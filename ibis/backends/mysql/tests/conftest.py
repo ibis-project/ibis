@@ -26,7 +26,7 @@ class TestConf(BackendTest, RoundHalfToEven):
     returned_timestamp_unit = 's'
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
-    bool_is_int = True
+    native_bool = False
     supports_structs = False
 
     def __init__(self, data_directory: Path) -> None:
@@ -80,6 +80,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 database=database,
                 schema=schema,
                 isolation_level="AUTOCOMMIT",
+                recreate=False,
             )
             with engine.begin() as con:
                 for table in TEST_TABLES:
@@ -92,7 +93,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                         "LINES TERMINATED BY '\\n'",
                         "IGNORE 1 LINES",
                     ]
-                    con.execute("\n".join(lines))
+                    con.exec_driver_sql("\n".join(lines))
 
     @staticmethod
     def connect(_: Path):

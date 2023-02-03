@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import Counter
-from typing import Iterator, Mapping
+from typing import Iterable, Iterator, Mapping
 
 import toolz
 
@@ -772,8 +772,13 @@ def find_subqueries(node: ops.Node) -> Counter:
 
 
 # TODO(kszucs): move to types/logical.py
-def _make_any(expr, any_op_class: type[ops.Any] | type[ops.NotAny]):
-    assert isinstance(expr, ir.Expr)
+def _make_any(
+    expr,
+    any_op_class: type[ops.Any] | type[ops.NotAny],
+    *,
+    where: ir.BooleanValue | None = None,
+):
+    assert isinstance(expr, ir.Expr), type(expr)
 
     tables = find_immediate_parent_tables(expr.op())
     predicates = find_predicates(expr.op(), flatten=True)
@@ -784,7 +789,7 @@ def _make_any(expr, any_op_class: type[ops.Any] | type[ops.NotAny]):
             predicates=predicates,
         )
     else:
-        op = any_op_class(expr)
+        op = any_op_class(expr, where=where)
     return op.to_expr()
 
 
@@ -862,3 +867,13 @@ def find_memtables(node: ops.Node) -> Iterator[ops.InMemoryTable]:
         return g.proceed, node if isinstance(node, ops.InMemoryTable) else None
 
     return g.traverse(finder, node, filter=ops.Node)
+
+
+def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
+    def finder(node):
+        return (
+            isinstance(node, ops.Value),
+            find_first_base_table(node) if isinstance(node, ops.Unnest) else None,
+        )
+
+    return g.traverse(finder, nodes, filter=ops.Node)

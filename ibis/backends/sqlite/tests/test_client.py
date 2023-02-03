@@ -1,4 +1,5 @@
 import uuid
+from pathlib import Path
 
 import numpy as np
 import pandas.testing as tm
@@ -41,15 +42,22 @@ def test_list_tables(con):
     assert len(con.list_tables(like='functional')) == 1
 
 
-def test_attach_file(dbpath):
-    client = ibis.sqlite.connect(None)
+def test_attach_file(tmp_path):
+    dbpath = str(tmp_path / "attached.db")
+    path_client = ibis.sqlite.connect(dbpath)
+    path_client.create_table("test", schema=ibis.schema(dict(a="int")))
 
-    client.attach('foo', dbpath)
+    client = ibis.sqlite.connect()
+
+    assert not client.list_tables()
+
+    client.attach('baz', Path(dbpath))
     client.attach('bar', dbpath)
 
-    foo_tables = client.list_tables(database='foo')
+    foo_tables = client.list_tables(database='baz')
     bar_tables = client.list_tables(database='bar')
 
+    assert foo_tables == ["test"]
     assert foo_tables == bar_tables
 
 

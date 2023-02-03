@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 import operator
 from typing import Any
@@ -35,9 +36,6 @@ def variance_reduction(func_name):
 
 
 def fixed_arity(sa_func, arity):
-    if isinstance(sa_func, str):
-        sa_func = getattr(sa.func, sa_func)
-
     def formatter(t, op):
         arg_count = len(op.args)
         if arity != arg_count:
@@ -54,10 +52,8 @@ def _varargs_call(sa_func, t, args):
     trans_args = []
     for raw_arg in args:
         arg = t.translate(raw_arg)
-        try:
+        with contextlib.suppress(AttributeError):
             arg = arg.scalar_subquery()
-        except AttributeError:
-            pass
         trans_args.append(arg)
     return sa_func(*trans_args)
 
@@ -85,24 +81,27 @@ def get_sqla_table(ctx, table):
     return sa_table
 
 
-def get_col_or_deferred_col(sa_table, colname):
-    """Get a `Column`, or create a "deferred" column.
+def get_col(sa_table, op: ops.TableColumn) -> sa.sql.ColumnClause:
+    """Extract a column from a table."""
+    cols = sa_table.exported_columns
+    colname = op.name
 
-    This is to handle the case when selecting a column from a join, which
-    happens when a join expression is cached during join traversal
+    if (col := cols.get(colname)) is not None:
+        return col
 
-    We'd like to avoid generating a subquery just for selection but in
-    sqlalchemy the Join object is not selectable. However, at this point
-    know that the column can be referred to unambiguously
-
-    Later the expression is assembled into
-    `sa.select([sa.column(colname)]).select_from(table_set)` (roughly)
-    where `table_set` is `sa_table` above.
-    """
-    try:
-        return sa_table.exported_columns[colname]
-    except KeyError:
-        return sa.column(colname)
+    # `cols` is a SQLAlchemy column collection that contains columns
+    # with names that are secretly prefixed by table that contains them
+    #
+    # for example, in `t0.join(t1).select(t0.a, t1.b)` t0.a will be named `t0_a`
+    # and t1.b will be named `t1_b`
+    #
+    # unfortunately SQLAlchemy doesn't let you select by the *un*prefixed
+    # column name despite the uniqueness of `colname`
+    #
+    # however, in ibis we have already deduplicated column names so we can
+    # refer to the name by position
+    colindex = op.table.schema._name_locs[colname]
+    return cols[colindex]
 
 
 def _table_column(t, op):
@@ -111,7 +110,7 @@ def _table_column(t, op):
 
     sa_table = get_sqla_table(ctx, table)
 
-    out_expr = get_col_or_deferred_col(sa_table, op.name)
+    out_expr = get_col(sa_table, op)
     out_expr.quote = t._always_quote_columns
 
     # If the column does not originate from the table set in the current SELECT
@@ -127,14 +126,21 @@ def _table_column(t, op):
 
 
 def _table_array_view(t, op):
+    # the table that the TableArrayView op contains (op.table) has
+    # one or more input relations that we need to "pin" for sqlalchemy's
+    # auto correlation functionality -- this is what `.correlate_except` does
+    #
+    # every relation that is NOT passed to `correlate_except` is considered an
+    # outer-query table
     ctx = t.context
     table = ctx.get_compiled_expr(op.table)
-    return table
+    # TODO: handle the case of `op.table` being a join
+    first, *_ = an.find_immediate_parent_tables(op.table, keep_input=False)
+    ref = ctx.get_ref(first)
+    return table.correlate_except(ref)
 
 
 def _exists_subquery(t, op):
-    from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
-
     ctx = t.context
 
     # TODO(kszucs): avoid converting the predicates to expressions
@@ -142,11 +148,11 @@ def _exists_subquery(t, op):
     filtered = (
         op.foreign_table.to_expr()
         .filter([pred.to_expr() for pred in op.predicates])
-        .projection([ir.literal(1).name(ir.core.unnamed)])
+        .projection([ir.literal(1).name("")])
     )
 
     sub_ctx = ctx.subcontext()
-    clause = AlchemyCompiler.to_sql(filtered, sub_ctx, exists=True)
+    clause = ctx.compiler.to_sql(filtered, sub_ctx, exists=True)
 
     if isinstance(op, ops.NotExistsSubquery):
         clause = sa.not_(clause)
@@ -157,18 +163,18 @@ def _exists_subquery(t, op):
 def _cast(t, op):
     arg = op.arg
     typ = op.to
+    arg_dtype = arg.output_dtype
 
     sa_arg = t.translate(arg)
-    sa_type = t.get_sqla_type(typ)
 
-    if isinstance(arg, ir.CategoryValue) and typ == dt.int32:
+    if arg_dtype.is_category() and typ.is_int32():
         return sa_arg
 
     # specialize going from an integer type to a timestamp
-    if arg.output_dtype.is_integer() and isinstance(sa_type, sa.DateTime):
+    if arg_dtype.is_integer() and typ.is_timestamp():
         return t.integer_to_timestamp(sa_arg)
 
-    if arg.output_dtype.is_binary() and typ.is_string():
+    if arg_dtype.is_binary() and typ.is_string():
         return sa.func.encode(sa_arg, 'escape')
 
     if typ.is_binary():
@@ -178,7 +184,8 @@ def _cast(t, op):
 
     if typ.is_json() and not t.native_json_type:
         return sa_arg
-    return sa.cast(sa_arg, sa_type)
+
+    return sa.cast(sa_arg, t.get_sqla_type(typ))
 
 
 def _contains(func):
@@ -224,7 +231,7 @@ def _is_null(t, op):
 
 def _not_null(t, op):
     arg = t.translate(op.arg)
-    return arg.isnot(sa.null())
+    return arg.is_not(sa.null())
 
 
 def _round(t, op):
@@ -246,22 +253,19 @@ def _floor_divide(t, op):
 
 
 def _simple_case(t, op):
-    cases = [ops.Equals(op.base, case) for case in op.cases]
-    return _translate_case(t, cases, op.results, op.default)
+    return _translate_case(t, op, value=t.translate(op.base))
 
 
 def _searched_case(t, op):
-    return _translate_case(t, op.cases, op.results, op.default)
+    return _translate_case(t, op, value=None)
 
 
-def _translate_case(t, cases, results, default):
-    case_args = [t.translate(arg) for arg in cases]
-    result_args = [t.translate(arg) for arg in results]
-
-    whens = zip(case_args, result_args)
-    default = t.translate(default)
-
-    return sa.case(list(whens), else_=default)
+def _translate_case(t, op, *, value):
+    return sa.case(
+        *zip(map(t.translate, op.cases), map(t.translate, op.results)),
+        value=value,
+        else_=t.translate(op.default),
+    )
 
 
 def _negate(t, op):
@@ -404,7 +408,7 @@ def reduction(sa_func):
 def _zero_if_null(t, op):
     sa_arg = t.translate(op.arg)
     return sa.case(
-        [(sa_arg.is_(None), sa.cast(0, t.get_sqla_type(op.output_dtype)))],
+        (sa_arg.is_(None), sa.cast(0, t.get_sqla_type(op.output_dtype))),
         else_=sa_arg,
     )
 
@@ -433,21 +437,6 @@ def _gen_string_find(func):
 
 def _nth_value(t, op):
     return sa.func.nth_value(t.translate(op.arg), t.translate(op.nth) + 1)
-
-
-def _clip(*, min_func, max_func):
-    def translate(t, op):
-        arg = t.translate(op.arg)
-
-        if (upper := op.upper) is not None:
-            arg = min_func(t.translate(upper), arg)
-
-        if (lower := op.lower) is not None:
-            arg = max_func(t.translate(lower), arg)
-
-        return arg
-
-    return translate
 
 
 def _bitwise_op(operator):
@@ -508,7 +497,6 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.BitOr: reduction(sa.func.bit_or),
     ops.BitXor: reduction(sa.func.bit_xor),
     ops.CountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
-    ops.HLLCardinality: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.ApproxCountDistinct: reduction(lambda arg: sa.func.count(arg.distinct())),
     ops.GroupConcat: reduction(sa.func.group_concat),
     ops.Between: fixed_arity(sa.between, 3),
@@ -516,7 +504,6 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.NotNull: _not_null,
     ops.Negate: _negate,
     ops.Round: _round,
-    ops.TypeOf: unary(sa.func.typeof),
     ops.Literal: _literal,
     ops.NullLiteral: lambda *_: sa.null(),
     ops.SimpleCase: _simple_case,
@@ -599,10 +586,9 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.IdenticalTo: fixed_arity(
         sa.sql.expression.ColumnElement.is_not_distinct_from, 2
     ),
-    ops.Clip: _clip(min_func=sa.func.least, max_func=sa.func.greatest),
     ops.Where: fixed_arity(
         lambda predicate, value_if_true, value_if_false: sa.case(
-            [(predicate, value_if_true)],
+            (predicate, value_if_true),
             else_=value_if_false,
         ),
         3,

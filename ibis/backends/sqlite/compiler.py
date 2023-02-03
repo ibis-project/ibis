@@ -14,25 +14,23 @@ from __future__ import annotations
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sqlalchemy as sa
+from sqlalchemy.dialects import sqlite
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
+from ibis.backends.base.sql.alchemy import (
+    AlchemyCompiler,
+    AlchemyExprTranslator,
+    to_sqla_type,
+)
 from ibis.backends.sqlite.registry import operation_registry
 
 
 class SQLiteExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
-    _type_map = AlchemyExprTranslator._type_map.copy()
-    _type_map.update(
-        {
-            dt.Float64: sa.types.REAL,
-            dt.Float16: sa.types.REAL,
-            dt.Float32: sa.types.REAL,
-        }
-    )
+    _dialect_name = "sqlite"
 
 
 rewrites = SQLiteExprTranslator.rewrites
@@ -68,3 +66,9 @@ def day_of_week_name(op):
 
 class SQLiteCompiler(AlchemyCompiler):
     translator_class = SQLiteExprTranslator
+    support_values_syntax_in_select = False
+
+
+@to_sqla_type.register(sqlite.dialect, (dt.Float32, dt.Float64))
+def _floating_point(_, itype):
+    return sa.REAL

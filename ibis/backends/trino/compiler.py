@@ -10,7 +10,6 @@ from ibis.backends.trino.registry import operation_registry
 class TrinoSQLExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry.copy()
     _rewrites = AlchemyExprTranslator._rewrites.copy()
-    _type_map = AlchemyExprTranslator._type_map.copy()
     _has_reduction_filter_syntax = True
     integer_to_timestamp = sa.func.from_unixtime
     _forbids_frame_clause = (
@@ -23,6 +22,8 @@ class TrinoSQLExprTranslator(AlchemyExprTranslator):
         ops.Lag,
         ops.Lead,
     )
+    _dialect_name = "trino"
+    supports_unnest_in_select = False
 
 
 rewrites = TrinoSQLExprTranslator.rewrites

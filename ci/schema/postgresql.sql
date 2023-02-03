@@ -1,6 +1,4 @@
-DROP SEQUENCE IF EXISTS test_sequence;
-CREATE SEQUENCE IF NOT EXISTS test_sequence;
-
+CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS plpython3u;
 
@@ -204,3 +202,9 @@ INSERT INTO win VALUES
     ('a', 2, 0),
     ('a', 3, 1),
     ('a', 4, 1);
+
+DROP TABLE IF EXISTS map CASCADE;
+CREATE TABLE map (kv HSTORE);
+INSERT INTO map VALUES
+    ('a=>1,b=>2,c=>3'),
+    ('d=>4,e=>5,c=>6');

@@ -1,33 +1,10 @@
-import sys
-
-import pyarrow as pa
 import pytest
 from pytest import param
 
+pa = pytest.importorskip("pyarrow")
+
 # Adds `to_pyarrow` to created schema objects
-from ibis.backends.pyarrow.datatypes import sch  # noqa: F401
-
-
-class PackageDiscarder:
-    def __init__(self):
-        self.pkgnames = []
-
-    def find_spec(self, fullname, path, target=None):
-        if fullname in self.pkgnames:
-            raise ImportError()
-
-
-@pytest.fixture
-def no_pyarrow(backend):
-    _pyarrow = sys.modules.pop('pyarrow', None)
-    d = PackageDiscarder()
-    d.pkgnames.append('pyarrow')
-    sys.meta_path.insert(0, d)
-    yield
-    sys.meta_path.remove(d)
-    if _pyarrow is not None:
-        sys.modules["pyarrow"] = _pyarrow
-
+from ibis.backends.pyarrow.datatypes import sch as _  # noqa: F401, E402
 
 limit = [
     param(
@@ -37,7 +14,6 @@ limit = [
             pytest.mark.notimpl(
                 [
                     # limit not implemented for pandas backend execution
-                    "bigquery",
                     "dask",
                     "datafusion",
                     "impala",
@@ -51,19 +27,8 @@ limit = [
 
 no_limit = [
     param(
-        None,
-        id='nolimit',
-        marks=[
-            pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "dask",
-                    "impala",
-                    "pyspark",
-                ]
-            ),
-        ],
-    ),
+        None, id='nolimit', marks=[pytest.mark.notimpl(["dask", "impala", "pyspark"])]
+    )
 ]
 
 limit_no_limit = limit + no_limit
@@ -106,7 +71,7 @@ def test_table_to_pyarrow_table(limit, awards_players):
 @pytest.mark.parametrize("limit", limit_no_limit)
 def test_column_to_pyarrow_array(limit, awards_players):
     array = awards_players.awardID.to_pyarrow(limit=limit)
-    assert isinstance(array, pa.Array)
+    assert isinstance(array, (pa.ChunkedArray, pa.Array))
     if limit is not None:
         assert len(array) == limit
 
@@ -115,7 +80,7 @@ def test_column_to_pyarrow_array(limit, awards_players):
 def test_empty_column_to_pyarrow(limit, awards_players):
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").awardID
     array = expr.to_pyarrow(limit=limit)
-    assert isinstance(array, pa.Array)
+    assert isinstance(array, (pa.ChunkedArray, pa.Array))
     assert len(array) == 0
 
 
@@ -134,31 +99,31 @@ def test_scalar_to_pyarrow_scalar(limit, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark"])
 def test_table_to_pyarrow_table_schema(awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
     assert table.schema == awards_players.schema().to_pyarrow()
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark"])
 def test_column_to_pyarrow_table_schema(awards_players):
     expr = awards_players.awardID
     array = expr.to_pyarrow()
-    assert isinstance(array, pa.Array)
+    assert isinstance(array, (pa.ChunkedArray, pa.Array))
     assert array.type == expr.type().to_pyarrow()
 
 
-@pytest.mark.notimpl(["bigquery", "pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
 def test_table_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
     assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
-    assert len(batch) == 2048
+    assert len(batch) <= 2048
 
 
-@pytest.mark.notimpl(["bigquery", "pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
 def test_column_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.awardID.to_pyarrow_batches(
         limit=2050, chunk_size=2048
@@ -166,10 +131,10 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
     assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
-    assert len(batch) == 2048
+    assert len(batch) <= 2048
 
 
-@pytest.mark.notimpl(["bigquery", "pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
 @pytest.mark.broken(
     ["sqlite"],
     raises=pa.ArrowException,

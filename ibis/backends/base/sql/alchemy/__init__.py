@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import abc
+import atexit
 import contextlib
 import getpass
+import warnings
 from operator import methodcaller
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
 import sqlalchemy as sa
 
@@ -14,11 +17,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy.database import AlchemyDatabase, AlchemyTable
-from ibis.backends.base.sql.alchemy.datatypes import (
-    schema_from_table,
-    table_from_schema,
-    to_sqla_type,
-)
+from ibis.backends.base.sql.alchemy.datatypes import schema_from_table, to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 from ibis.backends.base.sql.alchemy.registry import (
@@ -39,6 +38,8 @@ from ibis.backends.base.sql.alchemy.translator import (
 if TYPE_CHECKING:
     import pandas as pd
 
+    import ibis.expr.datatypes as dt
+
 
 __all__ = (
     'BaseAlchemyBackend',
@@ -58,7 +59,6 @@ __all__ = (
     'get_sqla_table',
     'to_sqla_type',
     'schema_from_table',
-    'table_from_schema',
     'varargs',
 )
 
@@ -91,7 +91,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def do_connect(self, con: sa.engine.Engine) -> None:
         self.con = con
         self._inspector = sa.inspect(self.con)
-        self.meta = sa.MetaData(bind=self.con)
+        self.meta = sa.MetaData()
         self._schemas: dict[str, sch.Schema] = {}
         self._temp_views: set[str] = set()
 
@@ -226,8 +226,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
         # if in memory tables aren't cheap then try to pull out their data
         # FIXME: queries that *select* from in memory tables are still broken
         # for mysql/sqlite/postgres because the generated SQL is wrong
-        if not self.compiler.cheap_in_memory_tables and isinstance(
-            expr.op(), ops.InMemoryTable
+        if (
+            not self.compiler.cheap_in_memory_tables
+            and self.compiler.support_values_syntax_in_select
+            and isinstance(expr.op(), ops.InMemoryTable)
         ):
             (from_,) = compiled.get_final_froms()
             (rows,) = from_._data
@@ -236,8 +238,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return methodcaller("from_select", list(expr.columns), compiled)
 
     def _columns_from_schema(self, name: str, schema: sch.Schema) -> list[sa.Column]:
+        dialect = self.con.dialect
         return [
-            sa.Column(colname, to_sqla_type(dtype), nullable=dtype.nullable)
+            sa.Column(colname, to_sqla_type(dialect, dtype), nullable=dtype.nullable)
             for colname, dtype in zip(schema.names, schema.types)
         ]
 
@@ -274,7 +277,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
             )
 
         t = self._get_sqla_table(table_name, schema=database, autoload=False)
-        t.drop(checkfirst=force)
+        with self.begin() as bind:
+            t.drop(bind=bind, checkfirst=force)
 
         assert not self.inspector.has_table(
             table_name
@@ -284,10 +288,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         qualified_name = self._fully_qualified_name(table_name, database)
 
-        try:
+        with contextlib.suppress(KeyError):
+            # schemas won't be cached if created with raw_sql
             del self._schemas[qualified_name]
-        except KeyError:  # schemas won't be cached if created with raw_sql
-            pass
 
     def load_data(
         self,
@@ -339,7 +342,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         database: str | None = None,
     ) -> None:
         t = self._get_sqla_table(table_name, schema=database)
-        t.delete().execute()
+        with self.begin() as con:
+            con.execute(t.delete())
 
     def schema(self, name: str) -> sch.Schema:
         """Get an ibis schema from the current database for the table `name`.
@@ -370,13 +374,46 @@ class BaseAlchemyBackend(BaseSQLBackend):
             util.log(query_str)
 
     def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        autoload: bool = True,
-        **kwargs: Any,
+        self, name: str, schema: str | None = None, autoload: bool = True, **kwargs: Any
     ) -> sa.Table:
-        return sa.Table(name, self.meta, schema=schema, autoload=autoload)
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore", message="Did not recognize type", category=sa.exc.SAWarning
+            )
+            table = sa.Table(
+                name,
+                self.meta,
+                schema=schema,
+                autoload_with=self.con if autoload else None,
+            )
+            nulltype_cols = frozenset(
+                col.name for col in table.c if isinstance(col.type, sa.types.NullType)
+            )
+
+            if not nulltype_cols:
+                return table
+            return self._handle_failed_column_type_inference(table, nulltype_cols)
+
+    def _handle_failed_column_type_inference(
+        self, table: sa.Table, nulltype_cols: Iterable[str]
+    ) -> sa.Table:
+        """Handle cases where SQLAlchemy cannot infer the column types of `table`."""
+
+        self.inspector.reflect_table(table, table.columns)
+        dialect = self.con.dialect
+        quoted_name = dialect.identifier_preparer.quote(table.name)
+
+        for colname, type in self._metadata(quoted_name):
+            if colname in nulltype_cols:
+                # replace null types discovered by sqlalchemy with non null
+                # types
+                table.append_column(
+                    sa.Column(
+                        colname, to_sqla_type(dialect, type), nullable=type.nullable
+                    ),
+                    replace_existing=True,
+                )
+        return table
 
     def _sqla_table_to_expr(self, table: sa.Table) -> ir.Table:
         schema = self._schemas.get(table.name)
@@ -387,6 +424,20 @@ class BaseAlchemyBackend(BaseSQLBackend):
             schema=schema,
         )
         return self.table_expr_class(node)
+
+    def raw_sql(self, query) -> None:
+        """Execute a query string.
+
+        !!! warning "The returned cursor object must be **manually** released."
+
+        Parameters
+        ----------
+        query
+            DDL or DML statement
+        """
+        return self.con.connect().execute(
+            sa.text(query) if isinstance(query, str) else query
+        )
 
     def table(
         self,
@@ -521,31 +572,57 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 f"The given obj is of type {type(obj).__name__} ."
             )
 
+    def _quote(self, name: str) -> str:
+        """Quote an identifier."""
+        return self.con.dialect.identifier_preparer.quote(name)
+
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         raise NotImplementedError(
             f"The {self.name} backend does not implement temporary view creation"
         )
 
     def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
-        pass
+        query = f"DROP VIEW IF EXISTS {name}"
 
-    def _create_temp_view(
+        def drop(self, raw_name: str, query: str):
+            with self.begin() as con:
+                con.exec_driver_sql(query)
+            self._temp_views.discard(raw_name)
+
+        atexit.register(drop, self, raw_name, query)
+
+    def _get_compiled_statement(
         self,
-        view: sa.Table,
         definition: sa.sql.Selectable,
-    ) -> None:
+        name: str,
+        compile_kwargs: Mapping[str, Any] | None = None,
+    ):
+        if compile_kwargs is None:
+            compile_kwargs = {}
+        compiled = definition.compile(
+            dialect=self.con.dialect, compile_kwargs=compile_kwargs
+        )
+        lines = self._get_temp_view_definition(name, definition=compiled)
+        return lines, compiled.params
+
+    def _create_temp_view(self, view: sa.Table, definition: sa.sql.Selectable) -> None:
         raw_name = view.name
         if raw_name not in self._temp_views and raw_name in self.list_tables():
             raise ValueError(f"{raw_name} already exists as a table or view")
-
-        name = self.con.dialect.identifier_preparer.quote_identifier(raw_name)
-        compiled = definition.compile()
-        defn = self._get_temp_view_definition(name, definition=compiled)
-        query = sa.text(defn).bindparams(**compiled.params)
-        self.con.execute(query)
+        name = self._quote(raw_name)
+        lines, params = self._get_compiled_statement(definition, name)
+        with self.begin() as con:
+            for line in lines:
+                con.exec_driver_sql(line, parameters=params)
         self._temp_views.add(raw_name)
         self._register_temp_view_cleanup(name, raw_name)
+
+    @abc.abstractmethod
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+        ...
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Return an ibis Schema from a backend-specific SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))

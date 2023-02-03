@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import collections
 import concurrent.futures
+import contextlib
 import itertools
 import os
 import subprocess
@@ -151,12 +152,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         )
 
     def _get_original_column_names(self, tablename: str) -> list[str]:
-        import pyarrow.parquet as pq
-
-        pq_file = pq.ParquetFile(
-            self.data_directory / "parquet" / tablename / f"{tablename}.parquet"
-        )
-        return pq_file.schema.names
+        return list(TEST_TABLES[tablename].names)
 
     def _get_renamed_table(self, tablename: str) -> ir.Table:
         t = self.connection.table(tablename)
@@ -317,17 +313,14 @@ def tmp_db(env, con, test_data_db):
     try:
         yield tmp_db
     finally:
-        con.set_database(test_data_db)
-        try:
-            con.drop_database(tmp_db, force=True)
-        except impala.error.HiveServer2Error:
+        with contextlib.suppress(impala.error.HiveServer2Error):
             # The database can be dropped by another process during tear down
             # in the middle of dropping this one if tests are running in
             # parallel.
             #
             # We only care that it gets dropped before all tests are finished
             # running.
-            pass
+            con.drop_database(tmp_db, force=True)
 
 
 @pytest.fixture(scope="module")
@@ -359,7 +352,6 @@ def temp_database(con, test_data_db):
     try:
         yield name
     finally:
-        con.set_database(test_data_db)
         con.drop_database(name, force=True)
 
 
@@ -503,8 +495,12 @@ def impala_create_test_database(con, env):
 
 
 PARQUET_SCHEMAS = {
-    'functional_alltypes': TEST_TABLES["functional_alltypes"].delete(
-        ["index", "Unnamed: 0"]
+    "functional_alltypes": ibis.schema(
+        {
+            name: dtype
+            for name, dtype in TEST_TABLES["functional_alltypes"].items()
+            if name not in {"index", "Unnamed: 0"}
+        }
     ),
     "tpch_region": ibis.schema(
         [

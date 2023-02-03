@@ -33,14 +33,14 @@ class BasePandasBackend(BaseBackend):
 
     def do_connect(
         self,
-        dictionary: MutableMapping[str, pd.DataFrame],
+        dictionary: MutableMapping[str, pd.DataFrame] | None = None,
     ) -> None:
         """Construct a client from a dictionary of pandas DataFrames.
 
         Parameters
         ----------
         dictionary
-            Mutable mapping of string table names to pandas DataFrames.
+            An optional mapping of string table names to pandas DataFrames.
 
         Examples
         --------
@@ -51,7 +51,7 @@ class BasePandasBackend(BaseBackend):
         # register dispatchers
         from ibis.backends.pandas import execution, udf  # noqa: F401
 
-        self.dictionary = dictionary
+        self.dictionary = dictionary or {}
         self.schemas: MutableMapping[str, sch.Schema] = {}
 
     def from_dataframe(
@@ -233,6 +233,8 @@ class Backend(BasePandasBackend):
         if params is None:
             params = {}
         else:
-            params = {k.op() if hasattr(k, 'op') else k: v for k, v in params.items()}
+            params = {
+                k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()
+            }
 
         return execute_and_reset(node, params=params, **kwargs)

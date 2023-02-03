@@ -3,11 +3,9 @@ from decimal import Decimal
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
 import pytest
 from packaging.version import parse as vparse
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
-from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -113,18 +111,17 @@ def test_infer_np_array(value, expected_dtypes):
         (np.double, dt.double),
         (np.str_, dt.string),
         (np.datetime64, dt.timestamp),
-        param(
-            np.timedelta64,
-            dt.interval,
-            marks=pytest.mark.skipif(
-                vparse(pa.__version__) < vparse("9"),
-                reason="pyarrow < 9 globally mutates the timedelta64 numpy dtype",
-            ),
-        ),
     ],
 )
 def test_numpy_dtype(numpy_dtype, ibis_dtype):
     assert dt.dtype(np.dtype(numpy_dtype)) == ibis_dtype
+
+
+def test_numpy_dtype_timedelta():
+    if vparse(pytest.importorskip("pyarrow").__version__) < vparse("9"):
+        pytest.skip("pyarrow < 9 globally mutates the timedelta64 numpy dtype")
+
+    assert dt.dtype(np.dtype(np.timedelta64)) == dt.interval
 
 
 @pytest.mark.parametrize(
@@ -224,5 +221,7 @@ def test_schema_infer(col_data, schema_type):
 
 
 def test_pyarrow_string():
+    pytest.importorskip("pa")
+
     s = pd.Series([], dtype="string[pyarrow]")
     assert dt.dtype(s.dtype) == dt.String()

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Iterator
 
 import sqlalchemy as sa
 import toolz
 
 import ibis.expr.datatypes as dt
-import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.trino.compiler import TrinoSQLCompiler
@@ -49,20 +49,35 @@ class Backend(BaseAlchemyBackend):
             port=port,
             database=database,
         )
-        connect_args.setdefault("experimental_python_types", True)
-        super().do_connect(sa.create_engine(url, connect_args=connect_args))
-        self._meta = sa.MetaData(bind=self.con, schema=schema)
+        connect_args.setdefault("timezone", "UTC")
+        with warnings.catch_warnings():
+            warnings.filterwarnings(
+                "ignore",
+                message=r"The dbapi\(\) classmethod on dialect classes has been renamed",
+                category=sa.exc.SADeprecationWarning,
+            )
+            try:
+                super().do_connect(
+                    sa.create_engine(
+                        url,
+                        connect_args={
+                            **connect_args,
+                            "experimental_python_types": True,
+                        },
+                    )
+                )
+            except TypeError:
+                super().do_connect(sa.create_engine(url, connect_args=connect_args))
+        self._meta = sa.MetaData(schema=schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         tmpname = f"_ibis_trino_output_{util.guid()[:6]}"
-        with self.con.begin() as con:
-            con.execute(f"PREPARE {tmpname} FROM {query}")
-            rows = list(con.execute(f"DESCRIBE OUTPUT {tmpname}"))
-            for name, type in toolz.pluck(["Column Name", "Type"], rows):
+        with self.begin() as con:
+            con.exec_driver_sql(f"PREPARE {tmpname} FROM {query}")
+            for name, type in toolz.pluck(
+                ["Column Name", "Type"],
+                con.exec_driver_sql(f"DESCRIBE OUTPUT {tmpname}").mappings(),
+            ):
                 ibis_type = parse(type)
                 yield name, ibis_type(nullable=True)
-
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Return an ibis Schema from a DuckDB SQL string."""
-        pairs = self._metadata(query)
-        return sch.Schema.from_tuples(pairs)
+            con.exec_driver_sql(f"DEALLOCATE PREPARE {tmpname}")

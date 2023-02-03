@@ -53,11 +53,17 @@ class PySparkTable(ir.Table):
         return self.op().source
 
     def compute_stats(self, noscan: bool = False):
-        """Invoke the Spark ANALYZE TABLE <tbl> COMPUTE STATISTICS command.
+        """Invoke the Spark `ANALYZE TABLE <tbl> COMPUTE STATISTICS` command.
+
+        Parameters
+        ----------
+        noscan
+            If `True`, collect only basic statistics for the table (number of
+            rows, size in bytes).
 
         See Also
         --------
-        SparkClient.compute_stats
+        [`ibis.backends.spark.Backend.compute_stats`][ibis.backends.spark.Backend.compute_stats]
         """
         return self._client.compute_stats(self._qualified_name, noscan=noscan)
 
@@ -66,6 +72,7 @@ class PySparkTable(ir.Table):
         self._client.drop_table_or_view(self._qualified_name)
 
     def truncate(self):
+        """Truncate the table, removing all data."""
         self._client.truncate_table(self._qualified_name)
 
     @staticmethod
@@ -153,7 +160,7 @@ class PySparkTable(ir.Table):
         statement = ddl.RenameTable(self._qualified_name, new_name)
         self._client.raw_sql(statement.compile())
 
-        op = self.op().change_name(new_qualified_name)
+        op = self.op().copy(name=new_qualified_name)
         return type(self)(op)
 
     def alter(self, tbl_properties: Mapping[str, str] | None = None) -> Any:

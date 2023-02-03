@@ -1,13 +1,13 @@
 WITH t0 AS (
-  SELECT `userid`, `movieid`, `rating`,
-         CAST(`timestamp` AS timestamp) AS `datetime`
-  FROM ratings
+  SELECT t3.`userid`, t3.`movieid`, t3.`rating`,
+         CAST(t3.`timestamp` AS timestamp) AS `datetime`
+  FROM ratings t3
 ),
 t1 AS (
-  SELECT t0.*, t5.`title`
+  SELECT t0.*, t4.`title`
   FROM t0
-    INNER JOIN movies t5
-      ON t0.`movieid` = t5.`movieid`
+    INNER JOIN movies t4
+      ON t0.`movieid` = t4.`movieid`
 )
 SELECT t2.*
 FROM (
@@ -17,9 +17,9 @@ FROM (
         (extract(t1.`datetime`, 'year') > 2001)
 ) t2
 WHERE t2.`movieid` IN (
-  SELECT `movieid`
+  SELECT t3.`movieid`
   FROM (
-    SELECT `movieid`
+    SELECT t4.`movieid`
     FROM (
       SELECT t1.*
       FROM t1
@@ -27,6 +27,6 @@ WHERE t2.`movieid` IN (
             (extract(t1.`datetime`, 'year') > 2001) AND
             (t1.`userid` = 118205) AND
             (extract(t1.`datetime`, 'year') < 2009)
-    ) t5
-  ) t4
+    ) t4
+  ) t3
 )

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import sys
 import tempfile
 from html import escape
@@ -13,10 +14,8 @@ from ibis.common.graph import Graph
 
 
 def get_type(node):
-    try:
+    with contextlib.suppress(AttributeError, NotImplementedError):
         return str(node.output_dtype)
-    except (AttributeError, NotImplementedError):
-        pass
 
     try:
         schema = node.schema
@@ -66,13 +65,13 @@ def get_label(node):
             label_fmt = '<<I>{}</I>: <B>{}</B>{}>'
         else:
             label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
-        label = label_fmt.format(escape(nodename), escape(name), typename)
+        label = label_fmt.format(escape(nodename), escape(name), escape(typename))
     else:
         if isinstance(node, ops.TableNode):
             label_fmt = '<<B>{}</B>{}>'
         else:
             label_fmt = '<<B>{}</B><BR ALIGN="LEFT" />:: {}>'
-        label = label_fmt.format(escape(name), typename)
+        label = label_fmt.format(escape(name), escape(typename))
     return label
 
 

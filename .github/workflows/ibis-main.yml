@@ -30,6 +30,8 @@ concurrency:
 jobs:
   test_no_backends:
     name: Test ${{ matrix.os }} python-${{ matrix.python-version }}
+    env:
+      SQLALCHEMY_WARN_20: "1"
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false

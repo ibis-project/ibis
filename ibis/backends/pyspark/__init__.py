@@ -13,7 +13,6 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
 from ibis.backends.base.sql.ddl import (
@@ -157,13 +156,6 @@ class Backend(BaseSQLBackend):
     @property
     def version(self):
         return pyspark.__version__
-
-    @util.deprecated(
-        version='2.0',
-        instead='use a new connection to the database',
-    )
-    def set_database(self, name):
-        self._catalog.setCurrentDatabase(name)
 
     @property
     def current_database(self):
@@ -469,9 +461,8 @@ class Backend(BaseSQLBackend):
 
         return self.raw_sql(statement.compile())
 
-    def _register_in_memory_table(self, table_op):
-        spark_df = self.compile(table_op.to_expr())
-        spark_df.createOrReplaceTempView(table_op.name)
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        self.compile(op.to_expr()).createOrReplaceTempView(op.name)
 
     def create_view(
         self,
@@ -607,14 +598,12 @@ class Backend(BaseSQLBackend):
         database
             Database name
         noscan
-            If True, collect only basic statistics for the table (number of
+            If `True`, collect only basic statistics for the table (number of
             rows, size in bytes).
         """
-        maybe_noscan = ' NOSCAN' if noscan else ''
-        stmt = 'ANALYZE TABLE {} COMPUTE STATISTICS{}'.format(
-            self._fully_qualified_name(name, database), maybe_noscan
-        )
-        return self.raw_sql(stmt)
+        maybe_noscan = " NOSCAN" * noscan
+        name = self._fully_qualified_name(name, database)
+        return self.raw_sql(f"ANALYZE TABLE {name} COMPUTE STATISTICS{maybe_noscan}")
 
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in PySparkExprTranslator._registry

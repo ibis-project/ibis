@@ -188,7 +188,7 @@ def format_dtype(dtype):
     strtyp = str(dtype)
     if len(strtyp) > max_string:
         strtyp = strtyp[: max_string - 1] + "…"
-    return Text.styled(strtyp, "bold blue")
+    return Text.styled(strtyp, "dim")
 
 
 def to_rich_table(table, console_width=None):

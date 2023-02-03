@@ -80,8 +80,12 @@ class TableSetFormatter:
             )
             for row in op.data.to_frame().itertuples(index=False)
         )
-        rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
-        return f"(VALUES {rows})"
+        if self.context.compiler.support_values_syntax_in_select:
+            rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
+            return f"(VALUES {rows})"
+        else:
+            rows = "UNION ALL ".join(f"(SELECT {raw_row})" for raw_row in raw_rows)
+            return f"({rows})"
 
     def _format_table(self, op):
         # TODO: This could probably go in a class and be significantly nicer
@@ -93,7 +97,6 @@ class TableSetFormatter:
 
         if isinstance(ref_op, ops.InMemoryTable):
             result = self._format_in_memory_table(ref_op)
-            is_subquery = True
         elif isinstance(ref_op, ops.PhysicalTable):
             name = ref_op.name
             # TODO(kszucs): add a mandatory `name` field to the base
@@ -102,7 +105,6 @@ class TableSetFormatter:
             if name is None:
                 raise com.RelationError(f'Table did not have a name: {op!r}')
             result = self._quote_identifier(name)
-            is_subquery = False
         else:
             # A subquery
             if ctx.is_extracted(ref_op):
@@ -118,10 +120,8 @@ class TableSetFormatter:
 
             subquery = ctx.get_compiled_expr(op)
             result = f'(\n{util.indent(subquery, self.indent)}\n)'
-            is_subquery = True
 
-        if is_subquery or ctx.need_aliases(op):
-            result += f' {ctx.get_ref(op)}'
+        result += f' {ctx.get_ref(op)}'
 
         return result
 
@@ -302,12 +302,8 @@ class Select(DML, Comparable):
             if isinstance(node, ops.Value):
                 expr_str = self._translate(node, named=True)
             elif isinstance(node, ops.TableNode):
-                # A * selection, possibly prefixed
-                if context.need_aliases(node):
-                    alias = context.get_ref(node)
-                    expr_str = f'{alias}.*' if alias else '*'
-                else:
-                    expr_str = '*'
+                alias = context.get_ref(node)
+                expr_str = f'{alias}.*' if alias else '*'
             else:
                 raise TypeError(node)
             formatted.append(expr_str)
@@ -496,6 +492,7 @@ class Compiler:
     difference_class = Difference
 
     cheap_in_memory_tables = False
+    support_values_syntax_in_select = True
 
     @classmethod
     def make_context(cls, params=None):

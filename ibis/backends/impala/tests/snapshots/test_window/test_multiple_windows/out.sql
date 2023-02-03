@@ -1,2 +1,3 @@
-SELECT `g`, sum(`f`) OVER (PARTITION BY `g`) - sum(`f`) OVER () AS `result`
-FROM alltypes
+SELECT t0.`g`,
+       sum(t0.`f`) OVER (PARTITION BY t0.`g`) - sum(t0.`f`) OVER () AS `result`
+FROM alltypes t0

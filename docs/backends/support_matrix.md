@@ -7,17 +7,30 @@ hide:
 
 Backends are shown in descending order of the number of supported operations.
 
-!!! tip "The Snowflake backend coverage is an overestimate"
+!!! tip "Backends with low coverage are good places to start contributing!"
 
-    The Snowflake backend translation functions are reused from the PostgreSQL backend
-    and some operations that claim coverage may not work.
+    Each backend implements operations differently, but this is usually very
+    similar to other backends. If you want to start contributing to ibis, it's
+    a good idea to start by adding missing operations to backends that have low
+    operation coverage.
 
-    The Snowflake backend is a good place to start contributing!
+<div class="streamlit-app">
+  <iframe id="streamlit-app" src="https://ibis-project.streamlit.app/?embedded=true"></iframe>
+</div>
 
-## Core Operations
+!!! note "This app is built using [`streamlit`](https://streamlit.io/)"
 
-{{ read_csv("docs/backends/core_support_matrix.csv") }}
+    You can develop the app locally by editing `docs/backends/app/backend_info_app.py` and
+    opening a PR with your changes.
 
-## Geospatial Operations
+    Test your changes locally by running
 
-{{ read_csv("docs/backends/geospatial_support_matrix.csv") }}
+    ```sh
+    $ streamlit run docs/backends/app/backend_info_app.py
+    ```
+
+    The changes will show up in the dev docs when your PR is merged!
+
+## Raw Data
+
+You can also download data from the above tables in [CSV format](./raw_support_matrix.csv).

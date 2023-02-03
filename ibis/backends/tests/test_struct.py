@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -52,7 +51,7 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres", "snowflake", "bigquery"])
+@pytest.mark.notimpl(["postgres"])
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(con, field):
     query = _STRUCT_LITERAL[field]
@@ -63,19 +62,8 @@ def test_literal(con, field):
     tm.assert_series_equal(result, expected.astype(dtype))
 
 
-@pytest.mark.notimpl(["postgres", "snowflake"])
-@pytest.mark.parametrize(
-    "field",
-    [
-        "a",
-        param(
-            "b", marks=pytest.mark.broken(["polars"], reason="polars incorrectly fails")
-        ),
-        param(
-            "c", marks=pytest.mark.broken(["polars"], reason="polars incorrectly fails")
-        ),
-    ],
-)
+@pytest.mark.notimpl(["postgres"])
+@pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
 )
@@ -87,11 +75,11 @@ def test_null_literal(con, field):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "dask", "pandas", "postgres", "snowflake"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres"])
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")
-    assert expr.type() == dt.Struct.from_dict(dict(a=dt.string, b=dt.int8, c=dt.int64))
+    assert expr.type() == dt.Struct(dict(a=dt.string, b=dt.int8, c=dt.int64))
     result = expr.execute()
     expected = pd.Series(
         (dict(a=a, b=1, c=c) for a, c in zip(df.string_col, df.bigint_col)),

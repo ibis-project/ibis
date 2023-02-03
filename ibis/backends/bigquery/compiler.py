@@ -9,6 +9,7 @@ import toolz
 
 import ibis.common.graph as lin
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.backends.base.sql import compiler as sql_compiler
 from ibis.backends.bigquery import operations, registry, rewrites
 
@@ -22,7 +23,8 @@ class BigQueryUDFDefinition(sql_compiler.DDL):
 
     def compile(self):
         """Generate UDF string from definition."""
-        return self.expr.op().js
+        op = expr.op() if isinstance(expr := self.expr, ir.Expr) else expr
+        return op.sql
 
 
 class BigQueryUnion(sql_compiler.Union):
@@ -52,6 +54,8 @@ class BigQueryDifference(sql_compiler.Difference):
 
 def find_bigquery_udf(op):
     """Filter which includes only UDFs from expression tree."""
+    if type(op) in BigQueryExprTranslator._rewrites:
+        op = BigQueryExprTranslator._rewrites[type(op)](op)
     if isinstance(op, operations.BigQueryUDFNode):
         result = op
     else:
@@ -109,6 +113,8 @@ class BigQueryCompiler(sql_compiler.Compiler):
     intersect_class = BigQueryIntersection
     difference_class = BigQueryDifference
 
+    support_values_syntax_in_select = False
+
     @staticmethod
     def _generate_setup_queries(expr, context):
         """Generate DDL for temporary resources."""
@@ -117,4 +123,13 @@ class BigQueryCompiler(sql_compiler.Compiler):
 
         # UDFs are uniquely identified by the name of the Node subclass we
         # generate.
-        return list(toolz.unique(queries, key=lambda x: type(x.expr.op()).__name__))
+        def key(x):
+            expr = x.expr
+            op = expr.op() if isinstance(expr, ir.Expr) else expr
+            return op.__class__.__name__
+
+        return list(toolz.unique(queries, key=key))
+
+
+# Register custom UDFs
+import ibis.backends.bigquery.custom_udfs  # noqa:  F401, E402

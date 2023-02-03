@@ -3,6 +3,7 @@ import decimal
 import numpy as np
 import pandas as pd
 import pytest
+import pytz
 from pytest import param
 
 import ibis
@@ -92,7 +93,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
     ('to', 'expected'),
     [
         ('string', str),
-        ('int64', lambda x: x.value // int(1e9)),
+        ('int64', lambda x: pd.Timestamp(x).value // int(1e9)),
         param(
             'double',
             float,
@@ -100,7 +101,7 @@ def test_cast_timestamp_column(t, df, column, to, expected):
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: x.tz_localize('America/Los_Angeles'),
+            lambda x: x.astimezone(tz=pytz.timezone('America/Los_Angeles')),
         ),
     ],
 )
@@ -116,7 +117,7 @@ def test_cast_timestamp_scalar_naive(to, expected):
     ('to', 'expected'),
     [
         ('string', str),
-        ('int64', lambda x: x.value // int(1e9)),
+        ('int64', lambda x: pd.Timestamp(x).value // int(1e9)),
         param(
             'double',
             float,
@@ -124,7 +125,7 @@ def test_cast_timestamp_scalar_naive(to, expected):
         ),
         (
             dt.Timestamp('America/Los_Angeles'),
-            lambda x: x.tz_convert('America/Los_Angeles'),
+            lambda x: x.astimezone(tz=pytz.timezone('America/Los_Angeles')),
         ),
     ],
 )

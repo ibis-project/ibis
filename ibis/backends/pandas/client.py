@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import warnings
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -45,6 +47,9 @@ _ibis_dtypes = toolz.valmap(
     },
 )
 
+if TYPE_CHECKING:
+    import pyarrow as pa
+
 
 @dt.dtype.register(DatetimeTZDtype)
 def from_pandas_tzdtype(value):
@@ -56,9 +61,25 @@ def from_pandas_categorical(_):
     return dt.Category()
 
 
-@dt.dtype.register(pd.core.arrays.string_.StringDtype)
-def from_pandas_string(_):
-    return dt.String()
+@dt.dtype.register(pd.core.dtypes.base.ExtensionDtype)
+def from_pandas_extension_dtype(t):
+    return getattr(dt, t.__class__.__name__.replace("Dtype", "").lower())
+
+
+try:
+    _arrow_dtype_class = pd.ArrowDtype
+except AttributeError:
+    warnings.warn(
+        f"The `ArrowDtype` class is not available in pandas {pd.__version__}. "
+        "Install pandas >= 1.5.0 for interop with pandas and arrow dtype support"
+    )
+else:
+
+    @dt.dtype.register(_arrow_dtype_class)
+    def from_pandas_arrow_extension_dtype(t):
+        import ibis.backends.pyarrow.datatypes as _  # noqa: F401
+
+        return dt.dtype(t.pyarrow_dtype)
 
 
 @sch.schema.register(pd.Series)
@@ -71,7 +92,7 @@ def infer_pandas_schema(df: pd.DataFrame, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []
-    for column_name in df.dtypes.keys():  # noqa: SIM118
+    for column_name in df.dtypes.keys():
         if not isinstance(column_name, str):
             raise TypeError('Column names must be strings to use the pandas backend')
 
@@ -189,19 +210,24 @@ def convert_json_to_series(in_, out, col: pd.Series):
 class DataFrameProxy(Immutable, util.ToFrame):
     __slots__ = ('_df', '_hash')
 
-    def __init__(self, df):
+    def __init__(self, df: pd.DataFrame) -> None:
         object.__setattr__(self, "_df", df)
         object.__setattr__(self, "_hash", hash((type(df), id(df))))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self._hash
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         df_repr = util.indent(repr(self._df), spaces=2)
         return f"{self.__class__.__name__}:\n{df_repr}"
 
-    def to_frame(self):
+    def to_frame(self) -> pd.DataFrame:
         return self._df
+
+    def to_pyarrow(self) -> pa.Table:
+        import pyarrow as pa
+
+        return pa.Table.from_pandas(self._df)
 
 
 class PandasInMemoryTable(ops.InMemoryTable):

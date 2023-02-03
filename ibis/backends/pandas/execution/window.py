@@ -336,7 +336,7 @@ def execute_window_op(
     ]
     if group_by:
         if order_by:
-            (sorted_df, grouping_keys, ordering_keys,) = util.compute_sorted_frame(
+            (sorted_df, grouping_keys, ordering_keys) = util.compute_sorted_frame(
                 data,
                 order_by,
                 group_by=group_by,

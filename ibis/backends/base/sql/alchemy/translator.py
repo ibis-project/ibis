@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import functools
+
 import sqlalchemy as sa
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.datatypes import ibis_type_to_sqla, to_sqla_type
+from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import _DEFAULT_DIALECT
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     sqlalchemy_operation_registry,
@@ -35,7 +38,6 @@ class AlchemyContext(QueryContext):
 class AlchemyExprTranslator(ExprTranslator):
     _registry = sqlalchemy_operation_registry
     _rewrites = ExprTranslator._rewrites.copy()
-    _type_map = ibis_type_to_sqla
 
     context_class = AlchemyContext
 
@@ -54,11 +56,27 @@ class AlchemyExprTranslator(ExprTranslator):
         ops.CumeDist,
     )
 
+    _dialect_name = "default"
+
+    supports_unnest_in_select = True
+
+    @functools.cached_property
+    def dialect(self) -> sa.engine.interfaces.Dialect:
+        if (name := self._dialect_name) == "default":
+            return _DEFAULT_DIALECT
+        dialect_cls = sa.dialects.registry.load(name)
+        return dialect_cls()
+
+    def _schema_to_sqlalchemy_columns(self, schema):
+        return [
+            sa.column(name, self.get_sqla_type(dtype)) for name, dtype in schema.items()
+        ]
+
     def name(self, translated, name, force=True):
         return translated.label(name)
 
     def get_sqla_type(self, data_type):
-        return to_sqla_type(data_type, type_map=self._type_map)
+        return to_sqla_type(self.dialect, data_type)
 
     def _maybe_cast_bool(self, op, arg):
         if (

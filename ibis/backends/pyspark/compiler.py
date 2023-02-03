@@ -345,7 +345,6 @@ def compile_subtract(t, op, **kwargs):
 @compile_nan_as_null
 def compile_literal(t, op, *, raw=False, **kwargs):
     """If raw is True, don't wrap the result with F.lit()."""
-    import pandas as pd
 
     value = op.value
     dtype = op.dtype
@@ -368,9 +367,9 @@ def compile_literal(t, op, *, raw=False, **kwargs):
         return F.array(*map(F.lit, value))
     elif dtype.is_struct():
         return F.struct(*(F.lit(val).alias(name) for name, val in value.items()))
+    elif dtype.is_timestamp():
+        return F.from_utc_timestamp(F.lit(str(value)), tz="UTC")
     else:
-        if isinstance(value, pd.Timestamp) and value.tz is None:
-            value = value.tz_localize("UTC").to_pydatetime()
         return F.lit(value)
 
 
@@ -432,7 +431,7 @@ def compile_not_contains(t, op, **kwargs):
         options = [t.translate(option, **kwargs) for option in op.options]
     else:
         options = t.translate(op.options, **kwargs)
-    return ~(col.isin(options))
+    return ~col.isin(options)
 
 
 @compiles(ops.StartsWith)
@@ -457,22 +456,32 @@ def _is_table(table):
         return False
 
 
-def compile_aggregator(t, op, *, fn, aggcontext=None, **kwargs):
-    if (where := getattr(op, 'where', None)) is not None:
+def compile_aggregator(
+    t, op, *, fn, aggcontext=None, where_excludes: tuple[str, ...] = (), **kwargs
+):
+    if (where := getattr(op, "where", None)) is not None:
         condition = t.translate(where, **kwargs)
     else:
         condition = None
 
-    def translate_arg(arg):
+    def translate_arg(arg, include_where: bool):
         src_col = t.translate(arg, **kwargs)
 
-        if condition is not None:
+        if include_where and condition is not None:
             src_col = F.when(condition, src_col)
         return src_col
 
-    src_inputs = tuple(arg for arg in op.args if arg is not getattr(op, "where", None))
+    src_inputs = tuple(
+        (argname, arg)
+        for argname, arg in zip(op.argnames, op.args)
+        if argname != "where"
+    )
     src_cols = tuple(
-        translate_arg(arg) for arg in src_inputs if isinstance(arg, ops.Node)
+        translate_arg(
+            arg, include_where=(not where_excludes) or argname not in where_excludes
+        )
+        for argname, arg in src_inputs
+        if isinstance(arg, ops.Node)
     )
 
     col = fn(*src_cols)
@@ -904,8 +913,8 @@ def compile_capitalize(t, op, **kwargs):
 
 
 @compiles(ops.Substring)
-def compile_substring(t, op, **kwargs):
-    src_column = t.translate(op.arg, **kwargs)
+def compile_substring(t, op, raw: bool = False, **kwargs):
+    src_column = t.translate(op.arg, raw=raw, **kwargs)
     start = t.translate(op.start, **kwargs, raw=True) + 1
     length = t.translate(op.length, **kwargs, raw=True)
 
@@ -999,7 +1008,7 @@ def compile_regex_search(t, op, **kwargs):
 
     @F.udf('boolean')
     def regex_search(s, pattern):
-        return True if re.search(pattern, s) else False
+        return re.search(pattern, s) is not None
 
     src_column = t.translate(op.arg, **kwargs)
     pattern = t.translate(op.pattern, **kwargs)
@@ -1895,3 +1904,21 @@ def compile_e(t, op, **kwargs):
 @compiles(ops.Pi)
 def compile_pi(t, op, **kwargs):
     return F.acos(F.lit(-1))
+
+
+@compiles(ops.Quantile)
+@compiles(ops.MultiQuantile)
+def compile_quantile(t, op, **kwargs):
+    return compile_aggregator(
+        t, op, fn=F.percentile_approx, where_excludes=("quantile",), **kwargs
+    )
+
+
+@compiles(ops.ArgMin)
+def compile_argmin(t, op, **kwargs):
+    return compile_aggregator(t, op, fn=F.min_by, **kwargs)
+
+
+@compiles(ops.ArgMax)
+def compile_argmax(t, op, **kwargs):
+    return compile_aggregator(t, op, fn=F.max_by, **kwargs)

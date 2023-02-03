@@ -18,79 +18,6 @@ class _LimitSpec(NamedTuple):
     offset: int
 
 
-class _CorrelatedRefCheck:
-    def __init__(self, query, node):
-        self.query = query
-        self.ctx = query.context
-        self.node = node
-        self.query_roots = frozenset(
-            an.find_immediate_parent_tables(self.query.table_set)
-        )
-        self.has_foreign_root = False
-        self.has_query_root = False
-        self.seen = set()
-
-    def get_result(self):
-        self.visit(self.node, in_subquery=False)
-        return self.has_query_root and self.has_foreign_root
-
-    def visit(self, node, in_subquery):
-        if node in self.seen:
-            return
-
-        in_subquery |= self.is_subquery(node)
-
-        for arg in node.args:
-            if isinstance(arg, ops.TableNode):
-                self.visit_table(arg, in_subquery=in_subquery)
-            elif isinstance(arg, ops.Node):
-                self.visit(arg, in_subquery=in_subquery)
-            elif isinstance(arg, tuple):
-                for item in arg:
-                    self.visit(item, in_subquery=in_subquery)
-
-        self.seen.add(node)
-
-    def is_subquery(self, node):
-        return isinstance(
-            node,
-            (
-                ops.TableArrayView,
-                ops.ExistsSubquery,
-                ops.NotExistsSubquery,
-            ),
-        ) or (isinstance(node, ops.TableColumn) and not self.is_root(node.table))
-
-    def visit_table(self, node, in_subquery):
-        if isinstance(node, (ops.PhysicalTable, ops.SelfReference)):
-            self.ref_check(node, in_subquery=in_subquery)
-
-        for arg in node.args:
-            if isinstance(arg, tuple):
-                for item in arg:
-                    self.visit(item, in_subquery=in_subquery)
-            elif isinstance(arg, ops.Node):
-                self.visit(arg, in_subquery=in_subquery)
-
-    def ref_check(self, node, in_subquery) -> None:
-        ctx = self.ctx
-
-        is_root = self.is_root(node)
-
-        self.has_query_root |= is_root and in_subquery
-        self.has_foreign_root |= not is_root and in_subquery
-
-        if (
-            not is_root
-            and not ctx.has_ref(node)
-            and (not in_subquery or ctx.has_ref(node, parent_contexts=True))
-        ):
-            ctx.make_alias(node)
-
-    def is_root(self, what: ops.TableNode) -> bool:
-        return what in self.query_roots
-
-
 def _get_scalar(field):
     def scalar_handler(results):
         return results[field][0]
@@ -150,11 +77,6 @@ class SelectBuilder:
         return select_query
 
     @staticmethod
-    def _foreign_ref_check(query, expr):
-        checker = _CorrelatedRefCheck(query, expr)
-        return checker.get_result()
-
-    @staticmethod
     def _adapt_operation(node):
         # Non-table expressions need to be adapted to some well-formed table
         # expression, along with a way to adapt the results to the desired
@@ -177,7 +99,7 @@ class SelectBuilder:
                     table_expr = node.table.to_expr()[[node.name]]
                     result_handler = _get_column(node.name)
                 else:
-                    table_expr = node.to_expr().to_projection()
+                    table_expr = node.to_expr().as_table()
                     result_handler = _get_column(node.name)
 
                 return table_expr.op(), result_handler
@@ -214,22 +136,6 @@ class SelectBuilder:
         # select statement.
         if self.table_set is not None:
             self._make_table_aliases(self.table_set)
-
-        # XXX: This is a temporary solution to the table-aliasing / correlated
-        # subquery problem. Will need to revisit and come up with a cleaner
-        # design (also as one way to avoid pathological naming conflicts; for
-        # example, we could define a table alias before we know that it
-        # conflicts with the name of a table used in a subquery, join, or
-        # another part of the query structure)
-
-        # There may be correlated subqueries inside the filters, requiring that
-        # we use an explicit alias when outputting as SQL. For now, we're just
-        # going to see if any table nodes appearing in the where stack have
-        # been marked previously by the above code.
-        for expr in self.filters:
-            needs_alias = self._foreign_ref_check(self, expr)
-            if needs_alias:
-                self.context.set_always_alias()
 
     # TODO(kszucs): should be rewritten using lin.traverse()
     def _make_table_aliases(self, node):

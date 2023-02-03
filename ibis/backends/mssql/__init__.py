@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 from typing import Literal
 
 import sqlalchemy as sa
 
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
-from ibis.backends.mssql.datatypes import _FieldDescription, _type_from_result_set_info
+from ibis.backends.mssql.datatypes import _type_from_result_set_info
 
 
 class Backend(BaseAlchemyBackend):
@@ -45,37 +43,23 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_datefirst = bind.execute('SELECT @@DATEFIRST').scalar()
-            bind.execute('SET DATEFIRST 1')
-            try:
-                yield bind
-            finally:
-                bind.execute(f"SET DATEFIRST {previous_datefirst}")
+            prev = bind.exec_driver_sql("SELECT @@DATEFIRST").scalar()
+            bind.exec_driver_sql("SET DATEFIRST 1")
+            yield bind
+            bind.execute(sa.text("SET DATEFIRST :prev").bindparams(prev=prev))
 
-    def _get_schema_using_query(self, query):
+    def _metadata(self, query):
+        if query in self.list_tables():
+            query = f"SELECT * FROM [{query}]"
+
+        query = sa.text("EXEC sp_describe_first_result_set @tsql = :query").bindparams(
+            query=query
+        )
         with self.begin() as bind:
-            result = bind.execute(
-                f"EXEC sp_describe_first_result_set @tsql = N'{query}';"
-            )
-            result_set_info: list[_FieldDescription] = result.mappings().fetchall()
-        fields = [
-            (column['name'], _type_from_result_set_info(column))
-            for column in result_set_info
-        ]
-        return sch.Schema.from_tuples(fields)
+            for column in bind.execute(query).mappings():
+                yield column["name"], _type_from_result_set_info(column)
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
-        return f"CREATE OR ALTER VIEW {name} AS {definition}"
-
-    def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
-        query = f"DROP VIEW IF EXISTS {name}"
-
-        def drop(self, raw_name: str, query: str):
-            self.con.execute(query)
-            self._temp_views.discard(raw_name)
-
-        atexit.register(drop, self, raw_name, query)
+        yield f"CREATE OR ALTER VIEW {name} AS {definition}"

@@ -18,21 +18,24 @@ import datetime
 import sqlite3
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Iterator
 
 import sqlalchemy as sa
+import toolz
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
-if TYPE_CHECKING:
-    import ibis.expr.datatypes as dt
-    import ibis.expr.types as ir
-
 import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
+from ibis.backends.sqlite.datatypes import parse
 from ibis.expr.schema import datatype
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
+    import ibis.expr.types as ir
 
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
@@ -136,7 +139,7 @@ class Backend(BaseAlchemyBackend):
             # easier than subclassing the builtin SQLite dialect, and achieves
             # the same desired behavior.
             def _to_ischema_val(t):
-                sa_type = to_sqla_type(datatype(t))
+                sa_type = to_sqla_type(engine.dialect, datatype(t))
                 if isinstance(sa_type, sa.types.TypeEngine):
                     # SQLAlchemy expects a callable here, rather than an
                     # instance. Use a lambda to work around this.
@@ -162,11 +165,7 @@ class Backend(BaseAlchemyBackend):
             if type(column_info["type"]) is TIMESTAMP:
                 column_info["type"] = ISODATETIME()
 
-    def attach(
-        self,
-        name: str,
-        path: str | Path,
-    ) -> None:
+    def attach(self, name: str, path: str | Path) -> None:
         """Connect another SQLite database file to the current connection.
 
         Parameters
@@ -174,17 +173,26 @@ class Backend(BaseAlchemyBackend):
         name
             Database name within SQLite
         path
-            Path to sqlite3 database file
-        """
-        quoted_name = self.con.dialect.identifier_preparer.quote(name)
-        self.raw_sql(f"ATTACH DATABASE {path!r} AS {quoted_name}")
+            Path to sqlite3 database files
 
-    def _get_sqla_table(self, name, schema=None, autoload=True):
+        Examples
+        --------
+        >>> con1 = ibis.sqlite.connect("original.db")
+        >>> con2 = ibis.sqlite.connect("new.db")
+        >>> con1.attach("new", "new.db")
+        >>> con1.list_tables(database="new")
+        """
+        with self.begin() as con:
+            con.exec_driver_sql(f"ATTACH DATABASE {str(path)!r} AS {self._quote(name)}")
+
+    def _get_sqla_table(
+        self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
+    ) -> sa.Table:
         return sa.Table(
             name,
             self.meta,
             schema=schema or self.current_database,
-            autoload=autoload,
+            autoload_with=self.con if autoload else None,
         )
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
@@ -214,9 +222,47 @@ class Backend(BaseAlchemyBackend):
     def _current_schema(self) -> str | None:
         return self.current_database
 
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        view = f"__ibis_sqlite_metadata{util.guid()}"
+
+        with self.begin() as con:
+            # create a view that should only be visible in this transaction
+            con.exec_driver_sql(f"CREATE TEMPORARY VIEW {view} AS {query}")
+
+            # extract table info from the view
+            table_info = con.exec_driver_sql(f"PRAGMA table_info({view})")
+
+            # get names and not nullables
+            names, notnulls, raw_types = zip(
+                *toolz.pluck(["name", "notnull", "type"], table_info.mappings())
+            )
+
+            # get the type of the first row if no affinity was returned in
+            # `raw_types`; assume that reflects the rest of the rows
+            type_queries = ", ".join(map("typeof({})".format, names))
+            single_row_types = con.exec_driver_sql(
+                f"SELECT {type_queries} FROM {view} LIMIT 1"
+            ).fetchone()
+            for name, notnull, raw_typ, typ in zip(
+                names, notnulls, raw_types, single_row_types
+            ):
+                ibis_type = parse(raw_typ or typ)
+                yield name, ibis_type(nullable=not notnull)
+
+            # drop the view when we're done with it
+            con.exec_driver_sql(f"DROP VIEW IF EXISTS {view}")
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        raise ValueError(
-            "The SQLite backend cannot infer schemas from raw SQL - "
-            "please specify the schema directly when calling `.sql` "
-            "using the `schema` keyword argument"
+        """Return an ibis Schema from a SQLite SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))
+
+    def _get_temp_view_definition(
+        self, name: str, definition: sa.sql.compiler.Compiled
+    ) -> str:
+        yield f"DROP VIEW IF EXISTS {name}"
+        yield f"CREATE VIEW {name} AS {definition}"
+
+    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
+        return super()._get_compiled_statement(
+            view, definition, compile_kwargs={"literal_binds": True}
         )

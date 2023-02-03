@@ -58,7 +58,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark", "snowflake"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
@@ -69,9 +69,7 @@ def test_scalar_param_array(con):
     assert result == len(value)
 
 
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "postgres", "pyspark", "snowflake"]
-)
+@pytest.mark.notimpl(["clickhouse", "datafusion", "impala", "postgres", "pyspark"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
@@ -84,23 +82,13 @@ def test_scalar_param_struct(con):
 
 
 @pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        # TODO: duckdb maps are tricky because they are multimaps
-        "duckdb",
-        "impala",
-        "pyspark",
-        "snowflake",
-        "polars",
-        "trino",
-    ]
+    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars"]
 )
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
 )
-@pytest.mark.notyet(["bigquery", "postgres"])
+@pytest.mark.notyet(["bigquery"])
 def test_scalar_param_map(con):
     value = {'a': 'ghi', 'b': 'def', 'c': 'abc'}
     param = ibis.param(dt.Map(dt.string, dt.string))
@@ -116,23 +104,13 @@ def test_scalar_param_map(con):
         param(0.0, "float64", "double_col", id="double"),
         param(True, "bool", "bool_col", id="bool"),
         param(
-            "2009-01-20 01:02:03",
-            "timestamp",
-            "timestamp_col",
-            id="string_timestamp",
-            marks=[pytest.mark.notimpl(["trino"])],
+            "2009-01-20 01:02:03", "timestamp", "timestamp_col", id="string_timestamp"
         ),
         param(
             datetime.date(2009, 1, 20),
             "timestamp",
             "timestamp_col",
             id="date_timestamp",
-            marks=[
-                pytest.mark.broken(
-                    ["impala"],
-                    reason="generates incorrect SQL for date literal values",
-                )
-            ],
         ),
         param(
             datetime.datetime(2009, 1, 20, 1, 2, 3),
@@ -155,36 +133,24 @@ def test_scalar_param(alltypes, df, value, dtype, col):
 
 
 @pytest.mark.parametrize(
-    ("value", "dtype"),
-    [
-        param(
-            "2009-01-20",
-            "date",
-            id="string_date",
-            marks=[
-                pytest.mark.broken(
-                    ["trino"],
-                    reason="generates incorrect SQL for date string values",
-                )
-            ],
-        ),
-        param(datetime.date(2009, 1, 20), "date", id="date_date"),
-        param(datetime.datetime(2009, 1, 20), "date", id="datetime_date"),
-    ],
+    "value",
+    ["2009-01-20", datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)],
+    ids=["string", "date", "datetime"],
 )
-@pytest.mark.notimpl(
-    ["mysql", "polars", "dask", "datafusion", "sqlite", "snowflake", "impala", "mssql"]
-)
-def test_scalar_param_date(backend, alltypes, value, dtype):
-    param = ibis.param(dtype)
-    ds_col = alltypes.date_string_col.split("/")
-    month, day, year = ds_col[0], ds_col[1], ds_col[2]
-    date_col = ibis.literal("-").join(["20" + year, month, day]).cast(dtype)
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
+def test_scalar_param_date(backend, alltypes, value):
+    param = ibis.param("date")
+    ds_col = alltypes.date_string_col
+    month = ds_col[:2]
+    day = ds_col[3:5]
+    year = "20" + ds_col[6:8]
+    date_col = (year + "-" + month + "-" + day).cast(param.type())
 
     base = alltypes.mutate(date_col=date_col)
     expr = (
         alltypes.mutate(date_col=date_col)
-        .filter([lambda t: t.date_col == param])
+        .filter(lambda t: t.date_col == param)
         .drop("date_col")
     )
 

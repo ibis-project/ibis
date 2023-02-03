@@ -12,7 +12,7 @@ _to_polars_types = {
     dt.Null: pl.Null,
     dt.Array: pl.List,
     dt.String: pl.Utf8,
-    dt.Binary: pl.Object,
+    dt.Binary: pl.Binary,
     dt.Date: pl.Date,
     dt.Time: pl.Time,
     dt.Int8: pl.Int8,
@@ -25,7 +25,6 @@ _to_polars_types = {
     dt.UInt64: pl.UInt64,
     dt.Float32: pl.Float32,
     dt.Float64: pl.Float64,
-    dt.Decimal: pl.Object,
 }
 
 _to_ibis_dtypes = {v: k for k, v in _to_polars_types.items()}
@@ -34,7 +33,12 @@ _to_ibis_dtypes = {v: k for k, v in _to_polars_types.items()}
 @functools.singledispatch
 def to_polars_type(dtype):
     """Convert ibis dtype to the polars counterpart."""
-    return _to_polars_types[dtype.__class__]  # else return  pl.Object?
+    try:
+        return _to_polars_types[dtype.__class__]  # else return  pl.Object?
+    except KeyError:
+        raise NotImplementedError(
+            f"Translation to polars dtype not implemented for {dtype}"
+        )
 
 
 @to_polars_type.register(dt.Timestamp)
@@ -54,7 +58,7 @@ def from_ibis_interval(dtype):
 def from_ibis_struct(dtype):
     fields = [
         pl.Field(name=name, dtype=to_polars_type(dtype))
-        for name, dtype in dtype.pairs.items()
+        for name, dtype in dtype.fields.items()
     ]
     return pl.Struct(fields)
 

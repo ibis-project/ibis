@@ -1,3 +1,8 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, List, NamedTuple, Tuple
+
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -138,10 +143,13 @@ def test_whole_schema():
 
 def test_schema_names_and_types_length_must_match():
     with pytest.raises(IntegrityError):
-        sch.Schema(names=["a", "b"], types=["int", "str", "float"])
+        sch.schema(["a", "b"], ["int", "str", "float"])
 
-    schema = sch.Schema(names=["a", "b"], types=["int", "str"])
+    schema = sch.schema(["a", "b"], ["int", "str"])
+
     assert isinstance(schema, sch.Schema)
+    assert schema.names == ("a", "b")
+    assert schema.types == (dt.int64, dt.string)
 
 
 def test_schema_subset():
@@ -209,3 +217,133 @@ def test_api_accepts_schema_objects():
 def test_names_types():
     s = ibis.schema(names=["a"], types=["array<float64>"])
     assert s == ibis.schema(dict(a="array<float64>"))
+
+
+def test_schema_mapping_api():
+    s = sch.Schema(
+        {
+            'a': 'map<double, string>',
+            'b': 'array<map<string, array<int32>>>',
+            'c': 'array<string>',
+            'd': 'int8',
+        }
+    )
+
+    assert s['a'] == dt.Map(dt.double, dt.string)
+    assert s['b'] == dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))
+    assert s['c'] == dt.Array(dt.string)
+    assert s['d'] == dt.int8
+
+    assert 'a' in s
+    assert 'e' not in s
+    assert len(s) == 4
+    assert tuple(s) == s.names
+    assert tuple(s.keys()) == s.names
+    assert tuple(s.values()) == s.types
+    assert tuple(s.items()) == tuple(zip(s.names, s.types))
+
+
+class BarSchema:
+    a: int
+    b: str
+
+
+class FooSchema:
+    a: int
+    b: str
+    c: float
+    d: Tuple[str]  # noqa: UP006
+    e: List[int]  # noqa: UP006
+    f: Dict[str, int]  # noqa: UP006
+    g: BarSchema
+    h: List[BarSchema]  # noqa: UP006
+    j: Dict[str, BarSchema]  # noqa: UP006
+
+
+foo_schema = sch.Schema(
+    {
+        'a': 'int64',
+        'b': 'string',
+        'c': 'float64',
+        'd': 'array<string>',
+        'e': 'array<int64>',
+        'f': 'map<string, int64>',
+        'g': 'struct<a: int64, b: string>',
+        'h': 'array<struct<a: int64, b: string>>',
+        'j': 'map<string, struct<a: int64, b: string>>',
+    }
+)
+
+
+def test_schema_from_annotated_class():
+    assert sch.schema(FooSchema) == foo_schema
+
+
+class NamedBar(NamedTuple):
+    a: int
+    b: str
+
+
+class NamedFoo(NamedTuple):
+    a: int
+    b: str
+    c: float
+    d: Tuple[str]  # noqa: UP006
+    e: List[int]  # noqa: UP006
+    f: Dict[str, int]  # noqa: UP006
+    g: NamedBar
+    h: List[NamedBar]  # noqa: UP006
+    j: Dict[str, NamedBar]  # noqa: UP006
+
+
+def test_schema_from_namedtuple():
+    assert sch.schema(NamedFoo) == foo_schema
+
+
+@dataclass
+class DataBar:
+    a: int
+    b: str
+
+
+@dataclass
+class DataFooBase:
+    a: int
+    b: str
+    c: float
+    d: Tuple[str]  # noqa: UP006
+
+
+@dataclass
+class DataFoo(DataFooBase):
+    e: List[int]  # noqa: UP006
+    f: Dict[str, int]  # noqa: UP006
+    g: DataBar
+    h: List[DataBar]  # noqa: UP006
+    j: Dict[str, DataBar]  # noqa: UP006
+
+
+def test_schema_from_dataclass():
+    assert sch.schema(DataFoo) == foo_schema
+
+
+class PreferenceA:
+    a: dt.int64
+    b: dt.Array(dt.int64)
+
+
+class PreferenceB:
+    a: dt.int64
+    b: dt.Array[dt.int64]
+
+
+class PreferenceC:
+    a: dt.Int64
+    b: dt.Array[dt.Int64]
+
+
+def test_preferences():
+    a = sch.schema(PreferenceA)
+    b = sch.schema(PreferenceB)
+    c = sch.schema(PreferenceC)
+    assert a == b == c

@@ -1,1 +1,1 @@
-position('a' IN string_col) - 1
+locate(string_col, 'a') - 1

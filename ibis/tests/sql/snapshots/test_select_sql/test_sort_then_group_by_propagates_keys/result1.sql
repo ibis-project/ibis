@@ -1,10 +1,10 @@
-SELECT `b`, count(1) AS `count`
+SELECT t0.`b`, count(1) AS `b_count`
 FROM (
-  SELECT `b`
+  SELECT t1.`b`
   FROM (
-    SELECT *
-    FROM t
-    ORDER BY `a` ASC
+    SELECT t2.*
+    FROM t t2
+    ORDER BY t2.`a` ASC
   ) t1
 ) t0
 GROUP BY 1

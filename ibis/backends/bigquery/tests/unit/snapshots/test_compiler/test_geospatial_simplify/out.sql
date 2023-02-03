@@ -1,2 +1,2 @@
-SELECT ST_SIMPLIFY(`geog`, 5.2) AS `tmp`
-FROM t
+SELECT ST_SIMPLIFY(t0.`geog`, 5.2) AS `tmp`
+FROM t t0

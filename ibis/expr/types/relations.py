@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import functools
 import itertools
+import re
 import sys
 import warnings
+from keyword import iskeyword
 from typing import (
     IO,
     TYPE_CHECKING,
@@ -17,7 +20,6 @@ from typing import (
 )
 
 from public import public
-from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
@@ -25,12 +27,14 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.deferred import Deferred
-from ibis.expr.types.core import Expr
+from ibis.expr.selectors import Selector
+from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
+    import pandas as pd
+
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
-    from ibis.expr.types.generic import Column
     from ibis.expr.types.groupby import GroupedTable
 
 
@@ -83,7 +87,7 @@ def _regular_join_method(
 
 
 @public
-class Table(Expr, JupyterMixin):
+class Table(Expr, _FixedTextJupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
@@ -92,7 +96,23 @@ class Table(Expr, JupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
-    def as_table(self):
+    def as_table(self) -> Table:
+        """Promote the expression to a table.
+
+        This method is a no-op for table expressions.
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        >>> t = ibis.table(dict(a="int"), name="t")
+        >>> s = t.as_table()
+        >>> t is s
+        True
+        """
         return self
 
     def __contains__(self, name):
@@ -114,7 +134,7 @@ class Table(Expr, JupyterMixin):
         from ibis.expr.types.logical import BooleanValue
 
         if isinstance(what, (str, int)):
-            return self.get_column(what)
+            return ops.TableColumn(self, what).to_expr()
 
         if isinstance(what, slice):
             step = what.step
@@ -152,10 +172,8 @@ class Table(Expr, JupyterMixin):
         raise com.ExpressionError('Use .count() instead')
 
     def __getattr__(self, key):
-        try:
-            return self.get_column(key)
-        except com.IbisTypeError:
-            pass
+        with contextlib.suppress(com.IbisTypeError):
+            return ops.TableColumn(self, key).to_expr()
 
         # Handle deprecated `groupby` and `sort_by` methods
         if key == "groupby":
@@ -189,7 +207,9 @@ class Table(Expr, JupyterMixin):
         raise AttributeError(f"'Table' object has no attribute {key!r}")
 
     def __dir__(self):
-        return sorted(frozenset(dir(type(self)) + self.columns))
+        out = set(dir(type(self)))
+        out.update(c for c in self.columns if c.isidentifier() and not iskeyword(c))
+        return sorted(out)
 
     def _ipython_key_completions_(self) -> list[str]:
         return self.columns
@@ -211,42 +231,9 @@ class Table(Expr, JupyterMixin):
         else:
             return expr
 
-    def get_columns(self, iterable: Iterable[str]) -> list[Column]:
-        """Get multiple columns from the table.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> table = ibis.table(
-        ...    [
-        ...        ('a', 'int64'),
-        ...        ('b', 'string'),
-        ...        ('c', 'timestamp'),
-        ...        ('d', 'float'),
-        ...    ],
-        ...    name='t'
-        ... )
-        >>> a, b, c = table.get_columns(['a', 'b', 'c'])
-
-        Returns
-        -------
-        list[ir.Column]
-            List of column expressions
-        """
-        return [self.get_column(x) for x in iterable]
-
-    def get_column(self, name: str) -> Column:
-        """Get a reference to a single column from the table.
-
-        Returns
-        -------
-        Column
-            A column named `name`.
-        """
-        return ops.TableColumn(self, name).to_expr()
-
     @property
     def columns(self):
+        """The list of columns in this table."""
         return list(self._arg.schema.names)
 
     def schema(self) -> sch.Schema:
@@ -350,6 +337,10 @@ class Table(Expr, JupyterMixin):
             The rows present in `self` that are not present in `tables`.
         """
         left = self
+        if not tables:
+            raise com.IbisTypeError(
+                "difference requires a table or tables to compare against"
+            )
         for right in tables:
             left = ops.Difference(left, right, distinct=distinct)
         return left.to_expr()
@@ -494,6 +485,10 @@ class Table(Expr, JupyterMixin):
             A new table containing the union of all input tables.
         """
         left = self
+        if not tables:
+            raise com.IbisTypeError(
+                "union requires a table or tables to compare against"
+            )
         for right in tables:
             left = ops.Union(left, right, distinct=distinct)
         return left.to_expr()
@@ -516,6 +511,10 @@ class Table(Expr, JupyterMixin):
             A new table containing the intersection of all input tables.
         """
         left = self
+        if not tables:
+            raise com.IbisTypeError(
+                "intersect requires a table or tables to compare against"
+            )
         for right in tables:
             left = ops.Intersection(left, right, distinct=distinct)
         return left.to_expr()
@@ -682,7 +681,10 @@ class Table(Expr, JupyterMixin):
 
         exprs = list(
             itertools.chain(
-                itertools.chain.from_iterable(map(util.promote_list, exprs)),
+                itertools.chain.from_iterable(
+                    util.promote_list(e.expand(self) if isinstance(e, Selector) else e)
+                    for e in exprs
+                ),
                 (
                     self._ensure_expr(expr).name(name)
                     for name, expr in named_exprs.items()
@@ -702,7 +704,10 @@ class Table(Expr, JupyterMixin):
     projection = select
 
     def relabel(
-        self, substitutions: Mapping[str, str] | Callable[[str], str | None]
+        self,
+        substitutions: Mapping[str, str]
+        | Callable[[str], str | None]
+        | Literal["snake_case"],
     ) -> Table:
         """Rename columns in the table.
 
@@ -711,7 +716,9 @@ class Table(Expr, JupyterMixin):
         substitutions
             A mapping or function from old to new column names. If a column
             isn't in the mapping (or if the callable returns None) it is left
-            with its original name.
+            with its original name. May also pass the string ``"snake_case"``,
+            which will relabel all columns to use a ``snake_case`` naming
+            convention.
 
         Returns
         -------
@@ -722,6 +729,19 @@ class Table(Expr, JupyterMixin):
 
         if isinstance(substitutions, Mapping):
             rename = substitutions.get
+        elif substitutions == "snake_case":
+
+            def rename(c):
+                c = c.strip()
+                if " " in c:
+                    # Handle "space case possibly with-hyphens"
+                    return "_".join(c.lower().split()).replace("-", "_")
+                # Handle PascalCase, camelCase, and kebab-case
+                c = re.sub(r"([A-Z]+)([A-Z][a-z])", r'\1_\2', c)
+                c = re.sub(r"([a-z\d])([A-Z])", r'\1_\2', c)
+                c = c.replace("-", "_")
+                return c.lower()
+
         else:
             rename = substitutions
 
@@ -920,12 +940,14 @@ class Table(Expr, JupyterMixin):
 
         if isinstance(replacements, collections.abc.Mapping):
             for col, val in replacements.items():
-                try:
-                    col_type = schema[col]
-                except KeyError:
+                if col not in schema:
+                    columns_formatted = ', '.join(map(repr, schema.names))
                     raise com.IbisTypeError(
-                        f'{col!r} is not a field in {schema}.'
+                        f"Column {col!r} is not found in table. "
+                        f"Existing columns: {columns_formatted}."
                     ) from None
+
+                col_type = schema[col]
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
                 if not dt.castable(val_type, col_type):
                     raise com.IbisTypeError(
@@ -974,7 +996,6 @@ class Table(Expr, JupyterMixin):
         r0 := UnboundTable: t
           a struct<b: float64, c: string>
           d string
-
         Selection[r0]
           selections:
             b: StructField(r0.a, field='b')
@@ -983,7 +1004,7 @@ class Table(Expr, JupyterMixin):
 
         See Also
         --------
-        ibis.expr.types.structs.StructValue.lift
+        [`StructValue.lift`][ibis.expr.types.structs.StructValue.lift]
         """
         columns_to_unpack = frozenset(columns)
         result_columns = []
@@ -996,7 +1017,9 @@ class Table(Expr, JupyterMixin):
         return self[result_columns]
 
     def info(self, buf: IO[str] | None = None) -> None:
-        """Show column names, types and null counts.
+        """Show summary information about a table.
+
+        Currently implemented as showing column names, types and null counts.
 
         Parameters
         ----------
@@ -1338,6 +1361,16 @@ class Table(Expr, JupyterMixin):
             query=query,
         )
         return op.to_expr()
+
+    def to_pandas(self, **kwargs) -> pd.DataFrame:
+        """Convert a table expression to a pandas DataFrame.
+
+        Parameters
+        ----------
+        kwargs
+            Same as keyword arguments to [`execute`][ibis.expr.types.core.Expr.execute]
+        """
+        return self.execute(**kwargs)
 
 
 def _resolve_predicates(

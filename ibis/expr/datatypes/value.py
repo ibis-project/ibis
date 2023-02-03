@@ -6,9 +6,13 @@ import decimal
 import enum
 import ipaddress
 import uuid
+from functools import partial
+from operator import methodcaller
 from typing import TYPE_CHECKING, Any, Mapping, NamedTuple, Sequence
 
+import dateutil.parser
 import numpy as np
+import pytz
 import toolz
 from public import public
 
@@ -28,12 +32,15 @@ def infer(value: Any) -> dt.DataType:
     raise InputTypeError(value)
 
 
+# TODO(kszucs): support NamedTuples and dataclasses instead of OrderedDict
+# which should trigger infer_map instead
 @infer.register(collections.OrderedDict)
 def infer_struct(value: Mapping[str, Any]) -> dt.Struct:
     """Infer the [`Struct`][ibis.expr.datatypes.Struct] type of `value`."""
     if not value:
         raise TypeError('Empty struct type not supported')
-    return dt.Struct(list(value.keys()), list(map(infer, value.values())))
+    fields = {name: infer(val) for name, val in value.items()}
+    return dt.Struct(fields)
 
 
 @infer.register(collections.abc.Mapping)
@@ -47,7 +54,7 @@ def infer_map(value: Mapping[Any, Any]) -> dt.Map:
             highest_precedence(map(infer, value.values())),
         )
     except IbisTypeError:
-        return dt.Struct.from_dict(toolz.valmap(infer, value, factory=type(value)))
+        return dt.Struct(toolz.valmap(infer, value, factory=type(value)))
 
 
 @infer.register((list, tuple))
@@ -299,7 +306,7 @@ def normalize(typ, value):
         return frozendict({k: normalize(typ.value_type, v) for k, v in value.items()})
     elif typ.is_struct():
         return frozendict(
-            {k: normalize(typ[k], v) for k, v in value.items() if k in typ.pairs}
+            {k: normalize(typ[k], v) for k, v in value.items() if k in typ.fields}
         )
     elif typ.is_geospatial():
         if isinstance(value, (tuple, list)):
@@ -312,8 +319,47 @@ def normalize(typ, value):
             elif typ.is_multipolygon():
                 return tuple(normalize(dt.polygon, item) for item in value)
         return _WellKnownText(value.wkt)
+    elif (is_timestamp := typ.is_timestamp()) or typ.is_date():
+        import pandas as pd
+
+        converter = (
+            partial(_convert_timezone, tz=typ.timezone)
+            if is_timestamp
+            else methodcaller("date")
+        )
+
+        if isinstance(value, str):
+            return converter(dateutil.parser.parse(value))
+        elif isinstance(value, pd.Timestamp):
+            return converter(value.to_pydatetime())
+        elif isinstance(value, datetime.datetime):
+            return converter(value)
+        elif isinstance(value, datetime.date):
+            return converter(
+                datetime.datetime(year=value.year, month=value.month, day=value.day)
+            )
+        elif isinstance(value, np.datetime64):
+            original_value = value
+            raw_value = value.item()
+            if isinstance(raw_value, int):
+                unit, _ = np.datetime_data(original_value)
+                return converter(pd.Timestamp(raw_value, unit=unit).to_pydatetime())
+            elif isinstance(raw_value, datetime.datetime):
+                return converter(raw_value)
+            elif is_timestamp:
+                return datetime.datetime(raw_value.year, raw_value.month, raw_value.day)
+            else:
+                return raw_value
+
+        raise TypeError(
+            f"Unsupported {'timestamp' if is_timestamp else 'date'} literal type: {type(value)}"
+        )
     else:
         return value
+
+
+def _convert_timezone(value: datetime.datetime, *, tz: str | None) -> datetime.datetime:
+    return value if tz is None else value.astimezone(tz=pytz.timezone(tz))
 
 
 public(infer=infer, normalize=normalize)

@@ -1,13 +1,21 @@
 from __future__ import annotations
 
+import itertools
+
 import numpy as np
 import sqlalchemy as sa
+from snowflake.sqlalchemy import ARRAY
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import sqltypes
+from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     geospatial_functions,
     reduction,
+    unary,
 )
 from ibis.backends.postgres.registry import _literal as _postgres_literal
 from ibis.backends.postgres.registry import operation_registry as _operation_registry
@@ -19,14 +27,39 @@ operation_registry = {
 
 
 def _literal(t, op):
-    if isinstance(op, ops.Literal) and op.output_dtype.is_floating():
-        value = op.value
+    value = op.value
+    dtype = op.output_dtype
 
+    if dtype.is_floating():
         if np.isnan(value):
             return _SF_NAN
 
         if np.isinf(value):
             return _SF_NEG_INF if value < 0 else _SF_POS_INF
+    elif dtype.is_timestamp():
+        args = (
+            value.year,
+            value.month,
+            value.day,
+            value.hour,
+            value.minute,
+            value.second,
+            value.microsecond * 1_000,
+        )
+        if (tz := value.tzinfo) is not None:
+            return sa.func.timestamp_tz_from_parts(*args, str(tz))
+        else:
+            return sa.func.timestamp_from_parts(*args)
+    elif dtype.is_date():
+        return sa.func.date_from_parts(value.year, value.month, value.day)
+    elif dtype.is_array():
+        return sa.func.array_construct(*value)
+    elif dtype.is_map() or dtype.is_struct():
+        return sa.func.object_construct_keep_null(
+            *itertools.chain.from_iterable(value.items())
+        )
+    elif dtype.is_uuid():
+        return sa.literal(str(value))
     return _postgres_literal(t, op)
 
 
@@ -46,16 +79,14 @@ def _round(t, op):
 
 def _day_of_week_name(arg):
     return sa.case(
+        ("Sun", "Sunday"),
+        ("Mon", "Monday"),
+        ("Tue", "Tuesday"),
+        ("Wed", "Wednesday"),
+        ("Thu", "Thursday"),
+        ("Fri", "Friday"),
+        ("Sat", "Saturday"),
         value=sa.func.dayname(arg),
-        whens=[
-            ("Sun", "Sunday"),
-            ("Mon", "Monday"),
-            ("Tue", "Tuesday"),
-            ("Wed", "Wednesday"),
-            ("Thu", "Thursday"),
-            ("Fri", "Friday"),
-            ("Sat", "Saturday"),
-        ],
         else_=None,
     )
 
@@ -71,24 +102,104 @@ def _extract_url_query(t, op):
     return sa.func.nullif(sa.func.as_varchar(r), "")
 
 
-_SF_POS_INF = sa.cast(sa.literal("Inf"), sa.FLOAT)
-_SF_NEG_INF = -_SF_POS_INF
-_SF_NAN = sa.cast(sa.literal("NaN"), sa.FLOAT)
+def _array_slice(t, op):
+    arg = t.translate(op.arg)
+
+    if (start := op.start) is not None:
+        start = t.translate(start)
+    else:
+        start = 0
+
+    if (stop := op.stop) is not None:
+        stop = t.translate(stop)
+    else:
+        stop = sa.func.array_size(arg)
+
+    return sa.func.array_slice(t.translate(op.arg), start, stop)
+
+
+def _nth_value(t, op):
+    if not isinstance(nth := op.nth, ops.Literal):
+        raise TypeError(f"`nth` argument must be a literal Python int, got {type(nth)}")
+    return sa.func.nth_value(t.translate(op.arg), nth.value + 1)
+
+
+def _arbitrary(t, op):
+    if op.how != "first":
+        raise ValueError(
+            "Snowflake only supports the `first` option for `.arbitrary()`"
+        )
+
+    # we can't use any_value here because it respects nulls
+    #
+    # yes it's slower, but it's also consistent with every other backend
+    return t._reduction(sa.func.min, op)
+
+
+class _flatten(GenericFunction):
+    def __init__(self, arg, *, type: sa.types.TypeEngine) -> None:
+        super().__init__(arg)
+        self.type = sqltypes.TableValueType(sa.Column("value", type))
+
+
+@compiles(_flatten, "snowflake")
+def compiles_flatten(element, compiler, **kw):
+    arg = compiler.function_argspec(element, **kw)
+    return f"FLATTEN(INPUT => {arg}, MODE => 'ARRAY')"
+
+
+def _unnest(t, op):
+    arg = t.translate(op.arg)
+    # HACK: https://community.snowflake.com/s/question/0D50Z000086MVhnSAG/has-anyone-found-a-way-to-unnest-an-array-without-loosing-the-null-values
+    sep = util.guid()
+    sqla_type = t.get_sqla_type(op.output_dtype)
+    col = (
+        _flatten(sa.func.split(sa.func.array_to_string(arg, sep), sep), type=sqla_type)
+        .lateral()
+        .c["value"]
+    )
+    return sa.cast(sa.func.nullif(col, ""), type_=sqla_type)
+
+
+_TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
+
+_SF_POS_INF = sa.func.to_double("Inf")
+_SF_NEG_INF = sa.func.to_double("-Inf")
+_SF_NAN = sa.func.to_double("NaN")
 
 operation_registry.update(
     {
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
-        ops.StructField: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
-        ops.MapKeys: fixed_arity(sa.func.object_keys, 1),
+        ops.Map: fixed_arity(sa.func.ibis_udfs.public.object_from_arrays, 2),
+        ops.MapKeys: unary(sa.func.object_keys),
+        ops.MapValues: unary(sa.func.ibis_udfs.public.object_values),
+        ops.MapGet: fixed_arity(
+            lambda arg, key, default: sa.func.coalesce(
+                sa.func.get(arg, key), sa.func.to_variant(default)
+            ),
+            3,
+        ),
+        ops.MapContains: fixed_arity(
+            lambda arg, key: sa.func.array_contains(
+                sa.func.to_variant(key), sa.func.object_keys(arg)
+            ),
+            2,
+        ),
+        ops.MapMerge: fixed_arity(sa.func.ibis_udfs.public.object_merge, 2),
+        ops.MapLength: unary(lambda arg: sa.func.array_size(sa.func.object_keys(arg))),
+        ops.BitwiseAnd: fixed_arity(sa.func.bitand, 2),
+        ops.BitwiseNot: unary(sa.func.bitnot),
+        ops.BitwiseOr: fixed_arity(sa.func.bitor, 2),
+        ops.BitwiseXor: fixed_arity(sa.func.bitxor, 2),
         ops.BitwiseLeftShift: fixed_arity(sa.func.bitshiftleft, 2),
         ops.BitwiseRightShift: fixed_arity(sa.func.bitshiftright, 2),
-        ops.Ln: fixed_arity(sa.func.ln, 1),
-        ops.Log2: fixed_arity(lambda arg: sa.func.log(2, arg), 1),
-        ops.Log10: fixed_arity(lambda arg: sa.func.log(10, arg), 1),
+        ops.Ln: unary(sa.func.ln),
+        ops.Log2: unary(lambda arg: sa.func.log(2, arg)),
+        ops.Log10: unary(lambda arg: sa.func.log(10, arg)),
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
-        ops.IsInf: fixed_arity(lambda arg: arg.in_((_SF_POS_INF, _SF_NEG_INF)), 1),
-        ops.IsNan: fixed_arity(lambda arg: arg == _SF_NAN, 1),
+        ops.IsInf: unary(lambda arg: arg.in_((_SF_POS_INF, _SF_NEG_INF))),
+        ops.IsNan: unary(lambda arg: arg == _SF_NAN),
         ops.Literal: _literal,
         ops.Round: _round,
         ops.Modulus: fixed_arity(sa.func.mod, 2),
@@ -97,52 +208,114 @@ operation_registry.update(
         # numbers
         ops.RandomScalar: fixed_arity(
             lambda: sa.func.uniform(
-                sa.cast(0, sa.dialects.postgresql.FLOAT()),
-                sa.cast(1, sa.dialects.postgresql.FLOAT()),
-                sa.func.random(),
+                sa.func.to_double(0.0), sa.func.to_double(1.0), sa.func.random()
             ),
             0,
         ),
         # time and dates
         ops.TimeFromHMS: fixed_arity(sa.func.time_from_parts, 3),
         # columns
-        ops.DayOfWeekName: fixed_arity(_day_of_week_name, 1),
-        ops.ExtractProtocol: fixed_arity(
+        ops.DayOfWeekName: unary(_day_of_week_name),
+        ops.ExtractProtocol: unary(
             lambda arg: sa.func.nullif(
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "scheme")), ""
-            ),
-            1,
+            )
         ),
-        ops.ExtractAuthority: fixed_arity(
+        ops.ExtractAuthority: unary(
             lambda arg: sa.func.concat_ws(
                 ":",
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "host")),
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "port")),
-            ),
-            1,
+            )
         ),
-        ops.ExtractFile: fixed_arity(
+        ops.ExtractFile: unary(
             lambda arg: sa.func.concat_ws(
                 "?",
                 "/"
                 + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path")),
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "query")),
-            ),
-            1,
+            )
         ),
-        ops.ExtractPath: fixed_arity(
+        ops.ExtractPath: unary(
             lambda arg: (
                 "/" + sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "path"))
-            ),
-            1,
+            )
         ),
         ops.ExtractQuery: _extract_url_query,
-        ops.ExtractFragment: fixed_arity(
+        ops.ExtractFragment: unary(
             lambda arg: sa.func.nullif(
                 sa.func.as_varchar(sa.func.get(sa.func.parse_url(arg, 1), "fragment")),
                 "",
+            )
+        ),
+        # snowflake typeof only accepts VARIANT
+        ops.ArrayIndex: fixed_arity(sa.func.get, 2),
+        ops.ArrayLength: fixed_arity(sa.func.array_size, 1),
+        ops.ArrayConcat: fixed_arity(sa.func.array_cat, 2),
+        ops.ArrayColumn: lambda t, op: sa.func.array_construct(
+            *map(t.translate, op.cols)
+        ),
+        ops.ArraySlice: _array_slice,
+        ops.ArrayCollect: reduction(
+            lambda arg: sa.func.array_agg(
+                sa.func.ifnull(arg, sa.func.parse_json("null")), type_=ARRAY
+            )
+        ),
+        ops.StringSplit: fixed_arity(sa.func.split, 2),
+        ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
+        ops.All: reduction(sa.func.booland_agg),
+        ops.NotAll: reduction(lambda arg: ~sa.func.booland_agg(arg)),
+        ops.Any: reduction(sa.func.boolor_agg),
+        ops.NotAny: reduction(lambda arg: ~sa.func.boolor_agg(arg)),
+        ops.BitAnd: reduction(sa.func.bitand_agg),
+        ops.BitOr: reduction(sa.func.bitor_agg),
+        ops.BitXor: reduction(sa.func.bitxor_agg),
+        ops.DateFromYMD: fixed_arity(sa.func.date_from_parts, 3),
+        ops.StringToTimestamp: fixed_arity(sa.func.to_timestamp_tz, 2),
+        ops.RegexExtract: fixed_arity(sa.func.regexp_substr, 3),
+        ops.RegexSearch: fixed_arity(sa.sql.operators.custom_op("REGEXP"), 2),
+        ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
+        ops.ExtractMillisecond: fixed_arity(
+            lambda arg: sa.cast(
+                sa.extract("epoch_millisecond", arg) % 1000, sa.SMALLINT
             ),
             1,
         ),
+        ops.TimestampFromYMDHMS: fixed_arity(sa.func.timestamp_from_parts, 6),
+        ops.TimestampFromUNIX: lambda t, op: sa.func.to_timestamp(
+            t.translate(op.arg), _TIMESTAMP_UNITS_TO_SCALE[op.unit]
+        ),
+        ops.StructField: lambda t, op: sa.cast(
+            sa.func.get(t.translate(op.arg), op.field), t.get_sqla_type(op.output_dtype)
+        ),
+        ops.NthValue: _nth_value,
+        ops.Arbitrary: _arbitrary,
+        ops.StructColumn: lambda t, op: sa.func.object_construct_keep_null(
+            *itertools.chain.from_iterable(zip(op.names, map(t.translate, op.values)))
+        ),
+        ops.Unnest: _unnest,
+        ops.ArgMin: reduction(sa.func.min_by),
+        ops.ArgMax: reduction(sa.func.max_by),
     }
 )
+
+_invalid_operations = {
+    # ibis.expr.operations.analytic
+    ops.CumulativeAll,
+    ops.CumulativeAny,
+    ops.CumulativeOp,
+    ops.NTile,
+    # ibis.expr.operations.array
+    ops.ArrayRepeat,
+    # ibis.expr.operations.reductions
+    ops.MultiQuantile,
+    # ibis.expr.operations.strings
+    ops.FindInSet,
+    # ibis.expr.operations.temporal
+    ops.IntervalFromInteger,
+    ops.TimestampDiff,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}

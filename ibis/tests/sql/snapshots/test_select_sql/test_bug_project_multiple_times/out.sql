@@ -9,14 +9,14 @@ WITH t0 AS (
 SELECT t0.`c_name`, t0.`r_name`, t0.`n_name`
 FROM t0
   LEFT SEMI JOIN (
-    SELECT *
+    SELECT t2.*
     FROM (
-      SELECT `n_name`,
-             sum(CAST(`c_acctbal` AS double)) AS `Sum(Cast(c_acctbal, float64))`
+      SELECT t0.`n_name`,
+             sum(CAST(t0.`c_acctbal` AS double)) AS `Sum(Cast(c_acctbal, float64))`
       FROM t0
       GROUP BY 1
     ) t2
-    ORDER BY `Sum(Cast(c_acctbal, float64))` DESC
+    ORDER BY t2.`Sum(Cast(c_acctbal, float64))` DESC
     LIMIT 10
   ) t1
     ON t0.`n_name` = t1.`n_name`

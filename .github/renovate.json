@@ -4,7 +4,18 @@
   "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
   "semanticCommits": "enabled",
   "lockFileMaintenance": { "enabled": true },
-  "enabledManagers": ["docker-compose", "github-actions", "poetry"],
+  "enabledManagers": [
+    "docker-compose",
+    "dockerfile",
+    "github-actions",
+    "poetry"
+  ],
   "automerge": false,
-  "labels": ["dependencies"]
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchManagers": ["docker-compose", "dockerfile", "github-actions"],
+      "automerge": true
+    }
+  ]
 }

@@ -4,17 +4,15 @@ import functools
 import operator
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
-from ibis.util import deprecated
-
-if TYPE_CHECKING:
-    from ibis.expr import types as ir
-
 from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+
+if TYPE_CHECKING:
+    from ibis.expr import types as ir
 
 
 @public
@@ -637,50 +635,6 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
-    @deprecated(
-        version='4.0',
-        instead=(
-            'use .protocol(), .authroity(), .userinfo(), .host(), .file(), .path(), .query(), or .fragment().'
-        ),
-    )
-    def parse_url(
-        self,
-        extract: Literal[
-            "PROTOCOL",
-            "AUTHORITY",
-            "USERINFO",
-            "HOST",
-            "FILE",
-            "PATH",
-            "QUERY",
-            "REF",
-        ],
-        key: str | None = None,
-    ) -> StringValue:
-        """Parse a URL and extract its components.
-
-        `key` can be used to extract query values when `extract == 'QUERY'`
-
-        Parameters
-        ----------
-        extract
-            Component of URL to extract
-        key
-            Query component to extract
-
-        Examples
-        --------
-        >>> import ibis
-        >>> url = ibis.literal("https://www.youtube.com/watch?v=kEuEcWfewf8&t=10")
-        >>> result = url.parse_url('QUERY', 'v')  # kEuEcWfewf
-
-        Returns
-        -------
-        StringValue
-            Extracted string value
-        """
-        return ops.ParseURL(self, extract, key).to_expr()
-
     def protocol(self):
         """Parse a URL and extract protocol.
 
@@ -787,6 +741,7 @@ class StringValue(Value):
         ----------
         key
             Query component to extract
+
         Examples
         --------
         >>> import ibis

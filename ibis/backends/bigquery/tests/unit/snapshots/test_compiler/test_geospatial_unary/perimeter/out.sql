@@ -1,2 +1,2 @@
-SELECT ST_PERIMETER(`geog`) AS `tmp`
-FROM t
+SELECT ST_PERIMETER(t0.`geog`) AS `tmp`
+FROM t t0

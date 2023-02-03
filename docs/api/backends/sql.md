@@ -2,6 +2,6 @@
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.base.sql.BaseSQLBackend
-    selection:
+    options:
       inherited_members: true
 <!-- prettier-ignore-end -->

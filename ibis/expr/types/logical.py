@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    import ibis.expr.types as ir
-
 from public import public
 
 import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
 
 
 @public
@@ -77,24 +77,36 @@ class BooleanScalar(NumericScalar, BooleanValue):
 
 @public
 class BooleanColumn(NumericColumn, BooleanValue):
-    def any(self) -> BooleanValue:
+    def any(self, where: BooleanValue | None = None) -> BooleanValue:
+        """Return whether at least one element is `True`.
+
+        Parameters
+        ----------
+        where
+            Optional filter for the aggregation
+        """
         import ibis.expr.analysis as an
 
-        return an._make_any(self, ops.Any)
+        return an._make_any(self, ops.Any, where=where)
 
-    def notany(self) -> BooleanValue:
+    def notany(self, where: BooleanValue | None = None) -> BooleanValue:
+        """Return whether no elements are `True`."""
         import ibis.expr.analysis as an
 
-        return an._make_any(self, ops.NotAny)
+        return an._make_any(self, ops.NotAny, where=where)
 
-    def all(self) -> BooleanScalar:
-        return ops.All(self).to_expr()
+    def all(self, where: BooleanValue | None = None) -> BooleanScalar:
+        """Return whether all elements are `True`."""
+        return ops.All(self, where=where).to_expr()
 
-    def notall(self) -> BooleanScalar:
-        return ops.NotAll(self).to_expr()
+    def notall(self, where: BooleanValue | None = None) -> BooleanScalar:
+        """Return whether not all elements are `True`."""
+        return ops.NotAll(self, where=where).to_expr()
 
     def cumany(self) -> BooleanColumn:
+        """Accumulate the `any` aggregate."""
         return ops.CumulativeAny(self).to_expr()
 
     def cumall(self) -> BooleanColumn:
+        """Accumulate the `all` aggregate."""
         return ops.CumulativeAll(self).to_expr()

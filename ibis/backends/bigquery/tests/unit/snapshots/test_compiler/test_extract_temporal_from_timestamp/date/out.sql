@@ -1,2 +1,2 @@
-SELECT DATE(`ts`) AS `tmp`
-FROM t
+SELECT DATE(t0.`ts`) AS `tmp`
+FROM t t0

@@ -3,7 +3,6 @@ from typing import Any
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from multipledispatch.conflict import ambiguities
 
 import ibis
 import ibis.common.exceptions as com
@@ -35,11 +34,6 @@ def core_client(dataframe):
 @pytest.fixture
 def ibis_table(core_client):
     return core_client.table('df')
-
-
-@pytest.mark.parametrize('func', [execute_node, pre_execute, post_execute])
-def test_no_execute_ambiguities(func):
-    assert not ambiguities(func.funcs)
 
 
 def test_from_dataframe(dataframe, ibis_table, core_client):
@@ -167,11 +161,6 @@ def test_is_computable_input():
     four = three + 1
     result = execute(four.op())
     assert result == 4.0
-
-    del execute_node[ops.Add, int, MyObject]
-
-    execute_node.reorder()
-    execute_node._cache.clear()
 
 
 def test_scope_look_up():

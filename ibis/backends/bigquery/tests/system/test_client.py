@@ -114,13 +114,13 @@ def test_different_partition_col_name(monkeypatch, client):
 
 def test_subquery_scalar_params(alltypes, project_id, dataset_id):
     expected = f"""\
-SELECT count\\(`foo`\\) AS `count`
+SELECT count\\(t0\\.`foo`\\) AS `count`
 FROM \\(
-  SELECT `string_col`, sum\\(`float_col`\\) AS `foo`
+  SELECT t1\\.`string_col`, sum\\(t1\\.`float_col`\\) AS `foo`
   FROM \\(
-    SELECT `float_col`, `timestamp_col`, `int_col`, `string_col`
-    FROM `{project_id}\\.{dataset_id}\\.functional_alltypes`
-    WHERE `timestamp_col` < @param_\\d+
+    SELECT t2\\.`float_col`, t2\\.`timestamp_col`, t2\\.`int_col`, t2\\.`string_col`
+    FROM `{project_id}\\.{dataset_id}\\.functional_alltypes` t2
+    WHERE t2\\.`timestamp_col` < @param_\\d+
   \\) t1
   GROUP BY 1
 \\) t0"""
@@ -207,7 +207,7 @@ def test_scalar_param_partition_time(parted_alltypes):
     assert "PARTITIONTIME" in parted_alltypes.columns
     assert "PARTITIONTIME" in parted_alltypes.schema()
     param = ibis.param("timestamp").name("time_param")
-    expr = parted_alltypes[parted_alltypes.PARTITIONTIME < param]
+    expr = parted_alltypes[param > parted_alltypes.PARTITIONTIME]
     df = expr.execute(params={param: "2017-01-01"})
     assert df.empty
 
@@ -225,11 +225,11 @@ def test_cross_project_query(public):
     expr = table[table.tags.contains("ibis")][["title", "tags"]]
     result = expr.compile()
     expected = """\
-SELECT `title`, `tags`
+SELECT t0.`title`, t0.`tags`
 FROM (
-  SELECT *
-  FROM `bigquery-public-data.stackoverflow.posts_questions`
-  WHERE STRPOS(`tags`, 'ibis') - 1 >= 0
+  SELECT t1.*
+  FROM `bigquery-public-data.stackoverflow.posts_questions` t1
+  WHERE STRPOS(t1.`tags`, 'ibis') - 1 >= 0
 ) t0"""
     assert result == expected
     n = 5

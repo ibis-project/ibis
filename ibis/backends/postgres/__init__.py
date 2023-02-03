@@ -3,16 +3,18 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Literal
+from typing import TYPE_CHECKING, Iterable, Literal
 
 import sqlalchemy as sa
 
-import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.postgres.compiler import PostgreSQLCompiler
 from ibis.backends.postgres.datatypes import _get_type
 from ibis.backends.postgres.udf import udf as _udf
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
 
 
 class Backend(BaseAlchemyBackend):
@@ -26,6 +28,7 @@ class Backend(BaseAlchemyBackend):
         password: str | None = None,
         port: int = 5432,
         database: str | None = None,
+        schema: str | None = None,
         url: str | None = None,
         driver: Literal["psycopg2"] = "psycopg2",
     ) -> None:
@@ -43,6 +46,8 @@ class Backend(BaseAlchemyBackend):
             Port number
         database
             Database to connect to
+        schema
+            PostgreSQL schema to use. If `None`, use the default `search_path`.
         url
             SQLAlchemy connection string.
 
@@ -91,6 +96,7 @@ class Backend(BaseAlchemyBackend):
         """
         if driver != 'psycopg2':
             raise NotImplementedError('psycopg2 is currently the only supported driver')
+
         alchemy_url = self._build_alchemy_url(
             url=url,
             host=host,
@@ -101,27 +107,29 @@ class Backend(BaseAlchemyBackend):
             driver=f'postgresql+{driver}',
         )
         self.database_name = alchemy_url.database
-        super().do_connect(sa.create_engine(alchemy_url))
+
+        connect_args = {}
+        if schema is not None:
+            connect_args["options"] = f"-csearch_path={schema}"
+        super().do_connect(sa.create_engine(alchemy_url, connect_args=connect_args))
 
     def list_databases(self, like=None):
-        # http://dba.stackexchange.com/a/1304/58517
-        databases = [
-            row.datname
-            for row in self.con.execute(
-                'SELECT datname FROM pg_database WHERE NOT datistemplate'
-            )
-        ]
+        with self.begin() as con:
+            # http://dba.stackexchange.com/a/1304/58517
+            databases = [
+                row.datname
+                for row in con.exec_driver_sql(
+                    "SELECT datname FROM pg_database WHERE NOT datistemplate"
+                ).mappings()
+            ]
         return self._filter_with_like(databases, like)
 
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = bind.execute('SHOW TIMEZONE').scalar()
-            bind.execute('SET TIMEZONE = UTC')
-            try:
-                yield bind
-            finally:
-                bind.execute(f"SET TIMEZONE = '{previous_timezone}'")
+            # LOCAL takes effect for the current transaction only
+            bind.exec_driver_sql("SET LOCAL TIMEZONE = UTC")
+            yield bind
 
     def udf(
         self,
@@ -172,31 +180,27 @@ class Backend(BaseAlchemyBackend):
             language=language,
         )
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         raw_name = util.guid()
-        name = self.con.dialect.identifier_preparer.quote_identifier(raw_name)
-        type_info_sql = f"""\
+        name = self._quote(raw_name)
+        type_info_sql = """\
 SELECT
   attname,
   format_type(atttypid, atttypmod) AS type
 FROM pg_attribute
-WHERE attrelid = {raw_name!r}::regclass
+WHERE attrelid = CAST(:raw_name AS regclass)
   AND attnum > 0
   AND NOT attisdropped
-ORDER BY attnum
-"""
-        with self.con.connect() as con:
-            con.execute(f"CREATE TEMPORARY VIEW {name} AS {query}")
-            try:
-                type_info = con.execute(type_info_sql).fetchall()
-            finally:
-                con.execute(f"DROP VIEW {name}")
-        tuples = [(col, _get_type(typestr)) for col, typestr in type_info]
-        return sch.Schema.from_tuples(tuples)
+ORDER BY attnum"""
+        with self.begin() as con:
+            con.exec_driver_sql(f"CREATE TEMPORARY VIEW {name} AS {query}")
+            type_info = con.execute(
+                sa.text(type_info_sql).bindparams(raw_name=raw_name)
+            )
+            yield from ((col, _get_type(typestr)) for col, typestr in type_info)
+            con.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
-        return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+        yield f"CREATE OR REPLACE VIEW {name} AS {definition}"

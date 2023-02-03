@@ -1,7 +1,10 @@
 version: "3.4"
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:22.12.1.1752-alpine
+    build:
+      context: .
+      dockerfile: ./docker/clickhouse/Dockerfile
+    image: ibis-clickhouse
     ports:
       - 8123:8123
       - 9000:9000
@@ -122,7 +125,7 @@ services:
       retries: 3
       test:
         - CMD-SHELL
-        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1 AS one"
+        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "IF DB_ID('ibis_testing') IS NULL BEGIN CREATE DATABASE [ibis_testing] END"
       timeout: 10s
     build:
       context: .
@@ -136,6 +139,8 @@ services:
     user: postgres
     environment:
       POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ibis_testing
+      POSTGRES_USER: postgres
     healthcheck:
       interval: 10s
       retries: 3
@@ -159,7 +164,7 @@ services:
         - CMD-SHELL
         - trino --execute 'SELECT 1 AS one'
       timeout: 30s
-    image: trinodb/trino:405
+    image: trinodb/trino:406
     ports:
       - 8080:8080
     networks:

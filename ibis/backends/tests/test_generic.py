@@ -1,19 +1,35 @@
 import decimal
 import io
 from contextlib import redirect_stdout
-from operator import and_, invert, lshift, neg, or_, rshift, xor
+from operator import invert, methodcaller, neg
 
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy
 import toolz
 from pytest import param
+from sqlalchemy.exc import ProgrammingError
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
+
+try:
+    import duckdb
+
+    DuckDBConversionException = duckdb.ConversionException
+except ImportError:
+    DuckDBConversionException = None
+
+try:
+    import clickhouse_driver
+
+    ClickhouseDriverOperationalError = clickhouse_driver.dbapi.errors.OperationalError
+except ImportError:
+    ClickhouseDriverOperationalError = None
 
 
 @pytest.mark.parametrize(
@@ -22,13 +38,13 @@ from ibis import literal as L
         param(
             ibis.NA.fillna(5),
             5,
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["mssql"]),
             id="na_fillna",
         ),
         param(
             L(5).fillna(10),
             5,
-            marks=pytest.mark.notimpl(["mssql", "trino"]),
+            marks=pytest.mark.notimpl(["mssql"]),
             id="non_na_fillna",
         ),
         param(L(5).nullif(5), None, id="nullif_null"),
@@ -54,7 +70,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         param(
             "nan_col",
             _.nan_col.isnan(),
-            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
             id="nan_col",
         ),
         param(
@@ -94,6 +110,7 @@ def test_isna(backend, alltypes, col, filt):
                     "mysql",
                     "snowflake",
                     "polars",
+                    "trino",
                 ],
                 reason="NaN != NULL for these backends",
             ),
@@ -101,7 +118,7 @@ def test_isna(backend, alltypes, col, filt):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_column_fillna(backend, alltypes, value):
     table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
     pd_table = table.execute()
@@ -114,7 +131,17 @@ def test_column_fillna(backend, alltypes, value):
 @pytest.mark.parametrize(
     ('expr', 'expected'),
     [
-        param(ibis.coalesce(5, None, 4), 5, id="generic"),
+        param(
+            ibis.coalesce(5, None, 4),
+            5,
+            id="generic",
+            marks=[
+                pytest.mark.broken(
+                    "polars",
+                    reason="implementation error, cannot get ref Int8 from Boolean",
+                ),
+            ],
+        ),
         param(ibis.coalesce(ibis.NA, 4, ibis.NA), 4, id="null_start_end"),
         param(
             ibis.coalesce(ibis.NA, ibis.NA, 3.14),
@@ -302,7 +329,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql"])
 @pytest.mark.min_version(duckdb="0.3.3", reason="isnan/isinf unsupported")
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
@@ -334,7 +361,9 @@ def test_select_filter_mutate(backend, alltypes, df):
 
 
 def test_table_fillna_invalid(alltypes):
-    with pytest.raises(com.IbisTypeError, match=r"'invalid_col' is not a field in.*"):
+    with pytest.raises(
+        com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
+    ):
         alltypes.fillna({'invalid_col': 0.0})
 
     with pytest.raises(
@@ -356,7 +385,7 @@ def test_table_fillna_invalid(alltypes):
         {"double_col": -1.5, "string_col": "missing"},
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
+@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -371,7 +400,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "trino", "clickhouse"])
+@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -401,7 +430,9 @@ def test_mutate_rename(alltypes):
 
 
 def test_dropna_invalid(alltypes):
-    with pytest.raises(com.IbisTypeError, match=r"'invalid_col' is not a field in.*"):
+    with pytest.raises(
+        com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
+    ):
         alltypes.dropna(subset=['invalid_col'])
 
     with pytest.raises(ValueError, match=r".*is not in.*"):
@@ -472,9 +503,7 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "pandas", "polars", "mssql"]
-)
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "polars", "mssql"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="clickhouse doesn't have a [0.0, 1.0) random implementation",
@@ -615,7 +644,7 @@ def test_logical_negation_column(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.parametrize(
     ("dtype", "zero", "expected"),
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
@@ -625,7 +654,7 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.min_version(
     dask="2022.01.1",
     reason="unsupported operation with later versions of pandas",
@@ -690,111 +719,6 @@ def test_select_filter_select(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-pyspark_no_bitshift = pytest.mark.notyet(
-    ["pyspark"], reason="pyspark doesn't implement bitshit operators"
-)
-
-
-@pytest.mark.parametrize("op", [and_, or_, xor])
-@pytest.mark.parametrize(
-    ("left_fn", "right_fn"),
-    [
-        param(lambda t: t.int_col, lambda t: t.int_col, id="col_col"),
-        param(lambda _: 3, lambda t: t.int_col, id="scalar_col"),
-        param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
-    ],
-)
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
-def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
-    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
-    result = con.execute(expr)
-
-    expected = op(left_fn(df), right_fn(df)).rename("tmp")
-    backend.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    ("op", "left_fn", "right_fn"),
-    [
-        param(
-            lshift,
-            lambda t: t.int_col,
-            lambda t: t.int_col,
-            id="lshift_col_col",
-        ),
-        param(
-            lshift,
-            lambda _: 3,
-            lambda t: t.int_col,
-            marks=pytest.mark.broken(
-                ["impala"],
-                reason="impala's behavior differs from every other backend",
-            ),
-            id="lshift_scalar_col",
-        ),
-        param(lshift, lambda t: t.int_col, lambda _: 3, id="lshift_col_scalar"),
-        param(rshift, lambda t: t.int_col, lambda t: t.int_col, id="rshift_col_col"),
-        param(rshift, lambda _: 3, lambda t: t.int_col, id="rshift_scalar_col"),
-        param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
-    ],
-)
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
-@pyspark_no_bitshift
-def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
-    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
-    result = expr.execute()
-
-    pandas_left = getattr(left := left_fn(df), "values", left)
-    pandas_right = getattr(right := right_fn(df), "values", right)
-    expected = pd.Series(
-        op(pandas_left, pandas_right),
-        name="tmp",
-        dtype="int64",
-    )
-    backend.assert_series_equal(result, expected)
-
-
-@pytest.mark.parametrize(
-    "op",
-    [
-        param(and_, marks=[pytest.mark.notimpl(["snowflake"])]),
-        param(or_, marks=[pytest.mark.notimpl(["snowflake"])]),
-        param(xor, marks=[pytest.mark.notimpl(["snowflake"])]),
-        param(lshift, marks=pyspark_no_bitshift),
-        param(rshift, marks=pyspark_no_bitshift),
-    ],
-)
-@pytest.mark.parametrize(
-    ("left", "right"),
-    [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
-)
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
-def test_bitwise_scalars(con, op, left, right):
-    expr = op(left, right)
-    result = con.execute(expr)
-    expected = op(4, 2)
-    assert result == expected
-
-
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
-def test_bitwise_not_scalar(con):
-    expr = ~L(2)
-    result = con.execute(expr)
-    expected = -3
-    assert result == expected
-
-
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas", "snowflake"])
-def test_bitwise_not_col(backend, alltypes, df):
-    expr = (~alltypes.int_col).name("tmp")
-    result = expr.execute()
-    expected = ~df.int_col
-    backend.assert_series_equal(result, expected.rename("tmp"))
-
-
-@pytest.mark.notimpl(
-    ["snowflake"], reason="snowflake doesn't implement timestamp subtraction"
-)
 def test_interactive(alltypes):
     expr = alltypes.mutate(
         str_col=_.string_col.replace("1", "").nullif("2"),
@@ -815,6 +739,16 @@ def test_correlated_subquery(alltypes):
     assert expr.compile() is not None
 
 
+@pytest.mark.notimpl(["dask", "polars", "pyspark", "datafusion"])
+def test_uncorrelated_subquery(backend, batting, batting_df):
+    subset_batting = batting[batting.yearID <= 2000]
+    expr = batting[_.yearID == subset_batting.yearID.max()]['playerID', 'yearID']
+    result = expr.execute()
+
+    expected = batting_df[batting_df.yearID == 2000][['playerID', 'yearID']]
+    backend.assert_frame_equal(result, expected)
+
+
 def test_int_column(alltypes):
     expr = alltypes.mutate(x=1).x
     result = expr.execute()
@@ -831,3 +765,675 @@ def test_int_scalar(alltypes):
     result = expr.execute()
     assert expr.type() == dt.int16
     assert result.dtype == np.int16
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notyet(
+    ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
+)
+@pytest.mark.notyet(["pyspark"])
+@pytest.mark.parametrize("method_name", ["any", "notany"])
+def test_exists(batting, awards_players, method_name):
+    method = methodcaller(method_name)
+    expr = batting[method(batting.yearID == awards_players.yearID)]
+    result = expr.execute()
+    assert not result.empty
+
+
+@pytest.mark.parametrize(
+    ("ibis_op", "expected_values"),
+    [
+        param(
+            ibis.null(),
+            {
+                'bigquery': "NULL",
+                'clickhouse': 'Nullable(Nothing)',
+                'duckdb': "NULL",
+                'impala': 'BOOLEAN',
+                'snowflake': None,
+                'sqlite': "null",
+                'trino': 'unknown',
+                "postgres": "null",
+            },
+            id="null",
+        ),
+        param(
+            ibis.literal(False, type=dt.boolean),
+            {
+                'bigquery': "BOOL",
+                'clickhouse': 'UInt8',
+                'impala': 'BOOLEAN',
+                'snowflake': "BOOLEAN",
+                'sqlite': "integer",
+                'trino': 'boolean',
+                "duckdb": "BOOLEAN",
+                "postgres": "boolean",
+            },
+            id="boolean",
+        ),
+        param(
+            ibis.literal(1, type=dt.int8),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "SMALLINT",
+                "postgres": "integer",
+            },
+            id="int8",
+        ),
+        param(
+            ibis.literal(1, type=dt.int16),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "SMALLINT",
+                "postgres": "integer",
+            },
+            id="int16",
+        ),
+        param(
+            ibis.literal(1, type=dt.int32),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "INTEGER",
+                "postgres": "integer",
+            },
+            id="int32",
+        ),
+        param(
+            ibis.literal(1, type=dt.int64),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "BIGINT",
+                "postgres": "integer",
+            },
+            id="int64",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint8),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "UTINYINT",
+                "postgres": "integer",
+            },
+            id="uint8",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint16),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "USMALLINT",
+                "postgres": "integer",
+            },
+            id="uint16",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint32),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "UINTEGER",
+                "postgres": "integer",
+            },
+            id="uint32",
+        ),
+        param(
+            ibis.literal(1, type=dt.uint64),
+            {
+                'bigquery': "INT64",
+                'clickhouse': 'UInt8',
+                'impala': 'TINYINT',
+                'snowflake': "INTEGER",
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "UBIGINT",
+                "postgres": "integer",
+            },
+            id="uint64",
+        ),
+        param(
+            ibis.literal(1, type=dt.float16),
+            {
+                'bigquery': "FLOAT64",
+                'clickhouse': 'Float64',
+                'impala': 'DECIMAL(2,1)',
+                'snowflake': "INTEGER",
+                'sqlite': "real",
+                'trino': 'double',
+                "duckdb": "FLOAT",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['polars'],
+                    "<class 'ibis.expr.datatypes.core.Float16'>",
+                    raises=KeyError,
+                ),
+            ],
+            id="float16",
+        ),
+        param(
+            ibis.literal(1, type=dt.float32),
+            {
+                'bigquery': "FLOAT64",
+                'clickhouse': 'Float64',
+                'impala': 'DECIMAL(2,1)',
+                'snowflake': "INTEGER",
+                'sqlite': "real",
+                'trino': 'double',
+                "duckdb": "FLOAT",
+                "postgres": "numeric",
+            },
+            id="float32",
+        ),
+        param(
+            ibis.literal(1, type=dt.float64),
+            {
+                'bigquery': "FLOAT64",
+                'clickhouse': 'Float64',
+                'impala': 'DECIMAL(2,1)',
+                'snowflake': "INTEGER",
+                'sqlite': "real",
+                'trino': 'double',
+                "duckdb": "DOUBLE",
+                "postgres": "numeric",
+            },
+            id="float64",
+        ),
+        param(
+            ibis.literal("STRING", type=dt.string),
+            {
+                'bigquery': "STRING",
+                'clickhouse': 'String',
+                'snowflake': "VARCHAR",
+                'sqlite': 'text',
+                'trino': 'varchar(6)',
+                "duckdb": "VARCHAR",
+                "impala": "STRING",
+                "postgres": "text",
+            },
+            id="string",
+        ),
+        param(
+            ibis.literal("STRI'NG", type=dt.string),
+            {
+                'bigquery': "STRING",
+                'clickhouse': 'String',
+                'snowflake': "VARCHAR",
+                'sqlite': 'text',
+                'trino': 'varchar(7)',
+                "duckdb": "VARCHAR",
+                "impala": "STRING",
+                "postgres": "text",
+            },
+            id="string-quote1",
+        ),
+        param(
+            ibis.literal("STRI\"NG", type=dt.string),
+            {
+                'bigquery': "STRING",
+                'clickhouse': 'String',
+                'snowflake': "VARCHAR",
+                'sqlite': 'text',
+                'trino': 'varchar(7)',
+                "duckdb": "VARCHAR",
+                "impala": "STRING",
+                "postgres": "text",
+            },
+            id="string-quote2",
+        ),
+        param(
+            ibis.literal(b"A", type=dt.binary),
+            {
+                'bigquery': "BYTES",
+                'clickhouse': 'String',
+                'duckdb': 'BLOB',
+                'snowflake': "BINARY",
+                'sqlite': "blob",
+                'trino': 'STRING',
+                "postgres": "bytea",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['polars'],
+                    "ValueError: could not convert value \"b'A'\" as a Literal",
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    "(builtins.AttributeError) 'bytes' object has no attribute 'encode'",
+                    raises=sqlalchemy.exc.StatementError,
+                ),
+                pytest.mark.broken(
+                    ['clickhouse', 'impala'],
+                    "Unsupported type: Binary(nullable=True)",
+                    raises=NotImplementedError,
+                ),
+            ],
+            id="binary",
+        ),
+        param(
+            ibis.date(2022, 12, 12),
+            {
+                'bigquery': "DATE",
+                'clickhouse': 'Date',
+                'snowflake': 'DATE',
+                'sqlite': "text",
+                'trino': 'date',
+                "duckdb": "DATE",
+                "postgres": "date",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['impala'],
+                    "No translation rule for <class 'ibis.expr.operations.temporal.DateFromYMD'>",
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
+            id="date",
+        ),
+        param(
+            ibis.time(12, 12, 12),
+            {
+                'bigquery': "TIME",
+                'snowflake': "TIME",
+                'sqlite': "text",
+                'trino': 'time(3)',
+                "duckdb": "TIME",
+                "postgres": "time without time zone",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse', 'impala'],
+                    "No translation rule for <class 'ibis.expr.operations.temporal.TimeFromHMS'>",
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
+            id="time",
+        ),
+        param(
+            ibis.now().cast(dt.timestamp),
+            {
+                'bigquery': "TIMESTAMP",
+                'clickhouse': 'DateTime',
+                'impala': 'TIMESTAMP',
+                'snowflake': 'TIMESTAMP_LTZ',
+                'sqlite': "text",
+                'trino': 'timestamp(3) with time zone',
+                "duckdb": "TIMESTAMP",
+                "postgres": "timestamp with time zone",
+            },
+            id="timestamp",
+        ),
+        param(
+            ibis.interval(1, unit="s"),
+            {
+                'bigquery': "INTERVAL",
+                'clickhouse': 'IntervalSecond',
+                'sqlite': "integer",
+                'trino': 'integer',
+                "duckdb": "INTERVAL",
+                "postgres": "interval",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['snowflake'],
+                    '(snowflake.connector.errors.ProgrammingError) 001007 (22023): SQL compilation error:'
+                    "invalid type [CAST(INTERVAL_LITERAL('second', '1') AS VARIANT)] for parameter 'TO_VARIANT'",
+                    raises=ProgrammingError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    'AnalysisException: Syntax error in line 1: SELECT typeof(INTERVAL 1 SECOND) AS `TypeOf(1)` '
+                    'Encountered: ) Expected: +',
+                ),
+            ],
+            id="interval",
+        ),
+        param(
+            ibis.literal("08f48812-7948-4718-96c7-27fa6a398db6", type=dt.uuid),
+            {
+                'bigquery': 'STRING',
+                'duckdb': "UUID",
+                'sqlite': "text",
+                'snowflake': 'VARCHAR',
+                'trino': 'uuid',
+                "postgres": "uuid",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse', 'impala'],
+                    "Unsupported type: UUID(nullable=True)",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.xfail_version(
+                    trino=["sqlalchemy>=2,<3"],
+                    reason="dialect fails to handle UUID correctly",
+                ),
+            ],
+            id="uuid",
+        ),
+        param(
+            ibis.literal("00:00:0A:BB:28:FC", type=dt.macaddr),
+            {
+                'bigquery': "STRING",
+                'clickhouse': "String",
+                'duckdb': 'VARCHAR',
+                'snowflake': "VARCHAR",
+                'sqlite': "text",
+                'trino': 'varchar(17)',
+                "impala": 'STRING',
+                "postgres": "text",
+            },
+            id="macaddr",
+        ),
+        param(
+            ibis.literal("127.0.0.1", type=dt.inet),
+            {
+                'bigquery': "STRING",
+                'clickhouse': "IPv4",
+                'duckdb': 'VARCHAR',
+                'impala': 'STRING',
+                'snowflake': "VARCHAR",
+                'sqlite': "text",
+                'trino': 'varchar(9)',
+                "postgres": "text",
+            },
+            id="inet",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("1.2"), type=dt.decimal),
+            {
+                'bigquery': "NUMERIC",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.2')) AS `TypeOf(Decimal('1.2'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+            ],
+            id="decimal",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("Infinity"), type=dt.decimal),
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('Infinity')) AS `TypeOf(Decimal('Infinity'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    'duckdb.ConversionException: Conversion Error: Could not cast value inf to DECIMAL(18,3)',
+                    raises=DuckDBConversionException,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'Infinity\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-infinity+",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("-Infinity"), type=dt.decimal),
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('-Infinity')) AS `TypeOf(Decimal('-Infinity'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    'duckdb.ConversionException: Conversion Error: Could not cast value -inf to DECIMAL(18,3)',
+                    raises=DuckDBConversionException,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'-Infinity\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-infinity+",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("NaN"), type=dt.decimal),
+            {
+                'bigquery': "FLOAT64",
+                'snowflake': "VARCHAR",
+                'sqlite': "null",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['clickhouse'],
+                    "Unsupported precision. Supported values: [1 : 76]. Current value: None",
+                    raises=NotImplementedError,
+                ),
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('NaN')) AS `TypeOf(Decimal('NaN'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    '(duckdb.InvalidInputException) Invalid Input Error: Attempting '
+                    'to execute an unsuccessful or closed pending query result'
+                    'Error: Invalid Input Error: Type DOUBLE with value nan can\'t be '
+                    'cast because the value is out of range for the destination type INT64',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+                pytest.mark.broken(
+                    ['trino'],
+                    '(trino.exceptions.TrinoUserError) TrinoUserError(type=USER_ERROR, name=INVALID_LITERAL, '
+                    'message="line 1:51: \'NaN\' is not a valid decimal literal", '
+                    'query_id=20230128_024107_01084_y8zm3)',
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-NaN",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(38, 9)),
+            {
+                'bigquery': "NUMERIC",
+                'clickhouse': 'Decimal(38, 9)',
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(38,9)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.1')) AS `TypeOf(Decimal('1.1'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+            ],
+            id="decimal-small",
+        ),
+        param(
+            ibis.literal(decimal.Decimal("1.1"), type=dt.Decimal(76, 38)),
+            {
+                'bigquery': "BIGNUMERIC",
+                'clickhouse': 'Decimal(76, 38)',
+                'snowflake': "VARCHAR",
+                'sqlite': "real",
+                'trino': 'decimal(2,1)',
+                "duckdb": "DECIMAL(18,3)",
+                "postgres": "numeric",
+            },
+            marks=[
+                pytest.mark.broken(
+                    ['impala'],
+                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
+                    "SELECT typeof(Decimal('1.2')) AS `TypeOf(Decimal('1.2'))"
+                    "Encountered: DECIMAL"
+                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
+                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
+                    "CAUSED BY: Exception: Syntax error",
+                ),
+                pytest.mark.broken(
+                    ['duckdb'],
+                    "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
+                    raises=sqlalchemy.exc.ProgrammingError,
+                ),
+            ],
+            id="decimal-big",
+        ),
+        param(
+            ibis.array([1.0, 2.0, 3.0]),
+            {
+                'clickhouse': "Array(Float64)",
+                'snowflake': "ARRAY",
+                'trino': 'array(double)',
+                "bigquery": "ARRAY",
+                "duckdb": "DOUBLE[]",
+                "postgres": "numeric[]",
+            },
+            marks=[
+                pytest.mark.notimpl(
+                    ['sqlite', 'impala'],
+                    "Unsupported type: Array(value_type=Float64(nullable=True), nullable=True)",
+                    raises=NotImplementedError,
+                ),
+            ],
+            id="array<float>",
+        ),
+        param(
+            ibis.array(["A", "B", "C"]),
+            {
+                'clickhouse': "Array(String)",
+                'snowflake': "ARRAY",
+                'trino': 'array(varchar(1))',
+                "bigquery": "ARRAY",
+                "duckdb": "VARCHAR[]",
+                "postgres": "text[]",
+            },
+            marks=[
+                pytest.mark.notimpl(
+                    ['sqlite', 'impala'],
+                    "Unsupported type: Array(value_type=String(nullable=True), nullable=True)",
+                    raises=NotImplementedError,
+                ),
+            ],
+            id="array<string>",
+        ),
+        # TODO: We should add test cases for other types including:
+        #   dt.geometry, dt.geography, dt.point, dt.linestring, dt.polygon, dt.multilinestring,
+        #   dt.multipoint, dt.multipolygon, dt.json, dt.struct
+    ],
+)
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "datafusion",
+        "mssql",
+        "mysql",
+        "pandas",
+        "polars",
+        "pyspark",
+    ],
+    raises=(NotImplementedError, com.OperationNotDefinedError),
+)
+def test_typeof(backend, con, ibis_op, expected_values):
+    expr = ibis_op.typeof()
+    result = con.execute(expr)
+
+    backend_name = backend.name()
+    assert result == expected_values[backend_name]

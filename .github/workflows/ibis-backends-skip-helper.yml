@@ -22,7 +22,19 @@ on:
       - master
       - "*.x.x"
 jobs:
-  backends:
+  test_backends:
     runs-on: ubuntu-latest
     steps:
       - run: echo "No build required"
+  test_backends_min_version:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
+  backends:
+    # this job exists so that we can use a single job from this workflow to gate merging
+    runs-on: ubuntu-latest
+    needs:
+      - test_backends_min_version
+      - test_backends
+    steps:
+      - run: exit 0

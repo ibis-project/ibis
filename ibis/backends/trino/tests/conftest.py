@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import os
 from pathlib import Path
 from typing import Any, Generator
@@ -8,9 +9,10 @@ import pandas as pd
 import pytest
 
 import ibis
-from ibis.backends.conftest import _random_identifier
+from ibis.backends.conftest import TEST_TABLES, _random_identifier
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import struct_types
+from ibis.util import consume
 
 TRINO_USER = os.environ.get(
     'IBIS_TEST_TRINO_USER', os.environ.get('TRINO_USER', 'user')
@@ -26,6 +28,8 @@ IBIS_TEST_TRINO_DB = os.environ.get(
     'IBIS_TEST_TRINO_DATABASE',
     os.environ.get('TRINO_DATABASE', 'memory'),
 )
+
+sa = pytest.importorskip("sqlalchemy")
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -61,19 +65,10 @@ class TestConf(BackendTest, RoundAwayFromZero):
             user=PG_USER,
             password=PG_PASS,
             database=IBIS_TEST_POSTGRES_DB,
+            schema="public",
         )
 
         con = TestConf.connect(data_dir)
-
-        # mirror the existing tables
-        unsupported_memory_tables = {"intervals", "not_supported_intervals"}
-        for table in pgcon.list_tables():
-            if table not in unsupported_memory_tables:
-                source = f"postgresql.public.{table}"
-                dest = f"memory.default.{table}"
-                with con.begin() as c:
-                    c.execute(f"DROP TABLE IF EXISTS {dest}")
-                    c.execute(f"CREATE TABLE {dest} AS SELECT * FROM {source}")
 
         selects = []
         for row in struct_types.abc:
@@ -86,17 +81,30 @@ class TestConf(BackendTest, RoundAwayFromZero):
                 datarow = f"CAST(ROW({datarow}) AS ROW(a DOUBLE, b VARCHAR, c BIGINT))"
             selects.append(f"SELECT {datarow} AS abc")
 
+        # mirror the existing tables except for intervals which are not supported
+        # and maps which we do natively in trino, because trino has more extensive
+        # map support
+        unsupported_memory_tables = {"intervals", "not_supported_intervals", "map"}
+        lines = []
+        for table in frozenset(pgcon.list_tables()) - unsupported_memory_tables:
+            dest = f"memory.default.{table}"
+            lines.append(f"DROP VIEW IF EXISTS {dest}")
+            lines.append(
+                f"CREATE VIEW {dest} AS SELECT * FROM postgresql.public.{table}"
+            )
+
+        lines.extend(
+            itertools.chain(
+                [
+                    "DROP VIEW IF EXISTS struct",
+                    f"CREATE VIEW struct AS {' UNION ALL '.join(selects)}",
+                ],
+                Path(script_dir, "schema", "trino.sql").read_text().split(";"),
+            )
+        )
+
         with con.begin() as c:
-            c.execute("DROP TABLE IF EXISTS struct")
-            c.execute(f"CREATE TABLE struct AS {' UNION ALL '.join(selects)}")
-            c.execute("DROP TABLE IF EXISTS map")
-            c.execute("CREATE TABLE map (kv MAP<VARCHAR, BIGINT>)")
-            c.execute(
-                "INSERT INTO map VALUES (MAP(ARRAY['a', 'b', 'c'], ARRAY[1, 2, 3]))"
-            )
-            c.execute(
-                "INSERT INTO map VALUES (MAP(ARRAY['d', 'e', 'f'], ARRAY[4, 5, 6]))"
-            )
+            consume(map(c.exec_driver_sql, filter(None, map(str.strip, lines))))
 
     @staticmethod
     def connect(data_directory: Path):
@@ -109,33 +117,19 @@ class TestConf(BackendTest, RoundAwayFromZero):
             schema="default",
         )
 
+    def _remap_column_names(self, table_name: str) -> dict[str, str]:
+        table = self.connection.table(table_name)
+        return table.relabel(
+            dict(zip(table.schema().names, TEST_TABLES[table_name].names))
+        )
+
     @property
     def batting(self):
-        b = self.connection.table("batting")
-        b = b.relabel(
-            {
-                "yearid": "yearID",
-                "lgid": "lgID",
-                "playerid": "playerID",
-                "teamid": "teamID",
-                "rbi": "RBI",
-                "g": "G",
-            }
-        )
-        return b
+        return self._remap_column_names("batting")
 
     @property
     def awards_players(self):
-        a = self.connection.table("awards_players")
-        a = a.relabel(
-            {
-                "yearid": "yearID",
-                "lgid": "lgID",
-                "playerid": "playerID",
-                "awardid": "awardID",
-            }
-        )
-        return a
+        return self._remap_column_names("awards_players")
 
 
 @pytest.fixture(scope='session')

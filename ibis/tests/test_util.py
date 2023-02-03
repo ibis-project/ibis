@@ -4,6 +4,7 @@
 import pytest
 
 from ibis import util
+from ibis.tests.util import assert_pickle_roundtrip
 
 
 @pytest.mark.parametrize(
@@ -56,6 +57,28 @@ def test_dotdict():
         assert d['x']
     with pytest.raises(AttributeError):
         assert d.x
+
+
+def test_frozendict():
+    d = util.frozendict({"a": 1, "b": 2, "c": 3})
+    e = util.frozendict(a=1, b=2, c=3)
+    assert d == e
+    assert d["a"] == 1
+    assert d["b"] == 2
+
+    msg = "'frozendict' object does not support item assignment"
+    with pytest.raises(TypeError, match=msg):
+        d["a"] = 2
+    with pytest.raises(TypeError, match=msg):
+        d["d"] = 4
+
+    with pytest.raises(TypeError):
+        d.__view__["a"] = 2
+    with pytest.raises(TypeError):
+        d.__view__ = {"a": 2}
+
+    assert hash(d)
+    assert_pickle_roundtrip(d)
 
 
 def test_import_object():

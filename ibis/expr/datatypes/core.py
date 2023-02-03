@@ -1,31 +1,80 @@
 from __future__ import annotations
 
+import datetime as pydatetime
+import decimal as pydecimal
 import numbers
-from typing import Any, Iterable, Mapping, NamedTuple
+import uuid as pyuuid
+from abc import abstractmethod
+from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Set as PySet
+from numbers import Integral, Real
+from typing import Any, Iterable, NamedTuple
 
 import numpy as np
+import toolz
 from multipledispatch import Dispatcher
 from public import public
+from typing_extensions import get_args, get_origin, get_type_hints
 
 import ibis.expr.types as ir
-from ibis.common.annotations import optional
-from ibis.common.exceptions import IbisTypeError
+from ibis.common.annotations import attribute, optional
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
     all_of,
+    frozendict_of,
     instance_of,
     isin,
     map_to,
-    tuple_of,
     validator,
 )
+
+# TODO(kszucs): we don't support union types yet
 
 dtype = Dispatcher('dtype')
 
 
 @dtype.register(object)
-def default(value, **kwargs) -> DataType:
-    raise IbisTypeError(f'Value {value!r} is not a valid datatype')
+def dtype_from_object(value, **kwargs) -> DataType:
+    # TODO(kszucs): implement this in a @dtype.register(type) overload once dtype
+    # turned into a singledispatched function because that overload doesn't work
+    # with multipledispatch
+
+    # TODO(kszucs): support Tuple[int, str] and Tuple[int, ...] typehints
+    # in order to support more kinds of typehints follow the implementation of
+    # Validator.from_annotation
+    origin_type = get_origin(value)
+    if origin_type is None:
+        if issubclass(value, DataType):
+            return value()
+        elif result := _python_dtypes.get(value):
+            return result
+        elif annots := get_type_hints(value):
+            return Struct(toolz.valmap(dtype, annots))
+        elif issubclass(value, bytes):
+            return bytes
+        elif issubclass(value, str):
+            return string
+        elif issubclass(value, Integral):
+            return int64
+        elif issubclass(value, Real):
+            return float64
+        elif value is type(None):
+            return null
+        else:
+            raise TypeError(
+                f"Cannot construct an ibis datatype from python type {value!r}"
+            )
+    elif issubclass(origin_type, Sequence):
+        (value_type,) = map(dtype, get_args(value))
+        return Array(value_type)
+    elif issubclass(origin_type, Mapping):
+        key_type, value_type = map(dtype, get_args(value))
+        return Map(key_type, value_type)
+    elif issubclass(origin_type, PySet):
+        (value_type,) = map(dtype, get_args(value))
+        return Set(value_type)
+    else:
+        raise TypeError(f'Value {value!r} is not a valid datatype')
 
 
 @validator
@@ -123,12 +172,6 @@ class DataType(Concrete):
 
     def is_floating(self) -> bool:
         return isinstance(self, Floating)
-
-    def is_geography(self) -> bool:
-        return isinstance(self, Geography)
-
-    def is_geometry(self) -> bool:
-        return isinstance(self, Geometry)
 
     def is_geospatial(self) -> bool:
         return isinstance(self, GeoSpatial)
@@ -243,17 +286,26 @@ class Primitive(DataType, Singleton):
     """Values with known size."""
 
 
+# TODO(kszucs): consider to remove since we don't actually use this information
+@public
+class Variadic(DataType):
+    """Values with unknown size."""
+
+
+@public
+class Parametric(DataType):
+    """Types that can be parameterized."""
+
+    def __class_getitem__(cls, params):
+        return cls(*params) if isinstance(params, tuple) else cls(params)
+
+
 @public
 class Null(Primitive):
     """Null values."""
 
     scalar = ir.NullScalar
     column = ir.NullColumn
-
-
-@public
-class Variadic(DataType):
-    """Values with unknown size."""
 
 
 @public
@@ -285,11 +337,9 @@ class Integer(Primitive, Numeric):
     column = ir.IntegerColumn
 
     @property
-    def _nbytes(self) -> int:
+    @abstractmethod
+    def nbytes(self) -> int:
         """Return the number of bytes used to store values of this type."""
-        raise TypeError(
-            "Cannot determine the size in bytes of an abstract integer type."
-        )
 
 
 @public
@@ -345,20 +395,24 @@ class Time(Temporal, Primitive):
 
 
 @public
-class Timestamp(Temporal):
+class Timestamp(Temporal, Parametric):
     """Timestamp values."""
 
     timezone = optional(instance_of(str))
     """The timezone of values of this type."""
+
+    scale = optional(isin(range(10)))
+    """The scale of the timestamp if known."""
 
     scalar = ir.TimestampScalar
     column = ir.TimestampColumn
 
     @property
     def _pretty_piece(self) -> str:
-        if (timezone := self.timezone) is not None:
-            return f"({timezone!r})"
-        return ""
+        pieces = [
+            repr(piece) for piece in (self.scale, self.timezone) if piece is not None
+        ]
+        return f"({', '.join(pieces)})" * bool(pieces)
 
 
 @public
@@ -372,7 +426,7 @@ class SignedInteger(Integer):
 
     @property
     def bounds(self):
-        exp = self._nbytes * 8 - 1
+        exp = self.nbytes * 8 - 1
         upper = (1 << exp) - 1
         return Bounds(lower=~upper, upper=upper)
 
@@ -388,7 +442,7 @@ class UnsignedInteger(Integer):
 
     @property
     def bounds(self):
-        exp = self._nbytes * 8 - 1
+        exp = self.nbytes * 8 - 1
         upper = 1 << exp
         return Bounds(lower=0, upper=upper)
 
@@ -406,91 +460,90 @@ class Floating(Primitive, Numeric):
         return float64
 
     @property
-    def _nbytes(self) -> int:
-        raise TypeError(
-            "Cannot determine the size in bytes of an abstract floating point type."
-        )
+    @abstractmethod
+    def nbytes(self) -> int:  # pragma: no cover
+        ...
 
 
 @public
 class Int8(SignedInteger):
     """Signed 8-bit integers."""
 
-    _nbytes = 1
+    nbytes = 1
 
 
 @public
 class Int16(SignedInteger):
     """Signed 16-bit integers."""
 
-    _nbytes = 2
+    nbytes = 2
 
 
 @public
 class Int32(SignedInteger):
     """Signed 32-bit integers."""
 
-    _nbytes = 4
+    nbytes = 4
 
 
 @public
 class Int64(SignedInteger):
     """Signed 64-bit integers."""
 
-    _nbytes = 8
+    nbytes = 8
 
 
 @public
 class UInt8(UnsignedInteger):
     """Unsigned 8-bit integers."""
 
-    _nbytes = 1
+    nbytes = 1
 
 
 @public
 class UInt16(UnsignedInteger):
     """Unsigned 16-bit integers."""
 
-    _nbytes = 2
+    nbytes = 2
 
 
 @public
 class UInt32(UnsignedInteger):
     """Unsigned 32-bit integers."""
 
-    _nbytes = 4
+    nbytes = 4
 
 
 @public
 class UInt64(UnsignedInteger):
     """Unsigned 64-bit integers."""
 
-    _nbytes = 8
+    nbytes = 8
 
 
 @public
 class Float16(Floating):
     """16-bit floating point numbers."""
 
-    _nbytes = 2
+    nbytes = 2
 
 
 @public
 class Float32(Floating):
     """32-bit floating point numbers."""
 
-    _nbytes = 4
+    nbytes = 4
 
 
 @public
 class Float64(Floating):
     """64-bit floating point numbers."""
 
-    _nbytes = 8
+    nbytes = 8
 
 
 @public
-class Decimal(Numeric):
+class Decimal(Numeric, Parametric):
     """Fixed-precision decimal values."""
 
     precision = optional(instance_of(int))
@@ -554,7 +607,7 @@ class Decimal(Numeric):
 
 
 @public
-class Interval(DataType):
+class Interval(Parametric):
     """Interval values."""
 
     __valid_units__ = {
@@ -620,7 +673,7 @@ class Interval(DataType):
 
 
 @public
-class Category(DataType):
+class Category(Parametric):
     cardinality = optional(instance_of(int))
 
     scalar = ir.CategoryScalar
@@ -643,21 +696,16 @@ class Category(DataType):
 
 
 @public
-class Struct(DataType):
+class Struct(Parametric, Mapping):
     """Structured values."""
 
-    names = tuple_of(instance_of(str))
-    types = tuple_of(datatype)
+    fields = frozendict_of(instance_of(str), datatype)
 
     scalar = ir.StructScalar
     column = ir.StructColumn
 
-    def __init__(self, names, types, **kwargs):
-        if len(names) != len(types):
-            raise IbisTypeError(
-                'Struct datatype names and types must have the same length'
-            )
-        super().__init__(names=names, types=types, **kwargs)
+    def __class_getitem__(cls, fields):
+        return cls({slice_.start: slice_.stop for slice_ in fields})
 
     @classmethod
     def from_tuples(
@@ -677,48 +725,29 @@ class Struct(DataType):
         Struct
             Struct data type instance
         """
-        names, types = zip(*pairs)
-        return cls(names, types, nullable=nullable)
+        return cls(dict(pairs), nullable=nullable)
 
-    @classmethod
-    def from_dict(
-        cls, pairs: Mapping[str, str | DataType], nullable: bool = True
-    ) -> Struct:
-        """Construct a `Struct` type from a [`dict`][dict].
+    @attribute.default
+    def names(self) -> tuple[str, ...]:
+        """Return the names of the struct's fields."""
+        return tuple(self.keys())
 
-        Parameters
-        ----------
-        pairs
-            A [`dict`][dict] of `field: type`
-        nullable
-            Whether the type is nullable
+    @attribute.default
+    def types(self) -> tuple[DataType, ...]:
+        """Return the types of the struct's fields."""
+        return tuple(self.values())
 
-        Returns
-        -------
-        Struct
-            Struct data type instance
-        """
-        names, types = pairs.keys(), pairs.values()
-        return cls(names, types, nullable=nullable)
+    def __len__(self) -> int:
+        return len(self.fields)
 
-    @property
-    def pairs(self) -> Mapping[str, DataType]:
-        """Return a mapping from names to data type instances.
-
-        Returns
-        -------
-        Mapping[str, DataType]
-            Mapping of field name to data type
-        """
-        return dict(zip(self.names, self.types))
+    def __iter__(self) -> Iterator[str]:
+        return iter(self.fields)
 
     def __getitem__(self, key: str) -> DataType:
-        return self.pairs[key]
+        return self.fields[key]
 
     def __repr__(self) -> str:
-        return '{}({}, nullable={})'.format(
-            self.name, list(self.pairs.items()), self.nullable
-        )
+        return f"'{self.name}({list(self.items())}, nullable={self.nullable})"
 
     @property
     def _pretty_piece(self) -> str:
@@ -727,7 +756,7 @@ class Struct(DataType):
 
 
 @public
-class Array(Variadic):
+class Array(Variadic, Parametric):
     """Array values."""
 
     value_type = datatype
@@ -741,7 +770,7 @@ class Array(Variadic):
 
 
 @public
-class Set(Variadic):
+class Set(Variadic, Parametric):
     """Set values."""
 
     value_type = datatype
@@ -755,7 +784,7 @@ class Set(Variadic):
 
 
 @public
-class Map(Variadic):
+class Map(Variadic, Parametric):
     """Associative array values."""
 
     key_type = datatype
@@ -798,28 +827,6 @@ class GeoSpatial(DataType):
         if self.srid is not None:
             piece += f";{self.srid}"
         return piece
-
-
-@public
-class Geometry(GeoSpatial):
-    """Geometry values."""
-
-    column = ir.GeoSpatialColumn
-    scalar = ir.GeoSpatialScalar
-
-    def __init__(self, geotype, **kwargs):
-        super().__init__(geotype="geometry", **kwargs)
-
-
-@public
-class Geography(GeoSpatial):
-    """Geography values."""
-
-    column = ir.GeoSpatialColumn
-    scalar = ir.GeoSpatialScalar
-
-    def __init__(self, geotype, **kwargs):
-        super().__init__(geotype="geography", **kwargs)
 
 
 @public
@@ -921,8 +928,8 @@ timestamp = Timestamp()
 interval = Interval()
 category = Category()
 # geo spatial data type
-geometry = Geometry()
-geography = Geography()
+geometry = GeoSpatial(geotype="geometry")
+geography = GeoSpatial(geotype="geography")
 point = Point()
 linestring = LineString()
 polygon = Polygon()
@@ -938,6 +945,21 @@ inet = INET()
 decimal = Decimal()
 
 Enum = String
+
+
+_python_dtypes = {
+    bool: boolean,
+    int: int64,
+    float: float64,
+    str: string,
+    bytes: binary,
+    pydatetime.date: date,
+    pydatetime.time: time,
+    pydatetime.datetime: timestamp,
+    pydatetime.timedelta: interval,
+    pydecimal.Decimal: decimal,
+    pyuuid.UUID: uuid,
+}
 
 _numpy_dtypes = {
     np.dtype("bool"): boolean,
@@ -956,14 +978,32 @@ _numpy_dtypes = {
     np.dtype("unicode"): string,
     np.dtype("str"): string,
     np.dtype("datetime64"): timestamp,
+    np.dtype("datetime64[Y]"): timestamp,
+    np.dtype("datetime64[M]"): timestamp,
+    np.dtype("datetime64[W]"): timestamp,
+    np.dtype("datetime64[D]"): timestamp,
+    np.dtype("datetime64[h]"): timestamp,
+    np.dtype("datetime64[m]"): timestamp,
+    np.dtype("datetime64[s]"): timestamp,
+    np.dtype("datetime64[ms]"): timestamp,
+    np.dtype("datetime64[us]"): timestamp,
     np.dtype("datetime64[ns]"): timestamp,
     np.dtype("timedelta64"): interval,
+    np.dtype("timedelta64[Y]"): Interval("Y"),
+    np.dtype("timedelta64[M]"): Interval("M"),
+    np.dtype("timedelta64[W]"): Interval("W"),
+    np.dtype("timedelta64[D]"): Interval("D"),
+    np.dtype("timedelta64[h]"): Interval("h"),
+    np.dtype("timedelta64[m]"): Interval("m"),
+    np.dtype("timedelta64[s]"): Interval("s"),
+    np.dtype("timedelta64[ms]"): Interval("ms"),
+    np.dtype("timedelta64[us]"): Interval("us"),
     np.dtype("timedelta64[ns]"): Interval("ns"),
 }
 
 
 @dtype.register(np.dtype)
-def _(value):
+def from_numpy_dtype(value):
     try:
         return _numpy_dtypes[value]
     except KeyError:
@@ -1006,4 +1046,6 @@ public(
     inet=inet,
     decimal=decimal,
     Enum=Enum,
+    Geography=GeoSpatial,
+    Geometry=GeoSpatial,
 )

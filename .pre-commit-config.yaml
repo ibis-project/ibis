@@ -14,21 +14,20 @@ default_stages:
   - commit
 repos:
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.22
+    rev: v1.6.23
     hooks:
       - id: actionlint
   - repo: https://github.com/psf/black
-    rev: 22.12.0
+    rev: 23.1.0
     hooks:
       - id: black
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.206
+    rev: v0.0.238
     hooks:
       - id: ruff
-        # exclude a file (if configured to do so), even if it's passed in explicitly
-        args: ["--force-exclude"]
+        args: ["--show-source", "--fix"]
   - repo: https://github.com/adrienverge/yamllint
-    rev: v1.28.0
+    rev: v1.29.0
     hooks:
       - id: yamllint
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -36,7 +35,6 @@ repos:
     hooks:
       - id: check-added-large-files
       - id: check-case-conflict
-      - id: check-docstring-first
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: check-shebang-scripts-are-executable

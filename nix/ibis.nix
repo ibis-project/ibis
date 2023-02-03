@@ -9,6 +9,7 @@
 }:
 let
   backends = [ "dask" "datafusion" "duckdb" "pandas" "polars" "sqlite" ];
+  markers = lib.concatStringsSep " or " (backends ++ [ "core" ]);
 in
 poetry2nix.mkPoetryApplication rec {
   python = python3;
@@ -25,16 +26,17 @@ poetry2nix.mkPoetryApplication rec {
 
   buildInputs = [ graphviz-nox sqlite ];
   checkInputs = buildInputs;
+  nativeCheckInputs = checkInputs;
 
   preCheck = ''
     set -euo pipefail
 
-    export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
+    HOME="$(mktemp -d)"
+    export HOME
 
     ${rsync}/bin/rsync \
       --chmod=Du+rwx,Fu+rw --archive --delete \
-      "${ibisTestingData}/" \
-      "$IBIS_TEST_DATA_DIRECTORY"
+      "${ibisTestingData}/" $PWD/ci/ibis-testing-data
   '';
 
   checkPhase = ''
@@ -42,10 +44,10 @@ poetry2nix.mkPoetryApplication rec {
 
     runHook preCheck
 
-    pytest \
-      --numprocesses "$NIX_BUILD_CORES" \
-      --dist loadgroup \
-      -m '${lib.concatStringsSep " or " backends} or core'
+    # the sqlite-on-duckdb tests try to download the sqlite_scanner extension
+    # but network usage is not allowed in the sandbox
+    pytest -m '${markers}' --numprocesses "$NIX_BUILD_CORES" --dist loadgroup \
+      --deselect=ibis/backends/duckdb/tests/test_register.py::test_{read,register}_sqlite \
 
     runHook postCheck
   '';

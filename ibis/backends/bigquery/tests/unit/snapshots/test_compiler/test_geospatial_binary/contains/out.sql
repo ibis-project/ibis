@@ -1,2 +1,2 @@
-SELECT ST_CONTAINS(`geog0`, `geog1`) AS `tmp`
-FROM t
+SELECT ST_CONTAINS(t0.`geog0`, t0.`geog1`) AS `tmp`
+FROM t t0

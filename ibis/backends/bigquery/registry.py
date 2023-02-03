@@ -44,6 +44,12 @@ def bigquery_cast_timestamp_to_integer(compiled_arg, from_, to):
     return f"UNIX_MICROS({compiled_arg})"
 
 
+@bigquery_cast.register(str, dt.Integer, dt.Timestamp)
+def bigquery_cast_integer_to_timestamp(compiled_arg, from_, to):
+    """Convert INT64 (seconds since Unix epoch) to Timestamp."""
+    return f"TIMESTAMP_SECONDS({compiled_arg})"
+
+
 @bigquery_cast.register(str, dt.DataType, dt.DataType)
 def bigquery_cast_generate(compiled_arg, from_, to):
     """Cast to desired type."""
@@ -88,8 +94,20 @@ def _struct_field(translator, op):
     return f"{arg}.`{op.field}`"
 
 
+def _struct_column(translator, op):
+    cols = (
+        f'{translator.translate(value)} AS {name}'
+        for name, value, in zip(op.names, op.values)
+    )
+    return "STRUCT({})".format(", ".join(cols))
+
+
 def _array_concat(translator, op):
     return "ARRAY_CONCAT({})".format(", ".join(map(translator.translate, op.args)))
+
+
+def _array_column(translator, op):
+    return "[{}]".format(", ".join(map(translator.translate, op.cols)))
 
 
 def _array_index(translator, op):
@@ -198,6 +216,18 @@ def _log(translator, op):
 
 def _literal(translator, op):
     dtype = op.output_dtype
+    if dtype.is_decimal():
+        value = op.value
+        if value.is_nan():
+            return "CAST('NaN' AS FLOAT64)"
+        if value.is_infinite():
+            prefix = "-" * value.is_signed()
+            return f"CAST('{prefix}inf' AS FLOAT64)"
+        else:
+            return f"{ibis_type_to_bigquery_type(dtype)} '{op.value}'"
+    elif dtype.is_uuid():
+        return translator.translate(ops.Literal(str(op.value), dtype=dt.str))
+
     if isinstance(dtype, dt.Numeric):
         value = op.value
         if not np.isfinite(value):
@@ -221,13 +251,19 @@ def _literal(translator, op):
             return "FROM_BASE64('{}')".format(
                 base64.b64encode(value).decode(encoding="utf-8")
             )
+        elif dtype.is_struct():
+            cols = (
+                f'{translator.translate(ops.Literal(op.value[name], dtype=type_))} AS {name}'
+                for name, type_ in zip(dtype.names, dtype.types)
+            )
+            return "STRUCT({})".format(", ".join(cols))
 
     try:
         return literal(translator, op)
     except NotImplementedError:
         if isinstance(dtype, dt.Array):
             return _array_literal_format(op)
-        raise NotImplementedError(type(op).__name__)
+        raise NotImplementedError(f'Unsupported type: {dtype!r}')
 
 
 def _arbitrary(translator, op):
@@ -460,6 +496,11 @@ def _nullifzero(t, op):
     return f"NULLIF({t.translate(op.arg)}, {casted})"
 
 
+def _zeroifnull(t, op):
+    casted = bigquery_cast('0', op.output_dtype)
+    return f"COALESCE({t.translate(op.arg)}, {casted})"
+
+
 def _array_agg(t, op):
     arg = op.arg
     if (where := op.where) is not None:
@@ -490,6 +531,37 @@ def _array_repeat(t, op):
     return f"ARRAY(SELECT {arg}[SAFE_ORDINAL({idx})] FROM UNNEST({series}) AS i)"
 
 
+def _neg_idx_to_pos(array, idx):
+    return f"IF({idx} < 0, ARRAY_LENGTH({array}) + {idx}, {idx})"
+
+
+def _array_slice(t, op):
+    arg = t.translate(op.arg)
+    cond = [f"index >= {_neg_idx_to_pos(arg, t.translate(op.start))}"]
+    if op.stop:
+        cond.append(f"index < {_neg_idx_to_pos(arg, t.translate(op.stop))}")
+    return (
+        f"ARRAY("
+        f"SELECT el "
+        f"FROM UNNEST({arg}) AS el WITH OFFSET index "
+        f"WHERE {' AND '.join(cond)}"
+        f")"
+    )
+
+
+def _capitalize(t, op):
+    return f"CONCAT(UPPER(SUBSTR({t.translate(op.arg)}, 1, 1)), SUBSTR({t.translate(op.arg)}, 2))"
+
+
+def _nth_value(t, op):
+    arg = t.translate(op.arg)
+
+    if not isinstance(nth_op := op.nth, ops.Literal):
+        raise TypeError(f"Bigquery nth must be a literal; got {type(op.nth)}")
+
+    return f'NTH_VALUE({arg}, {nth_op.value + 1})'
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -500,16 +572,26 @@ OPERATION_REGISTRY = {
     ops.IfNull: fixed_arity("IFNULL", 2),
     ops.NullIf: fixed_arity("NULLIF", 2),
     ops.NullIfZero: _nullifzero,
+    ops.ZeroIfNull: _zeroifnull,
     ops.NotAny: bigquery_compile_notany,
     ops.NotAll: bigquery_compile_notall,
-    # Math
-    ops.CMSMedian: compiles_approx,
+    # Reductions
+    ops.ApproxMedian: compiles_approx,
     ops.Covariance: _covar,
     ops.Correlation: _corr,
+    # Math
     ops.Divide: bigquery_compiles_divide,
     ops.Floor: compiles_floor,
     ops.Modulus: fixed_arity("MOD", 2),
     ops.Sign: unary("SIGN"),
+    ops.Degrees: lambda t, op: f"(180 * {t.translate(op.arg)} / ACOS(-1))",
+    ops.Radians: lambda t, op: f"(ACOS(-1) * {t.translate(op.arg)} / 180)",
+    ops.BitwiseNot: lambda t, op: f"~ {t.translate(op.arg)}",
+    ops.BitwiseXor: lambda t, op: f"{t.translate(op.left)} ^ {t.translate(op.right)}",
+    ops.BitwiseOr: lambda t, op: f"{t.translate(op.left)} | {t.translate(op.right)}",
+    ops.BitwiseAnd: lambda t, op: f"{t.translate(op.left)} & {t.translate(op.right)}",
+    ops.BitwiseLeftShift: lambda t, op: f"{t.translate(op.left)} << {t.translate(op.right)}",
+    ops.BitwiseRightShift: lambda t, op: f"{t.translate(op.left)} >> {t.translate(op.right)}",
     # Temporal functions
     ops.Date: unary("DATE"),
     ops.DateFromYMD: fixed_arity("DATE", 3),
@@ -522,6 +604,7 @@ OPERATION_REGISTRY = {
     ops.ExtractYear: _extract_field("year"),
     ops.ExtractQuarter: _extract_field("quarter"),
     ops.ExtractMonth: _extract_field("month"),
+    ops.ExtractWeekOfYear: _extract_field("isoweek"),
     ops.ExtractDay: _extract_field("day"),
     ops.ExtractDayOfYear: _extract_field("dayofyear"),
     ops.ExtractHour: _extract_field("hour"),
@@ -548,6 +631,8 @@ OPERATION_REGISTRY = {
     ops.StringFind: _string_find,
     ops.Substring: _string_substring,
     ops.StrRight: _string_right,
+    ops.Capitalize: _capitalize,
+    ops.Translate: fixed_arity("TRANSLATE", 3),
     ops.Repeat: fixed_arity("REPEAT", 2),
     ops.RegexSearch: _regex_search,
     ops.RegexExtract: _regex_extract,
@@ -555,12 +640,14 @@ OPERATION_REGISTRY = {
     ops.GroupConcat: reduction("STRING_AGG"),
     ops.Cast: _cast,
     ops.StructField: _struct_field,
+    ops.StructColumn: _struct_column,
     ops.ArrayCollect: _array_agg,
     ops.ArrayConcat: _array_concat,
+    ops.ArrayColumn: _array_column,
     ops.ArrayIndex: _array_index,
     ops.ArrayLength: unary("ARRAY_LENGTH"),
     ops.ArrayRepeat: _array_repeat,
-    ops.HLLCardinality: reduction("APPROX_COUNT_DISTINCT"),
+    ops.ArraySlice: _array_slice,
     ops.Log: _log,
     ops.Log2: _log2,
     ops.Arbitrary: _arbitrary,
@@ -615,14 +702,23 @@ OPERATION_REGISTRY = {
     ops.ArgMax: _arg_min_max("DESC"),
     ops.Pi: lambda *_: "ACOS(-1)",
     ops.E: lambda *_: "EXP(1)",
+    ops.RandomScalar: fixed_arity("RAND", 0),
+    ops.NthValue: _nth_value,
+    ops.JSONGetItem: lambda t, op: f"{t.translate(op.arg)}[{t.translate(op.index)}]",
 }
 
 _invalid_operations = {
-    ops.Translate,
     ops.FindInSet,
-    ops.Capitalize,
     ops.DateDiff,
     ops.TimestampDiff,
+    ops.ExtractAuthority,
+    ops.ExtractFile,
+    ops.ExtractFragment,
+    ops.ExtractHost,
+    ops.ExtractPath,
+    ops.ExtractProtocol,
+    ops.ExtractQuery,
+    ops.ExtractUserInfo,
 }
 
 OPERATION_REGISTRY = {

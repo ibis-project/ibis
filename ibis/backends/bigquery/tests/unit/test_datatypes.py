@@ -4,9 +4,8 @@ from pytest import param
 
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.datatypes import (
-    TypeTranslationContext,
-    UDFContext,
     ibis_type_to_bigquery_type,
+    spread_type,
 )
 
 
@@ -50,12 +49,12 @@ def test_no_ambiguities():
         param(
             "array<struct<a: string>>", "ARRAY<STRUCT<a STRING>>", id="array<struct>"
         ),
-        param(dt.Decimal(38, 9), "NUMERIC", id="decimal"),
+        param(dt.Decimal(38, 9), "NUMERIC", id="decimal-numeric"),
+        param(dt.Decimal(76, 38), "BIGNUMERIC", id="decimal-bignumeric"),
     ],
 )
 def test_simple(datatype, expected):
-    context = TypeTranslationContext()
-    assert ibis_type_to_bigquery_type(datatype, context) == expected
+    assert ibis_type_to_bigquery_type(datatype) == expected
 
 
 @pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(8, 3)])
@@ -65,21 +64,25 @@ def test_simple_failure_mode(datatype):
 
 
 @pytest.mark.parametrize(
-    ("type", "expected"),
+    ("type_", "expected"),
     [
-        param(dt.int64, "INT64", marks=pytest.mark.xfail(raises=TypeError)),
+        param(
+            dt.int64,
+            [dt.int64],
+        ),
         param(
             dt.Array(dt.int64),
-            "ARRAY<INT64>",
-            marks=pytest.mark.xfail(raises=TypeError),
+            [dt.int64, dt.Array(value_type=dt.int64)],
         ),
         param(
             dt.Struct.from_tuples([("a", dt.Array(dt.int64))]),
-            "STRUCT<a ARRAY<INT64>>",
-            marks=pytest.mark.xfail(raises=TypeError),
+            [
+                dt.int64,
+                dt.Array(value_type=dt.int64),
+                dt.Struct.from_tuples([('a', dt.Array(value_type=dt.int64))]),
+            ],
         ),
     ],
 )
-def test_ibis_type_to_bigquery_type_udf(type, expected):
-    context = UDFContext()
-    assert ibis_type_to_bigquery_type(type, context) == expected
+def test_spread_type(type_, expected):
+    assert list(spread_type(type_)) == expected

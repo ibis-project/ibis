@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import concurrent.futures
+import contextlib
 import functools
 import io
 import os
@@ -18,7 +19,7 @@ from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
 from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
-from ibis.backends.tests.data import non_null_array_types, struct_types, win
+from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
 
 DATASET_ID = "ibis_gbq_testing"
 DEFAULT_PROJECT_ID = "ibis-gbq"
@@ -48,7 +49,7 @@ def _(typ: dt.Struct) -> Mapping[str, Any]:
     return {
         "field_type": "RECORD",
         "mode": "NULLABLE" if typ.nullable else "REQUIRED",
-        "fields": ibis_schema_to_bq_schema(ibis.schema(typ.pairs)),
+        "fields": ibis_schema_to_bq_schema(ibis.schema(typ.fields)),
     }
 
 
@@ -72,7 +73,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_floating_modulus = False
     returned_timestamp_unit = "us"
     supports_structs = True
-    supports_json = False
+    supports_json = True
     check_names = False
 
     @staticmethod
@@ -94,10 +95,9 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         client = bq.Client(project=project_id, credentials=credentials)
 
         testing_dataset = bq.DatasetReference(project_id, DATASET_ID)
-        try:
+
+        with contextlib.suppress(NotFound):
             client.create_dataset(testing_dataset, exists_ok=True)
-        except NotFound:
-            pass
 
         # day partitioning
         functional_alltypes_parted = bq.Table(
@@ -134,7 +134,8 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         make_job = lambda func, *a, **kw: func(*a, **kw).result()
 
         futures = []
-        with concurrent.futures.ThreadPoolExecutor() as e:
+        # 10 is because of urllib3 connection pool size
+        with concurrent.futures.ThreadPoolExecutor(max_workers=10) as e:
             futures.append(
                 e.submit(
                     make_job,
@@ -237,6 +238,22 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                         schema=ibis_schema_to_bq_schema(
                             dict(g="string", x="int64", y="int64")
                         ),
+                    ),
+                )
+            )
+
+            futures.append(
+                e.submit(
+                    make_job,
+                    client.load_table_from_file,
+                    io.StringIO(
+                        "\n".join(f"{{\"js\": {row}}}" for row in json_types.js)
+                    ),
+                    bq.TableReference(testing_dataset, "json_t"),
+                    job_config=bq.LoadJobConfig(
+                        write_disposition=write_disposition,
+                        schema=ibis_schema_to_bq_schema(dict(js="json")),
+                        source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
                     ),
                 )
             )

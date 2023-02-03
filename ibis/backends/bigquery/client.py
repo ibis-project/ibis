@@ -48,7 +48,7 @@ def bigquery_field_to_ibis_dtype(field):
         assert fields, "RECORD fields are empty"
         names = [el.name for el in fields]
         ibis_types = list(map(dt.dtype, fields))
-        ibis_type = dt.Struct(names, ibis_types)
+        ibis_type = dt.Struct(dict(zip(names, ibis_types)))
     else:
         ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
         ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
@@ -70,6 +70,23 @@ def bigquery_schema(table):
         # Only add a new column if it's not already a column in the schema
         fields.setdefault(partition_field, dt.timestamp)
     return sch.schema(fields)
+
+
+def ibis_schema_to_bigquery_schema(schema: sch.Schema):
+    return [
+        (
+            bq.SchemaField(
+                name,
+                ibis_type_to_bigquery_type(type_),
+                mode='NULLABLE' if type_.nullable else 'REQUIRED',
+            )
+            if not type_.is_array()
+            else bq.SchemaField(
+                name, ibis_type_to_bigquery_type(type_.value_type), mode='REPEATED'
+            )
+        )
+        for name, type_ in schema.items()
+    ]
 
 
 class BigQueryCursor:
@@ -101,22 +118,11 @@ class BigQueryCursor:
         return list(result.schema)
 
     def __enter__(self):
-        # For compatibility when constructed from Query.execute()
-        """No-op for compatibility.
-
-        See Also
-        --------
-        ibis.client.Query.execute
-        """
+        """No-op for compatibility."""
         return self
 
     def __exit__(self, *_):
-        """No-op for compatibility.
-
-        See Also
-        --------
-        ibis.client.Query.execute
-        """
+        """No-op for compatibility."""
 
 
 class BigQueryDatabase(Database):
@@ -130,7 +136,7 @@ def bigquery_param(dtype, value, name):
 
 @bigquery_param.register
 def bq_param_struct(dtype: dt.Struct, value, name):
-    fields = dtype.pairs
+    fields = dtype.fields
     field_params = [bigquery_param(fields[k], v, k) for k, v in value.items()]
     result = bq.StructQueryParameter(name, *field_params)
     return result

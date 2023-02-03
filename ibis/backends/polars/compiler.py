@@ -72,37 +72,72 @@ def _make_duration(value, dtype):
 
 @translate.register(ops.Literal)
 def literal(op):
-    if op.dtype.is_array():
-        value = pl.Series("", op.value)
-        typ = to_polars_type(op.dtype)
+    value = op.value
+    dtype = op.dtype
+
+    if dtype.is_array():
+        value = pl.Series("", value)
+        typ = to_polars_type(dtype)
         return pl.lit(value, dtype=typ).list()
-    elif op.dtype.is_struct():
+    elif dtype.is_struct():
         values = [
-            pl.lit(v, dtype=to_polars_type(op.dtype[k])).alias(k)
-            for k, v in op.value.items()
+            pl.lit(v, dtype=to_polars_type(dtype[k])).alias(k) for k, v in value.items()
         ]
         return pl.struct(values)
-    elif op.dtype.is_interval():
-        return _make_duration(op.value, op.dtype)
+    elif dtype.is_interval():
+        return _make_duration(value, dtype)
+    elif dtype.is_null():
+        return pl.lit(value)
+    elif dtype.is_binary():
+        raise NotImplementedError("Binary literals do not work in polars")
     else:
-        typ = to_polars_type(op.dtype)
+        typ = to_polars_type(dtype)
         return pl.lit(op.value, dtype=typ)
+
+
+_TIMESTAMP_SCALE_TO_UNITS = {
+    0: "s",
+    1: "ms",
+    2: "ms",
+    3: "ms",
+    4: "us",
+    5: "us",
+    6: "us",
+    7: "ns",
+    8: "ns",
+    9: "ns",
+}
 
 
 @translate.register(ops.Cast)
 def cast(op):
     arg = translate(op.arg)
+    dtype = op.arg.output_dtype
+    to = op.to
 
-    if op.to.is_interval():
-        return _make_duration(arg, op.to)
-    elif op.to.is_date():
-        if op.arg.output_dtype.is_string():
+    if to.is_interval():
+        return _make_duration(arg, to)
+    elif to.is_date():
+        if dtype.is_string():
             return arg.str.strptime(pl.Date, "%Y-%m-%d")
-    elif op.to.is_timestamp():
-        if op.arg.output_dtype.is_integer():
-            return (arg * 1_000_000).cast(pl.Datetime).alias(op.name)
+    elif to.is_timestamp():
+        time_zone = to.timezone
+        time_unit = _TIMESTAMP_SCALE_TO_UNITS.get(to.scale, "us")
 
-    typ = to_polars_type(op.to)
+        if dtype.is_integer():
+            typ = pl.Datetime(time_unit="us", time_zone=time_zone)
+            arg = (arg * 1_000_000).cast(typ)
+            if time_unit != "us":
+                arg = arg.dt.truncate(f"1{time_unit}")
+            return arg.alias(op.name)
+        elif dtype.is_string():
+            typ = pl.Datetime(time_unit=time_unit, time_zone=time_zone)
+            arg = arg.str.strptime(typ)
+            if time_unit == "s":
+                return arg.dt.truncate("1s")
+            return arg
+
+    typ = to_polars_type(to)
     return arg.cast(typ)
 
 
@@ -146,7 +181,7 @@ def selection(op):
     if op.sort_keys:
         by = [key.name for key in op.sort_keys]
         reverse = [key.descending for key in op.sort_keys]
-        lf = lf.sort(by, reverse)
+        lf = lf.sort(by, reverse=reverse)
 
     return lf
 
@@ -177,7 +212,7 @@ def aggregation(op):
         lf = lf.select
 
     if op.metrics:
-        metrics = [translate(arg) for arg in op.metrics]
+        metrics = [translate(arg).alias(arg.name) for arg in op.metrics]
         lf = lf(metrics)
 
     return lf
@@ -377,7 +412,10 @@ def string_length(op):
 @translate.register(ops.StringUnary)
 def string_unary(op):
     arg = translate(op.arg)
-    func = _string_unary[type(op)]
+    func = _string_unary.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
+
     method = getattr(arg.str, func)
     return method()
 
@@ -764,7 +802,10 @@ def array_collect(op):
 @translate.register(ops.Unnest)
 def unnest(op):
     arg = translate(op.arg)
-    return arg.explode()
+    try:
+        return arg.arr.explode()
+    except AttributeError:
+        return arg.explode()
 
 
 _date_methods = {
@@ -838,7 +879,9 @@ def day_of_week_name(op):
 @translate.register(ops.Unary)
 def unary(op):
     arg = translate(op.arg)
-    func = _unary[type(op)]
+    func = _unary.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(arg)
 
 
@@ -856,16 +899,20 @@ _comparisons = {
 def comparison(op):
     left = translate(op.left)
     right = translate(op.right)
-    func = _comparisons[type(op)]
+    func = _comparisons.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(left, right)
 
 
 @translate.register(ops.Between)
 def between(op):
-    arg = translate(op.arg)
-    lower = translate(op.lower_bound)
-    upper = translate(op.upper_bound)
-    return arg.is_between(lower, upper)
+    op_arg = op.arg
+    arg = translate(op_arg)
+    dtype = op_arg.output_dtype
+    lower = translate(ops.Cast(op.lower_bound, dtype))
+    upper = translate(ops.Cast(op.upper_bound, dtype))
+    return arg.is_between(lower, upper, closed="both")
 
 
 _bitwise_binops = {
@@ -879,7 +926,9 @@ _bitwise_binops = {
 
 @translate.register(ops.BitwiseBinary)
 def bitwise_binops(op):
-    ufunc = _bitwise_binops[type(op)]
+    ufunc = _bitwise_binops.get(type(op))
+    if ufunc is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     left = translate(op.left)
     right = translate(op.right)
 
@@ -917,7 +966,9 @@ _binops = {
 def binop(op):
     left = translate(op.left)
     right = translate(op.right)
-    func = _binops[type(op)]
+    func = _binops.get(type(op))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(left, right)
 
 

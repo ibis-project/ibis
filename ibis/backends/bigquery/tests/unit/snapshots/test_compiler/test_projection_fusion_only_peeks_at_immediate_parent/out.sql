@@ -1,15 +1,16 @@
 WITH t0 AS (
-  SELECT *
-  FROM unbound_table
-  WHERE `PARTITIONTIME` < DATE '2017-01-01'
+  SELECT t4.*
+  FROM unbound_table t4
+  WHERE t4.`PARTITIONTIME` < DATE '2017-01-01'
 ),
 t1 AS (
-  SELECT CAST(`file_date` AS DATE) AS `file_date`, `PARTITIONTIME`, `val`
+  SELECT CAST(t0.`file_date` AS DATE) AS `file_date`, t0.`PARTITIONTIME`,
+         t0.`val`
   FROM t0
-  WHERE `file_date` < DATE '2017-01-01'
+  WHERE t0.`file_date` < DATE '2017-01-01'
 ),
 t2 AS (
-  SELECT *, `val` * 2 AS `XYZ`
+  SELECT t1.*, t1.`val` * 2 AS `XYZ`
   FROM t1
 )
 SELECT t2.*

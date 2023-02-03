@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from functools import partial
 
+import sqlalchemy as sa
+from sqlalchemy.dialects import mysql
+from sqlalchemy.dialects.mysql.base import MySQLDialect
+
 import ibis.expr.datatypes as dt
 
 # binary character set
@@ -29,15 +33,13 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
     if typename is None:
         raise NotImplementedError(f"MySQL type code {type_code:d} is not supported")
 
-    typ = _type_mapping[typename]
-
     if typename in ("DECIMAL", "NEWDECIMAL"):
         precision = _decimal_length_to_precision(
             length=field_length,
             scale=scale,
             is_unsigned=flags.is_unsigned,
         )
-        typ = partial(typ, precision=precision, scale=scale)
+        typ = partial(_type_mapping[typename], precision=precision, scale=scale)
     elif typename == "BIT":
         if field_length <= 8:
             typ = dt.int8
@@ -61,18 +63,15 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
                 typ = dt.Binary
             else:
                 typ = dt.String
+        else:
+            typ = _type_mapping[typename]
 
     # projection columns are always nullable
     return typ(nullable=True)
 
 
 # ported from my_decimal.h:my_decimal_length_to_precision in mariadb
-def _decimal_length_to_precision(
-    *,
-    length: int,
-    scale: int,
-    is_unsigned: bool,
-) -> int:
+def _decimal_length_to_precision(*, length: int, scale: int, is_unsigned: bool) -> int:
     return length - (scale > 0) - (not (is_unsigned or not length))
 
 
@@ -115,18 +114,14 @@ _type_mapping = {
     "FLOAT": dt.Float32,
     "DOUBLE": dt.Float64,
     "NULL": dt.Null,
-    "TIMESTAMP": lambda nullable: dt.Timestamp(
-        timezone="UTC",
-        nullable=nullable,
-    ),
+    "TIMESTAMP": lambda nullable: dt.Timestamp(timezone="UTC", nullable=nullable),
     "LONGLONG": dt.Int64,
     "INT24": dt.Int32,
     "DATE": dt.Date,
     "TIME": dt.Time,
     "DATETIME": dt.Timestamp,
-    "YEAR": dt.Int16,
+    "YEAR": dt.Int8,
     "VARCHAR": dt.String,
-    "BIT": dt.Int8,
     "JSON": dt.JSON,
     "NEWDECIMAL": dt.Decimal,
     "ENUM": dt.String,
@@ -169,3 +164,93 @@ class _FieldFlags:
     @property
     def is_num(self) -> bool:
         return (self.NUM & self.value) != 0
+
+
+@dt.dtype.register(MySQLDialect, (sa.NUMERIC, mysql.NUMERIC))
+def sa_mysql_numeric(_, satype, nullable=True):
+    # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
+    return dt.Decimal(satype.precision or 10, satype.scale or 0, nullable=nullable)
+
+
+@dt.dtype.register(MySQLDialect, mysql.YEAR)
+@dt.dtype.register(MySQLDialect, mysql.TINYINT)
+def sa_mysql_tinyint(_, satype, nullable=True):
+    return dt.Int8(nullable=nullable)
+
+
+@dt.dtype.register(MySQLDialect, mysql.BIT)
+def sa_mysql_bit(_, satype, nullable=True):
+    if 1 <= (length := satype.length) <= 8:
+        return dt.Int8(nullable=nullable)
+    elif 9 <= length <= 16:
+        return dt.Int16(nullable=nullable)
+    elif 17 <= length <= 32:
+        return dt.Int32(nullable=nullable)
+    elif 33 <= length <= 64:
+        return dt.Int64(nullable=nullable)
+    else:
+        raise ValueError(f"Invalid MySQL BIT length: {length:d}")
+
+
+@dt.dtype.register(MySQLDialect, mysql.FLOAT)
+def sa_real(_, satype, nullable=True):
+    return dt.Float32(nullable=nullable)
+
+
+@dt.dtype.register(MySQLDialect, mysql.TIMESTAMP)
+def sa_mysql_timestamp(_, satype, nullable=True):
+    return dt.Timestamp(timezone="UTC", nullable=nullable)
+
+
+@dt.dtype.register(MySQLDialect, mysql.DATETIME)
+def sa_mysql_datetime(_, satype, nullable=True):
+    return dt.Timestamp(nullable=nullable)
+
+
+@dt.dtype.register(MySQLDialect, mysql.SET)
+def sa_mysql_set(_, satype, nullable=True):
+    return dt.Set(dt.string, nullable=nullable)
+
+
+@dt.dtype.register(MySQLDialect, mysql.DOUBLE)
+def sa_mysql_double(_, satype, nullable=True):
+    # TODO: handle asdecimal=True
+    return dt.Float64(nullable=nullable)
+
+
+@dt.dtype.register(
+    MySQLDialect,
+    (
+        mysql.TINYBLOB,
+        mysql.MEDIUMBLOB,
+        mysql.BLOB,
+        mysql.LONGBLOB,
+        mysql.BINARY,
+        mysql.VARBINARY,
+    ),
+)
+def sa_binary(_, satype, nullable=True):
+    return dt.Binary(nullable=nullable)
+
+
+# TODO(kszucs): unsigned integers
+
+
+@dt.dtype.register((mysql.DOUBLE, mysql.REAL))
+def mysql_double(satype, nullable=True):
+    return dt.Float64(nullable=nullable)
+
+
+@dt.dtype.register(mysql.FLOAT)
+def mysql_float(satype, nullable=True):
+    return dt.Float32(nullable=nullable)
+
+
+@dt.dtype.register(mysql.TINYINT)
+def mysql_tinyint(satype, nullable=True):
+    return dt.Int8(nullable=nullable)
+
+
+@dt.dtype.register(mysql.BLOB)
+def mysql_blob(satype, nullable=True):
+    return dt.Binary(nullable=nullable)

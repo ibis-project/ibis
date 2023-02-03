@@ -1,2 +1,2 @@
-SELECT COVAR_SAMP(`double_col`, `double_col`) AS `tmp`
-FROM functional_alltypes
+SELECT COVAR_SAMP(t0.`double_col`, t0.`double_col`) AS `tmp`
+FROM functional_alltypes t0

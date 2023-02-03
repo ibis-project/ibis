@@ -1,2 +1,2 @@
-SELECT ST_BUFFER(`geog`, 5.2) AS `tmp`
-FROM t
+SELECT ST_BUFFER(t0.`geog`, 5.2) AS `tmp`
+FROM t t0

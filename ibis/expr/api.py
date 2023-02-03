@@ -20,7 +20,8 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import connect
+from ibis.backends.base import BaseBackend, connect
+from ibis.expr import selectors
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema
@@ -46,6 +47,7 @@ from ibis.expr.window import (
     trailing_window,
     window,
 )
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -63,6 +65,7 @@ __all__ = (
     'date',
     'desc',
     'decompile',
+    'deferred',
     'difference',
     'e',
     'Expr',
@@ -118,6 +121,7 @@ __all__ = (
     'geo_y',
     'geo_y_max',
     'geo_y_min',
+    'get_backend',
     'greatest',
     'ifelse',
     'infer_dtype',
@@ -139,12 +143,16 @@ __all__ = (
     'pi',
     'random',
     'range_window',
-    'read',
+    'read_csv',
+    'read_json',
+    'read_parquet',
     'row_number',
     'rows_with_max_lookback',
     'schema',
     'Schema',
+    'selectors',
     'sequence',
+    'set_backend',
     'show_sql',
     'to_sql',
     'struct',
@@ -583,6 +591,7 @@ def timestamp(
 @timestamp.register(np.floating)
 @timestamp.register(int)
 @timestamp.register(float)
+@timestamp.register(ir.IntegerValue)
 def _timestamp_from_ymdhms(
     value, *args, timezone: str | None = None
 ) -> ir.TimestampScalar:
@@ -773,9 +782,7 @@ def interval(
 def case() -> bl.SearchedCaseBuilder:
     """Begin constructing a case expression.
 
-    Notes
-    -----
-    Use the `.when` method on the resulting object followed by .end to create a
+    Use the `.when` method on the resulting object followed by `.end` to create a
     complete case.
 
     Examples
@@ -783,10 +790,8 @@ def case() -> bl.SearchedCaseBuilder:
     >>> import ibis
     >>> cond1 = ibis.literal(1) == 1
     >>> cond2 = ibis.literal(2) == 1
-    >>> (ibis.case()
-    ...  .when(cond1, 3)
-    ...  .when(cond2, 4).end())
-    >>> SearchedCase(cases=(1 == 1, 2 == 1), results=(3, 4)), default=Cast(None, to=int8))
+    >>> expr = ibis.case().when(cond1, 3).when(cond2, 4).end()
+    SearchedCase(cases=(1 == 1, 2 == 1), results=(3, 4)), default=Cast(None, to=int8))
 
     Returns
     -------
@@ -802,7 +807,7 @@ def now() -> ir.TimestampScalar:
     Returns
     -------
     TimestampScalar
-        A "now" expression
+        An expression representing the current timestamp.
     """
     return ops.TimestampNow().to_expr()
 
@@ -818,17 +823,81 @@ def row_number() -> ir.IntegerColumn:
     return ops.RowNumber().to_expr()
 
 
-def read(path: str | Path, **kwargs: Any) -> ir.Table:
-    """Lazily load a data source located at `path`.
+def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
+    """Lazily load a CSV or set of CSVs.
+
+    This function delegates to the `read_csv` method on the current default
+    backend (DuckDB or `ibis.config.default_backend`).
 
     Parameters
     ----------
-    path
-        A filesystem path or URL. Supports CSV, TSV, and Parquet files.
+    sources
+        A filesystem path or URL or list of same.  Supports CSV and TSV files.
     kwargs
-        DuckDB-specific keyword arguments for the file type.
+        Backend-specific keyword arguments for the file type. For the DuckDB
+        backend used by default, please refer to:
 
         * CSV/TSV: https://duckdb.org/docs/data/csv#parameters.
+
+    Returns
+    -------
+    ir.Table
+        Table expression representing a file
+
+    Examples
+    --------
+    >>> batting = ibis.read_csv("ci/ibis-testing-data/batting.csv")
+    """
+    from ibis.config import _default_backend
+
+    con = _default_backend()
+    return con.read_csv(sources, **kwargs)
+
+
+@experimental
+def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
+    """Lazily load newline-delimited JSON data.
+
+    This function delegates to the `read_json` method on the current default
+    backend (DuckDB or `ibis.config.default_backend`).
+
+    Parameters
+    ----------
+    sources
+        A filesystem path or URL or list of same.
+    kwargs
+        Backend-specific keyword arguments for the file type. For the DuckDB
+        backend used by default, there are no valid keywork arguments.
+
+    Returns
+    -------
+    ir.Table
+        Table expression representing a file
+
+    Examples
+    --------
+    >>> t = ibis.read_json("data.json")
+    """
+    from ibis.config import _default_backend
+
+    con = _default_backend()
+    return con.read_json(sources, **kwargs)
+
+
+def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
+    """Lazily load a parquet file or set of parquet files.
+
+    This function delegates to the `read_parquet` method on the current default
+    backend (DuckDB or `ibis.config.default_backend`).
+
+    Parameters
+    ----------
+    sources
+        A filesystem path or URL or list of same.
+    kwargs
+        Backend-specific keyword arguments for the file type. For the DuckDB
+        backend used by default, please refer to:
+
         * Parquet: https://duckdb.org/docs/data/parquet
 
     Returns
@@ -838,14 +907,67 @@ def read(path: str | Path, **kwargs: Any) -> ir.Table:
 
     Examples
     --------
-    >>> batting = ibis.read("ci/ibis-testing-data/batting.csv")
-    >>> diamonds = ibis.read("ci/ibis-testing-data/parquet/diamonds/diamonds.parquet")
-    >>> ft = ibis.read("parquet://ci/ibis-testing-data/parquet/functional_alltypes/*")
+    >>> batting = ibis.read_parquet("ci/ibis-testing-data/parquet/batting/batting.parquet")
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.register(str(path), **kwargs)
+    return con.read_parquet(sources, **kwargs)
+
+
+def set_backend(backend: str | BaseBackend) -> None:
+    """Set the default Ibis backend.
+
+    Parameters
+    ----------
+    backend
+        May be a backend name or URL, or an existing backend instance.
+
+    Examples
+    --------
+    May pass the backend as a name:
+    >>> ibis.set_backend("polars")
+
+    Or as a URI:
+    >>> ibis.set_backend("postgres://user:password@hostname:5432")
+
+    Or as an existing backend instance:
+    >>> ibis.set_backend(ibis.duckdb.connect())
+    """
+    import ibis
+
+    if isinstance(backend, str) and backend.isidentifier():
+        try:
+            backend_type = getattr(ibis, backend)
+        except AttributeError:
+            pass
+        else:
+            backend = backend_type.connect()
+    if isinstance(backend, str):
+        backend = ibis.connect(backend)
+
+    ibis.options.default_backend = backend
+
+
+def get_backend(expr: Expr | None = None) -> BaseBackend:
+    """Get the current Ibis backend to use for a given expression.
+
+    Parameters
+    ----------
+    expr
+        An expression to get the backend from. If not passed, the default
+        backend is returned.
+
+    Returns
+    -------
+    BaseBackend
+        The Ibis backend.
+    """
+    if expr is None:
+        from ibis.config import _default_backend
+
+        return _default_backend()
+    return expr._find_backend(use_default=True)
 
 
 e = ops.E().to_expr()
@@ -922,4 +1044,27 @@ union = ir.Table.union
 intersect = ir.Table.intersect
 difference = ir.Table.difference
 
-_ = Deferred()
+_ = deferred = Deferred()
+"""Deferred expression object.
+
+Use this object to refer to a previous table expression in a chain of
+expressions.
+
+!!! note "`_` may conflict with other idioms in Python"
+
+    See https://github.com/ibis-project/ibis/issues/4704 for details.
+
+    Use `from ibis import deferred as <NAME>` to assign a different name to
+    the deferred object builder.
+
+Examples
+--------
+>>> from ibis import _
+>>> t = ibis.table(dict(key="int", value="float"), name="t")
+>>> expr = t.group_by(key=_.key - 1).agg(total=_.value.sum())
+>>> expr.schema()
+ibis.Schema {
+  key    int64
+  total  float64
+}
+"""

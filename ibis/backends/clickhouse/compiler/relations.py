@@ -5,6 +5,7 @@ from functools import partial
 
 import sqlglot as sg
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.clickhouse.compiler.values import translate_val
@@ -13,7 +14,7 @@ from ibis.backends.clickhouse.compiler.values import translate_val
 @functools.singledispatch
 def translate_rel(op: ops.TableNode, **_):
     """Translate a table node into sqlglot."""
-    raise NotImplementedError(type(op))
+    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
 
 @translate_rel.register(ops.DummyTable)
@@ -78,7 +79,7 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
     sel = sg.select(*selections).from_(table)
 
     if by:
-        sel = sel.group_by(*by, dialect="clickhouse")
+        sel = sel.group_by(*map(str, range(1, len(by) + 1)), dialect="clickhouse")
 
     if predicates := op.predicates:
         sel = sel.where(*map(tr_val, predicates), dialect="clickhouse")

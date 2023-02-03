@@ -1,2 +1,2 @@
-SELECT DATE_TRUNC(`a`, YEAR) AS `tmp`
-FROM t
+SELECT DATE_TRUNC(t0.`a`, YEAR) AS `tmp`
+FROM t t0

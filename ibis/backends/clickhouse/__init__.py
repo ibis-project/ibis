@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import contextlib
 import json
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
@@ -80,16 +81,19 @@ class Backend(BaseBackend):
         ----------
         temp_db : str
             Database to use for temporary objects.
+        bool_type : str
+            Type to use for boolean columns
         """
 
         temp_db: str = "__ibis_tmp"
+        bool_type: str = "Boolean"
 
     def __init__(self, *args, external_tables=None, **kwargs):
         super().__init__(*args, **kwargs)
         self._external_tables = external_tables or {}
 
-    def _register_in_memory_table(self, table_op):
-        self._external_tables[table_op.name] = table_op.data.to_frame()
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        self._external_tables[op.name] = op.data.to_frame()
 
     def _log(self, sql: str) -> None:
         """Log the SQL, usually to the standard output.
@@ -132,10 +136,8 @@ class Backend(BaseBackend):
         return self.connect(**kwargs)
 
     def _convert_kwargs(self, kwargs):
-        try:
+        with contextlib.suppress(KeyError):
             kwargs["secure"] = bool(ast.literal_eval(kwargs["secure"]))
-        except KeyError:
-            pass
 
     def do_connect(
         self,
@@ -292,7 +294,7 @@ class Backend(BaseBackend):
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
-            Number of rows in each returned record batch.
+            Maximum number of rows in each returned record batch.
 
         Returns
         -------
@@ -301,21 +303,16 @@ class Backend(BaseBackend):
         """
         pa = self._import_pyarrow()
 
-        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
-
-        schema = self._table_or_column_schema(expr)
-
-        def _batches():
+        schema = expr.as_table().schema()
+        array_type = schema.as_struct().to_pyarrow()
+        batches = (
+            pa.RecordBatch.from_struct_array(pa.array(batch, type=array_type))
             for batch in self._cursor_batches(
                 expr, params=params, limit=limit, chunk_size=chunk_size
-            ):
-                struct_array = pa.array(
-                    map(tuple, batch),
-                    type=ibis_to_pyarrow_struct(schema),
-                )
-                yield pa.RecordBatch.from_struct_array(struct_array)
+            )
+        )
 
-        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)
 
     def _cursor_batches(
         self,

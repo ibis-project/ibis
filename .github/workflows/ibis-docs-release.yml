@@ -6,7 +6,7 @@ on:
       - published
 jobs:
   docs:
-    concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
+    concurrency: docs-${{ github.repository }}
     runs-on: ubuntu-latest
     steps:
       - name: install nix
@@ -48,4 +48,5 @@ jobs:
 
       - name: build and push docs on tag
         run: |
-          nix develop --ignore-environment -c mike deploy --push --rebase --update-aliases --prefix docs --message "docs(release): ibis@${GITHUB_REF_NAME}" "${GITHUB_REF_NAME}" latest
+          nix develop --ignore-environment -c \
+            mkdocs gh-deploy --message "docs(release): ibis@${GITHUB_REF_NAME}" "${GITHUB_REF_NAME}"

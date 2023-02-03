@@ -13,7 +13,8 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
-from ibis.util import UnnamedMarker, experimental
+from ibis.util import experimental
+from rich.jupyter import JupyterMixin
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -21,6 +22,15 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
     from ibis.expr.typing import TimeContext
+
+
+class _FixedTextJupyterMixin(JupyterMixin):
+    """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+
+    def _repr_mimebundle_(self, *args, **kwargs):
+        bundle = super()._repr_mimebundle_(*args, **kwargs)
+        bundle["text/plain"] = bundle["text/plain"].rstrip()
+        return bundle
 
 
 # TODO(kszucs): consider to subclass from Annotable with a single _arg field
@@ -64,6 +74,25 @@ class Expr(Immutable):
         return fmt(self)
 
     def equals(self, other):
+        """Return whether this expression is _structurally_ equivalent to `other`.
+
+        If you want to produce an equality expression, use `==` syntax.
+
+        Parameters
+        ----------
+        other
+            Another expression
+
+        Examples
+        --------
+        >>> t1 = ibis.table(dict(a="int"), name="t")
+        >>> t2 = ibis.table(dict(a="int"), name="t")
+        >>> t1.equals(t2)
+        True
+        >>> v = ibis.table(dict(a="string"), name="v")
+        >>> t1.equals(v)
+        False
+        """
         if not isinstance(other, Expr):
             raise TypeError(
                 f"invalid equality comparison between Expr and {type(other)}"
@@ -76,9 +105,11 @@ class Expr(Immutable):
     __nonzero__ = __bool__
 
     def has_name(self):
+        """Check whether this expression has an explicit name."""
         return isinstance(self._arg, ops.Named)
 
     def get_name(self):
+        """Return the name of this expression."""
         return self._arg.name
 
     def _repr_png_(self) -> bytes | None:
@@ -101,7 +132,7 @@ class Expr(Immutable):
         label_edges: bool = False,
         verbose: bool = False,
     ) -> None:
-        """Visualize an expression in the browser.
+        """Visualize an expression as a GraphViz graph in the browser.
 
         Parameters
         ----------
@@ -112,11 +143,6 @@ class Expr(Immutable):
             Show operation input names as edge labels
         verbose
             Print the graphviz DOT code to stderr if [`True`][True]
-
-        Notes
-        -----
-        This method opens a web browser tab showing the image of the expression
-        graph created by the code in [ibis.expr.visualize][].
 
         Raises
         ------
@@ -177,7 +203,7 @@ class Expr(Immutable):
         else:
             return f(self, *args, **kwargs)
 
-    def op(self) -> ops.Node:
+    def op(self) -> ops.Node:  # noqa: D102
         return self._arg
 
     def _find_backends(self) -> tuple[list[BaseBackend], bool]:
@@ -232,8 +258,7 @@ class Expr(Immutable):
                     "assign a backend instance to "
                     "`ibis.options.default_backend`."
                 )
-            if (default := options.default_backend) is None and use_default:
-                default = _default_backend()
+            default = _default_backend() if use_default else None
             if default is None:
                 raise IbisError(
                     'Expression depends on no backends, and found no default'
@@ -241,7 +266,7 @@ class Expr(Immutable):
             return default
 
         if len(backends) > 1:
-            raise ValueError('Multiple backends found')
+            raise IbisError('Multiple backends found for this expression')
 
         return backends[0]
 
@@ -326,7 +351,7 @@ class Expr(Immutable):
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
-            Number of rows in each returned record batch.
+            Maximum number of rows in each returned record batch.
         kwargs
             Keyword arguments
 
@@ -335,7 +360,7 @@ class Expr(Immutable):
         results
             RecordBatchReader
         """
-        return self._find_backend().to_pyarrow_batches(
+        return self._find_backend(use_default=True).to_pyarrow_batches(
             self,
             params=params,
             limit=limit,
@@ -371,7 +396,7 @@ class Expr(Immutable):
         Table
             A pyarrow table holding the results of the executed expression.
         """
-        return self._find_backend().to_pyarrow(
+        return self._find_backend(use_default=True).to_pyarrow(
             self, params=params, limit=limit, **kwargs
         )
 
@@ -384,9 +409,6 @@ class Expr(Immutable):
     def as_table(self) -> ir.Table:
         """Convert an expression to a table."""
         raise NotImplementedError(type(self))
-
-
-unnamed = UnnamedMarker()
 
 
 def _binop(

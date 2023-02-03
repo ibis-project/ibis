@@ -1,5 +1,5 @@
-SELECT `b`, sum(`a`) AS `sum`
-FROM t
-WHERE `b` = 'm'
+SELECT t0.`b`, sum(t0.`a`) AS `sum`
+FROM t t0
+WHERE t0.`b` = 'm'
 GROUP BY 1
-HAVING max(`a`) = 2
+HAVING max(t0.`a`) = 2

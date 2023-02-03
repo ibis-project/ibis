@@ -319,7 +319,9 @@ class NumericColumn(Column, NumericValue):
             "higher",
             "midpoint",
             "nearest",
-        ] = "linear",
+        ]
+        | None = None,
+        where: ir.BooleanValue | None = None,
     ) -> NumericScalar:
         """Return value at the given quantile.
 
@@ -328,8 +330,10 @@ class NumericColumn(Column, NumericValue):
         quantile
             `0 <= quantile <= 1`, the quantile(s) to compute
         interpolation
-            This optional parameter specifies the interpolation method to use,
-            when the desired quantile lies between two data points `i` and `j`:
+            !!! warning "This parameter is backend dependent and may have no effect"
+
+            This parameter specifies the interpolation method to use, when the
+            desired quantile lies between two data points `i` and `j`:
 
             * linear: `i + (j - i) * fraction`, where `fraction` is the
               fractional part of the index surrounded by `i` and `j`.
@@ -337,6 +341,8 @@ class NumericColumn(Column, NumericValue):
             * higher: `j`.
             * nearest: `i` or `j` whichever is nearest.
             * midpoint: (`i` + `j`) / 2.
+        where
+            Boolean filter for input values
 
         Returns
         -------
@@ -347,7 +353,7 @@ class NumericColumn(Column, NumericValue):
             op = ops.MultiQuantile
         else:
             op = ops.Quantile
-        return op(self, quantile, interpolation).to_expr()
+        return op(self, quantile, interpolation, where=where).to_expr()
 
     def std(
         self,
@@ -460,6 +466,7 @@ class NumericColumn(Column, NumericValue):
         return ops.Mean(self, where=where).to_expr()
 
     def cummean(self) -> NumericColumn:
+        """Return the cumulative mean of the input."""
         return ops.CumulativeMean(self).to_expr()
 
     def sum(
@@ -481,6 +488,7 @@ class NumericColumn(Column, NumericValue):
         return ops.Sum(self, where=where).to_expr()
 
     def cumsum(self) -> NumericColumn:
+        """Return the cumulative sum of the input."""
         return ops.CumulativeSum(self).to_expr()
 
     def bucket(
@@ -781,25 +789,7 @@ class FloatingColumn(NumericColumn, FloatingValue):
 
 @public
 class DecimalValue(NumericValue):
-    def precision(self) -> IntegerValue:
-        """Return the precision of `arg`.
-
-        Returns
-        -------
-        IntegerValue
-            The precision of the expression.
-        """
-        return ops.DecimalPrecision(self).to_expr()
-
-    def scale(self) -> IntegerValue:
-        """Return the scale of `arg`.
-
-        Returns
-        -------
-        IntegerValue
-            The scale of the expression.
-        """
-        return ops.DecimalScale(self).to_expr()
+    pass
 
 
 @public

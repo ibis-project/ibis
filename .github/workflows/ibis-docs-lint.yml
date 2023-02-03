@@ -60,7 +60,7 @@ jobs:
 
       # run against the full shell.nix on push so it gets pushed to cachix
       - name: pre-commit checks
-        run: nix develop '.#preCommit' --ignore-environment --keep-going -c pre-commit run --all-files
+        run: nix develop '.#preCommit' --ignore-environment --keep-going -c pre-commit run --all-files --show-diff-on-failure --color=always
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -147,7 +147,7 @@ jobs:
   docs_push:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
+    concurrency: docs-${{ github.repository }}
     needs:
       # wait on benchmarks to prevent a race condition when pushing to the
       # gh-pages branch
@@ -189,7 +189,7 @@ jobs:
       - name: build and push dev docs
         run: |
           nix develop --ignore-environment -c \
-            mike deploy --push --rebase --prefix docs --message 'docs(dev): ibis@${{ github.sha }}' dev
+            mkdocs gh-deploy --message 'docs: ibis@${{ github.sha }}'
 
   simulate_release:
     runs-on: ubuntu-latest

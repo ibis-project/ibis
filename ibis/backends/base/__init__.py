@@ -20,18 +20,16 @@ from typing import (
     MutableMapping,
 )
 
-if TYPE_CHECKING:
-    import pandas as pd
-    import pyarrow as pa
-
-    import ibis.expr.schema as sch
-
 import ibis
 import ibis.common.exceptions as exc
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import pyarrow as pa
 
 __all__ = ('BaseBackend', 'Database', 'connect')
 
@@ -206,32 +204,27 @@ class TablesAccessor(collections.abc.Mapping):
         )
         return list(o)
 
+    def __repr__(self) -> str:
+        tables = self._backend.list_tables()
+        rows = ["Tables", "------"]
+        rows.extend(f"- {name}" for name in sorted(tables))
+        return "\n".join(rows)
+
     def _ipython_key_completions_(self) -> list[str]:
         return self._backend.list_tables()
 
 
-# should have a better name
-class ResultHandler:
+class _FileIOHandler:
     @staticmethod
     def _import_pyarrow():
         try:
-            import pyarrow
+            import pyarrow  # noqa: ICN001
         except ImportError:
             raise ModuleNotFoundError(
                 "Exporting to arrow formats requires `pyarrow` but it is not installed"
             )
         else:
             return pyarrow
-
-    @staticmethod
-    def _table_or_column_schema(expr: ir.Expr) -> sch.Schema:
-        from ibis.backends.pyarrow.datatypes import sch
-
-        if isinstance(expr, ir.Table):
-            return expr.schema()
-        else:
-            # ColumnExpr has no schema method, define single-column schema
-            return sch.schema([(expr.get_name(), expr.type())])
 
     @util.experimental
     def to_pyarrow(
@@ -275,7 +268,7 @@ class ResultHandler:
         except ValueError:
             # The pyarrow batches iterator is empty so pass in an empty
             # iterator and a pyarrow schema
-            schema = self._table_or_column_schema(expr)
+            schema = expr.as_table().schema()
             table = pa.Table.from_batches([], schema=schema.to_pyarrow())
 
         if isinstance(expr, ir.Table):
@@ -317,7 +310,7 @@ class ResultHandler:
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
-            Number of rows in each returned record batch.
+            Maximum number of rows in each returned record batch.
         kwargs
             Keyword arguments
 
@@ -328,8 +321,56 @@ class ResultHandler:
         """
         raise NotImplementedError
 
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current backend.
 
-class BaseBackend(abc.ABC, ResultHandler):
+        Parameters
+        ----------
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the backend loading function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        raise NotImplementedError(
+            f"{self.name} does not support direct registration of parquet data."
+        )
+
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current backend.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the CSV file.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the backend loading function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        raise NotImplementedError(
+            f"{self.name} does not support direct registration of CSV data."
+        )
+
+
+class BaseBackend(abc.ABC, _FileIOHandler):
     """Base backend class.
 
     All Ibis backends must subclass this class and implement all the
@@ -520,6 +561,23 @@ class BaseBackend(abc.ABC, ResultHandler):
         -------
         list[str]
             The list of the table names that match the pattern `like`.
+        """
+
+    @abc.abstractmethod
+    def table(self, name: str, database: str | None = None) -> ir.Table:
+        """Construct a table expression.
+
+        Parameters
+        ----------
+        name
+            Table name
+        database
+            Database name
+
+        Returns
+        -------
+        Table
+            Table expression
         """
 
     @functools.cached_property

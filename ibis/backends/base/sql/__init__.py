@@ -6,8 +6,6 @@ import os
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
-import sqlalchemy as sa
-
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -46,6 +44,8 @@ class BaseSQLBackend(BaseBackend):
         BaseBackend
             A backend instance
         """
+        import sqlalchemy as sa
+
         url = sa.engine.make_url(url)
 
         kwargs = {}
@@ -112,26 +112,17 @@ class BaseSQLBackend(BaseBackend):
     def _get_schema_using_query(self, query):
         raise NotImplementedError(f"Backend {self.name} does not support .sql()")
 
-    def raw_sql(self, query: str) -> Any:
+    def raw_sql(self, query: str):
         """Execute a query string.
 
-        Could have unexpected results if the query modifies the behavior of
-        the session in a way unknown to Ibis; be careful.
+        !!! warning "The returned cursor object must be **manually** released if results are returned."
 
         Parameters
         ----------
         query
-            DML or DDL statement
-
-        Returns
-        -------
-        Any
-            Backend cursor
+            DDL or DML statement
         """
-        # TODO `self.con` is assumed to be defined in subclasses, but there
-        # is nothing that enforces it. We should find a way to make sure
-        # `self.con` is always a DBAPI2 connection, or raise an error
-        cursor = self.con.execute(query)  # type: ignore
+        cursor = self.con.execute(query)
         if cursor:
             return cursor
         cursor.release()
@@ -163,7 +154,7 @@ class BaseSQLBackend(BaseBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
-        **kwargs: Any,
+        **_: Any,
     ) -> pa.ipc.RecordBatchReader:
         """Execute expression and return an iterator of pyarrow record batches.
 
@@ -180,32 +171,26 @@ class BaseSQLBackend(BaseBackend):
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
-            Number of rows in each returned record batch.
-        kwargs
-            Keyword arguments
+            Maximum number of rows in each returned record batch.
 
         Returns
         -------
-        results
-            RecordBatchReader
+        RecordBatchReader
+            Collection of pyarrow `RecordBatch`s.
         """
         pa = self._import_pyarrow()
 
-        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_struct
-
-        schema = self._table_or_column_schema(expr)
-
-        def _batches():
+        schema = expr.as_table().schema()
+        array_type = schema.as_struct().to_pyarrow()
+        arrays = (
+            pa.array(map(tuple, batch), type=array_type)
             for batch in self._cursor_batches(
                 expr, params=params, limit=limit, chunk_size=chunk_size
-            ):
-                struct_array = pa.array(
-                    map(tuple, batch),
-                    type=ibis_to_pyarrow_struct(schema),
-                )
-                yield pa.RecordBatch.from_struct_array(struct_array)
+            )
+        )
+        batches = map(pa.RecordBatch.from_struct_array, arrays)
 
-        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), _batches())
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)
 
     def execute(
         self,
@@ -263,10 +248,10 @@ class BaseSQLBackend(BaseBackend):
 
         return result
 
-    def _register_in_memory_table(self, table_op):
-        raise NotImplementedError
+    def _register_in_memory_table(self, _: ops.InMemoryTable) -> None:
+        raise NotImplementedError(self.name)
 
-    def _register_in_memory_tables(self, expr):
+    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         if self.compiler.cheap_in_memory_tables:
             for memtable in an.find_memtables(expr.op()):
                 self._register_in_memory_table(memtable)

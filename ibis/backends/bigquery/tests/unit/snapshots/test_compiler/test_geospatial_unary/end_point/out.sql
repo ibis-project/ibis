@@ -1,2 +1,2 @@
-SELECT ST_ENDPOINT(`geog`) AS `tmp`
-FROM t
+SELECT ST_ENDPOINT(t0.`geog`) AS `tmp`
+FROM t t0

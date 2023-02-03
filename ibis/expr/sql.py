@@ -26,6 +26,7 @@ class Catalog(Dict[str, sch.Schema]):
         dt.Int16: "smallint",
         dt.Int32: "int",
         dt.Int64: "bigint",
+        dt.Float16: "halffloat",
         dt.Float32: "float",
         dt.Float64: "double",
         dt.Decimal: "decimal",
@@ -40,15 +41,17 @@ class Catalog(Dict[str, sch.Schema]):
         dt.Map: "map",
         dt.UUID: "uuid",
         dt.Struct: "struct",
-        dt.Geography: "geography",
-        dt.Geometry: "geometry",
     }
 
+    def to_sqlglot_dtype(self, dtype: dt.DataType) -> str:
+        if dtype.is_geospatial():
+            return dtype.geotype
+        else:
+            default = dtype.__class__.__name__.lower()
+            return self.typemap.get(type(dtype), default)
+
     def to_sqlglot_schema(self, schema: sch.Schema) -> dict[str, str]:
-        return {
-            name: self.typemap.get(type(dtype), str(dtype))
-            for name, dtype in schema.items()
-        }
+        return {name: self.to_sqlglot_dtype(dtype) for name, dtype in schema.items()}
 
     def to_sqlglot(self):
         return {
@@ -230,7 +233,7 @@ def convert_binary(binary, catalog):
         # expr is a table expression
         assert len(expr.columns) == 1
         name = expr.columns[0]
-        expr = expr.get_column(name)
+        expr = expr[name]
 
     return op(this, expr)
 
@@ -321,8 +324,29 @@ def show_sql(
     print(to_sql(expr, dialect=dialect), file=file)
 
 
+class SQLString:
+    """Object to hold a formatted SQL string.
+
+    Syntax highlights in Jupyter notebooks.
+    """
+
+    __slots__ = ("sql",)
+
+    def __init__(self, sql: str) -> None:
+        self.sql = sql
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(sql={self.sql!r})"
+
+    def __str__(self) -> str:
+        return self.sql
+
+    def _repr_markdown_(self) -> str:
+        return f"```sql\n{str(self)}\n```"
+
+
 @public
-def to_sql(expr: ir.Expr, dialect: str | None = None) -> str:
+def to_sql(expr: ir.Expr, dialect: str | None = None) -> SQLString:
     """Return the formatted SQL string for an expression.
 
     Parameters
@@ -360,11 +384,23 @@ def to_sql(expr: ir.Expr, dialect: str | None = None) -> str:
 
     compiled = backend.compile(expr)
     try:
-        sql = str(compiled.compile(compile_kwargs={"literal_binds": True}))
-    except (AttributeError, TypeError):
+        import sqlalchemy as sa
+
+        dialect_class = sa.dialects.registry.load(
+            backend.compiler.translator_class._dialect_name
+        )
+        # translate using question-mark-style bound parameter syntax for all
+        # backends, since sqlglot only supports qmark style
+        sql = compiled.compile(
+            dialect=dialect_class(paramstyle="qmark"),
+            compile_kwargs=dict(literal_binds=True),
+        )
+    except (ImportError, AttributeError, TypeError):
+        # ImportError is caught in case the dialect isn't installed. While it's
+        # probably rare that someone is trying to compile an X-backend
+        # expression and doesn't have the driver installed, we don't need to
+        # fail when showing its SQL
         sql = compiled
 
-    assert isinstance(sql, str), f"expected `str`, got `{sql.__class__.__name__}`"
-    (pretty,) = sg.transpile(sql, read=read, write=write, pretty=True)
-
-    return pretty
+    (pretty,) = sg.transpile(str(sql), read=read, write=write, pretty=True)
+    return SQLString(pretty)

@@ -1,3 +1,4 @@
+import contextlib
 import datetime
 import operator
 import warnings
@@ -76,7 +77,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             methodcaller('millisecond'),
             359,
             id='millisecond',
-            marks=[pytest.mark.notimpl(["clickhouse", "pyspark"])],
+            marks=[pytest.mark.notimpl(["pyspark"])],
         ),
         param(
             lambda x: x.day_of_week.index(),
@@ -91,13 +92,13 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "snowflake"])
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract_literal(con, func, expected):
     value = ibis.timestamp('2015-09-01 14:48:05.359')
     assert con.execute(func(value).name("tmp")) == expected
 
 
-@pytest.mark.notimpl(["datafusion", "clickhouse", "snowflake"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["sqlite", "pyspark"])
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
@@ -119,7 +120,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
     expr = alltypes.timestamp_col.week_of_year().name('tmp')
     result = expr.execute()
@@ -359,7 +360,6 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                     "bigquery",
                     "clickhouse",
                     "dask",
-                    "duckdb",
                     "impala",
                     "mysql",
                     "pandas",
@@ -392,13 +392,13 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ).dt.floor("s"),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.notimpl(["bigquery", "duckdb", "pyspark", "snowflake"]),
+            marks=pytest.mark.notimpl(["bigquery", "pyspark", "snowflake"]),
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.date(date_value),
             lambda t, _: t.timestamp_col.dt.floor('d') - date_value,
             id='date-subtract-date',
-            marks=pytest.mark.notimpl(["bigquery", "pyspark", "snowflake"]),
+            marks=pytest.mark.notimpl(["bigquery", "pyspark"]),
         ),
     ],
 )
@@ -462,13 +462,43 @@ def test_temporal_binop_pandas_timedelta(
 
 
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
-@pytest.mark.notimpl(["bigquery", "mssql"])
+@pytest.mark.notimpl(["bigquery"])
 def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
-    comparison_fn = getattr(operator, func_name)
     ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
+
+    comparison_fn = getattr(operator, func_name)
     expr = alltypes.filter(
         comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
     )
+
+    col = df.timestamp_col.dt.tz_localize("UTC")
+    expected = df[comparison_fn(col, ts)]
+    result = con.execute(expr)
+
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "func_name",
+    [
+        param("gt", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param("ge", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param("lt", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param("le", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        "eq",
+        "ne",
+    ],
+)
+@pytest.mark.notimpl(["bigquery"])
+def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name):
+    ts = np.datetime64('2010-03-02 00:00:00.000123')
+
+    comparison_fn = getattr(operator, func_name)
+    expr = alltypes.filter(
+        comparison_fn(alltypes.timestamp_col.cast("timestamp('UTC')"), ts)
+    )
+
+    ts = pd.Timestamp(ts.item(), tz="UTC")
 
     col = df.timestamp_col.dt.tz_localize("UTC")
     expected = df[comparison_fn(col, ts)]
@@ -574,13 +604,13 @@ unit_factors = {'s': 10**9, 'ms': 10**6, 'us': 10**3, 'ns': 1}
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite"])
 def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
 
     ts = ibis.timestamp('2018-04-13 09:54:11.872832')
-    pandas_ts = ibis.pandas.execute(ts).floor(unit).value
+    pandas_ts = pd.Timestamp(ibis.pandas.execute(ts)).floor(unit).value
 
     # convert the now timestamp to the input unit being tested
     int_expr = ibis.literal(pandas_ts // factor)
@@ -599,7 +629,8 @@ def test_integer_to_timestamp(backend, con, unit):
             '%m/%d/%y',
             id="mysql_format",
             marks=pytest.mark.never(
-                ["pyspark"], reason="datetime formatting style not supported"
+                ["pyspark", "snowflake"],
+                reason="datetime formatting style not supported",
             ),
         ),
         param(
@@ -621,7 +652,6 @@ def test_integer_to_timestamp(backend, con, unit):
         'sqlite',
         'impala',
         'datafusion',
-        'snowflake',
         'mssql',
     ]
 )
@@ -712,7 +742,7 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql"])
 def test_now(con):
     expr = ibis.now()
     result = con.execute(expr.name("tmp"))
@@ -725,7 +755,7 @@ def test_now(con):
 
 
 @pytest.mark.notimpl(["dask"], reason="Limit #2553")
-@pytest.mark.notimpl(["datafusion", "snowflake", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 def test_now_from_projection(alltypes):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
@@ -742,16 +772,16 @@ def test_now_from_projection(alltypes):
     tm.assert_series_equal(ts.dt.year, year_expected)
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["impala"])
 def test_date_literal(con):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
     assert result.strftime('%Y-%m-%d') == '2022-02-04'
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "snowflake"])
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["impala"])
 def test_timestamp_literal(con):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
     result = con.execute(expr)
@@ -774,33 +804,34 @@ def test_timestamp_literal(con):
 def test_time_literal(con):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
-    try:
+    with contextlib.suppress(AttributeError):
         result = result.to_pytimedelta()
-    except AttributeError:
-        pass
     assert str(result) == '16:20:00'
 
 
-@pytest.mark.notimpl(
-    [
-        "pandas",
-        "datafusion",
-        "mysql",
-        "dask",
-        "pyspark",
-        "snowflake",
-    ]
-)
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["impala"])
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
-    tbl = alltypes[
-        expr.name('timestamp_col'),
-    ]
+    tbl = alltypes[expr.name('timestamp_col')]
     result = con.execute(tbl)
 
     golden = df.timestamp_col.dt.date.astype('datetime64[ns]')
+    tm.assert_series_equal(golden, result.timestamp_col)
+
+
+@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark"])
+@pytest.mark.notyet(["impala"])
+def test_timestamp_column_from_ymdhms(con, alltypes, df):
+    c = alltypes.timestamp_col
+    expr = ibis.timestamp(
+        c.year(), c.month(), c.day(), c.hour(), c.minute(), c.second()
+    )
+    tbl = alltypes[expr.name('timestamp_col')]
+    result = con.execute(tbl)
+
+    golden = df.timestamp_col.dt.floor("s").astype('datetime64[ns]')
     tm.assert_series_equal(golden, result.timestamp_col)
 
 
@@ -829,8 +860,8 @@ def test_date_column_from_iso(con, alltypes, df):
     tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))
 
 
-@pytest.mark.notimpl(["datafusion", "snowflake"])
-@pytest.mark.notyet(["clickhouse", "pyspark"])
+@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notyet(["pyspark"])
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
     millis = timestamp.millisecond()
@@ -838,7 +869,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     assert result == 333
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -846,7 +877,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["bigquery", "datafusion"])
+@pytest.mark.notimpl(["datafusion"])
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -930,3 +961,50 @@ def test_large_timestamp(con):
     expr = ibis.timestamp("4567-01-01 00:00:00")
     result = con.execute(expr)
     assert result.replace(tzinfo=None) == huge_timestamp
+
+
+@pytest.mark.parametrize(
+    ("ts", "scale", "unit"),
+    [
+        param(
+            '2023-01-07 13:20:05.561',
+            3,
+            "ms",
+            id="ms",
+            marks=pytest.mark.broken(["mssql"], reason="incorrect result"),
+        ),
+        param(
+            '2023-01-07 13:20:05.561021',
+            6,
+            "us",
+            id="us",
+            marks=[
+                pytest.mark.broken(["mssql"], reason="incorrect result"),
+                pytest.mark.notyet(["sqlite"], reason="doesn't support microseconds"),
+            ],
+        ),
+        param(
+            '2023-01-07 13:20:05.561000231',
+            9,
+            "ns",
+            id="ns",
+            marks=[
+                pytest.mark.broken(
+                    ["clickhouse", "duckdb", "impala", "pyspark", "trino", "snowflake"],
+                    reason="drivers appear to truncate nanos",
+                ),
+                pytest.mark.notyet(
+                    ["bigquery", "mssql", "postgres", "sqlite"],
+                    reason="doesn't support nanoseconds",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.notyet(["mysql"])
+def test_timestamp_precision_output(con, ts, scale, unit):
+    dtype = dt.Timestamp(scale=scale)
+    expr = ibis.literal(ts).cast(dtype)
+    result = con.execute(expr)
+    expected = pd.Timestamp(ts).floor(unit)
+    assert result == expected

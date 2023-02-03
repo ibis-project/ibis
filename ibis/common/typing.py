@@ -10,11 +10,14 @@ import toolz
 if sys.version_info >= (3, 9):
 
     @toolz.memoize
-    def evaluate_typehint(hint, module_name) -> Any:
+    def evaluate_typehint(hint, module_name=None) -> Any:
         if isinstance(hint, str):
             hint = ForwardRef(hint)
         if isinstance(hint, ForwardRef):
-            globalns = sys.modules[module_name].__dict__
+            if module_name is None:
+                globalns = {}
+            else:
+                globalns = sys.modules[module_name].__dict__
             return hint._evaluate(globalns, locals(), frozenset())
         else:
             return hint
@@ -26,7 +29,10 @@ else:
         if isinstance(hint, str):
             hint = ForwardRef(hint)
         if isinstance(hint, ForwardRef):
-            globalns = sys.modules[module_name].__dict__
+            if module_name is None:
+                globalns = {}
+            else:
+                globalns = sys.modules[module_name].__dict__
             return hint._evaluate(globalns, locals())
         else:
             return hint

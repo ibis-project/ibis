@@ -87,10 +87,7 @@ argidx_not_grouped_marks = [
     "datafusion",
     "impala",
     "mysql",
-    "postgres",
-    "pyspark",
     "sqlite",
-    "snowflake",
     "polars",
     "mssql",
 ]
@@ -101,14 +98,14 @@ def make_argidx_params(marks):
     marks = pytest.mark.notyet(marks)
     return [
         param(
-            lambda t: t.timestamp_col.argmin(t.int_col),
-            lambda s: s.timestamp_col.iloc[s.int_col.argmin()],
+            lambda t: t.timestamp_col.argmin(t.id),
+            lambda s: s.timestamp_col.iloc[s.id.argmin()],
             id='argmin',
             marks=marks,
         ),
         param(
-            lambda t: t.double_col.argmax(t.int_col),
-            lambda s: s.double_col.iloc[s.int_col.argmax()],
+            lambda t: t.double_col.argmax(t.id),
+            lambda s: s.double_col.iloc[s.id.argmax()],
             id='argmax',
             marks=marks,
         ),
@@ -183,7 +180,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
 
     @reduction(
         input_type=[dt.double],
-        output_type=dt.Struct(['mean', 'std'], [dt.double, dt.double]),
+        output_type=dt.Struct({'mean': dt.double, 'std': dt.double}),
     )
     def mean_and_std(v):
         return v.mean(), v.std()
@@ -220,6 +217,12 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.bool_col.count(where=where),
             lambda t, where: len(t.bool_col[where].dropna()),
             id='count',
+        ),
+        param(
+            lambda t, where: t.bool_col.nunique(where=where),
+            lambda t, where: t.bool_col[where].dropna().nunique(),
+            id='nunique',
+            marks=pytest.mark.notimpl(["polars", "pyspark", "datafusion"]),
         ),
         param(
             lambda t, _: t.bool_col.any(),
@@ -307,17 +310,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmin()],
             id='argmin',
             marks=pytest.mark.notyet(
-                [
-                    "impala",
-                    "mysql",
-                    "postgres",
-                    "pyspark",
-                    "sqlite",
-                    "snowflake",
-                    "polars",
-                    "datafusion",
-                    "mssql",
-                ]
+                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql"]
             ),
         ),
         param(
@@ -325,17 +318,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmax()],
             id='argmax',
             marks=pytest.mark.notyet(
-                [
-                    "impala",
-                    "mysql",
-                    "postgres",
-                    "pyspark",
-                    "sqlite",
-                    "snowflake",
-                    "polars",
-                    "datafusion",
-                    "mssql",
-                ]
+                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql"]
             ),
         ),
         param(
@@ -378,7 +361,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'postgres',
                     'mysql',
                     'sqlite',
-                    'snowflake',
                     'polars',
                     'datafusion',
                     "mssql",
@@ -395,7 +377,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'postgres',
                     'mysql',
                     'sqlite',
-                    'snowflake',
                     'polars',
                     'datafusion',
                     "mssql",
@@ -450,9 +431,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: np.bitwise_and.reduce(t.bigint_col[where].values),
             id='bit_and',
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
-                ),
+                pytest.mark.notimpl(["dask", "polars", "datafusion", "mssql"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -461,9 +440,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: np.bitwise_or.reduce(t.bigint_col[where].values),
             id='bit_or',
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql"]
-                ),
+                pytest.mark.notimpl(["dask", "polars", "datafusion", "mssql"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -472,9 +449,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: np.bitwise_xor.reduce(t.bigint_col[where].values),
             id='bit_xor',
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "snowflake", "polars", "datafusion", "mssql", "trino"]
-                ),
+                pytest.mark.notimpl(["dask", "polars", "datafusion", "mssql"]),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -489,15 +464,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 mark.notimpl(
-                    [
-                        "dask",
-                        "impala",
-                        "mysql",
-                        "snowflake",
-                        "sqlite",
-                        "datafusion",
-                        "mssql",
-                    ]
+                    ["dask", "impala", "mysql", "sqlite", "datafusion", "mssql"]
                 )
             ],
         ),
@@ -532,6 +499,91 @@ def test_reduction_ops(
     except TypeError:  # assert_allclose only handles numerics
         # if we're not testing numerics, then the arrays should be exactly equal
         np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ('result_fn', 'expected_fn'),
+    [
+        param(
+            lambda t, where: t.double_col.quantile(0.5, where=where),
+            lambda t, where: t.double_col[where].quantile(0.5),
+            id="quantile",
+            marks=[
+                mark.notimpl(
+                    [
+                        "bigquery",
+                        "dask",
+                        "datafusion",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "polars",
+                        "sqlite",
+                    ]
+                ),
+                mark.never(
+                    ["pyspark", "trino"],
+                    reason="backend implements approximate quantiles",
+                ),
+            ],
+        ),
+        param(
+            lambda t, where: t.double_col.quantile([0.5], where=where),
+            lambda t, where: t.double_col[where].quantile([0.5]),
+            id="multi-quantile",
+            marks=[
+                mark.notimpl(
+                    [
+                        "bigquery",
+                        "dask",
+                        "datafusion",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "polars",
+                        "sqlite",
+                    ]
+                ),
+                mark.notyet(
+                    ["snowflake"],
+                    reason="backend doesn't implement array of quantiles as input",
+                ),
+                # strict=False untile quantilesIf works
+                mark.notyet(
+                    ["clickhouse"], reason="sqlglot throws a parse error", strict=False
+                ),
+                mark.never(
+                    ["pyspark", "trino"],
+                    reason="backend implements approximate quantiles",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ('ibis_cond', 'pandas_cond'),
+    [
+        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(
+            lambda t: t.string_col.isin(['1', '7']),
+            lambda t: t.string_col.isin(['1', '7']),
+            id='is_in',
+            marks=[mark.notimpl(["datafusion"])],
+        ),
+    ],
+)
+def test_quantile(
+    alltypes,
+    df,
+    result_fn,
+    expected_fn,
+    ibis_cond,
+    pandas_cond,
+):
+    expr = alltypes.agg(tmp=result_fn(alltypes, ibis_cond(alltypes))).tmp
+    result = expr.execute().squeeze()
+    expected = expected_fn(df, pandas_cond(df))
+    assert pytest.approx(result) == expected
 
 
 @pytest.mark.parametrize(
@@ -666,7 +718,6 @@ def test_corr_cov(
         "sqlite",
         "snowflake",
         "mssql",
-        "trino",
     ]
 )
 def test_approx_median(alltypes):
@@ -803,11 +854,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
 
 
 @pytest.mark.parametrize(
-    'agg_fn',
-    [
-        param(lambda s: list(s), id='agg_to_list'),
-        param(lambda s: np.array(s), id='agg_to_ndarray'),
-    ],
+    'agg_fn', [lambda s: list(s), lambda s: np.array(s)], ids=lambda obj: obj.__name__
 )
 @mark.notimpl(
     [
@@ -908,8 +955,9 @@ def test_agg_sort(alltypes):
     query.execute()
 
 
-@pytest.mark.xfail_version(polars="==0.14.31", reason="projection of scalars is broken")
-@pytest.mark.xfail_version(polars="==0.15.*", reason="projection of scalars is broken")
+@pytest.mark.xfail_version(
+    polars=["polars==0.14.31"], reason="projection of scalars is broken"
+)
 def test_filter(backend, alltypes, df):
     expr = (
         alltypes[_.string_col == "1"]
@@ -937,3 +985,10 @@ def test_column_summary(alltypes):
     expr = alltypes.aggregate(bool_col_summary)
     result = expr.execute()
     assert result.shape == (1, 7)
+
+
+def test_agg_name_in_output_column(alltypes):
+    query = alltypes.aggregate([alltypes.int_col.min(), alltypes.int_col.max()])
+    df = query.execute()
+    assert "min" in df.columns[0].lower()
+    assert "max" in df.columns[1].lower()

@@ -73,9 +73,6 @@ class ImpalaConnection:
         """Close all idle Impyla connections."""
         self.pool.dispose()
 
-    def set_database(self, name):
-        self.database = name
-
     def disable_codegen(self, disabled=True):
         self.options["DISABLE_CODEGEN"] = str(int(disabled))
 
@@ -114,10 +111,6 @@ class ImpalaConnection:
         wrapper = ImpalaCursor(cursor, con, self.database, self.options.copy())
         wrapper.set_options()
         return wrapper
-
-    @util.deprecated(instead="", version="4.0")
-    def ping(self):  # pragma: no cover
-        self.pool.connect()._cursor.ping()
 
     def release(self, cur):  # pragma: no cover
         pass
@@ -382,7 +375,7 @@ class ImpalaTable(ir.Table):
         statement = RenameTable(self._qualified_name, new_name, new_database=database)
         self._client.raw_sql(statement)
 
-        op = self.op().change_name(statement.new_qualified_name)
+        op = self.op().copy(name=statement.new_qualified_name)
         return type(self)(op)
 
     @property
@@ -403,8 +396,7 @@ class ImpalaTable(ir.Table):
                 break
             partition_fields.append((x, name_to_type[x]))
 
-        pnames, ptypes = zip(*partition_fields)
-        return sch.Schema(pnames, ptypes)
+        return sch.Schema(dict(partition_fields))
 
     def add_partition(self, spec, location=None):
         """Add a new table partition.

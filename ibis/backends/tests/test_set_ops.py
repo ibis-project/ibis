@@ -3,6 +3,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 from ibis import _
 
 
@@ -125,3 +126,9 @@ def test_difference(backend, alltypes, df, distinct):
         expected = expected.drop_duplicates()
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize("method", ["intersect", "difference", "union"])
+def test_empty_set_op(backend, alltypes, method):
+    with pytest.raises(com.IbisTypeError, match="requires a table or tables"):
+        getattr(alltypes, method)()

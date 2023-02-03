@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import functools
+from functools import partial
 
 import parsy
 
+import ibis
 import ibis.expr.datatypes as dt
 from ibis.common.parsing import (
     COMMA,
@@ -19,15 +21,35 @@ from ibis.common.parsing import (
 )
 
 
+def _bool_type():
+    return getattr(getattr(ibis.options, "clickhouse", None), "bool_type", "Boolean")
+
+
 def parse(text: str) -> dt.DataType:
-    @parsy.generate
-    def datetime():
-        yield spaceless_string("datetime64", "datetime")
-        timezone = yield parened_string.optional()
-        return dt.Timestamp(timezone=timezone, nullable=False)
+    parened_string = LPAREN.then(RAW_STRING).skip(RPAREN)
+
+    datetime64_args = LPAREN.then(
+        parsy.seq(
+            scale=parsy.decimal_digit.map(int).optional(),
+            timezone=COMMA.then(RAW_STRING).optional(),
+        )
+    ).skip(RPAREN)
+
+    datetime64 = spaceless_string("datetime64").then(
+        datetime64_args.optional(default={}).combine_dict(
+            partial(dt.Timestamp, nullable=False)
+        )
+    )
+
+    datetime = spaceless_string("datetime").then(
+        parsy.seq(timezone=parened_string.optional()).combine_dict(
+            partial(dt.Timestamp, nullable=False)
+        )
+    )
 
     primitive = (
-        datetime
+        datetime64
+        | datetime
         | spaceless_string("null", "nothing").result(dt.null)
         | spaceless_string("bigint", "int64").result(dt.Int64(nullable=False))
         | spaceless_string("double", "float64").result(dt.Float64(nullable=False))
@@ -35,8 +57,9 @@ def parse(text: str) -> dt.DataType:
         | spaceless_string("smallint", "int16", "int2").result(dt.Int16(nullable=False))
         | spaceless_string("date32", "date").result(dt.Date(nullable=False))
         | spaceless_string("time").result(dt.Time(nullable=False))
-        | spaceless_string("tinyint", "int8", "int1", "boolean", "bool").result(
-            dt.Int8(nullable=False)
+        | spaceless_string("tinyint", "int8", "int1").result(dt.Int8(nullable=False))
+        | spaceless_string("boolean", "bool").result(
+            getattr(dt, _bool_type())(nullable=False)
         )
         | spaceless_string("integer", "int32", "int4", "int").result(
             dt.Int32(nullable=False)
@@ -60,13 +83,6 @@ def parse(text: str) -> dt.DataType:
             "string",
         ).result(dt.String(nullable=False))
     )
-
-    @parsy.generate
-    def parened_string():
-        yield LPAREN
-        s = yield RAW_STRING
-        yield RPAREN
-        return s
 
     @parsy.generate
     def nullable():
@@ -223,6 +239,11 @@ def _(ty: dt.DataType) -> str:
     return type(ty).__name__.capitalize()
 
 
+@serialize_raw.register(dt.Boolean)
+def _(_: dt.Boolean) -> str:
+    return _bool_type()
+
+
 @serialize_raw.register(dt.Array)
 def _(ty: dt.Array) -> str:
     return f"Array({serialize(ty.value_type)})"
@@ -239,11 +260,16 @@ def _(ty: dt.Map) -> str:
 @serialize_raw.register(dt.Struct)
 def _(ty: dt.Struct) -> str:
     fields = ", ".join(
-        f"{name} {serialize(field_ty)}" for name, field_ty in ty.pairs.items()
+        f"{name} {serialize(field_ty)}" for name, field_ty in ty.fields.items()
     )
     return f"Tuple({fields})"
 
 
 @serialize_raw.register(dt.Timestamp)
 def _(ty: dt.Timestamp) -> str:
-    return "DateTime64(6)" if ty.timezone is None else f"DateTime64(6, {ty.timezone!r})"
+    if (scale := ty.scale) is None:
+        scale = 3
+
+    if (timezone := ty.timezone) is not None:
+        return f"DateTime64({scale:d}, {timezone})"
+    return f"DateTime64({scale:d})"

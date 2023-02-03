@@ -1,10 +1,10 @@
 import decimal
 import math
 import operator
+from operator import and_, lshift, or_, rshift, xor
 
 import numpy as np
 import pandas as pd
-import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -51,7 +51,7 @@ except ImportError:
         param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
     ],
 )
-@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql"])
 @pytest.mark.xfail(
     duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
     reason="<0.3.3 does not support isnan/isinf properly",
@@ -140,7 +140,7 @@ def test_isnan_isinf(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(["datafusion", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             L(5.556).ln(),
@@ -151,25 +151,23 @@ def test_isnan_isinf(
             L(5.556).log2(),
             math.log(5.556, 2),
             id='log2',
-            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).log10(),
             math.log10(5.556),
             id='log10',
-            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             L(5.556).radians(),
             math.radians(5.556),
             id='radians',
-            marks=pytest.mark.notimpl(["bigquery", "datafusion", "impala"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
         param(
             L(5.556).degrees(),
             math.degrees(5.556),
             id='degrees',
-            marks=pytest.mark.notimpl(["bigquery", "datafusion", "impala"]),
+            marks=pytest.mark.notimpl(["datafusion", "impala"]),
         ),
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
@@ -226,7 +224,7 @@ def test_trig_functions_literals(con, expr, expected):
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     dc_max = df.double_col.max()
     expr = alltypes.mutate(dc=(_.double_col / dc_max).nullifzero()).select(tmp=expr)
-    result = expr.tmp.execute()
+    result = expr.tmp.to_pandas()
     expected = expected_fn((df.double_col / dc_max).replace(0.0, np.nan)).rename("tmp")
     backend.assert_series_equal(result, expected)
 
@@ -300,7 +298,7 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(["datafusion", "trino"]),
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
@@ -311,7 +309,6 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log10(),
             lambda t: np.log10(t.double_col + 1),
             id='log10',
-            marks=pytest.mark.notimpl(["trino"]),
         ),
         param(
             lambda t: (t.double_col + 1).log(
@@ -324,7 +321,7 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "trino"]),
+            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars"]),
         ),
     ],
 )
@@ -450,13 +447,11 @@ def test_floating_mod(backend, alltypes, df):
         'bigint_col',
         pytest.param(
             'float_col',
-            marks=[
-                pytest.mark.broken(
-                    "polars",
-                    strict=False,
-                    reason="output types is float64 instead of the expected float32",
-                )
-            ],
+            marks=pytest.mark.broken(
+                "polars",
+                strict=False,
+                reason="output type is float64 instead of the expected float32",
+            ),
         ),
         'double_col',
     ],
@@ -488,12 +483,12 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     ("default_precisions", "default_scales"),
     [
         (
-            {'postgres': None, 'mysql': 10, 'snowflake': 38},
-            {'postgres': None, 'mysql': 0, 'snowflake': 0},
+            {'postgres': None, 'mysql': 10, 'snowflake': 38, 'trino': 18},
+            {'postgres': None, 'mysql': 0, 'snowflake': 0, 'trino': 3},
         )
     ],
 )
-@pytest.mark.notimpl(["sqlite", "duckdb", "mssql", "trino"])
+@pytest.mark.notimpl(["sqlite", "duckdb", "mssql"])
 @pytest.mark.never(
     [
         "bigquery",
@@ -528,19 +523,18 @@ def test_sa_default_numeric_precision_and_scale(
     sqla_types = []
     ibis_types = []
     for name, t, ibis_type in typespec:
-        sqla_type = sa.Column(name, t, nullable=True)
-        sqla_types.append(sqla_type)
+        sqla_types.append(sa.Column(name, t, nullable=True))
         ibis_types.append((name, ibis_type(nullable=True)))
 
     # Create a table with the numeric types.
     table_name = 'test_sa_default_param_decimal'
-    engine = con.con
-    table = sa.Table(table_name, sa.MetaData(bind=engine), *sqla_types)
-    table.create(bind=engine, checkfirst=True)
+    table = sa.Table(table_name, sa.MetaData(), *sqla_types)
+    with con.begin() as bind:
+        table.create(bind=bind, checkfirst=True)
 
     try:
         # Check that we can correctly recover the default precision and scale.
-        schema = schema_from_table(table)
+        schema = schema_from_table(table, dialect=con.con.dialect)
         expected = ibis.schema(ibis_types)
 
         assert_equal(schema, expected)
@@ -548,9 +542,7 @@ def test_sa_default_numeric_precision_and_scale(
         con.drop_table(table_name, force=True)
 
 
-@pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "pandas", "sqlite", "polars"]
-)
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite", "polars"])
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="backend doesn't implement a [0.0, 1.0) or [0.0, 1.0] RANDOM() function",
@@ -583,13 +575,13 @@ def test_random(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["bigquery", "datafusion", "impala"])
-def test_clip(alltypes, df, ibis_func, pandas_func):
+@pytest.mark.notimpl(["datafusion"])
+def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
     expected = pandas_func(df.int_col).astype(result.dtype)
-    # Names won't match in the Pyspark backend since Pyspark
+    # Names won't match in the PySpark backend since PySpark
     # gives 'tmp' name when executing a Column
-    tm.assert_series_equal(result, expected, check_names=False)
+    backend.assert_series_equal(result, expected, check_names=False)
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "polars"])
@@ -605,3 +597,105 @@ def test_constants(con, const):
     expr = getattr(ibis, const)
     result = con.execute(expr)
     assert pytest.approx(result) == getattr(math, const)
+
+
+pyspark_no_bitshift = pytest.mark.notyet(
+    ["pyspark"], reason="pyspark doesn't implement bitshift operators"
+)
+
+
+@pytest.mark.parametrize("op", [and_, or_, xor])
+@pytest.mark.parametrize(
+    ("left_fn", "right_fn"),
+    [
+        param(lambda t: t.int_col, lambda t: t.int_col, id="col_col"),
+        param(lambda _: 3, lambda t: t.int_col, id="scalar_col"),
+        param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
+    ],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
+    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
+    result = con.execute(expr)
+
+    expected = op(left_fn(df), right_fn(df)).rename("tmp")
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    ("op", "left_fn", "right_fn"),
+    [
+        param(
+            lshift,
+            lambda t: t.int_col,
+            lambda t: t.int_col,
+            id="lshift_col_col",
+        ),
+        param(
+            lshift,
+            lambda _: 3,
+            lambda t: t.int_col,
+            marks=pytest.mark.broken(
+                ["impala"],
+                reason="impala's behavior differs from every other backend",
+            ),
+            id="lshift_scalar_col",
+        ),
+        param(lshift, lambda t: t.int_col, lambda _: 3, id="lshift_col_scalar"),
+        param(rshift, lambda t: t.int_col, lambda t: t.int_col, id="rshift_col_col"),
+        param(rshift, lambda _: 3, lambda t: t.int_col, id="rshift_scalar_col"),
+        param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
+    ],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pyspark_no_bitshift
+def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
+    expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
+    result = expr.execute()
+
+    pandas_left = getattr(left := left_fn(df), "values", left)
+    pandas_right = getattr(right := right_fn(df), "values", right)
+    expected = pd.Series(
+        op(pandas_left, pandas_right),
+        name="tmp",
+        dtype="int64",
+    )
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "op",
+    [
+        param(and_),
+        param(or_),
+        param(xor),
+        param(lshift, marks=pyspark_no_bitshift),
+        param(rshift, marks=pyspark_no_bitshift),
+    ],
+)
+@pytest.mark.parametrize(
+    ("left", "right"),
+    [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_scalars(con, op, left, right):
+    expr = op(left, right)
+    result = con.execute(expr)
+    expected = op(4, 2)
+    assert result == expected
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_not_scalar(con):
+    expr = ~L(2)
+    result = con.execute(expr)
+    expected = -3
+    assert result == expected
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_bitwise_not_col(backend, alltypes, df):
+    expr = (~alltypes.int_col).name("tmp")
+    result = expr.execute()
+    expected = ~df.int_col
+    backend.assert_series_equal(result, expected.rename("tmp"))

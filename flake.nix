@@ -63,15 +63,9 @@
         sqlite-interactive
       ];
       shellHook = ''
-        export IBIS_TEST_DATA_DIRECTORY="$PWD/ci/ibis-testing-data"
-
         ${pkgs.rsync}/bin/rsync \
           --chmod=Du+rwx,Fu+rw --archive --delete \
-          "${pkgs.ibisTestingData}/" \
-          "$IBIS_TEST_DATA_DIRECTORY"
-
-        export TEMPDIR
-        TEMPDIR="$(python -c 'import tempfile; print(tempfile.gettempdir())')"
+          "${pkgs.ibisTestingData}/" "$PWD/ci/ibis-testing-data"
 
         # necessary for mkdocs
         export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
@@ -127,7 +121,7 @@
 
         default = pkgs.ibis310;
 
-        inherit (pkgs) update-lock-files;
+        inherit (pkgs) update-lock-files gen-all-extras;
       };
 
       devShells = rec {

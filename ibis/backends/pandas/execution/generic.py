@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import collections
+import contextlib
 import datetime
 import decimal
 import functools
@@ -14,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
+import pytz
 import toolz
 from pandas.api.types import DatetimeTZDtype
 from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
@@ -175,10 +177,8 @@ def execute_cast_series_date(op, data, type, **kwargs):
     if from_type.is_string() and not from_type.is_json():
         values = data.values
         datetimes = pd.to_datetime(values, infer_datetime_format=True)
-        try:
+        with contextlib.suppress(TypeError):
             datetimes = datetimes.tz_convert(None)
-        except TypeError:
-            pass
         dates = _normalize(datetimes, data.index, data.name)
         return pd.Series(dates, index=data.index, name=data.name)
 
@@ -200,6 +200,8 @@ def execute_sort_key_series(op, data, _, **kwargs):
 def call_numpy_ufunc(func, op, data, **kwargs):
     if getattr(data, "dtype", None) == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
+    if func is None:
+        raise NotImplementedError(f'{type(op).__name__} not supported')
     return func(data)
 
 
@@ -313,30 +315,104 @@ def execute_series_clip(op, data, lower, upper, **kwargs):
     return data.clip(lower=lower, upper=upper)
 
 
-@execute_node.register(ops.Quantile, (pd.Series, SeriesGroupBy), numeric_types)
-def execute_series_quantile(op, data, quantile, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'quantile', q=quantile, interpolation=op.interpolation)
-
-
-@execute_node.register(ops.MultiQuantile, pd.Series, np.ndarray)
-def execute_series_quantile_multi(op, data, quantile, aggcontext=None, **kwargs):
-    result = aggcontext.agg(
-        data, 'quantile', q=quantile, interpolation=op.interpolation
+@execute_node.register(
+    ops.Quantile,
+    pd.Series,
+    (np.ndarray, *numeric_types),
+    type(None),
+    (pd.Series, type(None)),
+)
+def execute_series_quantile(op, data, quantile, _, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data if mask is None else data.loc[mask],
+        'quantile',
+        q=quantile,
+        interpolation=op.interpolation or "linear",
     )
-    return np.array(result)
 
 
-@execute_node.register(ops.MultiQuantile, SeriesGroupBy, np.ndarray)
+@execute_node.register(
+    ops.Quantile, pd.Series, (np.ndarray, *numeric_types), type(None)
+)
+def execute_series_quantile_default(op, data, quantile, _, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data, 'quantile', q=quantile, interpolation=op.interpolation or "linear"
+    )
+
+
+@execute_node.register(
+    ops.Quantile,
+    SeriesGroupBy,
+    (np.ndarray, *numeric_types),
+    type(None),
+    (SeriesGroupBy, type(None)),
+)
+def execute_series_group_by_quantile(
+    op, data, quantile, _, mask, aggcontext=None, **kwargs
+):
+    return aggcontext.agg(
+        data,
+        (
+            "quantile"
+            if mask is None
+            else functools.partial(_filtered_reduction, mask.obj, pd.Series.quantile)
+        ),
+        q=quantile,
+        interpolation=op.interpolation or "linear",
+    )
+
+
+@execute_node.register(
+    ops.MultiQuantile,
+    pd.Series,
+    (np.ndarray, *numeric_types),
+    type(None),
+    (pd.Series, type(None)),
+)
+def execute_series_quantile_multi(
+    op, data, quantile, _, mask, aggcontext=None, **kwargs
+):
+    return np.array(
+        aggcontext.agg(
+            data if mask is None else data.loc[mask],
+            "quantile",
+            q=quantile,
+            interpolation=op.interpolation or "linear",
+        )
+    )
+
+
+@execute_node.register(
+    ops.MultiQuantile,
+    SeriesGroupBy,
+    np.ndarray,
+    type(None),
+    (SeriesGroupBy, type(None)),
+)
 def execute_series_quantile_multi_groupby(
-    op, data, quantile, aggcontext=None, **kwargs
+    op, data, quantile, _, mask, aggcontext=None, **kwargs
 ):
     def q(x, quantile, interpolation):
         result = x.quantile(quantile, interpolation=interpolation).tolist()
-        res = [result for _ in range(len(x))]
-        return res
+        return [result for _ in range(len(x))]
 
-    result = aggcontext.agg(data, q, quantile, op.interpolation)
-    return result
+    return aggcontext.agg(
+        data,
+        q if mask is None else functools.partial(_filtered_reduction, mask.obj, q),
+        quantile,
+        op.interpolation or "linear",
+    )
+
+
+@execute_node.register(ops.MultiQuantile, SeriesGroupBy, np.ndarray, type(None))
+def execute_series_quantile_multi_groupby_default(
+    op, data, quantile, _, aggcontext=None, **kwargs
+):
+    def q(x, quantile, interpolation):
+        result = x.quantile(quantile, interpolation=interpolation).tolist()
+        return [result for _ in range(len(x))]
+
+    return aggcontext.agg(data, q, quantile, op.interpolation or "linear")
 
 
 @execute_node.register(ops.Cast, type(None), dt.DataType)
@@ -392,18 +468,18 @@ def execute_cast_string_to_timestamp(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, datetime.datetime, dt.Timestamp)
 def execute_cast_timestamp_to_timestamp(op, data, type, **kwargs):
     """Cast timestamps to other timestamps including timezone if necessary."""
-    input_timezone = data.tz
+    input_timezone = data.tzinfo
     target_timezone = type.timezone
-
-    data = pd.Timestamp(data)
 
     if input_timezone == target_timezone:
         return data
 
     if input_timezone is None or target_timezone is None:
-        return data.tz_localize(target_timezone)
+        return data.astimezone(
+            tz=None if target_timezone is None else pytz.timezone(target_timezone)
+        )
 
-    return data.tz_convert(target_timezone)
+    return data.astimezone(tz=pytz.timezone(target_timezone))
 
 
 @execute_node.register(ops.Cast, fixed_width_types + (str,), dt.DataType)
@@ -678,8 +754,10 @@ def execute_variance_series(op, data, mask, aggcontext=None, **kwargs):
     )
 
 
-@execute_node.register((ops.Any, ops.All), (pd.Series, SeriesGroupBy))
-def execute_any_all_series(op, data, aggcontext=None, **kwargs):
+@execute_node.register((ops.Any, ops.All), pd.Series, (pd.Series, type(None)))
+def execute_any_all_series(op, data, mask, aggcontext=None, **kwargs):
+    if mask is not None:
+        data = data.loc[mask]
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
         result = aggcontext.agg(data, type(op).__name__.lower())
     else:
@@ -692,24 +770,42 @@ def execute_any_all_series(op, data, aggcontext=None, **kwargs):
         return result
 
 
-@execute_node.register(ops.NotAny, (pd.Series, SeriesGroupBy))
-def execute_notany_series(op, data, aggcontext=None, **kwargs):
+@execute_node.register((ops.Any, ops.All), SeriesGroupBy, type(None))
+def execute_any_all_series_group_by(op, data, mask, aggcontext=None, **kwargs):
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~(aggcontext.agg(data, 'any'))
+        result = aggcontext.agg(data, type(op).__name__.lower())
     else:
-        result = aggcontext.agg(data, lambda data: ~(data.any()))
+        result = aggcontext.agg(
+            data, lambda data: getattr(data, type(op).__name__.lower())()
+        )
     try:
         return result.astype(bool)
     except TypeError:
         return result
 
 
-@execute_node.register(ops.NotAll, (pd.Series, SeriesGroupBy))
-def execute_notall_series(op, data, aggcontext=None, **kwargs):
+@execute_node.register((ops.NotAny, ops.NotAll), pd.Series, (pd.Series, type(None)))
+def execute_notany_notall_series(op, data, mask, aggcontext=None, **kwargs):
+    name = type(op).__name__.lower()[len("Not") :]
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~(aggcontext.agg(data, 'all'))
+        result = ~aggcontext.agg(data, name)
     else:
-        result = aggcontext.agg(data, lambda data: ~(data.all()))
+        method = operator.methodcaller(name)
+        result = aggcontext.agg(data, lambda data: ~method(data))
+    try:
+        return result.astype(bool)
+    except TypeError:
+        return result
+
+
+@execute_node.register((ops.NotAny, ops.NotAll), SeriesGroupBy, type(None))
+def execute_notany_notall_series_group_by(op, data, mask, aggcontext=None, **kwargs):
+    name = type(op).__name__.lower()[len("Not") :]
+    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
+        result = ~aggcontext.agg(data, name)
+    else:
+        method = operator.methodcaller(name)
+        result = aggcontext.agg(data, lambda data: ~method(data))
     try:
         return result.astype(bool)
     except TypeError:
@@ -1303,7 +1399,7 @@ def execute_table_array_view(op, _, **kwargs):
 
 @execute_node.register(ops.ZeroIfNull, pd.Series)
 def execute_zero_if_null_series(op, data, **kwargs):
-    zero = op.arg.output_dtype.to_pandas().type(0)  # noqa: UP003
+    zero = op.arg.output_dtype.to_pandas().type(0)
     return data.replace({np.nan: zero, None: zero, pd.NA: zero})
 
 
@@ -1313,5 +1409,5 @@ def execute_zero_if_null_series(op, data, **kwargs):
 )
 def execute_zero_if_null_scalar(op, data, **kwargs):
     if data is None or pd.isna(data) or math.isnan(data) or np.isnan(data):
-        return op.arg.output_dtype.to_pandas().type(0)  # noqa: UP003
+        return op.arg.output_dtype.to_pandas().type(0)
     return data

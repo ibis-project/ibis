@@ -1,8 +1,5 @@
-import warnings
-
 import pytest
 from multipledispatch import Dispatcher
-from multipledispatch.conflict import AmbiguityWarning
 
 from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
 
@@ -142,27 +139,3 @@ def test_funcs(foo, foo_m):
 def test_unregistered(foo, args):
     with pytest.raises(NotImplementedError, match="Could not find signature for foo.*"):
         foo(*args)
-
-
-def test_ambiguities_warning():
-    bar = TwoLevelDispatcher('bar')
-
-    bar.register(A1, B1)(lambda a, b: 0)
-    bar.register(A1, B2)(lambda a, b: 1)
-    bar.register(A2, B1)(lambda a, b: 2)
-
-    with pytest.warns(AmbiguityWarning, match=".*Consider.*\n\n.*(A2, B2).*"):
-        bar.reorder()
-
-
-def test_ambiguities_no_warning():
-    bar = TwoLevelDispatcher('bar')
-
-    bar.register(A1, B1)(lambda a, b: 0)
-    bar.register(A1, B2)(lambda a, b: 1)
-    bar.register(A2, B1)(lambda a, b: 2)
-    bar.register(A2, B2)(lambda a, b: 3)
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        bar.reorder()

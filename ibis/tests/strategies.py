@@ -100,7 +100,8 @@ def struct_dtypes(
     num_fields = draw(num_fields)
     names = draw(st.lists(st.text(), min_size=num_fields, max_size=num_fields))
     types = draw(st.lists(item_strategy, min_size=num_fields, max_size=num_fields))
-    return dt.Struct(names, types, nullable=draw(nullable))
+    fields = dict(zip(names, types))
+    return dt.Struct(fields, nullable=draw(nullable))
 
 
 point_dtype = st.builds(dt.Point, nullable=nullable)
@@ -109,8 +110,12 @@ polygon_dtype = st.builds(dt.Polygon, nullable=nullable)
 multipoint_dtype = st.builds(dt.MultiPoint, nullable=nullable)
 multilinestring_dtype = st.builds(dt.MultiLineString, nullable=nullable)
 multipolygon_dtype = st.builds(dt.MultiPolygon, nullable=nullable)
-geometry_dtype = st.builds(dt.Geometry, nullable=nullable)
-geography_dtype = st.builds(dt.Geography, nullable=nullable)
+geometry_dtype = st.builds(
+    dt.GeoSpatial, geotype=st.just("geometry"), nullable=nullable
+)
+geography_dtype = st.builds(
+    dt.GeoSpatial, geotype=st.just("geography"), nullable=nullable
+)
 geospatial_dtypes = st.one_of(
     point_dtype,
     linestring_dtype,
@@ -167,7 +172,8 @@ def schema(draw, item_strategy=primitive_dtypes, max_size=20):
         st.lists(st.text(), min_size=num_fields, max_size=num_fields, unique=True)
     )
     types = draw(st.lists(item_strategy, min_size=num_fields, max_size=num_fields))
-    return sch.Schema(names, types)
+    fields = dict(zip(names, types))
+    return sch.Schema(fields)
 
 
 all_schema = schema(all_dtypes)

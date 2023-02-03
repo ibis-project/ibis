@@ -10,10 +10,12 @@ hide:
 === "pip"
 
     ```sh
-    pip install ibis-framework # (1)
+    pip install 'ibis-framework[duckdb]' # (1) (2)
     ```
 
-    1. Note that the `ibis-framework` package is *not* the same as the `ibis` package in PyPI.  These two libraries cannot coexist in the same Python environment, as they are both imported with the `ibis` module name.
+    1. We suggest starting with the DuckDB backend.  It's performant and fully featured.  If you would like to use a different backend, all of the available options are listed below.
+
+    2. Note that the `ibis-framework` package is *not* the same as the `ibis` package in PyPI.  These two libraries cannot coexist in the same Python environment, as they are both imported with the `ibis` module name.
 
 {% for mgr in ["conda", "mamba"] %}
 === "{{ mgr }}"

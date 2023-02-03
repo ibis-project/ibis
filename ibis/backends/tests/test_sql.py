@@ -14,12 +14,12 @@ pytest.importorskip("sqlglot")
 @mark.never(
     ["dask", "pandas"],
     reason="Dask and Pandas are not SQL backends",
-    raises=(NotImplementedError, AssertionError),
+    raises=(NotImplementedError, ValueError),
 )
 @mark.notimpl(
     ["datafusion", "pyspark", "polars"],
     reason="Not clear how to extract SQL from the backend",
-    raises=(exc.OperationNotDefinedError, NotImplementedError, AssertionError),
+    raises=(exc.OperationNotDefinedError, NotImplementedError, ValueError),
 )
 @mark.notimpl(["mssql"], raises=ValueError, reason="no sqlglot dialect for mssql")
 def test_table(con):
@@ -38,14 +38,14 @@ array_literal = param(
     ibis.array([1]),
     marks=[
         mark.never(
-            ["mysql", "sqlite", "mssql"],
+            ["mysql", "mssql"],
             raises=sa.exc.CompileError,
             reason="arrays not supported in the backend",
         ),
         mark.notyet(
-            ["impala"],
+            ["impala", "sqlite"],
             raises=NotImplementedError,
-            reason="Impala hasn't implemented array literals",
+            reason="backends hasn't implemented array literals",
         ),
         mark.notimpl(
             ["trino"], reason="Cannot render array literals", raises=sa.exc.CompileError
@@ -59,12 +59,11 @@ no_structs = mark.never(
     reason="structs not supported in the backend",
 )
 no_struct_literals = mark.notimpl(
-    ["bigquery", "postgres", "snowflake", "mssql"],
-    reason="struct literals are not yet implemented",
+    ["postgres", "mssql"], reason="struct literals are not yet implemented"
 )
 not_sql = mark.never(
     ["pandas", "dask"],
-    raises=(exc.IbisError, NotImplementedError, AssertionError),
+    raises=(exc.IbisError, NotImplementedError, ValueError),
     reason="Not a SQL backend",
 )
 no_sql_extraction = mark.notimpl(
@@ -88,6 +87,30 @@ no_sql_extraction = mark.notimpl(
 @not_sql
 @no_sql_extraction
 def test_literal(backend, expr):
-    buf = io.StringIO()
-    ibis.show_sql(expr, dialect=backend.name(), file=buf)
-    assert buf.getvalue()
+    assert ibis.to_sql(expr, dialect=backend.name())
+
+
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
+)
+@pytest.mark.notyet(["mssql"], reason="sqlglot doesn't support an mssql dialect")
+def test_group_by_has_index(backend, snapshot):
+    countries = ibis.table(
+        dict(continent="string", population="int64"), name="countries"
+    )
+    expr = countries.group_by(
+        cont=(
+            _.continent.case()
+            .when("NA", "North America")
+            .when("SA", "South America")
+            .when("EU", "Europe")
+            .when("AF", "Africa")
+            .when("AS", "Asia")
+            .when("OC", "Oceania")
+            .when("AN", "Antarctica")
+            .else_("Unknown continent")
+            .end()
+        )
+    ).agg(total_pop=_.population.sum())
+    sql = str(ibis.to_sql(expr, dialect=backend.name()))
+    snapshot.assert_match(sql, "out.sql")

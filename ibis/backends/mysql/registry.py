@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import operator
 
 import sqlalchemy as sa
@@ -90,10 +91,8 @@ def _literal(_, op):
         return list(map(sa.literal, op.value))
     else:
         value = op.value
-        try:
+        with contextlib.suppress(AttributeError):
             value = value.to_pydatetime()
-        except AttributeError:
-            pass
 
         return sa.literal(value)
 

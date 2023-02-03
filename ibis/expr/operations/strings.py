@@ -6,7 +6,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Unary, Value
-from ibis.util import deprecated
 
 
 @public
@@ -223,31 +222,6 @@ class StringConcat(Value):
     arg = rlz.tuple_of(rlz.string)
     output_shape = rlz.shape_like('arg')
     output_dtype = rlz.dtype_like('arg')
-
-
-@public
-class ParseURL(Value):
-    arg = rlz.string
-    extract = rlz.isin(
-        {
-            'PROTOCOL',
-            'AUTHORITY',
-            'USERINFO',
-            'HOST',
-            'FILE',
-            'PATH',
-            'QUERY',
-            'REF',
-        }
-    )
-    key = rlz.optional(rlz.string)
-
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
-
-    @deprecated(version="4.0", instead="use ExtractURLField and its subclasses")
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
 
 
 @public

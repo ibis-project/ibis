@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import calendar
 import functools
-from datetime import date, datetime
 from functools import partial
 from operator import add, mul, sub
 from typing import Any, Literal, Mapping
@@ -26,7 +25,7 @@ from ibis.backends.clickhouse.datatypes import serialize
 @functools.singledispatch
 def translate_val(op, **_):
     """Translate a value expression into sqlglot."""
-    raise NotImplementedError(type(op))
+    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
 
 @translate_val.register(dt.DataType)
@@ -181,14 +180,29 @@ def _not_all(op, **kw):
     return translate_val(ops.Not(ops.All(op.arg)), **kw)
 
 
-@translate_val.register(ops.Any)
-def _any(op, **kw):
-    return f"max({translate_val(op.arg, **kw)})"
+def _quantile_like(func_name: str, op: ops.Node, quantile: str, **kw):
+    args = [_sql(translate_val(op.arg, **kw))]
+
+    if (where := op.where) is not None:
+        args.append(_sql(translate_val(where, **kw)))
+        func_name += "If"
+
+    return f"{func_name}({quantile})({', '.join(args)})"
 
 
-@translate_val.register(ops.All)
-def _all(op, **kw):
-    return f"min({translate_val(op.arg, **kw)})"
+@translate_val.register(ops.Quantile)
+def _quantile(op, **kw):
+    quantile = _sql(translate_val(op.quantile, **kw))
+    return _quantile_like("quantile", op, quantile, **kw)
+
+
+@translate_val.register(ops.MultiQuantile)
+def _multi_quantile(op, **kw):
+    if not isinstance(op.quantile, ops.Literal):
+        raise TypeError("ClickHouse quantile only accepts a list of Python floats")
+
+    quantile = ", ".join(map(str, op.quantile.value))
+    return _quantile_like("quantiles", op, quantile, **kw)
 
 
 def _agg_variance_like(func):
@@ -263,7 +277,7 @@ def _string_find(op, **kw):
 
     arg = translate_val(op.arg, **kw)
     substr = translate_val(op.substr, **kw)
-    return f"position({substr} IN {arg}) - 1"
+    return f"locate({arg}, {substr}) - 1"
 
 
 @translate_val.register(ops.RegexExtract)
@@ -398,6 +412,22 @@ def _literal(op, **kw):
     elif dtype.is_string():
         quoted = value.replace("'", "''").replace("\\", "\\\\")
         return f"'{quoted}'"
+    elif dtype.is_decimal():
+        precision = dtype.precision
+        if precision is None or not 1 <= precision <= 76:
+            raise NotImplementedError(
+                f'Unsupported precision. Supported values: [1 : 76]. Current value: {precision!r}'
+            )
+
+        if 1 <= precision <= 9:
+            type_name = 'Decimal32'
+        elif 10 <= precision <= 18:
+            type_name = 'Decimal64'
+        elif 19 <= precision <= 38:
+            type_name = 'Decimal128'
+        else:
+            type_name = 'Decimal256'
+        return f"to{type_name}({str(value)}, {dtype.scale})"
     elif dtype.is_numeric():
         return repr(value)
     elif dtype.is_interval():
@@ -406,20 +436,17 @@ def _literal(op, **kw):
         func = "toDateTime"
         args = []
 
-        if isinstance(value, datetime):
-            fmt = "%Y-%m-%dT%H:%M:%S"
+        fmt = "%Y-%m-%dT%H:%M:%S"
 
-            if micros := value.microsecond:
-                func = "toDateTime64"
-                fmt += ".%f"
+        if micros := value.microsecond:
+            func = "toDateTime64"
+            fmt += ".%f"
 
-            args.append(value.strftime(fmt))
-            if micros % 1000:
-                args.append(6)
-            elif micros // 1000:
-                args.append(3)
-        else:
-            args.append(str(value))
+        args.append(value.strftime(fmt))
+        if micros % 1000:
+            args.append(6)
+        elif micros // 1000:
+            args.append(3)
 
         if (timezone := op.output_dtype.timezone) is not None:
             args.append(timezone)
@@ -428,9 +455,8 @@ def _literal(op, **kw):
         return f"{func}({joined_args})"
 
     elif isinstance(op.output_dtype, dt.Date):
-        if isinstance(value, date):
-            value = value.strftime("%Y-%m-%d")
-        return f"toDate('{value}')"
+        formatted = value.strftime('%Y-%m-%d')
+        return f"toDate('{formatted}')"
     elif isinstance(op.output_dtype, dt.Array):
         values = ", ".join(_array_literal_values(op))
         return f"[{values}]"
@@ -444,7 +470,7 @@ def _literal(op, **kw):
         fields = ", ".join(f"{value} as `{key}`" for key, value in op.value.items())
         return f"tuple({fields})"
     else:
-        raise NotImplementedError(type(op))
+        raise NotImplementedError(f'Unsupported type: {dtype!r}')
 
 
 def _array_literal_values(op):
@@ -535,14 +561,61 @@ def _truncate(op, **kw):
     return f"{converter}({arg})"
 
 
+@translate_val.register(ops.DateFromYMD)
+def _date_from_ymd(op, **kw):
+    y = translate_val(op.year, **kw)
+    m = translate_val(op.month, **kw)
+    d = translate_val(op.day, **kw)
+    return (
+        f"toDate(concat("
+        f"toString({y}), '-', "
+        f"leftPad(toString({m}), 2, '0'), '-', "
+        f"leftPad(toString({d}), 2, '0')"
+        f"))"
+    )
+
+
+@translate_val.register(ops.TimestampFromYMDHMS)
+def _timestamp_from_ymdhms(op, **kw):
+    y = translate_val(op.year, **kw)
+    m = translate_val(op.month, **kw)
+    d = translate_val(op.day, **kw)
+    h = translate_val(op.hours, **kw)
+    min = translate_val(op.minutes, **kw)
+    s = translate_val(op.seconds, **kw)
+    timezone_arg = ''
+    if timezone := op.output_dtype.timezone:
+        timezone_arg = f', {timezone}'
+
+    return (
+        f"toDateTime("
+        f"concat(toString({y}), '-', "
+        f"leftPad(toString({m}), 2, '0'), '-', "
+        f"leftPad(toString({d}), 2, '0'), ' ', "
+        f"leftPad(toString({h}), 2, '0'), ':', "
+        f"leftPad(toString({min}), 2, '0'), ':', "
+        f"leftPad(toString({s}), 2, '0')"
+        f"), {timezone_arg})"
+    )
+
+
 @translate_val.register(ops.ExistsSubquery)
 @translate_val.register(ops.NotExistsSubquery)
 def _exists_subquery(op, **kw):
-    foreign_table = translate_val(op.foreign_table, **kw)
+    # https://github.com/ClickHouse/ClickHouse/issues/6697
+    #
+    # this would work, if clickhouse supported correlated subqueries
+    from ibis.backends.clickhouse.compiler.relations import translate_rel
+
+    foreign_table = translate_rel(op.foreign_table, **kw)
     predicates = translate_val(op.predicates, **kw)
-    subq = sg.subquery(foreign_table.where(predicates, dialect="clickhouse").select(1))
+    subq = (
+        sg.select(1)
+        .from_(foreign_table, dialect="clickhouse")
+        .where(sg.condition(predicates), dialect="clickhouse")
+    )
     prefix = "NOT " * isinstance(op, ops.NotExistsSubquery)
-    return f"{prefix}EXISTS {subq}"
+    return f"{prefix}EXISTS ({subq})"
 
 
 @translate_val.register(ops.StringSplit)
@@ -617,7 +690,7 @@ def _bit_agg(func):
     def _translate(op, **kw):
         arg = translate_val(op.arg, **kw)
         if not isinstance((type := op.arg.output_dtype), dt.UnsignedInteger):
-            nbits = type._nbytes * 8
+            nbits = type.nbytes * 8
             arg = f"reinterpretAsUInt{nbits}({arg})"
 
         if (where := op.where) is not None:
@@ -728,7 +801,7 @@ def _scalar_param(op, params: Mapping[ops.Node, Any], **kw):
 def _string_contains(op, **kw):
     haystack = translate_val(op.haystack, **kw)
     needle = translate_val(op.needle, **kw)
-    return f"position({needle} IN {haystack}) > 0"
+    return f"locate({haystack}, {needle}) > 0"
 
 
 def contains(op_string: Literal["IN", "NOT IN"]) -> str:
@@ -927,16 +1000,16 @@ _simple_ops = {
     ops.Pi: "pi",
     ops.E: "e",
     # Unary aggregates
-    ops.CMSMedian: "median",
     ops.ApproxMedian: "median",
     # TODO: there is also a `uniq` function which is the
     #       recommended way to approximate cardinality
-    ops.HLLCardinality: "uniqHLL12",
     ops.ApproxCountDistinct: "uniqHLL12",
     ops.Mean: "avg",
     ops.Sum: "sum",
     ops.Max: "max",
     ops.Min: "min",
+    ops.Any: "max",
+    ops.All: "min",
     ops.ArgMin: "argMin",
     ops.ArgMax: "argMax",
     ops.ArrayCollect: "groupArray",
@@ -1010,6 +1083,13 @@ for _op, _name in _simple_ops.items():
 
 
 del _fmt, _name, _op
+
+
+@translate_val.register(ops.ExtractMillisecond)
+def _extract_millisecond(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    dtype = serialize(op.output_dtype)
+    return f"CAST(substring(formatDateTime({arg}, '%f'), 1, 3) AS {dtype})"
 
 
 @translate_val.register

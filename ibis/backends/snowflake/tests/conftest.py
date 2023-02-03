@@ -1,18 +1,33 @@
 from __future__ import annotations
 
+import concurrent.futures
 import functools
 import os
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
+import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.util import consume
 
 if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
+
+
+def copy_into(con, data_dir: Path, table: str) -> None:
+    stage = "ibis_testing"
+    csv = f"{table}.csv"
+    con.exec_driver_sql(
+        f"PUT file://{data_dir.joinpath(csv).absolute()} @{stage}/{csv}"
+    )
+    con.exec_driver_sql(
+        f"COPY INTO {table} FROM @{stage}/{csv} FILE_FORMAT = (FORMAT_NAME = ibis_testing)"
+    )
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -21,12 +36,9 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     @staticmethod
     def _load_data(
-        data_dir,
-        script_dir,
-        database: str = "ibis_testing",
-        **_: Any,
+        data_dir, script_dir, database: str = "ibis_testing", **_: Any
     ) -> None:
-        """Load test data into a DuckDB backend instance.
+        """Load test data into a Snowflake backend instance.
 
         Parameters
         ----------
@@ -35,44 +47,44 @@ class TestConf(BackendTest, RoundAwayFromZero):
         script_dir
             Location of scripts defining schemas
         """
-        pytest.importorskip("snowflake.connector")
-        pytest.importorskip("snowflake.sqlalchemy")
+        from ibis.backends.snowflake import _handle_pyarrow_warning
 
-        schema = (script_dir / 'schema' / 'snowflake.sql').read_text()
+        with _handle_pyarrow_warning(action="ignore"):
+            pytest.importorskip("snowflake.connector")
+            pytest.importorskip("snowflake.sqlalchemy")
 
-        stage = "ibis_testing_stage"
-        con = TestConf.connect(data_dir)
-        with con.con.connect() as con:
-            con.execute("DROP SCHEMA IF EXISTS ibis_testing")
-            con.execute("CREATE SCHEMA IF NOT EXISTS ibis_testing")
-            con.execute("USE SCHEMA ibis_testing")
-            con.execute(
-                """\
-CREATE OR REPLACE FILE FORMAT ibis_csv_fmt
-    type = 'CSV'
-    field_delimiter = ','
-    skip_header = 1
-    field_optionally_enclosed_by = '"'"""
-            )
-            con.execute(
-                """\
-CREATE OR REPLACE STAGE ibis_testing_stage
-    file_format = ibis_csv_fmt;"""
-            )
-            for stmt in filter(None, map(str.strip, schema.split(';'))):
-                con.execute(stmt)
+        if (snowflake_url := os.environ.get("SNOWFLAKE_URL")) is None:
+            pytest.skip("SNOWFLAKE_URL environment variable is not defined")
 
-            for table in TEST_TABLES:
-                src = data_dir / f"{table}.csv"
-                con.execute(f"PUT file://{str(src.absolute())} @{stage}/{table}.csv")
-                con.execute(
-                    f"COPY INTO {table} FROM @{stage}/{table}.csv FILE_FORMAT = (FORMAT_NAME = ibis_csv_fmt)"
-                )
+        url = sa.engine.make_url(snowflake_url).set(database="")
+        con = sa.create_engine(url)
+
+        dbschema = f"ibis_testing.{url.username}"
+
+        stmts = [
+            "CREATE DATABASE IF NOT EXISTS ibis_testing",
+            f"CREATE SCHEMA IF NOT EXISTS {dbschema}",
+            f"USE SCHEMA {dbschema}",
+            *script_dir.joinpath("schema", "snowflake.sql").read_text().split(";"),
+        ]
+
+        with con.begin() as c:
+            consume(map(c.exec_driver_sql, filter(None, map(str.strip, stmts))))
+
+            # not much we can do to make this faster, but running these in
+            # multiple threads seems to save about 2x
+            with concurrent.futures.ThreadPoolExecutor() as exe:
+                for result in concurrent.futures.as_completed(
+                    map(
+                        partial(exe.submit, partial(copy_into, c, data_dir)),
+                        TEST_TABLES,
+                    )
+                ):
+                    result.result()
 
     @staticmethod
     @functools.lru_cache(maxsize=None)
     def connect(data_directory: Path) -> BaseBackend:
         if snowflake_url := os.environ.get("SNOWFLAKE_URL"):
             return ibis.connect(snowflake_url)  # type: ignore
-        pytest.skip("SNOWFLAKE_URL environment variable is not defined")
-        return None
+        pytest.skip("SNOWFLAKE_URL environment variable is not defined")  # noqa: RET503

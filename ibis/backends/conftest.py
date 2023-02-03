@@ -1,23 +1,20 @@
 from __future__ import annotations
 
+import contextlib
 import importlib
 import importlib.metadata
-import os
 import platform
+import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, TextIO
+from typing import Any, TextIO
 
 import _pytest
 import pandas as pd
+import pytest
 import sqlalchemy as sa
 from packaging.requirements import Requirement
 from packaging.version import parse as vparse
-
-if TYPE_CHECKING:
-    import pyarrow as pa
-
-import pytest
 
 import ibis
 from ibis import util
@@ -119,12 +116,7 @@ def data_directory() -> Path:
     """
     root = Path(__file__).absolute().parents[2]
 
-    return Path(
-        os.environ.get(
-            "IBIS_TEST_DATA_DIRECTORY",
-            root / "ci" / "ibis-testing-data",
-        )
-    )
+    return root / "ci" / "ibis-testing-data"
 
 
 def recreate_database(
@@ -146,9 +138,9 @@ def recreate_database(
     engine = sa.create_engine(url.set(database=""), **kwargs)
 
     if url.database is not None:
-        with engine.connect() as conn:
-            conn.execute(f'DROP DATABASE IF EXISTS {database}')
-            conn.execute(f'CREATE DATABASE {database}')
+        with engine.begin() as con:
+            con.exec_driver_sql(f"DROP DATABASE IF EXISTS {database}")
+            con.exec_driver_sql(f"CREATE DATABASE {database}")
 
 
 def init_database(
@@ -156,6 +148,7 @@ def init_database(
     database: str,
     schema: TextIO | None = None,
     recreate: bool = True,
+    isolation_level: str | None = "AUTOCOMMIT",
     **kwargs: Any,
 ) -> sa.engine.Engine:
     """Initialise `database` at `url` with `schema`.
@@ -172,11 +165,17 @@ def init_database(
         File object containing schema to use
     recreate : bool
         If true, drop the database if it exists
+    isolation_level : str
+        Transaction isolation_level
 
     Returns
     -------
-    sa.engine.Engine for the database created
+    sa.engine.Engine
+        SQLAlchemy engine object
     """
+    if isolation_level is not None:
+        kwargs["isolation_level"] = isolation_level
+
     if recreate:
         recreate_database(url, database, **kwargs)
 
@@ -188,34 +187,11 @@ def init_database(
     engine = sa.create_engine(url, **kwargs)
 
     if schema:
-        with engine.connect() as conn:
+        with engine.begin() as conn:
             for stmt in filter(None, map(str.strip, schema.read().split(';'))):
-                conn.execute(stmt)
+                conn.exec_driver_sql(stmt)
 
     return engine
-
-
-def read_tables(
-    names: Iterable[str],
-    data_dir: Path,
-) -> Iterator[tuple[str, pa.Table]]:
-    """For each csv {names} in {data_dir} return a pyarrow.Table."""
-
-    import pyarrow.csv as pac
-
-    import ibis.backends.pyarrow.datatypes as pa_dt
-
-    for name in names:
-        schema = TEST_TABLES[name]
-        convert_options = pac.ConvertOptions(
-            column_types={
-                name: pa_dt.to_pyarrow_type(type) for name, type in schema.items()
-            }
-        )
-        yield name, pac.read_csv(
-            data_dir / f'{name}.csv',
-            convert_options=convert_options,
-        )
 
 
 def _random_identifier(suffix: str) -> str:
@@ -448,15 +424,16 @@ def pytest_runtest_call(item):
             continue
 
         provided_reason = kwargs.pop("reason", None)
-        spec = kwargs.pop(backend)
-        module = importlib.import_module(backend)
-        version = getattr(module, "__version__", None)
-        assert version is not None, f"{backend} module has no __version__ attribute"
-        condition = Requirement(f"{backend}{spec}").specifier.contains(version)
-        reason = f"{backend} backend test fails with {backend}{spec}"
+        specs = kwargs.pop(backend)
+        failing_specs = []
+        for spec in specs:
+            req = Requirement(spec)
+            if req.specifier.contains(importlib.import_module(req.name).__version__):
+                failing_specs.append(spec)
+        reason = f"{backend} backend test fails with {backend}{specs}"
         if provided_reason is not None:
             reason += f"; {provided_reason}"
-        if condition:
+        if failing_specs:
             item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
 
@@ -495,11 +472,7 @@ def _setup_backend(
     scope='session',
 )
 def ddl_backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
-    """Set up the backends that are SQL-based.
-
-    (sqlite, postgres, mysql, duckdb, datafusion, clickhouse, pyspark,
-    impala)
-    """
+    """Set up the backends that are SQL-based."""
     return _setup_backend(
         request, data_directory, script_directory, tmp_path_factory, worker_id
     )
@@ -513,17 +486,14 @@ def ddl_con(ddl_backend):
 
 @pytest.fixture(
     params=_get_backends_to_test(
-        keep=("sqlite", "postgres", "mysql", "duckdb", "snowflake")
+        keep=("duckdb", "mssql", "mysql", "postgres", "snowflake", "sqlite", "trino")
     ),
     scope='session',
 )
 def alchemy_backend(
     request, data_directory, script_directory, tmp_path_factory, worker_id
 ):
-    """Set up the SQLAlchemy-based backends.
-
-    (sqlite, mysql, postgres, duckdb)
-    """
+    """Set up the SQLAlchemy-based backends."""
     return _setup_backend(
         request, data_directory, script_directory, tmp_path_factory, worker_id
     )
@@ -645,10 +615,8 @@ def alchemy_temp_table(alchemy_con) -> str:
     try:
         yield name
     finally:
-        try:
+        with contextlib.suppress(NotImplementedError):
             alchemy_con.drop_table(name, force=True)
-        except NotImplementedError:
-            pass
 
 
 @pytest.fixture
@@ -668,10 +636,8 @@ def temp_table(con) -> str:
     try:
         yield name
     finally:
-        try:
+        with contextlib.suppress(NotImplementedError):
             con.drop_table(name, force=True)
-        except NotImplementedError:
-            pass
 
 
 @pytest.fixture
@@ -691,10 +657,8 @@ def temp_view(ddl_con) -> str:
     try:
         yield name
     finally:
-        try:
+        with contextlib.suppress(NotImplementedError):
             ddl_con.drop_view(name, force=True)
-        except NotImplementedError:
-            pass
 
 
 @pytest.fixture(scope='session')
@@ -704,7 +668,7 @@ def current_data_db(ddl_con) -> str:
 
 
 @pytest.fixture
-def alternate_current_database(ddl_con, ddl_backend, current_data_db: str) -> str:
+def alternate_current_database(ddl_con, ddl_backend) -> str:
     """Create a temporary database and yield its name. Drops the created
     database upon completion.
 
@@ -724,7 +688,6 @@ def alternate_current_database(ddl_con, ddl_backend, current_data_db: str) -> st
     try:
         yield name
     finally:
-        ddl_con.set_database(current_data_db)
         ddl_con.drop_database(name, force=True)
 
 
@@ -768,3 +731,13 @@ def test_employee_data_2():
     )
 
     return df2
+
+
+@pytest.fixture
+def no_duckdb(backend, monkeypatch):
+    monkeypatch.setitem(sys.modules, "duckdb", None)
+
+
+@pytest.fixture
+def no_pyarrow(backend, monkeypatch):
+    monkeypatch.setitem(sys.modules, "pyarrow", None)

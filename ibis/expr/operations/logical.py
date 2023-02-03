@@ -169,16 +169,11 @@ class Where(Value):
     true_expr = rlz.any
     false_null_expr = rlz.any
 
+    output_shape = rlz.shape_like("args")
+
     @attribute.default
     def output_dtype(self):
-        return rlz.highest_precedence_dtype(
-            [
-                self.true_expr,
-                self.false_null_expr,
-            ]
-        )
-
-    output_shape = rlz.shape_like("bool_expr")
+        return rlz.highest_precedence_dtype([self.true_expr, self.false_null_expr])
 
 
 @public
@@ -266,7 +261,7 @@ class UnresolvedExistsSubquery(_UnresolvedSubquery):
 
         assert isinstance(table, TableNode)
 
-        (foreign_table,) = (t for t in self.tables if not t == table)
+        (foreign_table,) = (t for t in self.tables if t != table)
         return ExistsSubquery(foreign_table, self.predicates).to_expr()
 
 
@@ -280,5 +275,5 @@ class UnresolvedNotExistsSubquery(_UnresolvedSubquery):
 
         assert isinstance(table, TableNode)
 
-        (foreign_table,) = (t for t in self.tables if not t == table)
+        (foreign_table,) = (t for t in self.tables if t != table)
         return NotExistsSubquery(foreign_table, self.predicates).to_expr()

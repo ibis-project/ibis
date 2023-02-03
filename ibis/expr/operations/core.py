@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 from public import public
 
 import ibis.expr.rules as rlz
+from ibis import util
 from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
-from ibis.util import UnnamedMarker, deprecated
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
@@ -23,7 +23,7 @@ class Node(Concrete, Traversable):
             )
         return self.__cached_equals__(other)
 
-    @deprecated(version='4.0', instead='remove intermediate .op() calls')
+    @util.deprecated(as_of='4.0', instead='remove intermediate .op() calls')
     def op(self):
         """Make `Node` backwards compatible with code that uses `Expr.op()`."""
         return self
@@ -92,7 +92,7 @@ class Value(Node, Named):
 @public
 class Alias(Value):
     arg = rlz.any
-    name = rlz.instance_of((str, UnnamedMarker))
+    name = rlz.instance_of(str)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = rlz.dtype_like("arg")

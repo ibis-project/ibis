@@ -1,22 +1,29 @@
-from typing import Dict, List, Optional, Tuple, Union
+from __future__ import annotations
+
+import sys
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import pytest
 from typing_extensions import Annotated
 
 from ibis.common.validators import (
+    Coercible,
     Validator,
     all_of,
     any_of,
     bool_,
     dict_of,
+    frozendict_of,
     instance_of,
     int_,
     isin,
     list_of,
+    mapping_of,
     min_,
     str_,
     tuple_of,
 )
+from ibis.util import frozendict
 
 
 @pytest.mark.parametrize(
@@ -36,6 +43,7 @@ from ibis.common.validators import (
         (any_of((str_, int_(max=8))), "foo", "foo"),
         (any_of((str_, int_(max=8))), 7, 7),
         (all_of((int_, min_(3), min_(8))), 10, 10),
+        (dict_of(str_, int_), {"a": 1, "b": 2}, {"a": 1, "b": 2}),
     ],
 )
 def test_validators_passing(validator, value, expected):
@@ -59,6 +67,7 @@ def test_validators_passing(validator, value, expected):
         (any_of((str_, int_(max=8))), 3.14),
         (any_of((str_, int_(max=8))), 9),
         (all_of((int_, min_(3), min_(8))), 7),
+        (dict_of(int_, str_), {"a": 1, "b": 2}),
     ],
 )
 def test_validators_failing(validator, value):
@@ -90,8 +99,65 @@ def endswith_d(x, this):
         (List[int], list_of(instance_of(int))),
         (Tuple[int], tuple_of(instance_of(int))),
         (Dict[str, float], dict_of(instance_of(str), instance_of(float))),
+        (frozendict[str, int], frozendict_of(instance_of(str), instance_of(int))),
+        (Literal["alpha", "beta", "gamma"], isin(("alpha", "beta", "gamma"))),
     ],
 )
 def test_validator_from_annotation(annot, expected):
-    validator = Validator.from_annotation(annot)
-    assert validator == expected
+    assert Validator.from_annotation(annot) == expected
+
+
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
+def test_validator_from_annotation_uniontype():
+    # uniontype marks `type1 | type2` annotations and it's different from
+    # Union[type1, type2]
+    validator = Validator.from_annotation(str | int | float)
+    assert validator == any_of((instance_of(str), instance_of(int), instance_of(float)))
+
+
+class Something(Coercible):
+    def __init__(self, value):
+        self.value = value
+
+    @classmethod
+    def __coerce__(cls, obj):
+        return cls(obj + 1)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.value == other.value
+
+
+class SomethingSimilar(Something):
+    pass
+
+
+class SomethingDifferent(Coercible):
+    @classmethod
+    def __coerce__(cls, obj):
+        return obj + 2
+
+
+def test_coercible():
+    s = Validator.from_annotation(Something)
+    assert s(1) == Something(2)
+    assert s(10) == Something(11)
+
+
+def test_coercible_checks_type():
+    s = Validator.from_annotation(SomethingSimilar)
+    v = Validator.from_annotation(SomethingDifferent)
+
+    assert s(1) == SomethingSimilar(2)
+    assert SomethingDifferent.__coerce__(1) == 3
+
+    with pytest.raises(TypeError, match="not an instance of .*SomethingDifferent.*"):
+        v(1)
+
+
+def test_mapping_of():
+    value = {"a": 1, "b": 2}
+    assert mapping_of(str, int, value, type=dict) == value
+    assert mapping_of(str, int, value, type=frozendict) == frozendict(value)
+
+    with pytest.raises(TypeError, match="Argument must be a mapping"):
+        mapping_of(str, float, 10, type=dict)

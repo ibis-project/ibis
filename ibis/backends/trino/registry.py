@@ -5,7 +5,6 @@ import sqlalchemy as sa
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.registry import _literal as _alchemy_literal
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
@@ -29,7 +28,7 @@ def _literal(t, op):
     dtype = op.output_dtype
 
     if dtype.is_struct():
-        return sa.cast(sa.func.row(*value.values()), to_sqla_type(dtype))
+        return sa.cast(sa.func.row(*value.values()), t.get_sqla_type(dtype))
     elif dtype.is_map():
         return sa.func.map(_array(t, value.keys()), _array(t, value.values()))
     return _alchemy_literal(t, op)
@@ -63,7 +62,7 @@ def _array_column(t, op):
         str(t.translate(arg).compile(compile_kwargs={"literal_binds": True}))
         for arg in op.cols
     )
-    return sa.literal_column(f"ARRAY[{args}]", type_=to_sqla_type(op.output_dtype))
+    return sa.literal_column(f"ARRAY[{args}]", type_=t.get_sqla_type(op.output_dtype))
 
 
 _truncate_precisions = {
@@ -148,16 +147,37 @@ def _round(t, op):
     return sa.func.round(arg)
 
 
+def _unnest(t, op):
+    arg = op.arg
+    name = arg.name
+    return sa.func.unnest(t.translate(arg)).table_valued(name).render_derived().c[name]
+
+
+def _where(t, op):
+    if_ = getattr(sa.func, "if")
+    return if_(
+        t.translate(op.bool_expr),
+        t.translate(op.true_expr),
+        t.translate(op.false_null_expr),
+        type_=t.get_sqla_type(op.output_dtype),
+    )
+
+
+def _cot(t, op):
+    arg = t.translate(op.arg)
+    return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.output_dtype))
+
+
 operation_registry.update(
     {
         # conditional expressions
         # static checks are not happy with using "if" as a property
-        ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
+        ops.Where: _where,
         # boolean reductions
-        ops.Any: unary(sa.func.bool_or),
-        ops.All: unary(sa.func.bool_and),
-        ops.NotAny: unary(lambda x: sa.not_(sa.func.bool_or(x))),
-        ops.NotAll: unary(lambda x: sa.not_(sa.func.bool_and(x))),
+        ops.Any: reduction(sa.func.bool_or),
+        ops.All: reduction(sa.func.bool_and),
+        ops.NotAny: reduction(lambda x: sa.not_(sa.func.bool_or(x))),
+        ops.NotAll: reduction(lambda x: sa.not_(sa.func.bool_and(x))),
         ops.ArgMin: reduction(sa.func.min_by),
         ops.ArgMax: reduction(sa.func.max_by),
         # array ops
@@ -166,6 +186,7 @@ operation_registry.update(
         ops.ExtractMillisecond: unary(sa.func.millisecond),
         ops.Arbitrary: _arbitrary,
         ops.ApproxCountDistinct: reduction(sa.func.approx_distinct),
+        ops.ApproxMedian: reduction(lambda arg: sa.func.approx_percentile(arg, 0.5)),
         ops.RegexExtract: fixed_arity(sa.func.regexp_extract, 3),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.RegexSearch: fixed_arity(
@@ -174,6 +195,14 @@ operation_registry.update(
         ops.GroupConcat: _group_concat,
         ops.BitAnd: reduction(sa.func.bitwise_and_agg),
         ops.BitOr: reduction(sa.func.bitwise_or_agg),
+        ops.BitXor: reduction(
+            lambda arg: sa.func.reduce_agg(
+                arg,
+                0,
+                sa.text("(a, b) -> bitwise_xor(a, b)"),
+                sa.text("(a, b) -> bitwise_xor(a, b)"),
+            )
+        ),
         ops.BitwiseAnd: fixed_arity(sa.func.bitwise_and, 2),
         ops.BitwiseOr: fixed_arity(sa.func.bitwise_or, 2),
         ops.BitwiseXor: fixed_arity(sa.func.bitwise_xor, 2),
@@ -236,9 +265,16 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.StructField: lambda t, op: t.translate(op.arg).op(".")(sa.text(op.field)),
         ops.StructColumn: lambda t, op: sa.cast(
-            sa.func.row(*map(t.translate, op.values)), to_sqla_type(op.output_dtype)
+            sa.func.row(*map(t.translate, op.values)), t.get_sqla_type(op.output_dtype)
         ),
         ops.Literal: _literal,
+        ops.IfNull: fixed_arity(sa.func.coalesce, 2),
+        ops.ZeroIfNull: unary(lambda value: sa.func.coalesce(value, 0)),
+        ops.IsNan: unary(sa.func.is_nan),
+        ops.IsInf: unary(sa.func.is_infinite),
+        ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
+        ops.Log2: unary(sa.func.log2),
+        ops.Log10: unary(sa.func.log10),
         ops.MapLength: unary(sa.func.cardinality),
         ops.MapGet: fixed_arity(
             lambda arg, key, default: sa.func.coalesce(
@@ -273,9 +309,35 @@ operation_registry.update(
             )
         ),
         ops.ExtractQuery: _extract_url_query,
-        ops.Cot: unary(lambda arg: 1.0 / sa.func.tan(arg)),
+        ops.Cot: _cot,
         ops.Round: _round,
         ops.Pi: fixed_arity(sa.func.pi, 0),
         ops.E: fixed_arity(sa.func.e, 0),
+        ops.Quantile: reduction(sa.func.approx_percentile),
+        ops.MultiQuantile: reduction(sa.func.approx_percentile),
+        ops.StringAscii: unary(
+            lambda d: sa.func.codepoint(
+                sa.func.cast(sa.func.substr(d, 1, 2), sa.VARCHAR(1))
+            )
+        ),
+        ops.TypeOf: unary(sa.func.typeof),
+        ops.Unnest: _unnest,
     }
 )
+
+_invalid_operations = {
+    # ibis.expr.operations.analytic
+    ops.CumulativeOp,
+    ops.NTile,
+    # ibis.expr.operations.logical
+    ops.Between,
+    # ibis.expr.operations.maps
+    ops.MapLength,
+    # ibis.expr.operations.reductions
+    ops.MultiQuantile,
+    ops.Quantile,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}

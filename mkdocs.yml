@@ -34,18 +34,18 @@ theme:
   custom_dir: docs/overrides
 plugins:
   - search
-  - mike
   - autorefs
-  - git-revision-date
+  - git-revision-date-localized
   - exclude:
       glob:
         - backends/template.md
-        - backends/support_matrix.csv
+        - backends/*_support_matrix.csv
+        - backends/app/*
         - CONTRIBUTING.md
   - gen-files:
       scripts:
         - gen_matrix.py
-  - table-reader
+        - gen_redirects.py
   - macros
   - mkdocstrings:
       enable_inventory: true
@@ -54,7 +54,7 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
             - https://docs.sqlalchemy.org/objects.inv
-          selection:
+          options:
             docstring_style: numpy
             filters:
               - "!^_"
@@ -74,7 +74,7 @@ plugins:
               - "!^scalar$"
               - "!^column$"
               - "!^option_context$"
-          rendering:
+              - "!Selector$"
             show_category_heading: true
             show_root_full_path: false
             show_root_heading: true
@@ -84,7 +84,7 @@ plugins:
       execute: true
       ignore:
         - "*.py"
-      execute_ignore: "tutorial/*Geospatial*.ipynb"
+      execute_ignore: "**/rendered/*.ipynb"
       include_source: true
       theme: dark
       allow_errors: false
@@ -119,9 +119,8 @@ markdown_extensions:
       permalink: true
       permalink_title: "Anchor link to this section for reference"
 extra:
-  version:
-    provider: mike
   project_name: "ibis"
+  # maybe version goes here?
   team:
     - name: "Maintainers"
       members:

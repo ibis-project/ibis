@@ -5,9 +5,6 @@ on:
     # At minute 00:30 on Sunday
     - cron: "30 0 * * SUN"
   workflow_dispatch:
-  repository_dispatch:
-    types:
-      - condalock-command
 
 jobs:
   condalock:
@@ -35,84 +32,13 @@ jobs:
           miniforge-variant: Mambaforge
           activate-environment: conda-lock
           python-version: ${{ matrix.python-version }}
-          condarc-file: ci/condarc
+          condarc-file: ci/conda-lock/condarc
 
       - name: install conda-lock
-        run: mamba install 'conda-lock <1.0'
+        run: mamba install 'conda-lock>=1.4'
 
       - name: generate lock file
-        run: |
-          set -euo pipefail
-
-          python_version_file="$(mktemp --suffix=.yml)"
-
-          {
-            echo 'name: conda-lock'
-            echo 'dependencies:'
-            echo '  - python=${{ matrix.python-version }}'
-          } > "${python_version_file}"
-
-          template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
-          conda lock \
-            --kind explicit \
-            --file pyproject.toml \
-            --file "${python_version_file}" \
-            --platform linux-64 \
-            --platform osx-64 \
-            --filename-template "${template}" \
-            --extras all \
-            --mamba
-
-          # not great, but conda-forge is missing packages for duckdb,
-          # clickhouse-cityhash, and datafusion for windows
-          conda lock \
-            --kind explicit \
-            --file pyproject.toml \
-            --file "${python_version_file}" \
-            --platform win-64 \
-            --filename-template "${template}" \
-            -e dask \
-            -e geospatial \
-            -e impala \
-            -e mysql \
-            -e pandas \
-            -e postgres \
-            -e pyspark \
-            -e sqlite \
-            -e visualization \
-            --mamba
-
-      - name: generate lock file for osx-arm64
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-
-          python_version_file="$(mktemp --suffix=.yml)"
-
-          {
-            echo 'name: conda-lock'
-            echo 'dependencies:'
-            echo '  - python=${{ matrix.python-version }}'
-          } > "${python_version_file}"
-
-          template='conda-lock/{platform}-${{ matrix.python-version }}.lock'
-
-          conda lock \
-            --kind explicit \
-            --file pyproject.toml \
-            --file "${python_version_file}" \
-            --platform osx-arm64 \
-            --filename-template "${template}" \
-            -e dask \
-            -e datafusion \
-            -e geospatial \
-            -e mysql \
-            -e pandas \
-            -e postgres \
-            -e pyspark \
-            -e sqlite \
-            -e visualization \
-            --mamba
+        run: ./ci/conda-lock/generate.sh "${{ matrix.python-version }}"
 
       - name: create conda environment
         run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock

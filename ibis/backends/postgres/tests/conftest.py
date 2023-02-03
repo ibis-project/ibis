@@ -74,6 +74,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 database=database,
                 schema=schema,
                 isolation_level='AUTOCOMMIT',
+                recreate=False,
             )
 
         tables = list(TEST_TABLES) + ['geo']
@@ -90,7 +91,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                 with data_dir.joinpath(f'{table}.csv').open('r') as file:
                     cur.copy_expert(sql=sql, file=file)
 
-        engine.execute('VACUUM FULL ANALYZE')
+            con.exec_driver_sql("VACUUM FULL ANALYZE")
 
     @staticmethod
     def connect(data_directory: Path):

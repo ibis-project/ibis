@@ -3,16 +3,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
 from public import public
-from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.grounds import Singleton
-from ibis.expr.types.core import Expr, _binop
+from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
+    import pandas as pd
+
     import ibis.expr.types as ir
     import ibis.expr.window as win
 
@@ -58,7 +59,8 @@ class Value(Expr):
         return op.to_expr()
 
     # TODO(kszucs): should rename to dtype
-    def type(self):
+    def type(self) -> dt.DataType:
+        """Return the [DataType] of this expression."""
         return self.op().output_dtype
 
     def hash(self, how: str = "fnv") -> ir.IntegerValue:
@@ -95,7 +97,7 @@ class Value(Expr):
             # noop case if passed type is the same
             return self
 
-        if op.to.is_geography() or op.to.is_geometry():
+        if op.to.is_geospatial():
             from_geotype = self.type().geotype or 'geometry'
             to_geotype = op.to.geotype
             if from_geotype == to_geotype:
@@ -480,8 +482,22 @@ class Value(Expr):
         """Sort an expression descending."""
         return ops.SortKey(self, ascending=False).to_expr()
 
-    def to_projection(self) -> ir.Table:
-        """Promote this value expression to a projection."""
+    def as_table(self) -> ir.Table:
+        """Promote the expression to a table.
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        >>> t = ibis.table(dict(a="str"), name="t")
+        >>> expr = t.a.length().name("len").as_table()
+        >>> expected = t.select(len=t.a.length())
+        >>> expr.equals(expected)
+        True
+        """
         from ibis.expr.analysis import find_immediate_parent_tables
 
         roots = find_immediate_parent_tables(self.op())
@@ -492,7 +508,17 @@ class Value(Expr):
                 'to a projection'
             )
         table = roots[0].to_expr()
-        return table.projection([self])
+        return table.select(self)
+
+    def to_pandas(self, **kwargs) -> pd.Series:
+        """Convert a column expression to a pandas Series or scalar object.
+
+        Parameters
+        ----------
+        kwargs
+            Same as keyword arguments to [`execute`][ibis.expr.types.core.Expr.execute]
+        """
+        return self.execute(**kwargs)
 
 
 @public
@@ -505,6 +531,29 @@ class Scalar(Value):
         return console.render(repr(self.execute()), options=options)
 
     def as_table(self) -> ir.Table:
+        """Promote the scalar expression to a table.
+
+        Returns
+        -------
+        Table
+            A table expression
+
+        Examples
+        --------
+        Promote an aggregation to a table
+
+        >>> t = ibis.table(dict(a="str"), name="t")
+        >>> expr = t.a.length().sum().name("len").as_table()
+        >>> isinstance(expr, ir.Table)
+        True
+
+        Promote a literal value to a table
+
+        >>> import ibis.expr.types as ir
+        >>> lit = ibis.literal(1).name("a").as_table()
+        >>> isinstance(lit, ir.Table)
+        True
+        """
         from ibis.expr.analysis import (
             find_first_base_table,
             is_scalar_reduction,
@@ -527,7 +576,7 @@ class Scalar(Value):
 
 
 @public
-class Column(Value, JupyterMixin):
+class Column(Value, _FixedTextJupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
@@ -535,9 +584,6 @@ class Column(Value, JupyterMixin):
 
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
-
-    def as_table(self):
-        return self.to_projection()
 
     def __rich_console__(self, console, options):
         named = self.name(self.op().name)
@@ -613,6 +659,18 @@ class Column(Value, JupyterMixin):
         return ops.ArgMin(self, key=key, where=where).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+        """Compute the number of distinct rows in an expression.
+
+        Parameters
+        ----------
+        where
+            Filter expression
+
+        Returns
+        -------
+        IntegerScalar
+            Number of distinct elements in an expression
+        """
         return ops.CountDistinct(self, where).to_expr()
 
     def topk(
@@ -741,53 +799,130 @@ class Column(Value, JupyterMixin):
         """
         return ops.Count(self, where).to_expr()
 
-    def value_counts(self, metric_name: str = "count") -> ir.Table:
+    def value_counts(self) -> ir.Table:
         """Compute a frequency table.
-
-        Parameters
-        ----------
-        metric_name
-            Output column name of the `count()` metric
 
         Returns
         -------
         Table
             Frequency table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"chars": char} for char in "aabcddd")
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ chars  ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ a      │
+        │ a      │
+        │ b      │
+        │ c      │
+        │ d      │
+        │ d      │
+        │ d      │
+        └────────┘
+        >>> t.chars.value_counts()
+        ┏━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ chars  ┃ chars_count ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string │ int64       │
+        ├────────┼─────────────┤
+        │ a      │           2 │
+        │ b      │           1 │
+        │ c      │           1 │
+        │ d      │           3 │
+        └────────┴─────────────┘
         """
         from ibis.expr.analysis import find_first_base_table
 
+        name = self.get_name()
         return (
             find_first_base_table(self.op())
             .to_expr()
             .select(self)
-            .group_by(self.get_name())
-            .agg(**{metric_name: lambda t: t.count()})
+            .group_by(name)
+            .agg(**{f"{name}_count": lambda t: t.count()})
         )
 
     def first(self) -> Column:
+        """Return the first value of a column.
+
+        Equivalent to SQL's `FIRST_VALUE` window function.
+        """
         return ops.FirstValue(self).to_expr()
 
     def last(self) -> Column:
+        """Return the last value of a column.
+
+        Equivalent to SQL's `LAST_VALUE` window function.
+        """
         return ops.LastValue(self).to_expr()
 
-    def rank(self) -> Column:
+    def rank(self) -> ir.IntegerColumn:
+        """Compute position of first element within each equal-value group in sorted order.
+
+        Equivalent to SQL's `RANK()` window function.
+
+        Examples
+        --------
+        values   ranks
+        1        0
+        1        0
+        2        2
+        2        2
+        2        2
+        3        5
+
+        Returns
+        -------
+        Int64Column
+            The min rank
+        """
         return ops.MinRank(self).to_expr()
 
-    def dense_rank(self) -> Column:
+    def dense_rank(self) -> ir.IntegerColumn:
+        """Position of first element within each group of equal values.
+
+        Values are returned in sorted order and duplicate values are ignored.
+
+        Equivalent to SQL's `DENSE_RANK()`.
+
+        Examples
+        --------
+        values   ranks
+        1        0
+        1        0
+        2        1
+        2        1
+        2        1
+        3        2
+
+        Returns
+        -------
+        IntegerColumn
+            The rank
+        """
         return ops.DenseRank(self).to_expr()
 
     def percent_rank(self) -> Column:
+        """Return the relative rank of the values in the column."""
         return ops.PercentRank(self).to_expr()
 
     def cume_dist(self) -> Column:
-        import ibis.expr.operations as ops
-
+        """Return the cumulative distribution over a window."""
         return ops.CumeDist(self).to_expr()
 
     def cummin(self) -> Column:
+        """Return the cumulative min over a window."""
         return ops.CumulativeMin(self).to_expr()
 
     def cummax(self) -> Column:
+        """Return the cumulative max over a window."""
         return ops.CumulativeMax(self).to_expr()
 
     def lag(
@@ -795,6 +930,15 @@ class Column(Value, JupyterMixin):
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
     ) -> Column:
+        """Return the row located at `offset` rows **before** the current row.
+
+        Parameters
+        ----------
+        offset
+            Index of row to select
+        default
+            Value used if no row exists at `offset`
+        """
         return ops.Lag(self, offset, default).to_expr()
 
     def lead(
@@ -802,9 +946,25 @@ class Column(Value, JupyterMixin):
         offset: int | ir.IntegerValue | None = None,
         default: Value | None = None,
     ) -> Column:
+        """Return the row located at `offset` rows **after** the current row.
+
+        Parameters
+        ----------
+        offset
+            Index of row to select
+        default
+            Value used if no row exists at `offset`
+        """
         return ops.Lead(self, offset, default).to_expr()
 
     def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+        """Return the integer number of a partitioning of the column values.
+
+        Parameters
+        ----------
+        buckets
+            Number of buckets to partition into
+        """
         return ops.NTile(self, buckets).to_expr()
 
     def nth(self, n: int | ir.IntegerValue) -> Column:

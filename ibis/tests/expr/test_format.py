@@ -346,12 +346,7 @@ def test_destruct_selection():
 
     @udf.reduction(
         input_type=['int64'],
-        output_type=dt.Struct.from_dict(
-            {
-                'sum': 'int64',
-                'mean': 'float64',
-            }
-        ),
+        output_type=dt.Struct({'sum': 'int64', 'mean': 'float64'}),
     )
     def multi_output_udf(v):
         return v.sum(), v.mean()

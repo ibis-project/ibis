@@ -1,17 +1,19 @@
 from __future__ import annotations
 
 import parsy as p
+import sqlalchemy as sa
 import toolz
+from duckdb_engine import Dialect as DuckDBDialect
+from sqlalchemy.dialects import postgresql
 
-from ibis import util
+import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.common.parsing import (
     COMMA,
     FIELD,
-    LANGLE,
     LBRACKET,
     LPAREN,
     PRECISION,
-    RANGLE,
     RBRACKET,
     RPAREN,
     SCALE,
@@ -62,13 +64,15 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         | spaceless_string("real", "float4", "float").result(float32)
         | spaceless_string("smallint", "int2", "short").result(int16)
         | spaceless_string(
-            "timestamp_tz",
-            "timestamp_sec",
-            "timestamp_ms",
-            "timestamp_ns",
-            "timestamp",
-            "datetime",
+            "timestamp with time zone", "timestamp_tz", "datetime"
         ).result(Timestamp(timezone="UTC"))
+        | spaceless_string("timestamp_sec", "timestamp_s").result(
+            Timestamp(timezone="UTC", scale=0)
+        )
+        | spaceless_string("timestamp_ms").result(Timestamp(timezone="UTC", scale=3))
+        | spaceless_string("timestamp_us").result(Timestamp(timezone="UTC", scale=6))
+        | spaceless_string("timestamp_ns").result(Timestamp(timezone="UTC", scale=9))
+        | spaceless_string("timestamp").result(Timestamp(timezone="UTC"))
         | spaceless_string("date").result(date)
         | spaceless_string("time").result(time)
         | spaceless_string("tinyint", "int1").result(int8)
@@ -78,13 +82,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         | spaceless_string("uinteger").result(uint32)
         | spaceless_string("utinyint").result(uint8)
         | spaceless_string("uuid").result(uuid)
-        | spaceless_string(
-            "varchar",
-            "char",
-            "bpchar",
-            "text",
-            "string",
-        ).result(string)
+        | spaceless_string("varchar", "char", "bpchar", "text", "string").result(string)
         | spaceless_string("json").result(json)
     )
 
@@ -103,19 +101,6 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         return Decimal(*prec_scale)
 
     @p.generate
-    def angle_type():
-        yield LANGLE
-        value_type = yield ty
-        yield RANGLE
-        return value_type
-
-    @p.generate
-    def list_array():
-        yield spaceless_string("list")
-        value_type = yield angle_type
-        return Array(value_type)
-
-    @p.generate
     def brackets():
         yield spaceless(LBRACKET)
         yield spaceless(RBRACKET)
@@ -129,11 +114,11 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def map():
         yield spaceless_string("map")
-        yield LANGLE
+        yield LPAREN
         key_type = yield primitive
         yield COMMA
         value_type = yield ty
-        yield RANGLE
+        yield RPAREN
         return Map(key_type, value_type)
 
     field = spaceless(FIELD)
@@ -148,14 +133,16 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
         yield RPAREN
         return Struct.from_tuples(field_names_types)
 
-    non_pg_array_type = primitive | decimal | list_array | map | struct
+    non_pg_array_type = primitive | decimal | map | struct
     ty = pg_array | non_pg_array_type
     return ty.parse(text)
 
 
-@util.deprecated(
-    instead=f"use {parse.__module__}.{parse.__name__}",
-    version="4.0",
-)
-def parse_type(*args, **kwargs):
-    return parse(*args, **kwargs)
+@to_sqla_type.register(DuckDBDialect, dt.UUID)
+def sa_duckdb_uuid(_, itype):
+    return postgresql.UUID
+
+
+@to_sqla_type.register(DuckDBDialect, (dt.MACADDR, dt.INET))
+def sa_duckdb_macaddr(_, itype):
+    return sa.TEXT()

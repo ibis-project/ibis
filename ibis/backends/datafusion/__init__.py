@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import os
+import itertools
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -15,7 +15,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.datafusion.compiler import translate
-from ibis.common.dispatch import RegexDispatcher
+from ibis.util import normalize_filename
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -24,40 +24,10 @@ except ImportError:
 
 import datafusion
 
-_register_file = RegexDispatcher("_register_file")
-
-
-def _name_from_path(path: Path) -> str:
-    base, *_ = path.name.partition(os.extsep)
-    return base.replace("-", "_")
-
-
-@_register_file.register(r"parquet://(?P<path>.+)", priority=10)
-def _parquet(_, path, table_name=None, **kwargs):
-    path = Path(path).absolute()
-    table_name = table_name or _name_from_path(path)
-    return ("register_parquet", path, table_name)
-
-
-@_register_file.register(r"csv://(?P<path>.+)", priority=10)
-def _csv(_, path, table_name=None, **kwargs):
-    path = Path(path).absolute()
-    table_name = table_name or _name_from_path(path)
-    return ("register_csv", path, table_name)
-
-
-@_register_file.register(r"(?:file://)?(?P<path>.+)", priority=9)
-def _file(raw, path, table_name=None, **kwargs):
-    num_sep_chars = len(os.extsep)
-    extension = "".join(Path(path).suffixes)[num_sep_chars:]
-    if not extension:
-        raise ValueError(
-            f"""Unrecognized file type or extension: {raw}
-
-        Valid prefixes are parquet://, csv://, or file://
-        Supported file extensions are parquet and csv"""
-        )
-    return _register_file(f"{extension}://{path}", table_name=table_name, **kwargs)
+# counters for in-memory, parquet, and csv reads
+# used if no table name is specified
+pa_n = itertools.count(0)
+csv_n = itertools.count(0)
 
 
 class Backend(BaseBackend):
@@ -151,13 +121,86 @@ class Backend(BaseBackend):
             Datafusion-specific keyword arguments
         """
         if isinstance(source, (str, Path)):
-            method, path, name = _register_file(
-                str(source), table_name=table_name, **kwargs
-            )
-            getattr(self._context, method)(name, str(path), **kwargs)
+            first = str(source)
         else:
             raise ValueError("`source` must be either a string or a pathlib.Path")
-        return self.table(name)
+
+        if first.startswith(("parquet://", "parq://")) or first.endswith(
+            ("parq", "parquet")
+        ):
+            return self.read_parquet(source, table_name=table_name, **kwargs)
+        elif first.startswith(("csv://", "txt://")) or first.endswith(
+            ("csv", "tsv", "txt")
+        ):
+            return self.read_csv(source, table_name=table_name, **kwargs)
+        else:
+            self._register_failure()
+            return None
+
+    def _register_failure(self):
+        import inspect
+
+        msg = ", ".join(
+            m[0] for m in inspect.getmembers(self) if m[0].startswith("read_")
+        )
+        raise ValueError(
+            f"Cannot infer appropriate read function for input, "
+            f"please call one of {msg} directly"
+        )
+
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the CSV file.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Datafusion loading function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        path = normalize_filename(path)
+        table_name = table_name or f"ibis_read_csv_{next(csv_n)}"
+        # Our other backends support overwriting views / tables when reregistering
+        self._context.deregister_table(table_name)
+        self._context.register_csv(table_name, path, **kwargs)
+        return self.table(table_name)
+
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Datafusion loading function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        path = normalize_filename(path)
+        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+        # Our other backends support overwriting views / tables when reregistering
+        self._context.deregister_table(table_name)
+        self._context.register_parquet(table_name, path, **kwargs)
+        return self.table(table_name)
 
     def _get_frame(
         self,
@@ -170,14 +213,14 @@ class Backend(BaseBackend):
             return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Column):
             # expression must be named for the projection
-            expr = expr.name('tmp').to_projection()
+            expr = expr.name('tmp').as_table()
             return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Scalar):
             if an.find_immediate_parent_tables(expr.op()):
                 # there are associated datafusion tables so convert the expr
                 # to a selection which we can directly convert to a datafusion
                 # plan
-                expr = expr.name('tmp').to_projection()
+                expr = expr.name('tmp').as_table()
                 frame = self.compile(expr, params, **kwargs)
             else:
                 # doesn't have any tables associated so create a plan from a

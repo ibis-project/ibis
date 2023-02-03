@@ -1,6 +1,8 @@
+import contextlib
 import os
 import platform
 import re
+import string
 
 import numpy as np
 import pandas as pd
@@ -25,13 +27,16 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     con.drop_table(temp_table_name, force=True)
     con.create_table(temp_table_name, schema=schema)
     temporary = con.table(temp_table_name)
-    assert temporary.execute().empty
+    assert temporary.to_pandas().empty
 
     if data is not None and isinstance(data, pd.DataFrame):
         con.load_data(temp_table_name, data, if_exists="append")
-        result = temporary.execute()
+        result = temporary.to_pandas()
         assert len(result) == len(data.index)
-        tm.assert_frame_equal(result, data)
+        tm.assert_frame_equal(
+            result.sort_values(result.columns[0]).reset_index(drop=True),
+            data.sort_values(result.columns[0]).reset_index(drop=True),
+        )
 
     return temporary
 
@@ -57,7 +62,12 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
     )
     alchemy_con.create_table(alchemy_temp_table, schema=sch)
     alchemy_con.load_data(alchemy_temp_table, df, if_exists='append')
-    result = alchemy_con.table(alchemy_temp_table).execute()
+    result = (
+        alchemy_con.table(alchemy_temp_table)
+        .execute()
+        .sort_values("first_name")
+        .reset_index(drop=True)
+    )
 
     alchemy_backend.assert_frame_equal(df, result)
 
@@ -101,14 +111,26 @@ def test_sql(backend, con):
     assert len(result) == 10
 
 
-@mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars"])
+backend_type_mapping = {
+    "bigquery": {
+        # backend only implements int64
+        dt.int32: dt.int64
+    }
+}
+
+
+@mark.notimpl(["clickhouse", "datafusion", "polars"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     con.create_table(temp_table, schema=new_schema)
 
-    t = con.table(temp_table)
+    new_table = con.table(temp_table)
+    backend_mapping = backend_type_mapping.get(con.name, dict())
 
-    for k, i_type in t.schema().items():
-        assert new_schema[k] == i_type
+    for column_name, column_type in new_table.schema().items():
+        assert (
+            backend_mapping.get(new_schema[column_name], new_schema[column_name])
+            == column_type
+        )
 
 
 @mark.notimpl(
@@ -163,10 +185,8 @@ def test_nullable_input_output(con, temp_table):
 
 @mark.notimpl(
     [
-        "bigquery",
         "clickhouse",
         "datafusion",
-        "duckdb",
         "mysql",
         "postgres",
         "sqlite",
@@ -277,7 +297,10 @@ def test_insert_no_overwrite_from_dataframe(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, test_employee_data_2)
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        test_employee_data_2.sort_values("first_name").reset_index(drop=True),
+    )
 
 
 def test_insert_overwrite_from_dataframe(
@@ -294,10 +317,13 @@ def test_insert_overwrite_from_dataframe(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, test_employee_data_2)
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        test_employee_data_2.sort_values("first_name").reset_index(drop=True),
+    )
 
 
-def test_insert_no_overwite_from_expr(
+def test_insert_no_overwrite_from_expr(
     alchemy_con,
     employee_empty_temp_table,
     employee_data_2_temp_table,
@@ -312,7 +338,10 @@ def test_insert_no_overwite_from_expr(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, from_table.execute())
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        from_table.execute().sort_values("first_name").reset_index(drop=True),
+    )
 
 
 def test_insert_overwrite_from_expr(
@@ -330,9 +359,15 @@ def test_insert_overwrite_from_expr(
     )
     result = temporary.execute()
     assert len(result) == 3
-    tm.assert_frame_equal(result, from_table.execute())
+    tm.assert_frame_equal(
+        result.sort_values("first_name").reset_index(drop=True),
+        from_table.execute().sort_values("first_name").reset_index(drop=True),
+    )
 
 
+@pytest.mark.notyet(
+    ["trino"], reason="memory connector doesn't allow writing to tables"
+)
 def test_insert_overwrite_from_list(
     alchemy_con,
     employee_data_1_temp_table,
@@ -368,51 +403,58 @@ def test_insert_from_memtable(alchemy_con):
         assert len(table.execute()) == 6
         assert alchemy_con.tables[table_name].schema() == ibis.schema({"x": "int64"})
     finally:
-        alchemy_con.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
+        with alchemy_con.begin() as con:
+            con.exec_driver_sql(f"DROP TABLE IF EXISTS {table_name}")
         assert table_name not in alchemy_con.list_tables()
 
 
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
-    TEST_DATABASES = {
+    test_databases = {
         "sqlite": {"main"},
         "postgres": {"postgres", "ibis_testing"},
+        "mssql": {"INFORMATION_SCHEMA"},
         "mysql": {"ibis_testing", "information_schema"},
         "duckdb": {"information_schema", "main", "temp"},
         "snowflake": {"IBIS_TESTING"},
+        "trino": {"default"},
     }
-    assert TEST_DATABASES[alchemy_con.name] <= set(alchemy_con.list_databases())
+    assert test_databases[alchemy_con.name] <= set(alchemy_con.list_databases())
 
 
 @pytest.mark.never(
-    ["bigquery", "postgres", "mysql", "snowflake"],
-    reason="postgres and mysql do not support in-memory tables",
+    ["bigquery", "postgres", "mssql", "mysql", "snowflake"],
+    reason="backend does not support client-side in-memory tables",
     raises=(sa.exc.OperationalError, TypeError),
+)
+@pytest.mark.notyet(
+    ["trino"], reason="memory connector doesn't allow writing to tables"
 )
 def test_in_memory(alchemy_backend):
     con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
     table_name = f"t{guid()[:6]}"
-    con.raw_sql(f"CREATE TABLE {table_name} (x int)")
+    with con.begin() as c:
+        c.exec_driver_sql(f"CREATE TABLE {table_name} (x int)")
     try:
         assert table_name in con.list_tables()
     finally:
-        con.raw_sql(f"DROP TABLE IF EXISTS {table_name}")
+        with con.begin() as c:
+            c.exec_driver_sql(f"DROP TABLE IF EXISTS {table_name}")
         assert table_name not in con.list_tables()
 
 
-@pytest.mark.parametrize(
-    "coltype",
-    [dt.uint8, dt.uint16, dt.uint32, dt.uint64],
-    ids=["uint8", "uint16", "uint32", "uint64"],
-)
 @pytest.mark.notyet(
-    ["postgres", "mysql", "sqlite"],
+    ["mssql", "mysql", "postgres", "snowflake", "sqlite", "trino"],
     raises=TypeError,
     reason="postgres, mysql and sqlite do not support unsigned integer types",
 )
-def test_unsigned_integer_type(alchemy_con, coltype):
+def test_unsigned_integer_type(alchemy_con):
     tname = f"t{guid()[:6]}"
-    alchemy_con.create_table(tname, schema=ibis.schema(dict(a=coltype)), force=True)
+    alchemy_con.create_table(
+        tname,
+        schema=ibis.schema(dict(a="uint8", b="uint16", c="uint32", d="uint64")),
+        force=True,
+    )
     try:
         assert tname in alchemy_con.list_tables()
     finally:
@@ -648,23 +690,13 @@ def test_deprecated_path_argument(backend_name, tmp_path):
         ),
     ],
 )
-@pytest.mark.notyet(
-    ["bigquery", "mysql", "sqlite"],
-    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
-    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
-)
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_in_memory_table(backend, con, expr, expected):
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["mysql", "sqlite"],
-    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
-    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
-)
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_filter_memory_table(backend, con):
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.filter(t.x > 1)
@@ -673,12 +705,7 @@ def test_filter_memory_table(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["mysql", "sqlite"],
-    reason="SQLAlchemy generates incorrect code for `VALUES` projections.",
-    raises=(sa.exc.ProgrammingError, sa.exc.OperationalError),
-)
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
 def test_agg_memory_table(con):
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.x.count()
@@ -703,9 +730,7 @@ def test_agg_memory_table(con):
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["bigquery", "clickhouse", "dask", "datafusion", "pandas", "polars"]
-)
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas", "polars"])
 def test_create_from_in_memory_table(backend, con, t):
     if backend.name() == "snowflake":
         pytest.skip("snowflake is unreliable here")
@@ -718,17 +743,25 @@ def test_create_from_in_memory_table(backend, con, t):
         assert tmp_name not in con.list_tables()
 
 
+def test_default_backend_option():
+    orig = ibis.options.default_backend
+    ibis.options.default_backend = ibis.pandas
+    try:
+        backend = ibis.config._default_backend()
+        assert backend.name == "pandas"
+    finally:
+        ibis.options.default_backend = orig
+
+
 def test_default_backend_no_duckdb(backend):
     # backend is used to ensure that this test runs in CI in the setting
     # where only the dependencies for a a given backend are installed
 
     # if duckdb is available then this test won't fail and so we skip it
-    try:
+    with contextlib.suppress(ImportError):
         import duckdb  # noqa: F401
 
         pytest.skip("duckdb is installed; it will be used as the default backend")
-    except ImportError:
-        pass
 
     df = pd.DataFrame({'a': [1, 2, 3]})
     t = ibis.memtable(df)
@@ -739,9 +772,17 @@ def test_default_backend_no_duckdb(backend):
     for _ in range(2):
         with pytest.raises(
             com.IbisError,
-            match="Expression depends on no backends",
+            match="You have used a function that relies on the default backend",
         ):
             expr.execute()
+
+
+def test_default_backend_no_duckdb_read_parquet(no_duckdb):
+    with pytest.raises(
+        com.IbisError,
+        match="You have used a function that relies on the default backend",
+    ):
+        ibis.read_parquet("foo.parquet")
 
 
 @pytest.mark.duckdb
@@ -756,7 +797,7 @@ def test_default_backend():
     for _ in range(2):
         assert expr.execute() == df.a.sum()
 
-    sql = ibis.to_sql(expr)
+    sql = str(ibis.to_sql(expr))
     rx = """\
 SELECT
   SUM\\((\\w+)\\.a\\) AS ".+"
@@ -859,66 +900,100 @@ def test_has_operation_no_geo(con):
         assert not con.has_operation(op)
 
 
-@pytest.mark.notimpl(
+def test_get_backend(con, alltypes, monkeypatch):
+    assert ibis.get_backend(alltypes) is con
+    assert ibis.get_backend(alltypes.id.min()) is con
+
+    with pytest.raises(com.IbisError, match="contains unbound tables"):
+        ibis.get_backend(ibis.table({"x": "int"}))
+
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    assert ibis.get_backend() is con
+    expr = ibis.literal(1) + 2
+    assert ibis.get_backend(expr) is con
+
+
+def test_set_backend(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", None)
+    ibis.set_backend(con)
+    assert ibis.get_backend() is con
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        param("duckdb", marks=mark.duckdb, id="duckdb"),
+        param("polars", marks=mark.polars, id="polars"),
+        param("sqlite", marks=mark.sqlite, id="sqlite"),
+    ],
+)
+def test_set_backend_name(name, monkeypatch):
+    # Don't need to test with all backends, only checking that things are
+    # plumbed through correctly.
+    monkeypatch.setattr(ibis.options, "default_backend", None)
+    ibis.set_backend(name)
+    assert ibis.get_backend().name == name
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        param(
+            "clickhouse://default@localhost:9000/ibis_testing",
+            marks=mark.clickhouse,
+            id="clickhouse",
+        ),
+        param(
+            "mysql://ibis:ibis@localhost:3306/ibis_testing",
+            marks=mark.mysql,
+            id="mysql",
+        ),
+        param(
+            "postgres://postgres:postgres@localhost:5432/ibis_testing",
+            marks=mark.postgres,
+            id="postgres",
+        ),
+    ],
+)
+def test_set_backend_url(url, monkeypatch):
+    # Don't need to test with all backends, only checking that things are
+    # plumbed through correctly.
+    monkeypatch.setattr(ibis.options, "default_backend", None)
+    name = url.split("://")[0]
+    ibis.set_backend(url)
+    assert ibis.get_backend().name == name
+
+
+@pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "dask",
+        "datafusion",
+        "duckdb",
         "impala",
         "mssql",
         "mysql",
         "pandas",
+        "polars",
         "postgres",
         "pyspark",
-        "snowflake",
         "sqlite",
-        "trino",
-    ]
+    ],
+    reason="backend doesn't support timestamp with scale parameter",
 )
-def test_register(con, data_directory):
-    path = data_directory / 'functional_alltypes.csv'
-    con.register(path, table_name="ft_csv")
-    assert "ft_csv" in con.list_tables()
-
-
+@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "clickhouse",
-        "dask",
-        "impala",
-        "mssql",
-        "mysql",
-        "pandas",
-        "postgres",
-        "pyspark",
-        "snowflake",
-        "sqlite",
-        "trino",
-    ]
+    ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
-def test_register_parquet(con, data_directory):
-    path = data_directory / 'functional_alltypes.parquet'
-    con.register(path, table_name="ft_parquet")
-    assert "ft_parquet" in con.list_tables()
-
-
-@pytest.mark.notimpl(
-    [
-        "bigquery",
-        "clickhouse",
-        "dask",
-        "impala",
-        "mysql",
-        "mssql",
-        "pandas",
-        "postgres",
-        "pyspark",
-        "snowflake",
-        "sqlite",
-        "trino",
-    ]
-)
-def test_register_garbage(con):
-    with pytest.raises(ValueError, match="Unrecognized file type or extension"):
-        con.register("garbage_notafile")
+def test_create_table_timestamp(con):
+    schema = ibis.schema(
+        dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
+    )
+    name = f"timestamp_scale_{guid()}"
+    con.create_table(name, schema=schema, force=True)
+    try:
+        rows = con.raw_sql(f"DESCRIBE {name}").fetchall()
+        result = ibis.schema((name, typ) for name, typ, *_ in rows)
+        assert result == schema
+    finally:
+        con.drop_table(name, force=True)

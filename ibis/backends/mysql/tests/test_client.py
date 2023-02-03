@@ -27,7 +27,7 @@ MYSQL_TYPES = [
     ("date", dt.date),
     ("time", dt.time),
     ("datetime", dt.timestamp),
-    ("year", dt.int16),
+    ("year", dt.int8),
     ("char(32)", dt.string),
     ("char byte", dt.binary),
     ("varchar(42)", dt.string),
@@ -59,21 +59,30 @@ MYSQL_TYPES = [
 )
 def test_get_schema_from_query(con, mysql_type, expected_type):
     raw_name = ibis.util.guid()
-    name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
+    name = con._quote(raw_name)
     # temporary tables get cleaned up by the db when the session ends, so we
     # don't need to explicitly drop the table
-    con.raw_sql(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
-    expected_schema = ibis.schema(dict(x=expected_type))
-    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert result_schema == expected_schema
+    with con.begin() as c:
+        c.exec_driver_sql(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
+    try:
+        expected_schema = ibis.schema(dict(x=expected_type))
+        t = con.table(raw_name)
+        result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+        assert t.schema() == expected_schema
+        assert result_schema == expected_schema
+    finally:
+        with con.begin() as c:
+            c.exec_driver_sql(f"DROP TABLE {name}")
 
 
-@pytest.mark.parametrize(
-    "coltype",
-    ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"],
-)
+@pytest.mark.parametrize("coltype", ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"])
 def test_blob_type(con, coltype):
     tmp = f"tmp_{ibis.util.guid()}"
-    con.raw_sql(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})")
-    t = con.table(tmp)
-    assert t.schema() == ibis.schema({"a": dt.binary})
+    with con.begin() as c:
+        c.exec_driver_sql(f"CREATE TEMPORARY TABLE {tmp} (a {coltype})")
+    try:
+        t = con.table(tmp)
+        assert t.schema() == ibis.schema({"a": dt.binary})
+    finally:
+        with con.begin() as c:
+            c.exec_driver_sql(f"DROP TABLE {tmp}")

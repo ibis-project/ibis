@@ -1,3 +1,3 @@
-SELECT `g`, (rank() OVER (ORDER BY `f`) - 1) AS `minr`,
-       (dense_rank() OVER (ORDER BY `f`) - 1) AS `denser`
-FROM alltypes
+SELECT t0.`g`, (rank() OVER (ORDER BY t0.`f`) - 1) AS `minr`,
+       (dense_rank() OVER (ORDER BY t0.`f`) - 1) AS `denser`
+FROM alltypes t0

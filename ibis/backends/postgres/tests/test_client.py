@@ -114,12 +114,11 @@ def test_schema_type_conversion():
         ibis_types.append((name, ibis_type(nullable=nullable)))
 
     # Create a table with placeholder stubs for JSON, JSONB, and UUID.
-    engine = sa.create_engine('postgresql://')
-    table = sa.Table('tname', sa.MetaData(bind=engine), *sqla_types)
+    table = sa.Table('tname', sa.MetaData(), *sqla_types)
 
     # Check that we can correctly create a schema with dt.any for the
     # missing types.
-    schema = schema_from_table(table)
+    schema = schema_from_table(table, dialect=postgresql.dialect())
     expected = ibis.schema(ibis_types)
 
     assert_equal(schema, expected)
@@ -135,40 +134,16 @@ def test_interval_films_schema(con):
     ("column", "expected_dtype"),
     [
         # a, b and g are variable length intervals, like YEAR TO MONTH
-        ("c", dt.Interval("D")),
-        ("d", dt.Interval("h")),
-        ("e", dt.Interval("m")),
-        ("f", dt.Interval("s")),
-        ("h", dt.Interval("h")),
-        ("i", dt.Interval("m")),
-        ("j", dt.Interval("s")),
-        ("k", dt.Interval("m")),
-        ("l", dt.Interval("s")),
-        ("m", dt.Interval("s")),
-    ],
-)
-def test_all_interval_types_schema(intervals, column, expected_dtype):
-    assert intervals[column].type() == expected_dtype
-
-
-@pytest.mark.parametrize(
-    ("column", "expected_dtype"),
-    [
-        # a, b and g are variable length intervals, like YEAR TO MONTH
-        ("c", dt.Interval("D")),
-        ("d", dt.Interval("h")),
-        ("e", dt.Interval("m")),
-        ("f", dt.Interval("s")),
-        ("h", dt.Interval("h")),
-        ("i", dt.Interval("m")),
-        ("j", dt.Interval("s")),
-        ("k", dt.Interval("m")),
-        ("l", dt.Interval("s")),
-        ("m", dt.Interval("s")),
+        param("c", dt.Interval("D"), id="day"),
+        param("d", dt.Interval("h"), id="hour"),
+        param("e", dt.Interval("m"), id="minute"),
+        param("f", dt.Interval("s"), id="second"),
     ],
 )
 def test_all_interval_types_execute(intervals, column, expected_dtype):
     expr = intervals[column]
+    assert expr.type() == expected_dtype
+
     series = expr.execute()
     assert series.dtype == np.dtype("timedelta64[ns]")
 
@@ -242,9 +217,9 @@ def test_create_and_drop_table(con, temp_table, params):
     ],
 )
 def test_get_schema_from_query(con, pg_type, expected_type):
-    raw_name = ibis.util.guid()
-    name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
-    con.raw_sql(f"CREATE TEMPORARY TABLE {name} (x {pg_type}, y {pg_type}[])")
+    name = con._quote(ibis.util.guid())
+    with con.begin() as c:
+        c.exec_driver_sql(f"CREATE TEMP TABLE {name} (x {pg_type}, y {pg_type}[])")
     expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
     result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
     assert result_schema == expected_schema

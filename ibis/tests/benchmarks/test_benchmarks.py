@@ -7,6 +7,7 @@ import string
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 from packaging.version import parse as vparse
 
 import ibis
@@ -188,7 +189,10 @@ def test_compile(benchmark, module, expr_fn, t, base, large_expr):
         pytest.skip(str(e))
     else:
         expr = expr_fn(t, base, large_expr)
-        benchmark(mod.compile, expr)
+        try:
+            benchmark(mod.compile, expr)
+        except sa.exc.NoSuchModuleError as e:
+            pytest.skip(str(e))
 
 
 @pytest.fixture(scope="module")
@@ -530,9 +534,7 @@ def test_op_args(benchmark):
 def test_complex_datatype_parse(benchmark):
     type_str = "array<struct<a: array<string>, b: map<string, array<int64>>>>"
     expected = dt.Array(
-        dt.Struct.from_dict(
-            dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64)))
-        )
+        dt.Struct(dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))))
     )
     assert dt.parse(type_str) == expected
     benchmark(dt.parse, type_str)
@@ -542,9 +544,7 @@ def test_complex_datatype_parse(benchmark):
 @pytest.mark.parametrize("func", [str, hash])
 def test_complex_datatype_builtins(benchmark, func):
     datatype = dt.Array(
-        dt.Struct.from_dict(
-            dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64)))
-        )
+        dt.Struct(dict(a=dt.Array(dt.string), b=dt.Map(dt.string, dt.Array(dt.int64))))
     )
     benchmark(func, datatype)
 
@@ -570,7 +570,7 @@ def test_large_expr_equals(benchmark, tpc_h02):
         ),
         pytest.param(
             dt.Array(
-                dt.Struct.from_dict(
+                dt.Struct(
                     dict(
                         a=dt.Array(dt.string),
                         b=dt.Map(dt.string, dt.Array(dt.int64)),
@@ -691,7 +691,10 @@ def test_compile_with_drops(
     except (AttributeError, ImportError) as e:
         pytest.skip(str(e))
     else:
-        benchmark(mod.compile, expr)
+        try:
+            benchmark(mod.compile, expr)
+        except sa.exc.NoSuchModuleError as e:
+            pytest.skip(str(e))
 
 
 def test_repr_join(benchmark, customers, orders, orders_items, products):

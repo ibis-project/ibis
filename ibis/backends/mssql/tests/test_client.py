@@ -3,11 +3,12 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 DB_TYPES = [
     # Exact numbers
     ('BIGINT', dt.int64),
-    ('BIT', dt.int8),
+    ('BIT', dt.boolean),
     ('DECIMAL', dt.Decimal(precision=18, scale=0)),
     ('DECIMAL(5, 2)', dt.Decimal(precision=5, scale=2)),
     ('INT', dt.int32),
@@ -26,8 +27,8 @@ DB_TYPES = [
     # Date and time
     ('DATE', dt.date),
     ('TIME', dt.time),
-    ('DATETIME2', dt.timestamp),
-    ('DATETIMEOFFSET', dt.timestamp),
+    ('DATETIME2', dt.timestamp(scale=7)),
+    ('DATETIMEOFFSET', dt.timestamp(scale=7, timezone="UTC")),
     ('SMALLDATETIME', dt.timestamp),
     ('DATETIME', dt.timestamp),
     # Characters strings
@@ -44,26 +45,50 @@ DB_TYPES = [
     ('IMAGE', dt.binary),
     # Other data types
     ('UNIQUEIDENTIFIER', dt.uuid),
-    ('GEOMETRY', dt.geometry),
-    ('GEOGRAPHY', dt.geography),
-    ('TIMESTAMP', dt.binary),
+    ('TIMESTAMP', dt.binary(nullable=False)),
 ]
+
+
+skipif_no_geospatial_deps = pytest.mark.skipif(
+    not geospatial_supported, reason="geospatial dependencies not installed"
+)
+
+broken_sqlalchemy_autoload = pytest.mark.xfail(
+    reason="scale not inferred by sqlalchemy autoload"
+)
 
 
 @pytest.mark.parametrize(
     ("server_type", "expected_type"),
-    [
-        param(server_type, ibis_type, id=server_type)
-        for server_type, ibis_type in DB_TYPES
+    DB_TYPES
+    + [
+        param("GEOMETRY", dt.geometry, marks=[skipif_no_geospatial_deps]),
+        param("GEOGRAPHY", dt.geography, marks=[skipif_no_geospatial_deps]),
+    ]
+    + [
+        param(
+            'DATETIME2(4)', dt.timestamp(scale=4), marks=[broken_sqlalchemy_autoload]
+        ),
+        param(
+            'DATETIMEOFFSET(5)',
+            dt.timestamp(scale=5, timezone="UTC"),
+            marks=[broken_sqlalchemy_autoload],
+        ),
     ],
+    ids=str,
 )
 def test_get_schema_from_query(con, server_type, expected_type):
     raw_name = f"tmp_{ibis.util.guid()}"
-    name = con.con.dialect.identifier_preparer.quote_identifier(raw_name)
+    name = con._quote(raw_name)
+    expected_schema = ibis.schema(dict(x=expected_type))
     try:
-        con.raw_sql(f"CREATE TABLE {name} (x {server_type})")
+        with con.begin() as c:
+            c.exec_driver_sql(f"CREATE TABLE {name} (x {server_type})")
         expected_schema = ibis.schema(dict(x=expected_type))
         result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
         assert result_schema == expected_schema
+        t = con.table(raw_name)
+        assert t.schema() == expected_schema
     finally:
-        con.raw_sql(f"DROP TABLE IF EXISTS {name}")
+        with con.begin() as c:
+            c.exec_driver_sql(f"DROP TABLE IF EXISTS {name}")

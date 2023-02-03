@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import itertools
 from typing import Callable, Iterable, Iterator
 
@@ -7,7 +8,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import operation_registry, quote_identifier
-from ibis.expr.types.core import unnamed
 
 
 class QueryContext:
@@ -24,7 +24,7 @@ class QueryContext:
         self.subquery_memo = {}
         self.indent = indent
         self.parent = parent
-        self.always_alias = False
+        self.always_alias = True
         self.query = None
         self.params = params if params is not None else {}
 
@@ -61,10 +61,8 @@ class QueryContext:
         self.always_alias = True
 
     def get_compiled_expr(self, node):
-        try:
+        with contextlib.suppress(KeyError):
             return self.top_context.subquery_memo[node]
-        except KeyError:
-            pass
 
         if isinstance(node, (ops.SQLQueryResult, ops.SQLStringView)):
             result = node.query
@@ -94,9 +92,6 @@ class QueryContext:
         alias = f't{i:d}'
         self.set_ref(node, alias)
 
-    def need_aliases(self, expr=None):
-        return self.always_alias or len(self.table_refs) > 1
-
     def _contexts(
         self,
         *,
@@ -116,14 +111,20 @@ class QueryContext:
     def set_ref(self, node, alias):
         self.table_refs[node] = alias
 
-    def get_ref(self, node):
+    def get_ref(self, node, search_parents=False):
         """Return the alias used to refer to an expression."""
-        assert isinstance(node, ops.Node)
+        assert isinstance(node, ops.Node), type(node)
 
         if self.is_extracted(node):
             return self.top_context.table_refs.get(node)
 
-        return self.table_refs.get(node)
+        if (ref := self.table_refs.get(node)) is not None:
+            return ref
+
+        if search_parents and (parent := self.parent) is not None:
+            return parent.get_ref(node, search_parents=search_parents)
+
+        return None
 
     def is_extracted(self, node):
         return node in self.top_context.extracted_subexprs
@@ -200,7 +201,7 @@ class ExprTranslator:
             # This column has been given an explicitly different name
             return False
 
-        return op.name is not unnamed
+        return bool(op.name)
 
     def name(self, translated, name, force=True):
         return f'{translated} AS {quote_identifier(name, force=force)}'
@@ -249,7 +250,7 @@ class ExprTranslator:
         if dtype.is_struct():
             literal = ibis.struct(raw_value, type=dtype)
         elif dtype.is_map():
-            literal = ibis.map(raw_value, type=dtype)
+            literal = ibis.map(list(raw_value.keys()), list(raw_value.values()))
         else:
             literal = ibis.literal(raw_value, type=dtype)
         return self.translate(literal.op())
@@ -376,22 +377,14 @@ def _rewrite_string_contains(op):
     return ops.GreaterEqual(ops.StringFind(op.haystack, op.needle), 0)
 
 
-NEW_EXTRACT_URL_OPERATION = {
-    "PROTOCOL": ops.ExtractProtocol,
-    "AUTHORITY": ops.ExtractAuthority,
-    "USERINFO": ops.ExtractUserInfo,
-    "HOST": ops.ExtractHost,
-    "FILE": ops.ExtractFile,
-    "PATH": ops.ExtractPath,
-    "REF": ops.ExtractFragment,
-}
+@rewrites(ops.Clip)
+def _rewrite_clip(op):
+    arg = ops.Cast(op.arg, op.output_dtype)
 
+    if (upper := op.upper) is not None:
+        arg = ops.Least((arg, ops.Cast(upper, op.output_dtype)))
 
-@rewrites(ops.ParseURL)
-def _rewrite_string_contains(op):
-    extract = op.extract
-    if extract == 'QUERY':
-        return ops.ExtractQuery(op.arg, op.key)
-    if (new_op := NEW_EXTRACT_URL_OPERATION.get(extract)) is not None:
-        return new_op(op.arg)
-    raise ValueError(f"{extract!r} is not supported")
+    if (lower := op.lower) is not None:
+        arg = ops.Greatest((arg, ops.Cast(lower, op.output_dtype)))
+
+    return arg

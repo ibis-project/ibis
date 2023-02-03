@@ -7,139 +7,60 @@ import itertools
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
-import pyarrow as pa
-import pyarrow.types as pat
 import sqlalchemy as sa
 import toolz
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
+from ibis import util
 
 if TYPE_CHECKING:
     import duckdb
+    import pandas as pd
+    import pyarrow as pa
+
+    import ibis.expr.operations as ops
 
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
-from ibis.common.dispatch import RegexDispatcher
 
-_generate_view_code = RegexDispatcher("_register")
-_dialect = sa.dialects.postgresql.dialect()
-
-_gen_table_names = (f"registered_table{i:d}" for i in itertools.count())
-
-
-def _name_from_path(path: str | Path) -> str:
-    # https://github.com/duckdb/duckdb/issues/5203
-    return str(path).replace(".", "_")
+# counters for in-memory, parquet, csv, and json reads
+# used if no table name is specified
+pd_n = itertools.count(0)
+pa_n = itertools.count(0)
+csv_n = itertools.count(0)
+json_n = itertools.count(0)
 
 
-def _name_from_dataset(dataset: pa.dataset.FileSystemDataset) -> str:
-    return _name_from_path(Path(os.path.commonprefix(dataset.files)))
+def normalize_filenames(source_list):
+    # Promote to list
+    source_list = util.promote_list(source_list)
+
+    return list(map(util.normalize_filename, source_list))
 
 
-def _quote(name: str):
-    return _dialect.identifier_preparer.quote(name)
+def _create_view(*args, **kwargs):
+    import sqlalchemy_views as sav
+
+    return sav.CreateView(*args, **kwargs)
 
 
-def _get_scheme(scheme):
-    if scheme is None or scheme == "file://":
-        return ""
-    return scheme
+def _drop_view(*args, **kwargs):
+    import sqlalchemy_views as sav
+
+    return sav.DropView(*args, **kwargs)
 
 
-def _format_kwargs(kwargs):
-    return (
-        f"{k}='{v}'" if isinstance(v, str) else f"{k}={v!r}" for k, v in kwargs.items()
-    )
-
-
-@_generate_view_code.register(r"parquet://(?P<path>.+)", priority=13)
-def _parquet(_, path, table_name=None, scheme=None, **kwargs):
-    scheme = _get_scheme(scheme)
-    if not scheme:
-        path = os.path.abspath(path)
-    if not table_name:
-        table_name = _name_from_path(path)
-    quoted_table_name = _quote(table_name)
-    args = [f"'{scheme}{path}'", *_format_kwargs(kwargs)]
-    code = f"""\
-CREATE OR REPLACE VIEW {quoted_table_name} AS
-SELECT * FROM read_parquet({', '.join(args)})"""
-    return code, table_name, ["parquet"] + ["httpfs"] if scheme else []
-
-
-@_generate_view_code.register(r"(c|t)sv://(?P<path>.+)", priority=13)
-def _csv(_, path, table_name=None, scheme=None, **kwargs):
-    scheme = _get_scheme(scheme)
-    if not scheme:
-        path = os.path.abspath(path)
-    if not table_name:
-        table_name = _name_from_path(path)
-    quoted_table_name = _quote(table_name)
-    # auto_detect and columns collide, so we set auto_detect=True
-    # unless COLUMNS has been specified
-    args = [
-        f"'{scheme}{path}'",
-        f"auto_detect={kwargs.pop('auto_detect', 'columns' not in kwargs)}",
-        *_format_kwargs(kwargs),
-    ]
-    code = f"""\
-CREATE OR REPLACE VIEW {quoted_table_name} AS
-SELECT * FROM read_csv({', '.join(args)})"""
-    return code, table_name, ["httpfs"] if scheme else []
-
-
-@_generate_view_code.register(
-    r"(?P<scheme>(?:file|https?)://)?(?P<path>.+?\.((?:c|t)sv|txt)(?:\.gz)?)",
-    priority=12,
-)
-def _csv_file_or_url(_, path, table_name=None, **kwargs):
-    return _csv(f"csv://{path}", path=path, table_name=table_name, **kwargs)
-
-
-@_generate_view_code.register(
-    r"(?P<scheme>(?:file|https?)://)?(?P<path>.+?\.parquet)", priority=12
-)
-def _parquet_file_or_url(_, path, table_name=None, **kwargs):
-    return _parquet(f"parquet://{path}", path=path, table_name=table_name, **kwargs)
-
-
-@_generate_view_code.register(r"s3://.+", priority=13)
-def _s3(full_path, table_name=None):
-    # TODO: gate this import once the ResultHandler mixin is merged #4454
-    import pyarrow.dataset as ds
-
-    dataset = ds.dataset(full_path)
-    table_name = table_name or _name_from_dataset(dataset)
-    return table_name, dataset, []
-
-
-@_generate_view_code.register(r"postgres(ql)?://.+", priority=10)
-def _postgres(uri, table_name=None):
-    if table_name is None:
-        raise ValueError("`table_name` is required when registering a postgres table")
-    quoted_table_name = _quote(table_name)
-    sql = (
-        f"CREATE OR REPLACE VIEW {quoted_table_name} AS "
-        f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{table_name}')"
-    )
-    return sql, table_name, ["postgres_scanner"]
-
-
-@_generate_view_code.register(r".+", priority=1)
-def _default(path, **kwargs):
-    raise ValueError(
-        f"""Unrecognized file type or extension: {path}.
-
-Valid prefixes are parquet://, csv://, tsv://, s3://, or file://
-Supported file extensions are parquet, csv, tsv, txt, csv.gz, tsv.gz, and txt.gz
-    """
-    )
+def _format_kwargs(kwargs: Mapping[str, Any]):
+    bindparams, pieces = [], []
+    for name, value in kwargs.items():
+        bindparams.append(sa.bindparam(name, value))
+        pieces.append(f"{name} = :{name}")
+    return sa.text(", ".join(pieces)).bindparams(*bindparams)
 
 
 class Backend(BaseAlchemyBackend):
@@ -209,10 +130,12 @@ class Backend(BaseAlchemyBackend):
             if temp_directory is None:
                 temp_directory = (
                     Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-                    / "duckdb"
+                    / "ibis-duckdb"
+                    / str(os.getpid())
                 )
 
         if temp_directory is not None:
+            Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
         super().do_connect(
@@ -222,15 +145,16 @@ class Backend(BaseAlchemyBackend):
                 poolclass=sa.pool.SingletonThreadPool if in_memory else None,
             )
         )
-        self._meta = sa.MetaData(bind=self.con)
+        self._meta = sa.MetaData()
         self._extensions = set()
 
     def _load_extensions(self, extensions):
         for extension in extensions:
             if extension not in self._extensions:
-                with self.con.connect() as con:
-                    con.execute(f"INSTALL '{extension}'")
-                    con.execute(f"LOAD '{extension}'")
+                with self.begin() as con:
+                    c = con.connection
+                    c.install_extension(extension)
+                    c.load_extension(extension)
                 self._extensions.add(extension)
 
     def register(
@@ -244,9 +168,9 @@ class Backend(BaseAlchemyBackend):
         Parameters
         ----------
         source
-            The data source. May be a path to a file or directory of
-            parquet/csv files, a pandas dataframe, or a pyarrow table or
-            dataset.
+            The data source(s). May be a path to a file or directory of
+            parquet/csv files, an iterable of parquet or CSV files, a pandas
+            dataframe, a pyarrow table or dataset, or a postgres URI.
         table_name
             An optional name to use for the created table. This defaults to the
             filename if a path (with hyphens replaced with underscores), or
@@ -261,46 +185,290 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-        if isinstance(source, str) and source.startswith("s3://"):
-            table_name, dataset, extensions_required = _generate_view_code(
-                source, table_name=table_name
+
+        if isinstance(source, (str, Path)):
+            first = str(source)
+        elif isinstance(source, (list, tuple)):
+            first = source[0]
+        else:
+            try:
+                return self.read_in_memory(source, table_name=table_name, **kwargs)
+            except sa.exc.ProgrammingError:
+                self._register_failure()
+
+        if first.startswith(("parquet://", "parq://")) or first.endswith(
+            ("parq", "parquet")
+        ):
+            return self.read_parquet(source, table_name=table_name, **kwargs)
+        elif first.startswith(
+            ("csv://", "csv.gz://", "txt://", "txt.gz://")
+        ) or first.endswith(("csv", "csv.gz", "tsv", "tsv.gz", "txt", "txt.gz")):
+            return self.read_csv(source, table_name=table_name, **kwargs)
+        elif first.startswith(("postgres://", "postgresql://")):
+            return self.read_postgres(source, table_name=table_name, **kwargs)
+        elif first.startswith("sqlite://"):
+            return self.read_sqlite(
+                first[len("sqlite://") :], table_name=table_name, **kwargs
             )
-            self._load_extensions(extensions_required)
+        else:
+            self._register_failure()  # noqa: RET503
+
+    def _register_failure(self):
+        import inspect
+
+        msg = ", ".join(
+            name for name, _ in inspect.getmembers(self) if name.startswith("read_")
+        )
+        raise ValueError(
+            f"Cannot infer appropriate read function for input, "
+            f"please call one of {msg} directly"
+        )
+
+    def read_json(
+        self,
+        source_list: str | list[str] | tuple[str],
+        table_name: str | None = None,
+        **kwargs,
+    ) -> ir.Table:
+        """Read newline-delimited JSON into an ibis table.
+
+        Parameters
+        ----------
+        source_list
+            File or list of files
+        table_name
+            Optional table name
+        kwargs
+            Additional keyword arguments passed to DuckDB's `read_json_objects` function
+
+        Returns
+        -------
+        Table
+            An ibis table expression
+        """
+        if not table_name:
+            table_name = f"ibis_read_json_{next(json_n)}"
+
+        source_list = normalize_filenames(source_list)
+
+        objects = (
+            sa.func.read_json_objects(
+                sa.func.list_value(*source_list), _format_kwargs(kwargs)
+            )
+            .table_valued("raw")
+            .render_derived()
+        )
+        # read a single row out to get the schema, assumes the first row is representative
+        json_structure_query = sa.select(sa.func.json_structure(objects.c.raw)).limit(1)
+
+        with self.begin() as con:
+            json_structure = con.execute(json_structure_query).scalar()
+            data = sa.select(sa.literal_column("s.*")).select_from(
+                sa.select(
+                    sa.func.json_transform(objects.c.raw, json_structure).label("s")
+                ).subquery()
+            )
+            view = _create_view(sa.table(table_name), data, or_replace=True)
+            con.execute(view)
+
+        return self.table(table_name)
+
+    def read_csv(
+        self,
+        source_list: str | list[str] | tuple[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current database.
+
+        Parameters
+        ----------
+        source_list
+            The data source(s). May be a path to a file or directory of CSV files, or an
+            iterable of CSV files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/data/csv for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source_list = normalize_filenames(source_list)
+
+        if not table_name:
+            table_name = f"ibis_read_csv_{next(csv_n)}"
+
+        # auto_detect and columns collide, so we set auto_detect=True
+        # unless COLUMNS has been specified
+        if any(source.startswith(("http://", "https://")) for source in source_list):
+            self._load_extensions(["httpfs"])
+
+        kwargs["auto_detect"] = kwargs.pop("auto_detect", "columns" not in kwargs)
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.read_csv(sa.func.list_value(*source_list), _format_kwargs(kwargs))
+        )
+        view = _create_view(sa.table(table_name), source, or_replace=True)
+        with self.begin() as con:
+            con.execute(view)
+        return self.table(table_name)
+
+    def read_parquet(
+        self,
+        source_list: str | Iterable[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        source_list
+            The data source(s). May be a path to a file, an iterable of files,
+            or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            See https://duckdb.org/docs/data/parquet for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source_list = normalize_filenames(source_list)
+
+        if any(source.startswith("s3://") for source in source_list):
+            if len(source_list) > 1:
+                raise ValueError("only single s3 paths are supported")
+
+            import pyarrow.dataset as ds
+
+            dataset = ds.dataset(source_list[0])
+            table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+            self._load_extensions(["httpfs"])
             # We don't create a view since DuckDB special cases Arrow Datasets
             # so if we also create a view we end up with both a "lazy table"
             # and a view with the same name
-            with self._safe_raw_sql("SELECT 1") as cursor:
+            with self.begin() as con:
                 # DuckDB normally auto-detects Arrow Datasets that are defined
                 # in local variables but the `dataset` variable won't be local
                 # by the time we execute against this so we register it
                 # explicitly.
-                cursor.cursor.c.register(table_name, dataset)
-        elif isinstance(source, (str, Path)):
-            sql, table_name, extensions_required = _generate_view_code(
-                str(source), table_name=table_name, **kwargs
-            )
-            self._load_extensions(extensions_required)
-            self.con.execute(sql)
+                con.connection.register(table_name, dataset)
         else:
-            if table_name is None:
-                table_name = next(_gen_table_names)
-            self.con.execute("register", (table_name, source))
+            if any(
+                source.startswith(("http://", "https://")) for source in source_list
+            ):
+                self._load_extensions(["httpfs"])
 
-        _table = self.table(table_name)
-        with warnings.catch_warnings():
-            # don't fail or warn if duckdb-engine fails to discover types
-            # mostly (tinyint)
-            warnings.filterwarnings(
-                "ignore",
-                message="Did not recognize type",
-                category=sa.exc.SAWarning,
+            if table_name is None:
+                table_name = f"ibis_read_parquet_{next(pa_n)}"
+
+            source = sa.select(sa.literal_column("*")).select_from(
+                sa.func.read_parquet(
+                    sa.func.list_value(*source_list), _format_kwargs(kwargs)
+                )
             )
-            # We don't rely on index reflection, ignore this warning
-            warnings.filterwarnings(
-                "ignore",
-                message="duckdb-engine doesn't yet support reflection on indices",
+            view = _create_view(sa.table(table_name), source, or_replace=True)
+            with self.begin() as con:
+                con.execute(view)
+
+        return self.table(table_name)
+
+    def read_in_memory(
+        self, dataframe: pd.DataFrame | pa.Table, table_name: str | None = None
+    ) -> ir.Table:
+        """Register a Pandas DataFrame or pyarrow Table as a table in the current database.
+
+        Parameters
+        ----------
+        dataframe
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
+        with self.begin() as con:
+            con.connection.register(table_name, dataframe)
+
+        return self.table(table_name)
+
+    def read_postgres(self, uri, table_name: str | None = None, schema: str = "public"):
+        """Register a table from a postgres instance into a DuckDB table.
+
+        Parameters
+        ----------
+        uri
+            The postgres URI in form 'postgres://user:password@host:port'
+        table_name
+            The table to read
+        schema
+            PostgreSQL schema where `table_name` resides
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+        """
+        if table_name is None:
+            raise ValueError(
+                "`table_name` is required when registering a postgres table"
             )
-            self.inspector.reflect_table(_table.op().sqla_table, _table.columns)
+        self._load_extensions(["postgres_scanner"])
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.postgres_scan_pushdown(uri, schema, table_name)
+        )
+        view = _create_view(sa.table(table_name), source, or_replace=True)
+        with self.begin() as con:
+            con.execute(view)
+
+        return self.table(table_name)
+
+    def read_sqlite(self, path: str | Path, table_name: str | None = None) -> ir.Table:
+        """Register a table from a SQLite database into a DuckDB table.
+
+        Parameters
+        ----------
+        path
+            The path to the SQLite database
+        table_name
+            The table to read
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.connect("duckdb://")
+        >>> t = con.read_sqlite("ci/ibis-testing-data/ibis_testing.db")
+        >>> t.head().execute()
+        """
+        if table_name is None:
+            raise ValueError("`table_name` is required when registering a sqlite table")
+        self._load_extensions(["sqlite"])
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.sqlite_scan(str(path), table_name)
+        )
+        view = _create_view(sa.table(table_name), source, or_replace=True)
+        with self.begin() as con:
+            con.execute(view)
+
         return self.table(table_name)
 
     def to_pyarrow_batches(
@@ -310,21 +478,37 @@ class Backend(BaseAlchemyBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
-        **kwargs: Any,
-    ) -> IbisRecordBatchReader:
-        _ = self._import_pyarrow()
+        **_: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        """Return a stream of record batches.
+
+        The returned `RecordBatchReader` contains a cursor with an unbounded lifetime.
+
+        For analytics use cases this is usually nothing to fret about. In some cases you
+        may need to explicit release the cursor.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression
+        params
+            Bound parameters
+        limit
+            Limit the result to this number of rows
+        chunk_size
+            !!! warning "DuckDB returns 1024 size batches regardless of what argument is passed."
+        """
+        self._import_pyarrow()
+
+        from ibis.backends.duckdb.pyarrow import IbisRecordBatchReader
+
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
-        cursor = self.raw_sql(sql)
+        cursor = self.con.connect().execute(sql)
 
-        _reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
-        # Horrible hack to make sure cursor isn't garbage collected
-        # before batches are streamed out of the RecordBatchReader
-        batches = IbisRecordBatchReader(_reader, cursor)
-        return batches
-        # TODO: duckdb seems to not care about the `chunk_size` argument
-        # and returns batches in 1024 row chunks
+        reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
+        return IbisRecordBatchReader(reader, cursor)
 
     def to_pyarrow(
         self,
@@ -332,14 +516,15 @@ class Backend(BaseAlchemyBackend):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **kwargs: Any,
+        **_: Any,
     ) -> pa.Table:
-        _ = self._import_pyarrow()
+        pa = self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
-        cursor = self.raw_sql(sql)
-        table = cursor.cursor.fetch_arrow_table()
+        with self.begin() as con:
+            cursor = con.execute(sql)
+            table = cursor.cursor.fetch_arrow_table()
 
         if isinstance(expr, ir.Table):
             return table
@@ -361,6 +546,7 @@ class Backend(BaseAlchemyBackend):
         schema: sch.Schema,
     ):
         import pandas as pd
+        import pyarrow.types as pat
 
         table = cursor.cursor.fetch_arrow_table()
 
@@ -377,90 +563,57 @@ class Backend(BaseAlchemyBackend):
         return schema.apply_to(df)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        for name, type, null in toolz.pluck(
-            ["column_name", "column_type", "null"],
-            self.con.execute(f"DESCRIBE {query}"),
-        ):
-            ibis_type = parse(type)
-            yield name, ibis_type(nullable=null.lower() == "yes")
+        with self.begin() as con:
+            rows = con.exec_driver_sql(f"DESCRIBE {query}")
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Return an ibis Schema from a DuckDB SQL string."""
-        return sch.Schema.from_tuples(self._metadata(query))
+            for name, type, null in toolz.pluck(
+                ["column_name", "column_type", "null"], rows.mappings()
+            ):
+                ibis_type = parse(type)
+                yield name, ibis_type.copy(nullable=null.lower() == "yes")
 
-    def _register_in_memory_table(self, table_op):
-        df = table_op.data.to_frame()
-        self.con.execute("register", (table_op.name, df))
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        # in theory we could use pandas dataframes, but when using dataframes
+        # with pyarrow datatypes later reads of this data segfault
+        name = op.name
+        table = op.data.to_pyarrow()
+        with self.begin() as con:
+            con.connection.register(name, table)
 
     def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        **kwargs: Any,
+        self, name: str, schema: str | None = None, **kwargs: Any
     ) -> sa.Table:
         with warnings.catch_warnings():
-            # don't fail or warn if duckdb-engine fails to discover types
-            warnings.filterwarnings(
-                "ignore",
-                message="Did not recognize type",
-                category=sa.exc.SAWarning,
-            )
             # We don't rely on index reflection, ignore this warning
             warnings.filterwarnings(
                 "ignore",
                 message="duckdb-engine doesn't yet support reflection on indices",
             )
-
-            table = super()._get_sqla_table(name, schema, **kwargs)
-
-        nulltype_cols = frozenset(
-            col.name for col in table.c if isinstance(col.type, sa.types.NullType)
-        )
-
-        if not nulltype_cols:
-            return table
-
-        quoted_name = self.con.dialect.identifier_preparer.quote(name)
-
-        for colname, type in self._metadata(quoted_name):
-            if colname in nulltype_cols:
-                # replace null types discovered by sqlalchemy with non null
-                # types
-                table.append_column(
-                    sa.Column(
-                        colname,
-                        to_sqla_type(type),
-                        nullable=type.nullable,
-                    ),
-                    replace_existing=True,
-                )
-        return table
+            return super()._get_sqla_table(name, schema, **kwargs)
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
-        return f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+        yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
+    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
+        # TODO: remove this once duckdb supports CTAS prepared statements
+        return super()._get_compiled_statement(
+            view, definition, compile_kwargs={"literal_binds": True}
+        )
 
-class IbisRecordBatchReader(pa.ipc.RecordBatchReader):
-    def __init__(self, reader, cursor):
-        self.reader = reader
-        self.cursor = cursor
+    def create_view(
+        self, name: str, expr: ir.Table, database: str | None = None
+    ) -> None:
+        source = self.compile(expr)
+        view = _create_view(sa.table(name), source, or_replace=True)
+        with self.begin() as con:
+            con.execute(view)
 
-    def close(self):
-        self.reader.close()
-        del self.cursor
+    def drop_view(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        view = _drop_view(sa.table(name), if_exists=not force)
 
-    def read_all(self):
-        return self.reader.read_all()
-
-    def read_next_batch(self):
-        return self.reader.read_next_batch()
-
-    def read_pandas(self):
-        return self.reader.read_pandas()
-
-    def schema(self):
-        return self.reader.schema
+        with self.begin() as con:
+            con.execute(view)

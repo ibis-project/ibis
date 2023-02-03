@@ -3,12 +3,12 @@ from __future__ import annotations
 import functools
 
 import sqlalchemy as sa
+import toolz
 from sqlalchemy import sql
 
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
-from ibis.backends.base.sql.alchemy.datatypes import to_sqla_type
 from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
@@ -20,10 +20,6 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 from ibis.backends.base.sql.compiler.base import SetOp
-
-
-def _schema_to_sqlalchemy_columns(schema: sch.Schema) -> list[sa.Column]:
-    return [sa.column(n, to_sqla_type(t)) for n, t in schema.items()]
 
 
 class _AlchemyTableSetFormatter(TableSetFormatter):
@@ -42,7 +38,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         for jtype, table, preds in zip(
             self.join_types, self.join_tables[1:], self.join_predicates
         ):
-            if len(preds):
+            if preds:
                 sqla_preds = [self._translate(pred) for pred in preds]
                 onclause = functools.reduce(sql.and_, sqla_preds)
             else:
@@ -59,9 +55,23 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             elif jtype is ops.OuterJoin:
                 result = result.outerjoin(table, onclause, full=True)
             elif jtype is ops.LeftSemiJoin:
-                result = result.select().where(sa.exists(sa.select(1).where(onclause)))
+                # subquery is required for semi and anti joins done using
+                # sqlalchemy, otherwise multiple references to the original
+                # select are treated as distinct tables
+                #
+                # with a subquery, the result is a distinct table and so there's only one
+                # thing for subsequent expressions to reference
+                result = (
+                    result.select()
+                    .where(sa.exists(sa.select(1).where(onclause)))
+                    .subquery()
+                )
             elif jtype is ops.LeftAntiJoin:
-                result = result.select().where(~sa.exists(sa.select(1).where(onclause)))
+                result = (
+                    result.select()
+                    .where(~sa.exists(sa.select(1).where(onclause)))
+                    .subquery()
+                )
             else:
                 raise NotImplementedError(jtype)
 
@@ -80,40 +90,54 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
         alias = ctx.get_ref(op)
 
+        translator = ctx.compiler.translator_class(ref_op, ctx)
+
         if isinstance(ref_op, AlchemyTable):
             result = ref_op.sqla_table
         elif isinstance(ref_op, ops.UnboundTable):
             # use SQLAlchemy's TableClause for unbound tables
             result = sa.table(
-                ref_op.name,
-                *_schema_to_sqlalchemy_columns(ref_op.schema),
+                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
             )
         elif isinstance(ref_op, ops.SQLQueryResult):
-            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
             result = sa.text(ref_op.query).columns(*columns)
         elif isinstance(ref_op, ops.SQLStringView):
-            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
             result = sa.text(ref_op.query).columns(*columns).cte(ref_op.name)
         elif isinstance(ref_op, ops.View):
             # TODO(kszucs): avoid converting to expression
             child_expr = ref_op.child.to_expr()
             definition = child_expr.compile()
             result = sa.table(
-                ref_op.name,
-                *_schema_to_sqlalchemy_columns(ref_op.schema),
+                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
             )
             backend = child_expr._find_backend()
             backend._create_temp_view(view=result, definition=definition)
         elif isinstance(ref_op, ops.InMemoryTable):
-            columns = _schema_to_sqlalchemy_columns(ref_op.schema)
+            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
 
             if self.context.compiler.cheap_in_memory_tables:
                 result = sa.table(ref_op.name, *columns)
             else:
                 # this has horrendous performance for medium to large tables
                 # should we warn?
-                rows = list(ref_op.data.to_frame().itertuples(index=False))
-                result = sa.values(*columns, name=ref_op.name).data(rows)
+                if self.context.compiler.support_values_syntax_in_select:
+                    rows = list(ref_op.data.to_frame().itertuples(index=False))
+                    result = sa.values(*columns, name=ref_op.name).data(rows)
+                else:
+                    raw_rows = (
+                        sa.select(
+                            *(
+                                translator.translate(ops.Literal(val, dtype=type_))
+                                for val, name, type_ in zip(
+                                    row, op.schema.names, op.schema.types
+                                )
+                            )
+                        )
+                        for row in op.data.to_frame().itertuples(index=False)
+                    )
+                    result = sa.union_all(*raw_rows).alias(ref_op.name)
         else:
             # A subquery
             if ctx.is_extracted(ref_op):
@@ -185,20 +209,21 @@ class AlchemySelect(Select):
     def _add_select(self, table_set):
         to_select = []
 
+        context = self.context
+        select_set = self.select_set
+
         has_select_star = False
-        for op in self.select_set:
+        for op in select_set:
             if isinstance(op, ops.Value):
                 arg = self._translate(op, named=True)
             elif isinstance(op, ops.TableNode):
+                arg = context.get_ref(op)
                 if op.equals(self.table_set):
-                    cached_table = self.context.get_ref(op)
-                    if cached_table is None:
-                        has_select_star = True
+                    if has_select_star := arg is None:
                         continue
                     else:
                         arg = table_set
                 else:
-                    arg = self.context.get_ref(op)
                     if arg is None:
                         raise ValueError(op)
             else:
@@ -214,55 +239,51 @@ class AlchemySelect(Select):
         else:
             clauses = to_select
 
-        if self.exists:
-            result = sa.exists(clauses)
-        else:
-            result = sa.select(clauses)
+        result_func = sa.exists if self.exists else sa.select
+        result = result_func(*clauses)
 
         if self.distinct:
             result = result.distinct()
 
-        # if we're SELECT *-ing or there's no table_set (e.g., SELECT 1) then
-        # we can return early
-        if has_select_star or table_set is None:
+        # only process unnest if the backend doesn't support SELECT UNNEST(...)
+        unnest_children = []
+        if not self.translator_class.supports_unnest_in_select:
+            unnest_children.extend(
+                map(
+                    context.get_ref,
+                    toolz.unique(an.find_toplevel_unnest_children(select_set)),
+                )
+            )
+
+        # if we're SELECT *-ing or there's no table_set (e.g., SELECT 1) *and*
+        # there are no unnest operations then we can return early
+        if (has_select_star or table_set is None) and not unnest_children:
             return result
 
-        # if we're selecting from something that isn't a subquery e.g., Select,
-        # Alias, Table
-        if not isinstance(table_set, sa.sql.Subquery):
-            return result.select_from(table_set)
+        if unnest_children:
+            # get all the unnests plus the current froms of the result selection
+            # and build up the cross join
+            table_set = functools.reduce(
+                functools.partial(sa.sql.FromClause.join, onclause=sa.true()),
+                toolz.unique(toolz.concatv(unnest_children, result.get_final_froms())),
+            )
 
-        final_froms = result.get_final_froms()
-        num_froms = len(final_froms)
-
-        # if the result subquery has no FROMs then we can select from the
-        # table_set since there's only a single possibility for FROM
-        if not num_froms:
-            return result.select_from(table_set)
-
-        # we need to replace every occurrence of `result`'s `FROM`
-        # with `table_set` to handle correlated EXISTs coming from
-        # semi/anti-join
-        #
-        # previously this was `replace_selectable`, but that's deprecated so we
-        # inline its implementation here
-        #
-        # sqlalchemy suggests using the functionality in sa.sql.visitors, but
-        # that would effectively require reimplementing ClauseAdapter
-        replaced = sa.sql.util.ClauseAdapter(table_set).traverse(result)
-        num_froms = len(replaced.get_final_froms())
-        assert num_froms == 1, f"num_froms == {num_froms:d}"
-        return replaced
+        return result.select_from(table_set)
 
     def _add_group_by(self, fragment):
         # GROUP BY and HAVING
-        if not len(self.group_by):
+        nkeys = len(self.group_by)
+        if not nkeys:
             return fragment
 
-        group_keys = [self._translate(arg) for arg in self.group_by]
+        if self.context.compiler.supports_indexed_grouping_keys:
+            group_keys = map(sa.literal_column, map(str, range(1, nkeys + 1)))
+        else:
+            group_keys = map(self._translate, self.group_by)
+
         fragment = fragment.group_by(*group_keys)
 
-        if len(self.having) > 0:
+        if self.having:
             having_args = [self._translate(arg) for arg in self.having]
             having_clause = functools.reduce(sql.and_, having_args)
             fragment = fragment.having(having_clause)
@@ -270,7 +291,7 @@ class AlchemySelect(Select):
         return fragment
 
     def _add_where(self, fragment):
-        if not len(self.where):
+        if not self.where:
             return fragment
 
         args = [self._translate(pred, permit_subquery=True) for pred in self.where]
@@ -278,7 +299,7 @@ class AlchemySelect(Select):
         return fragment.where(clause)
 
     def _add_order_by(self, fragment):
-        if not len(self.order_by):
+        if not self.order_by:
             return fragment
 
         clauses = []
@@ -292,10 +313,7 @@ class AlchemySelect(Select):
         return fragment.order_by(*clauses)
 
     def _among_select_set(self, expr):
-        for other in self.select_set:
-            if expr.equals(other):
-                return True
-        return False
+        return any(expr.equals(other) for other in self.select_set)
 
     def _add_limit(self, fragment):
         if self.limit is None:
@@ -365,6 +383,8 @@ class AlchemyCompiler(Compiler):
     union_class = AlchemyUnion
     intersect_class = AlchemyIntersection
     difference_class = AlchemyDifference
+
+    supports_indexed_grouping_keys = True
 
     @classmethod
     def to_sql(cls, expr, context=None, params=None, exists=False):

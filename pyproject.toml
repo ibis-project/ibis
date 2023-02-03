@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ibis-framework"
-version = "3.2.0"
+version = "4.1.0"
 packages = [{ include = "ibis" }]
 homepage = "https://ibis-project.org"
 repository = "https://github.com/ibis-project/ibis"
@@ -28,12 +28,14 @@ atpublic = ">=2.3,<4"
 multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<2"
-parsy = ">=1.3.0,<3"
+parsy = ">=2,<3"
+python-dateutil = ">=2.8.2,<3"
+pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
-sqlglot = ">=10.1.3,<11"
+sqlglot = ">=10.4.3,<11"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
-black = { version = ">=22.1.0,<23", optional = true }
+black = { version = ">=22.1.0,<24", optional = true }
 clickhouse-cityhash = { version = ">=1.0.2,<2", optional = true }
 clickhouse-driver = { version = ">=0.1,<1", optional = true, extras = [
   "numpy"
@@ -47,7 +49,7 @@ db-dtypes = { version = ">=0.3,<2", optional = true }
 duckdb = { version = ">=0.3.3,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
-GeoAlchemy2 = { version = ">=0.6.3,<1", optional = true }
+GeoAlchemy2 = { version = ">=0.6.3,<1,!=0.13.0", optional = true }
 geopandas = { version = ">=0.6,<1", optional = true }
 google-cloud-bigquery = { version = ">=3,<4", optional = true }
 google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
@@ -56,43 +58,36 @@ impyla = { version = ">=0.17,<1", optional = true }
 lz4 = { version = ">=3.1.10,<5", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
-pyarrow = { version = ">=2,<11", optional = true }
-pymssql = { version = ">=2.2.7,<3", optional = true }
-pydata-google-auth = { version = "^1.4.0", optional = true }
+pyarrow = { version = ">=2,<12", optional = true }
+pymssql = { version = ">=2.2.5,<3", optional = true }
+pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 # used to support posix regexen in the pandas, dask and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
 requests = { version = ">=2,<3", optional = true }
-Shapely = { version = ">=1.6,<1.8|>=1.9,<2", optional = true }
+shapely = { version = ">=1.6,<1.8|>=1.9,<3", optional = true }
 # include an explicit dependency on `snowflake-connector-python` because the
 # lack of lower bound on this dependency as specified in `snowflake-sqlalchemy`
 # appears to cause poetry's solver to get stuck
 #
 # also, we don't support arbitrarily old versions of this library
-snowflake-connector-python = { version = ">=2.7.10,<3", optional = true, extras = [
-  "pandas"
-] }
-# the pandas extra here places a constraint on the version of pyarrow, which
-# prevents users from getting a completely broken environment when installing
-# the snowflake extra
-snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true, extras = [
-  "pandas"
-] }
-sqlalchemy = { version = ">=1.4,<2", optional = true }
+snowflake-connector-python = { version = ">=2.7.10,<3", optional = true }
+snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
+sqlalchemy = { version = ">=1.4,<3", optional = true }
+sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
-black = ">=22.1.0,<23"
+black = ">=22.1.0,<24"
 ipython = ">=7.27.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 ruff = ">=0.0.205,<1"
 
 [tool.poetry.group.test.dependencies]
-black = ">=22.1.0,<23"
+black = ">=22.1.0,<24"
 filelock = ">=3.7.0,<4"
-packaging = ">=21.3,<23"
-pyarrow = ">=2,<11"
+packaging = ">=21.3,<24"
 pytest = ">=7.0.0,<8"
 pytest-benchmark = ">=3.4.1,<5"
 pytest-clarity = ">=1.0.1,<2"
@@ -104,27 +99,59 @@ pytest-repeat = ">=0.9.1,<0.10"
 pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
 hypothesis = ">=6.58.0,<7"
-sqlalchemy = ">=1.4,<2.0"
+sqlalchemy = ">=1.4,<3"
 
 [tool.poetry.group.docs.dependencies]
-docstring_parser = ">=0.13,<0.14"
+griffe = ">=0.25.3,<1"
 ipykernel = ">=6,<7"
-mike = ">=1.1.2,<2"
 mkdocs = ">=1.2.3,<1.4.3"
 mkdocs-exclude = ">=1.0.2,<2"
 mkdocs-gen-files = ">=0.3.4,<0.5.0"
-mkdocs-git-revision-date-plugin = ">=0.3.2,<1"
+mkdocs-git-revision-date-localized-plugin = ">=1.1.0,<2"
 mkdocs-jupyter = ">=0.20.0,<1"
 mkdocs-literate-nav = ">=0.4.1,<1"
 mkdocs-macros-plugin = ">=0.6.3,<1"
 mkdocs-material = ">=8.2.1,<9.0.2"
-mkdocs-table-reader-plugin = ">=1.0.0,<2"
-mkdocstrings = ">=0.17.0,<0.18.0"
-pytkdocs = { version = ">=0.15.0,<0.17.0", extras = ["numpy-style"] }
+mkdocstrings = ">=0.19.1,<1"
+mkdocstrings-python = ">=0.8.3,<1"
 requests = ">=2,<3"
-tomli = ">=2.0.1,<3"
+streamlit = { version = ">=1.17.0,<2", python = "!=3.9.7" }
 
 [tool.poetry.extras]
+# generate the `all` extra using nix run '.#gen-all-extras'
+all = [
+  "black",
+  "clickhouse-cityhash",
+  "clickhouse-driver",
+  "dask",
+  "datafusion",
+  "db-dtypes",
+  "duckdb",
+  "duckdb-engine",
+  "fsspec",
+  "geoalchemy2",
+  "geopandas",
+  "google-cloud-bigquery",
+  "google-cloud-bigquery-storage",
+  "graphviz",
+  "impyla",
+  "lz4",
+  "polars",
+  "psycopg2",
+  "pyarrow",
+  "pydata-google-auth",
+  "pymssql",
+  "pymysql",
+  "pyspark",
+  "regex",
+  "requests",
+  "shapely",
+  "snowflake-connector-python",
+  "snowflake-sqlalchemy",
+  "sqlalchemy",
+  "sqlalchemy-views",
+  "trino"
+]
 bigquery = [
   "db-dtypes",
   "google-cloud-bigquery",
@@ -134,7 +161,13 @@ bigquery = [
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
-duckdb = ["duckdb", "duckdb-engine", "pyarrow", "sqlalchemy"]
+duckdb = [
+  "duckdb",
+  "duckdb-engine",
+  "pyarrow",
+  "sqlalchemy",
+  "sqlalchemy-views"
+]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql"]
@@ -190,65 +223,42 @@ filterwarnings = [
   "error",
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
-  # poetry
-  "ignore:distutils Version classes are deprecated:DeprecationWarning",
-  # geopandas warning
-  "ignore:The distutils package is deprecated:DeprecationWarning",
   # dask
   "ignore:index is deprecated and will be removed in a future release:FutureWarning",
-  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
-  'ignore:The Index\._get_attributes_dict method is deprecated:DeprecationWarning',
-  'ignore:\nYou did not provide metadata:UserWarning',
   "ignore:`meta` is not specified:UserWarning",
+  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
+  "ignore:Possible nested set at position:FutureWarning",
+  'ignore:\s+You did not provide metadata:UserWarning',
   # pandas
   "ignore:Boolean Series key will be reindexed:UserWarning",
   'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
-  "ignore:This pattern is interpreted as a regular expression, and has match groups:UserWarning",
   "ignore:The default dtype for empty Series will be 'object':FutureWarning",
-  "ignore:the `interpolation=` argument to percentile was renamed to `method=`:DeprecationWarning",
-  "ignore:Explicitly passing `name=None`:FutureWarning",
   # pandas 1.5.x
   "ignore:iteritems is deprecated and will be removed in a future version:FutureWarning",
   'ignore:Passing unit-less datetime64 dtype to \.astype is deprecated:FutureWarning',
   'ignore:The default value of numeric_only in DataFrameGroupBy\.sum is deprecated:FutureWarning',
-  # the warning suggestion to simply remove the argument in the call isn't correct
-  "ignore:The 'check_less_precise' keyword in testing:FutureWarning",
   # numpy
   "ignore:Creating an ndarray from ragged nested sequences:",
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
   # numpy, coming from a pandas call
   'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
-  # sqlalchemy: most of these can be removed once we have a lower bound of sqlalchemy 1.4
-  'ignore:Dialect .+ does \*not\* support Decimal:',
-  "ignore:Class (_regex_extract|_array_search|ST_.*) will not make use of SQL compilation caching:",
-  'ignore:Dialect .+ will not make use of SQL compilation caching:',
-  "ignore:UserDefinedType .* will not produce a cache key because:",
   # duckdb-engine
-  'ignore:The URL\.__to_string__ method is deprecated:',
+  'ignore:Dialect .+ does \*not\* support Decimal:',
+  "ignore:duckdb-engine doesn't yet support reflection on indices:",
   # ibis
-  "ignore:`BaseBackend.database` is deprecated:FutureWarning",
-  "ignore:`Backend.database` is deprecated:FutureWarning",
-  "ignore:`Backend.set_database` is deprecated:FutureWarning",
+  'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
   # ibis on postgres + windows
   "ignore:locale specific date formats:UserWarning",
-  # shapely
-  "ignore:The array interface is deprecated:",
-  "ignore:Iteration over multi-part geometries is deprecated:",
-  "ignore:__len__ for multi-part geometries is deprecated:",
-  "ignore:An exception was ignored while fetching the attribute `__array_interface__`:DeprecationWarning",
-  # thrift by way of impyla
-  "ignore: PY_SSIZE_T_CLEAN will be required for '#' formats:DeprecationWarning",
   # spark
+  "ignore:distutils Version classes are deprecated:DeprecationWarning",
+  "ignore:The distutils package is deprecated and slated for removal:DeprecationWarning",
   "ignore:In Python .*, it is preferred .* type hints .* UDF:UserWarning",
   "ignore:`np.object` is a deprecated alias for the builtin `object`:DeprecationWarning",
   # windows
   "ignore:getargs.* The 'u' format is deprecated:DeprecationWarning",
-  # findspec
-  "ignore: _SixMetaPathImporter.find_spec()",
-  # duckdb-engine
-  "ignore:duckdb-engine doesn't yet support reflection on indices:",
-  # snowflake
-  "ignore:`Node.op` is deprecated:FutureWarning",
+  # sqlalchemy
+  "ignore:Class ST_.+ will not make use of SQL compilation caching:",
+  "ignore:UserDefinedType Geometry:",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [
@@ -273,7 +283,7 @@ markers = [
   "hdfs: Hadoop file system tests",
   "min_version: backend tests that require a specific version of a dependency to pass",
   "min_server_version: backend tests that require a specific version of a backend's server to pass",
-  "xfail_version: backend tests that for a specific version of a backend",
+  "xfail_version: backend tests that for a specific version of a dependency",
   "notimpl: functionality that isn't implemented in ibis",
   "notyet: for functionality that isn't implemented in a backend",
   "never: tests for functionality that a backend is likely to never implement",
@@ -333,26 +343,50 @@ ignore = [
   "D101", # public class
   "D102", # public method
   "D103", # public function
+  "D104", # public package
   "D105", # magic methods
+  "D106", # nested class
   "D107", # init
   "D202", # blank lines after function docstring
   "D203", # blank line before class docstring
   "D213", # Multi-line docstring summary should start at the second line
+  "D401", # Imperative mood
   "D402", # First line should not be the function's signature
   "E501",
   "E731",
   "PGH003",
+  "PLR0913", # too many arguments
+  "PLR2004", # forces everything to be a constant
   "RET504",
   "RET505",
   "RET506",
   "RET507",
   "RET508",
+  "RUF005", # splat instead of concat
+  "SIM102", # nested ifs
+  "SIM108", # convert everything to ternary operator
+  "SIM117", # nested withs
+  "SIM118", # remove .keys() calls from dictionaries
+  "SIM300", # yoda conditions
+
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
+# none of these codes will be automatically fixed by ruff
+unfixable = [
+  "T201", # print statements
+  "F401", # unused imports
+  "RUF100", # unused noqa comments
+  "F841", # unused variables
+
+]
 
 [tool.ruff.per-file-ignores]
-"*test*.py" = ["D"] # ignore all docstring lints in tests
+"*test*.py" = [
+  "D", # ignore all docstring lints in tests
+
+]
+"ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 
 [tool.black]
 line_length = 88

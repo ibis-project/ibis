@@ -85,6 +85,7 @@ class GroupedTable:
             return GroupedArray(col, self)
 
     def aggregate(self, metrics=None, **kwds):
+        """Compute aggregates over a group by."""
         return self.table.aggregate(metrics, by=self.by, having=self._having, **kwds)
 
     agg = aggregate
@@ -136,9 +137,7 @@ class GroupedTable:
         )
 
     def mutate(
-        self,
-        exprs: ir.Value | Sequence[ir.Value] | None = None,
-        **kwds: ir.Value,
+        self, exprs: ir.Value | Sequence[ir.Value] | None = None, **kwds: ir.Value
     ):
         """Return a table projection with window functions applied.
 
@@ -166,8 +165,7 @@ class GroupedTable:
           baz float64
         >>> expr = (t.group_by('foo')
         ...          .order_by(ibis.desc('bar'))
-        ...          .mutate(qux=lambda x: x.baz.lag(),
-        ...                  qux2=t.baz.lead()))
+        ...          .mutate(qux=lambda x: x.baz.lag(), qux2=t.baz.lead()))
         >>> print(expr)
         r0 := UnboundTable[t]
           foo string
@@ -200,7 +198,7 @@ class GroupedTable:
 
         See Also
         --------
-        ibis.expr.groupby.GroupedTable.mutate
+        [`GroupedTable.mutate`][ibis.expr.types.groupby.GroupedTable.mutate]
         """
         w = self._get_window()
         windowed_exprs = []
@@ -293,6 +291,13 @@ class GroupedArray:
     group_concat = _group_agg_dispatch('group_concat')
 
     def summary(self, exact_nunique=False):
+        """Summarize a column.
+
+        Parameters
+        ----------
+        exact_nunique
+            Whether to compute an exact count distinct.
+        """
         metric = self.arr.summary(exact_nunique=exact_nunique)
         return self.parent.aggregate(metric)
 
@@ -300,7 +305,3 @@ class GroupedArray:
 class GroupedNumbers(GroupedArray):
     mean = _group_agg_dispatch('mean')
     sum = _group_agg_dispatch('sum')
-
-    def summary(self, exact_nunique=False):
-        metric = self.arr.summary(exact_nunique=exact_nunique)
-        return self.parent.aggregate(metric)

@@ -4,6 +4,7 @@ from typing import Any, Callable, Optional
 from public import public
 from typing_extensions import Annotated
 
+import ibis.common.exceptions as com
 from ibis.common.grounds import Annotable
 from ibis.common.validators import min_
 
@@ -107,7 +108,7 @@ class Repr(Config):
         SQLQueryResult operations.
     show_types : bool
         Show the inferred type of value expressions in the repr.
-    interactive
+    interactive : bool
         Options controlling the interactive repr.
     """
 
@@ -133,7 +134,7 @@ class Options(Config):
         A callable to use when logging.
     graphviz_repr : bool
         Render expressions as GraphViz PNGs when running in a Jupyter notebook.
-    default_backend : Optional[str], default None
+    default_backend : Optional[ibis.backends.base.BaseBackend], default None
         The default backend to use for execution, defaults to DuckDB if not
         set.
     context_adjustment : ContextAdjustment
@@ -167,29 +168,38 @@ class Options(Config):
     pyspark: Optional[Config] = None
 
 
-_HAS_DUCKDB = True
-_DUCKDB_CON = None
-
-
 def _default_backend() -> Any:
-    global _HAS_DUCKDB, _DUCKDB_CON
-
-    if not _HAS_DUCKDB:
-        return None
-
-    if _DUCKDB_CON is not None:
-        return _DUCKDB_CON
+    if (backend := options.default_backend) is not None:
+        return backend
 
     try:
         import duckdb as _  # noqa: F401
     except ImportError:
-        _HAS_DUCKDB = False
-        return None
+        raise com.IbisError(
+            """\
+You have used a function that relies on the default backend, but the default
+backend (DuckDB) is not installed.
+
+You may specify an alternate backend to use, e.g.
+
+ibis.set_backend("polars")
+
+or to install the DuckDB backend, run:
+
+    pip install 'ibis-framework[duckdb]'
+
+or
+
+    conda install -c conda-forge ibis-framework
+
+For more information on available backends, visit https://ibis-project.org/install
+"""
+        )
 
     import ibis
 
-    _DUCKDB_CON = ibis.duckdb.connect(":memory:")
-    return _DUCKDB_CON
+    options.default_backend = con = ibis.duckdb.connect(":memory:")
+    return con
 
 
 options = Options()

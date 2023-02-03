@@ -29,7 +29,10 @@ from uuid import uuid4
 import toolz
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
+    import pyarrow as pa
 
     import ibis.expr.operations as ops
 
@@ -37,6 +40,7 @@ if TYPE_CHECKING:
 
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", covariant=True)
+K = TypeVar("K")
 V = TypeVar("V")
 
 # https://www.compart.com/en/unicode/U+22EE
@@ -45,30 +49,38 @@ VERTICAL_ELLIPSIS = "\u22EE"
 HORIZONTAL_ELLIPSIS = "\u2026"
 
 
-class frozendict(Mapping, Hashable):
-    __slots__ = ("_dict", "_hash")
+class frozendict(Mapping[K, V], Hashable):
+    __slots__ = ("__view__", "__precomputed_hash__")
 
     def __init__(self, *args, **kwargs):
-        self._dict = dict(*args, **kwargs)
-        self._hash = hash(tuple(self._dict.items()))
+        dictview = types.MappingProxyType(dict(*args, **kwargs))
+        dicthash = hash(tuple(dictview.items()))
+        object.__setattr__(self, "__view__", dictview)
+        object.__setattr__(self, "__precomputed_hash__", dicthash)
 
     def __str__(self):
-        return str(self._dict)
+        return str(self.__view__)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self._dict!r})"
+        return f"{self.__class__.__name__}({self.__view__!r})"
+
+    def __setattr__(self, name: str, _: Any) -> None:
+        raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
+
+    def __reduce__(self):
+        return frozendict, (dict(self.__view__),)
 
     def __iter__(self):
-        return iter(self._dict)
+        return iter(self.__view__)
 
     def __len__(self):
-        return len(self._dict)
+        return len(self.__view__)
 
     def __getitem__(self, key):
-        return self._dict[key]
+        return self.__view__[key]
 
     def __hash__(self):
-        return self._hash
+        return self.__precomputed_hash__
 
 
 class DotDict(dict):
@@ -85,10 +97,6 @@ class DotDict(dict):
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
-
-
-class UnnamedMarker:
-    pass
 
 
 def guid() -> str:
@@ -395,22 +403,30 @@ def flatten_iterable(iterable):
             yield item
 
 
-def deprecated_msg(name, *, instead, version=''):
-    msg = f'`{name}` is deprecated'
-    if version:
-        msg += f' as of v{version}'
+def deprecated_msg(name, *, instead, as_of="", removed_in=""):
+    msg = f"`{name}` is deprecated"
 
+    msgs = []
+
+    if as_of:
+        msgs.append(f"as of v{as_of}")
+
+    if removed_in:
+        msgs.append(f"removed in v{removed_in}")
+
+    if msgs:
+        msg += f" {', '.join(msgs)}"
     msg += f'; {instead}'
     return msg
 
 
-def warn_deprecated(name, *, instead, version='', stacklevel=1):
+def warn_deprecated(name, *, instead, as_of="", removed_in="", stacklevel=1):
     """Warn about deprecated usage.
 
     The message includes a stacktrace and what to do instead.
     """
 
-    msg = deprecated_msg(name, instead=instead, version=version)
+    msg = deprecated_msg(name, instead=instead, as_of=as_of, removed_in=removed_in)
     warnings.warn(msg, FutureWarning, stacklevel=stacklevel + 1)
 
 
@@ -441,18 +457,24 @@ def append_admonition(
     return docstr
 
 
-def deprecated(*, instead, version=''):
-    """Decorate to warn of deprecated usage, with stacktrace, and what to do instead."""
+def deprecated(*, instead: str, as_of: str = "", removed_in: str = ""):
+    """Decorate to warn of deprecated usage and what to do instead."""
 
     def decorator(func):
-        msg = deprecated_msg(func.__qualname__, instead=instead, version=version)
+        msg = deprecated_msg(
+            func.__qualname__, instead=instead, as_of=as_of, removed_in=removed_in
+        )
 
         func.__doc__ = append_admonition(func, msg=f"DEPRECATED: {msg}")
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             warn_deprecated(
-                func.__qualname__, instead=instead, version=version, stacklevel=2
+                func.__qualname__,
+                instead=instead,
+                as_of=as_of,
+                removed_in=removed_in,
+                stacklevel=2,
             )
             return func(*args, **kwargs)
 
@@ -485,12 +507,19 @@ def experimental(func):
 
 
 class ToFrame(abc.ABC):
-    """Interface for in-memory objects that can be converted to a DataFrame."""
+    """Interface for in-memory objects that can be converted to an in-memory structure.
+
+    Supports pandas DataFrames and PyArrow Tables.
+    """
 
     __slots__ = ()
 
     @abc.abstractmethod
-    def to_frame(self) -> pd.DataFrame:
+    def to_frame(self) -> pd.DataFrame:  # pragma: no cover
+        ...
+
+    @abc.abstractmethod
+    def to_pyarrow(self) -> pa.Table:  # pragma: no cover
         ...
 
 
@@ -521,3 +550,33 @@ def import_object(qualname: str) -> Any:
         return getattr(mod, name)
     except AttributeError:
         raise ImportError(f"cannot import name {name!r} from {mod_name!r}") from None
+
+
+def normalize_filename(source: str | Path) -> str:
+    def _removeprefix(text, prefix):
+        # TODO: remove when we drop Python 3.8
+        try:
+            return text.removeprefix(prefix)
+        except AttributeError:
+            return text[text.startswith(prefix) and len(prefix) :]
+
+    source = str(source)
+    for prefix in (
+        "parquet",
+        "csv",
+        "csv.gz",
+        "txt",
+        "txt.gz",
+        "tsv",
+        "tsv.gz",
+        "file",
+    ):
+        source = _removeprefix(source, f"{prefix}://")
+
+    def _absolufy_paths(name):
+        if not name.startswith(("http", "s3")):
+            return os.path.abspath(name)
+        return name
+
+    source = _absolufy_paths(source)
+    return source

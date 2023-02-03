@@ -1,7 +1,7 @@
-SELECT *
+SELECT t0.*
 FROM (
-  SELECT *
-  FROM star1
+  SELECT t1.*
+  FROM star1 t1
   LIMIT 10
 ) t0
-WHERE `f` > 0
+WHERE t0.`f` > 0

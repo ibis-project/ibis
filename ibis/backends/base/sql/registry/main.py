@@ -155,10 +155,9 @@ def table_column(translator, op):
         proj_expr = op.table.to_expr().projection([op.name]).to_array().op()
         return table_array_view(translator, proj_expr)
 
-    if ctx.need_aliases():
-        alias = ctx.get_ref(op.table)
-        if alias is not None:
-            quoted_name = f'{alias}.{quoted_name}'
+    alias = ctx.get_ref(op.table, search_parents=True)
+    if alias is not None:
+        quoted_name = f"{alias}.{quoted_name}"
 
     return quoted_name
 
@@ -166,7 +165,7 @@ def table_column(translator, op):
 def exists_subquery(translator, op):
     ctx = translator.context
 
-    dummy = ir.literal(1).name(ir.core.unnamed)
+    dummy = ir.literal(1).name("")
 
     filtered = op.foreign_table.to_expr().filter(
         [pred.to_expr() for pred in op.predicates]
@@ -175,14 +174,8 @@ def exists_subquery(translator, op):
 
     subquery = ctx.get_compiled_expr(node)
 
-    if isinstance(op, ops.ExistsSubquery):
-        key = 'EXISTS'
-    elif isinstance(op, ops.NotExistsSubquery):
-        key = 'NOT EXISTS'
-    else:
-        raise NotImplementedError
-
-    return f'{key} (\n{util.indent(subquery, ctx.indent)}\n)'
+    prefix = "NOT " * isinstance(op, ops.NotExistsSubquery)
+    return f'{prefix}EXISTS (\n{util.indent(subquery, ctx.indent)}\n)'
 
 
 # XXX this is not added to operation_registry, but looks like impala is
@@ -297,11 +290,7 @@ operation_registry = {
     ops.Tan: unary("tan"),
     ops.Pi: fixed_arity("pi", 0),
     ops.E: fixed_arity("exp(1)", 0),
-    ops.DecimalPrecision: unary('precision'),
-    ops.DecimalScale: unary('scale'),
     # Unary aggregates
-    ops.CMSMedian: aggregate.reduction('appx_median'),
-    ops.HLLCardinality: aggregate.reduction('ndv'),
     ops.ApproxMedian: aggregate.reduction('appx_median'),
     ops.ApproxCountDistinct: aggregate.reduction('ndv'),
     ops.Mean: aggregate.reduction('avg'),
@@ -407,5 +396,6 @@ operation_registry = {
     ops.DayOfWeekName: timestamp.day_of_week_name,
     ops.Strftime: timestamp.strftime,
     ops.SortKey: sort_key,
+    ops.TypeOf: unary('typeof'),
     **binary_infix_ops,
 }

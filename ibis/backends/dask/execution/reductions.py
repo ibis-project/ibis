@@ -12,6 +12,7 @@ dispatcher since the top level container is a list.
 
 from __future__ import annotations
 
+import contextlib
 import functools
 from collections.abc import Sized
 
@@ -63,16 +64,12 @@ def compute_row_reduction(func, values):
 #
 # Here we remove the dispatch for pandas if it exists because the dask rule
 # handles both cases.
-try:
+with contextlib.suppress(KeyError):
     del execute_node[ops.Greatest, Variadic[object]]
-except KeyError:
-    pass
 
 
-try:
+with contextlib.suppress(KeyError):
     del execute_node[ops.Least, Variadic[object]]
-except KeyError:
-    pass
 
 
 @execute_node.register(ops.Greatest, [(object, dd.Series)])

@@ -3,20 +3,19 @@ from __future__ import annotations
 import parsy as p
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
-from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW
+from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW, TIMESTAMP
 from trino.sqlalchemy.dialect import TrinoDialect
 
-import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.common.parsing import (
     COMMA,
     FIELD,
-    LANGLE,
     LPAREN,
     PRECISION,
-    RANGLE,
     RPAREN,
     SCALE,
+    SINGLE_DIGIT,
     spaceless,
     spaceless_string,
 )
@@ -51,7 +50,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def timestamp():
         yield spaceless_string("timestamp")
-        yield LPAREN.then(PRECISION).skip(RPAREN).optional()
+        yield LPAREN.then(SINGLE_DIGIT.map(int)).skip(RPAREN).optional()
         return Timestamp(timezone="UTC")
 
     primitive = (
@@ -89,9 +88,9 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
 
     @p.generate
     def angle_type():
-        yield LANGLE
+        yield LPAREN
         value_type = yield ty
-        yield RANGLE
+        yield RPAREN
         return value_type
 
     @p.generate
@@ -103,11 +102,11 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
     @p.generate
     def map():
         yield spaceless_string("map")
-        yield LANGLE
+        yield LPAREN
         key_type = yield primitive
         yield COMMA
         value_type = yield ty
-        yield RANGLE
+        yield RPAREN
         return Map(key_type, value_type)
 
     field = spaceless(FIELD)
@@ -152,26 +151,76 @@ def sa_trino_map(dialect, satype, nullable=True):
     )
 
 
+@dt.dtype.register(TrinoDialect, TIMESTAMP)
+def sa_trino_timestamp(_, satype, nullable=True):
+    return dt.Timestamp(
+        timezone="UTC" if satype.timezone else None,
+        scale=satype.precision,
+        nullable=nullable,
+    )
+
+
 @dt.dtype.register(TrinoDialect, JSON)
 def sa_trino_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
 
 
-@compiles(sa.TEXT, "trino")
-def compiles_text(element, compiler, **kw):
-    return "VARCHAR"
+@to_sqla_type.register(TrinoDialect, dt.String)
+def _string(_, itype):
+    return sa.VARCHAR()
 
 
-@compiles(sat.StructType, "trino")
-def compiles_struct(element, compiler, **kw):
+@to_sqla_type.register(TrinoDialect, dt.Struct)
+def _struct(dialect, itype):
+    return ROW(
+        [(name, to_sqla_type(dialect, typ)) for name, typ in itype.fields.items()]
+    )
+
+
+@to_sqla_type.register(TrinoDialect, dt.Timestamp)
+def _timestamp(_, itype):
+    return TIMESTAMP(precision=itype.scale, timezone=bool(itype.timezone))
+
+
+@compiles(TIMESTAMP, "trino")
+def compiles_timestamp(typ, compiler, **kw):
+    result = "TIMESTAMP"
+
+    if (prec := typ.precision) is not None:
+        result += f"({prec:d})"
+
+    if typ.timezone:
+        result += " WITH TIME ZONE"
+
+    return result
+
+
+@compiles(ROW, "trino")
+def _compiles_row(element, compiler, **kw):
+    # TODO: @compiles should live in the dialect
+    quote = compiler.dialect.identifier_preparer.quote
     content = ", ".join(
-        f"{field} {compiler.process(typ, **kw)}" for field, typ in element.pairs
+        f"{quote(field)} {compiler.process(typ, **kw)}"
+        for field, typ in element.attr_types
     )
     return f"ROW({content})"
 
 
-@compiles(sat.MapType, "trino")
+@to_sqla_type.register(TrinoDialect, dt.Map)
+def _map(dialect, itype):
+    return MAP(
+        to_sqla_type(dialect, itype.key_type), to_sqla_type(dialect, itype.value_type)
+    )
+
+
+@compiles(MAP, "trino")
 def compiles_map(typ, compiler, **kw):
+    # TODO: @compiles should live in the dialect
     key_type = compiler.process(typ.key_type, **kw)
     value_type = compiler.process(typ.value_type, **kw)
     return f"MAP({key_type}, {value_type})"
+
+
+@dt.dtype.register(TrinoDialect, sa.NUMERIC)
+def sa_trino_numeric(_, satype, nullable=True):
+    return dt.Decimal(satype.precision or 18, satype.scale or 3, nullable=nullable)

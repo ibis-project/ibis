@@ -26,11 +26,9 @@ backend.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
-        - set_database
         - create_database
         - drop_database
         - list_databases
@@ -45,9 +43,8 @@ find the most methods on `ImpalaTable`.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - table
         - sql
@@ -73,9 +70,8 @@ The best way to interact with a single table is through the
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - add_partition
         - alter
@@ -104,9 +100,8 @@ The best way to interact with a single table is through the
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - drop_table_or_view
         - create_view
@@ -117,9 +112,8 @@ The best way to interact with a single table is through the
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - delimited_file
         - parquet_file
@@ -161,10 +155,9 @@ table or database.
 ## Table objects
 
 <!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend.table
-    rendering:
+::: ibis.backends.base.sql.BaseSQLBackend.table
+    options:
       heading_level: 3
-
 <!-- prettier-ignore-end -->
 
 The client's `table` method allows you to create an Ibis table
@@ -183,9 +176,8 @@ you can use to examine its schema:
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - schema
 
@@ -228,9 +220,8 @@ top-level client connection or a database object.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend.create_table
-    rendering:
+    options:
       heading_level: 3
-
 <!-- prettier-ignore-end -->
 
 ### Creating tables from a table expression
@@ -349,9 +340,8 @@ partition data:
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - add_partition
         - drop_partition
@@ -434,9 +424,8 @@ To get a handy wrangled version of `DESCRIBE FORMATTED` use the
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable.metadata
-    rendering:
+    options:
       heading_level: 3
-
 <!-- prettier-ignore-end -->
 
 ```python
@@ -493,9 +482,8 @@ data files backing a table:
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - files
 
@@ -528,9 +516,8 @@ change partition-specific metadata use `alter_partition`.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - alter
         - alter_partition
@@ -570,9 +557,8 @@ table.alter_partition(
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - compute_stats
 
@@ -598,9 +584,8 @@ table.compute_stats(incremental=True)
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - column_stats
         - stats
@@ -672,9 +657,8 @@ methods:
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - invalidate_metadata
 
@@ -682,9 +666,8 @@ methods:
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - invalidate_metadata
         - refresh
@@ -719,9 +702,8 @@ also deals with file name conflicts so data is not lost in such cases.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - load_data
 
@@ -729,9 +711,8 @@ also deals with file name conflicts so data is not lost in such cases.
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.client.ImpalaTable
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - load_data
 
@@ -761,9 +742,8 @@ query execution:
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.impala.Backend
-    rendering:
+    options:
       heading_level: 3
-    selection:
       members:
         - disable_codegen
         - get_options

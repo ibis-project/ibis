@@ -602,4 +602,4 @@ if __name__ == "__main__":
         nnn = len(values)
         return [sum(values) - a + b * y**-x, z, foo.width, nnn]
 
-    print(my_func.js)  # noqa: T201
+    print(my_func.sql)  # noqa: T201

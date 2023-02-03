@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -25,7 +26,11 @@ def df(alltypes):
 
 
 def test_udf(alltypes, df):
-    @udf(input_type=[dt.double, dt.double], output_type=dt.double)
+    @udf(
+        input_type=[dt.double, dt.double],
+        output_type=dt.double,
+        determinism=True,
+    )
     def my_add(a, b):
         return a + b
 
@@ -56,7 +61,7 @@ def test_udf_with_struct(alltypes, df, snapshot):
 
         return Rectangle(a, b)
 
-    result = my_struct_thing.js
+    result = my_struct_thing.sql
     snapshot.assert_match(result, "out.sql")
 
     expr = my_struct_thing(alltypes.double_col, alltypes.double_col)
@@ -104,7 +109,7 @@ def test_multiple_calls_has_one_definition(client):
     add = expr.op()
 
     # generated javascript is identical
-    assert add.left.op().js == add.right.op().js
+    assert add.left.sql == add.right.sql
     assert client.execute(expr) == 8.0
 
 
@@ -138,3 +143,30 @@ def test_udf_with_len(client):
 
     assert client.execute(my_str_len("aaa")) == 3
     assert client.execute(my_array_len(["aaa", "bb"])) == 2
+
+
+@pytest.mark.parametrize(
+    ("argument_type",),
+    [
+        param(
+            dt.string,
+            id="string",
+        ),
+        param(
+            "ANY TYPE",
+            id="string",
+        ),
+    ],
+)
+def test_udf_sql(client, argument_type):
+    format_t = udf.sql(
+        "format_t",
+        params={'input': argument_type},
+        output_type=dt.string,
+        sql_expression="FORMAT('%T', input)",
+    )
+
+    s = ibis.literal("abcd")
+    expr = format_t(s)
+
+    client.execute(expr)

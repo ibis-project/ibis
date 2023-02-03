@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import _
 from ibis import literal as L
@@ -86,12 +87,20 @@ def test_getitem_column_select(table):
         assert isinstance(col, Column)
 
 
+def test_table_tab_completion():
+    table = ibis.table({"a": "int", "b": "int", "for": "int", "with spaces": "int"})
+    # Only valid python identifiers in getattr tab completion
+    attrs = set(dir(table))
+    assert {"a", "b"}.issubset(attrs)
+    assert {"for", "with spaces"}.isdisjoint(attrs)
+    # All columns in getitem tab completion
+    items = set(table._ipython_key_completions_())
+    assert items.issuperset(table.columns)
+
+
 def test_getitem_attribute(table):
     result = table.a
     assert_equal(result, table['a'])
-
-    assert 'a' in dir(table)
-    assert 'a' in table._ipython_key_completions_()
 
     # Project and add a name that conflicts with a Table built-in
     # attribute
@@ -361,9 +370,9 @@ def test_filter_fusion_distinct_table_objects(con):
     assert_equal(expr, expr4)
 
 
-def test_column_relabel(table):
+def test_column_relabel():
     table = api.table({"x": "int32", "y": "string", "z": "double"})
-    sol = api.schema({"x_1": "int32", "y_1": "string", "z": "double"})
+    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
 
     # Using a mapping
     res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
@@ -376,6 +385,23 @@ def test_column_relabel(table):
     # Mapping with unknown columns errors
     with pytest.raises(KeyError, match="is not an existing column"):
         table.relabel({"missing": "oops"})
+
+
+def test_relabel_snake_case():
+    cases = [
+        ("cola", "cola"),
+        ("ColB", "col_b"),
+        ("colC", "col_c"),
+        ("col-d", "col_d"),
+        ("col_e", "col_e"),
+        (" Column F ", "column_f"),
+        ("Column G-with-hyphens", "column_g_with_hyphens"),
+        ("Col H notCamelCase", "col_h_notcamelcase"),
+    ]
+    t = ibis.table({c: "int" for c, _ in cases})
+    res = t.relabel("snake_case")
+    sol = t.relabel(dict(cases))
+    assert_equal(res, sol)
 
 
 def test_limit(table):
@@ -452,6 +478,36 @@ def test_order_by_asc_deferred_sort_key(table):
 def test_order_by_scalar(table, key, expected):
     result = table.order_by(key)
     assert result.op().sort_keys == (ops.SortKey(expected),)
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "bogus",
+        ("bogus", False),
+        ibis.desc("bogus"),
+        1000,
+        (1000, False),
+        _.bogus,
+        _.bogus.desc(),
+    ],
+)
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        param(lambda t: t, id="table"),
+        param(lambda t: t.select("a", "b"), id="selection"),
+        param(lambda t: t.group_by("a").agg(new=_.b.sum()), id="aggregation"),
+    ],
+)
+def test_order_by_nonexistent_column_errors(table, expr_func, key):
+    # `order_by` is implemented on a few different operations, we check them
+    # all in turn here.
+    expr = expr_func(table)
+    # Depending on the expression, this can raise a few different errors.
+    # For now just check that an exception is raised.
+    with pytest.raises(Exception):
+        expr.order_by(key)
 
 
 def test_slice(table):
@@ -725,7 +781,7 @@ def test_group_by_column_select_api(table):
 def test_value_counts_convenience(table):
     # #152
     result = table.g.value_counts()
-    expected = table.select('g').group_by('g').aggregate(count=lambda t: t.count())
+    expected = table.select('g').group_by('g').aggregate(g_count=lambda t: t.count())
 
     assert_equal(result, expected)
 
@@ -843,7 +899,7 @@ def test_equijoin_schema_merge():
     pred = table1['key1'] == table2['key2']
     join_types = ['inner_join', 'left_join', 'outer_join']
 
-    ex_schema = api.Schema(
+    ex_schema = sch.schema(
         ['key1', 'value1', 'key2', 'stuff'],
         ['string', 'double', 'string', 'int32'],
     )
@@ -907,7 +963,7 @@ def test_self_join(table):
 
     # Try aggregating on top of joined
     aggregated = joined.aggregate([metric], by=[left['g']])
-    ex_schema = api.Schema(['g', 'metric'], ['string', 'double'])
+    ex_schema = api.Schema({'g': 'string', 'metric': 'double'})
     assert_equal(aggregated.schema(), ex_schema)
 
 
@@ -980,8 +1036,8 @@ def test_cross_join(table):
     scalar_aggs = table.aggregate(metrics)
 
     joined = table.cross_join(scalar_aggs)
-    agg_schema = api.Schema(['sum_a', 'mean_b'], ['int64', 'double'])
-    ex_schema = table.schema().append(agg_schema)
+    agg_schema = api.Schema({'sum_a': 'int64', 'mean_b': 'double'})
+    ex_schema = table.schema().merge(agg_schema)
     assert_equal(joined.schema(), ex_schema)
 
 
@@ -1473,10 +1529,7 @@ def test_multiple_db_different_backends():
     backend2_table = con2.table('alltypes')
 
     expr = backend1_table.union(backend2_table)
-    with pytest.raises(
-        ValueError,
-        match=re.compile("multiple backends", flags=re.IGNORECASE),
-    ):
+    with pytest.raises(com.IbisError, match="Multiple backends"):
         expr.compile()
 
 

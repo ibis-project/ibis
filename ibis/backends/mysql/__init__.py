@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
+import re
 import warnings
-from typing import Literal
+from typing import Iterable, Literal
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
@@ -107,65 +105,35 @@ class Backend(BaseAlchemyBackend):
     @contextlib.contextmanager
     def begin(self):
         with super().begin() as bind:
-            previous_timezone = bind.execute('SELECT @@session.time_zone').scalar()
+            prev = bind.exec_driver_sql('SELECT @@session.time_zone').scalar()
             try:
-                bind.execute("SET @@session.time_zone = 'UTC'")
+                bind.exec_driver_sql("SET @@session.time_zone = 'UTC'")
             except Exception as e:  # noqa: BLE001
-                warnings.warn(f"Couldn't set MySQL timezone: {str(e)}")
+                warnings.warn(f"Couldn't set MySQL timezone: {e}")
 
+            yield bind
+            stmt = sa.text("SET @@session.time_zone = :prev").bindparams(prev=prev)
             try:
-                yield bind
-            finally:
-                try:
-                    bind.execute(f"SET @@session.time_zone = '{previous_timezone}'")
-                except Exception as e:  # noqa: BLE001
-                    warnings.warn(f"Couldn't reset MySQL timezone: {str(e)}")
+                bind.execute(stmt)
+            except Exception as e:  # noqa: BLE001
+                warnings.warn(f"Couldn't reset MySQL timezone: {e}")
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        """Infer the schema of `query`."""
-        result = self.con.execute(f"SELECT * FROM ({query}) _ LIMIT 0")
-        cursor = result.cursor
-        fields = [
-            (field.name, _type_from_cursor_info(descr, field))
-            for descr, field in zip(cursor.description, cursor._result.fields)
-        ]
-        return sch.Schema.from_tuples(fields)
+    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+        if (
+            re.search(r"^\s*SELECT\s", query, flags=re.MULTILINE | re.IGNORECASE)
+            is not None
+        ):
+            query = f"({query})"
+
+        with self.begin() as con:
+            result = con.exec_driver_sql(f"SELECT * FROM {query} _ LIMIT 0")
+            cursor = result.cursor
+            yield from (
+                (field.name, _type_from_cursor_info(descr, field))
+                for descr, field in zip(cursor.description, cursor._result.fields)
+            )
 
     def _get_temp_view_definition(
-        self,
-        name: str,
-        definition: sa.sql.compiler.Compiled,
+        self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
-        return f"CREATE OR REPLACE VIEW {name} AS {definition}"
-
-    def _register_temp_view_cleanup(self, name: str, raw_name: str) -> None:
-        query = f"DROP VIEW IF EXISTS {name}"
-
-        def drop(self, raw_name: str, query: str):
-            self.con.execute(query)
-            self._temp_views.discard(raw_name)
-
-        atexit.register(drop, self, raw_name, query)
-
-
-# TODO(kszucs): unsigned integers
-
-
-@dt.dtype.register((mysql.DOUBLE, mysql.REAL))
-def mysql_double(satype, nullable=True):
-    return dt.Float64(nullable=nullable)
-
-
-@dt.dtype.register(mysql.FLOAT)
-def mysql_float(satype, nullable=True):
-    return dt.Float32(nullable=nullable)
-
-
-@dt.dtype.register(mysql.TINYINT)
-def mysql_tinyint(satype, nullable=True):
-    return dt.Int8(nullable=nullable)
-
-
-@dt.dtype.register(mysql.BLOB)
-def mysql_blob(satype, nullable=True):
-    return dt.Binary(nullable=nullable)
+        yield f"CREATE OR REPLACE VIEW {name} AS {definition}"

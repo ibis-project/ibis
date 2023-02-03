@@ -212,6 +212,10 @@ def get_pyspark_testing_client(data_directory):
     return get_common_spark_testing_client(data_directory, ibis.pyspark.connect)
 
 
+def set_pyspark_database(client, database):
+    client._session.catalog.setCurrentDatabase(database)
+
+
 class TestConf(BackendTest, RoundAwayFromZero):
     supported_to_timestamp_units = {'s'}
 
@@ -303,7 +307,7 @@ def test_data_db(client):
     name = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
     client.create_database(name)
     try:
-        client.set_database(name)
+        set_pyspark_database(client, name)
         yield name
     finally:
         client.drop_database(name, force=True)
@@ -316,7 +320,7 @@ def temp_database(client, test_data_db):
     try:
         yield name
     finally:
-        client.set_database(test_data_db)
+        set_pyspark_database(client, test_data_db)
         client.drop_database(name, force=True)
 
 

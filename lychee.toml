@@ -1,4 +1,4 @@
 base = "site"
 require_https = true
-exclude = ["duckdb:/:memory"]
+exclude = ["duckdb:/:memory", "postgres:/:*"]
 exclude_path = ["site/SUMMARY/index.html", "site/overrides/main.html"]

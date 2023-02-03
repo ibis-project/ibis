@@ -1,209 +1,54 @@
-import contextlib
-import csv
-import gzip
 import os
-import platform
-import re
 import tempfile
 from pathlib import Path
 
-import pyarrow as pa
-import pyarrow.parquet as pq
+import pandas as pd
 import pytest
-from packaging.version import parse as vparse
-from pytest import param
+import sqlalchemy as sa
 
 import ibis
-from ibis.backends.conftest import read_tables
-from ibis.backends.duckdb import _generate_view_code
-
-
-@contextlib.contextmanager
-def pushd(new_dir):
-    previous_dir = os.getcwd()
-    os.chdir(new_dir)
-    try:
-        yield
-    finally:
-        os.chdir(previous_dir)
-
-
-@pytest.fixture
-def gzip_csv(data_directory, tmp_path):
-    basename = "diamonds.csv"
-    f = tmp_path.joinpath(f"{basename}.gz")
-    data = data_directory.joinpath(basename).read_bytes()
-    f.write_bytes(gzip.compress(data))
-    return str(f.absolute())
-
-
-@pytest.mark.parametrize(
-    ("fname", "in_table_name", "out_table_name"),
-    [
-        param("diamonds.csv", None, None, id="default"),
-        param("csv://diamonds.csv", "Diamonds", "Diamonds", id="csv_name"),
-        param(
-            "file://diamonds.csv",
-            "fancy_stones",
-            "fancy_stones",
-            id="file_name",
-        ),
-        param(
-            "file://diamonds.csv",
-            "fancy stones",
-            "fancy stones",
-            id="file_atypical_name",
-        ),
-    ],
-)
-@pytest.mark.parametrize("ext", [None, "csv.gz"])
-def test_register_csv(
-    data_directory, fname, in_table_name, out_table_name, ext, gzip_csv
-):
-    con = ibis.duckdb.connect()
-    if ext:
-        fname = gzip_csv
-    with pushd(data_directory):
-        table = con.register(fname, table_name=in_table_name)
-
-    if out_table_name is not None:
-        out_table_name += (os.extsep * bool(ext) + (ext or "")) * (
-            in_table_name is None
-        )
-        assert out_table_name in con.list_tables()
-
-    assert table.count().execute()
-
-
-def test_register_with_dotted_name(data_directory, tmp_path):
-    con = ibis.duckdb.connect()
-    basename = "foo.bar.baz/diamonds.csv"
-    f = tmp_path.joinpath(basename)
-    f.parent.mkdir()
-    data = data_directory.joinpath("diamonds.csv").read_bytes()
-    f.write_bytes(data)
-    table = con.register(str(f.absolute()))
-    assert table.count().execute()
-
-
-@pytest.mark.parametrize(
-    ("fname", "in_table_name", "out_table_name"),
-    [
-        pytest.param(
-            "parquet://functional_alltypes.parquet",
-            None,
-            "functional_alltypes_parquet",
-        ),
-        ("functional_alltypes.parquet", "funk_all", "funk_all"),
-        ("parquet://functional_alltypes.parq", "funk_all", "funk_all"),
-        ("parquet://functional_alltypes", None, "functional_alltypes"),
-    ],
-)
-def test_register_parquet(
-    tmp_path, data_directory, fname, in_table_name, out_table_name
-):
-    fname = Path(fname)
-    _, table = next(read_tables([fname.stem], data_directory))
-
-    pq.write_table(table, tmp_path / fname.name)
-
-    con = ibis.duckdb.connect()
-    with pushd(tmp_path):
-        table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
-
-    assert any(out_table_name in t for t in con.list_tables())
-
-    assert table.count().execute()
-
-
-def test_register_pandas():
-    pd = pytest.importorskip("pandas")
-    df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
-
-    con = ibis.duckdb.connect()
-
-    t = con.register(df)
-    assert t.x.sum().execute() == 6
-
-    t = con.register(df, "my_table")
-    assert t.op().name == "my_table"
-    assert t.x.sum().execute() == 6
-
-
-def test_register_pyarrow_tables():
-    pa_t = pa.Table.from_pydict({"x": [1, 2, 3], "y": ["a", "b", "c"]})
-
-    con = ibis.duckdb.connect()
-
-    t = con.register(pa_t)
-    assert t.x.sum().execute() == 6
-
-
-@pytest.mark.parametrize(
-    "kwargs, expected_snippet",
-    [({}, "auto_detect=True"), ({"columns": {"foo": "int8"}}, "auto_detect=False")],
-)
-def test_csv_register_kwargs(kwargs, expected_snippet):
-    view_str, _, _ = _generate_view_code("bork.csv", **kwargs)
-    assert expected_snippet in view_str
-
-
-def test_csv_reregister_schema(tmp_path):
-    con = ibis.duckdb.connect()
-
-    foo = tmp_path / "foo.csv"
-    with open(foo, "w", newline="") as csvfile:
-        foowriter = csv.writer(
-            csvfile,
-            delimiter=",",
-        )
-        foowriter.writerow(["cola", "colb", "colc"])
-        foowriter.writerow([0, 1, 2])
-        foowriter.writerow([1, 5, 6])
-        foowriter.writerow([2, 3.0, "bar"])
-
-    # For a full file scan, expect correct schema based on final row
-    foo_table = con.register(foo)
-    exp_schema = ibis.schema(dict(cola="int32", colb="float64", colc="string"))
-    assert foo_table.schema() == exp_schema
-
-    # If file scan is limited to first two rows, should be all int32
-    foo_table = con.register(foo, SAMPLE_SIZE=2)
-    exp_schema = ibis.schema(dict(cola="int32", colb="int32", colc="int32"))
-    assert foo_table.schema() == exp_schema
 
 
 def test_read_csv(data_directory):
-    t = ibis.read(data_directory / "functional_alltypes.csv")
+    t = ibis.read_csv(data_directory / "functional_alltypes.csv")
     assert t.count().execute()
 
 
 def test_read_parquet(data_directory):
-    t = ibis.read(data_directory / "functional_alltypes.parquet")
+    t = ibis.read_parquet(data_directory / "functional_alltypes.parquet")
     assert t.count().execute()
 
 
-@pytest.mark.parametrize("basename", ["functional_alltypes.*", "df.xlsx"])
-def test_read_invalid(data_directory, basename):
-    path = data_directory / basename
-    msg = f"^Unrecognized file type or extension: {re.escape(str(path))}"
-    with pytest.raises(ValueError, match=msg):
-        ibis.read(path)
+def test_read_json(data_directory, tmp_path):
+    pqt = ibis.read_parquet(data_directory / "functional_alltypes.parquet")
+
+    path = tmp_path.joinpath("ft.json")
+    path.write_text(pqt.execute().to_json(orient="records", lines=True))
+
+    jst = ibis.read_json(path)
+
+    nrows = pqt.count().execute()
+    assert nrows
+    assert nrows == jst.count().execute()
 
 
 def test_temp_directory(tmp_path):
-    query = "SELECT value FROM duckdb_settings() WHERE name = 'temp_directory'"
+    query = sa.text("SELECT value FROM duckdb_settings() WHERE name = 'temp_directory'")
 
     # 1. in-memory + no temp_directory specified
     con = ibis.duckdb.connect()
-    [(value,)] = con.con.execute(query).fetchall()
-    assert value  # we don't care what the specific value is
+    with con.begin() as c:
+        cur = c.execute(query)
+        value = cur.scalar()
+        assert value  # we don't care what the specific value is
 
     temp_directory = Path(tempfile.gettempdir()) / "duckdb"
 
     # 2. in-memory + temp_directory specified
     con = ibis.duckdb.connect(temp_directory=temp_directory)
-    [(value,)] = con.con.execute(query).fetchall()
+    with con.begin() as c:
+        cur = c.execute(query)
+        value = cur.scalar()
     assert value == str(temp_directory)
 
     # 3. on-disk + no temp_directory specified
@@ -212,33 +57,110 @@ def test_temp_directory(tmp_path):
 
     # 4. on-disk + temp_directory specified
     con = ibis.duckdb.connect(tmp_path / "test2.ddb", temp_directory=temp_directory)
-    [(value,)] = con.con.execute(query).fetchall()
+    with con.begin() as c:
+        cur = c.execute(query)
+        value = cur.scalar()
     assert value == str(temp_directory)
 
 
-@pytest.mark.parametrize(
-    "path", ["s3://data-lake/dataset/", "s3://data-lake/dataset/file_1.parquet"]
-)
-@pytest.mark.xfail(
-    platform.system() == "Darwin" and vparse(pa.__version__) < vparse("9"),
-    reason="pyarrow < 9 macos wheels not built with S3 support",
-    raises=pa.ArrowNotImplementedError,
-)
-def test_s3_parquet(path):
-    with pytest.raises(OSError):
-        _generate_view_code(path)
+@pytest.fixture(scope="session")
+def pgurl():  # pragma: no cover
+    pgcon = ibis.postgres.connect(user="postgres", password="postgres")
+    df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 1.0], "y": ["a", "b", "c", "a"]})
+    s = ibis.schema(dict(x="float64", y="str"))
+
+    pgcon.create_table("duckdb_test", df, s, force=True)
+    yield pgcon.con.url
+    pgcon.drop_table("duckdb_test", force=True)
 
 
-@pytest.mark.parametrize("scheme", ["postgres", "postgresql"])
-@pytest.mark.parametrize(
-    "name, quoted_name", [("test", "test"), ("my table", '"my table"')]
+@pytest.mark.skipif(
+    os.environ.get("DUCKDB_POSTGRES") is None, reason="avoiding CI shenanigans"
 )
-def test_postgres(scheme, name, quoted_name):
-    uri = f"{scheme}://username:password@localhost:5432"
-    sql, table_name, exts = _generate_view_code(uri, name)
-    assert sql == (
-        f"CREATE OR REPLACE VIEW {quoted_name} AS "
-        f"SELECT * FROM postgres_scan_pushdown('{uri}', 'public', '{name}')"
+def test_read_postgres(pgurl):  # pragma: no cover
+    con = ibis.duckdb.connect()
+    table = con.read_postgres(
+        f"postgres://{pgurl.username}:{pgurl.password}@{pgurl.host}:{pgurl.port}",
+        table_name="duckdb_test",
     )
-    assert table_name == name
-    assert exts == ["postgres_scanner"]
+    assert table.count().execute()
+
+
+def test_read_sqlite(data_directory):
+    con = ibis.duckdb.connect()
+    path = data_directory / "ibis_testing.db"
+    ft = con.read_sqlite(path, table_name="functional_alltypes")
+    assert ft.count().execute()
+
+    with pytest.raises(ValueError):
+        con.read_sqlite(path)
+
+
+def test_read_sqlite_no_table_name(data_directory):
+    con = ibis.duckdb.connect()
+    path = data_directory / "ibis_testing.db"
+
+    with pytest.raises(ValueError):
+        con.read_sqlite(path)
+
+
+def test_register_sqlite(data_directory):
+    con = ibis.duckdb.connect()
+    path = data_directory / "ibis_testing.db"
+    ft = con.register(f"sqlite://{path}", "functional_alltypes")
+    assert ft.count().execute()
+
+
+def test_memtable_with_nullable_dtypes():
+    data = pd.DataFrame(
+        {
+            "a": pd.Series(["a", None, "c"], dtype="string"),
+            "b": pd.Series([None, 1, 2], dtype="Int8"),
+            "c": pd.Series([0, None, 2], dtype="Int16"),
+            "d": pd.Series([0, 1, None], dtype="Int32"),
+            "e": pd.Series([None, None, -1], dtype="Int64"),
+            "f": pd.Series([None, 1, 2], dtype="UInt8"),
+            "g": pd.Series([0, None, 2], dtype="UInt16"),
+            "h": pd.Series([0, 1, None], dtype="UInt32"),
+            "i": pd.Series([None, None, 42], dtype="UInt64"),
+            "j": pd.Series([None, False, True], dtype="boolean"),
+        }
+    )
+    expr = ibis.memtable(data)
+    res = expr.execute()
+    assert len(res) == len(data)
+
+
+def test_memtable_with_nullable_pyarrow_string():
+    pytest.importorskip("pyarrow")
+    data = pd.DataFrame({"a": pd.Series(["a", None, "c"], dtype="string[pyarrow]")})
+    expr = ibis.memtable(data)
+    res = expr.execute()
+    assert len(res) == len(data)
+
+
+def test_memtable_with_nullable_pyarrow_not_string():
+    pytest.importorskip("pyarrow")
+
+    data = pd.DataFrame(
+        {
+            "b": pd.Series([None, 1, 2], dtype="int8[pyarrow]"),
+            "c": pd.Series([0, None, 2], dtype="int16[pyarrow]"),
+            "d": pd.Series([0, 1, None], dtype="int32[pyarrow]"),
+            "e": pd.Series([None, None, -1], dtype="int64[pyarrow]"),
+            "f": pd.Series([None, 1, 2], dtype="uint8[pyarrow]"),
+            "g": pd.Series([0, None, 2], dtype="uint16[pyarrow]"),
+            "h": pd.Series([0, 1, None], dtype="uint32[pyarrow]"),
+            "i": pd.Series([None, None, 42], dtype="uint64[pyarrow]"),
+            "j": pd.Series([None, False, True], dtype="boolean[pyarrow]"),
+        }
+    )
+    expr = ibis.memtable(data)
+    res = expr.execute()
+    assert len(res) == len(data)
+
+
+def test_set_temp_dir(tmp_path):
+    path = tmp_path / "foo" / "bar"
+    ibis.duckdb.connect(temp_directory=path)
+    assert path.exists()
