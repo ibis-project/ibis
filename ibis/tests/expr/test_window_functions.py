@@ -38,3 +38,18 @@ def test_mutate_with_analytic_functions(alltypes):
     for field in proj.op().selections[1:]:
         assert isinstance(field, ops.Alias)
         assert isinstance(field.arg, ops.WindowFunction)
+
+
+def test_value_over_api(alltypes):
+    t = alltypes
+
+    w1 = ibis.window(rows=(0, 1), group_by=t.g, order_by=[t.f, t.h])
+    w2 = ibis.window(range=(-1, 1), group_by=[t.g, t.a], order_by=[t.f])
+
+    expr = t.f.cumsum().over(rows=(0, 1), group_by=t.g, order_by=[t.f, t.h])
+    expected = t.f.cumsum().over(w1)
+    assert expr.equals(expected)
+
+    expr = t.f.cumsum().over(range=(-1, 1), group_by=[t.g, t.a], order_by=[t.f])
+    expected = t.f.cumsum().over(w2)
+    assert expr.equals(expected)

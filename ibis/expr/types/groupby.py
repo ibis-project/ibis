@@ -19,6 +19,7 @@ from __future__ import annotations
 import types
 from typing import Iterable, Sequence
 
+import ibis
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -222,19 +223,43 @@ class GroupedTable:
                 order_by=self._window.order_by + self._order_by,
             )
 
-    def over(self, window) -> GroupedTable:
+    def over(
+        self,
+        window=None,
+        *,
+        rows=None,
+        range=None,
+        group_by=None,
+        order_by=None,
+    ) -> GroupedTable:
         """Apply a window over the input expressions.
 
         Parameters
         ----------
         window
             Window to add to the input
+        rows
+            Whether to use the `ROWS` window clause
+        range
+            Whether to use the `RANGE` window clause
+        group_by
+            Grouping key
+        order_by
+            Ordering key
 
         Returns
         -------
         GroupedTable
             A new grouped table expression
         """
+        if window is None:
+            window = ibis.window(
+                rows=rows,
+                range=range,
+                group_by=group_by,
+                order_by=order_by,
+            )
+
         return self.__class__(
             self.table,
             self.by,
