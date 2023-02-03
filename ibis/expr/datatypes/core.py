@@ -686,14 +686,6 @@ class Category(Parametric):
             cardinality = "unknown"
         return f"{self.name}(cardinality={cardinality})"
 
-    def to_integer_type(self):
-        from ibis.expr.datatypes.value import infer
-
-        if self.cardinality is None:
-            return int64
-        else:
-            return infer(self.cardinality)
-
 
 @public
 class Struct(Parametric, Mapping):

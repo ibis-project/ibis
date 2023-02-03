@@ -318,7 +318,6 @@ def test_register_pyarrow_tables(con):
     ]
 )
 def test_csv_reregister_schema(con, tmp_path):
-
     foo = tmp_path / "foo.csv"
     with open(foo, "w", newline="") as csvfile:
         foowriter = csv.writer(

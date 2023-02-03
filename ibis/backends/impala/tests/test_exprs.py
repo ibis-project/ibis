@@ -5,11 +5,11 @@ import pandas.testing as tm
 import pytest
 
 import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.expr import api
-from ibis.expr.datatypes import Category
 
 
 def test_embedded_identifier_quoting(alltypes):
@@ -169,9 +169,13 @@ def _check_impala_output_types_match(con, table):
     t = con.sql(query)
 
     def _clean_type(x):
-        if isinstance(x, Category):
-            x = x.to_integer_type()
-        return x
+        if isinstance(x, dt.Category):
+            if x.cardinality is None:
+                return dt.int64
+            else:
+                return dt.infer(x.cardinality)
+        else:
+            return x
 
     left_schema, right_schema = t.schema(), table.schema()
     for n, left_type, right_type in zip(
