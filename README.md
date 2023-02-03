@@ -77,7 +77,7 @@ documentation at https://github.com/ibis-project/ibis/blob/master/docs/CONTRIBUT
 Install Ibis from PyPI with:
 
 ```bash
-pip install ibis-framework
+pip install 'ibis-framework[duckdb]'
 ```
 
 Or from conda-forge with:
@@ -88,13 +88,15 @@ conda install ibis-framework -c conda-forge
 
 (It’s a common mistake to `pip install ibis`. If you try to use Ibis and get errors early on try uninstalling `ibis` and installing `ibis-framework`)
 
-For specific backends, include the backend name in brackets for PyPI:
+To discover ibis, we suggest starting with the DuckDB backend (which is included by default in the conda-forge package). The DuckDB backend is performant and fully featured.
+
+To use ibis with other backends, include the backend name in brackets for PyPI:
 
 ```bash
-pip install ibis-framework[duckdb]
+pip install 'ibis-framework[postgres]'
 ```
 
-Or use `ibis-$BACKEND` where `$BACKEND` the specific backend you want to use:
+Or use `ibis-$BACKEND` where `$BACKEND` is the specific backend you want to use when installing from conda-forge:
 
 ```bash
 conda install ibis-postgres -c conda-forge
