@@ -1121,9 +1121,9 @@ def _canonicalize_interval(t, interval, **kwargs):
     correspondingly.
     """
     if isinstance(interval, ir.IntervalScalar):
-        value = t.translate(interval.op(), **kwargs)
-        # value is in nanoseconds and spark uses seconds since epoch
-        return int(value / 1e9)
+        t.translate(interval.op(), **kwargs)
+        return None
+
     elif isinstance(interval, int):
         return interval
     else:
@@ -1133,68 +1133,63 @@ def _canonicalize_interval(t, interval, **kwargs):
         )
 
 
-@compiles(ops.Window)
-def compile_window_op(t, op, **kwargs):
-    window = op.window
-    operand = op.expr
+@compiles(ops.WindowBoundary)
+def compile_window_boundary(t, boundary, **kwargs):
+    if boundary.value.output_dtype.is_interval():
+        value = t.translate(boundary.value, **kwargs)
+        # TODO(kszucs): the value can be a literal which is a bug
+        value = value.value if isinstance(value, ops.Literal) else value
+        # value is in nanoseconds and spark uses seconds since epoch
+        value = int(value / 1e9)
+    else:
+        value = boundary.value.value
 
+    return -value if boundary.preceding else value
+
+
+@compiles(ops.WindowFunction)
+def compile_window_function(t, op, **kwargs):
     grouping_keys = [
         key.name if isinstance(key, ops.TableColumn) else t.translate(key, **kwargs)
-        for key in window._group_by
+        for key in op.frame.group_by
     ]
 
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
         F.col(sort.name).cast('long') if sort.output_dtype.is_timestamp() else sort.name
-        for sort in window._order_by
+        for sort in op.frame.order_by
     ]
     aggcontext = AggregationContext.WINDOW
     pyspark_window = Window.partitionBy(grouping_keys).orderBy(ordering_keys)
 
-    # Checks for invalid user input e.g. passing in tuple for preceding and
-    # non-None value for following are caught and raised in expr/window.py
-    # if we're here, then the input is valid, we just need to interpret it
-    # correctly
-    if isinstance(window.preceding, tuple):
-        start, end = window.preceding
-    elif isinstance(window.following, tuple):
-        start, end = window.following
-    else:
-        start = window.preceding
-        end = window.following
-
     # If the operand is a shift op (e.g. lead, lag), Spark will set the window
     # bounds. Only set window bounds here if not a shift operation.
-    if not isinstance(operand, ops.ShiftBase):
-        if start is None:
+    if not isinstance(op.func, ops.ShiftBase):
+        if op.frame.start is None:
             win_start = Window.unboundedPreceding
         else:
-            win_start = -_canonicalize_interval(t, start, **kwargs)
-        if end is None:
+            win_start = t.translate(op.frame.start, **kwargs)
+        if op.frame.end is None:
             win_end = Window.unboundedFollowing
         else:
-            win_end = _canonicalize_interval(t, end, **kwargs)
+            win_end = t.translate(op.frame.end, **kwargs)
 
-        if (
-            isinstance(start, ir.IntervalScalar)
-            or isinstance(end, ir.IntervalScalar)
-            or window.how == "range"
-        ):
+        if op.frame.how == 'range':
             pyspark_window = pyspark_window.rangeBetween(win_start, win_end)
         else:
             pyspark_window = pyspark_window.rowsBetween(win_start, win_end)
 
-    res_op = operand
-    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+    func = op.func
+    if isinstance(func, (ops.NotAll, ops.NotAny)):
         # For NotAll and NotAny, negation must be applied after .over(window)
         # Here we rewrite node to be its negation, and negate it back after
         # translation and window operation
-        operand = res_op.negate()
-    result = t.translate(operand, **kwargs, aggcontext=aggcontext).over(pyspark_window)
+        func = func.negate()
+    result = t.translate(func, **kwargs, aggcontext=aggcontext).over(pyspark_window)
 
-    if isinstance(res_op, (ops.NotAll, ops.NotAny)):
+    if isinstance(op.func, (ops.NotAll, ops.NotAny)):
         return ~result
-    elif isinstance(res_op, (ops.MinRank, ops.DenseRank, ops.RowNumber)):
+    elif isinstance(op.func, ops.RankBase):
         # result must be cast to long type for Rank / RowNumber
         return result.astype('long') - 1
     else:

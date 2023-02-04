@@ -1,6 +1,5 @@
 import pytest
 
-import ibis
 from ibis.backends.impala.tests.conftest import translate
 
 
@@ -12,10 +11,6 @@ def table(mockcon):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        pytest.param(
-            lambda t: ibis.row_number().over(ibis.window(order_by=t.float_col)),
-            id="row_number",
-        ),
         pytest.param(lambda t: t.string_col.lag(), id="lag_default"),
         pytest.param(lambda t: t.string_col.lag(2), id="lag_arg"),
         pytest.param(lambda t: t.string_col.lag(default=0), id="lag_explicit_default"),

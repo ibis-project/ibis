@@ -120,7 +120,7 @@ class Graph(Dict[Node, Sequence[Node]]):
         return self.keys()
 
     def invert(self) -> Graph:
-        result = {node: [] for node in self.keys()}
+        result = {node: [] for node in self}
         for node, dependencies in self.items():
             for dependency in dependencies:
                 result[dependency].append(node)

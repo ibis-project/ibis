@@ -120,7 +120,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.expr.window as win
 import ibis.util
 from ibis.backends.base import BaseBackend
 from ibis.backends.pandas import aggcontext as agg_ctx
@@ -161,7 +160,6 @@ def is_computable_input(arg):
 @is_computable_input.register(ops.Node)
 @is_computable_input.register(dt.DataType)
 @is_computable_input.register(type(None))
-@is_computable_input.register(win.Window)
 @is_computable_input.register(tuple)
 def is_computable_input_arg(arg):
     """Return whether `arg` is a valid computable argument."""
@@ -587,9 +585,9 @@ def get_node_arguments_aggregation(node):
     return (node.table,)
 
 
-@get_node_arguments.register(ops.Window)
+@get_node_arguments.register(ops.WindowFunction)
 def get_node_arguments_window(node):
-    return (get_node_arguments(node.expr)[0], node.window)
+    return get_node_arguments(node.func)[:1]
 
 
 @get_node_arguments.register(

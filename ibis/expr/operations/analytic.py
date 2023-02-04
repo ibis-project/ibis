@@ -6,28 +6,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Value
-from ibis.expr.window import propagate_down_window
-
-
-@public
-class Window(Value):
-    expr = rlz.analytic
-    window = rlz.window_from(rlz.base_table_of(rlz.ref("expr"), strict=False))
-
-    output_dtype = rlz.dtype_like("expr")
-    output_shape = rlz.Shape.COLUMNAR
-
-    def __init__(self, expr, window):
-        expr = propagate_down_window(expr, window)
-        super().__init__(expr=expr, window=window)
-
-    def over(self, window):
-        new_window = self.window.combine(window)
-        return Window(self.expr, new_window)
-
-    @property
-    def name(self):
-        return self.expr.name
 
 
 @public
@@ -197,4 +175,4 @@ class NthValue(Analytic):
     output_dtype = rlz.dtype_like("arg")
 
 
-public(WindowOp=Window, AnalyticOp=Analytic)
+public(AnalyticOp=Analytic)

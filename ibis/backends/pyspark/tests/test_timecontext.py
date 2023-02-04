@@ -1,22 +1,19 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pandas as pd
 import pandas.testing as tm
 import pytest
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.expr.scope import Scope
 from ibis.expr.timecontext import adjust_context
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 pytest.importorskip("pyspark")
 
-from ibis.backends.pyspark.compiler import compile_window_op, compiles  # noqa: E402
+from ibis.backends.pyspark.compiler import (  # noqa: E402
+    compile_window_function,
+    compiles,
+)
 from ibis.backends.pyspark.timecontext import combine_time_context  # noqa: E402
 
 
@@ -83,21 +80,17 @@ def test_adjust_context_scope(client):
     # To avoid that, we'll create a dummy subclass of Window and build the
     # test around that.
 
-    class CustomWindow(ops.Window):
+    class CustomWindowFunction(ops.WindowFunction):
         pass
 
     # Tell the Spark backend compiler it should compile CustomWindow just
     # like Window
-    compiles(CustomWindow)(compile_window_op)
+    compiles(CustomWindowFunction)(compile_window_function)
 
     # Create an `adjust_context` function for this subclass that simply checks
     # that `scope` is passed in.
-    @adjust_context.register(CustomWindow)
-    def adjust_context_window_check_scope(
-        op: CustomWindow,
-        scope: Scope,
-        timecontext: TimeContext,
-    ) -> TimeContext:
+    @adjust_context.register(CustomWindowFunction)
+    def adjust_context_window_check_scope(op, scope, timecontext):
         """Confirms that `scope` is passed in."""
         assert scope is not None
         return timecontext
@@ -105,15 +98,17 @@ def test_adjust_context_scope(client):
     # Do an operation that will trigger context adjustment
     # on a CustomWindow
     value_count = table['value'].count()
-    win = ibis.window(
+    window = ibis.window(
         ibis.interval(hours=1),
         0,
         order_by='time',
         group_by='key',
     )
+    frame = window.bind(table)
+
     # the argument needs to be pull out from the alias
     # any extensions must do the same
-    value_count_over_win = CustomWindow(value_count.op(), win).to_expr()
+    value_count_over_win = CustomWindowFunction(value_count, frame).to_expr()
 
     expr = table.mutate(value_count_over_win=value_count_over_win)
 

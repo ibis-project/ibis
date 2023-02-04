@@ -229,6 +229,7 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.util
 from ibis.expr.timecontext import construct_time_context_aware_series, get_time_col
 
@@ -413,7 +414,7 @@ def compute_window_spec(dtype, obj):
     )
 
 
-@compute_window_spec.register(type(None))
+@compute_window_spec.register(dt.Integer)
 def compute_window_spec_none(_, obj):
     """Helper method only used for row-based windows.
 
@@ -422,12 +423,17 @@ def compute_window_spec_none(_, obj):
     size. Therefore, we must add 1 to the ibis window bound to get the
     expected behavior.
     """
-    return obj + 1
+    from ibis.backends.pandas.core import execute
+
+    value = execute(obj)
+    return value + 1
 
 
 @compute_window_spec.register(dt.Interval)
-def compute_window_spec_interval(_, expr):
-    value = ibis.pandas.execute(expr)
+def compute_window_spec_interval(_, obj):
+    from ibis.backends.pandas.core import execute
+
+    value = execute(obj)
     return pd.tseries.frequencies.to_offset(value)
 
 
@@ -435,7 +441,7 @@ def window_agg_built_in(
     frame: pd.DataFrame,
     windowed: pd.core.window.Window,
     function: str,
-    max_lookback: int,
+    max_lookback: ops.Literal,
     *args: tuple[Any, ...],
     **kwargs: dict[str, Any],
 ) -> pd.Series:
@@ -447,7 +453,7 @@ def window_agg_built_in(
         agg_method = method
 
         def sliced_agg(s):
-            return agg_method(s.iloc[-max_lookback:])
+            return agg_method(s.iloc[-max_lookback.value :])
 
         method = operator.methodcaller('apply', sliced_agg, raw=False)
 
@@ -665,19 +671,18 @@ class Cumulative(Window):
 class Moving(Window):
     __slots__ = ()
 
-    def __init__(self, preceding, max_lookback, *args, **kwargs):
+    def __init__(self, start, max_lookback, *args, **kwargs):
         from ibis.backends.pandas.core import timedelta_types
 
-        ibis_dtype = getattr(preceding, 'type', lambda: None)()
-        preceding = compute_window_spec(ibis_dtype, preceding)
-        closed = (
-            None
-            if not isinstance(preceding, timedelta_types + (pd.offsets.DateOffset,))
-            else 'both'
-        )
+        start = compute_window_spec(start.output_dtype, start.value)
+        if isinstance(start, timedelta_types + (pd.offsets.DateOffset,)):
+            closed = 'both'
+        else:
+            closed = None
+
         super().__init__(
             'rolling',
-            preceding,
+            start,
             *args,
             max_lookback=max_lookback,
             closed=closed,

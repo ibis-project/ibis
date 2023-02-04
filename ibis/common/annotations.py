@@ -61,7 +61,7 @@ class Attribute(Annotation):
     def initialize(self, this):
         """Compute the default value of the field."""
         if self._default is EMPTY:
-            return None
+            return EMPTY
         elif callable(self._default):
             value = self._default(this)
         else:
@@ -231,7 +231,7 @@ class Signature(inspect.Signature):
             Tuple of positional and keyword arguments.
         """
         # does the reverse of bind, but doesn't apply defaults
-        return {name: getattr(this, name) for name in self.parameters.keys()}
+        return {name: getattr(this, name) for name in self.parameters}
 
     def validate(self, *args, **kwargs):
         """Validate the arguments against the signature.

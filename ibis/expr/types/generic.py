@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     import pandas as pd
 
     import ibis.expr.types as ir
-    import ibis.expr.window as win
 
 
 @public
@@ -320,7 +319,7 @@ class Value(Expr):
 
         return expr.else_(else_ if else_ is not None else self).end()
 
-    def over(self, window: win.Window) -> Value:
+    def over(self, window) -> Value:
         """Construct a window expression.
 
         Parameters
@@ -333,18 +332,28 @@ class Value(Expr):
         Value
             A window function expression
         """
-        prior_op = self.op()
+        import ibis.expr.analysis as an
+        import ibis.expr.builders as bl
+        import ibis.expr.deferred as de
 
-        # TODO(kszucs): fix this ugly hack
-        if isinstance(prior_op, ops.Alias):
-            return prior_op.arg.to_expr().over(window).name(prior_op.name)
+        op = self.op()
 
-        if isinstance(prior_op, ops.Window):
-            op = prior_op.over(window)
+        def bind(table):
+            frame = window.bind(table)
+            node = ops.WindowFunction(self, frame)
+            return node.to_expr()
+
+        if isinstance(op, ops.Alias):
+            return op.arg.to_expr().over(window).name(op.name)
+        elif isinstance(op, ops.WindowFunction):
+            return op.func.to_expr().over(window)
+        elif isinstance(window, bl.WindowBuilder):
+            if table := an.find_first_base_table(self.op()):
+                return bind(table)
+            else:
+                return de.Deferred(bind)
         else:
-            op = ops.Window(self, window)
-
-        return op.to_expr()
+            return ops.WindowFunction(self, window).to_expr()
 
     def isnull(self) -> ir.BooleanValue:
         """Return whether this expression is NULL."""

@@ -5,7 +5,6 @@ import ibis
 import ibis.common.exceptions as com
 from ibis import window
 from ibis.backends.impala.compiler import ImpalaCompiler
-from ibis.expr.window import rows_with_max_lookback
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
@@ -65,7 +64,7 @@ def test_window_frame_specs(alltypes, window, snapshot):
 
 
 def test_window_rows_with_max_lookback(alltypes):
-    mlb = rows_with_max_lookback(3, ibis.interval(days=3))
+    mlb = ibis.rows_with_max_lookback(3, ibis.interval(days=3))
     t = alltypes
     w = ibis.trailing_window(mlb, order_by=t.i)
     expr = t.a.sum().over(w)
@@ -73,34 +72,18 @@ def test_window_rows_with_max_lookback(alltypes):
         ImpalaCompiler.to_sql(expr)
 
 
-@pytest.mark.parametrize(
-    ('cumulative', 'static'),
-    [
-        param(
-            lambda t, w: t.f.cumsum().over(w), lambda t, w: t.f.sum().over(w), id="sum"
-        ),
-        param(
-            lambda t, w: t.f.cummin().over(w), lambda t, w: t.f.min().over(w), id="min"
-        ),
-        param(
-            lambda t, w: t.f.cummax().over(w), lambda t, w: t.f.max().over(w), id="max"
-        ),
-        param(
-            lambda t, w: t.f.cummean().over(w),
-            lambda t, w: t.f.mean().over(w),
-            id="mean",
-        ),
-    ],
-)
-def test_cumulative_functions(alltypes, cumulative, static, snapshot):
+@pytest.mark.parametrize("name", ["sum", "min", "max", "mean"])
+def test_cumulative_functions(alltypes, name, snapshot):
     t = alltypes
-
     w = ibis.window(order_by=t.d)
 
-    actual = cumulative(t, w).name('foo')
-    expected = static(t, w).over(ibis.cumulative_window()).name('foo')
+    func = getattr(t.f, name)
+    cumfunc = getattr(t.f, f"cum{name}")
 
-    expr1 = t.projection(actual)
+    expr = cumfunc().over(w).name("foo")
+    expected = func().over(ibis.cumulative_window(order_by=t.d)).name("foo")
+
+    expr1 = t.projection(expr)
     expr2 = t.projection(expected)
 
     assert_sql_equal(expr1, snapshot, "out1.sql")

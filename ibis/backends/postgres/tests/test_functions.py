@@ -15,7 +15,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config
 from ibis import literal as L
-from ibis.expr.window import rows_with_max_lookback
 
 pytest.importorskip("psycopg2")
 sa = pytest.importorskip("sqlalchemy")
@@ -764,7 +763,7 @@ def test_rolling_window(alltypes, func, df):
 def test_rolling_window_with_mlb(alltypes):
     t = alltypes
     window = ibis.trailing_window(
-        preceding=rows_with_max_lookback(3, ibis.interval(days=5)),
+        preceding=ibis.rows_with_max_lookback(3, ibis.interval(days=5)),
         order_by=t.timestamp_col,
     )
     expr = t['double_col'].sum().over(window)

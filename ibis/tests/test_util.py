@@ -92,3 +92,6 @@ def test_import_object():
 
     with pytest.raises(ImportError):
         util.import_object("collections.this_attribute_doesnt_exist")
+
+
+# TODO(kszucs): add tests for promote_list and promote_tuple

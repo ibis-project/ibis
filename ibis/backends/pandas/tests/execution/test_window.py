@@ -12,87 +12,11 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas import Backend
-from ibis.backends.pandas.aggcontext import AggregationContext, window_agg_udf
 from ibis.backends.pandas.dispatch import pre_execute
 from ibis.backends.pandas.execution import execute
-from ibis.backends.pandas.execution.window import get_aggcontext
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.expr.scope import Scope
-from ibis.expr.window import get_preceding_value, rows_with_max_lookback
 from ibis.udf.vectorized import reduction
-
-# These custom classes are used inn test_custom_window_udf
-
-
-class CustomInterval:
-    def __init__(self, value):
-        self.value = value
-
-    # These are necessary because ibis.expr.window
-    # will compare preceding and following
-    # with 0 to see if they are valid
-    def __lt__(self, other):
-        return self.value < other
-
-    def __gt__(self, other):
-        return self.value > other
-
-
-class CustomWindow(ibis.expr.window.Window):
-    """This is a dummy custom window that return n preceding rows where n is
-    defined by CustomInterval.value."""
-
-    def _replace(self, **kwds):
-        new_kwds = {
-            'group_by': kwds.get('group_by', self._group_by),
-            'order_by': kwds.get('order_by', self._order_by),
-            'preceding': kwds.get('preceding', self.preceding),
-            'following': kwds.get('following', self.following),
-            'max_lookback': kwds.get('max_lookback', self.max_lookback),
-            'how': kwds.get('how', self.how),
-        }
-        return CustomWindow(**new_kwds)
-
-
-class CustomAggContext(AggregationContext):
-    def __init__(
-        self, parent, group_by, order_by, output_type, max_lookback, preceding
-    ):
-        super().__init__(
-            parent=parent,
-            group_by=group_by,
-            order_by=order_by,
-            output_type=output_type,
-            max_lookback=max_lookback,
-        )
-        self.preceding = preceding
-
-    def agg(self, grouped_data, function, *args, **kwargs):
-        upper_indices = pd.Series(range(1, len(self.parent) + 2))
-        window_sizes = (
-            grouped_data.rolling(self.preceding.value + 1, min_periods=0)
-            .count()
-            .reset_index(drop=True)
-        )
-        lower_indices = upper_indices - window_sizes
-        mask = upper_indices.notna()
-
-        result_index = grouped_data.obj.index
-
-        result = window_agg_udf(
-            grouped_data,
-            function,
-            lower_indices,
-            upper_indices,
-            mask,
-            result_index,
-            self.dtype,
-            self.max_lookback,
-            *args,
-            **kwargs,
-        )
-
-        return result
 
 
 @pytest.fixture(scope='session')
@@ -120,16 +44,6 @@ def row_window():
 @pytest.fixture
 def range_window():
     return ibis.window(following=0, order_by='plain_datetimes_naive')
-
-
-@pytest.fixture
-def custom_window():
-    return CustomWindow(
-        preceding=CustomInterval(1),
-        following=0,
-        group_by='dup_ints',
-        order_by='plain_int64',
-    )
 
 
 @default
@@ -393,20 +307,6 @@ def test_batting_rolling_partitioned(batting, batting_df, sort_kind):
     )
 
 
-@pytest.mark.parametrize(
-    'window',
-    [
-        ibis.window(order_by='yearID'),
-        ibis.window(order_by='yearID', group_by='playerID'),
-    ],
-)
-def test_window_failure_mode(batting, batting_df, window):
-    # can't have order by without a following value of 0
-    expr = batting.mutate(more_values=batting.G.sum().over(window))
-    with pytest.raises(ibis.common.exceptions.OperationNotDefinedError):
-        expr.execute()
-
-
 def test_scalar_broadcasting(batting, batting_df):
     expr = batting.mutate(demeaned=batting.G - batting.G.mean())
     result = expr.execute()
@@ -553,7 +453,7 @@ def test_window_with_mlb():
     )
     client = ibis.pandas.connect({'df': df})
     t = client.table('df')
-    rows_with_mlb = rows_with_max_lookback(5, ibis.interval(days=10))
+    rows_with_mlb = ibis.rows_with_max_lookback(5, ibis.interval(days=10))
     expr = t.mutate(
         sum=lambda df: df.a.sum().over(
             ibis.trailing_window(rows_with_mlb, order_by='time', group_by='b')
@@ -571,8 +471,8 @@ def test_window_with_mlb():
     expected = expected.reset_index(drop=False).assign(sum=gb_df)
     tm.assert_frame_equal(result, expected)
 
-    rows_with_mlb = rows_with_max_lookback(5, 10)
-    with pytest.raises(com.IbisInputError):
+    rows_with_mlb = ibis.rows_with_max_lookback(5, 10)
+    with pytest.raises(com.IbisTypeError):
         t.mutate(
             sum=lambda df: df.a.sum().over(
                 ibis.trailing_window(rows_with_mlb, order_by='time')
@@ -660,58 +560,6 @@ def test_window_on_and_by_key_as_window_input(t, df):
         t[control].count().over(row_window).execute(),
         check_names=False,
     )
-
-
-def test_custom_window_udf(t, custom_window):
-    """Test implementing  a (dummy) custom window.
-
-    This test covers the advance use case to support custom window with udfs.
-
-    Note that method used in this example (e.g, get_preceding, get_aggcontext)
-    are unstable developer API, not stable public API.
-    """
-
-    @reduction(input_type=[dt.float64], output_type=dt.float64)
-    def my_sum(v):
-        return v.sum()
-
-    # Unfortunately we cannot unregister these because singledispatch
-    # doesn't support it, but this won't cause any issues either.
-    @get_preceding_value.register(CustomInterval)
-    def get_preceding_value_custom(preceding):
-        return preceding
-
-    @get_aggcontext.register(CustomWindow)
-    def get_aggcontext_custom(
-        window,
-        *,
-        scope,
-        cache,
-        operand,
-        parent,
-        group_by,
-        order_by,
-        dummy_custom_window_data,
-    ):
-        assert dummy_custom_window_data == 'dummy_data'
-        # scope and operand are not used here
-        return CustomAggContext(
-            parent=parent,
-            group_by=group_by,
-            order_by=order_by,
-            output_type=operand.output_dtype,
-            max_lookback=window.max_lookback,
-            preceding=window.preceding,
-        )
-
-    result = (
-        my_sum(t['plain_float64'])
-        .over(custom_window)
-        .execute(dummy_custom_window_data='dummy_data')
-    )
-    expected = pd.Series([4.0, 10.0, 5.0], name="tmp")
-
-    tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(

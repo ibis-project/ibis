@@ -1,18 +1,20 @@
 from __future__ import annotations
 
-from abc import abstractmethod
+import math
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
+from ibis import util
+from ibis.common.annotations import annotated
+from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
+from ibis.expr.deferred import Deferred
 
 
 class Builder(Concrete):
-    @property
-    @abstractmethod
-    def __type__(self):
-        ...
+    pass
 
 
 class CaseBuilder(Builder):
@@ -80,3 +82,188 @@ class SimpleCaseBuilder(CaseBuilder):
                 f'case {rlz._arg_type_error_format(case_expr)} are not comparable'
             )
         return super().when(case_expr, result_expr)
+
+
+class WindowBuilder(Builder):
+    """An unbound window frame specification.
+
+    Notes
+    -----
+    This class is patterned after SQL window frame clauses.
+
+    Using `None` for `preceding` or `following` indicates an unbounded frame.
+
+    Use 0 for `CURRENT ROW`.
+    """
+
+    how = rlz.optional(rlz.isin({'rows', 'range'}), default="rows")
+    start = end = rlz.optional(rlz.option(rlz.range_window_boundary))
+    groupings = orderings = rlz.optional(
+        rlz.tuple_of(
+            rlz.one_of([rlz.column(rlz.any), rlz.instance_of((str, Deferred))])
+        ),
+        default=(),
+    )
+    max_lookback = rlz.optional(rlz.interval)
+
+    def _maybe_cast_boundary(self, boundary, dtype):
+        if boundary.output_dtype == dtype:
+            return boundary
+
+        value = ops.Cast(boundary.value, dtype)
+        return boundary.copy(value=value)
+
+    def _maybe_cast_boundaries(self, start, end):
+        if start and end:
+            dtype = dt.higher_precedence(start.output_dtype, end.output_dtype)
+            start = self._maybe_cast_boundary(start, dtype)
+            end = self._maybe_cast_boundary(end, dtype)
+        return start, end
+
+    def _determine_how(self, start, end):
+        if start and not start.output_dtype.is_integer():
+            return self.range
+        elif end and not end.output_dtype.is_integer():
+            return self.range
+        else:
+            return self.rows
+
+    def _validate_boundaries(self, start, end):
+        start_, end_ = -math.inf, math.inf
+        if start and isinstance(lit := start.value, ops.Literal):
+            start_ = -lit.value if start.preceding else lit.value
+        if end and isinstance(lit := end.value, ops.Literal):
+            end_ = -lit.value if end.preceding else lit.value
+
+        if start_ > end_:
+            raise IbisInputError(
+                "Window frame's start point must be greater than its end point"
+            )
+
+    @annotated(
+        start=rlz.option(rlz.row_window_boundary),
+        end=rlz.option(rlz.row_window_boundary),
+    )
+    def rows(self, start, end):
+        self._validate_boundaries(start, end)
+        start, end = self._maybe_cast_boundaries(start, end)
+        return self.copy(how="rows", start=start, end=end)
+
+    @annotated(
+        start=rlz.option(rlz.range_window_boundary),
+        end=rlz.option(rlz.range_window_boundary),
+    )
+    def range(self, start, end):
+        self._validate_boundaries(start, end)
+        start, end = self._maybe_cast_boundaries(start, end)
+        return self.copy(how="range", start=start, end=end)
+
+    @annotated(
+        start=rlz.option(rlz.range_window_boundary),
+        end=rlz.option(rlz.range_window_boundary),
+    )
+    def between(self, start, end):
+        self._validate_boundaries(start, end)
+        start, end = self._maybe_cast_boundaries(start, end)
+        method = self._determine_how(start, end)
+        return method(start, end)
+
+    def group_by(self, expr):
+        return self.copy(groupings=self.groupings + util.promote_tuple(expr))
+
+    def order_by(self, expr):
+        return self.copy(orderings=self.orderings + util.promote_tuple(expr))
+
+    def lookback(self, value):
+        return self.copy(max_lookback=value)
+
+    def bind(self, table):
+        if self.how == "rows":
+            return ops.RowsWindowFrame(
+                table=table,
+                start=self.start,
+                end=self.end,
+                group_by=self.groupings,
+                order_by=self.orderings,
+                max_lookback=self.max_lookback,
+            )
+        elif self.how == "range":
+            return ops.RangeWindowFrame(
+                table=table,
+                start=self.start,
+                end=self.end,
+                group_by=self.groupings,
+                order_by=self.orderings,
+            )
+        else:
+            raise ValueError(f"Unsupported `{self.how}` window type")
+
+
+class LegacyWindowBuilder(WindowBuilder):
+    def _is_negative(self, value):
+        if value is None:
+            return False
+        if isinstance(value, ir.Scalar):
+            value = value.op().value
+        return value < 0
+
+    def preceding_following(self, preceding, following, how=None):
+        preceding_tuple = has_preceding = False
+        following_tuple = has_following = False
+        if preceding is not None:
+            preceding_tuple = isinstance(preceding, tuple)
+            has_preceding = True
+        if following is not None:
+            following_tuple = isinstance(following, tuple)
+            has_following = True
+
+        if (preceding_tuple and has_following) or (following_tuple and has_preceding):
+            raise IbisInputError(
+                'Can only specify one window side when you want an off-center window'
+            )
+        elif preceding_tuple:
+            start, end = preceding
+            if end is None:
+                raise IbisInputError("preceding end point cannot be None")
+            elif self._is_negative(end):
+                raise IbisInputError("preceding end point must be non-negative")
+            elif self._is_negative(start):
+                raise IbisInputError("preceding start point must be non-negative")
+            between = (
+                None if start is None else ops.WindowBoundary(start, preceding=True),
+                ops.WindowBoundary(end, preceding=True),
+            )
+        elif following_tuple:
+            start, end = following
+            if start is None:
+                raise IbisInputError("following start point cannot be None")
+            elif self._is_negative(start):
+                raise IbisInputError("following start point must be non-negative")
+            elif self._is_negative(end):
+                raise IbisInputError("following end point must be non-negative")
+            between = (
+                ops.WindowBoundary(start, preceding=False),
+                None if end is None else ops.WindowBoundary(end, preceding=False),
+            )
+        elif has_preceding and has_following:
+            between = (
+                ops.WindowBoundary(preceding, preceding=True),
+                ops.WindowBoundary(following, preceding=False),
+            )
+        elif has_preceding:
+            if self._is_negative(preceding):
+                raise IbisInputError("preceding end point must be non-negative")
+            between = (ops.WindowBoundary(preceding, preceding=True), None)
+        elif has_following:
+            if self._is_negative(following):
+                raise IbisInputError("following end point must be non-negative")
+            between = (None, ops.WindowBoundary(following, preceding=False))
+
+        if how is None:
+            return self.between(*between)
+        elif how == "rows":
+            return self.rows(*between)
+        elif how == "range":
+            return self.range(*between)
+        else:
+            raise ValueError(f"Invalid window frame type: {how}")
