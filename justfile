@@ -18,8 +18,8 @@ lock:
 
 # format code
 fmt:
-    ruff --fix .
     black .
+    ruff --fix .
 
 # run all non-backend tests; additional arguments are forwarded to pytest
 check *args:

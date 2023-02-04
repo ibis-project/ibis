@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 class NumericValue(Value):
     @staticmethod
     def __negate_op__():
+        # TODO(kszucs): do we need this?
         return ops.Negate
 
     def negate(self) -> NumericValue:

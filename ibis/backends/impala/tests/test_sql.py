@@ -303,5 +303,6 @@ def test_group_by_with_window_preserves_range(snapshot):
     t = ibis.table(dict(one='string', two='double', three='int32'), name='my_data')
     w = ibis.cumulative_window(order_by=t.one)
     expr = t.group_by(t.three).mutate(four=t.two.sum().over(w))
+
     result = ibis.impala.compile(expr)
     snapshot.assert_match(result, "out.sql")

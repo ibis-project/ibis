@@ -13,6 +13,7 @@ from ibis.common.validators import (
     any_of,
     bool_,
     dict_of,
+    equal_to,
     frozendict_of,
     instance_of,
     int_,
@@ -20,6 +21,7 @@ from ibis.common.validators import (
     list_of,
     mapping_of,
     min_,
+    pair_of,
     str_,
     tuple_of,
 )
@@ -44,6 +46,9 @@ from ibis.util import frozendict
         (any_of((str_, int_(max=8))), 7, 7),
         (all_of((int_, min_(3), min_(8))), 10, 10),
         (dict_of(str_, int_), {"a": 1, "b": 2}, {"a": 1, "b": 2}),
+        (pair_of(bool_, str_), (True, "foo"), (True, "foo")),
+        (equal_to(1), 1, 1),
+        (equal_to(None), None, None),
     ],
 )
 def test_validators_passing(validator, value, expected):
@@ -68,6 +73,9 @@ def test_validators_passing(validator, value, expected):
         (any_of((str_, int_(max=8))), 9),
         (all_of((int_, min_(3), min_(8))), 7),
         (dict_of(int_, str_), {"a": 1, "b": 2}),
+        (pair_of(bool_, str_), (True, True, True)),
+        (pair_of(bool_, str_), ("str", True)),
+        (equal_to(1), 2),
     ],
 )
 def test_validators_failing(validator, value):

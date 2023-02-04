@@ -6,7 +6,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.expr.window import window
 from ibis.udf.vectorized import analytic, elementwise, reduction
 
 
@@ -573,7 +572,7 @@ def test_elementwise_udf_struct(udf_backend, udf_alltypes):
 @pytest.mark.parametrize('udf', demean_struct_udfs)
 @pytest.mark.notimpl(["pyspark"])
 def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
-    w = window(preceding=None, following=None, group_by='year')
+    w = ibis.window(preceding=None, following=None, group_by='year')
 
     result = udf_alltypes.mutate(
         udf(udf_alltypes['double_col'], udf_alltypes['int_col']).over(w).destructure()
@@ -588,7 +587,7 @@ def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
 
 @pytest.mark.notimpl(["pyspark"])
 def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
-    w = window(preceding=None, following=None)
+    w = ibis.window(preceding=None, following=None)
 
     demean_struct_udf = create_demean_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
@@ -609,7 +608,7 @@ def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
 
 @pytest.mark.notimpl(["pyspark"])
 def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
-    w = window(preceding=None, following=None, group_by='year')
+    w = ibis.window(preceding=None, following=None, group_by='year')
 
     result = udf_alltypes.mutate(
         overwrite_struct_analytic(udf_alltypes['double_col'], udf_alltypes['int_col'])
@@ -695,7 +694,7 @@ def test_reduction_udf_destruct_no_group_by_overwrite(udf_backend, udf_alltypes)
 # TODO - windowing - #2553
 @pytest.mark.notimpl(["dask", "pyspark"])
 def test_reduction_udf_destruct_window(udf_backend, udf_alltypes):
-    win = window(
+    win = ibis.window(
         preceding=ibis.interval(hours=2),
         following=0,
         group_by='year',

@@ -45,8 +45,6 @@ import enum
 import functools
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
-
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis import config
@@ -282,34 +280,25 @@ def adjust_context_asof_join(
     return timecontext
 
 
-@adjust_context.register(ops.Window)
+@adjust_context.register(ops.WindowFunction)
 def adjust_context_window(
-    op: ops.Window, scope: Scope, timecontext: TimeContext
+    op: ops.WindowFunction, scope: Scope, timecontext: TimeContext
 ) -> TimeContext:
-    import ibis.expr.types as ir
+    # TODO(kszucs): this file should be really moved to the pandas
+    # backend instead of the current central placement
+    from ibis.backends.pandas.execution import execute
 
     # adjust time context by preceding and following
     begin, end = timecontext
 
-    # TODO(kszucs): rewrite op.window.preceding to be an ops.Node
-    preceding = op.window.preceding
-    if preceding is not None:
-        if isinstance(preceding, ir.IntervalScalar):
-            # TODO(kszucs): this file should be really moved to the pandas
-            # backend instead of the current central placement
-            from ibis.backends.pandas.execution import execute
+    if op.frame.start is not None:
+        value = execute(op.frame.start.value)
+        if value:
+            begin = begin - value
 
-            preceding = execute(preceding.op())
-        if preceding and not isinstance(preceding, (int, np.integer)):
-            begin = begin - preceding
-
-    following = op.window.following
-    if following is not None:
-        if isinstance(following, ir.IntervalScalar):
-            from ibis.backends.pandas.execution import execute
-
-            following = execute(following.op())
-        if following and not isinstance(following, (int, np.integer)):
-            end = end + following
+    if op.frame.end is not None:
+        value = execute(op.frame.end.value)
+        if value:
+            end = end + value
 
     return (begin, end)

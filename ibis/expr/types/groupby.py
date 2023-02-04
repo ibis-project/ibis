@@ -20,8 +20,8 @@ import types
 from typing import Iterable, Sequence
 
 import ibis.expr.analysis as an
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
-import ibis.expr.window as _window
 from ibis import util
 from ibis.expr.deferred import Deferred
 
@@ -53,6 +53,7 @@ def _get_group_by_key(table, value):
         return value
 
 
+# TODO(kszucs): make a builder class for this
 class GroupedTable:
     """An intermediate table expression to hold grouping information."""
 
@@ -200,33 +201,28 @@ class GroupedTable:
         --------
         [`GroupedTable.mutate`][ibis.expr.types.groupby.GroupedTable.mutate]
         """
-        w = self._get_window()
+        default_frame = self._get_window()
         windowed_exprs = []
         for expr in util.promote_list(exprs):
             expr = self.table._ensure_expr(expr)
-            expr = an.windowize_function(expr, w=w)
+            expr = an.windowize_function(expr, frame=default_frame)
             windowed_exprs.append(expr)
-        return self.table.projection(windowed_exprs)
+        return self.table.select(windowed_exprs)
 
     def _get_window(self):
         if self._window is None:
-            groups = self.by
-            sorts = self._order_by
-            preceding, following = None, None
+            return ops.RowsWindowFrame(
+                table=self.table,
+                group_by=self.by,
+                order_by=self._order_by,
+            )
         else:
-            w = self._window
-            groups = w.group_by + self.by
-            sorts = w.order_by + self._order_by
-            preceding, following = w.preceding, w.following
+            return self._window.copy(
+                groupy_by=self._window.group_by + self.by,
+                order_by=self._window.order_by + self._order_by,
+            )
 
-        return _window.window(
-            preceding=preceding,
-            following=following,
-            group_by=list(map(self.table._ensure_expr, util.promote_list(groups))),
-            order_by=list(map(self.table._ensure_expr, util.promote_list(sorts))),
-        )
-
-    def over(self, window: _window.Window) -> GroupedTable:
+    def over(self, window) -> GroupedTable:
         """Apply a window over the input expressions.
 
         Parameters

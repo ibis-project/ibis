@@ -21,7 +21,7 @@ from ibis.common.grounds import (
     Immutable,
     Singleton,
 )
-from ibis.common.validators import instance_of, validator
+from ibis.common.validators import instance_of, option, validator
 from ibis.tests.util import assert_pickle_roundtrip
 from ibis.util import frozendict
 
@@ -470,6 +470,14 @@ class Value2(Value):
         return 3
 
 
+class Value3(Value):
+    k = attribute(is_int, default=3)
+
+
+class Value4(Value):
+    k = attribute(option(is_int), default=None)
+
+
 # TODO(kszucs): add a test case with __dict__ added to __slots__
 
 
@@ -497,6 +505,12 @@ def test_annotable_attribute_init():
     v.j = 2
     assert v.j == 2
     assert v.k == 3
+
+    v = Value3(1)
+    assert v.k == 3
+
+    v = Value4(1)
+    assert v.k is None
 
 
 def test_annotable_mutability_and_serialization():

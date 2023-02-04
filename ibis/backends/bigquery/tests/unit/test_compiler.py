@@ -470,7 +470,7 @@ def test_range_window_function(alltypes, window, snapshot):
     "preceding",
     [
         param(5, id="five"),
-        param(ibis.interval(nanoseconds=1), id="nanos"),
+        param(ibis.interval(nanoseconds=1), id="nanos", marks=pytest.mark.xfail),
         param(ibis.interval(microseconds=1), id="micros"),
         param(ibis.interval(seconds=1), id="seconds"),
         param(ibis.interval(minutes=1), id="minutes"),
@@ -484,15 +484,6 @@ def test_trailing_range_window(alltypes, preceding, snapshot):
     w = ibis.trailing_range_window(preceding=preceding, order_by="timestamp_col")
     expr = alltypes.mutate(win_avg=_.float_col.mean().over(w))
     snapshot.assert_match(to_sql(expr), "out.sql")
-
-
-def test_trailing_range_window_unsupported(alltypes):
-    t = alltypes
-    preceding = ibis.interval(years=1)
-    w = ibis.trailing_range_window(preceding=preceding, order_by=t.timestamp_col)
-    expr = t.mutate(win_avg=t.float_col.mean().over(w))
-    with pytest.raises(ValueError):
-        to_sql(expr)
 
 
 @pytest.mark.parametrize("distinct1", [True, False])

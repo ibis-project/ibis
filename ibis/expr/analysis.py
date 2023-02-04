@@ -12,7 +12,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.expr.window import window
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
@@ -423,46 +422,63 @@ class _PushdownValidate:
         return is_valid
 
 
-# TODO(kszucs): rewrite to receive and return an ops.Node
-def windowize_function(expr, w=None):
-    assert isinstance(expr, ir.Expr), type(expr)
+# TODO(kszucs): use ibis.expr.analysis.substitute instead
+def propagate_down_window(func: ops.Value, frame: ops.WindowFrame):
+    import ibis.expr.operations as ops
 
-    def _windowize(op, w):
-        if isinstance(op, ops.Window):
-            window_arg, window_w = op.args
-            walked_child = _walk(window_arg, w)
-            walked = ops.Window(walked_child, window_w)
+    clean_args = []
+    for arg in func.args:
+        if isinstance(arg, ops.Value) and not isinstance(func, ops.WindowFunction):
+            arg = propagate_down_window(arg, frame)
+            if isinstance(arg, ops.Analytic):
+                arg = ops.WindowFunction(arg, frame)
+        clean_args.append(arg)
+
+    return type(func)(*clean_args)
+
+
+# TODO(kszucs): rewrite to receive and return an ops.Node
+def windowize_function(expr, frame):
+    assert isinstance(expr, ir.Expr), type(expr)
+    assert isinstance(frame, ops.WindowFrame)
+
+    def _windowize(op, frame):
+        if isinstance(op, ops.WindowFunction):
+            walked_child = _walk(op.func, frame)
+            walked = walked_child.to_expr().over(op.frame).op()
         elif isinstance(op, ops.Value):
-            walked = _walk(op, w)
+            walked = _walk(op, frame)
         else:
             walked = op
 
         if isinstance(walked, (ops.Analytic, ops.Reduction)):
-            if w is None:
-                w = window()
-            return walked.to_expr().over(w).op()
-        elif isinstance(walked, ops.Window):
-            if w is not None:
-                return walked.to_expr().over(w.combine(walked.window)).op()
+            return op.to_expr().over(frame).op()
+        elif isinstance(walked, ops.WindowFunction):
+            if frame is not None:
+                frame = walked.frame.copy(
+                    group_by=frame.group_by + walked.frame.group_by,
+                    order_by=frame.order_by + walked.frame.order_by,
+                )
+                return walked.to_expr().over(frame).op()
             else:
                 return walked
         else:
             return walked
 
-    def _walk(op, w):
+    def _walk(op, frame):
         # TODO(kszucs): rewrite to use the substitute utility
         windowed_args = []
         for arg in op.args:
             if isinstance(arg, ops.Value):
-                arg = _windowize(arg, w)
+                arg = _windowize(arg, frame)
             elif isinstance(arg, tuple):
-                arg = tuple(_windowize(x, w) for x in arg)
+                arg = tuple(_windowize(x, frame) for x in arg)
 
             windowed_args.append(arg)
 
         return type(op)(*windowed_args)
 
-    return _windowize(expr.op(), w).to_expr()
+    return _windowize(expr.op(), frame).to_expr()
 
 
 def simplify_aggregation(agg):
@@ -521,7 +537,12 @@ class Projector:
         self.parent = parent
         self.input_exprs = proj_exprs
         self.resolved_exprs = [parent._ensure_expr(e) for e in proj_exprs]
-        self.clean_exprs = list(map(windowize_function, self.resolved_exprs))
+
+        default_frame = ops.RowsWindowFrame(table=parent)
+        self.clean_exprs = [
+            windowize_function(expr, frame=default_frame)
+            for expr in self.resolved_exprs
+        ]
 
     def get_result(self):
         roots = find_immediate_parent_tables(self.parent.op())
@@ -817,7 +838,7 @@ def _rewrite_filter_reduction(op, name: str | None = None, **kwargs):
 @_rewrite_filter.register(ops.Literal)
 @_rewrite_filter.register(ops.ExistsSubquery)
 @_rewrite_filter.register(ops.NotExistsSubquery)
-@_rewrite_filter.register(ops.Window)
+@_rewrite_filter.register(ops.WindowFunction)
 def _rewrite_filter_subqueries(op, **kwargs):
     """Don't rewrite any of these operations in filters."""
     return op

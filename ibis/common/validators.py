@@ -122,6 +122,13 @@ def instance_of(klasses, arg, **kwargs):
 
 
 @validator
+def equal_to(value, arg, **kwargs):
+    if arg != value:
+        raise IbisTypeError(f"Given argument {arg} is not equal to {value}")
+    return arg
+
+
+@validator
 def coerced_to(klass, arg, **kwargs):
     value = klass.__coerce__(arg)
     return instance_of(klass, value, **kwargs)
@@ -210,12 +217,35 @@ def map_to(mapping, variant, **kwargs):
 
 
 @validator
-def sequence_of(inner, arg, *, type, min_length=0, flatten=False, **kwargs):
+def pair_of(inner1, inner2, arg, *, type=tuple, **kwargs):
+    try:
+        first, second = arg
+    except KeyError:
+        raise IbisTypeError('Argument must be a pair')
+    return type((inner1(first, **kwargs), inner2(second, **kwargs)))
+
+
+@validator
+def sequence_of(
+    inner,
+    arg,
+    *,
+    type,
+    length=None,
+    min_length=0,
+    max_length=math.inf,
+    flatten=False,
+    **kwargs,
+):
     if not is_iterable(arg):
         raise IbisTypeError('Argument must be a sequence')
 
+    if length is not None:
+        min_length = max_length = length
     if len(arg) < min_length:
         raise IbisTypeError(f'Arg must have at least {min_length} number of elements')
+    if len(arg) > max_length:
+        raise IbisTypeError(f'Arg must have at most {max_length} number of elements')
 
     if flatten:
         arg = flatten_iterable(arg)

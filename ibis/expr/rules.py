@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import builtins
 import enum
 import operator
 from itertools import product, starmap
@@ -15,11 +14,14 @@ from ibis import util
 from ibis.common.annotations import attribute, optional
 from ibis.common.validators import (
     bool_,
+    equal_to,  # noqa: F401
     instance_of,
     isin,
     lazy_instance_of,
     map_to,
     one_of,
+    option,  # noqa: F401
+    pair_of,  # noqa: F401
     ref,
     str_,
     tuple_of,
@@ -44,10 +46,7 @@ class Shape(enum.IntEnum):
 
 @public
 def highest_precedence_shape(nodes):
-    if builtins.any(node.output_shape.is_columnar() for node in nodes):
-        return Shape.COLUMNAR
-    else:
-        return Shape.SCALAR
+    return max(node.output_shape for node in nodes)
 
 
 @public
@@ -87,8 +86,6 @@ def comparable(left, right):
 
 
 class rule(validator):
-    __slots__ = ()
-
     def _erase_expr(self, value):
         return value.op() if isinstance(value, ir.Expr) else value
 
@@ -313,42 +310,6 @@ multilinestring = value(dt.MultiLineString)
 multipoint = value(dt.MultiPoint)
 multipolygon = value(dt.MultiPolygon)
 
-public(
-    any=any,
-    array=array,
-    bool=bool_,
-    boolean=boolean,
-    category=category,
-    date=date,
-    decimal=decimal,
-    double=double,
-    floating=floating,
-    geospatial=geospatial,
-    integer=integer,
-    isin=isin,
-    json=json,
-    lazy_instance_of=lazy_instance_of,
-    linestring=linestring,
-    mapping=mapping,
-    multilinestring=multilinestring,
-    multipoint=multipoint,
-    numeric=numeric,
-    optional=optional,
-    point=point,
-    polygon=polygon,
-    ref=ref,
-    set_=set_,
-    soft_numeric=soft_numeric,
-    str_=str_,
-    strict_numeric=strict_numeric,
-    string=string,
-    struct=struct,
-    temporal=temporal,
-    time=time,
-    timestamp=timestamp,
-    tuple_of=tuple_of,
-)
-
 
 @public
 @rule
@@ -362,7 +323,7 @@ def interval(arg, units=None, **kwargs):
 
 
 @public
-@validator
+@rule
 def client(arg, **kwargs):
     from ibis.backends.base import BaseBackend
 
@@ -401,11 +362,12 @@ def shape_like(name):
 
 
 def _promote_integral_binop(exprs, op):
+    import ibis.expr.operations as ops
+
     bounds, dtypes = [], []
     for arg in exprs:
         dtypes.append(arg.output_dtype)
-        if hasattr(arg, 'value'):
-            # arg.op() is a literal
+        if isinstance(arg, ops.Literal):
             bounds.append([arg.value])
         else:
             bounds.append(arg.output_dtype.bounds)
@@ -414,8 +376,9 @@ def _promote_integral_binop(exprs, op):
     # In some cases, the bounding type might be int8, even though neither
     # of the types are that small. We want to ensure the containing type is
     # _at least_ as large as the smallest type in the expression.
-    values = list(starmap(op, product(*bounds)))
-    dtypes.extend(dt.infer(v, prefer_unsigned=all_unsigned) for v in values)
+    values = starmap(op, product(*bounds))
+    dtypes += [dt.infer(v, prefer_unsigned=all_unsigned) for v in values]
+
     return dt.highest_precedence(dtypes)
 
 
@@ -625,28 +588,27 @@ def analytic(arg, **kwargs):
 
 
 @public
-@validator
-def window_from(table_ref, win, **kwargs):
-    from ibis.expr.window import Window
+@rule
+def window_boundary(inner, arg, **kwargs):
+    import ibis.expr.operations as ops
 
-    if not isinstance(win, Window):
-        raise com.IbisTypeError(
-            "`win` argument should be of type `ibis.expr.window.Window`; "
-            f"got type {type(win).__name__}"
-        )
+    arg = inner(arg, **kwargs)
 
-    table = table_ref(**kwargs)
-    if table is not None:
-        win = win.bind(table.to_expr())
+    if isinstance(arg, ops.WindowBoundary):
+        return arg
+    elif isinstance(arg, ops.Negate):
+        return ops.WindowBoundary(arg.arg, preceding=True)
+    elif isinstance(arg, ops.Literal):
+        new = arg.copy(value=abs(arg.value))
+        return ops.WindowBoundary(new, preceding=arg.value < 0)
+    elif isinstance(arg, ops.Value):
+        return ops.WindowBoundary(arg, preceding=False)
+    else:
+        raise TypeError(f'Invalid window boundary type: {type(arg)}')
 
-    if win.max_lookback is not None:
-        error_msg = "`max_lookback` window must be ordered by a timestamp column"
-        if len(win._order_by) != 1:
-            raise com.IbisInputError(error_msg)
-        order_var = win._order_by[0].args[0]
-        if not order_var.output_dtype.is_timestamp():
-            raise com.IbisInputError(error_msg)
-    return win
+
+row_window_boundary = window_boundary(integer)
+range_window_boundary = window_boundary(one_of([numeric, interval]))
 
 
 def _arg_type_error_format(op):
@@ -656,3 +618,42 @@ def _arg_type_error_format(op):
         return f"Literal({op.value}):{op.output_dtype}"
     else:
         return f"{op.name}:{op.output_dtype}"
+
+
+public(
+    any=any,
+    array=array,
+    bool=bool_,
+    boolean=boolean,
+    category=category,
+    date=date,
+    decimal=decimal,
+    double=double,
+    floating=floating,
+    geospatial=geospatial,
+    integer=integer,
+    isin=isin,
+    json=json,
+    lazy_instance_of=lazy_instance_of,
+    linestring=linestring,
+    mapping=mapping,
+    multilinestring=multilinestring,
+    multipoint=multipoint,
+    numeric=numeric,
+    optional=optional,
+    point=point,
+    polygon=polygon,
+    ref=ref,
+    set_=set_,
+    soft_numeric=soft_numeric,
+    str_=str_,
+    strict_numeric=strict_numeric,
+    string=string,
+    struct=struct,
+    temporal=temporal,
+    time=time,
+    timestamp=timestamp,
+    tuple_of=tuple_of,
+    row_window_boundary=row_window_boundary,
+    range_window_boundary=range_window_boundary,
+)

@@ -6,7 +6,7 @@ from copy import copy
 from typing import Any
 from weakref import WeakValueDictionary
 
-from ibis.common.annotations import Argument, Attribute, Signature, attribute
+from ibis.common.annotations import EMPTY, Argument, Attribute, Signature, attribute
 from ibis.common.caching import WeakCache
 from ibis.common.validators import Validator
 from ibis.util import frozendict
@@ -104,7 +104,7 @@ class Annotable(Base, metaclass=AnnotableMeta):
         # post-initialize the remaining attributes
         for name, field in self.__attributes__.items():
             if isinstance(field, Attribute):
-                if (value := field.initialize(self)) is not None:
+                if (value := field.initialize(self)) is not EMPTY:
                     object.__setattr__(self, name, value)
 
     def __setattr__(self, name, value) -> None:
@@ -123,7 +123,7 @@ class Annotable(Base, metaclass=AnnotableMeta):
 
         return all(
             getattr(self, name, None) == getattr(other, name, None)
-            for name in self.__attributes__.keys()
+            for name in self.__attributes__
         )
 
     @property

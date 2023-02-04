@@ -113,7 +113,7 @@ duckdb_0_4_0 = pytest.mark.xfail(
     (
         # nixpkgs is patched to include the fix, so we pass these tests
         # inside the nix-shell or when they run under `nix build`
-        (not any(key.startswith("NIX_") for key in os.environ.keys()))
+        (not any(key.startswith("NIX_") for key in os.environ))
         and (
             parse_version(getattr(duckdb, "__version__", "0.0.0"))
             == parse_version("0.4.0")

@@ -13,7 +13,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import ibis.expr.window as win
 from ibis import util
 from ibis.common import graph
 
@@ -657,15 +656,13 @@ def _fmt_value_string_sql_like(op: ops.StringSQLLike, *, aliases: Aliases) -> st
 
 
 @fmt_value.register
-def _fmt_value_window(win: win.Window, *, aliases: Aliases) -> str:
+def _fmt_value_window(win: ops.WindowFrame, *, aliases: Aliases) -> str:
     args = []
     for field, value in (
-        ("_group_by", win._group_by),
-        ("_order_by", win._order_by),
-        ("preceding", win.preceding),
-        ("following", win.following),
-        ("max_lookback", win.max_lookback),
-        ("how", win.how),
+        ("group_by", win.group_by),
+        ("order_by", win.order_by),
+        ("start", win.start),
+        ("end", win.end),
     ):
         disp_field = field.lstrip("_")
         if value is not None:

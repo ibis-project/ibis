@@ -166,6 +166,28 @@ def promote_list(val: V | Sequence[V]) -> list[V]:
         return [val]
 
 
+def promote_tuple(val: V | Sequence[V]) -> tuple[V]:
+    """Ensure that the value is a tuple.
+
+    Parameters
+    ----------
+    val
+        Value to promote
+
+    Returns
+    -------
+    tuple
+    """
+    if isinstance(val, tuple):
+        return val
+    elif is_iterable(val):
+        return tuple(val)
+    elif val is None:
+        return ()
+    else:
+        return (val,)
+
+
 def is_function(v: Any) -> bool:
     """Check if the given object is a function.
 

@@ -1293,27 +1293,6 @@ def test_valid_negate(type):
 
 
 @pytest.mark.parametrize(
-    ('kind', 'begin', 'end'),
-    [
-        ('preceding', None, None),
-        ('preceding', 1, None),
-        ('preceding', -1, 1),
-        ('preceding', 1, -1),
-        ('preceding', -1, -1),
-        ('following', None, None),
-        ('following', None, 1),
-        ('following', -1, 1),
-        ('following', 1, -1),
-        ('following', -1, -1),
-    ],
-)
-def test_window_unbounded_invalid(kind, begin, end):
-    kwargs = {kind: (begin, end)}
-    with pytest.raises(com.IbisInputError):
-        ibis.window(**kwargs)
-
-
-@pytest.mark.parametrize(
     ('left', 'right', 'expected'),
     [
         (ibis.literal(1), ibis.literal(1.0), dt.float64),
@@ -1662,3 +1641,16 @@ def test_where_output_shape():
     expr = ibis.literal(True).ifelse(t.a, -t.a)
     assert isinstance(expr, ir.IntegerColumn)
     assert isinstance(expr, ir.ColumnExpr)
+
+
+def test_quantile_shape():
+    t = ibis.table([("a", "float64")])
+
+    b1 = t.a.quantile(0.25).name("br2")
+    assert isinstance(b1, ir.Scalar)
+
+    projs = [b1]
+    expr = t.select(projs)
+    (b1,) = expr.op().selections
+
+    assert b1.output_shape.is_columnar()

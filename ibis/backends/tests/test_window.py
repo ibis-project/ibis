@@ -373,7 +373,6 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
                 order_by=[t.id],
             ),
             id='preceding-2-following-0-tuple',
-            marks=pytest.mark.notimpl(["pandas"]),
         ),
         param(
             lambda t: ibis.trailing_window(
@@ -386,7 +385,6 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
 @pytest.mark.notimpl(["dask", "datafusion", "polars"])
 def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
-
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
 
     result = expr.execute().set_index('id').sort_index()
@@ -440,7 +438,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
 @pytest.mark.parametrize(
     ('ordered'),
     [
-        param(True, id='ordered', marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param(True, id='ordered', marks=pytest.mark.notimpl(["dask"])),
         param(False, id='unordered'),
     ],
 )
@@ -473,6 +471,30 @@ def test_grouped_unbounded_window(
     left, right = result.val, expected.val
 
     backend.assert_series_equal(left, right)
+
+
+@pytest.mark.parametrize(
+    ('ibis_fn', 'pandas_fn'),
+    [
+        (lambda col: col.sum(), lambda s: s.cumsum()),
+        (lambda col: col.min(), lambda s: s.cummin()),
+        (lambda col: col.mean(), lambda s: s.expanding().mean()),
+    ],
+)
+@pytest.mark.broken(["mssql", "pandas", "snowflake"])
+@pytest.mark.notimpl(["datafusion", "polars", "dask"])
+def test_simple_ungrouped_unbound_following_window(
+    backend, alltypes, ibis_fn, pandas_fn
+):
+    t = alltypes[alltypes.double_col < 50].order_by('id')
+    df = t.execute()
+
+    w = ibis.window(rows=(0, None), order_by=t.id)
+    expr = ibis_fn(t.double_col).over(w).name('double_col')
+    result = expr.execute()
+    expected = pandas_fn(df.double_col[::-1])[::-1]
+
+    backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(

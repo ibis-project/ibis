@@ -12,10 +12,8 @@ import toolz
 from multipledispatch import Dispatcher
 from pandas.core.groupby import SeriesGroupBy
 
-import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
-import ibis.expr.window as win
 from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.aggcontext import AggregationContext
 from ibis.backends.pandas.core import (
@@ -136,9 +134,9 @@ def get_aggcontext_default(
     )
 
 
-@get_aggcontext.register(win.Window)
+@get_aggcontext.register(ops.WindowFrame)
 def get_aggcontext_window(
-    window,
+    frame,
     *,
     scope,
     operand,
@@ -155,8 +153,6 @@ def get_aggcontext_window(
     # otherwise we're transforming
     output_type = operand.output_dtype
 
-    aggcontext: agg_ctx.AggregationContext
-
     if not group_by and not order_by:
         aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
     elif group_by and not order_by:
@@ -169,13 +165,18 @@ def get_aggcontext_window(
         )
     else:
         # XXX(phillipc): What a horror show
-        preceding = window.preceding
-        if preceding is not None:
-            max_lookback = window.max_lookback
+        if frame.start is not None:
             assert not isinstance(operand, ops.CumulativeOp)
+            if isinstance(frame, ops.RowsWindowFrame):
+                max_lookback = frame.max_lookback
+            else:
+                max_lookback = None
+
             aggcontext = agg_ctx.Moving(
-                preceding,
-                max_lookback,
+                frame.start,
+                # FIXME(kszucs): I don't think that we have a proper max_lookback test
+                # case because passing None here is not braking anything
+                max_lookback=max_lookback,
                 parent=parent,
                 group_by=group_by,
                 order_by=order_by,
@@ -246,25 +247,26 @@ def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext 
     return indexed_subset[name]
 
 
-@execute_node.register(ops.Window, pd.Series, win.Window)
+@execute_node.register(ops.WindowFunction, pd.Series)
 def execute_window_op(
     op,
     data,
-    window,
     scope: Scope = None,
     timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,
     **kwargs,
 ):
-    if window.how == "range" and any(
-        not ob.output_dtype.is_temporal() for ob in window._order_by
+    func, frame = op.func, op.frame
+
+    if frame.how == "range" and any(
+        not col.output_dtype.is_temporal() for col in frame.order_by
     ):
         raise NotImplementedError(
             "The pandas backend only implements range windows with temporal "
             "ordering keys"
         )
-    operand = op.expr
+
     # pre execute "manually" here because otherwise we wouldn't pickup
     # relevant scope changes from the child operand since we're managing
     # execution of that by hand
@@ -281,7 +283,7 @@ def execute_window_op(
         adjusted_timecontext = arg_timecontexts[0]
 
     pre_executed_scope = pre_execute(
-        operand,
+        func,
         *clients,
         scope=scope,
         timecontext=adjusted_timecontext,
@@ -302,16 +304,7 @@ def execute_window_op(
         aggcontext=aggcontext,
         **kwargs,
     )
-    following = window.following
-    order_by = window._order_by
 
-    if order_by and following != 0 and not isinstance(operand, ops.ShiftBase):
-        raise com.OperationNotDefinedError(
-            'Window functions affected by following with order_by are not '
-            'implemented'
-        )
-
-    group_by = window._group_by
     grouping_keys = [
         key.name
         if isinstance(key, ops.TableColumn)
@@ -323,23 +316,22 @@ def execute_window_op(
             aggcontext=aggcontext,
             **kwargs,
         )
-        for key in group_by
+        for key in frame.group_by
     ]
 
-    order_by = window._order_by
-    if not order_by:
+    if not frame.order_by:
         ordering_keys = []
 
     post_process: Callable[
         [Any, pd.DataFrame, list[str], list[str], TimeContext | None],
         pd.Series,
     ]
-    if group_by:
-        if order_by:
-            (sorted_df, grouping_keys, ordering_keys) = util.compute_sorted_frame(
+    if frame.group_by:
+        if frame.order_by:
+            sorted_df, grouping_keys, ordering_keys = util.compute_sorted_frame(
                 data,
-                order_by,
-                group_by=group_by,
+                frame.order_by,
+                group_by=frame.group_by,
                 timecontext=adjusted_timecontext,
                 **kwargs,
             )
@@ -349,9 +341,9 @@ def execute_window_op(
             source = data.groupby(grouping_keys, sort=False, group_keys=False)
             post_process = _post_process_group_by
     else:
-        if order_by:
+        if frame.order_by:
             source, grouping_keys, ordering_keys = util.compute_sorted_frame(
-                data, order_by, timecontext=adjusted_timecontext, **kwargs
+                data, frame.order_by, timecontext=adjusted_timecontext, **kwargs
             )
             post_process = _post_process_order_by
         else:
@@ -364,22 +356,22 @@ def execute_window_op(
     new_scope = scope.merge_scopes(
         [
             Scope({t: source}, adjusted_timecontext)
-            for t in an.find_immediate_parent_tables(operand)
+            for t in an.find_immediate_parent_tables(func)
         ],
         overwrite=True,
     )
 
     aggcontext = get_aggcontext(
-        window,
+        frame,
         scope=scope,
-        operand=operand,
+        operand=func,
         parent=source,
         group_by=grouping_keys,
         order_by=ordering_keys,
         **kwargs,
     )
     result = execute(
-        operand,
+        func,
         scope=new_scope,
         timecontext=adjusted_timecontext,
         aggcontext=aggcontext,

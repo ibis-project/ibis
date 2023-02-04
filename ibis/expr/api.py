@@ -7,7 +7,7 @@ import functools
 import itertools
 import operator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, NamedTuple, Sequence, TypeVar
 from typing import Tuple as _Tuple
 from typing import Union as _Union
 
@@ -21,6 +21,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, connect
+from ibis.common.exceptions import IbisInputError
 from ibis.expr import selectors
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
@@ -38,14 +39,6 @@ from ibis.expr.types import (
     map,
     null,
     struct,
-)
-from ibis.expr.window import (
-    cumulative_window,
-    range_window,
-    rows_with_max_lookback,
-    trailing_range_window,
-    trailing_window,
-    window,
 )
 from ibis.util import experimental
 
@@ -147,6 +140,7 @@ __all__ = (
     'read_json',
     'read_parquet',
     'row_number',
+    'rows_window',
     'rows_with_max_lookback',
     'schema',
     'Schema',
@@ -164,6 +158,8 @@ __all__ = (
     'union',
     'where',
     'window',
+    'preceding',
+    'following',
     '_',
 )
 
@@ -433,8 +429,8 @@ def _memtable_from_dataframe(
     return op.to_expr()
 
 
-def _sort_order(expr, order: Literal["desc", "asc"]):
-    method = operator.methodcaller(order)
+def _deferred_method_call(expr, method_name):
+    method = operator.methodcaller(method_name)
     if isinstance(expr, str):
         value = _[expr]
     elif isinstance(expr, Deferred):
@@ -475,7 +471,7 @@ def desc(expr: ir.Column | str) -> ir.Value:
     ir.ValueExpr
         An expression
     """
-    return _sort_order(expr, "desc")
+    return _deferred_method_call(expr, "desc")
 
 
 def asc(expr: ir.Column | str) -> ir.Value:
@@ -507,7 +503,15 @@ def asc(expr: ir.Column | str) -> ir.Value:
     ir.ValueExpr
         An expression
     """
-    return _sort_order(expr, "asc")
+    return _deferred_method_call(expr, "asc")
+
+
+def preceding(value) -> ir.Value:
+    return ops.WindowBoundary(value, preceding=True).to_expr()
+
+
+def following(value) -> ir.Value:
+    return ops.WindowBoundary(value, preceding=False).to_expr()
 
 
 def and_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
@@ -558,8 +562,7 @@ def random() -> ir.FloatingScalar:
     FloatingScalar
         Random float value expression
     """
-    op = ops.RandomScalar()
-    return op.to_expr()
+    return ops.RandomScalar().to_expr()
 
 
 @functools.singledispatch
@@ -952,8 +955,6 @@ def set_backend(backend: str | BaseBackend) -> None:
 def get_backend(expr: Expr | None = None) -> BaseBackend:
     """Get the current Ibis backend to use for a given expression.
 
-    Parameters
-    ----------
     expr
         An expression to get the backend from. If not passed, the default
         backend is returned.
@@ -970,10 +971,262 @@ def get_backend(expr: Expr | None = None) -> BaseBackend:
     return expr._find_backend(use_default=True)
 
 
+class RowsWithMaxLookback(NamedTuple):
+    rows: int
+    max_lookback: ir.IntervalValue
+
+
+def rows_with_max_lookback(
+    rows: int | np.integer, max_lookback: ir.IntervalValue
+) -> RowsWithMaxLookback:
+    """Create a bound preceding value for use with trailing window functions.
+
+    Parameters
+    ----------
+    rows
+        Number of rows
+    max_lookback
+        Maximum lookback in time
+    Returns
+    -------
+    RowsWithMaxLookback
+        A named tuple of rows and maximum look-back in time.
+    """
+    return RowsWithMaxLookback(rows, max_lookback)
+
+
+def window(
+    preceding=None,
+    following=None,
+    order_by=None,
+    group_by=None,
+    *,
+    rows=None,
+    range=None,
+    between=None,
+):
+    """Create a window clause for use with window functions.
+
+    The `ROWS` window clause includes peer rows based on differences in row
+    **number** whereas `RANGE` includes rows based on the differences in row
+    **value** of a single `order_by` expression.
+
+    All window frame bounds are inclusive.
+
+    Parameters
+    ----------
+    preceding
+        Number of preceding rows in the window
+    following
+        Number of following rows in the window
+    group_by
+        Grouping key
+    order_by
+        Ordering key
+    rows
+        Whether to use the `ROWS` window clause
+    range
+        Whether to use the `RANGE` window clause
+    between
+        Automatically infer the window kind based on the boundaries
+
+    Returns
+    -------
+    Window
+        A window frame
+    """
+    if isinstance(preceding, RowsWithMaxLookback):
+        max_lookback = preceding.max_lookback
+        preceding = preceding.rows
+    else:
+        max_lookback = None
+
+    has_rows = rows is not None
+    has_range = range is not None
+    has_between = between is not None
+    has_preceding_following = preceding is not None or following is not None
+    if has_rows + has_range + has_between + has_preceding_following > 1:
+        raise IbisInputError(
+            "Must only specify either `rows`, `range`, `between` or `preceding`/`following`"
+        )
+
+    builder = (
+        bl.LegacyWindowBuilder()
+        .group_by(group_by)
+        .order_by(order_by)
+        .lookback(max_lookback)
+    )
+    if has_rows:
+        return builder.rows(*rows)
+    elif has_range:
+        return builder.range(*range)
+    elif has_between:
+        return builder.between(*between)
+    elif has_preceding_following:
+        return builder.preceding_following(preceding, following)
+    else:
+        return builder
+
+
+def rows_window(preceding=None, following=None, group_by=None, order_by=None):
+    """Create a rows-based window clause for use with window functions.
+
+    This ROWS window clause aggregates rows based upon differences in row
+    number.
+
+    All window frames / ranges are inclusive.
+
+    Parameters
+    ----------
+    preceding
+        Number of preceding rows in the window
+    following
+        Number of following rows in the window
+    group_by
+        Grouping key
+    order_by
+        Ordering key
+
+    Returns
+    -------
+    Window
+        A window frame
+    """
+    if isinstance(preceding, RowsWithMaxLookback):
+        max_lookback = preceding.max_lookback
+        preceding = preceding.rows
+    else:
+        max_lookback = None
+
+    return (
+        bl.LegacyWindowBuilder()
+        .group_by(group_by)
+        .order_by(order_by)
+        .lookback(max_lookback)
+        .preceding_following(preceding, following, how="rows")
+    )
+
+
+def range_window(preceding=None, following=None, group_by=None, order_by=None):
+    """Create a range-based window clause for use with window functions.
+
+    This RANGE window clause aggregates rows based upon differences in the
+    value of the order-by expression.
+
+    All window frames / ranges are inclusive.
+
+    Parameters
+    ----------
+    preceding
+        Number of preceding rows in the window
+    following
+        Number of following rows in the window
+    group_by
+        Grouping key
+    order_by
+        Ordering key
+
+    Returns
+    -------
+    Window
+        A window frame
+    """
+    return (
+        bl.LegacyWindowBuilder()
+        .group_by(group_by)
+        .order_by(order_by)
+        .preceding_following(preceding, following, how="range")
+    )
+
+
+def cumulative_window(group_by=None, order_by=None):
+    """Create a cumulative window for use with window functions.
+
+    All window frames / ranges are inclusive.
+
+    Parameters
+    ----------
+    group_by
+        Grouping key
+    order_by
+        Ordering key
+
+    Returns
+    -------
+    Window
+        A window frame
+    """
+    return window(rows=(None, 0), group_by=group_by, order_by=order_by)
+
+
+def trailing_window(preceding, group_by=None, order_by=None):
+    """Create a trailing window for use with window functions.
+
+    Parameters
+    ----------
+    preceding
+        The number of preceding rows
+    group_by
+        Grouping key
+    order_by
+        Ordering key
+
+    Returns
+    -------
+    Window
+        A window frame
+    """
+    return window(
+        preceding=preceding, following=0, group_by=group_by, order_by=order_by
+    )
+
+
+def trailing_rows_window(preceding, group_by=None, order_by=None):
+    """Create a trailing window for use with aggregate window functions.
+
+    Parameters
+    ----------
+    preceding
+        The number of preceding rows
+    group_by
+        Grouping key
+    order_by
+        Ordering key
+
+    Returns
+    -------
+    Window
+        A window frame
+    """
+    return rows_window(
+        preceding=preceding, following=0, group_by=group_by, order_by=order_by
+    )
+
+
+def trailing_range_window(preceding, order_by, group_by=None):
+    """Create a trailing range window for use with window functions.
+
+    Parameters
+    ----------
+    preceding
+        A value expression
+    order_by
+        Ordering key
+    group_by
+        Grouping key
+
+    Returns
+    -------
+    Window
+        A window frame
+    """
+    return range_window(
+        preceding=preceding, following=0, group_by=group_by, order_by=order_by
+    )
+
+
 e = ops.E().to_expr()
-
 pi = ops.Pi().to_expr()
-
 
 geo_area = _deferred(ir.GeoSpatialValue.area)
 geo_as_binary = _deferred(ir.GeoSpatialValue.as_binary)

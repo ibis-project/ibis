@@ -50,6 +50,11 @@ def bigquery_cast_integer_to_timestamp(compiled_arg, from_, to):
     return f"TIMESTAMP_SECONDS({compiled_arg})"
 
 
+@bigquery_cast.register(str, dt.Interval, dt.Integer)
+def bigquery_cast_interval_to_integer(compiled_arg, from_, to):
+    return f"EXTRACT({from_.resolution.upper()} from {compiled_arg})"
+
+
 @bigquery_cast.register(str, dt.DataType, dt.DataType)
 def bigquery_cast_generate(compiled_arg, from_, to):
     """Cast to desired type."""
@@ -562,6 +567,17 @@ def _nth_value(t, op):
     return f'NTH_VALUE({arg}, {nth_op.value + 1})'
 
 
+def _interval_multiply(t, op):
+    if isinstance(op.left, ops.Literal) and isinstance(op.right, ops.Literal):
+        value = op.left.value * op.right.value
+        literal = ops.Literal(value, op.left.output_dtype)
+        return t.translate(literal)
+
+    left, right = t.translate(op.left), t.translate(op.right)
+    unit = op.left.output_dtype.resolution.upper()
+    return f"INTERVAL EXTRACT({unit} from {left}) * {right} {unit}"
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -622,6 +638,7 @@ OPERATION_REGISTRY = {
     ops.TimestampNow: fixed_arity("CURRENT_TIMESTAMP", 0),
     ops.TimestampSub: _timestamp_op("TIMESTAMP_SUB", {"h", "m", "s", "ms", "us"}),
     ops.TimestampTruncate: _truncate("TIMESTAMP", _timestamp_units),
+    ops.IntervalMultiply: _interval_multiply,
     ops.Hash: _hash,
     ops.StringReplace: fixed_arity("REPLACE", 3),
     ops.StringSplit: fixed_arity("SPLIT", 2),

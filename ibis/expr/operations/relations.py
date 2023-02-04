@@ -433,7 +433,9 @@ class Aggregation(TableNode):
         default=(),
     )
     predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
-    sort_keys = rlz.optional(rlz.tuple_of(rlz.sort_key_from("table")), default=())
+    sort_keys = rlz.optional(
+        rlz.tuple_of(rlz.sort_key_from(rlz.ref("table"))), default=()
+    )
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
         from ibis.expr.analysis import shares_all_roots, shares_some_roots

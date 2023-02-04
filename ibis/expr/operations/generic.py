@@ -237,7 +237,7 @@ class ScalarParameter(Value, Named):
 
 
 @public
-class Constant(Value):
+class Constant(Value, Singleton):
     output_shape = rlz.Shape.SCALAR
 
 
