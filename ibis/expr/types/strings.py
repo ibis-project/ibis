@@ -17,7 +17,74 @@ if TYPE_CHECKING:
 
 @public
 class StringValue(Value):
-    def __getitem__(self, key: slice | int | ir.IntegerValue) -> StringValue:
+    def __getitem__(self, key: slice | int | ir.IntegerScalar) -> StringValue:
+        """Index or slice a string expression.
+
+        Parameters
+        ----------
+        key
+            [`int`][int], [`slice`][slice] or integer scalar expression
+
+        Returns
+        -------
+        StringValue
+            Indexed or sliced string value
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"food": ["bread", "cheese", "rice"], "idx": [1, 2, 4]})
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ food   ┃ idx   ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ string │ int64 │
+        ├────────┼───────┤
+        │ bread  │     1 │
+        │ cheese │     2 │
+        │ rice   │     4 │
+        └────────┴───────┘
+        >>> t.food[0]
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Substring(food, 0, 1) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                │
+        ├───────────────────────┤
+        │ b                     │
+        │ c                     │
+        │ r                     │
+        └───────────────────────┘
+        >>> t.food[:3]
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Substring(food, 0, 3) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                │
+        ├───────────────────────┤
+        │ bre                   │
+        │ che                   │
+        │ ric                   │
+        └───────────────────────┘
+        >>> t.food[3:5]
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Substring(food, 3, 2) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                │
+        ├───────────────────────┤
+        │ ad                    │
+        │ es                    │
+        │ e                     │
+        └───────────────────────┘
+        >>> t.food[7]
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Substring(food, 7, 1) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                │
+        ├───────────────────────┤
+        │ ~                     │
+        │ ~                     │
+        │ ~                     │
+        └───────────────────────┘
+        """
         from ibis.expr import types as ir
 
         if isinstance(key, slice):
@@ -55,7 +122,23 @@ class StringValue(Value):
         Returns
         -------
         IntegerValue
-            The length of the input
+            The length of each string in the expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["aaa", "a", "aa"]})
+        >>> t.s.length()
+        ┏━━━━━━━━━━━━━━━━━┓
+        ┃ StringLength(s) ┃
+        ┡━━━━━━━━━━━━━━━━━┩
+        │ int32           │
+        ├─────────────────┤
+        │               3 │
+        │               1 │
+        │               2 │
+        └─────────────────┘
         """
         return ops.StringLength(self).to_expr()
 
@@ -66,6 +149,32 @@ class StringValue(Value):
         -------
         StringValue
             Lowercase string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["AAA", "a", "AA"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ AAA    │
+        │ a      │
+        │ AA     │
+        └────────┘
+        >>> t.s.lower()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Lowercase(s) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ string       │
+        ├──────────────┤
+        │ aaa          │
+        │ a            │
+        │ aa           │
+        └──────────────┘
         """
         return ops.Lowercase(self).to_expr()
 
@@ -76,6 +185,32 @@ class StringValue(Value):
         -------
         StringValue
             Uppercase string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["aaa", "A", "aa"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ aaa    │
+        │ A      │
+        │ aa     │
+        └────────┘
+        >>> t.s.upper()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Uppercase(s) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ string       │
+        ├──────────────┤
+        │ AAA          │
+        │ A            │
+        │ AA           │
+        └──────────────┘
         """
         return ops.Uppercase(self).to_expr()
 
@@ -86,6 +221,32 @@ class StringValue(Value):
         -------
         StringValue
             Reversed string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ abc    │
+        │ def    │
+        │ ghi    │
+        └────────┘
+        >>> t.s.reverse()
+        ┏━━━━━━━━━━━━┓
+        ┃ Reverse(s) ┃
+        ┡━━━━━━━━━━━━┩
+        │ string     │
+        ├────────────┤
+        │ cba        │
+        │ fed        │
+        │ ihg        │
+        └────────────┘
         """
         return ops.Reverse(self).to_expr()
 
@@ -96,16 +257,58 @@ class StringValue(Value):
         -------
         IntegerValue
             ASCII code of the first character of the input
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t.s.ascii_str()
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StringAscii(s) ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ int32          │
+        ├────────────────┤
+        │             97 │
+        │            100 │
+        │            103 │
+        └────────────────┘
         """
         return ops.StringAscii(self).to_expr()
 
     def strip(self) -> StringValue:
-        """Remove whitespace from left and right sides of a string.
+        r"""Remove whitespace from left and right sides of a string.
 
         Returns
         -------
         StringValue
             Stripped string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["\ta\t", "\nb\n", "\vc\t"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ \ta\t  │
+        │ \nb\n  │
+        │ \vc\t  │
+        └────────┘
+        >>> t.s.strip()
+        ┏━━━━━━━━━━┓
+        ┃ Strip(s) ┃
+        ┡━━━━━━━━━━┩
+        │ string   │
+        ├──────────┤
+        │ a        │
+        │ b        │
+        │ c        │
+        └──────────┘
         """
         return ops.Strip(self).to_expr()
 
@@ -116,6 +319,32 @@ class StringValue(Value):
         -------
         StringValue
             Left-stripped string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["\ta\t", "\nb\n", "\vc\t"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ \ta\t  │
+        │ \nb\n  │
+        │ \vc\t  │
+        └────────┘
+        >>> t.s.lstrip()
+        ┏━━━━━━━━━━━┓
+        ┃ LStrip(s) ┃
+        ┡━━━━━━━━━━━┩
+        │ string    │
+        ├───────────┤
+        │ a\t       │
+        │ b\n       │
+        │ c\t       │
+        └───────────┘
         """
         return ops.LStrip(self).to_expr()
 
@@ -126,6 +355,32 @@ class StringValue(Value):
         -------
         StringValue
             Right-stripped string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["\ta\t", "\nb\n", "\vc\t"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ \ta\t  │
+        │ \nb\n  │
+        │ \vc\t  │
+        └────────┘
+        >>> t.s.rstrip()
+        ┏━━━━━━━━━━━┓
+        ┃ RStrip(s) ┃
+        ┡━━━━━━━━━━━┩
+        │ string    │
+        ├───────────┤
+        │ \ta       │
+        │ \nb       │
+        │ \vc       │
+        └───────────┘
         """
         return ops.RStrip(self).to_expr()
 
@@ -136,6 +391,22 @@ class StringValue(Value):
         -------
         StringValue
             Capitalized string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t.s.capitalize()
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ Capitalize(s) ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ string        │
+        ├───────────────┤
+        │ Abc           │
+        │ Def           │
+        │ Ghi           │
+        └───────────────┘
         """
         return ops.Capitalize(self).to_expr()
 
@@ -156,6 +427,22 @@ class StringValue(Value):
         -------
         BooleanValue
             Boolean indicating the presence of `substr` in the expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["bab", "ddd", "eaf"]})
+        >>> t.s.contains("a")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringContains(s, 'a') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                │
+        ├────────────────────────┤
+        │ True                   │
+        │ False                  │
+        │ True                   │
+        └────────────────────────┘
         """
         return ops.StringContains(self, substr).to_expr()
 
@@ -196,6 +483,22 @@ class StringValue(Value):
         -------
         StringValue
             Found substring
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "defg", "hijlk"]})
+        >>> t.s.substr(2)
+        ┏━━━━━━━━━━━━━━━━━┓
+        ┃ Substring(s, 2) ┃
+        ┡━━━━━━━━━━━━━━━━━┩
+        │ string          │
+        ├─────────────────┤
+        │ c               │
+        │ fg              │
+        │ jlk             │
+        └─────────────────┘
         """
         return ops.Substring(self, start, length).to_expr()
 
@@ -211,6 +514,22 @@ class StringValue(Value):
         -------
         StringValue
             Characters from the start
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "defg", "hijlk"]})
+        >>> t.s.left(2)
+        ┏━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Substring(s, 0, 2) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━┩
+        │ string             │
+        ├────────────────────┤
+        │ ab                 │
+        │ de                 │
+        │ hi                 │
+        └────────────────────┘
         """
         return self.substr(0, length=nchars)
 
@@ -226,6 +545,22 @@ class StringValue(Value):
         -------
         StringValue
             Characters from the end
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "defg", "hijlk"]})
+        >>> t.s.right(2)
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StrRight(s, 2) ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ string         │
+        ├────────────────┤
+        │ bc             │
+        │ fg             │
+        │ lk             │
+        └────────────────┘
         """
         return ops.StrRight(self, nchars).to_expr()
 
@@ -241,6 +576,22 @@ class StringValue(Value):
         -------
         StringValue
             Repeated string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["a", "b", "c"]})
+        >>> t.s.repeat(5)
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Repeat(s, 5) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ string       │
+        ├──────────────┤
+        │ aaaaa        │
+        │ bbbbb        │
+        │ ccccc        │
+        └──────────────┘
         """
         return ops.Repeat(self, n).to_expr()
 
@@ -294,9 +645,35 @@ class StringValue(Value):
         -------
         IntegerValue
             Position of `substr` in `arg` starting from `start`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
+        >>> t.s.find("a")
+        ┏━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringFind(s, 'a') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━┩
+        │ int64              │
+        ├────────────────────┤
+        │                  0 │
+        │                  1 │
+        │                  2 │
+        └────────────────────┘
+        >>> t.s.find("z")
+        ┏━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringFind(s, 'z') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━┩
+        │ int64              │
+        ├────────────────────┤
+        │                 -1 │
+        │                 -1 │
+        │                 -1 │
+        └────────────────────┘
         """
         if end is not None:
-            raise NotImplementedError
+            raise NotImplementedError("`end` parameter is not yet implemented")
         return ops.StringFind(self, substr, start, end).to_expr()
 
     def lpad(
@@ -316,15 +693,23 @@ class StringValue(Value):
         Returns
         -------
         StringValue
-            Padded string
+            Left-padded string
 
         Examples
         --------
         >>> import ibis
-        >>> short_str = ibis.literal("a")
-        >>> result = short_str.lpad(5, "-")  # ----a
-        >>> long_str = ibis.literal("abcdefg")
-        >>> result = long_str.lpad(5, "-")  # abcde
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t.s.lpad(5, "-")
+        ┏━━━━━━━━━━━━━━━━━┓
+        ┃ LPad(s, 5, '-') ┃
+        ┡━━━━━━━━━━━━━━━━━┩
+        │ string          │
+        ├─────────────────┤
+        │ --abc           │
+        │ --def           │
+        │ --ghi           │
+        └─────────────────┘
         """
         return ops.LPad(self, length, pad).to_expr()
 
@@ -344,18 +729,26 @@ class StringValue(Value):
         pad
             Pad character
 
-        Examples
-        --------
-        >>> import ibis
-        >>> short_str = ibis.literal("a")
-        >>> result = short_str.lpad(5, "-")  # a----
-        >>> long_str = ibis.literal("abcdefg")
-        >>> result = long_str.lpad(5, "-")  # abcde
-
         Returns
         -------
         StringValue
-            Padded string
+            Right-padded string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t.s.rpad(5, "-")
+        ┏━━━━━━━━━━━━━━━━━┓
+        ┃ RPad(s, 5, '-') ┃
+        ┡━━━━━━━━━━━━━━━━━┩
+        │ string          │
+        ├─────────────────┤
+        │ abc--           │
+        │ def--           │
+        │ ghi--           │
+        └─────────────────┘
         """
         return ops.RPad(self, length, pad).to_expr()
 
@@ -369,17 +762,17 @@ class StringValue(Value):
         str_list
             Sequence of strings
 
-        Examples
-        --------
-        >>> import ibis
-        >>> table = ibis.table(dict(string_col='string'))
-        >>> result = table.string_col.find_in_set(['a', 'b'])
-
         Returns
         -------
         IntegerValue
             Position of `str_list` in `self`. Returns -1 if `self` isn't found
             or if `self` contains `','`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> table = ibis.table(dict(string_col='string'))
+        >>> result = table.string_col.find_in_set(['a', 'b'])
         """
         return ops.FindInSet(self, str_list).to_expr()
 
@@ -390,12 +783,6 @@ class StringValue(Value):
         ----------
         strings
             Strings to join with `arg`
-
-        Examples
-        --------
-        >>> import ibis
-        >>> sep = ibis.literal(',')
-        >>> result = sep.join(['a', 'b', 'c'])
 
         Returns
         -------
@@ -450,16 +837,25 @@ class StringValue(Value):
         start
             prefix to check for
 
-        Examples
-        --------
-        >>> import ibis
-        >>> text = ibis.literal('Ibis project')
-        >>> result = text.startswith('Ibis')
-
         Returns
         -------
         BooleanValue
             Boolean indicating whether `self` starts with `start`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["Ibis project", "GitHub"]})
+        >>> t.s.startswith("Ibis")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StartsWith(s, 'Ibis') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean               │
+        ├───────────────────────┤
+        │ True                  │
+        │ False                 │
+        └───────────────────────┘
         """
         return ops.StartsWith(self, start).to_expr()
 
@@ -471,16 +867,25 @@ class StringValue(Value):
         end
             Suffix to check for
 
-        Examples
-        --------
-        >>> import ibis
-        >>> text = ibis.literal('Ibis project')
-        >>> result = text.endswith('project')
-
         Returns
         -------
         BooleanValue
             Boolean indicating whether `self` ends with `end`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["Ibis project", "GitHub"]})
+        >>> t.s.endswith("project")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ EndsWith(s, 'project') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                │
+        ├────────────────────────┤
+        │ True                   │
+        │ False                  │
+        └────────────────────────┘
         """
         return ops.EndsWith(self, end).to_expr()
 
@@ -505,6 +910,21 @@ class StringValue(Value):
         -------
         BooleanValue
             Column indicating matches
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["Ibis project", "GitHub"]})
+        >>> t.s.like("%project")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringSQLLike(s, '%project') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                      │
+        ├──────────────────────────────┤
+        │ True                         │
+        │ False                        │
+        └──────────────────────────────┘
         """
         return functools.reduce(
             operator.or_,
@@ -535,6 +955,21 @@ class StringValue(Value):
         -------
         BooleanValue
             Column indicating matches
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["Ibis project", "GitHub"]})
+        >>> t.s.ilike("%PROJect")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringSQLILike(s, '%PROJect') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                       │
+        ├───────────────────────────────┤
+        │ True                          │
+        │ False                         │
+        └───────────────────────────────┘
         """
         return functools.reduce(
             operator.or_,
@@ -561,6 +996,21 @@ class StringValue(Value):
         -------
         BooleanValue
             Indicator of matches
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["Ibis project", "GitHub"]})
+        >>> t.s.re_search(".+Hub")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ RegexSearch(s, '.+Hub') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                 │
+        ├─────────────────────────┤
+        │ False                   │
+        │ True                    │
+        └─────────────────────────┘
         """
         return ops.RegexSearch(self, pattern).to_expr()
 
@@ -592,6 +1042,38 @@ class StringValue(Value):
         -------
         StringValue
             Extracted match or whole string if `index` is zero
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
+
+        Extract a specific group
+
+        >>> t.s.re_extract(r"^(a)bc", 1)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ RegexExtract(s, '^(a)', 1) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                     │
+        ├────────────────────────────┤
+        │ a                          │
+        │ ~                          │
+        │ ~                          │
+        └────────────────────────────┘
+
+        Extract the entire match
+
+        >>> t.s.re_extract(r"^(a)bc", 0)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ RegexExtract(s, '^(a)bc', 0) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                       │
+        ├──────────────────────────────┤
+        │ abc                          │
+        │ ~                            │
+        │ ~                            │
+        └──────────────────────────────┘
         """
         return ops.RegexExtract(self, pattern, index).to_expr()
 
@@ -612,16 +1094,26 @@ class StringValue(Value):
         replacement
             Replacement string or regular expression
 
-        Examples
-        --------
-        >>> import ibis
-        >>> str_literal = ibis.literal("aaabbbaaa")
-        >>> result = str_literal.re_replace("(b+)", r"<\1>")  # aaa<bbb>aaa
-
         Returns
         -------
         StringValue
             Modified string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
+        >>> t.s.re_replace("^(a)", "b")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ RegexReplace(s, '^(a)', 'b') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                       │
+        ├──────────────────────────────┤
+        │ bbc                          │
+        │ bac                          │
+        │ bca                          │
+        └──────────────────────────────┘
         """
         return ops.RegexReplace(self, pattern, replacement).to_expr()
 
@@ -639,16 +1131,26 @@ class StringValue(Value):
         replacement
             String replacement
 
-        Examples
-        --------
-        >>> import ibis
-        >>> str_literal = ibis.literal("aaabbbaaa")
-        >>> result = str_literal.replace("aaa", "ccc")  # cccbbbccc
-
         Returns
         -------
         StringValue
             Replaced string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
+        >>> t.s.replace("b", "z")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringReplace(s, 'b', 'z') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                     │
+        ├────────────────────────────┤
+        │ azc                        │
+        │ zac                        │
+        │ zca                        │
+        └────────────────────────────┘
         """
         return ops.StringReplace(self, pattern, replacement).to_expr()
 
@@ -660,16 +1162,24 @@ class StringValue(Value):
         format_str
             Format string in `strptime` format
 
-        Examples
-        --------
-        >>> import ibis
-        >>> date_as_str = ibis.literal('20170206')
-        >>> result = date_as_str.to_timestamp('%Y%m%d')
-
         Returns
         -------
         TimestampValue
             Parsed timestamp value
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"ts": ["20170206"]})
+        >>> t.ts.to_timestamp("%Y%m%d")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringToTimestamp(ts, '%Y%m%d') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp('UTC')                │
+        ├─────────────────────────────────┤
+        │ 2017-02-06 00:00:00+00:00       │
+        └─────────────────────────────────┘
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
@@ -813,6 +1323,8 @@ class StringValue(Value):
     def split(self, delimiter: str | StringValue) -> ir.ArrayValue:
         """Split as string on `delimiter`.
 
+        !!! note "This API only works on backends with array support."
+
         Parameters
         ----------
         delimiter
@@ -822,14 +1334,36 @@ class StringValue(Value):
         -------
         ArrayValue
             The string split by `delimiter`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"col": ["a,b,c", "d,e", "f"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ col    ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ a,b,c  │
+        │ d,e    │
+        │ f      │
+        └────────┘
+        >>> t.col.split(",")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringSplit(col, ',') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<string>         │
+        ├───────────────────────┤
+        │ ['a', 'b', ... +1]    │
+        │ ['d', 'e']            │
+        │ ['f']                 │
+        └───────────────────────┘
         """
         return ops.StringSplit(self, delimiter).to_expr()
 
-    def concat(
-        self,
-        other: str | StringValue,
-        *args: str | StringValue,
-    ) -> StringValue:
+    def concat(self, other: str | StringValue, *args: str | StringValue) -> StringValue:
         """Concatenate strings.
 
         Parameters
@@ -843,6 +1377,22 @@ class StringValue(Value):
         -------
         StringValue
             All strings concatenated
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
+        >>> t.s.concat("xyz")
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat() ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ string         │
+        ├────────────────┤
+        │ abcxyz         │
+        │ bacxyz         │
+        │ bcaxyz         │
+        └────────────────┘
         """
         return ops.StringConcat((self, other, *args)).to_expr()
 
@@ -858,8 +1408,44 @@ class StringValue(Value):
         -------
         StringValue
             All strings concatenated
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ abc    │
+        │ bac    │
+        │ bca    │
+        └────────┘
+        >>> t.s + "z"
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat() ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ string         │
+        ├────────────────┤
+        │ abcz           │
+        │ bacz           │
+        │ bcaz           │
+        └────────────────┘
+        >>> t.s + t.s
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat() ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ string         │
+        ├────────────────┤
+        │ abcabc         │
+        │ bacbac         │
+        │ bcabca         │
+        └────────────────┘
         """
-        return ops.StringConcat((self, other)).to_expr()
+        return self.concat(other)
 
     def __radd__(self, other: str | StringValue) -> StringValue:
         """Concatenate strings.
@@ -873,6 +1459,32 @@ class StringValue(Value):
         -------
         StringValue
             All strings concatenated
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ s      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ abc    │
+        │ bac    │
+        │ bca    │
+        └────────┘
+        >>> "z" + t.s
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat() ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ string         │
+        ├────────────────┤
+        │ zabc           │
+        │ zbac           │
+        │ zbca           │
+        └────────────────┘
         """
         return ops.StringConcat((other, self)).to_expr()
 
