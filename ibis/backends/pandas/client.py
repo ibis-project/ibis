@@ -58,7 +58,7 @@ def from_pandas_tzdtype(value):
 
 @dt.dtype.register(CategoricalDtype)
 def from_pandas_categorical(_):
-    return dt.Category()
+    return dt.String()
 
 
 @dt.dtype.register(pd.core.dtypes.base.ExtensionDtype)
@@ -114,8 +114,6 @@ def ibis_dtype_to_pandas(ibis_dtype: dt.DataType):
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
     elif ibis_dtype.is_interval():
         return np.dtype(f'timedelta64[{ibis_dtype.unit}]')
-    elif ibis_dtype.is_category():
-        return CategoricalDtype()
     else:
         return _ibis_dtypes.get(type(ibis_dtype), np.dtype(np.object_))
 

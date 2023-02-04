@@ -55,11 +55,6 @@ def _value_to_temporal(arg, from_, to, **_):
     raise com.UnsupportedOperationError(type(arg))
 
 
-@sqlite_cast.register(object, dt.Category, dt.Int32)
-def _category_to_int(arg, from_, to, **_):
-    return arg
-
-
 @sqlite_cast.register(object, dt.DataType, dt.DataType)
 def _default_cast_impl(arg, from_, to, translator=None):
     assert translator is not None, "translator is None"

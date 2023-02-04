@@ -466,12 +466,16 @@ def test_ifelse(alltypes, df, op, pandas_op):
         # tier and histogram
         param(
             lambda d: d.bucket([0, 10, 25, 50, 100]),
-            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False),
+            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False).astype(
+                "int8"
+            ),
             id='include_over_false',
         ),
         param(
             lambda d: d.bucket([0, 10, 25, 50], include_over=True),
-            lambda s: pd.cut(s, [0, 10, 25, 50, np.inf], right=False, labels=False),
+            lambda s: pd.cut(
+                s, [0, 10, 25, 50, np.inf], right=False, labels=False
+            ).astype("int8"),
             id='include_over_true',
         ),
         param(
@@ -492,7 +496,9 @@ def test_ifelse(alltypes, df, op, pandas_op):
         ),
         param(
             lambda d: d.bucket([10, 25, 50, 100], include_under=True),
-            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False),
+            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False).astype(
+                "int8"
+            ),
             id='include_under_true',
         ),
     ],
@@ -500,7 +506,7 @@ def test_ifelse(alltypes, df, op, pandas_op):
 def test_bucket(alltypes, df, func, pandas_func):
     expr = func(alltypes.double_col)
     result = expr.execute()
-    expected = pandas_func(df.double_col).astype('category')
+    expected = pandas_func(df.double_col)
     tm.assert_series_equal(result, expected, check_names=False)
 
 

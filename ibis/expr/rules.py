@@ -289,7 +289,6 @@ floating = value(dt.float64)
 date = value(dt.date)
 time = value(dt.time)
 timestamp = value(dt.Timestamp)
-category = value(dt.category)
 temporal = one_of([timestamp, date, time])
 json = value(dt.json)
 
@@ -625,7 +624,6 @@ public(
     array=array,
     bool=bool_,
     boolean=boolean,
-    category=category,
     date=date,
     decimal=decimal,
     double=double,

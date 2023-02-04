@@ -114,8 +114,6 @@ def log(translator, op):
 def cast(translator, op):
     arg_formatted = translator.translate(op.arg)
 
-    if op.arg.output_dtype.is_category() and op.to.is_int32():
-        return arg_formatted
     if op.arg.output_dtype.is_temporal() and op.to.is_int64():
         return f'1000000 * unix_timestamp({arg_formatted})'
     else:

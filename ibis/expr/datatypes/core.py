@@ -149,9 +149,6 @@ class DataType(Concrete):
     def is_boolean(self) -> bool:
         return isinstance(self, Boolean)
 
-    def is_category(self) -> bool:
-        return isinstance(self, Category)
-
     def is_date(self) -> bool:
         return isinstance(self, Date)
 
@@ -673,29 +670,6 @@ class Interval(Parametric):
 
 
 @public
-class Category(Parametric):
-    cardinality = optional(instance_of(int))
-
-    scalar = ir.CategoryScalar
-    column = ir.CategoryColumn
-
-    def __repr__(self):
-        if self.cardinality is not None:
-            cardinality = repr(self.cardinality)
-        else:
-            cardinality = "unknown"
-        return f"{self.name}(cardinality={cardinality})"
-
-    def to_integer_type(self):
-        from ibis.expr.datatypes.value import infer
-
-        if self.cardinality is None:
-            return int64
-        else:
-            return infer(self.cardinality)
-
-
-@public
 class Struct(Parametric, Mapping):
     """Structured values."""
 
@@ -926,7 +900,6 @@ date = Date()
 time = Time()
 timestamp = Timestamp()
 interval = Interval()
-category = Category()
 # geo spatial data type
 geometry = GeoSpatial(geotype="geometry")
 geography = GeoSpatial(geotype="geography")
@@ -1031,7 +1004,6 @@ public(
     timestamp=timestamp,
     dtype=dtype,
     interval=interval,
-    category=category,
     geometry=geometry,
     geography=geography,
     point=point,
