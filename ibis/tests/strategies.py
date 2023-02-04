@@ -63,10 +63,6 @@ temporal_dtypes = st.one_of(
     # interval_dtype
 )
 
-category_dtype = st.builds(
-    dt.Category, cardinality=st.integers(min_value=0), nullable=nullable
-)
-
 primitive_dtypes = st.one_of(
     null_dtype,
     boolean_dtype,
@@ -149,7 +145,6 @@ all_dtypes = st.deferred(
     lambda: (
         primitive_dtypes
         | interval_dtype
-        | category_dtype
         | uuid_dtype
         | geospatial_dtypes
         | variadic_dtypes

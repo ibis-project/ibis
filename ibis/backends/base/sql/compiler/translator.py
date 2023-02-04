@@ -326,24 +326,6 @@ def _bucket(op):
     return result.op()
 
 
-@rewrites(ops.CategoryLabel)
-def _category_label(op):
-    # TODO(kszucs): avoid the expression roundtrip
-    expr = op.to_expr()
-    stmt = op.args[0].to_expr().case()
-    for i, label in enumerate(op.labels):
-        stmt = stmt.when(i, label)
-
-    if op.nulls is not None:
-        stmt = stmt.else_(op.nulls)
-
-    result = stmt.end()
-    if expr.has_name():
-        result = result.name(expr.get_name())
-
-    return result.op()
-
-
 @rewrites(ops.Any)
 def _any_expand(op):
     return ops.Max(op.arg)

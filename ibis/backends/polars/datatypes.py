@@ -61,11 +61,6 @@ def from_ibis_struct(dtype):
     return pl.Struct(fields)
 
 
-@to_polars_type.register(dt.Category)
-def from_ibis_category(_):
-    return pl.Categorical
-
-
 @to_polars_type.register(dt.Array)
 def from_ibis_array(dtype):
     return pl.List(to_polars_type(dtype.value_type))

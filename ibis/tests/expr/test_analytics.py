@@ -44,7 +44,7 @@ def test_category_project(alltypes):
     tier = t.double_col.bucket([0, 50, 100]).name('tier')
     expr = t[tier, t]
 
-    assert isinstance(expr.tier, ir.CategoryColumn)
+    assert isinstance(expr.tier, ir.IntegerColumn)
 
 
 def test_bucket(alltypes):
@@ -52,7 +52,7 @@ def test_bucket(alltypes):
     bins = [0, 10, 50, 100]
 
     expr = d.bucket(bins)
-    assert isinstance(expr, ir.CategoryColumn)
+    assert isinstance(expr, ir.IntegerColumn)
     assert expr.op().nbuckets == 3
 
     expr = d.bucket(bins, include_over=True)

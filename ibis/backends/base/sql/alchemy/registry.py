@@ -166,9 +166,6 @@ def _cast(t, op):
 
     sa_arg = t.translate(arg)
 
-    if arg_dtype.is_category() and typ.is_int32():
-        return sa_arg
-
     # specialize going from an integer type to a timestamp
     if arg_dtype.is_integer() and typ.is_timestamp():
         return t.integer_to_timestamp(sa_arg)

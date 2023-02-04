@@ -51,7 +51,6 @@ def can_cast_subtype(source: dt.DataType, target: dt.DataType, **kwargs) -> bool
     return isinstance(target, source.__class__)
 
 
-@castable.register(dt.Integer, dt.Category)
 @castable.register(dt.Integer, (dt.Floating, dt.Decimal))
 @castable.register(dt.Floating, dt.Decimal)
 @castable.register((dt.Date, dt.Timestamp), (dt.Date, dt.Timestamp))

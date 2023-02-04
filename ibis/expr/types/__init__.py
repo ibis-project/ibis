@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from ibis.expr.types.arrays import *  # noqa: F403
 from ibis.expr.types.binary import *  # noqa: F403
-from ibis.expr.types.category import *  # noqa: F403
 from ibis.expr.types.collections import *  # noqa: F403
 from ibis.expr.types.core import *  # noqa: F403
 from ibis.expr.types.generic import *  # noqa: F403

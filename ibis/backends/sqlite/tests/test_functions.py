@@ -8,6 +8,7 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 from packaging.version import parse
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -324,19 +325,26 @@ def test_ifelse(alltypes, df, func, expected_func):
     ('func', 'expected_func'),
     [
         # tier and histogram
-        (
+        param(
             lambda d: d.bucket([0, 10, 25, 50, 100]),
-            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False),
+            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False).astype(
+                "int8"
+            ),
+            id="default",
         ),
-        (
+        param(
             lambda d: d.bucket([0, 10, 25, 50], include_over=True),
-            lambda s: pd.cut(s, [0, 10, 25, 50, np.inf], right=False, labels=False),
+            lambda s: pd.cut(
+                s, [0, 10, 25, 50, np.inf], right=False, labels=False
+            ).astype("int8"),
+            id="include_over",
         ),
-        (
+        param(
             lambda d: d.bucket([0, 10, 25, 50], close_extreme=False),
             lambda s: pd.cut(s, [0, 10, 25, 50], right=False, labels=False),
+            id="no_close_extreme",
         ),
-        (
+        param(
             lambda d: d.bucket([0, 10, 25, 50], closed='right', close_extreme=False),
             lambda s: pd.cut(
                 s,
@@ -345,10 +353,14 @@ def test_ifelse(alltypes, df, func, expected_func):
                 right=True,
                 labels=False,
             ),
+            id="closed_right_no_close_extreme",
         ),
-        (
+        param(
             lambda d: d.bucket([10, 25, 50, 100], include_under=True),
-            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False),
+            lambda s: pd.cut(s, [0, 10, 25, 50, 100], right=False, labels=False).astype(
+                "int8"
+            ),
+            id="include_under",
         ),
     ],
 )
@@ -356,7 +368,6 @@ def test_bucket(alltypes, df, func, expected_func):
     expr = func(alltypes.double_col)
     result = expr.execute()
     expected = expected_func(df.double_col)
-    expected = pd.Series(pd.Categorical(expected))
 
     tm.assert_series_equal(result, expected, check_names=False)
 

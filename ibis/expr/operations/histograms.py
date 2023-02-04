@@ -1,28 +1,31 @@
 from __future__ import annotations
 
+import numbers
+
 from public import public
 
-from ibis.expr import datatypes as dt
+import ibis.expr.datatypes as dt
+from ibis.common.annotations import attribute
 from ibis.expr import rules as rlz
 from ibis.expr.operations.core import Value
 
 
 @public
 class Bucket(Value):
-    arg = rlz.column(rlz.any)
-    buckets = rlz.tuple_of(rlz.scalar(rlz.any))
+    arg = rlz.column(rlz.numeric)
+    buckets = rlz.tuple_of(rlz.instance_of(numbers.Real))
     closed = rlz.optional(rlz.isin({'left', 'right'}), default='left')
     close_extreme = rlz.optional(rlz.instance_of(bool), default=True)
     include_under = rlz.optional(rlz.instance_of(bool), default=False)
     include_over = rlz.optional(rlz.instance_of(bool), default=False)
     output_shape = rlz.Shape.COLUMNAR
 
-    @property
+    @attribute.default
     def output_dtype(self):
-        return dt.Category(self.nbuckets)
+        return dt.infer(self.nbuckets)
 
     def __init__(self, buckets, include_under, include_over, **kwargs):
-        if not len(buckets):
+        if not buckets:
             raise ValueError('Must be at least one bucket edge')
         elif len(buckets) == 1:
             if not include_under or not include_over:
@@ -40,21 +43,3 @@ class Bucket(Value):
     @property
     def nbuckets(self):
         return len(self.buckets) - 1 + self.include_over + self.include_under
-
-
-@public
-class CategoryLabel(Value):
-    arg = rlz.category
-    labels = rlz.tuple_of(rlz.instance_of(str))
-    nulls = rlz.optional(rlz.instance_of(str))
-
-    output_dtype = dt.string
-    output_shape = rlz.shape_like("arg")
-
-    def __init__(self, arg, labels, **kwargs):
-        cardinality = arg.output_dtype.cardinality
-        if len(labels) != cardinality:
-            raise ValueError(
-                f"Number of labels must match number of categories: {cardinality}"
-            )
-        super().__init__(arg=arg, labels=labels, **kwargs)

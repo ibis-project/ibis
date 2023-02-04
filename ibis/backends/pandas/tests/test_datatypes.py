@@ -131,7 +131,7 @@ def test_numpy_dtype_timedelta():
             DatetimeTZDtype(tz='US/Eastern', unit='ns'),
             dt.Timestamp('US/Eastern'),
         ),
-        (CategoricalDtype(), dt.Category()),
+        (CategoricalDtype(), dt.String()),
         (pd.Series([], dtype="string").dtype, dt.String()),
     ],
 )
@@ -171,7 +171,7 @@ def test_pandas_dtype(pandas_dtype, ibis_dtype):
             "interval('ns')",
         ),
         (['foo', 'bar', 'hello'], "string"),
-        (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.Category()),
+        (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.String()),
         (pd.Series([b'1', b'2', b'3']), dt.string),
         # mixed-integer
         (pd.Series([1, 2, '3']), dt.binary),

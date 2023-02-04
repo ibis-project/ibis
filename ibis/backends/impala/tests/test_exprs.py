@@ -9,7 +9,6 @@ import ibis.expr.types as ir
 from ibis import literal as L
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.expr import api
-from ibis.expr.datatypes import Category
 
 
 def test_embedded_identifier_quoting(alltypes):
@@ -168,18 +167,10 @@ def _check_impala_output_types_match(con, table):
     query = ImpalaCompiler.to_sql(table)
     t = con.sql(query)
 
-    def _clean_type(x):
-        if isinstance(x, Category):
-            x = x.to_integer_type()
-        return x
-
     left_schema, right_schema = t.schema(), table.schema()
-    for n, left_type, right_type in zip(
+    for n, left_ty, right_ty in zip(
         left_schema.names, left_schema.types, right_schema.types
     ):
-        left_ty = _clean_type(left_type)
-        right_ty = _clean_type(right_type)
-
         assert (
             left_ty == right_ty
         ), f'Value for {n} had left type {left_ty} and right type {right_ty}\nquery:\n{query}'
