@@ -10,7 +10,6 @@ import ibis.expr.schema as sch
 _to_polars_types = {
     dt.Boolean: pl.Boolean,
     dt.Null: pl.Null,
-    dt.Array: pl.List,
     dt.String: pl.Utf8,
     dt.Binary: pl.Binary,
     dt.Date: pl.Date,
@@ -28,6 +27,7 @@ _to_polars_types = {
 }
 
 _to_ibis_dtypes = {v: k for k, v in _to_polars_types.items()}
+_to_ibis_dtypes[pl.Categorical] = dt.String
 
 
 @functools.singledispatch
@@ -64,7 +64,7 @@ def from_ibis_struct(dtype):
 
 
 @to_polars_type.register(dt.Category)
-def from_ibis_category(dtype):
+def from_ibis_category(_):
     return pl.Categorical
 
 
@@ -82,8 +82,12 @@ def to_ibis_dtype(typ):
 
 @to_ibis_dtype.register(pl.Datetime)
 def from_polars_datetime(typ):
-    # TODO(kszucs): handle timezone?
-    return dt.Timestamp()
+    return dt.Timestamp(timezone=typ.tz)
+
+
+@to_ibis_dtype.register(pl.Duration)
+def from_polars_duration(typ):
+    return dt.Interval(unit=typ.tu)
 
 
 @to_ibis_dtype.register(pl.List)
@@ -96,10 +100,6 @@ def from_polars_struct(typ):
     return dt.Struct.from_tuples(
         [(field.name, to_ibis_dtype(field.dtype)) for field in typ.fields]
     )
-
-
-# Can't register here since polars datatypes are classes
-# @dt.dtype.register(pl.DataType)
 
 
 @sch.infer.register(pl.LazyFrame)
