@@ -199,3 +199,13 @@ operation_registry.update(
         ops.DateTruncate: _timestamp_truncate,
     }
 )
+
+_invalid_operations = {
+    # ibis.expr.operations.strings
+    ops.RPad,
+    ops.LPad,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}
