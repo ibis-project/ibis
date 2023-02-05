@@ -49,7 +49,7 @@ def _literal(t, op):
 
 def _arbitrary(t, op):
     if op.how == "heavy":
-        raise ValueError('Trino does not support how="heavy"')
+        raise com.UnsupportedOperationError('Trino does not support how="heavy"')
     return reduction(sa.func.arbitrary)(t, op)
 
 
@@ -62,7 +62,9 @@ def _json_get_item(t, op):
 
 def _group_concat(t, op):
     if not isinstance(op.sep, ops.Literal):
-        raise com.IbisTypeError("Trino group concat separator must be a literal value")
+        raise com.UnsupportedOperationError(
+            "Trino group concat separator must be a literal value"
+        )
 
     arg = sa.func.array_agg(t.translate(op.arg))
     if (where := op.where) is not None:
@@ -119,7 +121,7 @@ def _timestamp_from_unix(t, op):
     elif unit == "ns":
         return sa.func.from_unixtime_nanos(arg - (arg % 1_000_000_000))
     else:
-        raise ValueError(f"{unit!r} unit is not supported")
+        raise com.UnsupportedOperationError(f"{unit!r} unit is not supported")
 
 
 def _neg_idx_to_pos(array, idx):
