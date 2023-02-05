@@ -1029,6 +1029,7 @@ _simple_ops = {
     ops.Strip: "trimBoth",
     ops.RegexSearch: "match",
     ops.RegexReplace: "replaceRegexpAll",
+    ops.StringAscii: "ascii",
     # Temporal operations
     ops.Date: "toDate",
     ops.TimestampNow: "now",

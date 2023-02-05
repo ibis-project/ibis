@@ -208,7 +208,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars"]),
+            marks=pytest.mark.notimpl(["datafusion", "polars"]),
         ),
         param(
             lambda t: t.string_col.length(),
