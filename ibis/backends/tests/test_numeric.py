@@ -350,32 +350,32 @@ def test_complex_math_functions_columns(
             marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
-            lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col),
+            lambda be, t: ibis.least(t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
             id='least-all-columns',
             marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
-            lambda be, t: be.least(ibis.least, t.bigint_col, t.int_col, -2),
+            lambda be, t: ibis.least(t.bigint_col, t.int_col, -2),
             lambda be, t: pd.Series(
                 list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id='least-scalar',
-            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
-            lambda be, t: be.greatest(ibis.greatest, t.bigint_col, t.int_col),
+            lambda be, t: ibis.greatest(t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
             id='greatest-all-columns',
             marks=pytest.mark.notimpl(["datafusion"]),
         ),
         param(
-            lambda be, t: be.greatest(ibis.greatest, t.bigint_col, t.int_col, -2),
+            lambda be, t: ibis.greatest(t.bigint_col, t.int_col, -2),
             lambda be, t: pd.Series(
                 list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id='greatest-scalar',
-            marks=pytest.mark.notimpl(["datafusion", "clickhouse"]),
+            marks=pytest.mark.notimpl(["datafusion"]),
         ),
     ],
 )

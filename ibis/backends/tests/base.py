@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import inspect
 from pathlib import Path
-from typing import Any, Callable, Mapping
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
@@ -151,14 +151,6 @@ class BackendTest(abc.ABC):
     @staticmethod
     def default_series_rename(series: pd.Series, name: str = 'tmp') -> pd.Series:
         return series.rename(name)
-
-    @staticmethod
-    def greatest(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
-        return f(*args)
-
-    @staticmethod
-    def least(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
-        return f(*args)
 
     @property
     def functional_alltypes(self) -> ir.Table:
