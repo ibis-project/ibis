@@ -23,21 +23,37 @@ class ArrayValue(Value):
         Returns
         -------
         IntegerValue
-            The integer length of `self`
+            The integer length of each element of `self`
 
         Examples
         --------
         >>> import ibis
-        >>> a = ibis.array([1, 2, 3])
-        >>> a.length()
-        ArrayLength((1, 2, 3))
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[7, 42], [3], None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7, 42]              │
+        │ [3]                  │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> t.a.length()
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ ArrayLength(a) ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ int64          │
+        ├────────────────┤
+        │              2 │
+        │              1 │
+        │              ∅ │
+        └────────────────┘
         """
         return ops.ArrayLength(self).to_expr()
 
-    def __getitem__(
-        self,
-        index: int | ir.IntegerValue | slice,
-    ) -> ir.Value:
+    def __getitem__(self, index: int | ir.IntegerValue | slice) -> ir.Value:
         """Extract one or more elements of `self`.
 
         Parameters
@@ -59,16 +75,41 @@ class ArrayValue(Value):
         Extract a single element
 
         >>> import ibis
-        >>> x = ibis.array([1, 2, 3, 4])
-        >>> x[2]
-        ArrayIndex((1, 2, 3, 4), index=2)
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[7, 42], [3], None]})
+        >>> t.a[0]
+        ┏━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayIndex(a, 0) ┃
+        ┡━━━━━━━━━━━━━━━━━━┩
+        │ int8             │
+        ├──────────────────┤
+        │                7 │
+        │                3 │
+        │                ∅ │
+        └──────────────────┘
 
         Extract a range of elements
 
-        >>> import ibis
-        >>> x = ibis.array([1, 2, 3, 4])
-        >>> x[1:3]
-        ArraySlice((1, 2, 3, 4), start=1, stop=3)
+        >>> t = ibis.memtable({"a": [[7, 42, 72], [3] * 5, None]})
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7, 42, ... +1]      │
+        │ [3, 3, ... +3]       │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> t.a[1:2]
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArraySlice(a, 1, 2)  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [42]                 │
+        │ [3]                  │
+        │ ∅                    │
+        └──────────────────────┘
         """
         if isinstance(index, slice):
             start = index.start
@@ -99,10 +140,38 @@ class ArrayValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> a = ibis.array([1, 2])
-        >>> b = ibis.array([3, 4, 5])
-        >>> a + b
-        ArrayConcat(left=(1, 2), right=(3, 4, 5))
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[7], [3] , None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7]                  │
+        │ [3]                  │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> t.a + t.a
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat(a, a)    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7, 7]               │
+        │ [3, 3]               │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> t.a + [4]
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat(a, (4,)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7, 4]               │
+        │ [3, 4]               │
+        │ [4]                  │
+        └──────────────────────┘
         """
         return ops.ArrayConcat(self, other).to_expr()
 
@@ -122,10 +191,28 @@ class ArrayValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> a = ibis.array([1, 2])
-        >>> b = ibis.array([3, 4, 5])
-        >>> b + a
-        ArrayConcat(left=(3, 4, 5), right=(1, 2))
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[7], [3] , None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7]                  │
+        │ [3]                  │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> [4] + t.a
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat((4,), a) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [4, 7]               │
+        │ [4, 3]               │
+        │ [4]                  │
+        └──────────────────────┘
         """
         return ops.ArrayConcat(other, self).to_expr()
 
@@ -145,9 +232,28 @@ class ArrayValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> x = ibis.array([1, 2])
-        >>> x * 2
-        ArrayRepeat((1, 2), times=2)
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[7], [3] , None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7]                  │
+        │ [3]                  │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> t.a * 2
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayRepeat(a, 2)    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7, 7]               │
+        │ [3, 3]               │
+        │ []                   │
+        └──────────────────────┘
         """
         return ops.ArrayRepeat(self, n).to_expr()
 
@@ -167,14 +273,62 @@ class ArrayValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> x = ibis.array([1, 2])
-        >>> 2 * x
-        ArrayRepeat((1, 2), times=2)
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[7], [3] , None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7]                  │
+        │ [3]                  │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> 2 * t.a
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayRepeat(a, 2)    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7, 7]               │
+        │ [3, 3]               │
+        │ []                   │
+        └──────────────────────┘
         """
         return ops.ArrayRepeat(self, n).to_expr()
 
     def unnest(self) -> ir.Value:
-        """Unnest an array.
+        """Flatten an array into a column.
+
+        !!! note "This operation changes the cardinality of the result"
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[7, 42], [3, 3] , None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [7, 42]              │
+        │ [3, 3]               │
+        │ ∅                    │
+        └──────────────────────┘
+        >>> t.a.unnest()
+        ┏━━━━━━┓
+        ┃ a    ┃
+        ┡━━━━━━┩
+        │ int8 │
+        ├──────┤
+        │    7 │
+        │   42 │
+        │    3 │
+        │    3 │
+        └──────┘
 
         Returns
         -------
@@ -245,9 +399,9 @@ def array(
     >>> import ibis
     >>> result = ibis.array([1.0, 2.0, 3.0])
     """
-    if all([isinstance(value, Column) for value in values]):
+    if all(isinstance(value, Column) for value in values):
         return ops.ArrayColumn(values).to_expr()
-    elif any([isinstance(value, Column) for value in values]):
+    elif any(isinstance(value, Column) for value in values):
         raise com.IbisTypeError(
             'To create an array column using `array`, all input values must '
             'be column expressions.'
