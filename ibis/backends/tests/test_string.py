@@ -268,7 +268,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
-            marks=pytest.mark.notimpl(["clickhouse", "mssql"]),
+            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),
