@@ -127,7 +127,7 @@ class ArrayValue(Value):
         >>> b + a
         ArrayConcat(left=(3, 4, 5), right=(1, 2))
         """
-        return ops.ArrayConcat(self, other).to_expr()
+        return ops.ArrayConcat(other, self).to_expr()
 
     def __mul__(self, n: int | ir.IntegerValue) -> ArrayValue:
         """Repeat this array `n` times.
