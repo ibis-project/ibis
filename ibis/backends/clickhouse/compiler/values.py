@@ -998,6 +998,7 @@ _simple_ops = {
     ops.Tan: "tan",
     ops.Pi: "pi",
     ops.E: "e",
+    ops.RandomScalar: "randCanonical",
     # Unary aggregates
     ops.ApproxMedian: "median",
     # TODO: there is also a `uniq` function which is the

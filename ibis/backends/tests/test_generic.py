@@ -504,10 +504,6 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "polars", "mssql"])
-@pytest.mark.notyet(
-    ["clickhouse"],
-    reason="clickhouse doesn't have a [0.0, 1.0) random implementation",
-)
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
     r1 = expr.execute()
