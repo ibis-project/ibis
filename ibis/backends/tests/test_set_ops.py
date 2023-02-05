@@ -24,7 +24,7 @@ def union_subsets(alltypes, df):
     "distinct",
     [param(False, id="all"), param(True, id="distinct")],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 def test_union(backend, union_subsets, distinct):
     (a, b, c), (da, db, dc) = union_subsets
 
@@ -38,8 +38,8 @@ def test_union(backend, union_subsets, distinct):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"])
-@pytest.mark.notyet(["bigquery"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["bigquery"], raises=com.OperationNotDefinedError)
 def test_union_mixed_distinct(backend, union_subsets):
     (a, b, c), (da, db, dc) = union_subsets
 
@@ -60,14 +60,15 @@ def test_union_mixed_distinct(backend, union_subsets):
             marks=pytest.mark.notyet(
                 ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
                 reason="backend doesn't support INTERSECT ALL",
+                raises=com.OperationNotDefinedError,
             ),
             id="all",
         ),
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_intersect(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
     b = alltypes.filter((_.id >= 5205) & (_.id <= 5215))
@@ -98,14 +99,15 @@ def test_intersect(backend, alltypes, df, distinct):
             marks=pytest.mark.notyet(
                 ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
                 reason="backend doesn't support EXCEPT ALL",
+                raises=com.OperationNotDefinedError,
             ),
             id="all",
         ),
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_difference(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
     b = alltypes.filter((_.id >= 5205) & (_.id <= 5215))

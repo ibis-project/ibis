@@ -10,6 +10,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
+from ibis.common.exceptions import OperationNotDefinedError
 
 
 @pytest.mark.parametrize(
@@ -21,7 +22,7 @@ from ibis import _
         ('float_col', 2.2),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     value = ibis.param(dt.double)
     expr = (alltypes[column] + value).name('tmp')
@@ -35,7 +36,9 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     ('start_string', 'end_string'),
     [('2009-03-01', '2010-07-03'), ('2014-12-01', '2017-01-05')],
 )
-@pytest.mark.notimpl(["datafusion", "pyspark", "mssql", "trino"])
+@pytest.mark.notimpl(
+    ["datafusion", "pyspark", "mssql", "trino"], raises=OperationNotDefinedError
+)
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
@@ -49,7 +52,7 @@ def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
 def test_timestamp_accepts_date_literals(alltypes):
     date_string = '2009-03-01'
     param = ibis.param(dt.timestamp)
@@ -58,9 +61,14 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "impala", "pandas", "pyspark"],
+    raises=OperationNotDefinedError,
+)
 @pytest.mark.never(
-    ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
+    ["mysql", "sqlite", "mssql"],
+    reason="backend will never implement array types",
+    raises=OperationNotDefinedError,
 )
 def test_scalar_param_array(con):
     value = [1, 2, 3]
@@ -69,10 +77,14 @@ def test_scalar_param_array(con):
     assert result == len(value)
 
 
-@pytest.mark.notimpl(["clickhouse", "datafusion", "impala", "postgres", "pyspark"])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "postgres", "pyspark"],
+    raises=OperationNotDefinedError,
+)
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
+    raises=OperationNotDefinedError,
 )
 def test_scalar_param_struct(con):
     value = dict(a=1, b="abc", c=3.0)
@@ -82,13 +94,15 @@ def test_scalar_param_struct(con):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars"]
+    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars"],
+    raises=OperationNotDefinedError,
 )
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
+    raises=OperationNotDefinedError,
 )
-@pytest.mark.notyet(["bigquery"])
+@pytest.mark.notyet(["bigquery"], raises=OperationNotDefinedError)
 def test_scalar_param_map(con):
     value = {'a': 'ghi', 'b': 'def', 'c': 'abc'}
     param = ibis.param(dt.Map(dt.string, dt.string))
@@ -120,7 +134,7 @@ def test_scalar_param_map(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
 def test_scalar_param(alltypes, df, value, dtype, col):
     param = ibis.param(dtype)
     expr = alltypes.filter([_[col] == param])
@@ -137,8 +151,10 @@ def test_scalar_param(alltypes, df, value, dtype, col):
     ["2009-01-20", datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)],
     ids=["string", "date", "datetime"],
 )
-@pytest.mark.notimpl(["datafusion"])
-@pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["impala"], reason="impala doesn't support dates", raises=OperationNotDefinedError
+)
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col
@@ -167,7 +183,9 @@ def test_scalar_param_date(backend, alltypes, value):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(["mysql"], reason="no struct support")
+@pytest.mark.notyet(
+    ["mysql"], reason="no struct support", raises=OperationNotDefinedError
+)
 @pytest.mark.notimpl(
     [
         "postgres",
@@ -181,7 +199,8 @@ def test_scalar_param_date(backend, alltypes, value):
         "pyspark",
         "mssql",
         "trino",
-    ]
+    ],
+    raises=OperationNotDefinedError,
 )
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")

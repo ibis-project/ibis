@@ -42,7 +42,11 @@ NULL_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.broken(["duckdb", "impala", "bigquery"], 'assert nan is None')
+@pytest.mark.broken(
+    ["duckdb", "impala", "bigquery"],
+    'assert nan is None',
+    raises=com.OperationNotDefinedError,
+)
 @pytest.mark.notimpl(["datafusion"], raises=NotImplementedError)
 def test_null_literal(con, backend):
     expr = ibis.null()
@@ -83,20 +87,20 @@ def test_boolean_literal(con, backend):
         param(
             ibis.NA.fillna(5),
             5,
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             id="na_fillna",
         ),
         param(
             L(5).fillna(10),
             5,
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             id="non_na_fillna",
         ),
         param(L(5).nullif(5), None, id="nullif_null"),
         param(L(10).nullif(5), 10, id="nullif_not_null"),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_scalar_fillna_nullif(con, expr, expected):
     if expected is None:
         # The exact kind of null value used differs per backend (and version).
@@ -115,18 +119,24 @@ def test_scalar_fillna_nullif(con, expr, expected):
         param(
             "nan_col",
             _.nan_col.isnan(),
-            marks=pytest.mark.notimpl(["datafusion", "mysql", "sqlite"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion", "mysql", "sqlite"], raises=com.OperationNotDefinedError
+            ),
             id="nan_col",
         ),
         param(
             "none_col",
             _.none_col.isnull(),
-            marks=[pytest.mark.notimpl(["datafusion", "mysql"])],
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion", "mysql"], raises=com.OperationNotDefinedError
+                )
+            ],
             id="none_col",
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql"])
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 def test_isna(backend, alltypes, col, filt):
     table = alltypes.select(
         nan_col=ibis.literal(np.nan), none_col=ibis.NA.cast("float64")
@@ -158,12 +168,13 @@ def test_isna(backend, alltypes, col, filt):
                     "trino",
                 ],
                 reason="NaN != NULL for these backends",
+                raises=com.OperationNotDefinedError,
             ),
             id="nan_col",
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql"], raises=com.OperationNotDefinedError)
 def test_column_fillna(backend, alltypes, value):
     table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
     pd_table = table.execute()
@@ -184,6 +195,7 @@ def test_column_fillna(backend, alltypes, value):
                 pytest.mark.broken(
                     "polars",
                     reason="implementation error, cannot get ref Int8 from Boolean",
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -195,11 +207,12 @@ def test_column_fillna(backend, alltypes, value):
             marks=pytest.mark.broken(
                 "polars",
                 reason="implementation error, cannot get ref Int8 from Float64",
+                raises=com.OperationNotDefinedError,
             ),
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_coalesce(con, expr, expected):
     result = con.execute(expr.name("tmp"))
 
@@ -213,7 +226,10 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "dask", "pyspark", "mssql"])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "polars", "dask", "pyspark", "mssql"],
+    raises=com.OperationNotDefinedError,
+)
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by('id')
     df = sorted_df
@@ -242,7 +258,7 @@ def test_identical_to(backend, alltypes, sorted_df):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.notimpl(["mssql"])
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 def test_isin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by('id')
     expr = sorted_alltypes[
@@ -266,7 +282,7 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.notimpl(["mssql"])
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 def test_notin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by('id')
     expr = sorted_alltypes[
@@ -303,7 +319,9 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
             lambda t: t.bool_col ^ t.bool_col,
             lambda df: df.bool_col ^ df.bool_col,
             id="xor",
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
     ],
 )
@@ -330,7 +348,8 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "polars",
         "mssql",
         "trino",
-    ]
+    ],
+    raises=com.OperationNotDefinedError,
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by('id')
@@ -346,7 +365,7 @@ def test_filter_with_window_op(backend, alltypes, sorted_df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
@@ -374,7 +393,9 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql"])
+@pytest.mark.notimpl(
+    ["datafusion", "mysql", "sqlite", "mssql"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.min_version(duckdb="0.3.3", reason="isnan/isinf unsupported")
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
@@ -430,7 +451,9 @@ def test_table_fillna_invalid(alltypes):
         {"double_col": -1.5, "string_col": "missing"},
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
+@pytest.mark.notimpl(
+    ["datafusion", "mssql", "clickhouse"], raises=com.OperationNotDefinedError
+)
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -445,7 +468,9 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
+@pytest.mark.notimpl(
+    ["datafusion", "mssql", "clickhouse"], raises=com.OperationNotDefinedError
+)
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -485,7 +510,14 @@ def test_dropna_invalid(alltypes):
 
 
 @pytest.mark.parametrize(
-    'how', ['any', pytest.param('all', marks=pytest.mark.notyet("polars"))]
+    'how',
+    [
+        'any',
+        pytest.param(
+            'all',
+            marks=pytest.mark.notyet("polars", raises=com.OperationNotDefinedError),
+        ),
+    ],
 )
 @pytest.mark.parametrize(
     'subset', [None, [], 'col_1', ['col_1', 'col_2'], ['col_1', 'col_3']]
@@ -523,22 +555,22 @@ def test_select_sort_sort(alltypes):
         param(
             ("id", False),
             {"by": "id", "ascending": False},
-            marks=pytest.mark.notimpl(["dask"]),
+            marks=pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
         ),
         param(
             ibis.desc("id"),
             {"by": "id", "ascending": False},
-            marks=pytest.mark.notimpl(["dask"]),
+            marks=pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
         ),
         param(
             ["id", "int_col"],
             {"by": ["id", "int_col"]},
-            marks=pytest.mark.notimpl(["dask"]),
+            marks=pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
         ),
         param(
             ["id", ("int_col", False)],
             {"by": ["id", "int_col"], "ascending": [True, False]},
-            marks=pytest.mark.notimpl(["dask"]),
+            marks=pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
         ),
     ],
 )
@@ -548,7 +580,10 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "polars", "mssql"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "impala", "pandas", "polars", "mssql"],
+    raises=com.OperationNotDefinedError,
+)
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
     r1 = expr.execute()
@@ -617,7 +652,7 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     reason="dask doesn't support Series as isin/notin argument",
     raises=NotImplementedError,
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
@@ -656,14 +691,32 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
         param(True, True, toolz.identity, id="true_noop"),
         param(False, False, toolz.identity, id="false_noop"),
         param(
-            True, False, invert, id="true_invert", marks=pytest.mark.notimpl(["mssql"])
+            True,
+            False,
+            invert,
+            id="true_invert",
+            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
         ),
         param(
-            False, True, invert, id="false_invert", marks=pytest.mark.notimpl(["mssql"])
+            False,
+            True,
+            invert,
+            id="false_invert",
+            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
         ),
-        param(True, False, neg, id="true_negate", marks=pytest.mark.notimpl(["mssql"])),
         param(
-            False, True, neg, id="false_negate", marks=pytest.mark.notimpl(["mssql"])
+            True,
+            False,
+            neg,
+            id="true_negate",
+            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
+        ),
+        param(
+            False,
+            True,
+            neg,
+            id="false_negate",
+            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
         ),
     ],
 )
@@ -685,7 +738,7 @@ def test_logical_negation_column(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("dtype", "zero", "expected"),
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
@@ -695,7 +748,7 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.min_version(
     dask="2022.01.1",
     reason="unsupported operation with later versions of pandas",
@@ -707,7 +760,7 @@ def test_zeroifnull_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_where_select(backend, alltypes, df):
     table = alltypes
     table = table.select(
@@ -727,7 +780,7 @@ def test_where_select(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_where_column(backend, alltypes, df):
     expr = ibis.where(alltypes["int_col"] == 0, 42, -1).cast("int64").name("where_col")
     result = expr.execute()
@@ -780,7 +833,9 @@ def test_correlated_subquery(alltypes):
     assert expr.compile() is not None
 
 
-@pytest.mark.notimpl(["dask", "polars", "pyspark", "datafusion"])
+@pytest.mark.notimpl(
+    ["dask", "polars", "pyspark", "datafusion"], raises=com.OperationNotDefinedError
+)
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting[batting.yearID <= 2000]
     expr = batting[_.yearID == subset_batting.yearID.max()]['playerID', 'yearID']
@@ -797,9 +852,11 @@ def test_int_column(alltypes):
     assert result.dtype == np.int8
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
-    ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
+    ["bigquery", "sqlite", "snowflake"],
+    reason="backend only implements int64",
+    raises=com.OperationNotDefinedError,
 )
 def test_int_scalar(alltypes):
     expr = alltypes.smallint_col.min()
@@ -808,11 +865,15 @@ def test_int_scalar(alltypes):
     assert result.dtype == np.int16
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
-@pytest.mark.notyet(
-    ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas", "polars"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.notyet(["pyspark"])
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="https://github.com/ClickHouse/ClickHouse/issues/6697",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(["pyspark"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize("method_name", ["any", "notany"])
 def test_exists(batting, awards_players, method_name):
     method = methodcaller(method_name)

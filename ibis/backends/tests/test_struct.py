@@ -7,6 +7,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.exceptions import OperationNotDefinedError
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
@@ -15,7 +16,7 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["dask", "snowflake"])
+@pytest.mark.notimpl(["dask", "snowflake"], raises=OperationNotDefinedError)
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_single_field(backend, struct, struct_df, field):
     expr = struct.abc[field]
@@ -31,7 +32,7 @@ def test_single_field(backend, struct, struct_df, field):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask"])
+@pytest.mark.notimpl(["dask"], raises=OperationNotDefinedError)
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
@@ -51,7 +52,7 @@ _STRUCT_LITERAL = ibis.struct(
 _NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
 
 
-@pytest.mark.notimpl(["postgres"])
+@pytest.mark.notimpl(["postgres"], raises=OperationNotDefinedError)
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(con, field):
     query = _STRUCT_LITERAL[field]
@@ -62,10 +63,12 @@ def test_literal(con, field):
     tm.assert_series_equal(result, expected.astype(dtype))
 
 
-@pytest.mark.notimpl(["postgres"])
+@pytest.mark.notimpl(["postgres"], raises=OperationNotDefinedError)
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
-    ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
+    ["clickhouse"],
+    reason="clickhouse doesn't support nullable nested types",
+    raises=OperationNotDefinedError,
 )
 def test_null_literal(con, field):
     query = _NULL_STRUCT_LITERAL[field]
@@ -75,7 +78,7 @@ def test_null_literal(con, field):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres"], raises=OperationNotDefinedError)
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)).name("s")

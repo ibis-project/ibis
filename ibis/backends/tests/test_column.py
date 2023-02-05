@@ -2,6 +2,8 @@ import operator
 
 import pytest
 
+from ibis.common.exceptions import OperationNotDefinedError
+
 
 @pytest.mark.notimpl(
     [
@@ -18,7 +20,8 @@ import pytest
         "pyspark",
         "snowflake",
         "trino",
-    ]
+    ],
+    raises=OperationNotDefinedError,
 )
 def test_rowid(con):
     t = con.table('functional_alltypes')
@@ -36,7 +39,7 @@ def test_rowid(con):
     "column",
     ["string_col", "double_col", "date_string_col", "timestamp_col"],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
 def test_distinct_column(alltypes, df, column):
     expr = alltypes[[column]].distinct()
     result = expr.execute()
@@ -52,8 +55,8 @@ def test_distinct_column(alltypes, df, column):
         ("day", set(range(1, 32))),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
+@pytest.mark.notyet(["impala"], raises=OperationNotDefinedError)
 def test_date_extract_field(con, opname, expected):
     op = operator.methodcaller(opname)
     t = con.table("functional_alltypes")

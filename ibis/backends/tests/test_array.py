@@ -28,7 +28,7 @@ pytestmark = [
 # list.
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_column(backend, alltypes, df):
     expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
     assert isinstance(expr, ir.ArrayColumn)
@@ -65,7 +65,9 @@ def test_array_scalar(con, backend):
         assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(["polars", "datafusion", "snowflake"])
+@pytest.mark.notimpl(
+    ["polars", "datafusion", "snowflake"], raises=com.OperationNotDefinedError
+)
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 
@@ -76,7 +78,7 @@ def test_array_repeat(con):
 
 
 # Issues #2370
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
@@ -86,7 +88,7 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_radd_concat(con):
     left = [1]
     right = ibis.literal([2])
@@ -97,7 +99,7 @@ def test_array_radd_concat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
@@ -120,7 +122,7 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["polars", "datafusion"])
+@pytest.mark.notimpl(["polars", "datafusion"], raises=com.OperationNotDefinedError)
 def test_array_index(con, idx):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
@@ -148,17 +150,20 @@ builtin_array = toolz.compose(
     pytest.mark.never(
         ["mysql", "sqlite"],
         reason="array types are unsupported",
+        raises=com.OperationNotDefinedError,
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(["datafusion", "dask"]),
+    pytest.mark.notimpl(["datafusion", "dask"], raises=com.OperationNotDefinedError),
     duckdb_0_4_0,
 )
 
 unnest = toolz.compose(
     builtin_array,
-    pytest.mark.notimpl(["pandas"]),
+    pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
     pytest.mark.notyet(
-        ["bigquery"], reason="doesn't support unnest in SELECT position"
+        ["bigquery"],
+        reason="doesn't support unnest in SELECT position",
+        raises=com.OperationNotDefinedError,
     ),
 )
 
@@ -167,12 +172,18 @@ unnest = toolz.compose(
 @pytest.mark.never(
     ["clickhouse", "duckdb", "pandas", "pyspark", "snowflake", "polars"],
     reason="backend does not flatten array types",
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
     ["snowflake"],
     reason="snowflake has an extremely specialized way of implementing arrays",
+    raises=com.OperationNotDefinedError,
 )
-@pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
+@pytest.mark.never(
+    ["bigquery"],
+    reason="doesn't support arrays of arrays",
+    raises=com.OperationNotDefinedError,
+)
 def test_array_discovery_postgres(con):
     t = con.table("array_types")
     expected = ibis.schema(
@@ -192,12 +203,18 @@ def test_array_discovery_postgres(con):
 @pytest.mark.never(
     ["snowflake"],
     reason="snowflake has an extremely specialized way of implementing arrays",
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
     ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars", "trino"],
     reason="backend supports nullable nested types",
+    raises=com.OperationNotDefinedError,
 )
-@pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
+@pytest.mark.never(
+    ["bigquery"],
+    reason="doesn't support arrays of arrays",
+    raises=com.OperationNotDefinedError,
+)
 def test_array_discovery_clickhouse(con):
     t = con.table("array_types")
     expected = ibis.schema(
@@ -218,16 +235,24 @@ def test_array_discovery_clickhouse(con):
 
 @builtin_array
 @pytest.mark.notyet(
-    ["clickhouse", "postgres"], reason="backend does not support nullable nested types"
+    ["clickhouse", "postgres"],
+    reason="backend does not support nullable nested types",
+    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
     ["trino"],
     reason="trino supports nested arrays, but not with the postgres connector",
+    raises=com.OperationNotDefinedError,
 )
-@pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
+@pytest.mark.never(
+    ["bigquery"],
+    reason="doesn't support arrays of arrays",
+    raises=com.OperationNotDefinedError,
+)
 @pytest.mark.never(
     ["snowflake"],
     reason="snowflake has an extremely specialized way of implementing arrays",
+    raises=com.OperationNotDefinedError,
 )
 def test_array_discovery_desired(con):
     t = con.table("array_types")
@@ -260,6 +285,7 @@ def test_array_discovery_desired(con):
         "trino",
     ],
     reason="backend does not implement arrays like snowflake",
+    raises=com.OperationNotDefinedError,
 )
 def test_array_discovery_snowflake(con):
     t = con.table("array_types")
@@ -292,7 +318,7 @@ def test_unnest_simple(con):
 
 
 @unnest
-@pytest.mark.notimpl("polars")
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_unnest_complex(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -318,9 +344,17 @@ def test_unnest_complex(con):
 
 
 @unnest
-@pytest.mark.never("pyspark", reason="pyspark throws away nulls in collect_list")
-@pytest.mark.never("clickhouse", reason="clickhouse throws away nulls in groupArray")
-@pytest.mark.notimpl("polars")
+@pytest.mark.never(
+    "pyspark",
+    reason="pyspark throws away nulls in collect_list",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.never(
+    "clickhouse",
+    reason="clickhouse throws away nulls in groupArray",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl("polars", raises=com.OperationNotDefinedError)
 def test_unnest_idempotent(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -340,7 +374,7 @@ def test_unnest_idempotent(con):
 
 
 @unnest
-@pytest.mark.notimpl("polars")
+@pytest.mark.notimpl("polars", raises=com.OperationNotDefinedError)
 def test_unnest_no_nulls(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -366,7 +400,7 @@ def test_unnest_no_nulls(con):
 
 
 @unnest
-@pytest.mark.notimpl("polars")
+@pytest.mark.notimpl("polars", raises=com.OperationNotDefinedError)
 def test_unnest_default_name(con):
     array_types = con.table("array_types")
     df = array_types.execute()
@@ -395,7 +429,9 @@ def test_unnest_default_name(con):
         (-3, -1),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
+)
 def test_array_slice(con, start, stop):
     array_types = con.tables.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])

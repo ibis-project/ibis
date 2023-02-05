@@ -6,6 +6,7 @@ from pytest import param
 
 import ibis
 from ibis.backends.tests.test_vectorized_udf import calc_mean, create_demean_struct_udf
+from ibis.common.exceptions import OperationNotDefinedError
 from ibis.config import option_context
 
 pytestmark = pytest.mark.notimpl(
@@ -53,7 +54,7 @@ def ctx_col():
         yield
 
 
-@pytest.mark.notimpl(["dask", "duckdb"])
+@pytest.mark.notimpl(["dask", "duckdb"], raises=OperationNotDefinedError)
 @pytest.mark.min_version(pyspark="3.1")
 @pytest.mark.parametrize(
     'window',
@@ -85,7 +86,7 @@ def test_context_adjustment_window_udf(alltypes, context, window, ctx_col):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "duckdb"])
+@pytest.mark.notimpl(["dask", "duckdb"], raises=OperationNotDefinedError)
 def test_context_adjustment_filter_before_window(alltypes, context, ctx_col):
     window = ibis.trailing_window(ibis.interval(days=3), order_by=ORDER_BY_COL)
 
@@ -101,7 +102,7 @@ def test_context_adjustment_filter_before_window(alltypes, context, ctx_col):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["duckdb", "pyspark"])
+@pytest.mark.notimpl(["duckdb", "pyspark"], raises=OperationNotDefinedError)
 def test_context_adjustment_multi_col_udf_non_grouped(
     alltypes,
     context,

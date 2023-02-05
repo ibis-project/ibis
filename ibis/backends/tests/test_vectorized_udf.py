@@ -252,7 +252,7 @@ def test_elementwise_udf_mutate(udf_backend, udf_alltypes, udf_df, udf):
     udf_backend.assert_series_equal(result['incremented'], expected['incremented'])
 
 
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_analytic_udf(udf_backend, udf_alltypes, udf_df):
     calc_zscore_udf = create_calc_zscore_udf(result_formatter=lambda v: v)
     result = calc_zscore_udf(udf_alltypes['double_col']).execute()
@@ -261,7 +261,7 @@ def test_analytic_udf(udf_backend, udf_alltypes, udf_df):
 
 
 @pytest.mark.parametrize('udf', calc_zscore_udfs)
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_analytic_udf_mutate(udf_backend, udf_alltypes, udf_df, udf):
     expr = udf_alltypes.mutate(zscore=udf(udf_alltypes['double_col']))
     result = expr.execute()
@@ -488,7 +488,9 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
 
 
 @pytest.mark.min_version(pyspark="3.1")
-@pytest.mark.parametrize('method', ['destructure', 'unpack'])
+@pytest.mark.parametrize(
+    'method', ['destructure', 'unpack'], raises=com.OperationNotDefinedError
+)
 def test_elementwise_udf_destructure_exact_once(
     udf_backend, udf_alltypes, method, tmp_path
 ):
@@ -570,7 +572,7 @@ def test_elementwise_udf_struct(udf_backend, udf_alltypes):
 
 
 @pytest.mark.parametrize('udf', demean_struct_udfs)
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
     w = ibis.window(preceding=None, following=None, group_by='year')
 
@@ -585,7 +587,7 @@ def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
     udf_backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     w = ibis.window(preceding=None, following=None)
 
@@ -606,7 +608,7 @@ def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     udf_backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
     w = ibis.window(preceding=None, following=None, group_by='year')
 
@@ -632,7 +634,7 @@ def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
 
 
 @pytest.mark.parametrize('udf', mean_struct_udfs)
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_reduction_udf_destruct_group_by(udf_backend, udf_alltypes, udf):
     result = (
         udf_alltypes.group_by('year')
@@ -654,7 +656,7 @@ def test_reduction_udf_destruct_group_by(udf_backend, udf_alltypes, udf):
     udf_backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_reduction_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     mean_struct_udf = create_mean_struct_udf(result_formatter=lambda v1, v2: (v1, v2))
     result = udf_alltypes.aggregate(
@@ -670,7 +672,7 @@ def test_reduction_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     udf_backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pyspark"])
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
 def test_reduction_udf_destruct_no_group_by_overwrite(udf_backend, udf_alltypes):
     result = udf_alltypes.aggregate(
         overwrite_struct_reduction(
@@ -692,7 +694,7 @@ def test_reduction_udf_destruct_no_group_by_overwrite(udf_backend, udf_alltypes)
 
 
 # TODO - windowing - #2553
-@pytest.mark.notimpl(["dask", "pyspark"])
+@pytest.mark.notimpl(["dask", "pyspark"], raises=com.OperationNotDefinedError)
 def test_reduction_udf_destruct_window(udf_backend, udf_alltypes):
     win = ibis.window(
         preceding=ibis.interval(hours=2),

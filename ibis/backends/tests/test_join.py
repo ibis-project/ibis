@@ -6,6 +6,8 @@ import pytest
 from packaging.version import parse as vparse
 from pytest import param
 
+from ibis.common.exceptions import OperationNotDefinedError
+
 
 def _pandas_semi_join(left, right, on, **_):
     assert len(on) == 1, str(on)
@@ -70,12 +72,13 @@ def check_eq(left, right, how, **kwargs):
             # LEFT JOIN UNION RIGHT JOIN
             marks=pytest.mark.notimpl(
                 ["mysql"]
-                + (["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39")))
+                + (["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))),
+                raises=OperationNotDefinedError,
             ),
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
@@ -128,11 +131,15 @@ def test_mutating_join(backend, batting, awards_players, how):
     [
         param(
             "semi",
-            marks=pytest.mark.notimpl(["bigquery", "dask", "datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["bigquery", "dask", "datafusion"], raises=OperationNotDefinedError
+            ),
         ),
         param(
             "anti",
-            marks=pytest.mark.notimpl(["bigquery", "dask", "datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["bigquery", "dask", "datafusion"], raises=OperationNotDefinedError
+            ),
         ),
     ],
 )
@@ -167,8 +174,9 @@ def test_filtering_join(backend, batting, awards_players, how):
 @pytest.mark.notyet(
     ["pyspark"],
     reason="pyspark doesn't support joining on differing column names",
+    raises=OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["datafusion", "pyspark"])
+@pytest.mark.notimpl(["datafusion", "pyspark"], raises=OperationNotDefinedError)
 def test_join_then_filter_no_column_overlap(awards_players, batting):
     left = batting[batting.yearID == 2015]
     year = left.yearID.name("year")
@@ -181,10 +189,11 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     assert not q.execute().empty
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=OperationNotDefinedError)
 @pytest.mark.notyet(
     ["pyspark"],
     reason="pyspark doesn't support joining on differing column names",
+    raises=OperationNotDefinedError,
 )
 def test_mutate_then_join_no_column_overlap(batting, awards_players):
     left = batting.mutate(year=batting.yearID).filter(lambda t: t.year == 2015)
@@ -194,12 +203,17 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["datafusion", "bigquery"])
+@pytest.mark.notimpl(["datafusion", "bigquery"], raises=OperationNotDefinedError)
 @pytest.mark.notyet(
     ["pyspark"],
     reason="pyspark doesn't support joining on differing column names",
+    raises=OperationNotDefinedError,
 )
-@pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
+@pytest.mark.notyet(
+    ["dask"],
+    reason="dask doesn't support descending order by",
+    raises=OperationNotDefinedError,
+)
 def test_semi_join_topk(batting, awards_players):
     batting = batting.mutate(year=batting.yearID)
     left = batting.semi_join(batting.year.topk(5), "year").select("year", "RBI")
