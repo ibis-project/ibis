@@ -23,6 +23,10 @@ pytestmark = [
     pytest.mark.notyet(["impala"], reason="No array support"),
 ]
 
+# NB: We don't check whether results are numpy arrays or lists because this
+# varies across backends. At some point we should unify the result type to be
+# list.
+
 
 @pytest.mark.notimpl(["datafusion"])
 def test_array_column(backend, alltypes, df):
@@ -54,8 +58,6 @@ def test_array_scalar(con, backend):
     result = con.execute(expr.name("tmp"))
     expected = np.array([1.0, 2.0, 3.0])
 
-    # This does not check whether `result` is an np.array or a list,
-    # because it varies across backends and backend configurations
     assert np.array_equal(result, expected)
 
     with contextlib.suppress(com.OperationNotDefinedError):
@@ -70,8 +72,6 @@ def test_array_repeat(con):
     result = con.execute(expr.name("tmp"))
     expected = np.array([1.0, 2.0, 1.0, 2.0])
 
-    # This does not check whether `result` is an np.array or a list,
-    # because it varies across backends and backend configurations
     assert np.array_equal(result, expected)
 
 
@@ -83,9 +83,17 @@ def test_array_concat(con):
     expr = left + right
     result = con.execute(expr.name("tmp"))
     expected = np.array([1, 2, 3, 2, 1])
+    assert np.array_equal(result, expected)
 
-    # This does not check whether `result` is an np.array or a list,
-    # because it varies across backends and backend configurations
+
+@pytest.mark.notimpl(["datafusion"])
+def test_array_radd_concat(con):
+    left = [1]
+    right = ibis.literal([2])
+    expr = left + right
+    result = con.execute(expr.name("tmp"))
+    expected = np.array([1, 2])
+
     assert np.array_equal(result, expected)
 
 
@@ -100,8 +108,6 @@ def test_list_literal(con):
     expr = ibis.literal(arr)
     result = con.execute(expr.name("tmp"))
 
-    # This does not check whether `result` is an np.array or a list,
-    # because it varies across backends and backend configurations
     assert np.array_equal(result, arr)
 
 
@@ -110,8 +116,6 @@ def test_np_array_literal(con):
     expr = ibis.literal(arr)
     result = con.execute(expr.name("tmp"))
 
-    # This does not check whether `result` is an np.array or a list,
-    # because it varies across backends and backend configurations
     assert np.array_equal(result, arr)
 
 
