@@ -85,7 +85,7 @@ def _timestamp_from_unix(x, unit='s'):
         return sa.func.dateadd(sa.text('s'), x, '1970-01-01 00:00:00')
     if unit == 'ms':
         return sa.func.dateadd(sa.text('s'), x / 1_000, '1970-01-01 00:00:00')
-    raise ValueError(f"{unit!r} unit is not supported!")
+    raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
 
 _truncate_precisions = {

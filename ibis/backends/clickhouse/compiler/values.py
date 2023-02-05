@@ -533,7 +533,7 @@ def _table_array_view(op, *, cache, **kw):
 def _timestamp_from_unix(op, **kw):
     arg = translate_val(op.arg, **kw)
     if (unit := op.unit) in {"ms", "us", "ns"}:
-        raise ValueError(f"`{unit}` unit is not supported!")
+        raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
     return f"toDateTime({arg})"
 

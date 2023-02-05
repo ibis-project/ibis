@@ -29,6 +29,7 @@ from ibis.backends.postgres.registry import (
     fixed_arity,
     operation_registry,
 )
+from ibis.common.exceptions import UnsupportedOperationError
 
 operation_registry = {
     op: operation_registry[op]
@@ -80,7 +81,7 @@ def _timestamp_from_unix(t, op):
     elif unit == "s":
         return sa.func.to_timestamp(arg)
     else:
-        raise ValueError(f"`{unit}` unit is not supported!")
+        raise UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
 
 class struct_pack(GenericFunction):
@@ -177,7 +178,7 @@ def _json_get_item(left, path):
 def _strftime(t, op):
     format_str = op.format_str
     if not isinstance(format_str_op := format_str, ops.Literal):
-        raise TypeError(
+        raise UnsupportedOperationError(
             f"DuckDB format_str must be a literal `str`; got {type(format_str)}"
         )
     return sa.func.strftime(t.translate(op.arg), sa.text(repr(format_str_op.value)))
@@ -185,13 +186,15 @@ def _strftime(t, op):
 
 def _arbitrary(t, op):
     if (how := op.how) == "heavy":
-        raise ValueError(f"how={how!r} not supported in the DuckDB backend")
+        raise UnsupportedOperationError(
+            f"how={how!r} not supported in the DuckDB backend"
+        )
     return t._reduction(getattr(sa.func, how), op)
 
 
 def _string_agg(t, op):
     if not isinstance(op.sep, ops.Literal):
-        raise TypeError(
+        raise UnsupportedOperationError(
             "Separator argument to group_concat operation must be a constant"
         )
     agg = sa.func.string_agg(t.translate(op.arg), sa.text(repr(op.sep.value)))

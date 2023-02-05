@@ -1394,7 +1394,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
                 ),
                 pytest.mark.notyet(
                     ["duckdb"],
-                    raises=TypeError,
+                    raises=com.UnsupportedOperationError,
                     reason=(
                         "DuckDB format_str must be a literal `str`; got "
                         "<class 'ibis.expr.operations.strings.StringConcat'>"
@@ -1447,7 +1447,7 @@ unit_factors = {'s': 10**9, 'ms': 10**6, 'us': 10**3, 'ns': 1}
                 ),
                 pytest.mark.notimpl(
                     ["clickhouse"],
-                    raises=ValueError,
+                    raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
                 ),
             ],
@@ -1462,7 +1462,7 @@ unit_factors = {'s': 10**9, 'ms': 10**6, 'us': 10**3, 'ns': 1}
                 ),
                 pytest.mark.notimpl(
                     ["duckdb", "mssql", "clickhouse"],
-                    raises=ValueError,
+                    raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
             ],
@@ -1477,7 +1477,7 @@ unit_factors = {'s': 10**9, 'ms': 10**6, 'us': 10**3, 'ns': 1}
                 ),
                 pytest.mark.notimpl(
                     ["duckdb", "mssql", "clickhouse"],
-                    raises=ValueError,
+                    raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
                 ),
             ],
