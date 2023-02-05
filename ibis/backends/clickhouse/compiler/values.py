@@ -653,6 +653,12 @@ def _string_ilike(op, **kw):
     return f"lower({arg}) LIKE lower({pattern})"
 
 
+@translate_val.register(ops.Capitalize)
+def _string_capitalize(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), SUBSTR({arg}, 2))"
+
+
 @translate_val.register(ops.GroupConcat)
 def _group_concat(op, **kw):
     arg = translate_val(op.arg, **kw)
