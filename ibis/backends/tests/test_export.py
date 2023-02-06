@@ -1,12 +1,10 @@
 import sys
 
+import pandas as pd
 import pytest
 from pytest import param
 
 pa = pytest.importorskip("pyarrow")
-
-# Adds `to_pyarrow` to created schema objects
-from ibis.backends.pyarrow.datatypes import sch as _  # noqa: F401, E402
 
 limit = [
     param(
@@ -36,9 +34,6 @@ no_limit = [
 limit_no_limit = limit + no_limit
 
 
-@pytest.mark.notyet(
-    ["pandas"], reason="DataFrames have no option for outputting in batches"
-)
 @pytest.mark.parametrize("limit", limit_no_limit)
 def test_table_to_pyarrow_batches(limit, awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=limit)
@@ -156,3 +151,33 @@ def test_no_pyarrow_message(awards_players, monkeypatch):
     monkeypatch.setitem(sys.modules, "pyarrow", None)
     with pytest.raises(ModuleNotFoundError, match="requires `pyarrow` but"):
         awards_players.to_pyarrow()
+
+
+@pytest.mark.parametrize("limit", limit_no_limit)
+def test_table_to_parquet(tmp_path, backend, limit, awards_players):
+    outparquet = tmp_path / "out.parquet"
+    awards_players.to_parquet(outparquet, limit=limit)
+
+    df = pd.read_parquet(outparquet)
+
+    backend.assert_frame_equal(awards_players.execute(limit=limit), df)
+
+    if limit is not None:
+        assert len(df) == limit
+
+
+@pytest.mark.parametrize("limit", limit_no_limit)
+def test_table_to_csv(tmp_path, backend, limit, awards_players):
+    outcsv = tmp_path / "out.csv"
+
+    # avoid pandas NaNonense
+    awards_players = awards_players.select("playerID", "awardID", "yearID", "lgID")
+
+    awards_players.to_csv(outcsv, limit=limit)
+
+    df = pd.read_csv(outcsv, dtype=awards_players.schema().to_pandas())
+
+    backend.assert_frame_equal(awards_players.execute(limit=limit), df)
+
+    if limit is not None:
+        assert len(df) == limit

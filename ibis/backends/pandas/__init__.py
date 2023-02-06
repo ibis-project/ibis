@@ -212,6 +212,21 @@ class Backend(BasePandasBackend):
         else:
             return pa.scalar(output)
 
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1000000,
+        **kwargs: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        pa = self._import_pyarrow()
+        pa_table = self.to_pyarrow(expr, params=params, limit=limit)
+        return pa.RecordBatchReader.from_batches(
+            pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
+        )
+
     def execute(self, query, params=None, limit='default', **kwargs):
         from ibis.backends.pandas.core import execute_and_reset
 

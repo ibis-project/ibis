@@ -369,6 +369,86 @@ class _FileIOHandler:
             f"{self.name} does not support direct registration of CSV data."
         )
 
+    @util.experimental
+    def to_parquet(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        path
+            The data source. A string or Path to the parquet file.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+        """
+        self._import_pyarrow()
+        import pyarrow.parquet as pq
+
+        batch_reader = expr.to_pyarrow_batches(params=params, limit=limit)
+
+        with pq.ParquetWriter(path, batch_reader.schema) as writer:
+            for batch in batch_reader:
+                writer.write_batch(batch)
+
+    @util.experimental
+    def to_csv(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a CSV file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to CSV.
+        path
+            The data source. A string or Path to the CSV file.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.csv.CSVWriter
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
+        """
+        self._import_pyarrow()
+        import pyarrow.csv as pcsv
+
+        batch_reader = expr.to_pyarrow_batches(params=params, limit=limit)
+
+        with pcsv.CSVWriter(path, batch_reader.schema) as writer:
+            for batch in batch_reader:
+                writer.write_batch(batch)
+
 
 class BaseBackend(abc.ABC, _FileIOHandler):
     """Base backend class.
