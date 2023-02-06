@@ -184,3 +184,17 @@ operation_registry.update(
         ops.JSONGetItem: _json_get_item,
     }
 )
+
+_invalid_operations = {
+    ops.CumulativeAll,
+    ops.CumulativeAny,
+    ops.CumulativeMax,
+    ops.CumulativeMean,
+    ops.CumulativeMin,
+    ops.CumulativeSum,
+    ops.NTile,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}
