@@ -273,10 +273,17 @@ class Backend(BaseBackend):
         self,
         expr: ir.Expr,
         params: Mapping[ir.Expr, object] = None,
-        limit: str = 'default',
+        limit: int | None = None,
         **kwargs: Any,
     ):
-        df = self.compile(expr, params=params).collect()
+        lf = self.compile(expr, params=params, **kwargs)
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            df = lf.fetch(limit)
+        else:
+            df = lf.collect()
+
         if isinstance(expr, ir.Table):
             return df.to_pandas()
         elif isinstance(expr, ir.Column):
