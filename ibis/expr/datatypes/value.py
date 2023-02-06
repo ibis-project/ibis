@@ -91,33 +91,15 @@ def infer_timestamp(value: datetime.datetime) -> dt.Timestamp:
         return dt.timestamp
 
 
-def _get_timedelta_units(
-    timedelta: datetime.timedelta | pd.Timedelta,
-) -> list[str]:
-    import pandas as pd
-
-    # pandas Timedelta has more granularity
-    if isinstance(timedelta, pd.Timedelta):
-        unit_fields = timedelta.components._fields
-        base_object = timedelta.components
-    # datetime.timedelta only stores days, seconds, and microseconds internally
-    else:
-        unit_fields = ['days', 'seconds', 'microseconds']
-        base_object = timedelta
-
-    return [field for field in unit_fields if getattr(base_object, field) > 0]
-
-
 @infer.register(datetime.timedelta)
 def infer_interval(value: datetime.timedelta) -> dt.Interval:
-    time_units = _get_timedelta_units(value)
+    # datetime.timedelta only stores days, seconds, and microseconds internally
+    unit_fields = ['days', 'seconds', 'microseconds']
+    time_units = [field for field in unit_fields if getattr(value, field) > 0]
+
     # we can attempt a conversion in the simplest case, i.e. there is exactly
-    # one unit (e.g. pd.Timedelta('2 days') vs. pd.Timedelta('2 days 3 hours')
-    if len(time_units) == 1:
-        unit = time_units[0]
-        return dt.Interval(unit)
-    else:
-        return dt.interval
+    # one unit (e.g. datime.timedelta(days=2) vs. datetime.timedelta(days=2, seconds=3)
+    return dt.Interval(time_units[0]) if len(time_units) == 1 else dt.interval
 
 
 @infer.register(str)
@@ -244,6 +226,19 @@ def infer_pandas_timestamp(value):
         return dt.Timestamp(timezone=str(value.tz))
     else:
         return dt.timestamp
+
+
+@infer.register("pandas.Timedelta")
+def infer_interval_pandas(value: pd.Timedelta) -> dt.Interval:
+    # pandas Timedelta has more granularity
+    unit_fields = value.components._fields
+    time_units = [
+        field for field in unit_fields if getattr(value.components, field) > 0
+    ]
+
+    # we can attempt a conversion in the simplest case, i.e. there is exactly
+    # one unit (e.g. pd.Timedelta('2 days') vs. pd.Timedelta('2 days 3 hours')
+    return dt.Interval(time_units[0]) if len(time_units) == 1 else dt.interval
 
 
 @infer.register("shapely.geometry.Point")
