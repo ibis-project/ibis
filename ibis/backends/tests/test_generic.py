@@ -839,3 +839,46 @@ def test_typeof(backend, con):
     result = con.execute(expr)
 
     assert result is not None
+
+
+@pytest.mark.broken(["polars"], reason="incorrect answer")
+@pytest.mark.notimpl(["datafusion", "bigquery", "impala", "pyspark"])
+@pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
+def test_isin_uncorrelated(
+    backend, batting, awards_players, batting_df, awards_players_df
+):
+    expr = batting.select(
+        "playerID",
+        "yearID",
+        x=batting.yearID.isin(awards_players.yearID),
+    ).order_by(["playerID", "yearID"])
+    result = expr.execute().x
+    expected = (
+        batting_df.sort_values(["playerID", "yearID"])
+        .reset_index(drop=True)
+        .yearID.isin(awards_players_df.yearID)
+        .rename("x")
+    )
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.broken(["polars"], reason="incorrect answer")
+@pytest.mark.notimpl(["datafusion", "pyspark"])
+@pytest.mark.notyet(["dask"], reason="not supported by the backend")
+def test_isin_uncorrelated_filter(
+    backend, batting, awards_players, batting_df, awards_players_df
+):
+    expr = (
+        batting.select("playerID", "yearID")
+        .filter(batting.yearID.isin(awards_players.yearID))
+        .order_by(["playerID", "yearID"])
+    )
+    result = expr.execute()
+    expected = (
+        batting_df.loc[
+            batting_df.yearID.isin(awards_players_df.yearID), ["playerID", "yearID"]
+        ]
+        .sort_values(["playerID", "yearID"])
+        .reset_index(drop=True)
+    )
+    backend.assert_frame_equal(result, expected)

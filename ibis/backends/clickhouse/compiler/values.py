@@ -810,8 +810,8 @@ def _string_contains(op, **kw):
 
 
 def contains(op_string: Literal["IN", "NOT IN"]) -> str:
-    def translate(op, *, cache, **kw):
-        import ibis.expr.analysis as an
+    def tr(op, *, cache, **kw):
+        from ibis.backends.clickhouse.compiler import translate
 
         value = op.value
         options = op.options
@@ -827,28 +827,11 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
             not isinstance(options, tuple)
             and options.output_shape is rlz.Shape.COLUMNAR
         ):
-            leaves = list(an.find_immediate_parent_tables(options))
-            nleaves = len(leaves)
-            if nleaves > 1:
-                raise NotImplementedError(
-                    "more than one leaf table in a NOT IN/IN query unsupported"
-                )
-            (leaf,) = leaves
-
-            shared_roots_count = sum(
-                an.shares_all_roots(value, child)
-                for child in an.find_immediate_parent_tables(options)
-            )
-            if shared_roots_count == nleaves:
-                from ibis.backends.clickhouse.compiler.relations import translate_rel
-
-                op = options.to_expr().as_table().op()
-                subquery = translate_rel(op, table=cache[leaf], **kw)
-                right_arg = f"({subquery})"
-            else:
-                raise NotImplementedError(
-                    "ClickHouse doesn't support correlated subqueries"
-                )
+            # this will fail to execute if there's a correlation, but it's too
+            # annoying to detect so we let it through to enable the
+            # uncorrelated use case (pandas-style `.isin`)
+            subquery = translate(options.to_expr().as_table().op(), {})
+            right_arg = f"({subquery})"
         else:
             right_arg = translate_val(options, cache=cache, **kw)
 
@@ -856,7 +839,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
         # make sense to do so for Sequence operations
         return f"{left_arg} {op_string} {right_arg}"
 
-    return translate
+    return tr
 
 
 translate_val.register(ops.Contains)(contains("IN"))
