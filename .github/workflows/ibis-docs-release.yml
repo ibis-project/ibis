@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: install nix
-        uses: cachix/install-nix-action@v18
+        uses: cachix/install-nix-action@v19
 
       - name: setup cachix
         uses: cachix/cachix-action@v12
