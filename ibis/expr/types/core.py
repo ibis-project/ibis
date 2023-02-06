@@ -400,6 +400,68 @@ class Expr(Immutable):
             self, params=params, limit=limit, **kwargs
         )
 
+    @experimental
+    def to_parquet(
+        self,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the parquet file.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+        """
+        self._find_backend(use_default=True).to_parquet(
+            self, path, limit=limit, **kwargs
+        )
+
+    @experimental
+    def to_csv(
+        self,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a CSV file
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the CSV file.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.csv.CSVWriter
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
+        """
+        self._find_backend(use_default=True).to_csv(self, path, limit=limit, **kwargs)
+
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
         from ibis.expr.analysis import substitute_unbound
