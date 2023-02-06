@@ -159,6 +159,12 @@ def find_immediate_parent_tables(input_node, keep_input=True):
                 return g.halt, node
             else:
                 return g.proceed, None
+
+        # HACK: special case ops.Contains to only consider the needle's base
+        # table, since that's the only expression that matters for determining
+        # cardinality
+        elif isinstance(node, ops.Contains):
+            return [node.value], None
         else:
             return g.proceed, None
 
@@ -646,6 +652,8 @@ def _find_projections(node):
         return g.proceed, None
     elif isinstance(node, ops.TableNode):
         return g.halt, node
+    elif isinstance(node, ops.Contains):
+        return [node.value], None
     else:
         return g.proceed, None
 
