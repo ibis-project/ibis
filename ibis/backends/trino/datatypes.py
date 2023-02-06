@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-import parsy as p
+from functools import partial
+
+import parsy
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW, TIMESTAMP
@@ -19,109 +21,57 @@ from ibis.common.parsing import (
     spaceless,
     spaceless_string,
 )
-from ibis.expr.datatypes import (
-    Array,
-    DataType,
-    Decimal,
-    Interval,
-    Map,
-    Struct,
-    Timestamp,
-    binary,
-    boolean,
-    date,
-    float32,
-    float64,
-    inet,
-    int8,
-    int16,
-    int32,
-    int64,
-    json,
-    string,
-    time,
-    uuid,
-)
 
 
-def parse(text: str, default_decimal_parameters=(18, 3)) -> DataType:
+def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
     """Parse a Trino type into an ibis data type."""
 
-    @p.generate
-    def timestamp():
-        yield spaceless_string("timestamp")
-        yield LPAREN.then(SINGLE_DIGIT.map(int)).skip(RPAREN).optional()
-        return Timestamp(timezone="UTC")
-
-    primitive = (
-        spaceless_string("interval").result(Interval())
-        | spaceless_string("bigint").result(int64)
-        | spaceless_string("boolean").result(boolean)
-        | spaceless_string("varbinary").result(binary)
-        | spaceless_string("double").result(float64)
-        | spaceless_string("real").result(float32)
-        | spaceless_string("smallint").result(int16)
-        | timestamp
-        | spaceless_string("date").result(date)
-        | spaceless_string("time").result(time)
-        | spaceless_string("tinyint").result(int8)
-        | spaceless_string("integer").result(int32)
-        | spaceless_string("uuid").result(uuid)
-        | spaceless_string("varchar", "char").result(string)
-        | spaceless_string("json").result(json)
-        | spaceless_string("ipaddress").result(inet)
+    timestamp = spaceless_string("timestamp").then(
+        parsy.seq(
+            scale=LPAREN.then(SINGLE_DIGIT.map(int)).skip(RPAREN).optional()
+        ).combine_dict(partial(dt.Timestamp, timezone="UTC"))
     )
 
-    @p.generate
-    def decimal():
-        yield spaceless_string("decimal", "numeric")
-        prec_scale = (
-            yield LPAREN.then(
-                p.seq(PRECISION.skip(COMMA), SCALE).combine(
-                    lambda prec, scale: (prec, scale)
-                )
-            )
-            .skip(RPAREN)
-            .optional()
-        ) or default_decimal_parameters
-        return Decimal(*prec_scale)
+    primitive = (
+        spaceless_string("interval").result(dt.Interval())
+        | spaceless_string("bigint").result(dt.int64)
+        | spaceless_string("boolean").result(dt.boolean)
+        | spaceless_string("varbinary").result(dt.binary)
+        | spaceless_string("double").result(dt.float64)
+        | spaceless_string("real").result(dt.float32)
+        | spaceless_string("smallint").result(dt.int16)
+        | timestamp
+        | spaceless_string("date").result(dt.date)
+        | spaceless_string("time").result(dt.time)
+        | spaceless_string("tinyint").result(dt.int8)
+        | spaceless_string("integer").result(dt.int32)
+        | spaceless_string("uuid").result(dt.uuid)
+        | spaceless_string("varchar", "char").result(dt.string)
+        | spaceless_string("json").result(dt.json)
+        | spaceless_string("ipaddress").result(dt.inet)
+    )
 
-    @p.generate
-    def angle_type():
-        yield LPAREN
-        value_type = yield ty
-        yield RPAREN
-        return value_type
+    decimal = spaceless_string("decimal", "numeric").then(
+        parsy.seq(LPAREN.then(PRECISION).skip(COMMA), SCALE.skip(RPAREN))
+        .optional(default_decimal_parameters)
+        .combine(dt.Decimal)
+    )
 
-    @p.generate
-    def array():
-        yield spaceless_string("array")
-        value_type = yield angle_type
-        return Array(value_type)
+    ty = parsy.forward_declaration()
 
-    @p.generate
-    def map():
-        yield spaceless_string("map")
-        yield LPAREN
-        key_type = yield primitive
-        yield COMMA
-        value_type = yield ty
-        yield RPAREN
-        return Map(key_type, value_type)
+    array = spaceless_string("array").then(LPAREN).then(ty).skip(RPAREN).map(dt.Array)
+    map = spaceless_string("map").then(
+        parsy.seq(LPAREN.then(ty).skip(COMMA), ty.skip(RPAREN)).combine(dt.Map)
+    )
 
-    field = spaceless(FIELD)
+    struct = (
+        spaceless_string("row")
+        .then(LPAREN)
+        .then(parsy.seq(spaceless(FIELD), ty).sep_by(COMMA).map(dt.Struct.from_tuples))
+        .skip(RPAREN)
+    )
 
-    @p.generate
-    def struct():
-        yield spaceless_string("row")
-        yield LPAREN
-        field_names_types = yield (
-            p.seq(field, ty).combine(lambda field, ty: (field, ty)).sep_by(COMMA)
-        )
-        yield RPAREN
-        return Struct.from_tuples(field_names_types)
-
-    ty = primitive | decimal | array | map | struct
+    ty.become(primitive | decimal | array | map | struct)
     return ty.parse(text)
 
 
