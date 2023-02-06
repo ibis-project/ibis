@@ -26,30 +26,17 @@ _BRACKETS = "[]"
 def _parse_numeric(
     text: str, default_decimal_parameters: tuple[int | None, int | None] = (None, None)
 ) -> dt.DataType:
-    @parsy.generate
-    def decimal():
-        yield spaceless_string("decimal", "numeric")
-        prec_scale = (
-            yield LPAREN.then(
-                parsy.seq(PRECISION.skip(COMMA), SCALE).combine(
-                    lambda prec, scale: (prec, scale)
-                )
-            )
-            .skip(RPAREN)
-            .optional()
-        ) or default_decimal_parameters
-        return dt.Decimal(*prec_scale)
+    decimal = spaceless_string("decimal", "numeric").then(
+        parsy.seq(LPAREN.then(PRECISION.skip(COMMA)), SCALE.skip(RPAREN))
+        .optional(default_decimal_parameters)
+        .combine(dt.Decimal)
+    )
 
-    @parsy.generate
-    def brackets():
-        yield spaceless(LBRACKET)
-        yield spaceless(RBRACKET)
+    brackets = spaceless(LBRACKET).then(spaceless(RBRACKET))
 
-    @parsy.generate
-    def pg_array():
-        value_type = yield decimal
-        n = len((yield brackets.at_least(1)))
-        return toolz.nth(n, toolz.iterate(dt.Array, value_type))
+    pg_array = parsy.seq(decimal, brackets.at_least(1).map(len)).combine(
+        lambda value_type, n: toolz.nth(n, toolz.iterate(dt.Array, value_type))
+    )
 
     ty = pg_array | decimal
     return ty.parse(text)
@@ -111,7 +98,7 @@ def _pg_array(dialect, itype):
 def _pg_map(dialect, itype):
     if not (itype.key_type.is_string() and itype.value_type.is_string()):
         raise TypeError(f"PostgreSQL only supports map<string, string>, got: {itype}")
-    return postgresql.HSTORE
+    return postgresql.HSTORE()
 
 
 @dt.dtype.register(PGDialect, postgresql.DOUBLE_PRECISION)
