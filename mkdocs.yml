@@ -58,7 +58,7 @@ plugins:
             docstring_style: numpy
             filters:
               - "!^_"
-              - "^__init__$"
+              - "__.+"
               - "!^ast_schema"
               - "!^backend_table_type"
               - "!^column$"
