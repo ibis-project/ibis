@@ -353,6 +353,8 @@ ignore = [
   "E501",
   "E731",
   "PGH003",
+  "PLR0911", # too many return statements
+  "PLR0912", # too many branches
   "PLR0913", # too many arguments
   "PLR0915", # too many statements
   "PLR2004", # forces everything to be a constant
@@ -367,6 +369,7 @@ ignore = [
   "SIM117", # nested withs
   "SIM118", # remove .keys() calls from dictionaries
   "SIM300", # yoda conditions
+  "UP037", # remove quotes from type annotation
 
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
