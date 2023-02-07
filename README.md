@@ -104,18 +104,17 @@ conda install ibis-postgres -c conda-forge
 
 ## Getting Started with Ibis
 
-You can find a number of [helpful
-tutorials](https://ibis-project.org/tutorial/01-Introduction-to-Ibis/)
-on the Ibis website:
+We provide a number of tutorial and example notebooks in the
+[ibis-examples](https://github.com/ibis-project/ibis-examples). The easiest way
+to try these out is through the online interactive notebook environment
+provided here:
+[![Binder](https://static.mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/ibis-project/ibis-examples/main)
 
-- [Introduction to Ibis](https://ibis-project.org/tutorial/01-Introduction-to-Ibis/)
-- [Aggregating and Joining Data](https://ibis-project.org/tutorial/02-Aggregates-Joins/)
-- [Creating and Inserting Data](https://ibis-project.org/tutorial/05-IO-Create-Insert-External-Data/)
+You can also get started analyzing any dataset, anywhere with just a few lines
+of Ibis code. Here’s an example of how to use Ibis with a SQLite database.
 
-You can also get started analyzing any dataset, anywhere with just a few lines of Ibis code.
-Here’s an example of how to use Ibis with an SQLite database.
-
-Download the SQLite database from the `ibis-tutorial-data` GCS (Google Cloud Storage) bucket, then connect to it using ibis.
+Download the SQLite database from the `ibis-tutorial-data` GCS (Google Cloud
+Storage) bucket, then connect to it using ibis.
 
 ```bash
 curl -LsS -o geography.db 'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
