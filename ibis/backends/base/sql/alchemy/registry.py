@@ -516,6 +516,11 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),
     # string
+    ops.Capitalize: unary(
+        lambda arg: sa.func.concat(
+            sa.func.upper(sa.func.substr(arg, 1, 1)), sa.func.substr(arg, 2)
+        )
+    ),
     ops.LPad: fixed_arity(sa.func.lpad, 3),
     ops.RPad: fixed_arity(sa.func.rpad, 3),
     ops.Strip: unary(sa.func.trim),

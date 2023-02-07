@@ -140,12 +140,6 @@ operation_registry.update(
         ops.EndsWith: fixed_arity(
             lambda arg, end: arg.op("LIKE BINARY")(sa.func.concat("%", end)), 2
         ),
-        ops.Capitalize: fixed_arity(
-            lambda arg: sa.func.concat(
-                sa.func.ucase(sa.func.left(arg, 1)), sa.func.substring(arg, 2)
-            ),
-            1,
-        ),
         ops.RegexSearch: fixed_arity(lambda x, y: x.op('REGEXP')(y), 2),
         # math
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
