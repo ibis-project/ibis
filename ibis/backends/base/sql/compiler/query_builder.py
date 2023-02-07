@@ -300,7 +300,7 @@ class Select(DML, Comparable):
         formatted = []
         for node in self.select_set:
             if isinstance(node, ops.Value):
-                expr_str = self._translate(node, named=True)
+                expr_str = self._translate(node, named=True, permit_subquery=True)
             elif isinstance(node, ops.TableNode):
                 alias = context.get_ref(node)
                 expr_str = f'{alias}.*' if alias else '*'
