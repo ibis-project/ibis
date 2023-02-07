@@ -502,6 +502,7 @@ class Backend(BaseAlchemyBackend):
 
         from ibis.backends.duckdb.pyarrow import IbisRecordBatchReader
 
+        self._register_in_memory_tables(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
@@ -519,6 +520,8 @@ class Backend(BaseAlchemyBackend):
         **_: Any,
     ) -> pa.Table:
         pa = self._import_pyarrow()
+
+        self._register_in_memory_tables(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
