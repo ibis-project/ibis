@@ -57,3 +57,25 @@ def cowsay(msg):
 
 ibis.options.verbose_log = cowsay
 ```
+
+## Default backend
+
+`ibis.options.default_backend` controls which backend is used by table
+expressions returned by top-level functions such as `ibis.memtable`,
+`ibis.read_csv` or `ibis.read_parquet`.
+
+By default, it points to an instance of DuckDB backend. Assuming the [backend
+dependencies have been installed](../install.md), it can be updated by passing
+the name of the backend to `ibis.set_backend` as follows:
+
+```python
+import ibis
+
+expr = ibis.memtable({"column": [0, 1, 2, 3, 4]})
+ibis.get_backend(expr)
+# <ibis.backends.duckdb.Backend at 0x12fa0fb50>
+
+ibis.set_backend("sqlite")
+ibis.get_backend(expr)
+# <ibis.backends.sqlite.Backend at 0x158411d10>
+```
