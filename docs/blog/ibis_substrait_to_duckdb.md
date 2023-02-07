@@ -28,7 +28,7 @@ First, we can create a `conda` environment using the latest versions of
 `duckdb`, `ibis`, and `ibis_substrait`.
 
 ```sh
-mamba create -n ibis_substrait_duckdb ibis-framework==4.1 ibis-substrait==2.19 ipython python-duckdb
+mamba create -n ibis_substrait_duckdb ibis-framework==4.1 ibis-substrait==2.19 ipython python-duckdb parsy==2
 ```
 
 Next, we'll need to choose a dataset. For this example, we'll use data from IMDB, available through their [dataset portal](https://datasets.imdbws.com/).
