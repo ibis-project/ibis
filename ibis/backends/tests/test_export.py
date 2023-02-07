@@ -4,6 +4,8 @@ import pandas as pd
 import pytest
 from pytest import param
 
+import ibis
+
 pa = pytest.importorskip("pyarrow")
 
 limit = [
@@ -145,6 +147,24 @@ def test_to_pyarrow_batches_borked_types(batting):
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) == 42
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
+def test_to_pyarrow_memtable(con):
+    expr = ibis.memtable({"x": [1, 2, 3]})
+    table = con.to_pyarrow(expr)
+    assert isinstance(table, pa.Table)
+    assert len(table) == 3
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
+def test_to_pyarrow_batches_memtable(con):
+    expr = ibis.memtable({"x": [1, 2, 3]})
+    n = 0
+    for batch in con.to_pyarrow_batches(expr):
+        assert isinstance(batch, pa.RecordBatch)
+        n += len(batch)
+    assert n == 3
 
 
 def test_no_pyarrow_message(awards_players, monkeypatch):
