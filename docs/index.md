@@ -13,7 +13,7 @@ hide:
 
 <div class="install-tutorial-button" markdown>
 [Install](./install.md){ .md-button .md-button--primary }
-[Tutorial](./tutorial/index.md){ .md-button }
+[Tutorial](https://github.com/ibis-project/ibis-examples){ .md-button }
 </div>
 
 ---
