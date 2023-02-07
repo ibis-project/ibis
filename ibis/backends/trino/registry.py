@@ -231,11 +231,6 @@ operation_registry.update(
         ops.DayOfWeekName: unary(lambda arg: sa.func.date_format(arg, "%W")),
         ops.ExtractEpochSeconds: unary(sa.func.to_unixtime),
         ops.Translate: fixed_arity(sa.func.translate, 3),
-        ops.Capitalize: unary(
-            lambda arg: sa.func.concat(
-                sa.func.upper(sa.func.substring(arg, 1, 2)), sa.func.substring(arg, 2)
-            )
-        ),
         ops.StrRight: fixed_arity(lambda arg, nchars: sa.func.substr(arg, -nchars), 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         ops.Repeat: fixed_arity(

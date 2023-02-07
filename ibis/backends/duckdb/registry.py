@@ -9,6 +9,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.expr.operations as ops
+from ibis.backends.base.sql import alchemy
 from ibis.backends.base.sql.alchemy import unary
 from ibis.backends.base.sql.alchemy.datatypes import StructType
 from ibis.backends.base.sql.alchemy.registry import (
@@ -271,13 +272,9 @@ operation_registry.update(
         ops.Quantile: reduction(sa.func.quantile_cont),
         ops.MultiQuantile: reduction(sa.func.quantile_cont),
         ops.TypeOf: unary(sa.func.typeof),
-        ops.Capitalize: unary(
-            lambda arg: sa.func.concat(
-                sa.func.upper(sa.func.substring(arg, 1, 2)), sa.func.substring(arg, 2)
-            )
-        ),
         ops.IntervalAdd: fixed_arity(operator.add, 2),
         ops.IntervalSubtract: fixed_arity(operator.sub, 2),
+        ops.Capitalize: alchemy.sqlalchemy_operation_registry[ops.Capitalize],
     }
 )
 

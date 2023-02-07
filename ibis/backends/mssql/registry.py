@@ -124,6 +124,12 @@ operation_registry.update(
         ops.Mean: _reduction(sa.func.avg, 'float64'),
         ops.Where: fixed_arity(sa.func.iif, 3),
         # string methods
+        ops.Capitalize: unary(
+            lambda arg: sa.func.concat(
+                sa.func.upper(sa.func.substring(arg, 1, 1)),
+                sa.func.substring(arg, 2, sa.func.datalength(arg) - 1),
+            )
+        ),
         ops.LStrip: unary(sa.func.ltrim),
         ops.Lowercase: unary(sa.func.lower),
         ops.RStrip: unary(sa.func.rtrim),

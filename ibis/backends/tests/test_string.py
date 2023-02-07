@@ -328,7 +328,6 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
             id='capitalize',
-            marks=pytest.mark.notimpl(["mssql"]),
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),
@@ -536,3 +535,10 @@ def test_parse_url(con, result_func, expected):
     expr = result_func(ibis.literal(url).name("url"))
     result = con.execute(expr)
     assert result == expected
+
+
+def test_capitalize(con):
+    s = ibis.literal("abc")
+    expected = "Abc"
+    expr = s.capitalize()
+    assert con.execute(expr) == expected

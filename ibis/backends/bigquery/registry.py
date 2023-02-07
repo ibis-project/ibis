@@ -543,8 +543,8 @@ def _neg_idx_to_pos(array, idx):
 def _array_slice(t, op):
     arg = t.translate(op.arg)
     cond = [f"index >= {_neg_idx_to_pos(arg, t.translate(op.start))}"]
-    if op.stop:
-        cond.append(f"index < {_neg_idx_to_pos(arg, t.translate(op.stop))}")
+    if stop := op.stop:
+        cond.append(f"index < {_neg_idx_to_pos(arg, t.translate(stop))}")
     return (
         f"ARRAY("
         f"SELECT el "
@@ -555,7 +555,8 @@ def _array_slice(t, op):
 
 
 def _capitalize(t, op):
-    return f"CONCAT(UPPER(SUBSTR({t.translate(op.arg)}, 1, 1)), SUBSTR({t.translate(op.arg)}, 2))"
+    arg = t.translate(op.arg)
+    return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), SUBSTR({arg}, 2))"
 
 
 def _nth_value(t, op):

@@ -121,9 +121,9 @@ def execute_endswith(op, data, end, **kwargs):
     return data.str.endswith(end)
 
 
-@execute_node.register(ops.Capitalize, pd.Series)
+@execute_node.register(ops.Capitalize, (pd.Series, str))
 def execute_string_capitalize(op, data, **kwargs):
-    return data.str.capitalize()
+    return getattr(data, "str", data).capitalize()
 
 
 @execute_node.register(ops.Repeat, pd.Series, (pd.Series,) + integer_types)
