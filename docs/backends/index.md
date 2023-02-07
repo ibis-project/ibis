@@ -1,5 +1,8 @@
 # Backends
 
+See the [configuration guide](../user_guide/configuration.md#default-backend)
+to inspect or reconfigure the backend used by default.
+
 ## String Generating Backends
 
 The first category of backend translate Ibis expressions into string queries.
