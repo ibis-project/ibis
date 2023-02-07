@@ -842,7 +842,8 @@ def test_typeof(backend, con):
 
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["datafusion", "bigquery", "impala", "pyspark"])
+@pytest.mark.notyet(["impala"], reason="can't find table in subquery")
+@pytest.mark.notimpl(["datafusion", "pyspark"])
 @pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -850,14 +851,14 @@ def test_isin_uncorrelated(
     expr = batting.select(
         "playerID",
         "yearID",
-        x=batting.yearID.isin(awards_players.yearID),
+        has_year_id=batting.yearID.isin(awards_players.yearID),
     ).order_by(["playerID", "yearID"])
-    result = expr.execute().x
+    result = expr.execute().has_year_id
     expected = (
         batting_df.sort_values(["playerID", "yearID"])
         .reset_index(drop=True)
         .yearID.isin(awards_players_df.yearID)
-        .rename("x")
+        .rename("has_year_id")
     )
     backend.assert_series_equal(result, expected)
 
