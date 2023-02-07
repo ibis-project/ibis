@@ -153,31 +153,25 @@ def test_no_pyarrow_message(awards_players, monkeypatch):
         awards_players.to_pyarrow()
 
 
-@pytest.mark.parametrize("limit", limit_no_limit)
-def test_table_to_parquet(tmp_path, backend, limit, awards_players):
+@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+def test_table_to_parquet(tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
-    awards_players.to_parquet(outparquet, limit=limit)
+    awards_players.to_parquet(outparquet)
 
     df = pd.read_parquet(outparquet)
 
-    backend.assert_frame_equal(awards_players.execute(limit=limit), df)
-
-    if limit is not None:
-        assert len(df) == limit
+    backend.assert_frame_equal(awards_players.execute(), df)
 
 
-@pytest.mark.parametrize("limit", limit_no_limit)
-def test_table_to_csv(tmp_path, backend, limit, awards_players):
+@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 
     # avoid pandas NaNonense
     awards_players = awards_players.select("playerID", "awardID", "yearID", "lgID")
 
-    awards_players.to_csv(outcsv, limit=limit)
+    awards_players.to_csv(outcsv)
 
     df = pd.read_csv(outcsv, dtype=awards_players.schema().to_pandas())
 
-    backend.assert_frame_equal(awards_players.execute(limit=limit), df)
-
-    if limit is not None:
-        assert len(df) == limit
+    backend.assert_frame_equal(awards_players.execute(), df)

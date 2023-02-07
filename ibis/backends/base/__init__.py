@@ -376,7 +376,6 @@ class _FileIOHandler:
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
         **kwargs: Any,
     ) -> None:
         """Write the results of executing the given expression to a parquet file.
@@ -392,9 +391,6 @@ class _FileIOHandler:
             The data source. A string or Path to the parquet file.
         params
             Mapping of scalar parameter expressions to value.
-        limit
-            An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
         **kwargs
             Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
 
@@ -403,7 +399,7 @@ class _FileIOHandler:
         self._import_pyarrow()
         import pyarrow.parquet as pq
 
-        batch_reader = expr.to_pyarrow_batches(params=params, limit=limit)
+        batch_reader = expr.to_pyarrow_batches(params=params)
 
         with pq.ParquetWriter(path, batch_reader.schema) as writer:
             for batch in batch_reader:
@@ -416,7 +412,6 @@ class _FileIOHandler:
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
         **kwargs: Any,
     ) -> None:
         """Write the results of executing the given expression to a CSV file.
@@ -432,9 +427,6 @@ class _FileIOHandler:
             The data source. A string or Path to the CSV file.
         params
             Mapping of scalar parameter expressions to value.
-        limit
-            An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
         **kwargs
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
 
@@ -443,7 +435,7 @@ class _FileIOHandler:
         self._import_pyarrow()
         import pyarrow.csv as pcsv
 
-        batch_reader = expr.to_pyarrow_batches(params=params, limit=limit)
+        batch_reader = expr.to_pyarrow_batches(params=params)
 
         with pcsv.CSVWriter(path, batch_reader.schema) as writer:
             for batch in batch_reader:
