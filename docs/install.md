@@ -42,5 +42,5 @@ hide:
 After you've successfully installed Ibis, try going through the tutorial:
 
 <div class="install-tutorial-button" markdown>
-[Go to the Tutorial](./tutorial/index.md){ .md-button .md-button--primary }
+[Go to the Tutorial](https://github.com/ibis-project/ibis-examples){ .md-button .md-button--primary }
 </div>
