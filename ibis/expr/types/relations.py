@@ -1038,10 +1038,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         buf
             A writable buffer, defaults to stdout
         """
+        import rich
         import rich.table
         from rich.pretty import Pretty
-
-        from ibis.expr.types.pretty import console
 
         if buf is None:
             buf = sys.stdout
@@ -1071,6 +1070,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 f"{100 * (1.0 - non_nulls / n):>3.2f}",
             )
 
+        console = rich.get_console()
         with console.capture() as capture:
             console.print(table)
         buf.write(capture.get())

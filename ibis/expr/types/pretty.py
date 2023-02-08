@@ -12,7 +12,6 @@ from rich.text import Text
 import ibis
 import ibis.expr.datatypes as dt
 
-console = Console()
 # A console with all color/markup disabled, used for `__repr__`
 simple_console = Console(force_terminal=False)
 
