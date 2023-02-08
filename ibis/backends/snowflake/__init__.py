@@ -3,14 +3,13 @@ from __future__ import annotations
 import contextlib
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import Any, Iterable
 
 import sqlalchemy as sa
 import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyExprTranslator,
@@ -55,9 +54,6 @@ with _handle_pyarrow_warning(action="ignore"):
 
 from ibis.backends.snowflake.datatypes import parse  # noqa: E402
 from ibis.backends.snowflake.registry import operation_registry  # noqa: E402
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 class SnowflakeExprTranslator(AlchemyExprTranslator):
@@ -208,18 +204,6 @@ class Backend(BaseAlchemyBackend):
             extend_existing=True,
             keep_existing=False,
         )
-
-    def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        if not _NATIVE_ARROW:
-            return super().fetch_from_cursor(cursor, schema)
-
-        if (table := cursor.cursor.fetch_arrow_all()) is None:
-            import pandas as pd
-
-            df = pd.DataFrame(columns=schema.names)
-        else:
-            df = table.to_pandas(timestamp_as_object=True)
-        return schema.apply_to(df)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as con, con.connection.cursor() as cur:
