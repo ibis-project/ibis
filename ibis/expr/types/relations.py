@@ -126,7 +126,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         if not ibis.options.interactive:
             return console.render(Text(self._repr()), options=options)
 
-        table = to_rich_table(self, options.max_width)
+        if console.is_jupyter:
+            # Rich infers a console width in jupyter notebooks, but since
+            # notebooks can use horizontal scroll bars we don't want to apply a
+            # limit here. Since rich requires an integer for max_width, we
+            # choose an arbitrarily large integer bound. Note that we need to
+            # handle this here rather than in `to_rich_table`, as this setting
+            # also needs to be forwarded to `console.render`.
+            options = options.update(max_width=1_000_000)
+            width = None
+        else:
+            width = options.max_width
+
+        table = to_rich_table(self, width)
         return console.render(table, options=options)
 
     def __getitem__(self, what):
