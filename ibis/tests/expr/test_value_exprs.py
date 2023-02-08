@@ -39,6 +39,12 @@ def test_null():
     assert expr2.type().equals(dt.null)
 
 
+def test_literal_mixed_type_fails():
+    data = [1, 'a']
+    with pytest.raises(TypeError):
+        ibis.literal(data)
+
+
 @pytest.mark.parametrize(
     ['value', 'expected_type'],
     [

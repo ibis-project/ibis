@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 import pytest
@@ -151,3 +152,15 @@ def test_map_literal_non_castable(value):
     typestr = "map<string, string>"
     with pytest.raises(TypeError):
         ibis.map(value, type=typestr)
+
+
+def test_literal_mixed_type_fails():
+    data = [1, 'a']
+    with pytest.raises(TypeError):
+        ibis.literal(data)
+
+
+def test_timestamp_literal_without_tz():
+    now_raw = datetime.datetime.utcnow()
+    assert now_raw.tzinfo is None
+    assert ibis.literal(now_raw).type().timezone is None
