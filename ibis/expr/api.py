@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import datetime
 import functools
-import itertools
 import operator
+import uuid
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, NamedTuple, Sequence, TypeVar
 from typing import Tuple as _Tuple
@@ -410,9 +410,6 @@ def memtable(
     return _memtable_from_dataframe(df, name=name, schema=schema)
 
 
-_gen_memtable_name = (f"_ibis_memtable{i:d}" for i in itertools.count())
-
-
 def _memtable_from_dataframe(
     df: pd.DataFrame,
     *,
@@ -421,8 +418,12 @@ def _memtable_from_dataframe(
 ) -> Table:
     from ibis.backends.pandas.client import DataFrameProxy, PandasInMemoryTable
 
+    def _generate_unique_table_name():
+        # create case-insensitive uuid4 unique table name
+        return f"_ibis_memtable_{np.base_repr(uuid.uuid4().int, 36).lower()}"
+
     op = PandasInMemoryTable(
-        name=name if name is not None else next(_gen_memtable_name),
+        name=name if name is not None else _generate_unique_table_name(),
         schema=sch.infer(df) if schema is None else schema,
         data=DataFrameProxy(df),
     )
