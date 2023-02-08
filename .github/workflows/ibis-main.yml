@@ -27,6 +27,9 @@ concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
   cancel-in-progress: true
 
+env:
+  FORCE_COLOR: "1"
+
 jobs:
   test_no_backends:
     name: Test ${{ matrix.os }} python-${{ matrix.python-version }}
