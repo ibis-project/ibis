@@ -77,6 +77,10 @@ class Interactive(Config):
     ----------
     max_rows : int
         Maximum rows to pretty print.
+    max_columns : int | None
+        The maximum number of columns to pretty print. If 0 (the default), the
+        number of columns will be inferred from output console size. Set to
+        `None` for no limit.
     max_length : int
         Maximum length for pretty-printed arrays and maps.
     max_string : int
@@ -88,6 +92,7 @@ class Interactive(Config):
     """
 
     max_rows: int = 10
+    max_columns: Optional[int] = 0
     max_length: int = 2
     max_string: int = 80
     max_depth: int = 1

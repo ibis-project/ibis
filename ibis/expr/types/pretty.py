@@ -197,10 +197,18 @@ def to_rich_table(table, console_width=None):
 
     orig_ncols = len(table.columns)
 
-    # First determine the maximum subset of columns that *might* fit in the
-    # current console. Note that not every column here may actually fit later
-    # on once we know the repr'd width of the data.
-    if console_width:
+    max_columns = ibis.options.repr.interactive.max_columns
+    if console_width == float("inf"):
+        if max_columns == 0:
+            # Show up to 20 columns by default, mirroring pandas's behavior
+            if orig_ncols >= 20:
+                table = table.select(*table.columns[:20])
+        elif max_columns is not None and max_columns < orig_ncols:
+            table = table.select(*table.columns[:max_columns])
+    else:
+        # Determine the maximum subset of columns that *might* fit in the
+        # current console. Note that not every column here may actually fit
+        # later on once we know the repr'd width of the data.
         computed_cols = []
         remaining = console_width - 1  # 1 char for left boundary
         for c in table.columns:
@@ -211,8 +219,12 @@ def to_rich_table(table, console_width=None):
                 computed_cols.append(c)
                 remaining -= needed
             else:
-                table = table.select(*computed_cols)
                 break
+        if max_columns not in (0, None):
+            # If an explicit limit on max columns is set, apply it
+            computed_cols = computed_cols[:max_columns]
+        if orig_ncols > len(computed_cols):
+            table = table.select(*computed_cols)
 
     # Compute the data and return a pandas dataframe
     nrows = ibis.options.repr.interactive.max_rows
@@ -269,29 +281,35 @@ def to_rich_table(table, console_width=None):
     # figure it out for us.
     columns_truncated = orig_ncols > len(col_info)
     col_widths = {}
-    flex_cols = []
-    remaining = console_width - 1
-    if columns_truncated:
-        remaining -= 4
-    for name, _, min_width, max_width in col_info:
-        remaining -= min_width + 3
-        col_widths[name] = min_width
-        if min_width != max_width:
-            flex_cols.append((name, max_width))
+    if console_width == float("inf"):
+        # Always use the max_width if there's infinite console space
+        for name, _, _, max_width in col_info:
+            col_widths[name] = max_width
+    else:
+        # Allocate the remaining space evenly between the flexible columns
+        flex_cols = []
+        remaining = console_width - 1
+        if columns_truncated:
+            remaining -= 4
+        for name, _, min_width, max_width in col_info:
+            remaining -= min_width + 3
+            col_widths[name] = min_width
+            if min_width != max_width:
+                flex_cols.append((name, max_width))
 
-    while True:
-        next_flex_cols = []
-        for name, max_width in flex_cols:
-            if remaining:
-                remaining -= 1
-                if max_width is not None:
-                    col_widths[name] += 1
-                if max_width is None or col_widths[name] < max_width:
-                    next_flex_cols.append((name, max_width))
-            else:
+        while True:
+            next_flex_cols = []
+            for name, max_width in flex_cols:
+                if remaining:
+                    remaining -= 1
+                    if max_width is not None:
+                        col_widths[name] += 1
+                    if max_width is None or col_widths[name] < max_width:
+                        next_flex_cols.append((name, max_width))
+                else:
+                    break
+            if not next_flex_cols:
                 break
-        if not next_flex_cols:
-            break
 
     rich_table = rich.table.Table(padding=(0, 1, 0, 1))
 
@@ -313,6 +331,7 @@ def to_rich_table(table, console_width=None):
             justify="left",
             vertical="middle",
             width=1,
+            min_width=1,
             no_wrap=True,
         )
 
