@@ -618,5 +618,8 @@ operation_registry.update(
                 else_=sa.null(),
             )
         ),
+        ops.ArrayStringJoin: fixed_arity(
+            lambda sep, arr: sa.func.array_to_string(arr, sep), 2
+        ),
     }
 )

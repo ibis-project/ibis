@@ -1917,3 +1917,10 @@ def compile_argmin(t, op, **kwargs):
 @compiles(ops.ArgMax)
 def compile_argmax(t, op, **kwargs):
     return compile_aggregator(t, op, fn=F.max_by, **kwargs)
+
+
+@compiles(ops.ArrayStringJoin)
+def compile_array_string_join(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    sep = t.translate(op.sep, raw=True, **kwargs)
+    return F.concat_ws(sep, arg)

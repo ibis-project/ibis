@@ -1323,3 +1323,10 @@ def _extract_query(op, **kw):
 def _extract_fragment(op, **kw):
     arg = translate_val(op.arg, **kw)
     return f"nullIf(fragment({arg}), '')"
+
+
+@translate_val.register(ops.ArrayStringJoin)
+def _array_string_join(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    sep = translate_val(op.sep, **kw)
+    return f"arrayStringConcat({arg}, {sep})"

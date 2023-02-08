@@ -138,6 +138,15 @@ class StringJoin(Value):
 
 
 @public
+class ArrayStringJoin(Value):
+    sep = rlz.string
+    arg = rlz.value(dt.Array(dt.string))
+
+    output_dtype = dt.string
+    output_shape = rlz.shape_like("args")
+
+
+@public
 class StartsWith(Value):
     arg = rlz.string
     start = rlz.scalar(rlz.string)

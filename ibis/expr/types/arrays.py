@@ -341,6 +341,53 @@ class ArrayValue(Value):
         except com.ExpressionError:
             return expr
 
+    def join(self, sep: str | ir.StringValue) -> ir.StringValue:
+        """Join the elements of this array expression with `sep`.
+
+        Parameters
+        ----------
+        sep
+            Separator to use for joining array elements
+
+        Returns
+        -------
+        StringValue
+            Elements of `self` joined with `sep`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [["a", "b", "c"], None, [], ["b", None]]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<string>        │
+        ├──────────────────────┤
+        │ ['a', 'b', ... +1]   │
+        │ ∅                    │
+        │ []                   │
+        │ ['b', None]          │
+        └──────────────────────┘
+        >>> t.arr.join("|")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayStringJoin('|', arr) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                    │
+        ├───────────────────────────┤
+        │ a|b|c                     │
+        │ ∅                         │
+        │ ∅                         │
+        │ b                         │
+        └───────────────────────────┘
+
+        See Also
+        --------
+        [`StringValue.join`][ibis.expr.types.strings.StringValue.join]
+        """
+        return ops.ArrayStringJoin(sep, self).to_expr()
+
 
 @public
 class ArrayScalar(Scalar, ArrayValue):

@@ -542,3 +542,15 @@ def test_capitalize(con):
     expected = "Abc"
     expr = s.capitalize()
     assert con.execute(expr) == expected
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notyet(["impala", "mssql", "mysql", "sqlite"], reason="no arrays")
+def test_array_string_join(con):
+    s = ibis.array(["a", "b", "c"])
+    expected = "a,b,c"
+    expr = ibis.literal(",").join(s)
+    assert con.execute(expr) == expected
+
+    expr = s.join(",")
+    assert con.execute(expr) == expected

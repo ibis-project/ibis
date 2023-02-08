@@ -317,6 +317,9 @@ operation_registry.update(
         ),
         ops.TypeOf: unary(sa.func.typeof),
         ops.Unnest: _unnest,
+        ops.ArrayStringJoin: fixed_arity(
+            lambda sep, arr: sa.func.array_join(arr, sep), 2
+        ),
     }
 )
 
