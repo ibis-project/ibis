@@ -270,6 +270,10 @@ class Backend(BaseBackend):
                 external_tables=external_tables,
             )
 
+    def _register_in_memory_tables(self, expr: ir.TableExpr):
+        for memtable in an.find_memtables(expr.op()):
+            self._register_in_memory_table(memtable)
+
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
@@ -321,6 +325,7 @@ class Backend(BaseBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
     ) -> Iterable[list]:
+        self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params)
         cursor = self.raw_sql(sql)
         try:
@@ -337,13 +342,10 @@ class Backend(BaseBackend):
         **kwargs: Any,
     ) -> Any:
         """Execute an expression."""
+        self._register_in_memory_tables(expr)
         table_expr = expr.as_table()
         sql = self.compile(table_expr, limit=limit, **kwargs)
         self._log(sql)
-
-        for memtable in an.find_memtables(expr.op()):
-            self._register_in_memory_table(memtable)
-
         result = self.fetch_from_cursor(
             self.raw_sql(sql, external_tables=external_tables),
             table_expr.schema(),
