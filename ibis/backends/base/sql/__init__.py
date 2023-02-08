@@ -139,6 +139,7 @@ class BaseSQLBackend(BaseBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
     ) -> Iterable[list]:
+        self._register_in_memory_tables(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 

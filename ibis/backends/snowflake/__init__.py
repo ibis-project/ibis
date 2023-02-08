@@ -50,6 +50,9 @@ with _handle_pyarrow_warning(action="ignore"):
     from snowflake.connector.converter import (
         SnowflakeConverter as _BaseSnowflakeConverter,
     )
+    from snowflake.connector.pandas_tools import (
+        write_pandas,
+    )
     from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 
 from ibis.backends.snowflake.datatypes import parse  # noqa: E402
@@ -71,6 +74,7 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
 
 
 class SnowflakeCompiler(AlchemyCompiler):
+    cheap_in_memory_tables = _NATIVE_ARROW
     translator_class = SnowflakeExprTranslator
 
 
@@ -222,3 +226,14 @@ class Backend(BaseAlchemyBackend):
                 "SELECT database_name FROM information_schema.databases"
             ).scalars()
         return self._filter_with_like(databases, like)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        with self.begin() as con:
+            write_pandas(
+                conn=con.connection.connection,
+                df=op.data.to_frame(),
+                table_name=op.name,
+                table_type="temp",
+                auto_create_table=True,
+                quote_identifiers=False,
+            )
