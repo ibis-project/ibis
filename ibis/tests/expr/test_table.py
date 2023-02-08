@@ -1,6 +1,7 @@
 import datetime
 import pickle
 import re
+from typing import List
 
 import numpy as np
 import pandas as pd
@@ -1493,6 +1494,26 @@ def test_unbound_table_name():
     name = t.op().name
     match = re.match(r'^unbound_table_\d+$', name)
     assert match is not None
+
+
+class MyTable:
+    a: int
+    b: str
+    c: List[float]
+
+
+def test_unbound_table_using_class_definition():
+    expected_schema = ibis.schema({'a': 'int64', 'b': 'string', 'c': 'array<double>'})
+
+    t1 = ibis.table(MyTable)
+    t2 = ibis.table(MyTable, name="MyNamedTable")
+
+    cases = {t1: "MyTable", t2: "MyNamedTable"}
+    for t, name in cases.items():
+        assert isinstance(t, ir.TableExpr)
+        assert isinstance(t.op(), ops.UnboundTable)
+        assert t.schema() == expected_schema
+        assert t.get_name() == name
 
 
 def test_mutate_chain():

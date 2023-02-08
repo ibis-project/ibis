@@ -9,7 +9,7 @@ import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.validators import frozendict_of, instance_of, validator
+from ibis.common.validators import Coercible, frozendict_of, instance_of, validator
 from ibis.util import indent
 
 if TYPE_CHECKING:
@@ -43,7 +43,7 @@ def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
-class Schema(Concrete, Mapping):
+class Schema(Concrete, Mapping, Coercible):
     """An object for holding table schema information."""
 
     fields = frozendict_of(instance_of(str), datatype)
@@ -69,6 +69,10 @@ class Schema(Concrete, Mapping):
 
     def __getitem__(self, name: str) -> dt.DataType:
         return self.fields[name]
+
+    @classmethod
+    def __coerce__(cls, value) -> Schema:
+        return schema(value)
 
     @attribute.default
     def names(self):

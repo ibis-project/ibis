@@ -9,8 +9,10 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 from ibis.common.exceptions import IntegrityError
+from ibis.common.grounds import Annotable
 
 
 def test_whole_schema():
@@ -347,3 +349,15 @@ def test_preferences():
     b = sch.schema(PreferenceB)
     c = sch.schema(PreferenceC)
     assert a == b == c
+
+
+class ObjectWithSchema(Annotable):
+    schema: sch.Schema
+
+
+def test_schema_is_coercible():
+    s = sch.Schema({'a': dt.int64, 'b': dt.Array(dt.int64)})
+    assert rlz.coerced_to(sch.Schema, PreferenceA) == s
+
+    o = ObjectWithSchema(schema=PreferenceA)
+    assert o.schema == s

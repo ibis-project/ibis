@@ -14,6 +14,7 @@ from ibis import util
 from ibis.common.annotations import attribute, optional
 from ibis.common.validators import (
     bool_,
+    coerced_to,  # noqa: F401
     equal_to,  # noqa: F401
     instance_of,
     isin,
