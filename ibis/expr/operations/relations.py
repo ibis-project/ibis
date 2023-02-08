@@ -49,7 +49,7 @@ class PhysicalTable(TableNode, Named):
 
 @public
 class UnboundTable(PhysicalTable):
-    schema = rlz.instance_of(sch.Schema)
+    schema = rlz.coerced_to(sch.Schema)
     name = rlz.optional(rlz.instance_of(str), default=genname)
 
 

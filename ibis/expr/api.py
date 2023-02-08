@@ -311,8 +311,8 @@ def table(
       a int64
       b string
     """
-    if schema is not None:
-        schema = sch.schema(schema)
+    if isinstance(schema, type) and name is None:
+        name = schema.__name__
     return ops.UnboundTable(schema=schema, name=name).to_expr()
 
 
