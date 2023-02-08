@@ -8,22 +8,25 @@ from typing import NamedTuple
 import pytest
 
 import ibis
-from ibis.backends.base import BaseBackend
 
 
 def test_backends_are_cached():
-    assert isinstance(ibis.sqlite, BaseBackend)
+    assert ibis.sqlite is ibis.sqlite
     del ibis.sqlite  # delete to force recreation
-    assert isinstance(ibis.sqlite, BaseBackend)
     assert ibis.sqlite is ibis.sqlite
 
 
 def test_backends_tab_completion():
-    assert isinstance(ibis.sqlite, BaseBackend)
+    assert hasattr(ibis, "sqlite")
     del ibis.sqlite  # delete to ensure not real attr
     assert "sqlite" in dir(ibis)
-    assert isinstance(ibis.sqlite, BaseBackend)
+    assert ibis.sqlite is ibis.sqlite
     assert "sqlite" in dir(ibis)  # in dir even if already created
+
+
+def test_public_backend_methods():
+    public = {m for m in dir(ibis.sqlite) if not m.startswith("_")}
+    assert public == {"connect", "compile", "has_operation", "add_operation"}
 
 
 def test_missing_backend():

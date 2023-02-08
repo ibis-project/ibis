@@ -114,6 +114,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self._inspector.info_cache.clear()
         return self._inspector
 
+    def _to_sql(self, expr: ir.Expr) -> str:
+        # For `ibis.to_sql` calls we render with literal binds and qmark params
+        dialect_class = sa.dialects.registry.load(
+            self.compiler.translator_class._dialect_name
+        )
+        sql = self.compile(expr).compile(
+            dialect=dialect_class(paramstyle="qmark"),
+            compile_kwargs=dict(literal_binds=True),
+        )
+        return str(sql)
+
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         with self.begin() as con:

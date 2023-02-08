@@ -611,10 +611,9 @@ def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
 
-    ts = ibis.timestamp('2018-04-13 09:54:11.872832')
-    pandas_ts = pd.Timestamp(ibis.pandas.execute(ts)).floor(unit).value
+    pandas_ts = pd.Timestamp('2018-04-13 09:54:11.872832').floor(unit).value
 
-    # convert the now timestamp to the input unit being tested
+    # convert the timestamp to the input unit being tested
     int_expr = ibis.literal(pandas_ts // factor)
     expr = int_expr.to_timestamp(unit)
     result = con.execute(expr.name("tmp"))

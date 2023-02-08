@@ -20,17 +20,17 @@ from ibis.backends.dask.dispatch import (  # noqa: E402
 
 
 def test_from_dataframe(dataframe, ibis_table, core_client):
-    t = ibis.dask.from_dataframe(dataframe)
+    t = core_client.from_dataframe(dataframe)
     result = t.execute()
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
-    t = ibis.dask.from_dataframe(dataframe, name='foo')
+    t = core_client.from_dataframe(dataframe, name='foo')
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
     client = core_client
-    t = ibis.dask.from_dataframe(dataframe, name='foo', client=client)
+    t = core_client.from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
