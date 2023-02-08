@@ -3,8 +3,8 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.backends.base.df.scope import Scope
 from ibis.backends.pandas.dispatch import execute_node as pandas_execute_node
-from ibis.expr.scope import Scope
 
 dd = pytest.importorskip("dask.dataframe")
 

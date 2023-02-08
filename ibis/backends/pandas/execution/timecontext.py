@@ -31,20 +31,15 @@ time context.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import ibis.expr.operations as ops
 from ibis.backends.base import BaseBackend
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import TimeContext, adjust_context
 from ibis.backends.pandas.core import (
     compute_time_context,
     get_node_arguments,
     is_computable_input,
 )
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import adjust_context
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 
 @compute_time_context.register(ops.AsOfJoin)

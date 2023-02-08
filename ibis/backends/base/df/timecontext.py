@@ -43,17 +43,20 @@ from __future__ import annotations
 
 import enum
 import functools
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Tuple
+
+import pandas as pd
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis import config
 
-if TYPE_CHECKING:
-    import pandas as pd
+TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
 
-    from ibis.expr.scope import Scope
-    from ibis.expr.typing import TimeContext
+
+if TYPE_CHECKING:
+    from ibis.backends.base.df.scope import Scope
+
 
 # In order to use time context feature, there must be a column of Timestamp
 # type, and named as 'time' in Table. This TIME_COL constant will be
@@ -109,7 +112,6 @@ def canonicalize_context(
     timecontext: TimeContext | None,
 ) -> TimeContext | None:
     """Canonicalize a timecontext with type pandas.Timestamp for its begin and end time."""
-    import pandas as pd
 
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
     if not isinstance(timecontext, tuple) or len(timecontext) != 2:
@@ -209,8 +211,6 @@ def construct_time_context_aware_series(
     Name: value, dtype: float64
     The result is unchanged for a series already has 'time' as its index.
     """
-    import pandas as pd
-
     time_col = get_time_col()
     if time_col == frame.index.name:
         time_index = frame.index

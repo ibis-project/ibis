@@ -11,11 +11,11 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.base.df.scope import Scope
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.dispatch import pre_execute
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
-from ibis.expr.scope import Scope
 from ibis.udf.vectorized import reduction
 
 

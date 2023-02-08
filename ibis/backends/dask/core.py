@@ -111,13 +111,15 @@ See ibis.common.scope for details about the implementaion.
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import Any, Mapping
 
 import dask.dataframe as dd
 from multipledispatch import Dispatcher
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import TimeContext, canonicalize_context
 from ibis.backends.dask.dispatch import (
     execute_literal,
     execute_node,
@@ -132,11 +134,6 @@ from ibis.backends.pandas.core import (
     is_computable_input,
     is_computable_input_arg,
 )
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import canonicalize_context
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 

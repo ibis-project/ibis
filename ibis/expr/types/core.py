@@ -17,11 +17,13 @@ from ibis.util import experimental
 from rich.jupyter import JupyterMixin
 
 if TYPE_CHECKING:
+    import pandas as pd
     import pyarrow as pa
 
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
-    from ibis.expr.typing import TimeContext
+
+    TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
 
 
 class _FixedTextJupyterMixin(JupyterMixin):

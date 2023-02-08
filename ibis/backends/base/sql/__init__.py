@@ -15,9 +15,8 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.compiler import Compiler
 
 if TYPE_CHECKING:
+    import pandas as pd
     import pyarrow as pa
-
-    from ibis.expr.typing import TimeContext
 
 __all__ = [
     'BaseSQLBackend',
@@ -307,7 +306,7 @@ class BaseSQLBackend(BaseBackend):
         expr: ir.Expr,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-        timecontext: TimeContext | None = None,
+        timecontext: tuple[pd.Timestamp, pd.Timestamp] | None = None,
     ) -> Any:
         """Compile an Ibis expression.
 

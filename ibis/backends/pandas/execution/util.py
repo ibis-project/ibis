@@ -7,9 +7,9 @@ import pandas as pd
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.util
+from ibis.backends.base.df.scope import Scope
 from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.execution import constants
-from ibis.expr.scope import Scope
 
 
 def get_grouping(grouper):

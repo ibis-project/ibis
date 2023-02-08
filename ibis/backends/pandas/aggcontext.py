@@ -231,7 +231,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.util
-from ibis.expr.timecontext import construct_time_context_aware_series, get_time_col
+from ibis.backends.base.df.timecontext import (
+    construct_time_context_aware_series,
+    get_time_col,
+)
 
 
 class AggregationContext(abc.ABC):

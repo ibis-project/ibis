@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import dask.dataframe as dd
 
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import TimeContext
 from ibis.backends.dask.core import execute, execute_with_scope
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import (
@@ -16,10 +18,6 @@ from ibis.backends.dask.execution.util import (
     add_partitioned_sorted_column,
     make_meta_series,
 )
-from ibis.expr.scope import Scope
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 
 def _post_process_empty(

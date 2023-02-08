@@ -13,6 +13,8 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import canonicalize_context, localize_context
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
 from ibis.backends.base.sql.ddl import (
@@ -25,8 +27,6 @@ from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable, spark_dataframe_schema
 from ibis.backends.pyspark.compiler import PySparkDatabaseTable, PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import spark_dtype
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import canonicalize_context, localize_context
 
 if TYPE_CHECKING:
     import pandas as pd

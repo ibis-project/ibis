@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import pandas as pd
 import pytest
 from packaging.version import parse as vparse
@@ -9,19 +7,17 @@ from packaging.version import parse as vparse
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.pandas.execution import execute
-from ibis.backends.pandas.execution.window import trim_window_result
-from ibis.backends.pandas.tests.conftest import TestConf as tm
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import (
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import (
+    TimeContext,
     TimeContextRelation,
     adjust_context,
     compare_timecontext,
     construct_time_context_aware_series,
 )
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
+from ibis.backends.pandas.execution import execute
+from ibis.backends.pandas.execution.window import trim_window_result
+from ibis.backends.pandas.tests.conftest import TestConf as tm
 
 
 class CustomAsOfJoin(ops.AsOfJoin):

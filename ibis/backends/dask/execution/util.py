@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Tuple, Type, Union
 
 import dask.dataframe as dd
 import dask.delayed
@@ -13,13 +13,11 @@ import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import TimeContext
 from ibis.backends.dask.core import execute
 from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
 from ibis.common import graph
-from ibis.expr.scope import Scope
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 DispatchRule = Tuple[Tuple[Union[Type, Tuple], ...], Callable]
 

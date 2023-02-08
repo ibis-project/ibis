@@ -17,6 +17,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import interval
+from ibis.backends.base.df.timecontext import adjust_context
 from ibis.backends.pandas.client import PandasInMemoryTable
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pyspark.datatypes import spark_dtype
@@ -25,7 +26,6 @@ from ibis.backends.pyspark.timecontext import (
     filter_by_time_context,
 )
 from ibis.config import options
-from ibis.expr.timecontext import adjust_context
 from ibis.util import any_of, frozendict, guid
 
 

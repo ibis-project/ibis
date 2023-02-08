@@ -110,7 +110,7 @@ from __future__ import annotations
 import datetime
 import functools
 import numbers
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 import numpy as np
 import pandas as pd
@@ -122,6 +122,8 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.util
 from ibis.backends.base import BaseBackend
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import TimeContext, canonicalize_context
 from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.dispatch import (
     execute_literal,
@@ -130,11 +132,6 @@ from ibis.backends.pandas.dispatch import (
     pre_execute,
 )
 from ibis.backends.pandas.trace import trace
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import canonicalize_context
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
