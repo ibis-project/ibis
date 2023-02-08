@@ -12,8 +12,8 @@ import warnings
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
 
+import ibis.backends.base.sql.registry.geospatial as geo
 import ibis.common.exceptions as com
-import ibis.common.geospatial as geo
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -383,7 +383,6 @@ def _literal(t, op):
         return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
     elif dtype.is_set():
         return list(map(sa.literal, value))
-    # geo spatial data type
     elif dtype.is_geospatial():
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.literal_column(geo.translate_literal(op, inline_metadata=True))
