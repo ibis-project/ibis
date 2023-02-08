@@ -99,7 +99,11 @@ def _timestamp_from_unix(t, op):
     arg = t.translate(arg)
 
     if unit == "ms":
-        return sa.func.from_unixtime(sa.func.floor(arg / 1_000))
+        try:
+            arg //= 1_000
+        except TypeError:
+            arg = sa.func.floor(arg / 1_000)
+        return sa.func.from_unixtime(arg)
     elif unit == "s":
         return sa.func.from_unixtime(arg)
     elif unit == "us":

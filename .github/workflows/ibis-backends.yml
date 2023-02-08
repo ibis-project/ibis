@@ -413,9 +413,50 @@ jobs:
         if: ${{ failure() }}
         run: docker compose logs
 
+  gen_lockfile_sqlalchemy2:
+    name: Generate Poetry Lockfile for SQLAlchemy 2
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: install python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - run: python -m pip install --upgrade pip 'poetry>=1.2'
+
+      - name: remove deps that are not compatible with sqlalchemy 2
+        run: poetry remove duckdb-engine snowflake-sqlalchemy
+
+      - name: add sqlalchemy 2
+        run: poetry add --lock --optional 'sqlalchemy>=2,<3'
+
+      - name: checkout the lock file
+        run: git checkout poetry.lock
+
+      - name: lock with no updates
+        # poetry add is aggressive and will update other dependencies like
+        # numpy and pandas so we keep the pyproject.toml edits and then relock
+        # without updating anything except the requested versions
+        run: poetry lock --no-update
+
+      - name: check the sqlalchemy version
+        run: poetry show sqlalchemy --no-ansi | grep version | cut -d ':' -f2- | sed 's/ //g' | grep -P '^2\.'
+
+      - name: upload deps file
+        uses: actions/upload-artifact@v3
+        with:
+          name: deps
+          path: |
+            pyproject.toml
+            poetry.lock
+
   test_backends_sqlalchemy2:
-    name: ${{ matrix.backend.title }} SQLAlchemy 2 ${{ matrix.os }} python-${{ matrix.python-version }}
+    name: SQLAlchemy 2 ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    needs: gen_lockfile_sqlalchemy2
     strategy:
       fail-fast: false
       matrix:
@@ -424,32 +465,43 @@ jobs:
         python-version:
           - "3.10"
         backend:
-          - names:
-              - mssql
-              - mysql
-              - postgres
-              - sqlite
-            title: Alchemy Backends
-            deps:
-              - "'sqlalchemy>=2,<3'"
+          - name: mssql
+            title: MS SQL Server
             services:
               - mssql
+            extras:
+              - mssql
+          - name: mysql
+            title: MySQL
+            services:
               - mysql
+            extras:
+              - geospatial
+              - mysql
+          - name: postgres
+            title: PostgreSQL
+            services:
               - postgres
             extras:
               - geospatial
-              - mssql
-              - mysql
               - postgres
+          - name: sqlite
+            title: SQLite
+            extras:
               - sqlite
-            no-sqlalchemy2-support:
-              - duckdb-engine
-              - snowflake-sqlalchemy
+          - name: trino
+            title: Trino
+            services:
+              - trino
+            extras:
+              - trino
+              - postgres
     steps:
       - name: checkout
         uses: actions/checkout@v3
 
       - name: install libgeos for shapely
+        if: ${{ matrix.backend.name == 'postgres' }}
         run: sudo apt-get install -qq -y build-essential libgeos-dev
 
       - uses: extractions/setup-just@v1
@@ -469,43 +521,48 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: download poetry lockfile
+        uses: actions/download-artifact@v3
+        with:
+          name: deps
+          path: deps
+
+      - name: pull out lockfile
+        run: |
+          set -euo pipefail
+
+          mv -f deps/* .
+          rm -r deps
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+
       - run: python -m pip install --upgrade pip 'poetry>=1.2'
-
-      - name: remove deps that are not compatible with sqlalchemy 2
-        run: poetry remove ${{ join(matrix.backend.no-sqlalchemy2-support, ' ') }}
-
-      - name: install minimum versions
-        run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
-
-      - name: checkout the lock file
-        run: git checkout poetry.lock
-
-      - name: lock with no updates
-        # poetry add is aggressive and will update other dependencies like
-        # numpy and pandas so we keep the pyproject.toml edits and then relock
-        # without updating anything except the requested versions
-        run: poetry lock --no-update
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
-      - name: check the sqlalchemy version
-        run: poetry show sqlalchemy --no-ansi | grep version | cut -d ':' -f2- | sed 's/ //g' | grep -P '^2\.'
-
       - name: run tests
-        run: just ci-check -m "'${{ join(matrix.backend.names, ' or ') }}'" --numprocesses auto --dist=loadgroup
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
       - name: upload code coverage
         if: success()
         uses: codecov/codecov-action@v3
         with:
-          flags: backend,${{ join(matrix.backend.names, ',') }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
-          name: ${{ join(matrix.backend.names, '-') }}-sqlalchemy2-${{ matrix.os }}-${{ matrix.python-version }}
+          name: ${{ matrix.backend.name }}-sqlalchemy2-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
 
       - name: Show docker compose logs on fail
