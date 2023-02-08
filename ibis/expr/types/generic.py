@@ -439,8 +439,69 @@ class Value(Expr):
             builder = builder.when(case, result)
         return builder.else_(default).end()
 
-    def collect(self, where: ir.BooleanValue | None = None) -> ir.ArrayValue:
-        """Return an array of the elements of this expression."""
+    def collect(self, where: ir.BooleanValue | None = None) -> ir.ArrayScalar:
+        """Aggregate this expression's elements into an array.
+
+        This function is called `array_agg`, `list_agg`, or `list` in other systems.
+
+        Parameters
+        ----------
+        where
+            Filter to apply before aggregation
+
+        Returns
+        -------
+        ArrayScalar
+            Collected array
+
+        Examples
+        --------
+        Basic collect usage
+
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"key": list("aaabb"), "value": [1, 2, 3, 4, 5]})
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ key    ┃ value ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ string │ int64 │
+        ├────────┼───────┤
+        │ a      │     1 │
+        │ a      │     2 │
+        │ a      │     3 │
+        │ b      │     4 │
+        │ b      │     5 │
+        └────────┴───────┘
+        >>> t.value.collect()
+        [1, 2, 3, 4, 5]
+        >>> type(t.value.collect())
+        ibis.expr.types.arrays.ArrayScalar
+
+        Collect elements per group
+
+        >>> t.group_by("key").agg(v=lambda t: t.value.collect())
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ key    ┃ v                    ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ array<int64>         │
+        ├────────┼──────────────────────┤
+        │ a      │ [1, 2, ... +1]       │
+        │ b      │ [4, 5]               │
+        └────────┴──────────────────────┘
+
+        Collect elements per group using a filter
+
+        >>> t.group_by("key").agg(v=lambda t: t.value.collect(where=t.value > 1))
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ key    ┃ v                    ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ array<int64>         │
+        ├────────┼──────────────────────┤
+        │ a      │ [2, 3]               │
+        │ b      │ [4, 5]               │
+        └────────┴──────────────────────┘
+        """
         return ops.ArrayCollect(self, where=where).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
