@@ -6,7 +6,7 @@ import pytest
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.expr.timecontext import adjust_context
+from ibis.backends.base.df.timecontext import adjust_context
 
 pytest.importorskip("pyspark")
 

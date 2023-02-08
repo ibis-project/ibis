@@ -11,7 +11,6 @@ import math
 import numbers
 import operator
 from collections.abc import Mapping, Sized
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -24,6 +23,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import TimeContext, get_time_col
 from ibis.backends.pandas import Backend as PandasBackend
 from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.client import PandasTable
@@ -43,11 +44,6 @@ from ibis.backends.pandas.core import (
 from ibis.backends.pandas.dispatch import execute_literal, execute_node
 from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.util import coerce_to_output, get_grouping
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import get_time_col
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 
 # By default return the literal value

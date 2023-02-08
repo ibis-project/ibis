@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 import re
-from typing import TYPE_CHECKING, Any, Callable, NoReturn
+from typing import Any, Callable, NoReturn
 
 import numpy as np
 import pandas as pd
@@ -14,6 +14,12 @@ from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
+from ibis.backends.base.df.scope import Scope
+from ibis.backends.base.df.timecontext import (
+    TimeContext,
+    construct_time_context_aware_series,
+    get_time_col,
+)
 from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.aggcontext import AggregationContext
 from ibis.backends.pandas.core import (
@@ -27,11 +33,6 @@ from ibis.backends.pandas.core import (
 )
 from ibis.backends.pandas.dispatch import execute_node, pre_execute
 from ibis.backends.pandas.execution import util
-from ibis.expr.scope import Scope
-from ibis.expr.timecontext import construct_time_context_aware_series, get_time_col
-
-if TYPE_CHECKING:
-    from ibis.expr.typing import TimeContext
 
 
 def _post_process_empty(
