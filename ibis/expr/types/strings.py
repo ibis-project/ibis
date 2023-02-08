@@ -383,7 +383,7 @@ class StringValue(Value):
         """
         return ops.FindInSet(self, str_list).to_expr()
 
-    def join(self, strings: Sequence[str | StringValue]) -> StringValue:
+    def join(self, strings: Sequence[str | StringValue] | ir.ArrayValue) -> StringValue:
         """Join a list of strings using `self` as the separator.
 
         Parameters
@@ -401,8 +401,46 @@ class StringValue(Value):
         -------
         StringValue
             Joined string
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [["a", "b", "c"], None, [], ["b", None]]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<string>        │
+        ├──────────────────────┤
+        │ ['a', 'b', ... +1]   │
+        │ ∅                    │
+        │ []                   │
+        │ ['b', None]          │
+        └──────────────────────┘
+        >>> ibis.literal("|").join(t.arr)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayStringJoin('|', arr) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                    │
+        ├───────────────────────────┤
+        │ a|b|c                     │
+        │ ∅                         │
+        │ ∅                         │
+        │ b                         │
+        └───────────────────────────┘
+
+        See Also
+        --------
+        [`ArrayValue.join`][ibis.expr.types.arrays.ArrayValue.join]
         """
-        return ops.StringJoin(self, strings).to_expr()
+        import ibis.expr.types as ir
+
+        if isinstance(strings, ir.ArrayValue):
+            cls = ops.ArrayStringJoin
+        else:
+            cls = ops.StringJoin
+        return cls(self, strings).to_expr()
 
     def startswith(self, start: str | StringValue) -> ir.BooleanValue:
         """Determine whether `self` starts with `end`.

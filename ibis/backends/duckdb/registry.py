@@ -275,6 +275,9 @@ operation_registry.update(
         ops.IntervalAdd: fixed_arity(operator.add, 2),
         ops.IntervalSubtract: fixed_arity(operator.sub, 2),
         ops.Capitalize: alchemy.sqlalchemy_operation_registry[ops.Capitalize],
+        ops.ArrayStringJoin: fixed_arity(
+            lambda sep, arr: sa.func.array_aggr(arr, sa.text("'string_agg'"), sep), 2
+        ),
     }
 )
 
