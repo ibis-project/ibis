@@ -40,6 +40,7 @@ from ibis.expr.types import (
     null,
     struct,
 )
+from ibis.expr.types import literal as lit
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -124,6 +125,7 @@ __all__ = (
     'join',
     'least',
     'literal',
+    'lit',
     'map',
     'memtable',
     'NA',
