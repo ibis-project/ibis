@@ -745,6 +745,7 @@ def test_create_from_in_memory_table(backend, con, t):
         assert tmp_name not in con.list_tables()
 
 
+@pytest.mark.usefixtures("backend")
 def test_default_backend_option():
     orig = ibis.options.default_backend
     ibis.options.default_backend = ibis.pandas

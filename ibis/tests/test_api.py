@@ -26,7 +26,7 @@ def test_backends_tab_completion():
 
 def test_public_backend_methods():
     public = {m for m in dir(ibis.sqlite) if not m.startswith("_")}
-    assert public == {"connect", "compile", "has_operation", "add_operation"}
+    assert public == {"connect", "compile", "has_operation", "add_operation", "name"}
 
 
 def test_missing_backend():
