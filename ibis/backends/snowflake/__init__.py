@@ -3,18 +3,24 @@ from __future__ import annotations
 import contextlib
 import json
 import warnings
+from multiprocessing import cpu_count
+from pathlib import Path
 from typing import Any, Iterable
 
 import sqlalchemy as sa
 import toolz
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyExprTranslator,
     BaseAlchemyBackend,
+    to_sqla_type,
 )
+from ibis.util import guid
 
 
 @contextlib.contextmanager
@@ -237,3 +243,57 @@ class Backend(BaseAlchemyBackend):
                 auto_create_table=True,
                 quote_identifiers=False,
             )
+
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        if not _NATIVE_ARROW:
+            raise exc.IbisError(
+                "`read_parquet` for the snowflake backend requires a compatible version"
+                " of pyarrow built with parquet support"
+            )
+
+        import pyarrow.parquet as pq
+
+        import ibis.backends.pyarrow.datatypes as padt
+
+        path = Path(path)
+
+        schema = padt.from_pyarrow_schema(pq.ParquetFile(path).schema.to_arrow_schema())
+
+        format = f"format_{guid()}"
+        stage = f"stage_{guid()}"
+
+        if table_name is None:
+            table_name = f"table_{guid()}"
+
+        # snowflake has a documented limit of 99 threads
+        nthreads = min(cpu_count(), 99)
+
+        dialect = self.con.dialect
+
+        # snowflake requires casting the column types, because it reads in all
+        # parquet data as VARIANT
+        cols = []
+        for name, dtype in schema.items():
+            sqla_type = sa.types.to_instance(to_sqla_type(dialect, dtype)).compile(
+                dialect=dialect
+            )
+            cols.append(f'$1:{name}::{sqla_type} AS "{name}"')
+
+        uri = path.absolute().as_uri()
+        with self.begin() as con:
+            # create a file format
+            con.exec_driver_sql(f"CREATE TEMP FILE FORMAT {format} TYPE = PARQUET")
+            # create a stage -> associate the file format with it
+            con.exec_driver_sql(f"CREATE TEMP STAGE {stage} FILE_FORMAT = {format}")
+            # copy the file into to the stage
+            con.exec_driver_sql(
+                f"PUT {uri} @{stage} PARALLEL={nthreads} OVERWRITE=TRUE"
+            )
+            # create a temp table with the staged file
+            con.exec_driver_sql(
+                f"CREATE OR REPLACE TEMP TABLE {table_name} AS SELECT {', '.join(cols)} FROM @{stage}/{path.name}"
+            )
+
+        return self.table(table_name)
