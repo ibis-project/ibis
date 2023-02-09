@@ -3,6 +3,7 @@ import tempfile
 from pathlib import Path
 
 import pandas as pd
+import pyarrow as pa
 import pytest
 import sqlalchemy as sa
 
@@ -109,6 +110,18 @@ def test_register_sqlite(data_directory):
     path = data_directory / "ibis_testing.db"
     ft = con.register(f"sqlite://{path}", "functional_alltypes")
     assert ft.count().execute()
+
+
+def test_read_in_memory():
+    con = ibis.duckdb.connect()
+
+    df_arrow = pa.table({"a": ["a"], "b": [1]})
+    df_pandas = pd.DataFrame({"a": ["a"], "b": [1]})
+    con.read_in_memory(df_arrow, table_name="df_arrow")
+    con.read_in_memory(df_pandas, table_name="df_pandas")
+
+    assert "df_arrow" in con.list_tables()
+    assert "df_pandas" in con.list_tables()
 
 
 def test_memtable_with_nullable_dtypes():
