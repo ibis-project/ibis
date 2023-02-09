@@ -15,6 +15,7 @@ on:
       - pyproject.toml
       - requirements.txt
       - .github/workflows/check-requirements-txt.yml
+  merge_group:
 
 concurrency:
   group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}

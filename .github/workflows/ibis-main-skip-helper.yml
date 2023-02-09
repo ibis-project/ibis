@@ -19,6 +19,7 @@ on:
     branches:
       - master
       - "*.x.x"
+  merge_group:
 jobs:
   test_no_backends:
     runs-on: ubuntu-latest
