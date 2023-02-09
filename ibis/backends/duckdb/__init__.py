@@ -406,6 +406,15 @@ class Backend(BaseAlchemyBackend):
 
         return self.table(table_name)
 
+    def list_tables(self, like=None, database=None):
+        tables = self.inspector.get_table_names(schema=database)
+        views = self.inspector.get_view_names(schema=database)
+        # workaround for GH5503
+        temp_views = self.inspector.get_view_names(
+            schema="temp" if database is None else database
+        )
+        return self._filter_with_like(tables + views + temp_views, like)
+
     def read_postgres(self, uri, table_name: str | None = None, schema: str = "public"):
         """Register a table from a postgres instance into a DuckDB table.
 
