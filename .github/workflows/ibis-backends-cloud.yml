@@ -43,7 +43,7 @@ jobs:
             key: snowflake-pyarrow
             title: Snowflake + PyArrow
             deps:
-              - "snowflake-connector-python[pandas]<3"
+              - "'snowflake-connector-python[pandas]<3'"
               - "--optional"
               - "snowflake-sqlalchemy[pandas]"
               - "--optional"
