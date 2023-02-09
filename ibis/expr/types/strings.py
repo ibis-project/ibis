@@ -581,7 +581,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["a", "b", "c"]})
+        >>> t = ibis.memtable({"s": ["a", "bb", "c"]})
         >>> t.s.repeat(5)
         ┏━━━━━━━━━━━━━━┓
         ┃ Repeat(s, 5) ┃
@@ -589,7 +589,7 @@ class StringValue(Value):
         │ string       │
         ├──────────────┤
         │ aaaaa        │
-        │ bbbbb        │
+        │ bbbbbbbbbb   │
         │ ccccc        │
         └──────────────┘
         """
@@ -699,7 +699,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t = ibis.memtable({"s": ["abc", "def", "ghij"]})
         >>> t.s.lpad(5, "-")
         ┏━━━━━━━━━━━━━━━━━┓
         ┃ LPad(s, 5, '-') ┃
@@ -708,7 +708,7 @@ class StringValue(Value):
         ├─────────────────┤
         │ --abc           │
         │ --def           │
-        │ --ghi           │
+        │ -ghij           │
         └─────────────────┘
         """
         return ops.LPad(self, length, pad).to_expr()
@@ -738,7 +738,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["abc", "def", "ghi"]})
+        >>> t = ibis.memtable({"s": ["abc", "def", "ghij"]})
         >>> t.s.rpad(5, "-")
         ┏━━━━━━━━━━━━━━━━━┓
         ┃ RPad(s, 5, '-') ┃
@@ -747,7 +747,7 @@ class StringValue(Value):
         ├─────────────────┤
         │ abc--           │
         │ def--           │
-        │ ghi--           │
+        │ ghij-           │
         └─────────────────┘
         """
         return ops.RPad(self, length, pad).to_expr()
