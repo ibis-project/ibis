@@ -24,6 +24,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
+from ibis.util import guid
 
 pytest.importorskip("psycopg2")
 sa = pytest.importorskip("sqlalchemy")
@@ -89,12 +90,18 @@ def test_metadata_is_per_table():
         password=IBIS_POSTGRES_PASS,
         port=IBIS_POSTGRES_PORT,
     )
-    assert len(con.meta.tables) == 0
 
-    # assert that we reflect only when a table is requested
-    con.table('functional_alltypes')
-    assert 'functional_alltypes' in con.meta.tables
-    assert len(con.meta.tables) == 1
+    name = f"tmp_{guid()}"
+    with con.begin() as c:
+        c.exec_driver_sql(f"CREATE TABLE {name} (x BIGINT)")
+
+    try:
+        assert name not in con.meta.tables
+        con.table(name)
+        assert name in con.meta.tables
+    finally:
+        with con.begin() as c:
+            c.exec_driver_sql(f"DROP TABLE {name}")
 
 
 def test_schema_type_conversion():
