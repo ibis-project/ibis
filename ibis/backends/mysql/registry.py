@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import contextlib
+import functools
 import operator
+import string
 
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import GenericFunction
 
 import ibis
 import ibis.common.exceptions as com
@@ -116,6 +120,26 @@ def _json_get_item(t, op):
     return sa.func.json_extract(arg, path)
 
 
+class _mysql_trim(GenericFunction):
+    inherit_cache = True
+
+    def __init__(self, input, side: str) -> None:
+        super().__init__(input)
+        self.type = sa.VARCHAR()
+        self.side = side
+
+
+@compiles(_mysql_trim, "mysql")
+def compiles_mysql_trim(element, compiler, **kw):
+    arg = compiler.function_argspec(element, **kw)
+    side = element.side.upper()
+    # has to be called once for every whitespace character because mysql
+    # interprets `char` literally, not as a set of characters like Python
+    return functools.reduce(
+        lambda arg, char: f"TRIM({side} '{char}' FROM {arg})", string.whitespace, arg
+    )
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -176,6 +200,9 @@ operation_registry.update(
         ),
         ops.DayOfWeekName: fixed_arity(lambda arg: sa.func.dayname(arg), 1),
         ops.JSONGetItem: _json_get_item,
+        ops.Strip: unary(lambda arg: _mysql_trim(arg, "both")),
+        ops.LStrip: unary(lambda arg: _mysql_trim(arg, "leading")),
+        ops.RStrip: unary(lambda arg: _mysql_trim(arg, "trailing")),
     }
 )
 

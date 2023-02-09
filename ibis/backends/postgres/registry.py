@@ -620,5 +620,8 @@ operation_registry.update(
         ops.ArrayStringJoin: fixed_arity(
             lambda sep, arr: sa.func.array_to_string(arr, sep), 2
         ),
+        ops.Strip: unary(lambda arg: sa.func.trim(arg, string.whitespace)),
+        ops.LStrip: unary(lambda arg: sa.func.ltrim(arg, string.whitespace)),
+        ops.RStrip: unary(lambda arg: sa.func.rtrim(arg, string.whitespace)),
     }
 )
