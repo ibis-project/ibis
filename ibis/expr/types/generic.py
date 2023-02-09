@@ -289,21 +289,24 @@ class Value(Expr):
 
     def substitute(
         self,
-        value: Value,
+        value: Value | dict,
         replacement: Value | None = None,
         else_: Value | None = None,
     ):
-        """Replace one or more values in a value expression.
+        """Replace values given in `values` with `replacement`.
+
+        This is similar to the pandas `replace` method.
 
         Parameters
         ----------
         value
-            Expression or mapping
+            Expression or dict.
         replacement
-            Expression. If an expression is passed to value, this must be
+            If an expression is passed to value, this must be
             passed.
         else_
-            Expression
+            If an original value does not match `value`, then `else_` is used.
+            The default of `None` means leave the original value unchanged.
 
         Returns
         -------
