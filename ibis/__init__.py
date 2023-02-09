@@ -105,6 +105,7 @@ def __getattr__(name: str) -> BaseBackend:
     proxy.compile = backend.compile
     proxy.has_operation = backend.has_operation
     proxy.add_operation = backend.add_operation
+    proxy.name = name
     proxy._from_url = backend._from_url
     proxy._to_sql = backend._to_sql
     if hasattr(backend, "_sqlglot_dialect"):
