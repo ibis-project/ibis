@@ -20,6 +20,7 @@ on:
     branches:
       - master
       - "*.x.x"
+  merge_group:
 
 jobs:
   nix:
