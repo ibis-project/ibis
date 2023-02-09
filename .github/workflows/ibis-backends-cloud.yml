@@ -33,10 +33,20 @@ jobs:
         python-version:
           - "3.10"
         backend:
-          - name: snowflake
-            title: Snowflake
           - name: bigquery
             title: BigQuery
+
+          - name: snowflake
+            title: Snowflake
+
+          - name: snowflake
+            key: snowflake-pyarrow
+            title: Snowflake + PyArrow
+            deps:
+              - "snowflake-connector-python[pandas]<3"
+              - "--optional"
+              - "snowflake-sqlalchemy[pandas]"
+              - "--optional"
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -48,6 +58,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - run: python -m pip install --upgrade pip 'poetry>=1.2'
+
+      - name: modify deps
+        if: matrix.backend.deps != null
+        run: poetry add ${{ join(matrix.backend.deps, ' ') }}
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
@@ -77,11 +91,11 @@ jobs:
         if: success()
         uses: codecov/codecov-action@v3
         with:
-          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          flags: backend,${{ matrix.backend.key || matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
-          name: ${{ matrix.backend.name }}-${{ matrix.os }}-${{ matrix.python-version }}
+          name: ${{ matrix.backend.key || matrix.backend.name }}-${{ matrix.os }}-${{ matrix.python-version }}
           path: junit.xml
