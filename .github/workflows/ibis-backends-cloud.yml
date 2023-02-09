@@ -35,13 +35,16 @@ jobs:
         backend:
           - name: bigquery
             title: BigQuery
+            randomly-seed: true
 
           - name: snowflake
             title: Snowflake
+            randomly-seed: true
 
           - name: snowflake
             key: snowflake-pyarrow
             title: Snowflake + PyArrow
+            randomly-seed: false
             deps:
               - "'snowflake-connector-python[pandas]<3'"
               - "--optional"
@@ -84,8 +87,13 @@ jobs:
         env:
           SNOWFLAKE_URL: ${{ secrets.SNOWFLAKE_URL }}
 
-      - name: "run parallel tests: ${{ matrix.backend.name }}"
+      - name: "run parallel tests: ${{ matrix.backend.name }}; reset random seed"
+        if: matrix.backend.randomly-seed
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+
+      - name: "run parallel tests: ${{ matrix.backend.name }}; don't reset random seed"
+        if: ${{ !matrix.backend.randomly-seed }}
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup --randomly-dont-reset-seed
 
       - name: upload code coverage
         if: success()
