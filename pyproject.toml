@@ -2,6 +2,8 @@
 name = "ibis-framework"
 version = "4.1.0"
 packages = [{ include = "ibis" }]
+include = ["ibis/examples/descriptions.json", "ibis/examples/registry.txt"]
+exclude = ["ibis/examples/gen_examples.R", "ibis/examples/gen_registry.py"]
 homepage = "https://ibis-project.org"
 repository = "https://github.com/ibis-project/ibis"
 documentation = "https://ibis-project.org"
@@ -29,6 +31,7 @@ multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<2"
 parsy = ">=2,<3"
+pooch = ">=1.6.0,<2"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
@@ -81,6 +84,7 @@ trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
 black = ">=22.1.0,<24"
+google-cloud-storage = ">=2.7.0,<3"
 ipython = ">=7.27.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 ruff = ">=0.0.205,<1"
@@ -283,6 +287,7 @@ markers = [
   "backend: tests specific to a backend",
   "benchmark: benchmarks",
   "core: tests that do not required a backend",
+  "examples: tests that exercise examples",
   "geospatial: tests for geospatial functionality",
   "hdfs: Hadoop file system tests",
   "min_version: backend tests that require a specific version of a dependency to pass",
@@ -423,7 +428,12 @@ exclude_lines = [
   "if TYPE_CHECKING:",
 ]
 ignore_errors = true
-omit = ["*_version.py", "*tests*", "ibis/interactive.py"]
+omit = [
+  "*_version.py",
+  "*tests*",
+  "ibis/interactive.py",
+  "ibis/examples/gen_registry.py"
+]
 
 [tool.distutils.bdist_wheel]
 # universal = true is for projects that support py2 and py3, and do not have C

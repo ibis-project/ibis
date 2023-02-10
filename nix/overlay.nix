@@ -64,6 +64,26 @@ in
     '';
   };
 
+  gen-examples = pkgs.writeShellApplication {
+    name = "gen-examples";
+    runtimeInputs = [
+      (pkgs.python3.withPackages (p: [ p.google-cloud-storage ]))
+      (pkgs.rWrapper.override {
+        packages = with pkgs.rPackages; [
+          janitor
+          palmerpenguins
+          stringr
+          tidyverse
+        ];
+      })
+      pkgs.google-cloud-sdk
+    ];
+
+    text = ''
+      python "$PWD/ibis/examples/gen_registry.py"
+    '';
+  };
+
   gen-all-extras = pkgs.writeShellApplication {
     name = "gen-all-extras";
     runtimeInputs = with pkgs; [ yj jq ];

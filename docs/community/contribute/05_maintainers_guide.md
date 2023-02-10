@@ -20,6 +20,27 @@ Occasionally you may need to lock [`poetry`](https://python-poetry.org) dependen
 poetry lock --no-update
 ```
 
+## Adding Examples
+
+If you're not a maintainer, please open an issue asking us to add your example.
+
+### Requirements
+
+You need the ability to write to the `gs://ibis-examples` GCS bucket to add an example.
+
+### Instructions
+
+Make sure you're in the root of the ibis git repository.
+
+Assuming your file is called `example.csv`:
+
+1. Add a gzip-compressed CSV file with the path `ibis/examples/data/example.csv.gz`.
+1. Add a file named `ibis/examples/descriptions/example` that contains a
+   description of your example. One line is best, but not necessary.
+1. Run one of the following **from the git root of an ibis clone**:
+   - `python ibis/examples/gen_registry.py` (doesn't include R dependenices)
+   - `nix run '.#gen-examples'` (includes R dependenices)
+
 ## Release
 
 Ibis is released on [PyPI](https://pypi.org/project/ibis-framework/) and [Conda Forge](https://github.com/conda-forge/ibis-framework-feedstock).

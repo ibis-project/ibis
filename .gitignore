@@ -97,3 +97,7 @@ tags
 .DS_Store
 prof/
 .hypothesis
+.RData
+.Rhistory
+ibis/examples/data
+ibis/examples/descriptions
