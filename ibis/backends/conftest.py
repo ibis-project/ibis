@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import importlib
 import importlib.metadata
+import itertools
 import platform
 from functools import lru_cache
 from pathlib import Path
@@ -260,7 +261,12 @@ def pytest_collection_modifyitems(session, config, items):
         if backend is not None and backend in all_backends:
             item.add_marker(getattr(pytest.mark, backend))
             item.add_marker(pytest.mark.backend)
-        elif "backends" not in parts:
+        elif "backends" not in parts and not tuple(
+            itertools.chain(
+                *(item.iter_markers(name=name) for name in all_backends),
+                item.iter_markers(name="backend"),
+            )
+        ):
             # anything else is a "core" test and is run by default
             if not any(item.iter_markers(name="benchmark")):
                 item.add_marker(pytest.mark.core)
