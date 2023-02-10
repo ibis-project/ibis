@@ -44,6 +44,16 @@ try:
 except ImportError:
     ArrowTypeError = None
 
+try:
+    from google.api_core.exceptions import BadRequest as GoogleBadRequest
+except ImportError:
+    GoogleBadRequest = None
+
+try:
+    from impala.error import HiveServer2Error as ImpalaHiveServer2Error
+except ImportError:
+    ImpalaHiveServer2Error = None
+
 
 @pytest.mark.parametrize(
     ("expr", "expected_types"),
@@ -173,7 +183,7 @@ except ImportError:
                 "postgres": "numeric",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ['polars'],
                     "Unsupported type: Float16(nullable=True)",
                     raises=NotImplementedError,
@@ -253,7 +263,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": "numeric",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ['clickhouse'],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
@@ -266,6 +276,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
                     "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
                     "CAUSED BY: Exception: Syntax error",
+                    raises=ImpalaHiveServer2Error,
                 ),
             ],
             id="default",
@@ -305,6 +316,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
                     "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
                     "CAUSED BY: Exception: Syntax error",
+                    raises=ImpalaHiveServer2Error,
                 ),
             ],
             id="decimal-small",
@@ -345,6 +357,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
                     "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
                     "CAUSED BY: Exception: Syntax error",
+                    raises=ImpalaHiveServer2Error,
                 ),
                 pytest.mark.broken(
                     ['duckdb'],
@@ -364,6 +377,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": float('nan'),
                 'pandas': decimal.Decimal("Infinity"),
                 'dask': decimal.Decimal('Infinity'),
+                "impala": float('inf'),
             },
             {
                 'bigquery': "FLOAT64",
@@ -372,21 +386,13 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 'trino': 'decimal(2,1)',
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
+                "impala": "DOUBLE",
             },
             marks=[
                 pytest.mark.broken(
                     ['clickhouse'],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
-                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
-                    "SELECT typeof(Decimal('Infinity')) AS `TypeOf(Decimal('Infinity'))"
-                    "Encountered: DECIMAL"
-                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
-                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
-                    "CAUSED BY: Exception: Syntax error",
                 ),
                 pytest.mark.broken(
                     ['duckdb'],
@@ -432,6 +438,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": float('nan'),
                 'pandas': decimal.Decimal("-Infinity"),
                 'dask': decimal.Decimal('-Infinity'),
+                "impala": float('-inf'),
             },
             {
                 'bigquery': "FLOAT64",
@@ -440,21 +447,13 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 'trino': 'decimal(2,1)',
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
+                "impala": "DOUBLE",
             },
             marks=[
                 pytest.mark.broken(
                     ['clickhouse'],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
-                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
-                    "SELECT typeof(Decimal('-Infinity')) AS `TypeOf(Decimal('-Infinity'))"
-                    "Encountered: DECIMAL"
-                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
-                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
-                    "CAUSED BY: Exception: Syntax error",
                 ),
                 pytest.mark.broken(
                     ['duckdb'],
@@ -500,6 +499,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": float('nan'),
                 'pandas': decimal.Decimal('NaN'),
                 'dask': decimal.Decimal('NaN'),
+                "impala": float('nan'),
             },
             {
                 'bigquery': "FLOAT64",
@@ -508,21 +508,13 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 'trino': 'decimal(2,1)',
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
+                "impala": "DOUBLE",
             },
             marks=[
                 pytest.mark.broken(
                     ['clickhouse'],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ['impala'],
-                    "impala.error.HiveServer2Error: AnalysisException: Syntax error in line 1:"
-                    "SELECT typeof(Decimal('NaN')) AS `TypeOf(Decimal('NaN'))"
-                    "Encountered: DECIMAL"
-                    "Expected: ALL, CASE, CAST, DEFAULT, DISTINCT, EXISTS, FALSE, IF, "
-                    "INTERVAL, LEFT, NOT, NULL, REPLACE, RIGHT, TRUNCATE, TRUE, IDENTIFIER"
-                    "CAUSED BY: Exception: Syntax error",
                 ),
                 pytest.mark.broken(
                     ['duckdb'],
@@ -614,7 +606,9 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
         param(operator.methodcaller('isinf'), np.isinf, id='isinf'),
     ],
 )
-@pytest.mark.notimpl(["mysql", "sqlite", "datafusion", "mssql"])
+@pytest.mark.notimpl(
+    ["mysql", "sqlite", "datafusion", "mssql"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.xfail(
     duckdb is not None and vparse(duckdb.__version__) < vparse("0.3.3"),
     reason="<0.3.3 does not support isnan/isinf properly",
@@ -653,13 +647,17 @@ def test_isnan_isinf(
             ibis.least(L(10), L(1)),
             1,
             id='least',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             ibis.greatest(L(10), L(1)),
             10,
             id='greatest',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             L(5.5).round(),
@@ -670,7 +668,11 @@ def test_isnan_isinf(
             L(5.556).round(2),
             5.56,
             id='round-digits',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"],
+                raises=com.UnsupportedOperationError,
+                reason="Rounding to specific digits is not supported in datafusion",
+            ),
         ),
         param(L(5.556).ceil(), 6.0, id='ceil'),
         param(L(5.556).floor(), 5.0, id='floor'),
@@ -678,32 +680,42 @@ def test_isnan_isinf(
             L(5.556).exp(),
             math.exp(5.556),
             id='expr',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             L(5.556).sign(),
             1,
             id='sign-pos',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             L(-5.556).sign(),
             -1,
             id='sign-neg',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             L(0).sign(),
             0,
             id='sign-zero',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(L(5.556).sqrt(), math.sqrt(5.556), id='sqrt'),
         param(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             L(5.556).ln(),
@@ -724,13 +736,17 @@ def test_isnan_isinf(
             L(5.556).radians(),
             math.radians(5.556),
             id='radians',
-            marks=pytest.mark.notimpl(["datafusion", "impala"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion", "impala"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             L(5.556).degrees(),
             math.degrees(5.556),
             id='degrees',
-            marks=pytest.mark.notimpl(["datafusion", "impala"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion", "impala"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
@@ -783,6 +799,7 @@ def test_trig_functions_literals(con, expr, expected):
         "datafusion implements trig functions but can't easily test them due"
         " to missing NullIfZero"
     ),
+    raises=com.OperationNotDefinedError,
 )
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     dc_max = df.double_col.max()
@@ -855,13 +872,17 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).exp(),
             lambda t: np.exp(t.double_col + 1),
             id='exp',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
@@ -884,7 +905,17 @@ def test_simple_math_functions_columns(
                 np.log(t.double_col + 1) / np.log(np.maximum(9_000, t.bigint_col))
             ),
             id="log_base_bigint",
-            marks=pytest.mark.notimpl(["clickhouse", "datafusion", "polars"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notimpl(
+                    ["clickhouse", "datafusion"],
+                    raises=ValueError,
+                    reason="Base greatest(9000, t0.bigint_col) for logarithm not supported!",
+                ),
+                pytest.mark.notimpl(["polars"], raises=com.UnsupportedArgumentError),
+            ],
         ),
     ],
 )
@@ -904,19 +935,23 @@ def test_complex_math_functions_columns(
             lambda be, t: t.double_col.round(),
             lambda be, t: be.round(t.double_col),
             id='round',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql"], raises=AssertionError),
         ),
         param(
             lambda be, t: t.double_col.add(0.05).round(3),
             lambda be, t: be.round(t.double_col + 0.05, 3),
             id='round-with-param',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.UnsupportedOperationError
+            ),
         ),
         param(
             lambda be, t: ibis.least(t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(min, t.bigint_col, t.int_col))),
             id='least-all-columns',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             lambda be, t: ibis.least(t.bigint_col, t.int_col, -2),
@@ -924,13 +959,17 @@ def test_complex_math_functions_columns(
                 list(map(min, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id='least-scalar',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             lambda be, t: ibis.greatest(t.bigint_col, t.int_col),
             lambda be, t: pd.Series(list(map(max, t.bigint_col, t.int_col))),
             id='greatest-all-columns',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
         param(
             lambda be, t: ibis.greatest(t.bigint_col, t.int_col, -2),
@@ -938,7 +977,9 @@ def test_complex_math_functions_columns(
                 list(map(max, t.bigint_col, t.int_col, [-2] * len(t)))
             ),
             id='greatest-scalar',
-            marks=pytest.mark.notimpl(["datafusion"]),
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
         ),
     ],
 )
@@ -958,7 +999,12 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
         operator.mul,
         operator.truediv,
         operator.floordiv,
-        param(operator.pow, marks=pytest.mark.notimpl(["datafusion"])),
+        param(
+            operator.pow,
+            marks=pytest.mark.notimpl(
+                ["datafusion"], raises=com.OperationNotDefinedError
+            ),
+        ),
     ],
     ids=lambda op: op.__name__,
 )
@@ -989,8 +1035,12 @@ def test_mod(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["mssql"])
-@pytest.mark.notyet(["bigquery"], reason="bigquery doesn't support floating modulus")
+@pytest.mark.notimpl(["mssql"], raises=sqlalchemy.exc.OperationalError)
+@pytest.mark.notyet(
+    ["bigquery"],
+    reason="bigquery doesn't support floating modulus",
+    raises=GoogleBadRequest,
+)
 def test_floating_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name('tmp')
 
@@ -1024,12 +1074,34 @@ def test_floating_mod(backend, alltypes, df):
         "datafusion",
         "duckdb",
         "mysql",
-        "postgres",
         "pyspark",
         "sqlite",
-        "snowflake",
+    ],
+    raises=AssertionError,
+)
+@pytest.mark.notyet(
+    [
         "mssql",
-    ]
+    ],
+    raises=sqlalchemy.exc.OperationalError,
+)
+@pytest.mark.notyet(
+    [
+        "postgres",
+    ],
+    raises=sqlalchemy.exc.DataError,
+)
+@pytest.mark.notyet(
+    [
+        "snowflake",
+    ],
+    raises=sqlalchemy.exc.ProgrammingError,
+)
+@pytest.mark.notyet(
+    [
+        "datafusion",
+    ],
+    raises=Exception,
 )
 @pytest.mark.parametrize('denominator', [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
@@ -1046,12 +1118,27 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     ("default_precisions", "default_scales"),
     [
         (
-            {'postgres': None, 'mysql': 10, 'snowflake': 38, 'trino': 18},
-            {'postgres': None, 'mysql': 0, 'snowflake': 0, 'trino': 3},
+            {
+                'postgres': None,
+                'mysql': 10,
+                'snowflake': 38,
+                'trino': 18,
+                "duckdb": None,
+                "sqlite": None,
+                "mssql": None,
+            },
+            {
+                'postgres': None,
+                'mysql': 0,
+                'snowflake': 0,
+                'trino': 3,
+                "duckdb": None,
+                "sqlite": None,
+                "mssql": None,
+            },
         )
     ],
 )
-@pytest.mark.notimpl(["sqlite", "duckdb", "mssql"])
 @pytest.mark.never(
     [
         "bigquery",
@@ -1105,7 +1192,13 @@ def test_sa_default_numeric_precision_and_scale(
         con.drop_table(table_name, force=True)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "sqlite", "polars"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "impala", "pandas", "polars"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["sqlite"], raises=AssertionError, reason="backend returns values greater than 1"
+)
 def test_random(con):
     expr = ibis.random()
     result = con.execute(expr)
@@ -1134,7 +1227,7 @@ def test_random(con):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
     expected = pandas_func(df.int_col).astype(result.dtype)
@@ -1143,14 +1236,21 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["dask"],
+    raises=pd.errors.IntCastingNaNError,
+    reason="Cannot convert non-finite values (NA or inf) to integer",
+)
 def test_histogram(con, alltypes):
     n = 10
     results = con.execute(alltypes.int_col.histogram(n).name("tmp"))
     assert len(results.value_counts()) == n
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas", "polars"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.parametrize("const", ["e", "pi"])
 def test_constants(con, const):
     expr = getattr(ibis, const)
@@ -1172,7 +1272,9 @@ pyspark_no_bitshift = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+)
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -1206,7 +1308,9 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+)
 @pyspark_no_bitshift
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -1236,7 +1340,9 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+)
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
     result = con.execute(expr)
@@ -1244,7 +1350,9 @@ def test_bitwise_scalars(con, op, left, right):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+)
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -1252,7 +1360,12 @@ def test_bitwise_not_scalar(con):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["pandas", "dask"],
+    raises=AttributeError,
+    reason=" module 'numpy' has no attribute 'bitwisenot'. Did you mean: 'bitwise_not'?",
+)
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()
