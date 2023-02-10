@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import operator
+from functools import partial
 from typing import Any, Mapping
 
 import numpy as np
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import GenericFunction
+from sqlalchemy.sql.functions import FunctionElement, GenericFunction
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql import alchemy
@@ -224,6 +225,24 @@ def _translate_case(t, op, *, value):
     )
 
 
+class list_apply(FunctionElement):
+    pass
+
+
+@compiles(list_apply, "duckdb")
+def compiles_list_apply(element, compiler, **kw):
+    *args, signature, result = map(partial(compiler.process, **kw), element.clauses)
+    return f"list_apply({', '.join(args)}, {signature} -> {result})"
+
+
+def _array_map(t, op):
+    return list_apply(
+        t.translate(op.arg),
+        sa.literal_column(f"({', '.join(op.signature)})"),
+        t.translate(op.result),
+    )
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -309,6 +328,8 @@ operation_registry.update(
         ops.SimpleCase: _simple_case,
         ops.StartsWith: fixed_arity(sa.func.prefix, 2),
         ops.EndsWith: fixed_arity(sa.func.suffix, 2),
+        ops.ArrayMap: _array_map,
+        ops.Argument: lambda _, op: sa.literal_column(op.name),
     }
 )
 
