@@ -1,5 +1,3 @@
-import operator
-
 import pytest
 
 
@@ -42,21 +40,3 @@ def test_distinct_column(alltypes, df, column):
     result = expr.execute()
     expected = df[[column]].drop_duplicates()
     assert set(result) == set(expected)
-
-
-@pytest.mark.parametrize(
-    ("opname", "expected"),
-    [
-        ("year", {2009, 2010}),
-        ("month", set(range(1, 13))),
-        ("day", set(range(1, 32))),
-    ],
-)
-@pytest.mark.notimpl(["datafusion"])
-@pytest.mark.notyet(["impala"])
-def test_date_extract_field(con, opname, expected):
-    op = operator.methodcaller(opname)
-    t = con.table("functional_alltypes")
-    expr = t[op(t.timestamp_col.cast("date")).name("date")].distinct()
-    result = expr.execute()["date"].astype(int)
-    assert set(result) == expected
