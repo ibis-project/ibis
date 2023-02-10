@@ -404,3 +404,11 @@ def test_array_slice(con, start, stop):
         {'sliced': array_types.y.execute().map(lambda x: x[start:stop])}
     )
     tm.assert_frame_equal(result, expected)
+
+
+def test_array_map(backend):
+    t = ibis.memtable({"a": [[1, None, 2], None, [4]]})
+    expr = t.select(a=t.a.map(lambda x: x + 1))
+    result = expr.execute()
+    expected = pd.DataFrame({"a": [[2, None, 3], None, [5]]})
+    backend.assert_frame_equal(result, expected)

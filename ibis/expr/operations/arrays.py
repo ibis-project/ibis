@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 from typing import Callable
 
 from public import public
@@ -101,11 +102,19 @@ class ArrayMap(Value):
 
     @attribute.default
     def result(self):
-        shape = rlz.Shape.COLUMNAR
-        dtype = self.arg.output_dtype.value_type
-        arg = Argument(shape=shape, dtype=dtype).to_expr()
-        expr = self.func(arg)
+        arg = self.arg
+        shape = arg.output_shape
+        dtype = arg.output_dtype.value_type
+        args = [
+            Argument(name=name, shape=shape, dtype=dtype).to_expr()
+            for name in self.signature
+        ]
+        expr = self.func(*args)
         return expr.op()
+
+    @property
+    def signature(self):
+        return list(inspect.signature(self.func).parameters.keys())
 
     @attribute.default
     def output_dtype(self):

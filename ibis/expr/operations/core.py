@@ -91,6 +91,7 @@ class Value(Node, Named):
 
 @public
 class Argument(Value):
+    name = rlz.instance_of(str)
     shape = rlz.instance_of(rlz.Shape)
     dtype = rlz.datatype
 
