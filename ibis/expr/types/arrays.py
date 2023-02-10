@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable
+from typing import TYPE_CHECKING, Iterable, Callable
 
 from public import public
 
@@ -387,6 +387,47 @@ class ArrayValue(Value):
         [`StringValue.join`][ibis.expr.types.strings.StringValue.join]
         """
         return ops.ArrayStringJoin(sep, self).to_expr()
+
+    def map(self, func: Callable[[ir.Value], ir.Value]) -> ir.ArrayValue:
+        """Apply a callable `func` to each element of this array expression.
+
+        Parameters
+        ----------
+        func
+            Function to apply to each element of this array
+
+        Returns
+        -------
+        ArrayValue
+            `func` applied to every element of this array expression.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[1, None, 2], [4], []]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [1, None, ... +1]    │
+        │ [4]                  │
+        │ []                   │
+        └──────────────────────┘
+        >>> t.a.map(lambda x: (x + 100).cast("float"))
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a)           ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<float64>        │
+        ├───────────────────────┤
+        │ [101.0, None, ... +1] │
+        │ [104.0]               │
+        │ []                    │
+        └───────────────────────┘
+        """
+        return ops.ArrayMap(self, func).to_expr()
 
 
 @public

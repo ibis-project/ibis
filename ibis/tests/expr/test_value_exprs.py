@@ -1660,3 +1660,9 @@ def test_quantile_shape():
     (b1,) = expr.op().selections
 
     assert b1.output_shape.is_columnar()
+
+
+def test_array_map():
+    a = ibis.array([1, 2, 3])
+    r = a.map(lambda x: x * 2.1)
+    assert r.type() == dt.Array(dt.float64)

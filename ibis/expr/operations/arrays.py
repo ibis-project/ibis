@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from typing import Callable
+
 from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.expr.operations.core import Unary, Value
+from ibis.expr.operations.core import Argument, Unary, Value
 
 
 @public
@@ -86,6 +88,28 @@ class ArrayRepeat(Value):
 
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("args")
+
+
+@public
+class ArrayMap(Value):
+    arg = rlz.array
+    # TODO(kszucs): add a callable_with validator to support callable arguments
+    # and return type, e.g. Callable[[ops.Argument], ops.Value] in this case
+    func = rlz.instance_of(Callable)
+
+    output_shape = rlz.shape_like("arg")
+
+    @attribute.default
+    def result(self):
+        shape = rlz.Shape.COLUMNAR
+        dtype = self.arg.output_dtype.value_type
+        arg = Argument(shape=shape, dtype=dtype).to_expr()
+        expr = self.func(arg)
+        return expr.op()
+
+    @attribute.default
+    def output_dtype(self):
+        return dt.Array(self.result.output_dtype)
 
 
 @public

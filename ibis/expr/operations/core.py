@@ -72,7 +72,7 @@ class Value(Node, Named):
 
     @property
     @abstractmethod
-    def output_shape(self):
+    def output_shape(self) -> rlz.Shape:
         """Shape of the produced value expression.
 
         Possible values are: "scalar" and "columnar"
@@ -87,6 +87,20 @@ class Value(Node, Named):
             return self.output_dtype.column(self)
         else:
             return self.output_dtype.scalar(self)
+
+
+@public
+class Argument(Value):
+    shape = rlz.instance_of(rlz.Shape)
+    dtype = rlz.datatype
+
+    @property
+    def output_dtype(self) -> dt.DataType:
+        return self.dtype
+
+    @property
+    def output_shape(self) -> rlz.Shape:
+        return self.shape
 
 
 @public
