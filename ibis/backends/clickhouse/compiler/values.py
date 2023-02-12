@@ -1331,3 +1331,15 @@ def _array_string_join(op, **kw):
     arg = translate_val(op.arg, **kw)
     sep = translate_val(op.sep, **kw)
     return f"arrayStringConcat({arg}, {sep})"
+
+
+@translate_val.register(ops.Argument)
+def _argument(op, **_):
+    return op.name
+
+
+@translate_val.register(ops.ArrayMap)
+def _array_map(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    result = translate_val(op.result, **kw)
+    return f"arrayMap(({', '.join(op.signature)}) -> {result}, {arg})"

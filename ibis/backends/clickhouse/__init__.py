@@ -90,10 +90,12 @@ class Backend(BaseBackend):
 
     def __init__(self, *args, external_tables=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._external_tables = external_tables or {}
+        self._external_tables = toolz.valmap(
+            lambda v: ibis.memtable(v).op(), external_tables or {}
+        )
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        self._external_tables[op.name] = op.data.to_frame()
+        self._external_tables[op.name] = op
 
     def _log(self, sql: str) -> None:
         """Log the SQL, usually to the standard output.
@@ -204,7 +206,9 @@ class Backend(BaseBackend):
         # This won't start a connection until `cursor` is called, so in
         # the common case this is cheap.
         self.con = clickhouse_driver.dbapi.connect(**options)
-        self._external_tables = external_tables or {}
+        self._external_tables = toolz.valmap(
+            lambda v: ibis.memtable(v).op(), external_tables or {}
+        )
 
     @property
     def version(self) -> str:
@@ -241,21 +245,18 @@ class Backend(BaseBackend):
 
     def _normalize_external_tables(self, external_tables=None):
         """Merge registered external tables with any new external tables."""
-        import pandas as pd
-
         external_tables_list = []
-        if external_tables is None:
-            external_tables = {}
-        for name, df in toolz.merge(self._external_tables, external_tables).items():
-            if not isinstance(df, pd.DataFrame):
-                raise TypeError('External table is not an instance of pandas dataframe')
-            schema = sch.infer(df)
+        for name, obj in toolz.merge(
+            self._external_tables,
+            toolz.valmap(lambda v: ibis.memtable(v).op(), external_tables or {}),
+        ).items():
+            if not (schema := obj.schema):
+                raise TypeError(f'Schema is empty for external table {name}')
+
+            df = obj.data.to_frame()
+            structure = list(zip(schema.names, map(serialize, schema.types)))
             external_tables_list.append(
-                {
-                    "name": name,
-                    "data": df.to_dict("records"),
-                    "structure": list(zip(schema.names, map(serialize, schema.types))),
-                }
+                dict(name=name, data=df.to_dict("records"), structure=structure)
             )
         return external_tables_list
 
