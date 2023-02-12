@@ -52,6 +52,29 @@ INSERT INTO array_types VALUES
     ([2, NULL, 3], ['b', NULL, 'c'], NULL, 'b', 5.0, []),
     ([4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0, [[1, 2, 3]]);
 
+CREATE OR REPLACE TABLE time_df1 (
+    time Int64,
+    value Nullable(Float64),
+    key Nullable(String)
+) ENGINE = Memory;
+INSERT INTO time_df1 VALUES
+    (1, 1.0, 'x'),
+    (20, 20.0, 'x'),
+    (30, 30.0, 'x'),
+    (40, 40.0, 'x'),
+    (50, 50.0, 'x');
+
+CREATE OR REPLACE TABLE time_df2 (
+    time Int64,
+    value Nullable(Float64),
+    key Nullable(String)
+) ENGINE = Memory;
+INSERT INTO time_df2 VALUES
+    (19, 19.0, 'x'),
+    (21, 21.0, 'x'),
+    (39, 39.0, 'x'),
+    (49, 49.0, 'x'),
+    (1000, 1000.0, 'x');
 
 CREATE OR REPLACE TABLE struct (
     abc Tuple(
