@@ -361,3 +361,9 @@ def test_schema_is_coercible():
 
     o = ObjectWithSchema(schema=PreferenceA)
     assert o.schema == s
+
+
+def test_schema_with_different_orders_not_equal():
+    s1 = ibis.schema(dict(a="string", b="int"))
+    s2 = ibis.schema(dict(b="int", a="string"))
+    assert s1 != s2

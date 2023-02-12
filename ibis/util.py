@@ -82,6 +82,12 @@ class frozendict(Mapping[K, V], Hashable):
     def __hash__(self):
         return self.__precomputed_hash__
 
+    def __eq__(self, other):
+        return len(self) == len(other) and all(
+            k1 == k2 and v1 == v2
+            for (k1, v1), (k2, v2) in zip(self.items(), other.items())
+        )
+
 
 class DotDict(dict):
     __slots__ = ()
