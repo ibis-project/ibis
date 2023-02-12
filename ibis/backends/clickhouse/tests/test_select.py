@@ -23,6 +23,16 @@ def awards_players(con):
     return con.table('awards_players')
 
 
+@pytest.fixture(scope='module')
+def time_left(con):
+    return con.table('time_df1')
+
+
+@pytest.fixture(scope='module')
+def time_right(con):
+    return con.table('time_df2')
+
+
 def test_timestamp_extract_field(alltypes, snapshot):
     t = alltypes.timestamp_col
     expr = alltypes[
@@ -354,3 +364,18 @@ def test_join_with_external_table(alltypes, df):
     expected = expected.sort_values('id').reset_index(drop=True)
 
     tm.assert_frame_equal(result, expected, check_column_type=False)
+
+
+def test_asof_join(time_left, time_right):
+    expr = time_left.asof_join(
+        time_right,
+        predicates=[
+            time_left['key'] == time_right['key'],
+            time_left['time'] >= time_right['time'],
+        ],
+    )
+    result = expr.execute()
+    result['time'] = result['time_x']
+    result.drop(['time_x', 'time_y'], axis=1, inplace=True)
+    expected = pd.merge_asof(time_left.execute(), time_right.execute(), on='time')
+    tm.assert_frame_equal(result[expected.columns], expected)

@@ -103,6 +103,7 @@ _JOIN_TYPES = {
     ops.CrossJoin: "CROSS",
     ops.LeftSemiJoin: "LEFT SEMI",
     ops.LeftAntiJoin: "LEFT ANTI",
+    ops.AsOfJoin: "LEFT ASOF",
 }
 
 
