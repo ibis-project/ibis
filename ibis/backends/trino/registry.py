@@ -336,8 +336,6 @@ _invalid_operations = {
     # ibis.expr.operations.analytic
     ops.CumulativeOp,
     ops.NTile,
-    # ibis.expr.operations.maps
-    ops.MapLength,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,
     ops.Quantile,
