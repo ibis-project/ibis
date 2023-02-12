@@ -1048,6 +1048,7 @@ _simple_ops = {
     ops.IfNull: "ifNull",
     ops.NullIf: "nullIf",
     ops.MapContains: "mapContains",
+    ops.MapLength: "length",
     ops.MapKeys: "mapKeys",
     ops.MapValues: "mapValues",
     ops.MapMerge: "mapUpdate",
