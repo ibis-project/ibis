@@ -249,7 +249,7 @@ operation_registry.update(
         ),
         ops.RegexExtract: fixed_arity(_regex_extract, 3),
         ops.RegexReplace: fixed_arity(
-            lambda *args: sa.func.regexp_replace(*args, "g"), 3
+            lambda *args: sa.func.regexp_replace(*args, sa.text("'g'")), 3
         ),
         ops.StringContains: fixed_arity(sa.func.contains, 2),
         ops.ApproxMedian: reduction(
