@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from functools import partial
+
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import FunctionElement
 from trino.sqlalchemy.datatype import DOUBLE
 
 import ibis
@@ -177,6 +181,24 @@ def _cot(t, op):
     return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.output_dtype))
 
 
+class transform(FunctionElement):
+    pass
+
+
+@compiles(transform, "trino")
+def compiles_list_apply(element, compiler, **kw):
+    *args, signature, result = map(partial(compiler.process, **kw), element.clauses)
+    return f"transform({', '.join(args)}, {signature} -> {result})"
+
+
+def _array_map(t, op):
+    return transform(
+        t.translate(op.arg),
+        sa.literal_column(f"({', '.join(op.signature)})"),
+        t.translate(op.result),
+    )
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -330,6 +352,8 @@ operation_registry.update(
             lambda sep, arr: sa.func.array_join(arr, sep), 2
         ),
         ops.StartsWith: fixed_arity(sa.func.starts_with, 2),
+        ops.ArrayMap: _array_map,
+        ops.Argument: lambda _, op: sa.literal_column(op.name),
     }
 )
 
