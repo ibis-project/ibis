@@ -218,3 +218,8 @@ def test_map_create_table(con, tmptable):
     con.create_table(tmptable, schema=ibis.schema(dict(xyz="map<string, string>")))
     t = con.table(tmptable)
     assert t.schema()["xyz"].is_map()
+
+
+def test_map_length(con):
+    expr = ibis.literal(dict(a="A", b="B")).length()
+    assert con.execute(expr) == 2
