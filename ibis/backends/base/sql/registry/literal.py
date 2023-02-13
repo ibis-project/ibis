@@ -76,6 +76,9 @@ def literal(translator, op):
 
     dtype = op.output_dtype
 
+    if op.value is None:
+        return "NULL"
+
     if dtype.is_boolean():
         typeclass = 'boolean'
     elif dtype.is_string():

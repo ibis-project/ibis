@@ -31,6 +31,9 @@ def _literal(t, op):
     value = op.value
     dtype = op.output_dtype
 
+    if value is None:
+        return sa.null()
+
     if dtype.is_floating():
         if np.isnan(value):
             return _SF_NAN

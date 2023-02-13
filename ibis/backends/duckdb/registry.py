@@ -99,9 +99,13 @@ def compiles_struct_pack(element, compiler, **kw):
 
 def _literal(t, op):
     dtype = op.output_dtype
+    value = op.value
+
+    if value is None:
+        return sa.null()
+
     sqla_type = t.get_sqla_type(dtype)
 
-    value = op.value
     if dtype.is_interval():
         return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
     elif dtype.is_set() or dtype.is_array():
