@@ -20,6 +20,7 @@ from typing import (
 )
 
 from public import public
+from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
@@ -28,7 +29,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.deferred import Deferred
 from ibis.expr.selectors import Selector
-from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
+from ibis.expr.types.core import Expr
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -87,7 +88,7 @@ def _regular_join_method(
 
 
 @public
-class Table(Expr, _FixedTextJupyterMixin):
+class Table(Expr, JupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
@@ -124,7 +125,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.pretty import to_rich_table
 
         if not ibis.options.interactive:
-            return console.render(Text(self._repr()), options=options)
+            return Text(self._repr())
 
         if console.is_jupyter:
             # Rich infers a console width in jupyter notebooks, but since

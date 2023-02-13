@@ -3,13 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 
 from public import public
+from rich.jupyter import JupyterMixin
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.grounds import Singleton
-from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
+from ibis.expr.types.core import Expr, _binop
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -622,7 +623,7 @@ class Scalar(Value):
         from rich.text import Text
 
         if not ibis.options.interactive:
-            return console.render(Text(self._repr()), options=options)
+            return Text(self._repr())
         return console.render(repr(self.execute()), options=options)
 
     def as_table(self) -> ir.Table:
@@ -671,7 +672,7 @@ class Scalar(Value):
 
 
 @public
-class Column(Value, _FixedTextJupyterMixin):
+class Column(Value, JupyterMixin):
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
