@@ -86,24 +86,24 @@ def test_lazy_instance_of():
 @pytest.mark.parametrize(
     ('dtype', 'value', 'expected'),
     [
-        pytest.param(dt.int8, 26, ibis.literal(26)),
-        pytest.param(dt.int16, 26, ibis.literal(26)),
-        pytest.param(dt.int32, 26, ibis.literal(26)),
-        pytest.param(dt.int64, 26, ibis.literal(26)),
-        pytest.param(dt.uint8, 26, ibis.literal(26)),
-        pytest.param(dt.uint16, 26, ibis.literal(26)),
-        pytest.param(dt.uint32, 26, ibis.literal(26)),
-        pytest.param(dt.uint64, 26, ibis.literal(26)),
-        pytest.param(dt.float32, 26, ibis.literal(26)),
-        pytest.param(dt.float64, 26.4, ibis.literal(26.4)),
-        pytest.param(dt.double, 26.3, ibis.literal(26.3)),
-        pytest.param(dt.string, 'bar', ibis.literal('bar')),
-        pytest.param(
+        param(dt.int8, 26, ibis.literal(26)),
+        param(dt.int16, 26, ibis.literal(26)),
+        param(dt.int32, 26, ibis.literal(26)),
+        param(dt.int64, 26, ibis.literal(26)),
+        param(dt.uint8, 26, ibis.literal(26)),
+        param(dt.uint16, 26, ibis.literal(26)),
+        param(dt.uint32, 26, ibis.literal(26)),
+        param(dt.uint64, 26, ibis.literal(26)),
+        param(dt.float32, 26, ibis.literal(26)),
+        param(dt.float64, 26.4, ibis.literal(26.4)),
+        param(dt.double, 26.3, ibis.literal(26.3)),
+        param(dt.string, 'bar', ibis.literal('bar')),
+        param(
             dt.Array(dt.float64),
             [3.4, 5.6],
             ibis.literal([3.4, 5.6]),
         ),
-        pytest.param(
+        param(
             dt.Map(dt.string, dt.Array(dt.boolean)),
             {'a': [True, False], 'b': [True]},
             ibis.literal({'a': [True, False], 'b': [True]}),
@@ -190,14 +190,6 @@ def test_invalid_isin(values, value, expected):
             ibis.sequence(['a', 'b']),
             id="list_string_two",
         ),
-        # TODO(kszucs): currently this is disallowed, probably shouldn't
-        # support this case
-        # param(
-        #     rlz.list_of(rlz.list_of(rlz.string)),
-        #     [[], ['a']],
-        #     ibis.sequence([ibis.sequence([]), ibis.sequence(['a'])]),
-        #     id="list_list_string",
-        # ),
         param(
             rlz.tuple_of(rlz.boolean, min_length=2),
             [True, False],
@@ -211,7 +203,7 @@ def test_valid_tuple_of(validator, values, expected):
     assert isinstance(result, tuple)
 
 
-def test_valid_list_of_extra():
+def test_valid_tuple_of_extra():
     validator = rlz.tuple_of(identity)
     assert validator((3, 2)) == (3, 2)
 
@@ -229,7 +221,7 @@ def test_valid_list_of_extra():
         (rlz.tuple_of(identity), 3),
     ],
 )
-def test_invalid_list_of(validator, values):
+def test_invalid_tuple_of(validator, values):
     with pytest.raises(IbisTypeError):
         validator(values)
 
