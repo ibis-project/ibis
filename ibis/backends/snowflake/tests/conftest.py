@@ -87,4 +87,4 @@ class TestConf(BackendTest, RoundAwayFromZero):
     def connect(data_directory: Path) -> BaseBackend:
         if snowflake_url := os.environ.get("SNOWFLAKE_URL"):
             return ibis.connect(snowflake_url)  # type: ignore
-        pytest.skip("SNOWFLAKE_URL environment variable is not defined")  # noqa: RET503
+        pytest.skip("SNOWFLAKE_URL environment variable is not defined")
