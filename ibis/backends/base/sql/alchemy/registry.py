@@ -212,6 +212,9 @@ def _literal(_, op):
     dtype = op.output_dtype
     value = op.value
 
+    if value is None:
+        return sa.null()
+
     if dtype.is_set():
         return list(map(sa.literal, value))
     elif dtype.is_array():

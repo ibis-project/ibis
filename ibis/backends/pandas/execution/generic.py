@@ -62,21 +62,29 @@ def execute_node_literal_value_datatype(op, value, datatype, **kwargs):
 # bool to an integer.
 @execute_literal.register(ops.Literal, object, dt.Integer)
 def execute_node_literal_any_integer_datatype(op, value, datatype, **kwargs):
+    if value is None:
+        return value
     return int(value)
 
 
 @execute_literal.register(ops.Literal, object, dt.Boolean)
 def execute_node_literal_any_boolean_datatype(op, value, datatype, **kwargs):
+    if value is None:
+        return value
     return bool(value)
 
 
 @execute_literal.register(ops.Literal, object, dt.Floating)
 def execute_node_literal_any_floating_datatype(op, value, datatype, **kwargs):
+    if value is None:
+        return value
     return float(value)
 
 
 @execute_literal.register(ops.Literal, object, dt.Array)
 def execute_node_literal_any_array_datatype(op, value, datatype, **kwargs):
+    if value is None:
+        return value
     return np.array(value)
 
 
@@ -86,9 +94,11 @@ def execute_node_literal_datatype(op, datatype, **kwargs):
 
 
 @execute_literal.register(
-    ops.Literal, timedelta_types + (str,) + integer_types, dt.Interval
+    ops.Literal, (*timedelta_types, str, *integer_types, type(None)), dt.Interval
 )
 def execute_interval_literal(op, value, dtype, **kwargs):
+    if value is None:
+        return pd.NaT
     return pd.Timedelta(value, dtype.unit)
 
 

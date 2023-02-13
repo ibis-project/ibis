@@ -150,10 +150,10 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
     # XXX: this is a workaround until #1595 can be addressed
     in_dtype_type = in_dtype.type
     out_dtype_type = out_dtype.to_pandas().type
-    if column.empty or (
-        in_dtype_type != np.object_ and in_dtype_type != out_dtype_type
-    ):
+    if column.empty:
         return column.astype(out_dtype_type)
+    elif in_dtype_type != np.object_ and in_dtype_type != out_dtype_type:
+        return column.map(lambda value: pd.NA if pd.isna(value) else bool(value))
     return column
 
 

@@ -28,6 +28,9 @@ def _literal(t, op):
     value = op.value
     dtype = op.output_dtype
 
+    if value is None:
+        return sa.null()
+
     if dtype.is_struct():
         return sa.cast(sa.func.row(*value.values()), t.get_sqla_type(dtype))
     elif dtype.is_map():

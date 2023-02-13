@@ -221,26 +221,28 @@ def _log(translator, op):
 
 def _literal(translator, op):
     dtype = op.output_dtype
+    value = op.value
+
+    if value is None:
+        return "NULL"
+
     if dtype.is_decimal():
-        value = op.value
         if value.is_nan():
             return "CAST('NaN' AS FLOAT64)"
         if value.is_infinite():
             prefix = "-" * value.is_signed()
             return f"CAST('{prefix}inf' AS FLOAT64)"
         else:
-            return f"{ibis_type_to_bigquery_type(dtype)} '{op.value}'"
+            return f"{ibis_type_to_bigquery_type(dtype)} '{value}'"
     elif dtype.is_uuid():
-        return translator.translate(ops.Literal(str(op.value), dtype=dt.str))
+        return translator.translate(ops.Literal(str(value), dtype=dt.str))
 
     if isinstance(dtype, dt.Numeric):
-        value = op.value
         if not np.isfinite(value):
             return f"CAST({str(value)!r} AS FLOAT64)"
 
     # special case literal timestamp, date, and time scalars
     if isinstance(op, ops.Literal):
-        value = op.value
         if isinstance(dtype, dt.Date):
             if isinstance(value, datetime.datetime):
                 raw_value = value.date()
@@ -258,7 +260,7 @@ def _literal(translator, op):
             )
         elif dtype.is_struct():
             cols = (
-                f'{translator.translate(ops.Literal(op.value[name], dtype=type_))} AS {name}'
+                f'{translator.translate(ops.Literal(value[name], dtype=type_))} AS {name}'
                 for name, type_ in zip(dtype.names, dtype.types)
             )
             return "STRUCT({})".format(", ".join(cols))

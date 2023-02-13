@@ -883,3 +883,28 @@ def test_isin_uncorrelated_filter(
         .reset_index(drop=True)
     )
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "bool",
+        param("bytes", marks=pytest.mark.notyet(["polars"])),
+        "str",
+        "int",
+        "float",
+        "int8",
+        "int16",
+        "int32",
+        "int64",
+        "float32",
+        "float64",
+        "timestamp",
+        "date",
+        param("time", marks=pytest.mark.notyet(["datafusion"])),
+    ],
+)
+def test_literal_na(con, dtype):
+    expr = ibis.literal(None, type=dtype)
+    result = con.execute(expr)
+    assert pd.isna(result)

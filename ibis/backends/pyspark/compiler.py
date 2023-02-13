@@ -349,6 +349,9 @@ def compile_literal(t, op, *, raw=False, **kwargs):
     value = op.value
     dtype = op.dtype
 
+    if value is None:
+        return F.lit(value)
+
     if raw:
         return value
 
