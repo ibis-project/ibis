@@ -978,3 +978,13 @@ def elementwise_udf(op):
     return_type = to_polars_type(op.return_type)
 
     return pl.map(func_args, lambda args: op.func(*args), return_dtype=return_type)
+
+
+@translate.register(ops.E)
+def execute_e(op, **kwargs):
+    return pl.lit(np.e)
+
+
+@translate.register(ops.Pi)
+def execute_pi(op, **kwargs):
+    return pl.lit(np.pi)
