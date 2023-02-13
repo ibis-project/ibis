@@ -364,6 +364,9 @@ def execute_not_scalar_or_series(op, data, **kwargs):
 @execute_node.register((ops.Comparison, ops.Add, ops.Multiply), str, dd.Series)
 @execute_node.register(ops.Comparison, dd.Series, timestamp_types)
 @execute_node.register(ops.Comparison, timestamp_types, dd.Series)
+@execute_node.register(ops.BitwiseBinary, integer_types, integer_types)
+@execute_node.register(ops.BitwiseBinary, dd.Series, integer_types)
+@execute_node.register(ops.BitwiseBinary, integer_types, dd.Series)
 def execute_binary_op(op, left, right, **kwargs):
     return _execute_binary_op_impl(op, left, right, **kwargs)
 

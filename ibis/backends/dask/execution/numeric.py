@@ -39,7 +39,11 @@ def call_numpy_ufunc(func, op, data, **kwargs):
 
 @execute_node.register(ops.Unary, dd.Series)
 def execute_series_unary_op(op, data, **kwargs):
-    function = getattr(np, type(op).__name__.lower())
+    op_type = type(op)
+    if op_type == ops.BitwiseNot:
+        function = np.bitwise_not
+    else:
+        function = getattr(np, op_type.__name__.lower())
     return call_numpy_ufunc(function, op, data, **kwargs)
 
 
