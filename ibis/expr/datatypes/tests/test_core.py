@@ -326,6 +326,21 @@ def test_dtype_from_newer_typehints(hint, expected):
     assert dt.dtype(hint) == expected
 
 
+def test_dtype_from_invalid_python_value():
+    msg = "Cannot construct an ibis datatype from python value `1.0`"
+    with pytest.raises(TypeError, match=msg):
+        dt.dtype(1.0)
+
+
+def test_dtype_from_invalid_python_type():
+    class Something:
+        pass
+
+    msg = "Cannot construct an ibis datatype from python type `<class '.*Something'>`"
+    with pytest.raises(TypeError, match=msg):
+        dt.dtype(Something)
+
+
 def test_dtype_from_additional_struct_typehints():
     class A:
         nested: dt.Struct({'a': dt.Int16, 'b': dt.Int32})  # noqa: F821

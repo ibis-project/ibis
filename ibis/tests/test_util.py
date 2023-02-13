@@ -62,7 +62,10 @@ def test_dotdict():
 def test_frozendict():
     d = util.frozendict({"a": 1, "b": 2, "c": 3})
     e = util.frozendict(a=1, b=2, c=3)
+    f = util.frozendict(a=1, b=2, c=3, d=4)
     assert d == e
+    assert d != f
+
     assert d["a"] == 1
     assert d["b"] == 2
 

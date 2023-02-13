@@ -44,25 +44,30 @@ def dtype_from_object(value, **kwargs) -> DataType:
     # Validator.from_annotation
     origin_type = get_origin(value)
     if origin_type is None:
-        if issubclass(value, DataType):
-            return value()
-        elif result := _python_dtypes.get(value):
-            return result
-        elif annots := get_type_hints(value):
-            return Struct(toolz.valmap(dtype, annots))
-        elif issubclass(value, bytes):
-            return bytes
-        elif issubclass(value, str):
-            return string
-        elif issubclass(value, Integral):
-            return int64
-        elif issubclass(value, Real):
-            return float64
-        elif value is type(None):
-            return null
+        if isinstance(value, type):
+            if issubclass(value, DataType):
+                return value()
+            elif result := _python_dtypes.get(value):
+                return result
+            elif annots := get_type_hints(value):
+                return Struct(toolz.valmap(dtype, annots))
+            elif issubclass(value, bytes):
+                return bytes
+            elif issubclass(value, str):
+                return string
+            elif issubclass(value, Integral):
+                return int64
+            elif issubclass(value, Real):
+                return float64
+            elif value is type(None):
+                return null
+            else:
+                raise TypeError(
+                    f"Cannot construct an ibis datatype from python type `{value!r}`"
+                )
         else:
             raise TypeError(
-                f"Cannot construct an ibis datatype from python type {value!r}"
+                f"Cannot construct an ibis datatype from python value `{value!r}`"
             )
     elif issubclass(origin_type, Sequence):
         (value_type,) = map(dtype, get_args(value))
