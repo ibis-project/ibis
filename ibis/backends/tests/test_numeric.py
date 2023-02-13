@@ -1272,9 +1272,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
         param(lambda t: t.int_col, lambda _: 3, id="col_scalar"),
     ],
 )
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -1308,9 +1306,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pyspark_no_bitshift
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -1340,9 +1336,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     ("left", "right"),
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
     result = con.execute(expr)
@@ -1350,9 +1344,7 @@ def test_bitwise_scalars(con, op, left, right):
     assert result == expected
 
 
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -1361,11 +1353,6 @@ def test_bitwise_not_scalar(con):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["pandas", "dask"],
-    raises=AttributeError,
-    reason=" module 'numpy' has no attribute 'bitwisenot'. Did you mean: 'bitwise_not'?",
-)
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()

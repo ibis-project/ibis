@@ -76,4 +76,9 @@ BINARY_OPERATIONS = {
     ops.Modulus: operator.mod,
     ops.Power: operator.pow,
     ops.IdenticalTo: lambda x, y: (x == y) | (pd.isnull(x) & pd.isnull(y)),
+    ops.BitwiseXor: lambda x, y: np.bitwise_xor(x, y),
+    ops.BitwiseOr: lambda x, y: np.bitwise_or(x, y),
+    ops.BitwiseAnd: lambda x, y: np.bitwise_and(x, y),
+    ops.BitwiseLeftShift: lambda x, y: np.left_shift(x, y),
+    ops.BitwiseRightShift: lambda x, y: np.right_shift(x, y),
 }

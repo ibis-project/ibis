@@ -224,7 +224,11 @@ def execute_series_group_by_negate(op, data, **kwargs):
 
 @execute_node.register(ops.Unary, pd.Series)
 def execute_series_unary_op(op, data, **kwargs):
-    function = getattr(np, type(op).__name__.lower())
+    op_type = type(op)
+    if op_type == ops.BitwiseNot:
+        function = np.bitwise_not
+    else:
+        function = getattr(np, op_type.__name__.lower())
     return call_numpy_ufunc(function, op, data, **kwargs)
 
 
@@ -279,6 +283,11 @@ def execute_series_ceil(op, data, **kwargs):
     return_type = np.object_ if data.dtype == np.object_ else np.int64
     func = getattr(np, type(op).__name__.lower())
     return call_numpy_ufunc(func, op, data, **kwargs).astype(return_type)
+
+
+@execute_node.register(ops.BitwiseNot, integer_types)
+def execute_int_bitwise_not(op, data, **kwargs):
+    return np.invert(data)
 
 
 def vectorize_object(op, arg, *args, **kwargs):
@@ -918,6 +927,9 @@ def _execute_binary_op_impl(op, left, right, **_):
 @execute_node.register(ops.Multiply, str, integer_types)
 @execute_node.register(ops.Comparison, pd.Series, timestamp_types)
 @execute_node.register(ops.Comparison, timedelta_types, pd.Series)
+@execute_node.register(ops.BitwiseBinary, integer_types, integer_types)
+@execute_node.register(ops.BitwiseBinary, pd.Series, integer_types)
+@execute_node.register(ops.BitwiseBinary, integer_types, pd.Series)
 def execute_binary_op(op, left, right, **kwargs):
     return _execute_binary_op_impl(op, left, right, **kwargs)
 
