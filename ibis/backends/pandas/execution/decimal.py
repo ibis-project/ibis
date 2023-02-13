@@ -123,3 +123,13 @@ def execute_cast_series_to_decimal(op, data, type, **kwargs):
             context.create_decimal(x).quantize(places)
         )
     )
+
+
+@execute_node.register(ops.E)
+def execute_e(op, **kwargs):
+    return np.e
+
+
+@execute_node.register(ops.Pi)
+def execute_pi(op, **kwargs):
+    return np.pi

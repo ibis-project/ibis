@@ -1248,9 +1248,7 @@ def test_histogram(con, alltypes):
     assert len(results.value_counts()) == n
 
 
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize("const", ["e", "pi"])
 def test_constants(con, const):
     expr = getattr(ibis, const)
