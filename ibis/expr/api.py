@@ -40,7 +40,7 @@ from ibis.expr.types import (
     null,
     struct,
 )
-from ibis.util import experimental
+from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -148,8 +148,8 @@ __all__ = (
     'sequence',
     'set_backend',
     'show_sql',
-    'to_sql',
     'struct',
+    'to_sql',
     'table',
     'time',
     'timestamp',
@@ -227,7 +227,7 @@ def param(type: dt.DataType) -> ir.Scalar:
     return ops.ScalarParameter(type).to_expr()
 
 
-# TODO(kszucs): should be deprecated
+@deprecated(as_of='5.0', removed_in='6.0', instead='use tuple or list instead')
 def sequence(values: Sequence[T | None]) -> ir.List:
     """Wrap a list of Python values as an Ibis sequence type.
 
@@ -235,13 +235,12 @@ def sequence(values: Sequence[T | None]) -> ir.List:
     ----------
     values
         Should all be None or the same type
-
     Returns
     -------
     List
-        A list expression
+        A list expression.
     """
-    return rlz.tuple_of(rlz.any, values)
+    return [op.to_expr() for op in rlz.tuple_of(rlz.any, values)]
 
 
 def schema(

@@ -269,17 +269,6 @@ def test_literal_array():
     assert expr.type().equals(dt.Array(dt.null))
 
 
-def test_mixed_arity(table):
-    what = ["bar", table.g, "foo"]
-    expr = api.sequence(what)
-
-    assert isinstance(expr, tuple)
-    assert isinstance(expr[1], ops.TableColumn)
-
-    # it works!
-    repr(expr)
-
-
 @pytest.mark.parametrize('container', [list, tuple, set, frozenset])
 def test_isin_notin_list(table, container):
     values = container([1, 2, 3, 4])
@@ -1678,3 +1667,11 @@ def test_quantile_shape():
     (b1,) = expr.op().selections
 
     assert b1.output_shape.is_columnar()
+
+
+def test_sequence():
+    with pytest.warns(FutureWarning):
+        exprs = ibis.sequence([3, 2])
+
+    for expr in exprs:
+        assert isinstance(expr, ir.ScalarExpr)
