@@ -247,8 +247,12 @@ class SetOp(TableNode):
     distinct = rlz.optional(rlz.instance_of(bool), default=False)
 
     def __init__(self, left, right, **kwargs):
-        if not left.schema == right.schema:
+        if left.schema != right.schema:
             raise com.RelationError('Table schemas must be equal for set operations')
+        elif left.schema.names != right.schema.names:
+            # rewrite so that both sides have the columns in the same order making it
+            # easier for the backends to implement set operations
+            right = ops.Selection(right, left.schema.names)
         super().__init__(left=left, right=right, **kwargs)
 
     @property

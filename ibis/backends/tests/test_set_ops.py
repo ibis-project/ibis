@@ -1,3 +1,5 @@
+import random
+
 import pandas as pd
 import pytest
 from pytest import param
@@ -9,13 +11,21 @@ from ibis import _
 
 @pytest.fixture
 def union_subsets(alltypes, df):
-    a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
-    b = alltypes.filter((_.id >= 5205) & (_.id <= 5215))
-    c = alltypes.filter((_.id >= 5213) & (_.id <= 5220))
+    cols_a, cols_b, cols_c = (alltypes.columns.copy() for _ in range(3))
 
-    da = df[(df.id >= 5200) & (df.id <= 5210)]
-    db = df[(df.id >= 5205) & (df.id <= 5215)]
-    dc = df[(df.id >= 5213) & (df.id <= 5220)]
+    random.seed(89)
+    random.shuffle(cols_a)
+    random.shuffle(cols_b)
+    random.shuffle(cols_c)
+    assert cols_a != cols_b != cols_c
+
+    a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))[cols_a]
+    b = alltypes.filter((_.id >= 5205) & (_.id <= 5215))[cols_b]
+    c = alltypes.filter((_.id >= 5213) & (_.id <= 5220))[cols_c]
+
+    da = df[(df.id >= 5200) & (df.id <= 5210)][cols_a]
+    db = df[(df.id >= 5205) & (df.id <= 5215)][cols_b]
+    dc = df[(df.id >= 5213) & (df.id <= 5220)][cols_c]
 
     return (a, b, c), (da, db, dc)
 

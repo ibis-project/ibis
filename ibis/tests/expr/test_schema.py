@@ -167,12 +167,15 @@ def test_schema_subset():
 
 
 def test_empty_schema():
-    schema = ibis.schema([])
-    result = repr(schema)
-    expected = """\
-ibis.Schema {
-}"""
-    assert result == expected
+    s1 = sch.Schema({})
+    s2 = sch.schema()
+    s3 = ibis.schema([])
+
+    assert s1 == s2 == s3
+
+    for s in [s1, s2, s3]:
+        assert len(s.items()) == 0
+        assert repr(s) == "ibis.Schema {\n}"
 
 
 def test_nullable_output():
@@ -361,3 +364,8 @@ def test_schema_is_coercible():
 
     o = ObjectWithSchema(schema=PreferenceA)
     assert o.schema == s
+
+
+def test_schema_shorthand_supports_kwargs():
+    s = sch.schema(a=dt.int64, b=dt.Array(dt.int64))
+    assert s == sch.Schema({'a': dt.int64, 'b': dt.Array(dt.int64)})

@@ -322,8 +322,13 @@ schema = Dispatcher('schema')
 infer = Dispatcher('infer')
 
 
+@schema.register()
+def schema_from_kwargs(**kwargs):
+    return Schema(kwargs)
+
+
 @schema.register(Schema)
-def identity(s):
+def schema_from_schema(s):
     return s
 
 
