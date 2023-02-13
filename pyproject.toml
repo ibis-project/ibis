@@ -366,6 +366,7 @@ ignore = [
   "RUF005", # splat instead of concat
   "SIM102", # nested ifs
   "SIM108", # convert everything to ternary operator
+  "SIM114", # combine `if` branches using logical `or` operator
   "SIM117", # nested withs
   "SIM118", # remove .keys() calls from dictionaries
   "SIM300", # yoda conditions
