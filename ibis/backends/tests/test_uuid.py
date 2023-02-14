@@ -23,30 +23,29 @@ UUID_BACKEND_TYPE = {
     "postgres": "uuid",
 }
 
-# TODO(krzysztof-kwitt): Should we unify it?
 UUID_EXPECTED_VALUES = {
     'pandas': TEST_UUID,
-    'bigquery': RAW_TEST_UUID,
+    'bigquery': TEST_UUID,
     'duckdb': TEST_UUID,
-    'sqlite': RAW_TEST_UUID,
-    'snowflake': RAW_TEST_UUID,
-    'trino': TEST_UUID if SQLALCHEMY2 else RAW_TEST_UUID,
+    'sqlite': TEST_UUID,
+    'snowflake': TEST_UUID,
+    'trino': TEST_UUID,
     "postgres": TEST_UUID,
-    'mysql': TEST_UUID if SQLALCHEMY2 else RAW_TEST_UUID,
-    'mssql': TEST_UUID if SQLALCHEMY2 else RAW_TEST_UUID,
+    'mysql': TEST_UUID,
+    'mssql': TEST_UUID,
     'dask': TEST_UUID,
 }
 
 
 @pytest.mark.broken(
-    ["duckdb"],
-    '(duckdb.NotImplementedException) Not implemented Error: Unsupported type: "UUID"',
-    raises=sqlalchemy.exc.NotSupportedError,
-)
-@pytest.mark.broken(
     ["pyspark"],
     "'UUID' object has no attribute '_get_object_id'",
     raises=AttributeError,
+)
+@pytest.mark.xfail_version(
+    duckdb=["duckdb<0.7.0"],
+    reason='(duckdb.NotImplementedException) Not implemented Error: Unsupported type: "UUID"',
+    raises=sqlalchemy.exc.NotSupportedError,
 )
 @pytest.mark.notimpl(
     ['impala', 'datafusion', 'polars', 'clickhouse'], raises=NotImplementedError

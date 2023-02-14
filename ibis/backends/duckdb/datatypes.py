@@ -93,7 +93,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
 
 @to_sqla_type.register(DuckDBDialect, dt.UUID)
 def sa_duckdb_uuid(*_):
-    return postgresql.UUID()
+    return postgresql.UUID(as_uuid=True)
 
 
 @to_sqla_type.register(DuckDBDialect, (dt.MACADDR, dt.INET))

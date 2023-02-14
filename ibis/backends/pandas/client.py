@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import warnings
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import numpy as np
 import pandas as pd
@@ -143,6 +144,11 @@ def convert_any_to_interval(_, out_dtype, column):
 def convert_any_to_string(_, out_dtype, column):
     result = column.astype(out_dtype.to_pandas(), errors='ignore')
     return result
+
+
+@sch.convert.register(np.dtype, dt.UUID, pd.Series)
+def convert_any_to_uuid(_, out_dtype, column):
+    return column.map(lambda v: v if isinstance(v, UUID) else UUID(v))
 
 
 @sch.convert.register(np.dtype, dt.Boolean, pd.Series)
