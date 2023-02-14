@@ -261,6 +261,8 @@ filterwarnings = [
   # sqlalchemy
   "ignore:Class ST_.+ will not make use of SQL compilation caching:",
   "ignore:UserDefinedType Geometry:",
+  # google
+  "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('google.*'\\):DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [
