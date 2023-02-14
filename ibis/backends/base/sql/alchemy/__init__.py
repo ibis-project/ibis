@@ -626,7 +626,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         lines, params = self._get_compiled_statement(definition, name)
         with self.begin() as con:
             for line in lines:
-                con.exec_driver_sql(line, parameters=params)
+                con.exec_driver_sql(line, parameters=params or ())
         self._temp_views.add(raw_name)
         self._register_temp_view_cleanup(name, raw_name)
 
