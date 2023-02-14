@@ -6,6 +6,7 @@ import operator
 from typing import Any
 
 import sqlalchemy as sa
+from sqlalchemy.sql.functions import FunctionElement
 
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
@@ -471,6 +472,10 @@ def _extract(fmt: str):
         return sa.cast(sa.extract(fmt, t.translate(op.arg)), sa.SMALLINT)
 
     return translator
+
+
+class array_map(FunctionElement):
+    pass
 
 
 sqlalchemy_operation_registry: dict[Any, Any] = {

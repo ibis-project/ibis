@@ -4,7 +4,6 @@ from functools import partial
 
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import FunctionElement
 from trino.sqlalchemy.datatype import DOUBLE
 
 import ibis
@@ -12,6 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import _literal as _alchemy_literal
 from ibis.backends.base.sql.alchemy.registry import (
+    array_map,
     fixed_arity,
     reduction,
     sqlalchemy_operation_registry,
@@ -181,18 +181,14 @@ def _cot(t, op):
     return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.output_dtype))
 
 
-class transform(FunctionElement):
-    pass
-
-
-@compiles(transform, "trino")
+@compiles(array_map, "trino")
 def compiles_list_apply(element, compiler, **kw):
     *args, signature, result = map(partial(compiler.process, **kw), element.clauses)
     return f"transform({', '.join(args)}, {signature} -> {result})"
 
 
 def _array_map(t, op):
-    return transform(
+    return array_map(
         t.translate(op.arg),
         sa.literal_column(f"({', '.join(op.signature)})"),
         t.translate(op.result),
