@@ -352,6 +352,8 @@ operation_registry.update(
         ops.ArgMax: reduction(sa.func.max_by),
         ops.ToJSONArray: lambda t, op: t.translate(ops.Cast(op.arg, op.output_dtype)),
         ops.ToJSONMap: lambda t, op: t.translate(ops.Cast(op.arg, op.output_dtype)),
+        ops.StartsWith: fixed_arity(sa.func.startswith, 2),
+        ops.EndsWith: fixed_arity(sa.func.endswith, 2),
     }
 )
 

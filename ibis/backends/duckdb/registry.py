@@ -278,6 +278,8 @@ operation_registry.update(
         ops.ArrayStringJoin: fixed_arity(
             lambda sep, arr: sa.func.array_aggr(arr, sa.text("'string_agg'"), sep), 2
         ),
+        ops.StartsWith: fixed_arity(sa.func.prefix, 2),
+        ops.EndsWith: fixed_arity(sa.func.suffix, 2),
     }
 )
 

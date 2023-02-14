@@ -623,5 +623,6 @@ operation_registry.update(
         ops.Strip: unary(lambda arg: sa.func.trim(arg, string.whitespace)),
         ops.LStrip: unary(lambda arg: sa.func.ltrim(arg, string.whitespace)),
         ops.RStrip: unary(lambda arg: sa.func.rtrim(arg, string.whitespace)),
+        ops.StartsWith: fixed_arity(lambda arg, prefix: arg.op("^@")(prefix), 2),
     }
 )
