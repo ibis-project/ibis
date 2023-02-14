@@ -7,7 +7,7 @@ from typing import Any, Mapping
 import numpy as np
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql.functions import FunctionElement, GenericFunction
+from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql import alchemy
@@ -15,6 +15,7 @@ from ibis.backends.base.sql.alchemy import unary
 from ibis.backends.base.sql.alchemy.datatypes import StructType
 from ibis.backends.base.sql.alchemy.registry import (
     _table_column,
+    array_map,
     geospatial_functions,
     reduction,
 )
@@ -225,18 +226,14 @@ def _translate_case(t, op, *, value):
     )
 
 
-class list_apply(FunctionElement):
-    pass
-
-
-@compiles(list_apply, "duckdb")
+@compiles(array_map, "duckdb")
 def compiles_list_apply(element, compiler, **kw):
     *args, signature, result = map(partial(compiler.process, **kw), element.clauses)
     return f"list_apply({', '.join(args)}, {signature} -> {result})"
 
 
 def _array_map(t, op):
-    return list_apply(
+    return array_map(
         t.translate(op.arg),
         sa.literal_column(f"({', '.join(op.signature)})"),
         t.translate(op.result),
