@@ -441,8 +441,8 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.date_string_col.endswith("100"),
-            lambda t: t.date_string_col.str.endswith("100"),
+            lambda t: t.date_string_col.endswith("/10"),
+            lambda t: t.date_string_col.str.endswith("/10"),
             id='endswith-simple',
             marks=[
                 pytest.mark.notimpl(
