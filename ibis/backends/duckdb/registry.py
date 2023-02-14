@@ -17,6 +17,9 @@ from ibis.backends.base.sql.alchemy.registry import (
     geospatial_functions,
     reduction,
 )
+from ibis.backends.base.sql.alchemy.registry import (
+    _translate_case as _base_translate_case,
+)
 from ibis.backends.postgres.registry import (
     _array_index,
     _array_slice,
@@ -197,6 +200,26 @@ def _struct_column(t, op):
     )
 
 
+def _simple_case(t, op):
+    return _translate_case(t, op, value=t.translate(op.base))
+
+
+def _searched_case(t, op):
+    return _translate_case(t, op, value=None)
+
+
+def _translate_case(t, op, *, value):
+    return sa.literal_column(
+        str(
+            _base_translate_case(t, op, value=value).compile(
+                dialect=sa.dialects.registry.load("duckdb")(),
+                compile_kwargs=dict(literal_binds=True),
+            )
+        ),
+        type_=t.get_sqla_type(op.output_dtype),
+    )
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -278,6 +301,8 @@ operation_registry.update(
         ops.ArrayStringJoin: fixed_arity(
             lambda sep, arr: sa.func.array_aggr(arr, sa.text("'string_agg'"), sep), 2
         ),
+        ops.SearchedCase: _searched_case,
+        ops.SimpleCase: _simple_case,
         ops.StartsWith: fixed_arity(sa.func.prefix, 2),
         ops.EndsWith: fixed_arity(sa.func.suffix, 2),
     }
