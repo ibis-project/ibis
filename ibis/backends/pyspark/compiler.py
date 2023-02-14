@@ -445,7 +445,7 @@ def compile_startswith(t, op, **kwargs):
 def compile_endswith(t, op, **kwargs):
     col = t.translate(op.arg, **kwargs)
     end = t.translate(op.end, **kwargs)
-    return col.startswith(end)
+    return col.endswith(end)
 
 
 def _is_table(table):
