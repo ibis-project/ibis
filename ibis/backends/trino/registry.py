@@ -329,6 +329,7 @@ operation_registry.update(
         ops.ArrayStringJoin: fixed_arity(
             lambda sep, arr: sa.func.array_join(arr, sep), 2
         ),
+        ops.StartsWith: fixed_arity(sa.func.starts_with, 2),
     }
 )
 
