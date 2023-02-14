@@ -273,6 +273,16 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
+@execute_node.register(ops.StartsWith, pd.Series, str)
+def execute_series_starts_with(op, data, pattern, **kwargs):
+    return data.map(lambda x, p=pattern: x.startswith(p))
+
+
+@execute_node.register(ops.EndsWith, pd.Series, str)
+def execute_series_ends_with(op, data, pattern, **kwargs):
+    return data.map(lambda x, p=pattern: x.endswith(p))
+
+
 @execute_node.register(ops.RegexExtract, pd.Series, str, integer_types)
 def execute_series_regex_extract(op, data, pattern, index, **kwargs):
     pattern = re.compile(pattern)
