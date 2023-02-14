@@ -104,6 +104,7 @@ FIlES_WITH_STRICT_EXCEPTION_CHECK = [
     'ibis/backends/tests/test_binary.py',
     'ibis/backends/tests/test_numeric.py',
     'ibis/backends/tests/test_string.py',
+    'ibis/backends/tests/test_temporal.py',
     'ibis/backends/tests/test_uuid.py',
 ]
 

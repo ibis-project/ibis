@@ -61,7 +61,7 @@ def _timestamp_to_timestamp(arg, from_, to, **_):
 
 @sqlite_cast.register(object, dt.DataType, (dt.Date, dt.Timestamp))
 def _value_to_temporal(arg, from_, to, **_):
-    raise com.UnsupportedOperationError(type(arg))
+    raise com.UnsupportedOperationError(f"Unable to cast from {from_!r} to {to!r}.")
 
 
 @sqlite_cast.register(object, dt.DataType, dt.DataType)
