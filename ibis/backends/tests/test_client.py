@@ -417,7 +417,7 @@ def test_list_databases(alchemy_con):
         "postgres": {"postgres", "ibis_testing"},
         "mssql": {"INFORMATION_SCHEMA"},
         "mysql": {"ibis_testing", "information_schema"},
-        "duckdb": {"information_schema", "main", "temp"},
+        "duckdb": {"information_schema", "main"},
         "snowflake": {"IBIS_TESTING"},
         "trino": {"default"},
     }

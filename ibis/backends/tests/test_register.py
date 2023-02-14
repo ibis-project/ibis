@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Iterator
 import pytest
 from pytest import param
 
-import ibis
 from ibis.backends.conftest import TEST_TABLES
 
 if TYPE_CHECKING:
@@ -298,7 +297,7 @@ def test_register_pyarrow_tables(con):
 
 
 @pytest.mark.broken(
-    ["polars"], reason="it's working but it infers the int column as 32"
+    ["polars"], reason="it's working but polars infers the int column as 32"
 )
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(
@@ -318,26 +317,34 @@ def test_register_pyarrow_tables(con):
     ]
 )
 def test_csv_reregister_schema(con, tmp_path):
-    foo = tmp_path / "foo.csv"
-    with open(foo, "w", newline="") as csvfile:
-        foowriter = csv.writer(
-            csvfile,
-            delimiter=",",
+    foo = tmp_path.joinpath("foo.csv")
+    with foo.open("w", newline="") as csvfile:
+        csv.writer(csvfile, delimiter=",").writerows(
+            [
+                ["cola", "colb", "colc"],
+                [0, 1, 2],
+                [1, 5, 6],
+                [2, 3.0, "bar"],
+            ]
         )
-        foowriter.writerow(["cola", "colb", "colc"])
-        foowriter.writerow([0, 1, 2])
-        foowriter.writerow([1, 5, 6])
-        foowriter.writerow([2, 3.0, "bar"])
 
     # For a full file scan, expect correct schema based on final row
     foo_table = con.register(foo)
-    exp_schema = ibis.schema(dict(cola="int32", colb="float64", colc="string"))
-    assert foo_table.schema() == exp_schema
+    result_schema = foo_table.schema()
 
-    # If file scan is limited to first two rows, should be all int32
+    assert result_schema.names == ("cola", "colb", "colc")
+    assert result_schema["cola"].is_integer()
+    assert result_schema["colb"].is_float64()
+    assert result_schema["colc"].is_string()
+
+    # If file scan is limited to first two rows, should be all some kind of integer.
+    # The specific type isn't so important, and may vary across backends/versions
     foo_table = con.register(foo, SAMPLE_SIZE=2)
-    exp_schema = ibis.schema(dict(cola="int32", colb="int32", colc="int32"))
-    assert foo_table.schema() == exp_schema
+    result_schema = foo_table.schema()
+    assert result_schema.names == ("cola", "colb", "colc")
+    assert result_schema["cola"].is_integer()
+    assert result_schema["colb"].is_integer()
+    assert result_schema["colc"].is_integer()
 
 
 @pytest.mark.notimpl(
