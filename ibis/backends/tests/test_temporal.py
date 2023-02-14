@@ -465,6 +465,11 @@ def test_temporal_binop_pandas_timedelta(
 
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
 @pytest.mark.notimpl(["bigquery"])
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=TypeError,
+    reason="casting a timezone aware value to timezone aware dtype was removed",
+)
 def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
 
