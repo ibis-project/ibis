@@ -834,3 +834,11 @@ def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")
     result = con.execute(expr)
     assert result == "k"
+
+
+@pytest.mark.notimpl(["pyspark", "datafusion"], raises=com.OperationNotDefinedError)
+def test_multiple_subs(con):
+    m = {"foo": "FOO", "bar": "BAR"}
+    expr = ibis.literal("foo").substitute(m)
+    result = con.execute(expr)
+    assert result == "FOO"
