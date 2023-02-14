@@ -829,7 +829,9 @@ def test_array_string_join(con):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "mssql", "mysql", "pandas", "pyspark"])
+@pytest.mark.notimpl(
+    ["datafusion", "mssql", "mysql", "pyspark"], raises=com.OperationNotDefinedError
+)
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")
     result = con.execute(expr)

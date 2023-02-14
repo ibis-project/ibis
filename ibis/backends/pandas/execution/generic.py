@@ -1365,7 +1365,11 @@ def wrap_case_result(raw, expr):
             raw_1d, dtype=constants.IBIS_TYPE_TO_PANDAS_TYPE[expr.type()]
         )
     if result.size == 1 and isinstance(expr, ir.Scalar):
-        return result.iloc[0].item()
+        value = result.iloc[0]
+        try:
+            return value.item()
+        except AttributeError:
+            return value
     return result
 
 
