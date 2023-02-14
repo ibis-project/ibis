@@ -10,7 +10,8 @@ import ibis
     'data, data_type',
     [param('123e4567-e89b-12d3-a456-426655440000', 'uuid', id='uuid')],
 )
-def test_special_strings(con, alltypes, data, data_type):
+@pytest.mark.usefixtures("con")
+def test_special_strings(alltypes, data, data_type):
     lit = ibis.literal(data, type=data_type).name('tmp')
     expr = alltypes[[alltypes.id, lit]].head(1)
     df = expr.execute()

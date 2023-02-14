@@ -188,7 +188,7 @@ def _uuid(dialect, itype):
     try:
         return sa.UUID()
     except AttributeError:
-        return postgresql.UUID()
+        return postgresql.UUID(as_uuid=True)
 
 
 @dt.dtype.register(Dialect, sat.NullType)
