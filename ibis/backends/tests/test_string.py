@@ -380,7 +380,7 @@ def test_string_col_is_unicode(alltypes, df):
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "pyspark", "pandas"],
+                    ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -406,7 +406,7 @@ def test_string_col_is_unicode(alltypes, df):
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "pyspark", "pandas"],
+                    ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -426,7 +426,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='startswith-simple',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "pandas"],
+                    ["dask", "datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -446,7 +446,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='endswith-simple',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion", "pandas"],
+                    ["dask", "datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
