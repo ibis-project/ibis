@@ -138,13 +138,18 @@ class Backend(BaseAlchemyBackend):
             Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
-        super().do_connect(
-            sa.create_engine(
-                f"duckdb:///{database}",
-                connect_args=dict(read_only=read_only, config=config),
-                poolclass=sa.pool.SingletonThreadPool if in_memory else None,
-            )
+        engine = sa.create_engine(
+            f"duckdb:///{database}",
+            connect_args=dict(read_only=read_only, config=config),
+            poolclass=sa.pool.SingletonThreadPool if in_memory else None,
         )
+
+        @sa.event.listens_for(engine, "connect")
+        def set_time_zone(dbapi_connection, connection_record):
+            dbapi_connection.execute("SET TimeZone = 'UTC'")
+
+        super().do_connect(engine)
+
         self._meta = sa.MetaData()
         self._extensions = set()
 
