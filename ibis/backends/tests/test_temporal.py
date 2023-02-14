@@ -9,12 +9,48 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
+import sqlglot
 from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
+
+try:
+    from duckdb import InvalidInputException as DuckDBInvalidInputException
+except ImportError:
+    DuckDBInvalidInputException = None
+
+try:
+    from polars import ComputeError as PolarsComputeError
+    from polars import PanicException as PolarsPanicException
+
+except ImportError:
+    PolarsComputeError = None
+    PolarsPanicException = None
+
+try:
+    from google.api_core.exceptions import BadRequest as GoogleBadRequest
+except ImportError:
+    GoogleBadRequest = None
+
+try:
+    from pyarrow import ArrowInvalid
+except ImportError:
+    ArrowInvalid = None
+
+try:
+    from clickhouse_driver.dbapi.errors import (
+        OperationalError as ClickhouseOperationalError,
+    )
+except ImportError:
+    ClickhouseOperationalError = None
+
+try:
+    from impala.error import HiveServer2Error as ImpalaHiveServer2Error
+except ImportError:
+    ImpalaHiveServer2Error = None
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
@@ -25,11 +61,16 @@ from ibis.backends.pandas.execution.temporal import day_name
         param(
             lambda c: c.cast("date"),
             id="cast",
-            marks=pytest.mark.notimpl(["impala"]),
+            marks=pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType),
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ['druid'],
+    raises=AttributeError,
+    reason="Can only use .dt accessor with datetimelike values",
+)
 def test_date_extract(backend, alltypes, df, attr, expr_fn):
     expr = getattr(expr_fn(alltypes.timestamp_col), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype('int32')
@@ -47,7 +88,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         'day',
         param(
             'day_of_year',
-            marks=pytest.mark.notimpl(["impala"]),
+            marks=pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
         ),
         'quarter',
         'hour',
@@ -55,7 +96,12 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         'second',
     ],
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="AttributeError: 'StringColumn' object has no attribute 'X'",
+)
 def test_timestamp_extract(backend, alltypes, df, attr):
     method = getattr(alltypes.timestamp_col, attr)
     expr = method().name(attr)
@@ -69,39 +115,129 @@ def test_timestamp_extract(backend, alltypes, df, attr):
 @pytest.mark.parametrize(
     ('func', 'expected'),
     [
-        param(methodcaller('year'), 2015, id='year'),
-        param(methodcaller('month'), 9, id='month'),
-        param(methodcaller('day'), 1, id='day'),
-        param(methodcaller('hour'), 14, id='hour'),
-        param(methodcaller('minute'), 48, id='minute'),
-        param(methodcaller('second'), 5, id='second'),
+        param(
+            methodcaller('year'),
+            2015,
+            id='year',
+            marks=[
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=sa.exc.CompileError,
+                    reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
+                ),
+            ],
+        ),
+        param(
+            methodcaller('month'),
+            9,
+            id='month',
+            marks=[
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=sa.exc.CompileError,
+                    reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
+                ),
+            ],
+        ),
+        param(
+            methodcaller('day'),
+            1,
+            id='day',
+            marks=[
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=sa.exc.CompileError,
+                    reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
+                ),
+            ],
+        ),
+        param(
+            methodcaller('hour'),
+            14,
+            id='hour',
+            marks=[
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=sa.exc.CompileError,
+                    reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
+                ),
+            ],
+        ),
+        param(
+            methodcaller('minute'),
+            48,
+            id='minute',
+            marks=[
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=sa.exc.CompileError,
+                    reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
+                ),
+            ],
+        ),
+        param(
+            methodcaller('second'),
+            5,
+            id='second',
+            marks=[
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=sa.exc.CompileError,
+                    reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
+                ),
+            ],
+        ),
         param(
             methodcaller('millisecond'),
             359,
             id='millisecond',
-            marks=[pytest.mark.notimpl(["pyspark"])],
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="PySpark backend does not support extracting milliseconds.",
+                ),
+            ],
         ),
         param(
             lambda x: x.day_of_week.index(),
             1,
             id='day_of_week_index',
+            marks=[
+                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
+            ],
         ),
         param(
             lambda x: x.day_of_week.full_name(),
             'Tuesday',
             id='day_of_week_full_name',
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "druid"], raises=com.OperationNotDefinedError
+                ),
+            ],
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_literal(con, func, expected):
     value = ibis.timestamp('2015-09-01 14:48:05.359')
     assert con.execute(func(value).name("tmp")) == expected
 
 
-@pytest.mark.notimpl(["datafusion", "druid"])
-@pytest.mark.notyet(["sqlite", "pyspark"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'millisecond'",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason='PySpark backend does not support extracting milliseconds.',
+)
+@pytest.mark.broken(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
     result = expr.execute()
@@ -111,7 +247,12 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'epoch_seconds'",
+)
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name('tmp')
     result = expr.execute()
@@ -122,7 +263,12 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'week_of_year'",
+)
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
     expr = alltypes.timestamp_col.week_of_year().name('tmp')
     result = expr.execute()
@@ -141,53 +287,146 @@ PANDAS_UNITS = {
 @pytest.mark.parametrize(
     'unit',
     [
-        'Y',
-        'M',
-        'D',
+        param(
+            'Y',
+            marks=[
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                )
+            ],
+        ),
+        param(
+            'M',
+            marks=[
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                )
+            ],
+        ),
+        param(
+            'D',
+            marks=[
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                )
+            ],
+        ),
         param(
             'W',
             marks=[
-                pytest.mark.notimpl(["impala", "mysql", "sqlite"]),
+                pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
+                pytest.mark.notimpl(["impala"], raises=AssertionError),
+                pytest.mark.broken(["sqlite"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                ),
             ],
         ),
-        param('h', marks=pytest.mark.notimpl(["sqlite"])),
-        param('m', marks=pytest.mark.notimpl(["sqlite"])),
-        param('s', marks=pytest.mark.notimpl(["impala", "sqlite"])),
+        param(
+            'h',
+            marks=[
+                pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                ),
+            ],
+        ),
+        param(
+            'm',
+            marks=[
+                pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                ),
+            ],
+        ),
+        param(
+            's',
+            marks=[
+                pytest.mark.notimpl(
+                    ["impala", "sqlite"], raises=com.UnsupportedOperationError
+                ),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                ),
+            ],
+        ),
         param(
             'ms',
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["clickhouse", "impala", "mysql", "pyspark", "sqlite"],
+                    raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                ),
+            ],
         ),
         param(
             'us',
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "impala", "mysql", "pyspark", "sqlite", "trino"]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["clickhouse", "impala", "mysql", "pyspark", "sqlite", "trino"],
+                    raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                ),
+            ],
         ),
         param(
             'ns',
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "duckdb",
-                    "impala",
-                    "mysql",
-                    "postgres",
-                    "pyspark",
-                    "sqlite",
-                    "snowflake",
-                    "polars",
-                    "trino",
-                    "mssql",
-                ]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mysql",
+                        "postgres",
+                        "pyspark",
+                        "sqlite",
+                        "snowflake",
+                        "trino",
+                        "mssql",
+                    ],
+                    raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=PolarsPanicException,
+                    reason="attempt to calculate the remainder with a divisor of zero",
+                ),
+            ],
         ),
     ],
 )
-@pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="AttributeError: 'StringColumn' object has no attribute 'truncate'",
+)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name('tmp')
 
@@ -213,13 +452,30 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param(
             'W',
             marks=[
-                pytest.mark.notimpl(["impala", "mysql", "sqlite"]),
+                pytest.mark.notimpl(
+                    ["mysql"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Unsupported truncate unit W",
+                ),
+                pytest.mark.broken(["impala", "sqlite"], raises=AssertionError),
             ],
         ),
     ],
 )
-@pytest.mark.broken(["polars"], reason="snaps to the UNIX epoch")
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.broken(
+    ["polars", "druid"], reason="snaps to the UNIX epoch", raises=AssertionError
+)
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="AttributeError: 'StringColumn' object has no attribute 'date'",
+)
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit).name('tmp')
 
@@ -243,39 +499,150 @@ def test_date_truncate(backend, alltypes, df, unit):
             'Y',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.notimpl(["bigquery", 'dask', 'polars']),
+            marks=[
+                pytest.mark.notimpl(["bigquery"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    raises=TypeError,
+                    reason="duration() got an unexpected keyword argument 'years'",
+                ),
+                pytest.mark.notimpl(
+                    ['dask'],
+                    raises=ValueError,
+                    reason="Metadata inference failed in `add`.",
+                ),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Interval from integer column is unsupported for the PySpark backend.",
+                ),
+            ],
         ),
         param('Q', pd.offsets.DateOffset, marks=pytest.mark.xfail),
         param(
             'M',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.notimpl(["bigquery", 'dask', 'polars']),
+            marks=[
+                pytest.mark.notimpl(["bigquery"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ['dask'],
+                    raises=ValueError,
+                    reason="Metadata inference failed in `add`.",
+                ),
+                pytest.mark.notimpl(
+                    ['polars'],
+                    raises=TypeError,
+                    reason="duration() got an unexpected keyword argument 'months'",
+                ),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Interval from integer column is unsupported for the PySpark backend.",
+                ),
+            ],
         ),
         param(
             'W',
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
-            marks=pytest.mark.notimpl(['bigquery', 'dask']),
+            marks=[
+                pytest.mark.notimpl(['bigquery'], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ['dask'],
+                    raises=ValueError,
+                    reason="Metadata inference failed in `add`.",
+                ),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Interval from integer column is unsupported for the PySpark backend.",
+                ),
+            ],
         ),
-        param('D', pd.offsets.DateOffset, marks=pytest.mark.notimpl(["bigquery"])),
-        param('h', pd.Timedelta),
-        param('m', pd.Timedelta),
-        param('s', pd.Timedelta),
+        param(
+            'D',
+            pd.offsets.DateOffset,
+            marks=[
+                pytest.mark.notimpl(["bigquery"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Interval from integer column is unsupported for the PySpark backend.",
+                ),
+            ],
+        ),
+        param(
+            'h',
+            pd.Timedelta,
+            marks=[
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Interval from integer column is unsupported for the PySpark backend.",
+                )
+            ],
+        ),
+        param(
+            'm',
+            pd.Timedelta,
+            marks=[
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Interval from integer column is unsupported for the PySpark backend.",
+                )
+            ],
+        ),
+        param(
+            's',
+            pd.Timedelta,
+            marks=[
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Interval from integer column is unsupported for the PySpark backend.",
+                ),
+            ],
+        ),
         param(
             'ms',
             pd.Timedelta,
-            marks=pytest.mark.notimpl(["clickhouse", "mysql"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["mysql", "clickhouse"], raises=com.UnsupportedOperationError
+                ),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="Interval unit \"ms\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
+                ),
+            ],
         ),
         param(
             'us',
             pd.Timedelta,
-            marks=pytest.mark.notimpl(["clickhouse"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["clickhouse"], raises=com.UnsupportedOperationError
+                ),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="Interval unit \"us\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
+                ),
+            ],
         ),
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "pyspark", "sqlite", "snowflake", "mssql", "trino", "druid"]
+    ["datafusion", "sqlite", "snowflake", "trino", "mssql"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=com.IbisTypeError,
+    reason="Given argument with datatype interval('h') is not implicitly castable to string",
 )
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
@@ -309,14 +676,21 @@ def test_integer_to_interval_timestamp(
         "datafusion",
         "impala",
         "mysql",
-        "pyspark",
         "sqlite",
         "snowflake",
         "polars",
         "mssql",
         "trino",
         "druid",
-    ]
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    [
+        "pyspark",
+    ],
+    raises=com.UnsupportedOperationError,
+    reason="Interval from integer column is unsupported for the PySpark backend.",
 )
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
@@ -352,7 +726,17 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, _: t.timestamp_col + ibis.interval(days=4),
             lambda t, _: t.timestamp_col + pd.Timedelta(days=4),
             id='timestamp-add-interval',
-            marks=pytest.mark.notimpl(["bigquery"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["bigquery"],
+                    raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                ),
+            ],
         ),
         param(
             lambda t, _: t.timestamp_col
@@ -360,34 +744,68 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, _: t.timestamp_col
             + (pd.Timedelta(days=4) - pd.Timedelta(days=2)),
             id='timestamp-add-interval-binop',
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "dask",
-                    "impala",
-                    "mysql",
-                    "pandas",
-                    "postgres",
-                    "snowflake",
-                ]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "dask",
+                        "impala",
+                        "mysql",
+                        "pandas",
+                        "postgres",
+                        "snowflake",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                    ],
+                    raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                ),
+            ],
         ),
         param(
             lambda t, _: t.timestamp_col - ibis.interval(days=17),
             lambda t, _: t.timestamp_col - pd.Timedelta(days=17),
             id='timestamp-subtract-interval',
-            marks=pytest.mark.notimpl(["bigquery"]),
+            marks=[
+                pytest.mark.notimpl(["bigquery"], raises=com.UnsupportedOperationError),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'IntervalScalar'",
+                ),
+            ],
         ),
         param(
             lambda t, _: t.timestamp_col.date() + ibis.interval(days=4),
             lambda t, _: t.timestamp_col.dt.floor('d') + pd.Timedelta(days=4),
             id='date-add-interval',
+            marks=[
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=AttributeError,
+                    reason="'StringColumn' object has no attribute 'date'",
+                ),
+            ],
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.interval(days=14),
             lambda t, _: t.timestamp_col.dt.floor('d') - pd.Timedelta(days=14),
             id='date-subtract-interval',
+            marks=[
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=AttributeError,
+                    reason="'StringColumn' object has no attribute 'date'",
+                ),
+            ],
         ),
         param(
             lambda t, _: t.timestamp_col - ibis.timestamp(timestamp_value),
@@ -397,17 +815,47 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 )
             ).dt.floor("s"),
             id='timestamp-subtract-timestamp',
-            marks=pytest.mark.notimpl(["bigquery", "pyspark", "snowflake"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["bigquery", "snowflake"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="PySpark backend does not support TimestampDiff as there is no timedelta type.",
+                ),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'TimestampScalar'",
+                ),
+            ],
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.date(date_value),
             lambda t, _: t.timestamp_col.dt.floor('d') - date_value,
             id='date-subtract-date',
-            marks=pytest.mark.notimpl(["bigquery", "pyspark"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="PySpark backend does not support DateDiff as there is no timedelta type.",
+                ),
+                pytest.mark.notimpl(["bigquery"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=AttributeError,
+                    reason="'StringColumn' object has no attribute 'date'",
+                ),
+            ],
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "sqlite", "mssql", "trino", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion", "sqlite", "mssql", "trino"],
+    raises=com.OperationNotDefinedError,
+)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name('tmp')
     expected = expected_fn(df, backend)
@@ -425,35 +873,194 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
 @pytest.mark.parametrize(
     ('timedelta', 'temporal_fn'),
     [
-        ('36500d', plus),
-        ('5W', plus),
-        ('3d', plus),
-        param('1.5d', plus, marks=pytest.mark.notimpl(["mysql"])),
-        param('2h', plus, marks=pytest.mark.notimpl(["mysql"])),
-        param('3m', plus, marks=pytest.mark.notimpl(["mysql"])),
-        param('10s', plus, marks=pytest.mark.notimpl(["mysql"])),
-        ('36500d', minus),
-        ('5W', minus),
-        ('3d', minus),
-        param('1.5d', minus, marks=pytest.mark.notimpl(["mysql"])),
-        param('2h', minus, marks=pytest.mark.notimpl(["mysql"])),
-        param('3m', minus, marks=pytest.mark.notimpl(["mysql"])),
-        param('10s', minus, marks=pytest.mark.notimpl(["mysql"])),
+        param(
+            '36500d',
+            plus,
+            marks=[
+                pytest.mark.broken(
+                    ['druid'],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                )
+            ],
+        ),
+        param(
+            '5W',
+            plus,
+            marks=[
+                pytest.mark.broken(
+                    ['druid'],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                )
+            ],
+        ),
+        param(
+            '3d',
+            plus,
+            marks=[
+                pytest.mark.broken(
+                    ['druid'],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                )
+            ],
+        ),
+        param(
+            '1.5d',
+            plus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ['druid'],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('s') is not implicitly castable to string",
+                ),
+            ],
+        ),
+        param(
+            '2h',
+            plus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ['druid'],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('h') is not implicitly castable to string",
+                ),
+            ],
+        ),
+        param(
+            '3m',
+            plus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ['druid'],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('m') is not implicitly castable to string",
+                ),
+            ],
+        ),
+        param(
+            '10s',
+            plus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ['druid'],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval('s') is not implicitly castable to string",
+                ),
+            ],
+        ),
+        param(
+            '36500d',
+            minus,
+            marks=[
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                )
+            ],
+        ),
+        param(
+            '5W',
+            minus,
+            marks=[
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                )
+            ],
+        ),
+        param(
+            '3d',
+            minus,
+            marks=[
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                )
+            ],
+        ),
+        param(
+            '1.5d',
+            minus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+            ],
+        ),
+        param(
+            '2h',
+            minus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+            ],
+        ),
+        param(
+            '3m',
+            minus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+            ],
+        ),
+        param(
+            '10s',
+            minus,
+            marks=[
+                pytest.mark.broken(["mysql"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=TypeError,
+                    reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+            ],
+        ),
     ],
 )
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "clickhouse",
-        "datafusion",
-        "impala",
-        "sqlite",
-        "snowflake",
-        "polars",
-        "mssql",
-        "trino",
-        "druid",
-    ]
+    ["datafusion", "impala", "sqlite", "mssql", "trino"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["impala"],
+    raises=ImpalaHiveServer2Error,
+)
+@pytest.mark.notimpl(
+    ["clickhouse"],
+    raises=sqlglot.errors.ParseError,
+    reason="Invalid expression / Unexpected token.",
+)
+@pytest.mark.notimpl(
+    ["snowflake"],
+    raises=sa.exc.ProgrammingError,
+)
+@pytest.mark.notimpl(
+    ["bigquery"],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.broken(
+    ["polars"],
+    raises=AssertionError,
 )
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
@@ -468,11 +1075,20 @@ def test_temporal_binop_pandas_timedelta(
 
 
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
-@pytest.mark.notimpl(["bigquery", "druid"])
+@pytest.mark.notimpl(
+    ["bigquery"],
+    raises=TypeError,
+    reason="BigQuery does not support timestamps with timezones",
+)
 @pytest.mark.notimpl(
     ["polars"],
     raises=TypeError,
     reason="casting a timezone aware value to timezone aware dtype was removed",
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="Can only use .dt accessor with datetimelike values",
 )
 def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     ts = pd.Timestamp('20100302', tz="UTC").to_pydatetime()
@@ -492,15 +1108,88 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
 @pytest.mark.parametrize(
     "func_name",
     [
-        param("gt", marks=pytest.mark.notimpl(["dask", "pandas"])),
-        param("ge", marks=pytest.mark.notimpl(["dask", "pandas"])),
-        param("lt", marks=pytest.mark.notimpl(["dask", "pandas"])),
-        param("le", marks=pytest.mark.notimpl(["dask", "pandas"])),
+        param(
+            "gt",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "dask",
+                    ],
+                    raises=ValueError,
+                    reason="Metadata inference failed in `gt`.",
+                ),
+                pytest.mark.notimpl(
+                    ["pandas"],
+                    raises=TypeError,
+                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
+                ),
+            ],
+        ),
+        param(
+            "ge",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "dask",
+                    ],
+                    raises=ValueError,
+                    reason="Metadata inference failed in `ge`.",
+                ),
+                pytest.mark.notimpl(
+                    ["pandas"],
+                    raises=TypeError,
+                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
+                ),
+            ],
+        ),
+        param(
+            "lt",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "dask",
+                    ],
+                    raises=ValueError,
+                    reason="Metadata inference failed in `lt`.",
+                ),
+                pytest.mark.notimpl(
+                    ["pandas"],
+                    raises=TypeError,
+                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
+                ),
+            ],
+        ),
+        param(
+            "le",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "dask",
+                    ],
+                    raises=ValueError,
+                    reason="Metadata inference failed in `le`.",
+                ),
+                pytest.mark.notimpl(
+                    ["pandas"],
+                    raises=TypeError,
+                    reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
+                ),
+            ],
+        ),
         "eq",
         "ne",
     ],
 )
-@pytest.mark.notimpl(["bigquery", "druid"])
+@pytest.mark.notimpl(
+    ["bigquery"],
+    raises=TypeError,
+    reason="BigQuery does not support timestamps with timezones",
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="Can only use .dt accessor with datetimelike values",
+)
 def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name):
     ts = np.datetime64('2010-03-02 00:00:00.000123')
 
@@ -518,7 +1207,15 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "sqlite", "snowflake", "mssql", "trino", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion", "sqlite", "snowflake", "mssql", "trino"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'date'",
+)
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -531,7 +1228,15 @@ def test_interval_add_cast_scalar(backend, alltypes):
 @pytest.mark.never(
     ['pyspark'], reason="PySpark does not support casting columns to intervals"
 )
-@pytest.mark.notimpl(["datafusion", "sqlite", "snowflake", "mssql", "trino", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion", "sqlite", "snowflake", "mssql", "trino"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'date'",
+)
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -571,21 +1276,68 @@ def test_interval_add_cast_column(backend, alltypes, df):
             marks=[
                 pytest.mark.notimpl(
                     [
-                        "dask",
                         "pandas",
-                        "postgres",
-                        "pyspark",
-                        "snowflake",
-                        "polars",
-                    ]
+                    ],
+                    raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notyet(["duckdb", "impala"]),
+                pytest.mark.notimpl(
+                    [
+                        "pyspark",
+                    ],
+                    raises=AttributeError,
+                    reason="'StringConcat' object has no attribute 'value'",
+                ),
+                pytest.mark.notimpl(
+                    [
+                        "postgres",
+                        "snowflake",
+                    ],
+                    raises=AttributeError,
+                    reason="Neither 'concat' object nor 'Comparator' object has an attribute 'value'",
+                ),
+                pytest.mark.notimpl(
+                    [
+                        "polars",
+                    ],
+                    raises=com.UnsupportedArgumentError,
+                    reason="Polars does not support columnar argument StringConcat()",
+                ),
+                pytest.mark.notyet(["dask"], raises=com.OperationNotDefinedError),
+                pytest.mark.broken(
+                    ["impala"],
+                    raises=AttributeError,
+                    reason="'StringConcat' object has no attribute 'value'",
+                ),
+                pytest.mark.notyet(
+                    ["duckdb"],
+                    raises=TypeError,
+                    reason=(
+                        "DuckDB format_str must be a literal `str`; got "
+                        "<class 'ibis.expr.operations.strings.StringConcat'>"
+                    ),
+                ),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=AttributeError,
+                    reason="'StringColumn' object has no attribute 'strftime'",
+                ),
             ],
             id="column_format_str",
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "druid"])
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "mssql",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'strftime'",
+)
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
@@ -603,19 +1355,55 @@ unit_factors = {'s': 10**9, 'ms': 10**6, 'us': 10**3, 'ns': 1}
         's',
         param(
             'ms',
-            marks=pytest.mark.notimpl(["clickhouse", "pyspark"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
+                ),
+                pytest.mark.notimpl(
+                    ["clickhouse"],
+                    raises=ValueError,
+                    reason="`ms` unit is not supported!",
+                ),
+            ],
         ),
         param(
             'us',
-            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark", "mssql"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="PySpark backend does not support timestamp from unix time with unit us. Supported unit is s.",
+                ),
+                pytest.mark.notimpl(
+                    ["duckdb", "mssql", "clickhouse"],
+                    raises=ValueError,
+                    reason="`us` unit is not supported!",
+                ),
+            ],
         ),
         param(
             'ns',
-            marks=pytest.mark.notimpl(["clickhouse", "duckdb", "pyspark", "mssql"]),
+            marks=[
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
+                ),
+                pytest.mark.notimpl(
+                    ["duckdb", "mssql", "clickhouse"],
+                    raises=ValueError,
+                    reason="`ms` unit is not supported!",
+                ),
+            ],
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mysql", "postgres", "sqlite", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion", "mysql", "postgres", "sqlite", "druid"],
+    raises=com.OperationNotDefinedError,
+)
 def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
@@ -638,18 +1426,55 @@ def test_integer_to_timestamp(backend, con, unit):
         param(
             '%m/%d/%y',
             id="mysql_format",
-            marks=pytest.mark.never(
-                ["pyspark", "snowflake"],
-                reason="datetime formatting style not supported",
-            ),
+            marks=[
+                pytest.mark.never(
+                    ["pyspark"],
+                    reason=(
+                        "datetime formatting style not supported. "
+                        "Test failed with message: NaTType does not support strftime"
+                    ),
+                    raises=ValueError,
+                ),
+                pytest.mark.never(
+                    ["snowflake"],
+                    reason=(
+                        "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
+                        "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
+                    ),
+                    raises=sa.exc.ProgrammingError,
+                ),
+            ],
         ),
         param(
             'MM/dd/yy',
             id="pyspark_format",
-            marks=pytest.mark.never(
-                ["bigquery", "mysql", "polars", "duckdb", "trino"],
-                reason="datetime formatting style not supported",
-            ),
+            marks=[
+                pytest.mark.never(
+                    ["bigquery"],
+                    reason="400 Mismatch between format character 'M' and string character '0'",
+                    raises=GoogleBadRequest,
+                ),
+                pytest.mark.never(
+                    ["mysql"],
+                    reason="NaTType does not support strftime",
+                    raises=ValueError,
+                ),
+                pytest.mark.never(
+                    ["trino"],
+                    reason="datetime formatting style not supported",
+                    raises=sa.exc.ProgrammingError,
+                ),
+                pytest.mark.never(
+                    ["polars"],
+                    reason="datetime formatting style not supported",
+                    raises=PolarsComputeError,
+                ),
+                pytest.mark.never(
+                    ["duckdb"],
+                    reason="datetime formatting style not supported",
+                    raises=DuckDBInvalidInputException,
+                ),
+            ],
         ),
     ],
 )
@@ -663,8 +1488,9 @@ def test_integer_to_timestamp(backend, con, unit):
         'impala',
         'datafusion',
         'mssql',
-        "druid",
-    ]
+        'druid',
+    ],
+    raises=com.OperationNotDefinedError,
 )
 def test_string_to_timestamp(alltypes, fmt):
     table = alltypes
@@ -688,7 +1514,10 @@ def test_string_to_timestamp(alltypes, fmt):
         param('2017-01-07', 5, 'Saturday', id="saturday"),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "impala", "mssql", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion", "mssql", 'druid'], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
@@ -698,7 +1527,12 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "druid"])
+@pytest.mark.notimpl(["datafusion", "mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="StringColumn' object has no attribute 'day_of_week'",
+)
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -726,12 +1560,17 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda s: day_name(s.dt).str.len().sum(),
             id="day_of_week_full_name",
             marks=[
-                pytest.mark.notimpl(["mssql"]),
+                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
             ],
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'day_of_week'",
+)
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
@@ -753,7 +1592,9 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion", "mssql", "druid"], raises=com.OperationNotDefinedError
+)
 def test_now(con):
     expr = ibis.now()
     result = con.execute(expr.name("tmp"))
@@ -765,8 +1606,9 @@ def test_now(con):
     assert result_strftime == expected_strftime
 
 
-@pytest.mark.notimpl(["dask"], reason="Limit #2553")
-@pytest.mark.notimpl(["datafusion", "polars", "druid"])
+@pytest.mark.notimpl(["dask"], reason="Limit #2553", raises=AssertionError)
+@pytest.mark.notimpl(["polars"], reason="assert 1 == 5", raises=AssertionError)
+@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
 def test_now_from_projection(alltypes):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
@@ -794,8 +1636,24 @@ DATE_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "druid"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(
+    ["pandas", "datafusion", "dask", "pyspark"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ['druid'], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
+)
+@pytest.mark.broken(
+    ["mysql"],
+    raises=sa.exc.ProgrammingError,
+    reason=(
+        '(pymysql.err.ProgrammingError) (1064, "You have an error in your SQL syntax; '
+        'check the manual that corresponds to your MariaDB server version for '
+        'the right syntax to use near \' 2, 4) AS `DateFromYMD(2022, 2, 4)`\' at line 1")'
+        '[SQL: SELECT date(%(param_1)s, %(param_2)s, %(param_3)s) AS `DateFromYMD(2022, 2, 4)`]'
+    ),
+)
+@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
@@ -818,8 +1676,26 @@ TIMESTAMP_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "druid"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(
+    ["pandas", "datafusion", "dask", "pyspark"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ['druid'],
+    raises=sa.exc.ProgrammingError,
+    reason=(
+        "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
+        "(org.apache.calcite.tools.ValidationException): org.apache.calcite.runtime.CalciteContextException: "
+        "From line 1, column 8 to line 1, column 44: No match found for function signature "
+        "make_timestamp(<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
+    ),
+)
+@pytest.mark.broken(
+    ["mysql"],
+    raises=sa.exc.OperationalError,
+    reason="(pymysql.err.OperationalError) (1305, 'FUNCTION ibis_testing.make_timestamp does not exist')",
+)
+@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_timestamp_literal(con, backend):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
     result = con.execute(expr)
@@ -839,15 +1715,29 @@ TIMESTAMP_TIMEZONE_BACKEND_TYPES = {
     'snowflake': 'TIMESTAMP_NTZ',
     'sqlite': "text",
     'trino': 'timestamp(3) with time zone',
-    "duckdb": "TIMESTAMP",
+    "duckdb": "TIMESTAMP WITH TIME ZONE",
     "postgres": "timestamp with time zone",
 }
 
 
 @pytest.mark.notimpl(
-    ["pandas", "datafusion", "mysql", "dask", "pyspark", 'duckdb', 'sqlite']
+    ["pandas", "datafusion", "mysql", "dask", "pyspark"],
+    raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(
+    ["mysql"],
+    raises=sa.exc.OperationalError,
+    reason="FUNCTION ibis_testing.make_timestamp does not exist",
+)
+@pytest.mark.notimpl(
+    ['sqlite'],
+    raises=com.UnsupportedOperationError,
+    reason=(
+        "Unable to cast from Timestamp(timezone=None, scale=None, nullable=True) to "
+        "Timestamp(timezone='***', scale=None, nullable=True)."
+    ),
+)
+@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ('timezone', 'expected_result'),
     [
@@ -863,9 +1753,9 @@ TIMESTAMP_TIMEZONE_BACKEND_TYPES = {
                 ),
                 pytest.mark.broken(
                     ['clickhouse'],
-                    'clickhouse_driver.dbapi.errors.OperationalError: Code: 62.'
-                    'DB::Exception: Syntax error: failed at position 340 (\'/\') (line 16, col 38): '
-                    '/ London))). Expected one of: token, Comma. ',
+                    'Code: 62. DB::Exception: Syntax error: failed at position 340 (\'/\') '
+                    '(line 16, col 38): / London))). Expected one of: token, Comma. ',
+                    raises=ClickhouseOperationalError,
                 ),
             ],
         ),
@@ -889,7 +1779,14 @@ TIMESTAMP_TIMEZONE_BACKEND_TYPES = {
     "BigQuery does not support timestamps with timezones",
     raises=TypeError,
 )
-@pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=sa.exc.ProgrammingError,
+    reason=(
+        "No match found for function signature make_timestamp(<NUMERIC>, <NUMERIC>, "
+        "<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
+    ),
+)
 def test_timestamp_with_timezone_literal(con, backend, timezone, expected_result):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
     result = con.execute(expr)
@@ -918,14 +1815,28 @@ TIME_BACKEND_TYPES = {
     [
         "pandas",
         "datafusion",
-        "mysql",
         "dask",
         "pyspark",
         "polars",
-        "druid",
-    ]
+    ],
+    raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notyet(["clickhouse", "impala"])
+@pytest.mark.notyet(["clickhouse", "impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    [
+        "mysql",
+    ],
+    raises=sa.exc.ProgrammingError,
+    reason=(
+        '(pymysql.err.ProgrammingError) (1064, "You have an error in your SQL syntax; check the manual that '
+        'corresponds to your MariaDB server version for the right syntax to use near \' 20, 0) AS '
+        '`TimeFromHMS(16, 20, 0)`\' at line 1")'
+        '[SQL: SELECT time(%(param_1)s, %(param_2)s, %(param_3)s) AS `TimeFromHMS(16, 20, 0)`]'
+    ),
+)
+@pytest.mark.broken(
+    ["druid"], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
+)
 def test_time_literal(con, backend):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
@@ -1007,6 +1918,7 @@ INTERVAL_BACKEND_TYPES = {
     ['impala'],
     'AnalysisException: Syntax error in line 1: SELECT typeof(INTERVAL 1 SECOND) AS `TypeOf(1)` '
     'Encountered: ) Expected: +',
+    raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.broken(
     ['pyspark'],
@@ -1026,11 +1938,16 @@ INTERVAL_BACKEND_TYPES = {
     "AttributeError: 'TextClause' object has no attribute 'label'"
     "If SQLAlchemy >=2 is installed, test fails with the following exception:"
     "NotImplementedError",
+    raises=(NotImplementedError, AttributeError),
 )
 @pytest.mark.broken(
     ['bigquery'], "Could not convert object to NumPy timedelta", raises=ValueError
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reaason='This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
+)
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
     result = con.execute(expr)
@@ -1041,8 +1958,25 @@ def test_interval_literal(con, backend):
         assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "druid"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(
+    ["pandas", "datafusion", "dask", "pyspark"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["mysql"],
+    raises=sa.exc.ProgrammingError,
+    reason=(
+        "(pymysql.err.ProgrammingError) (1064, \"You have an error in your SQL syntax; check the manual "
+        "that corresponds to your MariaDB server version for the right syntax to use near "
+        "' CAST(EXTRACT(month FROM t0.timestamp_col) AS SIGNED INTEGER), CAST(EXTRACT(d...' at line 1\")"
+    ),
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'year'",
+)
+@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
@@ -1053,8 +1987,21 @@ def test_date_column_from_ymd(con, alltypes, df):
     tm.assert_series_equal(golden, result.timestamp_col)
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "mysql", "dask", "pyspark", "druid"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(
+    ["pandas", "datafusion", "dask", "pyspark"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
+    reason="StringColumn' object has no attribute 'year'",
+)
+@pytest.mark.broken(
+    ["mysql"],
+    raises=sa.exc.OperationalError,
+    reason="(pymysql.err.OperationalError) (1305, 'FUNCTION ibis_testing.make_timestamp does not exist')",
+)
+@pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.timestamp(
@@ -1067,7 +2014,21 @@ def test_timestamp_column_from_ymdhms(con, alltypes, df):
     tm.assert_series_equal(golden, result.timestamp_col)
 
 
-@pytest.mark.notimpl(["datafusion", "impala", "druid"])
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=sa.exc.ProgrammingError,
+    reason=(
+        "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
+        "(org.apache.calcite.tools.ValidationException): "
+        "java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: LONG"
+    ),
+)
+@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason="Arrow error: Cast error: Cannot cast string '2022-02-24' to value of Date64 type",
+)
 def test_date_scalar_from_iso(con):
     expr = ibis.literal('2022-02-24')
     expr2 = ibis.date(expr)
@@ -1076,7 +2037,18 @@ def test_date_scalar_from_iso(con):
     assert result.strftime('%Y-%m-%d') == '2022-02-24'
 
 
-@pytest.mark.notimpl(["datafusion", "impala", "mssql", "druid"])
+@pytest.mark.notimpl(["mssql", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=sa.exc.ProgrammingError,
+    reason="java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: STRING",
+)
+@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason="Arrow error: Cast error: Cannot cast string '2010-11-13' to value of Date64 type",
+)
 def test_date_column_from_iso(con, alltypes, df):
     expr = (
         alltypes.year.cast('string')
@@ -1092,8 +2064,17 @@ def test_date_column_from_iso(con, alltypes, df):
     tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))
 
 
-@pytest.mark.notimpl(["datafusion", "druid"])
-@pytest.mark.notyet(["pyspark"])
+@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason=" PySpark backend does not support extracting milliseconds.",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason="PySpark backend does not support extracting milliseconds.",
+)
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
     millis = timestamp.millisecond()
@@ -1101,7 +2082,18 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     assert result == 333
 
 
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason=(
+        "This feature is not implemented: Unsupported CAST from Int32 to Timestamp(Nanosecond, None)"
+    ),
+)
+@pytest.mark.broken(
+    ["druid"],
+    raises=sa.exc.ProgrammingError,
+    reason="No match found for function signature to_timestamp(<NUMERIC>)",
+)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -1109,7 +2101,20 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason=(
+        "Internal error: Invalid aggregate expression 'CAST(MIN(functional_alltypes.int_col) "
+        "AS Timestamp(Nanosecond, None)) AS tmp'. This was likely caused by a bug in "
+        "DataFusion's code and we would welcome that you file an bug report in our issue tracker"
+    ),
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=sa.exc.ProgrammingError,
+    reason="No match found for function signature to_timestamp(<NUMERIC>)",
+)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -1119,20 +2124,40 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 
 @pytest.mark.broken(
     ["clickhouse"],
-    reason=(
-        "Impala returns a string; "
-        "the clickhouse driver returns invalid results for big timestamps"
-    ),
+    raises=AssertionError,
 )
 @pytest.mark.notimpl(
     ["datafusion", "polars", "druid"],
     reason="Arrow backends assume a ns resolution timestamps",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    reason="No literal value renderer is available for literal value \"datetime.datetime(2419, 10, 11, 10, 10, 25)\" with datatype DATETIME",
+    raises=sa.exc.CompileError,
+)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=IndexError,
+)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=PolarsComputeError,
+    reason=(
+        "Casting from timestamp[us] to timestamp[ns] would "
+        "result in out of bounds timestamp: 14193569425000000"
+    ),
 )
 @pytest.mark.notyet(
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
+    raises=pd.errors.OutOfBoundsDatetime,
 )
-@pytest.mark.notimpl(["bigquery"], reason="bigquery returns a datetime with a timezone")
+@pytest.mark.notimpl(
+    ["bigquery"],
+    reason="bigquery returns a datetime with a timezone",
+    raises=com.OperationNotDefinedError,
+)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     value = ibis.timestamp("2419-10-11 10:10:25")
@@ -1154,8 +2179,22 @@ def build_date_col(t):
     ).cast("date")
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "druid"])
-@pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ['druid'],
+    raises=sa.exc.CompileError,
+    reason='No literal value renderer is available for literal value "datetime.date(2010, 11, 1)" with datatype DATE',
+)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=Exception,
+    reason="Arrow error: Cast error: Cannot cast string '2010-11-01' to value of Date64 type",
+)
+@pytest.mark.notyet(
+    ["impala"],
+    reason="impala doesn't support dates",
+    raises=com.UnsupportedBackendType,
+)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
     [
@@ -1186,8 +2225,29 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.broken(["clickhouse"], reason="returns incorrect results")
-@pytest.mark.notimpl(["polars", "datafusion", "pyspark", "druid"])
+@pytest.mark.broken(
+    ["clickhouse"],
+    reason="returns incorrect results",
+    raises=AssertionError,
+)
+@pytest.mark.notimpl(
+    ['druid'],
+    raises=sa.exc.CompileError,
+    reason='No literal value renderer is available for literal value "datetime.datetime(4567, 1, 1, 0, 0)" with datatype DATETIME',
+)
+@pytest.mark.notimpl(["pyspark"], raises=pd.errors.OutOfBoundsDatetime)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=IndexError,
+)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=PolarsPanicException,
+    reason=(
+        "called `Result::unwrap()` on an `Err` value: PyErr { type: <class 'OverflowError'>, "
+        "value: OverflowError('int too big to convert'), traceback: None }"
+    ),
+)
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp("4567-01-01 00:00:00")
@@ -1203,7 +2263,9 @@ def test_large_timestamp(con):
             3,
             "ms",
             id="ms",
-            marks=pytest.mark.broken(["mssql"], reason="incorrect result"),
+            marks=pytest.mark.broken(
+                ["mssql"], reason="incorrect result", raises=AssertionError
+            ),
         ),
         param(
             '2023-01-07 13:20:05.561021',
@@ -1211,8 +2273,14 @@ def test_large_timestamp(con):
             "us",
             id="us",
             marks=[
-                pytest.mark.broken(["mssql"], reason="incorrect result"),
-                pytest.mark.notyet(["sqlite"], reason="doesn't support microseconds"),
+                pytest.mark.broken(
+                    ["mssql"], reason="incorrect result", raises=AssertionError
+                ),
+                pytest.mark.notyet(
+                    ["sqlite"],
+                    reason="doesn't support microseconds",
+                    raises=AssertionError,
+                ),
             ],
         ),
         param(
@@ -1224,16 +2292,39 @@ def test_large_timestamp(con):
                 pytest.mark.broken(
                     ["clickhouse", "duckdb", "impala", "pyspark", "trino", "snowflake"],
                     reason="drivers appear to truncate nanos",
+                    raises=AssertionError,
                 ),
                 pytest.mark.notyet(
-                    ["bigquery", "mssql", "postgres", "sqlite"],
+                    ["bigquery", "postgres", "sqlite"],
                     reason="doesn't support nanoseconds",
+                    raises=AssertionError,
+                ),
+                pytest.mark.notyet(
+                    ["mssql"],
+                    reason="doesn't support nanoseconds",
+                    raises=sa.exc.OperationalError,
+                ),
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    reason=(
+                        "doesn't support nanoseconds. "
+                        "Server returns: 400 Invalid timestamp: '2023-01-07 13:20:05.561000231'",
+                    ),
+                    raises=GoogleBadRequest,
                 ),
             ],
         ),
     ],
 )
-@pytest.mark.notyet(["mysql", "druid"])
+@pytest.mark.notyet(["mysql"], raises=AssertionError)
+@pytest.mark.broken(
+    ['druid'],
+    raises=sa.exc.ProgrammingError,
+    reason=(
+        "java.lang.UnsupportedOperationException: class "
+        "org.apache.calcite.sql.SqlIdentifier: LONG"
+    ),
+)
 def test_timestamp_precision_output(con, ts, scale, unit):
     dtype = dt.Timestamp(scale=scale)
     expr = ibis.literal(ts).cast(dtype)
