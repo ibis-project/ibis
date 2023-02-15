@@ -870,8 +870,8 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
     sources
         A filesystem path or URL or list of same.
     kwargs
-        Backend-specific keyword arguments for the file type. For the DuckDB
-        backend used by default, there are no valid keywork arguments.
+        Backend-specific keyword arguments for the file type. See
+        https://duckdb.org/docs/extensions/json.html for details.
 
     Returns
     -------
@@ -880,7 +880,26 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
 
     Examples
     --------
-    >>> t = ibis.read_json("data.json")
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> lines = '''
+    ... {"a": 1, "b": "d"}
+    ... {"a": 2, "b": null}
+    ... {"a": null, "b": "f"}
+    ... '''
+    >>> with open("lines.json", mode="w") as f:
+    ...     f.write(lines)
+    >>> t = ibis.read_json("lines.json")
+    >>> t
+    ┏━━━━━━━━┳━━━━━━━━┓
+    ┃ a      ┃ b      ┃
+    ┡━━━━━━━━╇━━━━━━━━┩
+    │ uint64 │ string │
+    ├────────┼────────┤
+    │      1 │ d      │
+    │      2 │ ∅      │
+    │      ∅ │ f      │
+    └────────┴────────┘
     """
     from ibis.config import _default_backend
 

@@ -12,8 +12,14 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMappi
 import sqlalchemy as sa
 import toolz
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
+from ibis.backends.duckdb.datatypes import parse
 
 if TYPE_CHECKING:
     import duckdb
@@ -21,12 +27,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.operations as ops
-
-import ibis.expr.schema as sch
-import ibis.expr.types as ir
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
-from ibis.backends.duckdb.datatypes import parse
 
 # counters for in-memory, parquet, csv, and json reads
 # used if no table name is specified
@@ -229,6 +229,7 @@ class Backend(BaseAlchemyBackend):
             f"please call one of {msg} directly"
         )
 
+    @util.experimental
     def read_json(
         self,
         source_list: str | list[str] | tuple[str],
@@ -237,6 +238,8 @@ class Backend(BaseAlchemyBackend):
     ) -> ir.Table:
         """Read newline-delimited JSON into an ibis table.
 
+        !!! note "This feature requires duckdb>=0.7.0"
+
         Parameters
         ----------
         source_list
@@ -244,36 +247,33 @@ class Backend(BaseAlchemyBackend):
         table_name
             Optional table name
         kwargs
-            Additional keyword arguments passed to DuckDB's `read_json_objects` function
+            Additional keyword arguments passed to DuckDB's `read_json_auto` function
 
         Returns
         -------
         Table
             An ibis table expression
         """
+        from packaging.version import parse as vparse
+
+        if (version := vparse(self.version)) < vparse("0.7.0"):
+            raise exc.IbisError(
+                f"`read_json` requires duckdb >= 0.7.0, duckdb {version} is installed"
+            )
         if not table_name:
             table_name = f"ibis_read_json_{next(json_n)}"
 
-        source_list = normalize_filenames(source_list)
-
-        objects = (
-            sa.func.read_json_objects(
-                sa.func.list_value(*source_list), _format_kwargs(kwargs)
-            )
-            .table_valued("raw")
-            .render_derived()
+        view = _create_view(
+            sa.table(table_name),
+            sa.select(sa.literal_column("*")).select_from(
+                sa.func.read_json_auto(
+                    sa.func.list_value(*normalize_filenames(source_list)),
+                    _format_kwargs(kwargs),
+                )
+            ),
+            or_replace=True,
         )
-        # read a single row out to get the schema, assumes the first row is representative
-        json_structure_query = sa.select(sa.func.json_structure(objects.c.raw)).limit(1)
-
         with self.begin() as con:
-            json_structure = con.execute(json_structure_query).scalar()
-            data = sa.select(sa.literal_column("s.*")).select_from(
-                sa.select(
-                    sa.func.json_transform(objects.c.raw, json_structure).label("s")
-                ).subquery()
-            )
-            view = _create_view(sa.table(table_name), data, or_replace=True)
             con.execute(view)
 
         return self.table(table_name)
