@@ -361,7 +361,11 @@ def test_string_col_is_unicode(alltypes, df):
             id='ascii_str',
             marks=[
                 pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-                pytest.mark.notimpl(["druid"]),
+                pytest.mark.broken(
+                    ["druid"],
+                    raises=sa.exc.ProgrammingError,
+                    reason="No match found for function signature ascii(<CHARACTER>)",
+                ),
             ],
         ),
         param(
@@ -381,7 +385,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.broken(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
                 ),
@@ -411,7 +415,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason=(
@@ -606,7 +610,7 @@ def test_string_col_is_unicode(alltypes, df):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
-                pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -656,7 +660,7 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(

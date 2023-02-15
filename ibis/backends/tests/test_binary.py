@@ -16,20 +16,16 @@ BINARY_BACKEND_TYPES = {
     "postgres": "bytea",
 }
 
-pytestmark = pytest.mark.notimpl(["druid"])
+pytestmark = pytest.mark.broken(["druid"], raises=AssertionError)
 
 
-@pytest.mark.broken(
-    ['polars'],
-    "ValueError: could not convert value \"b'A'\" as a Literal",
-)
 @pytest.mark.broken(
     ['trino'],
     "(builtins.AttributeError) 'bytes' object has no attribute 'encode'",
     raises=sqlalchemy.exc.StatementError,
 )
 @pytest.mark.broken(
-    ['clickhouse', 'impala'],
+    ['clickhouse', 'impala', 'polars'],
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )

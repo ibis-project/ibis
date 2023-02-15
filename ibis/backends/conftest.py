@@ -92,6 +92,20 @@ TEST_TABLES = {
     ),
 }
 
+# We want to check for exceptions in xfail tests for two reasons:
+# * xfail tests without exception checking may hide problems.
+#   For example, the implementation may work, but we may have an error in the test that needs to be fixed.
+# * facilitates code reviews
+# For now, many of our tests don't do this, and we're working to change this situation
+# by improving all tests file by file. All files that have already been improved are
+# added to this list to prevent regression.
+FIlES_WITH_STRICT_EXCEPTION_CHECK = [
+    'ibis/backends/tests/test_binary.py',
+    'ibis/backends/tests/test_numeric.py',
+    'ibis/backends/tests/test_string.py',
+    'ibis/backends/tests/test_uuid.py',
+]
+
 
 @pytest.fixture(scope='session')
 def script_directory() -> Path:
@@ -380,6 +394,11 @@ def pytest_runtest_call(item):
     # This xfails so that you know when it starts to pass
     for marker in item.iter_markers(name="notimpl"):
         if backend in marker.args[0]:
+            if (
+                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
+                and "raises" not in marker.kwargs.keys()
+            ):
+                raise ValueError("notimpl requires a raises")
             reason = marker.kwargs.get("reason")
             item.add_marker(
                 pytest.mark.xfail(
@@ -392,6 +411,11 @@ def pytest_runtest_call(item):
     # This xfails so that you know when it starts to pass
     for marker in item.iter_markers(name="notyet"):
         if backend in marker.args[0]:
+            if (
+                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
+                and "raises" not in marker.kwargs.keys()
+            ):
+                raise ValueError("notyet requires a raises")
             reason = marker.kwargs.get("reason")
             item.add_marker(
                 pytest.mark.xfail(
@@ -415,6 +439,11 @@ def pytest_runtest_call(item):
     # bring it to attention  -- USE SPARINGLY
     for marker in item.iter_markers(name="broken"):
         if backend in marker.args[0]:
+            if (
+                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
+                and "raises" not in marker.kwargs.keys()
+            ):
+                raise ValueError("broken requires a raises")
             reason = marker.kwargs.get("reason")
             item.add_marker(
                 pytest.mark.xfail(
