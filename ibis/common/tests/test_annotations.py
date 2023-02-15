@@ -237,7 +237,21 @@ def test_annotated_function_with_type_annotations():
     assert test(2, 3, "4") == (2, 3, "4")
 
 
-def test_annotated_function_with_type_annotations_and_overrides():
+def test_annotated_function_with_return_type_annotation():
+    @annotated
+    def test_ok(a: int, b: int, c: int = 1) -> int:
+        return a + b + c
+
+    @annotated
+    def test_wrong(a: int, b: int, c: int = 1) -> int:
+        return "invalid result"
+
+    assert test_ok(2, 3) == 6
+    with pytest.raises(TypeError):
+        test_wrong(2, 3)
+
+
+def test_annotated_function_with_keyword_overrides():
     @annotated(b=instance_of(float))
     def test(a: int, b: int, c: int = 1):
         return a + b + c
@@ -246,6 +260,28 @@ def test_annotated_function_with_type_annotations_and_overrides():
         test(2, 3)
 
     assert test(2, 3.0) == 6.0
+
+
+def test_annotated_function_with_list_overrides():
+    @annotated([instance_of(int), instance_of(int), instance_of(float)])
+    def test(a: int, b: int, c: int = 1):
+        return a + b + c
+
+    with pytest.raises(TypeError):
+        test(2, 3, 4)
+
+
+def test_annotated_function_with_list_overrides_and_return_override():
+    @annotated(
+        [instance_of(int), instance_of(int), instance_of(float)], instance_of(float)
+    )
+    def test(a: int, b: int, c: int = 1):
+        return a + b + c
+
+    with pytest.raises(TypeError):
+        test(2, 3, 4)
+
+    assert test(2, 3, 4.0) == 9.0
 
 
 def short_str(x, this):
@@ -277,3 +313,23 @@ def test_annotated_function_with_complex_type_annotations():
         test("123", 1)
     with pytest.raises(TypeError, match="passes none of the following rules"):
         test("abcd", "qweqwe")
+
+
+def test_annotated_function_without_annotations():
+    @annotated
+    def test(a, b, c):
+        return a, b, c
+
+    assert test(1, 2, 3) == (1, 2, 3)
+    assert test.__signature__.parameters.keys() == {'a', 'b', 'c'}
+
+
+def test_annotated_function_without_decoration():
+    def test(a, b, c):
+        return a + b + c
+
+    func = annotated(test)
+    with pytest.raises(TypeError):
+        func(1, 2)
+
+    assert func(1, 2, c=3) == 6

@@ -1561,6 +1561,24 @@ def test_array_length_scalar():
     assert isinstance(expr.op(), ops.ArrayLength)
 
 
+def double_int(x):
+    return x * 2
+
+
+def double_float(x):
+    return x * 2.0
+
+
+def test_array_map():
+    arr = ibis.array([1, 2, 3])
+
+    result_int = arr.map(double_int)
+    result_float = arr.map(double_float)
+
+    assert result_int.type() == dt.Array(dt.int16)
+    assert result_float.type() == dt.Array(dt.float64)
+
+
 @pytest.mark.parametrize(
     ("func", "expected_type"),
     [
@@ -1660,9 +1678,3 @@ def test_quantile_shape():
     (b1,) = expr.op().selections
 
     assert b1.output_shape.is_columnar()
-
-
-def test_array_map():
-    a = ibis.array([1, 2, 3])
-    r = a.map(lambda x: x * 2.1)
-    assert r.type() == dt.Array(dt.float64)

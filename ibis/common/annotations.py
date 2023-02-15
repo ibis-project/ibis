@@ -4,8 +4,6 @@ import functools
 import inspect
 from typing import Any
 
-import toolz
-
 from ibis.common.validators import Validator, any_, option
 from ibis.util import DotDict
 
@@ -170,24 +168,36 @@ class Signature(inspect.Signature):
         return cls(inherited_args + new_args + new_kwargs + inherited_kwargs)
 
     @classmethod
-    def from_callable(cls, fn, validators=None):
+    def from_callable(cls, fn, validators=None, return_validator=None):
         """Create a validateable signature from a callable.
 
         Parameters
         ----------
         fn : Callable
             Callable to create a signature from.
-        validators : dict, default None
-            Pass validators for missing type annotations.
+        validators : list or dict, default None
+            Pass validators to add missing or override existing argument type
+            annotations.
+        return_validator : Validator, default None
+            Validator for the return value of the callable.
 
         Returns
         -------
         Signature
         """
         sig = super().from_callable(fn)
-        params = []
-        validators = validators or {}
 
+        if validators is None:
+            validators = {}
+        elif isinstance(validators, list):
+            # create a mapping of parameter name to validator
+            validators = dict(zip(sig.parameters.keys(), validators))
+        elif not isinstance(validators, dict):
+            raise TypeError(
+                f'validators must be a list or dict, got {type(validators)}'
+            )
+
+        parameters = []
         for param in sig.parameters.values():
             if param.kind in {
                 VAR_POSITIONAL,
@@ -211,9 +221,18 @@ class Signature(inspect.Signature):
             else:
                 annot = Argument.default(param.default, validator)
 
-            params.append(Parameter(param.name, annot))
+            parameters.append(Parameter(param.name, annot))
 
-        return cls(params)
+        if return_validator is not None:
+            return_annotation = return_validator
+        elif sig.return_annotation is not EMPTY:
+            return_annotation = Validator.from_annotation(
+                sig.return_annotation, module=fn.__module__
+            )
+        else:
+            return_annotation = EMPTY
+
+        return cls(parameters, return_annotation=return_annotation)
 
     def unbind(self, this: Any):
         """Reverse bind of the parameters.
@@ -262,6 +281,24 @@ class Signature(inspect.Signature):
 
         return this
 
+    def validate_return(self, value):
+        """Validate the return value of a function.
+
+        Parameters
+        ----------
+        value : Any
+            Return value of the function.
+
+        Returns
+        -------
+        validated : Any
+            Validated return value.
+        """
+        if self.return_annotation is EMPTY:
+            return value
+        else:
+            return self.return_annotation(value)
+
 
 # aliases for convenience
 attribute = Attribute
@@ -275,11 +312,10 @@ default = Argument.default
 # TODO(kszucs): try a quicker curry implementation
 
 
-@toolz.curry
-def annotated(fn, **validators):
+def annotated(_1=None, _2=None, _3=None, **kwargs):
     """Create functions with arguments validated at runtime.
 
-    There are three ways to apply this decorator:
+    There are various ways to apply this decorator:
 
     1. With type annotations
 
@@ -287,7 +323,7 @@ def annotated(fn, **validators):
     ... def foo(x: int, y: str) -> float:
     ...     return float(x) + float(y)
 
-    2. With validators
+    2. With argument validators passed as keyword arguments
 
     >>> from ibis.common.validate import instance_of
     >>> @annotated(x=instance_of(int), y=instance_of(str))
@@ -298,24 +334,60 @@ def annotated(fn, **validators):
 
     >>> @annotated(x=instance_of(float))
     ... def foo(x: int, y: str) -> float:
-    ...     return x + float(y)
+    ...     return float(x) + float(y)
+
+    4. With argument validators passed as a list and/or an optional return validator
+
+    >>> @annotated([instance_of(int), instance_of(str)], instance_of(float))
+    ... def foo(x, y):
+    ...     return float(x) + float(y)
 
     Parameters
     ----------
-    fn : Callable
-        Callable to wrap.
-    **validators : dict[str, Validator]
+    *args : Union[
+                tuple[Callable],
+                tuple[list[Validator], Callable],
+                tuple[list[Validator], Validator, Callable]
+            ]
+        Positional arguments.
+        - If a single callable is passed, it's wrapped with the signature
+        - If two arguments are passed, the first one is a list of validators for the
+          arguments and the second one is the callable to wrap
+        - If three arguments are passed, the first one is a list of validators for the
+          arguments, the second one is a validator for the return value and the third
+          one is the callable to wrap
+    **kwargs : dict[str, Validator]
         Validators for the arguments.
 
     Returns
     -------
     Callable
     """
-    sig = Signature.from_callable(fn, validators=validators)
+    if _1 is None:
+        return functools.partial(annotated, **kwargs)
+    elif _2 is None:
+        if callable(_1):
+            func, validators, return_validator = _1, None, None
+        else:
+            return functools.partial(annotated, _1, **kwargs)
+    elif _3 is None:
+        if not isinstance(_2, Validator):
+            func, validators, return_validator = _2, _1, None
+        else:
+            return functools.partial(annotated, _1, _2, **kwargs)
+    else:
+        func, validators, return_validator = _3, _1, _2
 
-    @functools.wraps(fn)
+    sig = Signature.from_callable(
+        func, validators=validators or kwargs, return_validator=return_validator
+    )
+
+    @functools.wraps(func)
     def wrapped(*args, **kwargs):
         kwargs = sig.validate(*args, **kwargs)
-        return fn(**kwargs)
+        result = sig.validate_return(func(**kwargs))
+        return result
+
+    wrapped.__signature__ = sig
 
     return wrapped

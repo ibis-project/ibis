@@ -1342,4 +1342,4 @@ def _argument(op, **_):
 def _array_map(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
-    return f"arrayMap(({', '.join(op.signature)}) -> {result}, {arg})"
+    return f"arrayMap(({op.parameter}) -> {result}, {arg})"

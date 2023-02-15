@@ -235,7 +235,7 @@ def compiles_list_apply(element, compiler, **kw):
 def _array_map(t, op):
     return array_map(
         t.translate(op.arg),
-        sa.literal_column(f"({', '.join(op.signature)})"),
+        sa.literal_column(f"({op.parameter})"),
         t.translate(op.result),
     )
 
