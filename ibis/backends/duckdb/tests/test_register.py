@@ -5,9 +5,9 @@ from pathlib import Path
 import pandas as pd
 import pyarrow as pa
 import pytest
-import sqlalchemy as sa
 
 import ibis
+import ibis.common.exceptions as exc
 
 
 def test_read_csv(data_directory):
@@ -20,6 +20,9 @@ def test_read_parquet(data_directory):
     assert t.count().execute()
 
 
+@pytest.mark.xfail_version(
+    duckdb=["duckdb<0.7.0"], reason="read_json_auto doesn't exist", raises=exc.IbisError
+)
 def test_read_json(data_directory, tmp_path):
     pqt = ibis.read_parquet(data_directory / "functional_alltypes.parquet")
 
@@ -34,13 +37,12 @@ def test_read_json(data_directory, tmp_path):
 
 
 def test_temp_directory(tmp_path):
-    query = sa.text("SELECT value FROM duckdb_settings() WHERE name = 'temp_directory'")
+    query = "SELECT current_setting('temp_directory')"
 
     # 1. in-memory + no temp_directory specified
     con = ibis.duckdb.connect()
     with con.begin() as c:
-        cur = c.execute(query)
-        value = cur.scalar()
+        value = c.exec_driver_sql(query).scalar()
         assert value  # we don't care what the specific value is
 
     temp_directory = Path(tempfile.gettempdir()) / "duckdb"
@@ -48,8 +50,7 @@ def test_temp_directory(tmp_path):
     # 2. in-memory + temp_directory specified
     con = ibis.duckdb.connect(temp_directory=temp_directory)
     with con.begin() as c:
-        cur = c.execute(query)
-        value = cur.scalar()
+        value = c.exec_driver_sql(query).scalar()
     assert value == str(temp_directory)
 
     # 3. on-disk + no temp_directory specified
@@ -59,8 +60,7 @@ def test_temp_directory(tmp_path):
     # 4. on-disk + temp_directory specified
     con = ibis.duckdb.connect(tmp_path / "test2.ddb", temp_directory=temp_directory)
     with con.begin() as c:
-        cur = c.execute(query)
-        value = cur.scalar()
+        value = c.exec_driver_sql(query).scalar()
     assert value == str(temp_directory)
 
 
