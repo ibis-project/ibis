@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import contextlib
 import re
-import warnings
 from typing import Iterable, Literal
 
 import sqlalchemy as sa
@@ -100,23 +98,15 @@ class Backend(BaseAlchemyBackend):
         )
 
         self.database_name = alchemy_url.database
-        super().do_connect(sa.create_engine(alchemy_url))
 
-    @contextlib.contextmanager
-    def begin(self):
-        with super().begin() as bind:
-            prev = bind.exec_driver_sql('SELECT @@session.time_zone').scalar()
-            try:
-                bind.exec_driver_sql("SET @@session.time_zone = 'UTC'")
-            except Exception as e:  # noqa: BLE001
-                warnings.warn(f"Couldn't set MySQL timezone: {e}")
+        engine = sa.create_engine(alchemy_url)
 
-            yield bind
-            stmt = sa.text("SET @@session.time_zone = :prev").bindparams(prev=prev)
-            try:
-                bind.execute(stmt)
-            except Exception as e:  # noqa: BLE001
-                warnings.warn(f"Couldn't reset MySQL timezone: {e}")
+        @sa.event.listens_for(engine, "connect")
+        def connect(dbapi_connection, connection_record):
+            with dbapi_connection.cursor() as cur:
+                cur.execute("SET @@session.time_zone = 'UTC'")
+
+        super().do_connect(engine)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         if (

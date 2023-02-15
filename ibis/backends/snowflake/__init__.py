@@ -158,6 +158,7 @@ class Backend(BaseAlchemyBackend):
             dialect = engine.dialect
             quote = dialect.preparer(dialect).quote_identifier
             with dbapi_connection.cursor() as cur:
+                cur.execute("ALTER SESSION SET TIMEZONE = 'UTC'")
                 (database, schema) = cur.execute(
                     "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
                 ).fetchone()
@@ -172,21 +173,6 @@ class Backend(BaseAlchemyBackend):
                     )
 
         return super().do_connect(engine)
-
-    @contextlib.contextmanager
-    def begin(self):
-        with super().begin() as bind:
-            prev = (
-                bind.exec_driver_sql("SHOW PARAMETERS LIKE 'TIMEZONE' IN SESSION")
-                .mappings()
-                .fetchone()
-                .value
-            )
-            bind.exec_driver_sql("ALTER SESSION SET TIMEZONE = 'UTC'")
-            yield bind
-            bind.execute(
-                sa.text("ALTER SESSION SET TIMEZONE = :prev").bindparams(prev=prev)
-            )
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **_: Any

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 from typing import TYPE_CHECKING, Iterable, Literal
 
 import sqlalchemy as sa
@@ -111,7 +110,15 @@ class Backend(BaseAlchemyBackend):
         connect_args = {}
         if schema is not None:
             connect_args["options"] = f"-csearch_path={schema}"
-        super().do_connect(sa.create_engine(alchemy_url, connect_args=connect_args))
+
+        engine = sa.create_engine(alchemy_url, connect_args=connect_args)
+
+        @sa.event.listens_for(engine, "connect")
+        def connect(dbapi_connection, connection_record):
+            with dbapi_connection.cursor() as cur:
+                cur.execute("SET TIMEZONE = UTC")
+
+        super().do_connect(engine)
 
     def list_databases(self, like=None):
         with self.begin() as con:
@@ -123,13 +130,6 @@ class Backend(BaseAlchemyBackend):
                 ).mappings()
             ]
         return self._filter_with_like(databases, like)
-
-    @contextlib.contextmanager
-    def begin(self):
-        with super().begin() as bind:
-            # LOCAL takes effect for the current transaction only
-            bind.exec_driver_sql("SET LOCAL TIMEZONE = UTC")
-            yield bind
 
     def udf(
         self,

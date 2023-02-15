@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import contextlib
 from typing import Literal
 
 import sqlalchemy as sa
@@ -38,15 +37,15 @@ class Backend(BaseAlchemyBackend):
             driver=f'mssql+{driver}',
         )
         self.database_name = alchemy_url.database
-        super().do_connect(sa.create_engine(alchemy_url))
 
-    @contextlib.contextmanager
-    def begin(self):
-        with super().begin() as bind:
-            prev = bind.exec_driver_sql("SELECT @@DATEFIRST").scalar()
-            bind.exec_driver_sql("SET DATEFIRST 1")
-            yield bind
-            bind.execute(sa.text("SET DATEFIRST :prev").bindparams(prev=prev))
+        engine = sa.create_engine(alchemy_url)
+
+        @sa.event.listens_for(engine, "connect")
+        def connect(dbapi_connection, connection_record):
+            with dbapi_connection.cursor() as cur:
+                cur.execute("SET DATEFIRST 1")
+
+        return super().do_connect(engine)
 
     def _metadata(self, query):
         if query in self.list_tables():
