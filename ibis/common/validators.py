@@ -59,11 +59,15 @@ class Validator(Callable):
             (inner,) = map(cls.from_annotation, get_args(annot))
             return sequence_of(inner, type=origin_type)
         elif issubclass(origin_type, Mapping):
-            key_type, value_type = map(cls.from_annotation, get_args(annot))
-            return mapping_of(key_type, value_type, type=origin_type)
+            key_inner, value_inner = map(cls.from_annotation, get_args(annot))
+            return mapping_of(key_inner, value_inner, type=origin_type)
         elif issubclass(origin_type, Callable):
-            # TODO(kszucs): add a more comprehensive callable_with rule here
-            return instance_of(Callable)
+            if args := get_args(annot):
+                arg_inners = map(cls.from_annotation, args[0])
+                return_inner = cls.from_annotation(args[1])
+                return callable_with(tuple(arg_inners), return_inner)
+            else:
+                return instance_of(Callable)
         else:
             raise NotImplementedError(
                 f"Cannot create validator from annotation {annot} {origin_type}"
@@ -264,13 +268,13 @@ def mapping_of(key_inner, value_inner, arg, *, type, **kwargs):
 
 
 @validator
-def callable_with(args_inner, return_inner, value, **kwargs):
+def callable_with(arg_inners, return_inner, value, **kwargs):
     from ibis.common.annotations import annotated
 
     if not callable(value):
         raise IbisTypeError("Argument must be a callable")
 
-    fn = annotated(args_inner, return_inner, value)
+    fn = annotated(arg_inners, return_inner, value)
 
     has_varargs = False
     positional, keyword_only = [], []
@@ -286,9 +290,9 @@ def callable_with(args_inner, return_inner, value, **kwargs):
         raise IbisTypeError(
             "Callable has mandatory keyword-only arguments which cannot be specified"
         )
-    elif len(positional) > len(args_inner):
+    elif len(positional) > len(arg_inners):
         raise IbisTypeError("Callable has more positional arguments than expected")
-    elif len(positional) < len(args_inner) and not has_varargs:
+    elif len(positional) < len(arg_inners) and not has_varargs:
         raise IbisTypeError("Callable has less positional arguments than expected")
     else:
         return fn
