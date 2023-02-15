@@ -12,6 +12,7 @@ from ibis.common.validators import (
     all_of,
     any_of,
     bool_,
+    callable_with,
     dict_of,
     equal_to,
     frozendict_of,
@@ -169,3 +170,37 @@ def test_mapping_of():
 
     with pytest.raises(TypeError, match="Argument must be a mapping"):
         mapping_of(str, float, 10, type=dict)
+
+
+def test_callable_with():
+    def func(a, b):
+        return str(a) + b
+
+    def func_with_kwargs(a, b, c=1):
+        return str(a) + b + str(c)
+
+    def func_with_mandatory_kwargs(*, c):
+        return c
+
+    with pytest.raises(TypeError, match="Argument must be a callable"):
+        callable_with([instance_of(int), instance_of(str)], 10, "string")
+
+    with pytest.raises(TypeError, match="unsupported parameter kind KEYWORD_ONLY"):
+        callable_with([instance_of(int)], instance_of(str), func_with_mandatory_kwargs)
+
+    msg = "Callable has more positional arguments than expected"
+    with pytest.raises(TypeError, match=msg):
+        callable_with([instance_of(int)] * 2, instance_of(str), func_with_kwargs)
+
+    msg = "Callable has less positional arguments than expected"
+    with pytest.raises(TypeError, match=msg):
+        callable_with([instance_of(int)] * 4, instance_of(str), func_with_kwargs)
+
+    wrapped = callable_with(
+        [instance_of(int), instance_of(str)], instance_of(str), func
+    )
+    assert wrapped(1, "st") == "1st"
+
+    msg = "Given argument with type <class 'int'> is not an instance of <class 'str'>"
+    with pytest.raises(TypeError, match=msg):
+        wrapped(1, 2)

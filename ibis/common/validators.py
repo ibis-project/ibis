@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from abc import ABC, abstractmethod
 from contextlib import suppress
+from inspect import Parameter
 from typing import Any, Callable, Iterable, Literal, Mapping, Sequence, Union
 
 import toolz
@@ -260,6 +261,37 @@ def mapping_of(key_inner, value_inner, arg, *, type, **kwargs):
     return type(
         (key_inner(k, **kwargs), value_inner(v, **kwargs)) for k, v in arg.items()
     )
+
+
+@validator
+def callable_with(args_inner, return_inner, value, **kwargs):
+    from ibis.common.annotations import annotated
+
+    if not callable(value):
+        raise IbisTypeError("Argument must be a callable")
+
+    fn = annotated(args_inner, return_inner, value)
+
+    has_varargs = False
+    positional, keyword_only = [], []
+    for p in fn.__signature__.parameters.values():
+        if p.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD):
+            positional.append(p)
+        elif p.kind is Parameter.KEYWORD_ONLY:
+            keyword_only.append(p)
+        elif p.kind is Parameter.VAR_POSITIONAL:
+            has_varargs = True
+
+    if keyword_only:
+        raise IbisTypeError(
+            "Callable has mandatory keyword-only arguments which cannot be specified"
+        )
+    elif len(positional) > len(args_inner):
+        raise IbisTypeError("Callable has more positional arguments than expected")
+    elif len(positional) < len(args_inner) and not has_varargs:
+        raise IbisTypeError("Callable has less positional arguments than expected")
+    else:
+        return fn
 
 
 @validator

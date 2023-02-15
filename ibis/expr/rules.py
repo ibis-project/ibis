@@ -14,6 +14,7 @@ from ibis import util
 from ibis.common.annotations import attribute, optional
 from ibis.common.validators import (
     bool_,
+    callable_with,  # noqa: F401
     coerced_to,  # noqa: F401
     equal_to,  # noqa: F401
     instance_of,
@@ -100,6 +101,12 @@ class rule(validator):
 
 # ---------------------------------------------------------------------
 # Input type validators / coercion functions
+
+
+@validator
+def expr_of(inner, value, **kwargs):
+    value = inner(value, **kwargs)
+    return value if isinstance(value, ir.Expr) else value.to_expr()
 
 
 @rule

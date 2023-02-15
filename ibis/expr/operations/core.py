@@ -90,21 +90,6 @@ class Value(Node, Named):
 
 
 @public
-class Argument(Value):
-    name = rlz.instance_of(str)
-    shape = rlz.instance_of(rlz.Shape)
-    dtype = rlz.datatype
-
-    @property
-    def output_dtype(self) -> dt.DataType:
-        return self.dtype
-
-    @property
-    def output_shape(self) -> rlz.Shape:
-        return self.shape
-
-
-@public
 class Alias(Value):
     arg = rlz.any
     name = rlz.instance_of(str)
@@ -134,6 +119,21 @@ class Binary(Value):
     @property
     def output_shape(self):
         return max(self.left.output_shape, self.right.output_shape)
+
+
+@public
+class Argument(Value):
+    name = rlz.instance_of(str)
+    shape = rlz.instance_of(rlz.Shape)
+    dtype = rlz.datatype
+
+    @property
+    def output_dtype(self) -> dt.DataType:
+        return self.dtype
+
+    @property
+    def output_shape(self) -> rlz.Shape:
+        return self.shape
 
 
 public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)

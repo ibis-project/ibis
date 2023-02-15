@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import inspect
-from typing import Callable
-
 from public import public
 
 import ibis.common.exceptions as com
@@ -94,30 +91,28 @@ class ArrayRepeat(Value):
 @public
 class ArrayMap(Value):
     arg = rlz.array
-    # TODO(kszucs): add a callable_with validator to support callable arguments
-    # and return type, e.g. Callable[[ops.Argument], ops.Value] in this case
-    func = rlz.instance_of(Callable)
+    func = rlz.callable_with([rlz.expr_of(rlz.any)], rlz.any)
 
-    output_shape = rlz.shape_like("arg")
+    @attribute.default
+    def parameter(self):
+        (name,) = self.func.__signature__.parameters.keys()
+        return name
 
     @attribute.default
     def result(self):
-        arg = self.arg
-        shape = arg.output_shape
-        dtype = arg.output_dtype.value_type
-        args = [
-            Argument(name=name, shape=shape, dtype=dtype).to_expr()
-            for name in self.signature
-        ]
-        expr = self.func(*args)
-        return expr.op()
-
-    @property
-    def signature(self):
-        return list(inspect.signature(self.func).parameters.keys())
+        arg = Argument(
+            name=self.parameter,
+            shape=self.arg.output_shape,
+            dtype=self.arg.output_dtype.value_type,
+        )
+        return self.func(arg)
 
     @attribute.default
-    def output_dtype(self):
+    def output_shape(self):
+        return self.arg.output_shape
+
+    @attribute.default
+    def output_dtype(self) -> dt.DataType:
         return dt.Array(self.result.output_dtype)
 
 
