@@ -795,7 +795,7 @@ def find_subqueries(node: ops.Node) -> Counter:
 
     # keep duplicates so we can determine where an expression is used
     # more than once
-    list(g.traverse(finder, node, dedup=False))
+    util.consume(g.traverse(finder, node))
 
     return counts
 

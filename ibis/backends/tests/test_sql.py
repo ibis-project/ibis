@@ -114,3 +114,18 @@ def test_group_by_has_index(backend, snapshot):
     ).agg(total_pop=_.population.sum())
     sql = str(ibis.to_sql(expr, dialect=backend.name()))
     snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
+)
+def test_cte_refs_in_topo_order(backend, snapshot):
+    mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name='leaf')
+
+    mr1 = mr0.filter(ibis.literal(True))
+
+    mr2 = mr1.join(mr1[['key']], ["key"])
+    mr3 = mr2.join(mr2, ['key'])
+
+    sql = str(ibis.to_sql(mr3, dialect=backend.name()))
+    snapshot.assert_match(sql, "out.sql")
