@@ -127,6 +127,7 @@ class QueryContext:
         return None
 
     def is_extracted(self, node):
+        # See #173. Might have been extracted already in a parent context.
         return node in self.top_context.extracted_subexprs
 
     def set_extracted(self, node):

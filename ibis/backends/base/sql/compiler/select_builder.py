@@ -381,7 +381,6 @@ class SelectBuilder:
 
         self.subqueries = []
         for node in subqueries:
-            # See #173. Might have been extracted already in a parent context.
             if not self.context.is_extracted(node):
                 self.subqueries.append(node)
                 self.context.set_extracted(node)
