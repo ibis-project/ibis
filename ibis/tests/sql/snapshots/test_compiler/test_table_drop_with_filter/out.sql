@@ -1,18 +1,22 @@
-SELECT t0.*
-FROM (
-  SELECT t1.`a`
-  FROM (
-    SELECT t3.`a`, t3.`b`, '2018-01-01T00:00:00' AS `the_date`
-    FROM (
-      SELECT t4.*
-      FROM (
-        SELECT t5.`a`, t5.`b`, t5.`c` AS `C`
-        FROM t t5
-      ) t4
-      WHERE t4.`C` = '2018-01-01T00:00:00'
-    ) t3
-  ) t1
-    INNER JOIN s t2
-      ON t1.`b` = t2.`b`
-) t0
-WHERE t0.`a` < 1.0
+WITH t0 AS (
+  SELECT t4.`a`, t4.`b`, t4.`c` AS `C`
+  FROM t t4
+),
+t1 AS (
+  SELECT t0.*
+  FROM t0
+  WHERE t0.`C` = '2018-01-01T00:00:00'
+),
+t2 AS (
+  SELECT t1.`a`, t1.`b`, '2018-01-01T00:00:00' AS `the_date`
+  FROM t1
+),
+t3 AS (
+  SELECT t2.`a`
+  FROM t2
+    INNER JOIN s t5
+      ON t2.`b` = t5.`b`
+)
+SELECT t3.*
+FROM t3
+WHERE t3.`a` < 1.0
