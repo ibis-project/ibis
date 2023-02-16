@@ -476,6 +476,11 @@ def string_translate(op):
     return df.functions.translate(*map(translate, op.args))
 
 
+@translate.register(ops.StringAscii)
+def string_ascii(op):
+    return df.functions.ascii(translate(op.arg))
+
+
 @translate.register(ops.RegexExtract)
 def regex_extract(op):
     arg = translate(op.arg)
