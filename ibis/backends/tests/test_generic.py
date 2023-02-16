@@ -7,6 +7,7 @@ from operator import invert, methodcaller, neg
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy.exc
 import toolz
 from pytest import param
 
@@ -757,6 +758,16 @@ def test_select_filter_select(backend, alltypes, df):
     result = expr.execute().rename("int_col")
 
     expected = df.loc[df.string_col == "4", "int_col"].reset_index(drop=True)
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(["mssql"], raises=sqlalchemy.exc.OperationalError)
+def test_between(backend, alltypes, df):
+    expr = alltypes.double_col.between(5, 10)
+    result = expr.execute().rename("double_col")
+
+    expected = df.double_col.between(5, 10)
     backend.assert_series_equal(result, expected)
 
 
