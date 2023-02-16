@@ -423,7 +423,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='startswith-simple',
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "datafusion"],
+                    ["dask"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
