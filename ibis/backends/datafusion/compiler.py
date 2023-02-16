@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import math
 import operator
 
 import datafusion as df
@@ -421,6 +422,16 @@ def atan2(op):
 def cot(op):
     x = translate(op.arg)
     return df.lit(1.0) / df.functions.tan(x)
+
+
+@translate.register(ops.Pi)
+def pi(_):
+    return df.lit(math.pi)
+
+
+@translate.register(ops.E)
+def e(_):
+    return df.lit(math.e)
 
 
 @translate.register(ops.ElementWiseVectorizedUDF)
