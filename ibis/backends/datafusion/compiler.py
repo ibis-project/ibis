@@ -428,6 +428,11 @@ def cot(op):
     return df.lit(1.0) / df.functions.tan(x)
 
 
+@translate.register(ops.RandomScalar)
+def random_scalar(_):
+    return df.functions.random()
+
+
 @translate.register(ops.Pi)
 def pi(_):
     return df.lit(math.pi)
