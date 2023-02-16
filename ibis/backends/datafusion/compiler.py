@@ -409,6 +409,7 @@ def negate(op):
 @translate.register(ops.Cos)
 @translate.register(ops.Sin)
 @translate.register(ops.Tan)
+@translate.register(ops.Exp)
 def trig(op):
     func_name = op.__class__.__name__.lower()
     func = getattr(df.functions, func_name)

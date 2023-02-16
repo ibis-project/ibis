@@ -679,10 +679,7 @@ def test_isnan_isinf(
         param(
             L(5.556).exp(),
             math.exp(5.556),
-            id='expr',
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
+            id='exp',
         ),
         param(
             L(5.556).sign(),
@@ -872,9 +869,6 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).exp(),
             lambda t: np.exp(t.double_col + 1),
             id='exp',
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(
             lambda t: t.double_col.add(1).log(2),
