@@ -119,6 +119,9 @@ def test_group_by_has_index(backend, snapshot):
 @pytest.mark.never(
     ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
 )
+@pytest.mark.notimpl(
+    ["mssql"], reason="sqlglot dialect not yet implemented", raises=ValueError
+)
 def test_cte_refs_in_topo_order(backend, snapshot):
     mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name='leaf')
 
