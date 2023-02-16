@@ -481,6 +481,11 @@ def string_ascii(op):
     return df.functions.ascii(translate(op.arg))
 
 
+@translate.register(ops.StartsWith)
+def string_starts_with(op):
+    return df.functions.starts_with(translate(op.arg), translate(op.start))
+
+
 @translate.register(ops.RegexExtract)
 def regex_extract(op):
     arg = translate(op.arg)
