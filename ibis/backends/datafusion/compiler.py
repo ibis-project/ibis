@@ -486,6 +486,11 @@ def string_starts_with(op):
     return df.functions.starts_with(translate(op.arg), translate(op.start))
 
 
+@translate.register(ops.StrRight)
+def string_right(op):
+    return df.functions.right(translate(op.arg), translate(op.nchars))
+
+
 @translate.register(ops.RegexExtract)
 def regex_extract(op):
     arg = translate(op.arg)
