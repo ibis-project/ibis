@@ -491,10 +491,6 @@ def test_string_col_is_unicode(alltypes, df):
             id='substr-start-only',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion"],
-                    raises=NotImplementedError,
-                ),
-                pytest.mark.notimpl(
                     ["pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),

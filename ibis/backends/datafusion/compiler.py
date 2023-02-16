@@ -260,8 +260,11 @@ def capitalize(op):
 def substring(op):
     arg = translate(op.arg)
     start = translate(ops.Add(left=op.start, right=1))
-    length = translate(op.length)
-    return df.functions.substr(arg, start, length)
+    if op_length := op.length:
+        length = translate(op_length)
+        return df.functions.substr(arg, start, length)
+    else:
+        return df.functions.substr(arg, start)
 
 
 @translate.register(ops.Repeat)
