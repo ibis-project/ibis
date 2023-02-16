@@ -287,7 +287,9 @@ operation_registry = {
     ops.Sin: unary("sin"),
     ops.Tan: unary("tan"),
     ops.Pi: fixed_arity("pi", 0),
-    ops.E: fixed_arity("exp(1)", 0),
+    ops.E: fixed_arity("e", 0),
+    ops.Degrees: lambda t, op: f"(180 * {t.translate(op.arg)} / {t.translate(ops.Pi())})",
+    ops.Radians: lambda t, op: f"({t.translate(ops.Pi())} * {t.translate(op.arg)} / 180)",
     # Unary aggregates
     ops.ApproxMedian: aggregate.reduction('appx_median'),
     ops.ApproxCountDistinct: aggregate.reduction('ndv'),
@@ -354,7 +356,6 @@ operation_registry = {
     ops.DateTruncate: timestamp.truncate,
     ops.IntervalFromInteger: timestamp.interval_from_integer,
     # Other operations
-    ops.E: lambda *args: 'e()',
     ops.Literal: literal,
     ops.NullLiteral: null_literal,
     ops.Cast: cast,

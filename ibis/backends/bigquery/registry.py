@@ -603,8 +603,6 @@ OPERATION_REGISTRY = {
     ops.Floor: compiles_floor,
     ops.Modulus: fixed_arity("MOD", 2),
     ops.Sign: unary("SIGN"),
-    ops.Degrees: lambda t, op: f"(180 * {t.translate(op.arg)} / ACOS(-1))",
-    ops.Radians: lambda t, op: f"(ACOS(-1) * {t.translate(op.arg)} / 180)",
     ops.BitwiseNot: lambda t, op: f"~ {t.translate(op.arg)}",
     ops.BitwiseXor: lambda t, op: f"{t.translate(op.left)} ^ {t.translate(op.right)}",
     ops.BitwiseOr: lambda t, op: f"{t.translate(op.left)} | {t.translate(op.right)}",
