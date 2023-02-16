@@ -274,6 +274,7 @@ operation_registry = {
     ops.Sqrt: unary('sqrt'),
     ops.Hash: hash,
     ops.HashBytes: hashbytes,
+    ops.RandomScalar: lambda *_: 'rand(utc_to_unix_micros(utc_timestamp()))',
     ops.Log: log,
     ops.Ln: unary('ln'),
     ops.Log2: unary('log2'),
