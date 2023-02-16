@@ -144,13 +144,10 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                 # Was put elsewhere, e.g. WITH block, we just need to grab
                 # its alias
                 alias = ctx.get_ref(op)
+                if not hasattr(alias, "name"):
+                    alias = ctx.get_ref(ref_op).alias(alias)
 
-                # hack
-                if isinstance(op, ops.SelfReference):
-                    table = ctx.get_ref(ref_op)
-                    self_ref = alias if hasattr(alias, "name") else table.alias(alias)
-                    ctx.set_ref(op, self_ref)
-                    return self_ref
+                ctx.top_context.set_ref(op, alias)
                 return alias
 
             alias = ctx.get_ref(op)
