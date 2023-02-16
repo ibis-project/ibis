@@ -55,6 +55,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
             dt.string
         )
         | spaceless_string("json").result(dt.json)
+        | spaceless_string("null").result(dt.null)
     )
 
     decimal = spaceless_string("decimal", "numeric").then(
