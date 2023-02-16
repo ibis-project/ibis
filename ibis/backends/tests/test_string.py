@@ -278,7 +278,6 @@ def test_string_col_is_unicode(alltypes, df):
             marks=pytest.mark.notimpl(
                 [
                     "clickhouse",
-                    "datafusion",
                     "duckdb",
                     "mssql",
                     "mysql",
