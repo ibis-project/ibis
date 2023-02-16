@@ -361,9 +361,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
-            marks=pytest.mark.notimpl(
-                ["datafusion", "polars"], raises=com.OperationNotDefinedError
-            ),
+            marks=pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
         ),
         param(
             lambda t: t.string_col.length(),
