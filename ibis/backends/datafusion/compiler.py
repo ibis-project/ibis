@@ -471,6 +471,11 @@ def string_concat(op):
     return df.functions.concat(*map(translate, op.arg))
 
 
+@translate.register(ops.Translate)
+def string_translate(op):
+    return df.functions.translate(*map(translate, op.args))
+
+
 @translate.register(ops.RegexExtract)
 def regex_extract(op):
     arg = translate(op.arg)
