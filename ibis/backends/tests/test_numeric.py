@@ -733,13 +733,11 @@ def test_isnan_isinf(
             L(5.556).radians(),
             math.radians(5.556),
             id='radians',
-            marks=pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
         ),
         param(
             L(5.556).degrees(),
             math.degrees(5.556),
             id='degrees',
-            marks=pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
         ),
         param(L(11) % 3, 11 % 3, id='mod'),
     ],
