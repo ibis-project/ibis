@@ -428,6 +428,16 @@ def cot(op):
     return df.lit(1.0) / df.functions.tan(x)
 
 
+@translate.register(ops.Radians)
+def radians(op):
+    return translate(op.arg) * df.lit(math.pi) / df.lit(180)
+
+
+@translate.register(ops.Degrees)
+def degrees(op):
+    return translate(op.arg) * df.lit(180) / df.lit(math.pi)
+
+
 @translate.register(ops.RandomScalar)
 def random_scalar(_):
     return df.functions.random()
