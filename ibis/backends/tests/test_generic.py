@@ -537,7 +537,7 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "impala", "pandas", "polars", "mssql", "druid"])
+@pytest.mark.notimpl(["dask", "pandas", "polars", "mssql", "druid"])
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
     r1 = expr.execute()

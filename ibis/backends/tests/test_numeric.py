@@ -1331,7 +1331,7 @@ def test_sa_default_numeric_precision_and_scale(
 
 
 @pytest.mark.notimpl(
-    ["dask", "impala", "pandas", "polars"],
+    ["dask", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
