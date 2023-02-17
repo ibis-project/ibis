@@ -15,6 +15,7 @@ from ibis.backends.base.sql.alchemy import unary
 from ibis.backends.base.sql.alchemy.datatypes import StructType
 from ibis.backends.base.sql.alchemy.registry import (
     _table_column,
+    array_filter,
     array_map,
     geospatial_functions,
     reduction,
@@ -240,6 +241,20 @@ def _array_map(t, op):
     )
 
 
+@compiles(array_filter, "duckdb")
+def compiles_list_filter(element, compiler, **kw):
+    *args, signature, result = map(partial(compiler.process, **kw), element.clauses)
+    return f"list_filter({', '.join(args)}, {signature} -> {result})"
+
+
+def _array_filter(t, op):
+    return array_filter(
+        t.translate(op.arg),
+        sa.literal_column(f"({op.parameter})"),
+        t.translate(op.result),
+    )
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -326,6 +341,7 @@ operation_registry.update(
         ops.StartsWith: fixed_arity(sa.func.prefix, 2),
         ops.EndsWith: fixed_arity(sa.func.suffix, 2),
         ops.ArrayMap: _array_map,
+        ops.ArrayFilter: _array_filter,
         ops.Argument: lambda _, op: sa.literal_column(op.name),
     }
 )
