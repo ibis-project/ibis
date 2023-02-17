@@ -331,6 +331,14 @@ def compile_less_equal(t, op, **kwargs):
     return t.translate(op.left, **kwargs) <= t.translate(op.right, **kwargs)
 
 
+@compiles(ops.Between)
+def compile_between(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    lower_bound = t.translate(op.lower_bound, **kwargs)
+    upper_bound = t.translate(op.upper_bound, **kwargs)
+    return arg.between(lower_bound, upper_bound)
+
+
 @compiles(ops.Multiply)
 def compile_multiply(t, op, **kwargs):
     return t.translate(op.left, **kwargs) * t.translate(op.right, **kwargs)
