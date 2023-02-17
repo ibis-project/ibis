@@ -1330,17 +1330,11 @@ def test_sa_default_numeric_precision_and_scale(
         con.drop_table(table_name, force=True)
 
 
-@pytest.mark.notimpl(
-    ["dask", "pandas", "polars"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["dask", "pandas", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature random()",
-)
-@pytest.mark.broken(
-    ["sqlite"], raises=AssertionError, reason="backend returns values greater than 1"
 )
 def test_random(con):
     expr = ibis.random()
