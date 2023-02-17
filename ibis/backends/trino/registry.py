@@ -11,6 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.registry import _literal as _alchemy_literal
 from ibis.backends.base.sql.alchemy.registry import (
+    array_filter,
     array_map,
     fixed_arity,
     reduction,
@@ -198,6 +199,20 @@ def _array_map(t, op):
     )
 
 
+@compiles(array_filter, "trino")
+def compiles_list_filter(element, compiler, **kw):
+    *args, signature, result = map(partial(compiler.process, **kw), element.clauses)
+    return f"filter({', '.join(args)}, {signature} -> {result})"
+
+
+def _array_filter(t, op):
+    return array_filter(
+        t.translate(op.arg),
+        sa.literal_column(f"({op.parameter})"),
+        t.translate(op.result),
+    )
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -352,6 +367,7 @@ operation_registry.update(
         ),
         ops.StartsWith: fixed_arity(sa.func.starts_with, 2),
         ops.ArrayMap: _array_map,
+        ops.ArrayFilter: _array_filter,
         ops.Argument: lambda _, op: sa.literal_column(op.name),
     }
 )
