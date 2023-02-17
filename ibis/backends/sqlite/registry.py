@@ -310,5 +310,8 @@ operation_registry.update(
         ops.E: fixed_arity(sa.func._ibis_sqlite_e, 0),
         ops.TypeOf: unary(sa.func.typeof),
         ops.Literal: _literal,
+        ops.RandomScalar: fixed_arity(
+            lambda: 0.5 + sa.func.random() / sa.cast(-1 << 64, sa.REAL), 0
+        ),
     }
 )
