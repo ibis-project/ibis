@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Callable
+from typing import TYPE_CHECKING, Callable, Iterable
 
 from public import public
 
@@ -427,7 +427,48 @@ class ArrayValue(Value):
         │ []                    │
         └───────────────────────┘
         """
-        return ops.ArrayMap(self, func).to_expr()
+        return ops.ArrayMap(self, func=func).to_expr()
+
+    def filter(self, predicate: Callable[[ir.Value], ir.BooleanValue]) -> ir.ArrayValue:
+        """Filter array elements using `predicate`.
+
+        Parameters
+        ----------
+        predicate
+            Function to use to filter array elements
+
+        Returns
+        -------
+        ArrayValue
+            Array elements filtered using `predicate`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [[1, None, 2], [4], []]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ a                    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [1, None, ... +1]    │
+        │ [4]                  │
+        │ []                   │
+        └──────────────────────┘
+        >>> t.a.filter(lambda x: x > 1)
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a)       ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [2]                  │
+        │ [4]                  │
+        │ []                   │
+        └──────────────────────┘
+        """
+        return ops.ArrayFilter(self, func=predicate).to_expr()
 
 
 @public
