@@ -123,6 +123,10 @@ def test_signature_from_callable():
     with pytest.raises(TypeError):
         sig.validate(2, 3, "4")
 
+    args, kwargs = sig.unbind(sig.validate(2, 3))
+    assert args == (2, 3, 1)
+    assert kwargs == {}
+
 
 def test_signature_from_callable_with_varargs():
     def test(a: int, b: int, *args: int):
@@ -136,19 +140,45 @@ def test_signature_from_callable_with_varargs():
     with pytest.raises(TypeError):
         sig.validate(2, 3, 4, "5")
 
+    args, kwargs = sig.unbind(sig.validate(2, 3, 4, 5))
+    assert args == (2, 3, 4, 5)
+    assert kwargs == {}
 
-def test_signature_from_callable_unsupported_argument_kinds():
-    def test(a: int, b: int, *, c: int):
-        pass
 
-    with pytest.raises(TypeError, match="unsupported parameter kind KEYWORD_ONLY"):
-        Signature.from_callable(test)
-
+def test_signature_from_callable_with_positional_only_arguments():
     def test(a: int, b: int, /, c: int = 1):
-        pass
+        return a + b + c
 
-    with pytest.raises(TypeError, match="unsupported parameter kind POSITIONAL_ONLY"):
-        Signature.from_callable(test)
+    sig = Signature.from_callable(test)
+    assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'c': 1}
+    assert sig.validate(2, 3, 4) == {'a': 2, 'b': 3, 'c': 4}
+    assert sig.validate(2, 3, c=4) == {'a': 2, 'b': 3, 'c': 4}
+
+    msg = "'b' parameter is positional only, but was passed as a keyword"
+    with pytest.raises(TypeError, match=msg):
+        sig.validate(1, b=2)
+
+    args, kwargs = sig.unbind(sig.validate(2, 3))
+    assert args == (2, 3, 1)
+    assert kwargs == {}
+
+
+def test_signature_from_callable_with_keyword_only_arguments():
+    def test(a: int, b: int, *, c: float, d: float = 0.0):
+        return a + b + c
+
+    sig = Signature.from_callable(test)
+    assert sig.validate(2, 3, c=4.0) == {'a': 2, 'b': 3, 'c': 4.0, 'd': 0.0}
+    assert sig.validate(2, 3, c=4.0, d=5.0) == {'a': 2, 'b': 3, 'c': 4.0, 'd': 5.0}
+
+    with pytest.raises(TypeError, match="missing a required argument: 'c'"):
+        sig.validate(2, 3)
+    with pytest.raises(TypeError, match="too many positional arguments"):
+        sig.validate(2, 3, 4)
+
+    args, kwargs = sig.unbind(sig.validate(2, 3, c=4.0))
+    assert args == (2, 3)
+    assert kwargs == {'c': 4.0, 'd': 0.0}
 
 
 def test_signature_unbind():

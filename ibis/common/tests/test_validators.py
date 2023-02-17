@@ -190,10 +190,12 @@ def test_callable_with():
     def func_with_mandatory_kwargs(*, c):
         return c
 
-    with pytest.raises(TypeError, match="Argument must be a callable"):
+    msg = "Argument must be a callable"
+    with pytest.raises(TypeError, match=msg):
         callable_with([instance_of(int), instance_of(str)], 10, "string")
 
-    with pytest.raises(TypeError, match="unsupported parameter kind KEYWORD_ONLY"):
+    msg = "Callable has mandatory keyword-only arguments which cannot be specified"
+    with pytest.raises(TypeError, match=msg):
         callable_with([instance_of(int)], instance_of(str), func_with_mandatory_kwargs)
 
     msg = "Callable has more positional arguments than expected"
