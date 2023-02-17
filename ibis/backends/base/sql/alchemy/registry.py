@@ -481,6 +481,10 @@ class array_map(FunctionElement):
     pass
 
 
+class array_filter(FunctionElement):
+    pass
+
+
 sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Alias: _alias,
     ops.And: fixed_arity(operator.and_, 2),

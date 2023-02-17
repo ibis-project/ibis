@@ -88,10 +88,8 @@ class ArrayRepeat(Value):
     output_shape = rlz.shape_like("args")
 
 
-@public
-class ArrayMap(Value):
+class ArrayApply(Value):
     arg = rlz.array
-    func = rlz.callable_with([rlz.expr_of(rlz.any)], rlz.any)
 
     @attribute.default
     def parameter(self):
@@ -111,9 +109,21 @@ class ArrayMap(Value):
     def output_shape(self):
         return self.arg.output_shape
 
+
+@public
+class ArrayMap(ArrayApply):
+    func = rlz.callable_with([rlz.expr_of(rlz.any)], rlz.any)
+
     @attribute.default
     def output_dtype(self) -> dt.DataType:
         return dt.Array(self.result.output_dtype)
+
+
+@public
+class ArrayFilter(ArrayApply):
+    func = rlz.callable_with([rlz.expr_of(rlz.any)], rlz.boolean)
+
+    output_dtype = rlz.dtype_like("arg")
 
 
 @public

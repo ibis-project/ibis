@@ -430,3 +430,29 @@ def test_array_map(backend, con):
     result = con.execute(expr)
     expected = pd.DataFrame({"a": [[2, None, 3], [5]]})
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+    ]
+)
+def test_array_filter(backend, con):
+    t = ibis.memtable(
+        {"a": [[1, None, 2], [4]]}, schema=ibis.schema(dict(a="!array<int8>"))
+    )
+    expr = t.select(a=t.a.filter(lambda x: x > 1))
+    result = con.execute(expr)
+    expected = pd.DataFrame({"a": [[2], [4]]})
+    backend.assert_frame_equal(result, expected)
