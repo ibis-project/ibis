@@ -1343,3 +1343,10 @@ def _array_map(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
     return f"arrayMap(({op.parameter}) -> {result}, {arg})"
+
+
+@translate_val.register(ops.ArrayFilter)
+def _array_filter(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    result = translate_val(op.result, **kw)
+    return f"arrayFilter(({op.parameter}) -> {result}, {arg})"
