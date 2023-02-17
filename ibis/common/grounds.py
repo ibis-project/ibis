@@ -54,14 +54,14 @@ class AnnotableMeta(BaseMeta):
             if name in dct:
                 dct[name] = Argument.default(dct[name], validator)
             else:
-                dct[name] = Argument.mandatory(validator)
+                dct[name] = Argument.required(validator)
 
         # collect the newly defined annotations
         slots = list(dct.pop('__slots__', []))
         namespace, arguments = {}, {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):
-                attrib = Argument.mandatory(attrib)
+                attrib = Argument.required(attrib)
 
             if isinstance(attrib, Argument):
                 arguments[name] = attrib
@@ -94,6 +94,12 @@ class Annotable(Base, metaclass=AnnotableMeta):
     def __create__(cls, *args, **kwargs) -> Annotable:
         # construct the instance by passing the validated keyword arguments
         kwargs = cls.__signature__.validate(*args, **kwargs)
+        return super().__create__(**kwargs)
+
+    @classmethod
+    def __recreate__(cls, kwargs) -> Annotable:
+        # bypass signature binding by requiring keyword arguments only
+        kwargs = cls.__signature__.validate_nobind(**kwargs)
         return super().__create__(**kwargs)
 
     def __init__(self, **kwargs) -> None:
@@ -221,7 +227,8 @@ class Concrete(Immutable, Comparable, Annotable):
     def __reduce__(self):
         # assuming immutability and idempotency of the __init__ method, we can
         # reconstruct the instance from the arguments without additional attributes
-        return (self.__class__, self.__args__)
+        state = dict(zip(self.__argnames__, self.__args__))
+        return (self.__recreate__, (state,))
 
     def __hash__(self):
         return self.__precomputed_hash__
@@ -240,4 +247,4 @@ class Concrete(Immutable, Comparable, Annotable):
     def copy(self, **overrides):
         kwargs = dict(zip(self.__argnames__, self.__args__))
         kwargs.update(overrides)
-        return self.__class__(**kwargs)
+        return self.__recreate__(kwargs)

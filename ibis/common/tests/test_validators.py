@@ -181,7 +181,10 @@ def test_callable_with():
     def func(a, b):
         return str(a) + b
 
-    def func_with_kwargs(a, b, c=1):
+    def func_with_args(a, b, *args):
+        return sum((a, b) + args)
+
+    def func_with_kwargs(a, b, c=1, **kwargs):
         return str(a) + b + str(c)
 
     def func_with_mandatory_kwargs(*, c):
@@ -200,6 +203,9 @@ def test_callable_with():
     msg = "Callable has less positional arguments than expected"
     with pytest.raises(TypeError, match=msg):
         callable_with([instance_of(int)] * 4, instance_of(str), func_with_kwargs)
+
+    wrapped = callable_with([instance_of(int)] * 4, instance_of(int), func_with_args)
+    assert wrapped(1, 2, 3, 4) == 10
 
     wrapped = callable_with(
         [instance_of(int), instance_of(str)], instance_of(str), func
