@@ -4,7 +4,7 @@ import functools
 import inspect
 from typing import Any
 
-from ibis.common.validators import Validator, any_, option
+from ibis.common.validators import Validator, any_, frozendict_of, option, tuple_of
 from ibis.util import DotDict
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
@@ -70,8 +70,15 @@ class Attribute(Annotation):
 class Argument(Annotation):
     """Base class for all fields which should be passed as arguments."""
 
+    __slots__ = ('_kind',)
+
+    def __init__(self, validator=None, default=EMPTY, kind=POSITIONAL_OR_KEYWORD):
+        self._kind = kind
+        self._default = default
+        self._validator = validator
+
     @classmethod
-    def mandatory(cls, validator=None):
+    def required(cls, validator=None):
         """Annotation to mark a mandatory argument."""
         return cls(validator)
 
@@ -89,6 +96,17 @@ class Argument(Annotation):
             validator = option(validator, default=default)
         return cls(validator, default=None)
 
+    @classmethod
+    def varargs(cls, validator=None):
+        """Annotation to mark a variable length positional argument."""
+        validator = None if validator is None else tuple_of(validator)
+        return cls(validator, kind=VAR_POSITIONAL)
+
+    @classmethod
+    def varkwds(cls, validator=None):
+        validator = None if validator is None else frozendict_of(any_, validator)
+        return cls(validator, kind=VAR_KEYWORD)
+
 
 class Parameter(inspect.Parameter):
     """Augmented Parameter class to additionally hold a validator object."""
@@ -102,7 +120,7 @@ class Parameter(inspect.Parameter):
             )
         super().__init__(
             name,
-            kind=POSITIONAL_OR_KEYWORD,
+            kind=annotation._kind,
             default=annotation._default,
             annotation=annotation._validator,
         )
@@ -150,22 +168,34 @@ class Signature(inspect.Signature):
 
         # mandatory fields without default values must preceed the optional
         # ones in the function signature, the partial ordering will be kept
+        var_args, var_kwargs = [], []
         new_args, new_kwargs = [], []
-        inherited_args, inherited_kwargs = [], []
+        old_args, old_kwargs = [], []
 
         for name, param in params.items():
-            if name in inherited:
+            if param.kind == VAR_POSITIONAL:
+                var_args.append(param)
+            elif param.kind == VAR_KEYWORD:
+                var_kwargs.append(param)
+            elif name in inherited:
                 if param.default is EMPTY:
-                    inherited_args.append(param)
+                    old_args.append(param)
                 else:
-                    inherited_kwargs.append(param)
+                    old_kwargs.append(param)
             else:
                 if param.default is EMPTY:
                     new_args.append(param)
                 else:
                     new_kwargs.append(param)
 
-        return cls(inherited_args + new_args + new_kwargs + inherited_kwargs)
+        if len(var_args) > 1:
+            raise TypeError('only one variadic positional *args parameter is allowed')
+        if len(var_kwargs) > 1:
+            raise TypeError('only one variadic keywords **kwargs parameter is allowed')
+
+        return cls(
+            old_args + new_args + var_args + new_kwargs + old_kwargs + var_kwargs
+        )
 
     @classmethod
     def from_callable(cls, fn, validators=None, return_validator=None):
@@ -199,25 +229,24 @@ class Signature(inspect.Signature):
 
         parameters = []
         for param in sig.parameters.values():
-            if param.kind in {
-                VAR_POSITIONAL,
-                VAR_KEYWORD,
-                POSITIONAL_ONLY,
-                KEYWORD_ONLY,
-            }:
+            if param.kind in {POSITIONAL_ONLY, KEYWORD_ONLY}:
                 raise TypeError(f"unsupported parameter kind {param.kind} in {fn}")
 
             if param.name in validators:
                 validator = validators[param.name]
-            elif param.annotation is EMPTY:
-                validator = any_
-            else:
+            elif param.annotation is not EMPTY:
                 validator = Validator.from_annotation(
                     param.annotation, module=fn.__module__
                 )
+            else:
+                validator = None
 
-            if param.default is EMPTY:
-                annot = Argument.mandatory(validator)
+            if param.kind is VAR_POSITIONAL:
+                annot = Argument.varargs(validator)
+            elif param.kind is VAR_KEYWORD:
+                annot = Argument.varkwds(validator)
+            elif param.default is EMPTY:
+                annot = Argument.required(validator)
             else:
                 annot = Argument.default(param.default, validator)
 
@@ -250,7 +279,18 @@ class Signature(inspect.Signature):
             Tuple of positional and keyword arguments.
         """
         # does the reverse of bind, but doesn't apply defaults
-        return {name: getattr(this, name) for name in self.parameters}
+        args, kwargs = [], {}
+        for name, param in self.parameters.items():
+            value = getattr(this, name)
+            if param.kind is POSITIONAL_OR_KEYWORD:
+                args.append(value)
+            elif param.kind is VAR_POSITIONAL:
+                args.extend(value)
+            elif param.kind is VAR_KEYWORD:
+                kwargs.update(value)
+            else:
+                raise TypeError(f"unsupported parameter kind {param.kind}")
+        return tuple(args), kwargs
 
     def validate(self, *args, **kwargs):
         """Validate the arguments against the signature.
@@ -278,7 +318,16 @@ class Signature(inspect.Signature):
             param = self.parameters[name]
             # TODO(kszucs): provide more error context on failure
             this[name] = param.validate(value, this=this)
+        return this
 
+    def validate_nobind(self, **kwargs):
+        """Validate the arguments against the signature without binding."""
+        this = DotDict()
+        for name, param in self.parameters.items():
+            value = kwargs.get(name, param.default)
+            if value is EMPTY:
+                raise TypeError(f"missing required argument `{name!r}`")
+            this[name] = param.validate(value, this=kwargs)
         return this
 
     def validate_return(self, value):
@@ -303,8 +352,10 @@ class Signature(inspect.Signature):
 # aliases for convenience
 attribute = Attribute
 argument = Argument
-mandatory = Argument.mandatory
+required = Argument.required
 optional = Argument.optional
+varargs = Argument.varargs
+varkwds = Argument.varkwds
 default = Argument.default
 
 
@@ -384,9 +435,10 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
 
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
-        kwargs = sig.validate(*args, **kwargs)
-        result = sig.validate_return(func(**kwargs))
-        return result
+        values = sig.validate(*args, **kwargs)
+        args, kwargs = sig.unbind(values)
+        result = func(*args, **kwargs)
+        return sig.validate_return(result)
 
     wrapped.__signature__ = sig
 

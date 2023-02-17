@@ -77,7 +77,7 @@ def test_parameter():
     def fn(x, this):
         return int(x) + this['other']
 
-    annot = Argument.mandatory(fn)
+    annot = Argument.required(fn)
     p = Parameter('test', annotation=annot)
 
     assert p.annotation is fn
@@ -104,8 +104,8 @@ def test_signature():
     def add_other(x, this):
         return int(x) + this['other']
 
-    other = Parameter('other', annotation=Argument.mandatory(to_int))
-    this = Parameter('this', annotation=Argument.mandatory(add_other))
+    other = Parameter('other', annotation=Argument.required(to_int))
+    this = Parameter('this', annotation=Argument.required(add_other))
 
     sig = Signature(parameters=[other, this])
     assert sig.validate(1, 2) == {'other': 1, 'this': 3}
@@ -124,19 +124,20 @@ def test_signature_from_callable():
         sig.validate(2, 3, "4")
 
 
+def test_signature_from_callable_with_varargs():
+    def test(a: int, b: int, *args: int):
+        return a + b + sum(args)
+
+    sig = Signature.from_callable(test)
+    assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'args': ()}
+    assert sig.validate(2, 3, 4) == {'a': 2, 'b': 3, 'args': (4,)}
+    assert sig.validate(2, 3, 4, 5) == {'a': 2, 'b': 3, 'args': (4, 5)}
+
+    with pytest.raises(TypeError):
+        sig.validate(2, 3, 4, "5")
+
+
 def test_signature_from_callable_unsupported_argument_kinds():
-    def test(a: int, b: int, *args):
-        pass
-
-    with pytest.raises(TypeError, match="unsupported parameter kind VAR_POSITIONAL"):
-        Signature.from_callable(test)
-
-    def test(a: int, b: int, **kwargs):
-        pass
-
-    with pytest.raises(TypeError, match="unsupported parameter kind VAR_KEYWORD"):
-        Signature.from_callable(test)
-
     def test(a: int, b: int, *, c: int):
         pass
 
@@ -157,14 +158,15 @@ def test_signature_unbind():
     def add_other(x, this):
         return int(x) + this['other']
 
-    other = Parameter('other', annotation=Argument.mandatory(to_int))
-    this = Parameter('this', annotation=Argument.mandatory(add_other))
+    other = Parameter('other', annotation=Argument.required(to_int))
+    this = Parameter('this', annotation=Argument.required(add_other))
 
     sig = Signature(parameters=[other, this])
     params = sig.validate(1, this=2)
 
-    kwargs = sig.unbind(params)
-    assert kwargs == {"other": 1, "this": 3}
+    args, kwargs = sig.unbind(params)
+    assert args == (1, 3)
+    assert kwargs == {}
 
 
 def as_float(x, this):
@@ -175,8 +177,8 @@ def as_tuple_of_floats(x, this):
     return tuple(float(i) for i in x)
 
 
-a = Parameter('a', annotation=Argument.mandatory(validator=as_float))
-b = Parameter('b', annotation=Argument.mandatory(validator=as_float))
+a = Parameter('a', annotation=Argument.required(validator=as_float))
+b = Parameter('b', annotation=Argument.required(validator=as_float))
 c = Parameter('c', annotation=Argument.default(default=0, validator=as_float))
 d = Parameter(
     'd', annotation=Argument.default(default=tuple(), validator=as_tuple_of_floats)
@@ -190,10 +192,11 @@ def test_signature_unbind_with_empty_variadic(d):
     params = sig.validate(1, 2, 3, d, e=4)
     assert params == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': d, 'e': 4.0}
 
-    kwargs = sig.unbind(params)
-    assert kwargs == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': d, 'e': 4.0}
+    args, kwargs = sig.unbind(params)
+    assert args == (1.0, 2.0, 3.0, tuple(map(float, d)), 4.0)
+    assert kwargs == {}
 
-    params_again = sig.validate(**kwargs)
+    params_again = sig.validate(*args, **kwargs)
     assert params_again == params
 
 
@@ -333,3 +336,27 @@ def test_annotated_function_without_decoration():
         func(1, 2)
 
     assert func(1, 2, c=3) == 6
+
+
+def test_annotated_function_with_varargs():
+    @annotated
+    def test(a: float, b: float, *args: int):
+        return sum((a, b) + args)
+
+    assert test(1.0, 2.0, 3, 4) == 10.0
+    assert test(1.0, 2.0, 3, 4, 5) == 15.0
+
+    with pytest.raises(TypeError):
+        test(1.0, 2.0, 3, 4, 5, 6.0)
+
+
+def test_annotated_function_with_varkwds():
+    @annotated
+    def test(a: float, b: float, **kwargs: int):
+        return sum((a, b) + tuple(kwargs.values()))
+
+    assert test(1.0, 2.0, c=3, d=4) == 10.0
+    assert test(1.0, 2.0, c=3, d=4, e=5) == 15.0
+
+    with pytest.raises(TypeError):
+        test(1.0, 2.0, c=3, d=4, e=5, f=6.0)

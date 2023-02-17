@@ -9,8 +9,10 @@ from ibis.common.annotations import (
     Signature,
     argument,
     attribute,
-    mandatory,
     optional,
+    required,
+    varargs,
+    varkwds,
 )
 from ibis.common.caching import WeakCache
 from ibis.common.grounds import (
@@ -66,6 +68,19 @@ class BetweenWithCalculated(Concrete):
     @attribute.default
     def calculated(self):
         return self.value + self.lower
+
+
+class VariadicArgs(Concrete):
+    args = varargs(is_int)
+
+
+class VariadicKeywords(Concrete):
+    kwargs = varkwds(is_int)
+
+
+class VariadicArgsAndKeywords(Concrete):
+    args = varargs(is_int)
+    kwargs = varkwds(is_int)
 
 
 def test_annotable():
@@ -223,22 +238,22 @@ def test_signature_inheritance():
 
     assert IntBinop.__signature__ == Signature(
         [
-            Parameter('left', annotation=mandatory(is_int)),
-            Parameter('right', annotation=mandatory(is_int)),
+            Parameter('left', annotation=required(is_int)),
+            Parameter('right', annotation=required(is_int)),
         ]
     )
 
     assert FloatAddRhs.__signature__ == Signature(
         [
-            Parameter('left', annotation=mandatory(is_int)),
-            Parameter('right', annotation=mandatory(is_float)),
+            Parameter('left', annotation=required(is_int)),
+            Parameter('right', annotation=required(is_float)),
         ]
     )
 
     assert FloatAddClip.__signature__ == Signature(
         [
-            Parameter('left', annotation=mandatory(is_float)),
-            Parameter('right', annotation=mandatory(is_float)),
+            Parameter('left', annotation=required(is_float)),
+            Parameter('right', annotation=required(is_float)),
             Parameter('clip_lower', annotation=optional(is_int, default=0)),
             Parameter('clip_upper', annotation=optional(is_int, default=10)),
         ]
@@ -246,8 +261,8 @@ def test_signature_inheritance():
 
     assert IntAddClip.__signature__ == Signature(
         [
-            Parameter('left', annotation=mandatory(is_int)),
-            Parameter('right', annotation=mandatory(is_int)),
+            Parameter('left', annotation=required(is_int)),
+            Parameter('right', annotation=required(is_int)),
             Parameter('clip_lower', annotation=optional(is_int, default=0)),
             Parameter('clip_upper', annotation=optional(is_int, default=10)),
         ]
@@ -301,6 +316,124 @@ def test_keyword_argument_reordering():
     obj = Beta(1, 2, 3, 4, 5)
     assert obj.d == 5
     assert obj.e == 4
+
+
+def test_variadic_argument_reordering():
+    class Test(Annotable):
+        a = is_int
+        b = is_int
+        args = varargs(is_int)
+
+    class Test2(Test):
+        c = is_int
+        args = varargs(is_int)
+
+    with pytest.raises(TypeError, match="missing a required argument: 'c'"):
+        Test2(1, 2)
+
+    a = Test2(1, 2, 3)
+    assert a.a == 1
+    assert a.b == 2
+    assert a.c == 3
+    assert a.args == ()
+
+    b = Test2(*range(5))
+    assert b.a == 0
+    assert b.b == 1
+    assert b.c == 2
+    assert b.args == (3, 4)
+
+    msg = "only one variadic positional \\*args parameter is allowed"
+    with pytest.raises(TypeError, match=msg):
+
+        class Test3(Test):
+            another_args = varargs(is_int)
+
+
+def test_variadic_keyword_argument_reordering():
+    class Test(Annotable):
+        a = is_int
+        b = is_int
+        options = varkwds(is_int)
+
+    class Test2(Test):
+        c = is_int
+        options = varkwds(is_int)
+
+    with pytest.raises(TypeError, match="missing a required argument: 'c'"):
+        Test2(1, 2)
+
+    a = Test2(1, 2, c=3)
+    assert a.a == 1
+    assert a.b == 2
+    assert a.c == 3
+    assert a.options == {}
+
+    b = Test2(1, 2, c=3, d=4, e=5)
+    assert b.a == 1
+    assert b.b == 2
+    assert b.c == 3
+    assert b.options == {'d': 4, 'e': 5}
+
+    msg = "only one variadic keywords \\*\\*kwargs parameter is allowed"
+    with pytest.raises(TypeError, match=msg):
+
+        class Test3(Test):
+            another_options = varkwds(is_int)
+
+
+def test_variadic_argument():
+    class Test(Annotable):
+        a = is_int
+        b = is_int
+        args = varargs(is_int)
+
+    assert Test(1, 2).args == ()
+    assert Test(1, 2, 3).args == (3,)
+    assert Test(1, 2, 3, 4, 5).args == (3, 4, 5)
+
+
+def test_variadic_keyword_argument():
+    class Test(Annotable):
+        first = is_int
+        second = is_int
+        options = varkwds(is_int)
+
+    assert Test(1, 2).options == {}
+    assert Test(1, 2, a=3).options == {'a': 3}
+    assert Test(1, 2, a=3, b=4, c=5).options == {'a': 3, 'b': 4, 'c': 5}
+
+
+def test_concrete_copy_with_variadic_argument():
+    class Test(Annotable):
+        a = is_int
+        b = is_int
+        args = varargs(is_int)
+
+    t = Test(1, 2, 3, 4, 5)
+    assert t.a == 1
+    assert t.b == 2
+    assert t.args == (3, 4, 5)
+
+    u = t.copy(a=6, args=(8, 9, 10))
+    assert u.a == 6
+    assert u.b == 2
+    assert u.args == (8, 9, 10)
+
+
+def test_concrete_pickling_variadic_arguments():
+    v = VariadicArgs(1, 2, 3, 4, 5)
+    assert v.args == (1, 2, 3, 4, 5)
+    assert_pickle_roundtrip(v)
+
+    v = VariadicKeywords(a=3, b=4, c=5)
+    assert v.kwargs == {'a': 3, 'b': 4, 'c': 5}
+    assert_pickle_roundtrip(v)
+
+    v = VariadicArgsAndKeywords(1, 2, 3, 4, 5, a=3, b=4, c=5)
+    assert v.args == (1, 2, 3, 4, 5)
+    assert v.kwargs == {'a': 3, 'b': 4, 'c': 5}
+    assert_pickle_roundtrip(v)
 
 
 def test_dont_copy_default_argument():
@@ -559,7 +692,7 @@ def test_initialized_attribute_mixed_with_classvar():
     class Reduction(Value):
         output_shape = "scalar"
 
-    class variadic(Value):
+    class Variadic(Value):
         @attribute.default
         def output_shape(self):
             if self.arg > 10:
@@ -571,11 +704,11 @@ def test_initialized_attribute_mixed_with_classvar():
     assert r.output_shape == "scalar"
     assert "output_shape" not in r.__slots__
 
-    v = variadic(1)
+    v = Variadic(1)
     assert v.output_shape == "scalar"
     assert "output_shape" in v.__slots__
 
-    v = variadic(100)
+    v = Variadic(100)
     assert v.output_shape == "columnar"
     assert "output_shape" in v.__slots__
 
