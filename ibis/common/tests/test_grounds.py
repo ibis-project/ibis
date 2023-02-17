@@ -343,7 +343,7 @@ def test_variadic_argument_reordering():
     assert b.c == 2
     assert b.args == (3, 4)
 
-    msg = "only one variadic positional \\*args parameter is allowed"
+    msg = "only one variadic \\*args parameter is allowed"
     with pytest.raises(TypeError, match=msg):
 
         class Test3(Test):
@@ -375,7 +375,7 @@ def test_variadic_keyword_argument_reordering():
     assert b.c == 3
     assert b.options == {'d': 4, 'e': 5}
 
-    msg = "only one variadic keywords \\*\\*kwargs parameter is allowed"
+    msg = "only one variadic \\*\\*kwargs parameter is allowed"
     with pytest.raises(TypeError, match=msg):
 
         class Test3(Test):
