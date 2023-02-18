@@ -8,22 +8,24 @@ WITH t0 AS (
       ON t5.`c_nationkey` = t4.`n_nationkey`
     INNER JOIN tpch_orders t6
       ON t6.`o_custkey` = t5.`c_custkey`
-)
-SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`,
-       t2.`count` / CAST(t1.`count` AS double) AS `fraction`
-FROM (
+),
+t1 AS (
+  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
+  FROM t0
+  WHERE t0.`o_totalprice` > (
+    SELECT avg(t4.`o_totalprice`) AS `mean`
+    FROM t0 t4
+    WHERE t4.`region` = t0.`region`
+  )
+  GROUP BY 1
+),
+t2 AS (
   SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
   FROM t0
   GROUP BY 1
-) t1
-  INNER JOIN (
-    SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
-    FROM t0
-    WHERE t0.`o_totalprice` > (
-      SELECT avg(t4.`o_totalprice`) AS `mean`
-      FROM t0 t4
-      WHERE t4.`region` = t0.`region`
-    )
-    GROUP BY 1
-  ) t2
-    ON t1.`year` = t2.`year`
+)
+SELECT t2.`year`, t2.`count` AS `pre_count`, t1.`count` AS `post_count`,
+       t1.`count` / CAST(t2.`count` AS double) AS `fraction`
+FROM t2
+  INNER JOIN t1
+    ON t2.`year` = t1.`year`

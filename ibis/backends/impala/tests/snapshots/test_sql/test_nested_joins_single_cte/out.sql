@@ -1,23 +1,26 @@
 WITH t0 AS (
-  SELECT t3.`uuid`, count(1) AS `count`
-  FROM t t3
+  SELECT t4.`uuid`, count(1) AS `count`
+  FROM t t4
   GROUP BY 1
-)
-SELECT t1.*, t2.`last_visit`
-FROM (
+),
+t1 AS (
+  SELECT t0.`uuid`, max(t0.`count`) AS `max_count`
+  FROM t0
+  GROUP BY 1
+),
+t2 AS (
+  SELECT t4.`uuid`, max(t4.`ts`) AS `last_visit`
+  FROM t t4
+  GROUP BY 1
+),
+t3 AS (
   SELECT t0.*
-  FROM (
-    SELECT t0.`uuid`, max(t0.`count`) AS `max_count`
-    FROM t0
-    GROUP BY 1
-  ) t3
+  FROM t1
     LEFT OUTER JOIN t0
-      ON (t3.`uuid` = t0.`uuid`) AND
-         (t3.`max_count` = t0.`count`)
-) t1
-  LEFT OUTER JOIN (
-    SELECT t3.`uuid`, max(t3.`ts`) AS `last_visit`
-    FROM t t3
-    GROUP BY 1
-  ) t2
-    ON t1.`uuid` = t2.`uuid`
+      ON (t1.`uuid` = t0.`uuid`) AND
+         (t1.`max_count` = t0.`count`)
+)
+SELECT t3.*, t2.`last_visit`
+FROM t3
+  LEFT OUTER JOIN t2
+    ON t3.`uuid` = t2.`uuid`
