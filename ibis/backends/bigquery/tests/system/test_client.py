@@ -1,7 +1,7 @@
 import collections
 import datetime
 import decimal
-import re
+import itertools
 
 import pandas as pd
 import pandas.testing as tm
@@ -10,6 +10,7 @@ import pytz
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 from ibis.backends.bigquery.client import bigquery_param
 
 
@@ -112,18 +113,8 @@ def test_different_partition_col_name(monkeypatch, client):
     assert col in parted_alltypes.columns
 
 
-def test_subquery_scalar_params(alltypes, project_id, dataset_id):
-    expected = f"""\
-SELECT count\\(t0\\.`foo`\\) AS `count`
-FROM \\(
-  SELECT t1\\.`string_col`, sum\\(t1\\.`float_col`\\) AS `foo`
-  FROM \\(
-    SELECT t2\\.`float_col`, t2\\.`timestamp_col`, t2\\.`int_col`, t2\\.`string_col`
-    FROM `{project_id}\\.{dataset_id}\\.functional_alltypes` t2
-    WHERE t2\\.`timestamp_col` < @param_\\d+
-  \\) t1
-  GROUP BY 1
-\\) t0"""
+def test_subquery_scalar_params(alltypes, monkeypatch, snapshot):
+    monkeypatch.setattr(ops.ScalarParameter, "_counter", itertools.count())
     t = alltypes
     p = ibis.param("timestamp").name("my_param")
     expr = (
@@ -136,7 +127,7 @@ FROM \\(
         .name("count")
     )
     result = expr.compile(params={p: "20140101"})
-    assert re.match(expected, result) is not None
+    snapshot.assert_match(result, "out.sql")
 
 
 def test_repr_struct_of_array_of_struct():
@@ -220,18 +211,11 @@ def test_parted_column(client, kind):
     assert t.columns == [expected_column, "string_col", "int_col"]
 
 
-def test_cross_project_query(public):
+def test_cross_project_query(public, snapshot):
     table = public.table("posts_questions")
     expr = table[table.tags.contains("ibis")][["title", "tags"]]
     result = expr.compile()
-    expected = """\
-SELECT t0.`title`, t0.`tags`
-FROM (
-  SELECT t1.*
-  FROM `bigquery-public-data.stackoverflow.posts_questions` t1
-  WHERE STRPOS(t1.`tags`, 'ibis') - 1 >= 0
-) t0"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
     n = 5
     df = expr.limit(n).execute()
     assert len(df) == n

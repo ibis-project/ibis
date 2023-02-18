@@ -166,10 +166,7 @@ halt = False
 
 
 def traverse(
-    fn: Callable[[Node], tuple[bool | Iterable, Any]],
-    node: Iterable[Node],
-    dedup: bool = True,
-    filter=Node,
+    fn: Callable[[Node], tuple[bool | Iterable, Any]], node: Iterable[Node], filter=Node
 ) -> Iterator[Any]:
     """Utility for generic expression tree traversal.
 
@@ -180,8 +177,6 @@ def traverse(
         controls the traversal, and the second is the result if its not `None`.
     node
         The Node expression or a list of expressions.
-    dedup
-        Whether to allow expression traversal more than once
     filter
         Restrict initial traversal to this kind of node
     """
@@ -192,11 +187,10 @@ def traverse(
     while todo:
         node = todo.pop()
 
-        if dedup:
-            if node in seen:
-                continue
-            else:
-                seen.add(node)
+        if node in seen:
+            continue
+        else:
+            seen.add(node)
 
         control, result = fn(node)
         if result is not None:

@@ -8,7 +8,9 @@ from typing import Iterable, Iterator, Mapping
 import toolz
 
 import ibis.common.graph as g
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
+import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.exceptions import IbisTypeError, IntegrityError
@@ -774,28 +776,15 @@ def find_predicates(node, flatten=True):
 
 def find_subqueries(node: ops.Node) -> Counter:
     counts = Counter()
-
-    def finder(node: ops.Node):
-        if isinstance(node, ops.Join):
-            return [node.left, node.right], None
-        elif isinstance(node, ops.PhysicalTable):
-            return g.halt, None
-        elif isinstance(node, ops.SelfReference):
-            return g.proceed, None
-        elif isinstance(node, (ops.Selection, ops.Aggregation)):
-            counts[node] += 1
-            return [node.table], None
-        elif isinstance(node, ops.TableNode):
-            counts[node] += 1
-            return g.proceed, None
-        elif isinstance(node, ops.TableColumn):
-            return node.table not in counts, None
-        else:
-            return g.proceed, None
-
-    # keep duplicates so we can determine where an expression is used
-    # more than once
-    list(g.traverse(finder, node, dedup=False))
+    for graph in map(g.Graph.from_dfs, util.promote_list(node)):
+        dependents = graph.invert()
+        for u, vs in dependents.toposort().items():
+            # count the number of table-node dependents on the current node
+            # but only if the current node is a selection or aggregation
+            if isinstance(u, (rels.Projection, rels.Aggregation)):
+                counts[u] += len(
+                    set(toolz.concat(map(an.find_immediate_parent_tables, vs)))
+                )
 
     return counts
 
