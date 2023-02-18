@@ -88,7 +88,9 @@ def test_literal(backend, expr):
 @pytest.mark.never(
     ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
 )
-@pytest.mark.notyet(["mssql"], reason="sqlglot doesn't support an mssql dialect")
+@pytest.mark.xfail_version(
+    mssql=["sqlalchemy>=2"], reason="sqlalchemy 2 prefixes literals with `N`"
+)
 def test_group_by_has_index(backend, snapshot):
     countries = ibis.table(
         dict(continent="string", population="int64"), name="countries"
@@ -108,4 +110,19 @@ def test_group_by_has_index(backend, snapshot):
         )
     ).agg(total_pop=_.population.sum())
     sql = str(ibis.to_sql(expr, dialect=backend.name()))
+    snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
+)
+def test_cte_refs_in_topo_order(backend, snapshot):
+    mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name='leaf')
+
+    mr1 = mr0.filter(ibis.literal(True))
+
+    mr2 = mr1.join(mr1[['key']], ["key"])
+    mr3 = mr2.join(mr2, ['key'])
+
+    sql = str(ibis.to_sql(mr3, dialect=backend.name()))
     snapshot.assert_match(sql, "out.sql")

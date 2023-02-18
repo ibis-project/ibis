@@ -31,6 +31,7 @@ try:
 except ImportError:
     ClickhouseDriverOperationalError = None
 
+
 NULL_BACKEND_TYPES = {
     'bigquery': "NULL",
     'clickhouse': 'Nullable(Nothing)',
@@ -910,3 +911,22 @@ def test_memtable_bool_column(backend, con, monkeypatch):
 
     t = ibis.memtable({"a": [True, False, True]})
     backend.assert_series_equal(t.a.execute(), pd.Series([True, False, True], name="a"))
+
+
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas", "polars"],
+    raises=NotImplementedError,
+    reason="not a SQL backend",
+)
+@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
+def test_many_subqueries(con, snapshot):
+    def query(t, group_cols):
+        t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
+        return t2.inner_join(t2[["key"]], "key")
+
+    t = ibis.table(dict(street="str"), name="data")
+
+    t2 = query(t, group_cols=["street"])
+    t3 = query(t2, group_cols=["street"])
+
+    snapshot.assert_match(str(ibis.to_sql(t3, dialect=con.name)), "out.sql")

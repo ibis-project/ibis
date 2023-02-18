@@ -584,3 +584,33 @@ def test_order_by_expr(snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
     expr = t[lambda t: t.a == 1].order_by(lambda t: t.b + "a")
     snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+def test_tpc_h17(snapshot):
+    BRAND = "Brand#23"
+    CONTAINER = "MED BOX"
+
+    lineitem = ibis.table(
+        dict(
+            l_partkey="!int32", l_quantity="!int32", l_extendedprice="!decimal(15, 2)"
+        ),
+        name="lineitem",
+    )
+    part = ibis.table(
+        dict(p_partkey="!int32", p_brand="!string", p_container="!string"), name="part"
+    )
+
+    q = lineitem.join(part, part.p_partkey == lineitem.l_partkey)
+    innerq = lineitem.filter([lineitem.l_partkey == q.p_partkey])
+    q = q.filter(
+        [
+            q.p_brand == BRAND,
+            q.p_container == CONTAINER,
+            q.l_quantity < (0.2 * innerq.l_quantity.mean()),
+        ]
+    )
+    q = q.aggregate(
+        avg_yearly=q.l_extendedprice.sum() / ibis.literal(7.0, type="decimal(15, 2)")
+    )
+
+    snapshot.assert_match(to_sql(q), "out.sql")

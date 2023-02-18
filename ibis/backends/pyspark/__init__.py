@@ -195,7 +195,7 @@ class Backend(BaseSQLBackend):
             expr.op(),
             scope=scope,
             timecontext=timecontext,
-            session=self._session,
+            session=getattr(self, "_session", None),
         )
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
