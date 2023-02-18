@@ -92,7 +92,7 @@ services:
         - mysqladmin
         - ping
       timeout: 5s
-    image: mariadb:10.10.3
+    image: mariadb:10.11.2
     ports:
       - 3306:3306
     networks:
