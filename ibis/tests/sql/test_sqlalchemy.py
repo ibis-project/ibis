@@ -542,6 +542,36 @@ def test_tpc_h11(snapshot):
     snapshot.assert_match(to_sql(q), "out.sql")
 
 
+def test_tpc_h17(snapshot):
+    BRAND = "Brand#23"
+    CONTAINER = "MED BOX"
+
+    lineitem = ibis.table(
+        dict(
+            l_partkey="!int32", l_quantity="!int32", l_extendedprice="!decimal(15, 2)"
+        ),
+        name="lineitem",
+    )
+    part = ibis.table(
+        dict(p_partkey="!int32", p_brand="!string", p_container="!string"), name="part"
+    )
+
+    q = lineitem.join(part, part.p_partkey == lineitem.l_partkey)
+    innerq = lineitem.filter([lineitem.l_partkey == q.p_partkey])
+    q = q.filter(
+        [
+            q.p_brand == BRAND,
+            q.p_container == CONTAINER,
+            q.l_quantity < (0.2 * innerq.l_quantity.mean()),
+        ]
+    )
+    q = q.aggregate(
+        avg_yearly=q.l_extendedprice.sum() / ibis.literal(7.0, type="decimal(15, 2)")
+    )
+
+    snapshot.assert_match(to_sql(q), "out.sql")
+
+
 def test_to_sqla_type_array_of_non_primitive():
     result = to_sqla_type(DefaultDialect(), dt.Array(dt.Struct(dict(a="int"))))
     [(result_name, result_type)] = result.value_type.fields.items()

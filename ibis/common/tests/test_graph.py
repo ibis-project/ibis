@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ibis.common.graph import Graph, Node, bfs, dfs, toposort
+from ibis.common.graph import Graph, Node, bfs, dfs, toposort, traverse
 from ibis.common.grounds import Annotable, Concrete
 from ibis.common.validators import any_of, instance_of, tuple_of
 
@@ -180,3 +180,15 @@ def test_concrete_with_traversable_children():
 
     copied = node.copy(arguments=(T, F))
     assert copied == All((T, F), strict=False)
+
+
+def test_traverse():
+    import ibis
+
+    one = ibis.literal(1)
+    two = ibis.literal(2)
+    x = one + one
+    y = one + two
+    z = x + y
+    nodes = list(traverse(lambda node: (True, node), z.op()))
+    assert nodes == [z.op(), x.op(), y.op(), one.op(), two.op()]
