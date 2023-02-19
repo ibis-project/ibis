@@ -35,6 +35,10 @@ class AlchemyContext(QueryContext):
             params=self.params,
         )
 
+    def _compile_subquery(self, op):
+        sub_ctx = self.subcontext()
+        return self._to_sql(op, sub_ctx)
+
 
 class AlchemyExprTranslator(ExprTranslator):
     _registry = sqlalchemy_operation_registry

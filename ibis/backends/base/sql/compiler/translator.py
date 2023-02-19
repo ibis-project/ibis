@@ -29,8 +29,11 @@ class QueryContext:
         self.params = params if params is not None else {}
 
     def _compile_subquery(self, op):
-        sub_ctx = self.subcontext()
-        return self._to_sql(op, sub_ctx)
+        if isinstance(op, (ops.SQLQueryResult, ops.SQLStringView)):
+            return op.query
+        else:
+            sub_ctx = self.subcontext()
+            return self._to_sql(op, sub_ctx)
 
     def _to_sql(self, expr, ctx):
         return self.compiler.to_sql(expr, ctx)
@@ -64,10 +67,7 @@ class QueryContext:
         with contextlib.suppress(KeyError):
             return self.top_context.subquery_memo[node]
 
-        if isinstance(node, (ops.SQLQueryResult, ops.SQLStringView)):
-            result = node.query
-        else:
-            result = self._compile_subquery(node)
+        result = self._compile_subquery(node)
 
         self.top_context.subquery_memo[node] = result
         return result

@@ -66,19 +66,13 @@ def varargs(sa_func):
 
 
 def get_sqla_table(ctx, table):
-    if ctx.has_ref(table, parent_contexts=True):
-        ctx_level = ctx
-        sa_table = ctx_level.get_ref(table)
-        while sa_table is None and ctx_level.parent is not ctx_level:
-            ctx_level = ctx_level.parent
-            sa_table = ctx_level.get_ref(table)
-    else:
-        if isinstance(table, AlchemyTable):
-            sa_table = table.sqla_table
-        else:
-            sa_table = ctx.get_compiled_expr(table)
+    if (sa_table := ctx.get_ref(table, search_parents=True)) is not None:
+        return sa_table
 
-    return sa_table
+    if isinstance(table, AlchemyTable):
+        return table.sqla_table
+    else:
+        return ctx.get_compiled_expr(table)
 
 
 def get_col(sa_table, op: ops.TableColumn) -> sa.sql.ColumnClause:
