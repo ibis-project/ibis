@@ -180,6 +180,62 @@ def traverse(
     filter
         Restrict initial traversal to this kind of node
     """
+    args = node if isinstance(node, Iterable) else [node]
+    # the second element of the tuple indicates whether we've visited all of a node's children
+    todo = [(arg, False) for arg in args if isinstance(arg, filter)]
+    seen = set()
+
+    out = []
+
+    while todo:
+        node, done = todo.pop()
+
+        control, result = fn(node)
+
+        if done and result is not None:
+            out.append(result)
+
+        if control is not halt:
+            if control is proceed:
+                args = node.__children__(filter)
+            elif isinstance(control, Iterable):
+                args = control
+            else:
+                raise TypeError(
+                    'First item of the returned tuple must be '
+                    'an instance of boolean or iterable'
+                )
+        else:
+            args = ()
+
+        if node not in seen:
+            if done:
+                raise AssertionError("`done` is True but should be False")
+
+            seen.add(node)
+            # yield this node on the next visit, because we've visited all of its children
+            todo.append((node, True))
+            todo.extend((arg, False) for arg in args)
+
+    while out:
+        yield out.pop()
+
+
+def pre_order_traverse(
+    fn: Callable[[Node], tuple[bool | Iterable, Any]], node: Iterable[Node], filter=Node
+) -> Iterator[Any]:
+    """Utility for generic expression tree traversal.
+
+    Parameters
+    ----------
+    fn
+        A function applied on each expression. The first element of the tuple
+        controls the traversal, and the second is the result if its not `None`.
+    node
+        The Node expression or a list of expressions.
+    filter
+        Restrict initial traversal to this kind of node
+    """
     args = reversed(node) if isinstance(node, Iterable) else [node]
     todo = deque(arg for arg in args if isinstance(arg, filter))
     seen = set()

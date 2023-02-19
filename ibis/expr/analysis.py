@@ -170,7 +170,7 @@ def find_immediate_parent_tables(input_node, keep_input=True):
         else:
             return g.proceed, None
 
-    return list(toolz.unique(g.traverse(finder, input_node)))
+    return list(toolz.unique(g.pre_order_traverse(finder, input_node)))
 
 
 def substitute(fn, node):
@@ -638,7 +638,7 @@ def find_first_base_table(node):
             return g.proceed, None
 
     try:
-        return next(g.traverse(predicate, node))
+        return next(g.pre_order_traverse(predicate, node))
     except StopIteration:
         return None
 
