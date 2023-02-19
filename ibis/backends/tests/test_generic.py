@@ -31,6 +31,21 @@ try:
 except ImportError:
     ClickhouseDriverOperationalError = None
 
+try:
+    from google.api_core.exceptions import BadRequest
+except ImportError:
+    BadRequest = None
+
+try:
+    from pyspark.sql.utils import AnalysisException as PySparkAnalysisException
+except ImportError:
+    PySparkAnalysisException = None
+
+try:
+    from impala.error import HiveServer2Error
+except ImportError:
+    HiveServer2Error = None
+
 NULL_BACKEND_TYPES = {
     'bigquery': "NULL",
     'clickhouse': 'Nullable(Nothing)',
@@ -928,3 +943,80 @@ def test_memtable_bool_column(backend, con, monkeypatch):
 
     t = ibis.memtable({"a": [True, False, True]})
     backend.assert_series_equal(t.a.execute(), pd.Series([True, False, True], name="a"))
+
+
+@pytest.mark.notimpl(["bigquery"], raises=BadRequest)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["impala"], raises=HiveServer2Error)
+@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
+@pytest.mark.notimpl(["pyspark"], raises=PySparkAnalysisException)
+def test_many_subqueries(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    def group_id(t, keys):
+        """Number each group from 0 to the "number of groups - 1".
+
+        This is equivalent to pandas.DataFrame.groupby(keys).ngroup().
+        """
+        # We need an arbitrary column to use for dense_rank
+        col = t[t.columns[0]]
+        return col.dense_rank().over(ibis.window(order_by=keys))
+
+    def with_nunique_per_group(t, group_cols, count_cols, result_col):
+        """Semantically: t[count_cols].nunique().over(ibis.window(group_by=group_cols)).
+
+        AKA
+
+        SELECT COUNT(DISTINCT count_cols) OVER (PARTITION BY group_cols) from t
+
+        Except the above doesn't work in duckdb, so we use a workaround.
+        """
+        # Using a simple count distinct over a window is not possible because
+        # we get (duckdb.ParserException) Parser Error: DISTINCT is not
+        # implemented for window functions!
+        if isinstance(count_cols, str):
+            count_cols = [count_cols]
+        if isinstance(group_cols, str):
+            group_cols = [group_cols]
+        if result_col in t:
+            t = t.drop(result_col)
+        t2 = t.mutate(__group_id=group_id(t, group_cols))
+        distinct = t2[["__group_id"] + count_cols].distinct()
+        vc = distinct.group_by("__group_id").agg(**{result_col: ibis._.count()})
+        return t2.inner_join(vc, "__group_id").drop("__group_id")
+
+    # Context: Trying to which addresses are associated with business entities,
+    # that aren't individual residences. Business addresses have many people
+    # associated with them, but few employers
+    columns = ["is_business", "street", "first_name", "last_name", "employer"]
+    data = [
+        [True, None, "p", "barnes", "laborers local 341"],
+        [True, "2501 commercial dr", "p", "barnes", "laborers local 341"],
+        [True, "2501 commercial dr", "p", "barnes", "laborers local 341"],
+        [True, "2501 commercial dr", "j", "brady", "laborers local 341"],
+        [True, "2501 commercial dr", "l", "hepburn", "local 341"],
+        [True, "2501 commercial dr", "l", "leon", "laborers local 341"],
+        [True, "2501 commercial dr", "james", "miller", "local 341"],
+        [True, "2501 commercial dr", "b", "monks", "local 341"],
+        [True, "2501 commercial dr", "n", "monks", "local 341"],
+        [True, "2501 commercial dr", "vance", "putman", "laborers local 341"],
+        [False, "2413 oak dr", "adam", "baldwin", "anchorage museum"],
+        [False, "4081 e 20th ave", "clara", "baldwin", "asd"],
+        [False, "4081 e 20th ave", "clara", "baldwin", "asd"],
+        [False, "3000 vintage blvd", "clarie", "baldwin", "real estate group"],
+        [False, "6461 e hart lake loop", "daniel", "baldwin", "roger hickel"],
+    ]
+    t = ibis.memtable(data, columns=columns)
+
+    address_id_cols = "street"
+    person_id_cols = ["first_name", "last_name"]
+    employer_id_cols = "employer"
+
+    t2 = with_nunique_per_group(
+        t, address_id_cols, person_id_cols, "npeople_per_address"
+    )
+    t3 = with_nunique_per_group(
+        t2, address_id_cols, employer_id_cols, "nemployers_per_address"
+    )
+    assert not t2.execute().empty
+    assert not t3.execute().empty
