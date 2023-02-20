@@ -86,7 +86,7 @@ class Backend(BaseBackend):
         """
 
         temp_db: str = "__ibis_tmp"
-        bool_type: str = "Boolean"
+        bool_type: Literal["Bool", "UInt8", "Int8"] = "Bool"
 
     def __init__(self, *args, external_tables=None, **kwargs):
         super().__init__(*args, **kwargs)
