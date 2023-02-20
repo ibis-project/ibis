@@ -46,7 +46,7 @@ jobs:
             title: Snowflake + PyArrow
             randomly-seed: false
             deps:
-              - "'snowflake-connector-python[pandas]<3'"
+              - "snowflake-connector-python[pandas]"
               - "--optional"
               - "snowflake-sqlalchemy[pandas]"
               - "--optional"
