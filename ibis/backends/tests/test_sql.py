@@ -126,3 +126,13 @@ def test_cte_refs_in_topo_order(backend, snapshot):
 
     sql = str(ibis.to_sql(mr3, dialect=backend.name()))
     snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
+)
+def test_isin_bug(con, snapshot):
+    t = ibis.table(dict(x="int"), name="t")
+    good = t[t.x > 2].x
+    expr = t.x.isin(good)
+    snapshot.assert_match(str(ibis.to_sql(expr, dialect=con.name)), "out.sql")

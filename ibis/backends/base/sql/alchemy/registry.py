@@ -189,14 +189,15 @@ def _contains(func):
     def translate(t, op):
         left = t.translate(op.value)
 
-        if isinstance(op.options, tuple):
+        options = op.options
+        if isinstance(options, tuple):
             right = [t.translate(x) for x in op.options]
-        elif op.options.output_shape.is_columnar():
-            right = t.translate(op.options)
+        elif options.output_shape.is_columnar():
+            right = t.translate(ops.TableArrayView(options.to_expr().as_table()))
             if not isinstance(right, sa.sql.Selectable):
                 right = sa.select(right)
         else:
-            right = t.translate(op.options)
+            right = t.translate(options)
 
         return func(left, right)
 
