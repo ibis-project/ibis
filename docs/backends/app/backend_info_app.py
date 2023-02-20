@@ -127,6 +127,7 @@ def get_selected_operation_categories():
 
 
 current_backend_names = get_selected_backend_name()
+sort_by_coverage = st.sidebar.checkbox('Sort by API Coverage', value=False)
 current_ops_categories = get_selected_operation_categories()
 
 hide_supported_by_all_backends = st.sidebar.selectbox(
@@ -182,7 +183,9 @@ if all_visible_ops_count:
         .T
     )
 
-    table = pd.concat([coverage, df.replace({True: "✔", False: "🚫"})])
+    table = pd.concat([coverage, df.replace({True: "✔", False: "🚫"})]).loc[
+        :, slice(None) if sort_by_coverage else sorted(df.columns)
+    ]
     st.dataframe(table)
 else:
     st.write("No data")
@@ -192,10 +195,7 @@ with st.expander("SQL queries"):
         pretty_sql_query = sqlglot.transpile(
             sql_query, read='duckdb', write='duckdb', pretty=True
         )[0]
-        st.code(
-            pretty_sql_query,
-            language='sql',
-        )
+        st.code(pretty_sql_query, language='sql')
 
 with st.expander("Source code"):
     st.code(Path(__file__).read_text())
