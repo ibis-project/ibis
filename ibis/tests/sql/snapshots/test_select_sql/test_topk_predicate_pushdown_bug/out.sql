@@ -10,13 +10,14 @@ t1 AS (
   SELECT t0.`n_name`, sum(t0.`c_acctbal`) AS `Sum(c_acctbal)`
   FROM t0
   GROUP BY 1
+),
+t2 AS (
+  SELECT t1.*
+  FROM t1
+  ORDER BY t1.`Sum(c_acctbal)` DESC
+  LIMIT 10
 )
 SELECT *
 FROM t0
-  LEFT SEMI JOIN (
-    SELECT t1.*
-    FROM t1
-    ORDER BY t1.`Sum(c_acctbal)` DESC
-    LIMIT 10
-  ) t2
+  LEFT SEMI JOIN t2
     ON t0.`n_name` = t2.`n_name`

@@ -780,7 +780,7 @@ def find_subqueries(node: ops.Node, min_dependents=1) -> tuple[ops.Node, ...]:
         for u, vs in dependents.toposort().items():
             # count the number of table-node dependents on the current node
             # but only if the current node is a selection or aggregation
-            if isinstance(u, (rels.Projection, rels.Aggregation)):
+            if isinstance(u, (rels.Projection, rels.Aggregation, rels.Limit)):
                 subquery_dependents[u].update(vs)
 
     return tuple(

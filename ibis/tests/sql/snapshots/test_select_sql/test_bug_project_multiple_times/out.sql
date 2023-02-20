@@ -11,13 +11,14 @@ t1 AS (
          sum(CAST(t0.`c_acctbal` AS double)) AS `Sum(Cast(c_acctbal, float64))`
   FROM t0
   GROUP BY 1
+),
+t2 AS (
+  SELECT t1.*
+  FROM t1
+  ORDER BY t1.`Sum(Cast(c_acctbal, float64))` DESC
+  LIMIT 10
 )
 SELECT t0.`c_name`, t0.`r_name`, t0.`n_name`
 FROM t0
-  LEFT SEMI JOIN (
-    SELECT t1.*
-    FROM t1
-    ORDER BY t1.`Sum(Cast(c_acctbal, float64))` DESC
-    LIMIT 10
-  ) t2
+  LEFT SEMI JOIN t2
     ON t0.`n_name` = t2.`n_name`
