@@ -39,7 +39,7 @@ jobs:
 
           - name: snowflake
             title: Snowflake
-            randomly-seed: true
+            randomly-seed: false
 
           - name: snowflake
             key: snowflake-pyarrow
