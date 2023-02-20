@@ -229,6 +229,8 @@ def _aggregate(op, func, *, where=None, **kw):
     if where is not None:
         func += "If"
         args.append(translate_val(where, **kw))
+    elif func == "any":
+        func = '"any"'
 
     joined_args = ", ".join(map(_sql, args))
     return f"{func}({joined_args})"
