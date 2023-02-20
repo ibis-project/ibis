@@ -12,7 +12,7 @@ from ibis.common.annotations import (
     optional,
     required,
     varargs,
-    varkwds,
+    varkwargs,
 )
 from ibis.common.caching import WeakCache
 from ibis.common.grounds import (
@@ -75,12 +75,12 @@ class VariadicArgs(Concrete):
 
 
 class VariadicKeywords(Concrete):
-    kwargs = varkwds(is_int)
+    kwargs = varkwargs(is_int)
 
 
 class VariadicArgsAndKeywords(Concrete):
     args = varargs(is_int)
-    kwargs = varkwds(is_int)
+    kwargs = varkwargs(is_int)
 
 
 def test_annotable():
@@ -354,11 +354,11 @@ def test_variadic_keyword_argument_reordering():
     class Test(Annotable):
         a = is_int
         b = is_int
-        options = varkwds(is_int)
+        options = varkwargs(is_int)
 
     class Test2(Test):
         c = is_int
-        options = varkwds(is_int)
+        options = varkwargs(is_int)
 
     with pytest.raises(TypeError, match="missing a required argument: 'c'"):
         Test2(1, 2)
@@ -379,7 +379,7 @@ def test_variadic_keyword_argument_reordering():
     with pytest.raises(TypeError, match=msg):
 
         class Test3(Test):
-            another_options = varkwds(is_int)
+            another_options = varkwargs(is_int)
 
 
 def test_variadic_argument():
@@ -397,7 +397,7 @@ def test_variadic_keyword_argument():
     class Test(Annotable):
         first = is_int
         second = is_int
-        options = varkwds(is_int)
+        options = varkwargs(is_int)
 
     assert Test(1, 2).options == {}
     assert Test(1, 2, a=3).options == {'a': 3}
