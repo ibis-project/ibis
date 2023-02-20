@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import functools
 from functools import partial
+from typing import Literal
 
 import parsy
 
@@ -22,8 +23,8 @@ from ibis.common.parsing import (
 )
 
 
-def _bool_type():
-    return getattr(getattr(ibis.options, "clickhouse", None), "bool_type", "Boolean")
+def _bool_type() -> Literal["Bool", "UInt8", "Int8"]:
+    return getattr(getattr(ibis.options, "clickhouse", None), "bool_type", "Bool")
 
 
 def parse(text: str) -> dt.DataType:
@@ -57,9 +58,7 @@ def parse(text: str) -> dt.DataType:
         | spaceless_string("date32", "date").result(dt.Date(nullable=False))
         | spaceless_string("time").result(dt.Time(nullable=False))
         | spaceless_string("tinyint", "int8", "int1").result(dt.Int8(nullable=False))
-        | spaceless_string("boolean", "bool").result(
-            getattr(dt, _bool_type())(nullable=False)
-        )
+        | spaceless_string("boolean", "bool").result(dt.Boolean(nullable=False))
         | spaceless_string("integer", "int32", "int4", "int").result(
             dt.Int32(nullable=False)
         )
