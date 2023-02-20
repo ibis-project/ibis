@@ -115,7 +115,7 @@ def test_signature():
 
 def test_signature_from_callable():
     def test(a: int, b: int, c: int = 1):
-        return a + b + c
+        ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'c': 1}
@@ -130,7 +130,7 @@ def test_signature_from_callable():
 
 def test_signature_from_callable_with_varargs():
     def test(a: int, b: int, *args: int):
-        return a + b + sum(args)
+        ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'args': ()}
@@ -147,7 +147,7 @@ def test_signature_from_callable_with_varargs():
 
 def test_signature_from_callable_with_positional_only_arguments():
     def test(a: int, b: int, /, c: int = 1):
-        return a + b + c
+        ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'c': 1}
@@ -165,7 +165,7 @@ def test_signature_from_callable_with_positional_only_arguments():
 
 def test_signature_from_callable_with_keyword_only_arguments():
     def test(a: int, b: int, *, c: float, d: float = 0.0):
-        return a + b + c
+        ...
 
     sig = Signature.from_callable(test)
     assert sig.validate(2, 3, c=4.0) == {'a': 2, 'b': 3, 'c': 4.0, 'd': 0.0}
@@ -380,7 +380,7 @@ def test_annotated_function_with_varargs():
         test(1.0, 2.0, 3, 4, 5, 6.0)
 
 
-def test_annotated_function_with_varkwds():
+def test_annotated_function_with_varkwargs():
     @annotated
     def test(a: float, b: float, **kwargs: int):
         return sum((a, b) + tuple(kwargs.values()))

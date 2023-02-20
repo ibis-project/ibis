@@ -103,7 +103,7 @@ class Argument(Annotation):
         return cls(validator, kind=VAR_POSITIONAL)
 
     @classmethod
-    def varkwds(cls, validator=None):
+    def varkwargs(cls, validator=None):
         validator = None if validator is None else frozendict_of(any_, validator)
         return cls(validator, kind=VAR_KEYWORD)
 
@@ -240,7 +240,7 @@ class Signature(inspect.Signature):
             if param.kind is VAR_POSITIONAL:
                 annot = Argument.varargs(validator)
             elif param.kind is VAR_KEYWORD:
-                annot = Argument.varkwds(validator)
+                annot = Argument.varkwargs(validator)
             elif param.default is EMPTY:
                 annot = Argument.required(validator, kind=param.kind)
             else:
@@ -350,13 +350,13 @@ class Signature(inspect.Signature):
 
 
 # aliases for convenience
-attribute = Attribute
 argument = Argument
-required = Argument.required
-optional = Argument.optional
-varargs = Argument.varargs
-varkwds = Argument.varkwds
+attribute = Attribute
 default = Argument.default
+optional = Argument.optional
+required = Argument.required
+varargs = Argument.varargs
+varkwargs = Argument.varkwargs
 
 
 # TODO(kszucs): try to cache validator objects
