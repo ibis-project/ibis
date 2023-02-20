@@ -68,8 +68,8 @@ class SetOp(DML):
         return map(self.keyword, self.distincts)
 
     def _extract_subqueries(self):
-        self.subqueries = _extract_common_table_expressions(
-            [self.table_set, *self.filters]
+        self.subqueries = an.find_subqueries(
+            [self.table_set, *self.filters], min_dependents=2
         )
         for subquery in self.subqueries:
             self.context.set_extracted(subquery)
@@ -111,12 +111,3 @@ class SetOp(DML):
             )
         )
         return '\n'.join(buf)
-
-
-def _extract_common_table_expressions(nodes):
-    # filter out None values
-    nodes = list(filter(None, nodes))
-    counts = an.find_subqueries(nodes)
-    duplicates = [op for op, count in counts.items() if count > 1]
-    duplicates.reverse()
-    return duplicates

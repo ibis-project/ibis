@@ -10,7 +10,6 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.compiler.base import _extract_common_table_expressions
 
 
 class _LimitSpec(NamedTuple):
@@ -377,7 +376,9 @@ class SelectBuilder:
         # want.
 
         # Find the subqueries, and record them in the passed query context.
-        subqueries = _extract_common_table_expressions([self.table_set, *self.filters])
+        subqueries = an.find_subqueries(
+            [self.table_set, *self.filters], min_dependents=2
+        )
 
         self.subqueries = []
         for node in subqueries:

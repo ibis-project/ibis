@@ -2,13 +2,12 @@ from __future__ import annotations
 
 import functools
 import operator
-from collections import Counter
+from collections import defaultdict
 from typing import Iterable, Iterator, Mapping
 
 import toolz
 
 import ibis.common.graph as g
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
@@ -774,19 +773,21 @@ def find_predicates(node, flatten=True):
     return list(g.traverse(predicate, node))
 
 
-def find_subqueries(node: ops.Node) -> Counter:
-    counts = Counter()
-    for graph in map(g.Graph.from_dfs, util.promote_list(node)):
-        dependents = graph.invert()
+def find_subqueries(node: ops.Node, min_dependents=1) -> tuple[ops.Node, ...]:
+    subquery_dependents = defaultdict(set)
+    for n in filter(None, util.promote_list(node)):
+        dependents = g.Graph.from_dfs(n).invert()
         for u, vs in dependents.toposort().items():
             # count the number of table-node dependents on the current node
             # but only if the current node is a selection or aggregation
             if isinstance(u, (rels.Projection, rels.Aggregation)):
-                counts[u] += len(
-                    set(toolz.concat(map(an.find_immediate_parent_tables, vs)))
-                )
+                subquery_dependents[u].update(vs)
 
-    return counts
+    return tuple(
+        node
+        for node, dependents in reversed(subquery_dependents.items())
+        if len(dependents) >= min_dependents
+    )
 
 
 # TODO(kszucs): move to types/logical.py
