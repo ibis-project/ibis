@@ -21,7 +21,6 @@ pytest.importorskip("sqlglot")
     reason="Not clear how to extract SQL from the backend",
     raises=(exc.OperationNotDefinedError, NotImplementedError, ValueError),
 )
-@mark.notimpl(["mssql"], raises=ValueError, reason="no sqlglot dialect for mssql")
 def test_table(con):
     expr = con.tables.functional_alltypes.select(c=_.int_col + 1)
     buf = io.StringIO()
@@ -29,11 +28,7 @@ def test_table(con):
     assert buf.getvalue()
 
 
-simple_literal = param(
-    ibis.literal(1),
-    marks=[pytest.mark.notimpl(["mssql"], reason="no sqlglot dialect for mssql")],
-    id="simple_literal",
-)
+simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(
     ibis.array([1]),
     marks=[
