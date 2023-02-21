@@ -259,10 +259,13 @@ def build_df_from_projection(
     # Result series might be trimmed by time context, thus index may
     # have changed. To concat rows properly, we first `sort_index` on
     # each pieces then assign data index manually to series
+    #
+    # If cardinality changes (e.g. unnest/explode), trying to do this
+    # won't work so don't try?
     for i in range(len(new_pieces)):
-        assert len(new_pieces[i].index) == len(data.index)
         new_pieces[i] = new_pieces[i].sort_index()
-        new_pieces[i].index = data.index
+        if len(new_pieces[i].index) == len(data.index):
+            new_pieces[i].index = data.index
 
     return pd.concat(new_pieces, axis=1)
 
