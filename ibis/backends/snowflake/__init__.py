@@ -177,9 +177,22 @@ class Backend(BaseAlchemyBackend):
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **_: Any
     ) -> sa.Table:
-        inspected = self.inspector.get_columns(name, schema)
+        with self.begin() as con:
+            cur_db, cur_schema = con.exec_driver_sql(
+                "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
+            ).fetchone()
+            if schema is not None:
+                con.exec_driver_sql(f"USE {schema}")
+        try:
+            inspected = self.inspector.get_columns(
+                name,
+                schema=schema.split(".", 2)[1] if schema is not None else schema,
+            )
+        finally:
+            with self.begin() as con:
+                con.exec_driver_sql(f"USE {cur_db}.{cur_schema}")
         cols = []
-        identifier = name if not schema else schema + "." + name
+        identifier = name if schema is None else schema + "." + name
         with self.begin() as con:
             cur = con.exec_driver_sql(f"DESCRIBE TABLE {identifier}").mappings()
             for colname, colinfo in zip(toolz.pluck("name", cur), inspected):

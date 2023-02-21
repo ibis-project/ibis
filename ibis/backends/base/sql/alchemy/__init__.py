@@ -478,16 +478,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
             Table expression
         """
         if database is not None and database != self.current_database:
-            return self.database(database=database).table(
-                name=name,
-                database=database,
-                schema=schema,
-            )
-        sqla_table = self._get_sqla_table(
-            name,
-            database=database,
-            schema=schema,
-        )
+            return self.database(name=database).table(name=name, schema=schema)
+        sqla_table = self._get_sqla_table(name, database=database, schema=schema)
         return self._sqla_table_to_expr(sqla_table)
 
     def insert(
