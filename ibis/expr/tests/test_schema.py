@@ -328,3 +328,34 @@ def test_schema_is_coercible():
 def test_schema_shorthand_supports_kwargs():
     s = sch.schema(a=dt.int64, b=dt.Array(dt.int64))
     assert s == sch.Schema({'a': dt.int64, 'b': dt.Array(dt.int64)})
+
+
+def test_schema_set_operations():
+    a = sch.Schema({'a': dt.string, 'b': dt.int64, 'c': dt.float64})
+    b = sch.Schema({'a': dt.string, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date})
+    c = sch.Schema({'i': dt.int64, 'j': dt.float64, 'k': dt.string})
+    d = sch.Schema({'i': dt.int64, 'j': dt.float64, 'k': dt.string, 'l': dt.boolean})
+
+    assert a & b == sch.Schema({'a': dt.string, 'c': dt.float64})
+    assert a | b == sch.Schema(
+        {'a': dt.string, 'b': dt.int64, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date}
+    )
+    assert a - b == sch.Schema({'b': dt.int64})
+    assert b - a == sch.Schema({'d': dt.boolean, 'e': dt.date})
+    assert a ^ b == sch.Schema({'b': dt.int64, 'd': dt.boolean, 'e': dt.date})
+
+    assert not a.isdisjoint(b)
+    assert a.isdisjoint(c)
+
+    assert a <= a
+    assert a >= a
+    assert not a < a
+    assert not a > a
+    assert not a <= b
+    assert not a >= b
+    assert not a >= c
+    assert not a <= c
+    assert c <= d
+    assert c < d
+    assert d >= c
+    assert d > c

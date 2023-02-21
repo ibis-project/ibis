@@ -18,6 +18,7 @@ from typing_extensions import get_args, get_origin, get_type_hints
 
 import ibis.expr.types as ir
 from ibis.common.annotations import attribute, optional
+from ibis.common.collections import MapSet
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
     all_of,
@@ -675,7 +676,7 @@ class Interval(Parametric):
 
 
 @public
-class Struct(Parametric, Mapping):
+class Struct(Parametric, MapSet):
     """Structured values."""
 
     fields = frozendict_of(instance_of(str), datatype)

@@ -1038,7 +1038,8 @@ def test_cross_join(table):
 
     joined = table.cross_join(scalar_aggs)
     agg_schema = api.Schema({'sum_a': 'int64', 'mean_b': 'double'})
-    ex_schema = table.schema().merge(agg_schema)
+    with pytest.warns(FutureWarning):
+        ex_schema = table.schema().merge(agg_schema)
     assert_equal(joined.schema(), ex_schema)
 
 

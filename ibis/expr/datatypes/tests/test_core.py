@@ -400,6 +400,37 @@ def test_struct_mapping_api():
         s['e'] = dt.int8
 
 
+def test_struct_set_operations():
+    a = dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})
+    b = dt.Struct({'a': dt.string, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date})
+    c = dt.Struct({'i': dt.int64, 'j': dt.float64, 'k': dt.string})
+    d = dt.Struct({'i': dt.int64, 'j': dt.float64, 'k': dt.string, 'l': dt.boolean})
+
+    assert a & b == dt.Struct({'a': dt.string, 'c': dt.float64})
+    assert a | b == dt.Struct(
+        {'a': dt.string, 'b': dt.int64, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date}
+    )
+    assert a - b == dt.Struct({'b': dt.int64})
+    assert b - a == dt.Struct({'d': dt.boolean, 'e': dt.date})
+    assert a ^ b == dt.Struct({'b': dt.int64, 'd': dt.boolean, 'e': dt.date})
+
+    assert not a.isdisjoint(b)
+    assert a.isdisjoint(c)
+
+    assert a <= a
+    assert a >= a
+    assert not a < a
+    assert not a > a
+    assert not a <= b
+    assert not a >= b
+    assert not a >= c
+    assert not a <= c
+    assert c <= d
+    assert c < d
+    assert d >= c
+    assert d > c
+
+
 def test_singleton_null():
     assert dt.null is dt.Null()
 

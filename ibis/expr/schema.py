@@ -7,10 +7,11 @@ from multipledispatch import Dispatcher
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
+from ibis.common.collections import MapSet
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.validators import Coercible, frozendict_of, instance_of, validator
-from ibis.util import indent
+from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -43,7 +44,7 @@ def datatype(arg, **kwargs):
     return dt.dtype(arg)
 
 
-class Schema(Concrete, Mapping, Coercible):
+class Schema(Concrete, Coercible, MapSet):
     """An object for holding table schema information."""
 
     fields = frozendict_of(instance_of(str), datatype)
@@ -60,6 +61,10 @@ class Schema(Concrete, Mapping, Coercible):
                 2,
             )
         )
+
+    def __rich_repr__(self):
+        for name, dtype in self.items():
+            yield name, str(dtype)
 
     def __len__(self) -> int:
         return len(self.fields)
@@ -152,14 +157,7 @@ class Schema(Concrete, Mapping, Coercible):
     def as_struct(self) -> dt.Struct:
         return dt.Struct(self)
 
-    def __gt__(self, other: Schema) -> bool:
-        """Return whether `self` is a strict superset of `other`."""
-        return set(self.items()) > set(other.items())
-
-    def __ge__(self, other: Schema) -> bool:
-        """Return whether `self` is a superset of or equal to `other`."""
-        return set(self.items()) >= set(other.items())
-
+    @deprecated(as_of="5.0", removed_in="6.0", instead="use union operator instead")
     def merge(self, other: Schema) -> Schema:
         """Merge `other` to `self`.
 
