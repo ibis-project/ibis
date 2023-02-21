@@ -181,6 +181,7 @@ class Backend(BaseAlchemyBackend):
             cur_db, cur_schema = con.exec_driver_sql(
                 "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
             ).fetchone()
+
             if schema is not None:
                 con.exec_driver_sql(f"USE {schema}")
         try:
@@ -190,7 +191,11 @@ class Backend(BaseAlchemyBackend):
             )
         finally:
             with self.begin() as con:
-                con.exec_driver_sql(f"USE {cur_db}.{cur_schema}")
+                if cur_db is not None:
+                    con.exec_driver_sql(f"USE DATABASE {cur_db}")
+
+                if cur_schema is not None:
+                    con.exec_driver_sql(f"USE SCHEMA {cur_schema}")
         cols = []
         identifier = name if schema is None else schema + "." + name
         with self.begin() as con:
