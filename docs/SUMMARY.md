@@ -24,6 +24,7 @@
     * [Backend Operations Matrix](backends/support_matrix.md)
 * [Releases](release_notes.md)
 * Blog
+    * [Maximizing Productivity with Selectors](blog/selectors.md)
     * [Ibis + DuckDB + Substrait](blog/ibis_substrait_to_duckdb.md)
     * [Ibis v4.0.0](blog/ibis-version-4.0.0-release.md)
     * [Analyzing Ibis's CI Data with Ibis](blog/rendered/ci-analysis.ipynb)

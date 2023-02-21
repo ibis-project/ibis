@@ -212,9 +212,6 @@ class Schema(Concrete, Coercible, MapSet):
         >>> sch.name_at_position(1)
         'b'
         """
-        upper = len(self.names) - 1
-        if not 0 <= i <= upper:
-            raise ValueError(f'Column index must be between 0 and {upper:d}, inclusive')
         return self.names[i]
 
     def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:

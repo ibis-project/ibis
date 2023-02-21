@@ -16,6 +16,7 @@
 
 from __future__ import annotations
 
+import itertools
 import types
 from typing import Iterable, Sequence
 
@@ -25,6 +26,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.expr.deferred import Deferred
+from ibis.expr.selectors import Selector
 
 _function_types = tuple(
     filter(
@@ -43,15 +45,17 @@ _function_types = tuple(
 
 def _get_group_by_key(table, value):
     if isinstance(value, str):
-        return table[value]
+        yield table[value]
     elif isinstance(value, _function_types):
-        return value(table)
+        yield value(table)
     elif isinstance(value, Deferred):
-        return value.resolve(table)
+        yield value.resolve(table)
+    elif isinstance(value, Selector):
+        yield from value.expand(table)
     elif isinstance(value, ir.Expr):
-        return an.sub_immediate_parents(value.op(), table.op()).to_expr()
+        yield an.sub_immediate_parents(value.op(), table.op()).to_expr()
     else:
-        return value
+        yield value
 
 
 # TODO(kszucs): make a builder class for this
@@ -62,9 +66,18 @@ class GroupedTable:
         self, table, by, having=None, order_by=None, window=None, **expressions
     ):
         self.table = table
-        self.by = [_get_group_by_key(table, v) for v in util.promote_list(by)] + [
-            _get_group_by_key(table, v).name(k) for k, v in expressions.items()
-        ]
+        self.by = list(
+            itertools.chain(
+                itertools.chain.from_iterable(
+                    _get_group_by_key(table, v) for v in util.promote_list(by)
+                ),
+                (
+                    expr.name(k)
+                    for k, v in expressions.items()
+                    for expr in _get_group_by_key(table, v)
+                ),
+            )
+        )
         self._order_by = order_by or []
         self._having = having or []
         self._window = window
@@ -138,9 +151,7 @@ class GroupedTable:
             window=self._window,
         )
 
-    def mutate(
-        self, exprs: ir.Value | Sequence[ir.Value] | None = None, **kwds: ir.Value
-    ):
+    def mutate(self, *exprs: ir.Value | Sequence[ir.Value], **kwexprs: ir.Value):
         """Return a table projection with window functions applied.
 
         Any arguments can be functions.
@@ -149,7 +160,7 @@ class GroupedTable:
         ----------
         exprs
             List of expressions
-        kwds
+        kwexprs
             Expressions
 
         Examples
@@ -184,31 +195,41 @@ class GroupedTable:
         Table
             A table expression with window functions applied
         """
-        if exprs is None:
-            exprs = []
-        else:
-            exprs = util.promote_list(exprs)
 
-        for name, expr in kwds.items():
-            expr = self.table._ensure_expr(expr)
-            exprs.append(expr.name(name))
+        exprs = self._selectables(*exprs, **kwexprs)
+        return self.table.mutate(exprs)
 
-        return self.projection([self.table, *exprs])
-
-    def projection(self, exprs):
+    def select(self, *exprs, **kwexprs):
         """Project new columns out of the grouped table.
 
         See Also
         --------
         [`GroupedTable.mutate`][ibis.expr.types.groupby.GroupedTable.mutate]
         """
+        exprs = self._selectables(*exprs, **kwexprs)
+        return self.table.select(exprs)
+
+    def _selectables(self, *exprs, **kwexprs):
+        """Project new columns out of the grouped table.
+
+        See Also
+        --------
+        [`GroupedTable.mutate`][ibis.expr.types.groupby.GroupedTable.mutate]
+        """
+        table = self.table
         default_frame = self._get_window()
-        windowed_exprs = []
-        for expr in util.promote_list(exprs):
-            expr = self.table._ensure_expr(expr)
-            expr = an.windowize_function(expr, frame=default_frame)
-            windowed_exprs.append(expr)
-        return self.table.select(windowed_exprs)
+        return [
+            an.windowize_function(e2, frame=default_frame)
+            for expr in exprs
+            for e1 in util.promote_list(expr)
+            for e2 in util.promote_list(table._ensure_expr(e1))
+        ] + [
+            an.windowize_function(e, frame=default_frame).name(k)
+            for k, expr in kwexprs.items()
+            for e in util.promote_list(table._ensure_expr(expr))
+        ]
+
+    projection = select
 
     def _get_window(self):
         if self._window is None:

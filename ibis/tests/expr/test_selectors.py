@@ -5,6 +5,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
+from ibis import deferred as _
 from ibis import selectors as s
 
 
@@ -90,3 +91,275 @@ def test_compose_and(t):
 
 def test_compose_not(t):
     assert t.select(~s.numeric()).equals(t.select("b", "c", "d", "g", "ga"))
+
+
+@pytest.fixture
+def penguins():
+    return ibis.table(
+        dict(
+            species="string",
+            island="string",
+            bill_length_mm="float64",
+            bill_depth_mm="float64",
+            flipper_length_mm="int64",
+            body_mass_g="int64",
+            sex="string",
+            year="int64",
+        ),
+        name="penguins",
+    )
+
+
+def zscore(c):
+    return (c - c.mean()) / c.std()
+
+
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        lambda t: t.select(
+            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+        ),
+        lambda t: t.select(s.across(s.numeric() & ~s.c("year"), zscore)),
+    ],
+    ids=["deferred", "func"],
+)
+def test_across_select(penguins, expr_func):
+    expr = expr_func(penguins)
+    expected = penguins.select(
+        bill_length_mm=zscore(_.bill_length_mm),
+        bill_depth_mm=zscore(_.bill_depth_mm),
+        flipper_length_mm=zscore(_.flipper_length_mm),
+        body_mass_g=zscore(_.body_mass_g),
+    )
+    assert expr.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        lambda t: t.mutate(
+            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+        ),
+        lambda t: t.mutate(s.across(s.numeric() & ~s.c("year"), zscore)),
+    ],
+    ids=["deferred", "func"],
+)
+def test_across_mutate(penguins, expr_func):
+    expr = expr_func(penguins)
+    expected = penguins.mutate(
+        bill_length_mm=zscore(_.bill_length_mm),
+        bill_depth_mm=zscore(_.bill_depth_mm),
+        flipper_length_mm=zscore(_.flipper_length_mm),
+        body_mass_g=zscore(_.body_mass_g),
+    )
+    assert expr.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        lambda t: t.agg(s.across(s.numeric() & ~s.c("year"), _.mean())),
+        lambda t: t.agg(s.across(s.numeric() & ~s.c("year"), lambda c: c.mean())),
+    ],
+    ids=["deferred", "func"],
+)
+def test_across_agg(penguins, expr_func):
+    expr = expr_func(penguins)
+    expected = penguins.agg(
+        bill_length_mm=_.bill_length_mm.mean(),
+        bill_depth_mm=_.bill_depth_mm.mean(),
+        flipper_length_mm=_.flipper_length_mm.mean(),
+        body_mass_g=_.body_mass_g.mean(),
+    )
+    assert expr.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        lambda t: t.group_by("species").select(
+            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+        ),
+        lambda t: t.group_by("species").select(
+            s.across(s.numeric() & ~s.c("year"), zscore)
+        ),
+    ],
+    ids=["deferred", "func"],
+)
+def test_across_group_by_select(penguins, expr_func):
+    expr = expr_func(penguins)
+    expected = penguins.group_by("species").select(
+        bill_length_mm=zscore(_.bill_length_mm),
+        bill_depth_mm=zscore(_.bill_depth_mm),
+        flipper_length_mm=zscore(_.flipper_length_mm),
+        body_mass_g=zscore(_.body_mass_g),
+    )
+    assert expr.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        lambda t: t.group_by("species").mutate(
+            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+        ),
+        lambda t: t.group_by("species").mutate(
+            s.across(s.numeric() & ~s.c("year"), zscore)
+        ),
+    ],
+    ids=["deferred", "func"],
+)
+def test_across_group_by_mutate(penguins, expr_func):
+    expr = expr_func(penguins)
+    expected = penguins.group_by("species").mutate(
+        bill_length_mm=zscore(_.bill_length_mm),
+        bill_depth_mm=zscore(_.bill_depth_mm),
+        flipper_length_mm=zscore(_.flipper_length_mm),
+        body_mass_g=zscore(_.body_mass_g),
+    )
+    assert expr.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        lambda t: t.group_by("species").agg(
+            s.across(s.numeric() & ~s.c("year"), _.mean())
+        ),
+        lambda t: t.group_by("species").agg(
+            s.across(s.numeric() & ~s.c("year"), lambda c: c.mean())
+        ),
+    ],
+    ids=["deferred", "func"],
+)
+def test_across_group_by_agg(penguins, expr_func):
+    expr = expr_func(penguins)
+    expected = penguins.group_by("species").agg(
+        bill_length_mm=_.bill_length_mm.mean(),
+        bill_depth_mm=_.bill_depth_mm.mean(),
+        flipper_length_mm=_.flipper_length_mm.mean(),
+        body_mass_g=_.body_mass_g.mean(),
+    )
+    assert expr.equals(expected)
+
+
+@pytest.mark.parametrize(
+    "expr_func",
+    [
+        lambda t: t.group_by(~s.numeric()).agg(
+            s.across(s.numeric() & ~s.c("year"), _.mean())
+        ),
+        lambda t: t.group_by(~s.numeric()).agg(
+            s.across(s.numeric() & ~s.c("year"), lambda c: c.mean())
+        ),
+    ],
+    ids=["deferred", "func"],
+)
+def test_across_group_by_agg_with_grouped_selectors(penguins, expr_func):
+    expr = expr_func(penguins)
+    expected = penguins.group_by(["species", "island", "sex"]).agg(
+        bill_length_mm=_.bill_length_mm.mean(),
+        bill_depth_mm=_.bill_depth_mm.mean(),
+        flipper_length_mm=_.flipper_length_mm.mean(),
+        body_mass_g=_.body_mass_g.mean(),
+    )
+    assert expr.equals(expected)
+
+
+def test_if_all(penguins):
+    expr = penguins.filter(s.if_all(s.numeric() & ~s.c("year"), _ > 5))
+    expected = penguins.filter(
+        (_.bill_length_mm > 5)
+        & (_.bill_depth_mm > 5)
+        & (_.flipper_length_mm > 5)
+        & (_.body_mass_g > 5)
+    )
+    assert expr.equals(expected)
+
+
+def test_if_any(penguins):
+    expr = penguins.filter(s.if_any(s.numeric() & ~s.c("year"), _ > 5))
+    expected = penguins.filter(
+        (_.bill_length_mm > 5)
+        | (_.bill_depth_mm > 5)
+        | (_.flipper_length_mm > 5)
+        | (_.body_mass_g > 5)
+    )
+    assert expr.equals(expected)
+
+
+def test_string_range_start(penguins):
+    assert penguins.select(s.r["island":5]).equals(
+        penguins.select(penguins.columns[penguins.columns.index("island") : 5])
+    )
+
+
+def test_string_range_end(penguins):
+    assert penguins.select(s.r[:"island"]).equals(
+        penguins.select(penguins.columns[: penguins.columns.index("island")])
+    )
+
+
+def test_first(penguins):
+    assert penguins.select(s.first()).equals(penguins.select(penguins.columns[0]))
+
+
+def test_last(penguins):
+    assert penguins.select(s.last()).equals(penguins.select(penguins.columns[-1]))
+
+
+def test_all(penguins):
+    assert penguins.select(s.all()).equals(penguins.select(penguins.columns))
+
+
+def test_names_callable(penguins):
+    expr = penguins.select(
+        s.across(
+            s.numeric() & ~s.c("year"),
+            func=dict(cast=_.cast("float32")),
+            names=lambda col, fn: f"{fn}({col})",
+        )
+    )
+    expected = penguins.select(
+        **{
+            "cast(bill_length_mm)": _.bill_length_mm.cast("float32"),
+            "cast(bill_depth_mm)": _.bill_depth_mm.cast("float32"),
+            "cast(flipper_length_mm)": _.flipper_length_mm.cast("float32"),
+            "cast(body_mass_g)": _.body_mass_g.cast("float32"),
+        }
+    )
+    assert expr.equals(expected)
+
+
+def test_names_format_string(penguins):
+    expr = penguins.select(
+        s.across(
+            s.numeric() & ~s.c("year"),
+            func=dict(cast=_.cast("float32")),
+            names="{fn}({col})",
+        )
+    )
+    expected = penguins.select(
+        **{
+            "cast(bill_length_mm)": _.bill_length_mm.cast("float32"),
+            "cast(bill_depth_mm)": _.bill_depth_mm.cast("float32"),
+            "cast(flipper_length_mm)": _.flipper_length_mm.cast("float32"),
+            "cast(body_mass_g)": _.body_mass_g.cast("float32"),
+        }
+    )
+    assert expr.equals(expected)
+
+
+def test_all_of(penguins):
+    expr = penguins.select(s.all_of(s.numeric(), ~s.c("year")))
+    expected = penguins.select(
+        "bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"
+    )
+    assert expr.equals(expected)
+
+
+def test_any_of(penguins):
+    expr = penguins.select(s.any_of(s.startswith("bill"), s.c("year")))
+    expected = penguins.select("bill_length_mm", "bill_depth_mm", "year")
+    assert expr.equals(expected)

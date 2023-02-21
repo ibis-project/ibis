@@ -218,7 +218,7 @@ class Signature(inspect.Signature):
 
         if validators is None:
             validators = {}
-        elif isinstance(validators, list):
+        elif isinstance(validators, (list, tuple)):
             # create a mapping of parameter name to validator
             validators = dict(zip(sig.parameters.keys(), validators))
         elif not isinstance(validators, dict):
