@@ -156,7 +156,6 @@ builtin_array = toolz.compose(
 
 unnest = toolz.compose(
     builtin_array,
-    pytest.mark.notimpl(["pandas"]),
     pytest.mark.notyet(
         ["bigquery"], reason="doesn't support unnest in SELECT position"
     ),
@@ -377,7 +376,7 @@ def test_unnest_default_name(con):
 
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
-    tm.assert_series_equal(result, expected.astype("float64"))
+    tm.assert_series_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.parametrize(
