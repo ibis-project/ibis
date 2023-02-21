@@ -400,6 +400,7 @@ unfixable = [
 
 ]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
+"ibis/expr/selectors.py" = ["UP007"]
 
 [tool.black]
 line_length = 88

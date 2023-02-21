@@ -27,7 +27,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.deferred import Deferred
-from ibis.expr.selectors import Selector
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
@@ -39,6 +38,22 @@ if TYPE_CHECKING:
 
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
+
+
+def _ensure_expr(table, expr):
+    import ibis.expr.rules as rlz
+    from ibis.expr.selectors import Selector
+
+    # This is different than self._ensure_expr, since we don't want to
+    # treat `str` or `int` values as column indices
+    if util.is_function(expr):
+        return expr(table)
+    elif isinstance(expr, Deferred):
+        return expr.resolve(table)
+    elif isinstance(expr, Selector):
+        return expr.expand(table)
+    else:
+        return rlz.any(expr).to_expr()
 
 
 def _regular_join_method(
@@ -229,6 +244,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     def _ensure_expr(self, expr):
         import numpy as np
 
+        from ibis.expr.selectors import Selector
+
         if isinstance(expr, str):
             # treat strings as column names
             return self[expr]
@@ -238,6 +255,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         elif isinstance(expr, Deferred):
             # resolve deferred expressions
             return expr.resolve(self)
+        elif isinstance(expr, Selector):
+            return expr.expand(self)
         elif callable(expr):
             return expr(self)
         else:
@@ -258,18 +277,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self.op().schema
 
-    def group_by(
-        self,
-        by=None,
-        **additional_grouping_expressions: Any,
-    ) -> GroupedTable:
+    def group_by(self, by=None, **group_exprs: Any) -> GroupedTable:
         """Create a grouped table expression.
 
         Parameters
         ----------
         by
             Grouping expressions
-        additional_grouping_expressions
+        group_exprs
             Named grouping expressions
 
         Examples
@@ -296,7 +311,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.groupby import GroupedTable
 
-        return GroupedTable(self, by, **additional_grouping_expressions)
+        return GroupedTable(self, by, **group_exprs)
 
     def rowid(self) -> ir.IntegerValue:
         """A unique integer per row, only valid on physical tables.
@@ -384,14 +399,25 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         import ibis.expr.analysis as an
 
-        metrics = util.promote_list(metrics)
-        metrics.extend(
-            self._ensure_expr(expr).name(name) for name, expr in kwargs.items()
+        metrics = itertools.chain(
+            itertools.chain.from_iterable(
+                (
+                    (_ensure_expr(self, m) for m in metric)
+                    if isinstance(metric, (list, tuple))
+                    else util.promote_list(_ensure_expr(self, metric))
+                )
+                for metric in util.promote_list(metrics)
+            ),
+            (
+                e.name(name)
+                for name, expr in kwargs.items()
+                for e in util.promote_list(_ensure_expr(self, expr))
+            ),
         )
 
         agg = ops.Aggregation(
             self,
-            metrics=metrics,
+            metrics=list(metrics),
             by=util.promote_list(by),
             having=util.promote_list(having),
         )
@@ -599,22 +625,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         True
         """
         import ibis.expr.analysis as an
-        import ibis.expr.rules as rlz
-
-        def ensure_expr(expr):
-            # This is different than self._ensure_expr, since we don't want to
-            # treat `str` or `int` values as column indices
-            if util.is_function(expr):
-                return expr(self)
-            elif isinstance(expr, Deferred):
-                return expr.resolve(self)
-            else:
-                return rlz.any(expr).to_expr()
 
         exprs = [] if exprs is None else util.promote_list(exprs)
-        exprs = [ensure_expr(expr) for expr in exprs]
-        exprs.extend(ensure_expr(expr).name(name) for name, expr in mutations.items())
-        mutation_exprs = an.get_mutation_exprs(exprs, self)
+        exprs = itertools.chain(
+            itertools.chain.from_iterable(
+                util.promote_list(_ensure_expr(self, expr)) for expr in exprs
+            ),
+            (
+                e.name(name)
+                for name, expr in mutations.items()
+                for e in util.promote_list(_ensure_expr(self, expr))
+            ),
+        )
+        mutation_exprs = an.get_mutation_exprs(list(exprs), self)
         return self.select(mutation_exprs)
 
     def select(
@@ -693,6 +716,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             demeaned_a: r0.a - Window(Mean(r0.a), window=Window(how='rows'))
         """
         import ibis.expr.analysis as an
+        from ibis.expr.selectors import Selector
 
         exprs = list(
             itertools.chain(
@@ -1395,8 +1419,12 @@ def _resolve_predicates(
     import ibis.expr.types as ir
 
     predicates = [
-        ir.relations.bind_expr(table, pred).op()
-        for pred in util.promote_list(predicates)
+        pred.op()
+        for preds in map(
+            functools.partial(ir.relations.bind_expr, table),
+            util.promote_list(predicates),
+        )
+        for pred in util.promote_list(preds)
     ]
     predicates = an.flatten_predicate(predicates)
 
