@@ -408,6 +408,7 @@ channels = ["conda-forge"]
 # conda-lock doesn't map dependencies' extras to conda-forge packages and we
 # use the array and dataframe extras from dask
 dask = ">=2021.10.0"
+pip = "*"
 
 [tool.coverage.run]
 branch = true
