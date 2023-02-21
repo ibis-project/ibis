@@ -329,7 +329,9 @@ def test_csv_reregister_schema(con, tmp_path):
         )
 
     # For a full file scan, expect correct schema based on final row
-    foo_table = con.register(foo)
+    # We also use the same `table_name` for both tests to ensure that
+    # the table is re-reflected in sqlalchemy
+    foo_table = con.register(foo, table_name="same")
     result_schema = foo_table.schema()
 
     assert result_schema.names == ("cola", "colb", "colc")
@@ -339,7 +341,7 @@ def test_csv_reregister_schema(con, tmp_path):
 
     # If file scan is limited to first two rows, should be all some kind of integer.
     # The specific type isn't so important, and may vary across backends/versions
-    foo_table = con.register(foo, SAMPLE_SIZE=2)
+    foo_table = con.register(foo, SAMPLE_SIZE=2, table_name="same")
     result_schema = foo_table.schema()
     assert result_schema.names == ("cola", "colb", "colc")
     assert result_schema["cola"].is_integer()
