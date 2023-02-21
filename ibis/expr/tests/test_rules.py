@@ -332,7 +332,7 @@ def test_table_with_schema(table):
 )
 def test_table_with_schema_invalid(table):
     validator = rlz.table(schema=[('group', dt.double), ('value', dt.timestamp)])
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(ValueError):
         validator(table)
 
 

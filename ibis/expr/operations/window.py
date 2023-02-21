@@ -25,9 +25,6 @@ class WindowBoundary(Value):
         return not self.preceding
 
 
-# perhaps have separate window frames, RowsWindowFrame and RangeWindowFrame
-
-
 @public
 class WindowFrame(Value):
     """A window frame operation bound to a table."""

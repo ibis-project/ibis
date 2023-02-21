@@ -465,6 +465,9 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             _con_kwargs=self._con_kwargs,
         )
 
+    def __rich_repr__(self):
+        yield "name", self.name
+
     def __hash__(self):
         return hash(self.db_identity)
 

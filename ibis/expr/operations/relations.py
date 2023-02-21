@@ -79,12 +79,6 @@ class InMemoryTable(PhysicalTable):
     def data(self) -> util.ToFrame:
         """Return the data of an in-memory table."""
 
-    def has_resolved_name(self):
-        return True
-
-    def resolve_name(self):
-        return self.name
-
 
 # TODO(kszucs): desperately need to clean this up, the majority of this
 # functionality should be handled by input rules for the Join class
@@ -176,8 +170,13 @@ class Join(TableNode):
 
     @property
     def schema(self):
-        # For joins retaining both table schemas, merge them together here
-        return self.left.schema.merge(self.right.schema)
+        # TODO(kszucs): use `return self.lefts.chema | self.right.schema` instead which
+        # eliminates unnecessary projection over the join, but currently breaks the
+        # pandas backend
+        left, right = self.left.schema, self.right.schema
+        if duplicates := left.keys() & right.keys():
+            raise com.IntegrityError(f'Duplicate column name(s): {duplicates}')
+        return sch.Schema({**left, **right})
 
 
 @public

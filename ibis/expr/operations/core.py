@@ -35,6 +35,9 @@ class Node(Concrete, Traversable):
     # Avoid custom repr for performance reasons
     __repr__ = object.__repr__
 
+    def __rich_repr__(self):
+        return zip(self.__argnames__, self.__args__)
+
 
 @public
 class Named(ABC):
