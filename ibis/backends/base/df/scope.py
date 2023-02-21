@@ -154,20 +154,19 @@ class Scope:
         return None
 
     def merge_scope(self, other_scope: Scope, overwrite=False) -> Scope:
-        """merge items in other_scope into this scope.
+        """Merge items in `other_scope` into this scope.
 
         Parameters
         ----------
-        other_scope: Scope
+        other_scope
             Scope to be merged with
-        overwrite: bool
-            if set to be True, force overwrite `value` if `op` already
-            exists.
+        overwrite
+            if `True`, force overwrite `value` if node already exists.
 
         Returns
         -------
         Scope
-            a new Scope instance with items in two scope merged.
+            a new Scope instance with items in two scopes merged.
         """
         result = Scope()
 
@@ -185,19 +184,19 @@ class Scope:
         return result
 
     def merge_scopes(self, other_scopes: Iterable[Scope], overwrite=False) -> Scope:
-        """merge items in other_scopes into this scope.
+        """Merge items in `other_scopes` into this scope.
 
         Parameters
         ----------
-        other_scopes: Iterable[Scope]
+        other_scopes
             scopes to be merged with
-        overwrite: Bool
-            if set to be True, force overwrite value if op already exists.
+        overwrite
+            if `True`, force overwrite value if node already exists.
 
         Returns
         -------
         Scope
-            a new Scope instance with items in two scope merged.
+            a new Scope instance with items in input scopes merged.
         """
         result = Scope()
         for op in self:
