@@ -423,7 +423,7 @@ exclude_lines = [
   "if TYPE_CHECKING:",
 ]
 ignore_errors = true
-omit = ["*_version.py", "*tests*"]
+omit = ["*_version.py", "*tests*", "ibis/interactive.py"]
 
 [tool.distutils.bdist_wheel]
 # universal = true is for projects that support py2 and py3, and do not have C
