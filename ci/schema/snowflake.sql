@@ -1,10 +1,10 @@
-CREATE OR REPLACE FILE FORMAT ibis_testing
+CREATE OR REPLACE TEMP FILE FORMAT ibis_testing
     type = 'CSV'
     field_delimiter = ','
     skip_header = 1
     field_optionally_enclosed_by = '"';
 
-CREATE OR REPLACE STAGE ibis_testing file_format = ibis_testing;
+CREATE OR REPLACE TEMP STAGE ibis_testing file_format = ibis_testing;
 
 CREATE OR REPLACE TABLE diamonds (
     "carat" FLOAT,

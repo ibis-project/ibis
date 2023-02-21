@@ -88,3 +88,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
         if snowflake_url := os.environ.get("SNOWFLAKE_URL"):
             return ibis.connect(snowflake_url)  # type: ignore
         pytest.skip("SNOWFLAKE_URL environment variable is not defined")
+
+
+@pytest.fixture(scope="session")
+def con(data_directory):
+    return TestConf.connect(data_directory)
