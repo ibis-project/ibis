@@ -387,6 +387,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _get_sqla_table(
         self, name: str, schema: str | None = None, autoload: bool = True, **kwargs: Any
     ) -> sa.Table:
+        # If the underlying table (or more likely, view) has changed, remove it
+        # to ensure a correct reflection
+        if autoload and self.inspector.has_table(name):
+            self.meta.remove(sa.Table(name, self.meta))
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", message="Did not recognize type", category=sa.exc.SAWarning

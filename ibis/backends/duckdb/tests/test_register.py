@@ -124,6 +124,21 @@ def test_read_in_memory():
     assert "df_pandas" in con.list_tables()
 
 
+def test_re_read_in_memory_overwrite():
+    con = ibis.duckdb.connect()
+
+    df_pandas_1 = pd.DataFrame({"a": ["a"], "b": [1], "d": ["hi"]})
+    df_pandas_2 = pd.DataFrame({"a": [1], "c": [1.4]})
+
+    table = con.read_in_memory(df_pandas_1, table_name="df")
+    assert len(table.columns) == 3
+    assert table.schema() == ibis.schema([("a", "str"), ("b", "int"), ("d", "str")])
+
+    table = con.read_in_memory(df_pandas_2, table_name="df")
+    assert len(table.columns) == 2
+    assert table.schema() == ibis.schema([("a", "int"), ("c", "float")])
+
+
 def test_memtable_with_nullable_dtypes():
     data = pd.DataFrame(
         {
