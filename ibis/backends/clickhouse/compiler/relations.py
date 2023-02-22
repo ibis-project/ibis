@@ -151,21 +151,28 @@ def _query(op: ops.SQLQueryResult, *, aliases, **_):
     return res.subquery(aliases.get(op, "_"))
 
 
-_KEYWORD = {
-    ops.Union: "UNION",
-    ops.Intersection: "INTERSECT",
-    ops.Difference: "EXCEPT",
+_SET_OP_FUNC = {
+    ops.Union: sg.union,
+    ops.Intersection: sg.intersect,
+    ops.Difference: sg.except_,
 }
 
 
 @translate_rel.register
 def _set_op(op: ops.SetOp, *, left, right, **_):
     dialect = "clickhouse"
-    left_query = left.args["this"].sql(dialect=dialect)
-    right_query = right.args["this"].sql(dialect=dialect)
-    distinct = "DISTINCT" if op.distinct else "ALL"
-    return sg.parse_one(
-        f"{left_query} {_KEYWORD[type(op)]} {distinct} {right_query}", read=dialect
+
+    if isinstance(left, sg.exp.Table):
+        left = sg.select("*", dialect=dialect).from_(left, dialect=dialect)
+
+    if isinstance(right, sg.exp.Table):
+        right = sg.select("*", dialect=dialect).from_(right, dialect=dialect)
+
+    return _SET_OP_FUNC[type(op)](
+        left.args.get("this", left),
+        right.args.get("this", right),
+        distinct=op.distinct,
+        dialect=dialect,
     )
 
 
