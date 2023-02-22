@@ -279,15 +279,18 @@ class SelectBuilder:
 
     def _collect_Union(self, op, toplevel=False):
         if toplevel:
-            raise NotImplementedError()
+            self.table_set = op
+            self.select_set = [op]
 
     def _collect_Difference(self, op, toplevel=False):
         if toplevel:
-            raise NotImplementedError()
+            self.table_set = op
+            self.select_set = [op]
 
     def _collect_Intersection(self, op, toplevel=False):
         if toplevel:
-            raise NotImplementedError()
+            self.table_set = op
+            self.select_set = [op]
 
     def _collect_Aggregation(self, op, toplevel=False):
         # The select set includes the grouping keys (if any), and these are
