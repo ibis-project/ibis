@@ -109,13 +109,12 @@ class SelectBuilder:
 
     def _build_result_query(self):
         self._collect_elements()
-        self._analyze_select_exprs()
         self._analyze_subqueries()
         self._populate_context()
 
         return self.select_class(
             self.table_set,
-            self.select_set,
+            list(self.select_set),
             translator_class=self.translator_class,
             table_set_formatter_class=self.table_set_formatter_class,
             context=self.context,
@@ -152,35 +151,6 @@ class SelectBuilder:
             # a subquery into a CTE, we need to propagate that reference
             # down to child contexts so that they aren't missing any refs.
             ctx.set_ref(node, ctx.top_context.get_ref(node))
-
-    # ---------------------------------------------------------------------
-    # Expr analysis / rewrites
-
-    def _analyze_select_exprs(self):
-        new_select_set = []
-
-        for op in self.select_set:
-            new_op = self._visit_select_expr(op)
-            new_select_set.append(new_op)
-
-        self.select_set = new_select_set
-
-    # TODO(kszucs): this should be rewritten using analysis.substitute()
-    def _visit_select_expr(self, op):
-        method = f'_visit_select_{type(op).__name__}'
-        if hasattr(self, method):
-            f = getattr(self, method)
-            return f(op)
-        elif isinstance(op, ops.Value):
-            new_args = []
-            for arg in op.args:
-                if isinstance(arg, ops.Node):
-                    arg = self._visit_select_expr(arg)
-                new_args.append(arg)
-
-            return type(op)(*new_args)
-        else:
-            return op
 
     # ---------------------------------------------------------------------
     # Analysis of table set
