@@ -139,6 +139,45 @@ def test_difference(backend, alltypes, df, distinct):
 
 
 @pytest.mark.parametrize("method", ["intersect", "difference", "union"])
-def test_empty_set_op(backend, alltypes, method):
+def test_empty_set_op(alltypes, method):
     with pytest.raises(com.IbisTypeError, match="requires a table or tables"):
         getattr(alltypes, method)()
+
+
+@pytest.mark.parametrize("distinct", [True, False])
+@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+def test_top_level_union(backend, con, distinct):
+    t1 = ibis.memtable(dict(a=[1]), name="t1")
+    t2 = ibis.memtable(dict(a=[2]), name="t2")
+    expr = t1.union(t2, distinct=distinct).limit(2)
+    result = con.execute(expr)
+    expected = pd.DataFrame({"a": [1, 2]})
+    backend.assert_frame_equal(result.sort_values("a").reset_index(drop=True), expected)
+
+
+@pytest.mark.parametrize(
+    "distinct",
+    [
+        True,
+        param(
+            False,
+            marks=pytest.mark.notimpl(["bigquery", "mssql", "snowflake", "sqlite"]),
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    ("opname", "expected"),
+    [("intersect", pd.DataFrame({"a": [2]})), ("difference", pd.DataFrame({"a": [1]}))],
+    ids=["intersect", "difference"],
+)
+@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["impala"], reason="doesn't support intersection or difference")
+def test_top_level_intersect_difference(backend, con, distinct, opname, expected):
+    t1 = ibis.memtable(dict(a=[1, 2]), name="t1")
+    t2 = ibis.memtable(dict(a=[2, 3]), name="t2")
+    op = getattr(t1, opname)
+    expr = op(t2, distinct=distinct).limit(2)
+    result = con.execute(expr)
+    backend.assert_frame_equal(result, expected)
