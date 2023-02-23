@@ -145,14 +145,14 @@ def test_empty_set_op(alltypes, method):
 
 
 @pytest.mark.parametrize("distinct", [True, False])
-@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
-def test_top_level_union(backend, con, distinct):
-    t1 = ibis.memtable(dict(a=[1]), name="t1")
-    t2 = ibis.memtable(dict(a=[2]), name="t2")
+@pytest.mark.broken(["dask"], raises=AssertionError, reason="results are incorrect")
+def test_top_level_union(backend, con, alltypes, distinct):
+    t1 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 10).distinct()
+    t2 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 20).distinct()
     expr = t1.union(t2, distinct=distinct).limit(2)
     result = con.execute(expr)
-    expected = pd.DataFrame({"a": [1, 2]})
+    expected = pd.DataFrame({"a": [10, 20]})
     backend.assert_frame_equal(result.sort_values("a").reset_index(drop=True), expected)
 
 
@@ -162,21 +162,35 @@ def test_top_level_union(backend, con, distinct):
         True,
         param(
             False,
-            marks=pytest.mark.notimpl(["bigquery", "mssql", "snowflake", "sqlite"]),
+            marks=pytest.mark.notimpl(
+                ["bigquery", "dask", "mssql", "pandas", "snowflake", "sqlite"]
+            ),
         ),
     ],
 )
 @pytest.mark.parametrize(
     ("opname", "expected"),
-    [("intersect", pd.DataFrame({"a": [2]})), ("difference", pd.DataFrame({"a": [1]}))],
+    [
+        ("intersect", pd.DataFrame({"a": [20]})),
+        ("difference", pd.DataFrame({"a": [10]})),
+    ],
     ids=["intersect", "difference"],
 )
-@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(["impala"], reason="doesn't support intersection or difference")
-def test_top_level_intersect_difference(backend, con, distinct, opname, expected):
-    t1 = ibis.memtable(dict(a=[1, 2]), name="t1")
-    t2 = ibis.memtable(dict(a=[2, 3]), name="t2")
+def test_top_level_intersect_difference(
+    backend, con, alltypes, distinct, opname, expected
+):
+    t1 = (
+        alltypes.select(a="bigint_col")
+        .filter(lambda t: (t.a == 10) | (t.a == 20))
+        .distinct()
+    )
+    t2 = (
+        alltypes.select(a="bigint_col")
+        .filter(lambda t: (t.a == 20) | (t.a == 30))
+        .distinct()
+    )
     op = getattr(t1, opname)
     expr = op(t2, distinct=distinct).limit(2)
     result = con.execute(expr)
