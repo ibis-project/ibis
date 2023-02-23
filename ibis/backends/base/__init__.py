@@ -370,6 +370,61 @@ class _FileIOHandler:
         )
 
     @util.experimental
+    def to_dataset(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        format: str | None = None,
+        **kwargs: Any,
+    ):
+        """Write results to a directory, optionally partitioning or splitting.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and write to file(s).
+        path
+            The data source. A string or Path to the output directory.
+        params
+            Mapping of scalar parameter expressions to value.
+        format
+            Output format. Supported values are "parquet", "csv", "feather".
+        **kwargs
+            Additional keyword arguments passed to pyarrow.dataset.write_dataset
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
+
+        Example
+        -------
+        >>> con = ibis.duckdb.connect("penguins.duckdb")
+        >>> penguins = con.tables.penguins
+        >>> con.to_dataset(penguins,
+                           "/tmp/penguins",
+                           partitioning=["species", "island"],
+                           )
+
+        >>> con.to_dataset(penguins,
+                           "/tmp/penguins-hive",
+                           partitioning=["species", "island"],
+                           partitioning_flavor="hive",
+                           )
+        """
+        self._import_pyarrow()
+        import pyarrow.dataset as ds
+
+        ibis_batch_reader = expr.to_pyarrow_batches(params=params)
+        batch_reader = ibis_batch_reader.reader
+
+        format = format if format is not None else "parquet"
+
+        ds.write_dataset(batch_reader, path, format=format, **kwargs)
+
+    @util.experimental
     def to_parquet(
         self,
         expr: ir.Table,
@@ -392,7 +447,7 @@ class _FileIOHandler:
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
+            Additional keyword arguments passed to pyarrow.dataset.ParquetWriter
 
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
         """

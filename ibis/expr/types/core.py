@@ -403,6 +403,55 @@ class Expr(Immutable):
         )
 
     @experimental
+    def to_dataset(
+        self,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write results to a directory, optionally partitioning or splitting.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the output directory.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.dataset.write_dataset
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
+
+        Example
+        -------
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> # Write to parquet, partitioned on two columns
+        >>> penguins.to_dataset("tmp/penguins",
+                                format="parquet",
+                                partitioning=["species", "island"],
+                                )
+        >>> # Write to parquet, partitioned on two columns, using hive naming scheme
+        >>> penguins.to_dataset("tmp/penguins",
+                                format="parquet",
+                                partitioning=["species", "island"],
+                                partitioning_flavor="hive",
+                                )
+        >>> # Write to CSV, partitioned on one columns, using hive naming scheme
+        >>> penguins.to_dataset("tmp/penguins",
+                                format="csv",
+                                partitioning=["island"],
+                                partitioning_flavor="hive",
+                                )
+        """
+        self._find_backend(use_default=True).to_dataset(
+            self, path, params=params, **kwargs
+        )
+
+    @experimental
     def to_parquet(
         self,
         path: str | Path,
@@ -426,7 +475,9 @@ class Expr(Immutable):
 
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
         """
-        self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
+        self._find_backend(use_default=True).to_parquet(
+            self, path, params=params, **kwargs
+        )
 
     @experimental
     def to_csv(
@@ -452,7 +503,7 @@ class Expr(Immutable):
 
         https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
         """
-        self._find_backend(use_default=True).to_csv(self, path, **kwargs)
+        self._find_backend(use_default=True).to_csv(self, path, params=params, **kwargs)
 
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
