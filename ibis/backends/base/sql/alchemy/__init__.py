@@ -389,8 +389,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
     ) -> sa.Table:
         # If the underlying table (or more likely, view) has changed, remove it
         # to ensure a correct reflection
-        if autoload and self.inspector.has_table(name):
-            self.meta.remove(sa.Table(name, self.meta))
+        if (sa_table := self.meta.tables.get(name, None)) is not None and autoload:
+            # check if self._metadata and self.meta agree
+            # (ibis vs. sqlalchemy bookkeeping)
+            sa_cols = {col.name for col in sa_table.columns}
+            ibis_cols = {col for col, _ in self._metadata(name)}
+            if sa_cols.difference(ibis_cols):
+                self.meta.remove(sa.Table(name, self.meta))
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", message="Did not recognize type", category=sa.exc.SAWarning
