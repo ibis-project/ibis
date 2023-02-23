@@ -195,7 +195,7 @@ def convert_struct_to_dict(_, out_dtype, column):
 
 @sch.convert.register(np.dtype, dt.Array, pd.Series)
 def convert_array_to_series(in_dtype, out_dtype, column):
-    return column.map(lambda x: x if x is None else list(x))
+    return column.map(lambda x: list(x) if util.is_iterable(x) else x)
 
 
 @sch.convert.register(np.dtype, dt.JSON, pd.Series)
