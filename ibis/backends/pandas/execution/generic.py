@@ -129,7 +129,17 @@ def execute_cast_series_array(op, data, type, **kwargs):
             'Array value type must be a primitive type '
             '(e.g., number, string, or timestamp)'
         )
-    return data.map(lambda array, numpy_type=numpy_type: array.astype(numpy_type))
+
+    def cast_to_array(array, numpy_type=numpy_type):
+        elems = [
+            el if el is None else np.array(el, dtype=numpy_type).item() for el in array
+        ]
+        try:
+            return np.array(elems, dtype=numpy_type)
+        except TypeError:
+            return np.array(elems)
+
+    return data.map(cast_to_array)
 
 
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
