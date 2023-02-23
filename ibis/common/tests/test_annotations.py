@@ -80,18 +80,18 @@ def test_parameter():
     annot = Argument.required(fn)
     p = Parameter('test', annotation=annot)
 
-    assert p.annotation is fn
+    assert p.annotation is annot
     assert p.default is inspect.Parameter.empty
-    assert p.validate('2', this={'other': 1}) == 3
+    assert p.annotation.validate('2', this={'other': 1}) == 3
 
     with pytest.raises(TypeError):
-        p.validate({}, valid=inspect.Parameter.empty)
+        p.annotation.validate({}, valid=inspect.Parameter.empty)
 
     ofn = Argument.optional(fn)
     op = Parameter('test', annotation=ofn)
-    assert op.annotation == option(fn, default=None)
+    assert op.annotation._validator == option(fn, default=None)
     assert op.default is None
-    assert op.validate(None, this={'other': 1}) is None
+    assert op.annotation.validate(None, this={'other': 1}) is None
 
     with pytest.raises(TypeError, match="annotation must be an instance of Argument"):
         Parameter("wrong", annotation=Attribute("a"))
@@ -136,6 +136,9 @@ def test_signature_from_callable_with_varargs():
     assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'args': ()}
     assert sig.validate(2, 3, 4) == {'a': 2, 'b': 3, 'args': (4,)}
     assert sig.validate(2, 3, 4, 5) == {'a': 2, 'b': 3, 'args': (4, 5)}
+    assert sig.parameters['a'].annotation._typehint is int
+    assert sig.parameters['b'].annotation._typehint is int
+    assert sig.parameters['args'].annotation._typehint is int
 
     with pytest.raises(TypeError):
         sig.validate(2, 3, 4, "5")

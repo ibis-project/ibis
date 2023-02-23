@@ -136,34 +136,6 @@ def test_invalid_value(dtype, value, expected):
 
 
 @pytest.mark.parametrize(
-    ('values', 'value', 'expected'),
-    [
-        (['a', 'b'], 'a', 'a'),
-        (('a', 'b'), 'b', 'b'),
-        ({'a', 'b', 'c'}, 'c', 'c'),
-        ([1, 2, 'f'], 'f', 'f'),
-        ({'a': 1, 'b': 2}, 'a', 1),
-        ({'a': 1, 'b': 2}, 'b', 2),
-    ],
-)
-def test_valid_isin(values, value, expected):
-    assert rlz.isin(values, value) == expected
-
-
-@pytest.mark.parametrize(
-    ('values', 'value', 'expected'),
-    [
-        (['a', 'b'], 'c', ValueError),
-        ({'a', 'b', 'c'}, 'd', ValueError),
-        ({'a': 1, 'b': 2}, 'c', ValueError),
-    ],
-)
-def test_invalid_isin(values, value, expected):
-    with pytest.raises(expected):
-        rlz.isin(values, value)
-
-
-@pytest.mark.parametrize(
     ('validator', 'values', 'expected'),
     [
         param(

@@ -1,7 +1,17 @@
 from __future__ import annotations
 
 import sys
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import pytest
 from typing_extensions import Annotated
@@ -14,6 +24,7 @@ from ibis.common.validators import (
     any_of,
     bool_,
     callable_with,
+    coerced_to,
     dict_of,
     equal_to,
     frozendict_of,
@@ -24,9 +35,12 @@ from ibis.common.validators import (
     mapping_of,
     min_,
     pair_of,
+    sequence_of,
     str_,
     tuple_of,
 )
+
+T = TypeVar("T")
 
 
 @pytest.mark.parametrize(
@@ -40,8 +54,12 @@ from ibis.common.validators import (
         (instance_of(int), 1, 1),
         (instance_of(float), 1.0, 1.0),
         (isin({"a", "b"}), "a", "a"),
-        (isin({"a": 1, "b": 2}), "a", 1),
+        (isin({"a": 1, "b": 2}), "a", "a"),
+        (isin(['a', 'b']), 'a', 'a'),
+        (isin(('a', 'b')), 'b', 'b'),
+        (isin({'a', 'b', 'c'}), 'c', 'c'),
         (tuple_of(instance_of(int)), (1, 2, 3), (1, 2, 3)),
+        (tuple_of((instance_of(int), instance_of(str))), (1, "a"), (1, "a")),
         (list_of(instance_of(str)), ["a", "b"], ["a", "b"]),
         (any_of((str_, int_(max=8))), "foo", "foo"),
         (any_of((str_, int_(max=8))), 7, 7),
@@ -50,6 +68,7 @@ from ibis.common.validators import (
         (pair_of(bool_, str_), (True, "foo"), (True, "foo")),
         (equal_to(1), 1, 1),
         (equal_to(None), None, None),
+        (coerced_to(int), "1", 1),
     ],
 )
 def test_validators_passing(validator, value, expected):
@@ -66,6 +85,7 @@ def test_validators_passing(validator, value, expected):
         (min_(3), 2),
         (instance_of(int), None),
         (instance_of(float), 1),
+        (isin(["a", "b"]), "c"),
         (isin({"a", "b"}), "c"),
         (isin({"a": 1, "b": 2}), "d"),
         (tuple_of(instance_of(int)), (1, 2.0, 3)),
@@ -105,8 +125,15 @@ def endswith_d(x, this):
             Annotated[str, short_str, endswith_d],
             all_of((instance_of(str), short_str, endswith_d)),
         ),
-        (List[int], list_of(instance_of(int))),
-        (Tuple[int], tuple_of(instance_of(int))),
+        (List[int], sequence_of(instance_of(int), type=coerced_to(list))),
+        (
+            Tuple[int, float, str],
+            tuple_of(
+                (instance_of(int), instance_of(float), instance_of(str)),
+                type=coerced_to(tuple),
+            ),
+        ),
+        (Tuple[int, ...], tuple_of(instance_of(int), type=coerced_to(tuple))),
         (Dict[str, float], dict_of(instance_of(str), instance_of(float))),
         (frozendict[str, int], frozendict_of(instance_of(str), instance_of(int))),
         (Literal["alpha", "beta", "gamma"], isin(("alpha", "beta", "gamma"))),
@@ -117,19 +144,19 @@ def endswith_d(x, this):
         (Callable, instance_of(Callable)),
     ],
 )
-def test_validator_from_annotation(annot, expected):
-    assert Validator.from_annotation(annot) == expected
+def test_validator_from_typehint(annot, expected):
+    assert Validator.from_typehint(annot) == expected
 
 
 @pytest.mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
-def test_validator_from_annotation_uniontype():
+def test_validator_from_typehint_uniontype():
     # uniontype marks `type1 | type2` annotations and it's different from
     # Union[type1, type2]
-    validator = Validator.from_annotation(str | int | float)
+    validator = Validator.from_typehint(str | int | float)
     assert validator == any_of((instance_of(str), instance_of(int), instance_of(float)))
 
 
-class Something(Coercible):
+class PlusOne(Coercible):
     def __init__(self, value):
         self.value = value
 
@@ -141,31 +168,72 @@ class Something(Coercible):
         return type(self) == type(other) and self.value == other.value
 
 
-class SomethingSimilar(Something):
+class PlusOneRaise(PlusOne):
+    @classmethod
+    def __coerce__(cls, obj):
+        raise TypeError("raise on coercion")
+
+
+class PlusOneChild(PlusOne):
     pass
 
 
-class SomethingDifferent(Coercible):
+class PlusTwo(PlusOne):
     @classmethod
     def __coerce__(cls, obj):
         return obj + 2
 
 
-def test_coercible():
-    s = Validator.from_annotation(Something)
-    assert s(1) == Something(2)
-    assert s(10) == Something(11)
+def test_coercible_protocol():
+    s = Validator.from_typehint(PlusOne)
+    assert s(1) == PlusOne(2)
+    assert s(10) == PlusOne(11)
+
+
+def test_coercible_bypass_coercion():
+    s = Validator.from_typehint(PlusOneRaise)
+    # bypass coercion since it's already an instance of SomethingRaise
+    assert s(PlusOneRaise(10)) == PlusOneRaise(10)
+    # but actually call __coerce__ if it's not an instance
+    with pytest.raises(TypeError, match="raise on coercion"):
+        s(10)
 
 
 def test_coercible_checks_type():
-    s = Validator.from_annotation(SomethingSimilar)
-    v = Validator.from_annotation(SomethingDifferent)
+    s = Validator.from_typehint(PlusOneChild)
+    v = Validator.from_typehint(PlusTwo)
 
-    assert s(1) == SomethingSimilar(2)
-    assert SomethingDifferent.__coerce__(1) == 3
+    assert s(1) == PlusOneChild(2)
 
-    with pytest.raises(TypeError, match="not an instance of .*SomethingDifferent.*"):
+    assert PlusTwo.__coerce__(1) == 3
+    with pytest.raises(TypeError, match="not an instance of .*PlusTwo.*"):
         v(1)
+
+
+class DoubledList(List[T]):
+    @classmethod
+    def __coerce__(cls, obj):
+        return cls(list(obj) * 2)
+
+
+def test_coercible_sequence_type():
+    s = Validator.from_typehint(Sequence[PlusOne])
+    with pytest.raises(TypeError, match=r"Sequence\(\) takes no arguments"):
+        s([1, 2, 3])
+
+    s = Validator.from_typehint(List[PlusOne])
+    assert s == sequence_of(coerced_to(PlusOne), type=coerced_to(list))
+    assert s([1, 2, 3]) == [PlusOne(2), PlusOne(3), PlusOne(4)]
+
+    s = Validator.from_typehint(Tuple[PlusOne, ...])
+    assert s == tuple_of(coerced_to(PlusOne), type=coerced_to(tuple))
+    assert s([1, 2, 3]) == (PlusOne(2), PlusOne(3), PlusOne(4))
+
+    s = Validator.from_typehint(DoubledList[PlusOne])
+    assert s == sequence_of(coerced_to(PlusOne), type=coerced_to(DoubledList))
+    assert s([1, 2, 3]) == DoubledList(
+        [PlusOne(2), PlusOne(3), PlusOne(4), PlusOne(2), PlusOne(3), PlusOne(4)]
+    )
 
 
 def test_mapping_of():

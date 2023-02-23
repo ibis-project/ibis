@@ -4,7 +4,18 @@ import math
 from abc import ABC, abstractmethod
 from contextlib import suppress
 from inspect import Parameter
-from typing import Any, Callable, Iterable, Literal, Mapping, Sequence, Union
+from typing import (
+    Any,
+    Callable,
+    Container,
+    Iterable,
+    Literal,
+    Mapping,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import toolz
 from typing_extensions import Annotated, get_args, get_origin
@@ -12,7 +23,6 @@ from typing_extensions import Annotated, get_args, get_origin
 from ibis.common.collections import FrozenDict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
-from ibis.common.typing import evaluate_typehint
 from ibis.util import flatten_iterable, is_function, is_iterable
 
 try:
@@ -20,8 +30,19 @@ try:
 except ImportError:
     UnionType = object()
 
+K = TypeVar('K')
+V = TypeVar('V')
+T = TypeVar('T')
+
 
 class Coercible(ABC):
+    """Protocol for defining coercible types.
+
+    Coercible types define a special ``__coerce__`` method that accepts an object
+    with an instance of the type. Used in conjunction with the ``coerced_to`` validator
+    to coerce arguments to a specific type.
+    """
+
     __slots__ = ()
 
     @classmethod
@@ -36,42 +57,68 @@ class Validator(Callable):
     __slots__ = ()
 
     @classmethod
-    def from_annotation(cls, annot, module=None):
-        # TODO(kszucs): cache the result of this function
-        annot = evaluate_typehint(annot, module)
-        origin_type = get_origin(annot)
+    def from_typehint(cls, annot: type) -> Validator:
+        """Construct a validator from a python type annotation.
 
-        if origin_type is None:
+        Parameters
+        ----------
+        annot
+            The typehint annotation to construct a validator from. If a string is
+            available then it must be evaluated before passing it to this function
+            using the ``evaluate_typehint`` function.
+        module
+            The module to evaluate the type annotation in. This is only used
+            when the first argument is a string (or ForwardRef).
+
+        Returns
+        -------
+        validator
+            A validator that can be used to validate objects, tipically function
+            arguments.
+        """
+        # TODO(kszucs): cache the result of this function
+        origin, args = get_origin(annot), get_args(annot)
+
+        if origin is None:
             if annot is Any:
+                return any_
+            elif isinstance(annot, TypeVar):
                 return any_
             elif issubclass(annot, Coercible):
                 return coerced_to(annot)
             else:
                 return instance_of(annot)
-        elif origin_type is Literal:
-            return isin(get_args(annot))
-        elif origin_type is UnionType or origin_type is Union:
-            inners = map(cls.from_annotation, get_args(annot))
+        elif origin is Literal:
+            return isin(args)
+        elif origin is UnionType or origin is Union:
+            inners = map(cls.from_typehint, args)
             return any_of(tuple(inners))
-        elif origin_type is Annotated:
-            annot, *extras = get_args(annot)
+        elif origin is Annotated:
+            annot, *extras = args
             return all_of((instance_of(annot), *extras))
-        elif issubclass(origin_type, Sequence):
-            (inner,) = map(cls.from_annotation, get_args(annot))
-            return sequence_of(inner, type=origin_type)
-        elif issubclass(origin_type, Mapping):
-            key_inner, value_inner = map(cls.from_annotation, get_args(annot))
-            return mapping_of(key_inner, value_inner, type=origin_type)
-        elif issubclass(origin_type, Callable):
-            if args := get_args(annot):
-                arg_inners = map(cls.from_annotation, args[0])
-                return_inner = cls.from_annotation(args[1])
-                return callable_with(tuple(arg_inners), return_inner)
+        elif issubclass(origin, Tuple):
+            first, *rest = args
+            if rest == [Ellipsis]:
+                inners = cls.from_typehint(first)
+            else:
+                inners = tuple(map(cls.from_typehint, args))
+            return tuple_of(inners, type=coerced_to(origin))
+        elif issubclass(origin, Sequence):
+            (inner,) = map(cls.from_typehint, args)
+            return sequence_of(inner, type=coerced_to(origin))
+        elif issubclass(origin, Mapping):
+            key_inner, value_inner = map(cls.from_typehint, args)
+            return mapping_of(key_inner, value_inner, type=origin)
+        elif issubclass(origin, Callable):
+            if args:
+                arg_inners = tuple(map(cls.from_typehint, args[0]))
+                return_inner = cls.from_typehint(args[1])
+                return callable_with(arg_inners, return_inner)
             else:
                 return instance_of(Callable)
         else:
             raise NotImplementedError(
-                f"Cannot create validator from annotation {annot} {origin_type}"
+                f"Cannot create validator from annotation {annot} {origin}"
             )
 
 
@@ -92,7 +139,22 @@ validator = Curried
 
 
 @validator
-def ref(key, *, this):
+def ref(key: str, *, this: Mapping[str, Any]) -> Any:
+    """Retrieve a value from the already validated state.
+
+    Parameters
+    ----------
+    key
+        The key to retrieve from the state.
+    this
+        The state to retrieve the value from, usually the result of an annotated
+        function signature validation (including annotable object creation).
+
+    Returns
+    -------
+    value
+        The value retrieved from the state.
+    """
     try:
         return this[key]
     except KeyError:
@@ -100,12 +162,31 @@ def ref(key, *, this):
 
 
 @validator
-def any_(arg, **kwargs):
+def any_(arg: Any, **kwargs: Any) -> Any:
+    """Validator that accepts any value, basically a no-op."""
     return arg
 
 
 @validator
-def option(inner, arg, *, default=None, **kwargs):
+def option(inner: Validator, arg: Any, *, default: Any = None, **kwargs) -> Any:
+    """Validator that accepts `None` or a value that passes the inner validator.
+
+    Parameters
+    ----------
+    inner
+        The inner validator to use.
+    arg
+        The value to validate.
+    default
+        The default value to use if `arg` is `None`.
+    kwargs
+        Additional keyword arguments to pass to the inner validator.
+
+    Returns
+    -------
+    validated
+        The validated value or the default value if `arg` is `None`.
+    """
     if arg is None:
         if default is None:
             return None
@@ -117,8 +198,23 @@ def option(inner, arg, *, default=None, **kwargs):
 
 
 @validator
-def instance_of(klasses, arg, **kwargs):
-    """Require that a value has a particular Python type."""
+def instance_of(klasses: type | tuple[type], arg: Any, **kwargs: Any) -> Any:
+    """Require that a value has a particular Python type.
+
+    Parameters
+    ----------
+    klasses
+        The type or tuple of types to validate against.
+    arg
+        The value to validate.
+    kwargs
+        Omitted keyword arguments.
+
+    Returns
+    -------
+    validated
+        The input argument if it is an instance of the given type(s).
+    """
     if not isinstance(arg, klasses):
         # TODO(kszucs): unify errors coming from various validators
         raise IbisTypeError(
@@ -128,16 +224,42 @@ def instance_of(klasses, arg, **kwargs):
 
 
 @validator
-def equal_to(value, arg, **kwargs):
+def equal_to(value: T, arg: T, **kwargs: Any) -> T:
+    """Require that a value is equal to a particular value."""
     if arg != value:
         raise IbisTypeError(f"Given argument {arg} is not equal to {value}")
     return arg
 
 
 @validator
-def coerced_to(klass, arg, **kwargs):
-    value = klass.__coerce__(arg)
-    return instance_of(klass, value, **kwargs)
+def coerced_to(klass: T, arg: Any, **kwargs: Any) -> T:
+    """Force a value to have a particular Python type.
+
+    If a Coercible subclass is passed, the `__coerce__` method will be used to
+    coerce the value. Otherwise, the type will be called with the value as the
+    only argument.
+
+    Parameters
+    ----------
+    klass
+        The type to coerce to.
+    arg
+        The value to coerce.
+    kwargs
+        Additional keyword arguments to pass to the inner validator.
+
+    Returns
+    -------
+    validated
+        The coerced value which is checked to be an instance of the given type.
+    """
+    if isinstance(arg, klass):
+        return arg
+    try:
+        arg = klass.__coerce__(arg)
+    except AttributeError:
+        arg = klass(arg)
+    return instance_of(klass, arg, **kwargs)
 
 
 class lazy_instance_of(Validator):
@@ -165,8 +287,24 @@ class lazy_instance_of(Validator):
 
 
 @validator
-def any_of(inners, arg, **kwargs):
-    """At least one of the inner validators must pass."""
+def any_of(inners: Iterable[Validator], arg: Any, **kwargs: Any) -> Any:
+    """At least one of the inner validators must pass.
+
+    Parameters
+    ----------
+    inners
+        Iterable of value validators, each of which is applied from left to right and
+        the first one that passes gets returned.
+    arg
+        Value to be validated.
+    kwargs
+        Keyword arguments
+
+    Returns
+    -------
+    arg : Any
+        Value maybe coerced by inner validators to the appropiate types
+    """
     for inner in inners:
         with suppress(IbisTypeError, ValueError):
             return inner(arg, **kwargs)
@@ -181,14 +319,14 @@ one_of = any_of
 
 
 @validator
-def all_of(inners: Iterable[validator], arg: Any, **kwargs: Any) -> Any:
+def all_of(inners: Iterable[Validator], arg: Any, **kwargs: Any) -> Any:
     """Construct a validator of other valdiators.
 
     Parameters
     ----------
     inners
-        Iterable of function Functions, each of which is applied from right to
-        left so `allof([rule1, rule2], arg)` is the same as `rule1(rule2(arg))`.
+        Iterable of value validators, each of which is applied from left to
+        right so `allof([rule1, rule2], arg)` is the same as `rule2(rule1(arg))`.
     arg
         Value to be validated.
     kwargs
@@ -205,17 +343,46 @@ def all_of(inners: Iterable[validator], arg: Any, **kwargs: Any) -> Any:
 
 
 @validator
-def isin(values, arg, **kwargs):
+def isin(values: Container, arg: T, **kwargs: Any) -> T:
+    """Check if the value is in the given container.
+
+    Parameters
+    ----------
+    values
+        Container of values to check against.
+    arg
+        Value to be looked for.
+    kwargs
+        Omitted keyword arguments.
+
+    Returns
+    -------
+    validated
+        The input argument if it is in the given container.
+    """
     if arg not in values:
         raise ValueError(f'Value with type {type(arg)} is not in {values!r}')
-    if isinstance(values, dict):  # TODO check for mapping instead
-        return values[arg]
-    else:
-        return arg
+    return arg
 
 
 @validator
-def map_to(mapping, variant, **kwargs):
+def map_to(mapping: Mapping[K, V], variant: K, **kwargs: Any) -> V:
+    """Check if the value is in the given mapping and return the corresponding value.
+
+    Parameters
+    ----------
+    mapping
+        Mapping of values to check against.
+    variant
+        Value to be looked for.
+    kwargs
+        Omitted keyword arguments.
+
+    Returns
+    -------
+    validated
+        The value corresponding to the input argument if it is in the given mapping.
+    """
     try:
         return mapping[variant]
     except KeyError:
@@ -223,7 +390,29 @@ def map_to(mapping, variant, **kwargs):
 
 
 @validator
-def pair_of(inner1, inner2, arg, *, type=tuple, **kwargs):
+def pair_of(
+    inner1: Validator, inner2: Validator, arg: Any, *, type=tuple, **kwargs
+) -> tuple[Any, Any]:
+    """Validate a pair of values (tuple of 2 items).
+
+    Parameters
+    ----------
+    inner1
+        Validator to apply to the first element of the pair.
+    inner2
+        Validator to apply to the second element of the pair.
+    arg
+        Pair to validate.
+    type
+        Type to coerce the pair to, typically a tuple.
+    kwargs
+        Additional keyword arguments to pass to the inner validator.
+
+    Returns
+    -------
+    validated
+        The validated pair with each element coerced according to the inner validators.
+    """
     try:
         first, second = arg
     except KeyError:
@@ -233,16 +422,42 @@ def pair_of(inner1, inner2, arg, *, type=tuple, **kwargs):
 
 @validator
 def sequence_of(
-    inner,
-    arg,
+    inner: Validator,
+    arg: Any,
     *,
-    type,
-    length=None,
-    min_length=0,
-    max_length=math.inf,
-    flatten=False,
-    **kwargs,
-):
+    type: Callable[[Iterable], T],
+    length: int | None = None,
+    min_length: int = 0,
+    max_length: int = math.inf,
+    flatten: bool = False,
+    **kwargs: Any,
+) -> T:
+    """Validate a sequence of values.
+
+    Parameters
+    ----------
+    inner
+        Validator to apply to each element of the sequence.
+    arg
+        Sequence to validate.
+    type
+        Type to coerce the sequence to, typically a tuple or list.
+    length
+        If specified, the sequence must have exactly this length.
+    min_length
+        The sequence must have at least this many elements.
+    max_length
+        The sequence must have at most this many elements.
+    flatten
+        If True, the sequence is flattened before validation.
+    kwargs
+        Keyword arguments to pass to the inner validator.
+
+    Returns
+    -------
+    validated
+        The coerced sequence containing validated elements.
+    """
     if not is_iterable(arg):
         raise IbisTypeError('Argument must be a sequence')
 
@@ -260,7 +475,63 @@ def sequence_of(
 
 
 @validator
-def mapping_of(key_inner, value_inner, arg, *, type, **kwargs):
+def tuple_of(inner: Validator | tuple[Validator], arg: Any, *, type=tuple, **kwargs):
+    """Validate a tuple of values.
+
+    Parameters
+    ----------
+    inner
+        Either a balidator to apply to each element of the tuple or a tuple of
+        validators which are applied to the elements of the tuple in order.
+    arg
+        Sequence to validate.
+    type
+        Type to coerce the sequence to, a tuple by default.
+    kwargs
+        Keyword arguments to pass to the inner validator.
+
+    Returns
+    -------
+    validated
+        The coerced tuple containing validated elements.
+    """
+    if isinstance(inner, tuple):
+        if len(inner) != len(arg):
+            raise IbisTypeError(f'Argument must has length {len(inner)}')
+        return type(validator(item, **kwargs) for validator, item in zip(inner, arg))
+    else:
+        return sequence_of(inner, arg, type=type, **kwargs)
+
+
+@validator
+def mapping_of(
+    key_inner: Validator,
+    value_inner: Validator,
+    arg: Any,
+    *,
+    type: T,
+    **kwargs: Any,
+) -> T:
+    """Validate a mapping of values.
+
+    Parameters
+    ----------
+    key_inner
+        Validator to apply to each key of the mapping.
+    value_inner
+        Validator to apply to each value of the mapping.
+    arg
+        Mapping to validate.
+    type
+        Type to coerce the mapping to, typically a dict.
+    kwargs
+        Keyword arguments to pass to the inner validator.
+
+    Returns
+    -------
+    validated
+        The coerced mapping containing validated keys and values.
+    """
     if not isinstance(arg, Mapping):
         raise IbisTypeError('Argument must be a mapping')
     return type(
@@ -269,7 +540,35 @@ def mapping_of(key_inner, value_inner, arg, *, type, **kwargs):
 
 
 @validator
-def callable_with(arg_inners, return_inner, value, **kwargs):
+def callable_with(
+    arg_inners: Sequence[Validator],
+    return_inner: Validator,
+    value: Any,
+    **kwargs: Any,
+) -> Callable:
+    """Validate a callable with a given signature and return type.
+
+    The rule's responsility is twofold:
+    1. Validate the signature of the callable (keyword only arguments are not supported)
+    2. Wrap the callable with validation logic that validates the arguments and the
+       return value at runtime.
+
+    Parameters
+    ----------
+    arg_inners
+        Sequence of validators to apply to the arguments of the callable.
+    return_inner
+        Validator to apply to the return value of the callable.
+    value
+        Callable to validate.
+    kwargs
+        Keyword arguments to pass to the inner validators.
+
+    Returns
+    -------
+    validated
+        The callable wrapped with validation logic.
+    """
     from ibis.common.annotations import annotated
 
     if not callable(value):
@@ -300,20 +599,43 @@ def callable_with(arg_inners, return_inner, value, **kwargs):
 
 
 @validator
-def int_(arg, min=0, max=math.inf, **kwargs):
+def int_(arg: Any, min: int = 0, max: int = math.inf, **kwargs: Any) -> int:
+    """Validate an integer.
+
+    Parameters
+    ----------
+    arg
+        Integer to validate.
+    min
+        Minimum value of the integer.
+    max
+        Maximum value of the integer.
+    kwargs
+        Omited keyword arguments.
+
+    Returns
+    -------
+    validated
+        The validated integer.
+    """
     if not isinstance(arg, int):
         raise IbisTypeError('Argument must be an integer')
-    if arg < min:
-        raise ValueError(f'Argument must be greater than {min}')
-    if arg > max:
-        raise ValueError(f'Argument must be less than {max}')
+    arg = min_(min, arg, **kwargs)
+    arg = max_(max, arg, **kwargs)
     return arg
 
 
 @validator
-def min_(min, arg, **kwargs):
+def min_(min: int, arg: int, **kwargs: Any) -> int:
     if arg < min:
         raise ValueError(f'Argument must be greater than {min}')
+    return arg
+
+
+@validator
+def max_(max: int, arg: int, **kwargs: Any) -> int:
+    if arg > max:
+        raise ValueError(f'Argument must be less than {max}')
     return arg
 
 
@@ -322,5 +644,4 @@ bool_ = instance_of(bool)
 none_ = instance_of(type(None))
 dict_of = mapping_of(type=dict)
 list_of = sequence_of(type=list)
-tuple_of = sequence_of(type=tuple)
 frozendict_of = mapping_of(type=FrozenDict)
