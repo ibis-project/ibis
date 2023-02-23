@@ -5,6 +5,7 @@ import inspect
 from typing import Any
 
 from ibis.common.collections import DotDict
+from ibis.common.typing import evaluate_typehint
 from ibis.common.validators import Validator, any_, frozendict_of, option, tuple_of
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
@@ -16,18 +17,32 @@ VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
 
 
 class Annotation:
-    """Base class for all annotations."""
+    """Base class for all annotations.
 
-    __slots__ = ('_default', '_validator')
+    Annotations are used to mark fields in a class and to validate them.
 
-    def __init__(self, validator=None, default=EMPTY):
+    Parameters
+    ----------
+    validator : Validator, default noop
+        Validator to validate the field.
+    default : Any, default EMPTY
+        Default value of the field.
+    typehint : type, default EMPTY
+        Type of the field, not used for validation.
+    """
+
+    __slots__ = ('_validator', '_default', '_typehint')
+
+    def __init__(self, validator=None, default=EMPTY, typehint=EMPTY):
         self._default = default
+        self._typehint = typehint
         self._validator = validator
 
     def __eq__(self, other):
         return (
             type(self) is type(other)
             and self._default == other._default
+            and self._typehint == other._typehint
             and self._validator == other._validator
         )
 
@@ -68,44 +83,62 @@ class Attribute(Annotation):
 
 
 class Argument(Annotation):
-    """Base class for all fields which should be passed as arguments."""
+    """Annotation type for all fields which should be passed as arguments.
+
+    Parameters
+    ----------
+    validator
+        Optional validator to validate the argument.
+    default
+        Optional default value of the argument.
+    typehint
+        Optional typehint of the argument.
+    kind
+        Kind of the argument, one of `inspect.Parameter` constants.
+        Defaults to positional or keyword.
+    """
 
     __slots__ = ('_kind',)
 
-    def __init__(self, validator=None, default=EMPTY, kind=POSITIONAL_OR_KEYWORD):
+    def __init__(
+        self,
+        validator: Validator = None,
+        default: Any = EMPTY,
+        typehint: type = None,
+        kind: int = POSITIONAL_OR_KEYWORD,
+    ):
+        super().__init__(validator, default, typehint)
         self._kind = kind
-        self._default = default
-        self._validator = validator
 
     @classmethod
-    def required(cls, validator=None, kind=POSITIONAL_OR_KEYWORD):
+    def required(cls, validator=None, **kwargs):
         """Annotation to mark a mandatory argument."""
-        return cls(validator=validator, kind=kind)
+        return cls(validator, **kwargs)
 
     @classmethod
-    def default(cls, default, validator=None, kind=POSITIONAL_OR_KEYWORD):
+    def default(cls, default, validator=None, **kwargs):
         """Annotation to allow missing arguments with a default value."""
-        return cls(validator=validator, default=default, kind=kind)
+        return cls(validator, default, **kwargs)
 
     @classmethod
-    def optional(cls, validator=None, default=None, kind=POSITIONAL_OR_KEYWORD):
+    def optional(cls, validator=None, default=None, **kwargs):
         """Annotation to allow and treat `None` values as missing arguments."""
         if validator is None:
             validator = option(any_, default=default)
         else:
             validator = option(validator, default=default)
-        return cls(validator=validator, default=None, kind=kind)
+        return cls(validator, default=None, **kwargs)
 
     @classmethod
-    def varargs(cls, validator=None):
+    def varargs(cls, validator=None, **kwargs):
         """Annotation to mark a variable length positional argument."""
         validator = None if validator is None else tuple_of(validator)
-        return cls(validator, kind=VAR_POSITIONAL)
+        return cls(validator, kind=VAR_POSITIONAL, **kwargs)
 
     @classmethod
-    def varkwargs(cls, validator=None):
+    def varkwargs(cls, validator=None, **kwargs):
         validator = None if validator is None else frozendict_of(any_, validator)
-        return cls(validator, kind=VAR_KEYWORD)
+        return cls(validator, kind=VAR_KEYWORD, **kwargs)
 
 
 class Parameter(inspect.Parameter):
@@ -122,20 +155,14 @@ class Parameter(inspect.Parameter):
             name,
             kind=annotation._kind,
             default=annotation._default,
-            annotation=annotation._validator,
+            annotation=annotation,
         )
-
-    def validate(self, arg, *, this):
-        if self.annotation is None:
-            return arg
-        return self.annotation(arg, this=this)
 
 
 class Signature(inspect.Signature):
     """Validatable signature.
 
-    Primarly used in the implementation of
-    ibis.common.grounds.Annotable.
+    Primarly used in the implementation of `ibis.common.grounds.Annotable`.
     """
 
     __slots__ = ()
@@ -227,32 +254,37 @@ class Signature(inspect.Signature):
 
         parameters = []
         for param in sig.parameters.values():
-            if param.name in validators:
-                validator = validators[param.name]
-            elif param.annotation is not EMPTY:
-                validator = Validator.from_annotation(
-                    param.annotation, module=fn.__module__
-                )
+            name = param.name
+            kind = param.kind
+            default = param.default
+            typehint = param.annotation
+
+            if name in validators:
+                validator = validators[name]
+            elif typehint is not EMPTY:
+                typehint = evaluate_typehint(typehint, fn.__module__)
+                validator = Validator.from_typehint(typehint)
             else:
                 validator = None
 
-            if param.kind is VAR_POSITIONAL:
-                annot = Argument.varargs(validator)
-            elif param.kind is VAR_KEYWORD:
-                annot = Argument.varkwargs(validator)
-            elif param.default is EMPTY:
-                annot = Argument.required(validator, kind=param.kind)
+            if kind is VAR_POSITIONAL:
+                annot = Argument.varargs(validator, typehint=typehint)
+            elif kind is VAR_KEYWORD:
+                annot = Argument.varkwargs(validator, typehint=typehint)
+            elif default is EMPTY:
+                annot = Argument.required(validator, kind=kind, typehint=typehint)
             else:
-                annot = Argument.default(param.default, validator, kind=param.kind)
+                annot = Argument.default(
+                    default, validator, kind=param.kind, typehint=typehint
+                )
 
             parameters.append(Parameter(param.name, annot))
 
         if return_validator is not None:
             return_annotation = return_validator
         elif sig.return_annotation is not EMPTY:
-            return_annotation = Validator.from_annotation(
-                sig.return_annotation, module=fn.__module__
-            )
+            typehint = evaluate_typehint(sig.return_annotation, fn.__module__)
+            return_annotation = Validator.from_typehint(typehint)
         else:
             return_annotation = EMPTY
 
@@ -316,7 +348,7 @@ class Signature(inspect.Signature):
         for name, value in bound.arguments.items():
             param = self.parameters[name]
             # TODO(kszucs): provide more error context on failure
-            this[name] = param.validate(value, this=this)
+            this[name] = param.annotation.validate(value, this=this)
         return this
 
     def validate_nobind(self, **kwargs):
@@ -326,7 +358,7 @@ class Signature(inspect.Signature):
             value = kwargs.get(name, param.default)
             if value is EMPTY:
                 raise TypeError(f"missing required argument `{name!r}`")
-            this[name] = param.validate(value, this=kwargs)
+            this[name] = param.annotation.validate(value, this=kwargs)
         return this
 
     def validate_return(self, value):
