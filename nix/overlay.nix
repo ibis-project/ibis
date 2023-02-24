@@ -70,6 +70,7 @@ in
       (pkgs.python3.withPackages (p: [ p.google-cloud-storage ]))
       (pkgs.rWrapper.override {
         packages = with pkgs.rPackages; [
+          Lahman
           janitor
           palmerpenguins
           stringr

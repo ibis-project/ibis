@@ -66,7 +66,9 @@ def main(args):
     descriptions_json = make_descriptions(descriptions_path)
 
     # rsync data and descriptions with the bucket
-    subprocess.check_call(["gsutil", "-m", "rsync", data_path, f"gs://{bucket}/data"])
+    subprocess.check_call(
+        ["gsutil", "-m", "rsync", "-r", "-d", data_path, f"gs://{bucket}/data"]
+    )
     subprocess.check_call(
         ["gsutil", "cp", str(descriptions_json), f"gs://{bucket}/descriptions.json"]
     )
