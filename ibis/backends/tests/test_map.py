@@ -16,7 +16,7 @@ pytestmark = [
         ["bigquery", "impala"], reason="Backend doesn't yet implement map types"
     ),
     pytest.mark.notimpl(
-        ["duckdb", "datafusion", "pyspark", "polars"],
+        ["duckdb", "datafusion", "pyspark", "polars", "druid"],
         reason="Not yet implemented in ibis",
     ),
 ]

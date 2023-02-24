@@ -16,6 +16,8 @@ BINARY_BACKEND_TYPES = {
     "postgres": "bytea",
 }
 
+pytestmark = pytest.mark.notimpl(["druid"])
+
 
 @pytest.mark.broken(
     ['polars'],

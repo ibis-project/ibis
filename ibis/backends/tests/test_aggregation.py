@@ -19,6 +19,9 @@ aggregate_test_params = [
         lambda t: t.double_col.mean(),
         lambda t: t.double_col.mean(),
         id='mean',
+        marks=mark.broken(
+            ["druid"], reason="sqlalchemy dialect returns incorrect type"
+        ),
     ),
     param(
         lambda t: mean_udf(t.double_col),
@@ -37,6 +40,7 @@ aggregate_test_params = [
                     "snowflake",
                     "mssql",
                     "trino",
+                    "druid",
                 ]
             ),
             pytest.mark.never(["sqlite", "mysql"], reason="no udf support"),
@@ -46,11 +50,17 @@ aggregate_test_params = [
         lambda t: t.double_col.min(),
         lambda t: t.double_col.min(),
         id='min',
+        marks=mark.broken(
+            ["druid"], reason="sqlalchemy dialect returns incorrect type"
+        ),
     ),
     param(
         lambda t: t.double_col.max(),
         lambda t: t.double_col.max(),
         id='max',
+        marks=mark.broken(
+            ["druid"], reason="sqlalchemy dialect returns incorrect type"
+        ),
     ),
     param(
         # int_col % 3 so there are no ties for most common value
@@ -68,6 +78,7 @@ aggregate_test_params = [
                 "sqlite",
                 "mssql",
                 "trino",
+                "druid",
             ]
         ),
     ),
@@ -75,11 +86,15 @@ aggregate_test_params = [
         lambda t: (t.double_col + 5).sum(),
         lambda t: (t.double_col + 5).sum(),
         id='complex_sum',
+        marks=mark.broken(
+            ["druid"], reason="sqlalchemy dialect returns incorrect type"
+        ),
     ),
     param(
         lambda t: t.timestamp_col.max(),
         lambda t: t.timestamp_col.max(),
         id='timestamp_max',
+        marks=pytest.mark.notimpl(["druid"]),
     ),
 ]
 
@@ -90,6 +105,7 @@ argidx_not_grouped_marks = [
     "sqlite",
     "polars",
     "mssql",
+    "druid",
 ]
 argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
@@ -172,6 +188,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "polars",
         "mssql",
         "trino",
+        "druid",
     ]
 )
 def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
@@ -228,37 +245,37 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, _: t.bool_col.any(),
             lambda t, _: t.bool_col.any(),
             id='any',
-            marks=pytest.mark.notimpl(["polars", "datafusion"]),
+            marks=pytest.mark.notimpl(["polars", "datafusion", "druid"]),
         ),
         param(
             lambda t, _: t.bool_col.notany(),
             lambda t, _: ~t.bool_col.any(),
             id='notany',
-            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql"]),
+            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql", "druid"]),
         ),
         param(
             lambda t, _: -t.bool_col.any(),
             lambda t, _: ~t.bool_col.any(),
             id='any_negate',
-            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql"]),
+            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql", "druid"]),
         ),
         param(
             lambda t, _: t.bool_col.all(),
             lambda t, _: t.bool_col.all(),
             id='all',
-            marks=pytest.mark.notimpl(["polars", "datafusion"]),
+            marks=pytest.mark.notimpl(["polars", "datafusion", "druid", "druid"]),
         ),
         param(
             lambda t, _: t.bool_col.notall(),
             lambda t, _: ~t.bool_col.all(),
             id='notall',
-            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql"]),
+            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql", "druid"]),
         ),
         param(
             lambda t, _: -t.bool_col.all(),
             lambda t, _: ~t.bool_col.all(),
             id='all_negate',
-            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql"]),
+            marks=pytest.mark.notimpl(["polars", "datafusion", "mssql", "druid"]),
         ),
         param(
             lambda t, where: t.double_col.sum(where=where),
@@ -302,6 +319,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     "sqlite",
                     "mssql",
                     "trino",
+                    "druid",
                 ]
             ),
         ),
@@ -310,7 +328,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmin()],
             id='argmin',
             marks=pytest.mark.notyet(
-                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql"]
+                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql", "druid"]
             ),
         ),
         param(
@@ -318,32 +336,32 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmax()],
             id='argmax',
             marks=pytest.mark.notyet(
-                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql"]
+                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql", "druid"]
             ),
         ),
         param(
             lambda t, where: t.double_col.std(how='sample', where=where),
             lambda t, where: t.double_col[where].std(ddof=1),
             id='std',
-            marks=[mark.notimpl(["datafusion", "mssql"])],
+            marks=[mark.notimpl(["datafusion", "mssql", "druid"])],
         ),
         param(
             lambda t, where: t.double_col.var(how='sample', where=where),
             lambda t, where: t.double_col[where].var(ddof=1),
             id='var',
-            marks=[mark.notimpl(["datafusion", "mssql"])],
+            marks=[mark.notimpl(["datafusion", "mssql", "druid"])],
         ),
         param(
             lambda t, where: t.double_col.std(how='pop', where=where),
             lambda t, where: t.double_col[where].std(ddof=0),
             id='std_pop',
-            marks=[mark.notimpl(["datafusion", "mssql"])],
+            marks=[mark.notimpl(["datafusion", "mssql", "druid"])],
         ),
         param(
             lambda t, where: t.double_col.var(how='pop', where=where),
             lambda t, where: t.double_col[where].var(ddof=0),
             id='var_pop',
-            marks=[mark.notimpl(["datafusion", "mssql"])],
+            marks=[mark.notimpl(["datafusion", "mssql", "druid"])],
         ),
         param(
             lambda t, where: t.string_col.approx_nunique(where=where),
@@ -364,6 +382,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'polars',
                     'datafusion',
                     "mssql",
+                    "druid",
                 ]
             ),
         ),
@@ -380,6 +399,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'polars',
                     'datafusion',
                     "mssql",
+                    "druid",
                 ]
             ),
         ),
@@ -399,6 +419,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     'datafusion',
                     "mssql",
                     "trino",
+                    "druid",
                 ]
             ),
         ),
@@ -423,6 +444,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     "polars",
                     "mssql",
                     "trino",
+                    "druid",
                 ],
             ),
         ),
@@ -432,6 +454,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_and',
             marks=[
                 pytest.mark.notimpl(["dask", "polars", "datafusion", "mssql"]),
+                pytest.mark.notimpl(["druid"], strict=False),
                 pytest.mark.notyet(["impala", "pyspark"]),
             ],
         ),
@@ -464,7 +487,15 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 mark.notimpl(
-                    ["dask", "impala", "mysql", "sqlite", "datafusion", "mssql"]
+                    [
+                        "dask",
+                        "impala",
+                        "mysql",
+                        "sqlite",
+                        "datafusion",
+                        "mssql",
+                        "druid",
+                    ]
                 )
             ],
         ),
@@ -519,6 +550,7 @@ def test_reduction_ops(
                         "mysql",
                         "polars",
                         "sqlite",
+                        "druid",
                     ]
                 ),
                 mark.never(
@@ -542,6 +574,7 @@ def test_reduction_ops(
                         "mysql",
                         "polars",
                         "sqlite",
+                        "druid",
                     ]
                 ),
                 mark.notyet(
@@ -594,7 +627,9 @@ def test_quantile(
             lambda t, where: t.G[where].cov(t.RBI[where], ddof=0),
             id='covar_pop',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "polars", "druid"]
+                ),
                 pytest.mark.notyet(["mysql", "impala", "sqlite"]),
             ],
         ),
@@ -603,7 +638,9 @@ def test_quantile(
             lambda t, where: t.G[where].cov(t.RBI[where], ddof=1),
             id='covar_samp',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "polars", "druid"]
+                ),
                 pytest.mark.notyet(["mysql", "impala", "sqlite"]),
             ],
         ),
@@ -612,7 +649,9 @@ def test_quantile(
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id='corr_pop',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "polars", "druid"]
+                ),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),
@@ -623,7 +662,9 @@ def test_quantile(
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id='corr_samp',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "polars", "druid"]
+                ),
                 pytest.mark.notyet(
                     [
                         "bigquery",
@@ -648,7 +689,9 @@ def test_quantile(
             lambda t, where: (t.G[where] > 34.0).cov(t.G[where] <= 34.0, ddof=0),
             id='covar_pop_bool',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "polars", "druid"]
+                ),
                 pytest.mark.notyet(["mysql", "impala", "sqlite"]),
             ],
         ),
@@ -661,7 +704,9 @@ def test_quantile(
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
             id='corr_pop_bool',
             marks=[
-                pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"]),
+                pytest.mark.notimpl(
+                    ["dask", "datafusion", "pandas", "polars", "druid"]
+                ),
                 pytest.mark.notyet(
                     ["clickhouse", "impala", "mysql", "pyspark", "sqlite"]
                 ),
@@ -718,6 +763,7 @@ def test_corr_cov(
         "sqlite",
         "snowflake",
         "mssql",
+        "druid",
     ]
 )
 def test_approx_median(alltypes):
@@ -783,7 +829,7 @@ def test_approx_median(alltypes):
         ),
     ],
 )
-@mark.notimpl(["datafusion", "snowflake", "polars", "mssql"])
+@mark.notimpl(["datafusion", "snowflake", "polars", "mssql", "druid"])
 def test_group_concat(
     backend,
     alltypes,
@@ -839,7 +885,7 @@ def test_topk_op(alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@mark.notimpl(["bigquery", "datafusion", "pandas", "dask"])
+@mark.notimpl(["bigquery", "datafusion", "pandas", "dask", "druid"])
 def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
@@ -870,6 +916,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
         "polars",
         "mssql",
         "trino",
+        "druid",
     ]
 )
 def test_aggregate_list_like(backend, alltypes, df, agg_fn):
@@ -905,6 +952,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "polars",
         "mssql",
         "trino",
+        "druid",
     ]
 )
 def test_aggregate_mixed_udf(backend, alltypes, df):

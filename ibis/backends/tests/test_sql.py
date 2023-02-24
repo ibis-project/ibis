@@ -10,6 +10,8 @@ from ibis import _
 sa = pytest.importorskip("sqlalchemy")
 pytest.importorskip("sqlglot")
 
+pytestmark = pytest.mark.notimpl(["druid"])
+
 
 @mark.never(
     ["dask", "pandas"],

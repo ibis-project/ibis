@@ -132,6 +132,12 @@ jobs:
               - postgres
             services:
               - trino
+          - name: druid
+            title: Druid
+            extras:
+              - druid
+            services:
+              - druid
         include:
           - os: ubuntu-latest
             python-version: "3.10"
@@ -221,6 +227,14 @@ jobs:
               extras:
                 - trino
                 - postgres
+          - os: windows-latest
+            backend:
+              name: druid
+              title: Druid
+              extras:
+                - druid
+              services:
+                - druid
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null

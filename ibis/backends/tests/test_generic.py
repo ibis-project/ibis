@@ -85,13 +85,13 @@ def test_boolean_literal(con, backend):
         param(
             ibis.NA.fillna(5),
             5,
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "druid"]),
             id="na_fillna",
         ),
         param(
             L(5).fillna(10),
             5,
-            marks=pytest.mark.notimpl(["mssql"]),
+            marks=pytest.mark.notimpl(["mssql", "druid"]),
             id="non_na_fillna",
         ),
         param(L(5).nullif(5), None, id="nullif_null"),
@@ -128,7 +128,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql"])
+@pytest.mark.notimpl(["mssql", "druid"])
 def test_isna(backend, alltypes, col, filt):
     table = alltypes.select(
         nan_col=ibis.literal(np.nan), none_col=ibis.NA.cast("float64")
@@ -165,7 +165,7 @@ def test_isna(backend, alltypes, col, filt):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mssql", "druid"])
 def test_column_fillna(backend, alltypes, value):
     table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
     pd_table = table.execute()
@@ -197,7 +197,9 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(["clickhouse", "datafusion", "polars", "dask", "pyspark", "mssql"])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "polars", "dask", "pyspark", "mssql", "druid"]
+)
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by('id')
     df = sorted_df
@@ -226,7 +228,7 @@ def test_identical_to(backend, alltypes, sorted_df):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.notimpl(["mssql"])
+@pytest.mark.notimpl(["mssql", "druid"])
 def test_isin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by('id')
     expr = sorted_alltypes[
@@ -250,7 +252,7 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
         ('int_col', frozenset({1})),
     ],
 )
-@pytest.mark.notimpl(["mssql"])
+@pytest.mark.notimpl(["mssql", "druid"])
 def test_notin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by('id')
     expr = sorted_alltypes[
@@ -291,6 +293,7 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
         ),
     ],
 )
+@pytest.mark.notimpl(["druid"])
 def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     sorted_alltypes = alltypes.order_by('id')
     table = sorted_alltypes[predicate_fn(sorted_alltypes)].order_by('id')
@@ -314,6 +317,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "polars",
         "mssql",
         "trino",
+        "druid",
     ]
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
@@ -358,7 +362,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql"])
+@pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql", "druid"])
 @pytest.mark.min_version(duckdb="0.3.3", reason="isnan/isinf unsupported")
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
@@ -414,7 +418,7 @@ def test_table_fillna_invalid(alltypes):
         {"double_col": -1.5, "string_col": "missing"},
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
+@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse", "druid"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -429,7 +433,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse"])
+@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse", "druid"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -526,13 +530,14 @@ def test_select_sort_sort(alltypes):
         ),
     ],
 )
+@pytest.mark.notimpl(["druid"])
 def test_order_by(backend, alltypes, df, key, df_kwargs):
     result = alltypes.filter(_.id < 100).order_by(key).execute()
     expected = df.loc[df.id < 100].sort_values(**df_kwargs)
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "impala", "pandas", "polars", "mssql"])
+@pytest.mark.notimpl(["dask", "impala", "pandas", "polars", "mssql", "druid"])
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
     r1 = expr.execute()
@@ -601,7 +606,7 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     reason="dask doesn't support Series as isin/notin argument",
     raises=NotImplementedError,
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
@@ -659,7 +664,7 @@ def test_logical_negation_literal(con, expr, expected, op):
     "op",
     [
         toolz.identity,
-        param(invert, marks=pytest.mark.notimpl(["mssql"])),
+        param(invert, marks=pytest.mark.notimpl(["mssql", "druid"])),
         param(neg, marks=pytest.mark.notimpl(["mssql"])),
     ],
 )
@@ -754,6 +759,7 @@ def test_between(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notimpl(["druid"])
 def test_interactive(alltypes):
     expr = alltypes.mutate(
         str_col=_.string_col.replace("1", "").nullif("2"),
@@ -791,7 +797,7 @@ def test_int_column(alltypes):
     assert result.dtype == np.int8
 
 
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.never(
     ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
 )
@@ -802,7 +808,7 @@ def test_int_scalar(alltypes):
     assert result.dtype == np.int16
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
@@ -824,6 +830,7 @@ def test_exists(batting, awards_players, method_name):
         "pandas",
         "pyspark",
         "polars",
+        "druid",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -837,7 +844,7 @@ def test_typeof(backend, con):
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
-@pytest.mark.notimpl(["datafusion", "pyspark"])
+@pytest.mark.notimpl(["datafusion", "pyspark", "druid"])
 @pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -858,7 +865,7 @@ def test_isin_uncorrelated(
 
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["datafusion", "pyspark"])
+@pytest.mark.notimpl(["datafusion", "pyspark", "druid"])
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -919,6 +926,7 @@ def test_memtable_bool_column(backend, con, monkeypatch):
     reason="not a SQL backend",
 )
 @pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], reason="no sqlglot dialect", raises=ValueError)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
         t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))

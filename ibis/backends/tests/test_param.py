@@ -35,7 +35,7 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     ('start_string', 'end_string'),
     [('2009-03-01', '2010-07-03'), ('2014-12-01', '2017-01-05')],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "mssql", "trino", "druid"])
 def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
@@ -58,7 +58,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark", "druid"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
@@ -69,7 +69,9 @@ def test_scalar_param_array(con):
     assert result == len(value)
 
 
-@pytest.mark.notimpl(["clickhouse", "datafusion", "impala", "postgres", "pyspark"])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "impala", "postgres", "pyspark", "druid"]
+)
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
@@ -82,7 +84,7 @@ def test_scalar_param_struct(con):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars"]
+    ["clickhouse", "datafusion", "duckdb", "impala", "pyspark", "polars", "druid"]
 )
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
@@ -102,21 +104,33 @@ def test_scalar_param_map(con):
         param("0", "string", "string_col", id="string"),
         param(0, "int64", "int_col", id="int"),
         param(0.0, "float64", "double_col", id="double"),
-        param(True, "bool", "bool_col", id="bool"),
         param(
-            "2009-01-20 01:02:03", "timestamp", "timestamp_col", id="string_timestamp"
+            True,
+            "bool",
+            "bool_col",
+            id="bool",
+            marks=pytest.mark.notimpl(["druid"]),
+        ),
+        param(
+            "2009-01-20 01:02:03",
+            "timestamp",
+            "timestamp_col",
+            id="string_timestamp",
+            marks=pytest.mark.notimpl(["druid"]),
         ),
         param(
             datetime.date(2009, 1, 20),
             "timestamp",
             "timestamp_col",
             id="date_timestamp",
+            marks=pytest.mark.notimpl(["druid"]),
         ),
         param(
             datetime.datetime(2009, 1, 20, 1, 2, 3),
             "timestamp",
             "timestamp_col",
             id="datetime_timestamp",
+            marks=pytest.mark.notimpl(["druid"]),
         ),
     ],
 )
@@ -137,7 +151,7 @@ def test_scalar_param(alltypes, df, value, dtype, col):
     ["2009-01-20", datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)],
     ids=["string", "date", "datetime"],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
@@ -181,6 +195,7 @@ def test_scalar_param_date(backend, alltypes, value):
         "pyspark",
         "mssql",
         "trino",
+        "druid",
     ]
 )
 def test_scalar_param_nested(con):

@@ -16,6 +16,7 @@ import pytest
         "pyspark",
         "snowflake",
         "trino",
+        "druid",
     ]
 )
 def test_rowid(con):

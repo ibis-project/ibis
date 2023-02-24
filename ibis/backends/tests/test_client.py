@@ -121,7 +121,7 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["clickhouse", "datafusion", "polars"])
+@mark.notimpl(["clickhouse", "datafusion", "polars", "druid"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     con.create_table(temp_table, schema=new_schema)
 
@@ -152,6 +152,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
         "trino",
     ]
 )
+@mark.broken(["druid"], reason="sqlalchemy dialect is broken")
 def test_rename_table(con, temp_table, new_schema):
     temp_table_original = f'{temp_table}_original'
     con.create_table(temp_table_original, schema=new_schema)
@@ -166,7 +167,7 @@ def test_rename_table(con, temp_table, new_schema):
         con.drop_table(temp_table, force=True)
 
 
-@mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars"])
+@mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
@@ -189,6 +190,7 @@ def test_nullable_input_output(con, temp_table):
     [
         "clickhouse",
         "datafusion",
+        "druid",
         "mysql",
         "postgres",
         "sqlite",
@@ -718,21 +720,15 @@ def test_agg_memory_table(con):
 @pytest.mark.parametrize(
     "t",
     [
-        param(
-            ibis.memtable([("a", 1.0)], columns=["a", "b"]),
-            id="python",
-        ),
+        param(ibis.memtable([("a", 1.0)], columns=["a", "b"]), id="python"),
         param(
             ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
             id="pandas-memtable",
         ),
-        param(
-            pd.DataFrame([("a", 1.0)], columns=["a", "b"]),
-            id="pandas",
-        ),
+        param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas", "polars", "druid"])
 def test_create_from_in_memory_table(backend, con, t):
     if backend.name() == "snowflake":
         pytest.skip("snowflake is unreliable here")
@@ -844,18 +840,15 @@ def test_dunder_array_column(alltypes, dtype):
 def test_repr(alltypes, interactive, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
-    expr = alltypes.select("id", "int_col")
-
-    val = str(alltypes.limit(5).id.execute().iloc[0])
+    expr = alltypes.select("date_string_col")
 
     s = repr(expr)
     # no control characters
     assert all(c.isprintable() or c in "\n\r\t" for c in s)
-    assert "id" in s
     if interactive:
-        assert val in s
+        assert "/" in s
     else:
-        assert val not in s
+        assert "/" not in s
 
 
 @pytest.mark.parametrize("show_types", [True, False])
@@ -916,19 +909,16 @@ def test_repr_mimebundle(alltypes, interactive, expr_type, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
     if expr_type == "column":
-        expr = alltypes.id
+        expr = alltypes.date_string_col
     else:
-        expr = alltypes.select("id", "int_col")
-
-    val = str(alltypes.limit(5).id.execute().iloc[0])
+        expr = alltypes.select("date_string_col")
 
     reprs = expr._repr_mimebundle_(include=["text/plain", "text/html"], exclude=[])
     for format in ["text/plain", "text/html"]:
-        assert "id" in reprs[format]
         if interactive:
-            assert val in reprs[format]
+            assert "r0.date_string_col" not in reprs[format]
         else:
-            assert val not in reprs[format]
+            assert "r0.date_string_col" in reprs[format]
 
 
 @pytest.mark.never(
@@ -1032,6 +1022,7 @@ def test_set_backend_url(url, monkeypatch):
 @pytest.mark.notimpl(
     ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
+@pytest.mark.broken(["druid"], reason="sqlalchemy dialect is broken")
 def test_create_table_timestamp(con):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))

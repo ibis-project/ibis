@@ -5,7 +5,9 @@ from pytest import param
 import ibis
 from ibis import _, util
 
-table_dot_sql_notimpl = pytest.mark.notimpl(["bigquery", "clickhouse", "impala"])
+table_dot_sql_notimpl = pytest.mark.notimpl(
+    ["bigquery", "clickhouse", "impala", "druid"]
+)
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake"],
@@ -16,7 +18,7 @@ dot_sql_never = pytest.mark.never(
     reason="dask and pandas do not accept SQL",
 )
 
-pytestmark = pytest.mark.xdist_group("dot_sql")
+pytestmark = [pytest.mark.xdist_group("dot_sql")]
 
 
 @dot_sql_notimpl
@@ -25,7 +27,7 @@ pytestmark = pytest.mark.xdist_group("dot_sql")
 @pytest.mark.parametrize(
     "schema",
     [
-        param(None, id="implicit_schema"),
+        param(None, id="implicit_schema", marks=pytest.mark.notimpl(["druid"])),
         param({"s": "string", "new_col": "double"}, id="explicit_schema"),
     ],
 )

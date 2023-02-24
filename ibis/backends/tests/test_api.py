@@ -10,13 +10,14 @@ def test_backend_name(backend):
     assert backend.api.name == backend.name()
 
 
+@pytest.mark.notimpl(["druid"])
 def test_version(backend):
     assert isinstance(backend.api.version, str)
 
 
 # 1. `current_database` returns '.', but isn't listed in list_databases()
 @pytest.mark.never(["dask", "pandas"], reason="pass")
-@pytest.mark.notimpl(["datafusion", "duckdb", "polars", "mssql", "trino"])
+@pytest.mark.notimpl(["datafusion", "duckdb", "polars", "mssql", "trino", "druid"])
 def test_database_consistency(backend, con):
     # every backend has a different set of databases, not testing the
     # exact names for now
