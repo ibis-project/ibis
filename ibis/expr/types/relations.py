@@ -444,7 +444,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         by: str
         | ir.Column
         | tuple[str | ir.Column, bool]
-        | Sequence[tuple[str | ir.Column, bool]],
+        | Sequence[str]
+        | Sequence[ir.Column]
+        | Sequence[tuple[str | ir.Column, bool]]
+        | None,
     ) -> Table:
         """Sort a table by one or more expressions.
 
