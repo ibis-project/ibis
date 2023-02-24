@@ -1,7 +1,7 @@
 import contextlib
 
 import pytest
-import sqlalchemy.exc
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -92,7 +92,7 @@ def test_string_col_is_unicode(alltypes, df):
                 ),
                 pytest.mark.broken(
                     ["mssql"],
-                    raises=sqlalchemy.exc.ProgrammingError,
+                    raises=sa.exc.ProgrammingError,
                     reason=(
                         "(pymssql._pymssql.ProgrammingError) (102, b\"Incorrect syntax near '>'."
                         "DB-Lib error message 20018, severity 15:\nGeneral SQL Server error: "
@@ -115,7 +115,7 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                 ),
             ],
         ),
@@ -130,7 +130,7 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                 ),
             ],
         ),
@@ -145,7 +145,7 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                 ),
             ],
         ),
@@ -161,7 +161,7 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                 ),
             ],
         ),
@@ -171,7 +171,8 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
+                    ["datafusion", "mssql", "druid"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=AssertionError),
             ],
@@ -182,7 +183,8 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
+                    ["datafusion", "mssql", "druid"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["pyspark"], raises=AssertionError),
             ],
@@ -193,7 +195,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql"], raises=com.OperationNotDefinedError
+                    ["mysql", "mssql", "druid"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.broken(["impala"], raises=AssertionError),
             ],
@@ -204,7 +206,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql"], raises=com.OperationNotDefinedError
+                    ["mysql", "mssql", "druid"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.broken(["pyspark"], raises=AssertionError),
             ],
@@ -215,12 +217,12 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract_whole_group',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql"],
+                    ["mysql", "mssql", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
                     ["snowflake"],
-                    raises=sqlalchemy.exc.ProgrammingError,
+                    raises=sa.exc.ProgrammingError,
                     reason=(
                         '(snowflake.connector.errors.ProgrammingError) 100050 (22023): '
                         'Invalid parameter value: 0. Reason: Position must be positive'
@@ -238,7 +240,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_replace_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ['datafusion', "mysql", "mssql"],
+                    ['datafusion', "mysql", "mssql", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -253,7 +255,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_replace',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mysql", "mssql"],
+                    ["datafusion", "mysql", "mssql", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -276,13 +278,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.translate(str.maketrans('01', 'ab')),
             id='translate',
             marks=pytest.mark.notimpl(
-                [
-                    "clickhouse",
-                    "duckdb",
-                    "mssql",
-                    "mysql",
-                    "polars",
-                ],
+                ["clickhouse", "duckdb", "mssql", "mysql", "polars", "druid"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -320,6 +316,7 @@ def test_string_col_is_unicode(alltypes, df):
                     "polars",
                     "mssql",
                     "trino",
+                    "druid",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -338,6 +335,7 @@ def test_string_col_is_unicode(alltypes, df):
                     "polars",
                     "mssql",
                     "trino",
+                    "druid",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -361,7 +359,10 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.ascii_str(),
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
-            marks=pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
+            marks=[
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(["druid"]),
+            ],
         ),
         param(
             lambda t: t.string_col.length(),
@@ -380,9 +381,13 @@ def test_string_col_is_unicode(alltypes, df):
                     ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=sa.exc.ProgrammingError,
+                ),
                 pytest.mark.broken(
                     ["mssql"],
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                     reason=(
                         '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near the keyword '
                         '\'LIKE\'.DB-Lib error message 20018, severity 15:\nGeneral SQL Server error: '
@@ -406,6 +411,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason=(
@@ -413,7 +419,7 @@ def test_string_col_is_unicode(alltypes, df):
                         'the keyword \'LIKE\'.DB-Lib error message 20018, severity 15:\n'
                         'General SQL Server error: Check messages from the SQL Server\n")'
                     ),
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                 ),
             ],
         ),
@@ -428,7 +434,7 @@ def test_string_col_is_unicode(alltypes, df):
                 ),
                 pytest.mark.broken(
                     ["mssql"],
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                     reason=(
                         '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
                         'the keyword \'LIKE\'.DB-Lib error message 20018, severity 15:\n'
@@ -448,7 +454,7 @@ def test_string_col_is_unicode(alltypes, df):
                 ),
                 pytest.mark.broken(
                     ["mssql"],
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                     reason=(
                         '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
                         'the keyword \'LIKE\'.DB-Lib error message 20018, severity 15:\n'
@@ -499,7 +505,7 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="substr requires 3 arguments",
-                    raises=sqlalchemy.exc.OperationalError,
+                    raises=sa.exc.OperationalError,
                 ),
             ],
         ),
@@ -543,6 +549,7 @@ def test_string_col_is_unicode(alltypes, df):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
+                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -570,6 +577,7 @@ def test_string_col_is_unicode(alltypes, df):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
+                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -598,6 +606,7 @@ def test_string_col_is_unicode(alltypes, df):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
+                pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -627,6 +636,7 @@ def test_string_col_is_unicode(alltypes, df):
                     reason="'Series' object has no attribute 'items'",
                     raises=AttributeError,
                 ),
+                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -634,7 +644,7 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.str.split('/'),
             id='split',
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "impala", "mysql", "sqlite", "mssql"],
+                ["dask", "datafusion", "impala", "mysql", "sqlite", "mssql", "druid"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -642,9 +652,12 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
             lambda t: 'a-' + t.string_col + '-c',
             id='join',
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError),
+            ],
         ),
         param(
             lambda t: t.string_col + t.date_string_col,
@@ -680,7 +693,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "mssql"], raises=com.OperationNotDefinedError
+    ["datafusion", "mysql", "mssql", "druid"], raises=com.OperationNotDefinedError
 )
 def test_re_replace_global(con):
     expr = ibis.literal("aba").re_replace("a", "c")
@@ -691,12 +704,13 @@ def test_re_replace_global(con):
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["mssql"],
-    raises=sqlalchemy.exc.OperationalError,
+    raises=sa.exc.OperationalError,
     reason=(
         "(pymssql._pymssql.OperationalError) (4145, b\"An expression of non-boolean type specified in "
         "a context where a condition is expected, near 'THEN'.DB-Lib error message 20018, severity 15:\n"
     ),
 )
+@pytest.mark.notimpl(["druid"], raises=com.IbisTypeError)
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.case()
@@ -753,6 +767,7 @@ def test_substr_with_null_values(backend, alltypes, df):
                     reason="Backend is foiled by the presence of a password",
                     raises=AssertionError,
                 ),
+                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -784,6 +799,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "postgres",
         "pyspark",
         "sqlite",
+        "druid",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -802,7 +818,7 @@ def test_capitalize(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars"], raises=OperationNotDefinedError
+    ["dask", "datafusion", "pandas", "polars", "druid"], raises=OperationNotDefinedError
 )
 @pytest.mark.notyet(
     ["impala", "mssql", "mysql", "sqlite"],
@@ -820,7 +836,8 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "mysql", "pyspark"], raises=com.OperationNotDefinedError
+    ["datafusion", "mssql", "mysql", "pyspark", "druid"],
+    raises=com.OperationNotDefinedError,
 )
 def test_subs_with_re_replace(con):
     expr = ibis.literal("hi").re_replace("i", "a").substitute({"d": "b"}, else_="k")

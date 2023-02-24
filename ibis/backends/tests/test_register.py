@@ -15,6 +15,8 @@ from ibis.backends.conftest import TEST_TABLES
 if TYPE_CHECKING:
     import pyarrow as pa
 
+pytestmark = pytest.mark.notimpl(["druid"])
+
 
 @contextlib.contextmanager
 def pushd(new_dir):

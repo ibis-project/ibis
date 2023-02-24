@@ -70,6 +70,7 @@ psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pyarrow = { version = ">=2,<12", optional = true }
 pymssql = { version = ">=2.2.5,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
+pydruid = { version = ">=0.6.5,<1", optional = true, extras = ["sqlalchemy"] }
 pymysql = { version = ">=1,<2", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 # used to support posix regexen in the pandas, dask and sqlite backends
@@ -96,6 +97,7 @@ pre-commit = ">=3.1,<4"
 ruff = ">=0.0.205,<1"
 
 [tool.poetry.group.test.dependencies]
+aiohttp = ">=3.8.4,<4"
 black = ">=22.1.0,<24"
 filelock = ">=3.7.0,<4"
 packaging = ">=21.3,<24"
@@ -151,6 +153,7 @@ all = [
   "psycopg2",
   "pyarrow",
   "pydata-google-auth",
+  "pydruid",
   "pymssql",
   "pymysql",
   "pyspark",
@@ -172,6 +175,7 @@ bigquery = [
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
+druid = ["pydruid", "sqlalchemy"]
 duckdb = [
   "duckdb",
   "duckdb-engine",
@@ -200,6 +204,7 @@ bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
 dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
+druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
@@ -256,6 +261,8 @@ filterwarnings = [
   # duckdb-engine
   'ignore:Dialect .+ does \*not\* support Decimal:',
   "ignore:duckdb-engine doesn't yet support reflection on indices:",
+  # druid
+  'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
   # ibis
   'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
   # ibis on postgres + windows
@@ -309,6 +316,7 @@ markers = [
   "clickhouse: ClickHouse tests",
   "dask: Dask tests",
   "datafusion: Apache Datafusion tests",
+  "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
   "impala: Apache Impala tests",
   "mysql: MySQL tests",

@@ -52,20 +52,21 @@ Ibis aims to be a future-proof solution to interacting with data using Python an
 
 Ibis acts as a universal frontend to the following systems:
 
-- [Apache Impala](https://ibis-project.org/backends/Impala/)
+- [BigQuery](https://ibis-project.org/backends/BigQuery/)
 - [ClickHouse](https://ibis-project.org/backends/ClickHouse/)
 - [Dask](https://ibis-project.org/backends/Dask/)
+- [Druid](https://ibis-project.org/backends/Druid/) (experimental)
 - [DuckDB](https://ibis-project.org/backends/DuckDB/)
-- [Google BigQuery](https://ibis-project.org/backends/BigQuery/)
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
+- [Impala](https://ibis-project.org/backends/Impala/)
 - [MySQL](https://ibis-project.org/backends/MySQL/)
-- [Microsoft SQL Server](https://ibis-project.org/backends/MSSQL/)
 - [Pandas](https://ibis-project.org/backends/Pandas/)
-- [Polars](https://ibis-project.org/backends/Polars/)
+- [Polars](https://ibis-project.org/backends/Polars/) (experimental)
 - [PostgreSQL](https://ibis-project.org/backends/PostgreSQL/)
 - [PySpark](https://ibis-project.org/backends/PySpark/)
-- [Snowflake](https://ibis-project.org/backends/Snowflake) (experimental)
+- [SQL Server](https://ibis-project.org/backends/MSSQL/)
 - [SQLite](https://ibis-project.org/backends/SQLite/)
+- [Snowflake](https://ibis-project.org/backends/Snowflake) (experimental)
 - [Trino](https://ibis-project.org/backends/Trino/) (experimental)
 
 The list of supported backends is continuously growing. Anyone can get involved

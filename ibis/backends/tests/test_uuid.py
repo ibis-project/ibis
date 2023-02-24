@@ -36,6 +36,8 @@ UUID_EXPECTED_VALUES = {
     'dask': TEST_UUID,
 }
 
+pytestmark = pytest.mark.notimpl(["druid"])
+
 
 @pytest.mark.broken(
     ["pyspark"],

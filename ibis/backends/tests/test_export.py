@@ -37,6 +37,7 @@ limit_no_limit = limit + no_limit
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
+@pytest.mark.notimpl(["druid"])
 def test_table_to_pyarrow_batches(limit, awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=limit)
     assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
@@ -60,6 +61,7 @@ def test_column_to_pyarrow_batches(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
+@pytest.mark.notimpl(["druid"])
 def test_table_to_pyarrow_table(limit, awards_players):
     table = awards_players.to_pyarrow(limit=limit)
     assert isinstance(table, pa.Table)
@@ -98,7 +100,7 @@ def test_scalar_to_pyarrow_scalar(limit, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "druid"])
 def test_table_to_pyarrow_table_schema(awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
@@ -113,7 +115,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == expr.type().to_pyarrow()
 
 
-@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
 def test_table_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
     assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
@@ -133,7 +135,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
     assert len(batch) <= 2048
 
 
-@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
 @pytest.mark.broken(
     ["sqlite"],
     raises=pa.ArrowException,
@@ -173,7 +175,7 @@ def test_no_pyarrow_message(awards_players, monkeypatch):
         awards_players.to_pyarrow()
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "druid"])
 def test_table_to_parquet(tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet)

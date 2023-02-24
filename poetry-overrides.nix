@@ -12,6 +12,10 @@ in
   # require itself (infinite recursion)
   wheel = super.wheel.override { preferWheel = false; };
 
+  pydruid = super.pydruid.overridePythonAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
+  });
+
   ipython-genutils = self.ipython_genutils;
 } // super.lib.listToAttrs (
   map

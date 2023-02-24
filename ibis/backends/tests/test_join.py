@@ -75,7 +75,7 @@ def check_eq(left, right, how, **kwargs):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "druid"])
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
@@ -123,19 +123,8 @@ def test_mutating_join(backend, batting, awards_players, how):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.parametrize(
-    "how",
-    [
-        param(
-            "semi",
-            marks=pytest.mark.notimpl(["bigquery", "dask", "datafusion"]),
-        ),
-        param(
-            "anti",
-            marks=pytest.mark.notimpl(["bigquery", "dask", "datafusion"]),
-        ),
-    ],
-)
+@pytest.mark.parametrize("how", ["semi", "anti"])
+@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "druid"])
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
@@ -194,7 +183,7 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["datafusion", "bigquery"])
+@pytest.mark.notimpl(["datafusion", "bigquery", "druid"])
 @pytest.mark.notyet(
     ["pyspark"],
     reason="pyspark doesn't support joining on differing column names",

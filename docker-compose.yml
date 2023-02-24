@@ -174,6 +174,171 @@ services:
       - $PWD/docker/trino/catalog/memory.properties:/etc/trino/catalog/memory.properties:ro
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
+  druid-postgres:
+    image: postgres:15.2-alpine
+    container_name: druid-postgres
+    volumes:
+      - metadata_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_PASSWORD=FoolishPassword
+      - POSTGRES_USER=druid
+      - POSTGRES_DB=druid
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 5432
+    networks:
+      - druid
+
+  # Need 3.5 or later for container nodes
+  druid-zookeeper:
+    hostname: zookeeper
+    container_name: zookeeper
+    image: zookeeper:3.5
+    environment:
+      - ZOO_MY_ID=1
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 2181
+    networks:
+      - druid
+
+  druid-coordinator:
+    image: apache/druid:25.0.0
+    hostname: coordinator
+    container_name: coordinator
+    volumes:
+      - druid:/opt/shared
+      - coordinator_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+    command:
+      - coordinator
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8081
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid-broker:
+    image: apache/druid:25.0.0
+    hostname: broker
+    container_name: broker
+    volumes:
+      - broker_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+    command:
+      - broker
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8082
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid-historical:
+    image: apache/druid:25.0.0
+    hostname: historical
+    container_name: historical
+    volumes:
+      - druid:/opt/shared
+      - historical_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+    command:
+      - historical
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8083
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid-middlemanager:
+    image: apache/druid:25.0.0
+    hostname: middlemanager
+    container_name: middlemanager
+    volumes:
+      - druid:/opt/shared
+      - middle_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+    command:
+      - middleManager
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8091
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid:
+    image: apache/druid:25.0.0
+    hostname: router
+    container_name: router
+    volumes:
+      - router_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+      - druid-middlemanager
+      - druid-historical
+      - druid-broker
+    ports:
+      - "8888:8888"
+    command:
+      - router
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8888
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
 networks:
   impala:
   mysql:
@@ -181,3 +346,13 @@ networks:
   clickhouse:
   postgres:
   trino:
+  druid:
+
+volumes:
+  metadata_data:
+  middle_var:
+  historical_var:
+  broker_var:
+  coordinator_var:
+  router_var:
+  druid:

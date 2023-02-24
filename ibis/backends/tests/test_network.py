@@ -96,6 +96,7 @@ def test_macaddr_literal(con, backend):
     ],
 )
 @pytest.mark.notimpl(["datafusion", "polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["druid"], raises=KeyError)
 def test_inet_literal(con, backend, test_value, expected_values, expected_types):
     backend_name = backend.name()
     expr = ibis.literal(test_value, type=dt.inet)
