@@ -14,6 +14,7 @@ import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
+import ibis.expr.selectors as s
 import ibis.expr.types as ir
 from ibis import _
 from ibis import literal as L
@@ -1635,12 +1636,12 @@ def test_drop():
     res = t.drop("a", "b")
     assert res.equals(t.select("c", "d"))
 
-    with pytest.raises(KeyError, match="Fields not in table"):
-        t.drop("missing")
-
-    with pytest.warns(FutureWarning, match="a sequence of fields"):
-        res = t.drop(["a", "b"])
     assert res.equals(t.select("c", "d"))
+
+    assert res.equals(t.drop(s.matches("a|b")))
+
+    with pytest.raises(KeyError):
+        t.drop("e")
 
 
 def test_python_table_ambiguous():
