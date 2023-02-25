@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 import pooch
 
@@ -18,44 +18,68 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-EXAMPLES = pooch.create(
+_EXAMPLES = pooch.create(
     path=pooch.os_cache("ibis-framework"),
     # the trailing slash matters here
     base_url="https://storage.googleapis.com/ibis-examples/data/",
     version=ibis.__version__,
 )
 with resources.files(__name__).joinpath("registry.txt").open(mode="r") as _f:
-    EXAMPLES.load_registry(_f)
+    _EXAMPLES.load_registry(_f)
 
-DESCRIPTIONS = json.loads(
-    resources.files(__name__).joinpath("descriptions.json").read_text()
-)
+_METADATA = json.loads(resources.files(__name__).joinpath("metadata.json").read_text())
+
+_READER_FUNCS = {"csv": "read_csv", "csv.gz": "read_csv", "parquet": "read_parquet"}
 
 
 class Example(Concrete):
-    descr: str
+    descr: Optional[str]  # noqa: UP007
     key: str
+    reader: str
 
-    def fetch(self, **kwargs) -> ir.Table:
-        return ibis.read_csv(EXAMPLES.fetch(self.key), **kwargs)
+    def fetch(self, **kwargs: Any) -> ir.Table:
+        reader = getattr(ibis, self.reader)
+        return reader(_EXAMPLES.fetch(self.key), **kwargs)
 
 
 def __dir__() -> list[str]:
-    return sorted(key.split(os.extsep, 1)[0] for key in EXAMPLES.registry.keys())
+    return sorted(_METADATA.keys())
+
+
+def _make_fetch_docstring(*, name: str, reader: str):
+    return f"""Fetch the {name} example.
+Parameters
+----------
+kwargs
+    Same as the arguments for [`ibis.{reader}`][ibis.{reader}]
+
+Returns
+-------
+ir.Table
+    Table expression
+
+Examples
+--------
+>>> from ibis.interactive import *
+>>> t = ex.{name}.fetch()
+"""
 
 
 def __getattr__(name: str) -> Example:
-    key = f"{name}.csv.gz"
+    spec = _METADATA.get(name, {})
 
-    if key not in EXAMPLES.registry:
+    if (key := spec.get("key")) is None:
         raise AttributeError(name)
 
-    description = DESCRIPTIONS.get(name, "No description available")
+    description = spec.get("description")
 
-    example_class = type(name, (Example,), {"__doc__": description})
-    example = example_class(descr=description, key=key)
+    _, ext = key.split(os.extsep, maxsplit=1)
+    reader = _READER_FUNCS[ext]
+
+    fields = {"__doc__": description} if description is not None else {}
+
+    example_class = type(name, (Example,), fields)
+    example_class.fetch.__doc__ = _make_fetch_docstring(name=name, reader=reader)
+    example = example_class(descr=description, key=key, reader=reader)
     setattr(ibis.examples, name, example)
     return example
-
-
-__all__ = sorted(__dir__())  # noqa: PLE0605

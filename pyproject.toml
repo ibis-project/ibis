@@ -2,7 +2,7 @@
 name = "ibis-framework"
 version = "4.1.0"
 packages = [{ include = "ibis" }]
-include = ["ibis/examples/descriptions.json", "ibis/examples/registry.txt"]
+include = ["ibis/examples/*.json", "ibis/examples/*.txt"]
 exclude = ["ibis/examples/gen_examples.R", "ibis/examples/gen_registry.py"]
 homepage = "https://ibis-project.org"
 repository = "https://github.com/ibis-project/ibis"

@@ -10,8 +10,10 @@ pytestmark = pytest.mark.examples
 
 duckdb = pytest.importorskip("duckdb")
 
+ignored = {"wowah_data_raw"}  # this file is large (~80M)
 
-@pytest.mark.parametrize("example", dir(ibis.examples))
+
+@pytest.mark.parametrize("example", sorted(set(dir(ibis.examples)) - ignored))
 @pytest.mark.duckdb
 @pytest.mark.backend
 @pytest.mark.xfail(
@@ -29,8 +31,8 @@ def test_examples(example):
     assert example in repr(ex)
 
     t = ex.fetch()
-    df = t.execute()
-    assert not df.empty
+    df = t.limit(1).execute()
+    assert len(df) == 1
 
 
 def test_non_example():

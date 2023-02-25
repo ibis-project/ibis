@@ -83,7 +83,7 @@ in
     ];
 
     text = ''
-      python "$PWD/ibis/examples/gen_registry.py"
+      python "$PWD/ibis/examples/gen_registry.py" "''${@}"
     '';
   };
 
