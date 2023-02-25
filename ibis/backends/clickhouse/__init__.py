@@ -378,8 +378,8 @@ class Backend(BaseBackend):
         assert not isinstance(sql, sg.exp.Subquery)
         return sql.sql(dialect="clickhouse", pretty=True)
 
-    def _to_sql(self, expr: ir.Expr) -> str:
-        return str(self.compile(expr))
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
+        return str(self.compile(expr, **kwargs))
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
