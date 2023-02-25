@@ -330,8 +330,8 @@ class BaseSQLBackend(BaseBackend):
         """
         return self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
 
-    def _to_sql(self, expr: ir.Expr) -> str:
-        return str(self.compile(expr))
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
+        return str(self.compile(expr, **kwargs))
 
     def explain(
         self,

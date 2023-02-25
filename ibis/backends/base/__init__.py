@@ -427,7 +427,7 @@ class _FileIOHandler:
             The data source. A string or Path to the CSV file.
         params
             Mapping of scalar parameter expressions to value.
-        **kwargs
+        kwargs
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
 
         https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
@@ -708,7 +708,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """Compile an expression."""
         return self.compiler.to_sql(expr, params=params)
 
-    def _to_sql(self, expr: ir.Expr) -> str:
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         """Convert an expression to a SQL string.
 
         Called by `ibis.to_sql`/`ibis.show_sql`, gives the backend an

@@ -114,12 +114,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self._inspector.info_cache.clear()
         return self._inspector
 
-    def _to_sql(self, expr: ir.Expr) -> str:
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         # For `ibis.to_sql` calls we render with literal binds and qmark params
         dialect_class = sa.dialects.registry.load(
             self.compiler.translator_class._dialect_name
         )
-        sql = self.compile(expr).compile(
+        sql = self.compile(expr, **kwargs).compile(
             dialect=dialect_class(paramstyle="qmark"),
             compile_kwargs=dict(literal_binds=True),
         )

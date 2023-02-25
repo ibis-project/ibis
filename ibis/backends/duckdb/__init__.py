@@ -137,6 +137,8 @@ class Backend(BaseAlchemyBackend):
             Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
+        config.setdefault("experimental_parallel_csv", 1)
+
         engine = sa.create_engine(
             f"duckdb:///{database}",
             connect_args=dict(read_only=read_only, config=config),
@@ -556,11 +558,80 @@ class Backend(BaseAlchemyBackend):
         else:
             raise ValueError
 
-    def fetch_from_cursor(
+    @util.experimental
+    def to_parquet(
         self,
-        cursor: duckdb.DuckDBPyConnection,
-        schema: sch.Schema,
-    ):
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        path
+            The data source. A string or Path to the parquet file.
+        params
+            Mapping of scalar parameter expressions to value.
+        kwargs
+            DuckDB Parquet writer arguments. See
+            https://duckdb.org/docs/data/parquet#writing-to-parquet-files for
+            details
+        """
+        query = self._to_sql(expr, params=params)
+        args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
+        copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
+        with self.begin() as con:
+            con.exec_driver_sql(copy_cmd)
+
+    @util.experimental
+    def to_csv(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        header: bool = True,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a CSV file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to CSV.
+        path
+            The data source. A string or Path to the CSV file.
+        params
+            Mapping of scalar parameter expressions to value.
+        header
+            Whether to write the column names as the first line of the CSV file.
+        kwargs
+            DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv.html#parameters
+        """
+        query = self._to_sql(expr, params=params)
+        args = [
+            "FORMAT 'csv'",
+            f"HEADER {int(header)}",
+            *(f"{k.upper()} {v!r}" for k, v in kwargs.items()),
+        ]
+        copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
+        with self.begin() as con:
+            con.exec_driver_sql(copy_cmd)
+
+    def fetch_from_cursor(
+        self, cursor: duckdb.DuckDBPyConnection, schema: sch.Schema
+    ) -> pd.DataFrame:
         import pandas as pd
         import pyarrow.types as pat
 
