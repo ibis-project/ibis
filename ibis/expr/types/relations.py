@@ -15,6 +15,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 from ibis import util
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
@@ -22,8 +23,8 @@ from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 if TYPE_CHECKING:
     import pandas as pd
 
-    import ibis.expr.schema as sch
     import ibis.expr.types as ir
+    from ibis.common.typing import SupportsSchema
     from ibis.expr.selectors import IfAnyAll, Selector
     from ibis.expr.types.groupby import GroupedTable
 
@@ -142,6 +143,95 @@ class Table(Expr, _FixedTextJupyterMixin):
         False
         """
         return name in self.schema()
+
+    def cast(self, schema: SupportsSchema) -> Table:
+        """Cast the columns of a table.
+
+        !!! note "If you need to cast columns to a single type, use [selectors](https://ibis-project.org/blog/selectors/)."
+
+        Parameters
+        ----------
+        schema
+            Mapping, schema or iterable of pairs to use for casting
+
+        Returns
+        -------
+        Table
+            Casted table
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.selectors as s
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.schema()
+        ibis.Schema {
+          species            string
+          island             string
+          bill_length_mm     float64
+          bill_depth_mm      float64
+          flipper_length_mm  int64
+          body_mass_g        int64
+          sex                string
+          year               int64
+        }
+        >>> cols = ["body_mass_g", "bill_length_mm"]
+        >>> t[cols].head()
+        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ body_mass_g ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ int64       │ float64        │
+        ├─────────────┼────────────────┤
+        │        3750 │           39.1 │
+        │        3800 │           39.5 │
+        │        3250 │           40.3 │
+        │           ∅ │            nan │
+        │        3450 │           36.7 │
+        └─────────────┴────────────────┘
+
+        Columns not present in the input schema will be passed through unchanged
+
+        >>> t.columns
+        ['species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year']
+        >>> expr = t.cast({"body_mass_g": "float64", "bill_length_mm": "int"})
+        >>> expr.select(*cols).head()
+        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ body_mass_g ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ float64     │ int64          │
+        ├─────────────┼────────────────┤
+        │      3750.0 │             39 │
+        │      3800.0 │             40 │
+        │      3250.0 │             40 │
+        │         nan │              ∅ │
+        │      3450.0 │             37 │
+        └─────────────┴────────────────┘
+
+        Columns that are in the input `schema` but not in the table raise an error
+
+        >>> t.cast({"foo": "string"})
+        Traceback (most recent call last):
+            ...
+        ibis.common.exceptions.IbisError: Cast schema has fields that are not in the table: ['foo']
+        """
+        schema = sch.schema(schema)
+
+        cols = []
+
+        columns = self.columns
+        if missing_fields := frozenset(schema.names).difference(columns):
+            raise com.IbisError(
+                f"Cast schema has fields that are not in the table: {sorted(missing_fields)}"
+            )
+
+        for col in columns:
+            if (new_type := schema.get(col)) is not None:
+                new_col = self[col].cast(new_type).name(col)
+            else:
+                new_col = col
+            cols.append(new_col)
+        return self.select(*cols)
 
     def __rich_console__(self, console, options):
         from rich.text import Text

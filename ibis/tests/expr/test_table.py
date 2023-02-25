@@ -1702,3 +1702,21 @@ def test_filter_with_literal(value, api):
     int_val = ibis.literal(int(value))
     with pytest.raises((NotImplementedError, com.IbisTypeError)):
         api(t, int_val)
+
+
+def test_cast():
+    t = ibis.table(dict(a="int", b="string", c="float"), name="t")
+
+    assert t.cast({"a": "string"}).equals(t.mutate(a=t.a.cast("string")))
+
+    with pytest.raises(
+        com.IbisError, match="fields that are not in the table: .+'d'.+"
+    ):
+        t.cast({"d": "array<int>"}).equals(t.select())
+
+    assert t.cast(ibis.schema({"a": "string", "b": "int"})).equals(
+        t.mutate(a=t.a.cast("string"), b=t.b.cast("int"))
+    )
+    assert t.cast([("a", "string"), ("b", "float")]).equals(
+        t.mutate(a=t.a.cast("string"), b=t.b.cast("float"))
+    )

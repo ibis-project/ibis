@@ -6,9 +6,7 @@ import datetime
 import functools
 import operator
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, NamedTuple, Sequence, TypeVar
-from typing import Tuple as _Tuple
-from typing import Union as _Union
+from typing import TYPE_CHECKING, Any, Iterable, NamedTuple, Sequence, TypeVar
 
 import dateutil.parser
 import numpy as np
@@ -44,6 +42,8 @@ from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
     import pandas as pd
+
+    from ibis.common.typing import SupportsSchema
 
 __all__ = (
     'aggregate',
@@ -173,13 +173,6 @@ NA = null()
 T = TypeVar("T")
 
 negate = ir.NumericValue.negate
-
-SupportsSchema = TypeVar(
-    "SupportsSchema",
-    Iterable[_Tuple[str, _Union[str, dt.DataType]]],
-    Mapping[str, dt.DataType],
-    sch.Schema,
-)
 
 
 def _deferred(fn):

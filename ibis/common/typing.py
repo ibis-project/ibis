@@ -1,7 +1,16 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, ForwardRef
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ForwardRef,
+    Iterable,
+    Mapping,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import toolz
 
@@ -36,3 +45,15 @@ else:
             return hint._evaluate(globalns, locals())
         else:
             return hint
+
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
+    import ibis.expr.schema as sch
+
+    SupportsSchema = TypeVar(
+        "SupportsSchema",
+        Iterable[Tuple[str, Union[str, dt.DataType]]],
+        Mapping[str, Union[str, dt.DataType]],
+        sch.Schema,
+    )
