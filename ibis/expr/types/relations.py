@@ -25,6 +25,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
+    from ibis.expr.selectors import IfAnyAll, Selector
     from ibis.expr.types.groupby import GroupedTable
 
 
@@ -1532,18 +1533,18 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return self.select(exprs)
 
-    def drop(self, *fields: str) -> Table:
+    def drop(self, *fields: str | Selector) -> Table:
         """Remove fields from a table.
 
         Parameters
         ----------
         fields
-            Fields to drop
+            Fields to drop. Strings and selectors are accepted.
 
         Returns
         -------
         Table
-            A table with all columns in `fields` removed.
+            A table with all columns matching `fields` removed.
 
         Examples
         --------
@@ -1568,7 +1569,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.drop("species")
+
+        Drop one or more columns
+
+        >>> t.drop("species").head()
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
         ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
@@ -1579,36 +1583,54 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │           40.3 │          18.0 │               195 │ … │
         │ Torgersen │            nan │           nan │                 ∅ │ … │
         │ Torgersen │           36.7 │          19.3 │               193 │ … │
-        │ Torgersen │           39.3 │          20.6 │               190 │ … │
-        │ Torgersen │           38.9 │          17.8 │               181 │ … │
-        │ Torgersen │           39.2 │          19.6 │               195 │ … │
-        │ Torgersen │           34.1 │          18.1 │               193 │ … │
-        │ Torgersen │           42.0 │          20.2 │               190 │ … │
-        │ …         │              … │             … │                 … │ … │
         └───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t.drop("species", "bill_length_mm").head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━┓
+        ┃ island    ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ … ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━┩
+        │ string    │ float64       │ int64             │ int64       │ string │ … │
+        ├───────────┼───────────────┼───────────────────┼─────────────┼────────┼───┤
+        │ Torgersen │          18.7 │               181 │        3750 │ male   │ … │
+        │ Torgersen │          17.4 │               186 │        3800 │ female │ … │
+        │ Torgersen │          18.0 │               195 │        3250 │ female │ … │
+        │ Torgersen │           nan │                 ∅ │           ∅ │ ∅      │ … │
+        │ Torgersen │          19.3 │               193 │        3450 │ female │ … │
+        └───────────┴───────────────┴───────────────────┴─────────────┴────────┴───┘
+
+        Drop with selectors, mix and match
+
+        >>> import ibis.expr.selectors as s
+        >>> t.drop("species", s.startswith("bill_")).head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ island    ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ year  ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ string    │ int64             │ int64       │ string │ int64 │
+        ├───────────┼───────────────────┼─────────────┼────────┼───────┤
+        │ Torgersen │               181 │        3750 │ male   │  2007 │
+        │ Torgersen │               186 │        3800 │ female │  2007 │
+        │ Torgersen │               195 │        3250 │ female │  2007 │
+        │ Torgersen │                 ∅ │           ∅ │ ∅      │  2007 │
+        │ Torgersen │               193 │        3450 │ female │  2007 │
+        └───────────┴───────────────────┴─────────────┴────────┴───────┘
         """
+        from ibis import selectors as s
+
         if not fields:
             # no-op if nothing to be dropped
             return self
 
-        if len(fields) == 1 and not isinstance(fields[0], str):
-            fields = util.promote_list(fields[0])
-            warnings.warn(
-                "Passing a sequence of fields to `drop` is deprecated and "
-                "will be removed in version 5.0, use `drop(*fields)` instead",
-                FutureWarning,
-            )
+        if missing_fields := {f for f in fields if isinstance(f, str)}.difference(
+            self.schema().names
+        ):
+            raise KeyError(f"Fields not in table: {sorted(missing_fields)}")
 
-        schema = self.schema()
-        field_set = frozenset(fields)
-        missing_fields = field_set.difference(schema)
+        sels = (s.c(f) if isinstance(f, str) else f for f in fields)
+        return self.select(~s.any_of(*sels))
 
-        if missing_fields:
-            raise KeyError(f'Fields not in table: {missing_fields!s}')
-
-        return self[[field for field in schema if field not in field_set]]
-
-    def filter(self, predicates: ir.BooleanValue | Sequence[ir.BooleanValue]) -> Table:
+    def filter(
+        self,
+        predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll,
+    ) -> Table:
         """Select rows from `table` based on `predicates`.
 
         Parameters
