@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import abc
+import concurrent.futures
 import inspect
+import subprocess
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -109,12 +111,7 @@ class BackendTest(abc.ABC):
 
     @classmethod
     def load_data(
-        cls,
-        data_dir: Path,
-        script_dir: Path,
-        tmpdir: Path,
-        worker_id: str,
-        **kwargs: Any,
+        cls, data_dir: Path, script_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
     ) -> None:
         """Load testdata from `data_directory` into the backend using scripts
         in `script_directory`."""
@@ -128,9 +125,14 @@ class BackendTest(abc.ABC):
         fn = root_tmp_dir / f"lockfile_{cls.name()}"
         with FileLock(f"{fn}.lock"):
             if not fn.exists():
-                cls._load_data(data_dir, script_dir, **kwargs)
+                cls.preload(data_dir)
+                cls._load_data(data_dir, script_dir, **kw)
                 fn.touch()
         return cls(data_dir)
+
+    @classmethod
+    def preload(cls, data_dir: Path):  # noqa: B027
+        """Code to execute before loading data."""
 
     @classmethod
     def assert_series_equal(
@@ -179,7 +181,6 @@ class BackendTest(abc.ABC):
             return self.connection.table("struct")
         else:
             pytest.xfail(f"{self.name()} backend does not support struct types")
-            return None
 
     @property
     def json_t(self) -> ir.Table | None:
@@ -189,7 +190,6 @@ class BackendTest(abc.ABC):
             return self.connection.table("json_t").mutate(js=_.js.cast("json"))
         else:
             pytest.xfail(f"{self.name()} backend does not support json types")
-            return None
 
     @property
     def api(self):
@@ -197,3 +197,37 @@ class BackendTest(abc.ABC):
 
     def make_context(self, params: Mapping[ir.Value, Any] | None = None):
         return self.api.compiler.make_context(params=params)
+
+
+class ServiceSpec(NamedTuple):
+    name: str
+    data_volume: str
+    files: list[Path]
+
+
+class ServiceBackendTest(BackendTest):
+    @classmethod
+    @abc.abstractmethod
+    def service_spec(data_dir: Path) -> ServiceSpec:
+        ...
+
+    @classmethod
+    def preload(cls, data_dir: Path):
+        spec = cls.service_spec(data_dir)
+        service = spec.name
+        data_volume = spec.data_volume
+        with concurrent.futures.ThreadPoolExecutor() as e:
+            for fut in concurrent.futures.as_completed(
+                e.submit(
+                    subprocess.check_call,
+                    [
+                        "docker",
+                        "compose",
+                        "cp",
+                        str(path),
+                        f"{service}:{data_volume}/{path.name}",
+                    ],
+                )
+                for path in spec.files
+            ):
+                fut.result()

@@ -1,33 +1,17 @@
 -- NB: The paths in this file are all relative to /var/lib/clickhouse/user_files
 
 CREATE OR REPLACE TABLE diamonds ENGINE = Memory AS
-SELECT * FROM file('parquet/diamonds/diamonds.parquet', 'Parquet');
+SELECT * FROM file('ibis/diamonds.parquet', 'Parquet');
 
 CREATE OR REPLACE TABLE batting ENGINE = Memory AS
-SELECT * FROM file('parquet/batting/batting.parquet', 'Parquet');
+SELECT * FROM file('ibis/batting.parquet', 'Parquet');
 
 CREATE OR REPLACE TABLE awards_players ENGINE = Memory AS
-SELECT * FROM file('parquet/awards_players/awards_players.parquet', 'Parquet');
+SELECT * FROM file('ibis/awards_players.parquet', 'Parquet');
 
-CREATE OR REPLACE TABLE functional_alltypes (
-    `index` Nullable(Int64),
-    `Unnamed: 0` Nullable(Int64),
-    id Nullable(Int32),
-    bool_col Nullable(Bool),
-    tinyint_col Nullable(Int8),
-    smallint_col Nullable(Int16),
-    int_col Nullable(Int32),
-    bigint_col Nullable(Int64),
-    float_col Nullable(Float32),
-    double_col Nullable(Float64),
-    date_string_col Nullable(String),
-    string_col Nullable(String),
-    -- TODO: clean this up when timestamp scale is supported
-    timestamp_col Nullable(DateTime),
-    year Nullable(Int32),
-    month Nullable(Int32)
-) ENGINE = Memory AS
-SELECT * FROM file('functional_alltypes.csv', 'CSVWithNames');
+CREATE OR REPLACE TABLE functional_alltypes ENGINE = Memory AS
+SELECT * REPLACE(CAST(timestamp_col AS Nullable(DateTime)) AS timestamp_col)
+FROM file('ibis/functional_alltypes.parquet', 'Parquet');
 
 CREATE OR REPLACE TABLE tzone (
     ts Nullable(DateTime),

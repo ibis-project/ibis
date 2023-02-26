@@ -21,7 +21,7 @@ in
     owner = "ibis-project";
     repo = "testing-data";
     rev = "master";
-    sha256 = "sha256-BZWi4kEumZemQeYoAtlUSw922p+R6opSWp/bmX0DjAo=";
+    sha256 = "sha256-NbgEe0w/qf9hCr9rRfIpyaH9pv25I8x0ykY7EJxDOuk=";
   };
 
   rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);

@@ -1,13 +1,12 @@
 version: "3.4"
 services:
   clickhouse:
-    build:
-      context: .
-      dockerfile: ./docker/clickhouse/Dockerfile
-    image: ibis-clickhouse
+    image: clickhouse/clickhouse-server:23.2.1.2537-alpine
     ports:
       - 8123:8123
       - 9000:9000
+    volumes:
+      - clickhouse:/var/lib/clickhouse/user_files/ibis
     networks:
       - clickhouse
   impala:
@@ -117,6 +116,7 @@ services:
     networks:
       - postgres
   mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
       MSSQL_SA_PASSWORD: 1bis_Testing!
       ACCEPT_EULA: "Y"
@@ -127,12 +127,10 @@ services:
         - CMD-SHELL
         - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "IF DB_ID('ibis_testing') IS NULL BEGIN CREATE DATABASE [ibis_testing] END"
       timeout: 10s
-    build:
-      context: .
-      dockerfile: ./docker/mssql/Dockerfile
-    image: ibis-mssql
     ports:
       - 1433:1433
+    volumes:
+      - mssql:/data
     networks:
       - mssql
   trino-postgres:
@@ -355,4 +353,6 @@ volumes:
   broker_var:
   coordinator_var:
   router_var:
+  clickhouse:
   druid:
+  mssql:

@@ -4,8 +4,6 @@ import asyncio
 import json
 import os
 import re
-import subprocess
-import sys
 from functools import partial
 from itertools import chain, repeat
 from pathlib import Path
@@ -15,7 +13,7 @@ import pytest
 from aiohttp import ClientSession
 
 import ibis
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
 
 DRUID_URL = os.environ.get(
     "DRUID_URL", "druid://localhost:8082/druid/v2/sql?header=true"
@@ -90,36 +88,7 @@ async def run_query(session: ClientSession, query: str) -> None:
         await asyncio.sleep(REQUEST_INTERVAL)
 
 
-async def cp_data_file(path: Path) -> None:
-    proc = await asyncio.create_subprocess_exec(
-        "docker",
-        "compose",
-        "cp",
-        str(path),
-        # since the data are copied into a shared volume mount we only
-        # need to copy the data to the volume mount on a single service
-        #
-        # the choice of `druid-coordinator` is arbitrary, other valid
-        # choices are `druid-historical` and `druid-middlemanager`
-        f"druid-coordinator:/opt/shared/{path.name}",
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    stdout, stderr = await proc.communicate()
-
-    if stdout:
-        print(stdout.decode(), file=sys.stdout)  # noqa: T201
-
-    if proc.returncode != 0:
-        if stderr:
-            msg = stderr.decode()
-            print(msg, file=sys.stderr)  # noqa: T201
-            raise DruidDataLoadError(msg)
-        else:
-            raise DruidDataLoadError(f"Failed to load data; got stderr: {stderr}")
-
-
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest, RoundHalfToEven):
     # druid has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
@@ -129,6 +98,22 @@ class TestConf(BackendTest, RoundHalfToEven):
     native_bool = True
     supports_structs = False
     supports_json = False  # it does, but we haven't implemented it
+
+    @classmethod
+    def service_spec(cls, data_dir: Path):
+        return ServiceSpec(
+            name="druid-coordinator",
+            data_volume="/opt/shared",
+            files=[
+                data_dir.joinpath(f"{name}.csv")
+                for name in (
+                    "diamonds",
+                    "batting",
+                    "awards_players",
+                    "functional_alltypes",
+                )
+            ],
+        )
 
     @staticmethod
     def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:
@@ -152,13 +137,12 @@ class TestConf(BackendTest, RoundHalfToEven):
 
         # gather executes immediately, but we need to wait for asyncio.run to
         # create the event loop
-        async def copy_and_load_data(data_dir: Path, queries):
+        async def load_data(queries):
             """Copy data into the Druid volume mount and run data loading queries."""
-            await asyncio.gather(*map(cp_data_file, data_dir.glob("*.csv")))
             async with ClientSession() as session:
                 await asyncio.gather(*map(partial(run_query, session), queries))
 
-        asyncio.run(copy_and_load_data(data_dir, queries))
+        asyncio.run(load_data(queries))
 
     @staticmethod
     def connect(_: Path):
