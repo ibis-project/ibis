@@ -9,7 +9,7 @@ import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import init_database
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
 
 MSSQL_USER = os.environ.get('IBIS_TEST_MSSQL_USER', 'sa')
 MSSQL_PASS = os.environ.get('IBIS_TEST_MSSQL_PASSWORD', '1bis_Testing!')
@@ -18,7 +18,7 @@ MSSQL_PORT = int(os.environ.get('IBIS_TEST_MSSQL_PORT', 1433))
 IBIS_TEST_MSSQL_DB = os.environ.get('IBIS_TEST_MSSQL_DATABASE', 'ibis_testing')
 
 
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest, RoundHalfToEven):
     # MSSQL has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
@@ -29,8 +29,21 @@ class TestConf(BackendTest, RoundHalfToEven):
     supports_arrays = False
     supports_json = False
 
-    def __init__(self, data_directory: Path) -> None:
-        super().__init__(data_directory)
+    @classmethod
+    def service_spec(cls, data_dir: Path):
+        return ServiceSpec(
+            name=cls.name(),
+            data_volume="/data",
+            files=[
+                data_dir.joinpath(f"{name}.csv")
+                for name in (
+                    "diamonds",
+                    "batting",
+                    "awards_players",
+                    "functional_alltypes",
+                )
+            ],
+        )
 
     @staticmethod
     def _load_data(

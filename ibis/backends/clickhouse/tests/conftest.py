@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import os
 from pathlib import Path
 from typing import Callable
@@ -8,7 +9,12 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven, UnorderedComparator
+from ibis.backends.tests.base import (
+    RoundHalfToEven,
+    ServiceBackendTest,
+    ServiceSpec,
+    UnorderedComparator,
+)
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
 CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
@@ -17,7 +23,7 @@ CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
 IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
 
 
-class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
+class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'
@@ -29,6 +35,19 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
     def native_bool(self) -> bool:
         [(value,)] = self.connection._client.execute("SELECT true")
         return isinstance(value, bool)
+
+    @classmethod
+    def service_spec(cls, data_dir: Path) -> ServiceSpec:
+        files = [data_dir.joinpath("functional_alltypes.parquet")]
+        files.extend(
+            data_dir.joinpath("parquet", name, f"{name}.parquet")
+            for name in ("diamonds", "batting", "awards_players")
+        )
+        return ServiceSpec(
+            name=cls.name(),
+            data_volume="/var/lib/clickhouse/user_files/ibis",
+            files=files,
+        )
 
     @staticmethod
     def _load_data(
@@ -56,8 +75,8 @@ class TestConf(UnorderedComparator, BackendTest, RoundHalfToEven):
             host=host, port=port, user=user, password=password
         )
 
-        client.execute(f"DROP DATABASE IF EXISTS {database}")
-        client.execute(f"CREATE DATABASE {database} ENGINE = Atomic")
+        with contextlib.suppress(clickhouse_driver.errors.ServerException):
+            client.execute(f"CREATE DATABASE {database} ENGINE = Atomic")
 
         client.execute("DROP DATABASE IF EXISTS tmptables")
         client.execute("CREATE DATABASE tmptables ENGINE = Atomic")
