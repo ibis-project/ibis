@@ -27,6 +27,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.8"
 atpublic = ">=2.3,<4"
+importlib-resources = { version = ">=5,<6", python = "<3.9" }
 multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<2"
@@ -87,6 +88,7 @@ black = ">=22.1.0,<24"
 google-cloud-storage = ">=2.7.0,<3"
 ipython = ">=7.27.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
+pre-commit = ">=3.1,<4"
 ruff = ">=0.0.205,<1"
 
 [tool.poetry.group.test.dependencies]
@@ -120,7 +122,6 @@ mkdocs-material = ">=8.2.1,<9.0.2"
 mkdocstrings = ">=0.19.1,<1"
 mkdocstrings-python = ">=0.8.3,<1"
 requests = ">=2,<3"
-streamlit = { version = ">=1.17.0,<2", python = "!=3.9.7" }
 
 [tool.poetry.extras]
 # generate the `all` extra using nix run '.#gen-all-extras'
@@ -267,6 +268,8 @@ filterwarnings = [
   "ignore:UserDefinedType Geometry:",
   # google
   "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('google.*'\\):DeprecationWarning",
+  # pyspark on python 3.11
+  "ignore:typing\\.io is deprecated:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 norecursedirs = [

@@ -76,7 +76,6 @@
         git
         just
         nixpkgs-fmt
-        pre-commit
         prettier
         shellcheck
         shfmt
@@ -117,9 +116,9 @@
     in
     rec {
       packages = {
-        inherit (pkgs) ibis38 ibis39 ibis310;
+        inherit (pkgs) ibis38 ibis39 ibis310 ibis311;
 
-        default = pkgs.ibis310;
+        default = pkgs.ibis311;
 
         inherit (pkgs) update-lock-files gen-all-extras gen-examples;
       };
@@ -128,8 +127,9 @@
         ibis38 = mkDevShell pkgs.ibisDevEnv38;
         ibis39 = mkDevShell pkgs.ibisDevEnv39;
         ibis310 = mkDevShell pkgs.ibisDevEnv310;
+        ibis311 = mkDevShell pkgs.ibisDevEnv311;
 
-        default = ibis310;
+        default = ibis311;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";
@@ -143,13 +143,7 @@
 
         release = pkgs.mkShell {
           name = "release";
-          nativeBuildInputs = with pkgs; [
-            git
-            poetry
-            nodejs
-            unzip
-            gnugrep
-          ];
+          nativeBuildInputs = with pkgs; [ git poetry nodejs unzip gnugrep ];
         };
       };
     }
