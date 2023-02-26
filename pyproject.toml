@@ -368,6 +368,7 @@ ignore = [
   "PLR0913", # too many arguments
   "PLR0915", # too many statements
   "PLR2004", # forces everything to be a constant
+  "PLW2901", # overwriting loop variable
   "RET504",
   "RET505",
   "RET506",
@@ -377,6 +378,7 @@ ignore = [
   "SIM102", # nested ifs
   "SIM108", # convert everything to ternary operator
   "SIM114", # combine `if` branches using logical `or` operator
+  "SIM116", # dictionary instead of `if` statements
   "SIM117", # nested withs
   "SIM118", # remove .keys() calls from dictionaries
   "SIM300", # yoda conditions
