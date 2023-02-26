@@ -74,7 +74,7 @@ jobs:
         uses: actions/setup-python@v4
         id: install_python
         with:
-          python-version: "3.10"
+          python-version: "3.11"
 
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential libgeos-dev

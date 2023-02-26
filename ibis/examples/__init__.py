@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import importlib.resources
 import json
 import os
 from typing import TYPE_CHECKING
@@ -8,6 +7,12 @@ from typing import TYPE_CHECKING
 import pooch
 
 import ibis
+from ibis.common.grounds import Concrete
+
+try:
+    import importlib_resources as resources
+except ImportError:
+    from importlib import resources
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -19,22 +24,17 @@ EXAMPLES = pooch.create(
     base_url="https://storage.googleapis.com/ibis-examples/data/",
     version=ibis.__version__,
 )
-with importlib.resources.open_text(__name__, "registry.txt") as f:
-    EXAMPLES.load_registry(f)
+with resources.files(__name__).joinpath("registry.txt").open(mode="r") as _f:
+    EXAMPLES.load_registry(_f)
 
-DESCRIPTIONS = json.loads(importlib.resources.read_text(__name__, "descriptions.json"))
+DESCRIPTIONS = json.loads(
+    resources.files(__name__).joinpath("descriptions.json").read_text()
+)
 
 
-class Example:
-    __slots__ = ("key",)
-
-    def __init__(self, key: str) -> None:
-        self.key = key
-
-    def __repr__(self) -> str:
-        key = self.key
-        description = self.__class__.__doc__
-        return f"{self.__class__.__name__}({description!r}, key={key!r})"
+class Example(Concrete):
+    descr: str
+    key: str
 
     def fetch(self, **kwargs) -> ir.Table:
         return ibis.read_csv(EXAMPLES.fetch(self.key), **kwargs)
@@ -52,8 +52,8 @@ def __getattr__(name: str) -> Example:
 
     description = DESCRIPTIONS.get(name, "No description available")
 
-    example_class = type(name, (Example,), {"__slots__": (), "__doc__": description})
-    example = example_class(key)
+    example_class = type(name, (Example,), {"__doc__": description})
+    example = example_class(descr=description, key=key)
     setattr(ibis.examples, name, example)
     return example
 
