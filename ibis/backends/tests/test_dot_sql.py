@@ -191,7 +191,6 @@ def test_table_dot_sql_does_not_clobber_existing_tables(con):
 
 @table_dot_sql_notimpl
 @dot_sql_notimpl
-@dot_sql_notyet
 @dot_sql_never
 @pytest.mark.notimpl(["trino"])
 def test_dot_sql_alias_with_params(backend, alltypes, df):
