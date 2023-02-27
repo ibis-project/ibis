@@ -1160,6 +1160,34 @@
   "housing_raw": {
     "key": "housing_raw.csv.gz"
   },
+  "imdb_name_basics": {
+    "description": "Contains the following information for names:\n* nconst (string) - alphanumeric unique identifier of the name/person\n* primaryName (string) - name by which the person is most often credited\n* birthYear - in YYYY format\n* deathYear - in YYYY format if applicable, else '\\N'\n* primaryProfession (array of strings) - the top-3 professions of the person\n* knownForTitles (array of tconsts) - titles the person is known for",
+    "key": "imdb_name_basics.parquet"
+  },
+  "imdb_title_akas": {
+    "description": "Contains the following information for titles:\n* titleId (string) - a tconst, an alphanumeric unique identifier of the title\n* ordering (integer) - a number to uniquely identify rows for a given titleId\n* title (string) - the localized title\n* region (string) - the region for this version of the title\n* language (string) - the language of the title\n* types (array) - Enumerated set of attributes for this alternative title. One or more of the following: \"alternative\", \"dvd\", \"festival\", \"tv\", \"video\", \"working\", \"original\", \"imdbDisplay\". New values may be added in the future without warning\n* attributes (array) - Additional terms to describe this alternative title, not enumerated\n* isOriginalTitle (boolean) - 0: not original title; 1: original title",
+    "key": "imdb_title_akas.parquet"
+  },
+  "imdb_title_basics": {
+    "description": "Contains the following information for titles:\n* tconst (string) - alphanumeric unique identifier of the title\n* titleType (string) - the type/format of the title (e.g. movie, short, tvseries, tvepisode, video, etc)\n* primaryTitle (string) - the more popular title / the title used by the filmmakers on promotional materials at the point of release\n* originalTitle (string) - original title, in the original language\n* isAdult (boolean) - 0: non-adult title; 1: adult title\n* startYear (YYYY) - represents the release year of a title. In the case of TV Series, it is the series start year\n* endYear (YYYY) - TV Series end year. '\\N' for all other title types\n* runtimeMinutes - primary runtime of the title, in minutes\n* genres (string array) - includes up to three genres associated with the title",
+    "key": "imdb_title_basics.parquet"
+  },
+  "imdb_title_crew": {
+    "description": "Contains the director and writer information for all the titles in IMDb. Fields include:\n* tconst (string) - alphanumeric unique identifier of the title\n* directors (array of nconsts) - director(s) of the given title\n* writers (array of nconsts) - writer(s) of the given title",
+    "key": "imdb_title_crew.parquet"
+  },
+  "imdb_title_episode": {
+    "description": "Contains the tv episode information. Fields include:\n* tconst (string) - alphanumeric identifier of episode\n* parentTconst (string) - alphanumeric identifier of the parent TV Series\n* seasonNumber (integer) - season number the episode belongs to\n* episodeNumber (integer) - episode number of the tconst in the TV series",
+    "key": "imdb_title_episode.parquet"
+  },
+  "imdb_title_principals": {
+    "description": "Contains the principal cast/crew for titles\n* tconst (string) - alphanumeric unique identifier of the title\n* ordering (integer) - a number to uniquely identify rows for a given titleId\n* nconst (string) - alphanumeric unique identifier of the name/person\n* category (string) - the category of job that person was in\n* job (string) - the specific job title if applicable, else '\\N'\n* characters (string) - the name of the character played if applicable, else '\\N'",
+    "key": "imdb_title_principals.parquet"
+  },
+  "imdb_title_ratings": {
+    "description": "Contains the IMDb rating and votes information for titles\n* tconst (string) - alphanumeric unique identifier of the title\n* averageRating - weighted average of all the individual user ratings\n* numVotes - number of votes the title has received",
+    "key": "imdb_title_ratings.parquet"
+  },
   "immer": {
     "description": "Yields from a Barley Field Trial",
     "key": "immer.csv.gz"
