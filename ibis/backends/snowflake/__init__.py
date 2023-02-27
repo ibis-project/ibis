@@ -236,3 +236,8 @@ class Backend(BaseAlchemyBackend):
                 auto_create_table=True,
                 quote_identifiers=False,
             )
+
+    def _get_temp_view_definition(
+        self, name: str, definition: sa.sql.compiler.Compiled
+    ) -> str:
+        yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
