@@ -69,7 +69,7 @@ in
   gen-examples = pkgs.writeShellApplication {
     name = "gen-examples";
     runtimeInputs = [
-      (pkgs.python3.withPackages (p: [ p.google-cloud-storage ]))
+      (pkgs.python3.withPackages (p: with p; [ duckdb google-cloud-storage pooch requests ]))
       (pkgs.rWrapper.override {
         packages = with pkgs.rPackages; [
           Lahman

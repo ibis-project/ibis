@@ -1255,6 +1255,18 @@
     "description": "Minnesota High School Graduates of 1938",
     "key": "minn38.csv.gz"
   },
+  "ml_latest_small_links": {
+    "key": "ml_latest_small_links.parquet"
+  },
+  "ml_latest_small_movies": {
+    "key": "ml_latest_small_movies.parquet"
+  },
+  "ml_latest_small_ratings": {
+    "key": "ml_latest_small_ratings.parquet"
+  },
+  "ml_latest_small_tags": {
+    "key": "ml_latest_small_tags.parquet"
+  },
   "morley": {
     "description": "Michelson Speed of Light Data",
     "key": "morley.csv.gz"
