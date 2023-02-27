@@ -149,7 +149,11 @@ def column(op):
 @translate.register(ops.SortKey)
 def sort_key(op):
     arg = translate(op.expr)
-    return arg.sort(reverse=op.descending)
+    descending = op.descending
+    try:
+        return arg.sort(descending=descending)
+    except TypeError:  # pragma: no cover
+        return arg.sort(reverse=descending)  # pragma: no cover
 
 
 @translate.register(ops.Selection)
@@ -180,8 +184,11 @@ def selection(op):
 
     if op.sort_keys:
         by = [key.name for key in op.sort_keys]
-        reverse = [key.descending for key in op.sort_keys]
-        lf = lf.sort(by, reverse=reverse)
+        descending = [key.descending for key in op.sort_keys]
+        try:
+            lf = lf.sort(by, descending=descending)
+        except TypeError:  # pragma: no cover
+            lf = lf.sort(by, reverse=descending)  # pragma: no cover
 
     return lf
 
