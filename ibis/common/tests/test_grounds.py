@@ -15,6 +15,7 @@ from ibis.common.annotations import (
     varkwargs,
 )
 from ibis.common.caching import WeakCache
+from ibis.common.collections import frozendict
 from ibis.common.grounds import (
     Annotable,
     Base,
@@ -25,7 +26,6 @@ from ibis.common.grounds import (
 )
 from ibis.common.validators import instance_of, option, validator
 from ibis.tests.util import assert_pickle_roundtrip
-from ibis.util import frozendict
 
 is_any = instance_of(object)
 is_bool = instance_of(bool)

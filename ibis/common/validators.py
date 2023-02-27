@@ -9,10 +9,11 @@ from typing import Any, Callable, Iterable, Literal, Mapping, Sequence, Union
 import toolz
 from typing_extensions import Annotated, get_args, get_origin
 
+from ibis.common.collections import FrozenDict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import evaluate_typehint
-from ibis.util import flatten_iterable, frozendict, is_function, is_iterable
+from ibis.util import flatten_iterable, is_function, is_iterable
 
 try:
     from types import UnionType
@@ -322,4 +323,4 @@ none_ = instance_of(type(None))
 dict_of = mapping_of(type=dict)
 list_of = sequence_of(type=list)
 tuple_of = sequence_of(type=tuple)
-frozendict_of = mapping_of(type=frozendict)
+frozendict_of = mapping_of(type=FrozenDict)

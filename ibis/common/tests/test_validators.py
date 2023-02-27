@@ -6,6 +6,7 @@ from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 import pytest
 from typing_extensions import Annotated
 
+from ibis.common.collections import frozendict
 from ibis.common.validators import (
     Coercible,
     Validator,
@@ -26,7 +27,6 @@ from ibis.common.validators import (
     str_,
     tuple_of,
 )
-from ibis.util import frozendict
 
 
 @pytest.mark.parametrize(

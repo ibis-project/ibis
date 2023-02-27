@@ -5,9 +5,9 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.collections import frozendict
 from ibis.expr.operations import Literal
 from ibis.tests.util import assert_pickle_roundtrip
-from ibis.util import frozendict
 
 
 def test_literal_equality_basic():

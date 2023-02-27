@@ -57,6 +57,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
+from ibis.common.collections import frozendict
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import Coercible
 from ibis.expr.deferred import Deferred
@@ -326,7 +327,7 @@ class Across(Selector):
     funcs: Union[
         Deferred,
         Callable[[ir.Value], ir.Value],
-        util.frozendict[Optional[str], Union[Deferred, Callable[[ir.Value], ir.Value]]],
+        frozendict[Optional[str], Union[Deferred, Callable[[ir.Value], ir.Value]]],
     ]
     names: Union[str, Callable[[str, Optional[str]], str]]
 
@@ -353,7 +354,7 @@ class Across(Selector):
 def across(selector, func, names=None) -> Across:
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
-    funcs = util.frozendict(func if isinstance(func, Mapping) else {None: func})
+    funcs = frozendict(func if isinstance(func, Mapping) else {None: func})
     return Across(selector=selector, funcs=funcs, names=names)
 
 

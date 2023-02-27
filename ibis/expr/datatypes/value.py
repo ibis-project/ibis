@@ -17,10 +17,10 @@ import toolz
 from public import public
 
 import ibis.expr.datatypes.core as dt
+from ibis.common.collections import frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.expr.datatypes.cast import highest_precedence
-from ibis.util import frozendict
 
 if TYPE_CHECKING:
     import pandas as pd

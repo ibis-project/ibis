@@ -20,6 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import _, literal
+from ibis.common.collections import frozendict
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr import api
 from ibis.tests.util import assert_equal
@@ -1508,24 +1509,12 @@ def test_non_null_with_null_precedence(expr_fn, expected_type):
     assert expr.type() == expected_type
 
 
-@pytest.mark.parametrize(
-    ("name", "expected"),
-    [
-        ("names", ("a", "b", "c")),
-        ("types", (dt.int8, dt.string, dt.Array(dt.Array(dt.float64)))),
-        (
-            "fields",
-            ibis.util.frozendict(
-                a=dt.int8,
-                b=dt.string,
-                c=dt.Array(dt.Array(dt.float64)),
-            ),
-        ),
-    ],
-)
-def test_struct_names_types_fields(name, expected):
+def test_struct_names_types_fields():
     s = ibis.struct(dict(a=1, b="2", c=[[1.0], [], [None]]))
-    assert getattr(s, name) == expected
+    assert s.names == ("a", "b", "c")
+    assert s.types == (dt.int8, dt.string, dt.Array(dt.Array(dt.float64)))
+    assert s.fields == dict(a=dt.int8, b=dt.string, c=dt.Array(dt.Array(dt.float64)))
+    assert isinstance(s.fields, frozendict)
 
 
 @pytest.mark.parametrize(
