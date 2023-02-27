@@ -137,6 +137,45 @@ def test_create_table_from_schema(con, new_schema, temp_table):
 
 @mark.notimpl(
     [
+        "clickhouse",
+        "datafusion",
+        "polars",
+        "bigquery",
+        "dask",
+        "pandas",
+        "impala",
+        "pyspark",
+        "trino",
+        "druid",
+    ]
+)
+@mark.notyet(
+    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
+)
+@mark.never(
+    ["mssql"],
+    reason="mssql supports support temporary tables through naming conventions",
+)
+def test_create_temporary_table_from_schema(con, new_schema, temp_table):
+    con.create_table(temp_table, schema=new_schema, temp=True)
+
+    table = con.table(temp_table)
+
+    # verify table exist in the current session
+    backend_mapping = backend_type_mapping.get(con.name, dict())
+    for column_name, column_type in table.schema().items():
+        assert (
+            backend_mapping.get(new_schema[column_name], new_schema[column_name])
+            == column_type
+        )
+
+    con.reconnect()
+    # verify table no longer exist after reconnect
+    assert temp_table not in con.tables.keys()
+
+
+@mark.notimpl(
+    [
         "bigquery",
         "clickhouse",
         "dask",

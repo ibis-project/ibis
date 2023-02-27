@@ -214,9 +214,14 @@ class Backend(BaseAlchemyBackend):
         node = self.table_class(source=self, sqla_table=alch_table)
         return self.table_expr_class(node)
 
-    def _table_from_schema(self, name, schema, database: str | None = None) -> sa.Table:
+    def _table_from_schema(
+        self, name, schema, database: str | None = None, temp: bool = True
+    ) -> sa.Table:
+        prefixes = []
+        if temp:
+            prefixes.append('TEMPORARY')
         columns = self._columns_from_schema(name, schema)
-        return sa.Table(name, self.meta, *columns, schema=database)
+        return sa.Table(name, self.meta, *columns, schema=database, prefixes=prefixes)
 
     @property
     def _current_schema(self) -> str | None:

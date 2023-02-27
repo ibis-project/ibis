@@ -174,6 +174,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         schema: sch.Schema | None = None,
         database: str | None = None,
         force: bool = False,
+        temp: bool = False,
     ) -> None:
         """Create a table.
 
@@ -189,6 +190,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
             A database
         force
             Check whether a table exists before creating it
+        temp
+            Should the table be temporary for the session.
         """
         import pandas as pd
 
@@ -218,7 +221,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         self._schemas[self._fully_qualified_name(name, database)] = schema
         table = self._table_from_schema(
-            name, schema, database=database or self.current_database
+            name,
+            schema,
+            database=database or self.current_database,
+            temp=temp,
         )
 
         if has_expr := expr is not None:
@@ -257,10 +263,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
         ]
 
     def _table_from_schema(
-        self, name: str, schema: sch.Schema, database: str | None = None
+        self,
+        name: str,
+        schema: sch.Schema,
+        database: str | None = None,
+        temp: bool = False,
     ) -> sa.Table:
+        prefixes = []
+        if temp:
+            prefixes.append('TEMPORARY')
         columns = self._columns_from_schema(name, schema)
-        return sa.Table(name, self.meta, *columns)
+        return sa.Table(name, self.meta, *columns, prefixes=prefixes)
 
     def drop_table(
         self,

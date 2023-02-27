@@ -6,6 +6,7 @@ from typing import Literal
 
 import sqlalchemy as sa
 
+import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
 from ibis.backends.mssql.datatypes import _type_from_result_set_info
@@ -63,3 +64,18 @@ class Backend(BaseAlchemyBackend):
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR ALTER VIEW {name} AS {definition}"
+
+    def _table_from_schema(
+        self,
+        name: str,
+        schema: sch.Schema,
+        database: str | None = None,
+        temp: bool = False,
+    ) -> sa.Table:
+        prefixes = []
+        if temp:
+            raise ValueError(
+                'MSSQL supports temporary table declaration through placing hash before the table name'
+            )
+        columns = self._columns_from_schema(name, schema)
+        return sa.Table(name, self.meta, *columns, prefixes=prefixes)
