@@ -4,8 +4,8 @@ import functools
 import inspect
 from typing import Any
 
+from ibis.common.collections import DotDict
 from ibis.common.validators import Validator, any_, frozendict_of, option, tuple_of
-from ibis.util import DotDict
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY

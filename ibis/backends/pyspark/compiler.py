@@ -25,8 +25,9 @@ from ibis.backends.pyspark.timecontext import (
     combine_time_context,
     filter_by_time_context,
 )
+from ibis.common.collections import frozendict
 from ibis.config import options
-from ibis.util import any_of, frozendict, guid
+from ibis.util import any_of, guid
 
 
 class PySparkDatabaseTable(ops.DatabaseTable):

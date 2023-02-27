@@ -8,8 +8,8 @@ from weakref import WeakValueDictionary
 
 from ibis.common.annotations import EMPTY, Argument, Attribute, Signature, attribute
 from ibis.common.caching import WeakCache
+from ibis.common.collections import FrozenDict
 from ibis.common.validators import Validator
-from ibis.util import frozendict
 
 
 class BaseMeta(ABCMeta):
@@ -168,7 +168,7 @@ class Singleton(Base):
 
     @classmethod
     def __create__(cls, *args, **kwargs) -> Singleton:
-        key = (cls, args, frozendict(kwargs))
+        key = (cls, args, FrozenDict(kwargs))
         try:
             return cls.__instances__[key]
         except KeyError:

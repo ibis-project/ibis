@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import collections
-import itertools
+
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
 from public import public
 
 import ibis.expr.operations as ops
-from ibis import util
+
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import V
 
@@ -114,7 +114,7 @@ class StructValue(Value):
     @property
     def fields(self) -> Mapping[str, dt.DataType]:
         """Return a mapping from field name to field type of the struct."""
-        return util.frozendict(self.type().fields)
+        return self.type().fields
 
     def lift(self) -> ir.Table:
         """Project the fields of `self` into a table.

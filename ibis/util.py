@@ -18,7 +18,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Hashable,
     Iterator,
     Mapping,
     Sequence,
@@ -43,60 +42,11 @@ U = TypeVar("U", covariant=True)
 K = TypeVar("K")
 V = TypeVar("V")
 
+
 # https://www.compart.com/en/unicode/U+22EE
 VERTICAL_ELLIPSIS = "\u22EE"
 # https://www.compart.com/en/unicode/U+2026
 HORIZONTAL_ELLIPSIS = "\u2026"
-
-
-class frozendict(Mapping[K, V], Hashable):
-    __slots__ = ("__view__", "__precomputed_hash__")
-
-    def __init__(self, *args, **kwargs):
-        dictview = types.MappingProxyType(dict(*args, **kwargs))
-        dicthash = hash(tuple(dictview.items()))
-        object.__setattr__(self, "__view__", dictview)
-        object.__setattr__(self, "__precomputed_hash__", dicthash)
-
-    def __str__(self):
-        return str(self.__view__)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.__view__!r})"
-
-    def __setattr__(self, name: str, _: Any) -> None:
-        raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
-
-    def __reduce__(self):
-        return frozendict, (dict(self.__view__),)
-
-    def __iter__(self):
-        return iter(self.__view__)
-
-    def __len__(self):
-        return len(self.__view__)
-
-    def __getitem__(self, key):
-        return self.__view__[key]
-
-    def __hash__(self):
-        return self.__precomputed_hash__
-
-
-class DotDict(dict):
-    __slots__ = ()
-
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            raise AttributeError(key)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({super().__repr__()})"
 
 
 def guid() -> str:

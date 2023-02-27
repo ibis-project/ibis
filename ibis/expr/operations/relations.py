@@ -13,6 +13,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
+from ibis.common.collections import frozendict
 from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Named, Node, Value
 from ibis.expr.operations.generic import TableColumn
@@ -534,7 +535,7 @@ class FillNa(TableNode):
             replacements=(
                 replacements
                 if not isinstance(replacements, collections.abc.Mapping)
-                else util.frozendict(replacements)
+                else frozendict(replacements)
             ),
             **kwargs,
         )

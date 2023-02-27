@@ -16,9 +16,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common import exceptions as com
 from ibis.common.annotations import attribute
+from ibis.common.collections import frozendict
 from ibis.common.grounds import Singleton
 from ibis.expr.operations.core import Named, Unary, Value
-from ibis.util import frozendict
 
 
 @public
