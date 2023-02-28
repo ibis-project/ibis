@@ -13,6 +13,14 @@ from ibis.common.validators import instance_of, option
 is_int = instance_of(int)
 
 
+def test_argument_repr():
+    argument = Argument(is_int, typehint=int, default=None)
+    assert repr(argument) == (
+        "Argument(validator=instance_of(<class 'int'>,), default=None, "
+        "typehint=<class 'int'>)"
+    )
+
+
 def test_default_argument():
     annotation = Argument.default(validator=int, default=3)
     assert annotation.validate(1) == 1

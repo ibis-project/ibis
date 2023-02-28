@@ -46,6 +46,12 @@ class Annotation:
             and self._validator == other._validator
         )
 
+    def __repr__(self):
+        return (
+            f"{self.__class__.__name__}(validator={self._validator!r}, "
+            f"default={self._default!r}, typehint={self._typehint!r})"
+        )
+
     def validate(self, arg, **kwargs):
         if self._validator is None:
             return arg
