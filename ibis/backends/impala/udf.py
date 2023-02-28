@@ -282,17 +282,16 @@ def parse_type(t):
     t = t.lower()
     if t in _impala_to_ibis_type:
         return _impala_to_ibis_type[t]
-    else:
-        if 'varchar' in t or 'char' in t:
-            return 'string'
-        elif 'decimal' in t:
-            result = dt.dtype(t)
-            if result:
-                return t
-            else:
-                return ValueError(t)
+    elif 'varchar' in t or 'char' in t:
+        return 'string'
+    elif 'decimal' in t:
+        result = dt.dtype(t)
+        if result:
+            return t
         else:
-            raise Exception(t)
+            return ValueError(t)
+    else:
+        raise Exception(t)
 
 
 _VARCHAR_RE = re.compile(r'varchar\((\d+)\)')

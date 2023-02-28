@@ -126,13 +126,12 @@ class Backend(BaseAlchemyBackend):
             database = path
         if not (in_memory := database == ":memory:"):
             database = Path(database).absolute()
-        else:
-            if temp_directory is None:
-                temp_directory = (
-                    Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-                    / "ibis-duckdb"
-                    / str(os.getpid())
-                )
+        elif temp_directory is None:
+            temp_directory = (
+                Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
+                / "ibis-duckdb"
+                / str(os.getpid())
+            )
 
         if temp_directory is not None:
             Path(temp_directory).mkdir(parents=True, exist_ok=True)

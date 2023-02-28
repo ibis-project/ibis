@@ -51,20 +51,19 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
             typ = dt.int64
         else:
             raise AssertionError('invalid field length for BIT type')
-    else:
-        if flags.is_set:
-            # sets are limited to strings
-            typ = dt.Set(dt.string)
-        elif flags.is_unsigned and flags.is_num:
-            typ = getattr(dt, f"U{typ.__name__}")
-        elif type_code in TEXT_TYPES:
-            # binary text
-            if field.charsetnr == MY_CHARSET_BIN:
-                typ = dt.Binary
-            else:
-                typ = dt.String
+    elif flags.is_set:
+        # sets are limited to strings
+        typ = dt.Set(dt.string)
+    elif flags.is_unsigned and flags.is_num:
+        typ = getattr(dt, f"U{typ.__name__}")
+    elif type_code in TEXT_TYPES:
+        # binary text
+        if field.charsetnr == MY_CHARSET_BIN:
+            typ = dt.Binary
         else:
-            typ = _type_mapping[typename]
+            typ = dt.String
+    else:
+        typ = _type_mapping[typename]
 
     # projection columns are always nullable
     return typ(nullable=True)

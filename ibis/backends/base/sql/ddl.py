@@ -96,16 +96,14 @@ def _serdeproperties(props):
 class _BaseQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):
         if database:
-            scoped_name = f'{database}.`{obj_name}`'
-        else:
-            if not is_fully_qualified(obj_name):
-                if _is_quoted(obj_name):
-                    return obj_name
-                else:
-                    return f'`{obj_name}`'
-            else:
+            return f'{database}.`{obj_name}`'
+        elif not is_fully_qualified(obj_name):
+            if _is_quoted(obj_name):
                 return obj_name
-        return scoped_name
+            else:
+                return f'`{obj_name}`'
+        else:
+            return obj_name
 
 
 class BaseDDL(DDL, _BaseQualifiedSQLStatement):

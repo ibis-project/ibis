@@ -164,33 +164,31 @@ def get_aggcontext_window(
             order_by=order_by,
             output_type=output_type,
         )
-    else:
-        # XXX(phillipc): What a horror show
-        if frame.start is not None:
-            assert not isinstance(operand, ops.CumulativeOp)
-            if isinstance(frame, ops.RowsWindowFrame):
-                max_lookback = frame.max_lookback
-            else:
-                max_lookback = None
-
-            aggcontext = agg_ctx.Moving(
-                frame.start,
-                # FIXME(kszucs): I don't think that we have a proper max_lookback test
-                # case because passing None here is not braking anything
-                max_lookback=max_lookback,
-                parent=parent,
-                group_by=group_by,
-                order_by=order_by,
-                output_type=output_type,
-            )
+    elif frame.start is not None:
+        assert not isinstance(operand, ops.CumulativeOp)
+        if isinstance(frame, ops.RowsWindowFrame):
+            max_lookback = frame.max_lookback
         else:
-            # expanding window
-            aggcontext = agg_ctx.Cumulative(
-                parent=parent,
-                group_by=group_by,
-                order_by=order_by,
-                output_type=output_type,
-            )
+            max_lookback = None
+
+        aggcontext = agg_ctx.Moving(
+            frame.start,
+            # FIXME(kszucs): I don't think that we have a proper max_lookback test
+            # case because passing None here is not braking anything
+            max_lookback=max_lookback,
+            parent=parent,
+            group_by=group_by,
+            order_by=order_by,
+            output_type=output_type,
+        )
+    else:
+        # expanding window
+        aggcontext = agg_ctx.Cumulative(
+            parent=parent,
+            group_by=group_by,
+            order_by=order_by,
+            output_type=output_type,
+        )
 
     return aggcontext
 
@@ -341,15 +339,14 @@ def execute_window_op(
         else:
             source = data.groupby(grouping_keys, sort=False, group_keys=False)
             post_process = _post_process_group_by
+    elif frame.order_by:
+        source, grouping_keys, ordering_keys = util.compute_sorted_frame(
+            data, frame.order_by, timecontext=adjusted_timecontext, **kwargs
+        )
+        post_process = _post_process_order_by
     else:
-        if frame.order_by:
-            source, grouping_keys, ordering_keys = util.compute_sorted_frame(
-                data, frame.order_by, timecontext=adjusted_timecontext, **kwargs
-            )
-            post_process = _post_process_order_by
-        else:
-            source = data
-            post_process = _post_process_empty
+        source = data
+        post_process = _post_process_empty
 
     # Here groupby object should be add to the corresponding node in scope
     # for execution, data will be overwrite to a groupby object, so we

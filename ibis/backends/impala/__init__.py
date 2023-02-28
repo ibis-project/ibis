@@ -446,13 +446,11 @@ class Backend(BaseSQLBackend):
                     database=name,
                     force=True,
                 )
-        else:
-            if len(tables) > 0 or len(udfs) > 0 or len(udas) > 0:
-                raise com.IntegrityError(
-                    'Database {} must be empty before '
-                    'being dropped, or set '
-                    'force=True'.format(name)
-                )
+        elif tables or udfs or udas:
+            raise com.IntegrityError(
+                f"Database {name} must be empty before "
+                "being dropped, or set force=True"
+            )
         statement = DropDatabase(name, must_exist=not force)
         return self.raw_sql(statement)
 
