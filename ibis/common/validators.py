@@ -104,11 +104,11 @@ class Validator(Callable):
                 inners = tuple(map(cls.from_typehint, args))
             return tuple_of(inners, type=coerced_to(origin))
         elif issubclass(origin, Sequence):
-            (inner,) = map(cls.from_typehint, args)
-            return sequence_of(inner, type=coerced_to(origin))
+            (value_inner,) = map(cls.from_typehint, args)
+            return sequence_of(value_inner, type=coerced_to(origin))
         elif issubclass(origin, Mapping):
             key_inner, value_inner = map(cls.from_typehint, args)
-            return mapping_of(key_inner, value_inner, type=origin)
+            return mapping_of(key_inner, value_inner, type=coerced_to(origin))
         elif issubclass(origin, Callable):
             if args:
                 arg_inners = tuple(map(cls.from_typehint, args[0]))
@@ -496,8 +496,14 @@ def tuple_of(inner: Validator | tuple[Validator], arg: Any, *, type=tuple, **kwa
         The coerced tuple containing validated elements.
     """
     if isinstance(inner, tuple):
+        if is_iterable(arg):
+            arg = tuple(arg)
+        else:
+            raise IbisTypeError('Argument must be a sequence')
+
         if len(inner) != len(arg):
             raise IbisTypeError(f'Argument must has length {len(inner)}')
+
         return type(validator(item, **kwargs) for validator, item in zip(inner, arg))
     else:
         return sequence_of(inner, arg, type=type, **kwargs)
@@ -535,7 +541,7 @@ def mapping_of(
     if not isinstance(arg, Mapping):
         raise IbisTypeError('Argument must be a mapping')
     return type(
-        (key_inner(k, **kwargs), value_inner(v, **kwargs)) for k, v in arg.items()
+        {key_inner(k, **kwargs): value_inner(v, **kwargs) for k, v in arg.items()}
     )
 
 

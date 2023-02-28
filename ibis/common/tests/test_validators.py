@@ -134,8 +134,16 @@ def endswith_d(x, this):
             ),
         ),
         (Tuple[int, ...], tuple_of(instance_of(int), type=coerced_to(tuple))),
-        (Dict[str, float], dict_of(instance_of(str), instance_of(float))),
-        (frozendict[str, int], frozendict_of(instance_of(str), instance_of(int))),
+        (
+            Dict[str, float],
+            dict_of(instance_of(str), instance_of(float), type=coerced_to(dict)),
+        ),
+        (
+            frozendict[str, int],
+            frozendict_of(
+                instance_of(str), instance_of(int), type=coerced_to(frozendict)
+            ),
+        ),
         (Literal["alpha", "beta", "gamma"], isin(("alpha", "beta", "gamma"))),
         (
             Callable[[str, int], str],

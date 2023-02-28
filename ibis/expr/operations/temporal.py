@@ -128,9 +128,6 @@ class ExtractTemporalField(TemporalUnary):
     output_dtype = dt.int32
 
 
-ExtractTimestampField = ExtractTemporalField
-
-
 @public
 class ExtractDateField(ExtractTemporalField):
     arg = rlz.one_of([rlz.date, rlz.timestamp])
@@ -412,3 +409,6 @@ class BetweenTime(Between):
     arg = rlz.one_of([rlz.timestamp, rlz.time])
     lower_bound = rlz.one_of([rlz.time, rlz.string])
     upper_bound = rlz.one_of([rlz.time, rlz.string])
+
+
+public(ExtractTimestampField=ExtractTemporalField)

@@ -1,7 +1,7 @@
 import copy
 import pickle
 import weakref
-from typing import Sequence, TypeVar
+from typing import Mapping, Sequence, Tuple, TypeVar
 
 import pytest
 
@@ -25,7 +25,7 @@ from ibis.common.grounds import (
     Immutable,
     Singleton,
 )
-from ibis.common.validators import Coercible, instance_of, option, validator
+from ibis.common.validators import Coercible, Validator, instance_of, option, validator
 from ibis.tests.util import assert_pickle_roundtrip
 
 is_any = instance_of(object)
@@ -85,14 +85,16 @@ class VariadicArgsAndKeywords(Concrete):
 
 
 T = TypeVar('T')
+K = TypeVar('K')
+V = TypeVar('V')
 
 
 class List(Concrete, Sequence[T], Coercible):
     @classmethod
-    def __coerce__(self, value):
-        value = tuple(value)
-        if value:
-            head, *rest = value
+    def __coerce__(self, values):
+        values = tuple(values)
+        if values:
+            head, *rest = values
             return ConsList(head, rest)
         else:
             return EmptyList()
@@ -118,6 +120,66 @@ class ConsList(List[T]):
 
     def __len__(self):
         return len(self.rest) + 1
+
+
+class Map(Concrete, Mapping[K, V], Coercible):
+    @classmethod
+    def __coerce__(self, pairs):
+        pairs = dict(pairs)
+        if pairs:
+            head_key = next(iter(pairs))
+            head_value = pairs.pop(head_key)
+            rest = pairs
+            return ConsMap((head_key, head_value), rest)
+        else:
+            return EmptyMap()
+
+
+class EmptyMap(Map[K, V]):
+    def __getitem__(self, key):
+        raise KeyError(key)
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self):
+        return 0
+
+
+class ConsMap(Map[K, V]):
+    head: Tuple[K, V]
+    rest: Map[K, V]
+
+    def __getitem__(self, key):
+        if key == self.head[0]:
+            return self.head[1]
+        else:
+            return self.rest[key]
+
+    def __iter__(self):
+        yield self.head[0]
+        yield from self.rest
+
+    def __len__(self):
+        return len(self.rest) + 1
+
+
+class Integer(int, Coercible):
+    @classmethod
+    def __coerce__(cls, value):
+        return Integer(value)
+
+
+class Float(float, Coercible):
+    @classmethod
+    def __coerce__(cls, value):
+        return Float(value)
+
+
+class MyExpr(Concrete):
+    a: Integer
+    b: List[Float]
+    c: Map[str, Integer]
 
 
 def test_annotable():
@@ -199,7 +261,37 @@ def test_annotable_with_type_annotations():
 
 
 def test_annotable_with_recursive_generic_type_annotations():
-    pass
+    # testing cons list
+    validator = Validator.from_typehint(List[Integer])
+    values = ["1", 2.0, 3]
+    result = validator(values)
+    expected = ConsList(1, ConsList(2, ConsList(3, EmptyList())))
+    assert result == expected
+    assert result[0] == 1
+    assert result[1] == 2
+    assert result[2] == 3
+    assert len(result) == 3
+    with pytest.raises(IndexError):
+        result[3]
+
+    # testing cons map
+    validator = Validator.from_typehint(Map[Integer, Float])
+    values = {"1": 2, 3: "4.0", 5: 6.0}
+    result = validator(values)
+    expected = ConsMap((1, 2.0), ConsMap((3, 4.0), ConsMap((5, 6.0), EmptyMap())))
+    assert result == expected
+    assert result[1] == 2.0
+    assert result[3] == 4.0
+    assert result[5] == 6.0
+    assert len(result) == 3
+    with pytest.raises(KeyError):
+        result[7]
+
+    # testing both encapsulated in a class
+    expr = MyExpr(a="1", b=["2.0", 3, True], c={"a": "1", "b": 2, "c": 3.0})
+    assert expr.a == 1
+    assert expr.b == ConsList(2.0, ConsList(3.0, ConsList(1.0, EmptyList())))
+    assert expr.c == ConsMap(("a", 1), ConsMap(("b", 2), ConsMap(("c", 3), EmptyMap())))
 
 
 def test_composition_of_annotable_and_immutable():
@@ -600,10 +692,7 @@ def test_multiple_inheritance_argument_order():
     class Sum(VersionedOp, Reduction):
         where = optional(is_bool, default=False)
 
-    # assert (
-    #     str(Sum.__signature__)
-    #     == "(arg: instance_of(<class 'object'>,), version: instance_of(<class 'int'>,), where: option(instance_of(<class 'bool'>,),default=False) = None)"
-    # )
+    assert tuple(Sum.__signature__.parameters.keys()) == ("arg", "version", "where")
 
 
 def test_multiple_inheritance_optional_argument_order():
@@ -618,10 +707,12 @@ def test_multiple_inheritance_optional_argument_order():
         max = is_int
         how = optional(is_str, default="strict")
 
-    # assert (
-    #     str(Between.__signature__)
-    #     == "(min: instance_of(<class 'int'>,), max: instance_of(<class 'int'>,), how: option(instance_of(<class 'str'>,),default='strict') = None, where: option(instance_of(<class 'bool'>,),default=False) = None)"
-    # )
+    assert tuple(Between.__signature__.parameters.keys()) == (
+        "min",
+        "max",
+        "how",
+        "where",
+    )
 
 
 def test_immutability():
