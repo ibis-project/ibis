@@ -45,8 +45,9 @@ def backends_info_df():
         {
             "bigquery": ["string", "sql"],
             "clickhouse": ["string", "sql"],
-            'dask': ["dataframe"],
-            "datafusion": ["dataframe"],
+            "dask": ["dataframe"],
+            "datafusion": ["sql"],
+            "druid": ["sqlalchemy", "sql"],
             "duckdb": ["sqlalchemy", "sql"],
             "impala": ["string", "sql"],
             "mssql": ["sqlalchemy", "sql"],
