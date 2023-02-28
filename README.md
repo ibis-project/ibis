@@ -55,6 +55,7 @@ Ibis acts as a universal frontend to the following systems:
 - [BigQuery](https://ibis-project.org/backends/BigQuery/)
 - [ClickHouse](https://ibis-project.org/backends/ClickHouse/)
 - [Dask](https://ibis-project.org/backends/Dask/)
+- [DataFusion](https://ibis-project.org/backends/Datafusion/)
 - [Druid](https://ibis-project.org/backends/Druid/) (experimental)
 - [DuckDB](https://ibis-project.org/backends/DuckDB/)
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
