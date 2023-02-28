@@ -119,25 +119,22 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
             if self.context.compiler.cheap_in_memory_tables:
                 result = sa.table(ref_op.name, *columns)
+            elif self.context.compiler.support_values_syntax_in_select:
+                rows = list(ref_op.data.to_frame().itertuples(index=False))
+                result = sa.values(*columns, name=ref_op.name).data(rows)
             else:
-                # this has horrendous performance for medium to large tables
-                # should we warn?
-                if self.context.compiler.support_values_syntax_in_select:
-                    rows = list(ref_op.data.to_frame().itertuples(index=False))
-                    result = sa.values(*columns, name=ref_op.name).data(rows)
-                else:
-                    raw_rows = (
-                        sa.select(
-                            *(
-                                translator.translate(ops.Literal(val, dtype=type_))
-                                for val, name, type_ in zip(
-                                    row, op.schema.names, op.schema.types
-                                )
+                raw_rows = (
+                    sa.select(
+                        *(
+                            translator.translate(ops.Literal(val, dtype=type_))
+                            for val, name, type_ in zip(
+                                row, op.schema.names, op.schema.types
                             )
                         )
-                        for row in op.data.to_frame().itertuples(index=False)
                     )
-                    result = sa.union_all(*raw_rows).alias(ref_op.name)
+                    for row in op.data.to_frame().itertuples(index=False)
+                )
+                result = sa.union_all(*raw_rows).alias(ref_op.name)
         else:
             # A subquery
             if ctx.is_extracted(ref_op):
@@ -223,9 +220,8 @@ class AlchemySelect(Select):
                         continue
                     else:
                         arg = table_set
-                else:
-                    if arg is None:
-                        raise ValueError(op)
+                elif arg is None:
+                    raise ValueError(op)
             else:
                 raise TypeError(op)
 

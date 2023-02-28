@@ -186,11 +186,10 @@ class Signature(inspect.Signature):
                     old_args.append(param)
                 else:
                     old_kwargs.append(param)
+            elif param.default is EMPTY:
+                new_args.append(param)
             else:
-                if param.default is EMPTY:
-                    new_args.append(param)
-                else:
-                    new_kwargs.append(param)
+                new_kwargs.append(param)
 
         return cls(
             old_args + new_args + var_args + new_kwargs + old_kwargs + var_kwargs
