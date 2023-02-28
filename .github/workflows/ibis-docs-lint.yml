@@ -34,6 +34,7 @@ jobs:
         uses: cachix/install-nix-action@v19
         with:
           nix_path: nixpkgs=channel:nixos-unstable-small
+          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
@@ -49,6 +50,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v19
         with:
+          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
@@ -124,6 +126,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v19
         with:
+          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
@@ -157,6 +160,7 @@ jobs:
       - name: install nix
         uses: cachix/install-nix-action@v19
         with:
+          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
@@ -201,6 +205,7 @@ jobs:
 
       - uses: cachix/install-nix-action@v19
         with:
+          install_url: https://releases.nixos.org/nix/nix-2.13.3/install
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
