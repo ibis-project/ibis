@@ -81,7 +81,7 @@ _timestamp_units = toolz.merge(_date_units, _time_units)
 @public
 class TimestampTruncate(Value):
     arg = rlz.timestamp
-    unit = rlz.isin(_timestamp_units)
+    unit = rlz.map_to(_timestamp_units)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.timestamp
@@ -90,7 +90,7 @@ class TimestampTruncate(Value):
 @public
 class DateTruncate(Value):
     arg = rlz.date
-    unit = rlz.isin(_date_units)
+    unit = rlz.map_to(_date_units)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.date
@@ -99,7 +99,7 @@ class DateTruncate(Value):
 @public
 class TimeTruncate(Value):
     arg = rlz.time
-    unit = rlz.isin(_time_units)
+    unit = rlz.map_to(_time_units)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.time
