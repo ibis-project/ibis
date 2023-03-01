@@ -15,7 +15,7 @@ Ibis has three primary components:
 
 1. **A dataframe API for Python**.
    Python users can write Ibis code to manipulate tabular data.
-2. **Interfaces to 10+ query engines.**
+2. **Interfaces to 15+ query engines.**
    Wherever data is stored, people can use Ibis as their API of choice to communicate with any of those query engines.
 3. **Deferred execution**.
    Ibis uses deferred execution, so execution of code is pushed to the query engine.
@@ -52,19 +52,19 @@ Ibis aims to be a future-proof solution to interacting with data using Python an
 
 Ibis acts as a universal frontend to the following systems:
 
+- [Apache Arrow DataFusion](https://ibis-project.org/backends/Datafusion/) (experimental)
+- [Apache Druid](https://ibis-project.org/backends/Druid/) (experimental)
+- [Apache Impala](https://ibis-project.org/backends/Impala/)
+- [Apache PySpark](https://ibis-project.org/backends/PySpark/)
 - [BigQuery](https://ibis-project.org/backends/BigQuery/)
 - [ClickHouse](https://ibis-project.org/backends/ClickHouse/)
 - [Dask](https://ibis-project.org/backends/Dask/)
-- [DataFusion](https://ibis-project.org/backends/Datafusion/)
-- [Druid](https://ibis-project.org/backends/Druid/) (experimental)
 - [DuckDB](https://ibis-project.org/backends/DuckDB/)
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
-- [Impala](https://ibis-project.org/backends/Impala/)
 - [MySQL](https://ibis-project.org/backends/MySQL/)
 - [Pandas](https://ibis-project.org/backends/Pandas/)
 - [Polars](https://ibis-project.org/backends/Polars/) (experimental)
 - [PostgreSQL](https://ibis-project.org/backends/PostgreSQL/)
-- [PySpark](https://ibis-project.org/backends/PySpark/)
 - [SQL Server](https://ibis-project.org/backends/MSSQL/)
 - [SQLite](https://ibis-project.org/backends/SQLite/)
 - [Snowflake](https://ibis-project.org/backends/Snowflake) (experimental)
