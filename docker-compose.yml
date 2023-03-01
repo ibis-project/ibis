@@ -197,7 +197,7 @@ services:
   druid-zookeeper:
     hostname: zookeeper
     container_name: zookeeper
-    image: zookeeper:3.5
+    image: zookeeper:3.8
     environment:
       - ZOO_MY_ID=1
     healthcheck:
