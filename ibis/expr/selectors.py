@@ -12,19 +12,19 @@ subsequent computation.
 Without selectors this becomes quite verbose and tedious to write:
 
 ```python
->>> t.select([t[c] for c in t.columns if t[c].type().is_numeric()])
+>>> t.select([t[c] for c in t.columns if t[c].type().is_numeric()])  # doctest: +SKIP
 ```
 
 Compare that to the [`numeric`][ibis.expr.selectors.numeric] selector:
 
 ```python
->>> t.select(s.numeric())
+>>> t.select(s.numeric())  # doctest: +SKIP
 ```
 
 When there are multiple properties to check it gets worse:
 
 ```python
->>> t.select(
+>>> t.select(  # doctest: +SKIP
 ...     [
 ...         t[c] for c in t.columns
 ...         if t[c].type().is_numeric()
@@ -36,7 +36,7 @@ When there are multiple properties to check it gets worse:
 Using a composition of selectors this is much less tiresome:
 
 ```python
->>> t.select(s.numeric() & s.contains(("a", "cd")))
+>>> t.select(s.numeric() & s.contains(("a", "cd")))  # doctest: +SKIP
 ```
 """
 
@@ -133,14 +133,12 @@ def where(predicate: Callable[[ir.Value], bool]) -> Predicate:
 
     Examples
     --------
+    >>> import ibis
+    >>> import ibis.expr.selectors as s
     >>> t = ibis.table(dict(a="float32"), name="t")
-    >>> t.select(s.where(lambda col: col.get_name() == "a"))
-    r0 := UnboundTable: t
-      a float32
-    <BLANKLINE>
-    Selection[r0]
-      selections:
-        a: r0.a
+    >>> expr = t.select(s.where(lambda col: col.get_name() == "a"))
+    >>> expr.columns
+    ['a']
     """
     return Predicate(predicate=predicate)
 
@@ -151,22 +149,17 @@ def numeric() -> Predicate:
 
     Examples
     --------
-    >>> import ibis.selectors as s
+    >>> import ibis
+    >>> import ibis.expr.selectors as s
     >>> t = ibis.table(dict(a="int", b="string", c="array<string>"), name="t")
     >>> t
-    r0 := UnboundTable: t
+    UnboundTable: t
       a int64
       b string
       c array<string>
-    >>> t.select(s.numeric())  # `a` has integer type, so it's numeric
-    r0 := UnboundTable: t
-      a int64
-      b string
-      c array<string>
-    <BLANKLINE>
-    Selection[r0]
-      selections:
-        a: r0.a
+    >>> expr = t.select(s.numeric())  # `a` has integer type, so it's numeric
+    >>> expr.columns
+    ['a']
 
     See Also
     --------
@@ -188,15 +181,15 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
     --------
     Select according to a specific `DataType` instance
 
-    >>> t.select(s.of_type(dt.Array(dt.string)))
+    >>> t.select(s.of_type(dt.Array(dt.string)))  # doctest: +SKIP
 
     Strings are also accepted
 
-    >>> t.select(s.of_type("map<string, float>"))
+    >>> t.select(s.of_type("map<string, float>"))  # doctest: +SKIP
 
     Select by category of `DataType` by passing the `DataType` class
 
-    >>> t.select(s.of_type(dt.Struct))  # all struct columns, regardless of field types
+    >>> t.select(s.of_type(dt.Struct))  # doctest: +SKIP
 
     See Also
     --------
@@ -221,8 +214,12 @@ def startswith(prefixes: str | tuple[str, ...]) -> Predicate:
 
     Examples
     --------
+    >>> import ibis
+    >>> import ibis.expr.selectors as s
     >>> t = ibis.table(dict(apples="int", oranges="float", bananas="bool"), name="t")
-    >>> t.select(s.startswith(("a", "b")))
+    >>> expr = t.select(s.startswith(("a", "b")))
+    >>> expr.columns
+    ['apples', 'bananas']
 
     See Also
     --------
@@ -264,11 +261,11 @@ def contains(
     --------
     Select columns that contain either `"a"` or `"b"`
 
-    >>> t.select(s.contains(("a", "b")))
+    >>> t.select(s.contains(("a", "b")))  # doctest: +SKIP
 
     Select columns that contain all of `"a"` and `"b"`
 
-    >>> t.select(s.contains(("a", "b"), how=all))
+    >>> t.select(s.contains(("a", "b"), how=all))  # doctest: +SKIP
 
     See Also
     --------
@@ -293,7 +290,7 @@ def matches(regex: str | re.Pattern) -> Selector:
 
     Examples
     --------
-    >>> t.select(s.matches(r"ab+"))
+    >>> t.select(s.matches(r"ab+"))  # doctest: +SKIP
 
     See Also
     --------

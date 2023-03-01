@@ -207,9 +207,9 @@ class _UnresolvedSubquery(Value, _Negatable):
     -----
     Consider the following ibis expressions
 
-    >>> t = ibis.table(dict(a="string"))
-    >>> s = ibis.table(dict(a="string"))
-    >>> cond = (t.a == s.a).any()
+    >>> t = ibis.table(dict(a="string"))  # doctest: +SKIP
+    >>> s = ibis.table(dict(a="string"))  # doctest: +SKIP
+    >>> cond = (t.a == s.a).any()  # doctest: +SKIP
 
     Without knowing the table to use as the outer query there are two ways to
     turn this expression into a SQL `EXISTS` predicate depending on which of

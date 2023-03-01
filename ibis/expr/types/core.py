@@ -87,6 +87,7 @@ class Expr(Immutable):
 
         Examples
         --------
+        >>> import ibis
         >>> t1 = ibis.table(dict(a="int"), name="t")
         >>> t2 = ibis.table(dict(a="int"), name="t")
         >>> t1.equals(t2)
@@ -183,7 +184,7 @@ class Expr(Immutable):
         >>> g = lambda a: (a * 2).name('a')
         >>> result1 = t.a.pipe(f).pipe(g)
         >>> result1
-        r0 := UnboundTable[t]
+        r0 := UnboundTable: t
           a int64
           b string
         a: r0.a + 1 * 2
@@ -487,10 +488,11 @@ def _binop(
 
     Examples
     --------
+    >>> import ibis
     >>> import ibis.expr.operations as ops
     >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
     >>> expr
-    datetime.time(1, 0) + 1
+    TimeAdd(datetime.time(1, 0), 1): datetime.time(1, 0) + 1 h
     >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
     NotImplemented
     """

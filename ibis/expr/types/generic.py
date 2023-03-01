@@ -37,9 +37,9 @@ class Value(Expr):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table(dict(a="int64"))
+        >>> t = ibis.table(dict(a="int64"), name="t")
         >>> t.a.name("b")
-        r0 := UnboundTable[unbound_table_...]
+        r0 := UnboundTable: t
           a int64
         b: r0.a
         """
@@ -120,8 +120,8 @@ class Value(Expr):
         Examples
         --------
         >>> import ibis
-        >>> ibis.coalesce(None, 4, 5)
-        Coalesce((None, 4, 5))
+        >>> ibis.coalesce(None, 4, 5).name("x")
+        x: Coalesce(...)
         """
         return ops.Coalesce((self, *args)).to_expr()
 
@@ -178,17 +178,44 @@ class Value(Expr):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(col='int64', other_col='int64'))
-        >>> result = table.col.fillna(5)
-        r0 := UnboundTable: unbound_table_0
-          col       int64
-          other_col int64
-        IfNull(r0.col, ifnull_expr=5)
-        >>> table.col.fillna(table.other_col * 3)
-        r0 := UnboundTable: unbound_table_0
-          col       int64
-          other_col int64
-        IfNull(r0.col, ifnull_expr=r0.other_col * 3)
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.sex
+        ┏━━━━━━━━┓
+        ┃ sex    ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ male   │
+        │ female │
+        │ female │
+        │ ∅      │
+        │ female │
+        │ male   │
+        │ female │
+        │ male   │
+        │ ∅      │
+        │ ∅      │
+        │ …      │
+        └────────┘
+        >>> t.sex.fillna("unrecorded").name("sex")
+        ┏━━━━━━━━━━━━┓
+        ┃ sex        ┃
+        ┡━━━━━━━━━━━━┩
+        │ string     │
+        ├────────────┤
+        │ male       │
+        │ female     │
+        │ female     │
+        │ unrecorded │
+        │ female     │
+        │ male       │
+        │ female     │
+        │ male       │
+        │ unrecorded │
+        │ unrecorded │
+        │ …          │
+        └────────────┘
 
         Returns
         -------
@@ -254,21 +281,21 @@ class Value(Expr):
         Check whether a column's values are contained in a sequence
 
         >>> import ibis
-        >>> table = ibis.table(dict(string_col='string'))
+        >>> table = ibis.table(dict(string_col='string'), name="t")
         >>> table.string_col.isin(['foo', 'bar', 'baz'])
-        r0 := UnboundTable: unbound_table_1
+        r0 := UnboundTable: t
           string_col string
-        Contains(value=r0.string_col, options=('foo', 'bar', 'baz'))
+        Contains(string_col): Contains(...)
 
         Check whether a column's values are contained in another table's column
 
-        >>> table2 = ibis.table(dict(other_string_col='string'))
+        >>> table2 = ibis.table(dict(other_string_col='string'), name="t2")
         >>> table.string_col.isin(table2.other_string_col)
-        r0 := UnboundTable: unbound_table_3
-          other_string_col string
-        r1 := UnboundTable: unbound_table_1
+        r0 := UnboundTable: t
           string_col string
-        Contains(value=r1.string_col, options=r0.other_string_col)
+        r1 := UnboundTable: t2
+          other_string_col string
+        Contains(string_col, other_string_col): Contains(...)
         """
         return ops.Contains(self, values).to_expr()
 
@@ -410,9 +437,9 @@ class Value(Expr):
         ...              .else_('null or (not a and not b)')
         ...              .end())
         >>> case_expr
-        r0 := UnboundTable[t]
+        r0 := UnboundTable: t
           string_col string
-        SimpleCase(base=r0.string_col, cases=[List(values=['a', 'b'])], results=[List(values=['an a', 'a b'])], default='null or (not a and not b)')
+        SimpleCase(...)
         """
         import ibis.expr.builders as bl
 
@@ -479,7 +506,7 @@ class Value(Expr):
         >>> t.value.collect()
         [1, 2, 3, 4, 5]
         >>> type(t.value.collect())
-        ibis.expr.types.arrays.ArrayScalar
+        <class 'ibis.expr.types.arrays.ArrayScalar'>
 
         Collect elements per group
 
@@ -637,6 +664,8 @@ class Scalar(Value):
         --------
         Promote an aggregation to a table
 
+        >>> import ibis
+        >>> import ibis.expr.types as ir
         >>> t = ibis.table(dict(a="str"), name="t")
         >>> expr = t.a.length().sum().name("len").as_table()
         >>> isinstance(expr, ir.Table)

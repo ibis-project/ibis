@@ -8,16 +8,7 @@ import re
 import sys
 import warnings
 from keyword import iskeyword
-from typing import (
-    IO,
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterable,
-    Literal,
-    Mapping,
-    Sequence,
-)
+from typing import IO, TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
 
 from public import public
 
@@ -130,7 +121,27 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self
 
-    def __contains__(self, name):
+    def __contains__(self, name: str) -> bool:
+        """Return whether `name` is a column in the table.
+
+        Parameters
+        ----------
+        name
+            Possible column name
+
+        Returns
+        -------
+        bool
+            Whether `name` is a column in `self`
+
+        Examples
+        --------
+        >>> t = ibis.table(dict(a="string", b="float"), name="t")
+        >>> "a" in t
+        True
+        >>> "c" in t
+        False
+        """
         return name in self.schema()
 
     def __rich_console__(self, console, options):
@@ -157,6 +168,207 @@ class Table(Expr, _FixedTextJupyterMixin):
         return console.render(table, options=options)
 
     def __getitem__(self, what):
+        """Select items from a table expression.
+
+        This method implements square bracket syntax for table expressions,
+        including various forms of projection and filtering.
+
+        Parameters
+        ----------
+        what
+            Selection object. This can be a variety of types including strings, ints, lists.
+
+        Returns
+        -------
+        Table | Column
+            The return type depends on the input. For a single string or int
+            input a column is returned, otherwise a table is returned.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.selectors as s
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
+        Return a column by name
+
+        >>> t["island"]
+        ┏━━━━━━━━━━━┓
+        ┃ island    ┃
+        ┡━━━━━━━━━━━┩
+        │ string    │
+        ├───────────┤
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ …         │
+        └───────────┘
+
+        Return the second column, starting from index 0
+
+        >>> t.columns[1]
+        'island'
+        >>> t[1]
+        ┏━━━━━━━━━━━┓
+        ┃ island    ┃
+        ┡━━━━━━━━━━━┩
+        │ string    │
+        ├───────────┤
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ …         │
+        └───────────┘
+
+        Extract a range of rows
+
+        >>> t[:2]
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t[:5]
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t[2:5]
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
+        Select columns
+
+        >>> t[["island", "bill_length_mm"]].head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ float64        │
+        ├───────────┼────────────────┤
+        │ Torgersen │           39.1 │
+        │ Torgersen │           39.5 │
+        │ Torgersen │           40.3 │
+        │ Torgersen │            nan │
+        │ Torgersen │           36.7 │
+        └───────────┴────────────────┘
+        >>> t["island", "bill_length_mm"].head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ float64        │
+        ├───────────┼────────────────┤
+        │ Torgersen │           39.1 │
+        │ Torgersen │           39.5 │
+        │ Torgersen │           40.3 │
+        │ Torgersen │            nan │
+        │ Torgersen │           36.7 │
+        └───────────┴────────────────┘
+        >>> t[_.island, _.bill_length_mm].head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ float64        │
+        ├───────────┼────────────────┤
+        │ Torgersen │           39.1 │
+        │ Torgersen │           39.5 │
+        │ Torgersen │           40.3 │
+        │ Torgersen │            nan │
+        │ Torgersen │           36.7 │
+        └───────────┴────────────────┘
+
+        Filtering
+
+        >>> t[t.island.lower() != "torgersen"].head()
+        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string │ float64        │ float64       │ int64             │ … │
+        ├─────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Biscoe │           37.8 │          18.3 │               174 │ … │
+        │ Adelie  │ Biscoe │           37.7 │          18.7 │               180 │ … │
+        │ Adelie  │ Biscoe │           35.9 │          19.2 │               189 │ … │
+        │ Adelie  │ Biscoe │           38.2 │          18.1 │               185 │ … │
+        │ Adelie  │ Biscoe │           38.8 │          17.2 │               180 │ … │
+        └─────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
+
+        Selectors
+
+        >>> t[~s.numeric() | (s.numeric() & ~s.c("year"))].head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t[s.r["bill_length_mm":"body_mass_g"]].head()
+        ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃
+        ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ float64        │ float64       │ int64             │
+        ├────────────────┼───────────────┼───────────────────┤
+        │           39.1 │          18.7 │               181 │
+        │           39.5 │          17.4 │               186 │
+        │           40.3 │          18.0 │               195 │
+        │            nan │           nan │                 ∅ │
+        │           36.7 │          19.3 │               193 │
+        └────────────────┴───────────────┴───────────────────┘
+        """
         from ibis.expr.types.generic import Column
         from ibis.expr.types.logical import BooleanValue
 
@@ -198,7 +410,43 @@ class Table(Expr, _FixedTextJupyterMixin):
     def __len__(self):
         raise com.ExpressionError('Use .count() instead')
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> ir.Column:
+        """Return the column name of a table.
+
+        Parameters
+        ----------
+        key
+            Column name
+
+        Returns
+        -------
+        Column
+            Column expression with name `key`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.island
+        ┏━━━━━━━━━━━┓
+        ┃ island    ┃
+        ┡━━━━━━━━━━━┩
+        │ string    │
+        ├───────────┤
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ Torgersen │
+        │ …         │
+        └───────────┘
+        """
         with contextlib.suppress(com.IbisTypeError):
             return ops.TableColumn(self, key).to_expr()
 
@@ -233,7 +481,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             )
         raise AttributeError(f"'Table' object has no attribute {key!r}")
 
-    def __dir__(self):
+    def __dir__(self) -> list[str]:
         out = set(dir(type(self)))
         out.update(c for c in self.columns if c.isidentifier() and not iskeyword(c))
         return sorted(out)
@@ -263,62 +511,124 @@ class Table(Expr, _FixedTextJupyterMixin):
             return expr
 
     @property
-    def columns(self):
-        """The list of columns in this table."""
-        return list(self._arg.schema.names)
+    def columns(self) -> list[str]:
+        """The list of columns in this table.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.starwars.fetch()
+        >>> t.columns
+        ['name',
+         'height',
+         'mass',
+         'hair_color',
+         'skin_color',
+         'eye_color',
+         'birth_year',
+         'sex',
+         'gender',
+         'homeworld',
+         'species',
+         'films',
+         'vehicles',
+         'starships']
+        """
+        return list(self.schema().names)
 
     def schema(self) -> sch.Schema:
-        """Get the schema for this table (if one is known).
+        """Return the schema for this table.
 
         Returns
         -------
         Schema
             The table's schema.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.starwars.fetch()
+        >>> t.schema()
+        ibis.Schema {
+          name        string
+          height      int64
+          mass        float64
+          hair_color  string
+          skin_color  string
+          eye_color   string
+          birth_year  float64
+          sex         string
+          gender      string
+          homeworld   string
+          species     string
+          films       string
+          vehicles    string
+          starships   string
+        }
         """
         return self.op().schema
 
-    def group_by(self, by=None, **group_exprs: Any) -> GroupedTable:
+    def group_by(
+        self,
+        by: str | ir.Value | Iterable[str] | Iterable[ir.Value] | None = None,
+        **key_exprs: str | ir.Value | Iterable[str] | Iterable[ir.Value],
+    ) -> GroupedTable:
         """Create a grouped table expression.
 
         Parameters
         ----------
         by
             Grouping expressions
-        group_exprs
+        key_exprs
             Named grouping expressions
-
-        Examples
-        --------
-        >>> import ibis
-        >>> from ibis import _
-        >>> t = ibis.table(dict(a='int32', b='timestamp', c='double'), name='t')
-        >>> t.group_by([_.a, _.b]).aggregate(sum_of_c=_.c.sum())
-        r0 := UnboundTable: t
-          a int32
-          b timestamp
-          c float64
-        Aggregation[r0]
-          metrics:
-            sum_of_c: Sum(r0.c)
-          by:
-            a: r0.a
-            b: r0.b
 
         Returns
         -------
         GroupedTable
             A grouped table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"fruit": ["apple", "apple", "banana", "orange"], "price": [0.5, 0.5, 0.25, 0.33]})
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━━━┓
+        ┃ fruit  ┃ price   ┃
+        ┡━━━━━━━━╇━━━━━━━━━┩
+        │ string │ float64 │
+        ├────────┼─────────┤
+        │ apple  │    0.50 │
+        │ apple  │    0.50 │
+        │ banana │    0.25 │
+        │ orange │    0.33 │
+        └────────┴─────────┘
+        >>> t.group_by("fruit").agg(total_cost=_.price.sum(), avg_cost=_.price.mean())
+        ┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
+        ┃ fruit  ┃ total_cost ┃ avg_cost ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
+        │ string │ float64    │ float64  │
+        ├────────┼────────────┼──────────┤
+        │ apple  │       1.00 │     0.50 │
+        │ banana │       0.25 │     0.25 │
+        │ orange │       0.33 │     0.33 │
+        └────────┴────────────┴──────────┘
         """
         from ibis.expr.types.groupby import GroupedTable
 
-        return GroupedTable(self, by, **group_exprs)
+        return GroupedTable(self, by, **key_exprs)
 
     def rowid(self) -> ir.IntegerValue:
-        """A unique integer per row, only valid on physical tables.
+        """A unique integer per row.
 
-        Any further meaning behind this expression is backend dependent.
-        Generally this corresponds to some index into the database storage
-        (for example, sqlite or duckdb's `rowid`).
+        !!! note "This operation is only valid on physical tables"
+
+            Any further meaning behind this expression is backend dependent.
+            Generally this corresponds to some index into the database storage
+            (for example, sqlite or duckdb's `rowid`).
 
         For a monotonically increasing row number, see `ibis.row_number`.
 
@@ -362,6 +672,39 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             The rows present in `self` that are not present in `tables`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t1 = ibis.memtable({"a": [1, 2]})
+        >>> t1
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t2 = ibis.memtable({"a": [2, 3]})
+        >>> t2
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     2 │
+        │     3 │
+        └───────┘
+        >>> t1.difference(t2)
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        └───────┘
         """
         left = self
         if not tables:
@@ -396,6 +739,33 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             An aggregate table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"fruit": ["apple", "apple", "banana", "orange"], "price": [0.5, 0.5, 0.25, 0.33]})
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━━━┓
+        ┃ fruit  ┃ price   ┃
+        ┡━━━━━━━━╇━━━━━━━━━┩
+        │ string │ float64 │
+        ├────────┼─────────┤
+        │ apple  │    0.50 │
+        │ apple  │    0.50 │
+        │ banana │    0.25 │
+        │ orange │    0.33 │
+        └────────┴─────────┘
+        >>> t.aggregate(by=["fruit"], total_cost=_.price.sum(), avg_cost=_.price.mean(), having=_.price.sum() < 0.5)
+        ┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
+        ┃ fruit  ┃ total_cost ┃ avg_cost ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
+        │ string │ float64    │ float64  │
+        ├────────┼────────────┼──────────┤
+        │ banana │       0.25 │     0.25 │
+        │ orange │       0.33 │     0.33 │
+        └────────┴────────────┴──────────┘
         """
         import ibis.expr.analysis as an
 
@@ -428,11 +798,44 @@ class Table(Expr, _FixedTextJupyterMixin):
     agg = aggregate
 
     def distinct(self) -> Table:
-        """Compute the set of unique rows in the table."""
+        """Compute the unique rows in `self`.
+
+        Returns
+        -------
+        Table
+            Unique rows of `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 1, 2], "b": ["c", "a", "a"]})
+        >>> t[["a"]].distinct()
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t.distinct()
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ c      │
+        │     1 │ a      │
+        │     2 │ a      │
+        └───────┴────────┘
+        """
         return ops.Distinct(self).to_expr()
 
     def limit(self, n: int, offset: int = 0) -> Table:
-        """Select the first `n` rows starting at `offset`.
+        """Select `n` rows from `self` starting at `offset`.
+
+        !!! note "The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by]."
 
         Parameters
         ----------
@@ -444,24 +847,83 @@ class Table(Expr, _FixedTextJupyterMixin):
         Returns
         -------
         Table
-            The first `n` rows of `table` starting at `offset`
+            The first `n` rows of `self` starting at `offset`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 1, 2], "b": ["c", "a", "a"]})
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ c      │
+        │     1 │ a      │
+        │     2 │ a      │
+        └───────┴────────┘
+        >>> t.limit(2)
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ c      │
+        │     1 │ a      │
+        └───────┴────────┘
+
+        See Also
+        --------
+        [`Table.order_by`][ibis.expr.types.relations.Table.order_by]
         """
         return ops.Limit(self, n, offset=offset).to_expr()
 
     def head(self, n: int = 5) -> Table:
         """Select the first `n` rows of a table.
 
-        The result set is not deterministic without a sort.
+        !!! note "The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by]."
 
         Parameters
         ----------
         n
-            Number of rows to include, defaults to 5
+            Number of rows to include
 
         Returns
         -------
         Table
-            `table` limited to `n` rows
+            `self` limited to `n` rows
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 1, 2], "b": ["c", "a", "a"]})
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ c      │
+        │     1 │ a      │
+        │     2 │ a      │
+        └───────┴────────┘
+        >>> t.head(2)
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ c      │
+        │     1 │ a      │
+        └───────┴────────┘
+
+        See Also
+        --------
+        [`Table.limit`][ibis.expr.types.relations.Table.limit]
+        [`Table.order_by`][ibis.expr.types.relations.Table.order_by]
         """
         return self.limit(n=n)
 
@@ -479,26 +941,49 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        by:
-            An expression (or expressions) to sort the table by.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> t = ibis.table(dict(a='int64', b='string'))
-        >>> t.order_by(['a', ibis.desc('b')])
-        r0 := UnboundTable: unbound_table_0
-          a int64
-          b string
-        Selection[r0]
-          sort_keys:
-             asc|r0.a
-            desc|r0.b
+        by
+            Expressions to sort the table by.
 
         Returns
         -------
         Table
             Sorted table
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 2, 3], "b": ["c", "b", "a"], "c": [4, 6, 5]})
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ string │ int64 │
+        ├───────┼────────┼───────┤
+        │     1 │ c      │     4 │
+        │     2 │ b      │     6 │
+        │     3 │ a      │     5 │
+        └───────┴────────┴───────┘
+        >>> t.order_by("b")
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ string │ int64 │
+        ├───────┼────────┼───────┤
+        │     3 │ a      │     5 │
+        │     2 │ b      │     6 │
+        │     1 │ c      │     4 │
+        └───────┴────────┴───────┘
+        >>> t.order_by(ibis.desc("c"))
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ string │ int64 │
+        ├───────┼────────┼───────┤
+        │     2 │ b      │     6 │
+        │     3 │ a      │     5 │
+        │     1 │ c      │     4 │
+        └───────┴────────┴───────┘
         """
         if isinstance(by, tuple):
             by = [by]
@@ -524,6 +1009,52 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             A new table containing the union of all input tables.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t1 = ibis.memtable({"a": [1, 2]})
+        >>> t1
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t2 = ibis.memtable({"a": [2, 3]})
+        >>> t2
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     2 │
+        │     3 │
+        └───────┘
+        >>> t1.union(t2)  # union all by default
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        │     2 │
+        │     3 │
+        └───────┘
+        >>> t1.union(t2, distinct=True).order_by("a")
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        │     3 │
+        └───────┘
         """
         left = self
         if not tables:
@@ -550,6 +1081,39 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             A new table containing the intersection of all input tables.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t1 = ibis.memtable({"a": [1, 2]})
+        >>> t1
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t2 = ibis.memtable({"a": [2, 3]})
+        >>> t2
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     2 │
+        │     3 │
+        └───────┘
+        >>> t1.intersect(t2)
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     2 │
+        └───────┘
         """
         left = self
         if not tables:
@@ -577,9 +1141,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         return ops.TableArrayView(self).to_expr()
 
     def mutate(
-        self,
-        exprs: Sequence[ir.Expr] | None = None,
-        **mutations: ir.Value,
+        self, exprs: Sequence[ir.Expr] | None = None, **mutations: ir.Value
     ) -> Table:
         """Add columns to a table expression.
 
@@ -597,32 +1159,74 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Examples
         --------
-        Using keywords arguments to name the new columns
-
         >>> import ibis
-        >>> table = ibis.table(
-        ...     [('foo', 'double'), ('bar', 'double')],
-        ...     name='t'
-        ... )
-        >>> expr = table.mutate(qux=table.foo + table.bar, baz=5)
-        >>> expr
-        r0 := UnboundTable[t]
-          foo float64
-          bar float64
-        Selection[r0]
-          selections:
-            r0
-            baz: 5
-            qux: r0.foo + r0.bar
+        >>> import ibis.expr.selectors as s
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().select("species", "year", "bill_length_mm")
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ species ┃ year  ┃ bill_length_mm ┃
+        ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string  │ int64 │ float64        │
+        ├─────────┼───────┼────────────────┤
+        │ Adelie  │  2007 │           39.1 │
+        │ Adelie  │  2007 │           39.5 │
+        │ Adelie  │  2007 │           40.3 │
+        │ Adelie  │  2007 │            nan │
+        │ Adelie  │  2007 │           36.7 │
+        │ Adelie  │  2007 │           39.3 │
+        │ Adelie  │  2007 │           38.9 │
+        │ Adelie  │  2007 │           39.2 │
+        │ Adelie  │  2007 │           34.1 │
+        │ Adelie  │  2007 │           42.0 │
+        │ …       │     … │              … │
+        └─────────┴───────┴────────────────┘
 
-        Use the [`name`][ibis.expr.types.generic.Value.name] method to name
-        the new columns.
+        Add a new column from a per-element expression
 
-        >>> new_columns = [ibis.literal(5).name('baz',),
-        ...                (table.foo + table.bar).name('qux')]
-        >>> expr2 = table.mutate(new_columns)
-        >>> expr.equals(expr2)
-        True
+        >>> t.mutate(next_year=_.year + 1).head()
+        ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ species ┃ year  ┃ bill_length_mm ┃ next_year ┃
+        ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+        │ string  │ int64 │ float64        │ int64     │
+        ├─────────┼───────┼────────────────┼───────────┤
+        │ Adelie  │  2007 │           39.1 │      2008 │
+        │ Adelie  │  2007 │           39.5 │      2008 │
+        │ Adelie  │  2007 │           40.3 │      2008 │
+        │ Adelie  │  2007 │            nan │      2008 │
+        │ Adelie  │  2007 │           36.7 │      2008 │
+        └─────────┴───────┴────────────────┴───────────┘
+
+        Add a new column based on an aggregation. Note the automatic broadcasting.
+
+        >>> t.select("species", bill_demean=_.bill_length_mm - _.bill_length_mm.mean()).head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ species ┃ bill_demean ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string  │ float64     │
+        ├─────────┼─────────────┤
+        │ Adelie  │    -4.82193 │
+        │ Adelie  │    -4.42193 │
+        │ Adelie  │    -3.62193 │
+        │ Adelie  │         nan │
+        │ Adelie  │    -7.22193 │
+        └─────────┴─────────────┘
+
+        Mutate across multiple columns
+
+        >>> t.mutate(s.across(s.numeric() & ~s.c("year"), _ - _.mean())).head()
+        ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ species ┃ year  ┃ bill_length_mm ┃
+        ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string  │ int64 │ float64        │
+        ├─────────┼───────┼────────────────┤
+        │ Adelie  │  2007 │       -4.82193 │
+        │ Adelie  │  2007 │       -4.42193 │
+        │ Adelie  │  2007 │       -3.62193 │
+        │ Adelie  │  2007 │            nan │
+        │ Adelie  │  2007 │       -7.22193 │
+        └─────────┴───────┴────────────────┘
         """
         import ibis.expr.analysis as an
 
@@ -671,49 +1275,119 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Examples
         --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
         Simple projection
 
-        >>> import ibis
-        >>> t = ibis.table(dict(a="int64", b="double"), name='t')
-        >>> proj = t.select(t.a, b_plus_1=t.b + 1)
-        >>> proj
-        r0 := UnboundTable[t]
-          a int64
-          b float64
-        Selection[r0]
-          selections:
-            a:        r0.a
-            b_plus_1: r0.b + 1
-        >>> proj2 = t.select("a", b_plus_1=t.b + 1)
-        >>> proj.equals(proj2)
-        True
+        >>> t.select("island", "bill_length_mm").head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ float64        │
+        ├───────────┼────────────────┤
+        │ Torgersen │           39.1 │
+        │ Torgersen │           39.5 │
+        │ Torgersen │           40.3 │
+        │ Torgersen │            nan │
+        │ Torgersen │           36.7 │
+        └───────────┴────────────────┘
 
-        Aggregate projection
+        Projection by zero-indexed column position
 
-        >>> agg_proj = t.select(sum_a=t.a.sum(), mean_b=t.b.mean())
-        >>> agg_proj
-        r0 := UnboundTable[t]
-          a int64
-          b float64
-        Selection[r0]
-          selections:
-            sum_a:  Window(Sum(r0.a), window=Window(how='rows'))
-            mean_b: Window(Mean(r0.b), window=Window(how='rows'))
+        >>> t.select(0, 4).head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ species ┃ flipper_length_mm ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ string  │ int64             │
+        ├─────────┼───────────────────┤
+        │ Adelie  │               181 │
+        │ Adelie  │               186 │
+        │ Adelie  │               195 │
+        │ Adelie  │                 ∅ │
+        │ Adelie  │               193 │
+        └─────────┴───────────────────┘
 
-        Note the `Window` objects here.
+        Projection with renaming and compute in one call
 
-        Their existence means that the result of the aggregation will be
-        broadcast across the number of rows in the input column.
-        The purpose of this expression rewrite is to make it easy to write
-        column/scalar-aggregate operations like
+        >>> t.select(next_year=t.year + 1).head()
+        ┏━━━━━━━━━━━┓
+        ┃ next_year ┃
+        ┡━━━━━━━━━━━┩
+        │ int64     │
+        ├───────────┤
+        │      2008 │
+        │      2008 │
+        │      2008 │
+        │      2008 │
+        │      2008 │
+        └───────────┘
 
-        >>> t.select(demeaned_a=t.a - t.a.mean())
-        r0 := UnboundTable[t]
-          a int64
-          b float64
-        Selection[r0]
-          selections:
-            demeaned_a: r0.a - Window(Mean(r0.a), window=Window(how='rows'))
+        Projection with aggregation expressions
+
+        >>> t.select("island", bill_mean=t.bill_length_mm.mean()).head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ island    ┃ bill_mean ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
+        │ string    │ float64   │
+        ├───────────┼───────────┤
+        │ Torgersen │  43.92193 │
+        │ Torgersen │  43.92193 │
+        │ Torgersen │  43.92193 │
+        │ Torgersen │  43.92193 │
+        │ Torgersen │  43.92193 │
+        └───────────┴───────────┘
+
+        Projection with a selector
+
+        >>> import ibis.expr.selectors as s
+        >>> t.select(s.numeric() & ~s.c("year")).head()
+        ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
+        ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ float64        │ float64       │ int64             │ int64       │
+        ├────────────────┼───────────────┼───────────────────┼─────────────┤
+        │           39.1 │          18.7 │               181 │        3750 │
+        │           39.5 │          17.4 │               186 │        3800 │
+        │           40.3 │          18.0 │               195 │        3250 │
+        │            nan │           nan │                 ∅ │           ∅ │
+        │           36.7 │          19.3 │               193 │        3450 │
+        └────────────────┴───────────────┴───────────────────┴─────────────┘
+
+        Projection + aggregation across multiple columns
+
+        >>> from ibis import _
+        >>> t.select(s.across(s.numeric() & ~s.c("year"), _.mean())).head()
+        ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
+        ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ float64        │ float64       │ float64           │ float64     │
+        ├────────────────┼───────────────┼───────────────────┼─────────────┤
+        │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
+        │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
+        │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
+        │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
+        │       43.92193 │      17.15117 │        200.915205 │ 4201.754386 │
+        └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
         import ibis.expr.analysis as an
         from ibis.expr.selectors import Selector
@@ -762,7 +1436,66 @@ class Table(Expr, _FixedTextJupyterMixin):
         Returns
         -------
         Table
-            A relabeled table expression
+            A relabeled table expressi
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.selectors as s
+        >>> ibis.options.interactive = True
+        >>> first3 = s.r[:3]  # first 3 columns
+        >>> t = ibis.examples.penguins_raw_raw.fetch().select(first3)
+        >>> t
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ studyName ┃ Sample Number ┃ Species                             ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string    │ int64         │ string                              │
+        ├───────────┼───────────────┼─────────────────────────────────────┤
+        │ PAL0708   │             1 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             2 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             3 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             4 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             5 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             6 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             7 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             8 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │             9 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ PAL0708   │            10 │ Adelie Penguin (Pygoscelis adeliae) │
+        │ …         │             … │ …                                   │
+        └───────────┴───────────────┴─────────────────────────────────────┘
+
+        Relabel column names using a mapping from old name to new name
+
+        >>> t.relabel({"studyName": "study_name"}).head(1)
+        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ study_name ┃ Sample Number ┃ Species                             ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string     │ int64         │ string                              │
+        ├────────────┼───────────────┼─────────────────────────────────────┤
+        │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
+        └────────────┴───────────────┴─────────────────────────────────────┘
+
+        Relabel column names using a snake_case convention
+
+        >>> t.relabel("snake_case").head(1)
+        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ study_name ┃ sample_number ┃ species                             ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string     │ int64         │ string                              │
+        ├────────────┼───────────────┼─────────────────────────────────────┤
+        │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
+        └────────────┴───────────────┴─────────────────────────────────────┘
+
+        Relabel column names using a callable
+
+        >>> t.relabel(str.upper).head(1)
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ STUDYNAME ┃ SAMPLE NUMBER ┃ SPECIES                             ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string    │ int64         │ string                              │
+        ├───────────┼───────────────┼─────────────────────────────────────┤
+        │ PAL0708   │             1 │ Adelie Penguin (Pygoscelis adeliae) │
+        └───────────┴───────────────┴─────────────────────────────────────┘
         """
         observed = set()
 
@@ -811,6 +1544,48 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             A table with all columns in `fields` removed.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t.drop("species")
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string    │ float64        │ float64       │ int64             │ … │
+        ├───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …         │              … │             … │                 … │ … │
+        └───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         if not fields:
             # no-op if nothing to be dropped
@@ -833,10 +1608,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return self[[field for field in schema if field not in field_set]]
 
-    def filter(
-        self,
-        predicates: ir.BooleanValue | Sequence[ir.BooleanValue],
-    ) -> Table:
+    def filter(self, predicates: ir.BooleanValue | Sequence[ir.BooleanValue]) -> Table:
         """Select rows from `table` based on `predicates`.
 
         Parameters
@@ -848,6 +1620,39 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             Filtered table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().dropna("sex")
+        ┏━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ sex    ┃ sex_count ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━┩
+        │ string │ int64     │
+        ├────────┼───────────┤
+        │ male   │        68 │
+        │ female │        22 │
+        └────────┴───────────┘
         """
         import ibis.expr.analysis as an
 
@@ -874,26 +1679,29 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> from ibis import _
-        >>> t = ibis.table(dict(a="int"), name="t")
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": ["foo", "bar", "baz"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ a      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ foo    │
+        │ bar    │
+        │ baz    │
+        └────────┘
         >>> t.count()
-        r0 := UnboundTable: t
-          a int64
-        count: CountStar(t)
-        >>> t.aggregate(n=_.count(_.a > 1), total=_.sum())
-        r0 := UnboundTable: t
-          a int64
-        Aggregation[r0]
-          metrics:
-            n:     CountStar(t, where=r0.a > 1)
-            total: Sum(r0.a)
+        3
+        >>> t.count(t.a != "foo")
+        2
+        >>> type(t.count())
+        <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
         return ops.CountStar(self, where).to_expr().name("count")
 
     def dropna(
-        self,
-        subset: Sequence[str] | None = None,
-        how: Literal["any", "all"] = "any",
+        self, subset: Sequence[str] | None = None, how: Literal["any", "all"] = "any"
     ) -> Table:
         """Remove rows with null values from the table.
 
@@ -903,40 +1711,44 @@ class Table(Expr, _FixedTextJupyterMixin):
             Columns names to consider when dropping nulls. By default all columns
             are considered.
         how
-            Determine whether a row is removed if there is at least one null
-            value in the row ('any'), or if all row values are null ('all').
-            Options are 'any' or 'all'. Default is 'any'.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> t = ibis.table(dict(a='int64', b='string'), name='t')
-        >>> t = t.dropna()  # Drop all rows where any values are null
-        >>> t
-        r0 := UnboundTable: t
-          a int64
-          b string
-        DropNa[r0]
-          how: 'any'
-        >>> t.dropna(how='all')  # Only drop rows where all values are null
-        r0 := UnboundTable: t
-          a int64
-          b string
-        r1 := DropNa[r0]
-          how: 'all'
-        >>> t.dropna(subset=['a'], how='all')  # Only drop rows where all values in column 'a' are null  # noqa: E501
-        r0 := UnboundTable: t
-          a int64
-          b string
-        DropNa[r0]
-          how: 'all'
-          subset:
-            r0.a
+            Determine whether a row is removed if there is **at least one null
+            value in the row** (`'any'`), or if **all** row values are null
+            (`'all'`).
 
         Returns
         -------
         Table
             Table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t.count()
+        344
+        >>> t.dropna(["bill_length_mm", "body_mass_g"]).count()
+        342
+        >>> t.dropna(how="all").count()  # no rows where all columns are null
+        344
         """
         if subset is not None:
             subset = util.promote_list(subset)
@@ -948,33 +1760,65 @@ class Table(Expr, _FixedTextJupyterMixin):
     ) -> Table:
         """Fill null values in a table expression.
 
+        !!! note "There is potential lack of type stability with the `fillna` API"
+
+            For example, different library versions may impact whether a given
+            backend promotes integer replacement values to floats.
+
         Parameters
         ----------
         replacements
-            Value with which to fill the nulls. If passed as a mapping, the keys
-            are column names that map to their replacement value. If passed
-            as a scalar, all columns are filled with that value.
-
-        Notes
-        -----
-        There is potential lack of type stability with the `fillna` API. For
-        example, different library versions may impact whether or not a given
-        backend promotes integer replacement values to floats.
+            Value with which to fill nulls. If `replacements` is a mapping, the
+            keys are column names that map to their replacement value. If
+            passed as a scalar all columns are filled with that value.
 
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.datatypes as dt
-        >>> t = ibis.table([('a', 'int64'), ('b', 'string')])
-        >>> res = t.fillna(0.0)  # Replace nulls in all columns with 0.0
-        >>> res = t.fillna({c: 0.0 for c, t in t.schema().items() if t == dt.float64})
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.sex
+        ┏━━━━━━━━┓
+        ┃ sex    ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ male   │
+        │ female │
+        │ female │
+        │ ∅      │
+        │ female │
+        │ male   │
+        │ female │
+        │ male   │
+        │ ∅      │
+        │ ∅      │
+        │ …      │
+        └────────┘
+        >>> t.fillna({"sex": "unrecorded"}).sex
+        ┏━━━━━━━━━━━━┓
+        ┃ sex        ┃
+        ┡━━━━━━━━━━━━┩
+        │ string     │
+        ├────────────┤
+        │ male       │
+        │ female     │
+        │ female     │
+        │ unrecorded │
+        │ female     │
+        │ male       │
+        │ female     │
+        │ male       │
+        │ unrecorded │
+        │ unrecorded │
+        │ …          │
+        └────────────┘
 
         Returns
         -------
         Table
             Table expression
         """
-
         schema = self.schema()
 
         if isinstance(replacements, collections.abc.Mapping):
@@ -1025,21 +1869,36 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Examples
         --------
-        >>> schema = dict(a="struct<b: float, c: string>", d="string")
-        >>> t = ibis.table(schema, name="t")
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> lines = '''
+        ...     {"name": "a", "pos": {"lat": 10.1, "lon": 30.3}}
+        ...     {"name": "b", "pos": {"lat": 10.2, "lon": 30.2}}
+        ...     {"name": "c", "pos": {"lat": 10.3, "lon": 30.1}}
+        ... '''
+        >>> with open("/tmp/lines.json", "w") as f:
+        ...     _ = f.write(lines)
+        >>> t = ibis.read_json("/tmp/lines.json")
         >>> t
-        UnboundTable: t
-          a struct<b: float64, c: string>
-          d string
-        >>> t.unpack("a")
-        r0 := UnboundTable: t
-          a struct<b: float64, c: string>
-          d string
-        Selection[r0]
-          selections:
-            b: StructField(r0.a, field='b')
-            c: StructField(r0.a, field='c')
-            d: r0.d
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ name   ┃ pos                                ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ struct<lat: float64, lon: float64> │
+        ├────────┼────────────────────────────────────┤
+        │ a      │ {'lat': 10.1, 'lon': 30.3}         │
+        │ b      │ {'lat': 10.2, 'lon': 30.2}         │
+        │ c      │ {'lat': 10.3, 'lon': 30.1}         │
+        └────────┴────────────────────────────────────┘
+        >>> t.unpack("pos")
+        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+        ┃ name   ┃ lat     ┃ lon     ┃
+        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+        │ string │ float64 │ float64 │
+        ├────────┼─────────┼─────────┤
+        │ a      │    10.1 │    30.3 │
+        │ b      │    10.2 │    30.2 │
+        │ c      │    10.3 │    30.1 │
+        └────────┴─────────┴─────────┘
 
         See Also
         --------
@@ -1058,12 +1917,65 @@ class Table(Expr, _FixedTextJupyterMixin):
     def info(self, buf: IO[str] | None = None) -> None:
         """Show summary information about a table.
 
-        Currently implemented as showing column names, types and null counts.
-
         Parameters
         ----------
         buf
             A writable buffer, defaults to stdout
+
+        Returns
+        -------
+        None
+            This method prints to a buffer (stdout by default) and returns nothing.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch(table_name="penguins")
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
+        Default implementation prints to stdout
+
+        >>> t.info()  # doctest: +SKIP
+                               Summary of penguins
+                                     344 rows
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
+        ┃ Name              ┃ Type                   ┃ # Nulls ┃ % Nulls ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
+        │ species           │ String(nullable=True)  │       0 │    0.00 │
+        │ island            │ String(nullable=True)  │       0 │    0.00 │
+        │ bill_length_mm    │ Float64(nullable=True) │       2 │    0.58 │
+        │ bill_depth_mm     │ Float64(nullable=True) │       2 │    0.58 │
+        │ flipper_length_mm │ Int64(nullable=True)   │       2 │    0.58 │
+        │ body_mass_g       │ Int64(nullable=True)   │       2 │    0.58 │
+        │ sex               │ String(nullable=True)  │      11 │    3.20 │
+        │ year              │ Int64(nullable=True)   │       0 │    0.00 │
+        └───────────────────┴────────────────────────┴─────────┴─────────┘
+
+        Store the info into a buffer
+
+        >>> import io
+        >>> buf = io.StringIO()
+        >>> t.info(buf=buf)
+        >>> "Summary of penguins" in buf.getvalue()
+        True
         """
         import rich
         import rich.table
@@ -1269,26 +2181,48 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> schemas = [(name, 'int64') for name in 'abcde']
-        >>> a, b, c, d, e = [
-        ...     ibis.table([(name, type)], name=name) for name, type in schemas
-        ... ]
-        >>> joined1 = ibis.cross_join(a, b, c, d, e)
-        >>> joined1
-        r0 := UnboundTable[e]
-          e int64
-        r1 := UnboundTable[d]
-          d int64
-        r2 := UnboundTable[c]
-          c int64
-        r3 := UnboundTable[b]
-          b int64
-        r4 := UnboundTable[a]
-          a int64
-        r5 := CrossJoin[r3, r2]
-        r6 := CrossJoin[r5, r1]
-        r7 := CrossJoin[r6, r0]
-        CrossJoin[r4, r7]
+        >>> import ibis.expr.selectors as s
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
+        >>> expr = t.cross_join(agg)
+        >>> expr
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm_x ┃ bill_depth_mm_x ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64          │ float64         │ … │
+        ├─────────┼───────────┼──────────────────┼─────────────────┼───┤
+        │ Adelie  │ Torgersen │             39.1 │            18.7 │ … │
+        │ Adelie  │ Torgersen │             39.5 │            17.4 │ … │
+        │ Adelie  │ Torgersen │             40.3 │            18.0 │ … │
+        │ Adelie  │ Torgersen │              nan │             nan │ … │
+        │ Adelie  │ Torgersen │             36.7 │            19.3 │ … │
+        │ Adelie  │ Torgersen │             39.3 │            20.6 │ … │
+        │ Adelie  │ Torgersen │             38.9 │            17.8 │ … │
+        │ Adelie  │ Torgersen │             39.2 │            19.6 │ … │
+        │ Adelie  │ Torgersen │             34.1 │            18.1 │ … │
+        │ Adelie  │ Torgersen │             42.0 │            20.2 │ … │
+        │ …       │ …         │                … │               … │ … │
+        └─────────┴───────────┴──────────────────┴─────────────────┴───┘
+        >>> from pprint import pprint
+        >>> pprint(expr.columns)
+        ['species',
+         'island',
+         'bill_length_mm_x',
+         'bill_depth_mm_x',
+         'flipper_length_mm_x',
+         'body_mass_g_x',
+         'sex',
+         'year',
+         'bill_length_mm_y',
+         'bill_depth_mm_y',
+         'flipper_length_mm_y',
+         'body_mass_g_y']
+        >>> expr.count()
+        344
+        >>> t.count()
+        344
         """
         op = ops.CrossJoin(
             left,
@@ -1332,23 +2266,22 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Examples
         --------
-        >>> con = ibis.duckdb.connect("ci/ibis-testing-data/ibis_testing.ddb")
-        >>> t = con.table("functional_alltypes")
-        >>> expr = t.alias("my_t").sql("SELECT sum(double_col) FROM my_t")
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> expr = t.alias("pingüinos").sql('SELECT * FROM "pingüinos" LIMIT 5')
         >>> expr
-        r0 := AlchemyTable: functional_alltypes
-          index           int64
-            ⋮
-          month           int32
-        r1 := View[r0]: my_t
-          schema:
-            index           int64
-              ⋮
-            month           int32
-        SQLStringView[r1]: _ibis_view_0
-          query: 'SELECT sum(double_col) FROM my_t'
-          schema:
-            sum(double_col) float64
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         expr = ops.View(child=self, name=alias).to_expr()
 
@@ -1364,7 +2297,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         !!! note "The SQL string is backend specific"
 
             `query` must be valid SQL for the execution backend the expression
-            will run against
+            will run against.
+
+            This restriction may be lifted in a future version of ibis.
 
         See [`Table.alias`][ibis.expr.types.relations.Table.alias] for
         details on using named table expressions in a SQL string.
@@ -1381,18 +2316,20 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Examples
         --------
-        >>> con = ibis.duckdb.connect("ci/ibis-testing-data/ibis_testing.ddb")
-        >>> t = con.table("functional_alltypes")
-        >>> expr = t.sql("SELECT sum(double_col) FROM functional_alltypes")
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch(table_name="penguins")
+        >>> expr = t.sql("SELECT island, mean(bill_length_mm) FROM penguins GROUP BY 1 ORDER BY 2 DESC")
         >>> expr
-        r0 := AlchemyTable: functional_alltypes
-          index           int64
-            ⋮
-          month           int32
-        SQLStringView[r0]: _ibis_view_1
-          query: 'SELECT sum(double_col) FROM functional_alltypes'
-          schema:
-            sum(double_col) float64
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ mean(bill_length_mm) ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string    │ float64              │
+        ├───────────┼──────────────────────┤
+        │ Biscoe    │            45.257485 │
+        │ Dream     │            44.167742 │
+        │ Torgersen │            38.950980 │
+        └───────────┴──────────────────────┘
         """
         op = ops.SQLStringView(
             child=self,

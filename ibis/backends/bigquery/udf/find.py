@@ -46,8 +46,8 @@ def find_names(node: ast.AST) -> list[ast.Name]:
     >>> import ast
     >>> node = ast.parse('a + b')
     >>> names = find_names(node)
-    >>> names  # doctest: +ELLIPSIS
-    [<_ast.Name object at 0x...>, <_ast.Name object at 0x...>]
+    >>> names
+    [<....Name object at 0x...>, <....Name object at 0x...>]
     >>> names[0].id
     'a'
     >>> names[1].id

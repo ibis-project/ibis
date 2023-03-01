@@ -172,7 +172,7 @@ class GroupedTable:
         ...     ('baz', 'double'),
         ... ], name='t')
         >>> t
-        UnboundTable[t]
+        UnboundTable: t
           foo string
           bar string
           baz float64
@@ -180,15 +180,15 @@ class GroupedTable:
         ...          .order_by(ibis.desc('bar'))
         ...          .mutate(qux=lambda x: x.baz.lag(), qux2=t.baz.lead()))
         >>> print(expr)
-        r0 := UnboundTable[t]
+        r0 := UnboundTable: t
           foo string
           bar string
           baz float64
         Selection[r0]
           selections:
             r0
-            qux:  Window(Lag(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
-            qux2: Window(Lead(r0.baz), window=Window(group_by=[r0.foo], order_by=[desc|r0.bar], how='rows'))
+            qux:  WindowFunction(...)
+            qux2: WindowFunction(...)
 
         Returns
         -------

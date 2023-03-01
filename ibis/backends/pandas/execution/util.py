@@ -110,18 +110,18 @@ def coerce_to_output(
     --------
     For dataframe outputs, see ``ibis.util.coerce_to_dataframe``.
 
-    >>> coerce_to_output(pd.Series(1), node)
+    >>> coerce_to_output(pd.Series(1), node)  # doctest: +SKIP
     0    1
     Name: result, dtype: int64
-    >>> coerce_to_output(1, node)
+    >>> coerce_to_output(1, node)  # doctest: +SKIP
     0    1
     Name: result, dtype: int64
-    >>> coerce_to_output(1, node, [1,2,3])
+    >>> coerce_to_output(1, node, [1,2,3])  # doctest: +SKIP
     1    1
     2    1
     3    1
     Name: result, dtype: int64
-    >>> coerce_to_output([1,2,3], node)
+    >>> coerce_to_output([1,2,3], node)  # doctest: +SKIP
     0    [1, 2, 3]
     Name: result, dtype: object
     """

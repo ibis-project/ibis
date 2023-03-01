@@ -510,11 +510,11 @@ def import_object(qualname: str) -> Any:
 
     Examples
     --------
-    >>> out = import_object("foo.bar.baz")
+    >>> ex = import_object("ibis.examples")
 
     Is the same as
 
-    >>> from foo.bar import baz
+    >>> from ibis import examples as ex
     """
     mod_name, name = qualname.rsplit(".", 1)
     mod = importlib.import_module(mod_name)

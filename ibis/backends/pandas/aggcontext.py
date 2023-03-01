@@ -195,7 +195,7 @@ Pandas
     ...     'time': pd.date_range(periods=4, start='now')
     ... })
     >>> sorter = lambda df: df.sort_values('time')
-    >>> gb = df.groupby('key').apply(sorter).reset_index(
+    >>> gb = df.groupby('key', group_keys=False).apply(sorter).reset_index(
     ...    drop=True
     ... ).groupby('key')
     >>> rolling = gb.value.rolling(2)

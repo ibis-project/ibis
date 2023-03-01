@@ -107,18 +107,18 @@ def coerce_to_output(
     Examples below use pandas objects for legibility, but functionality is the
     same on dask objects.
 
-    >>> coerce_to_output(pd.Series(1), expr)
+    >>> coerce_to_output(pd.Series(1), expr)  # doctest: +SKIP
     0    1
     Name: result, dtype: int64
-    >>> coerce_to_output(1, expr)
+    >>> coerce_to_output(1, expr)  # doctest: +SKIP
     0    1
     Name: result, dtype: int64
-    >>> coerce_to_output(1, expr, [1,2,3])
+    >>> coerce_to_output(1, expr, [1,2,3])  # doctest: +SKIP
     1    1
     2    1
     3    1
     Name: result, dtype: int64
-    >>> coerce_to_output([1,2,3], expr)
+    >>> coerce_to_output([1,2,3], expr)  # doctest: +SKIP
     0    [1, 2, 3]
     Name: result, dtype: object
     """
@@ -288,7 +288,7 @@ def add_partitioned_sorted_column(
     Examples
     --------
     >>> ddf = dd.from_pandas(pd.DataFrame({'a': [1, 2,3, 4]}), npartitions=2)
-    >>> ddf
+    >>> ddf  # doctest: +SKIP
     Dask DataFrame Structure:
                     a
     npartitions=2
@@ -296,14 +296,14 @@ def add_partitioned_sorted_column(
     2                ...
     3                ...
     Dask Name: from_pandas, 2 task
-    >>> ddf.compute()
+    >>> ddf.compute()  # doctest: +SKIP
        a
     0  1
     1  2
     2  3
     3  4
     >>> ddf = add_partitioned_sorted_column(ddf)
-    >>> ddf
+    >>> ddf  # doctest: +SKIP
     Dask DataFrame Structure:
                     a
     npartitions=2
@@ -312,7 +312,7 @@ def add_partitioned_sorted_column(
     8589934592       ...
     Dask Name: set_index, 8 tasks
     Name: result, dtype: int64
-    >>> ddf.compute()
+    >>> ddf.compute()  # doctest: +SKIP
                 a
     _ibis_index
     0            1

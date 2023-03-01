@@ -37,16 +37,16 @@ class JSONValue(Value):
         >>> import json, ibis
         >>> ibis.options.interactive = True
         >>> rows = [{"js": json.dumps({"a": [i, 1]})} for i in range(2)]
-        >>> t = ibis.memtable(rows, schema=ibis.schema(js="json"))
+        >>> t = ibis.memtable(rows, schema=ibis.schema(dict(js="json")))
         >>> t
-        ┏━━━━━━━━━━━━━━━┓
-        ┃ js            ┃
-        ┡━━━━━━━━━━━━━━━┩
-        │ json          │
-        ├───────────────┤
-        │ {'a': [0, 1]} │
-        │ {'a': [1, 1]} │
-        └───────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ js                   ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ json                 │
+        ├──────────────────────┤
+        │ {'a': [...]}         │
+        │ {'a': [...]}         │
+        └──────────────────────┘
 
         Extract the `"a"` field
 
@@ -74,7 +74,7 @@ class JSONValue(Value):
 
         Extract a non-existent field
 
-        >>> t.js.a["foo"]
+        >>> t.js["a"]["foo"]
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ JSONGetItem(JSONGetItem(js, 'a'), 'foo') ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩

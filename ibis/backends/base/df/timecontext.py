@@ -162,7 +162,7 @@ def construct_time_context_aware_series(
     Examples
     --------
     >>> import pandas as pd
-    >>> from ibis.expr.timecontext import construct_time_context_aware_series
+    >>> from ibis.backends.base.df.timecontext import construct_time_context_aware_series
     >>> df = pd.DataFrame(
     ...     {
     ...         'time': pd.Series(

@@ -1,7 +1,9 @@
 """Initialize Ibis module."""
 from __future__ import annotations
 
-from ibis import util
+__version__ = "4.1.0"
+
+from ibis import examples, util
 from ibis.backends.base import BaseBackend
 from ibis.common.exceptions import IbisError
 from ibis.config import options
@@ -11,6 +13,7 @@ from ibis.expr.api import *  # noqa: F403
 
 __all__ = [  # noqa: PLE0604
     'api',
+    'examples',
     'ir',
     'util',
     'BaseBackend',
@@ -18,8 +21,6 @@ __all__ = [  # noqa: PLE0604
     'options',
     *api.__all__,
 ]
-
-__version__ = "4.1.0"
 
 _KNOWN_BACKENDS = ['heavyai']
 
