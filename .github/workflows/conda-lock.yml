@@ -92,7 +92,6 @@ jobs:
           body: "Relock conda-lock environment files"
           labels: |
             dependencies
-            autorebase:opt-in
 
       - uses: juliangruber/approve-pull-request-action@v2.0.3
         if: steps.create_pr.outputs.pull-request-operation == 'created'
