@@ -2,6 +2,7 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis import _
 from ibis.backends.base.sql.compiler import Compiler
 from ibis.tests.sql.conftest import get_query, to_sql
 from ibis.tests.util import assert_decompile_roundtrip
@@ -813,3 +814,15 @@ def test_sort_then_group_by_propagates_keys(snapshot):
     # b IS in the output's order by clause
     result = t.order_by("b").b.value_counts()
     snapshot.assert_match(to_sql(result), "result2.sql")
+
+
+def test_incorrect_predicate_pushdown(snapshot):
+    t = ibis.table({"x": int}, name="t")
+    result = t.mutate(x=_.x + 1).filter(_.x > 1)
+    snapshot.assert_match(to_sql(result), "result.sql")
+
+
+def test_incorrect_predicate_pushdown_with_literal(snapshot):
+    t = ibis.table(dict(a="int"), name="t")
+    expr = t.mutate(a=ibis.literal(1)).filter(lambda t: t.a > 1)
+    snapshot.assert_match(to_sql(expr), "result.sql")

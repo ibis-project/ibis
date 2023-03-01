@@ -34,6 +34,16 @@ class Node(Hashable):
 
         return results
 
+    def find(self, type, filter=None):
+        def fn(node, _, **kwargs):
+            if isinstance(node, type):
+                return node
+            return None
+
+        result = self.map(fn, filter=filter)
+
+        return {node for node in result.values() if node is not None}
+
     def substitute(self, fn, filter=None):
         return self.map(fn, filter=filter)[self]
 

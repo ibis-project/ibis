@@ -277,41 +277,20 @@ def apply_filter(op, predicates):
     # This will attempt predicate pushdown in the cases where we can do it
     # easily and safely, to make both cleaner SQL and fewer referential errors
     # for users
-    assert isinstance(op, ops.Node)
-
-    if isinstance(op, ops.Selection):
-        return _filter_selection(op, predicates)
-    elif isinstance(op, ops.Aggregation):
-        # Potential fusion opportunity
-        # GH1344: We can't sub in things with correlated subqueries
-        simplified_predicates = tuple(
-            # Originally this line tried substituting op.table in for expr, but
-            # that is too aggressive in the presence of filters that occur
-            # after aggregations.
-            #
-            # See https://github.com/ibis-project/ibis/pull/3341 for details
-            sub_for(predicate, {op.table: op})
-            if not is_reduction(predicate)
-            else predicate
-            for predicate in predicates
-        )
-
-        if shares_all_roots(simplified_predicates, op.table):
-            return ops.Aggregation(
-                op.table,
-                op.metrics,
-                by=op.by,
-                having=op.having,
-                predicates=op.predicates + simplified_predicates,
-                sort_keys=op.sort_keys,
-            )
-
     if not predicates:
         return op
-    return ops.Selection(op, [], predicates)
+
+    if isinstance(op, ops.Selection):
+        return pushdown_selection_filters(op, predicates)
+    elif isinstance(op, ops.Aggregation):
+        return pushdown_aggregation_filters(op, predicates)
+    else:
+        return ops.Selection(op, [], predicates)
 
 
-def _filter_selection(op, predicates):
+def pushdown_selection_filters(op, predicates):
+    default = ops.Selection(op, selections=[], predicates=predicates)
+
     # We can't push down filters on Unnest or Window because they
     # change the shape and potential values of the data.
     if any(
@@ -321,7 +300,7 @@ def _filter_selection(op, predicates):
         )
         for sel in op.selections
     ):
-        return ops.Selection(op, selections=[], predicates=predicates)
+        return default
 
     # if any of the filter predicates have the parent expression among
     # their roots, then pushdown (at least of that predicate) is not
@@ -347,82 +326,57 @@ def _filter_selection(op, predicates):
             for predicate in predicates
         )
     except IntegrityError:
-        pass
-    else:
-        if shares_all_roots(simplified_predicates, op.table):
-            return ops.Selection(
-                op.table,
-                selections=op.selections,
-                predicates=op.predicates + simplified_predicates,
-                sort_keys=op.sort_keys,
-            )
+        return default
 
-    can_pushdown = _can_pushdown(op, predicates)
+    if not shares_all_roots(simplified_predicates, op.table):
+        return default
 
-    if can_pushdown:
-        simplified_predicates = tuple(substitute_parents(x) for x in predicates)
-        fused_predicates = op.predicates + simplified_predicates
-        return ops.Selection(
+    # find spuriously simplified predicates
+    for predicate in simplified_predicates:
+        # find columns in the predicate
+        depends_on = predicate.find((ops.TableColumn, ops.Literal))
+        for projection in op.selections:
+            if not isinstance(projection, (ops.TableColumn, ops.Literal)):
+                # if the projection's table columns overlap with columns
+                # used in the predicate then we return immediately
+                #
+                # this means that we were too aggressive during simplification
+                # example: t.mutate(a=_.a + 1).filter(_.a > 1)
+                if projection.find((ops.TableColumn, ops.Literal)) & depends_on:
+                    return default
+
+    return ops.Selection(
+        op.table,
+        selections=op.selections,
+        predicates=op.predicates + simplified_predicates,
+        sort_keys=op.sort_keys,
+    )
+
+
+def pushdown_aggregation_filters(op, predicates):
+    # Potential fusion opportunity
+    # GH1344: We can't sub in things with correlated subqueries
+    simplified_predicates = tuple(
+        # Originally this line tried substituting op.table in for expr, but
+        # that is too aggressive in the presence of filters that occur
+        # after aggregations.
+        #
+        # See https://github.com/ibis-project/ibis/pull/3341 for details
+        sub_for(predicate, {op.table: op}) if not is_reduction(predicate) else predicate
+        for predicate in predicates
+    )
+
+    if shares_all_roots(simplified_predicates, op.table):
+        return ops.Aggregation(
             op.table,
-            selections=op.selections,
-            predicates=fused_predicates,
+            op.metrics,
+            by=op.by,
+            having=op.having,
+            predicates=op.predicates + simplified_predicates,
             sort_keys=op.sort_keys,
         )
     else:
-        return ops.Selection(op, selections=[], predicates=predicates)
-
-
-def _can_pushdown(op, predicates):
-    # Per issues discussed in #173
-    #
-    # The only case in which pushdown is possible is that all table columns
-    # referenced must meet all of the following (not that onerous in practice)
-    # criteria
-    #
-    # 1) Is a table column, not any other kind of expression
-    # 2) Is unaliased. So, if you project t3.foo AS bar, then filter on bar,
-    #    this cannot be pushed down (until we implement alias rewriting if
-    #    necessary)
-    # 3) Appears in the selections in the projection (either is part of one of
-    #    the entire tables or a single column selection)
-
-    for pred in predicates:
-        if isinstance(pred, ir.Expr):
-            pred = pred.op()
-        validator = _PushdownValidate(op, pred)
-        predicate_is_valid = validator.get_result()
-        if not predicate_is_valid:
-            return False
-    return True
-
-
-# TODO(kszucs): rewrite to only work with operation objects
-class _PushdownValidate:
-    def __init__(self, parent, predicate):
-        self.parent = parent
-        self.pred = predicate
-
-    def get_result(self):
-        assert isinstance(self.pred, ops.Node), type(self.pred)
-
-        def validate(node):
-            if isinstance(node, ops.TableColumn):
-                return g.proceed, self._validate_projection(node)
-            return g.proceed, None
-
-        return all(g.traverse(validate, self.pred))
-
-    def _validate_projection(self, node):
-        is_valid = False
-
-        for val in self.parent.selections:
-            if isinstance(val, ops.PhysicalTable) and node.name in val.schema:
-                is_valid = True
-            elif isinstance(val, ops.TableColumn) and node.name == val.name:
-                # Aliased table columns are no good
-                is_valid = val.table == node.table
-
-        return is_valid
+        return ops.Selection(op, [], predicates)
 
 
 # TODO(kszucs): use ibis.expr.analysis.substitute instead
