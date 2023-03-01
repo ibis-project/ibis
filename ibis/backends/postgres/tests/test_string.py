@@ -4,6 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.expr.datatypes as dt
 
 
 @pytest.mark.parametrize(
@@ -16,3 +17,9 @@ def test_special_strings(alltypes, data, data_type):
     expr = alltypes[[alltypes.id, lit]].head(1)
     df = expr.execute()
     assert df['tmp'].iloc[0] == uuid.UUID(data)
+
+
+def test_load_tsvector_table(con):
+    awards_players = con.table("awards_players")
+    assert "search" in awards_players.columns
+    assert awards_players.schema()["search"] == dt.String(nullable=True)

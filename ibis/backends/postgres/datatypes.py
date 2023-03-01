@@ -170,3 +170,8 @@ def sa_pg_array(dialect, satype, nullable=True):
 
     value_dtype = dt.dtype(dialect, satype.item_type)
     return dt.Array(value_dtype, nullable=nullable)
+
+
+@dt.dtype.register(PGDialect, postgresql.TSVECTOR)
+def sa_postgres_tsvector(_, satype, nullable=True):
+    return dt.String(nullable=nullable)
