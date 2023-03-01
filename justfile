@@ -84,6 +84,10 @@ down *backends:
 bench +args='ibis/tests/benchmarks':
     pytest --benchmark-only --benchmark-enable --benchmark-autosave {{ args }}
 
+# run benchmarks and compare with a previous run
+benchcmp *args:
+    just bench {{ args }} --benchmark-compare
+
 # check for invalid links in a locally built version of the docs
 checklinks *args:
     #!/usr/bin/env bash

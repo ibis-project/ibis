@@ -3,6 +3,8 @@ import functools
 import inspect
 import itertools
 import string
+import tempfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -706,3 +708,19 @@ def test_repr_join(benchmark, customers, orders, orders_items, products):
     )
     op = expr.op()
     benchmark(repr, op)
+
+
+@pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no_overwrite"])
+def test_insert_duckdb(benchmark, overwrite):
+    pytest.importorskip("duckdb")
+    pytest.importorskip("duckdb_engine")
+
+    n_rows = int(1e4)
+    table_name = "t"
+    schema = ibis.schema(dict(a="int64", b="int64", c="int64"))
+    t = ibis.memtable(dict.fromkeys(list("abc"), range(n_rows)), schema=schema)
+
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
+        con = ibis.duckdb.connect(Path(d, "test_insert.ddb"))
+        con.create_table(table_name, schema=schema)
+        benchmark(con.insert, table_name, t, overwrite=overwrite)

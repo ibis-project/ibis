@@ -399,8 +399,10 @@ def test_insert_overwrite_from_list(
 def test_insert_from_memtable(alchemy_con):
     df = pd.DataFrame({"x": range(3)})
     table_name = "memtable_test"
-    alchemy_con.insert(table_name, ibis.memtable(df))
-    alchemy_con.insert(table_name, ibis.memtable(df))
+    mt = ibis.memtable(df)
+    alchemy_con.create_table(table_name, schema=mt.schema())
+    alchemy_con.insert(table_name, mt)
+    alchemy_con.insert(table_name, mt)
 
     try:
         table = alchemy_con.tables[table_name]
