@@ -564,33 +564,12 @@ def reduction(arg, **kwargs):
 
 @public
 @rule
-def non_negative_integer(arg, **kwargs):
-    if not isinstance(arg, int):
-        raise com.IbisTypeError(
-            f"positive integer must be int type, got {type(arg).__name__}"
-        )
-    if arg < 0:
-        raise ValueError("got negative value for non-negative integer rule")
-    return arg
-
-
-@public
-@rule
-def pair(inner_left, inner_right, arg, **kwargs):
-    try:
-        a, b = arg
-    except TypeError:
-        raise com.IbisTypeError(f"{arg} is not an iterable with two elements")
-    return inner_left(a[0], **kwargs), inner_right(b, **kwargs)
-
-
-@public
-@rule
 def analytic(arg, **kwargs):
     from ibis.expr.analysis import is_analytic
 
     if not is_analytic(arg):
         raise com.IbisInputError('Expression does not contain a valid window operation')
+
     return arg
 
 
