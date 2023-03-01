@@ -704,3 +704,22 @@ class Backend(BaseAlchemyBackend):
 
         with self.begin() as con:
             con.execute(view)
+
+    def _insert_dataframe(
+        self, table_name: str, df: pd.DataFrame, overwrite: bool
+    ) -> None:
+        columns = list(df.columns)
+        t = sa.table(table_name, *map(sa.column, columns))
+
+        quote = self.con.dialect.identifier_preparer.quote
+        table_name = quote(table_name)
+
+        # the table name df here matters, and *must* match the input variable's
+        # name because duckdb will look up this name in the outer scope of the
+        # insert call and pull in that variable's data to scan
+        source = sa.table("df", *map(sa.column, columns))
+
+        with self.begin() as con:
+            if overwrite:
+                con.execute(t.delete())
+            con.execute(t.insert().from_select(columns, sa.select(source)))

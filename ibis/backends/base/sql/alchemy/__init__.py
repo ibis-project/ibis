@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 import sqlalchemy as sa
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -486,6 +487,19 @@ class BaseAlchemyBackend(BaseSQLBackend):
         sqla_table = self._get_sqla_table(name, database=database, schema=schema)
         return self._sqla_table_to_expr(sqla_table)
 
+    def _insert_dataframe(
+        self, table_name: str, df: pd.DataFrame, overwrite: bool
+    ) -> None:
+        if not self.inspector.has_table(table_name):
+            raise exc.IbisError(f"Cannot insert into non-existent table {table_name}")
+        df.to_sql(
+            table_name,
+            self.con,
+            index=False,
+            if_exists='replace' if overwrite else 'append',
+            schema=self._current_schema,
+        )
+
     def insert(
         self,
         table_name: str,
@@ -533,13 +547,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             obj = in_mem_table.data.to_frame()
 
         if isinstance(obj, pd.DataFrame):
-            obj.to_sql(
-                table_name,
-                self.con,
-                index=False,
-                if_exists='replace' if overwrite else 'append',
-                schema=self._current_schema,
-            )
+            self._insert_dataframe(table_name, obj, overwrite=overwrite)
         elif isinstance(obj, ir.Table):
             to_table_expr = self.table(table_name)
             to_table_schema = to_table_expr.schema()
