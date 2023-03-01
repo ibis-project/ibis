@@ -203,15 +203,15 @@ class MapColumn(Column, MapValue):
 
 
 @public
-def map(keys, values) -> MapValue:
-    """Create a map literal from a [`dict`][dict] or other mapping.
+def map(keys, values=None) -> MapValue:
+    """Create a map literal from a [`dict`][dict], other mapping or two sequences.
 
     Parameters
     ----------
     keys
-        Keys of the map
+        Keys of the map or `Mapping`. If `keys` is a `Mapping`, `values` must be `None`.
     values
-        Values of the map
+        Values of the map or `None`. If `None`, the `keys` argument must be a `Mapping`.
 
     Returns
     -------
@@ -222,11 +222,10 @@ def map(keys, values) -> MapValue:
     Examples
     --------
     Create a map literal from a dict with the type inferred
+
     >>> import ibis
     >>> t = ibis.map(dict(a=1, b=2))
-
-    Create a map literal from a dict with the specified type
-    >>> import ibis
-    >>> t = ibis.map(dict(a=1, b=2), type='map<string, double>')
     """
+    if values is None:
+        keys, values = list(keys.keys()), list(keys.values())
     return ops.Map(keys, values).to_expr()
