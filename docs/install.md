@@ -29,12 +29,14 @@ hide:
 ## Install backend dependencies
 
 {% for backend in sorted(ibis.backends.base._get_backend_names()) %}
+{% if backend != "spark" %}
 === "{{ backend }}"
 
     ```sh
     pip install 'ibis-framework[{{ backend }}]'
     ```
 
+{% endif %}
 {% endfor %}
 
 ---
