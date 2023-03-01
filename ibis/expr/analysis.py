@@ -141,16 +141,12 @@ def find_immediate_parent_tables(input_node, keep_input=True):
     >>> import ibis, toolz
     >>> t = ibis.table([('a', 'int64')], name='t')
     >>> expr = t.mutate(foo=t.a + 1)
-    >>> result = find_immediate_parent_tables(expr)
-    >>> len(result)
-    1
-    >>> result[0]
-    r0 := UnboundTable[t]
-      a int64
-    Selection[r0]
-      selections:
-        r0
-        foo: r0.a + 1
+    >>> result, = find_immediate_parent_tables(expr.op())
+    >>> result.equals(expr.op())
+    True
+    >>> result, = find_immediate_parent_tables(expr.op(), keep_input=False)
+    >>> result.equals(t.op())
+    True
     """
     assert all(isinstance(arg, ops.Node) for arg in util.promote_list(input_node))
 
@@ -681,19 +677,19 @@ def flatten_predicate(node):
     >>> import ibis
     >>> t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
     >>> filt = (t.a == 1) & (t.b == 'foo')
-    >>> predicates = flatten_predicate(filt)
+    >>> predicates = flatten_predicate(filt.op())
     >>> len(predicates)
     2
-    >>> predicates[0]
-    r0 := UnboundTable[t]
+    >>> predicates[0].to_expr().name("left")
+    r0 := UnboundTable: t
       a int64
       b string
-    r0.a == 1
-    >>> predicates[1]
-    r0 := UnboundTable[t]
+    left: r0.a == 1
+    >>> predicates[1].to_expr().name("right")
+    r0 := UnboundTable: t
       a int64
       b string
-    r0.b == 'foo'
+    right: r0.b == 'foo'
     """
 
     def predicate(node):

@@ -226,13 +226,29 @@ doctest_optionflags = [
 ]
 xfail_strict = true
 addopts = [
-  "--ignore=site-packages",
-  "--ignore=dist-packages",
   "--strict-markers",
   "--strict-config",
   "--benchmark-disable",
   "--benchmark-group-by=name",
   "--benchmark-sort=name",
+]
+norecursedirs = [
+  "**/snapshots",
+  ".benchmarks",
+  ".direnv",
+  ".git",
+  ".github",
+  ".hypothesis",
+  ".pytest_cache",
+  ".streamlit",
+  "LICENSES",
+  "ci",
+  "conda-lock",
+  "dev",
+  "docker",
+  "docs",
+  "nix",
+  "result*",
 ]
 filterwarnings = [
   # fail on any warnings that are not explicitly matched below
@@ -281,22 +297,10 @@ filterwarnings = [
   "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('google.*'\\):DeprecationWarning",
   # pyspark on python 3.11
   "ignore:typing\\.io is deprecated:DeprecationWarning",
+  # warnings from google's use of the cgi module
+  "ignore:'cgi' is deprecated and slated for removal in Python 3\\.13:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
-norecursedirs = [
-  ".benchmarks",
-  ".direnv",
-  ".git",
-  ".github",
-  "LICENSES",
-  "ci",
-  "conda-lock",
-  "dev",
-  "docker",
-  "nix",
-  "result",
-  "result-*",
-]
 markers = [
   "backend: tests specific to a backend",
   "benchmark: benchmarks",

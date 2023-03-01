@@ -47,6 +47,21 @@ test +backends:
 
     pytest "${pytest_args[@]}"
 
+# run doctests
+doctest *args:
+    #!/usr/bin/env bash
+
+    # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
+    mapfile -t doctest_modules < <(
+      find \
+        ibis \
+        -wholename '*.py' \
+        -and -not -wholename '*test*.py' \
+        -and -not -wholename '*__init__*' \
+        -and -not -wholename '*gen_*.py'
+    )
+    pytest --doctest-modules {{ args }} "${doctest_modules[@]}"
+
 # download testing data
 download-data owner="ibis-project" repo="testing-data" rev="master":
     #!/usr/bin/env bash

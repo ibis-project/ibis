@@ -38,9 +38,9 @@ class BooleanValue(NumericValue):
         >>> import ibis
         >>> t = ibis.table([("is_person", "boolean")], name="t")
         >>> expr = t.is_person.ifelse("yes", "no")
-        >>> print(ibis.impala.compile(expr))
-        SELECT CASE WHEN `is_person` THEN 'yes' ELSE 'no' END AS `tmp`
-        FROM t
+        >>> print(ibis.impala.compile(expr.name("tmp")))
+        SELECT if(t0.`is_person`, 'yes', 'no') AS `tmp`
+        FROM t t0
         """
         # Result will be the result of promotion of true/false exprs. These
         # might be conflicting types; same type resolution as case expressions

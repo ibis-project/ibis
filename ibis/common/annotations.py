@@ -413,7 +413,7 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
 
     2. With argument validators passed as keyword arguments
 
-    >>> from ibis.common.validate import instance_of
+    >>> from ibis.common.validators import instance_of
     >>> @annotated(x=instance_of(int), y=instance_of(str))
     ... def foo(x, y):
     ...     return float(x) + float(y)

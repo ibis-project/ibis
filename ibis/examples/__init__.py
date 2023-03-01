@@ -60,8 +60,8 @@ ir.Table
 
 Examples
 --------
->>> from ibis.interactive import *
->>> t = ex.{name}.fetch()
+>>> import ibis
+>>> t = ibis.examples.{name}.fetch()
 """
 
 

@@ -91,6 +91,7 @@ class ArrayValue(Value):
         Extract a range of elements
 
         >>> t = ibis.memtable({"a": [[7, 42, 72], [3] * 5, None]})
+        >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ a                    ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━┩

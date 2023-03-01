@@ -133,28 +133,25 @@ def _coerce_to_dataframe(
 
     Examples
     --------
-    >>> _coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), dt.Struct([('b', 'int32')]))  # noqa: E501
+    >>> import pandas as pd
+    >>> _coerce_to_dataframe(pd.DataFrame({'a': [1, 2, 3]}), dt.Struct(dict(b="int32")))  # noqa: E501
        b
     0  1
     1  2
     2  3
-    dtype: int32
-    >>> _coerce_to_dataframe(pd.Series([[1, 2, 3]]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe(pd.Series([[1, 2, 3]]), dt.Struct(dict.fromkeys('abc', 'int32')))  # noqa: E501
        a  b  c
     0  1  2  3
-    dtypes: [int32, int32, int32]
-    >>> _coerce_to_dataframe(pd.Series([range(3), range(3)]), dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe(pd.Series([range(3), range(3)]), dt.Struct(dict.fromkeys('abc', 'int32')))  # noqa: E501
        a  b  c
     0  0  1  2
     1  0  1  2
-    dtypes: [int32, int32, int32]
-    >>> _coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe([pd.Series(x) for x in [1, 2, 3]], dt.Struct(dict.fromkeys('abc', 'int32')))  # noqa: E501
        a  b  c
     0  1  2  3
-    >>>  _coerce_to_dataframe([1, 2, 3], dt.Struct([('a', 'int32'), ('b', 'int32'), ('c', 'int32')]))  # noqa: E501
+    >>> _coerce_to_dataframe([1, 2, 3], dt.Struct(dict.fromkeys('abc', 'int32')))  # noqa: E501
        a  b  c
     0  1  2  3
-    dtypes: [int32, int32, int32]
     """
     import pandas as pd
 
@@ -285,7 +282,7 @@ def analytic(input_type, output_type):
 
     >>> @analytic(
     ...     input_type=[dt.double],
-    ...     output_type=dt.Struct(['demean', 'zscore'], [dt.double, dt.double])
+    ...     output_type=dt.Struct(dict(demean="double", zscore="double")),
     ... )
     ... def demean_and_zscore(v):
     ...     mean = v.mean()
@@ -294,7 +291,7 @@ def analytic(input_type, output_type):
     >>>
     >>> win = ibis.window(preceding=None, following=None, group_by='key')
     >>> # add two columns "demean" and "zscore"
-    >>> table = table.mutate(
+    >>> table = table.mutate(  # doctest: +SKIP
     ...     demean_and_zscore(table['v']).over(win).destructure()
     ... )
     """
@@ -332,13 +329,13 @@ def elementwise(input_type, output_type):
 
     >>> @elementwise(
     ...     input_type=[dt.string],
-    ...     output_type=dt.Struct(['year', 'monthday'], [dt.string, dt.string])
+    ...     output_type=dt.Struct(dict(year=dt.string, monthday=dt.string))
     ... )
     ... def year_monthday(date):
     ...     return date.str.slice(0, 4), date.str.slice(4, 8)
     >>>
     >>> # add two columns "year" and "monthday"
-    >>> table = table.mutate(year_monthday(table['date']).destructure())
+    >>> table = table.mutate(year_monthday(table['date']).destructure())  # doctest: +SKIP
     """
     return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
 
@@ -368,13 +365,13 @@ def reduction(input_type, output_type):
 
     >>> @reduction(
     ...     input_type=[dt.double],
-    ...     output_type=dt.Struct(['mean', 'std'], [dt.double, dt.double])
+    ...     output_type=dt.Struct(dict(mean="double", std="double"))
     ... )
     ... def mean_and_std(v):
     ...     return v.mean(), v.std()
     >>>
     >>> # create aggregation columns "mean" and "std"
-    >>> table = table.group_by('key').aggregate(
+    >>> table = table.group_by('key').aggregate(  # doctest: +SKIP
     ...     mean_and_std(table['v']).destructure()
     ... )
     """

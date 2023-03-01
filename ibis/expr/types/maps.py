@@ -39,11 +39,11 @@ class MapValue(Value):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.get("a")
-        MapGet(frozendict({'a': 1, 'b': 2}), key='a', default=None)
+        MapGet(...)
         >>> m.get("c", 3)
-        MapGet(frozendict({'a': 1, 'b': 2}), key='c', default=3)
+        MapGet(...)
         >>> m.get("d")
-        MapGet(frozendict({'a': 1, 'b': 2}), key='d', default=None)
+        MapGet(...)
         """
 
         return ops.MapGet(self, key, default).to_expr()
@@ -61,7 +61,7 @@ class MapValue(Value):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.length()
-        MapLength(frozendict({'a': 1, 'b': 2}))
+        MapLength(...)
         """
         return ops.MapLength(self).to_expr()
 
@@ -88,9 +88,9 @@ class MapValue(Value):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m["a"]
-        MapValueForKey(frozendict({'a': 1, 'b': 2}), key='a')
+        MapGet(...)
         >>> m["c"]  # note that this does not fail on construction
-        MapValueForKey(frozendict({'a': 1, 'b': 2}), key='c')
+        MapGet(...)
         """
         return ops.MapGet(self, key).to_expr()
 
@@ -124,7 +124,7 @@ class MapValue(Value):
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.keys()
-        MapKeys(frozendict({'a': 1, 'b': 2}))
+        MapKeys(...)
         """
         return ops.MapKeys(self).to_expr()
 
@@ -140,8 +140,8 @@ class MapValue(Value):
         --------
         >>> import ibis
         >>> m = ibis.map({"a": 1, "b": 2})
-        >>> m.keys()
-        MapKeys(frozendict({'a': 1, 'b': 2}))
+        >>> m.values()
+        MapValues(...)
         """
         return ops.MapValues(self).to_expr()
 
@@ -164,7 +164,7 @@ class MapValue(Value):
         >>> m1 = ibis.map({"a": 1, "b": 2})
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
-        MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
+        MapMerge(...)
         """
         return ops.MapMerge(self, other).to_expr()
 
@@ -187,7 +187,7 @@ class MapValue(Value):
         >>> m1 = ibis.map({"a": 1, "b": 2})
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
-        MapConcat(left=frozendict({'a': 1, 'b': 2}), right=frozendict({'c': 3, 'd': 4}))
+        MapMerge(...)
         """
         return ops.MapMerge(self, other).to_expr()
 

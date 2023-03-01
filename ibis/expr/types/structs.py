@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import collections
-
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Iterable, Mapping, Sequence
 
 from public import public
 
 import ibis.expr.operations as ops
-
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import V
 
@@ -88,7 +86,7 @@ class StructValue(Value):
         >>> import ibis
         >>> s = ibis.struct(dict(fruit="pear", weight=0))
         >>> s['fruit']
-        fruit: StructField(frozendict({'fruit': 'pear', 'weight': 0}), field='fruit')
+        fruit: StructField(...)
         """
         return ops.StructField(self, name).to_expr()
 
@@ -130,21 +128,36 @@ class StructValue(Value):
 
         Examples
         --------
-        >>> schema = dict(a="struct<b: float, c: string>", d="string")
-        >>> t = ibis.table(schema, name="t")
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> lines = '''
+        ...     {"pos": {"lat": 10.1, "lon": 30.3}}
+        ...     {"pos": {"lat": 10.2, "lon": 30.2}}
+        ...     {"pos": {"lat": 10.3, "lon": 30.1}}
+        ... '''
+        >>> with open("/tmp/lines.json", "w") as f:
+        ...     _ = f.write(lines)
+        >>> t = ibis.read_json("/tmp/lines.json")
         >>> t
-        UnboundTable: t
-          a struct<b: float64, c: string>
-          d string
-        >>> t.a.lift()
-        r0 := UnboundTable: t
-          a struct<b: float64, c: string>
-          d string
-
-        Selection[r0]
-          selections:
-            b: StructField(r0.a, field='b')
-            c: StructField(r0.a, field='c')
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ pos                                ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ struct<lat: float64, lon: float64> │
+        ├────────────────────────────────────┤
+        │ {'lat': 10.1, 'lon': 30.3}         │
+        │ {'lat': 10.2, 'lon': 30.2}         │
+        │ {'lat': 10.3, 'lon': 30.1}         │
+        └────────────────────────────────────┘
+        >>> t.pos.lift()
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ lat     ┃ lon     ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ float64 │ float64 │
+        ├─────────┼─────────┤
+        │    10.1 │    30.3 │
+        │    10.2 │    30.2 │
+        │    10.3 │    30.1 │
+        └─────────┴─────────┘
 
         See Also
         --------

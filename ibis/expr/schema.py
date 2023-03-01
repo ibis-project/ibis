@@ -176,9 +176,9 @@ class Schema(Concrete, Coercible, MapSet):
         Examples
         --------
         >>> import ibis
-        >>> first = ibis.Schema.from_dict({"a": "int", "b": "string"})
-        >>> second = ibis.Schema.from_dict({"c": "float", "d": "int16"})
-        >>> first.merge(second)
+        >>> first = ibis.Schema({"a": "int", "b": "string"})
+        >>> second = ibis.Schema({"c": "float", "d": "int16"})
+        >>> first.merge(second)  # doctest: +SKIP
         ibis.Schema {
           a  int64
           b  string
@@ -206,7 +206,7 @@ class Schema(Concrete, Coercible, MapSet):
         Examples
         --------
         >>> import ibis
-        >>> sch = ibis.Schema.from_dict({"a": "int", "b": "string"})
+        >>> sch = ibis.Schema({"a": "int", "b": "string"})
         >>> sch.name_at_position(0)
         'a'
         >>> sch.name_at_position(1)

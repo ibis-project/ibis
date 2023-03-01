@@ -35,6 +35,7 @@ class StringValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"food": ["bread", "cheese", "rice"], "idx": [1, 2, 4]})
+        >>> t
         ┏━━━━━━━━┳━━━━━━━┓
         ┃ food   ┃ idx   ┃
         ┡━━━━━━━━╇━━━━━━━┩
@@ -313,7 +314,7 @@ class StringValue(Value):
         return ops.Strip(self).to_expr()
 
     def lstrip(self) -> StringValue:
-        """Remove whitespace from the left side of string.
+        r"""Remove whitespace from the left side of string.
 
         Returns
         -------
@@ -349,7 +350,7 @@ class StringValue(Value):
         return ops.LStrip(self).to_expr()
 
     def rstrip(self) -> StringValue:
-        """Remove whitespace from the right side of string.
+        r"""Remove whitespace from the right side of string.
 
         Returns
         -------
@@ -1052,15 +1053,15 @@ class StringValue(Value):
         Extract a specific group
 
         >>> t.s.re_extract(r"^(a)bc", 1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ RegexExtract(s, '^(a)', 1) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                     │
-        ├────────────────────────────┤
-        │ a                          │
-        │ ~                          │
-        │ ~                          │
-        └────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ RegexExtract(s, '^(a)bc', 1) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                       │
+        ├──────────────────────────────┤
+        │ a                            │
+        │ ~                            │
+        │ ~                            │
+        └──────────────────────────────┘
 
         Extract the entire match
 

@@ -222,7 +222,7 @@ def param(type: dt.DataType) -> ir.Scalar:
       predicates:
         r0.timestamp_col >= $(date)
         r0.timestamp_col <= $(date)
-    sum: Sum(r1.value)
+    Sum(value): Sum(r1.value)
     """
     return ops.ScalarParameter(type).to_expr()
 
@@ -269,7 +269,7 @@ def schema(
     >>> sc = schema(names=['foo', 'bar', 'baz'],
     ...             types=['string', 'int64', 'boolean'])
     >>> sc = schema(dict(foo="string"))
-    >>> sc = schema(Schema(['foo'], ['string']))  # no-op
+    >>> sc = schema(Schema(dict(foo="string")))  # no-op
 
     Returns
     -------
@@ -304,9 +304,12 @@ def table(
     --------
     Create a table with no data backing it
 
-    >>> t = ibis.table(schema=dict(a="int", b="string"))
+    >>> import ibis
+    >>> ibis.options.interactive
+    False
+    >>> t = ibis.table(schema=dict(a="int", b="string"), name="t")
     >>> t
-    UnboundTable: unbound_table_0
+    UnboundTable: t
       a int64
       b string
     """
@@ -453,18 +456,20 @@ def desc(expr: ir.Column | str) -> ir.Value:
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table(dict(g='string'), name='t')
-    >>> t.group_by('g').size('count').order_by(ibis.desc('count'))
-    r0 := UnboundTable: t
-      g string
-    r1 := Aggregation[r0]
-      metrics:
-        count: Count(t)
-      by:
-        g: r0.g
-    Selection[r1]
-      sort_keys:
-        desc|r1.count
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t[["species", "year"]].order_by(ibis.desc("year")).head()
+    ┏━━━━━━━━━┳━━━━━━━┓
+    ┃ species ┃ year  ┃
+    ┡━━━━━━━━━╇━━━━━━━┩
+    │ string  │ int64 │
+    ├─────────┼───────┤
+    │ Adelie  │  2009 │
+    │ Adelie  │  2009 │
+    │ Adelie  │  2009 │
+    │ Adelie  │  2009 │
+    │ Adelie  │  2009 │
+    └─────────┴───────┘
 
     Returns
     -------
@@ -485,18 +490,20 @@ def asc(expr: ir.Column | str) -> ir.Value:
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table(dict(g='string'), name='t')
-    >>> t.group_by('g').size('count').order_by(ibis.asc('count'))
-    r0 := UnboundTable: t
-      g string
-    r1 := Aggregation[r0]
-      metrics:
-        count: Count(t)
-      by:
-        g: r0.g
-    Selection[r1]
-      sort_keys:
-        asc|r1.count
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t[["species", "year"]].order_by(ibis.asc("year")).head()
+    ┏━━━━━━━━━┳━━━━━━━┓
+    ┃ species ┃ year  ┃
+    ┡━━━━━━━━━╇━━━━━━━┩
+    │ string  │ int64 │
+    ├─────────┼───────┤
+    │ Adelie  │  2007 │
+    │ Adelie  │  2007 │
+    │ Adelie  │  2007 │
+    │ Adelie  │  2007 │
+    │ Adelie  │  2007 │
+    └─────────┴───────┘
 
     Returns
     -------
@@ -794,7 +801,8 @@ def case() -> bl.SearchedCaseBuilder:
     >>> cond1 = ibis.literal(1) == 1
     >>> cond2 = ibis.literal(2) == 1
     >>> expr = ibis.case().when(cond1, 3).when(cond2, 4).end()
-    SearchedCase(cases=(1 == 1, 2 == 1), results=(3, 4)), default=Cast(None, to=int8))
+    >>> expr
+    SearchedCase(...)
 
     Returns
     -------
@@ -849,7 +857,27 @@ def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Ta
 
     Examples
     --------
-    >>> batting = ibis.read_csv("ci/ibis-testing-data/batting.csv")
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.Batting_raw.fetch()
+    >>> t
+    ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
+    ┃ playerID  ┃ yearID ┃ stint ┃ teamID ┃ lgID   ┃ G     ┃ AB    ┃ R     ┃ … ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
+    │ string    │ int64  │ int64 │ string │ string │ int64 │ int64 │ int64 │ … │
+    ├───────────┼────────┼───────┼────────┼────────┼───────┼───────┼───────┼───┤
+    │ abercda01 │   1871 │     1 │ TRO    │ NA     │     1 │     4 │     0 │ … │
+    │ addybo01  │   1871 │     1 │ RC1    │ NA     │    25 │   118 │    30 │ … │
+    │ allisar01 │   1871 │     1 │ CL1    │ NA     │    29 │   137 │    28 │ … │
+    │ allisdo01 │   1871 │     1 │ WS3    │ NA     │    27 │   133 │    28 │ … │
+    │ ansonca01 │   1871 │     1 │ RC1    │ NA     │    25 │   120 │    29 │ … │
+    │ armstbo01 │   1871 │     1 │ FW1    │ NA     │    12 │    49 │     9 │ … │
+    │ barkeal01 │   1871 │     1 │ RC1    │ NA     │     1 │     4 │     0 │ … │
+    │ barnero01 │   1871 │     1 │ BS1    │ NA     │    31 │   157 │    66 │ … │
+    │ barrebi01 │   1871 │     1 │ FW1    │ NA     │     1 │     5 │     1 │ … │
+    │ barrofr01 │   1871 │     1 │ BS1    │ NA     │    18 │    86 │    13 │ … │
+    │ …         │      … │     … │ …      │ …      │     … │     … │     … │ … │
+    └───────────┴────────┴───────┴────────┴────────┴───────┴───────┴───────┴───┘
     """
     from ibis.config import _default_backend
 
@@ -886,9 +914,9 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
     ... {"a": 2, "b": null}
     ... {"a": null, "b": "f"}
     ... '''
-    >>> with open("lines.json", mode="w") as f:
-    ...     f.write(lines)
-    >>> t = ibis.read_json("lines.json")
+    >>> with open("/tmp/lines.json", mode="w") as f:
+    ...     _ = f.write(lines)
+    >>> t = ibis.read_json("/tmp/lines.json")
     >>> t
     ┏━━━━━━━━┳━━━━━━━━┓
     ┃ a      ┃ b      ┃
@@ -929,7 +957,27 @@ def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> i
 
     Examples
     --------
-    >>> batting = ibis.read_parquet("ci/ibis-testing-data/parquet/batting/batting.parquet")
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.Batting_raw.fetch()
+    >>> t
+    ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
+    ┃ playerID  ┃ yearID ┃ stint ┃ teamID ┃ lgID   ┃ G     ┃ AB    ┃ R     ┃ … ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
+    │ string    │ int64  │ int64 │ string │ string │ int64 │ int64 │ int64 │ … │
+    ├───────────┼────────┼───────┼────────┼────────┼───────┼───────┼───────┼───┤
+    │ abercda01 │   1871 │     1 │ TRO    │ NA     │     1 │     4 │     0 │ … │
+    │ addybo01  │   1871 │     1 │ RC1    │ NA     │    25 │   118 │    30 │ … │
+    │ allisar01 │   1871 │     1 │ CL1    │ NA     │    29 │   137 │    28 │ … │
+    │ allisdo01 │   1871 │     1 │ WS3    │ NA     │    27 │   133 │    28 │ … │
+    │ ansonca01 │   1871 │     1 │ RC1    │ NA     │    25 │   120 │    29 │ … │
+    │ armstbo01 │   1871 │     1 │ FW1    │ NA     │    12 │    49 │     9 │ … │
+    │ barkeal01 │   1871 │     1 │ RC1    │ NA     │     1 │     4 │     0 │ … │
+    │ barnero01 │   1871 │     1 │ BS1    │ NA     │    31 │   157 │    66 │ … │
+    │ barrebi01 │   1871 │     1 │ FW1    │ NA     │     1 │     5 │     1 │ … │
+    │ barrofr01 │   1871 │     1 │ BS1    │ NA     │    18 │    86 │    13 │ … │
+    │ …         │      … │     … │ …      │ …      │     … │     … │     … │ … │
+    └───────────┴────────┴───────┴────────┴────────┴───────┴───────┴───────┴───┘
     """
     from ibis.config import _default_backend
 
@@ -947,13 +995,17 @@ def set_backend(backend: str | BaseBackend) -> None:
 
     Examples
     --------
-    May pass the backend as a name:
+    You can pass the backend as a name:
+
+    >>> import ibis
     >>> ibis.set_backend("polars")
 
-    Or as a URI:
-    >>> ibis.set_backend("postgres://user:password@hostname:5432")
+    Or as a URI
 
-    Or as an existing backend instance:
+    >>> ibis.set_backend("postgres://user:password@hostname:5432")  # doctest: +SKIP
+
+    Or as an existing backend instance
+
     >>> ibis.set_backend(ibis.duckdb.connect())
     """
     import ibis
