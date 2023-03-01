@@ -208,3 +208,9 @@ CREATE TABLE map (kv HSTORE);
 INSERT INTO map VALUES
     ('a=>1,b=>2,c=>3'),
     ('d=>4,e=>5,c=>6');
+
+ALTER TABLE awards_players
+ADD search tsvector
+GENERATED always AS (
+  setweight(to_tsvector('simple', notes), 'A') :: tsvector
+) stored;
