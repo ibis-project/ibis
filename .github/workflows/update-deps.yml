@@ -99,7 +99,7 @@ jobs:
           author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
           title: "chore(flake/${{ matrix.flake }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
           body: ${{ steps.compare_commits.outputs.differences }}
-          labels: dependencies,nix,autorebase:opt-in
+          labels: dependencies,nix
 
       - uses: juliangruber/approve-pull-request-action@v2.0.3
         if: fromJSON(steps.needs_pr.outputs.did_change)
