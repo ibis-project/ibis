@@ -50,6 +50,15 @@ def _string_or_timestamp_to_date(arg, from_, to, **_):
     return sa.func.date(arg)
 
 
+@sqlite_cast.register(object, dt.Timestamp, dt.Timestamp)
+def _timestamp_to_timestamp(arg, from_, to, **_):
+    if from_ == to:
+        return arg
+    if from_.timezone is None and to.timezone == 'UTC':
+        return arg
+    raise com.UnsupportedOperationError(f'Cannot cast from {from_} to {to}')
+
+
 @sqlite_cast.register(object, dt.DataType, (dt.Date, dt.Timestamp))
 def _value_to_temporal(arg, from_, to, **_):
     raise com.UnsupportedOperationError(type(arg))

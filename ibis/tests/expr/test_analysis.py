@@ -264,7 +264,6 @@ def test_select_filter_mutate_fusion():
 
     second_selection = result.op()
     first_selection = second_selection.table
-
     assert len(second_selection.selections) == 1
 
     col = first_selection.to_expr()['col'].cast('int32').name('col').op()
