@@ -879,6 +879,37 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             f"{cls.name} backend has not implemented `has_operation` API"
         )
 
+    def _cache(self, expr):
+        """Cache the provided expression. All subsequent operations on the returned expression will be performed on the cached data.
+
+        Parameters
+        ----------
+        expr
+            Table expression to cache
+
+        Returns
+        -------
+        Expr
+            Cached table
+
+        """
+        raise NotImplementedError(
+            f"{self.name} backend has not implemented `cache` API"
+        )
+
+    def _release_cache(self, expr):
+        """Releases the provided cached expression.
+
+        Parameters
+        ----------
+        expr
+            Cached expression to release
+
+        """
+        raise NotImplementedError(
+            f"{self.name} backend has not implemented `release_cache` API"
+        )
+
 
 @functools.lru_cache(maxsize=None)
 def _get_backend_names() -> frozenset[str]:
