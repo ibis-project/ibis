@@ -12,6 +12,7 @@ import os
 import sys
 import textwrap
 import types
+import uuid
 import warnings
 from numbers import Real
 from typing import (
@@ -25,6 +26,7 @@ from typing import (
 )
 from uuid import uuid4
 
+import numpy as np
 import toolz
 
 if TYPE_CHECKING:
@@ -555,3 +557,8 @@ def normalize_filename(source: str | Path) -> str:
 
     source = _absolufy_paths(source)
     return source
+
+
+def generate_unique_table_name(namespace: str) -> str:
+    """Creates case-insensitive uuid4 unique table name."""
+    return f"_ibis_{namespace}_{np.base_repr(uuid.uuid4().int, 36)}".lower()
