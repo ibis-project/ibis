@@ -294,7 +294,10 @@ def convert_unit(value, unit, to, floor: bool = True):
     else:
         assert i > j
         op = operator.floordiv if floor else operator.truediv
-    return op(value.to_expr(), factor).op()
+    try:
+        return op(value.to_expr(), factor).op()
+    except AttributeError:
+        return op(value, factor)
 
 
 def get_logger(
