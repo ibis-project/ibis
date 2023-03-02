@@ -92,7 +92,7 @@ benchcmp *args:
 checklinks *args:
     #!/usr/bin/env bash
     mapfile -t files < <(find site -name '*.html')
-    lychee "${files[@]}" {{ args }}
+    lychee --base site "${files[@]}" {{ args }}
 
 # view the changelog for upcoming release (use --pretty to format with glow)
 view-changelog flags="":
