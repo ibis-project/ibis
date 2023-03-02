@@ -32,7 +32,7 @@ def union_subsets(alltypes, df):
 
 
 @pytest.mark.parametrize("distinct", [False, True], ids=["all", "distinct"])
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_union(backend, union_subsets, distinct):
     (a, b, c), (da, db, dc) = union_subsets
@@ -47,7 +47,7 @@ def test_union(backend, union_subsets, distinct):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(["bigquery"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_union_mixed_distinct(backend, union_subsets):
@@ -155,7 +155,7 @@ def test_empty_set_op(alltypes, method):
         False,
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(["dask"], raises=AssertionError, reason="results are incorrect")
 def test_top_level_union(backend, con, alltypes, distinct):
     t1 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 10).distinct()

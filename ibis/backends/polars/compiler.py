@@ -1007,3 +1007,11 @@ def execute_time(op, **kwargs):
     if op.arg.output_dtype.is_timestamp():
         return arg.dt.truncate("1us").cast(pl.Time)
     return arg
+
+
+@translate.register(ops.Union)
+def execute_union(op, **kwargs):
+    result = pl.concat([translate(op.left, **kwargs), translate(op.right, **kwargs)])
+    if op.distinct:
+        return result.unique()
+    return result
