@@ -872,14 +872,20 @@ def compile_power(t, op, **kwargs):
 
 @compiles(ops.IsNan)
 def compile_isnan(t, op, **kwargs):
-    src_column = t.translate(op.arg, **kwargs)
-    return F.isnan(src_column) | F.isnull(src_column)
+    arg = op.arg
+    if arg.output_dtype.is_floating():
+        src_column = t.translate(arg, **kwargs)
+        return F.isnull(src_column) | F.isnan(src_column)
+    return F.lit(False)
 
 
 @compiles(ops.IsInf)
 def compile_isinf(t, op, **kwargs):
-    src_column = t.translate(op.arg, **kwargs)
-    return (src_column == float('inf')) | (src_column == float('-inf'))
+    arg = op.arg
+    if arg.output_dtype.is_floating():
+        inf = float("inf")
+        return t.translate(arg, **kwargs).isin([inf, -inf])
+    return F.lit(False)
 
 
 @compiles(ops.Uppercase)
@@ -1648,9 +1654,13 @@ def compile_null_literal(t, op, **kwargs):
 
 @compiles(ops.IfNull)
 def compile_if_null(t, op, **kwargs):
-    col = t.translate(op.arg, **kwargs)
+    arg = op.arg
+    col = t.translate(arg, **kwargs)
     ifnull_col = t.translate(op.ifnull_expr, **kwargs)
-    return F.when(col.isNull() | F.isnan(col), ifnull_col).otherwise(col)
+    result = F.isnull(col)
+    if arg.output_dtype.is_floating():
+        result |= F.isnan(col)
+    return F.when(result, ifnull_col).otherwise(col)
 
 
 @compiles(ops.NullIf)
@@ -1662,14 +1672,22 @@ def compile_null_if(t, op, **kwargs):
 
 @compiles(ops.IsNull)
 def compile_is_null(t, op, **kwargs):
-    col = t.translate(op.arg, **kwargs)
-    return F.isnull(col) | F.isnan(col)
+    arg = op.arg
+    col = t.translate(arg, **kwargs)
+    result = F.isnull(col)
+    if arg.output_dtype.is_floating():
+        result |= F.isnan(col)
+    return result
 
 
 @compiles(ops.NotNull)
 def compile_not_null(t, op, **kwargs):
-    col = t.translate(op.arg, **kwargs)
-    return ~F.isnull(col) & ~F.isnan(col)
+    arg = op.arg
+    col = t.translate(arg, **kwargs)
+    result = ~F.isnull(col)
+    if arg.output_dtype.is_floating():
+        result &= ~F.isnan(col)
+    return result
 
 
 @compiles(ops.DropNa)
@@ -1820,8 +1838,12 @@ def compile_radians(t, op, **kwargs):
 
 @compiles(ops.ZeroIfNull)
 def compile_zero_if_null(t, op, **kwargs):
-    col = t.translate(op.arg, **kwargs)
-    return F.when(col.isNull() | F.isnan(col), F.lit(0)).otherwise(col)
+    arg = op.arg
+    col = t.translate(arg, **kwargs)
+    result = F.isnull(col)
+    if arg.output_dtype.is_floating():
+        result |= F.isnan(col)
+    return F.when(result, F.lit(0)).otherwise(col)
 
 
 @compiles(ops.Where)
