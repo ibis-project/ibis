@@ -5,10 +5,9 @@ import contextlib
 import functools
 import itertools
 import re
-import sys
 import warnings
 from keyword import iskeyword
-from typing import IO, TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
 
 from public import public
 
@@ -1936,105 +1935,55 @@ class Table(Expr, _FixedTextJupyterMixin):
                 result_columns.append(column)
         return self[result_columns]
 
-    def info(self, buf: IO[str] | None = None) -> None:
-        """Show summary information about a table.
-
-        Parameters
-        ----------
-        buf
-            A writable buffer, defaults to stdout
+    def info(self) -> Table:
+        """Return summary information about a table.
 
         Returns
         -------
-        None
-            This method prints to a buffer (stdout by default) and returns nothing.
+        Table
+            Summary of `self`
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch(table_name="penguins")
-        >>> t
-        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string  │ string    │ float64        │ float64       │ int64             │ … │
-        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
-        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
-        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
-        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
-        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
-        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
-        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
-        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
-        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
-        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
-        │ …       │ …         │              … │             … │                 … │ … │
-        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-
-        Default implementation prints to stdout
-
-        >>> t.info()  # doctest: +SKIP
-                               Summary of penguins
-                                     344 rows
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┓
-        ┃ Name              ┃ Type                   ┃ # Nulls ┃ % Nulls ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━┩
-        │ species           │ String(nullable=True)  │       0 │    0.00 │
-        │ island            │ String(nullable=True)  │       0 │    0.00 │
-        │ bill_length_mm    │ Float64(nullable=True) │       2 │    0.58 │
-        │ bill_depth_mm     │ Float64(nullable=True) │       2 │    0.58 │
-        │ flipper_length_mm │ Int64(nullable=True)   │       2 │    0.58 │
-        │ body_mass_g       │ Int64(nullable=True)   │       2 │    0.58 │
-        │ sex               │ String(nullable=True)  │      11 │    3.20 │
-        │ year              │ Int64(nullable=True)   │       0 │    0.00 │
-        └───────────────────┴────────────────────────┴─────────┴─────────┘
-
-        Store the info into a buffer
-
-        >>> import io
-        >>> buf = io.StringIO()
-        >>> t.info(buf=buf)
-        >>> "Summary of penguins" in buf.getvalue()
-        True
+        >>> t.info()
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━┓
+        ┃ name              ┃ type    ┃ nullable ┃ nulls ┃ non_nulls ┃ null_frac ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━╇━━━┩
+        │ string            │ string  │ boolean  │ int64 │ int64     │ float64   │ … │
+        ├───────────────────┼─────────┼──────────┼───────┼───────────┼───────────┼───┤
+        │ species           │ string  │ True     │     0 │       344 │  0.000000 │ … │
+        │ island            │ string  │ True     │     0 │       344 │  0.000000 │ … │
+        │ bill_length_mm    │ float64 │ True     │     2 │       342 │  0.005814 │ … │
+        │ bill_depth_mm     │ float64 │ True     │     2 │       342 │  0.005814 │ … │
+        │ flipper_length_mm │ int64   │ True     │     2 │       342 │  0.005814 │ … │
+        │ body_mass_g       │ int64   │ True     │     2 │       342 │  0.005814 │ … │
+        │ sex               │ string  │ True     │    11 │       333 │  0.031977 │ … │
+        │ year              │ int64   │ True     │     0 │       344 │  0.000000 │ … │
+        └───────────────────┴─────────┴──────────┴───────┴───────────┴───────────┴───┘
         """
-        import rich
-        import rich.table
-        from rich.pretty import Pretty
+        from ibis import literal as lit
 
-        if buf is None:
-            buf = sys.stdout
+        aggs = []
 
-        metrics = [self[col].count().name(col) for col in self.columns]
-        metrics.append(self.count().name("nrows"))
-
-        schema = self.schema()
-
-        *items, (_, n) = self.aggregate(metrics).execute().squeeze().items()
-
-        op = self.op()
-        title = getattr(op, "name", type(op).__name__)
-
-        table = rich.table.Table(title=f"Summary of {title}\n{n:d} rows")
-
-        table.add_column("Name", justify="left")
-        table.add_column("Type", justify="left")
-        table.add_column("# Nulls", justify="right")
-        table.add_column("% Nulls", justify="right")
-
-        for column, non_nulls in items:
-            table.add_row(
-                column,
-                Pretty(schema[column]),
-                str(n - non_nulls),
-                f"{100 * (1.0 - non_nulls / n):>3.2f}",
+        for pos, colname in enumerate(self.columns):
+            col = self[colname]
+            typ = col.type()
+            agg = self.select(
+                isna=ibis.case().when(col.isnull(), 1).else_(0).end()
+            ).agg(
+                name=lit(colname),
+                type=lit(str(typ)),
+                nullable=lit(int(typ.nullable)).cast("bool"),
+                nulls=lambda t: t.isna.sum(),
+                non_nulls=lambda t: (1 - t.isna).sum(),
+                null_frac=lambda t: t.isna.mean(),
+                pos=lit(pos),
             )
-
-        console = rich.get_console()
-        with console.capture() as capture:
-            console.print(table)
-        buf.write(capture.get())
+            aggs.append(agg)
+        return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
     def set_column(self, name: str, expr: ir.Value) -> Table:
         """Replace an existing column with a new expression.

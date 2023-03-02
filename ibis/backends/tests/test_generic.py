@@ -1,13 +1,11 @@
 import contextlib
 import decimal
-import io
-from contextlib import redirect_stdout
 from operator import invert, methodcaller, neg
 
 import numpy as np
 import pandas as pd
 import pytest
-import sqlalchemy.exc
+import sqlalchemy as sa
 import toolz
 from pytest import param
 
@@ -548,25 +546,26 @@ def test_order_by_random(alltypes):
     assert not r1.equals(r2)
 
 
-def check_table_info(buf, schema):
-    info_str = buf.getvalue()
-
-    assert "Null" in info_str
-    assert all(type.__class__.__name__ in info_str for type in schema.types)
-    assert all(name in info_str for name in schema.names)
-
-
-def test_table_info_buf(alltypes):
-    buf = io.StringIO()
-    alltypes.info(buf=buf)
-    check_table_info(buf, alltypes.schema())
-
-
-def test_table_info_no_buf(alltypes):
-    buf = io.StringIO()
-    with redirect_stdout(buf):
-        alltypes.info()
-    check_table_info(buf, alltypes.schema())
+@pytest.mark.notyet(
+    ["druid"],
+    raises=sa.exc.ProgrammingError,
+    reason="Druid only supports trivial unions",
+)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+def test_table_info(alltypes):
+    expr = alltypes.info()
+    df = expr.execute()
+    assert alltypes.columns == list(df.name)
+    assert expr.columns == [
+        "name",
+        "type",
+        "nullable",
+        "nulls",
+        "non_nulls",
+        "null_frac",
+        "pos",
+    ]
+    assert expr.columns == list(df.columns)
 
 
 @pytest.mark.parametrize(
@@ -750,7 +749,7 @@ def test_select_filter_select(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["mssql"], raises=sqlalchemy.exc.OperationalError)
+@pytest.mark.broken(["mssql"], raises=sa.exc.OperationalError)
 def test_between(backend, alltypes, df):
     expr = alltypes.double_col.between(5, 10)
     result = expr.execute().rename("double_col")
