@@ -300,6 +300,10 @@ filterwarnings = [
   "ignore:'cgi' is deprecated and slated for removal in Python 3\\.13:DeprecationWarning",
   # warnings from google's use of pkg_resources
   "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
+  # sqlalchemy warns about mysql's inability to cast to bool;
+  # this has no effect on ibis's output because we convert types after
+  # execution
+  "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning"
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
