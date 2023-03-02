@@ -18,11 +18,11 @@
 #
 
 # Java tuning
-DRUID_XMX=2g
+DRUID_XMX=1g
 DRUID_XMS=64m
 DRUID_MAXNEWSIZE=128m
 DRUID_NEWSIZE=64m
-DRUID_MAXDIRECTMEMORYSIZE=2g
+DRUID_MAXDIRECTMEMORYSIZE=1g
 
 druid_emitter_logging_logLevel=debug
 
@@ -41,7 +41,7 @@ druid_metadata_storage_connector_password=FoolishPassword
 
 druid_coordinator_balancer_strategy=cachingCost
 
-druid_indexer_runner_javaOptsArray=["-server", "-Xmx1g", "-Xms64m", "-XX:MaxDirectMemorySize=2g", "-Duser.timezone=UTC", "-Dfile.encoding=UTF-8", "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"]
+druid_indexer_runner_javaOptsArray=["-server", "-Xmx1g", "-Xms64m", "-XX:MaxDirectMemorySize=1g", "-Duser.timezone=UTC", "-Dfile.encoding=UTF-8", "-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager"]
 druid_indexer_fork_property_druid_processing_buffer_sizeBytes=64MiB
 
 druid_storage_type=local
@@ -51,5 +51,6 @@ druid_indexer_logs_directory=/opt/shared/indexing-logs
 
 druid_processing_numThreads=1
 druid_processing_numMergeBuffers=1
+druid_processing_buffer_sizeBytes=64m
 
 DRUID_LOG4J=<?xml version="1.0" encoding="UTF-8" ?><Configuration status="WARN"><Appenders><Console name="Console" target="SYSTEM_OUT"><PatternLayout pattern="%d{ISO8601} %p [%t] %c - %m%n"/></Console></Appenders><Loggers><Root level="info"><AppenderRef ref="Console"/></Root><Logger name="org.apache.druid.jetty.RequestLog" additivity="false" level="DEBUG"><AppenderRef ref="Console"/></Logger></Loggers></Configuration>
