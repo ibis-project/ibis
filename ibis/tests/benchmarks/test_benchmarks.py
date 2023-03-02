@@ -154,8 +154,6 @@ def test_builtins(benchmark, expr_fn, builtin, t, base, large_expr):
 
 
 _backends = set(_get_backend_names())
-# spark is a duplicate of pyspark
-_backends.remove("spark")
 # compile is a no-op
 _backends.remove("pandas")
 

@@ -321,9 +321,6 @@ def _get_backends_to_test(
     if keep:
         backends = backends.intersection(keep)
 
-    # spark is an alias for pyspark
-    backends = backends.difference(("spark",))
-
     return [
         pytest.param(
             backend,
