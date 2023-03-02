@@ -214,7 +214,6 @@ polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
 pyspark = "ibis.backends.pyspark"
 snowflake = "ibis.backends.snowflake"
-spark = "ibis.backends.pyspark"
 sqlite = "ibis.backends.sqlite"
 trino = "ibis.backends.trino"
 

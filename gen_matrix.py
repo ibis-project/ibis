@@ -10,9 +10,7 @@ import ibis.expr.operations as ops
 
 
 def get_backends():
-    entry_points = sorted(
-        name for ep in ibis.util.backend_entry_points() if (name := ep.name) != "spark"
-    )
+    entry_points = sorted(ep.name for ep in ibis.util.backend_entry_points())
     return [(backend, getattr(ibis, backend)) for backend in entry_points]
 
 
