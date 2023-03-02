@@ -12,16 +12,15 @@ hide:
 ---
 
 <div class="install-tutorial-button" markdown>
-[Install](./install.md){ .md-button .md-button--primary }
-[Tutorial](https://github.com/ibis-project/ibis-examples){ .md-button }
+[Getting Started](./getting_started.md){ .md-button .md-button--primary }
+[Install](./install.md){ .md-button }
 </div>
 
 ---
 
 ```python title="Write high-level Python code"
 >>> import ibis
->>> con = ibis.connect('movielens.sqlite')
->>> movies = con.tables.movies
+>>> movies = ibis.examples.ml_latest_small_movies.fetch()
 >>> rating_by_year = movies.group_by('year').avg_rating.mean()
 >>> q = rating_by_year.order_by(rating_by_year.year.desc())
 ```
