@@ -664,7 +664,7 @@ def test_logical_negation_literal(con, expr, expected, op):
     "op",
     [
         toolz.identity,
-        param(invert, marks=pytest.mark.notimpl(["mssql", "druid"])),
+        param(invert, marks=pytest.mark.notimpl(["mssql"])),
         param(neg, marks=pytest.mark.notimpl(["mssql"])),
     ],
 )
