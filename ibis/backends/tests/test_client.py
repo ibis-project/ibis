@@ -156,7 +156,8 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_create_temporary_table_from_schema(con, new_schema, temp_table):
+def test_create_temporary_table_from_schema(con, new_schema):
+    temp_table = f"_{guid()}"
     con.create_table(temp_table, schema=new_schema, temp=True)
 
     table = con.table(temp_table)
