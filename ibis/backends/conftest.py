@@ -5,6 +5,7 @@ import importlib
 import importlib.metadata
 import itertools
 import platform
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, TextIO
@@ -267,7 +268,7 @@ def pytest_ignore_collect(path, config):
 def pytest_collection_modifyitems(session, config, items):
     # add the backend marker to any tests are inside "ibis/backends"
     all_backends = _get_backend_names()
-    xdist_group_markers = []
+    additional_markers = []
 
     for item in items:
         parts = item.path.parts
@@ -289,9 +290,20 @@ def pytest_collection_modifyitems(session, config, items):
             # build a list of markers so we're don't invalidate the item's
             # marker iterator
             for _ in item.iter_markers(name=name):
-                xdist_group_markers.append((item, pytest.mark.xdist_group(name=name)))
+                additional_markers.append((item, pytest.mark.xdist_group(name=name)))
 
-    for item, marker in xdist_group_markers:
+        for _ in item.iter_markers(name="pyspark"):
+            additional_markers.append(
+                (
+                    item,
+                    pytest.mark.xfail(
+                        sys.version_info >= (3, 11),
+                        reason="PySpark doesn't support Python 3.11",
+                    ),
+                )
+            )
+
+    for item, marker in additional_markers:
         item.add_marker(marker)
 
 

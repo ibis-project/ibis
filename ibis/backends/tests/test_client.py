@@ -553,17 +553,35 @@ def test_unsigned_integer_type(alchemy_con):
         ),
         param(
             "pyspark://?spark.app.name=test-pyspark",
-            marks=mark.pyspark,
+            marks=[
+                mark.pyspark,
+                pytest.mark.skipif(
+                    sys.version_info >= (3, 11),
+                    reason="passes on 3.11, but no other pyspark tests do",
+                ),
+            ],
             id="pyspark",
         ),
         param(
             "pyspark://my-warehouse-dir?spark.app.name=test-pyspark",
-            marks=mark.pyspark,
+            marks=[
+                mark.pyspark,
+                pytest.mark.skipif(
+                    sys.version_info >= (3, 11),
+                    reason="passes on 3.11, but no other pyspark tests do",
+                ),
+            ],
             id="pyspark_with_warehouse",
         ),
         param(
             "pyspark://my-warehouse-dir",
-            marks=mark.pyspark,
+            marks=[
+                mark.pyspark,
+                pytest.mark.skipif(
+                    sys.version_info >= (3, 11),
+                    reason="passes on 3.11, but no other pyspark tests do",
+                ),
+            ],
             id="pyspark_with_warehouse_no_params",
         ),
     ],

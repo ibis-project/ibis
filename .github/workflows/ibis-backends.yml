@@ -71,11 +71,6 @@ jobs:
             title: Datafusion
             extras:
               - datafusion
-          - name: pyspark
-            title: PySpark
-            serial: true
-            extras:
-              - pyspark
           - name: polars
             title: Polars
             extras:
@@ -140,11 +135,26 @@ jobs:
               - druid
         include:
           - os: ubuntu-latest
+            python-version: "3.8"
+            backend:
+              name: pyspark
+              title: PySpark
+              serial: true
+              extras:
+                - pyspark
+          - os: ubuntu-latest
             python-version: "3.10"
             backend:
               name: pyspark
               title: PySpark
               serial: true
+              extras:
+                - pyspark
+          - os: ubuntu-latest
+            python-version: "3.11"
+            backend:
+              name: pyspark
+              title: PySpark
               extras:
                 - pyspark
         exclude:
@@ -167,21 +177,6 @@ jobs:
                 - clickhouse
               services:
                 - clickhouse
-          - os: ubuntu-latest
-            python-version: "3.11"
-            backend:
-              name: pyspark
-              title: PySpark
-              serial: true
-              extras:
-                - pyspark
-          - os: windows-latest
-            backend:
-              name: pyspark
-              title: PySpark
-              serial: true
-              extras:
-                - pyspark
           - os: windows-latest
             backend:
               name: postgres
