@@ -203,4 +203,17 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run doctests
-        run: just doctest
+        run: just doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          flags: core,doctests,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+
+      - name: publish test report
+        uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: doctest-${{ matrix.os }}-${{ matrix.python-version }}
+          path: junit.xml
