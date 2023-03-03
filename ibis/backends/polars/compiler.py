@@ -995,3 +995,11 @@ def execute_e(op, **kwargs):
 @translate.register(ops.Pi)
 def execute_pi(op, **kwargs):
     return pl.lit(np.pi)
+
+
+@translate.register(ops.Time)
+def execute_time(op, **kwargs):
+    arg = translate(op.arg, **kwargs)
+    if op.arg.output_dtype.is_timestamp():
+        return arg.dt.truncate("1us").cast(pl.Time)
+    return arg

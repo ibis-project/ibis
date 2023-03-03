@@ -624,6 +624,7 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.ExtractHour: _extract('hour'),
     ops.ExtractMinute: _extract('minute'),
     ops.ExtractSecond: _extract('second'),
+    ops.Time: fixed_arity(lambda arg: sa.cast(arg, sa.TIME), 1),
 }
 
 
