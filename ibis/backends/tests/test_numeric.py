@@ -842,7 +842,6 @@ def test_isnan_isinf(
             L(5.556).log10(),
             math.log10(5.556),
             id='log10',
-            marks=pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
         ),
         param(
             L(5.556).radians(),
@@ -858,13 +857,6 @@ def test_isnan_isinf(
             L(11) % 3,
             11 % 3,
             id='mod',
-            marks=[
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="ercent remainder '%' is not allowed under the current SQL conformance level",
-                )
-            ],
         ),
     ],
 )
@@ -1166,7 +1158,6 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
     ],
@@ -1189,7 +1180,6 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
-@pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1).name('tmp')
 
@@ -1201,7 +1191,9 @@ def test_mod(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["mssql"], raises=sa.exc.OperationalError)
-@pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(
+    ["druid"], raises=AssertionError, reason="mod with floats is integer mod"
+)
 @pytest.mark.notyet(
     ["bigquery"],
     reason="bigquery doesn't support floating modulus",
@@ -1408,20 +1400,7 @@ def test_histogram(con, alltypes):
     assert len(results.value_counts()) == n
 
 
-@pytest.mark.parametrize(
-    "const",
-    [
-        param(
-            "pi",
-            marks=pytest.mark.broken(
-                ["druid"],
-                raises=sa.exc.ProgrammingError,
-                reason="No match found for function signature PI()",
-            ),
-        ),
-        "e",
-    ],
-)
+@pytest.mark.parametrize("const", ["pi", "e"])
 def test_constants(con, const):
     expr = getattr(ibis, const)
     result = con.execute(expr)

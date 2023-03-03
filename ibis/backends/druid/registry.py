@@ -22,5 +22,9 @@ operation_registry.update(
         ops.BitwiseXor: fixed_arity(sa.func.bitwise_xor, 2),
         ops.BitwiseLeftShift: fixed_arity(sa.func.bitwise_shift_left, 2),
         ops.BitwiseRightShift: fixed_arity(sa.func.bitwise_shift_right, 2),
+        ops.Pi: fixed_arity(lambda: sa.func.acos(-1), 0),
+        ops.Modulus: fixed_arity(sa.func.mod, 2),
+        ops.Power: fixed_arity(sa.func.power, 2),
+        ops.Log10: fixed_arity(sa.func.log10, 1),
     }
 )
