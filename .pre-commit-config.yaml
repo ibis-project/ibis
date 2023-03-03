@@ -4,11 +4,12 @@ ci:
   autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"
   skip:
     - actionlint
-    - prettier
-    - shellcheck
-    - shfmt
     - just
     - nixpkgs-fmt
+    - prettier
+    - ruff
+    - shellcheck
+    - shfmt
     - statix
 default_stages:
   - commit
@@ -21,11 +22,19 @@ repos:
     rev: 23.1.0
     hooks:
       - id: black
-  - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.253
+  - repo: local
     hooks:
       - id: ruff
-        args: ["--show-source", "--fix"]
+        name: ruff
+        description: "Run 'ruff' for extremely fast Python linting"
+        entry: ruff
+        language: system
+        types_or:
+          - python
+          - pyi
+        args: ["check", "--force-exclude", "--show-source", "--fix"]
+        require_serial: true
+        minimum_pre_commit_version: "2.9.2"
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.29.0
     hooks:
