@@ -12,6 +12,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.selectors as s
 from ibis import _
 from ibis import literal as L
 
@@ -937,3 +938,37 @@ def test_many_subqueries(con, snapshot):
     t3 = query(t2, group_cols=["street"])
 
     snapshot.assert_match(str(ibis.to_sql(t3, dialect=con.name)), "out.sql")
+
+
+@pytest.mark.notimpl(["dask", "pandas"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["polars"], reason="polars doesn't expand > 1 explode")
+@pytest.mark.notimpl(["druid"], raises=AssertionError)
+@pytest.mark.notyet(
+    ["pyspark"], reason="pyspark doesn't allow more than one explode in a select"
+)
+@pytest.mark.notyet(
+    ["bigquery"],
+    reason="backend doesn't implement unnest",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["datafusion", "impala", "mssql", "mysql", "sqlite"],
+    reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
+    raises=com.OperationNotDefinedError,
+)
+def test_pivot_longer(con):
+    diamonds = con.tables.diamonds
+    res = diamonds.pivot_longer(s.c("x", "y", "z"), names_to="pos", values_to="xyz")
+    assert res.schema().names == (
+        "carat",
+        "cut",
+        "color",
+        "clarity",
+        "depth",
+        "table",
+        "price",
+        "pos",
+        "xyz",
+    )
+    df = res.limit(5).execute()
+    assert not df.empty

@@ -9,6 +9,7 @@ import warnings
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
 
+import toolz
 from public import public
 
 import ibis
@@ -23,6 +24,8 @@ from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 if TYPE_CHECKING:
     import pandas as pd
 
+    import ibis.expr.schema as sch
+    import ibis.expr.selectors as s
     import ibis.expr.types as ir
     from ibis.common.typing import SupportsSchema
     from ibis.expr.selectors import IfAnyAll, Selector
@@ -2480,6 +2483,325 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def __enter__(self):
         return self
+
+    def pivot_longer(
+        self,
+        cols: str | s.Selector,
+        *,
+        names_to: str | Iterable[str] = "name",
+        names_pattern: str | re.Pattern = r"(.+)",
+        names_transform: Callable[[str], ir.Value]
+        | Mapping[str, Callable[[str], ir.Value]]
+        | None = None,
+        values_to: str = "value",
+        values_transform: Callable[[ir.Value], ir.Value] | Deferred | None = None,
+    ) -> Table:
+        """Transform a table from wider to longer.
+
+        Parameters
+        ----------
+        cols
+            String column names or selectors.
+        names_to
+            A string or iterable of strings indicating how to name the new
+            pivoted columns.
+        names_pattern
+            Pattern to use to extract column names from the input. By default
+            the entire column name is extracted.
+        names_transform
+            Function or mapping of a name in `names_to` to a function to
+            transform a column name to a value.
+        values_to
+            Name of the pivoted value column.
+        values_transform
+            Apply a function to the value column. This can be a lambda or
+            deferred expression.
+
+        Returns
+        -------
+        Table
+            Pivoted table
+
+        Examples
+        --------
+        Basic usage
+
+        >>> import ibis
+        >>> import ibis.expr.selectors as s
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> relig_income = ibis.examples.relig_income_raw.fetch()
+        >>> relig_income
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━┳━━━┓
+        ┃ religion                ┃ <$10k ┃ $10-20k ┃ $20-30k ┃ $30-40k ┃ $40-50k ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━╇━━━┩
+        │ string                  │ int64 │ int64   │ int64   │ int64   │ int64   │ … │
+        ├─────────────────────────┼───────┼─────────┼─────────┼─────────┼─────────┼───┤
+        │ Agnostic                │    27 │      34 │      60 │      81 │      76 │ … │
+        │ Atheist                 │    12 │      27 │      37 │      52 │      35 │ … │
+        │ Buddhist                │    27 │      21 │      30 │      34 │      33 │ … │
+        │ Catholic                │   418 │     617 │     732 │     670 │     638 │ … │
+        │ Don’t know/refused      │    15 │      14 │      15 │      11 │      10 │ … │
+        │ Evangelical Prot        │   575 │     869 │    1064 │     982 │     881 │ … │
+        │ Hindu                   │     1 │       9 │       7 │       9 │      11 │ … │
+        │ Historically Black Prot │   228 │     244 │     236 │     238 │     197 │ … │
+        │ Jehovah's Witness       │    20 │      27 │      24 │      24 │      21 │ … │
+        │ Jewish                  │    19 │      19 │      25 │      25 │      30 │ … │
+        │ …                       │     … │       … │       … │       … │       … │ … │
+        └─────────────────────────┴───────┴─────────┴─────────┴─────────┴─────────┴───┘
+
+        Here we convert column names not matching the selector for the `religion` column
+        and convert those names into values
+
+        >>> relig_income.pivot_longer(~s.c("religion"), names_to="income", values_to="count")
+        ┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ religion ┃ income             ┃ count ┃
+        ┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ string   │ string             │ int64 │
+        ├──────────┼────────────────────┼───────┤
+        │ Agnostic │ <$10k              │    27 │
+        │ Agnostic │ $10-20k            │    34 │
+        │ Agnostic │ $20-30k            │    60 │
+        │ Agnostic │ $30-40k            │    81 │
+        │ Agnostic │ $40-50k            │    76 │
+        │ Agnostic │ $50-75k            │   137 │
+        │ Agnostic │ $75-100k           │   122 │
+        │ Agnostic │ $100-150k          │   109 │
+        │ Agnostic │ >150k              │    84 │
+        │ Agnostic │ Don't know/refused │    96 │
+        │ …        │ …                  │     … │
+        └──────────┴────────────────────┴───────┘
+
+        Simliarly for a different example dataset, we convert names to values
+        but using a different selector and the default `values_to` value.
+
+        >>> world_bank_pop = ibis.examples.world_bank_pop_raw.fetch(header=1)
+        >>> world_bank_pop.head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━┓
+        ┃ country ┃ indicator   ┃ 2000         ┃ 2001         ┃ 2002         ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string      │ float64      │ float64      │ float64      │ … │
+        ├─────────┼─────────────┼──────────────┼──────────────┼──────────────┼───┤
+        │ ABW     │ SP.URB.TOTL │ 4.244400e+04 │ 4.304800e+04 │ 4.367000e+04 │ … │
+        │ ABW     │ SP.URB.GROW │ 1.182632e+00 │ 1.413021e+00 │ 1.434560e+00 │ … │
+        │ ABW     │ SP.POP.TOTL │ 9.085300e+04 │ 9.289800e+04 │ 9.499200e+04 │ … │
+        │ ABW     │ SP.POP.GROW │ 2.055027e+00 │ 2.225930e+00 │ 2.229056e+00 │ … │
+        │ AFG     │ SP.URB.TOTL │ 4.436299e+06 │ 4.648055e+06 │ 4.892951e+06 │ … │
+        └─────────┴─────────────┴──────────────┴──────────────┴──────────────┴───┘
+        >>> world_bank_pop.pivot_longer(s.matches(r"\\d{4}"), names_to="year").head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ country ┃ indicator   ┃ year   ┃ value   ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ string  │ string      │ string │ float64 │
+        ├─────────┼─────────────┼────────┼─────────┤
+        │ ABW     │ SP.URB.TOTL │ 2000   │ 42444.0 │
+        │ ABW     │ SP.URB.TOTL │ 2001   │ 43048.0 │
+        │ ABW     │ SP.URB.TOTL │ 2002   │ 43670.0 │
+        │ ABW     │ SP.URB.TOTL │ 2003   │ 44246.0 │
+        │ ABW     │ SP.URB.TOTL │ 2004   │ 44669.0 │
+        └─────────┴─────────────┴────────┴─────────┘
+
+        `pivot_longer` has some preprocessing capabiltiies like stripping a prefix and applying
+        a function to column names
+
+        >>> billboard = ibis.examples.billboard.fetch()
+        >>> billboard
+        ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
+        ┃ artist         ┃ track                   ┃ date_entered ┃ wk1   ┃ wk2   ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
+        │ string         │ string                  │ date         │ int64 │ int64 │ … │
+        ├────────────────┼─────────────────────────┼──────────────┼───────┼───────┼───┤
+        │ 2 Pac          │ Baby Don't Cry (Keep... │ 2000-02-26   │    87 │    82 │ … │
+        │ 2Ge+her        │ The Hardest Part Of ... │ 2000-09-02   │    91 │    87 │ … │
+        │ 3 Doors Down   │ Kryptonite              │ 2000-04-08   │    81 │    70 │ … │
+        │ 3 Doors Down   │ Loser                   │ 2000-10-21   │    76 │    76 │ … │
+        │ 504 Boyz       │ Wobble Wobble           │ 2000-04-15   │    57 │    34 │ … │
+        │ 98^0           │ Give Me Just One Nig... │ 2000-08-19   │    51 │    39 │ … │
+        │ A*Teens        │ Dancing Queen           │ 2000-07-08   │    97 │    97 │ … │
+        │ Aaliyah        │ I Don't Wanna           │ 2000-01-29   │    84 │    62 │ … │
+        │ Aaliyah        │ Try Again               │ 2000-03-18   │    59 │    53 │ … │
+        │ Adams, Yolanda │ Open My Heart           │ 2000-08-26   │    76 │    76 │ … │
+        │ …              │ …                       │ …            │     … │     … │ … │
+        └────────────────┴─────────────────────────┴──────────────┴───────┴───────┴───┘
+        >>> billboard.pivot_longer(
+        ...     s.startswith("wk"),
+        ...     names_to="week",
+        ...     names_pattern=r"wk(.+)",
+        ...     names_transform=int,
+        ...     values_to="rank",
+        ...     values_transform=_.cast("int"),
+        ... ).dropna("rank")
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━┓
+        ┃ artist  ┃ track                   ┃ date_entered ┃ week ┃ rank  ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━┩
+        │ string  │ string                  │ date         │ int8 │ int64 │
+        ├─────────┼─────────────────────────┼──────────────┼──────┼───────┤
+        │ 2 Pac   │ Baby Don't Cry (Keep... │ 2000-02-26   │    1 │    87 │
+        │ 2 Pac   │ Baby Don't Cry (Keep... │ 2000-02-26   │    2 │    82 │
+        │ 2 Pac   │ Baby Don't Cry (Keep... │ 2000-02-26   │    3 │    72 │
+        │ 2 Pac   │ Baby Don't Cry (Keep... │ 2000-02-26   │    4 │    77 │
+        │ 2 Pac   │ Baby Don't Cry (Keep... │ 2000-02-26   │    5 │    87 │
+        │ 2 Pac   │ Baby Don't Cry (Keep... │ 2000-02-26   │    6 │    94 │
+        │ 2 Pac   │ Baby Don't Cry (Keep... │ 2000-02-26   │    7 │    99 │
+        │ 2Ge+her │ The Hardest Part Of ... │ 2000-09-02   │    1 │    91 │
+        │ 2Ge+her │ The Hardest Part Of ... │ 2000-09-02   │    2 │    87 │
+        │ 2Ge+her │ The Hardest Part Of ... │ 2000-09-02   │    3 │    92 │
+        │ …       │ …                       │ …            │    … │     … │
+        └─────────┴─────────────────────────┴──────────────┴──────┴───────┘
+
+        You can use regular expression capture groups to extract multiple
+        variables stored in column names
+
+        >>> who = ibis.examples.who.fetch()
+        >>> who
+        ┏━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━┓
+        ┃ country     ┃ iso2   ┃ iso3   ┃ year  ┃ new_sp_m014 ┃ new_sp_m1524 ┃ … ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━┩
+        │ string      │ string │ string │ int64 │ int64       │ int64        │ … │
+        ├─────────────┼────────┼────────┼───────┼─────────────┼──────────────┼───┤
+        │ Afghanistan │ AF     │ AFG    │  1980 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1981 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1982 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1983 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1984 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1985 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1986 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1987 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1988 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1989 │           ∅ │            ∅ │ … │
+        │ …           │ …      │ …      │     … │           … │            … │ … │
+        └─────────────┴────────┴────────┴───────┴─────────────┴──────────────┴───┘
+        >>> len(who.columns)
+        60
+        >>> who.pivot_longer(
+        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     names_to=["diagnosis", "gender", "age"],
+        ...     names_pattern="new_?(.*)_(.)(.*)",
+        ...     values_to="count",
+        ... )
+        ┏━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ country     ┃ iso2   ┃ iso3   ┃ year  ┃ diagnosis ┃ gender ┃ age    ┃ count ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ string      │ string │ string │ int64 │ string    │ string │ string │ int64 │
+        ├─────────────┼────────┼────────┼───────┼───────────┼────────┼────────┼───────┤
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 014    │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 1524   │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 2534   │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 3544   │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 4554   │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 5564   │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 65     │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 014    │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 1524   │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 2534   │     ∅ │
+        │ …           │ …      │ …      │     … │ …         │ …      │ …      │     … │
+        └─────────────┴────────┴────────┴───────┴───────────┴────────┴────────┴───────┘
+
+        `names_transform` is flexible, and can be:
+
+            1. A mapping of one or more names in `names_to` to callable
+            2. A callable that will be applied to every name
+
+        Let's recode gender and age to numeric values using a mapping
+
+        >>> who.pivot_longer(
+        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     names_to=["diagnosis", "gender", "age"],
+        ...     names_pattern="new_?(.*)_(.)(.*)",
+        ...     names_transform=dict(
+        ...         gender={"m": 1, "f": 2}.get,
+        ...         age=dict(zip(["014", "1524", "2534", "3544", "4554", "5564", "65"], range(7))).get,
+        ...     ),
+        ...     values_to="count",
+        ... )
+        ┏━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━┳━━━━━━━┓
+        ┃ country     ┃ iso2   ┃ iso3   ┃ year  ┃ diagnosis ┃ gender ┃ age  ┃ count ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━╇━━━━━━━┩
+        │ string      │ string │ string │ int64 │ string    │ int8   │ int8 │ int64 │
+        ├─────────────┼────────┼────────┼───────┼───────────┼────────┼──────┼───────┤
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    0 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    1 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    2 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    3 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    4 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    5 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    6 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    0 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    1 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    2 │     ∅ │
+        │ …           │ …      │ …      │     … │ …         │      … │    … │     … │
+        └─────────────┴────────┴────────┴───────┴───────────┴────────┴──────┴───────┘
+
+        The number of match groups in `names_pattern` must match the length of `names_to`
+
+        >>> who.pivot_longer(
+        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     names_to=["diagnosis", "gender", "age"],
+        ...     names_pattern="new_?(.*)_.(.*)",
+        ... )
+        Traceback (most recent call last):
+          ...
+        ibis.common.exceptions.IbisInputError: Number of match groups in `names_pattern` ...
+
+        `names_transform` must be a mapping or callable
+
+        >>> who.pivot_longer(s.r["new_sp_m014":"newrel_f65"], names_transform="upper")
+        Traceback (most recent call last):
+          ...
+        ibis.common.exceptions.IbisTypeError: ... Got <class 'str'>
+        """
+        import ibis.expr.selectors as s
+
+        pivot_sel = s.c(cols) if isinstance(cols, str) else cols
+
+        pivot_cols = pivot_sel.expand(self)
+        if not pivot_cols:
+            # TODO: improve the repr of selectors
+            raise com.IbisInputError("Selector returned no columns to pivot on")
+
+        names_to = util.promote_list(names_to)
+
+        names_pattern = re.compile(names_pattern)
+        if (ngroups := names_pattern.groups) != (nnames := len(names_to)):
+            raise com.IbisInputError(
+                f"Number of match groups in `names_pattern`"
+                f"{names_pattern.pattern!r} ({ngroups:d} groups) doesn't "
+                f"match the length of `names_to` {names_to} (length {nnames:d})"
+            )
+
+        if names_transform is None:
+            names_transform = dict.fromkeys(names_to, toolz.identity)
+        elif not isinstance(names_transform, Mapping):
+            if callable(names_transform):
+                names_transform = dict.fromkeys(names_to, names_transform)
+            else:
+                raise com.IbisTypeError(
+                    f"`names_transform` must be a mapping or callable. Got {type(names_transform)}"
+                )
+
+        for name in names_to:
+            names_transform.setdefault(name, toolz.identity)
+
+        if values_transform is None:
+            values_transform = toolz.identity
+        elif isinstance(values_transform, Deferred):
+            values_transform = values_transform.resolve
+
+        names_map = {name: [] for name in names_to}
+        values = []
+
+        for pivot_col in pivot_cols:
+            col_name = pivot_col.get_name()
+            match_result = names_pattern.match(col_name)
+            for name, value in zip(names_to, match_result.groups()):
+                transformer = names_transform[name]
+                names_map[name].append(transformer(value))
+            values.append(values_transform(pivot_col))
+
+        new_cols = {key: ibis.array(value).unnest() for key, value in names_map.items()}
+        new_cols[values_to] = ibis.array(values).unnest()
+
+        return self.select(~pivot_sel, **new_cols)
 
 
 def _resolve_predicates(
