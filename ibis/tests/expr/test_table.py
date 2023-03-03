@@ -1720,3 +1720,86 @@ def test_cast():
     assert t.cast([("a", "string"), ("b", "float")]).equals(
         t.mutate(a=t.a.cast("string"), b=t.b.cast("float"))
     )
+
+
+def test_pivot_longer():
+    diamonds = ibis.table(
+        {
+            'carat': 'float64',
+            'cut': 'string',
+            'color': 'string',
+            'clarity': 'string',
+            'depth': 'float64',
+            'table': 'float64',
+            'price': 'int64',
+            'x': 'float64',
+            'y': 'float64',
+            'z': 'float64',
+        },
+        name="diamonds",
+    )
+    res = diamonds.pivot_longer(s.c("x", "y", "z"), names_to="pos", values_to="xyz")
+    assert res.schema().names == (
+        "carat",
+        "cut",
+        "color",
+        "clarity",
+        "depth",
+        "table",
+        "price",
+        "pos",
+        "xyz",
+    )
+
+
+def test_pivot_longer_strip_prefix():
+    t = ibis.table(
+        dict(artist="string", track="string", wk1="int", wk2="int", wk3="int")
+    )
+    expr = t.pivot_longer(
+        s.startswith("wk"),
+        names_to="week",
+        names_pattern=r"wk(.+)",
+        names_transform=int,
+        values_to="rank",
+        values_transform=_.cast("int"),
+    )
+    schema = ibis.schema(dict(artist="string", track="string", week="int8", rank="int"))
+    assert expr.schema() == schema
+
+
+def test_pivot_longer_pluck_regex():
+    t = ibis.table(
+        dict(artist="string", track="string", x_wk1="int", x_wk2="int", x_wk3="int")
+    )
+    expr = t.pivot_longer(
+        s.matches("^.+wk.$"),
+        names_to=["other_var", "week"],
+        names_pattern=r"(.)_wk(\d)",
+        names_transform=dict(other_var=str.upper, week=int),
+        values_to="rank",
+        values_transform=_.cast("int"),
+    )
+    schema = ibis.schema(
+        dict(
+            artist="string", track="string", other_var="string", week="int8", rank="int"
+        )
+    )
+    assert expr.schema() == schema
+
+
+def test_pivot_longer_no_match():
+    t = ibis.table(
+        dict(artist="string", track="string", x_wk1="int", x_wk2="int", x_wk3="int")
+    )
+    with pytest.raises(
+        com.IbisInputError, match="Selector returned no columns to pivot on"
+    ):
+        t.pivot_longer(
+            s.matches("foo"),
+            names_to=["other_var", "week"],
+            names_pattern=r"(.)_wk(\d)",
+            names_transform=dict(other_var=str.upper, week=int),
+            values_to="rank",
+            values_transform=_.cast("int"),
+        )
