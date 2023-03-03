@@ -50,10 +50,8 @@ import re
 from typing import Callable, Iterable, Mapping, Optional, Sequence, Union
 
 from public import public
-from typing_extensions import Annotated
 
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
@@ -402,48 +400,54 @@ class HashableSlice(Concrete, Coercible):
         return hash((self.__class__, (self.start, self.stop, self.step)))
 
 
-class RangeSelector(Selector):
-    key: Union[str, int, Annotated[slice, rlz.coerced_to(HashableSlice)]]
-
-    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
-        key = self.key
-
-        if isinstance(key, (str, int)):
-            return [table[key]]
-
-        start = key.start or 0
-        stop = key.stop or len(table.columns)
-        step = key.step or 1
-
-        schema = table.schema()
-
-        if isinstance(start, str):
-            start = schema._name_locs[start]
-
-        if isinstance(stop, str):
-            stop = schema._name_locs[stop]
-
-        return [table[i] for i in range(start, stop, step)]
-
-
 class Sliceable(Singleton):
-    def __getitem__(self, key: str | int | slice):
-        return RangeSelector(key=key)
+    def __getitem__(self, key: str | int | slice) -> Predicate:
+        def pred(col):
+            import ibis.expr.analysis as an
+
+            table = an.find_first_base_table(col.op())
+            schema = table.schema
+            idxs = schema._name_locs
+            num_names = len(schema)
+            colname = col.get_name()
+            colidx = idxs[colname]
+
+            if isinstance(key, str):
+                return key == colname
+            elif isinstance(key, int):
+                return key % num_names == colidx
+            else:
+                start = key.start or 0
+                stop = key.stop or num_names
+                step = key.step or 1
+
+                if isinstance(start, str):
+                    start = idxs[start]
+
+                if isinstance(stop, str):
+                    stop = idxs[stop] + 1
+
+                return colidx in range(start, stop, step)
+
+        return where(pred)
 
 
 r = Sliceable()
 
 
 @public
-def first() -> Selector:
+def first() -> Predicate:
+    """Return the first column of a table."""
     return r[0]
 
 
 @public
-def last() -> Selector:
+def last() -> Predicate:
+    """Return the last column of a table."""
     return r[-1]
 
 
 @public
 def all() -> Predicate:
+    """Return every column from a table."""
     return r[:]

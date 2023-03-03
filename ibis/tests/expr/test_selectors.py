@@ -289,6 +289,10 @@ def test_if_any(penguins):
     assert expr.equals(expected)
 
 
+def test_negate_range(penguins):
+    assert penguins.select(~s.r[3:]).equals(penguins.select(0, 1, 2))
+
+
 def test_string_range_start(penguins):
     assert penguins.select(s.r["island":5]).equals(
         penguins.select(penguins.columns[penguins.columns.index("island") : 5])
@@ -297,7 +301,13 @@ def test_string_range_start(penguins):
 
 def test_string_range_end(penguins):
     assert penguins.select(s.r[:"island"]).equals(
-        penguins.select(penguins.columns[: penguins.columns.index("island")])
+        penguins.select(penguins.columns[: penguins.columns.index("island") + 1])
+    )
+
+
+def test_string_element(penguins):
+    assert penguins.select(~s.r["island"]).equals(
+        penguins.select([c for c in penguins.columns if c != "island"])
     )
 
 
