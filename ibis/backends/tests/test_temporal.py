@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-import sqlalchemy.exc
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -938,6 +938,55 @@ def test_time_literal(con, backend):
         assert con.execute(expr.typeof()) == TIME_BACKEND_TYPES[backend_name]
 
 
+@pytest.mark.notyet(
+    ["clickhouse", "impala", "pyspark"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't have a time datatype",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=sa.exc.CompileError,
+    reason="druid sqlalchemy dialect fails to compile datetime types",
+)
+@pytest.mark.broken(
+    ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
+)
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.parametrize(
+    "microsecond",
+    [
+        0,
+        param(
+            561021,
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "mysql"],
+                    raises=AssertionError,
+                    reason="doesn't have enough precision to capture microseconds",
+                ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=AssertionError,
+                    reason="has enough precision, but sqlalchemy dialect drops them",
+                ),
+            ],
+        ),
+    ],
+    ids=["second", "subsecond"],
+)
+def test_extract_time_from_timestamp(con, microsecond):
+    raw_ts = datetime.datetime(2023, 1, 7, 13, 20, 5, microsecond)
+    ts = ibis.timestamp(raw_ts)
+    expr = ts.time()
+
+    result = con.execute(expr)
+    expected = raw_ts.time()
+
+    assert result == expected
+
+
 INTERVAL_BACKEND_TYPES = {
     'bigquery': "INTERVAL",
     'clickhouse': 'IntervalSecond',
@@ -952,7 +1001,7 @@ INTERVAL_BACKEND_TYPES = {
     ['snowflake'],
     '(snowflake.connector.errors.ProgrammingError) 001007 (22023): SQL compilation error:'
     "invalid type [CAST(INTERVAL_LITERAL('second', '1') AS VARIANT)] for parameter 'TO_VARIANT'",
-    raises=sqlalchemy.exc.ProgrammingError,
+    raises=sa.exc.ProgrammingError,
 )
 @pytest.mark.broken(
     ['impala'],
