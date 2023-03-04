@@ -36,7 +36,7 @@ multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<2"
 parsy = ">=2,<3"
-pooch = ">=1.6.0,<2"
+pooch = { version = ">=1.6.0,<2", extras = ["progress", "xxhash"] }
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
