@@ -26,7 +26,7 @@ DRUID_MAXDIRECTMEMORYSIZE=1g
 
 druid_emitter_logging_logLevel=debug
 
-druid_extensions_loadList=["postgresql-metadata-storage", "druid-multi-stage-query"]
+druid_extensions_loadList=["postgresql-metadata-storage", "druid-multi-stage-query", "druid-parquet-extensions", "druid-avro-extensions"]
 
 druid_zk_service_host=zookeeper
 
