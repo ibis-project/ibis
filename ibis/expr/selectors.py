@@ -401,10 +401,10 @@ class HashableSlice(Concrete, Coercible):
 
 
 class Sliceable(Singleton):
-    def __getitem__(self, key: str | int | slice) -> Predicate:
-        def pred(col):
-            import ibis.expr.analysis as an
+    def __getitem__(self, key: str | int | slice | Iterable[int | str]) -> Predicate:
+        import ibis.expr.analysis as an
 
+        def pred(col: ir.Value) -> bool:
             table = an.find_first_base_table(col.op())
             schema = table.schema
             idxs = schema._name_locs
@@ -416,6 +416,12 @@ class Sliceable(Singleton):
                 return key == colname
             elif isinstance(key, int):
                 return key % num_names == colidx
+            elif util.is_iterable(key):
+                return any(
+                    (isinstance(el, int) and el % num_names == colidx)
+                    or (isinstance(el, str) and el == colname)
+                    for el in key
+                )
             else:
                 start = key.start or 0
                 stop = key.stop or num_names
