@@ -101,18 +101,13 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
 
     @classmethod
     def service_spec(cls, data_dir: Path):
+        files = [data_dir.joinpath("functional_alltypes.parquet")]
+        files.extend(
+            data_dir.joinpath("parquet", name, f"{name}.parquet")
+            for name in ("diamonds", "batting", "awards_players")
+        )
         return ServiceSpec(
-            name="druid-coordinator",
-            data_volume="/opt/shared",
-            files=[
-                data_dir.joinpath(f"{name}.csv")
-                for name in (
-                    "diamonds",
-                    "batting",
-                    "awards_players",
-                    "functional_alltypes",
-                )
-            ],
+            name="druid-coordinator", data_volume="/opt/shared", files=files
         )
 
     @staticmethod
@@ -138,7 +133,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         # gather executes immediately, but we need to wait for asyncio.run to
         # create the event loop
         async def load_data(queries):
-            """Copy data into the Druid volume mount and run data loading queries."""
+            """Run data loading queries."""
             async with ClientSession() as session:
                 await asyncio.gather(*map(partial(run_query, session), queries))
 
