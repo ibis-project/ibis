@@ -39,7 +39,7 @@ class Example(Concrete):
 
     def fetch(self, **kwargs: Any) -> ir.Table:
         reader = getattr(ibis, self.reader)
-        return reader(_EXAMPLES.fetch(self.key), **kwargs)
+        return reader(_EXAMPLES.fetch(self.key, progressbar=True), **kwargs)
 
 
 def __dir__() -> list[str]:
