@@ -478,7 +478,11 @@ def string_concat(op):
 def string_join(op):
     args = [translate(arg) for arg in op.arg]
     _assert_literal(op.sep)
-    return pl.concat_str(args, sep=op.sep.value)
+    sep = op.sep.value
+    try:
+        return pl.concat_str(args, separator=sep)
+    except TypeError:  # pragma: no cover
+        return pl.concat_str(args, sep=sep)  # pragma: no cover
 
 
 @translate.register(ops.Substring)
