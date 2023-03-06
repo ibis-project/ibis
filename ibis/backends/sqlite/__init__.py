@@ -129,7 +129,8 @@ class Backend(BaseAlchemyBackend):
         self.database_name = "main"
 
         engine = sa.create_engine(
-            f"sqlite:///{database if database is not None else ':memory:'}"
+            f"sqlite:///{database if database is not None else ':memory:'}",
+            poolclass=sa.pool.StaticPool,
         )
 
         if type_map:

@@ -111,7 +111,9 @@ class Backend(BaseAlchemyBackend):
         if schema is not None:
             connect_args["options"] = f"-csearch_path={schema}"
 
-        engine = sa.create_engine(alchemy_url, connect_args=connect_args)
+        engine = sa.create_engine(
+            alchemy_url, connect_args=connect_args, poolclass=sa.pool.StaticPool
+        )
 
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):

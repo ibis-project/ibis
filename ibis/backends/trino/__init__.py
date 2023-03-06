@@ -64,10 +64,15 @@ class Backend(BaseAlchemyBackend):
                             **connect_args,
                             "experimental_python_types": True,
                         },
+                        poolclass=sa.pool.StaticPool,
                     )
                 )
             except TypeError:
-                super().do_connect(sa.create_engine(url, connect_args=connect_args))
+                super().do_connect(
+                    sa.create_engine(
+                        url, connect_args=connect_args, poolclass=sa.pool.StaticPool
+                    )
+                )
         self._meta = sa.MetaData(schema=schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
