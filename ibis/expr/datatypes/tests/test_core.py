@@ -95,8 +95,8 @@ class FooStruct:
     m: dt.date
     n: dt.time
     o: dt.timestamp
-    oa: dt.Timestamp('UTC')  # noqa: F821
-    ob: dt.Timestamp('UTC', 6)  # noqa: F821
+    oa: dt.Timestamp('UTC')
+    ob: dt.Timestamp('UTC', 6)
     p: dt.interval
     pa: dt.Interval('s')
     pb: dt.Interval('s', dt.int16)
@@ -343,7 +343,7 @@ def test_dtype_from_invalid_python_type():
 
 def test_dtype_from_additional_struct_typehints():
     class A:
-        nested: dt.Struct({'a': dt.Int16, 'b': dt.Int32})  # noqa: F821
+        nested: dt.Struct({'a': dt.Int16, 'b': dt.Int32})
 
     class B:
         nested: dt.Struct['a' : dt.Int16, 'b' : dt.Int32]  # noqa: F821
