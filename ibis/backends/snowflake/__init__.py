@@ -150,6 +150,7 @@ class Backend(BaseAlchemyBackend):
                     "STRICT_JSON_OUTPUT": "TRUE",
                 },
             },
+            poolclass=sa.pool.StaticPool,
         )
 
         @sa.event.listens_for(engine, "connect")

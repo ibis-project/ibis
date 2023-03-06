@@ -124,7 +124,7 @@ class Backend(BaseAlchemyBackend):
                 "instead."
             )
             database = path
-        if not (in_memory := database == ":memory:"):
+        if database != ":memory:":
             database = Path(database).absolute()
         elif temp_directory is None:
             temp_directory = (
@@ -142,7 +142,7 @@ class Backend(BaseAlchemyBackend):
         engine = sa.create_engine(
             f"duckdb:///{database}",
             connect_args=dict(read_only=read_only, config=config),
-            poolclass=sa.pool.SingletonThreadPool if in_memory else None,
+            poolclass=sa.pool.StaticPool,
         )
 
         @sa.event.listens_for(engine, "connect")

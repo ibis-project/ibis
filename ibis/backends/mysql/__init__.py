@@ -99,7 +99,7 @@ class Backend(BaseAlchemyBackend):
 
         self.database_name = alchemy_url.database
 
-        engine = sa.create_engine(alchemy_url)
+        engine = sa.create_engine(alchemy_url, poolclass=sa.pool.StaticPool)
 
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):

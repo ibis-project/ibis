@@ -43,7 +43,7 @@ class Backend(BaseAlchemyBackend):
 
         self.database_name = "default"  # not sure what should go here
 
-        engine = sa.create_engine(url)
+        engine = sa.create_engine(url, poolclass=sa.pool.StaticPool)
 
         super().do_connect(engine)
 
