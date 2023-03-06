@@ -32,7 +32,7 @@ env:
   FORCE_COLOR: "1"
 
 jobs:
-  test_no_backends:
+  test_core:
     name: Test ${{ matrix.os }} python-${{ matrix.python-version }}
     env:
       SQLALCHEMY_WARN_20: "1"
@@ -68,7 +68,7 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: no-backends-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: core
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -133,7 +133,7 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: shapely-duckdb-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: shapely-duckdb
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
@@ -193,7 +193,7 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: doctests-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: doctests
 
       - name: install ibis with all extras
         run: poetry install --without dev --without docs --extras all

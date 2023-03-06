@@ -279,7 +279,7 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.backend.name }}
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
@@ -563,7 +563,7 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-sqlalchemy2
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
