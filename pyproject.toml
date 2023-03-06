@@ -298,6 +298,8 @@ filterwarnings = [
   "ignore:typing\\.io is deprecated:DeprecationWarning",
   # warnings from google's use of the cgi module
   "ignore:'cgi' is deprecated and slated for removal in Python 3\\.13:DeprecationWarning",
+  # warnings from google's use of pkg_resources
+  "ignore:pkg_resources is deprecated as an API:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

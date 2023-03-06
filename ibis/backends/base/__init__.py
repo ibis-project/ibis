@@ -499,10 +499,10 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         Parameters
         ----------
-        args
+        *args
             Mandatory connection parameters, see the docstring of `do_connect`
             for details.
-        kwargs
+        **kwargs
             Extra connection parameters, see the docstring of `do_connect` for
             details.
 
