@@ -82,7 +82,7 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: benchmarks-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: benchmarks
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
