@@ -329,7 +329,7 @@ def test_all(penguins):
     [
         param([0, 1, 2], (0, 1, 2), id="int_tuple"),
         param(~s.r[[3, 4, 5]], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_list"),
-        param(~s.r[3, 4, 5], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_list"),
+        param(~s.r[3, 4, 5], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_tuple),
         param(s.r["island", "year"], ("island", "year"), id="string_tuple"),
         param(s.r[["island", "year"]], ("island", "year"), id="string_list"),
         param(iter(["island", 4, "year"]), ("island", 4, "year"), id="mixed_iterable"),
