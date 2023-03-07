@@ -132,20 +132,17 @@ def test_create_table_from_schema(con, new_schema, temp_table):
         )
 
 
-@mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        "polars",
-        "bigquery",
-        "dask",
-        "pandas",
-        "impala",
-        "pyspark",
-        "trino",
-        "druid",
-    ]
-)
+@pytest.fixture(scope="session")
+def tmpcon(alchemy_con):
+    """A fixture to scope the connection for temp table testing.
+
+    This prevents resetting the connection for subsequent tests that may depend
+    on connection state persisting across tests.
+    """
+    return alchemy_con._from_url(alchemy_con.con.url)
+
+
+@mark.notimpl(["trino", "druid"])
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
@@ -153,21 +150,21 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_create_temporary_table_from_schema(con, new_schema):
+def test_create_temporary_table_from_schema(tmpcon, new_schema):
     temp_table = f"_{guid()}"
-    table = con.create_table(temp_table, schema=new_schema, temp=True)
+    table = tmpcon.create_table(temp_table, schema=new_schema, temp=True)
 
     # verify table exist in the current session
-    backend_mapping = backend_type_mapping.get(con.name, dict())
+    backend_mapping = backend_type_mapping.get(tmpcon.name, dict())
     for column_name, column_type in table.schema().items():
         assert (
             backend_mapping.get(new_schema[column_name], new_schema[column_name])
             == column_type
         )
 
-    con.reconnect()
+    tmpcon.reconnect()
     # verify table no longer exist after reconnect
-    assert temp_table not in con.tables.keys()
+    assert temp_table not in tmpcon.tables.keys()
 
 
 @mark.notimpl(
@@ -1107,10 +1104,44 @@ def test_create_table_timestamp(con):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_persist_expression(con, alltypes):
+@mark.never(
+    ["pandas"],
+    raises=AssertionError,
+    reason="pandas doesn't cache anything and therefore does no ref counting",
+)
+def test_persist_expression_ref_count(con, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation")
     persisted_table = non_persisted_table.cache()
 
+    op = non_persisted_table.op()
+
+    # ref count is unaffected without a context manager
+    assert con._refs[op] == 1
+    tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
+    assert con._refs[op] == 1
+
+
+@mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "bigquery",
+        "impala",
+        "pyspark",
+        "trino",
+        "druid",
+    ]
+)
+@mark.notyet(
+    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
+)
+@mark.never(
+    ["mssql"],
+    reason="mssql supports support temporary tables through naming conventions",
+)
+def test_persist_expression(alltypes):
+    non_persisted_table = alltypes.mutate(test_column="calculation", other_calc="xyz")
+    persisted_table = non_persisted_table.cache()
     tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
 
 
@@ -1132,7 +1163,144 @@ def test_persist_expression(con, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_persist_expression_contextmanager(con, alltypes):
-    non_cached_table = alltypes.mutate(test_column="calculation")
+def test_persist_expression_contextmanager(alltypes):
+    non_cached_table = alltypes.mutate(
+        test_column="calculation", other_column="big calc"
+    )
     with non_cached_table.cache() as cached_table:
         tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+
+
+@mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "bigquery",
+        "impala",
+        "pyspark",
+        "trino",
+        "druid",
+    ]
+)
+@mark.notyet(
+    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
+)
+@mark.never(
+    ["mssql"],
+    reason="mssql supports support temporary tables through naming conventions",
+)
+@mark.never(
+    ["pandas"],
+    raises=AssertionError,
+    reason="pandas doesn't cache anything and therefore does no ref counting",
+)
+def test_persist_expression_contextmanager_ref_count(con, alltypes):
+    non_cached_table = alltypes.mutate(
+        test_column="calculation", other_column="big calc 2"
+    )
+    op = non_cached_table.op()
+    with non_cached_table.cache() as cached_table:
+        tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+        assert con._refs[op] == 1
+    assert con._refs[op] == 0
+
+
+@mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "bigquery",
+        "impala",
+        "pyspark",
+        "trino",
+        "druid",
+    ]
+)
+@mark.notyet(
+    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
+)
+@mark.never(
+    ["mssql"],
+    reason="mssql supports support temporary tables through naming conventions",
+)
+@mark.never(
+    ["pandas"],
+    raises=AssertionError,
+    reason="pandas doesn't cache anything and therefore does no ref counting",
+)
+def test_persist_expression_multiple_refs(con, alltypes):
+    non_cached_table = alltypes.mutate(
+        test_column="calculation", other_column="big calc 2"
+    )
+    op = non_cached_table.op()
+    with non_cached_table.cache() as cached_table:
+        tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+        with non_cached_table.cache() as nested_cached_table:
+            assert not nested_cached_table.to_pandas().empty
+            assert con._refs[op] == 2
+        assert con._refs[op] == 1
+    assert con._refs[op] == 0
+
+
+@mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "bigquery",
+        "impala",
+        "pyspark",
+        "trino",
+        "druid",
+    ]
+)
+@mark.notyet(
+    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
+)
+@mark.never(
+    ["mssql"],
+    reason="mssql supports support temporary tables through naming conventions",
+)
+def test_persist_expression_repeated_cache(alltypes):
+    non_cached_table = alltypes.mutate(
+        test_column="calculation", other_column="big calc 2"
+    )
+    with non_cached_table.cache() as cached_table:
+        with cached_table.cache() as nested_cached_table:
+            assert not nested_cached_table.to_pandas().empty
+
+
+@mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "bigquery",
+        "impala",
+        "pyspark",
+        "trino",
+        "druid",
+    ]
+)
+@mark.notyet(
+    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
+)
+@mark.never(
+    ["mssql"],
+    reason="mssql supports support temporary tables through naming conventions",
+)
+@mark.never(["pandas"], reason="pandas does not need to release anything")
+def test_persist_expression_release(con, alltypes):
+    non_cached_table = alltypes.mutate(
+        test_column="calculation", other_column="big calc 3"
+    )
+    cached_table = non_cached_table.cache()
+    cached_table.release()
+    assert con._refs[non_cached_table.op()] == 0
+
+    with pytest.raises(
+        com.IbisError,
+        match=r".+Did you call `\.release\(\)` twice on the same expression\?",
+    ):
+        cached_table.release()
+
+    with pytest.raises(Exception, match=cached_table.op().name):
+        cached_table.execute()

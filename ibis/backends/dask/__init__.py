@@ -13,7 +13,6 @@ import ibis.backends.pandas.execution
 import ibis.config
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import util
 from ibis.backends.dask.client import DaskDatabase, DaskTable, ibis_schema_to_dask
 from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
@@ -128,14 +127,8 @@ class Backend(BasePandasBackend):
     def _convert_object(cls, obj: dd.DataFrame) -> dd.DataFrame:
         return obj
 
-    def _cache(self, expr):
-        persisted_table_name = util.generate_unique_table_name("cache")
-        df = self.compile(expr).persist()
-        self.load_data(persisted_table_name, df)
-        return self.table(persisted_table_name)
+    def _load_into_cache(self, name, expr):
+        self.load_data(name, self.compile(expr).persist())
 
-    def _release_cache(self, expr):
-        if isinstance(expr._arg, DaskTable):
-            del self.dictionary[expr._arg.name]
-        else:
-            raise NotImplementedError(f"{expr.arg} is not releasable.")
+    def _clean_up_cached_table(self, op):
+        del self.dictionary[op.name]

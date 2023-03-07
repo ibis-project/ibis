@@ -31,6 +31,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.8"
 atpublic = ">=2.3,<4"
+bidict = ">=0.22.1,<1"
 importlib-resources = { version = ">=5,<6", python = "<3.9" }
 multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
