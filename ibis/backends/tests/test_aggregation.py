@@ -1029,7 +1029,8 @@ def test_filter(backend, alltypes, df):
 
 @pytest.mark.notimpl(["polars", "datafusion", "pyspark", "mssql"])
 def test_column_summary(alltypes):
-    bool_col_summary = alltypes.bool_col.summary()
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        bool_col_summary = alltypes.bool_col.summary()
     expr = alltypes.aggregate(bool_col_summary)
     result = expr.execute()
     assert result.shape == (1, 7)

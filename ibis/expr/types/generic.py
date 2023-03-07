@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 from public import public
 
 import ibis
+from ibis import util
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -843,6 +844,11 @@ class Column(Value, _FixedTextJupyterMixin):
             .limit(k)
         )
 
+    @util.deprecated(
+        instead="Reach out at https://github.com/ibis-project/ibis if you'd like this API to remain.",
+        as_of="5.0",
+        removed_in="6.0",
+    )
     def summary(
         self,
         exact_nunique: bool = False,

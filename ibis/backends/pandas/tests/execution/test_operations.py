@@ -648,20 +648,22 @@ def test_quantile_groupby(batting, batting_df):
 
 
 def test_summary_execute(t):
-    expr = t.group_by('plain_strings').aggregate(
-        [
-            t.plain_int64.summary(prefix='int64_'),
-            t.plain_int64.summary(suffix='_int64'),
-            t.plain_datetimes_utc.summary(prefix='datetime_'),
-            t.plain_datetimes_utc.summary(suffix='_datetime'),
-        ]
-    )
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        expr = t.group_by('plain_strings').aggregate(
+            [
+                t.plain_int64.summary(prefix='int64_'),
+                t.plain_int64.summary(suffix='_int64'),
+                t.plain_datetimes_utc.summary(prefix='datetime_'),
+                t.plain_datetimes_utc.summary(suffix='_datetime'),
+            ]
+        )
     result = expr.execute()
     assert isinstance(result, pd.DataFrame)
 
 
 def test_summary_numeric(batting, batting_df):
-    expr = batting.aggregate(batting.G.summary())
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        expr = batting.aggregate(batting.G.summary())
     result = expr.execute()
     assert len(result) == 1
 
@@ -679,7 +681,8 @@ def test_summary_numeric(batting, batting_df):
 
 
 def test_summary_numeric_group_by(batting, batting_df):
-    expr = batting.group_by('teamID').G.summary()
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        expr = batting.group_by('teamID').G.summary()
     result = expr.execute()
     expected = (
         batting_df.groupby('teamID')
@@ -707,7 +710,8 @@ def test_summary_numeric_group_by(batting, batting_df):
 
 
 def test_summary_non_numeric(batting, batting_df):
-    expr = batting.aggregate(batting.teamID.summary())
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        expr = batting.aggregate(batting.teamID.summary())
     result = expr.execute()
     assert len(result) == 1
     assert len(result.columns) == 3
@@ -720,7 +724,8 @@ def test_summary_non_numeric(batting, batting_df):
 
 
 def test_summary_non_numeric_group_by(batting, batting_df):
-    expr = batting.group_by('teamID').playerID.summary()
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        expr = batting.group_by('teamID').playerID.summary()
     result = expr.execute()
     expected = (
         batting_df.groupby('teamID')
