@@ -253,9 +253,3 @@ class Backend(BasePandasBackend):
             }
 
         return execute_and_reset(node, params=params, **kwargs)
-
-    def _cache(self, expr):
-        return expr
-
-    def _release_cache(self, expr):
-        return
