@@ -257,7 +257,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _columns_from_schema(self, name: str, schema: sch.Schema) -> list[sa.Column]:
         dialect = self.con.dialect
         return [
-            sa.Column(colname, to_sqla_type(dialect, dtype), nullable=dtype.nullable)
+            sa.Column(
+                colname,
+                to_sqla_type(dialect, dtype),
+                nullable=dtype.nullable,
+                quote=self.compiler.translator_class._always_quote_columns,
+            )
             for colname, dtype in zip(schema.names, schema.types)
         ]
 
@@ -437,7 +442,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 # types
                 table.append_column(
                     sa.Column(
-                        colname, to_sqla_type(dialect, type), nullable=type.nullable
+                        colname,
+                        to_sqla_type(dialect, type),
+                        nullable=type.nullable,
+                        quote=self.compiler.translator_class._always_quote_columns,
                     ),
                     replace_existing=True,
                 )

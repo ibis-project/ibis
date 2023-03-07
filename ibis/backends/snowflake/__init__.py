@@ -70,6 +70,7 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
     )
     _require_order_by = (*AlchemyExprTranslator._require_order_by, ops.Reduction)
     _dialect_name = "snowflake"
+    _always_quote_columns = True
     supports_unnest_in_select = False
 
 
