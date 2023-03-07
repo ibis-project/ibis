@@ -41,7 +41,6 @@ if TYPE_CHECKING:
 
     import ibis.expr.datatypes as dt
 
-
 __all__ = (
     'BaseAlchemyBackend',
     'AlchemyExprTranslator',
@@ -654,3 +653,14 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a backend-specific SQL string."""
         return sch.Schema.from_tuples(self._metadata(query))
+
+    def _cache(self, expr):
+        persisted_table_name = util.generate_unique_table_name("cache")
+        self.create_table(persisted_table_name, expr, schema=expr.schema(), temp=True)
+        return self.table(persisted_table_name)
+
+    def _release_cache(self, expr):
+        if isinstance(expr._arg, AlchemyTable):
+            self.drop_table(expr._arg.name)
+        else:
+            raise NotImplementedError(f"{expr.arg} is not releaseable.")
