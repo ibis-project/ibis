@@ -626,7 +626,8 @@ def test_groupby_alias(table):
 
 
 def test_summary_expand_list(table):
-    summ = table.f.summary()
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        summ = table.f.summary()
 
     metric = table.g.group_concat().name('bar')
     result = table.aggregate([metric, summ])
@@ -638,40 +639,45 @@ def test_summary_prefix_suffix(table):
     def get_names(exprs):
         return [e.get_name() for e in exprs]
 
-    assert get_names(table.g.summary(prefix="string_")) == [
-        'string_count',
-        'string_nulls',
-        'string_uniques',
-    ]
-    assert get_names(table.g.summary(suffix="_string")) == [
-        'count_string',
-        'nulls_string',
-        'uniques_string',
-    ]
-    assert get_names(table.g.summary(prefix="pre_", suffix="_post")) == [
-        'pre_count_post',
-        'pre_nulls_post',
-        'pre_uniques_post',
-    ]
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        assert get_names(table.g.summary(prefix="string_")) == [
+            'string_count',
+            'string_nulls',
+            'string_uniques',
+        ]
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        assert get_names(table.g.summary(suffix="_string")) == [
+            'count_string',
+            'nulls_string',
+            'uniques_string',
+        ]
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        assert get_names(table.g.summary(prefix="pre_", suffix="_post")) == [
+            'pre_count_post',
+            'pre_nulls_post',
+            'pre_uniques_post',
+        ]
 
-    assert get_names(table.f.summary(prefix="float_")) == [
-        "float_count",
-        "float_nulls",
-        "float_min",
-        "float_max",
-        "float_sum",
-        "float_mean",
-        "float_approx_nunique",
-    ]
-    assert get_names(table.f.summary(suffix="_numeric")) == [
-        "count_numeric",
-        "nulls_numeric",
-        "min_numeric",
-        "max_numeric",
-        "sum_numeric",
-        "mean_numeric",
-        "approx_nunique_numeric",
-    ]
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        assert get_names(table.f.summary(prefix="float_")) == [
+            "float_count",
+            "float_nulls",
+            "float_min",
+            "float_max",
+            "float_sum",
+            "float_mean",
+            "float_approx_nunique",
+        ]
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        assert get_names(table.f.summary(suffix="_numeric")) == [
+            "count_numeric",
+            "nulls_numeric",
+            "min_numeric",
+            "max_numeric",
+            "sum_numeric",
+            "mean_numeric",
+            "approx_nunique_numeric",
+        ]
 
 
 def test_filter_aggregate_pushdown_predicate(table):

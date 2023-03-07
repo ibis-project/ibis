@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Iterable, Literal, Sequence
 from public import public
 
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
@@ -583,6 +584,11 @@ class NumericColumn(Column, NumericValue):
 
         return ((self - base) / binwidth).floor()
 
+    @util.deprecated(
+        instead="Reach out at https://github.com/ibis-project/ibis if you'd like this API to remain.",
+        as_of="5.0",
+        removed_in="6.0",
+    )
     def summary(
         self,
         exact_nunique: bool = False,

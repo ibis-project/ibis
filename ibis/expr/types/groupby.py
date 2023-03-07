@@ -332,6 +332,11 @@ class GroupedArray:
     approx_median = _group_agg_dispatch('approx_median')
     group_concat = _group_agg_dispatch('group_concat')
 
+    @util.deprecated(
+        instead="Reach out at https://github.com/ibis-project/ibis if you'd like this API to remain.",
+        as_of="5.0",
+        removed_in="6.0",
+    )
     def summary(self, exact_nunique=False):
         """Summarize a column.
 

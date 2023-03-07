@@ -24,20 +24,22 @@ def test_summary_execute(alltypes):
     # also test set_column while we're at it
     table = table.set_column('double_col', table.double_col * 2)
 
-    metrics = table.double_col.summary()
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        metrics = table.double_col.summary()
     expr = table.aggregate(metrics)
     repr(expr)
 
     result = expr.execute()
     assert isinstance(result, pd.DataFrame)
 
-    expr = table.group_by('string_col').aggregate(
-        [
-            table.double_col.summary(prefix='double_'),
-            table.float_col.summary(prefix='float_'),
-            table.string_col.summary(suffix='_string'),
-        ]
-    )
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        expr = table.group_by('string_col').aggregate(
+            [
+                table.double_col.summary(prefix='double_'),
+                table.float_col.summary(prefix='float_'),
+                table.string_col.summary(suffix='_string'),
+            ]
+        )
     result = expr.execute()
     assert isinstance(result, pd.DataFrame)
 

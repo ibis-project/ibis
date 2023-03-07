@@ -168,7 +168,8 @@ def test_anonymous_aggregate(alltypes, df):
 
 
 def test_boolean_summary(alltypes):
-    bool_col_summary = alltypes.bool_col.summary()
+    with pytest.warns(FutureWarning, match="is deprecated"):
+        bool_col_summary = alltypes.bool_col.summary()
     expr = alltypes.aggregate(bool_col_summary)
 
     result = expr.execute()
