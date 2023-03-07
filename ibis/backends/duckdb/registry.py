@@ -53,23 +53,24 @@ _LOG_BASE_FUNCS = {
 }
 
 
-def _generic_log(arg, base):
-    return sa.func.ln(arg) / sa.func.ln(base)
+def _generic_log(arg, base, *, type_):
+    return sa.func.ln(arg, type_=type_) / sa.func.ln(base, type_=type_)
 
 
 def _log(t, op):
     arg, base = op.args
+    sqla_type = t.get_sqla_type(op.output_dtype)
     sa_arg = t.translate(arg)
     if base is not None:
         sa_base = t.translate(base)
         try:
             base_value = sa_base.value
         except AttributeError:
-            return _generic_log(sa_arg, sa_base)
+            return _generic_log(sa_arg, sa_base, type_=sqla_type)
         else:
             func = _LOG_BASE_FUNCS.get(base_value, _generic_log)
-            return func(sa_arg)
-    return sa.func.ln(sa_arg)
+            return func(sa_arg, type_=sqla_type)
+    return sa.func.ln(sa_arg, type_=sqla_type)
 
 
 def _timestamp_from_unix(t, op):

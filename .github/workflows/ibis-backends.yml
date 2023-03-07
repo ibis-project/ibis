@@ -454,7 +454,7 @@ jobs:
       - run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - name: remove deps that are not compatible with sqlalchemy 2
-        run: poetry remove duckdb-engine snowflake-sqlalchemy
+        run: poetry remove snowflake-sqlalchemy
 
       - name: add sqlalchemy 2
         run: poetry add --lock --optional 'sqlalchemy>=2,<3'
@@ -522,6 +522,10 @@ jobs:
             extras:
               - trino
               - postgres
+          - name: duckdb
+            title: DuckDB
+            extras:
+              - duckdb
     steps:
       - name: checkout
         uses: actions/checkout@v3
