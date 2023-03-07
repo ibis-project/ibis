@@ -664,14 +664,15 @@ def test_connect_duckdb(url, tmp_path):
             ],  # hard to test in CI since tmpdir & cwd are on different drives
             id="relative-path",
         ),
-        param(lambda p: "sqlite://", "db", id="in-memory-empty"),
-        param(lambda p: "sqlite://:memory:", "db", id="in-memory-explicit"),
+        param(lambda _: "sqlite://", "db", id="in-memory-empty"),
+        param(lambda _: "sqlite://:memory:", "db", id="in-memory-explicit"),
     ],
 )
 def test_connect_sqlite(url, ext, tmp_path):
     import sqlite3
 
     path = os.path.abspath(tmp_path / f"test.{ext}")
+    print(path)
     with sqlite3.connect(path):
         pass
     con = ibis.connect(url(path))

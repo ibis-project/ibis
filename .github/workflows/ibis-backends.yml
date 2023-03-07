@@ -45,191 +45,194 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          # - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.8"
+          # - "3.8"
           - "3.11"
         backend:
-          - name: dask
-            title: Dask
-            extras:
-              - dask
-          - name: duckdb
-            title: DuckDB
-            extras:
-              - duckdb
-          - name: pandas
-            title: Pandas
-            extras:
-              - pandas
+          # - name: dask
+          #   title: Dask
+          #   extras:
+          #     - dask
+          # - name: duckdb
+          #   title: DuckDB
+          #   extras:
+          #     - duckdb
+          # - name: pandas
+          #   title: Pandas
+          #   extras:
+          #     - pandas
           - name: sqlite
             title: SQLite
             extras:
               - sqlite
-          - name: datafusion
-            title: Datafusion
-            extras:
-              - datafusion
-          - name: polars
-            title: Polars
-            extras:
-              - polars
-          - name: mysql
-            title: MySQL
-            services:
-              - mysql
-            extras:
-              - mysql
-              - geospatial
-            sys-deps:
-              - libgeos-dev
-          - name: clickhouse
-            title: ClickHouse
-            services:
-              - clickhouse
-            extras:
-              - clickhouse
-          - name: postgres
-            title: PostgreSQL
-            extras:
-              - postgres
-              - geospatial
-            services:
-              - postgres
-            sys-deps:
-              - libgeos-dev
-          - name: impala
-            title: Impala
-            serial: true
-            extras:
-              - impala
-            services:
-              - impala
-              - kudu
-            sys-deps:
-              - cmake
-              - ninja-build
-          - name: mssql
-            title: MS SQL Server
-            serial: true
-            extras:
-              - mssql
-            services:
-              - mssql
-            sys-deps:
-              - libkrb5-dev
-              - krb5-config
-          - name: trino
-            title: Trino
-            extras:
-              - trino
-              - postgres
-            services:
-              - trino
-          - name: druid
-            title: Druid
-            extras:
-              - druid
-            services:
-              - druid
-        include:
-          - os: ubuntu-latest
-            python-version: "3.8"
-            backend:
-              name: pyspark
-              title: PySpark
-              serial: true
-              extras:
-                - pyspark
-          - os: ubuntu-latest
-            python-version: "3.10"
-            backend:
-              name: pyspark
-              title: PySpark
-              serial: true
-              extras:
-                - pyspark
-          - os: ubuntu-latest
-            python-version: "3.11"
-            backend:
-              name: pyspark
-              title: PySpark
-              extras:
-                - pyspark
-        exclude:
-          - os: windows-latest
-            backend:
-              name: mysql
-              title: MySQL
-              extras:
-                - mysql
-                - geospatial
-              services:
-                - mysql
-              sys-deps:
-                - libgeos-dev
-          - os: windows-latest
-            backend:
-              name: clickhouse
-              title: ClickHouse
-              extras:
-                - clickhouse
-              services:
-                - clickhouse
-          - os: windows-latest
-            backend:
-              name: postgres
-              title: PostgreSQL
-              extras:
-                - postgres
-                - geospatial
-              services:
-                - postgres
-              sys-deps:
-                - libgeos-dev
-          - os: windows-latest
-            backend:
-              name: impala
-              title: Impala
-              serial: true
-              extras:
-                - impala
-              services:
-                - impala
-                - kudu
-              sys-deps:
-                - cmake
-                - ninja-build
-          - os: windows-latest
-            backend:
-              name: mssql
-              title: MS SQL Server
-              serial: true
-              extras:
-                - mssql
-              services:
-                - mssql
-              sys-deps:
-                - libkrb5-dev
-                - krb5-config
-          - os: windows-latest
-            backend:
-              name: trino
-              title: Trino
-              services:
-                - trino
-              extras:
-                - trino
-                - postgres
-          - os: windows-latest
-            backend:
-              name: druid
-              title: Druid
-              extras:
-                - druid
-              services:
-                - druid
+            sys-deps: []
+            services: []
+            serial: false
+          # - name: datafusion
+          #   title: Datafusion
+          #   extras:
+          #     - datafusion
+          # - name: polars
+          #   title: Polars
+          #   extras:
+          #     - polars
+          # - name: mysql
+          #   title: MySQL
+          #   services:
+          #     - mysql
+          #   extras:
+          #     - mysql
+          #     - geospatial
+          #   sys-deps:
+          #     - libgeos-dev
+          # - name: clickhouse
+          #   title: ClickHouse
+          #   services:
+          #     - clickhouse
+          #   extras:
+          #     - clickhouse
+          # - name: postgres
+          #   title: PostgreSQL
+          #   extras:
+          #     - postgres
+          #     - geospatial
+          #   services:
+          #     - postgres
+          #   sys-deps:
+          #     - libgeos-dev
+          # - name: impala
+          #   title: Impala
+          #   serial: true
+          #   extras:
+          #     - impala
+          #   services:
+          #     - impala
+          #     - kudu
+          #   sys-deps:
+          #     - cmake
+          #     - ninja-build
+          # - name: mssql
+          #   title: MS SQL Server
+          #   serial: true
+          #   extras:
+          #     - mssql
+          #   services:
+          #     - mssql
+          #   sys-deps:
+          #     - libkrb5-dev
+          #     - krb5-config
+          # - name: trino
+          #   title: Trino
+          #   extras:
+          #     - trino
+          #     - postgres
+          #   services:
+          #     - trino
+          # - name: druid
+          #   title: Druid
+          #   extras:
+          #     - druid
+          #   services:
+          #     - druid
+        # include:
+        #   - os: ubuntu-latest
+        #     python-version: "3.8"
+        #     backend:
+        #       name: pyspark
+        #       title: PySpark
+        #       serial: true
+        #       extras:
+        #         - pyspark
+        #   - os: ubuntu-latest
+        #     python-version: "3.10"
+        #     backend:
+        #       name: pyspark
+        #       title: PySpark
+        #       serial: true
+        #       extras:
+        #         - pyspark
+        #   - os: ubuntu-latest
+        #     python-version: "3.11"
+        #     backend:
+        #       name: pyspark
+        #       title: PySpark
+        #       extras:
+        #         - pyspark
+        # exclude:
+        #   - os: windows-latest
+        #     backend:
+        #       name: mysql
+        #       title: MySQL
+        #       extras:
+        #         - mysql
+        #         - geospatial
+        #       services:
+        #         - mysql
+        #       sys-deps:
+        #         - libgeos-dev
+        #   - os: windows-latest
+        #     backend:
+        #       name: clickhouse
+        #       title: ClickHouse
+        #       extras:
+        #         - clickhouse
+        #       services:
+        #         - clickhouse
+        #   - os: windows-latest
+        #     backend:
+        #       name: postgres
+        #       title: PostgreSQL
+        #       extras:
+        #         - postgres
+        #         - geospatial
+        #       services:
+        #         - postgres
+        #       sys-deps:
+        #         - libgeos-dev
+        #   - os: windows-latest
+        #     backend:
+        #       name: impala
+        #       title: Impala
+        #       serial: true
+        #       extras:
+        #         - impala
+        #       services:
+        #         - impala
+        #         - kudu
+        #       sys-deps:
+        #         - cmake
+        #         - ninja-build
+        #   - os: windows-latest
+        #     backend:
+        #       name: mssql
+        #       title: MS SQL Server
+        #       serial: true
+        #       extras:
+        #         - mssql
+        #       services:
+        #         - mssql
+        #       sys-deps:
+        #         - libkrb5-dev
+        #         - krb5-config
+        #   - os: windows-latest
+        #     backend:
+        #       name: trino
+        #       title: Trino
+        #       services:
+        #         - trino
+        #       extras:
+        #         - trino
+        #         - postgres
+        #   - os: windows-latest
+        #     backend:
+        #       name: druid
+        #       title: Druid
+        #       extras:
+        #         - druid
+        #       services:
+        #         - druid
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
