@@ -2392,7 +2392,7 @@ def test_large_timestamp(con):
                     ["bigquery"],
                     reason=(
                         "doesn't support nanoseconds. "
-                        "Server returns: 400 Invalid timestamp: '2023-01-07 13:20:05.561000231'",
+                        "Server returns: 400 Invalid timestamp: '2023-01-07 13:20:05.561000231'"
                     ),
                     raises=GoogleBadRequest,
                 ),
