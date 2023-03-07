@@ -525,7 +525,16 @@ class Backend(BaseAlchemyBackend):
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
-        cursor = self.con.connect().execute(sql)
+        con = self.con.connect()
+
+        # end the current transaction started by sqlalchemy; without this
+        # duckdb-engine raises an exception disallowing nested transactions
+        #
+        # not clear if the value of returning a RecordBatchReader versus an
+        # iterator of record batches is worth the cursor leakage here
+        con.exec_driver_sql("COMMIT")
+
+        cursor = con.execute(sql)
 
         reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
         return IbisRecordBatchReader(reader, cursor)
