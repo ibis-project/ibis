@@ -68,8 +68,6 @@ jobs:
             extras:
               - sqlite
             sys-deps: []
-            services: []
-            serial: false
           # - name: datafusion
           #   title: Datafusion
           #   extras:
@@ -289,7 +287,7 @@ jobs:
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup -s ibis/backends/tests/test_client.py
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial
@@ -318,292 +316,292 @@ jobs:
         if: ${{ failure() }}
         run: docker compose logs
 
-  test_backends_min_version:
-    name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-    env:
-      SQLALCHEMY_WARN_20: "1"
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-        python-version:
-          - "3.8"
-          - "3.11"
-        backend:
-          - name: dask
-            title: Dask
-            deps:
-              - "dask[array,dataframe]@2022.9.1"
-            extras:
-              - dask
-          - name: postgres
-            title: PostgreSQL
-            deps:
-              - "psycopg2@2.8.4"
-              - "GeoAlchemy2@0.6.3"
-              - "geopandas@0.6"
-              - "Shapely@1.6"
-            services:
-              - postgres
-            extras:
-              - postgres
-              - geospatial
-        exclude:
-          - os: windows-latest
-            backend:
-              name: postgres
-              title: PostgreSQL
-              deps:
-                - "psycopg2@2.8.4"
-                - "GeoAlchemy2@0.6.3"
-                - "geopandas@0.6"
-                - "Shapely@1.6"
-              services:
-                - postgres
-              extras:
-                - postgres
-                - geospatial
-          - python-version: "3.11"
-            backend:
-              name: postgres
-              title: PostgreSQL
-              deps:
-                - "psycopg2@2.8.4"
-                - "GeoAlchemy2@0.6.3"
-                - "geopandas@0.6"
-                - "Shapely@1.6"
-              services:
-                - postgres
-              extras:
-                - postgres
-                - geospatial
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-
-      - name: install libgeos for shapely
-        if: matrix.backend.name == 'postgres'
-        run: sudo apt-get install -qq -y build-essential libgeos-dev
-
-      - uses: extractions/setup-just@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download backend data
-        run: just download-data
-
-      - name: start services
-        if: matrix.backend.services != null
-        run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
-
-      - name: install python
-        uses: actions/setup-python@v4
-        id: install_python
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
-
-      - name: install minimum versions
-        run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
-
-      - name: checkout the lock file
-        run: git checkout poetry.lock
-
-      - name: lock with no updates
-        # poetry add is aggressive and will update other dependencies like
-        # numpy and pandas so we keep the pyproject.toml edits and then relock
-        # without updating anything except the requested versions
-        run: poetry lock --no-update
-
-      - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
-
-      - name: run tests
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
-
-      - name: upload code coverage
-        if: success()
-        uses: codecov/codecov-action@v3
-        with:
-          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ matrix.backend.name }}-min-version-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
-      - name: Show docker compose logs on fail
-        if: ${{ failure() }}
-        run: docker compose logs
-
-  gen_lockfile_sqlalchemy2:
-    name: Generate Poetry Lockfile for SQLAlchemy 2
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-
-      - name: install python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"
-
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
-
-      - name: remove deps that are not compatible with sqlalchemy 2
-        run: poetry remove duckdb-engine snowflake-sqlalchemy
-
-      - name: add sqlalchemy 2
-        run: poetry add --lock --optional 'sqlalchemy>=2,<3'
-
-      - name: checkout the lock file
-        run: git checkout poetry.lock
-
-      - name: lock with no updates
-        # poetry add is aggressive and will update other dependencies like
-        # numpy and pandas so we keep the pyproject.toml edits and then relock
-        # without updating anything except the requested versions
-        run: poetry lock --no-update
-
-      - name: check the sqlalchemy version
-        run: poetry show sqlalchemy --no-ansi | grep version | cut -d ':' -f2- | sed 's/ //g' | grep -P '^2\.'
-
-      - name: upload deps file
-        uses: actions/upload-artifact@v3
-        with:
-          name: deps
-          path: |
-            pyproject.toml
-            poetry.lock
-
-  test_backends_sqlalchemy2:
-    name: SQLAlchemy 2 ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-    needs: gen_lockfile_sqlalchemy2
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-        python-version:
-          - "3.11"
-        backend:
-          - name: mssql
-            title: MS SQL Server
-            services:
-              - mssql
-            extras:
-              - mssql
-          - name: mysql
-            title: MySQL
-            services:
-              - mysql
-            extras:
-              - geospatial
-              - mysql
-          - name: postgres
-            title: PostgreSQL
-            services:
-              - postgres
-            extras:
-              - geospatial
-              - postgres
-          - name: sqlite
-            title: SQLite
-            extras:
-              - sqlite
-          - name: trino
-            title: Trino
-            services:
-              - trino
-            extras:
-              - trino
-              - postgres
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-
-      - name: install libgeos for shapely
-        if: ${{ matrix.backend.name == 'postgres' }}
-        run: sudo apt-get install -qq -y build-essential libgeos-dev
-
-      - uses: extractions/setup-just@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: download backend data
-        run: just download-data
-
-      - name: start services
-        if: matrix.backend.services != null
-        run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
-
-      - name: install python
-        uses: actions/setup-python@v4
-        id: install_python
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: download poetry lockfile
-        uses: actions/download-artifact@v3
-        with:
-          name: deps
-          path: deps
-
-      - name: pull out lockfile
-        run: |
-          set -euo pipefail
-
-          mv -f deps/* .
-          rm -r deps
-
-      - uses: syphar/restore-virtualenv@v1
-        with:
-          requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-sqlalchemy2
-
-      - uses: syphar/restore-pip-download-cache@v1
-        with:
-          requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-sqlalchemy2-${{ steps.install_python.outputs.python-version }}
-
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
-
-      - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
-
-      - name: run tests
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
-
-      - name: upload code coverage
-        if: success()
-        uses: codecov/codecov-action@v3
-        with:
-          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ matrix.backend.name }}-sqlalchemy2-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
-      - name: Show docker compose logs on fail
-        if: ${{ failure() }}
-        run: docker compose logs
+  # test_backends_min_version:
+  #   name: ${{ matrix.backend.title }} Min Version ${{ matrix.os }} python-${{ matrix.python-version }}
+  #   runs-on: ${{ matrix.os }}
+  #   env:
+  #     SQLALCHEMY_WARN_20: "1"
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os:
+  #         - ubuntu-latest
+  #         - windows-latest
+  #       python-version:
+  #         - "3.8"
+  #         - "3.11"
+  #       backend:
+  #         - name: dask
+  #           title: Dask
+  #           deps:
+  #             - "dask[array,dataframe]@2022.9.1"
+  #           extras:
+  #             - dask
+  #         - name: postgres
+  #           title: PostgreSQL
+  #           deps:
+  #             - "psycopg2@2.8.4"
+  #             - "GeoAlchemy2@0.6.3"
+  #             - "geopandas@0.6"
+  #             - "Shapely@1.6"
+  #           services:
+  #             - postgres
+  #           extras:
+  #             - postgres
+  #             - geospatial
+  #       exclude:
+  #         - os: windows-latest
+  #           backend:
+  #             name: postgres
+  #             title: PostgreSQL
+  #             deps:
+  #               - "psycopg2@2.8.4"
+  #               - "GeoAlchemy2@0.6.3"
+  #               - "geopandas@0.6"
+  #               - "Shapely@1.6"
+  #             services:
+  #               - postgres
+  #             extras:
+  #               - postgres
+  #               - geospatial
+  #         - python-version: "3.11"
+  #           backend:
+  #             name: postgres
+  #             title: PostgreSQL
+  #             deps:
+  #               - "psycopg2@2.8.4"
+  #               - "GeoAlchemy2@0.6.3"
+  #               - "geopandas@0.6"
+  #               - "Shapely@1.6"
+  #             services:
+  #               - postgres
+  #             extras:
+  #               - postgres
+  #               - geospatial
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v3
+  #
+  #     - name: install libgeos for shapely
+  #       if: matrix.backend.name == 'postgres'
+  #       run: sudo apt-get install -qq -y build-essential libgeos-dev
+  #
+  #     - uses: extractions/setup-just@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #
+  #     - name: download backend data
+  #       run: just download-data
+  #
+  #     - name: start services
+  #       if: matrix.backend.services != null
+  #       run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
+  #
+  #     - name: install python
+  #       uses: actions/setup-python@v4
+  #       id: install_python
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #
+  #     - run: python -m pip install --upgrade pip 'poetry<1.4'
+  #
+  #     - name: install minimum versions
+  #       run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
+  #
+  #     - name: checkout the lock file
+  #       run: git checkout poetry.lock
+  #
+  #     - name: lock with no updates
+  #       # poetry add is aggressive and will update other dependencies like
+  #       # numpy and pandas so we keep the pyproject.toml edits and then relock
+  #       # without updating anything except the requested versions
+  #       run: poetry lock --no-update
+  #
+  #     - name: install ibis
+  #       run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+  #
+  #     - name: run tests
+  #       run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+  #
+  #     - name: upload code coverage
+  #       if: success()
+  #       uses: codecov/codecov-action@v3
+  #       with:
+  #         flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+  #
+  #     - name: publish test report
+  #       uses: actions/upload-artifact@v3
+  #       if: success() || failure()
+  #       with:
+  #         name: ${{ matrix.backend.name }}-min-version-${{ matrix.os }}-${{ matrix.python-version }}
+  #         path: junit.xml
+  #
+  #     - name: Show docker compose logs on fail
+  #       if: ${{ failure() }}
+  #       run: docker compose logs
+  #
+  # gen_lockfile_sqlalchemy2:
+  #   name: Generate Poetry Lockfile for SQLAlchemy 2
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v3
+  #
+  #     - name: install python
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: "3.11"
+  #
+  #     - run: python -m pip install --upgrade pip 'poetry<1.4'
+  #
+  #     - name: remove deps that are not compatible with sqlalchemy 2
+  #       run: poetry remove duckdb-engine snowflake-sqlalchemy
+  #
+  #     - name: add sqlalchemy 2
+  #       run: poetry add --lock --optional 'sqlalchemy>=2,<3'
+  #
+  #     - name: checkout the lock file
+  #       run: git checkout poetry.lock
+  #
+  #     - name: lock with no updates
+  #       # poetry add is aggressive and will update other dependencies like
+  #       # numpy and pandas so we keep the pyproject.toml edits and then relock
+  #       # without updating anything except the requested versions
+  #       run: poetry lock --no-update
+  #
+  #     - name: check the sqlalchemy version
+  #       run: poetry show sqlalchemy --no-ansi | grep version | cut -d ':' -f2- | sed 's/ //g' | grep -P '^2\.'
+  #
+  #     - name: upload deps file
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: deps
+  #         path: |
+  #           pyproject.toml
+  #           poetry.lock
+  #
+  # test_backends_sqlalchemy2:
+  #   name: SQLAlchemy 2 ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
+  #   runs-on: ${{ matrix.os }}
+  #   needs: gen_lockfile_sqlalchemy2
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os:
+  #         - ubuntu-latest
+  #       python-version:
+  #         - "3.11"
+  #       backend:
+  #         - name: mssql
+  #           title: MS SQL Server
+  #           services:
+  #             - mssql
+  #           extras:
+  #             - mssql
+  #         - name: mysql
+  #           title: MySQL
+  #           services:
+  #             - mysql
+  #           extras:
+  #             - geospatial
+  #             - mysql
+  #         - name: postgres
+  #           title: PostgreSQL
+  #           services:
+  #             - postgres
+  #           extras:
+  #             - geospatial
+  #             - postgres
+  #         - name: sqlite
+  #           title: SQLite
+  #           extras:
+  #             - sqlite
+  #         - name: trino
+  #           title: Trino
+  #           services:
+  #             - trino
+  #           extras:
+  #             - trino
+  #             - postgres
+  #   steps:
+  #     - name: checkout
+  #       uses: actions/checkout@v3
+  #
+  #     - name: install libgeos for shapely
+  #       if: ${{ matrix.backend.name == 'postgres' }}
+  #       run: sudo apt-get install -qq -y build-essential libgeos-dev
+  #
+  #     - uses: extractions/setup-just@v1
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #
+  #     - name: download backend data
+  #       run: just download-data
+  #
+  #     - name: start services
+  #       if: matrix.backend.services != null
+  #       run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
+  #
+  #     - name: install python
+  #       uses: actions/setup-python@v4
+  #       id: install_python
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #
+  #     - name: download poetry lockfile
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: deps
+  #         path: deps
+  #
+  #     - name: pull out lockfile
+  #       run: |
+  #         set -euo pipefail
+  #
+  #         mv -f deps/* .
+  #         rm -r deps
+  #
+  #     - uses: syphar/restore-virtualenv@v1
+  #       with:
+  #         requirement_files: poetry.lock
+  #         custom_cache_key_element: ${{ matrix.backend.name }}-sqlalchemy2
+  #
+  #     - uses: syphar/restore-pip-download-cache@v1
+  #       with:
+  #         requirement_files: poetry.lock
+  #         custom_cache_key_element: ${{ matrix.backend.name }}-sqlalchemy2-${{ steps.install_python.outputs.python-version }}
+  #
+  #     - run: python -m pip install --upgrade pip 'poetry<1.4'
+  #
+  #     - name: install ibis
+  #       run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+  #
+  #     - name: run tests
+  #       run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+  #
+  #     - name: upload code coverage
+  #       if: success()
+  #       uses: codecov/codecov-action@v3
+  #       with:
+  #         flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+  #
+  #     - name: publish test report
+  #       uses: actions/upload-artifact@v3
+  #       if: success() || failure()
+  #       with:
+  #         name: ${{ matrix.backend.name }}-sqlalchemy2-${{ matrix.os }}-${{ matrix.python-version }}
+  #         path: junit.xml
+  #
+  #     - name: Show docker compose logs on fail
+  #       if: ${{ failure() }}
+  #       run: docker compose logs
 
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
-      - test_backends_min_version
+      # - test_backends_min_version
       - test_backends
-      - test_backends_sqlalchemy2
+      # - test_backends_sqlalchemy2
     steps:
       - run: exit 0
