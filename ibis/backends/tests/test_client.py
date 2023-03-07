@@ -672,8 +672,7 @@ def test_connect_sqlite(url, ext, tmp_path):
     import sqlite3
 
     path = os.path.abspath(tmp_path / f"test.{ext}")
-    print(path)
-    assert False
+    assert False, str(path)
     with sqlite3.connect(path):
         pass
     con = ibis.connect(url(path))
