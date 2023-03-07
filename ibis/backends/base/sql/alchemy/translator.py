@@ -47,7 +47,7 @@ class AlchemyExprTranslator(ExprTranslator):
 
     integer_to_timestamp = sa.func.to_timestamp
     native_json_type = True
-    _always_quote_columns = False
+    _always_quote_columns = None  # let the dialect decide how to quote
 
     _require_order_by = (
         ops.DenseRank,
