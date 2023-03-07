@@ -101,3 +101,4 @@ prof/
 .Rhistory
 ibis/examples/data
 ibis/examples/descriptions
+.coverage*
