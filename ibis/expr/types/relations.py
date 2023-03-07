@@ -2414,10 +2414,18 @@ class Table(Expr, _FixedTextJupyterMixin):
     def cache(self) -> Table:
         """Cache the provided expression.
 
-         All subsequent operations on the returned expression will be performed on the cached data.
-         You may use the ``with`` statement to explicitly clean up the cached expression when it's not needed.
+        All subsequent operations on the returned expression will be performed
+        on the cached data. Use the
+        [`with`](https://docs.python.org/3/reference/compound_stmts.html#with)
+        statement to limit the lifetime of a cached table.
+
+        This method is idempotent: calling it multiple times in succession will
+        return the same value as the first call.
 
         !!! note "This method eagerly evaluates the expression prior to caching"
+
+            Subsequent evaluations will not recompute the expression so method
+            chaining will not incur the overhead of caching more than once.
 
         Returns
         -------
@@ -2451,9 +2459,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Explicit cache cleanup
 
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch(table_name="penguins")
         >>> with t.mutate(computation="Heavy Computation").cache() as cached_penguins:
         ...     cached_penguins
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
@@ -2475,14 +2480,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         current_backend = self._find_backend(use_default=True)
-        return current_backend._cache(self)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        current_backend = self._find_backend(use_default=True)
-        return current_backend._release_cache(self)
-
-    def __enter__(self):
-        return self
+        return current_backend._cached(self)
 
     def pivot_longer(
         self,
@@ -2802,6 +2800,20 @@ class Table(Expr, _FixedTextJupyterMixin):
         new_cols[values_to] = ibis.array(values).unnest()
 
         return self.select(~pivot_sel, **new_cols)
+
+
+@public
+class CachedTable(Table):
+    def __exit__(self, *_):
+        self.release()
+
+    def __enter__(self):
+        return self
+
+    def release(self):
+        """Release the underlying expression from the cache."""
+        current_backend = self._find_backend(use_default=True)
+        return current_backend._release_cached(self)
 
 
 def _resolve_predicates(

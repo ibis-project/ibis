@@ -257,8 +257,9 @@ class Backend(BasePandasBackend):
 
         return execute_and_reset(node, params=params, **kwargs)
 
-    def _cache(self, expr):
-        return expr
+    def _cached(self, expr):
+        """No-op. The expression is already in memory."""
+        return ir.CachedTable(expr.op())
 
-    def _release_cache(self, expr):
-        return
+    def _release_cached(self, _):
+        """No-op."""

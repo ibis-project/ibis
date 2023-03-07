@@ -672,13 +672,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         """Return an ibis Schema from a backend-specific SQL string."""
         return sch.Schema.from_tuples(self._metadata(query))
 
-    def _cache(self, expr):
-        persisted_table_name = util.generate_unique_table_name("cache")
-        self.create_table(persisted_table_name, expr, schema=expr.schema(), temp=True)
-        return self.table(persisted_table_name)
+    def _load_into_cache(self, name, expr):
+        self.create_table(name, expr, schema=expr.schema(), temp=True)
 
-    def _release_cache(self, expr):
-        if isinstance(expr._arg, AlchemyTable):
-            self.drop_table(expr._arg.name)
-        else:
-            raise NotImplementedError(f"{expr.arg} is not releaseable.")
+    def _clean_up_cached_table(self, op):
+        self.drop_table(op.name)

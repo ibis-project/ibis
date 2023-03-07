@@ -8,6 +8,7 @@ import keyword
 import re
 import sys
 import urllib.parse
+from collections import Counter
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -19,6 +20,8 @@ from typing import (
     Mapping,
     MutableMapping,
 )
+
+from bidict import MutableBidirectionalMapping, bidict
 
 import ibis
 import ibis.common.exceptions as exc
@@ -456,6 +459,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def __init__(self, *args, **kwargs):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
+        # expression cache
+        self._query_cache: MutableBidirectionalMapping[
+            ops.TableNode, ops.PhysicalTable
+        ] = bidict()
+
+        self._refs = Counter()
 
     def __getstate__(self):
         return dict(
@@ -889,8 +898,10 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             f"{cls.name} backend has not implemented `has_operation` API"
         )
 
-    def _cache(self, expr):
-        """Cache the provided expression. All subsequent operations on the returned expression will be performed on the cached data.
+    def _cached(self, expr):
+        """Cache the provided expression.
+
+        All subsequent operations on the returned expression will be performed on the cached data.
 
         Parameters
         ----------
@@ -903,22 +914,40 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             Cached table
 
         """
-        raise NotImplementedError(
-            f"{self.name} backend has not implemented `cache` API"
-        )
+        op = expr.op()
+        if (result := self._query_cache.get(op)) is None:
+            name = util.generate_unique_table_name("cache")
+            self._load_into_cache(name, expr)
+            self._query_cache[op] = result = self.table(name, expr.schema()).op()
+        self._refs[op] += 1
+        return ir.CachedTable(result)
 
-    def _release_cache(self, expr):
+    def _release_cached(self, expr):
         """Releases the provided cached expression.
 
         Parameters
         ----------
         expr
             Cached expression to release
-
         """
-        raise NotImplementedError(
-            f"{self.name} backend has not implemented `release_cache` API"
-        )
+        op = expr.op()
+        # we need to remove the expression representing the temp table as well
+        # as the expression that was used to create the temp table
+        #
+        # bidict automatically handles this for us; without it we'd have to
+        # do to the bookkeeping ourselves with two dicts
+        if (key := self._query_cache.inverse.get(op)) is None:
+            raise exc.IbisError(
+                "This expression has already been released. Did you call "
+                "`.release()` twice on the same expression?"
+            )
+
+        self._refs[key] -= 1
+
+        if not self._refs[key]:
+            del self._query_cache[key]
+            del self._refs[key]
+            self._clean_up_cached_table(op)
 
 
 @functools.lru_cache(maxsize=None)

@@ -13,10 +13,8 @@ import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.polars.compiler import translate
-from ibis.expr.operations import DatabaseTable
 from ibis.util import normalize_filename
 
 if TYPE_CHECKING:
@@ -353,14 +351,8 @@ class Backend(BaseBackend):
         table = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
         return table.to_reader(chunk_size)
 
-    def _cache(self, expr):
-        persisted_table_name = util.generate_unique_table_name("cache")
-        lf = self.compile(expr).cache()
-        self.load_data(persisted_table_name, lf)
-        return self.table(persisted_table_name, expr.schema)
+    def _load_into_cache(self, name, expr):
+        self.load_data(name, self.compile(expr).cache())
 
-    def _release_cache(self, expr):
-        if isinstance(expr._arg, DatabaseTable):
-            del self._tables[expr._arg.name]
-        else:
-            raise NotImplementedError(f"{expr._arg} is not releasable.")
+    def _clean_up_cached_table(self, op):
+        del self._tables[op.name]
