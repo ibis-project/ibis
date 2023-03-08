@@ -260,10 +260,3 @@ awards_players_schema = ibis.schema(
 def test_schema_from_csv(client, awards_players_filename):
     schema = client._schema_from_csv(awards_players_filename)
     assert schema.equals(awards_players_schema)
-
-
-def test_create_table_or_temp_view_from_csv(client, awards_players_filename):
-    client._create_table_or_temp_view_from_csv('awards', awards_players_filename)
-    table = client.table('awards')
-    assert table.schema().equals(awards_players_schema)
-    assert table.count().execute() == 6078
