@@ -68,8 +68,12 @@ class SetOp(DML):
         return map(self.keyword, self.distincts)
 
     def _extract_subqueries(self):
+        # extract any subquery to avoid generating incorrect sql when at least
+        # one of the set operands is invalid outside of being a subquery
+        #
+        # for example: SELECT * FROM t ORDER BY x UNION ...
         self.subqueries = an.find_subqueries(
-            [self.table_set, *self.filters], min_dependents=2
+            [self.table_set, *self.filters], min_dependents=1
         )
         for subquery in self.subqueries:
             self.context.set_extracted(subquery)
