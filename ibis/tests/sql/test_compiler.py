@@ -218,3 +218,10 @@ def test_column_expr_default_name(snapshot):
     expr = t.int_col + 4
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
+
+
+def test_union_order_by(snapshot):
+    t = ibis.table(dict(a="int", b="string"), name="t")
+    expr = t.order_by("b").union(t.order_by("b"))
+    snapshot.assert_match(to_sql(expr), "out.sql")
+    assert_decompile_roundtrip(expr, snapshot)

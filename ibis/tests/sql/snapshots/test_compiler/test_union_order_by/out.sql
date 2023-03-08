@@ -1,0 +1,10 @@
+WITH t0 AS (
+  SELECT t1.*
+  FROM t t1
+  ORDER BY t1.`b` ASC
+)
+SELECT *
+FROM t0
+UNION ALL
+SELECT *
+FROM t0
