@@ -20,6 +20,7 @@ import ibis.config
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
+import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.ddl import (
@@ -510,35 +511,16 @@ class Backend(BaseSQLBackend):
 
         self.set_options({'COMPRESSION_CODEC': codec})
 
-    def create_view(self, name, expr, database=None):
-        """Create an Impala view from a table expression.
-
-        Parameters
-        ----------
-        name
-            View name
-        expr : ibis Table
-            Ibis table expression
-        database
-            Database name
-        """
+    def create_view(
+        self, name: str, expr: ir.Table, database: str | None = None
+    ) -> ir.Table:
         ast = self.compiler.to_ast(expr)
         select = ast.queries[0]
         statement = CreateView(name, select, database=database)
-        return self.raw_sql(statement)
+        self.raw_sql(statement)
+        return self.table(name, database=database)
 
     def drop_view(self, name, database=None, force=False):
-        """Drop an Impala view.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database
-        force
-            Database may throw exception if table does not exist
-        """
         statement = DropView(name, database=database, must_exist=not force)
         return self.raw_sql(statement)
 
@@ -554,8 +536,8 @@ class Backend(BaseSQLBackend):
 
     def create_table(
         self,
-        table_name,
-        obj=None,
+        table_name: str,
+        obj: ir.Table | None = None,
         schema=None,
         database=None,
         external=False,
@@ -565,7 +547,7 @@ class Backend(BaseSQLBackend):
         location=None,
         partition=None,
         like_parquet=None,
-    ):
+    ) -> ir.Table:
         """Create a new table in Impala using an Ibis table expression.
 
         This is currently designed for tables whose data is stored in HDFS.
@@ -636,6 +618,7 @@ class Backend(BaseSQLBackend):
             )
         else:
             raise com.IbisError('Must pass obj or schema')
+        return self.table(table_name, database=database)
 
     def avro_file(
         self,

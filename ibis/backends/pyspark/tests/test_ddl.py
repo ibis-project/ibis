@@ -15,14 +15,12 @@ def test_create_exists_view(client, alltypes, temp_view):
     tmp_name = temp_view
     assert tmp_name not in client.list_tables()
 
-    expr = alltypes.group_by('string_col').size()
+    t1 = alltypes.group_by('string_col').size()
+    t2 = client.create_view(tmp_name, t1, temporary=True)
 
-    client.create_view(tmp_name, expr, temporary=True)
     assert tmp_name in client.list_tables()
-
     # just check it works for now
-    expr2 = client.table(tmp_name)
-    assert expr2.execute() is not None
+    assert t2.execute() is not None
 
 
 def test_drop_non_empty_database(client, alltypes, temp_table_db):
@@ -73,8 +71,7 @@ def test_truncate_table_expression(client, alltypes, temp_table):
     expr = alltypes.limit(1)
 
     table_name = temp_table
-    client.create_table(table_name, obj=expr)
-    t = client.table(table_name)
+    t = client.create_table(table_name, obj=expr)
     t.truncate()
     nrows = t.count().execute()
     assert not nrows
@@ -132,13 +129,11 @@ def test_insert_validate_types(client, alltypes, test_data_db, temp_table):
     db = test_data_db
 
     expr = alltypes
-    client.create_table(
+    t = client.create_table(
         table_name,
         schema=expr['tinyint_col', 'int_col', 'string_col'].schema(),
         database=db,
     )
-
-    t = client.table(table_name, database=db)
 
     to_insert = expr[
         expr.tinyint_col, expr.smallint_col.name('int_col'), expr.string_col
@@ -162,8 +157,7 @@ def test_insert_validate_types(client, alltypes, test_data_db, temp_table):
 def test_compute_stats(client, alltypes):
     name = 'functional_alltypes_table'
     try:
-        client.create_table(name, alltypes)
-        t = client.table(name)
+        t = client.create_table(name, alltypes)
         t.compute_stats()
         t.compute_stats(noscan=True)
         client.compute_stats(name)
@@ -186,8 +180,7 @@ def test_drop_view(client, alltypes, created_view):
 
 def test_rename_table(client, alltypes):
     orig_name = 'tmp_rename_test'
-    client.create_table(orig_name, alltypes)
-    table = client.table(orig_name)
+    table = client.create_table(orig_name, alltypes)
 
     old_name = table.name
 
@@ -205,11 +198,10 @@ def test_rename_table(client, alltypes):
 def table(client, temp_database):
     table_name = f'table_{util.guid()}'
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
-    client.create_table(
-        table_name, database=temp_database, schema=schema, format='parquet'
-    )
     try:
-        yield client.table(table_name, database=temp_database)
+        yield client.create_table(
+            table_name, database=temp_database, schema=schema, format='parquet'
+        )
     finally:
         client.drop_table(table_name, database=temp_database)
 
@@ -229,9 +221,9 @@ def test_create_table_reserved_identifier(client, alltypes):
     table_name = 'distinct'
     expr = alltypes
     expected = expr.count().execute()
-    client.create_table(table_name, expr)
     try:
-        result = client.table(table_name).count().execute()
+        t = client.create_table(table_name, expr)
+        result = t.count().execute()
     except Exception:
         raise
     else:

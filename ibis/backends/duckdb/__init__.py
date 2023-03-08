@@ -691,11 +691,12 @@ class Backend(BaseAlchemyBackend):
 
     def create_view(
         self, name: str, expr: ir.Table, database: str | None = None
-    ) -> None:
+    ) -> ir.Table:
         source = self.compile(expr)
         view = _create_view(sa.table(name), source, or_replace=True)
         with self.begin() as con:
             con.execute(view)
+        return self.table(name, database=database)
 
     def drop_view(
         self, name: str, database: str | None = None, force: bool = False

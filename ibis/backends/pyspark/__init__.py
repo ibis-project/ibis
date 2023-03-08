@@ -364,13 +364,13 @@ class Backend(BaseSQLBackend):
         force: bool = False,
         # HDFS options
         format: str = 'parquet',
-    ):
+    ) -> ir.Table:
         """Create a new table in Spark.
 
         Parameters
         ----------
         table_name
-            Table name
+            Name of the new table.
         obj
             If passed, creates table from select statement results
         schema
@@ -382,6 +382,11 @@ class Backend(BaseSQLBackend):
             If true, create table if table with indicated name already exists
         format
             Table format
+
+        Returns
+        -------
+        Table
+            The newly created table.
 
         Examples
         --------
@@ -421,7 +426,8 @@ class Backend(BaseSQLBackend):
         else:
             raise com.IbisError('Must pass expr or schema')
 
-        return self.raw_sql(statement.compile())
+        self.raw_sql(statement.compile())
+        return self.table(table_name, database=database)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self.compile(op.to_expr()).createOrReplaceTempView(op.name)
@@ -433,7 +439,7 @@ class Backend(BaseSQLBackend):
         database: str | None = None,
         can_exist: bool = False,
         temporary: bool = False,
-    ):
+    ) -> ir.Table:
         """Create a Spark view from a table expression.
 
         Parameters
@@ -448,6 +454,11 @@ class Backend(BaseSQLBackend):
             Replace an existing view of the same name if it exists
         temporary
             Whether the table is temporary
+
+        Returns
+        -------
+        Table
+            The created view
         """
         ast = self.compiler.to_ast(expr)
         select = ast.queries[0]
@@ -458,7 +469,8 @@ class Backend(BaseSQLBackend):
             can_exist=can_exist,
             temporary=temporary,
         )
-        return self.raw_sql(statement.compile())
+        self.raw_sql(statement.compile())
+        return self.table(name, database=database)
 
     def drop_table(
         self,

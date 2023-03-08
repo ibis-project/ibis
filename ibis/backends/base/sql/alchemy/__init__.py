@@ -174,23 +174,32 @@ class BaseAlchemyBackend(BaseSQLBackend):
         database: str | None = None,
         force: bool = False,
         temp: bool = False,
-    ) -> None:
+    ) -> ir.Table:
         """Create a table.
 
         Parameters
         ----------
         name
-            Table name to create
+            Name of the new table.
         expr
-            DataFrame or table expression to use as the data source
+            An Ibis table expression or pandas table that will be used to
+            extract the schema and the data of the new table. If not provided,
+            `schema` must be given.
         schema
-            An ibis schema
+            The schema for the new table. Only one of `schema` or `obj` can be
+            provided.
         database
-            A database
+            Name of the database where the table will be created, if not the
+            default.
         force
             Check whether a table exists before creating it
         temp
             Should the table be temporary for the session.
+
+        Returns
+        -------
+        Table
+            The table that was created.
         """
         import pandas as pd
 
@@ -236,6 +245,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             if has_expr:
                 method = self._get_insert_method(expr)
                 bind.execute(method(table.insert()))
+        return self.table(name, database=database)
 
     def _get_insert_method(self, expr):
         compiled = self.compile(expr)

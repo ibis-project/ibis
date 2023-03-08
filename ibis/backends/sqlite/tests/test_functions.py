@@ -646,8 +646,7 @@ def test_identical_to(alltypes):
 def test_truncate_method(con, alltypes):
     expr = alltypes.limit(5)
     name = str(uuid.uuid4())
-    con.create_table(name, expr)
-    t = con.table(name)
+    t = con.create_table(name, expr)
     assert len(t.execute()) == 5
     t.truncate()
     assert len(t.execute()) == 0
@@ -656,8 +655,7 @@ def test_truncate_method(con, alltypes):
 def test_truncate_from_connection(con, alltypes):
     expr = alltypes.limit(5)
     name = str(uuid.uuid4())
-    con.create_table(name, expr)
-    t = con.table(name)
+    t = con.create_table(name, expr)
     assert len(t.execute()) == 5
     con.truncate_table(name)
     assert len(t.execute()) == 0

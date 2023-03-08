@@ -766,7 +766,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         obj: pd.DataFrame | ir.Table | None = None,
         schema: ibis.Schema | None = None,
         database: str | None = None,
-    ) -> None:
+    ) -> ir.Table:
         """Create a new table.
 
         Not all backends implement this method.
@@ -785,6 +785,11 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         database
             Name of the database where the table will be created, if not the
             default.
+
+        Returns
+        -------
+        Table
+            The table that was created.
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "create_table"'
@@ -816,7 +821,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         name: str,
         expr: ir.Table,
         database: str | None = None,
-    ) -> None:
+    ) -> ir.Table:
         """Create a view.
 
         Parameters
@@ -829,6 +834,11 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         database
             Name of the database where the view will be created, if not the
             default.
+
+        Returns
+        -------
+        Table
+            The view that was created.
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "create_view"'

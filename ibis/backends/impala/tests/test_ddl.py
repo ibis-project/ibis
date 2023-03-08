@@ -18,14 +18,12 @@ def test_create_exists_view(con, temp_view):
     tmp_name = temp_view
     assert tmp_name not in con.list_tables()
 
-    expr = con.table('functional_alltypes').group_by('string_col').size()
+    t1 = con.table('functional_alltypes').group_by('string_col').size()
+    t2 = con.create_view(tmp_name, t1)
 
-    con.create_view(tmp_name, expr)
     assert tmp_name in con.list_tables()
-
     # just check it works for now
-    expr2 = con.table(tmp_name)
-    assert expr2.execute() is not None
+    assert t2.execute() is not None
 
 
 def test_drop_non_empty_database(con, alltypes, temp_table_db):

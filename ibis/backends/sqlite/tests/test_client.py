@@ -72,8 +72,7 @@ def test_compile_toplevel(snapshot):
 def test_create_and_drop_table(con):
     t = con.table('functional_alltypes')
     name = str(uuid.uuid4())
-    con.create_table(name, t.limit(5))
-    new_table = con.table(name)
+    new_table = con.create_table(name, t.limit(5))
     tm.assert_frame_equal(new_table.execute(), t.limit(5).execute())
     con.drop_table(name)
     assert name not in con.list_tables()
