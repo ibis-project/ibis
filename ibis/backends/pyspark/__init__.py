@@ -26,7 +26,6 @@ from ibis.backends.base.sql.ddl import (
 from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable, spark_dataframe_schema
 from ibis.backends.pyspark.compiler import PySparkDatabaseTable, PySparkExprTranslator
-from ibis.backends.pyspark.datatypes import spark_dtype
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -355,43 +354,6 @@ class Backend(BaseSQLBackend):
 
         df = self._session.read.csv(path, **options)
         return spark_dataframe_schema(df)
-
-    def _create_table_or_temp_view_from_csv(
-        self,
-        name: str,
-        path: Path,
-        schema: sch.Schema | None = None,
-        database: str | None = None,
-        force: bool = False,
-        temp_view: bool = False,
-        format: str = 'parquet',
-        **kwargs: Any,
-    ):
-        options = _read_csv_defaults.copy()
-        options.update(kwargs)
-
-        if schema:
-            assert ('inferSchema', True) not in options.items()
-            schema = spark_dtype(schema)
-            options['schema'] = schema
-        else:
-            options['inferSchema'] = True
-
-        df = self._session.read.csv(path, **options)
-
-        if temp_view:
-            if force:
-                df.createOrReplaceTempView(name)
-            else:
-                df.createTempView(name)
-        else:
-            qualified_name = self._fully_qualified_name(
-                name, database or self.current_database
-            )
-            mode = 'error'
-            if force:
-                mode = 'overwrite'
-            df.write.saveAsTable(qualified_name, format=format, mode=mode)
 
     def create_table(
         self,
