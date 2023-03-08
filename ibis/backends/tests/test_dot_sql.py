@@ -181,9 +181,9 @@ def test_table_dot_sql_repr(con):
 @dot_sql_never
 def test_table_dot_sql_does_not_clobber_existing_tables(con):
     name = f"ibis_{util.guid()}"
-    con.create_table(name, schema=ibis.schema(dict(a="string")))
+    t = con.create_table(name, schema=ibis.schema(dict(a="string")))
     try:
-        expr = con.table(name).sql("SELECT 1 as x FROM functional_alltypes")
+        expr = t.sql("SELECT 1 as x FROM functional_alltypes")
         with pytest.raises(ValueError):
             expr.alias(name)
     finally:

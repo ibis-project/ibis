@@ -215,8 +215,7 @@ def tmptable(con):
 
 @pytest.mark.notimpl(["clickhouse"], reason=".create_table not yet implemented in ibis")
 def test_map_create_table(con, tmptable):
-    con.create_table(tmptable, schema=ibis.schema(dict(xyz="map<string, string>")))
-    t = con.table(tmptable)
+    t = con.create_table(tmptable, schema=ibis.schema(dict(xyz="map<string, string>")))
     assert t.schema()["xyz"].is_map()
 
 

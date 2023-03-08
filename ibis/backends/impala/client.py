@@ -27,14 +27,12 @@ if TYPE_CHECKING:
 
 
 class ImpalaDatabase(Database):
-    def create_table(self, table_name, obj=None, **kwargs):
+    def create_table(self, name: str, obj=None, **kwargs) -> ir.Table:
         """Dispatch to ImpalaClient.create_table.
 
         See that function's docstring for more
         """
-        return self.client.create_table(
-            table_name, obj=obj, database=self.name, **kwargs
-        )
+        return self.client.create_table(name, obj=obj, database=self.name, **kwargs)
 
     def list_udfs(self, like=None):
         return self.client.list_udfs(like=like, database=self.name)

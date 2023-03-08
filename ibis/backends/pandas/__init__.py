@@ -119,7 +119,9 @@ class BasePandasBackend(BaseBackend):
     def compile(self, expr, *args, **kwargs):
         return expr
 
-    def create_table(self, table_name, obj=None, schema=None):
+    def create_table(
+        self, table_name: str, obj=None, schema: sch.Schema | None = None
+    ) -> ir.Table:
         """Create a table."""
         if obj is None and schema is None:
             raise com.IbisError('Must pass expr or schema')
@@ -140,6 +142,7 @@ class BasePandasBackend(BaseBackend):
 
         if schema is not None:
             self.schemas[table_name] = schema
+        return self.table(table_name)
 
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:

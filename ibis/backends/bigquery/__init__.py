@@ -443,7 +443,7 @@ class Backend(BaseSQLBackend):
         obj: pd.DataFrame | ir.Table | None = None,
         schema: ibis.Schema | None = None,
         database: str | None = None,
-    ) -> None:
+    ) -> ir.Table:
         if obj is None and schema is None:
             raise ValueError("The schema or obj parameter is required")
         if schema is not None:
@@ -460,6 +460,7 @@ class Backend(BaseSQLBackend):
             sql_select = self.compile(table)
             table_ref = f"`{project_id}`.`{dataset}`.`{name}`"
             self.raw_sql(f'CREATE TABLE {table_ref} AS ({sql_select})')
+        return self.table(name, database=database)
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
@@ -469,12 +470,13 @@ class Backend(BaseSQLBackend):
 
     def create_view(
         self, name: str, expr: ir.Table, database: str | None = None
-    ) -> None:
+    ) -> ir.Table:
         table_id = self._fully_qualified_name(name, database)
         sql_select = self.compile(expr)
         table = bq.Table(table_id)
         table.view_query = sql_select
         self.client.create_table(table)
+        return self.table(name, database=database)
 
     def drop_view(
         self, name: str, database: str | None = None, force: bool = False

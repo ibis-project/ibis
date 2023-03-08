@@ -27,8 +27,7 @@ def new_schema():
 
 def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     con.drop_table(temp_table_name, force=True)
-    con.create_table(temp_table_name, schema=schema)
-    temporary = con.table(temp_table_name)
+    temporary = con.create_table(temp_table_name, schema=schema)
     assert temporary.to_pandas().empty
 
     if data is not None and isinstance(data, pd.DataFrame):
@@ -123,9 +122,7 @@ backend_type_mapping = {
 
 @mark.notimpl(["clickhouse", "datafusion", "polars", "druid"])
 def test_create_table_from_schema(con, new_schema, temp_table):
-    con.create_table(temp_table, schema=new_schema)
-
-    new_table = con.table(temp_table)
+    new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, dict())
 
     for column_name, column_type in new_table.schema().items():
@@ -158,9 +155,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
 )
 def test_create_temporary_table_from_schema(con, new_schema):
     temp_table = f"_{guid()}"
-    con.create_table(temp_table, schema=new_schema, temp=True)
-
-    table = con.table(temp_table)
+    table = con.create_table(temp_table, schema=new_schema, temp=True)
 
     # verify table exist in the current session
     backend_mapping = backend_type_mapping.get(con.name, dict())
@@ -216,10 +211,7 @@ def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [('foo', 'int64'), ('bar', dt.int64(nullable=False)), ('baz', 'boolean')]
     )
-
-    con.create_table(temp_table, schema=sch)
-
-    t = con.table(temp_table)
+    t = con.create_table(temp_table, schema=sch)
 
     assert t.schema().types[0].nullable
     assert not t.schema().types[1].nullable
