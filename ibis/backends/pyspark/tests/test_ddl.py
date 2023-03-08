@@ -230,25 +230,3 @@ def test_create_table_reserved_identifier(client, alltypes):
         assert result == expected
     finally:
         client.drop_table(table_name)
-
-
-@pytest.fixture(scope='session')
-def awards_players_filename(data_directory):
-    return str(data_directory / 'awards_players.csv')
-
-
-awards_players_schema = ibis.schema(
-    [
-        ('playerID', 'string'),
-        ('awardID', 'string'),
-        ('yearID', 'int32'),
-        ('lgID', 'string'),
-        ('tie', 'string'),
-        ('notes', 'string'),
-    ]
-)
-
-
-def test_schema_from_csv(client, awards_players_filename):
-    schema = client._schema_from_csv(awards_players_filename)
-    assert schema.equals(awards_players_schema)

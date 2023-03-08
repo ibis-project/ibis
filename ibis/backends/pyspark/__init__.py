@@ -331,30 +331,6 @@ class Backend(BaseSQLBackend):
 
         return sch.infer(df)
 
-    def _schema_from_csv(self, path: str, **kwargs: Any) -> sch.Schema:
-        """Return a Schema object for the indicated csv file.
-
-        Spark goes through the file once to determine the schema.
-
-        Parameters
-        ----------
-        path
-            Path to CSV
-        kwargs
-            See documentation for `pyspark.sql.DataFrameReader` for more information.
-
-        Returns
-        -------
-        sch.Schema
-            An ibis schema instance
-        """
-        options = _read_csv_defaults.copy()
-        options.update(kwargs)
-        options['inferSchema'] = True
-
-        df = self._session.read.csv(path, **options)
-        return spark_dataframe_schema(df)
-
     def create_table(
         self,
         table_name: str,
