@@ -128,15 +128,6 @@ class Backend(BasePandasBackend):
     def _convert_object(cls, obj: dd.DataFrame) -> dd.DataFrame:
         return obj
 
-    def create_table(
-        self,
-        table_name: str,
-        obj: dd.DataFrame | None = None,
-        schema: sch.Schema | None = None,
-    ):
-        """Create a table."""
-        super().create_table(table_name, obj=obj, schema=schema)
-
     def _cache(self, expr):
         persisted_table_name = util.generate_unique_table_name("cache")
         df = self.compile(expr).persist()
