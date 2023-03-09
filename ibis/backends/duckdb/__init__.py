@@ -117,6 +117,7 @@ class Backend(BaseAlchemyBackend):
         --------
         >>> import ibis
         >>> ibis.duckdb.connect("database.ddb", threads=4, memory_limit="1GB")
+        <ibis.backends.duckdb.Backend object at ...>
         """
         if path is not None:
             warnings.warn(
@@ -471,8 +472,14 @@ class Backend(BaseAlchemyBackend):
         --------
         >>> import ibis
         >>> con = ibis.connect("duckdb://")
-        >>> t = con.read_sqlite("ci/ibis-testing-data/ibis_testing.db")
+        >>> t = con.read_sqlite("ci/ibis-testing-data/ibis_testing.db", table_name="diamonds")
         >>> t.head().execute()
+                carat      cut color clarity  depth  table  price     x     y     z
+            0   0.23    Ideal     E     SI2   61.5   55.0    326  3.95  3.98  2.43
+            1   0.21  Premium     E     SI1   59.8   61.0    326  3.89  3.84  2.31
+            2   0.23     Good     E     VS1   56.9   65.0    327  4.05  4.07  2.31
+            3   0.29  Premium     I     VS2   62.4   58.0    334  4.20  4.23  2.63
+            4   0.31     Good     J     SI2   63.3   58.0    335  4.34  4.35  2.75
         """
         if table_name is None:
             raise ValueError("`table_name` is required when registering a sqlite table")
