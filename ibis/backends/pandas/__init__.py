@@ -238,6 +238,9 @@ class BasePandasBackend(BaseBackend):
             issubclass(operation, op_impl) for op_impl in op_classes
         )
 
+    def _clean_up_cached_table(self, op):
+        del self.dictionary[op.name]
+
 
 class Backend(BasePandasBackend):
     name = 'pandas'
@@ -303,9 +306,5 @@ class Backend(BasePandasBackend):
 
         return execute_and_reset(node, params=params, **kwargs)
 
-    def _cached(self, expr):
-        """No-op. The expression is already in memory."""
-        return ir.CachedTable(expr.op())
-
-    def _release_cached(self, _):
-        """No-op."""
+    def _load_into_cache(self, name, expr):
+        self.create_table(name, expr.execute())
