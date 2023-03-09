@@ -426,6 +426,25 @@ class Expr(Immutable):
             Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
 
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+
+        Examples
+        --------
+        Write out an expression to a single parquet file.
+
+        >>> import ibis
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> penguins.to_parquet("penguins.parquet")  # doctest: +SKIP
+
+        Write out an expression to a hive-partitioned parquet file.
+
+        >>> import ibis
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> # partition on single column
+        >>> penguins.to_parquet("penguins_hive_dir", partition_by="year")  # doctest: +SKIP
+        >>> # partition on multiple columns
+        >>> penguins.to_parquet("penguins_hive_dir", partition_by=("year", "island"))  # doctest: +SKIP
+
+        !!! note "Hive-partitioned output is currently only supported when using DuckDB"
         """
         self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
 

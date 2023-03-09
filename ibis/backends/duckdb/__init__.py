@@ -584,6 +584,24 @@ class Backend(BaseAlchemyBackend):
             DuckDB Parquet writer arguments. See
             https://duckdb.org/docs/data/parquet#writing-to-parquet-files for
             details
+
+        Examples
+        --------
+        Write out an expression to a single parquet file.
+
+        >>> import ibis
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> con = ibis.get_backend(penguins)
+        >>> con.to_parquet(penguins, "penguins.parquet")
+
+        Write out an expression to a hive-partitioned parquet file.
+
+        >>> import ibis
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> con = ibis.get_backend(penguins)
+        >>> con.to_parquet(penguins, "penguins_hive_dir", partition_by="year")  # doctest: +SKIP
+        >>> # partition on multiple columns
+        >>> con.to_parquet(penguins, "penguins_hive_dir", partition_by=("year", "island"))  # doctest: +SKIP
         """
         query = self._to_sql(expr, params=params)
         args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
