@@ -918,7 +918,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         if (result := self._query_cache.get(op)) is None:
             name = util.generate_unique_table_name("cache")
             self._load_into_cache(name, expr)
-            self._query_cache[op] = result = self.table(name, expr.schema()).op()
+            self._query_cache[op] = result = self.table(name).op()
         self._refs[op] += 1
         return ir.CachedTable(result)
 

@@ -512,8 +512,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
         Table
             Table expression
         """
-        if database is not None and database != self.current_database:
-            return self.database(name=database).table(name=name, schema=schema)
+        if database is not None:
+            if not isinstance(database, str):
+                raise exc.IbisTypeError(
+                    f"`database` must be a string; got {type(database)}"
+                )
+            if database != self.current_database:
+                return self.database(name=database).table(name=name, schema=schema)
         sqla_table = self._get_sqla_table(name, database=database, schema=schema)
         return self._sqla_table_to_expr(sqla_table)
 

@@ -6,6 +6,7 @@ import os
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
+import ibis.common.exceptions as exc
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -77,6 +78,10 @@ class BaseSQLBackend(BaseBackend):
         Table
             Table expression
         """
+        if database is not None and not isinstance(database, str):
+            raise exc.IbisTypeError(
+                f"`database` must be a string; got {type(database)}"
+            )
         qualified_name = self._fully_qualified_name(name, database)
         schema = self.get_schema(qualified_name)
         node = self.table_class(qualified_name, schema, self)
