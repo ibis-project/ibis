@@ -185,6 +185,39 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.execute(), df)
 
 
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "mssql",
+        "mysql",
+        "pandas",
+        "polars",
+        "postgres",
+        "sqlite",
+        "trino",
+    ],
+    reason="no partitioning support",
+)
+@pytest.mark.notimpl(
+    ["dask", "impala", "pyspark", "druid"], reason="No to_parquet support"
+)
+def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
+    outparquet = tmp_path / "outhive.parquet"
+    awards_players.to_parquet(outparquet, partition_by=("yearID"))
+
+    # Check that the directories are all named as expected
+    for d in outparquet.iterdir():
+        assert d.stem.startswith("yearID")
+
+    # Reingest and compare schema
+    reingest = con.read_parquet(outparquet / "*" / "*")
+
+    assert reingest.schema() == awards_players.schema()
+
+    backend.assert_frame_equal(awards_players.execute(), awards_players.execute())
+
+
 @pytest.mark.notimpl(["dask", "impala", "pyspark"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
