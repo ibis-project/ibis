@@ -260,11 +260,16 @@ def _substring(op, **kw):
     # Clickhouse is 1-indexed
     arg = translate_val(op.arg, **kw)
     start = translate_val(op.start, **kw)
-    if (length := op.length) is None:
-        return f"substring({arg}, {start} + 1)"
+    arg_length = f"length({arg})"
+    if op.length is not None:
+        length = translate_val(op.length, **kw)
+        suffix = f", {length}"
+    else:
+        suffix = ""
 
-    length = translate_val(length, **kw)
-    return f"substring({arg}, {start} + 1, {length})"
+    if_pos = f"substring({arg}, {start} + 1{suffix})"
+    if_neg = f"substring({arg}, {arg_length} + {start} + 1{suffix})"
+    return f"if({start} >= 0, {if_pos}, {if_neg})"
 
 
 @translate_val.register(ops.StringFind)

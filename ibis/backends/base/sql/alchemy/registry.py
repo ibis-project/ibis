@@ -6,7 +6,7 @@ import operator
 from typing import Any
 
 import sqlalchemy as sa
-from sqlalchemy.sql.functions import FunctionElement
+from sqlalchemy.sql.functions import FunctionElement, GenericFunction
 
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
@@ -14,6 +14,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql.alchemy.database import AlchemyTable
+
+
+class substr(GenericFunction):
+    """A generic substr function, so dialects can customize compilation."""
+
+    type = sa.types.String()
+    inherit_cache = True
 
 
 def variance_reduction(func_name):
@@ -418,12 +425,21 @@ def _zero_if_null(t, op):
 
 
 def _substring(t, op):
-    args = t.translate(op.arg), t.translate(op.start) + 1
-
-    if (length := op.length) is not None:
-        args += (t.translate(length),)
-
-    return sa.func.substr(*args)
+    sa_arg = t.translate(op.arg)
+    sa_start = t.translate(op.start) + 1
+    # Start is an expression, need a runtime branch
+    sa_arg_length = t.translate(ops.StringLength(op.arg))
+    if op.length is None:
+        return sa.case(
+            ((sa_start >= 1), sa.func.substr(sa_arg, sa_start)),
+            else_=sa.func.substr(sa_arg, sa_start + sa_arg_length),
+        )
+    else:
+        sa_length = t.translate(op.length)
+        return sa.case(
+            ((sa_start >= 1), sa.func.substr(sa_arg, sa_start, sa_length)),
+            else_=sa.func.substr(sa_arg, sa_start + sa_arg_length, sa_length),
+        )
 
 
 def _gen_string_find(func):

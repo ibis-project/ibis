@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -11,6 +12,7 @@ from ibis.backends.base.sql.alchemy import (
     sqlalchemy_window_functions_registry,
     unary,
 )
+from ibis.backends.base.sql.alchemy.registry import substr
 
 
 def _reduction(func, cast_type='int32'):
@@ -28,25 +30,15 @@ def _reduction(func, cast_type='int32'):
     return reduction_compiler
 
 
+@compiles(substr, "mssql")
+def mssql_substr(element, compiler, **kw):
+    return compiler.process(sa.func.substring(*element.clauses), **kw)
+
+
 # String
-# TODO: substr and find are copied from SQLite, we should really have a
+# TODO: find is copied from SQLite, we should really have a
 # "base" set of SQL functions that are the most common APIs across the major
 # RDBMS
-def _substr(t, op):
-    f = sa.func.substring
-
-    arg, start, length = op.args
-
-    sa_arg = t.translate(arg)
-    sa_start = t.translate(start)
-
-    if length is None:
-        return f(sa_arg, sa_start + 1)
-    else:
-        sa_length = t.translate(length)
-        return f(sa_arg, sa_start + 1, sa_length)
-
-
 def _string_find(t, op):
     arg, substr, start, _ = op.args
 
@@ -139,7 +131,6 @@ operation_registry.update(
         ops.StringLength: unary(sa.func.datalength),
         ops.StringReplace: fixed_arity(sa.func.replace, 3),
         ops.Strip: unary(sa.func.trim),
-        ops.Substring: _substr,
         ops.Uppercase: unary(sa.func.upper),
         # math
         ops.Abs: unary(sa.func.abs),

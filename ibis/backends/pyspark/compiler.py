@@ -941,6 +941,9 @@ def compile_substring(t, op, raw: bool = False, **kwargs):
             "Specifiying `start` or `length` with column expressions is not supported."
         )
 
+    if start < 0:
+        raise NotImplementedError("`start < 0` is not supported.")
+
     return src_column.substr(start, length)
 
 
