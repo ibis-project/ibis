@@ -846,3 +846,13 @@ def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Tab
         )
 
     return g.traverse(finder, nodes, filter=ops.Node)
+
+
+def find_toplevel_aggs(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
+    def finder(node):
+        return (
+            isinstance(node, ops.Value),
+            node if isinstance(node, ops.Reduction) else None,
+        )
+
+    return g.traverse(finder, nodes, filter=ops.Node)

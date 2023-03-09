@@ -1003,6 +1003,23 @@ def test_pivot_longer(backend):
     assert not df.empty
 
 
+@pytest.mark.notyet(["datafusion"], raises=com.OperationNotDefinedError)
+def test_pivot_wider(backend):
+    diamonds = backend.diamonds
+    expr = (
+        diamonds.group_by(["cut", "color"])
+        .agg(carat=_.carat.mean())
+        .pivot_wider(
+            names_from="cut", values_from="carat", names_sort=True, values_agg="mean"
+        )
+    )
+    df = expr.execute()
+    assert set(df.columns) == {"color"} | set(
+        diamonds[["cut"]].distinct().cut.execute()
+    )
+    assert len(df) == diamonds.color.nunique().execute()
+
+
 @pytest.mark.parametrize(
     "on",
     [

@@ -1811,6 +1811,18 @@ def test_pivot_longer_no_match():
         )
 
 
+def test_pivot_wider():
+    fish = ibis.table({"fish": "int", "station": "string", "seen": "int"}, name="fish")
+    res = fish.pivot_wider(
+        names=["Release", "Lisbon"], names_from="station", values_from="seen"
+    )
+    assert res.schema().names == ("fish", "Release", "Lisbon")
+    with pytest.raises(
+        com.IbisInputError, match="No matching names columns in `names_from`"
+    ):
+        fish.pivot_wider(names=["Release", "Lisbon"], values_from="seen")
+
+
 def test_invalid_deferred():
     t = ibis.table(dict(value="int", lagged_value="int"), name="t")
 
