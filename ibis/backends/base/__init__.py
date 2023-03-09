@@ -8,7 +8,6 @@ import keyword
 import re
 import sys
 import urllib.parse
-from collections import Counter
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -21,14 +20,13 @@ from typing import (
     MutableMapping,
 )
 
-from bidict import MutableBidirectionalMapping, bidict
-
 import ibis
 import ibis.common.exceptions as exc
 import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
+from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -460,11 +458,13 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
         # expression cache
-        self._query_cache: MutableBidirectionalMapping[
-            ops.TableNode, ops.PhysicalTable
-        ] = bidict()
-
-        self._refs = Counter()
+        self._query_cache = RefCountedCache(
+            populate=self._load_into_cache,
+            lookup=lambda name: self.table(name).op(),
+            finalize=self._clean_up_cached_table,
+            generate_name=functools.partial(util.generate_unique_table_name, "cache"),
+            key=lambda expr: expr.op(),
+        )
 
     def __getstate__(self):
         return dict(
@@ -902,7 +902,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             f"{cls.name} backend has not implemented `has_operation` API"
         )
 
-    def _cached(self, expr):
+    def _cached(self, expr: ir.Table):
         """Cache the provided expression.
 
         All subsequent operations on the returned expression will be performed on the cached data.
@@ -920,13 +920,11 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
         op = expr.op()
         if (result := self._query_cache.get(op)) is None:
-            name = util.generate_unique_table_name("cache")
-            self._load_into_cache(name, expr)
-            self._query_cache[op] = result = self.table(name).op()
-        self._refs[op] += 1
+            self._query_cache.store(expr)
+            result = self._query_cache[op]
         return ir.CachedTable(result)
 
-    def _release_cached(self, expr):
+    def _release_cached(self, expr: ir.CachedTable) -> None:
         """Releases the provided cached expression.
 
         Parameters
@@ -934,24 +932,13 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         expr
             Cached expression to release
         """
-        op = expr.op()
-        # we need to remove the expression representing the temp table as well
-        # as the expression that was used to create the temp table
-        #
-        # bidict automatically handles this for us; without it we'd have to
-        # do to the bookkeeping ourselves with two dicts
-        if (key := self._query_cache.inverse.get(op)) is None:
-            raise exc.IbisError(
-                "This expression has already been released. Did you call "
-                "`.release()` twice on the same expression?"
-            )
+        del self._query_cache[expr.op()]
 
-        self._refs[key] -= 1
+    def _load_into_cache(self, name, expr):
+        raise NotImplementedError(self.name)
 
-        if not self._refs[key]:
-            del self._query_cache[key]
-            del self._refs[key]
-            self._clean_up_cached_table(op)
+    def _clean_up_cached_table(self, op):
+        raise NotImplementedError(self.name)
 
 
 @functools.lru_cache(maxsize=None)

@@ -129,6 +129,3 @@ class Backend(BasePandasBackend):
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, self.compile(expr).persist())
-
-    def _clean_up_cached_table(self, op):
-        del self.dictionary[op.name]

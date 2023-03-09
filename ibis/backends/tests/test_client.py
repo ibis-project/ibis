@@ -1093,11 +1093,6 @@ def test_create_table_timestamp(con):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-@mark.never(
-    ["pandas"],
-    raises=AssertionError,
-    reason="pandas doesn't cache anything and therefore does no ref counting",
-)
 def test_persist_expression_ref_count(con, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation")
     persisted_table = non_persisted_table.cache()
@@ -1105,9 +1100,9 @@ def test_persist_expression_ref_count(con, alltypes):
     op = non_persisted_table.op()
 
     # ref count is unaffected without a context manager
-    assert con._refs[op] == 1
+    assert con._query_cache.refs[op] == 1
     tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
-    assert con._refs[op] == 1
+    assert con._query_cache.refs[op] == 1
 
 
 @mark.notimpl(
@@ -1178,11 +1173,6 @@ def test_persist_expression_contextmanager(alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-@mark.never(
-    ["pandas"],
-    raises=AssertionError,
-    reason="pandas doesn't cache anything and therefore does no ref counting",
-)
 def test_persist_expression_contextmanager_ref_count(con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
@@ -1190,8 +1180,8 @@ def test_persist_expression_contextmanager_ref_count(con, alltypes):
     op = non_cached_table.op()
     with non_cached_table.cache() as cached_table:
         tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
-        assert con._refs[op] == 1
-    assert con._refs[op] == 0
+        assert con._query_cache.refs[op] == 1
+    assert con._query_cache.refs[op] == 0
 
 
 @mark.notimpl(
@@ -1212,11 +1202,6 @@ def test_persist_expression_contextmanager_ref_count(con, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-@mark.never(
-    ["pandas"],
-    raises=AssertionError,
-    reason="pandas doesn't cache anything and therefore does no ref counting",
-)
 def test_persist_expression_multiple_refs(con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
@@ -1224,11 +1209,25 @@ def test_persist_expression_multiple_refs(con, alltypes):
     op = non_cached_table.op()
     with non_cached_table.cache() as cached_table:
         tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+
+        name1 = cached_table.op().name
+
         with non_cached_table.cache() as nested_cached_table:
+            name2 = nested_cached_table.op().name
             assert not nested_cached_table.to_pandas().empty
-            assert con._refs[op] == 2
-        assert con._refs[op] == 1
-    assert con._refs[op] == 0
+
+            # there are two refs to the uncached expression
+            assert con._query_cache.refs[op] == 2
+
+        # one ref to the uncached expression was removed by the context manager
+        assert con._query_cache.refs[op] == 1
+
+    # no refs left after the outer context manager exits
+    assert con._query_cache.refs[op] == 0
+
+    # assert that tables have been dropped
+    assert name1 not in con.list_tables()
+    assert name2 not in con.list_tables()
 
 
 @mark.notimpl(
@@ -1276,14 +1275,13 @@ def test_persist_expression_repeated_cache(alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-@mark.never(["pandas"], reason="pandas does not need to release anything")
 def test_persist_expression_release(con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 3"
     )
     cached_table = non_cached_table.cache()
     cached_table.release()
-    assert con._refs[non_cached_table.op()] == 0
+    assert con._query_cache.refs[non_cached_table.op()] == 0
 
     with pytest.raises(
         com.IbisError,

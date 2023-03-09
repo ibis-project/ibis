@@ -424,6 +424,12 @@ class MockBackend(BaseSQLBackend):
     def drop_view(self, *_, **__) -> ir.Table:
         raise NotImplementedError(self.name)
 
+    def _load_into_cache(self, *_):
+        raise NotImplementedError(self.name)
+
+    def _clean_up_cached_table(self, _):
+        raise NotImplementedError(self.name)
+
 
 def table_from_schema(name, meta, schema, *, database: str | None = None):
     # Convert Ibis schema to SQLA table
