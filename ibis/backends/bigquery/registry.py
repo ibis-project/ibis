@@ -196,12 +196,22 @@ def _string_right(translator, op):
 
 
 def _string_substring(translator, op):
-    _, _, length = op.args
+    length = op.length
     if (length := getattr(length, "value", None)) is not None and length < 0:
         raise ValueError("Length parameter must be a non-negative value.")
 
-    base_substring = operation_registry[ops.Substring]
-    return base_substring(translator, op)
+    arg = translator.translate(op.arg)
+    start = translator.translate(op.start)
+
+    arg_length = f"LENGTH({arg})"
+    if op.length is not None:
+        suffix = f", {translator.translate(op.length)}"
+    else:
+        suffix = ""
+
+    if_pos = f"SUBSTR({arg}, {start} + 1{suffix})"
+    if_neg = f"SUBSTR({arg}, {arg_length} + {start} + 1{suffix})"
+    return f"IF({start} >= 0, {if_pos}, {if_neg})"
 
 
 def _array_literal_format(op):

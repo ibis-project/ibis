@@ -526,6 +526,16 @@ def test_string_col_is_unicode(alltypes, df):
             id='slice',
         ),
         param(
+            lambda t: t.date_string_col[-2],
+            lambda t: t.date_string_col.str[-2],
+            id='negative-index',
+            marks=[
+                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.broken(["datafusion", "impala"], raises=AssertionError),
+                pytest.mark.notimpl(["pyspark"], raises=NotImplementedError),
+            ],
+        ),
+        param(
             lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
             lambda t: t.date_string_col.str[-1:],
             id='expr_slice_begin',
