@@ -94,7 +94,7 @@ class Predicate(Selector):
         return [col for column in table.columns if self.predicate(col := table[column])]
 
     def __and__(self, other: Selector) -> Predicate:
-        """Compute the conjunction of two `Selectors`.
+        """Compute the conjunction of two `Selector`s.
 
         Parameters
         ----------
@@ -104,7 +104,7 @@ class Predicate(Selector):
         return self.__class__(lambda col: self.predicate(col) and other.predicate(col))
 
     def __or__(self, other: Selector) -> Predicate:
-        """Compute the disjunction of two `Selectors`.
+        """Compute the disjunction of two `Selector`s.
 
         Parameters
         ----------
@@ -114,7 +114,7 @@ class Predicate(Selector):
         return self.__class__(lambda col: self.predicate(col) or other.predicate(col))
 
     def __invert__(self) -> Predicate:
-        """Compute the logical negation of two `Selectors`."""
+        """Compute the logical negation of two `Selector`s."""
         return self.__class__(lambda col: not self.predicate(col))
 
 
@@ -457,3 +457,8 @@ def last() -> Predicate:
 def all() -> Predicate:
     """Return every column from a table."""
     return r[:]
+
+
+def _to_selector(obj: str | Selector) -> Selector:
+    """Convert an object to a `Selector`."""
+    return c(obj) if isinstance(obj, str) else obj
