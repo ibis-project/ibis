@@ -24,6 +24,7 @@
     * [Backend Operations Matrix](backends/support_matrix.md)
 * [Releases](release_notes.md)
 * Blog
+    * [Ibis Sneak Peek: Writing to Files](blog/ibis-to-file.md)
     * [Ibis Sneak Peek: Examples](blog/ibis-examples.md)
     * [Maximizing Productivity with Selectors](blog/selectors.md)
     * [Ibis + DuckDB + Substrait](blog/ibis_substrait_to_duckdb.md)
