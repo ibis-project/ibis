@@ -27,6 +27,7 @@ class QueryContext:
         self.always_alias = True
         self.query = None
         self.params = params if params is not None else {}
+        self._alias_counter = getattr(parent, "_alias_counter", 0)
 
     def _compile_subquery(self, op):
         sub_ctx = self.subcontext()
@@ -73,11 +74,9 @@ class QueryContext:
         return result
 
     def make_alias(self, node):
-        i = len(self.table_refs)
+        i = self._alias_counter
 
-        # Get total number of aliases up and down the tree at this point; if we
-        # find the table prior-aliased along the way, however, we reuse that
-        # alias
+        # check for existing tables that we're referencing from a parent context
         for ctx in itertools.islice(self._contexts(), 1, None):
             try:
                 alias = ctx.table_refs[node]
@@ -87,8 +86,7 @@ class QueryContext:
                 self.set_ref(node, alias)
                 return
 
-            i += len(ctx.table_refs)
-
+        self._alias_counter += 1
         alias = f't{i:d}'
         self.set_ref(node, alias)
 
