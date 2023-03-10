@@ -15,6 +15,7 @@ from google.api_core.exceptions import NotFound
 from pydata_google_auth import cache
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -441,11 +442,22 @@ class Backend(BaseSQLBackend):
         self,
         name: str,
         obj: pd.DataFrame | ir.Table | None = None,
+        *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
+        temp: bool | None = None,
+        overwrite: bool = False,
     ) -> ir.Table:
         if obj is None and schema is None:
-            raise ValueError("The schema or obj parameter is required")
+            raise com.IbisError("The schema or obj parameter is required")
+        if temp is True:
+            raise NotImplementedError(
+                "BigQuery backend does not yet support temporary tables"
+            )
+        if overwrite is not False:
+            raise NotImplementedError(
+                "BigQuery backend does not yet support overwriting tables"
+            )
         if schema is not None:
             table_id = self._fully_qualified_name(name, database)
             bigquery_schema = ibis_schema_to_bigquery_schema(schema)
@@ -463,23 +475,28 @@ class Backend(BaseSQLBackend):
         return self.table(name, database=database)
 
     def drop_table(
-        self, name: str, database: str | None = None, force: bool = False
+        self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
         table_id = self._fully_qualified_name(name, database)
         self.client.delete_table(table_id, not_found_ok=not force)
 
     def create_view(
-        self, name: str, expr: ir.Table, database: str | None = None
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
     ) -> ir.Table:
+        or_replace = "OR REPLACE " * overwrite
+        sql_select = self.compile(obj)
         table_id = self._fully_qualified_name(name, database)
-        sql_select = self.compile(expr)
-        table = bq.Table(table_id)
-        table.view_query = sql_select
-        self.client.create_table(table)
+        code = f"CREATE {or_replace}VIEW {table_id} AS {sql_select}"
+        self.raw_sql(code)
         return self.table(name, database=database)
 
     def drop_view(
-        self, name: str, database: str | None = None, force: bool = False
+        self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
         self.drop_table(name=name, database=database, force=force)
 

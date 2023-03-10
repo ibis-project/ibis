@@ -11,6 +11,7 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.pandas.client import (
     PandasDatabase,
@@ -104,6 +105,9 @@ class BasePandasBackend(BaseBackend):
     def database(self, name=None):
         return self.database_class(name, self)
 
+    @util.deprecated(
+        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
+    )
     def load_data(self, table_name, obj, **kwargs):
         # kwargs is a catch all for any options required by other backends.
         self.dictionary[table_name] = obj
@@ -120,11 +124,28 @@ class BasePandasBackend(BaseBackend):
         return expr
 
     def create_table(
-        self, table_name: str, obj=None, schema: sch.Schema | None = None
+        self,
+        name: str,
+        obj: pd.DataFrame | ir.Table | None = None,
+        *,
+        schema: sch.Schema | None = None,
+        database: str | None = None,
+        temp: bool | None = None,
+        overwrite: bool = False,
     ) -> ir.Table:
         """Create a table."""
+        if temp:
+            com.IbisError(
+                "Passing `temp=True` to the Pandas backend create_table method has no "
+                "effect: all tables are in memory and temporary."
+            )
+        if database:
+            com.IbisError(
+                "Passing `database` to the Pandas backend create_table method has no "
+                "effect: Pandas cannot set a database."
+            )
         if obj is None and schema is None:
-            raise com.IbisError('Must pass expr or schema')
+            raise com.IbisError("The schema or obj parameter is required")
 
         if obj is not None:
             if not self._supports_conversion(obj):
@@ -138,11 +159,36 @@ class BasePandasBackend(BaseBackend):
             dtypes = dict(pandas_schema)
             df = self._from_pandas(pd.DataFrame(columns=dtypes.keys()).astype(dtypes))
 
-        self.dictionary[table_name] = df
+        if name in self.dictionary and not overwrite:
+            raise com.IbisError(f"Cannot overwrite existing table `{name}`")
+
+        self.dictionary[name] = df
 
         if schema is not None:
-            self.schemas[table_name] = schema
-        return self.table(table_name)
+            self.schemas[name] = schema
+        return self.table(name)
+
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        return self.create_table(
+            name, obj=obj, temp=None, database=database, overwrite=overwrite
+        )
+
+    def drop_view(self, name: str, *, force: bool = False) -> None:
+        self.drop_table(name, force=force)
+
+    def drop_table(self, name: str, *, force: bool = False) -> None:
+        if not force and name in self.dictionary:
+            raise com.IbisError(
+                "Cannot drop existing table. Call drop_table with force=True to drop existing table."
+            )
+        del self.dictionary[name]
 
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:

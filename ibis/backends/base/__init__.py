@@ -769,16 +769,18 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             f'Backend "{self.name}" does not implement "create_database"'
         )
 
+    @abc.abstractmethod
     def create_table(
         self,
         name: str,
         obj: pd.DataFrame | ir.Table | None = None,
+        *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
     ) -> ir.Table:
         """Create a new table.
-
-        Not all backends implement this method.
 
         Parameters
         ----------
@@ -794,19 +796,22 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         database
             Name of the database where the table will be created, if not the
             default.
+        temp
+            Whether a table is temporary or not
+        overwrite
+            Whether to clobber existing data
 
         Returns
         -------
         Table
             The table that was created.
         """
-        raise NotImplementedError(
-            f'Backend "{self.name}" does not implement "create_table"'
-        )
 
+    @abc.abstractmethod
     def drop_table(
         self,
         name: str,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:
@@ -825,36 +830,38 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             f'Backend "{self.name}" does not implement "drop_table"'
         )
 
+    @abc.abstractmethod
     def create_view(
         self,
         name: str,
-        expr: ir.Table,
+        obj: ir.Table,
+        *,
         database: str | None = None,
+        overwrite: bool = False,
     ) -> ir.Table:
-        """Create a view.
+        """Create a new view from an expression.
 
         Parameters
         ----------
         name
-            Name for the new view.
-        expr
-            An Ibis table expression that will be used to extract the query
-            of the view.
+            Name of the new view.
+        obj
+            An Ibis table expression that will be used to create the view.
         database
-            Name of the database where the view will be created, if not the
-            default.
+            Name of the database where the view will be created, if not
+            provided the database's default is used.
+        overwrite
+            Whether to clobber an existing view with the same name
 
         Returns
         -------
         Table
             The view that was created.
         """
-        raise NotImplementedError(
-            f'Backend "{self.name}" does not implement "create_view"'
-        )
 
+    @abc.abstractmethod
     def drop_view(
-        self, name: str, database: str | None = None, force: bool = False
+        self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop a view.
 
@@ -867,9 +874,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         force
             If `False`, an exception is raised if the view does not exist.
         """
-        raise NotImplementedError(
-            f'Backend "{self.name}" does not implement "drop_view"'
-        )
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:

@@ -354,6 +354,7 @@ class ImpalaTable(ir.Table):
             path,
             partition=partition,
             partition_schema=partition_schema,
+            overwrite=overwrite,
         )
 
         return self._client.raw_sql(stmt.compile())

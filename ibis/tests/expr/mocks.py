@@ -412,6 +412,18 @@ class MockBackend(BaseSQLBackend):
         queries = [q.compile() for q in ast.queries]
         return queries[0] if len(queries) == 1 else queries
 
+    def create_table(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def drop_table(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def create_view(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def drop_view(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
 
 def table_from_schema(name, meta, schema, *, database: str | None = None):
     # Convert Ibis schema to SQLA table
@@ -431,8 +443,8 @@ class MockAlchemyBackend(MockBackend):
 
     def __init__(self):
         super().__init__()
-        sa = pytest.importorskip('sqlalchemy')
-        self.meta = sa.MetaData()
+        pytest.importorskip('sqlalchemy')
+        self.tables = {}
 
     def table(self, name, database=None):
         schema = self.get_schema(name)
@@ -440,9 +452,11 @@ class MockAlchemyBackend(MockBackend):
 
     def _inject_table(self, name, schema):
         try:
-            alchemy_table = self.meta.tables[name]
+            alchemy_table = self.tables[name]
         except KeyError:
-            alchemy_table = table_from_schema(name, self.meta, schema)
+            alchemy_table = self.tables[name] = table_from_schema(
+                name, sa.MetaData(), schema
+            )
 
         return self.table_class(
             source=self, sqla_table=alchemy_table, schema=schema

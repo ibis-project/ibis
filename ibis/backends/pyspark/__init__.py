@@ -333,31 +333,33 @@ class Backend(BaseSQLBackend):
 
     def create_table(
         self,
-        table_name: str,
+        name: str,
         obj: ir.Table | pd.DataFrame | None = None,
+        *,
         schema: sch.Schema | None = None,
         database: str | None = None,
-        force: bool = False,
-        # HDFS options
-        format: str = 'parquet',
+        temp: bool | None = None,
+        overwrite: bool = False,
+        format: str = "parquet",
     ) -> ir.Table:
         """Create a new table in Spark.
 
         Parameters
         ----------
-        table_name
+        name
             Name of the new table.
         obj
-            If passed, creates table from select statement results
+            If passed, creates table from `SELECT` statement results
         schema
-            Mutually exclusive with obj, creates an empty table with a
-            schema
+            Mutually exclusive with `obj`, creates an empty table with a schema
         database
             Database name
-        force
-            If true, create table if table with indicated name already exists
+        temp
+            Whether the new table is temporary
+        overwrite
+            If `True`, overwrite existing data
         format
-            Table format
+            Format of the table on disk
 
         Returns
         -------
@@ -370,13 +372,17 @@ class Backend(BaseSQLBackend):
         """
         import pandas as pd
 
+        if obj is None and schema is None:
+            raise com.IbisError("The schema or obj parameter is required")
+        if temp is True:
+            raise NotImplementedError(
+                "PySpark backend does not yet support temporary tables"
+            )
         if obj is not None:
             if isinstance(obj, pd.DataFrame):
                 spark_df = self._session.createDataFrame(obj)
-                mode = 'error'
-                if force:
-                    mode = 'overwrite'
-                spark_df.write.saveAsTable(table_name, format=format, mode=mode)
+                mode = "overwrite" if overwrite else "error"
+                spark_df.write.saveAsTable(name, format=format, mode=mode)
                 return None
             else:
                 self._register_in_memory_tables(obj)
@@ -385,25 +391,23 @@ class Backend(BaseSQLBackend):
             select = ast.queries[0]
 
             statement = ddl.CTAS(
-                table_name,
+                name,
                 select,
                 database=database,
-                can_exist=force,
+                can_exist=overwrite,
                 format=format,
             )
-        elif schema is not None:
+        else:
             statement = ddl.CreateTableWithSchema(
-                table_name,
+                name,
                 schema,
                 database=database,
                 format=format,
-                can_exist=force,
+                can_exist=overwrite,
             )
-        else:
-            raise com.IbisError('Must pass expr or schema')
 
         self.raw_sql(statement.compile())
-        return self.table(table_name, database=database)
+        return self.table(name, database=database)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self.compile(op.to_expr()).createOrReplaceTempView(op.name)
@@ -411,10 +415,10 @@ class Backend(BaseSQLBackend):
     def create_view(
         self,
         name: str,
-        expr: ir.Table,
+        obj: ir.Table,
+        *,
         database: str | None = None,
-        can_exist: bool = False,
-        temporary: bool = False,
+        overwrite: bool = False,
     ) -> ir.Table:
         """Create a Spark view from a table expression.
 
@@ -422,28 +426,22 @@ class Backend(BaseSQLBackend):
         ----------
         name
             View name
-        expr
+        obj
             Expression to use for the view
         database
             Database name
-        can_exist
+        overwrite
             Replace an existing view of the same name if it exists
-        temporary
-            Whether the table is temporary
 
         Returns
         -------
         Table
             The created view
         """
-        ast = self.compiler.to_ast(expr)
+        ast = self.compiler.to_ast(obj)
         select = ast.queries[0]
         statement = ddl.CreateView(
-            name,
-            select,
-            database=database,
-            can_exist=can_exist,
-            temporary=temporary,
+            name, select, database=database, can_exist=overwrite, temporary=True
         )
         self.raw_sql(statement.compile())
         return self.table(name, database=database)
@@ -451,24 +449,27 @@ class Backend(BaseSQLBackend):
     def drop_table(
         self,
         name: str,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:
         """Drop a table."""
-        self.drop_table_or_view(name, database, force)
+        self.drop_table_or_view(name, database=database, force=force)
 
     def drop_view(
         self,
         name: str,
+        *,
         database: str | None = None,
         force: bool = False,
     ):
         """Drop a view."""
-        self.drop_table_or_view(name, database, force)
+        self.drop_table_or_view(name, database=database, force=force)
 
     def drop_table_or_view(
         self,
         name: str,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:
@@ -492,21 +493,17 @@ class Backend(BaseSQLBackend):
         statement = DropTable(name, database=database, must_exist=not force)
         self.raw_sql(statement.compile())
 
-    def truncate_table(
-        self,
-        table_name: str,
-        database: str | None = None,
-    ) -> None:
+    def truncate_table(self, name: str, database: str | None = None) -> None:
         """Delete all rows from an existing table.
 
         Parameters
         ----------
-        table_name
+        name
             Table name
         database
             Database name
         """
-        statement = TruncateTable(table_name, database=database)
+        statement = TruncateTable(name, database=database)
         self.raw_sql(statement.compile())
 
     def insert(

@@ -72,10 +72,6 @@ class Backend(BaseAlchemyBackend):
         database: str | None = None,
         temp: bool = False,
     ) -> sa.Table:
-        prefixes = []
-        if temp:
-            raise ValueError(
-                'MSSQL supports temporary table declaration through placing hash before the table name'
-            )
-        columns = self._columns_from_schema(name, schema)
-        return sa.Table(name, self.meta, *columns, prefixes=prefixes)
+        return super()._table_from_schema(
+            temp * "#" + name, schema=schema, database=database, temp=False
+        )

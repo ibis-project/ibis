@@ -284,3 +284,15 @@ class Backend(BaseBackend):
         return operation in op_classes or any(
             issubclass(operation, op_impl) for op_impl in op_classes
         )
+
+    def create_table(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def create_view(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def drop_table(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def drop_view(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)

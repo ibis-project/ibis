@@ -1088,7 +1088,7 @@ def test_anti_join(t, s):
 
 
 def test_create_table_from_expr(con, trunc, guid2):
-    con.create_table(guid2, expr=trunc)
+    con.create_table(guid2, obj=trunc)
     t = con.table(guid2)
     assert list(t['name'].execute()) == list('abc')
 

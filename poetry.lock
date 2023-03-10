@@ -5574,18 +5574,18 @@ druid = ["pydruid", "sqlalchemy"]
 duckdb = ["duckdb", "duckdb-engine", "packaging", "pyarrow", "sqlalchemy", "sqlalchemy-views"]
 geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
-mssql = ["sqlalchemy", "pymssql"]
-mysql = ["sqlalchemy", "pymysql"]
+mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
+mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["polars", "pyarrow"]
-postgres = ["psycopg2", "sqlalchemy"]
+postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
 pyspark = ["pyarrow", "pyspark", "sqlalchemy"]
-snowflake = ["snowflake-connector-python", "snowflake-sqlalchemy"]
-sqlite = ["regex", "sqlalchemy"]
-trino = ["trino", "sqlalchemy"]
+snowflake = ["snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy-views"]
+sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
+trino = ["trino", "sqlalchemy", "sqlalchemy-views"]
 visualization = ["graphviz"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "f113527d242423168c146d59aca1fdc1084b171cb11c3ee66bf8c5ba5c62cae8"
+content-hash = "6eaf9b594415cc03edd48afa3c88edfa7b3be36213320c801d87c88233bc19f7"

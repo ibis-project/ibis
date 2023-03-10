@@ -24,7 +24,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.tests.util import assert_equal
-from ibis.util import guid
 
 pytest.importorskip("psycopg2")
 sa = pytest.importorskip("sqlalchemy")
@@ -80,28 +79,6 @@ def test_compile_toplevel(snapshot):
 def test_list_databases(con):
     assert POSTGRES_TEST_DB is not None
     assert POSTGRES_TEST_DB in con.list_databases()
-
-
-def test_metadata_is_per_table():
-    con = ibis.postgres.connect(
-        host=IBIS_POSTGRES_HOST,
-        database=POSTGRES_TEST_DB,
-        user=IBIS_POSTGRES_USER,
-        password=IBIS_POSTGRES_PASS,
-        port=IBIS_POSTGRES_PORT,
-    )
-
-    name = f"tmp_{guid()}"
-    with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TABLE {name} (x BIGINT)")
-
-    try:
-        assert name not in con.meta.tables
-        con.table(name)
-        assert name in con.meta.tables
-    finally:
-        with con.begin() as c:
-            c.exec_driver_sql(f"DROP TABLE {name}")
 
 
 def test_schema_type_conversion():
