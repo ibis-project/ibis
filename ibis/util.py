@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.operations as ops
+    import ibis.expr.schema as sch
 
     Graph = Mapping[ops.Node, Sequence[ops.Node]]
 
@@ -493,11 +494,11 @@ class ToFrame(abc.ABC):
 
     @abc.abstractmethod
     def to_frame(self) -> pd.DataFrame:  # pragma: no cover
-        ...
+        """Convert this input to a pandas DataFrame."""
 
     @abc.abstractmethod
-    def to_pyarrow(self) -> pa.Table:  # pragma: no cover
-        ...
+    def to_pyarrow(self, schema: sch.Schema) -> pa.Table:  # pragma: no cover
+        """Convert this input to a PyArrow Table."""
 
 
 def backend_entry_points() -> list[importlib.metadata.EntryPoint]:

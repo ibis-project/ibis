@@ -466,7 +466,13 @@ def table(arg, schema=None, **kwargs):
     it must be of the specified type. The table may have extra columns not
     specified in the schema.
     """
+    import pandas as pd
+
+    import ibis
     import ibis.expr.operations as ops
+
+    if isinstance(arg, pd.DataFrame):
+        arg = ibis.memtable(arg).op()
 
     if not isinstance(arg, ops.TableNode):
         raise com.IbisTypeError(

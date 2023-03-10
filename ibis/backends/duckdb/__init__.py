@@ -687,8 +687,15 @@ class Backend(BaseAlchemyBackend):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # in theory we could use pandas dataframes, but when using dataframes
         # with pyarrow datatypes later reads of this data segfault
+        schema = op.schema
+        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
+            raise exc.IbisTypeError(
+                "DuckDB cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
         name = op.name
-        table = op.data.to_pyarrow()
+        table = op.data.to_pyarrow(schema)
         with self.begin() as con:
             con.connection.register(name, table)
 

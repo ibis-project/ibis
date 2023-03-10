@@ -195,7 +195,7 @@ def _infer_object_array_dtype(x):
             'timedelta': dt.interval,
             'time': dt.time,
             'period': dt.binary,
-            'empty': dt.binary,
+            'empty': dt.null,
             'unicode': dt.string,
         }[classifier]
 
