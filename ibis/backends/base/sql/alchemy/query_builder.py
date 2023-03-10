@@ -127,9 +127,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                     sa.select(
                         *(
                             translator.translate(ops.Literal(val, dtype=type_))
-                            for val, name, type_ in zip(
-                                row, op.schema.names, op.schema.types
-                            )
+                            for val, type_ in zip(row, op.schema.types)
                         )
                     )
                     for row in op.data.to_frame().itertuples(index=False)
