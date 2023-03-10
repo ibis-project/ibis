@@ -736,6 +736,7 @@ OPERATION_REGISTRY = {
     ops.ArrayStringJoin: lambda t, op: f"ARRAY_TO_STRING({t.translate(op.arg)}, {t.translate(op.sep)})",
     ops.StartsWith: fixed_arity("STARTS_WITH", 2),
     ops.EndsWith: fixed_arity("ENDS_WITH", 2),
+    ops.Unnest: fixed_arity("UNNEST", 1),
 }
 
 _invalid_operations = {

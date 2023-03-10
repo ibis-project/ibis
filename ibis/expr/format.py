@@ -9,6 +9,7 @@ from typing import Any, Callable, Deque, Iterable, Mapping, Tuple
 import rich.pretty
 
 import ibis
+import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -209,6 +210,20 @@ def _fmt_table_op_sql_view(
         schema_field,
     ]
     return "\n".join(components)
+
+
+@fmt_table_op.register
+def _fmt_table_op_unnest_table(
+    op: ops.relations._UnnestTable,
+    *,
+    aliases: Aliases,
+    **_: Any,
+) -> str:
+    top = op.__class__.__name__
+    formatted_schema = fmt_schema(op.schema)
+    schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
+    first = f"{top}[{aliases[an.find_first_base_table(op.child)]}]"
+    return f"{first}\n{schema_field}"
 
 
 @functools.singledispatch

@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import itertools
+from functools import partial, reduce
 from io import StringIO
 from typing import Iterable
 
 import toolz
 
 import ibis.common.exceptions as com
+import ibis.expr.analysis as an
 import ibis.expr.operations as ops
+import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql.compiler.base import DML, QueryAST, SetOp
@@ -100,6 +104,8 @@ class TableSetFormatter:
 
         if isinstance(ref_op, ops.InMemoryTable):
             result = self._format_in_memory_table(ref_op)
+        elif isinstance(ref_op, ops.relations._UnnestTable):
+            result = self._translate(ref_op.child)
         elif isinstance(ref_op, ops.PhysicalTable):
             name = ref_op.name
             # TODO(kszucs): add a mandatory `name` field to the base
@@ -124,7 +130,7 @@ class TableSetFormatter:
             subquery = ctx.get_compiled_expr(op)
             result = f'(\n{util.indent(subquery, self.indent)}\n)'
 
-        result += f' {ctx.get_ref(op)}'
+        result += f' {ctx.get_ref(op) or op.name}'
 
         return result
 
@@ -301,8 +307,14 @@ class Select(DML, Comparable):
         # TODO:
         context = self.context
         formatted = []
+        unnests = []
         for node in self.select_set:
-            if isinstance(node, ops.Value):
+            if unnest_nodes := list(an.find_toplevel_unnests(node)):
+                expr_str = node.name
+                unnests.extend(
+                    map(partial(rels._UnnestTable, name=node.name), unnest_nodes)
+                )
+            elif isinstance(node, ops.Value):
                 expr_str = self._translate(node, named=True, permit_subquery=True)
             elif isinstance(node, ops.TableNode):
                 alias = context.get_ref(node)
@@ -347,6 +359,23 @@ class Select(DML, Comparable):
         else:
             select_key = 'SELECT'
 
+        # only process unnest if the backend doesn't support SELECT UNNEST(...)
+        if not self.translator_class.supports_unnest_in_select:
+            if unnest_children := list(
+                toolz.unique(an.find_toplevel_unnest_children(self.select_set)),
+            ):
+                # in the presence of unnest expressions, table_set becomes a
+                # cross join with the original table_set and the unnested
+                # expressions
+                self.table_set = reduce(
+                    ops.CrossJoin,
+                    itertools.chain(
+                        # don't repeat tables in `table_set`
+                        (op for op in unnest_children if not op.equals(self.table_set)),
+                        toolz.unique(unnests),
+                    ),
+                    self.table_set,
+                )
         return f'{select_key}{buf.getvalue()}'
 
     def format_table_set(self):

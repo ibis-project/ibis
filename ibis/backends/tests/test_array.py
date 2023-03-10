@@ -155,12 +155,7 @@ builtin_array = toolz.compose(
     duckdb_0_4_0,
 )
 
-unnest = toolz.compose(
-    builtin_array,
-    pytest.mark.notyet(
-        ["bigquery"], reason="doesn't support unnest in SELECT position"
-    ),
-)
+unnest = builtin_array
 
 
 @builtin_array
@@ -279,16 +274,10 @@ def test_array_discovery_snowflake(backend):
 @unnest
 def test_unnest_simple(backend):
     array_types = backend.array_types
-    expected = (
-        array_types.execute()
-        .x.explode()
-        .reset_index(drop=True)
-        .astype("float64")
-        .rename("tmp")
-    )
-    expr = array_types.x.cast("!array<float64>").unnest()
+    expected = array_types.execute().x.explode().reset_index(drop=True).rename("tmp")
+    expr = array_types.x.unnest()
     result = expr.execute().rename("tmp")
-    tm.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected, check_dtype=False)
 
 
 @unnest

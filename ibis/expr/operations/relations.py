@@ -585,6 +585,15 @@ class SQLStringView(PhysicalTable):
         return backend._get_schema_using_query(self.query)
 
 
+class _UnnestTable(TableNode):
+    child = rlz.instance_of(ops.Unnest)
+    name = rlz.instance_of(str)
+
+    @attribute.default
+    def schema(self) -> sch.Schema:
+        return sch.Schema({self.name: self.child.output_dtype})
+
+
 def _dedup_join_columns(expr, suffixes: tuple[str, str]):
     op = expr.op()
     left = op.left.to_expr()

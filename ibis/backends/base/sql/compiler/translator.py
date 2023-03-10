@@ -180,6 +180,7 @@ class ExprTranslator:
         ops.CumeDist,
         ops.NTile,
     )
+    supports_unnest_in_select = False
 
     def __init__(self, node, context, named=False, permit_subquery=False):
         self.node = node
