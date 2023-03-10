@@ -228,10 +228,12 @@ class DataFrameProxy(Immutable, util.ToFrame):
     def to_frame(self) -> pd.DataFrame:
         return self._df
 
-    def to_pyarrow(self) -> pa.Table:
+    def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
         import pyarrow as pa
 
-        return pa.Table.from_pandas(self._df)
+        from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_schema
+
+        return pa.Table.from_pandas(self._df, schema=ibis_to_pyarrow_schema(schema))
 
 
 class PandasInMemoryTable(ops.InMemoryTable):

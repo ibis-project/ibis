@@ -6,6 +6,9 @@ import pytest
 from packaging.version import parse as vparse
 from pytest import param
 
+import ibis.common.exceptions as exc
+import ibis.expr.schema as sch
+
 
 def _pandas_semi_join(left, right, on, **_):
     assert len(on) == 1, str(on)
@@ -194,3 +197,32 @@ def test_semi_join_topk(batting, awards_players):
     left = batting.semi_join(batting.year.topk(5), "year").select("year", "RBI")
     expr = left.join(awards_players, left.year == awards_players.yearID)
     assert not expr.limit(5).execute().empty
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "druid", "pandas"])
+@pytest.mark.broken(
+    ["duckdb"],
+    raises=exc.IbisTypeError,
+    reason="DuckDB as of 0.7.1 occasionally segfaults when there are `null`-typed columns present",
+)
+def test_join_with_pandas(batting, awards_players):
+    batting_filt = batting[lambda t: t.yearID < 1900]
+    awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
+    assert isinstance(awards_players_filt, pd.DataFrame)
+    expr = batting_filt.join(awards_players_filt, "yearID")
+    df = expr.execute()
+    assert df.yearID.nunique() == 7
+
+
+@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
+    batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
+    awards_players_filt = awards_players[lambda t: t.yearID < 1900][
+        ["yearID"]
+    ].execute()
+    # ensure that none of the columns have type null
+    assert sch.infer(awards_players_filt) == sch.Schema(dict(yearID="int"))
+    assert isinstance(awards_players_filt, pd.DataFrame)
+    expr = batting_filt.join(awards_players_filt, "yearID")
+    df = expr.execute()
+    assert df.yearID.nunique() == 7

@@ -208,7 +208,7 @@ def test_pandas_dtype(pandas_dtype, ibis_dtype):
         # mixed
         (pd.Series([b'1', '2', 3.0]), dt.binary),
         # empty
-        (pd.Series([], dtype='object'), dt.binary),
+        (pd.Series([], dtype='object'), dt.null),
         (pd.Series([], dtype="string"), dt.string),
     ],
 )

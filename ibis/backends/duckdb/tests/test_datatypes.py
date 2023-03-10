@@ -3,6 +3,7 @@ import sqlglot as sg
 from packaging.version import parse as vparse
 from pytest import param
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.backends.duckdb.datatypes import parse
 
@@ -95,3 +96,18 @@ def test_cast_uints(uint_type, snapshot):
     snapshot.assert_match(
         str(ibis.to_sql(t.a.cast(uint_type), dialect="duckdb")), "out.sql"
     )
+
+
+def test_null_dtype():
+    import ibis
+
+    con = ibis.connect("duckdb://:memory:")
+
+    t = ibis.memtable({"a": [None, None]})
+    assert t.schema() == ibis.schema(dict(a="null"))
+
+    with pytest.raises(
+        exc.IbisTypeError,
+        match="DuckDB cannot yet reliably handle `null` typed columns",
+    ):
+        con.execute(t)

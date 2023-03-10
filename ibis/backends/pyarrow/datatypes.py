@@ -26,6 +26,8 @@ _to_pyarrow_types = {
     dt.Boolean: pa.bool_(),
     dt.Timestamp: pa.timestamp('ns'),
     dt.Date: pa.date64(),
+    dt.JSON: pa.string(),
+    dt.Null: pa.null(),
 }
 
 
