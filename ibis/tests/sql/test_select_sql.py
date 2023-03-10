@@ -826,3 +826,21 @@ def test_incorrect_predicate_pushdown_with_literal(snapshot):
     t = ibis.table(dict(a="int"), name="t")
     expr = t.mutate(a=ibis.literal(1)).filter(lambda t: t.a > 1)
     snapshot.assert_match(to_sql(expr), "result.sql")
+
+
+def test_complex_union(snapshot):
+    def compute(t):
+        return (
+            t.select("diag", "status")
+            .mutate(diag=_.diag + 1)
+            .mutate(diag=_.diag.cast("int32"))
+        )
+
+    # schema subset from ibis.examples.Aids2
+    schema = ibis.schema(dict(diag="int64", status="string"))
+
+    t1 = compute(ibis.table(schema, name="aids2_one"))
+    t2 = compute(ibis.table(schema, name="aids2_two"))
+
+    u = ibis.union(t1, t2)
+    snapshot.assert_match(to_sql(u), "result.sql")
