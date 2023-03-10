@@ -15,7 +15,7 @@ SELECT t3.*
 FROM (
   SELECT t2.`a`
   FROM t2
-    INNER JOIN s t5
-      ON t2.`b` = t5.`b`
+    INNER JOIN s t4
+      ON t2.`b` = t4.`b`
 ) t3
 WHERE t3.`a` < 1.0

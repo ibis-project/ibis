@@ -13,9 +13,9 @@ t1 AS (
   SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
   FROM t0
   WHERE t0.`o_totalprice` > (
-    SELECT avg(t4.`o_totalprice`) AS `mean`
-    FROM t0 t4
-    WHERE t4.`region` = t0.`region`
+    SELECT avg(t3.`o_totalprice`) AS `mean`
+    FROM t0 t3
+    WHERE t3.`region` = t0.`region`
   )
   GROUP BY 1
 ),

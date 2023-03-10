@@ -31,11 +31,11 @@ LEFT OUTER JOIN (
     t1.dt AS dt,
     t1.id3 AS id3,
     t1.t3_val2 AS t3_val2,
-    t5.id2a AS id2a,
-    t5.id2b AS id2b,
-    t5.val2 AS val2
+    t4.id2a AS id2a,
+    t4.id2b AS id2b,
+    t4.val2 AS val2
   FROM t1
-  JOIN test2 AS t5
-    ON t5.id2b = t1.id3
+  JOIN test2 AS t4
+    ON t4.id2b = t1.id3
 ) AS t3
   ON t2.t1_id1 = t3.id2a

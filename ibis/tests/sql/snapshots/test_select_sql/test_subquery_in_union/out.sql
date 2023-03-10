@@ -6,13 +6,13 @@ WITH t0 AS (
 t1 AS (
   SELECT t0.*
   FROM t0
-    INNER JOIN t0 t3
-      ON t0.`g` = t3.`g`
+    INNER JOIN t0 t2
+      ON t0.`g` = t2.`g`
 )
 SELECT *
 FROM t1
 UNION ALL
 SELECT t0.*
 FROM t0
-  INNER JOIN t0 t3
-    ON t0.`g` = t3.`g`
+  INNER JOIN t0 t2
+    ON t0.`g` = t2.`g`
