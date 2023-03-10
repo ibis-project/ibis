@@ -43,18 +43,6 @@ def normalize_filenames(source_list):
     return list(map(util.normalize_filename, source_list))
 
 
-def _create_view(*args, **kwargs):
-    import sqlalchemy_views as sav
-
-    return sav.CreateView(*args, **kwargs)
-
-
-def _drop_view(*args, **kwargs):
-    import sqlalchemy_views as sav
-
-    return sav.DropView(*args, **kwargs)
-
-
 def _format_kwargs(kwargs: Mapping[str, Any]):
     bindparams, pieces = [], []
     for name, value in kwargs.items():
@@ -256,6 +244,7 @@ class Backend(BaseAlchemyBackend):
         Table
             An ibis table expression
         """
+        import sqlalchemy_views as sav
         from packaging.version import parse as vparse
 
         if (version := vparse(self.version)) < vparse("0.7.0"):
@@ -265,7 +254,7 @@ class Backend(BaseAlchemyBackend):
         if not table_name:
             table_name = f"ibis_read_json_{next(json_n)}"
 
-        view = _create_view(
+        view = sav.CreateView(
             sa.table(table_name),
             sa.select(sa.literal_column("*")).select_from(
                 sa.func.read_json_auto(
@@ -305,6 +294,8 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
+        import sqlalchemy_views as sav
+
         source_list = normalize_filenames(source_list)
 
         if not table_name:
@@ -319,7 +310,7 @@ class Backend(BaseAlchemyBackend):
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.read_csv(sa.func.list_value(*source_list), _format_kwargs(kwargs))
         )
-        view = _create_view(sa.table(table_name), source, or_replace=True)
+        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
         with self.begin() as con:
             con.execute(view)
         return self.table(table_name)
@@ -349,6 +340,8 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
+        import sqlalchemy_views as sav
+
         source_list = normalize_filenames(source_list)
 
         if any(source.startswith("s3://") for source in source_list):
@@ -383,7 +376,7 @@ class Backend(BaseAlchemyBackend):
                     sa.func.list_value(*source_list), _format_kwargs(kwargs)
                 )
             )
-            view = _create_view(sa.table(table_name), source, or_replace=True)
+            view = sav.CreateView(sa.table(table_name), source, or_replace=True)
             with self.begin() as con:
                 con.execute(view)
 
@@ -439,6 +432,8 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table.
         """
+        import sqlalchemy_views as sav
+
         if table_name is None:
             raise ValueError(
                 "`table_name` is required when registering a postgres table"
@@ -447,7 +442,7 @@ class Backend(BaseAlchemyBackend):
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.postgres_scan_pushdown(uri, schema, table_name)
         )
-        view = _create_view(sa.table(table_name), source, or_replace=True)
+        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
         with self.begin() as con:
             con.execute(view)
 
@@ -481,13 +476,15 @@ class Backend(BaseAlchemyBackend):
             3   0.29  Premium     I     VS2   62.4   58.0    334  4.20  4.23  2.63
             4   0.31     Good     J     SI2   63.3   58.0    335  4.34  4.35  2.75
         """
+        import sqlalchemy_views as sav
+
         if table_name is None:
             raise ValueError("`table_name` is required when registering a sqlite table")
         self._load_extensions(["sqlite"])
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.sqlite_scan(str(path), table_name)
         )
-        view = _create_view(sa.table(table_name), source, or_replace=True)
+        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
         with self.begin() as con:
             con.execute(view)
 
@@ -720,23 +717,6 @@ class Backend(BaseAlchemyBackend):
         return super()._get_compiled_statement(
             view, definition, compile_kwargs={"literal_binds": True}
         )
-
-    def create_view(
-        self, name: str, expr: ir.Table, database: str | None = None
-    ) -> ir.Table:
-        source = self.compile(expr)
-        view = _create_view(sa.table(name), source, or_replace=True)
-        with self.begin() as con:
-            con.execute(view)
-        return self.table(name, database=database)
-
-    def drop_view(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        view = _drop_view(sa.table(name), if_exists=not force)
-
-        with self.begin() as con:
-            con.execute(view)
 
     def _insert_dataframe(
         self, table_name: str, df: pd.DataFrame, overwrite: bool

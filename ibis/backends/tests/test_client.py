@@ -26,23 +26,23 @@ def new_schema():
 
 
 def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
-    con.drop_table(temp_table_name, force=True)
     temporary = con.create_table(temp_table_name, schema=schema)
     assert temporary.to_pandas().empty
 
     if data is not None and isinstance(data, pd.DataFrame):
-        con.load_data(temp_table_name, data, if_exists="append")
-        result = temporary.to_pandas()
+        assert not data.empty
+        tmp = con.create_table(temp_table_name, data, overwrite=True)
+        result = tmp.to_pandas()
         assert len(result) == len(data.index)
         tm.assert_frame_equal(
             result.sort_values(result.columns[0]).reset_index(drop=True),
             data.sort_values(result.columns[0]).reset_index(drop=True),
         )
+        return tmp
 
     return temporary
 
 
-@pytest.mark.notimpl(["snowflake"])
 def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
     sch = ibis.schema(
         [
@@ -61,8 +61,7 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
             'salary': [100.0, 200.0, 300.0],
         }
     )
-    alchemy_con.create_table(alchemy_temp_table, schema=sch)
-    alchemy_con.load_data(alchemy_temp_table, df, if_exists='append')
+    alchemy_con.create_table(alchemy_temp_table, df, schema=sch, overwrite=True)
     result = (
         alchemy_con.table(alchemy_temp_table)
         .execute()
@@ -215,25 +214,17 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        "druid",
-        "mysql",
-        "postgres",
-        "sqlite",
-        "snowflake",
-        "polars",
-        "mssql",
-        "trino",
-    ]
-)
-@mark.notyet(["pyspark"])
+@mark.notimpl(["datafusion", "druid", "polars"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = 'functional_alltypes'
-    expr = ddl_con.table(table_name).limit(1)
+    try:
+        expr = ddl_con.table(table_name)
+    except KeyError:
+        table_name = table_name.upper()
+        expr = ddl_con.table(table_name)
+
+    expr = expr.limit(1)
 
     # create a new view
     ddl_con.create_view(temp_view, expr)
@@ -246,7 +237,7 @@ def test_create_drop_view(ddl_con, temp_view):
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
 
 
-@mark.notimpl(["postgres", "mysql", "clickhouse", "datafusion", "polars"])
+@mark.notimpl(["postgres", "mysql", "datafusion", "polars"])
 def test_separate_database(ddl_con, alternate_current_database, current_data_db):
     # using alternate_current_database switches "con" current
     #  database to a temporary one until a test is over
@@ -257,14 +248,8 @@ def test_separate_database(ddl_con, alternate_current_database, current_data_db)
     assert tmp_db.name == alternate_current_database
 
 
-def _skip_snowflake(con, reason="snowflake can't drop tables"):
-    if con.name == "snowflake":
-        pytest.skip(reason)
-
-
 @pytest.fixture
 def employee_empty_temp_table(alchemy_con, test_employee_schema):
-    _skip_snowflake(alchemy_con)
     temp_table_name = f"temp_to_table_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
@@ -283,7 +268,6 @@ def employee_data_1_temp_table(
     test_employee_schema,
     test_employee_data_1,
 ):
-    _skip_snowflake(alchemy_con)
     temp_table_name = f"temp_to_table_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
@@ -291,6 +275,7 @@ def employee_data_1_temp_table(
         test_employee_schema,
         data=test_employee_data_1,
     )
+    assert temp_table_name in alchemy_con.list_tables()
     try:
         yield temp_table_name
     finally:
@@ -303,7 +288,6 @@ def employee_data_2_temp_table(
     test_employee_schema,
     test_employee_data_2,
 ):
-    _skip_snowflake(alchemy_con)
     temp_table_name = f"temp_to_table_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
@@ -336,6 +320,11 @@ def test_insert_no_overwrite_from_dataframe(
     )
 
 
+@pytest.mark.notyet(
+    ["trino"],
+    reason="Connector doesn't support deletion (required for overwrite=True)",
+    raises=sa.exc.ProgrammingError,
+)
 def test_insert_overwrite_from_dataframe(
     alchemy_con,
     employee_data_1_temp_table,
@@ -488,7 +477,7 @@ def test_unsigned_integer_type(alchemy_con):
     alchemy_con.create_table(
         tname,
         schema=ibis.schema(dict(a="uint8", b="uint16", c="uint32", d="uint64")),
-        force=True,
+        overwrite=True,
     )
     try:
         assert tname in alchemy_con.list_tables()
@@ -1077,7 +1066,7 @@ def test_create_table_timestamp(con):
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
     )
     name = f"timestamp_scale_{guid()}"
-    con.create_table(name, schema=schema, force=True)
+    con.create_table(name, schema=schema, overwrite=True)
     try:
         rows = con.raw_sql(f"DESCRIBE {name}").fetchall()
         result = ibis.schema((name, typ) for name, typ, *_ in rows)

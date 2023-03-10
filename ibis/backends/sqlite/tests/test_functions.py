@@ -576,7 +576,7 @@ def mj1(con):
     con.create_table(
         "mj1",
         schema=ibis.schema(dict(id1="int32", val1="float64")),
-        force=True,
+        overwrite=True,
     )
     try:
         con.insert(
@@ -592,22 +592,16 @@ def mj1(con):
 @pytest.fixture
 def mj2(con):
     con.create_table(
-        "mj2",
-        schema=ibis.schema(dict(id2="int32", val2="float64")),
-        force=True,
+        "mj2", schema=ibis.schema(dict(id2="int32", val2="float64")), overwrite=True
     )
     try:
-        con.insert(
-            "mj2",
-            pd.DataFrame(dict(id2=[1, 2], val2=[15, 25])),
-            overwrite=True,
-        )
+        con.insert("mj2", pd.DataFrame(dict(id2=[1, 2], val2=[15, 25])), overwrite=True)
         yield con.table("mj2")
     finally:
         con.drop_table("mj2", force=True)
 
 
-def test_simple_join(con, mj1, mj2):
+def test_simple_join(mj1, mj2):
     joined = mj1.join(mj2, mj1.id1 == mj2.id2)
     result = joined.val2.execute()
     assert len(result) == 2

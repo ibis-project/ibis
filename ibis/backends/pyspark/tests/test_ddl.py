@@ -16,7 +16,7 @@ def test_create_exists_view(client, alltypes, temp_view):
     assert tmp_name not in client.list_tables()
 
     t1 = alltypes.group_by('string_col').size()
-    t2 = client.create_view(tmp_name, t1, temporary=True)
+    t2 = client.create_view(tmp_name, t1)
 
     assert tmp_name in client.list_tables()
     # just check it works for now
@@ -169,7 +169,7 @@ def test_compute_stats(client, alltypes):
 def created_view(client, alltypes):
     name = util.guid()
     expr = alltypes.limit(10)
-    client.create_view(name, expr, temporary=True)
+    client.create_view(name, expr)
     return name
 
 

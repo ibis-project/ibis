@@ -15,7 +15,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.polars.compiler import translate
-from ibis.util import normalize_filename
+from ibis.util import deprecated, normalize_filename
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -218,9 +218,52 @@ class Backend(BaseBackend):
     def database(self, name=None):
         return self.database_class(name, self)
 
+    @deprecated(
+        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
+    )
     def load_data(self, table_name, obj, **kwargs):
         # kwargs is a catch all for any options required by other backends.
         self._tables[table_name] = obj
+
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | ir.Table | None = None,
+        *,
+        schema: ibis.Schema | None = None,
+        database: str | None = None,
+        temp: bool | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        if schema is not None and obj is None:
+            raise NotImplementedError(
+                "Empty table creation is not yet supported in the Polars backend"
+            )
+
+        if database is not None:
+            raise com.IbisError(
+                "Passing `database` to the Polars backend create_table method has no "
+                "effect: Polars cannot set a database."
+            )
+
+        if temp is not None:
+            raise com.IbisError(
+                "Passing `temp=True` to the Polars backend create_table method has no "
+                "effect: all tables are in memory and temporary. "
+            )
+
+        if not overwrite and name in self._tables:
+            raise com.IntegrityError(
+                f"Table {name} already exists. Use overwrite=True to clobber existing tables"
+            )
+
+        if isinstance(obj, ir.Table):
+            obj = obj.to_pyarrow()
+
+        if not isinstance(obj, (pl.DataFrame, pl.LazyFrame)):
+            obj = pl.LazyFrame(obj)
+
+        self._tables[name] = obj
 
     def get_schema(self, table_name, database=None):
         return self._tables[table_name].schema
@@ -352,7 +395,16 @@ class Backend(BaseBackend):
         return table.to_reader(chunk_size)
 
     def _load_into_cache(self, name, expr):
-        self.load_data(name, self.compile(expr).cache())
+        self.create_table(name, self.compile(expr).cache())
 
     def _clean_up_cached_table(self, op):
         del self._tables[op.name]
+
+    def create_view(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def drop_table(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)
+
+    def drop_view(self, *_, **__) -> ir.Table:
+        raise NotImplementedError(self.name)

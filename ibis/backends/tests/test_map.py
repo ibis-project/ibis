@@ -210,7 +210,7 @@ def tmptable(con):
 
     # some backends don't implement drop
     with contextlib.suppress(NotImplementedError):
-        con.drop_table(name)
+        con.drop_table(name, force=True)
 
 
 @pytest.mark.notimpl(["clickhouse"], reason=".create_table not yet implemented in ibis")

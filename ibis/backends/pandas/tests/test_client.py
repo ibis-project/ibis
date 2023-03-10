@@ -45,7 +45,8 @@ def test_client_table_repr(table):
 
 
 def test_load_data(client, test_data):
-    client.load_data('testing', test_data)
+    with pytest.warns(FutureWarning):
+        client.load_data('testing', test_data)
     assert 'testing' in client.list_tables()
     assert client.get_schema('testing')
 

@@ -75,12 +75,11 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
 
 
 class SnowflakeTableSetFormatter(_AlchemyTableSetFormatter):
-    def _format_in_memory_table(self, op, ref_op, translator):
+    def _format_in_memory_table(self, _, ref_op, translator):
         columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
         rows = list(ref_op.data.to_frame().itertuples(index=False))
         pos_columns = [
-            sa.column(f"${idx}")
-            for idx, name in enumerate(ref_op.schema.names, start=1)
+            sa.column(f"${idx}") for idx in range(1, len(ref_op.schema.names) + 1)
         ]
         return sa.select(*pos_columns).select_from(sa.values(*columns).data(rows))
 
@@ -134,6 +133,11 @@ class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
     quote_table_names = True
+
+    @property
+    def _current_schema(self) -> str:
+        with self.begin() as con:
+            return con.execute(sa.select(sa.func.current_schema())).scalar()
 
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
@@ -223,9 +227,8 @@ class Backend(BaseAlchemyBackend):
             name, schema=schema, autoload=autoload, database=db, **kwargs
         )
 
-        path = ".".join(self.con.url.database.split("/", 1))
         with self.begin() as con:
-            con.exec_driver_sql(f"USE {path}")
+            con.exec_driver_sql(f"USE {default_db}.{default_schema}")
         result.schema = ident
         return result
 

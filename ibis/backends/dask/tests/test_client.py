@@ -52,7 +52,8 @@ def test_client_table_repr(table):
 
 
 def test_load_data(client, npartitions):
-    client.load_data('testing', make_dask_data_frame(npartitions))
+    with pytest.warns(FutureWarning):
+        client.load_data('testing', make_dask_data_frame(npartitions))
     assert 'testing' in client.list_tables()
     assert client.get_schema('testing')
 

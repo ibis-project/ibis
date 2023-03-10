@@ -161,11 +161,6 @@ class Backend(BaseAlchemyBackend):
 
         super().do_connect(engine)
 
-        @sa.event.listens_for(self.meta, "column_reflect")
-        def column_reflect(inspector, table, column_info):
-            if type(column_info["type"]) is TIMESTAMP:
-                column_info["type"] = ISODATETIME()
-
     def attach(self, name: str, path: str | Path) -> None:
         """Connect another SQLite database file to the current connection.
 
@@ -189,14 +184,21 @@ class Backend(BaseAlchemyBackend):
     def _get_sqla_table(
         self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
     ) -> sa.Table:
+        meta = sa.MetaData()
+
+        @sa.event.listens_for(meta, "column_reflect")
+        def column_reflect(inspector, table, column_info):
+            if type(column_info["type"]) is TIMESTAMP:
+                column_info["type"] = ISODATETIME()
+
         return sa.Table(
             name,
-            self.meta,
+            meta,
             schema=schema or self.current_database,
             autoload_with=self.con if autoload else None,
         )
 
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(self, name: str, database: str | None = None, **_: Any) -> ir.Table:
         """Create a table expression from a table in the SQLite database.
 
         Parameters
@@ -222,7 +224,9 @@ class Backend(BaseAlchemyBackend):
         if temp:
             prefixes.append('TEMPORARY')
         columns = self._columns_from_schema(name, schema)
-        return sa.Table(name, self.meta, *columns, schema=database, prefixes=prefixes)
+        return sa.Table(
+            name, sa.MetaData(), *columns, schema=database, prefixes=prefixes
+        )
 
     @property
     def _current_schema(self) -> str | None:

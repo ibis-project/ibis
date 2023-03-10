@@ -11,6 +11,7 @@ import sqlglot as sg
 import toolz
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
@@ -489,3 +490,97 @@ class Backend(BaseBackend):
         from ibis.backends.clickhouse.compiler.values import translate_val
 
         return operation in translate_val.registry
+
+    def create_database(
+        self, name: str, *, force: bool = False, engine: str = "Atomic"
+    ) -> None:
+        self.raw_sql(
+            f"CREATE DATABASE {'IF NOT EXISTS ' * force}{name} ENGINE = {engine}"
+        )
+
+    def drop_database(self, name: str, *, force: bool = False) -> None:
+        self.raw_sql(f"DROP DATABASE {'IF EXISTS ' * force}{name}")
+
+    def truncate_table(self, name: str, database: str | None = None) -> None:
+        ident = ".".join(filter(None, (database, name)))
+        self.raw_sql(f"DELETE FROM {ident}")
+
+    def drop_table(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        ident = ".".join(filter(None, (database, name)))
+        self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")
+
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | ir.Table | None = None,
+        *,
+        schema: ibis.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+        # backend specific arguments
+        engine: str | None,
+        order_by: Iterable[str] | None = None,
+        partition_by: Iterable[str] | None = None,
+        sample_by: str | None = None,
+        settings: Mapping[str, Any] | None = None,
+    ) -> ir.Table:
+        tmp = "TEMPORARY " * temp
+        replace = "OR REPLACE " * overwrite
+        code = f"CREATE {replace}{tmp}TABLE {name}"
+
+        if obj is None and schema is None:
+            raise com.IbisError("The schema or obj parameter is required")
+
+        if schema is not None:
+            code += f" ({schema})"
+
+        if isinstance(obj, pd.DataFrame):
+            obj = ibis.memtable(obj, schema=schema)
+
+        if obj is not None:
+            self._register_in_memory_tables(obj)
+            query = self.compile(obj)
+            code += f" AS {query}"
+
+        code += f" ENGINE = {engine}"
+
+        if order_by is not None:
+            code += f" ORDER BY {', '.join(util.promote_list(order_by))}"
+
+        if partition_by is not None:
+            code += f" PARTITION BY {', '.join(util.promote_list(partition_by))}"
+
+        if sample_by is not None:
+            code += f" SAMPLE BY {sample_by}"
+
+        if settings:
+            kvs = ", ".join(f"{name}={value!r}" for name, value in settings.items())
+            code += f" SETTINGS {kvs}"
+
+        self.raw_sql(code)
+        return self.table(name, database=database)
+
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        name = ".".join(filter(None, (database, name)))
+        replace = "OR REPLACE " * overwrite
+        query = self.compile(obj)
+        code = f"CREATE {replace}VIEW {name} AS {query}"
+        self.raw_sql(code)
+        return self.table(name, database=database)
+
+    def drop_view(
+        self, name: str, *, database: str | None = None, force: bool = False
+    ) -> None:
+        name = ".".join(filter(None, (database, name)))
+        if_not_exists = "IF EXISTS " * force
+        self.raw_sql(f"DROP VIEW {if_not_exists}{name}")

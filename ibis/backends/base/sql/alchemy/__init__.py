@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 import sqlalchemy as sa
 
 import ibis
-import ibis.common.exceptions as exc
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -92,7 +92,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def do_connect(self, con: sa.engine.Engine) -> None:
         self.con = con
         self._inspector = sa.inspect(self.con)
-        self.meta = sa.MetaData()
         self._schemas: dict[str, sch.Schema] = {}
         self._temp_views: set[str] = set()
 
@@ -170,11 +169,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def create_table(
         self,
         name: str,
-        expr: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | ir.Table | None = None,
+        *,
         schema: sch.Schema | None = None,
         database: str | None = None,
-        force: bool = False,
         temp: bool = False,
+        overwrite: bool = False,
     ) -> ir.Table:
         """Create a table.
 
@@ -182,7 +182,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         ----------
         name
             Name of the new table.
-        expr
+        obj
             An Ibis table expression or pandas table that will be used to
             extract the schema and the data of the new table. If not provided,
             `schema` must be given.
@@ -192,20 +192,23 @@ class BaseAlchemyBackend(BaseSQLBackend):
         database
             Name of the database where the table will be created, if not the
             default.
-        force
-            Check whether a table exists before creating it
         temp
             Should the table be temporary for the session.
+        overwrite
+            Clobber existing data
 
         Returns
         -------
         Table
             The table that was created.
         """
+        if obj is None and schema is None:
+            raise com.IbisError("The schema or obj parameter is required")
+
         import pandas as pd
 
-        if isinstance(expr, pd.DataFrame):
-            expr = ibis.memtable(expr)
+        if isinstance(obj, pd.DataFrame):
+            obj = ibis.memtable(obj)
 
         if database == self.current_database:
             # avoid fully qualified name
@@ -213,20 +216,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         if database is not None:
             raise NotImplementedError(
-                'Creating tables from a different database is not yet implemented'
+                "Creating tables from a different database is not yet implemented"
             )
 
-        if expr is None and schema is None:
-            raise ValueError('You must pass either an expression or a schema')
-
-        if expr is not None and schema is not None:
-            if not expr.schema().equals(ibis.schema(schema)):
-                raise TypeError(
+        if obj is not None and schema is not None:
+            if not obj.schema().equals(ibis.schema(schema)):
+                raise com.IbisTypeError(
                     'Expression schema is not equal to passed schema. '
                     'Try passing the expression without the schema'
                 )
         if schema is None:
-            schema = expr.schema()
+            schema = obj.schema()
 
         self._schemas[self._fully_qualified_name(name, database)] = schema
         table = self._table_from_schema(
@@ -236,15 +236,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
             temp=temp,
         )
 
-        if has_expr := expr is not None:
+        if has_expr := obj is not None:
             # this has to happen outside the `begin` block, so that in-memory
             # tables are visible inside the transaction created by it
-            self._register_in_memory_tables(expr)
+            self._register_in_memory_tables(obj)
 
         with self.begin() as bind:
-            table.create(bind=bind, checkfirst=force)
+            if overwrite:
+                table.drop(bind=bind, checkfirst=True)
+            table.create(bind=bind)
             if has_expr:
-                method = self._get_insert_method(expr)
+                method = self._get_insert_method(obj)
                 bind.execute(method(table.insert()))
         return self.table(name, database=database)
 
@@ -260,8 +262,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
             and isinstance(expr.op(), ops.InMemoryTable)
         ):
             (from_,) = compiled.get_final_froms()
-            (rows,) = from_._data
-            return methodcaller("values", rows)
+            try:
+                (rows,) = from_._data
+            except AttributeError:
+                return methodcaller("from_select", list(expr.columns), from_)
+            else:
+                return methodcaller("values", rows)
 
         return methodcaller("from_select", list(expr.columns), compiled)
 
@@ -278,31 +284,28 @@ class BaseAlchemyBackend(BaseSQLBackend):
         ]
 
     def _table_from_schema(
-        self,
-        name: str,
-        schema: sch.Schema,
-        database: str | None = None,
-        temp: bool = False,
+        self, name: str, schema: sch.Schema, temp: bool = False, **_: Any
     ) -> sa.Table:
         prefixes = []
         if temp:
             prefixes.append('TEMPORARY')
         columns = self._columns_from_schema(name, schema)
         return sa.Table(
-            name, self.meta, *columns, prefixes=prefixes, quote=self.quote_table_names
+            name,
+            sa.MetaData(),
+            *columns,
+            prefixes=prefixes,
+            quote=self.quote_table_names,
         )
 
     def drop_table(
-        self,
-        table_name: str,
-        database: str | None = None,
-        force: bool = False,
+        self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop a table.
 
         Parameters
         ----------
-        table_name
+        name
             Table to drop
         database
             Database to drop table from
@@ -314,26 +317,23 @@ class BaseAlchemyBackend(BaseSQLBackend):
             database = None
 
         if database is not None:
-            raise NotImplementedError(
-                'Dropping tables from a different database is not yet implemented'
+            raise com.IbisInputError(
+                "Dropping tables from a different database is not yet implemented"
             )
 
-        t = self._get_sqla_table(table_name, schema=database, autoload=False)
+        t = self._get_sqla_table(name, schema=database, autoload=False)
         with self.begin() as bind:
             t.drop(bind=bind, checkfirst=force)
 
-        assert not self.inspector.has_table(
-            table_name
-        ), f"Something went wrong during DROP of table {table_name!r}"
-
-        self.meta.remove(t)
-
-        qualified_name = self._fully_qualified_name(table_name, database)
+        qualified_name = self._fully_qualified_name(name, database)
 
         with contextlib.suppress(KeyError):
             # schemas won't be cached if created with raw_sql
             del self._schemas[qualified_name]
 
+    @util.deprecated(
+        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
+    )
     def load_data(
         self,
         table_name: str,
@@ -378,12 +378,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
             schema=self._current_schema,
         )
 
-    def truncate_table(
-        self,
-        table_name: str,
-        database: str | None = None,
-    ) -> None:
-        t = self._get_sqla_table(table_name, schema=database)
+    def truncate_table(self, name: str, database: str | None = None) -> None:
+        t = self._get_sqla_table(name, schema=database)
         with self.begin() as con:
             con.execute(t.delete())
 
@@ -420,17 +416,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
     ) -> sa.Table:
         # If the underlying table (or more likely, view) has changed, remove it
         # to ensure a correct reflection
-        if autoload and self.inspector.has_table(name, schema=schema):
-            self.meta.remove(
-                sa.Table(name, self.meta, schema=schema, quote=self.quote_table_names)
-            )
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", message="Did not recognize type", category=sa.exc.SAWarning
             )
             table = sa.Table(
                 name,
-                self.meta,
+                sa.MetaData(),
                 schema=schema,
                 autoload_with=self.con if autoload else None,
                 quote=self.quote_table_names,
@@ -520,7 +512,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         """
         if database is not None:
             if not isinstance(database, str):
-                raise exc.IbisTypeError(
+                raise com.IbisTypeError(
                     f"`database` must be a string; got {type(database)}"
                 )
             if database != self.current_database:
@@ -531,15 +523,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _insert_dataframe(
         self, table_name: str, df: pd.DataFrame, overwrite: bool
     ) -> None:
-        if not self.inspector.has_table(table_name):
-            raise exc.IbisError(f"Cannot insert into non-existent table {table_name}")
-        df.to_sql(
-            table_name,
-            self.con,
-            index=False,
-            if_exists='replace' if overwrite else 'append',
-            schema=self._current_schema,
-        )
+        schema = self._current_schema
+
+        t = self._get_sqla_table(table_name, schema=schema)
+        with self.con.begin() as con:
+            if overwrite:
+                con.execute(t.delete())
+            con.execute(t.insert(), df.to_dict(orient="records"))
 
     def insert(
         self,
@@ -607,12 +597,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
             with self.begin() as bind:
                 if from_table_expr is not None:
-                    bind.execute(
-                        to_table.insert().from_select(
-                            list(from_table_expr.columns),
-                            from_table_expr.compile(),
-                        )
-                    )
+                    compiled = from_table_expr.compile()
+                    columns = [
+                        self.con.dialect.normalize_name(c)
+                        for c in from_table_expr.columns
+                    ]
+                    bind.execute(to_table.insert().from_select(columns, compiled))
         elif isinstance(obj, (list, dict)):
             to_table = self._get_sqla_table(table_name, schema=database)
 
@@ -688,3 +678,40 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def _clean_up_cached_table(self, op):
         self.drop_table(op.name)
+
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        import sqlalchemy_views as sav
+
+        source = self.compile(obj)
+        view = sav.CreateView(
+            sa.Table(
+                name, sa.MetaData(), schema=database, quote=self.quote_table_names
+            ),
+            source,
+            or_replace=overwrite,
+        )
+        with self.begin() as con:
+            con.execute(view)
+        return self.table(name, database=database)
+
+    def drop_view(
+        self, name: str, *, database: str | None = None, force: bool = False
+    ) -> None:
+        import sqlalchemy_views as sav
+
+        view = sav.DropView(
+            sa.Table(
+                name, sa.MetaData(), schema=database, quote=self.quote_table_names
+            ),
+            if_exists=not force,
+        )
+
+        with self.begin() as con:
+            con.execute(view)

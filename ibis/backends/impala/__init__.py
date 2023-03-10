@@ -512,11 +512,16 @@ class Backend(BaseSQLBackend):
         self.set_options({'COMPRESSION_CODEC': codec})
 
     def create_view(
-        self, name: str, expr: ir.Table, database: str | None = None
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
     ) -> ir.Table:
-        ast = self.compiler.to_ast(expr)
+        ast = self.compiler.to_ast(obj)
         select = ast.queries[0]
-        statement = CreateView(name, select, database=database)
+        statement = CreateView(name, select, database=database, can_exist=overwrite)
         self.raw_sql(statement)
         return self.table(name, database=database)
 
@@ -536,12 +541,14 @@ class Backend(BaseSQLBackend):
 
     def create_table(
         self,
-        table_name: str,
+        name: str,
         obj: ir.Table | None = None,
+        *,
         schema=None,
         database=None,
-        external=False,
-        force=False,
+        temp: bool | None = None,
+        overwrite: bool = False,
+        external: bool = False,
         # HDFS options
         format='parquet',
         location=None,
@@ -554,7 +561,7 @@ class Backend(BaseSQLBackend):
 
         Parameters
         ----------
-        table_name
+        name
             Table name
         obj
             If passed, creates table from select statement results
@@ -563,7 +570,9 @@ class Backend(BaseSQLBackend):
             particular schema
         database
             Database name
-        force
+        temp
+            Whether a table is temporary
+        overwrite
             Do not create table if table with indicated name already exists
         external
             Create an external table; Impala will not delete the underlying
@@ -578,11 +587,14 @@ class Backend(BaseSQLBackend):
             expression.
         like_parquet
             Can specify instead of a schema
-
-        Examples
-        --------
-        >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
+        if obj is None and schema is None:
+            raise com.IbisError("The schema or obj parameter is required")
+
+        if temp is not None:
+            raise NotImplementedError(
+                "Impala backend does not yet support temporary tables"
+            )
         if like_parquet is not None:
             raise NotImplementedError
 
@@ -591,34 +603,34 @@ class Backend(BaseSQLBackend):
                 ast = self.compiler.to_ast(to_insert)
                 select = ast.queries[0]
 
+                if overwrite:
+                    self.drop_table(name, force=True)
                 self.raw_sql(
                     CTAS(
-                        table_name,
+                        name,
                         select,
                         database=database,
-                        can_exist=force,
                         format=format,
                         external=external,
                         partition=partition,
                         path=location,
                     )
                 )
-        elif schema is not None:
+        else:  # schema is not None
+            if overwrite:
+                self.drop_table(name, force=True)
             self.raw_sql(
                 CreateTableWithSchema(
-                    table_name,
+                    name,
                     schema,
                     database=database,
                     format=format,
-                    can_exist=force,
                     external=external,
                     path=location,
                     partition=partition,
                 )
             )
-        else:
-            raise com.IbisError('Must pass obj or schema')
-        return self.table(table_name, database=database)
+        return self.table(name, database=database)
 
     def avro_file(
         self,
@@ -894,6 +906,9 @@ class Backend(BaseSQLBackend):
             validate=validate,
         )
 
+    @util.deprecated(
+        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
+    )
     def load_data(
         self,
         table_name,
@@ -906,12 +921,14 @@ class Backend(BaseSQLBackend):
         table = self.table(table_name, database=database)
         return table.load_data(path, overwrite=overwrite, partition=partition)
 
-    def drop_table(self, table_name, database=None, force=False):
+    def drop_table(
+        self, name: str, *, database: str | None = None, force: bool = False
+    ) -> None:
         """Drop an Impala table.
 
         Parameters
         ----------
-        table_name
+        name
             Table name
         database
             Database name
@@ -924,23 +941,23 @@ class Backend(BaseSQLBackend):
         >>> db = 'operations'
         >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
         """
-        statement = DropTable(table_name, database=database, must_exist=not force)
+        statement = DropTable(name, database=database, must_exist=not force)
         self.raw_sql(statement)
 
-    def truncate_table(self, table_name, database=None):
+    def truncate_table(self, name: str, database: str | None = None) -> None:
         """Delete all rows from an existing table.
 
         Parameters
         ----------
-        table_name
+        name
             Table name
         database
             Database name
         """
-        statement = TruncateTable(table_name, database=database)
+        statement = TruncateTable(name, database=database)
         self.raw_sql(statement)
 
-    def drop_table_or_view(self, name, database=None, force=False):
+    def drop_table_or_view(self, name, *, database=None, force=False):
         """Drop view or table."""
         try:
             self.drop_table(name, database=database)
@@ -950,7 +967,7 @@ class Backend(BaseSQLBackend):
             except Exception:  # noqa: BLE001
                 raise e
 
-    def cache_table(self, table_name, database=None, pool='default'):
+    def cache_table(self, table_name, *, database=None, pool='default'):
         """Caches a table in cluster memory in the given pool.
 
         Parameters

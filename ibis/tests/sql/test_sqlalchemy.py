@@ -65,7 +65,7 @@ def alltypes(con):
     return con.table('alltypes')
 
 
-def test_sqla_schema_conversion(con):
+def test_sqla_schema_conversion():
     typespec = [
         # name, type, nullable
         ('smallint', sat.SmallInteger, False, dt.int16),
@@ -83,7 +83,7 @@ def test_sqla_schema_conversion(con):
         sqla_types.append(sa.Column(name, t, nullable=nullable))
         ibis_types.append((name, ibis_type(nullable=nullable)))
 
-    table = sa.Table('tname', con.meta, *sqla_types)
+    table = sa.Table('tname', sa.MetaData(), *sqla_types)
 
     schema = schema_from_table(table)
     expected = ibis.schema(ibis_types)

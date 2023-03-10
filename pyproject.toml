@@ -187,15 +187,19 @@ duckdb = [
 ]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
-mssql = ["sqlalchemy", "pymssql"]
-mysql = ["sqlalchemy", "pymysql"]
+mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
+mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["polars", "pyarrow"]
-postgres = ["psycopg2", "sqlalchemy"]
-pyspark = ["pyarrow", "pyspark", "sqlalchemy"] # for make_url
-snowflake = ["snowflake-connector-python", "snowflake-sqlalchemy"]
-sqlite = ["regex", "sqlalchemy"]
-trino = ["trino", "sqlalchemy"]
+postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
+pyspark = ["pyarrow", "pyspark", "sqlalchemy"]
+snowflake = [
+  "snowflake-connector-python",
+  "snowflake-sqlalchemy",
+  "sqlalchemy-views"
+]
+sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
+trino = ["trino", "sqlalchemy", "sqlalchemy-views"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
