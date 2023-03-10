@@ -187,6 +187,7 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
 
 @pytest.mark.notimpl(
     [
+        "bigquery",
         "clickhouse",
         "datafusion",
         "mssql",
@@ -194,6 +195,7 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
         "pandas",
         "polars",
         "postgres",
+        "snowflake",
         "sqlite",
         "trino",
     ],
@@ -204,7 +206,9 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
 )
 def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     outparquet = tmp_path / "outhive.parquet"
-    awards_players.to_parquet(outparquet, partition_by=("yearID"))
+    awards_players.to_parquet(outparquet, partition_by="yearID")
+
+    assert outparquet.is_dir()
 
     # Check that the directories are all named as expected
     for d in outparquet.iterdir():
