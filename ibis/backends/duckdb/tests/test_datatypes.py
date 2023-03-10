@@ -1,4 +1,6 @@
 import pytest
+import sqlglot as sg
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis.expr.datatypes as dt
@@ -78,3 +80,18 @@ from ibis.backends.duckdb.datatypes import parse
 def test_parser(typ, expected):
     ty = parse(typ)
     assert ty == expected
+
+
+@pytest.mark.parametrize("uint_type", ["uint8", "uint16", "uint32", "uint64"])
+@pytest.mark.xfail(
+    vparse(sg.__version__) < vparse("11.3.4"),
+    raises=sg.ParseError,
+    reason="sqlglot version doesn't support duckdb unsigned integer types",
+)
+def test_cast_uints(uint_type, snapshot):
+    import ibis
+
+    t = ibis.table(dict(a="int8"), name="t")
+    snapshot.assert_match(
+        str(ibis.to_sql(t.a.cast(uint_type), dialect="duckdb")), "out.sql"
+    )

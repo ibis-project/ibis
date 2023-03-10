@@ -20,12 +20,24 @@ class DuckDBSQLExprTranslator(AlchemyExprTranslator):
     _dialect_name = "duckdb"
 
 
-@compiles(sat.UInt64, "duckdb")
-@compiles(sat.UInt32, "duckdb")
-@compiles(sat.UInt16, "duckdb")
 @compiles(sat.UInt8, "duckdb")
+def compile_uint8(element, compiler, **kw):
+    return "UTINYINT"
+
+
+@compiles(sat.UInt16, "duckdb")
+def compile_uint16(element, compiler, **kw):
+    return "USMALLINT"
+
+
+@compiles(sat.UInt32, "duckdb")
+def compile_uint32(element, compiler, **kw):
+    return "UINTEGER"
+
+
+@compiles(sat.UInt64, "duckdb")
 def compile_uint(element, compiler, **kw):
-    return element.__class__.__name__.upper()
+    return "UBIGINT"
 
 
 @compiles(sat.ArrayType, "duckdb")
