@@ -7,6 +7,7 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.types as ir
 from ibis import _
 
 
@@ -141,9 +142,10 @@ def test_difference(backend, alltypes, df, distinct):
 
 
 @pytest.mark.parametrize("method", ["intersect", "difference", "union"])
-def test_empty_set_op(alltypes, method):
-    with pytest.raises(com.IbisTypeError, match="requires a table or tables"):
-        getattr(alltypes, method)()
+@pytest.mark.parametrize("source", [ibis, ir.Table], ids=["top_level", "method"])
+def test_empty_set_op(alltypes, method, source):
+    result = getattr(source, method)(alltypes)
+    assert result.equals(alltypes)
 
 
 @pytest.mark.parametrize(

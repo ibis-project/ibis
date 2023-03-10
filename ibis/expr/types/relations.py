@@ -760,6 +760,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         distinct
             Only diff distinct rows not occurring in the calling table
 
+        See Also
+        --------
+        [`ibis.difference`][ibis.difference]
+
         Returns
         -------
         Table
@@ -797,15 +801,36 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├───────┤
         │     1 │
         └───────┘
+
+        Passing no arguments to `difference` returns the table expression
+
+        This can be useful when you have a sequence of tables to process, and
+        you don't know the length prior to running your program (for example, user input).
+
+        >>> t1
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t1.difference()
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t1.difference().equals(t1)
+        True
         """
-        left = self
-        if not tables:
-            raise com.IbisTypeError(
-                "difference requires a table or tables to compare against"
-            )
-        for right in tables:
-            left = ops.Difference(left, right, distinct=distinct)
-        return left.to_expr()
+        return functools.reduce(
+            functools.partial(ops.Difference, distinct=distinct), tables, self.op()
+        ).to_expr()
 
     def aggregate(
         self,
@@ -1102,6 +1127,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         Table
             A new table containing the union of all input tables.
 
+        See Also
+        --------
+        [`ibis.union`][ibis.union]
+
         Examples
         --------
         >>> import ibis
@@ -1147,15 +1176,36 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     2 │
         │     3 │
         └───────┘
+
+        Passing no arguments to `union` returns the table expression
+
+        This can be useful when you have a sequence of tables to process, and
+        you don't know the length prior to running your program (for example, user input).
+
+        >>> t1
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t1.union()
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t1.union().equals(t1)
+        True
         """
-        left = self
-        if not tables:
-            raise com.IbisTypeError(
-                "union requires a table or tables to compare against"
-            )
-        for right in tables:
-            left = ops.Union(left, right, distinct=distinct)
-        return left.to_expr()
+        return functools.reduce(
+            functools.partial(ops.Union, distinct=distinct), tables, self.op()
+        ).to_expr()
 
     def intersect(self, *tables: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
@@ -1173,6 +1223,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             A new table containing the intersection of all input tables.
+
+        See Also
+        --------
+        [`ibis.intersect`][ibis.intersect]
 
         Examples
         --------
@@ -1206,15 +1260,36 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├───────┤
         │     2 │
         └───────┘
+
+        Passing no arguments to `intersect` returns the table expression.
+
+        This can be useful when you have a sequence of tables to process, and
+        you don't know the length prior to running your program (for example, user input).
+
+        >>> t1
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t1.intersect()
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t1.intersect().equals(t1)
+        True
         """
-        left = self
-        if not tables:
-            raise com.IbisTypeError(
-                "intersect requires a table or tables to compare against"
-            )
-        for right in tables:
-            left = ops.Intersection(left, right, distinct=distinct)
-        return left.to_expr()
+        return functools.reduce(
+            functools.partial(ops.Intersection, distinct=distinct), tables, self.op()
+        ).to_expr()
 
     def to_array(self) -> ir.Column:
         """View a single column table as an array.
