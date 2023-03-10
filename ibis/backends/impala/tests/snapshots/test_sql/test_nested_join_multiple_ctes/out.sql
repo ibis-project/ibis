@@ -12,10 +12,10 @@ t1 AS (
   FROM ratings t3
 ),
 t2 AS (
-  SELECT t1.*, t4.`title`
+  SELECT t1.*, t3.`title`
   FROM t1
-    INNER JOIN movies t4
-      ON t1.`movieid` = t4.`movieid`
+    INNER JOIN movies t3
+      ON t1.`movieid` = t3.`movieid`
 )
 SELECT t2.*
 FROM t2
