@@ -363,6 +363,8 @@ def count_star(_):
 @translate.register(ops.Sum)
 def sum(op):
     arg = translate(op.arg)
+    if op.arg.output_dtype.is_boolean():
+        arg = arg.cast(pa.int64())
     return df.functions.sum(arg)
 
 

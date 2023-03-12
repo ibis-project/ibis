@@ -286,7 +286,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: (t.int_col > 0).sum(where=where),
             lambda t, where: (t.int_col > 0)[where].sum(),
             id="bool_sum",
-            marks=pytest.mark.notimpl(["datafusion", "pyspark", "mssql"]),
+            marks=pytest.mark.notimpl(["pyspark", "mssql"]),
         ),
         param(
             lambda t, where: t.double_col.mean(where=where),
