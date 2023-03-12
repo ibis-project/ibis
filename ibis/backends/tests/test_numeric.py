@@ -781,11 +781,6 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature sign(<NUMERIC>)",
-                ),
             ],
         ),
         param(
@@ -796,11 +791,6 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature sign(<NUMERIC>)",
-                ),
             ],
         ),
         param(
@@ -810,11 +800,6 @@ def test_isnan_isinf(
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature sign(<NUMERIC>)",
                 ),
             ],
         ),
@@ -949,16 +934,6 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason=(
-                        '(pydruid.db.exceptions.ProgrammingError) Plan validation failed '
-                        '(org.apache.calcite.tools.ValidationException): '
-                        'org.apache.calcite.runtime.CalciteContextException: From line 1, column 8 to '
-                        'line 1, column 30: No match found for function signature sign(<NUMERIC>)'
-                    ),
-                ),
             ],
         ),
         param(
@@ -968,16 +943,6 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason=(
-                        '(pydruid.db.exceptions.ProgrammingError) Plan validation failed '
-                        '(org.apache.calcite.tools.ValidationException): '
-                        'org.apache.calcite.runtime.CalciteContextException: From line 1, column 8 to '
-                        'line 1, column 31: No match found for function signature sign(<NUMERIC>)'
-                    ),
                 ),
             ],
         ),

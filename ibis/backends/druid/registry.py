@@ -14,6 +14,14 @@ operation_registry = sqlalchemy_operation_registry.copy()
 
 operation_registry.update(sqlalchemy_window_functions_registry)
 
+
+def _sign(t, op):
+    arg = op.arg
+    cond1 = ops.Where(ops.Greater(arg, 0), 1, -1)
+    cond2 = ops.Where(ops.Equals(arg, 0), 0, cond1)
+    return t.translate(cond2)
+
+
 operation_registry.update(
     {
         ops.BitwiseAnd: fixed_arity(sa.func.bitwise_and, 2),
@@ -26,5 +34,6 @@ operation_registry.update(
         ops.Modulus: fixed_arity(sa.func.mod, 2),
         ops.Power: fixed_arity(sa.func.power, 2),
         ops.Log10: fixed_arity(sa.func.log10, 1),
+        ops.Sign: _sign,
     }
 )
