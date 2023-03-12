@@ -639,15 +639,16 @@ _reductions = {
     ops.Variance: 'var',
 }
 
+for reduction in _reductions.keys():
 
-@translate.register(ops.Reduction)
-def reduction(op):
-    arg = translate(op.arg)
-    agg = _reductions[type(op)]
-    if (where := op.where) is not None:
-        arg = arg.filter(translate(where))
-    method = getattr(arg, agg)
-    return method()
+    @translate.register(reduction)
+    def reduction(op):
+        arg = translate(op.arg)
+        agg = _reductions[type(op)]
+        if (where := op.where) is not None:
+            arg = arg.filter(translate(where))
+        method = getattr(arg, agg)
+        return method()
 
 
 @translate.register(ops.Mode)
