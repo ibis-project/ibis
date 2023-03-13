@@ -306,6 +306,11 @@ class SelectBuilder:
             self.select_set = [node]
             self.table_set = node
 
+    def _collect_PyArrowInMemoryTable(self, node, toplevel=False):
+        if toplevel:
+            self.select_set = [node]
+            self.table_set = node
+
     def _convert_group_by(self, nodes):
         return list(range(len(nodes)))
 

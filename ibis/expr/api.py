@@ -42,6 +42,7 @@ from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
     from ibis.common.typing import SupportsSchema
 
@@ -324,10 +325,10 @@ def memtable(
     Parameters
     ----------
     data
-        Any data accepted by the `pandas.DataFrame` constructor.
+        Any data accepted by the `pandas.DataFrame` constructor or a `pyarrow.Table`.
 
-        The use of `DataFrame` underneath should **not** be relied upon and is
-        free to change across non-major releases.
+        Do not depend on the underlying storage type (e.g., pyarrow.Table), it's subject
+        to change across non-major releases.
     columns
         Optional [`Iterable`][typing.Iterable] of [`str`][str] column names.
     schema
@@ -393,6 +394,15 @@ def memtable(
             "passing `columns` and schema` is ambiguous; "
             "pass one or the other but not both"
         )
+
+    try:
+        import pyarrow as pa
+    except ImportError:
+        pass
+    else:
+        if isinstance(data, pa.Table):
+            return _memtable_from_pyarrow_table(data, name=name, schema=schema)
+
     df = pd.DataFrame(data, columns=columns)
     if df.columns.inferred_type != "string":
         cols = df.columns
@@ -419,6 +429,18 @@ def _memtable_from_dataframe(
         data=DataFrameProxy(df),
     )
     return op.to_expr()
+
+
+def _memtable_from_pyarrow_table(
+    data: pa.Table, *, name: str | None = None, schema: SupportsSchema | None = None
+):
+    from ibis.backends.pyarrow import PyArrowInMemoryTable, PyArrowTableProxy
+
+    return PyArrowInMemoryTable(
+        name=name if name is not None else util.generate_unique_table_name("memtable"),
+        schema=sch.infer(data) if schema is None else schema,
+        data=PyArrowTableProxy(data),
+    ).to_expr()
 
 
 def _deferred_method_call(expr, method_name):
