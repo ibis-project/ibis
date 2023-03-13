@@ -115,24 +115,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             backend = child_expr._find_backend()
             backend._create_temp_view(view=result, definition=definition)
         elif isinstance(ref_op, ops.InMemoryTable):
-            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
-
-            if self.context.compiler.cheap_in_memory_tables:
-                result = sa.table(ref_op.name, *columns)
-            elif self.context.compiler.support_values_syntax_in_select:
-                rows = list(ref_op.data.to_frame().itertuples(index=False))
-                result = sa.values(*columns, name=ref_op.name).data(rows)
-            else:
-                raw_rows = (
-                    sa.select(
-                        *(
-                            translator.translate(ops.Literal(val, dtype=type_))
-                            for val, type_ in zip(row, op.schema.types)
-                        )
-                    )
-                    for row in op.data.to_frame().itertuples(index=False)
-                )
-                result = sa.union_all(*raw_rows).alias(ref_op.name)
+            result = self._format_in_memory_table(op, ref_op, translator)
         else:
             # A subquery
             if ctx.is_extracted(ref_op):
@@ -153,6 +136,26 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
         result = alias if hasattr(alias, "name") else result.alias(alias)
         ctx.set_ref(op, result)
+        return result
+
+    def _format_in_memory_table(self, op, ref_op, translator):
+        columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
+        if self.context.compiler.cheap_in_memory_tables:
+            result = sa.table(ref_op.name, *columns)
+        elif self.context.compiler.support_values_syntax_in_select:
+            rows = list(ref_op.data.to_frame().itertuples(index=False))
+            result = sa.values(*columns, name=ref_op.name).data(rows)
+        else:
+            raw_rows = (
+                sa.select(
+                    *(
+                        translator.translate(ops.Literal(val, dtype=type_))
+                        for val, type_ in zip(row, op.schema.types)
+                    )
+                )
+                for row in op.data.to_frame().itertuples(index=False)
+            )
+            result = sa.union_all(*raw_rows).alias(ref_op.name)
         return result
 
 
