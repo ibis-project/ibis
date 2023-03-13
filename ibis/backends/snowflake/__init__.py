@@ -15,6 +15,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
+from ibis.backends.base.sql.alchemy.query_builder import _AlchemyTableSetFormatter
 
 
 @contextlib.contextmanager
@@ -74,9 +75,21 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
     supports_unnest_in_select = False
 
 
+class SnowflakeTableSetFormatter(_AlchemyTableSetFormatter):
+    def _format_in_memory_table(self, op, ref_op, translator):
+        columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
+        rows = list(ref_op.data.to_frame().itertuples(index=False))
+        pos_columns = [
+            sa.column(f"${idx}")
+            for idx, name in enumerate(ref_op.schema.names, start=1)
+        ]
+        return sa.select(*pos_columns).select_from(sa.values(*columns).data(rows))
+
+
 class SnowflakeCompiler(AlchemyCompiler):
     cheap_in_memory_tables = _NATIVE_ARROW
     translator_class = SnowflakeExprTranslator
+    table_set_formatter_class = SnowflakeTableSetFormatter
 
 
 class _SnowFlakeConverter(_BaseSnowflakeConverter):
