@@ -1645,6 +1645,11 @@ def test_day_of_week_column(backend, alltypes, df):
             id="day_of_week_full_name",
             marks=[
                 pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
+                pytest.mark.broken(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="Polars is broken for cased group by keys as of at least 0.16.12",
+                ),
             ],
         ),
     ],
@@ -2226,7 +2231,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 )
 @pytest.mark.notimpl(
     ["polars"],
-    raises=PolarsComputeError,
+    raises=(AssertionError, PolarsComputeError),
     reason=(
         "Casting from timestamp[us] to timestamp[ns] would "
         "result in out of bounds timestamp: 14193569425000000"
