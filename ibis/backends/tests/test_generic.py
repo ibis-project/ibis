@@ -920,6 +920,29 @@ def test_memtable_bool_column(backend, con, monkeypatch):
     backend.assert_series_equal(t.a.execute(), pd.Series([True, False, True], name="a"))
 
 
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AssertionError,
+    reason="result contains empty strings instead of None",
+)
+def test_memtable_construct(backend, con, monkeypatch):
+    pa = pytest.importorskip("pyarrow")
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    pa_t = pa.Table.from_pydict(
+        {
+            "a": list("abc"),
+            "b": [1, 2, 3],
+            "c": [1.0, 2.0, 3.0],
+            "d": [None, "b", None],
+        }
+    )
+    t = ibis.memtable(pa_t)
+    backend.assert_frame_equal(t.execute(), pa_t.to_pandas())
+
+
 @pytest.mark.notimpl(
     ["dask", "datafusion", "pandas", "polars"],
     raises=NotImplementedError,
