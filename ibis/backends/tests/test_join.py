@@ -3,6 +3,7 @@ import sqlite3
 import numpy as np
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 from packaging.version import parse as vparse
 from pytest import param
 
@@ -205,6 +206,11 @@ def test_semi_join_topk(batting, awards_players):
     raises=exc.IbisTypeError,
     reason="DuckDB as of 0.7.1 occasionally segfaults when there are `null`-typed columns present",
 )
+@pytest.mark.broken(
+    ["snowflake"],
+    reason="Case isn't preserved for memtable yet",
+    raises=sa.exc.ProgrammingError,
+)
 def test_join_with_pandas(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
@@ -215,12 +221,22 @@ def test_join_with_pandas(batting, awards_players):
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.broken(
+    ["snowflake"],
+    reason="Case isn't preserved for memtable yet",
+    raises=sa.exc.ProgrammingError,
+)
 def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900][
         ["yearID"]
     ].execute()
-    # ensure that none of the columns have type null
+
+    # ensure that none of the columns of eitherr table have type null
+    batting_schema = batting_filt.schema()
+    assert len(batting_schema) == 1
+    assert batting_schema["yearID"].is_integer()
+
     assert sch.infer(awards_players_filt) == sch.Schema(dict(yearID="int"))
     assert isinstance(awards_players_filt, pd.DataFrame)
     expr = batting_filt.join(awards_players_filt, "yearID")

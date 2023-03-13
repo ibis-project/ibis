@@ -73,18 +73,21 @@ class TableSetFormatter:
 
     def _format_in_memory_table(self, op):
         names = op.schema.names
-        raw_rows = (
-            ", ".join(
-                f"{val!r} AS {self._quote_identifier(name)}"
-                for val, name in zip(row, names)
-            )
-            for row in op.data.to_frame().itertuples(index=False)
-        )
+        raw_rows = []
+        for row in op.data.to_frame().itertuples(index=False):
+            raw_row = []
+            for val, name in zip(row, names):
+                lit = ops.Literal(val, dtype=op.schema[name])
+                raw_row.append(
+                    f"{self._translate(lit)} AS {self._quote_identifier(name)}"
+                )
+            raw_rows.append(", ".join(raw_row))
+
         if self.context.compiler.support_values_syntax_in_select:
             rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
             return f"(VALUES {rows})"
         else:
-            rows = "UNION ALL ".join(f"(SELECT {raw_row})" for raw_row in raw_rows)
+            rows = " UNION ALL ".join(f"(SELECT {raw_row})" for raw_row in raw_rows)
             return f"({rows})"
 
     def _format_table(self, op):
