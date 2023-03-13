@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+import toolz
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
@@ -22,6 +23,12 @@ def _sign(t, op):
     return t.translate(cond2)
 
 
+def _join(t, op):
+    sep = t.translate(op.sep)
+    values = list(map(t.translate, op.arg))
+    return sa.func.concat(*toolz.interpose(sep, values))
+
+
 operation_registry.update(
     {
         ops.BitwiseAnd: fixed_arity(sa.func.bitwise_and, 2),
@@ -35,5 +42,6 @@ operation_registry.update(
         ops.Power: fixed_arity(sa.func.power, 2),
         ops.Log10: fixed_arity(sa.func.log10, 1),
         ops.Sign: _sign,
+        ops.StringJoin: _join,
     }
 )

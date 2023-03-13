@@ -660,7 +660,6 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
