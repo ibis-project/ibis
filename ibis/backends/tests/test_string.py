@@ -360,11 +360,8 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.map(ord).astype('int32'),
             id='ascii_str',
             marks=[
-                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                    reason="No match found for function signature ascii(<CHARACTER>)",
+                pytest.mark.notimpl(
+                    ["polars", 'druid'], raises=com.OperationNotDefinedError
                 ),
             ],
         ),

@@ -45,3 +45,14 @@ operation_registry.update(
         ops.StringJoin: _join,
     }
 )
+
+_invalid_operations = {
+    # ibis.expr.operations.generic
+    ops.RandomScalar,
+    # ibis.expr.operations.strings
+    ops.StringAscii,
+}
+
+operation_registry = {
+    k: v for k, v in operation_registry.items() if k not in _invalid_operations
+}
