@@ -829,7 +829,7 @@ def test_approx_median(alltypes):
         ),
     ],
 )
-@mark.notimpl(["datafusion", "snowflake", "polars", "mssql", "druid"])
+@mark.notimpl(["datafusion", "polars", "mssql", "druid"])
 def test_group_concat(
     backend,
     alltypes,

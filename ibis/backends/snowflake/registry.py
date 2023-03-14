@@ -187,6 +187,20 @@ def _unnest(t, op):
     return sa.cast(sa.func.nullif(col, ""), type_=sqla_type)
 
 
+def _group_concat(t, op):
+    if (where := op.where) is None:
+        return sa.func.listagg(t.translate(op.arg), t.translate(op.sep))
+
+    where_sa = t.translate(where)
+    arg_sa = sa.func.iff(where_sa, t.translate(op.arg), None)
+
+    return sa.func.iff(
+        sa.func.count_if(arg_sa is not None) != 0,
+        sa.func.listagg(arg_sa, t.translate(op.sep)),
+        None,
+    )
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -357,6 +371,7 @@ operation_registry.update(
         ops.ToJSONMap: lambda t, op: t.translate(ops.Cast(op.arg, op.output_dtype)),
         ops.StartsWith: fixed_arity(sa.func.startswith, 2),
         ops.EndsWith: fixed_arity(sa.func.endswith, 2),
+        ops.GroupConcat: _group_concat,
     }
 )
 
