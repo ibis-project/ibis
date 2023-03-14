@@ -484,10 +484,6 @@ class Backend(BaseBackend):
         ]
         return sch.Schema.from_tuples(fields)
 
-    def _table_command(self, cmd, name, database=None):
-        qualified_name = self._fully_qualified_name(name, database)
-        return f'{cmd} {qualified_name}'
-
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         from ibis.backends.clickhouse.compiler.values import translate_val
