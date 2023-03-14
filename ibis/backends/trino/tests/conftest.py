@@ -38,6 +38,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     returned_timestamp_unit = 's'
     supports_structs = True
+    supports_map = True
 
     @staticmethod
     def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:

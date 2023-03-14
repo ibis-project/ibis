@@ -1281,7 +1281,9 @@ def test_sa_default_numeric_precision_and_scale(
 
     # Create a table with the numeric types.
     table_name = 'test_sa_default_param_decimal'
-    table = sa.Table(table_name, sa.MetaData(), *sqla_types)
+
+    is_snowflake = con.name == "snowflake"
+    table = sa.Table(table_name, sa.MetaData(), *sqla_types, quote=is_snowflake)
     with con.begin() as bind:
         table.create(bind=bind, checkfirst=True)
 
@@ -1292,7 +1294,7 @@ def test_sa_default_numeric_precision_and_scale(
 
         assert_equal(schema, expected)
     finally:
-        con.drop_table(table_name, force=True)
+        con.drop_table(f'{table_name}' if is_snowflake else table_name, force=True)
 
 
 @pytest.mark.notimpl(

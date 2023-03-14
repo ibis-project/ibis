@@ -38,7 +38,8 @@ def test_list_tables(con):
     tables = con.list_tables()
     assert isinstance(tables, list)
     # only table that is guaranteed to be in all backends
-    assert 'functional_alltypes' in tables
+    key = 'functional_alltypes'
+    assert key in tables or key.upper() in tables
     assert all(isinstance(table, str) for table in tables)
 
 
@@ -58,7 +59,14 @@ def test_tables_accessor_mapping(con):
 
 
 def test_tables_accessor_getattr(con):
-    assert isinstance(con.tables.functional_alltypes, ir.Table)
+    assert isinstance(
+        getattr(
+            con.tables,
+            "functional_alltypes",
+            getattr(con.tables, "FUNCTIONAL_ALLTYPES", None),
+        ),
+        ir.Table,
+    )
 
     with pytest.raises(AttributeError, match="doesnt_exist"):
         con.tables.doesnt_exist
@@ -71,16 +79,16 @@ def test_tables_accessor_getattr(con):
 
 def test_tables_accessor_tab_completion(con):
     attrs = dir(con.tables)
-    assert 'functional_alltypes' in attrs
+    assert 'functional_alltypes' in attrs or "FUNCTIONAL_ALLTYPES" in attrs
     assert 'keys' in attrs  # type methods also present
 
     keys = con.tables._ipython_key_completions_()
-    assert 'functional_alltypes' in keys
+    assert 'functional_alltypes' in keys or "FUNCTIONAL_ALLTYPES" in keys
 
 
 def test_tables_accessor_repr(con):
     result = repr(con.tables)
-    assert '- functional_alltypes' in result
+    assert '- functional_alltypes' in result or '- FUNCTIONAL_ALLTYPES' in result
 
 
 @pytest.mark.parametrize(

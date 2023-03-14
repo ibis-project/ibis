@@ -77,6 +77,7 @@ class BackendTest(abc.ABC):
     native_bool = True
     supports_structs = True
     supports_json = True
+    supports_map = False  # basically nothing does except trino and snowflake
     reduction_tolerance = 1e-7
 
     @staticmethod
@@ -170,6 +171,10 @@ class BackendTest(abc.ABC):
         return self.connection.table('awards_players')
 
     @property
+    def diamonds(self) -> ir.Table:
+        return self.connection.table('diamonds')
+
+    @property
     def geo(self) -> ir.Table | None:
         if 'geo' in self.connection.list_tables():
             return self.connection.table('geo')
@@ -183,6 +188,13 @@ class BackendTest(abc.ABC):
             pytest.xfail(f"{self.name()} backend does not support struct types")
 
     @property
+    def array_types(self) -> ir.Table | None:
+        if self.supports_arrays:
+            return self.connection.table("array_types")
+        else:
+            pytest.xfail(f"{self.name()} backend does not support array types")
+
+    @property
     def json_t(self) -> ir.Table | None:
         from ibis import _
 
@@ -190,6 +202,17 @@ class BackendTest(abc.ABC):
             return self.connection.table("json_t").mutate(js=_.js.cast("json"))
         else:
             pytest.xfail(f"{self.name()} backend does not support json types")
+
+    @property
+    def map(self) -> ir.Table | None:
+        if self.supports_map:
+            return self.connection.table("map")
+        else:
+            pytest.xfail(f"{self.name()} backend does not support map types")
+
+    @property
+    def win(self) -> ir.Table | None:
+        return self.connection.table("win")
 
     @property
     def api(self):

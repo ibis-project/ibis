@@ -821,8 +821,8 @@ def test_mutate_window_filter(backend, alltypes, df):
 
 @pytest.mark.notimpl(["dask", "datafusion", "polars"])
 @pytest.mark.broken(["impala"], reason="the database returns incorrect results")
-def test_first_last(con):
-    t = con.table("win")
+def test_first_last(backend):
+    t = backend.win
     w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)
     expr = t.mutate(
         x_first=t.x.first().over(w),

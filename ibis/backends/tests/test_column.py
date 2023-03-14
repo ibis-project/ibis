@@ -22,8 +22,8 @@ import ibis.common.exceptions as com
     ],
     raises=com.OperationNotDefinedError,
 )
-def test_rowid(con):
-    t = con.table('functional_alltypes')
+def test_rowid(backend):
+    t = backend.diamonds
     result = t.rowid().execute()
     # Only guarantee is that the values are unique integers
     assert result.is_unique

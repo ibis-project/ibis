@@ -173,8 +173,8 @@ unnest = toolz.compose(
     reason="snowflake has an extremely specialized way of implementing arrays",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
-def test_array_discovery_postgres(con):
-    t = con.table("array_types")
+def test_array_discovery_postgres(backend):
+    t = backend.array_types
     expected = ibis.schema(
         dict(
             x=dt.Array(dt.int64),
@@ -198,8 +198,8 @@ def test_array_discovery_postgres(con):
     reason="backend supports nullable nested types",
 )
 @pytest.mark.never(["bigquery"], reason="doesn't support arrays of arrays")
-def test_array_discovery_clickhouse(con):
-    t = con.table("array_types")
+def test_array_discovery_clickhouse(backend):
+    t = backend.array_types
     expected = ibis.schema(
         dict(
             x=dt.Array(dt.int64, nullable=False),
@@ -229,8 +229,8 @@ def test_array_discovery_clickhouse(con):
     ["snowflake"],
     reason="snowflake has an extremely specialized way of implementing arrays",
 )
-def test_array_discovery_desired(con):
-    t = con.table("array_types")
+def test_array_discovery_desired(backend):
+    t = backend.array_types
     expected = ibis.schema(
         dict(
             x=dt.Array(dt.int64),
@@ -261,8 +261,8 @@ def test_array_discovery_desired(con):
     ],
     reason="backend does not implement arrays like snowflake",
 )
-def test_array_discovery_snowflake(con):
-    t = con.table("array_types")
+def test_array_discovery_snowflake(backend):
+    t = backend.array_types
     expected = ibis.schema(
         dict(
             x=dt.Array(dt.json),
@@ -277,8 +277,8 @@ def test_array_discovery_snowflake(con):
 
 
 @unnest
-def test_unnest_simple(con):
-    array_types = con.table("array_types")
+def test_unnest_simple(backend):
+    array_types = backend.array_types
     expected = (
         array_types.execute()
         .x.explode()
@@ -293,8 +293,8 @@ def test_unnest_simple(con):
 
 @unnest
 @pytest.mark.notimpl("polars")
-def test_unnest_complex(con):
-    array_types = con.table("array_types")
+def test_unnest_complex(backend):
+    array_types = backend.array_types
     df = array_types.execute()
     expr = (
         array_types.select(["grouper", "x"])
@@ -321,8 +321,8 @@ def test_unnest_complex(con):
 @pytest.mark.never("pyspark", reason="pyspark throws away nulls in collect_list")
 @pytest.mark.never("clickhouse", reason="clickhouse throws away nulls in groupArray")
 @pytest.mark.notimpl("polars")
-def test_unnest_idempotent(con):
-    array_types = con.table("array_types")
+def test_unnest_idempotent(backend):
+    array_types = backend.array_types
     df = array_types.execute()
     expr = (
         array_types.select(
@@ -341,8 +341,8 @@ def test_unnest_idempotent(con):
 
 @unnest
 @pytest.mark.notimpl("polars")
-def test_unnest_no_nulls(con):
-    array_types = con.table("array_types")
+def test_unnest_no_nulls(backend):
+    array_types = backend.array_types
     df = array_types.execute()
     expr = (
         array_types.select(
@@ -367,8 +367,8 @@ def test_unnest_no_nulls(con):
 
 @unnest
 @pytest.mark.notimpl("polars")
-def test_unnest_default_name(con):
-    array_types = con.table("array_types")
+def test_unnest_default_name(backend):
+    array_types = backend.array_types
     df = array_types.execute()
     expr = (
         array_types.x.cast("!array<int64>") + ibis.array([1], type="!array<int64>")
@@ -396,8 +396,8 @@ def test_unnest_default_name(con):
     ],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "polars"])
-def test_array_slice(con, start, stop):
-    array_types = con.tables.array_types
+def test_array_slice(backend, start, stop):
+    array_types = backend.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
     result = expr.execute()
     expected = pd.DataFrame(

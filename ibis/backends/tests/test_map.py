@@ -23,8 +23,8 @@ pytestmark = [
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-def test_map_table(con):
-    table = con.table("map")
+def test_map_table(backend):
+    table = backend.map
     assert table.kv.type().is_map()
     assert not table.limit(1).execute().empty
 

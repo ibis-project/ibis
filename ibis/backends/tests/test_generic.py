@@ -956,8 +956,8 @@ def test_many_subqueries(con, snapshot):
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
     raises=com.OperationNotDefinedError,
 )
-def test_pivot_longer(con):
-    diamonds = con.tables.diamonds
+def test_pivot_longer(backend):
+    diamonds = backend.diamonds
     res = diamonds.pivot_longer(s.c("x", "y", "z"), names_to="pos", values_to="xyz")
     assert res.schema().names == (
         "carat",

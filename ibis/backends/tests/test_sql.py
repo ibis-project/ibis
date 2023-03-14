@@ -23,8 +23,8 @@ pytestmark = pytest.mark.notimpl(["druid"])
     reason="Not clear how to extract SQL from the backend",
     raises=(exc.OperationNotDefinedError, NotImplementedError, ValueError),
 )
-def test_table(con):
-    expr = con.tables.functional_alltypes.select(c=_.int_col + 1)
+def test_table(backend):
+    expr = backend.functional_alltypes.select(c=_.int_col + 1)
     buf = io.StringIO()
     ibis.show_sql(expr, file=buf)
     assert buf.getvalue()

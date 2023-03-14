@@ -69,6 +69,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     database_class = AlchemyDatabase
     table_class = AlchemyTable
     compiler = AlchemyCompiler
+    quote_table_names = None
 
     def _build_alchemy_url(self, url, host, port, user, password, database, driver):
         if url is not None:
@@ -287,7 +288,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         if temp:
             prefixes.append('TEMPORARY')
         columns = self._columns_from_schema(name, schema)
-        return sa.Table(name, self.meta, *columns, prefixes=prefixes)
+        return sa.Table(
+            name, self.meta, *columns, prefixes=prefixes, quote=self.quote_table_names
+        )
 
     def drop_table(
         self,
@@ -413,12 +416,14 @@ class BaseAlchemyBackend(BaseSQLBackend):
             util.log(query_str)
 
     def _get_sqla_table(
-        self, name: str, schema: str | None = None, autoload: bool = True, **kwargs: Any
+        self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
     ) -> sa.Table:
         # If the underlying table (or more likely, view) has changed, remove it
         # to ensure a correct reflection
-        if autoload and self.inspector.has_table(name):
-            self.meta.remove(sa.Table(name, self.meta))
+        if autoload and self.inspector.has_table(name, schema=schema):
+            self.meta.remove(
+                sa.Table(name, self.meta, schema=schema, quote=self.quote_table_names)
+            )
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", message="Did not recognize type", category=sa.exc.SAWarning
@@ -428,6 +433,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 self.meta,
                 schema=schema,
                 autoload_with=self.con if autoload else None,
+                quote=self.quote_table_names,
             )
             nulltype_cols = frozenset(
                 col.name for col in table.c if isinstance(col.type, sa.types.NullType)
