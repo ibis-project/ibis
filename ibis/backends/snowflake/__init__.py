@@ -6,7 +6,6 @@ import warnings
 from typing import Any, Iterable
 
 import sqlalchemy as sa
-import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -134,6 +133,7 @@ $$ {defn["source"]} $$"""
 class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
+    quote_table_names = True
 
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
@@ -187,41 +187,47 @@ class Backend(BaseAlchemyBackend):
                         f"Unable to create map UDFs, some functionality will not work: {e}"
                     )
 
-        return super().do_connect(engine)
+        res = super().do_connect(engine)
+
+        def normalize_name(name):
+            if name is None:
+                return None
+            elif name == "":
+                return ""
+            elif name.lower() == name:
+                return sa.sql.quoted_name(name, quote=True)
+            else:
+                return name
+
+        self.con.dialect.normalize_name = normalize_name
+        return res
 
     def _get_sqla_table(
-        self, name: str, schema: str | None = None, **_: Any
+        self,
+        name: str,
+        schema: str | None = None,
+        database: str | None = None,
+        autoload: bool = True,
+        **kwargs: Any,
     ) -> sa.Table:
-        different_schema = schema is not None
-        with self.begin() as con:
-            if different_schema:
-                con.exec_driver_sql(f"USE {schema}")
-        try:
-            inspected = self.inspector.get_columns(
-                name,
-                schema=schema.split(".", 1)[1] if schema is not None else schema,
-            )
-        finally:
-            if different_schema:
-                path = ".".join(self.con.url.database.split("/", 1))
-                with self.begin() as con:
-                    con.exec_driver_sql(f"USE {path}")
-        cols = []
-        identifier = name if schema is None else schema + "." + name
-        with self.begin() as con:
-            cur = con.exec_driver_sql(f"DESCRIBE TABLE {identifier}").mappings()
-            for colname, colinfo in zip(toolz.pluck("name", cur), inspected):
-                colinfo["name"] = colname
-                colinfo["type_"] = colinfo.pop("type")
-                cols.append(sa.Column(**colinfo, quote=True))
-        return sa.Table(
-            name,
-            self.meta,
-            *cols,
-            schema=schema,
-            extend_existing=True,
-            keep_existing=False,
+        default_db, default_schema = self.con.url.database.split("/", 1)
+        if schema is None:
+            schema = default_schema
+        *db, schema = schema.split(".")
+        db = "".join(db) or database or default_db
+        ident = ".".join(filter(None, (db, schema)))
+        if ident:
+            with self.begin() as con:
+                con.exec_driver_sql(f"USE {ident}")
+        result = super()._get_sqla_table(
+            name, schema=schema, autoload=autoload, database=db, **kwargs
         )
+
+        path = ".".join(self.con.url.database.split("/", 1))
+        with self.begin() as con:
+            con.exec_driver_sql(f"USE {path}")
+        result.schema = ident
+        return result
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as con, con.connection.cursor() as cur:

@@ -16,6 +16,7 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.util import consume
 
 if TYPE_CHECKING:
+    import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
 
 
@@ -31,6 +32,8 @@ def copy_into(con, data_dir: Path, table: str) -> None:
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
+    supports_map = True
+
     def __init__(self, data_directory: Path) -> None:
         self.connection = self.connect(data_directory)
 
@@ -81,6 +84,46 @@ class TestConf(BackendTest, RoundAwayFromZero):
                     )
                 ):
                     result.result()
+
+    @property
+    def functional_alltypes(self) -> ir.Table:
+        return self.connection.table('FUNCTIONAL_ALLTYPES')
+
+    @property
+    def batting(self) -> ir.Table:
+        return self.connection.table('BATTING')
+
+    @property
+    def awards_players(self) -> ir.Table:
+        return self.connection.table('AWARDS_PLAYERS')
+
+    @property
+    def diamonds(self) -> ir.Table:
+        return self.connection.table('DIAMONDS')
+
+    @property
+    def array_types(self) -> ir.Table:
+        return self.connection.table('ARRAY_TYPES')
+
+    @property
+    def geo(self) -> ir.Table | None:
+        return None
+
+    @property
+    def struct(self) -> ir.Table | None:
+        return self.connection.table("STRUCT")
+
+    @property
+    def json_t(self) -> ir.Table | None:
+        return self.connection.table("JSON_T")
+
+    @property
+    def map(self) -> ir.Table | None:
+        return self.connection.table("MAP")
+
+    @property
+    def win(self) -> ir.Table | None:
+        return self.connection.table("WIN")
 
     @staticmethod
     @functools.lru_cache(maxsize=None)
