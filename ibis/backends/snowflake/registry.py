@@ -195,7 +195,7 @@ def _group_concat(t, op):
     arg_sa = sa.func.iff(where_sa, t.translate(op.arg), None)
 
     return sa.func.iff(
-        sa.func.count_if(arg_sa is not None) != 0,
+        sa.func.count_if(arg_sa != sa.null()) != 0,
         sa.func.listagg(arg_sa, t.translate(op.sep)),
         None,
     )
