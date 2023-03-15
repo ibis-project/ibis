@@ -28,9 +28,20 @@ theme:
   logo: static/icons/ibis/logo.svg
   favicon: static/icons/ibis/logo.svg
   palette:
-    scheme: slate
-    primary: teal
-    accent: lime
+    # light mode toggle
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # dark mode toggle
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: lime
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   custom_dir: docs/overrides
 plugins:
   - search
@@ -86,7 +97,6 @@ plugins:
         - "*.py"
       execute_ignore: "**/rendered/*.ipynb"
       include_source: true
-      theme: dark
       allow_errors: false
   - literate-nav
 markdown_extensions:
