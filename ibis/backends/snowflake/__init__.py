@@ -145,7 +145,13 @@ class Backend(BaseAlchemyBackend):
             return con.exec_driver_sql("SELECT CURRENT_VERSION()").scalar()
 
     def do_connect(
-        self, user: str, password: str, account: str, database: str, **kwargs: Any
+        self,
+        user: str,
+        password: str,
+        account: str,
+        database: str,
+        connect_args: dict[str, Any] = None,
+        **kwargs: Any,
     ):
         dbparams = dict(zip(("database", "schema"), database.split("/", 1)))
         if dbparams.get("schema") is None:
@@ -155,15 +161,16 @@ class Backend(BaseAlchemyBackend):
             )
         url = URL(account=account, user=user, password=password, **dbparams, **kwargs)
         self.database_name = dbparams["database"]
+        if connect_args is None:
+            connect_args = {}
+        connect_args["converter_class"] = _SnowFlakeConverter
+        connect_args["session_parameters"] = {
+            PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT: "JSON",
+            "STRICT_JSON_OUTPUT": "TRUE",
+        }
         engine = sa.create_engine(
             url,
-            connect_args={
-                "converter_class": _SnowFlakeConverter,
-                "session_parameters": {
-                    PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT: "JSON",
-                    "STRICT_JSON_OUTPUT": "TRUE",
-                },
-            },
+            connect_args=connect_args,
             poolclass=sa.pool.StaticPool,
         )
 
