@@ -12,7 +12,7 @@ from ibis.backends.base.sql.alchemy import (
     sqlalchemy_window_functions_registry,
     unary,
 )
-from ibis.backends.base.sql.alchemy.registry import substr
+from ibis.backends.base.sql.alchemy.registry import substr, variance_reduction
 
 
 def _reduction(func, cast_type='int32'):
@@ -158,6 +158,8 @@ operation_registry.update(
         ops.Log: fixed_arity(lambda x, p: sa.func.log(x, p), 2),
         ops.Log2: fixed_arity(lambda x: sa.func.log(x, 2), 1),
         ops.Log10: fixed_arity(lambda x: sa.func.log(x, 10), 1),
+        ops.StandardDev: variance_reduction('stdev', {'sample': '', 'pop': 'p'}),
+        ops.Variance: variance_reduction('var', {'sample': '', 'pop': 'p'}),
         # timestamp methods
         ops.TimestampNow: fixed_arity(sa.func.GETDATE, 0),
         ops.ExtractYear: _extract('year'),
