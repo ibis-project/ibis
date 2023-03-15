@@ -5579,7 +5579,7 @@ mysql = ["sqlalchemy", "pymysql"]
 pandas = ["regex"]
 polars = ["polars", "pyarrow"]
 postgres = ["psycopg2", "sqlalchemy"]
-pyspark = ["pyarrow", "pyspark"]
+pyspark = ["pyarrow", "pyspark", "sqlalchemy"]
 snowflake = ["snowflake-connector-python", "snowflake-sqlalchemy"]
 sqlite = ["regex", "sqlalchemy"]
 trino = ["trino", "sqlalchemy"]
@@ -5588,4 +5588,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "f55d86cb93751c9cca087ed795a9e500873ee415a1e52cde8b48cc8579cfa5aa"
+content-hash = "f113527d242423168c146d59aca1fdc1084b171cb11c3ee66bf8c5ba5c62cae8"
