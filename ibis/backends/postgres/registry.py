@@ -448,12 +448,17 @@ def _binary_variance_reduction(func):
         if (y_type := y.output_dtype).is_boolean():
             y = ops.Cast(y, dt.Int32(nullable=y_type.nullable))
 
-        result = func(t.translate(x), t.translate(y))
+        if t._has_reduction_filter_syntax:
+            result = func(t.translate(x), t.translate(y))
 
-        if (where := op.where) is not None:
-            return result.filter(t.translate(where))
-
-        return result
+            if (where := op.where) is not None:
+                return result.filter(t.translate(where))
+            return result
+        else:
+            if (where := op.where) is not None:
+                x = ops.Where(where, x, None)
+                y = ops.Where(where, y, None)
+            return func(t.translate(x), t.translate(y))
 
     return variance_compiler
 
