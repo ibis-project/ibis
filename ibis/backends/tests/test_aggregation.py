@@ -489,11 +489,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 mark.notimpl(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason="'stddev_samp' is not a recognized built-in function name.",
-                ),
-                mark.notimpl(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
                     reason="No match found for function signature stddev_samp(<NUMERIC>)",
@@ -508,11 +503,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 mark.notimpl(
                     ["datafusion"],
                     raises=com.OperationNotDefinedError,
-                ),
-                mark.broken(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason="'var_samp' is not a recognized built-in function name.",
                 ),
                 mark.notimpl(
                     ["druid"],
@@ -535,11 +525,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=sa.exc.ProgrammingError,
                     reason="No match found for function signature stddev_pop(<NUMERIC>)",
                 ),
-                mark.broken(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason="'stddev_pop' is not a recognized built-in function name.",
-                ),
             ],
         ),
         param(
@@ -555,11 +540,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
                     reason="No match found for function signature var_pop(<NUMERIC>)",
-                ),
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason="'var_pop' is not a recognized built-in function name.",
                 ),
             ],
         ),

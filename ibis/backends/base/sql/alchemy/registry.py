@@ -23,8 +23,8 @@ class substr(GenericFunction):
     inherit_cache = True
 
 
-def variance_reduction(func_name):
-    suffix = {'sample': 'samp', 'pop': 'pop'}
+def variance_reduction(func_name, suffix=None):
+    suffix = suffix or {'sample': '_samp', 'pop': '_pop'}
 
     def variance_compiler(t, op):
         arg = op.arg
@@ -32,7 +32,7 @@ def variance_reduction(func_name):
         if arg.output_dtype.is_boolean():
             arg = ops.Cast(op.arg, to=dt.int32)
 
-        func = getattr(sa.func, f'{func_name}_{suffix[op.how]}')
+        func = getattr(sa.func, f'{func_name}{suffix[op.how]}')
 
         if op.where is not None:
             arg = ops.Where(op.where, arg, None)
