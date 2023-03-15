@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import json
 import warnings
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
 import sqlalchemy as sa
 
@@ -154,7 +154,7 @@ class Backend(BaseAlchemyBackend):
         password: str,
         account: str,
         database: str,
-        connect_args: dict[str, Any] = None,
+        connect_args: Mapping[str, Any] | None = None,
         **kwargs: Any,
     ):
         dbparams = dict(zip(("database", "schema"), database.split("/", 1)))
