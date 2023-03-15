@@ -722,12 +722,6 @@ def test_quantile(
             lambda t: t.yearID.isin([2009, 2015]),
             lambda t: t.yearID.isin([2009, 2015]),
             id='cond',
-            marks=[
-                pytest.mark.broken(
-                    ["snowflake"],
-                    reason=("snowflake doesn't allow quoted columns in group_by"),
-                ),
-            ],
         ),
     ],
 )
