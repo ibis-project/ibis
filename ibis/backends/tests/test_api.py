@@ -10,14 +10,27 @@ def test_backend_name(backend):
     assert backend.api.name == backend.name()
 
 
-@pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(
+    ["druid"], raises=TypeError, reason="'NoneType' object is not iterable"
+)
 def test_version(backend):
     assert isinstance(backend.api.version, str)
 
 
 # 1. `current_database` returns '.', but isn't listed in list_databases()
-@pytest.mark.never(["dask", "pandas"], reason="pass")
-@pytest.mark.notimpl(["datafusion", "duckdb", "polars", "mssql", "trino", "druid"])
+@pytest.mark.never(
+    ["polars", "dask", "pandas"],
+    reason="backends does not support databases",
+    raises=NotImplementedError,
+)
+@pytest.mark.notimpl(
+    ["duckdb", "mssql", "trino", "druid"],
+    raises=AssertionError,
+)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=NotImplementedError,
+)
 def test_database_consistency(backend, con):
     # every backend has a different set of databases, not testing the
     # exact names for now
