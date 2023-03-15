@@ -102,6 +102,7 @@ TEST_TABLES = {
 # added to this list to prevent regression.
 FIlES_WITH_STRICT_EXCEPTION_CHECK = [
     'ibis/backends/tests/test_api.py',
+    'ibis/backends/tests/test_array.py',
     'ibis/backends/tests/test_aggregation.py',
     'ibis/backends/tests/test_binary.py',
     'ibis/backends/tests/test_numeric.py',
