@@ -369,8 +369,8 @@ def _window_function(t, window):
         end = _translate_window_boundary(window.frame.end)
         additional_params = {how: (start, end)}
 
-    result = reduction.over(
-        partition_by=partition_by, order_by=order_by, **additional_params
+    result = sa.over(
+        reduction, partition_by=partition_by, order_by=order_by, **additional_params
     )
 
     if isinstance(window.func, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)):
