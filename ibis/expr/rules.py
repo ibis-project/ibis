@@ -232,6 +232,12 @@ def value(dtype, arg, **kwargs):
     """
     import ibis.expr.operations as ops
 
+    if isinstance(arg, Deferred):
+        raise com.IbisTypeError(
+            "Deferred input is not allowed, try passing a lambda function instead. "
+            "For example, instead of writing `f(_.a)` write `lambda t: f(t.a)`"
+        )
+
     if not isinstance(arg, ops.Value):
         # coerce python literal to ibis literal
         arg = literal(None, arg)

@@ -1809,3 +1809,12 @@ def test_pivot_longer_no_match():
             values_to="rank",
             values_transform=_.cast("int"),
         )
+
+
+def test_invalid_deferred():
+    import ibis
+
+    t = ibis.table(dict(value="int", lagged_value="int"), name="t")
+
+    with pytest.raises(com.IbisTypeError, match="Deferred input is not allowed"):
+        ibis.greatest(t.value, ibis._.lagged_value)
