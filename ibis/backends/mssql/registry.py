@@ -195,6 +195,11 @@ _invalid_operations = {
     # ibis.expr.operations.strings
     ops.RPad,
     ops.LPad,
+    # ibis.expr.operations.reductions
+    ops.BitAnd,
+    ops.BitOr,
+    ops.BitXor,
+    ops.GroupConcat,
 }
 
 operation_registry = {

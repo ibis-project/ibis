@@ -695,13 +695,8 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_and',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["polars", "datafusion", "mssql"],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason="'bit_and' is not a recognized built-in function name.",
                 ),
                 pytest.mark.notimpl(["druid"], strict=False, raises=AssertionError),
                 pytest.mark.notyet(
@@ -720,13 +715,8 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_or',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["polars", "datafusion", "mssql"],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason="'bit_or' is not a recognized built-in function name.",
                 ),
                 pytest.mark.notyet(
                     ["impala", "pyspark"], raises=com.OperationNotDefinedError
@@ -744,13 +734,8 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='bit_xor',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["polars", "datafusion", "mssql"],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason="'bit_xor' is not a recognized built-in function name.",
                 ),
                 pytest.mark.notyet(
                     ["impala", "pyspark"], raises=com.OperationNotDefinedError
@@ -1206,18 +1191,13 @@ def test_approx_median(alltypes):
     ],
 )
 @mark.notimpl(
-    ["datafusion", "polars"],
+    ["datafusion", "polars", "mssql"],
     raises=com.OperationNotDefinedError,
 )
 @mark.notimpl(
     ["druid"],
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature group_concat(<CHARACTER>, <CHARACTER>)",
-)
-@mark.notimpl(
-    ["mssql"],
-    raises=sa.exc.OperationalError,
-    reason="'group_concat' is not a recognized built-in function name",
 )
 def test_group_concat(
     backend,
