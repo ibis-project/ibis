@@ -156,14 +156,11 @@ def calc_zscore(s):
             id='cumnotany',
             marks=pytest.mark.notyet(
                 (
-                    "duckdb",
                     'impala',
-                    'postgres',
                     'mssql',
                     'mysql',
                     'sqlite',
                     'snowflake',
-                    'trino',
                 ),
                 reason="notany() over window not supported",
             ),
@@ -190,14 +187,11 @@ def calc_zscore(s):
             id='cumnotall',
             marks=pytest.mark.notyet(
                 (
-                    "duckdb",
                     'impala',
-                    'postgres',
                     'mssql',
                     'mysql',
                     'sqlite',
                     'snowflake',
-                    'trino',
                 ),
                 reason="notall() over window not supported",
             ),
