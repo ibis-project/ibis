@@ -418,11 +418,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "function sum requires numeric or interval types, not boolean;"
                     ),
                 ),
-                pytest.mark.notimpl(
-                    ['mssql'],
-                    raises=sa.exc.OperationalError,
-                    reason="Incorrect syntax near the keyword 'AS'",
-                ),
             ],
         ),
         param(
@@ -1448,11 +1443,6 @@ def test_filter(backend, alltypes, df):
         "cannot resolve 'sum((functional_alltypes.bool_col IS NULL))' due to data type mismatch: "
         "function sum requires numeric or interval types, not boolean;"
     ),
-)
-@pytest.mark.notimpl(
-    ["mssql"],
-    raises=sa.exc.OperationalError,
-    reason="Incorrect syntax near the keyword 'AS'",
 )
 def test_column_summary(alltypes):
     with pytest.warns(FutureWarning, match="is deprecated"):

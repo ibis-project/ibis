@@ -20,8 +20,11 @@ def _reduction(func, cast_type='int32'):
         arg, where = op.args
 
         if arg.output_dtype.is_boolean():
-            nullable = arg.output_dtype.nullable
-            arg = ops.Cast(arg, dt.dtype(cast_type)(nullable=nullable))
+            if isinstance(arg, ops.TableColumn):
+                nullable = arg.output_dtype.nullable
+                arg = ops.Cast(arg, dt.dtype(cast_type)(nullable=nullable))
+            else:
+                arg = ops.Where(arg, 1, 0)
 
         if where is not None:
             arg = ops.Where(where, arg, None)
