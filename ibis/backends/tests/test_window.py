@@ -143,7 +143,6 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumany',
-            marks=[pytest.mark.notyet(["mssql"])],
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -176,7 +175,6 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumall',
-            marks=[pytest.mark.notyet(["mssql"])],
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
