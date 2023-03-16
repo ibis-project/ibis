@@ -844,11 +844,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         Parameters
         ----------
         metrics
-            Aggregate expressions
+            Aggregate expressions. These can be any scalar-producing
+            expression, including aggregation functions like `sum` or literal
+            values like `ibis.literal(1)`.
         by
-            Grouping expressions
+            Grouping expressions.
         having
-            Post-aggregation filters
+            Post-aggregation filters. The shape requirements are the same
+            `metrics`, but the output type for `having` is `boolean`.
         kwargs
             Named aggregate expressions
 
@@ -2220,6 +2223,84 @@ class Table(Expr, _FixedTextJupyterMixin):
         suffixes
             Left and right suffixes that will be used to rename overlapping
             columns.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import ibis.expr.selectors as s
+        >>> import ibis.examples as ex
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> movies = ex.ml_latest_small_movies.fetch()
+        >>> movies
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ movieId ┃ title                            ┃ genres                          ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64   │ string                           │ string                          │
+        ├─────────┼──────────────────────────────────┼─────────────────────────────────┤
+        │       1 │ Toy Story (1995)                 │ Adventure|Animation|Children|C… │
+        │       2 │ Jumanji (1995)                   │ Adventure|Children|Fantasy      │
+        │       3 │ Grumpier Old Men (1995)          │ Comedy|Romance                  │
+        │       4 │ Waiting to Exhale (1995)         │ Comedy|Drama|Romance            │
+        │       5 │ Father of the Bride Part II (19… │ Comedy                          │
+        │       6 │ Heat (1995)                      │ Action|Crime|Thriller           │
+        │       7 │ Sabrina (1995)                   │ Comedy|Romance                  │
+        │       8 │ Tom and Huck (1995)              │ Adventure|Children              │
+        │       9 │ Sudden Death (1995)              │ Action                          │
+        │      10 │ GoldenEye (1995)                 │ Action|Adventure|Thriller       │
+        │       … │ …                                │ …                               │
+        └─────────┴──────────────────────────────────┴─────────────────────────────────┘
+        >>> links = ex.ml_latest_small_links.fetch()
+        >>> links
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+        ┃ movieId ┃ imdbId  ┃ tmdbId ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+        │ int64   │ string  │ int64  │
+        ├─────────┼─────────┼────────┤
+        │       1 │ 0114709 │    862 │
+        │       2 │ 0113497 │   8844 │
+        │       3 │ 0113228 │  15602 │
+        │       4 │ 0114885 │  31357 │
+        │       5 │ 0113041 │  11862 │
+        │       6 │ 0113277 │    949 │
+        │       7 │ 0114319 │  11860 │
+        │       8 │ 0112302 │  45325 │
+        │       9 │ 0114576 │   9091 │
+        │      10 │ 0113189 │    710 │
+        │       … │ …       │      … │
+        └─────────┴─────────┴────────┘
+
+        Implicit inner equality join on the shared `movieId` column
+
+        >>> linked = movies.join(links, "movieId", how="inner")
+        >>> linked.head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+        ┃ movieId ┃ title                  ┃ genres                 ┃ imdbId  ┃ tmdbId ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+        │ int64   │ string                 │ string                 │ string  │ int64  │
+        ├─────────┼────────────────────────┼────────────────────────┼─────────┼────────┤
+        │       1 │ Toy Story (1995)       │ Adventure|Animation|C… │ 0114709 │    862 │
+        │       2 │ Jumanji (1995)         │ Adventure|Children|Fa… │ 0113497 │   8844 │
+        │       3 │ Grumpier Old Men (199… │ Comedy|Romance         │ 0113228 │  15602 │
+        │       4 │ Waiting to Exhale (19… │ Comedy|Drama|Romance   │ 0114885 │  31357 │
+        │       5 │ Father of the Bride P… │ Comedy                 │ 0113041 │  11862 │
+        └─────────┴────────────────────────┴────────────────────────┴─────────┴────────┘
+
+        Explicit equality join using the default `how` value of `"inner"`
+
+        >>> linked = movies.join(links, movies.movieId == links.movieId)
+        >>> linked.head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+        ┃ movieId ┃ title                  ┃ genres                 ┃ imdbId  ┃ tmdbId ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+        │ int64   │ string                 │ string                 │ string  │ int64  │
+        ├─────────┼────────────────────────┼────────────────────────┼─────────┼────────┤
+        │       1 │ Toy Story (1995)       │ Adventure|Animation|C… │ 0114709 │    862 │
+        │       2 │ Jumanji (1995)         │ Adventure|Children|Fa… │ 0113497 │   8844 │
+        │       3 │ Grumpier Old Men (199… │ Comedy|Romance         │ 0113228 │  15602 │
+        │       4 │ Waiting to Exhale (19… │ Comedy|Drama|Romance   │ 0114885 │  31357 │
+        │       5 │ Father of the Bride P… │ Comedy                 │ 0113041 │  11862 │
+        └─────────┴────────────────────────┴────────────────────────┴─────────┴────────┘
         """
 
         _join_classes = {
