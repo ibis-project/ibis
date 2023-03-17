@@ -586,6 +586,14 @@ class SQLStringView(PhysicalTable):
 
 
 class _UnnestTable(TableNode):
+    """A tabular unnest operation.
+
+    This operation is **private** and is subject to removal without warning.
+
+    We use this operation to replace columnar unnest expressions with their
+    table-equivalent in backends that only support unnest as part of a cross join.
+    """
+
     child = rlz.instance_of(ops.Unnest)
     name = rlz.instance_of(str)
 
