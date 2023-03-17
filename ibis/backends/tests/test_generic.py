@@ -947,11 +947,6 @@ def test_many_subqueries(con, snapshot):
     ["pyspark"], reason="pyspark doesn't allow more than one explode in a select"
 )
 @pytest.mark.notyet(
-    ["bigquery"],
-    reason="backend doesn't implement unnest",
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notyet(
     ["datafusion", "impala", "mssql", "mysql", "sqlite"],
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
     raises=com.OperationNotDefinedError,
