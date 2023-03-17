@@ -192,6 +192,10 @@ class ExprTranslator:
         # For now, governing whether the result will have a name
         self.named = named
 
+    @classmethod
+    def _fix_name(cls, name: str) -> str:
+        return name
+
     def _needs_name(self, op):
         if not self.named:
             return False

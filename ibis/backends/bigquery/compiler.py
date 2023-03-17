@@ -76,11 +76,15 @@ class BigQueryExprTranslator(sql_compiler.ExprTranslator):
         ops.Lead,
     )
 
+    @classmethod
+    def _fix_name(cls, name: str) -> str:
+        first_char = name[0]
+        if not first_char.isalpha() and first_char != "_":
+            name = f"_{name}"
+        return re.sub(r"[^\w]+", "_", name)
+
     def name(self, translated: str, name: str):
-        # replace invalid characters in automatically generated names
-        if self._valid_name_pattern.match(name) is None:
-            return f"{translated} AS `tmp`"
-        return super().name(translated, name)
+        return super().name(translated, self._fix_name(name))
 
     @classmethod
     def compiles(cls, klass):

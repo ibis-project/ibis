@@ -130,7 +130,7 @@ class TableSetFormatter:
             subquery = ctx.get_compiled_expr(op)
             result = f'(\n{util.indent(subquery, self.indent)}\n)'
 
-        result += f' {ctx.get_ref(op) or op.name}'
+        result += f' {ctx.get_ref(op) or self.parent._fix_name(op.name)}'
 
         return result
 
@@ -303,6 +303,9 @@ class Select(DML, Comparable):
 
         return 'WITH {}'.format(',\n'.join(buf))
 
+    def _fix_name(self, name: str) -> str:
+        return self.translator_class._fix_name(name)
+
     def format_select_set(self):
         # TODO:
         context = self.context
@@ -310,7 +313,7 @@ class Select(DML, Comparable):
         unnests = []
         for node in self.select_set:
             if unnest_nodes := list(an.find_toplevel_unnests(node)):
-                expr_str = node.name
+                expr_str = self._fix_name(node.name)
                 unnests.extend(
                     map(partial(rels._UnnestTable, name=node.name), unnest_nodes)
                 )
