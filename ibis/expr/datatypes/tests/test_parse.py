@@ -40,6 +40,21 @@ def test_primitive_from_string(spec, expected):
 
 
 @pytest.mark.parametrize(
+    ('spec', 'expected'),
+    [
+        ['decimal', dt.Decimal(None, None)],
+        ['decimal(10, 3)', dt.Decimal(10, 3)],
+        ['bignumeric', dt.Decimal(76, 38)],
+        ['bigdecimal', dt.Decimal(76, 38)],
+        ['bignumeric(1, 1)', dt.Decimal(1, 1)],
+        ['bigdecimal(1, 1)', dt.Decimal(1, 1)],
+    ],
+)
+def test_parse_decimal(spec, expected):
+    assert dt.dtype(spec) == expected
+
+
+@pytest.mark.parametrize(
     'case',
     [
         'decimal(',

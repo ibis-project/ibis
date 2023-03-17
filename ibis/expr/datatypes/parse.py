@@ -119,6 +119,14 @@ def parse(
         .combine(dt.Decimal)
     )
 
+    bignumeric = spaceless_string("bignumeric", "bigdecimal").then(
+        parsy.seq(
+            LPAREN.then(spaceless(PRECISION)).skip(COMMA), spaceless(SCALE).skip(RPAREN)
+        )
+        .optional((76, 38))
+        .combine(dt.Decimal)
+    )
+
     parened_string = LPAREN.then(RAW_STRING).skip(RPAREN)
     timestamp_scale = SINGLE_DIGIT.map(int)
 
@@ -169,6 +177,7 @@ def parse(
         | timestamp
         | primitive
         | decimal
+        | bignumeric
         | varchar_or_char
         | interval
         | array
