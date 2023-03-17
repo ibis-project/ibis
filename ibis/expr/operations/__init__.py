@@ -16,5 +16,6 @@ from ibis.expr.operations.sortkeys import *  # noqa: F403
 from ibis.expr.operations.strings import *  # noqa: F403
 from ibis.expr.operations.structs import *  # noqa: F403
 from ibis.expr.operations.temporal import *  # noqa: F403
+from ibis.expr.operations.udf import *  # noqa: F403
 from ibis.expr.operations.vectorized import *  # noqa: F403
 from ibis.expr.operations.window import *  # noqa: F403

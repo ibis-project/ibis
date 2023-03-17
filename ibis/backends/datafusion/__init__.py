@@ -30,6 +30,7 @@ if TYPE_CHECKING:
 class Backend(BaseBackend):
     name = 'datafusion'
     builder = None
+    supports_in_memory_tables = False
 
     @property
     def version(self):

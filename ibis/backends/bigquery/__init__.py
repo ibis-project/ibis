@@ -74,6 +74,8 @@ def _create_client_info_gapic(application_name):
 class Backend(BaseSQLBackend):
     name = "bigquery"
     compiler = BigQueryCompiler
+    supports_in_memory_tables = False
+    supports_python_udfs = False
 
     def _from_url(self, url: str, **kwargs):
         result = urlparse(url)
