@@ -18,4 +18,4 @@ function my_len(s) {
 return my_len(s);
 """;
 
-SELECT (my_len_0('abcd') + my_len_0('abcd')) + my_len_1('abcd') AS `tmp`
+SELECT (my_len_0('abcd') + my_len_0('abcd')) + my_len_1('abcd') AS `Add_Add_my_len_0_abcd_my_len_0_abcd_my_len_1_abcd_`
