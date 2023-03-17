@@ -12,6 +12,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.bigquery.client import bigquery_param
+from ibis.util import guid
 
 
 def test_column_execute(alltypes, df):
@@ -337,3 +338,17 @@ def test_approx_median(alltypes):
     # Since 6 and 7 are right on the edge for median in the range of months
     # (1-12), accept either for the approximate function.
     assert result in (6, 7)
+
+
+def test_create_table_bignumeric(client):
+    temp_table_name = f"temp_to_table_{guid()[:6]}"
+    schema = ibis.schema({'col1': dt.Decimal(76, 38)})
+    temporary_table = client.create_table(temp_table_name, schema=schema)
+    try:
+        client.raw_sql(
+            f"INSERT {client.current_database}.{temp_table_name} (col1) VALUES(10.2)"
+        )
+        df = temporary_table.execute()
+        assert df.shape == (1, 1)
+    finally:
+        client.drop_table(temp_table_name)
