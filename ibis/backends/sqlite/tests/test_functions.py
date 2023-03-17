@@ -212,7 +212,7 @@ def test_str_replace(con):
     ],
 )
 def test_math_functions(con, expr, expected):
-    assert con.execute(expr.op()) == expected
+    assert con.execute(expr) == expected
 
 
 NULL_STRING = L(None).cast(dt.string)

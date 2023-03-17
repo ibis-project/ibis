@@ -185,6 +185,8 @@ def can_cast_array_or_set(source: dt.Array, target: dt.Array, **kwargs) -> bool:
 
 
 @castable.register(dt.JSON, dt.JSON)
+@castable.register(dt.Floating, dt.JSON)
+@castable.register(dt.Integer, dt.JSON)
 def can_cast_json(source, target, **kwargs):
     return True
 

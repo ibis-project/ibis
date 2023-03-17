@@ -2,24 +2,35 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, Literal
+import inspect
+import textwrap
+from typing import TYPE_CHECKING, Callable, Iterable, Literal
 
 import sqlalchemy as sa
 
+import ibis.common.exceptions as exc
+import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.postgres.compiler import PostgreSQLCompiler
 from ibis.backends.postgres.datatypes import _get_type
-from ibis.backends.postgres.udf import udf as _udf
+from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
+
+
+def _verify_source_line(func_name: str, line: str):
+    if line.startswith("@"):
+        raise InvalidDecoratorError(func_name, line)
+    return line
 
 
 class Backend(BaseAlchemyBackend):
     name = "postgres"
     compiler = PostgreSQLCompiler
     supports_create_or_replace = False
+    supports_python_udfs = True
 
     def do_connect(
         self,
@@ -132,53 +143,96 @@ class Backend(BaseAlchemyBackend):
             ]
         return self._filter_with_like(databases, like)
 
-    def udf(
-        self,
-        pyfunc,
-        in_types,
-        out_type,
-        schema=None,
-        replace=False,
-        name=None,
-        language="plpythonu",
-    ):
-        """Decorator that defines a PL/Python UDF in-database.
+    def function(self, name: str, *, schema: str | None = None) -> Callable:
+        query = sa.text(
+            """
+SELECT
+  n.nspname as schema,
+  pg_catalog.pg_get_function_result(p.oid) as return_type,
+  string_to_array(pg_catalog.pg_get_function_arguments(p.oid), ', ') as signature,
+  CASE p.prokind
+    WHEN 'a' THEN 'agg'
+    WHEN 'w' THEN 'window'
+    WHEN 'p' THEN 'proc'
+    ELSE 'func'
+  END as "Type"
+FROM pg_catalog.pg_proc p
+LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+WHERE p.proname = :name
+"""
+            + "AND n.nspname OPERATOR(pg_catalog.~) :schema COLLATE pg_catalog.default"
+            * (schema is not None)
+        ).bindparams(name=name, schema=f"^({schema})$")
 
-        Parameters
-        ----------
-        pyfunc
-            Python function
-        in_types
-            Input types
-        out_type
-            Output type
-        schema
-            The postgres schema in which to define the UDF
-        replace
-            replace UDF in database if already exists
-        name
-            name for the UDF to be defined in database
-        language
-            Language extension to use for PL/Python
+        def split_name_type(arg: str) -> tuple[str, dt.DataType]:
+            name, typ = arg.split(" ", 1)
+            return name, _get_type(typ)
 
-        Returns
-        -------
-        Callable
-            A callable ibis expression
+        with self.begin() as con:
+            rows = con.execute(query).mappings().fetchall()
 
-        Function that takes in Column arguments and returns an instance
-        inheriting from PostgresUDFNode
-        """
+            if not rows:
+                name = f"{schema}.{name}" if schema else name
+                raise exc.MissingUDFError(name)
+            elif len(rows) > 1:
+                raise exc.AmbiguousUDFError(name)
 
-        return _udf(
-            client=self,
-            python_func=pyfunc,
-            in_types=in_types,
-            out_type=out_type,
-            schema=schema,
-            replace=replace,
+            [row] = rows
+            return_type = _get_type(row["return_type"])
+            signature = list(map(split_name_type, row["signature"]))
+
+        # dummy callable
+        def fake_func(*args, **kwargs):
+            ...
+
+        fake_func.__name__ = name
+        fake_func.__signature__ = inspect.Signature(
+            [
+                inspect.Parameter(
+                    name, kind=inspect.Parameter.POSITIONAL_OR_KEYWORD, annotation=typ
+                )
+                for name, typ in signature
+            ],
+            return_annotation=return_type,
+        )
+        fake_func.__annotations__ = {"return": return_type, **dict(signature)}
+        op = ops.udf.scalar._opaque(fake_func, schema=schema)
+        return op
+
+    def _get_udf_source(self, udf_node: ops.ScalarUDF):
+        config = udf_node.__config__["kwargs"]
+        func = udf_node.__func__
+        func_name = func.__name__
+        schema = config.get("schema", "")
+        name = type(udf_node).__name__
+        ident = ".".join(filter(None, [schema, name]))
+        return dict(
             name=name,
-            language=language,
+            ident=ident,
+            signature=", ".join(
+                f"{name} {self._compile_type(arg.output_dtype)}"
+                for name, arg in zip(udf_node.argnames, udf_node.args)
+            ),
+            return_type=self._compile_type(udf_node.output_dtype),
+            language=config.get("language", "plpython3u"),
+            source="\n".join(
+                _verify_source_line(func_name, line)
+                for line in textwrap.dedent(inspect.getsource(func)).splitlines()
+                if not line.strip().startswith("@udf")
+            ),
+            args=", ".join(udf_node.argnames),
+        )
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
+        return """\
+CREATE OR REPLACE FUNCTION {ident}({signature})
+RETURNS {return_type}
+LANGUAGE {language}
+AS $$
+{source}
+return {name}({args})
+$$""".format(
+            **self._get_udf_source(udf_node)
         )
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
