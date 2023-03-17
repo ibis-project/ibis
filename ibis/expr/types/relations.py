@@ -917,40 +917,169 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     agg = aggregate
 
-    def distinct(self) -> Table:
-        """Compute the unique rows in `self`.
+    def distinct(
+        self,
+        *,
+        on: str | Iterable[str] | s.Selector | None = None,
+        keep: Literal["first", "last"] | None = "first",
+    ) -> Table:
+        """Return a Table with duplicate rows removed.
 
-        Returns
-        -------
-        Table
-            Unique rows of `self`
+        Similar to `pandas.DataFrame.drop_duplicates()`.
+
+        !!! note "Some backends do not support `keep='last'`"
+
+        Parameters
+        ----------
+        on
+            Only consider certain columns for identifying duplicates.
+            By default deduplicate all of the columns.
+        keep
+            Determines which duplicates to keep.
+
+            - `"first"`: Drop duplicates except for the first occurrence.
+            - `"last"`: Drop duplicates except for the last occurrence.
+            - `None`: Drop all duplicates
 
         Examples
         --------
         >>> import ibis
+        >>> import ibis.examples as ex
+        >>> import ibis.expr.selectors as s
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [1, 1, 2], "b": ["c", "a", "a"]})
-        >>> t[["a"]].distinct()
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t.distinct()
-        ┏━━━━━━━┳━━━━━━━━┓
-        ┃ a     ┃ b      ┃
-        ┡━━━━━━━╇━━━━━━━━┩
-        │ int64 │ string │
-        ├───────┼────────┤
-        │     1 │ c      │
-        │     1 │ a      │
-        │     2 │ a      │
-        └───────┴────────┘
+        >>> t = ex.penguins.fetch()
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
+        Compute the distinct rows of a subset of columns
+
+        >>> t[["species", "island"]].distinct()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ species   ┃ island    ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━┩
+        │ string    │ string    │
+        ├───────────┼───────────┤
+        │ Adelie    │ Torgersen │
+        │ Adelie    │ Biscoe    │
+        │ Adelie    │ Dream     │
+        │ Gentoo    │ Biscoe    │
+        │ Chinstrap │ Dream     │
+        └───────────┴───────────┘
+
+        Drop all duplicate rows except the first
+
+        >>> t.distinct(on=["species", "island"], keep="first")
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━┓
+        ┃ species   ┃ island    ┃ bill_length_mm ┃ bill_depth_… ┃ flipper_length_mm ┃  ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━┩
+        │ string    │ string    │ float64        │ float64      │ int64             │  │
+        ├───────────┼───────────┼────────────────┼──────────────┼───────────────────┼──┤
+        │ Adelie    │ Torgersen │           39.1 │         18.7 │               181 │  │
+        │ Adelie    │ Biscoe    │           37.8 │         18.3 │               174 │  │
+        │ Adelie    │ Dream     │           39.5 │         16.7 │               178 │  │
+        │ Gentoo    │ Biscoe    │           46.1 │         13.2 │               211 │  │
+        │ Chinstrap │ Dream     │           46.5 │         17.9 │               192 │  │
+        └───────────┴───────────┴────────────────┴──────────────┴───────────────────┴──┘
+
+        Drop all duplicate rows except the last
+
+        >>> t.distinct(on=["species", "island"], keep="last")
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━┓
+        ┃ species   ┃ island    ┃ bill_length_mm ┃ bill_depth_… ┃ flipper_length_mm ┃  ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━┩
+        │ string    │ string    │ float64        │ float64      │ int64             │  │
+        ├───────────┼───────────┼────────────────┼──────────────┼───────────────────┼──┤
+        │ Adelie    │ Torgersen │           43.1 │         19.2 │               197 │  │
+        │ Adelie    │ Biscoe    │           42.7 │         18.3 │               196 │  │
+        │ Adelie    │ Dream     │           41.5 │         18.5 │               201 │  │
+        │ Gentoo    │ Biscoe    │           49.9 │         16.1 │               213 │  │
+        │ Chinstrap │ Dream     │           50.2 │         18.7 │               198 │  │
+        └───────────┴───────────┴────────────────┴──────────────┴───────────────────┴──┘
+
+        Drop all duplicated rows
+
+        >>> expr = t.distinct(on=["species", "island", "year", "bill_length_mm"], keep=None)
+        >>> expr.count()
+        273
+        >>> t.count()
+        344
+
+        You can pass [`selectors`][ibis.expr.selectors] to `on`
+
+        >>> t.distinct(on=~s.numeric())
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Biscoe    │           37.8 │          18.3 │               174 │ … │
+        │ Adelie  │ Biscoe    │           37.7 │          18.7 │               180 │ … │
+        │ Adelie  │ Dream     │           39.5 │          16.7 │               178 │ … │
+        │ Adelie  │ Dream     │           37.2 │          18.1 │               178 │ … │
+        │ Adelie  │ Dream     │           37.5 │          18.9 │               179 │ … │
+        │ Gentoo  │ Biscoe    │           46.1 │          13.2 │               211 │ … │
+        │ Gentoo  │ Biscoe    │           50.0 │          16.3 │               230 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
+        The only valid values of `keep` are `"first"`, `"last"` and [`None][None]
+
+        >>> t.distinct(on="species", keep="second")
+        Traceback (most recent call last):
+          ...
+        ibis.common.exceptions.IbisError: Invalid value for keep: 'second' ...
         """
-        return ops.Distinct(self).to_expr()
+
+        import ibis.expr.selectors as s
+
+        if on is None:
+            # dedup everything
+            return ops.Distinct(self).to_expr()
+
+        if not isinstance(on, s.Selector):
+            on = s.c(*util.promote_list(on))
+
+        if keep is None:
+            having = lambda t: t.count() == 1
+            how = "first"
+        elif keep == "first" or keep == "last":
+            having = None
+            how = keep
+        else:
+            raise com.IbisError(
+                f"Invalid value for `keep`: {keep!r}, must be 'first', 'last' or None"
+            )
+
+        aggs = {col.get_name(): col.arbitrary(how=how) for col in (~on).expand(self)}
+
+        gb = self.group_by(on)
+        if having is not None:
+            gb = gb.having(having)
+        res = gb.agg(**aggs)
+
+        assert len(res.columns) == len(self.columns)
+        if res.columns != self.columns:
+            return res.select(self.columns)
+        return res
 
     def limit(self, n: int, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
