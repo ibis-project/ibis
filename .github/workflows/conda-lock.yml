@@ -93,7 +93,7 @@ jobs:
           labels: |
             dependencies
 
-      - uses: juliangruber/approve-pull-request-action@v2.0.3
+      - uses: juliangruber/approve-pull-request-action@v2.0.4
         if: steps.create_pr.outputs.pull-request-operation == 'created'
         with:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}

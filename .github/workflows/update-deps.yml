@@ -99,7 +99,7 @@ jobs:
           body: ${{ steps.compare_commits.outputs.differences }}
           labels: dependencies,nix
 
-      - uses: juliangruber/approve-pull-request-action@v2.0.3
+      - uses: juliangruber/approve-pull-request-action@v2.0.4
         if: fromJSON(steps.needs_pr.outputs.did_change)
         with:
           github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
