@@ -207,3 +207,11 @@ def test_get_schema_from_query(con, pg_type, expected_type):
     expected_schema = ibis.schema(dict(x=expected_type, y=dt.Array(expected_type)))
     result_schema = con._get_schema_using_query(f"SELECT x, y FROM {name}")
     assert result_schema == expected_schema
+
+
+@pytest.mark.parametrize(
+    ("col", "expected_type"), [("search", dt.string), ("simvec", dt.null)]
+)
+def test_unknown_column_type(con, col, expected_type):
+    awards_players = con.table("awards_players")
+    assert awards_players[col].type() == expected_type

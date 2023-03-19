@@ -194,6 +194,8 @@ WHERE attrelid = CAST(:raw_name AS regclass)
   AND attnum > 0
   AND NOT attisdropped
 ORDER BY attnum"""
+        if self.inspector.has_table(query):
+            query = f"TABLE {query}"
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE TEMPORARY VIEW {name} AS {query}")
             type_info = con.execute(
