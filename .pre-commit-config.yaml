@@ -4,6 +4,7 @@ ci:
   autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"
   skip:
     - actionlint
+    - deadnix
     - just
     - nixpkgs-fmt
     - prettier
@@ -119,5 +120,12 @@ repos:
         entry: statix
         args: ["fix"]
         pass_filenames: false
+        types:
+          - nix
+      - id: deadnix
+        name: deadnix
+        language: system
+        entry: deadnix
+        args: ["--edit", "--fail"]
         types:
           - nix
