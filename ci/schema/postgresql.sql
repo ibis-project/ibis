@@ -1,6 +1,7 @@
 CREATE EXTENSION IF NOT EXISTS hstore;
 CREATE EXTENSION IF NOT EXISTS postgis;
 CREATE EXTENSION IF NOT EXISTS plpython3u;
+CREATE EXTENSION IF NOT EXISTS vector;
 
 DROP TABLE IF EXISTS diamonds CASCADE;
 
@@ -214,3 +215,7 @@ ADD search tsvector
 GENERATED always AS (
   setweight(to_tsvector('simple', notes), 'A') :: tsvector
 ) stored;
+
+ALTER TABLE awards_players
+ADD simvec vector
+GENERATED always AS ('[1,2,3]' :: vector) stored;

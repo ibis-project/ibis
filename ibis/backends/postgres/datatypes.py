@@ -46,7 +46,14 @@ def _get_type(typestr: str) -> dt.DataType:
     is_array = typestr.endswith(_BRACKETS)
     if (typ := _type_mapping.get(typestr.replace(_BRACKETS, ""))) is not None:
         return dt.Array(typ) if is_array else typ
-    return _parse_numeric(typestr)
+    try:
+        return _parse_numeric(typestr)
+    except parsy.ParseError:
+        # postgres can have arbitrary types unknown to ibis, so we just
+        # consider them null since we can't know what to do with them without
+        # explicit support, return null to effectively give no public API to
+        # such columns
+        return dt.null
 
 
 _type_mapping = {
