@@ -38,7 +38,6 @@
         inherit localSystem;
         overlays = [ self.overlays.default ];
       };
-      inherit (pkgs) lib;
 
       backendDevDeps = with pkgs; [
         # impala UDFs
@@ -73,6 +72,7 @@
 
       preCommitDeps = with pkgs; [
         actionlint
+        deadnix
         git
         just
         nixpkgs-fmt
