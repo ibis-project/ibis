@@ -346,7 +346,7 @@ def test_create_table_bignumeric(client):
     temporary_table = client.create_table(temp_table_name, schema=schema)
     try:
         client.raw_sql(
-            f"INSERT {client.current_database}.{temp_table_name} (col1) VALUES(10.2)"
+            f"INSERT {client.current_database}.{temp_table_name} (col1) VALUES (10.2)"
         )
         df = temporary_table.execute()
         assert df.shape == (1, 1)
