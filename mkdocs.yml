@@ -97,7 +97,8 @@ plugins:
       execute: true
       ignore:
         - "*.py"
-      execute_ignore: "**/rendered/*.ipynb"
+      execute_ignore:
+        - "**/rendered/*.ipynb"
       include_source: true
       allow_errors: false
   - literate-nav
