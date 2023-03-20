@@ -603,7 +603,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["snowflake"],
-                    raises=ValueError,
+                    raises=com.UnsupportedOperationError,
                     reason="Snowflake only supports the `first` option for `.arbitrary()",
                 ),
                 pytest.mark.notimpl(
@@ -640,7 +640,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 ),
                 pytest.mark.notimpl(
                     ["snowflake"],
-                    raises=ValueError,
+                    raises=com.UnsupportedOperationError,
                     reason="Snowflake only supports the `first` option for `.arbitrary()",
                 ),
             ],
