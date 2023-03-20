@@ -374,6 +374,7 @@ select = [
 ]
 respect-gitignore = true
 ignore = [
+  "B028", # required stacklevel argument to warn
   "B904", # raise from e or raise from None in exception handlers
   "C408", # dict(...) as literal
   "D100", # public module
