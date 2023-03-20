@@ -10,6 +10,7 @@ from sqlalchemy.sql import sqltypes
 from sqlalchemy.sql.elements import Cast
 from sqlalchemy.sql.functions import GenericFunction
 
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.base.sql.alchemy.registry import (
@@ -130,7 +131,7 @@ def _nth_value(t, op):
 
 def _arbitrary(t, op):
     if op.how != "first":
-        raise ValueError(
+        raise com.UnsupportedOperationError(
             "Snowflake only supports the `first` option for `.arbitrary()`"
         )
 
