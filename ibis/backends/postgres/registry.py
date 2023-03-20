@@ -479,6 +479,15 @@ def _arg_min_max(sort_func):
     return translate
 
 
+def _arbitrary(t, op):
+    if (how := op.how) == "heavy":
+        raise com.UnsupportedOperationError(
+            f"postgres backend doesn't support how={how!r} for the arbitrary() aggregate"
+        )
+    func = getattr(sa.func.public, f"_ibis_{op.how}")
+    return t._reduction(func, op)
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -629,5 +638,6 @@ operation_registry.update(
         ops.LStrip: unary(lambda arg: sa.func.ltrim(arg, string.whitespace)),
         ops.RStrip: unary(lambda arg: sa.func.rtrim(arg, string.whitespace)),
         ops.StartsWith: fixed_arity(lambda arg, prefix: arg.op("^@")(prefix), 2),
+        ops.Arbitrary: _arbitrary,
     }
 )

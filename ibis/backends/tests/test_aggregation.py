@@ -553,7 +553,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             marks=pytest.mark.notimpl(
                 [
                     'impala',
-                    'postgres',
                     'mysql',
                     'sqlite',
                     'polars',
@@ -571,7 +570,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             marks=pytest.mark.notimpl(
                 [
                     'impala',
-                    'postgres',
                     'mysql',
                     'sqlite',
                     'polars',
@@ -590,7 +588,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 pytest.mark.notimpl(
                     [
                         'impala',
-                        'postgres',
                         'mysql',
                         'sqlite',
                         'polars',
@@ -629,13 +626,17 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "impala",
                         "mysql",
                         "pandas",
-                        "postgres",
                         "sqlite",
                         "polars",
                         "mssql",
                         "druid",
                     ],
                     raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["postgres"],
+                    raises=com.UnsupportedOperationError,
+                    reason="how='heavy' not supported in the postgres backend",
                 ),
                 pytest.mark.notimpl(
                     ["duckdb"],
