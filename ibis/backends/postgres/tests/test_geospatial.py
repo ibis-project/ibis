@@ -518,7 +518,7 @@ def test_geo_literals_smoke(con, shape, value, modifier, expected):
 )
 def test_geo_ops_smoke(geotable, fn_expr):
     """Smoke tests for geo spatial operations."""
-    assert fn_expr(geotable).compile() != ''
+    assert str(fn_expr(geotable).compile())
 
 
 def test_geo_equals(geotable):

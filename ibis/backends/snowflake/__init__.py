@@ -203,7 +203,7 @@ class Backend(BaseAlchemyBackend):
         def normalize_name(name):
             if name is None:
                 return None
-            elif name == "":
+            elif not name:
                 return ""
             elif name.lower() == name:
                 return sa.sql.quoted_name(name, quote=True)
