@@ -692,7 +692,9 @@ def compile_arbitrary(t, op, **kwargs):
     elif how == 'last':
         fn = functools.partial(F.last, ignorenulls=True)
     else:
-        raise NotImplementedError(f"Does not support 'how': {how}")
+        raise com.UnsupportedOperationError(
+            f"PySpark backend does not support how={how!r}"
+        )
 
     return compile_aggregator(t, op, fn=fn, **kwargs)
 
