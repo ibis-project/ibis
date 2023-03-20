@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import warnings
 from typing import TYPE_CHECKING, Any, Mapping
 from urllib.parse import parse_qs, urlparse
 
@@ -31,6 +30,7 @@ from ibis.backends.bigquery.client import (
     rename_partitioned_column,
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
+from ibis.util import deprecated
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
@@ -305,19 +305,15 @@ class Backend(BaseSQLBackend):
 
         return result
 
+    @deprecated(
+        instead="use name in con.list_databases()", as_of="2.0", removed_in="6.0"
+    )
     def exists_database(self, name):
         """Return whether a database name exists in the current connection.
 
         Deprecated in Ibis 2.0. Use `name in client.list_databases()`
         instead.
         """
-        warnings.warn(
-            "`client.exists_database(name)` is deprecated, and will be "
-            "removed in a future version of Ibis. Use "
-            "`name in client.list_databases()` instead.",
-            FutureWarning,
-        )
-
         project, dataset = self._parse_project_and_dataset(name)
         client = self.client
         dataset_ref = client.dataset(dataset, project=project)
@@ -328,19 +324,15 @@ class Backend(BaseSQLBackend):
         else:
             return True
 
+    @deprecated(
+        instead="use `table in con.list_tables()`", as_of="2.0", removed_in="6.0"
+    )
     def exists_table(self, name: str, database: str | None = None) -> bool:
         """Return whether a table name exists in the database.
 
         Deprecated in Ibis 2.0. Use `name in client.list_tables()`
         instead.
         """
-        warnings.warn(
-            "`client.exists_table(name)` is deprecated, and will be "
-            "removed in a future version of Ibis. Use "
-            "`name in client.list_tables()` instead.",
-            FutureWarning,
-        )
-
         table_id = self._fully_qualified_name(name, database)
         client = self.client
         try:
