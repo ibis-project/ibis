@@ -1053,6 +1053,10 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         if on is None:
             # dedup everything
+            if keep != "first":
+                raise com.IbisError(
+                    f"Only keep='first' (the default) makes sense when deduplicating all columns; got keep={keep!r}"
+                )
             return ops.Distinct(self).to_expr()
 
         if not isinstance(on, s.Selector):

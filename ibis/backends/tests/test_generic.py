@@ -995,3 +995,153 @@ def test_pivot_longer(backend):
     )
     df = res.limit(5).execute()
     assert not df.empty
+
+
+@pytest.mark.parametrize(
+    "on",
+    [
+        param(
+            ["cut"],
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                ),
+            ],
+            id="one",
+        ),
+        param(
+            ["clarity", "cut"],
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                ),
+            ],
+            id="many",
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "keep",
+    [
+        param(
+            "first",
+            marks=pytest.mark.notimpl(
+                ["trino"],
+                raises=AssertionError,
+                reason="trino is more arbitrary than other backends",
+                strict=False,
+            ),
+        ),
+        param(
+            "last",
+            marks=[
+                pytest.mark.notimpl(
+                    ["bigquery", "snowflake"],
+                    raises=com.UnsupportedOperationError,
+                    reason="backend doesn't support last argument to arbitrary",
+                ),
+                pytest.mark.notimpl(
+                    ["trino"],
+                    raises=AssertionError,
+                    reason="trino is more arbitrary than other backends",
+                    strict=False,
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    ["druid", "impala"],
+    raises=(NotImplementedError, sa.exc.ProgrammingError, com.OperationNotDefinedError),
+    reason="arbitrary not implemented in the backend",
+)
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "polars"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement window functions",
+)
+@pytest.mark.notimpl(
+    ["pandas"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement ops.WindowFunction",
+)
+def test_distinct_on_keep(backend, on, keep):
+    from ibis import _
+
+    t = backend.diamonds.mutate(one=ibis.literal(1)).mutate(
+        idx=ibis.row_number().over(order_by=_.one, rows=(None, 0))
+    )
+
+    requires_cache = backend.name() in ("mysql", "impala")
+
+    if requires_cache:
+        t = t.cache()
+    expr = t.distinct(on=on, keep=keep).order_by(ibis.asc("idx"))
+    result = expr.execute()
+    df = t.execute()
+    expected = (
+        df.drop_duplicates(subset=on, keep=keep or False)
+        .sort_values(by=["idx"])
+        .reset_index(drop=True)
+    )
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "on",
+    [
+        param(
+            ["cut"],
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                ),
+            ],
+            id="one",
+        ),
+        param(
+            ["clarity", "cut"],
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "mysql"], raises=com.OperationNotDefinedError
+                ),
+            ],
+            id="many",
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    ["druid", "impala"],
+    raises=(NotImplementedError, sa.exc.ProgrammingError, com.OperationNotDefinedError),
+    reason="arbitrary not implemented in the backend",
+)
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "polars"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement window functions",
+)
+@pytest.mark.notimpl(
+    ["pandas"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement ops.WindowFunction",
+)
+def test_distinct_on_keep_is_none(backend, on):
+    from ibis import _
+
+    t = backend.diamonds.mutate(one=ibis.literal(1)).mutate(
+        idx=ibis.row_number().over(order_by=_.one, rows=(None, 0))
+    )
+
+    requires_cache = backend.name() in ("mysql", "impala")
+
+    if requires_cache:
+        t = t.cache()
+    expr = t.distinct(on=on, keep=None).order_by(ibis.asc("idx"))
+    result = expr.execute()
+    df = t.execute()
+    expected = (
+        df.drop_duplicates(subset=on, keep=False)
+        .sort_values(by=["idx"])
+        .reset_index(drop=True)
+    )
+    backend.assert_frame_equal(result, expected)

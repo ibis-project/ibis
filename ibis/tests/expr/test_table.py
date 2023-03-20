@@ -1812,9 +1812,20 @@ def test_pivot_longer_no_match():
 
 
 def test_invalid_deferred():
-    import ibis
-
     t = ibis.table(dict(value="int", lagged_value="int"), name="t")
 
     with pytest.raises(com.IbisTypeError, match="Deferred input is not allowed"):
         ibis.greatest(t.value, ibis._.lagged_value)
+
+
+@pytest.mark.parametrize("keep", ["last", None])
+def test_invalid_distinct(keep):
+    t = ibis.table(dict(a="int"), name="t")
+    with pytest.raises(com.IbisError, match="Only keep='first'"):
+        t.distinct(keep=keep)
+
+
+def test_invalid_keep_distinct():
+    t = ibis.table(dict(a="int", b="string"), name="t")
+    with pytest.raises(com.IbisError, match="Invalid value for `keep`:"):
+        t.distinct(on="a", keep="invalid")
