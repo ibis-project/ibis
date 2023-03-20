@@ -251,7 +251,7 @@ def test_annotable_with_type_annotations():
 
     p = Op(1)
     assert p.foo == 1
-    assert p.bar == ""
+    assert not p.bar
 
     class Op(Annotable):
         bar: str = None

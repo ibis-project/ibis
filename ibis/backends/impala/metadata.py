@@ -147,7 +147,7 @@ class MetadataParser:
         schema = []
         while True:
             tup = self._next_tuple()
-            if tup[0].strip() == '':
+            if not tup[0].strip():
                 break
             schema.append((tup[0], tup[1]))
 
@@ -160,7 +160,7 @@ class MetadataParser:
             orig_key = tup[0].strip(':')
             key = _clean_param_name(tup[0])
 
-            if key == '' or key.startswith('#'):
+            if not key or key.startswith('#'):
                 # section is done
                 break
 
@@ -214,7 +214,7 @@ class MetadataParser:
             orig_key = tup[0].strip(':')
             key = _clean_param_name(tup[0])
 
-            if key == '' or key.startswith('#'):
+            if not key or key.startswith('#'):
                 # section is done
                 break
 
