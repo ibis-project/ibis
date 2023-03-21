@@ -132,7 +132,7 @@ class Backend(BaseAlchemyBackend):
 
         engine = sa.create_engine(
             f"duckdb:///{database}",
-            connect_args=dict(read_only=read_only, config=config),
+            connect_args=dict(read_only=read_only),
             poolclass=sa.pool.StaticPool,
         )
 
@@ -144,7 +144,25 @@ class Backend(BaseAlchemyBackend):
 
         super().do_connect(engine)
 
-        self._meta = sa.MetaData()
+        stmts = ";\n".join(f"SET {key} = {value!r}" for key, value in config.items())
+
+        # load extensions that are installed before setting their config
+        #
+        # we could install too, but that potentially requires the internet
+        # and/or is slow
+        extension_name = sa.column("extension_name")
+        loaded = sa.column("loaded")
+        installed = sa.column("installed")
+        query = (
+            sa.select(extension_name)
+            .select_from(sa.func.duckdb_extensions())
+            .where(installed & ~loaded)
+        )
+        with engine.begin() as con:
+            util.consume(
+                map(con.connection.load_extension, con.execute(query).scalars())
+            )
+            con.exec_driver_sql(stmts)
 
     def _load_extensions(self, extensions):
         extension_name = sa.column("extension_name")
