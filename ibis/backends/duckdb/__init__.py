@@ -9,6 +9,7 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
+import duckdb
 import sqlalchemy as sa
 import toolz
 
@@ -22,7 +23,6 @@ from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
 
 if TYPE_CHECKING:
-    import duckdb
     import pandas as pd
     import pyarrow as pa
 
@@ -342,47 +342,65 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-        import sqlalchemy_views as sav
-
         source_list = normalize_filenames(source_list)
 
-        if any(source.startswith("s3://") for source in source_list):
-            if len(source_list) > 1:
-                raise ValueError("only single s3 paths are supported")
+        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
 
-            import pyarrow.dataset as ds
-
-            dataset = ds.dataset(source_list[0])
-            table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
-            self._load_extensions(["httpfs"])
-            # We don't create a view since DuckDB special cases Arrow Datasets
-            # so if we also create a view we end up with both a "lazy table"
-            # and a view with the same name
-            with self.begin() as con:
-                # DuckDB normally auto-detects Arrow Datasets that are defined
-                # in local variables but the `dataset` variable won't be local
-                # by the time we execute against this so we register it
-                # explicitly.
-                con.connection.register(table_name, dataset)
-        else:
-            if any(
-                source.startswith(("http://", "https://")) for source in source_list
-            ):
-                self._load_extensions(["httpfs"])
-
-            if table_name is None:
-                table_name = f"ibis_read_parquet_{next(pa_n)}"
-
-            source = sa.select(sa.literal_column("*")).select_from(
-                sa.func.read_parquet(
-                    sa.func.list_value(*source_list), _format_kwargs(kwargs)
-                )
-            )
-            view = sav.CreateView(sa.table(table_name), source, or_replace=True)
-            with self.begin() as con:
-                con.execute(view)
+        # Default to using the native duckdb parquet reader
+        # If that fails because of auth issues, fall back to ingesting via
+        # pyarrow dataset
+        try:
+            self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
+        except sa.exc.OperationalError as e:
+            if isinstance(e.orig, duckdb.IOException):
+                self._read_parquet_pyarrow_dataset(source_list, table_name, **kwargs)
+            else:
+                raise e
 
         return self.table(table_name)
+
+    def _read_parquet_duckdb_native(
+        self,
+        source_list: str | Iterable[str],
+        table_name: str,
+        **kwargs: Any,
+    ) -> None:
+        import sqlalchemy_views as sav
+
+        if any(
+            source.startswith(("http://", "https://", "s3://"))
+            for source in source_list
+        ):
+            self._load_extensions(["httpfs"])
+
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.read_parquet(
+                sa.func.list_value(*source_list), _format_kwargs(kwargs)
+            )
+        )
+        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
+        with self.begin() as con:
+            con.execute(view)
+
+    def _read_parquet_pyarrow_dataset(
+        self,
+        source_list: str | Iterable[str],
+        table_name: str,
+        **kwargs: Any,
+    ) -> None:
+        import pyarrow.dataset as ds
+
+        dataset = ds.dataset(list(map(ds.dataset, source_list)), **kwargs)
+        self._load_extensions(["httpfs"])
+        # We don't create a view since DuckDB special cases Arrow Datasets
+        # so if we also create a view we end up with both a "lazy table"
+        # and a view with the same name
+        with self.begin() as con:
+            # DuckDB normally auto-detects Arrow Datasets that are defined
+            # in local variables but the `dataset` variable won't be local
+            # by the time we execute against this so we register it
+            # explicitly.
+            con.connection.register(table_name, dataset)
 
     def read_in_memory(
         self, dataframe: pd.DataFrame | pa.Table, table_name: str | None = None
