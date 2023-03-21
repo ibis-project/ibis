@@ -216,12 +216,12 @@ def _alias(t, op):
     return t.translate(op.arg)
 
 
-def _literal(_, op):
+def _literal(t, op):
     dtype = op.output_dtype
     value = op.value
 
     if value is None:
-        return sa.null()
+        return sa.cast(sa.null(), t.get_sqla_type(dtype))
 
     if dtype.is_set():
         return list(map(sa.literal, value))

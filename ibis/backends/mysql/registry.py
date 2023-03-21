@@ -81,20 +81,23 @@ def _interval_from_integer(t, op):
     return sa.text(f'INTERVAL {sa_arg} {text_unit}')
 
 
-def _literal(_, op):
-    if op.output_dtype.is_interval():
-        if op.output_dtype.unit in {'ms', 'ns'}:
+def _literal(t, op):
+    value = op.value
+    dtype = op.output_dtype
+
+    if value is None:
+        return sa.cast(sa.null(), t.get_sqla_type(dtype))
+    if dtype.is_interval():
+        if dtype.unit in {'ms', 'ns'}:
             raise com.UnsupportedOperationError(
-                'MySQL does not allow operation '
-                f'with INTERVAL offset {op.output_dtype.unit}'
+                f'MySQL does not allow operation with INTERVAL offset {dtype.unit}'
             )
-        text_unit = op.output_dtype.resolution.upper()
+        text_unit = dtype.resolution.upper()
         sa_text = sa.text(f'INTERVAL :value {text_unit}')
         return sa_text.bindparams(value=op.value)
-    elif op.output_dtype.is_set():
-        return list(map(sa.literal, op.value))
+    elif dtype.is_set():
+        return list(map(sa.literal, value))
     else:
-        value = op.value
         with contextlib.suppress(AttributeError):
             value = value.to_pydatetime()
 

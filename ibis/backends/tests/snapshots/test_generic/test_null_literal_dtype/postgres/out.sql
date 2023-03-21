@@ -1,0 +1,2 @@
+SELECT
+  CAST(NULL AS TEXT) IS NULL AS "IsNull(None)"

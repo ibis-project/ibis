@@ -1,0 +1,2 @@
+SELECT
+  CAST(NULL AS CHAR) IS NULL AS `IsNull(None)`

@@ -972,3 +972,16 @@ def test_pivot_longer(backend):
     )
     df = res.limit(5).execute()
     assert not df.empty
+
+
+@pytest.mark.never(
+    ["dask", "datafusion", "pandas", "polars"],
+    raises=NotImplementedError,
+    reason="not a SQL backend",
+)
+@pytest.mark.notimpl(["pyspark"], raises=ValueError, reason="not yet implemented")
+@pytest.mark.notimpl(["druid"], raises=ValueError, reason="not a valid sqlglot dialect")
+def test_null_literal_dtype(backend, snapshot):
+    expr = ibis.literal(None, type="string").isnull()
+    sql = str(ibis.to_sql(expr, dialect=backend.name()))
+    snapshot.assert_match(sql, "out.sql")

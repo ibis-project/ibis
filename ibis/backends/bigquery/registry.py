@@ -234,7 +234,7 @@ def _literal(translator, op):
     value = op.value
 
     if value is None:
-        return "NULL"
+        return f"CAST(NULL AS {ibis_type_to_bigquery_type(dtype)})"
 
     if dtype.is_decimal():
         if value.is_nan():

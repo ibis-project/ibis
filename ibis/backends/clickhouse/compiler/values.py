@@ -766,8 +766,8 @@ def _repeat(op, **kw):
 
 
 @translate_val.register(ops.NullLiteral)
-def _null_literal(_, **__):
-    return "Null"
+def _null_literal(op, **kw):
+    return f"CAST(Null AS {translate_val(op.output_dtype, **kw)})"
 
 
 @translate_val.register(ops.NullIfZero)

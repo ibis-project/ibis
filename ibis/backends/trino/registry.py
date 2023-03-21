@@ -34,7 +34,7 @@ def _literal(t, op):
     dtype = op.output_dtype
 
     if value is None:
-        return sa.null()
+        return sa.cast(sa.null(), t.get_sqla_type(dtype))
 
     if dtype.is_struct():
         return sa.cast(sa.func.row(*value.values()), t.get_sqla_type(dtype))

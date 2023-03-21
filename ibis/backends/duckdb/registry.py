@@ -107,7 +107,7 @@ def _literal(t, op):
     value = op.value
 
     if value is None:
-        return sa.null()
+        return sa.cast(sa.null(), t.get_sqla_type(dtype))
 
     sqla_type = t.get_sqla_type(dtype)
 

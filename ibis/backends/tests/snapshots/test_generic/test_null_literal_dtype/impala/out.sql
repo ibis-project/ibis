@@ -1,0 +1,2 @@
+SELECT
+  NULL IS NULL AS `IsNull(None)`
