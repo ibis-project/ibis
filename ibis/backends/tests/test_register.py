@@ -369,14 +369,15 @@ def test_csv_reregister_schema(con, tmp_path):
         "trino",
     ]
 )
-def test_register_garbage(con):
+def test_register_garbage(con, monkeypatch):
+    # monkeypatch to avoid downloading extensions in tests
+    monkeypatch.setattr(con, "_load_extensions", lambda x: True)
+
     sa = pytest.importorskip("sqlalchemy")
     with pytest.raises(
         sa.exc.OperationalError, match="No files found that match the pattern"
     ):
         con.read_csv("garbage_notafile")
 
-    with pytest.raises(
-        sa.exc.OperationalError, match="No files found that match the pattern"
-    ):
+    with pytest.raises(FileNotFoundError):
         con.read_parquet("garbage_notafile")

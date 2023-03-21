@@ -192,3 +192,20 @@ def test_set_temp_dir(tmp_path):
     path = tmp_path / "foo" / "bar"
     ibis.duckdb.connect(temp_directory=path)
     assert path.exists()
+
+
+def test_s3_403_fallback(httpserver, monkeypatch):
+    con = ibis.duckdb.connect()
+
+    # monkeypatch to avoid downloading extensions in tests
+    monkeypatch.setattr(con, "_load_extensions", lambda x: True)
+
+    # Throw a 403 to trigger fallback to pyarrow.dataset
+    httpserver.expect_request("/myfile").respond_with_data(
+        "Forbidden", status=403, content_type="text/plain"
+    )
+
+    # Since the URI is nonsense to pyarrow, expect an error, but raises from
+    # pyarrow, which indicates the fallback worked
+    with pytest.raises(pa.lib.ArrowInvalid):
+        con.read_parquet(httpserver.url_for("/myfile"))
