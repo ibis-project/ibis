@@ -135,8 +135,10 @@ class Backend(BaseAlchemyBackend):
         )
 
         @sa.event.listens_for(engine, "connect")
-        def set_time_zone(dbapi_connection, connection_record):
+        def configure_connection(dbapi_connection, connection_record):
             dbapi_connection.execute("SET TimeZone = 'UTC'")
+            # the progress bar causes kernel crashes in jupyterlab ¯\_(ツ)_/¯
+            dbapi_connection.execute("SET enable_progress_bar = false")
 
         super().do_connect(engine)
 
