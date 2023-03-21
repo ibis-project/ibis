@@ -1,15 +1,45 @@
+from operator import methodcaller
+
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis.udf.vectorized import analytic, reduction
 
-pytestmark = pytest.mark.notimpl(["druid"])
+pytestmark = pytest.mark.notimpl(
+    ["druid"],
+    raises=(
+        sa.exc.ProgrammingError,
+        sa.exc.NoSuchTableError,
+        com.OperationNotDefinedError,
+    ),
+)
+
+try:
+    from clickhouse_driver.dbapi.errors import (
+        OperationalError as ClickHouseOperationalError,
+    )
+except ImportError:
+    ClickHouseOperationalError = None
+
+
+try:
+    from pyspark.sql.utils import AnalysisException
+except ImportError:
+    AnalysisException = None
+
+
+try:
+    from impala.error import HiveServer2Error
+except ImportError:
+    HiveServer2Error = None
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -29,27 +59,38 @@ def calc_zscore(s):
             lambda t, win: t.float_col.lag().over(win),
             lambda t: t.float_col.shift(1),
             id='lag',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
             id='lead',
-            marks=pytest.mark.broken(
-                ["clickhouse"],
-                reason="upstream is broken; returns all nulls",
-            ),
+            marks=[
+                pytest.mark.broken(
+                    ["clickhouse"],
+                    reason="upstream is broken; returns all nulls",
+                    raises=AssertionError,
+                ),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method='min').astype('int64') - 1,
             id='rank',
-            marks=pytest.mark.min_server_version(clickhouse="22.8"),
+            marks=[
+                pytest.mark.min_server_version(clickhouse="22.8"),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method='dense').astype('int64') - 1,
             id='dense_rank',
-            marks=pytest.mark.min_server_version(clickhouse="22.8"),
+            marks=[
+                pytest.mark.min_server_version(clickhouse="22.8"),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -59,18 +100,23 @@ def calc_zscore(s):
                 )
             ).reset_index(drop=True, level=[0]),
             id='percent_rank',
-            marks=pytest.mark.notyet(
-                ["clickhouse"],
-                reason="clickhouse doesn't implement percent_rank",
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    reason="clickhouse doesn't implement percent_rank",
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t, win: t.id.cume_dist().over(win),
             lambda t: t.id.rank(method='min') / t.id.transform(len),
             id='cume_dist',
             marks=[
-                pytest.mark.notimpl(["pyspark"]),
-                pytest.mark.notyet(["clickhouse"]),
+                pytest.mark.notimpl(["pyspark"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(["clickhouse"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
             ],
         ),
         param(
@@ -83,11 +129,13 @@ def calc_zscore(s):
             lambda t, win: t.float_col.first().over(win),
             lambda t: t.float_col.transform('first'),
             id='first',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.last().over(win),
             lambda t: t.float_col.transform('last'),
             id='last',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.nth(3).over(win),
@@ -101,8 +149,11 @@ def calc_zscore(s):
             ),
             id="nth",
             marks=[
-                pytest.mark.notimpl(["pandas"]),
-                pytest.mark.notyet(["impala", "mssql"]),
+                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
+                pytest.mark.notyet(
+                    ["impala", "mssql"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
             ],
         ),
         param(
@@ -110,7 +161,8 @@ def calc_zscore(s):
             lambda t: t.cumcount(),
             id='row_number',
             marks=[
-                pytest.mark.notimpl(["pandas"]),
+                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.min_server_version(clickhouse="22.8"),
             ],
         ),
@@ -118,21 +170,25 @@ def calc_zscore(s):
             lambda t, win: t.double_col.cumsum().over(win),
             lambda t: t.double_col.cumsum(),
             id='cumsum',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.cummean().over(win),
             lambda t: (t.double_col.expanding().mean().reset_index(drop=True, level=0)),
             id='cummean',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.cummin().over(win),
             lambda t: t.float_col.cummin(),
             id='cummin',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.cummax().over(win),
             lambda t: t.float_col.cummax(),
             id='cummax',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: (t.double_col == 0).any().over(win),
@@ -143,6 +199,7 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumany',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -153,16 +210,22 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumnotany',
-            marks=pytest.mark.notyet(
-                (
-                    'impala',
-                    'mssql',
-                    'mysql',
-                    'sqlite',
-                    'snowflake',
+            marks=[
+                pytest.mark.notyet(
+                    ["sqlite"],
+                    reason="notany() over window not supported",
+                    raises=sa.exc.OperationalError,
                 ),
-                reason="notany() over window not supported",
-            ),
+                pytest.mark.notyet(
+                    ["impala"],
+                    reason="notany() over window not supported",
+                    raises=HiveServer2Error,
+                ),
+                pytest.mark.broken(
+                    ["mssql", "mysql", "snowflake"], raises=sa.exc.ProgrammingError
+                ),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -173,6 +236,7 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumall',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
@@ -183,21 +247,28 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumnotall',
-            marks=pytest.mark.notyet(
-                (
-                    'impala',
-                    'mssql',
-                    'mysql',
-                    'sqlite',
-                    'snowflake',
+            marks=[
+                pytest.mark.notyet(
+                    ["sqlite"],
+                    reason="notall() over window not supported",
+                    raises=sa.exc.OperationalError,
                 ),
-                reason="notall() over window not supported",
-            ),
+                pytest.mark.notyet(
+                    ["impala"],
+                    reason="notall() over window not supported",
+                    raises=HiveServer2Error,
+                ),
+                pytest.mark.broken(
+                    ["mssql", "mysql", "snowflake"], raises=sa.exc.ProgrammingError
+                ),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),
             lambda gb: gb.double_col.cumsum(),
             id='sum',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.mean().over(win),
@@ -205,16 +276,19 @@ def calc_zscore(s):
                 gb.double_col.expanding().mean().reset_index(drop=True, level=0)
             ),
             id='mean',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.min().over(win),
             lambda gb: gb.float_col.cummin(),
             id='min',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.max().over(win),
             lambda gb: gb.float_col.cummax(),
             id='max',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.count().over(win),
@@ -222,10 +296,11 @@ def calc_zscore(s):
             # that we must, so we add one to the pandas result
             lambda gb: gb.double_col.cumcount() + 1,
             id='count',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 def test_grouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -278,14 +353,16 @@ def test_grouped_bounded_expanding_window(
                         "sqlite",
                         "snowflake",
                         "trino",
-                    ]
+                    ],
+                    raises=com.OperationNotDefinedError,
                 )
             ],
         ),
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_ungrouped_bounded_expanding_window(
     backend, alltypes, df, result_fn, expected_fn
 ):
@@ -312,7 +389,9 @@ def test_ungrouped_bounded_expanding_window(
         (None, (0, 2)),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.notimpl(["pandas"], raises=AssertionError)
 def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
     window = ibis.window(
         preceding=preceding,
@@ -376,7 +455,8 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
         ),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
@@ -411,32 +491,39 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda gb: (gb.double_col.transform('mean')),
             id='mean_udf',
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "dask",
-                    "duckdb",
-                    "impala",
-                    "mssql",
-                    "mysql",
-                    "postgres",
-                    "sqlite",
-                    "snowflake",
-                    "trino",
-                ]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "postgres",
+                        "sqlite",
+                        "snowflake",
+                        "trino",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
     ],
 )
 @pytest.mark.parametrize(
     ('ordered'),
     [
-        param(True, id='ordered', marks=pytest.mark.notimpl(["dask"])),
+        param(
+            True,
+            id='ordered',
+            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+        ),
         param(False, id='unordered'),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 def test_grouped_unbounded_window(
     backend, alltypes, df, result_fn, expected_fn, ordered
 ):
@@ -468,23 +555,25 @@ def test_grouped_unbounded_window(
 
 
 @pytest.mark.parametrize(
-    ('ibis_fn', 'pandas_fn'),
+    ("ibis_method", "pandas_fn"),
     [
-        (lambda col: col.sum(), lambda s: s.cumsum()),
-        (lambda col: col.min(), lambda s: s.cummin()),
-        (lambda col: col.mean(), lambda s: s.expanding().mean()),
+        param(methodcaller("sum"), lambda s: s.cumsum(), id="sum"),
+        param(methodcaller("min"), lambda s: s.cummin(), id="min"),
+        param(methodcaller("mean"), lambda s: s.expanding().mean(), id="mean"),
     ],
 )
-@pytest.mark.broken(["mssql", "pandas", "snowflake"])
-@pytest.mark.notimpl(["datafusion", "polars", "dask"])
+@pytest.mark.broken(["snowflake"], raises=AssertionError)
+@pytest.mark.broken(["pandas", "mssql"], raises=AssertionError)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_simple_ungrouped_unbound_following_window(
-    backend, alltypes, ibis_fn, pandas_fn
+    backend, alltypes, ibis_method, pandas_fn
 ):
     t = alltypes[alltypes.double_col < 50].order_by('id')
     df = t.execute()
 
     w = ibis.window(rows=(0, None), order_by=t.id)
-    expr = ibis_fn(t.double_col).over(w).name('double_col')
+    expr = ibis_method(t.double_col).over(w).name('double_col')
     result = expr.execute()
     expected = pandas_fn(df.double_col[::-1])[::-1]
 
@@ -501,10 +590,16 @@ def test_simple_ungrouped_unbound_following_window(
             True,
             id='ordered-mean',
             marks=[
-                pytest.mark.notimpl(["dask", "pandas"]),
+                pytest.mark.broken(["pandas"], raises=AssertionError),
+                pytest.mark.notimpl(
+                    ["dask"],
+                    raises=NotImplementedError,
+                    reason='Window operations are unsupported in the dask backend',
+                ),
                 pytest.mark.broken(
-                    ["clickhouse", "bigquery", "impala"],
+                    ["bigquery", "clickhouse", "impala"],
                     reason="default window semantics are different",
+                    raises=AssertionError,
                 ),
             ],
         ),
@@ -519,42 +614,52 @@ def test_simple_ungrouped_unbound_following_window(
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             True,
             id='ordered-mean_udf',
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "dask",
-                    "duckdb",
-                    "impala",
-                    "mssql",
-                    "mysql",
-                    "pandas",
-                    "postgres",
-                    "sqlite",
-                    "snowflake",
-                    "trino",
-                ]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "postgres",
+                        "sqlite",
+                        "snowflake",
+                        "trino",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(["pandas"], raises=AssertionError),
+                pytest.mark.notimpl(
+                    ["dask"],
+                    raises=NotImplementedError,
+                    reason='Window operations are unsupported in the dask backend',
+                ),
+            ],
         ),
         param(
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             False,
             id='unordered-mean_udf',
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "duckdb",
-                    "impala",
-                    "mssql",
-                    "mysql",
-                    "postgres",
-                    "sqlite",
-                    "snowflake",
-                    "trino",
-                ]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "postgres",
+                        "sqlite",
+                        "snowflake",
+                        "trino",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
         ),
         # Analytic ops
         param(
@@ -563,7 +668,7 @@ def test_simple_ungrouped_unbound_following_window(
             True,
             id='ordered-lag',
             marks=[
-                pytest.mark.notimpl(["dask"]),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
             ],
         ),
         param(
@@ -573,22 +678,24 @@ def test_simple_ungrouped_unbound_following_window(
             id='unordered-lag',
             marks=[
                 pytest.mark.broken(
-                    ["bigquery"],
-                    reason=(
-                        "this isn't actually broken: the bigquery backend "
-                        "automatically inserts an order by"
-                    ),
-                ),
-                pytest.mark.broken(
-                    ["trino"],
+                    ["bigquery", "trino"],
                     reason=(
                         "this isn't actually broken: the trino backend "
                         "result is equal up to ordering"
                     ),
+                    raises=AssertionError,
                 ),
-                pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=AnalysisException,
+                    reason="pyspark requires ORDER BY",
+                ),
+                pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
-                    ["snowflake", "mssql"], reason="backend requires ordering"
+                    ["snowflake"],
+                    reason="backend requires ordering",
+                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -597,7 +704,10 @@ def test_simple_ungrouped_unbound_following_window(
             lambda df: df.float_col.shift(-1),
             True,
             id='ordered-lead',
-            marks=pytest.mark.notimpl(["dask", "clickhouse"]),
+            marks=[
+                pytest.mark.notimpl(["clickhouse"], raises=AssertionError),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -611,10 +721,19 @@ def test_simple_ungrouped_unbound_following_window(
                         "this isn't actually broken: the trino backend "
                         "result is equal up to ordering"
                     ),
+                    raises=AssertionError,
                 ),
-                pytest.mark.notimpl(["dask", "mysql", "pyspark"]),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["pyspark"],
+                    raises=AnalysisException,
+                    reason="pyspark requires ORDER BY",
+                ),
+                pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
-                    ["snowflake", "mssql"], reason="backend requires ordering"
+                    ["snowflake"],
+                    reason="backend requires ordering",
+                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -623,23 +742,30 @@ def test_simple_ungrouped_unbound_following_window(
             lambda df: df.double_col.transform(calc_zscore.func),
             True,
             id='ordered-zscore_udf',
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "dask",
-                    "duckdb",
-                    "impala",
-                    "mssql",
-                    "mysql",
-                    "pandas",
-                    "postgres",
-                    "pyspark",
-                    "sqlite",
-                    "snowflake",
-                    "trino",
-                ]
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "postgres",
+                        "pyspark",
+                        "sqlite",
+                        "snowflake",
+                        "trino",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(
+                    ["pandas"],
+                    raises=RuntimeWarning,
+                    reason='invalid value encountered in divide',
+                ),
+            ],
         ),
         param(
             lambda t, win: calc_zscore(t.double_col).over(win),
@@ -659,13 +785,14 @@ def test_simple_ungrouped_unbound_following_window(
                     "sqlite",
                     "snowflake",
                     "trino",
-                ]
+                ],
+                raises=com.OperationNotDefinedError,
             ),
         ),
     ],
 )
 # Some backends do not support non-grouped window specs
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 def test_ungrouped_unbounded_window(
     backend, alltypes, df, result_fn, expected_fn, ordered
 ):
@@ -691,14 +818,26 @@ def test_ungrouped_unbounded_window(
     backend.assert_series_equal(left, right)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "snowflake", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["snowflake"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(
+    ["impala"], raises=HiveServer2Error, reason="limited RANGE support"
+)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["pandas"],
+    raises=NotImplementedError,
+    reason="The pandas backend only implements range windows with temporal ordering keys",
+)
 @pytest.mark.notyet(
     ["clickhouse"],
     reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",
+    raises=ClickHouseOperationalError,
 )
 @pytest.mark.notyet(
     ["mssql"],
     reason="RANGE is only supported with UNBOUNDED and CURRENT ROW window frame delimiters",
+    raises=sa.exc.OperationalError,
 )
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
@@ -748,8 +887,16 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     backend.assert_series_equal(result.val, expected.val)
 
 
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pyspark", "polars"])
-@pytest.mark.notyet(["clickhouse"], reason="clickhouse doesn't implement percent_rank")
+@pytest.mark.notimpl(
+    ["clickhouse", "dask", "datafusion", "polars"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["pyspark"], raises=AnalysisException)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="clickhouse doesn't implement percent_rank",
+    raises=com.OperationNotDefinedError,
+)
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 
@@ -760,8 +907,11 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     backend.assert_series_equal(result.val, expected.val)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
-@pytest.mark.broken(["pandas"], reason="pandas returns incorrect results")
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.broken(
+    ["pandas"], reason="pandas returns incorrect results", raises=AssertionError
+)
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
     expr = (
@@ -795,8 +945,11 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
-@pytest.mark.broken(["clickhouse"], reason="clickhouse returns incorrect results")
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.broken(
+    ["clickhouse"], reason="clickhouse returns incorrect results", raises=AssertionError
+)
 def test_mutate_window_filter(backend, alltypes, df):
     t = alltypes
     win = ibis.window(order_by=[t.id])
@@ -811,8 +964,18 @@ def test_mutate_window_filter(backend, alltypes, df):
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "polars"])
-@pytest.mark.broken(["impala"], reason="the database returns incorrect results")
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=KeyError,
+    reason='KeyError: "Table with name win doesn\'t exist.',
+)
+@pytest.mark.broken(
+    ["impala"],
+    reason="the database returns incorrect results",
+    raises=AssertionError,
+)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 def test_first_last(backend):
     t = backend.win
     w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)
