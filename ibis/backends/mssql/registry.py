@@ -205,6 +205,8 @@ _invalid_operations = {
     ops.BitOr,
     ops.BitXor,
     ops.GroupConcat,
+    # ibis.expr.operations.window
+    ops.NthValue,
 }
 
 operation_registry = {
