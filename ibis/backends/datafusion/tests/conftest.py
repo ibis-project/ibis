@@ -7,6 +7,7 @@ import pytest
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.data import array_types, json_types, struct_types, win
 
 pa = pytest.importorskip("pyarrow")
 
@@ -26,7 +27,14 @@ class TestConf(BackendTest, RoundAwayFromZero):
         #   pyarrow.RecordBatch
         #   parquet file path
         #   csv file path
-        client = ibis.datafusion.connect({})
+        client = ibis.datafusion.connect(
+            {
+                "array_types": array_types,
+                "json_types": pa.Table.from_pandas(json_types),
+                "struct_types": pa.Table.from_pandas(struct_types).to_batches(),
+                "win": iter(pa.Table.from_pandas(win).to_batches()),
+            }
+        )
         client.register(
             data_directory / 'functional_alltypes.csv',
             table_name='functional_alltypes',
@@ -55,6 +63,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
             data_directory / 'awards_players.csv', table_name='awards_players'
         )
         client.register(data_directory / 'diamonds.csv', table_name='diamonds')
+
         return client
 
     @property

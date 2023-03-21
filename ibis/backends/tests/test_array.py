@@ -164,9 +164,7 @@ builtin_array = toolz.compose(
         raises=com.OperationNotDefinedError,
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(
-        ["datafusion", "dask"], raises=(com.OperationNotDefinedError, KeyError)
-    ),
+    pytest.mark.notimpl(["dask"], raises=(com.OperationNotDefinedError, KeyError)),
     duckdb_0_4_0,
 )
 
@@ -177,12 +175,17 @@ unnest = toolz.compose(
         reason="doesn't support unnest in SELECT position",
         raises=com.OperationNotDefinedError,
     ),
+    pytest.mark.notyet(
+        ["datafusion"],
+        reason="Not yet implemented",
+        raises=com.OperationNotDefinedError,
+    ),
 )
 
 
 @builtin_array
 @pytest.mark.never(
-    ["clickhouse", "duckdb", "pandas", "pyspark", "snowflake", "polars"],
+    ["clickhouse", "datafusion", "duckdb", "pandas", "pyspark", "snowflake", "polars"],
     reason="backend does not flatten array types",
     raises=AssertionError,
 )
@@ -218,7 +221,16 @@ def test_array_discovery_postgres(backend):
     raises=AssertionError,
 )
 @pytest.mark.never(
-    ["duckdb", "pandas", "postgres", "pyspark", "snowflake", "polars", "trino"],
+    [
+        "datafusion",
+        "duckdb",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "polars",
+        "trino",
+    ],
     reason="backend supports nullable nested types",
     raises=AssertionError,
 )
@@ -442,11 +454,9 @@ def test_unnest_default_name(backend):
         (-3, -1),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["dask", "datafusion", 'snowflake'],
-    raises=AttributeError,
-    reason="AttributeError: array_types",
+    ["dask", 'snowflake'], raises=AttributeError, reason="AttributeError: array_types"
 )
 def test_array_slice(con, start, stop):
     array_types = con.tables.array_types

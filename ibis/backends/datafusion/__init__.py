@@ -4,7 +4,7 @@ import itertools
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import pyarrow as pa
 
@@ -15,7 +15,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.datafusion.compiler import translate
-from ibis.util import normalize_filename
+from ibis.util import normalize_filename, promote_list
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -23,6 +23,9 @@ except ImportError:
     from datafusion import SessionContext
 
 import datafusion
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 # counters for in-memory, parquet, and csv reads
 # used if no table name is specified
@@ -42,7 +45,11 @@ class Backend(BaseBackend):
 
     def do_connect(
         self,
-        config: Mapping[str, str | Path] | SessionContext | None = None,
+        config: Mapping[
+            str, str | Path | pd.DataFrame | pa.Table | Iterable[pa.RecordBatch]
+        ]
+        | SessionContext
+        | None = None,
     ) -> None:
         """Create a Datafusion backend for use with Ibis.
 
@@ -64,8 +71,8 @@ class Backend(BaseBackend):
 
         config = config or {}
 
-        for name, path in config.items():
-            self.register(path, table_name=name)
+        for name, obj in config.items():
+            self.register(obj, table_name=name)
 
     def current_database(self) -> str:
         raise NotImplementedError()
@@ -107,23 +114,41 @@ class Backend(BaseBackend):
         return self.table_class(name, schema, self).to_expr()
 
     def register(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        source: str | Path | pd.DataFrame | pa.Table | Iterable[pa.RecordBatch],
+        table_name: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Register a CSV or Parquet file with `table_name` located at `source`.
 
         Parameters
         ----------
         source
-            The path to the file
+            The path to the file or in-memory object
         table_name
             The name of the table
         kwargs
             Datafusion-specific keyword arguments
         """
+        import pandas as pd
+
         if isinstance(source, (str, Path)):
             first = str(source)
         else:
-            raise ValueError("`source` must be either a string or a pathlib.Path")
+            if isinstance(source, pd.DataFrame):
+                batches = pa.Table.from_pandas(source).to_batches()
+            elif isinstance(source, pa.Table):
+                batches = source.to_batches()
+            elif isinstance(source, Iterable):
+                batches = promote_list(source)
+            else:
+                raise com.IbisError(
+                    f"Invalid DataFusion source object: {type(source)}, "
+                    "paths, DataFrames, Arrow tables and record batches are accepted"
+                )
+            self._context.deregister_table(table_name)
+            self._context.register_record_batches(table_name, [batches])
+            return self.table(table_name)
 
         if first.startswith(("parquet://", "parq://")) or first.endswith(
             ("parq", "parquet")
