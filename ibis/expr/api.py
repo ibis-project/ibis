@@ -347,7 +347,7 @@ def memtable(
     >>> import ibis
     >>> t = ibis.memtable([{"a": 1}, {"a": 2}])
     >>> t
-    PandasInMemoryTable
+    InMemoryTable
       data:
         DataFrameProxy:
              a
@@ -356,7 +356,7 @@ def memtable(
 
     >>> t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}])
     >>> t
-    PandasInMemoryTable
+    InMemoryTable
       data:
         DataFrameProxy:
              a    b
@@ -368,7 +368,7 @@ def memtable(
 
     >>> t = ibis.memtable([(1, "foo"), (2, "baz")], columns=["a", "b"])
     >>> t
-    PandasInMemoryTable
+    InMemoryTable
       data:
         DataFrameProxy:
              a    b
@@ -380,7 +380,7 @@ def memtable(
 
     >>> t = ibis.memtable([(1, "foo"), (2, "baz")])
     >>> t
-    PandasInMemoryTable
+    InMemoryTable
       data:
         DataFrameProxy:
              col0 col1
@@ -421,9 +421,9 @@ def _memtable_from_dataframe(
     name: str | None = None,
     schema: SupportsSchema | None = None,
 ) -> Table:
-    from ibis.backends.pandas.client import DataFrameProxy, PandasInMemoryTable
+    from ibis.backends.pandas.client import DataFrameProxy
 
-    op = PandasInMemoryTable(
+    op = ops.InMemoryTable(
         name=name if name is not None else util.generate_unique_table_name("memtable"),
         schema=sch.infer(df) if schema is None else schema,
         data=DataFrameProxy(df),
@@ -434,9 +434,9 @@ def _memtable_from_dataframe(
 def _memtable_from_pyarrow_table(
     data: pa.Table, *, name: str | None = None, schema: SupportsSchema | None = None
 ):
-    from ibis.backends.pyarrow import PyArrowInMemoryTable, PyArrowTableProxy
+    from ibis.backends.pyarrow import PyArrowTableProxy
 
-    return PyArrowInMemoryTable(
+    return ops.InMemoryTable(
         name=name if name is not None else util.generate_unique_table_name("memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PyArrowTableProxy(data),

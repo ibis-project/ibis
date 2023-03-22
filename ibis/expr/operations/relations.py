@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import abc
 import collections
 import itertools
 from abc import abstractmethod
+from typing import TYPE_CHECKING
 
 from public import public
 
@@ -14,10 +16,15 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
 from ibis.common.collections import frozendict
+from ibis.common.grounds import Immutable
 from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Named, Node, Value
 from ibis.expr.operations.generic import TableColumn
 from ibis.expr.operations.logical import Equals, ExistsSubquery, NotExistsSubquery
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import pyarrow as pa
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 
@@ -70,15 +77,34 @@ class SQLQueryResult(TableNode):
     source = rlz.client
 
 
+class TableProxy(Immutable):
+    __slots__ = ('_data', '_hash')
+
+    def __init__(self, data) -> None:
+        object.__setattr__(self, "_data", data)
+        object.__setattr__(self, "_hash", hash((type(data), id(data))))
+
+    def __hash__(self) -> int:
+        return self._hash
+
+    def __repr__(self) -> str:
+        data_repr = util.indent(repr(self._data), spaces=2)
+        return f"{self.__class__.__name__}:\n{data_repr}"
+
+    @abc.abstractmethod
+    def to_frame(self) -> pd.DataFrame:  # pragma: no cover
+        """Convert this input to a pandas DataFrame."""
+
+    @abc.abstractmethod
+    def to_pyarrow(self, schema: sch.Schema) -> pa.Table:  # pragma: no cover
+        """Convert this input to a PyArrow Table."""
+
+
 @public
 class InMemoryTable(PhysicalTable):
     name = rlz.instance_of(str)
     schema = rlz.instance_of(sch.Schema)
-
-    @property
-    @abstractmethod
-    def data(self) -> util.ToFrame:
-        """Return the data of an in-memory table."""
+    data = rlz.instance_of(TableProxy)
 
 
 # TODO(kszucs): desperately need to clean this up, the majority of this

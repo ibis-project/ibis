@@ -15,11 +15,10 @@ from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base import Database
-from ibis.common.grounds import Immutable
+from ibis.expr.operations.relations import TableProxy
 
 _ibis_dtypes = toolz.valmap(
     np.dtype,
@@ -211,33 +210,18 @@ def convert_json_to_series(in_, out, col: pd.Series):
     return pd.Series(list(map(try_json, col)), dtype="object")
 
 
-class DataFrameProxy(Immutable, util.ToFrame):
-    __slots__ = ('_df', '_hash')
-
-    def __init__(self, df: pd.DataFrame) -> None:
-        object.__setattr__(self, "_df", df)
-        object.__setattr__(self, "_hash", hash((type(df), id(df))))
-
-    def __hash__(self) -> int:
-        return self._hash
-
-    def __repr__(self) -> str:
-        df_repr = util.indent(repr(self._df), spaces=2)
-        return f"{self.__class__.__name__}:\n{df_repr}"
+class DataFrameProxy(TableProxy):
+    __slots__ = ()
 
     def to_frame(self) -> pd.DataFrame:
-        return self._df
+        return self._data
 
     def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
         import pyarrow as pa
 
         from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_schema
 
-        return pa.Table.from_pandas(self._df, schema=ibis_to_pyarrow_schema(schema))
-
-
-class PandasInMemoryTable(ops.InMemoryTable):
-    data = rlz.instance_of(DataFrameProxy)
+        return pa.Table.from_pandas(self._data, schema=ibis_to_pyarrow_schema(schema))
 
 
 class PandasTable(ops.DatabaseTable):
