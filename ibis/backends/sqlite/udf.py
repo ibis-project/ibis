@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import functools
 import inspect
 import math
@@ -348,6 +349,32 @@ class _ibis_sqlite_bit_and(_ibis_sqlite_bit_agg):
 class _ibis_sqlite_bit_xor(_ibis_sqlite_bit_agg):
     def __init__(self):
         super().__init__(operator.xor)
+
+
+class _ibis_sqlite_arbitrary(abc.ABC):
+    def __init__(self) -> None:
+        self.value = None
+
+    @abc.abstractmethod
+    def step(self, value):
+        ...
+
+    def finalize(self) -> int | None:
+        return self.value
+
+
+@udaf
+class _ibis_sqlite_arbitrary_first(_ibis_sqlite_arbitrary):
+    def step(self, value):
+        if self.value is None:
+            self.value = value
+
+
+@udaf
+class _ibis_sqlite_arbitrary_last(_ibis_sqlite_arbitrary):
+    def step(self, value):
+        if value is not None:
+            self.value = value
 
 
 def _number_of_arguments(callable):
