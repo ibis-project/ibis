@@ -19,6 +19,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, connect
+from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
 from ibis.expr import selectors
 from ibis.expr.decompile import decompile
@@ -312,7 +313,17 @@ def table(
     return ops.UnboundTable(schema=schema, name=name).to_expr()
 
 
-@functools.singledispatch
+@lazy_singledispatch
+def _memtable(
+    data,
+    *,
+    columns: Iterable[str] | None = None,
+    schema: SupportsSchema | None = None,
+    name: str | None = None,
+):
+    raise NotImplementedError(type(data))
+
+
 def memtable(
     data,
     *,
@@ -387,21 +398,51 @@ def memtable(
           0     1  foo
           1     2  baz
     """
-    import pandas as pd
-
     if columns is not None and schema is not None:
         raise NotImplementedError(
             "passing `columns` and schema` is ambiguous; "
             "pass one or the other but not both"
         )
+    return _memtable(data, name=name, schema=schema, columns=columns)
 
-    try:
-        import pyarrow as pa
-    except ImportError:
-        pass
-    else:
-        if isinstance(data, pa.Table):
-            return _memtable_from_pyarrow_table(data, name=name, schema=schema)
+
+@_memtable.register("pyarrow.Table")
+def _memtable_from_pyarrow_table(
+    data: pa.Table,
+    *,
+    name: str | None = None,
+    schema: SupportsSchema | None = None,
+    columns: Iterable[str] | None = None,
+):
+    from ibis.backends.pyarrow import PyArrowTableProxy
+
+    if columns is not None:
+        assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
+        schema = sch.Schema(
+            {col: typ for col, typ in zip(columns, sch.infer(data).values())}
+        )
+    return ops.InMemoryTable(
+        name=(
+            name
+            if name is not None
+            else util.generate_unique_table_name("pyarrow_memtable")
+        ),
+        schema=sch.infer(data) if schema is None else schema,
+        data=PyArrowTableProxy(data),
+    ).to_expr()
+
+
+@_memtable.register(object)
+def _memtable_from_dataframe(
+    data: pd.DataFrame | Any,
+    *,
+    name: str | None = None,
+    schema: SupportsSchema | None = None,
+    columns: Iterable[str] | None = None,
+) -> Table:
+    import pandas as pd
+
+    from ibis.backends.pandas.client import DataFrameProxy
 
     df = pd.DataFrame(data, columns=columns)
     if df.columns.inferred_type != "string":
@@ -412,35 +453,16 @@ def memtable(
             (f"col{i:d}" for i in range(len(cols))),
         )
         df = df.rename(columns=dict(zip(cols, newcols)))
-    return _memtable_from_dataframe(df, name=name, schema=schema)
-
-
-def _memtable_from_dataframe(
-    df: pd.DataFrame,
-    *,
-    name: str | None = None,
-    schema: SupportsSchema | None = None,
-) -> Table:
-    from ibis.backends.pandas.client import DataFrameProxy
-
     op = ops.InMemoryTable(
-        name=name if name is not None else util.generate_unique_table_name("memtable"),
+        name=(
+            name
+            if name is not None
+            else util.generate_unique_table_name("pandas_memtable")
+        ),
         schema=sch.infer(df) if schema is None else schema,
         data=DataFrameProxy(df),
     )
     return op.to_expr()
-
-
-def _memtable_from_pyarrow_table(
-    data: pa.Table, *, name: str | None = None, schema: SupportsSchema | None = None
-):
-    from ibis.backends.pyarrow import PyArrowTableProxy
-
-    return ops.InMemoryTable(
-        name=name if name is not None else util.generate_unique_table_name("memtable"),
-        schema=sch.infer(data) if schema is None else schema,
-        data=PyArrowTableProxy(data),
-    ).to_expr()
 
 
 def _deferred_method_call(expr, method_name):
