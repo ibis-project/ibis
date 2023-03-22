@@ -157,7 +157,6 @@ def test_empty_set_op(alltypes, method, source):
     ],
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["dask"], raises=AssertionError, reason="results are incorrect")
 def test_top_level_union(backend, con, alltypes, distinct):
     t1 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 10).distinct()
     t2 = alltypes.select(a="bigint_col").filter(lambda t: t.a == 20).distinct()

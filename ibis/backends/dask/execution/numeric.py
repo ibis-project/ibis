@@ -125,7 +125,9 @@ def execute_series_quantile(op, data, quantile, _, mask, **kwargs):
     ops.Quantile, ddgb.SeriesGroupBy, numeric_types, type(None), type(None)
 )
 def execute_series_quantile_group_by(op, data, quantile, *_, **kwargs):
-    return data.quantile(q=quantile)
+    raise NotImplementedError(
+        "Quantile not implemented for Dask SeriesGroupBy, Dask #9824"
+    )
 
 
 @execute_node.register(

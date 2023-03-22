@@ -120,6 +120,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.df.scope import Scope
 from ibis.backends.base.df.timecontext import TimeContext, canonicalize_context
+from ibis.backends.dask import aggcontext as agg_ctx
 from ibis.backends.dask.dispatch import (
     execute_literal,
     execute_node,
@@ -127,7 +128,6 @@ from ibis.backends.dask.dispatch import (
     pre_execute,
 )
 from ibis.backends.dask.trace import trace
-from ibis.backends.pandas import aggcontext as agg_ctx
 from ibis.backends.pandas.core import (
     compute_time_context,
     get_node_arguments,
@@ -320,7 +320,6 @@ def execute_until_in_scope(
         new_scope.get_value(arg, timecontext) if isinstance(arg, ops.Node) else arg
         for (arg, timecontext) in zip(computable_args, arg_timecontexts)
     ]
-
     result = execute_node(
         node,
         *data,

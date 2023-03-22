@@ -1754,7 +1754,6 @@ def test_now(con):
     assert result_strftime == expected_strftime
 
 
-@pytest.mark.notimpl(["dask"], reason="Limit #2553", raises=AssertionError)
 @pytest.mark.notimpl(["polars"], reason="assert 1 == 5", raises=AssertionError)
 @pytest.mark.notimpl(
     ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError

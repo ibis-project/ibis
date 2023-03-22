@@ -93,13 +93,15 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
     expr = left.join(right, [left.key == right.key, left.key2 == right.key3], how=how)[
         left, right.key3, right.other_value
     ]
-    result = expr.compile()
-    expected = dd.merge(
-        df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
-    ).reset_index(drop=True)
+    result = expr.execute()
+    expected = (
+        dd.merge(df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3'])
+        .compute(scheduler='single-threaded')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler='single-threaded'),
-        expected.compute(scheduler='single-threaded'),
+        result[expected.columns],
+        expected,
     )
 
 
@@ -107,13 +109,15 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
 def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2):
     predicate = (left.key == right.key) & (left.key2 == right.key3)
     expr = left.join(right, predicate, how=how)[left, right.key3, right.other_value]
-    result = expr.compile()
-    expected = dd.merge(
-        df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
-    ).reset_index(drop=True)
+    result = expr.execute()
+    expected = (
+        dd.merge(df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3'])
+        .compute(scheduler='single-threaded')
+        .reset_index(drop=True)
+    )
     tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler='single-threaded'),
-        expected.compute(scheduler='single-threaded'),
+        result[expected.columns],
+        expected,
     )
 
 
@@ -294,10 +298,6 @@ def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     )
 
 
-@pytest.mark.xfail(
-    raises=NotImplementedError,
-    reason="multi-key sort isn't implemented",
-)
 def test_join_with_window_function(players_base, players_df, batting, batting_df):
     players = players_base
 
@@ -308,7 +308,7 @@ def test_join_with_window_function(players_base, players_df, batting, batting_df
         team_avg=lambda d: d.G.mean(),
         demeaned_by_player=lambda d: d.G - d.G.mean(),
     )
-    result = expr.compile()
+    result = expr.execute()
 
     expected = dd.merge(
         batting_df, players_df[['playerID']], on='playerID', how='left'
@@ -319,7 +319,7 @@ def test_join_with_window_function(players_base, players_df, batting, batting_df
     )
 
     tm.assert_frame_equal(
-        result[expected.columns].compute(scheduler='single-threaded'),
+        result[expected.columns],
         expected.compute(scheduler='single-threaded'),
     )
 

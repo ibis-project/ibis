@@ -805,6 +805,7 @@ def test_reduction_ops(
     expr = alltypes.agg(tmp=result_fn(alltypes, ibis_cond(alltypes))).tmp
     result = expr.execute().squeeze()
     expected = expected_fn(df, pandas_cond(df))
+
     try:
         np.testing.assert_allclose(result, expected, rtol=backend.reduction_tolerance)
     except TypeError:  # assert_allclose only handles numerics
@@ -834,10 +835,10 @@ def test_reduction_ops(
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                mark.broken(
+                mark.never(
                     ["dask"],
+                    reason="backend implements approximate quantiles",
                     raises=AssertionError,
-                    reason="assert 50.5 ± 5.1e-05 == 45.45",
                 ),
                 mark.never(
                     ["trino"],

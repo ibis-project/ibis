@@ -12,12 +12,14 @@ import pandas as pd
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
+from ibis.backends.dask.aggcontext import Transform
 from ibis.backends.dask.dispatch import execute_node, pre_execute
 from ibis.backends.dask.execution.util import (
     assert_identical_grouping_keys,
     make_meta_series,
     make_selected_obj,
 )
+from ibis.backends.pandas.udf import create_gens_from_args_groupby
 
 
 def make_struct_op_meta(op: ir.Expr) -> list[tuple[str, np.dtype]]:
@@ -176,37 +178,58 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         groupings = args[0].index
         parent_df = args[0].obj
 
-        columns = [parent_df[idx] for idx in args[0].index]
-        for arg in args:
-            df = arg.obj
-            column = df[arg._meta.obj.name]
-            columns.append(column)
-        parent_df = dd.concat(columns, axis=1)
+        if isinstance(aggcontext, Transform):
+            # We are aggregating over an unbounded (and GROUPED) window,
+            # which uses a Transform aggregation context.
+            # We need to do some pre-processing to func and args so that
+            # Transform can pull data out of the SeriesGroupBys in args.
 
-        out_type = op.return_type.to_pandas()
+            # Construct a generator that yields the next group of data
+            # for every argument excluding the first (pandas performs
+            # the iteration for the first argument) for each argument
+            # that is a SeriesGroupBy.
+            iters = create_gens_from_args_groupby(*args[1:])
 
-        grouped_df = parent_df.groupby(groupings)
-        col_names = [col._meta._selected_obj.name for col in args]
+            # TODO: Unify calling convension here to be more like
+            # window
+            def aggregator(first, *rest):
+                # map(next, *rest) gets the inputs for the next group
+                # TODO: might be inefficient to do this on every call
+                return func(first, *map(next, rest))
 
-        def apply_wrapper(df, apply_func, col_names):
-            cols = (df[col] for col in col_names)
-            return apply_func(*cols)
-
-        if len(groupings) > 1:
-            meta_index = pd.MultiIndex.from_arrays(
-                [[0]] * len(groupings), names=groupings
-            )
-            meta_value = [dd.utils.make_meta(out_type)]
+            return aggcontext.agg(args[0], aggregator, *iters)
         else:
-            meta_index = pd.Index([], name=groupings[0])
-            meta_value = []
+            columns = [parent_df[idx] for idx in args[0].index]
+            for arg in args:
+                df = arg.obj
+                column = df[arg._meta.obj.name]
+                columns.append(column)
+            parent_df = dd.concat(columns, axis=1)
 
-        return grouped_df.apply(
-            apply_wrapper,
-            func,
-            col_names,
-            meta=pd.Series(meta_value, index=meta_index, dtype=out_type),
-        )
+            out_type = op.return_type.to_pandas()
+
+            grouped_df = parent_df.groupby(groupings)
+            col_names = [col._meta._selected_obj.name for col in args]
+
+            def apply_wrapper(df, apply_func, col_names):
+                cols = (df[col] for col in col_names)
+                return apply_func(*cols)
+
+            if len(groupings) > 1:
+                meta_index = pd.MultiIndex.from_arrays(
+                    [[0]] * len(groupings), names=groupings
+                )
+                meta_value = [dd.utils.make_meta(out_type)]
+            else:
+                meta_index = pd.Index([], name=groupings[0])
+                meta_value = []
+
+            return grouped_df.apply(
+                apply_wrapper,
+                func,
+                col_names,
+                meta=pd.Series(meta_value, index=meta_index, dtype=out_type),
+            )
 
     @execute_node.register(
         ops.AnalyticVectorizedUDF,
