@@ -199,6 +199,15 @@ def _literal(t, op):
     return base_literal(t, op)
 
 
+def _arbitrary(t, op):
+    if (how := op.how) == "heavy":
+        raise com.OperationNotDefinedError(
+            "how='heavy' not implemented for the SQLite backend"
+        )
+
+    return reduction(getattr(sa.func, f"_ibis_sqlite_arbitrary_{how}"))(t, op)
+
+
 operation_registry.update(
     {
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
@@ -322,5 +331,6 @@ operation_registry.update(
         ops.RandomScalar: fixed_arity(
             lambda: 0.5 + sa.func.random() / sa.cast(-1 << 64, sa.REAL), 0
         ),
+        ops.Arbitrary: _arbitrary,
     }
 )

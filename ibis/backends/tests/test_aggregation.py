@@ -554,7 +554,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 [
                     'impala',
                     'mysql',
-                    'sqlite',
                     'polars',
                     'datafusion',
                     "mssql",
@@ -571,7 +570,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 [
                     'impala',
                     'mysql',
-                    'sqlite',
                     'polars',
                     'datafusion',
                     "mssql",
@@ -589,7 +587,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     [
                         'impala',
                         'mysql',
-                        'sqlite',
                         'polars',
                         'datafusion',
                         "mssql",
