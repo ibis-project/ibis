@@ -220,7 +220,7 @@ def test_create_drop_view(ddl_con, temp_view):
     table_name = 'functional_alltypes'
     try:
         expr = ddl_con.table(table_name)
-    except KeyError:
+    except (KeyError, sa.exc.NoSuchTableError):
         table_name = table_name.upper()
         expr = ddl_con.table(table_name)
 
