@@ -126,6 +126,10 @@ class Backend(BaseSQLBackend):
         session = builder.getOrCreate()
         return self.connect(session)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._cached_dataframes = {}
+
     def do_connect(self, session: SparkSession) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 
@@ -554,3 +558,19 @@ class Backend(BaseSQLBackend):
 
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in PySparkExprTranslator._registry
+
+    def _load_into_cache(self, name, expr):
+        t = expr.compile().cache()
+        assert t.is_cached
+        t.createOrReplaceTempView(name)
+        # store the underlying spark dataframe so we can release memory when
+        # asked to, instead of when the session ends
+        self._cached_dataframes[name] = t
+
+    def _clean_up_cached_table(self, op):
+        name = op.name
+        self._session.catalog.dropTempView(name)
+        t = self._cached_dataframes.pop(name)
+        assert t.is_cached
+        t.unpersist()
+        assert not t.is_cached
