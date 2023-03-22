@@ -18,9 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import interval
 from ibis.backends.base.df.timecontext import adjust_context
-from ibis.backends.pandas.client import PandasInMemoryTable
 from ibis.backends.pandas.execution import execute
-from ibis.backends.pyarrow import PyArrowInMemoryTable
 from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.backends.pyspark.timecontext import (
     combine_time_context,
@@ -1863,8 +1861,7 @@ def compile_random(*args, **kwargs):
     return F.rand()
 
 
-@compiles(PandasInMemoryTable)
-@compiles(PyArrowInMemoryTable)
+@compiles(ops.InMemoryTable)
 def compile_in_memory_table(t, op, session, **kwargs):
     fields = [
         pt.StructField(name, spark_dtype(dtype), dtype.nullable)

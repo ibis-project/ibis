@@ -476,7 +476,7 @@ def test_array_slice(con, start, stop):
     ["dask", "pandas"],
     raises=com.UnboundExpressionError,
     reason=(
-        "Node of type 'PandasInMemoryTable' has no data bound to it. "
+        "Node of type 'InMemoryTable' has no data bound to it. "
         "You probably tried to execute an expression without a data source."
     ),
 )
@@ -512,7 +512,7 @@ def test_array_map(backend, con):
     ["dask", "pandas"],
     raises=com.UnboundExpressionError,
     reason=(
-        "Node of type 'PandasInMemoryTable' has no data bound to it. "
+        "Node of type 'InMemoryTable' has no data bound to it. "
         "You probably tried to execute an expression without a data source."
     ),
 )

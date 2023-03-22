@@ -1,7 +1,6 @@
 """Ibis utility functions."""
 from __future__ import annotations
 
-import abc
 import collections
 import functools
 import importlib.metadata
@@ -32,11 +31,7 @@ import toolz
 if TYPE_CHECKING:
     from pathlib import Path
 
-    import pandas as pd
-    import pyarrow as pa
-
     import ibis.expr.operations as ops
-    import ibis.expr.schema as sch
 
     Graph = Mapping[ops.Node, Sequence[ops.Node]]
 
@@ -482,23 +477,6 @@ def experimental(func):
         func, msg="This API is experimental and subject to change."
     )
     return func
-
-
-class ToFrame(abc.ABC):
-    """Interface for in-memory objects that can be converted to an in-memory structure.
-
-    Supports pandas DataFrames and PyArrow Tables.
-    """
-
-    __slots__ = ()
-
-    @abc.abstractmethod
-    def to_frame(self) -> pd.DataFrame:  # pragma: no cover
-        """Convert this input to a pandas DataFrame."""
-
-    @abc.abstractmethod
-    def to_pyarrow(self, schema: sch.Schema) -> pa.Table:  # pragma: no cover
-        """Convert this input to a PyArrow Table."""
 
 
 def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
