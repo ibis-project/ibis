@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import dask
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -13,6 +14,12 @@ from ibis.backends.tests.data import array_types, win
 
 dd = pytest.importorskip("dask.dataframe")
 
+# FIXME Dask issue with non deterministic groupby results, relates to the
+# shuffle method on a local cluster. Manually setting the shuffle method
+# avoids the issue https://github.com/dask/dask/issues/10034.
+dask.config.set({"dataframe.shuffle.method": "tasks"})
+
+# It's necessary that NPARTITIONS > 1 in order to test cross partitioning bugs.
 NPARTITIONS = 2
 
 

@@ -1,10 +1,8 @@
 import pytest
 
-pytest.importorskip("dask.dataframe")
+from ibis.backends.dask.execution.util import assert_identical_grouping_keys
 
-from ibis.backends.dask.execution.util import (  # noqa: E402
-    assert_identical_grouping_keys,
-)
+pytest.importorskip("dask.dataframe")
 
 
 @pytest.mark.parametrize(

@@ -1410,11 +1410,6 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     raises=sa.exc.ProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
 )
-@pytest.mark.broken(
-    ["dask"],
-    raises=pd.errors.IntCastingNaNError,
-    reason="Cannot convert non-finite values (NA or inf) to integer",
-)
 def test_histogram(con, alltypes):
     n = 10
     results = con.execute(alltypes.int_col.histogram(n).name("tmp"))

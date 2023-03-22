@@ -64,6 +64,11 @@ def df(npartitions):
 @pytest.fixture(scope='module')
 def batting_df(data_directory):
     df = dd.read_parquet(data_directory / 'parquet' / 'batting.parquet')
+    # Dask dataframe thinks the columns are of type int64,
+    # but when computed they are all float64.
+    non_float_cols = ['playerID', 'yearID', 'stint', 'teamID', 'lgID', 'G']
+    float_cols = [c for c in df.columns if c not in non_float_cols]
+    df = df.astype({col: 'float64' for col in float_cols})
     return df.sample(frac=0.01).reset_index(drop=True)
 
 
@@ -270,7 +275,14 @@ def sel_cols(batting):
 
 @pytest.fixture(scope='module')
 def players_base(batting, sel_cols):
-    return batting[sel_cols].order_by(sel_cols[:3])
+    # TODO Dask doesn't support order_by and group_by yet
+    # Adding an order by would cause all groupby tests to fail.
+    return batting[sel_cols]  # .order_by(sel_cols[:3])
+
+
+@pytest.fixture(scope='module')
+def players(players_base):
+    return players_base.group_by('playerID')
 
 
 @pytest.fixture(scope='module')

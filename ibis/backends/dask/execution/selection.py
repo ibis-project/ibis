@@ -16,10 +16,11 @@ from ibis.backends.base.df.timecontext import TimeContext
 from ibis.backends.dask.core import execute
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import (
-    add_partitioned_sorted_column,
+    add_globally_consecutive_column,
     coerce_to_output,
     compute_sorted_frame,
     is_row_order_preserving,
+    rename_index,
 )
 from ibis.backends.pandas.execution.selection import (
     build_df_from_selection,
@@ -110,7 +111,6 @@ def compute_projection(
                 )
                 for t in an.find_immediate_parent_tables(node)
             )
-
             result = execute(node, scope=scope, timecontext=timecontext, **kwargs)
             return coerce_to_output(result, node, data.index)
     else:
@@ -137,10 +137,15 @@ def build_df_from_projection(
     # Slow path when we cannot do direct assigns
     # Create a unique row identifier and set it as the index. This is
     # used in dd.concat to merge the pieces back together.
-    data = add_partitioned_sorted_column(data)
-    data_pieces = [compute_projection(node, op, data, **kwargs) for node in selections]
-
-    return dd.concat(data_pieces, axis=1).reset_index(drop=True)
+    partitioned_data = add_globally_consecutive_column(data)
+    data_pieces = [
+        compute_projection(node, op, partitioned_data, **kwargs) for node in selections
+    ]
+    result = dd.concat(data_pieces, axis=1)
+    # _ibis_index was added and used to concat data_pieces together.
+    # Drop the index name here but keep the index as the dataframe is
+    # already partitioned on it.
+    return rename_index(result, None)
 
 
 @execute_node.register(ops.Selection, dd.DataFrame)
@@ -174,7 +179,6 @@ def execute_selection_dataframe(
                 timecontext=timecontext,
                 **kwargs,
             )
-
     if op.sort_keys:
         if len(op.sort_keys) > 1:
             raise NotImplementedError(
@@ -187,13 +191,14 @@ def execute_selection_dataframe(
             raise NotImplementedError(
                 "Descending sort is not supported for the Dask backend"
             )
-        result = compute_sorted_frame(
-            result,
-            order_by=sort_key,
+        result, _, _ = compute_sorted_frame(
+            df=result,
+            order_by=[sort_key],
             scope=scope,
             timecontext=timecontext,
             **kwargs,
         )
+        result = add_globally_consecutive_column(result, col_name='_ibis_sort_index')
 
         return result
     else:
