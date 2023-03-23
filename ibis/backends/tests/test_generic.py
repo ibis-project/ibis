@@ -1125,6 +1125,11 @@ def test_distinct_on_keep(backend, on, keep):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
+@pytest.mark.notimpl(
+    ["pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason="backend doesn't support `having` filters",
+)
 def test_distinct_on_keep_is_none(backend, on):
     from ibis import _
 

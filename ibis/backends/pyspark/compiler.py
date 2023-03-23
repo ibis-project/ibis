@@ -388,6 +388,13 @@ def compile_literal(t, op, *, raw=False, **kwargs):
 def compile_aggregation(t, op, **kwargs):
     src_table = t.translate(op.table, **kwargs)
 
+    if op.having:
+        raise com.UnsupportedOperationError(
+            "The PySpark backend does not support `having` because the underlying "
+            "PySpark API does not support it. Use a filter on the aggregation "
+            "expression instead."
+        )
+
     if op.predicates:
         predicate = functools.reduce(ops.And, op.predicates)
         src_table = src_table.filter(t.translate(predicate, **kwargs))
