@@ -49,9 +49,11 @@ def _column(op, *, aliases, **_):
 
 
 @translate_val.register(ops.Alias)
-def _alias(op, **kw):
-    val = translate_val(op.arg, **kw)
-    return sg.alias(val, op.name, dialect="clickhouse")
+def _alias(op, render_aliases: bool = True, **kw):
+    val = translate_val(op.arg, render_aliases=render_aliases, **kw)
+    if render_aliases:
+        return sg.alias(val, op.name, dialect="clickhouse")
+    return val
 
 
 _interval_cast_suffixes = {
