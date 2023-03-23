@@ -6,6 +6,7 @@ import ast
 import itertools
 import os
 import warnings
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
@@ -143,16 +144,32 @@ class Backend(BaseAlchemyBackend):
         super().do_connect(engine)
 
         self._meta = sa.MetaData()
-        self._extensions = set()
 
     def _load_extensions(self, extensions):
-        for extension in extensions:
-            if extension not in self._extensions:
-                with self.begin() as con:
-                    c = con.connection
-                    c.install_extension(extension)
-                    c.load_extension(extension)
-                self._extensions.add(extension)
+        extension_name = sa.column("extension_name")
+        loaded = sa.column("loaded")
+        installed = sa.column("installed")
+        aliases = sa.column("aliases")
+        query = (
+            sa.select(extension_name)
+            .select_from(sa.func.duckdb_extensions())
+            .where(
+                sa.and_(
+                    # extension isn't loaded or isn't installed
+                    sa.not_(loaded & installed),
+                    # extension is one that we're requesting, or an alias of it
+                    sa.or_(
+                        extension_name.in_(extensions),
+                        *map(partial(sa.func.array_has, aliases), extensions),
+                    ),
+                )
+            )
+        )
+        with self.begin() as con:
+            c = con.connection
+            for extension in con.execute(query).scalars():
+                c.install_extension(extension)
+                c.load_extension(extension)
 
     def register(
         self,
