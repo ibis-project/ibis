@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -13,6 +14,7 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.base.df.scope import Scope
 from ibis.backends.base.df.timecontext import canonicalize_context, localize_context
 from ibis.backends.base.sql import BaseSQLBackend
@@ -36,6 +38,16 @@ _read_csv_defaults = {
     'mode': 'FAILFAST',
     'escape': '"',
 }
+
+pa_n = itertools.count(0)
+csv_n = itertools.count(0)
+
+
+def normalize_filenames(source_list):
+    # Promote to list
+    source_list = util.promote_list(source_list)
+
+    return list(map(util.normalize_filename, source_list))
 
 
 class _PySparkCursor:
@@ -574,3 +586,121 @@ class Backend(BaseSQLBackend):
         assert t.is_cached
         t.unpersist()
         assert not t.is_cached
+
+    def read_parquet(
+        self,
+        source: str | Path,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source. May be a path to a file or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.parquet.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source = util.normalize_filename(source)
+        spark_df = self._session.read.parquet(source, **kwargs)
+        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def read_csv(
+        self,
+        source_list: str | list[str] | tuple[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current database.
+
+        Parameters
+        ----------
+        source_list
+            The data source(s). May be a path to a file or directory of CSV files, or an
+            iterable of CSV files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.csv.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source_list = normalize_filenames(source_list)
+        spark_df = self._session.read.csv(source_list, **kwargs)
+        table_name = table_name or f"ibis_read_csv_{next(csv_n)}"
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def register(
+        self,
+        source: str | Path | Any,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a data source as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source(s). May be a path to a file or directory of
+            parquet/csv files, or an iterable of CSV files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to PySpark loading functions for
+            CSV or parquet.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+
+        if isinstance(source, (str, Path)):
+            first = str(source)
+        elif isinstance(source, (list, tuple)):
+            first = source[0]
+        else:
+            self._register_failure()
+
+        if first.startswith(("parquet://", "parq://")) or first.endswith(
+            ("parq", "parquet")
+        ):
+            return self.read_parquet(source, table_name=table_name, **kwargs)
+        elif first.startswith(
+            ("csv://", "csv.gz://", "txt://", "txt.gz://")
+        ) or first.endswith(("csv", "csv.gz", "tsv", "tsv.gz", "txt", "txt.gz")):
+            return self.read_csv(source, table_name=table_name, **kwargs)
+        else:
+            self._register_failure()  # noqa: RET503
+
+    def _register_failure(self):
+        import inspect
+
+        msg = ", ".join(
+            name for name, _ in inspect.getmembers(self) if name.startswith("read_")
+        )
+        raise ValueError(
+            f"Cannot infer appropriate read function for input, "
+            f"please call one of {msg} directly"
+        )

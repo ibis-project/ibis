@@ -187,9 +187,8 @@ class Backend(BaseAlchemyBackend):
             parquet/csv files, an iterable of parquet or CSV files, a pandas
             dataframe, a pyarrow table or dataset, or a postgres URI.
         table_name
-            An optional name to use for the created table. This defaults to the
-            filename if a path (with hyphens replaced with underscores), or
-            sequentially generated name otherwise.
+            An optional name to use for the created table. This defaults to a
+            sequentially generated name.
         **kwargs
             Additional keyword arguments passed to DuckDB loading functions for
             CSV or parquet.  See https://duckdb.org/docs/data/csv and
