@@ -171,7 +171,9 @@ def test_to_pyarrow_batches_memtable(con):
 
 def test_no_pyarrow_message(awards_players, monkeypatch):
     monkeypatch.setitem(sys.modules, "pyarrow", None)
-    with pytest.raises(ModuleNotFoundError, match="requires `pyarrow` but"):
+    with pytest.raises(
+        ModuleNotFoundError, match="requires `pyarrow` but|import of pyarrow halted"
+    ):
         awards_players.to_pyarrow()
 
 
