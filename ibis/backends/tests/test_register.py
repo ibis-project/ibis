@@ -41,7 +41,15 @@ def gzip_csv(data_directory, tmp_path):
     ("fname", "in_table_name", "out_table_name"),
     [
         param("diamonds.csv", None, "ibis_read_csv_", id="default"),
-        param("csv://diamonds.csv", "Diamonds2", "Diamonds2", id="csv_name"),
+        param(
+            "csv://diamonds.csv",
+            "Diamonds2",
+            "Diamonds2",
+            id="csv_name",
+            marks=pytest.mark.notyet(
+                ["pyspark"], reason="pyspark lowercases view names"
+            ),
+        ),
         param(
             "file://diamonds.csv",
             "fancy_stones",
@@ -53,11 +61,14 @@ def gzip_csv(data_directory, tmp_path):
             "fancy stones",
             "fancy stones",
             id="file_atypical_name",
+            marks=pytest.mark.notyet(
+                ["pyspark"], reason="no spaces allowed in view names"
+            ),
         ),
         param(
             ["file://diamonds.csv", "diamonds.csv"],
-            "fancy stones",
-            "fancy stones",
+            "fancy_stones2",
+            "fancy_stones2",
             id="multi_csv",
             marks=pytest.mark.notyet(
                 ["polars", "datafusion"],
@@ -76,7 +87,6 @@ def gzip_csv(data_directory, tmp_path):
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",
@@ -102,7 +112,6 @@ def test_register_csv(con, data_directory, fname, in_table_name, out_table_name)
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",
@@ -125,7 +134,6 @@ def test_register_csv_gz(con, data_directory, gzip_csv):
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",
@@ -179,7 +187,6 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",
@@ -381,3 +388,90 @@ def test_register_garbage(con, monkeypatch):
 
     with pytest.raises(FileNotFoundError):
         con.read_parquet("garbage_notafile")
+
+
+@pytest.mark.parametrize(
+    ("fname", "in_table_name", "out_table_name"),
+    [
+        (
+            "functional_alltypes.parquet",
+            None,
+            "ibis_read_parquet",
+        ),
+        ("functional_alltypes.parquet", "funk_all", "funk_all"),
+    ],
+)
+@pytest.mark.notyet(
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "postgres",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ]
+)
+def test_read_parquet(
+    con, tmp_path, data_directory, fname, in_table_name, out_table_name
+):
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    fname = Path(fname)
+    table = read_table(data_directory / fname.name)
+
+    pq.write_table(table, tmp_path / fname.name)
+
+    with pushd(data_directory):
+        if con.name == "pyspark":
+            # pyspark doesn't respect CWD
+            fname = str(Path(fname).absolute())
+        table = con.read_parquet(fname, table_name=in_table_name)
+
+    assert any(t.startswith(out_table_name) for t in con.list_tables())
+
+    if con.name != "datafusion":
+        table.count().execute()
+
+
+@pytest.mark.parametrize(
+    ("fname", "in_table_name", "out_table_name"),
+    [
+        param("diamonds.csv", None, "ibis_read_csv_", id="default"),
+        param(
+            "diamonds.csv",
+            "fancy_stones",
+            "fancy_stones",
+            id="file_name",
+        ),
+    ],
+)
+@pytest.mark.notyet(
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "postgres",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ]
+)
+def test_read_csv(con, data_directory, fname, in_table_name, out_table_name):
+    with pushd(data_directory):
+        if con.name == "pyspark":
+            # pyspark doesn't respect CWD
+            fname = str(Path(fname).absolute())
+        table = con.read_csv(fname, table_name=in_table_name)
+
+    assert any(t.startswith(out_table_name) for t in con.list_tables())
+    if con.name != "datafusion":
+        table.count().execute()
