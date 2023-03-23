@@ -72,6 +72,7 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
 @translate_rel.register(ops.Aggregation)
 def _aggregation(op: ops.Aggregation, *, table, **kw):
     tr_val = partial(translate_val, **kw)
+    tr_val_no_alias = partial(translate_val, render_aliases=False, **kw)
 
     by = tuple(map(tr_val, op.by))
     metrics = tuple(map(tr_val, op.metrics))
@@ -82,13 +83,13 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
         sel = sel.group_by(*map(str, range(1, len(by) + 1)), dialect="clickhouse")
 
     if predicates := op.predicates:
-        sel = sel.where(*map(tr_val, predicates), dialect="clickhouse")
+        sel = sel.where(*map(tr_val_no_alias, predicates), dialect="clickhouse")
 
     if having := op.having:
-        sel = sel.having(*map(tr_val, having), dialect="clickhouse")
+        sel = sel.having(*map(tr_val_no_alias, having), dialect="clickhouse")
 
     if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val, sort_keys), dialect="clickhouse")
+        sel = sel.order_by(*map(tr_val_no_alias, sort_keys), dialect="clickhouse")
 
     return sel
 
