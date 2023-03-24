@@ -551,14 +551,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_default',
             marks=pytest.mark.notimpl(
-                [
-                    'impala',
-                    'mysql',
-                    'polars',
-                    'datafusion',
-                    "mssql",
-                    "druid",
-                ],
+                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -567,14 +560,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_first',
             marks=pytest.mark.notimpl(
-                [
-                    'impala',
-                    'mysql',
-                    'polars',
-                    'datafusion',
-                    "mssql",
-                    "druid",
-                ],
+                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -584,29 +570,13 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='arbitrary_last',
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        'impala',
-                        'mysql',
-                        'polars',
-                        'datafusion',
-                        "mssql",
-                        "druid",
-                    ],
+                    ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["trino"],
-                    raises=AssertionError,
-                ),
                 pytest.mark.notimpl(
-                    ["snowflake"],
+                    ["bigquery", "snowflake", "trino"],
                     raises=com.UnsupportedOperationError,
-                    reason="Snowflake only supports the `first` option for `.arbitrary()",
-                ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason="'last' value not supported for arbitrary in BigQuery",
+                    reason="backend only supports the `first` option for `.arbitrary()",
                 ),
             ],
         ),
@@ -711,14 +681,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 mark.notimpl(
-                    [
-                        "impala",
-                        "mysql",
-                        "sqlite",
-                        "datafusion",
-                        "mssql",
-                        "druid",
-                    ],
+                    ["impala", "mysql", "sqlite", "datafusion", "mssql", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -941,12 +904,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    [
-                        "impala",
-                        "mysql",
-                        "sqlite",
-                        "polars",
-                    ],
+                    ["impala", "mysql", "sqlite", "polars"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1047,15 +1005,7 @@ def test_corr_cov(
 
 
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "mysql",
-        "postgres",
-        "sqlite",
-        "snowflake",
-        "mssql",
-        "druid",
-    ],
+    ["datafusion", "mysql", "postgres", "sqlite", "snowflake", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
