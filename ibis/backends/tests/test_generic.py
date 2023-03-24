@@ -948,7 +948,9 @@ def test_memtable_construct(backend, con, monkeypatch):
     raises=NotImplementedError,
     reason="not a SQL backend",
 )
-@pytest.mark.notimpl(["pyspark"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
+)
 @pytest.mark.notimpl(["druid"], reason="no sqlglot dialect", raises=ValueError)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
