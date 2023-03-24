@@ -92,7 +92,7 @@ class Interactive(Config):
     """
 
     max_rows: int = 10
-    max_columns: Optional[int] = 0
+    max_columns: Optional[int] = None
     max_length: int = 2
     max_string: int = 80
     max_depth: int = 1
