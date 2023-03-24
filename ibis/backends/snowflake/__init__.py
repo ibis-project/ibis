@@ -20,7 +20,10 @@ from ibis.backends.base.sql.alchemy import (
 from ibis.backends.base.sql.alchemy.query_builder import _AlchemyTableSetFormatter
 
 if TYPE_CHECKING:
+    import pandas as pd
     import pyarrow as pa
+
+    import ibis.expr.schema as sch
 
 
 @contextlib.contextmanager
@@ -181,7 +184,7 @@ class Backend(BaseAlchemyBackend):
                 "STRICT_JSON_OUTPUT": "TRUE",
             },
         )
-        self._default_connector_format = connect_args["session_parameters"].get(
+        self._default_connector_format = connect_args["session_parameters"].setdefault(
             PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT, "JSON"
         )
         engine = sa.create_engine(
@@ -262,6 +265,11 @@ class Backend(BaseAlchemyBackend):
         elif isinstance(expr, ir.Scalar):
             return res[expr.get_name()][0]
         return res
+
+    def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        if _NATIVE_ARROW and self._default_connector_format == "ARROW":
+            return cursor.cursor.fetch_pandas_all()
+        return super().fetch_from_cursor(cursor, schema)
 
     def to_pyarrow_batches(
         self,

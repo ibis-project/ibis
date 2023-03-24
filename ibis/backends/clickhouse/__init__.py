@@ -111,13 +111,15 @@ class Backend(BaseBackend):
             schema = self._get_schema_using_query(query)
         return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
 
-    def _from_url(self, url: str) -> BaseBackend:
+    def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 
         Parameters
         ----------
         url
             URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments
 
         Returns
         -------
@@ -126,11 +128,14 @@ class Backend(BaseBackend):
         """
         url = sa.engine.make_url(url)
 
-        kwargs = {
-            name: value
-            for name in ("host", "port", "database", "password")
-            if (value := getattr(url, name, None))
-        }
+        kwargs = toolz.merge(
+            {
+                name: value
+                for name in ("host", "port", "database", "password")
+                if (value := getattr(url, name, None))
+            },
+            kwargs,
+        )
         if username := url.username:
             kwargs["user"] = username
 

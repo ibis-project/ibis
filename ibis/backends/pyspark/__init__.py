@@ -122,7 +122,7 @@ class Backend(BaseSQLBackend):
 
         treat_nan_as_null: bool = False
 
-    def _from_url(self, url: str) -> Backend:
+    def _from_url(self, url: str, **kwargs) -> Backend:
         """Construct a PySpark backend from a URL `url`."""
         url = sa.engine.make_url(url)
 
@@ -136,7 +136,7 @@ class Backend(BaseSQLBackend):
 
         builder = SparkSession.builder.config(conf=conf)
         session = builder.getOrCreate()
-        return self.connect(session)
+        return self.connect(session, **kwargs)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
