@@ -118,13 +118,6 @@ def convert_join(join, catalog):
 
     left_name = join.name
     for right_name, desc in join.joins.items():
-        if desc['condition']:
-            left_name = desc['condition'].this.table
-            left_table = catalog[left_name]
-            predicate = convert(desc['condition'], catalog=catalog)
-            catalog[left_name] = left_table.filter(predicate)
-            continue
-
         left_table = catalog[left_name]
         right_table = catalog[right_name]
         join_kind = _join_types[desc['side']]
