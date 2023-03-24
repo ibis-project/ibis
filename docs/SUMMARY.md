@@ -24,6 +24,7 @@
     * [Backend Operations Matrix](backends/support_matrix.md)
 * [Releases](release_notes.md)
 * Blog
+    * [Campaign Finance Analysis with Ibis](blog/rendered/campaign-finance.ipynb)
     * [Ibis Sneak Peek: Writing to Files](blog/ibis-to-file.md)
     * [Ibis Sneak Peek: Examples](blog/ibis-examples.md)
     * [Maximizing Productivity with Selectors](blog/selectors.md)
