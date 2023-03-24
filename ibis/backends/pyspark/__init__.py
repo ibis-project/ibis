@@ -704,3 +704,6 @@ class Backend(BaseSQLBackend):
             f"Cannot infer appropriate read function for input, "
             f"please call one of {msg} directly"
         )
+
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
+        raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
