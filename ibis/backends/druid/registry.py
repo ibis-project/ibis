@@ -43,6 +43,7 @@ operation_registry.update(
         ops.Log10: fixed_arity(sa.func.log10, 1),
         ops.Sign: _sign,
         ops.StringJoin: _join,
+        ops.RegexSearch: fixed_arity(sa.func.regexp_like, 2),
     }
 )
 
