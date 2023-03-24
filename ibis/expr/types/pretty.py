@@ -198,11 +198,9 @@ def to_rich_table(table, console_width=None):
 
     max_columns = ibis.options.repr.interactive.max_columns
     if console_width == float("inf"):
-        if max_columns == 0:
-            # Show up to 20 columns by default, mirroring pandas's behavior
-            if orig_ncols >= 20:
-                table = table.select(*table.columns[:20])
-        elif max_columns is not None and max_columns < orig_ncols:
+        # When there's infinite display space, only subset columns
+        # if an explicit limit has been set.
+        if max_columns and max_columns < orig_ncols:
             table = table.select(*table.columns[:max_columns])
     else:
         # Determine the maximum subset of columns that *might* fit in the
