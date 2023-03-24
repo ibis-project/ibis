@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from itertools import tee
 from types import MappingProxyType
 from typing import Any, Hashable, Mapping, TypeVar
 
@@ -206,6 +208,23 @@ class DotDict(dict):
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
+
+
+class RewindableIterator(Iterator):
+    def __init__(self, iterable):
+        self._iterator = iter(iterable)
+        self._checkpoint = None
+
+    def __next__(self):
+        return next(self._iterator)
+
+    def rewind(self):
+        if self._checkpoint is None:
+            raise ValueError("No checkpoint to rewind to.")
+        self._iterator, self._checkpoint = tee(self._checkpoint)
+
+    def checkpoint(self):
+        self._iterator, self._checkpoint = tee(self._iterator)
 
 
 public(frozendict=FrozenDict, dotdict=DotDict)

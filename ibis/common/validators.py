@@ -35,6 +35,9 @@ V = TypeVar('V')
 T = TypeVar('T')
 
 
+# have the slotted base here
+
+
 class Coercible(ABC):
     """Protocol for defining coercible types.
 
@@ -121,6 +124,18 @@ class Validator(Callable):
                 f"Cannot create validator from annotation {annot} {origin}"
             )
 
+    def __rshift__(self, name):
+        return capture(self, name)
+
+    def __rmatmul__(self, name):
+        return capture(self, name)
+
+    def __and__(self, other):
+        return all_of((self, other))
+
+    def __or__(self, other):
+        return any_of((self, other))
+
 
 # TODO(kszucs): in order to cache valiadator instances we could subclass
 # grounds.Singleton, but the imports would need to be reorganized
@@ -159,6 +174,27 @@ def ref(key: str, *, this: Mapping[str, Any]) -> Any:
         return this[key]
     except KeyError:
         raise IbisTypeError(f"Could not get `{key}` from {this}")
+
+
+class Capture(Validator):
+    def __init__(self, inner, name):
+        self.inner = inner
+        self.name = name
+
+    def __call__(self, arg, *, this):
+        arg = self.inner(arg, this=this)
+        this[self.name] = arg
+        return arg
+
+    def __eq__(self, other):
+        return (
+            isinstance(other, Capture)
+            and self.inner == other.inner
+            and self.name == other.name
+        )
+
+
+capture = Capture
 
 
 @validator
@@ -284,6 +320,32 @@ class lazy_instance_of(Validator):
             f"Given argument with type {type(arg)} is not an instance of "
             f"{self._classes}"
         )
+
+
+@validator
+def not_(inner: Validator, arg: Any, **kwargs: Any) -> Any:
+    """Require that a value does not pass a particular validator.
+
+    Parameters
+    ----------
+    inner
+        The inner validator to use.
+    arg
+        The value to validate.
+    kwargs
+        Additional keyword arguments to pass to the inner validator.
+
+    Returns
+    -------
+    validated
+        The input argument if it does not pass the inner validator.
+    """
+    try:
+        inner(arg, **kwargs)
+    except IbisTypeError:
+        return arg
+    else:
+        raise IbisTypeError(f"Given argument {arg} is not allowed")
 
 
 @validator
@@ -651,3 +713,8 @@ none_ = instance_of(type(None))
 dict_of = mapping_of(type=dict)
 list_of = sequence_of(type=list)
 frozendict_of = mapping_of(type=FrozenDict)
+
+
+# @curry
+# def callable_with(arg_inners, return_innter, value, **kwargs):
+#     return CallableWith(arg_inners, return_inner).validate(value, **kwargs)
