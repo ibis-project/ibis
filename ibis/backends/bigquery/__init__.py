@@ -69,12 +69,13 @@ class Backend(BaseSQLBackend):
     database_class = BigQueryDatabase
     table_class = BigQueryTable
 
-    def _from_url(self, url):
+    def _from_url(self, url: str, **kwargs):
         result = urlparse(url)
         params = parse_qs(result.query)
         return self.connect(
             project_id=result.netloc or params.get("project_id", [""])[0],
             dataset_id=result.path[1:] or params.get("dataset_id", [""])[0],
+            **kwargs,
         )
 
     def do_connect(

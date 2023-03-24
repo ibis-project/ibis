@@ -530,7 +530,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         new_backend.reconnect()
         return new_backend
 
-    def _from_url(self, url: str) -> BaseBackend:
+    def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Construct an ibis backend from a SQLAlchemy-conforming URL."""
         raise NotImplementedError(
             f"`_from_url` not implemented for the {self.name} backend"
@@ -991,12 +991,14 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     parsed = urllib.parse.urlparse(url)
     scheme = parsed.scheme or "file"
 
-    # Merge explicit kwargs with query string, explicit kwargs
-    # taking precedence
-    kwargs = dict(urllib.parse.parse_qsl(parsed.query), **kwargs)
+    orig_kwargs = kwargs.copy()
+    kwargs = dict(urllib.parse.parse_qsl(parsed.query))
 
     if scheme == "file":
         path = parsed.netloc + parsed.path
+        # Merge explicit kwargs with query string, explicit kwargs
+        # taking precedence
+        kwargs.update(orig_kwargs)
         if path.endswith(".duckdb"):
             return ibis.duckdb.connect(path, **kwargs)
         elif path.endswith((".sqlite", ".db")):
@@ -1038,4 +1040,4 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     except AttributeError:
         raise ValueError(f"Don't know how to connect to {resource!r}") from None
 
-    return backend._from_url(url)
+    return backend._from_url(url, **orig_kwargs)

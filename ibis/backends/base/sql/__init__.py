@@ -6,6 +6,8 @@ import os
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
+import toolz
+
 import ibis.common.exceptions as exc
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
@@ -31,13 +33,15 @@ class BaseSQLBackend(BaseBackend):
     table_class = ops.DatabaseTable
     table_expr_class = ir.Table
 
-    def _from_url(self, url: str) -> BaseBackend:
+    def _from_url(self, url: str, **kwargs: Any) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 
         Parameters
         ----------
         url
             URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments passed to the `connect` method.
 
         Returns
         -------
@@ -47,7 +51,7 @@ class BaseSQLBackend(BaseBackend):
         import sqlalchemy as sa
 
         url = sa.engine.make_url(url)
-
+        new_kwargs = kwargs.copy()
         kwargs = {}
 
         for name in ("host", "port", "database", "password"):
@@ -60,8 +64,9 @@ class BaseSQLBackend(BaseBackend):
             kwargs["user"] = username
 
         kwargs.update(url.query)
-        self._convert_kwargs(kwargs)
-        return self.connect(**kwargs)
+        new_kwargs = toolz.merge(kwargs, new_kwargs)
+        self._convert_kwargs(new_kwargs)
+        return self.connect(**new_kwargs)
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
