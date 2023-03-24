@@ -1,4 +1,5 @@
 import contextlib
+import os
 
 import pytest
 import sqlalchemy as sa
@@ -882,6 +883,8 @@ def test_multiple_subs(con):
     raises=ValueError,
     reason="sqlglot doesn't support a druid dialect",
 )
-def test_rlike(snapshot, alltypes):
+def test_rlike(backend, snapshot, alltypes):
+    if backend.name() == "snowflake" and not os.environ.get("CI"):  # pragma: no cover
+        pytest.skip("snowflake test database is segmented per-user and different in CI")
     expr = alltypes[alltypes.string_col.rlike('0')]
     snapshot.assert_match(str(ibis.to_sql(expr)), "out.sql")
