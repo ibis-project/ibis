@@ -861,3 +861,23 @@ def test_multiple_subs(con):
     expr = ibis.literal("foo").substitute(m)
     result = con.execute(expr)
     assert result == "FOO"
+
+
+@pytest.mark.never(
+    ["dask", "datafusion", "pandas", "polars", "pyspark"],
+    raises=NotImplementedError,
+    reason="not a SQL backend",
+)
+@pytest.mark.notyet(
+    ["mssql"],
+    raises=OperationNotDefinedError,
+    reason="Doesn't support regular expressions",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=ValueError,
+    reason="sqlglot doesn't support a druid dialect",
+)
+def test_rlike(snapshot, alltypes):
+    expr = alltypes[alltypes.string_col.rlike('0')]
+    snapshot.assert_match(str(ibis.to_sql(expr)), "out.sql")
