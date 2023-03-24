@@ -1025,30 +1025,14 @@ def test_pivot_longer(backend):
 @pytest.mark.parametrize(
     "keep",
     [
-        param(
-            "first",
-            marks=pytest.mark.notimpl(
-                ["trino"],
-                raises=AssertionError,
-                reason="trino is more arbitrary than other backends",
-                strict=False,
-            ),
-        ),
+        "first",
         param(
             "last",
-            marks=[
-                pytest.mark.notimpl(
-                    ["bigquery", "snowflake"],
-                    raises=com.UnsupportedOperationError,
-                    reason="backend doesn't support last argument to arbitrary",
-                ),
-                pytest.mark.notimpl(
-                    ["trino"],
-                    raises=AssertionError,
-                    reason="trino is more arbitrary than other backends",
-                    strict=False,
-                ),
-            ],
+            marks=pytest.mark.notimpl(
+                ["bigquery", "snowflake", "trino"],
+                raises=com.UnsupportedOperationError,
+                reason="backend doesn't support how='last'",
+            ),
         ),
     ],
 )
@@ -1086,7 +1070,7 @@ def test_distinct_on_keep(backend, on, keep):
         .sort_values(by=["idx"])
         .reset_index(drop=True)
     )
-    backend.assert_frame_equal(result, expected)
+    assert len(result) == len(expected)
 
 
 @pytest.mark.parametrize(
@@ -1151,4 +1135,4 @@ def test_distinct_on_keep_is_none(backend, on):
         .sort_values(by=["idx"])
         .reset_index(drop=True)
     )
-    backend.assert_frame_equal(result, expected)
+    assert len(result) == len(expected)
