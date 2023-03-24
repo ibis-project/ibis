@@ -171,8 +171,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql", "druid"],
-                    raises=com.OperationNotDefinedError,
+                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(["impala"], raises=AssertionError),
             ],
@@ -183,10 +182,15 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql", "druid"],
+                    ["datafusion", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["pyspark"], raises=AssertionError),
+                pytest.mark.never(
+                    ["druid"],
+                    reason="No posix support; regex is interpreted literally",
+                    raises=AssertionError,
+                ),
             ],
         ),
         param(
