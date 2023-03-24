@@ -917,8 +917,8 @@ def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
     text = "".join(s.text for s in console.render(expr, options))
     assert " c_0 " in text
     if is_jupyter:
-        # Default of 20 columns are written
-        assert " c_19 " in text
+        # All columns are written
+        assert " c_49 " in text
     else:
         # width calculations truncates well before 20 columns
         assert " c_19 " not in text
