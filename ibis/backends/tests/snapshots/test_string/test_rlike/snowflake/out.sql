@@ -14,6 +14,6 @@ SELECT
   t0."timestamp_col",
   t0."year",
   t0."month"
-FROM ibis_testing.voltrondataphillip."FUNCTIONAL_ALLTYPES" AS t0
+FROM ibis_testing.ibis_testing."FUNCTIONAL_ALLTYPES" AS t0
 WHERE
   REGEXP_LIKE(t0."string_col", '0')
