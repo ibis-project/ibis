@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import numpy as np
 import pandas as pd
@@ -275,6 +275,63 @@ def client(data_directory):
     )
 
     df_time_indexed.createTempView('time_indexed_table')
+
+    df_interval = client._session.createDataFrame(
+        [
+            [
+                timedelta(days=10),
+                timedelta(hours=10),
+                timedelta(minutes=10),
+                timedelta(seconds=10),
+            ]
+        ],
+        pt.StructType(
+            [
+                pt.StructField(
+                    "interval_day",
+                    pt.DayTimeIntervalType(
+                        pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.DAY
+                    ),
+                ),
+                pt.StructField(
+                    "interval_hour",
+                    pt.DayTimeIntervalType(
+                        pt.DayTimeIntervalType.HOUR, pt.DayTimeIntervalType.HOUR
+                    ),
+                ),
+                pt.StructField(
+                    "interval_minute",
+                    pt.DayTimeIntervalType(
+                        pt.DayTimeIntervalType.MINUTE, pt.DayTimeIntervalType.MINUTE
+                    ),
+                ),
+                pt.StructField(
+                    "interval_second",
+                    pt.DayTimeIntervalType(
+                        pt.DayTimeIntervalType.SECOND, pt.DayTimeIntervalType.SECOND
+                    ),
+                ),
+            ]
+        ),
+    )
+
+    df_interval.createTempView('interval_table')
+
+    df_interval_invalid = client._session.createDataFrame(
+        [[timedelta(days=10, hours=10, minutes=10, seconds=10)]],
+        pt.StructType(
+            [
+                pt.StructField(
+                    "interval_day_hour",
+                    pt.DayTimeIntervalType(
+                        pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.HOUR
+                    ),
+                )
+            ]
+        ),
+    )
+
+    df_interval_invalid.createTempView('invalid_interval_table')
 
     return client
 

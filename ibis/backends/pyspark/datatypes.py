@@ -79,6 +79,28 @@ def _spark_struct(spark_dtype_obj, nullable=True):
     return dt.Struct(fields, nullable=nullable)
 
 
+_SPARK_INTERVAL_TO_IBIS_INTERVAL = {
+    pt.DayTimeIntervalType.SECOND: 's',
+    pt.DayTimeIntervalType.MINUTE: 'm',
+    pt.DayTimeIntervalType.HOUR: 'h',
+    pt.DayTimeIntervalType.DAY: 'D',
+}
+
+
+@dt.dtype.register(pt.DayTimeIntervalType)
+def _spark_struct(spark_dtype_obj, nullable=True):
+    if (
+        spark_dtype_obj.startField == spark_dtype_obj.endField
+        and spark_dtype_obj.startField in _SPARK_INTERVAL_TO_IBIS_INTERVAL
+    ):
+        return dt.Interval(
+            _SPARK_INTERVAL_TO_IBIS_INTERVAL[spark_dtype_obj.startField],
+            nullable=nullable,
+        )
+    else:
+        raise com.IbisTypeError("DayTimeIntervalType couldn't be converted to Interval")
+
+
 _IBIS_DTYPE_TO_SPARK_DTYPE = {v: k for k, v in _SPARK_DTYPE_TO_IBIS_DTYPE.items()}
 _IBIS_DTYPE_TO_SPARK_DTYPE[dt.JSON] = pt.StringType
 
