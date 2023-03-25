@@ -41,7 +41,7 @@ jobs:
         run: sudo apt-get install -y -q build-essential graphviz libgeos-dev
 
       - name: install poetry
-        run: pip install 'poetry<1.4'
+        run: pip install 'poetry>=1.4.1,<1.5'
 
       - name: check consistency with pyproject.toml
         run: poetry lock --check
