@@ -65,7 +65,7 @@ google-resumable-media==2.4.1 ; python_version >= "3.8" and python_version < "4.
 googleapis-common-protos==1.59.0 ; python_version >= "3.8" and python_version < "4.0"
 gprof2dot==2022.7.29 ; python_version >= "3.8" and python_version < "4.0"
 graphviz==0.20.1 ; python_version >= "3.8" and python_version < "4.0"
-greenlet==2.0.2 ; python_version >= "3.8" and platform_machine == "aarch64" and python_version < "4.0" or python_version >= "3.8" and platform_machine == "ppc64le" and python_version < "4.0" or python_version >= "3.8" and platform_machine == "x86_64" and python_version < "4.0" or python_version >= "3.8" and platform_machine == "amd64" and python_version < "4.0" or python_version >= "3.8" and platform_machine == "AMD64" and python_version < "4.0" or python_version >= "3.8" and platform_machine == "win32" and python_version < "4.0" or python_version >= "3.8" and platform_machine == "WIN32" and python_version < "4.0"
+greenlet==2.0.2 ; python_version >= "3.8" and python_version < "4.0"
 griffe==0.25.5 ; python_version >= "3.8" and python_version < "4.0"
 grpcio-status==1.51.3 ; python_version >= "3.8" and python_version < "4.0"
 grpcio==1.51.3 ; python_version >= "3.8" and python_version < "4.0"
