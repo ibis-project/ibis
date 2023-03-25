@@ -503,7 +503,6 @@ def test_array_map(backend, con):
         "mssql",
         "polars",
         "postgres",
-        "pyspark",
         "snowflake",
     ],
     raises=com.OperationNotDefinedError,
