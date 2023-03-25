@@ -1,3 +1,18 @@
+"""Converted the previous validator system into a pattern matching system.
+
+The previously used validator system had the following problems:
+- Used curried functions which was error prone to missing arguments and was hard to debug.
+- Used exceptions for control flow which raising exceptions from the innermost function call giving cryptic error messages.
+- While it was similarly composable it was hard to see whether the validator was fully constructed or not.
+- We wasn't able traverse the nested validators due to the curried functions.
+
+In addition to those the new approach has the following advantages:
+- The pattern matching system is fully composable.
+- Not we support syntax sugar for combining patterns using & and |.
+- We can capture values at mutiple levels using either `>>` or `@` syntax.
+- Support structural pattern matching for sequences, mappings and objects.
+"""
+
 import numbers
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
@@ -25,6 +40,9 @@ class Pattern(ABC):
     @abstractmethod
     def match(self, value, *, context):
         ...
+
+    # TODO(kszucs): consider to add match_strict() with a default implementation
+    # that calls match()
 
     def __invert__(self):
         return Not(self)
@@ -505,11 +523,10 @@ class CallableWith(Matcher):
             return fn
 
 
-# TODO(kszucs): rename to PatternSequence
-class Sequence(Matcher):
+class PatternSequence(Matcher):
     __slots__ = ("pattern_pairs",)
 
-    def __init__(self, *patterns):
+    def __init__(self, patterns):
         current_patterns = [
             SequenceOf(Any()) if p is Ellipsis else pattern(p) for p in patterns
         ]
@@ -519,8 +536,16 @@ class Sequence(Matcher):
 
     def match(self, value, *, context):
         it = RewindableIterator(value)
-
         result = []
+
+        if not self.pattern_pairs:
+            try:
+                next(it)
+            except StopIteration:
+                return result
+            else:
+                return NoMatch
+
         for current, following in self.pattern_pairs:
             original = current
 
@@ -529,7 +554,7 @@ class Sequence(Matcher):
             if isinstance(following, Capture):
                 following = following.pattern
 
-            if isinstance(current, (SequenceOf, Sequence)):
+            if isinstance(current, (SequenceOf, PatternSequence)):
                 matches = []
                 while True:
                     it.checkpoint()
@@ -564,6 +589,56 @@ class Sequence(Matcher):
         return result
 
 
+# class PatternMapping(Matcher):
+#     __slots__ = ("pattern_map",)
+
+#     def __init__(self, patterns):
+
+#         patterns = {k: pattern(v) for k, v in patterns.items()}
+#         super().__init__(frozendict(patterns))
+
+#     def match(self, value, *, context):
+#         if not isinstance(value, Mapping):
+#             return NoMatch
+
+#         result = {}
+#         for k, v in value.items():
+#             try:
+#                 value_pattern = self.pattern_map[k]
+#             except KeyError:
+#                 return NoMatch
+
+#             if (v := value_pattern.match(v, context=context)) is NoMatch:
+#                 return NoMatch
+
+#             result[k] = v
+
+#         return result
+
+
+class PatternMapping(Matcher):
+    __slots__ = ("keys_pattern", "values_pattern")
+
+    def __init__(self, patterns):
+        keys_pattern = PatternSequence(list(map(pattern, patterns.keys())))
+        values_pattern = PatternSequence(list(map(pattern, patterns.values())))
+        super().__init__(keys_pattern, values_pattern)
+
+    def match(self, value, *, context):
+        if not isinstance(value, Mapping):
+            return NoMatch
+
+        keys = value.keys()
+        if (keys := self.keys_pattern.match(keys, context=context)) is NoMatch:
+            return NoMatch
+
+        values = value.values()
+        if (values := self.values_pattern.match(values, context=context)) is NoMatch:
+            return NoMatch
+
+        return dict(zip(keys, values))
+
+
 IsTruish = Check(lambda x: bool(x))
 IsNumber = InstanceOf(numbers.Number) & ~InstanceOf(bool)
 IsString = InstanceOf(str)
@@ -573,8 +648,10 @@ def pattern(obj):
     """Create a pattern from an object."""
     if isinstance(obj, Pattern):
         return obj
+    elif isinstance(obj, Mapping):
+        return PatternMapping(obj)
     elif is_iterable(obj):
-        return Sequence(*obj)
+        return PatternSequence(obj)
     elif obj is Ellipsis:
         return Any()
     else:

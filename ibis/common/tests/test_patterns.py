@@ -28,8 +28,9 @@ from ibis.common.patterns import (
     Object,
     Option,
     Pattern,
+    PatternMapping,
+    PatternSequence,
     Reference,
-    Sequence,
     SequenceOf,
     SubclassOf,
     TupleOf,
@@ -294,19 +295,19 @@ def test_callable_with():
     #     wrapped(1, 2)
 
 
-def test_sequence():
-    p = Sequence(1, 2, InstanceOf(int), ...)
+def test_pattern_list():
+    p = PatternSequence([1, 2, InstanceOf(int), ...])
     assert p.match([1, 2, 3, 4, 5], context={}) == [1, 2, 3, 4, 5]
     assert p.match([1, 2, 3, 4, 5, 6], context={}) == [1, 2, 3, 4, 5, 6]
     assert p.match([1, 2, 3, 4], context={}) == [1, 2, 3, 4]
     assert p.match([1, 2, "3", 4], context={}) is NoMatch
 
     # subpattern is a simple pattern
-    p = Sequence(1, 2, CoercedTo(int), ...)
+    p = PatternSequence([1, 2, CoercedTo(int), ...])
     assert p.match([1, 2, 3.0, 4.0, 5.0], context={}) == [1, 2, 3, 4.0, 5.0]
 
     # subpattern is a sequence
-    p = Sequence(1, 2, 3, SequenceOf(CoercedTo(int), at_least=1))
+    p = PatternSequence([1, 2, 3, SequenceOf(CoercedTo(int), at_least=1)])
     assert p.match([1, 2, 3, 4.0, 5.0], context={}) == [1, 2, 3, 4, 5]
 
 
@@ -328,6 +329,9 @@ def test_matching():
 
 
 def test_matching_sequence_pattern():
+    assert match([], []) == {}
+    assert match([], [1]) is NoMatch
+
     assert match([1, 2, 3, 4, ...], list(range(1, 9))) == {}
     assert match([1, 2, 3, 4, ...], list(range(1, 3))) is NoMatch
     assert match([1, 2, 3, 4, ...], list(range(1, 5))) == {}
@@ -384,7 +388,7 @@ def test_matching_sequence_complicated():
     }
     assert match(pattern, range(1, 10)) == expected
 
-    pattern = [0, Sequence(1, 2) >> "pairs", 3]
+    pattern = [0, PatternSequence([1, 2]) >> "pairs", 3]
     expected = {"pairs": [1, 2]}
     assert match(pattern, [0, 1, 2, 1, 2, 3]) == expected
 
@@ -395,6 +399,32 @@ def test_matching_sequence_complicated():
     assert match([0, SequenceOf([1, 2]), 3], [0, [1, 2], [1, 2], 3]) == {}
 
 
-# TODO(kszucs)
-# Add object matchers
-# Add dict matchers
+def test_pattern_map():
+    assert PatternMapping({}).match({}, context={}) == {}
+    assert PatternMapping({}).match({1: 2}, context={}) is NoMatch
+
+
+def test_matching_mapping():
+    assert match({}, {}) == {}
+    assert match({}, {1: 2}) is NoMatch
+
+    assert match({1: 2}, {1: 2}) == {}
+    assert match({1: 2}, {1: 3}) is NoMatch
+
+    assert match({}, 3) is NoMatch
+    assert match({'a': "capture" @ InstanceOf(int)}, {'a': 1}) == {"capture": 1}
+
+    p = {
+        "a": "capture" @ InstanceOf(int),
+        "b": InstanceOf(float),
+        ...: InstanceOf(str),
+    }
+    assert match(p, {"a": 1, "b": 2.0, "c": "foo"}) == {"capture": 1}
+    assert match(p, {"a": 1, "b": 2.0, "c": 3}) is NoMatch
+
+    p = {
+        "a": "capture" @ InstanceOf(int),
+        "b": InstanceOf(float),
+        "rest" @ SequenceOf(...): InstanceOf(str),
+    }
+    assert match(p, {"a": 1, "b": 2.0, "c": "foo"}) == {"capture": 1, "rest": ("c",)}
