@@ -10,6 +10,8 @@ pyspark = pytest.importorskip("pyspark")
 import pyspark.sql.functions as F  # noqa: E402
 
 from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name  # noqa: E402
+from ibis.expr import datatypes as dt
+from ibis.common.exceptions import IbisTypeError
 
 
 def test_basic(client):
@@ -211,3 +213,22 @@ def test_can_be_replaced_by_column_name(selection_fn, selection_idx, expected):
     selection_to_test = table.op().selections[selection_idx]
     result = _can_be_replaced_by_column_name(selection_to_test, table.op().table)
     assert result == expected
+
+
+def test_interval_columns(client):
+    table = client.table('interval_table')
+    assert table.schema() == ibis.schema(
+        pairs=[
+            ('interval_day', dt.Interval('D')),
+            ('interval_hour', dt.Interval('h')),
+            ('interval_minute', dt.Interval('m')),
+            ('interval_second', dt.Interval('s')),
+        ]
+    )
+
+
+def test_interval_columns_invalid(client):
+    with pytest.raises(
+        IbisTypeError, match="DayTimeIntervalType couldn't be converted to Interval"
+    ):
+        client.table('invalid_interval_table')
