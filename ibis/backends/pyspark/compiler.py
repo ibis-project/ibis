@@ -1655,6 +1655,20 @@ def compile_array_collect(t, op, **kwargs):
     return F.collect_list(src_column)
 
 
+@compiles(ops.Argument)
+def compile_argument(t, op, arg_columns, **kwargs):
+    return arg_columns[op.name]
+
+
+@compiles(ops.ArrayFilter)
+def compile_array_filter(t, op, **kwargs):
+    src_column = t.translate(op.arg, **kwargs)
+    return F.filter(
+        src_column,
+        lambda x: t.translate(op.result, arg_columns={op.parameter: x}, **kwargs),
+    )
+
+
 # --------------------------- Null Operations -----------------------------
 
 
