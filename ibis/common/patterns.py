@@ -589,33 +589,6 @@ class PatternSequence(Matcher):
         return result
 
 
-# class PatternMapping(Matcher):
-#     __slots__ = ("pattern_map",)
-
-#     def __init__(self, patterns):
-
-#         patterns = {k: pattern(v) for k, v in patterns.items()}
-#         super().__init__(frozendict(patterns))
-
-#     def match(self, value, *, context):
-#         if not isinstance(value, Mapping):
-#             return NoMatch
-
-#         result = {}
-#         for k, v in value.items():
-#             try:
-#                 value_pattern = self.pattern_map[k]
-#             except KeyError:
-#                 return NoMatch
-
-#             if (v := value_pattern.match(v, context=context)) is NoMatch:
-#                 return NoMatch
-
-#             result[k] = v
-
-#         return result
-
-
 class PatternMapping(Matcher):
     __slots__ = ("keys_pattern", "values_pattern")
 
