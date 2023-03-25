@@ -557,6 +557,8 @@ class PatternSequence(Matcher):
             if isinstance(current, (SequenceOf, PatternSequence)):
                 if isinstance(following, SequenceOf):
                     following = following.pattern
+                elif isinstance(following, PatternSequence):
+                    following = following.pattern_pairs[0][0]
 
                 matches = []
                 while True:

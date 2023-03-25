@@ -401,6 +401,15 @@ def test_matching_sequence_complicated():
     expected = {"pairs": [1, 2]}
     assert match(pattern, [0, 1, 2, 1, 2, 3]) == expected
 
+    pattern = [
+        0,
+        PatternSequence([1, 2]) >> "first",
+        PatternSequence([4, 5]) >> "second",
+        3,
+    ]
+    expected = {"first": [1, 2], "second": [4, 5]}
+    assert match(pattern, [0, 1, 2, 4, 5, 3]) == expected
+
     pattern = [1, 2, 'remaining' @ SequenceOf(...)]
     expected = {'remaining': (3, 4, 5, 6, 7, 8, 9)}
     assert match(pattern, range(1, 10)) == expected
