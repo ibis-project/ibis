@@ -356,6 +356,15 @@ def test_matching_sequence_with_captures():
     assert match([0, 1, "var" @ SequenceOf(...), 4], list(range(5))) == {"var": (2, 3)}
     assert match([0, 1, SequenceOf(...) >> "var", 4], list(range(5))) == {"var": (2, 3)}
 
+    p = [
+        0,
+        1,
+        "ints" @ SequenceOf(InstanceOf(int)),
+        "floats" @ SequenceOf(InstanceOf(float)),
+        6,
+    ]
+    assert match(p, [0, 1, 2, 3, 4.0, 5.0, 6]) == {"ints": (2, 3), "floats": (4.0, 5.0)}
+
 
 def test_matching_sequence_remaining():
     Seq = SequenceOf

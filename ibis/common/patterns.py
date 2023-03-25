@@ -555,6 +555,9 @@ class PatternSequence(Matcher):
                 following = following.pattern
 
             if isinstance(current, (SequenceOf, PatternSequence)):
+                if isinstance(following, SequenceOf):
+                    following = following.pattern
+
                 matches = []
                 while True:
                     it.checkpoint()
@@ -640,3 +643,6 @@ def match(pat, value, context=None):
         return NoMatch
 
     return context
+
+
+# TODO(kszucs): add a ChildOf matcher to match against the children of a node
