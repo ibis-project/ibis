@@ -193,6 +193,7 @@ mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["polars", "pyarrow"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
+pyarrow = ["pyarrow"]
 pyspark = ["pyarrow", "pyspark", "sqlalchemy"]
 snowflake = [
   "snowflake-connector-python",

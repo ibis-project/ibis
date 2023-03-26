@@ -99,6 +99,16 @@ jobs:
               - postgres
             sys-deps:
               - libgeos-dev
+          - name: postgres
+            title: PostgreSQL + PyArrow
+            extras:
+              - postgres
+              - geospatial
+              - pyarrow
+            services:
+              - postgres
+            sys-deps:
+              - libgeos-dev
           - name: impala
             title: Impala
             serial: true
@@ -184,6 +194,18 @@ jobs:
               extras:
                 - postgres
                 - geospatial
+              services:
+                - postgres
+              sys-deps:
+                - libgeos-dev
+          - os: windows-latest
+            backend:
+              name: postgres
+              title: PostgreSQL + PyArrow
+              extras:
+                - postgres
+                - geospatial
+                - pyarrow
               services:
                 - postgres
               sys-deps:

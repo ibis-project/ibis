@@ -53,7 +53,11 @@ CREATE TABLE awards_players (
     "yearID" BIGINT,
     "lgID" TEXT,
     tie TEXT,
-    notes TEXT
+    notes TEXT,
+    search TSVECTOR GENERATED ALWAYS AS (
+      setweight(to_tsvector('simple', notes), 'A')::TSVECTOR
+    ) STORED,
+    simvec VECTOR GENERATED always AS ('[1,2,3]'::VECTOR) STORED
 );
 
 DROP TABLE IF EXISTS functional_alltypes CASCADE;
@@ -209,13 +213,3 @@ CREATE TABLE map (kv HSTORE);
 INSERT INTO map VALUES
     ('a=>1,b=>2,c=>3'),
     ('d=>4,e=>5,c=>6');
-
-ALTER TABLE awards_players
-ADD search tsvector
-GENERATED always AS (
-  setweight(to_tsvector('simple', notes), 'A') :: tsvector
-) stored;
-
-ALTER TABLE awards_players
-ADD simvec vector
-GENERATED always AS ('[1,2,3]' :: vector) stored;
