@@ -50,6 +50,9 @@ jobs:
           extra_nix_config: |
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
+      - name: check poetry version
+        run: nix run '.#check-poetry-version' -- "1.3"
+
       - name: setup cachix
         uses: cachix/cachix-action@v12
         with:
