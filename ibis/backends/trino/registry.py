@@ -48,8 +48,10 @@ def _literal(t, op):
 
 
 def _arbitrary(t, op):
-    if op.how == "heavy":
-        raise com.UnsupportedOperationError('Trino does not support how="heavy"')
+    if op.how != "first":
+        raise com.UnsupportedOperationError(
+            'Trino only supports how="first" for `arbitrary` reduction'
+        )
     return reduction(sa.func.arbitrary)(t, op)
 
 
