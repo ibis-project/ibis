@@ -9,6 +9,8 @@ from weakref import WeakValueDictionary
 from ibis.common.annotations import EMPTY, Argument, Attribute, Signature, attribute
 from ibis.common.caching import WeakCache
 from ibis.common.collections import FrozenDict
+
+# from ibis.common.patterns import Pattern
 from ibis.common.typing import evaluate_typehint
 from ibis.common.validators import Validator
 

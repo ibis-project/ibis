@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import re
+from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
 
 import pytest
+from typing_extensions import Annotated
 
 from ibis.common.collections import frozendict
 from ibis.common.patterns import (
@@ -14,7 +16,9 @@ from ibis.common.patterns import (
     Check,
     CoercedTo,
     Contains,
+    DictOf,
     EqualTo,
+    FrozenDictOf,
     InstanceOf,
     IsIn,
     LazyInstanceOf,
@@ -42,6 +46,12 @@ from ibis.common.patterns import (
 class Double(Pattern):
     def match(self, value, *, context):
         return value * 2
+
+    def __eq__(self, other):
+        return type(self) == type(other)
+
+    def __hash__(self):
+        return hash(type(self))
 
 
 def test_any():
@@ -446,3 +456,90 @@ def test_matching_mapping():
         "rest" @ SequenceOf(...): InstanceOf(str),
     }
     assert match(p, {"a": 1, "b": 2.0, "c": "foo"}) == {"capture": 1, "rest": ("c",)}
+
+
+@pytest.mark.parametrize(
+    ("pattern", "value", "expected"),
+    [
+        (InstanceOf(bool), True, True),
+        (InstanceOf(str), "foo", "foo"),
+        (InstanceOf(int), 8, 8),
+        (InstanceOf(int), 1, 1),
+        (InstanceOf(float), 1.0, 1.0),
+        (IsIn({"a", "b"}), "a", "a"),
+        (IsIn({"a": 1, "b": 2}), "a", "a"),
+        (IsIn(['a', 'b']), 'a', 'a'),
+        (IsIn(('a', 'b')), 'b', 'b'),
+        (IsIn({'a', 'b', 'c'}), 'c', 'c'),
+        (TupleOf(InstanceOf(int)), (1, 2, 3), (1, 2, 3)),
+        (TupleOf((InstanceOf(int), InstanceOf(str))), (1, "a"), (1, "a")),
+        (ListOf(InstanceOf(str)), ["a", "b"], ["a", "b"]),
+        (AnyOf(InstanceOf(str), InstanceOf(int)), "foo", "foo"),
+        (AnyOf(InstanceOf(str), InstanceOf(int)), 7, 7),
+        (
+            AllOf(InstanceOf(int), Check(lambda v: v >= 3), Check(lambda v: v >= 8)),
+            10,
+            10,
+        ),
+        (
+            MappingOf(InstanceOf(str), InstanceOf(int)),
+            {"a": 1, "b": 2},
+            {"a": 1, "b": 2},
+        ),
+    ],
+)
+def test_various_patterns(pattern, value, expected):
+    assert pattern.match(value, context={}) == expected
+
+
+class Min(Pattern):
+    def __init__(self, min):
+        self.min = min
+
+    def match(self, value, context):
+        if value >= self.min:
+            return value
+        else:
+            return NoMatch
+
+    def __hash__(self):
+        return hash((self.__class__, self.min))
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.min == other.min
+
+
+@pytest.mark.parametrize(
+    ("annot", "expected"),
+    [
+        (int, InstanceOf(int)),
+        (str, InstanceOf(str)),
+        (bool, InstanceOf(bool)),
+        (Optional[int], AnyOf(InstanceOf(int), InstanceOf(type(None)))),
+        (Union[int, str], AnyOf(InstanceOf(int), InstanceOf(str))),
+        (Annotated[int, Min(3)], AllOf(InstanceOf(int), Min(3))),
+        # (
+        #     Annotated[str, short_str, endswith_d],
+        #     AllOf((InstanceOf(str), short_str, endswith_d)),
+        # ),
+        (List[int], SequenceOf(InstanceOf(int), list)),
+        (
+            Tuple[int, float, str],
+            TupleOf((InstanceOf(int), InstanceOf(float), InstanceOf(str))),
+        ),
+        (Tuple[int, ...], TupleOf(InstanceOf(int))),
+        (
+            Dict[str, float],
+            DictOf(InstanceOf(str), InstanceOf(float)),
+        ),
+        (frozendict[str, int], FrozenDictOf(InstanceOf(str), InstanceOf(int))),
+        (Literal["alpha", "beta", "gamma"], IsIn(("alpha", "beta", "gamma"))),
+        (
+            Callable[[str, int], str],
+            CallableWith((InstanceOf(str), InstanceOf(int)), InstanceOf(str)),
+        ),
+        (Callable, InstanceOf(Callable)),
+    ],
+)
+def test_pattern_from_typehint(annot, expected):
+    assert Pattern.from_typehint(annot) == expected

@@ -12,16 +12,34 @@ In addition to those the new approach has the following advantages:
 - We can capture values at mutiple levels using either `>>` or `@` syntax.
 - Support structural pattern matching for sequences, mappings and objects.
 """
+from __future__ import annotations
 
 import numbers
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
+from collections.abc import Hashable, Mapping, Sequence
 from inspect import Parameter
 from itertools import chain, zip_longest
+from typing import (
+    Any as AnyType,
+)
+from typing import (
+    Callable,
+    Literal,
+    Tuple,
+    TypeVar,
+    Union,
+)
+
+from typing_extensions import Annotated, get_args, get_origin
 
 from ibis.common.collections import RewindableIterator, frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.util import is_function, is_iterable, promote_tuple
+
+try:
+    from types import UnionType
+except ImportError:
+    UnionType = object()
 
 
 class MatchError(Exception):
@@ -36,9 +54,29 @@ class NoMatch:
     """Sentinel value for when a pattern doesn't match."""
 
 
-class Pattern(ABC):
+class Coercible(ABC):
+    """Protocol for defining coercible types.
+
+    Coercible types define a special ``__coerce__`` method that accepts an object
+    with an instance of the type. Used in conjunction with the ``coerced_to``
+    pattern to coerce arguments to a specific type.
+    """
+
+    __slots__ = ()
+
+    @classmethod
+    @abstractmethod
+    def __coerce__(cls, obj):
+        ...
+
+
+class Pattern(ABC, Hashable):
     @abstractmethod
     def match(self, value, *, context):
+        ...
+
+    @abstractmethod
+    def __eq__(self, other):
         ...
 
     # TODO(kszucs): consider to add match_strict() with a default implementation
@@ -62,6 +100,71 @@ class Pattern(ABC):
     def validate(self, value, *, context):
         if self.match(value, context=context) is NoMatch:
             raise ValidationError(f"{value} doesn't match {self}")
+
+    @classmethod
+    def from_typehint(cls, annot: type) -> Pattern:
+        """Construct a pattern from a python type annotation.
+
+        Parameters
+        ----------
+        annot
+            The typehint annotation to construct the pattern from. If a string is
+            available then it must be evaluated before passing it to this function
+            using the ``evaluate_typehint`` function.
+        module
+            The module to evaluate the type annotation in. This is only used
+            when the first argument is a string (or ForwardRef).
+
+        Returns
+        -------
+        pattern
+            A pattern that matches the given type annotation.
+        """
+        # TODO(kszucs): cache the result of this function
+        origin, args = get_origin(annot), get_args(annot)
+
+        if origin is None:
+            if annot is AnyType:
+                return Any()
+            elif isinstance(annot, TypeVar):
+                return Any()
+            elif issubclass(annot, Coercible):
+                return CoercedTo(annot)
+            else:
+                return InstanceOf(annot)
+        elif origin is Literal:
+            return IsIn(args)
+        elif origin is UnionType or origin is Union:
+            inners = map(cls.from_typehint, args)
+            return AnyOf(*inners)
+        elif origin is Annotated:
+            annot, *extras = args
+            return AllOf(InstanceOf(annot), *extras)
+        elif issubclass(origin, Tuple):
+            first, *rest = args
+            if rest == [Ellipsis]:
+                inners = cls.from_typehint(first)
+            else:
+                inners = tuple(map(cls.from_typehint, args))
+            return TupleOf(inners)
+        elif issubclass(origin, Sequence):
+            (value_inner,) = map(cls.from_typehint, args)
+            return SequenceOf(value_inner, type=origin)
+            # return SequenceOf(value_inner, type=CoercedTo(origin))
+        elif issubclass(origin, Mapping):
+            key_inner, value_inner = map(cls.from_typehint, args)
+            return MappingOf(key_inner, value_inner, type=origin)
+        elif issubclass(origin, Callable):
+            if args:
+                arg_inners = tuple(map(cls.from_typehint, args[0]))
+                return_inner = cls.from_typehint(args[1])
+                return CallableWith(arg_inners, return_inner)
+            else:
+                return InstanceOf(Callable)
+        else:
+            raise NotImplementedError(
+                f"Cannot create validator from annotation {annot} {origin}"
+            )
 
 
 # extend Singleton base class to make this a singleton
@@ -409,13 +512,6 @@ class SequenceOf(Matcher):
         return self.length_pattern.match(result, context=context)
 
 
-class ListOf(SequenceOf):
-    __slots__ = ("pattern", "type", "length_pattern")
-
-    def __init__(self, pat):
-        super().__init__(pat, list)
-
-
 class TupleOf(Matcher):
     __slots__ = ("patterns",)
 
@@ -620,6 +716,18 @@ class PatternMapping(Matcher):
 IsTruish = Check(lambda x: bool(x))
 IsNumber = InstanceOf(numbers.Number) & ~InstanceOf(bool)
 IsString = InstanceOf(str)
+
+
+def ListOf(pattern):
+    return SequenceOf(pattern, type=list)
+
+
+def DictOf(key_pattern, value_pattern):
+    return MappingOf(key_pattern, value_pattern, type=dict)
+
+
+def FrozenDictOf(key_pattern, value_pattern):
+    return MappingOf(key_pattern, value_pattern, type=frozendict)
 
 
 def pattern(obj):
