@@ -1536,8 +1536,11 @@ def compile_date_sub(t, op, **kwargs):
 
 @compiles(ops.DateDiff)
 def compile_date_diff(t, op, **kwargs):
-    raise com.UnsupportedOperationError(
-        'PySpark backend does not support DateDiff as there is no timedelta type.'
+    left = t.translate(op.left, **kwargs)
+    right = t.translate(op.right, **kwargs)
+
+    return F.concat(F.lit("INTERVAL '"), F.datediff(left, right), F.lit("' DAY")).cast(
+        pt.DayTimeIntervalType(pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.DAY)
     )
 
 

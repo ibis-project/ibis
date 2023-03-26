@@ -855,11 +855,6 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, _: t.timestamp_col.dt.floor('d') - date_value,
             id='date-subtract-date',
             marks=[
-                pytest.mark.notimpl(
-                    ["pyspark"],
-                    raises=com.UnsupportedOperationError,
-                    reason="PySpark backend does not support DateDiff as there is no timedelta type.",
-                ),
                 pytest.mark.notimpl(["bigquery"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["druid"],
