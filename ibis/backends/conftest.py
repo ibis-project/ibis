@@ -291,7 +291,7 @@ def pytest_collection_modifyitems(session, config, items):
             if not any(item.iter_markers(name="benchmark")):
                 item.add_marker(pytest.mark.core)
 
-        for name in ("duckdb", "sqlite"):
+        for name in ["sqlite"]:
             # build a list of markers so we're don't invalidate the item's
             # marker iterator
             for _ in item.iter_markers(name=name):
