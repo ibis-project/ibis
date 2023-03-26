@@ -673,14 +673,9 @@ def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_pat
 
 
 @not_windows
-def test_invalid_connect():
+def test_invalid_connect(tmp_path):
     pytest.importorskip("duckdb")
-    url = "?".join(
-        [
-            "duckdb://ci/ibis-testing-data/ibis_testing.ddb",
-            "read_only=invalid_value",
-        ]
-    )
+    url = f"duckdb://{tmp_path}?read_only=invalid_value"
     with pytest.raises(ValueError):
         ibis.connect(url)
 
