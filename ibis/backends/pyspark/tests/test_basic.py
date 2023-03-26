@@ -226,6 +226,16 @@ def test_interval_columns(client):
         ]
     )
 
+    expected = pd.DataFrame(
+        {
+            "interval_day": [pd.Timedelta("10d")],
+            "interval_hour": [pd.Timedelta("10h")],
+            "interval_minute": [pd.Timedelta("10m")],
+            "interval_second": [pd.Timedelta("10s")],
+        }
+    )
+    tm.assert_frame_equal(table.execute(), expected)
+
 
 def test_interval_columns_invalid(client):
     with pytest.raises(
