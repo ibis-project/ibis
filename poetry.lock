@@ -5578,6 +5578,7 @@ mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["polars", "pyarrow"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
+pyarrow = ["pyarrow"]
 pyspark = ["pyarrow", "pyspark", "sqlalchemy"]
 snowflake = ["snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy-views"]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
@@ -5587,4 +5588,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "8a2e51fb531b6150707c76b9d202aaa0ecf6b7ad7a4ee1f16d913856a08e7334"
+content-hash = "1ddc5d070ca573ccedd3ae97bf8d136372d604c15579b2924d7f432ce893c9c1"
