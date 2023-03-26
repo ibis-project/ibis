@@ -1669,6 +1669,15 @@ def compile_array_filter(t, op, **kwargs):
     )
 
 
+@compiles(ops.ArrayMap)
+def compile_array_map(t, op, **kwargs):
+    src_column = t.translate(op.arg, **kwargs)
+    return F.transform(
+        src_column,
+        lambda x: t.translate(op.result, arg_columns={op.parameter: x}, **kwargs),
+    )
+
+
 # --------------------------- Null Operations -----------------------------
 
 

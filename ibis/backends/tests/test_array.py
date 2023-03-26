@@ -466,7 +466,6 @@ def test_array_slice(con, start, stop):
         "mssql",
         "polars",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
     ],
