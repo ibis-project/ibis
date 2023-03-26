@@ -95,4 +95,25 @@ in
       yj -tj < pyproject.toml | jq -rM '.tool.poetry.extras | with_entries(select(.key != "all")) | [.[]] | add | unique | sort'
     '';
   };
+
+  check-poetry-version = pkgs.writeShellApplication {
+    name = "check-poetry-version";
+    runtimeInputs = [
+      (
+        mkPoetryEnv {
+          python = pkgs.python311;
+          groups = [ ];
+          extras = [ ];
+        }
+      ).pkgs.poetry
+    ];
+    text = ''
+      expected="$1"
+      out="$(poetry --version --no-ansi)"
+      if [[ "$out" != *"$expected"* ]]; then
+        >&2 echo "error: expected version $expected; got: $out"
+        exit 1
+      fi
+    '';
+  };
 }

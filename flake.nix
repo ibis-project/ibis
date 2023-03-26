@@ -121,7 +121,7 @@
 
         default = pkgs.ibis311;
 
-        inherit (pkgs) update-lock-files gen-all-extras gen-examples;
+        inherit (pkgs) update-lock-files gen-all-extras gen-examples check-poetry-version;
       };
 
       devShells = rec {
