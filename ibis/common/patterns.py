@@ -50,6 +50,10 @@ class ValidationError(Exception):
     ...
 
 
+class CoercionError(Exception):
+    ...
+
+
 class NoMatch:
     """Sentinel value for when a pattern doesn't match."""
 
@@ -71,36 +75,6 @@ class Coercible(ABC):
 
 
 class Pattern(ABC, Hashable):
-    @abstractmethod
-    def match(self, value, *, context):
-        ...
-
-    @abstractmethod
-    def __eq__(self, other):
-        ...
-
-    # TODO(kszucs): consider to add match_strict() with a default implementation
-    # that calls match()
-
-    def __invert__(self):
-        return Not(self)
-
-    def __or__(self, other):
-        return AnyOf(self, other)
-
-    def __and__(self, other):
-        return AllOf(self, other)
-
-    def __rshift__(self, name):
-        return Capture(self, name)
-
-    def __rmatmul__(self, name):
-        return Capture(self, name)
-
-    def validate(self, value, *, context):
-        if self.match(value, context=context) is NoMatch:
-            raise ValidationError(f"{value} doesn't match {self}")
-
     @classmethod
     def from_typehint(cls, annot: type) -> Pattern:
         """Construct a pattern from a python type annotation.
@@ -149,11 +123,12 @@ class Pattern(ABC, Hashable):
             return TupleOf(inners)
         elif issubclass(origin, Sequence):
             (value_inner,) = map(cls.from_typehint, args)
-            return SequenceOf(value_inner, type=origin)
-            # return SequenceOf(value_inner, type=CoercedTo(origin))
+            ctor = origin.__coerce__ if issubclass(origin, Coercible) else origin
+            return SequenceOf(value_inner, type=ctor)
         elif issubclass(origin, Mapping):
             key_inner, value_inner = map(cls.from_typehint, args)
-            return MappingOf(key_inner, value_inner, type=origin)
+            ctor = origin.__coerce__ if issubclass(origin, Coercible) else origin
+            return MappingOf(key_inner, value_inner, type=ctor)
         elif issubclass(origin, Callable):
             if args:
                 arg_inners = tuple(map(cls.from_typehint, args[0]))
@@ -165,6 +140,38 @@ class Pattern(ABC, Hashable):
             raise NotImplementedError(
                 f"Cannot create validator from annotation {annot} {origin}"
             )
+
+    @abstractmethod
+    def match(self, value, *, context):
+        ...
+
+    @abstractmethod
+    def __eq__(self, other):
+        ...
+
+    # TODO(kszucs): consider to add match_strict() with a default implementation
+    # that calls match()
+
+    def __invert__(self):
+        return Not(self)
+
+    def __or__(self, other):
+        return AnyOf(self, other)
+
+    def __and__(self, other):
+        return AllOf(self, other)
+
+    def __rshift__(self, name):
+        return Capture(self, name)
+
+    def __rmatmul__(self, name):
+        return Capture(self, name)
+
+    def validate(self, value, *, context):
+        result = self.match(value, context=context)
+        if result is NoMatch:
+            raise ValidationError(f"{value} doesn't match {self}")
+        return result
 
 
 # extend Singleton base class to make this a singleton
@@ -392,17 +399,27 @@ class CoercedTo(Matcher):
         The type to coerce to.
     """
 
-    __slots__ = ("type",)
+    __slots__ = ("type", "constructor")
+
+    def __init__(self, type):
+        ctor = type.__coerce__ if issubclass(type, Coercible) else type
+        super().__init__(type, ctor)
 
     def match(self, value, *, context):
-        klass = self.type
-        if isinstance(value, type):
+        if isinstance(value, self.type):
             return value
 
         try:
-            return klass.__coerce__(value)
-        except AttributeError:
-            return klass(value)
+            value = self.constructor(value)
+        except CoercionError:
+            return NoMatch
+
+        if not isinstance(value, self.type):
+            raise MatchError(
+                f"Coercion failed: the coercion's result {value!r} is not a {self.type!r}"
+            )
+
+        return value
 
 
 class Not(Matcher):

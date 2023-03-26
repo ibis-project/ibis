@@ -1,7 +1,18 @@
 from __future__ import annotations
 
 import re
-from typing import Callable, Dict, List, Literal, Optional, Tuple, Union
+import sys
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Sequence,
+    Tuple,
+    TypeVar,
+    Union,
+)
 
 import pytest
 from typing_extensions import Annotated
@@ -15,6 +26,7 @@ from ibis.common.patterns import (
     Capture,
     Check,
     CoercedTo,
+    Coercible,
     Contains,
     DictOf,
     EqualTo,
@@ -39,6 +51,7 @@ from ibis.common.patterns import (
     SubclassOf,
     TupleOf,
     TypeOf,
+    ValidationError,
     match,
 )
 
@@ -52,6 +65,23 @@ class Double(Pattern):
 
     def __hash__(self):
         return hash(type(self))
+
+
+class Min(Pattern):
+    def __init__(self, min):
+        self.min = min
+
+    def match(self, value, context):
+        if value >= self.min:
+            return value
+        else:
+            return NoMatch
+
+    def __hash__(self):
+        return hash((self.__class__, self.min))
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ and self.min == other.min
 
 
 def test_any():
@@ -120,10 +150,10 @@ def test_lazy_instance_of():
 
 
 def test_coerced_to():
-    class MyInt(int):
+    class MyInt(int, Coercible):
         @classmethod
         def __coerce__(cls, other):
-            return MyInt(other) + 1
+            return MyInt(MyInt(other) + 1)
 
     p = CoercedTo(int)
     assert p.match(1, context={}) == 1
@@ -490,23 +520,33 @@ def test_matching_mapping():
 )
 def test_various_patterns(pattern, value, expected):
     assert pattern.match(value, context={}) == expected
+    assert pattern.validate(value, context={}) == expected
 
 
-class Min(Pattern):
-    def __init__(self, min):
-        self.min = min
-
-    def match(self, value, context):
-        if value >= self.min:
-            return value
-        else:
-            return NoMatch
-
-    def __hash__(self):
-        return hash((self.__class__, self.min))
-
-    def __eq__(self, other):
-        return self.__class__ == other.__class__ and self.min == other.min
+@pytest.mark.parametrize(
+    ('pattern', 'value'),
+    [
+        (InstanceOf(bool), "foo"),
+        (InstanceOf(str), True),
+        (InstanceOf(int), 8.1),
+        (Min(3), 2),
+        (InstanceOf(int), None),
+        (InstanceOf(float), 1),
+        (IsIn(["a", "b"]), "c"),
+        (IsIn({"a", "b"}), "c"),
+        (IsIn({"a": 1, "b": 2}), "d"),
+        (TupleOf(InstanceOf(int)), (1, 2.0, 3)),
+        (ListOf(InstanceOf(str)), ["a", "b", None]),
+        (AnyOf(InstanceOf(str), Min(4)), 3.14),
+        (AnyOf(InstanceOf(str), Min(10)), 9),
+        (AllOf(InstanceOf(int), Min(3), Min(8)), 7),
+        (DictOf(InstanceOf(int), InstanceOf(str)), {"a": 1, "b": 2}),
+    ],
+)
+def test_various_not_matching_patterns(pattern, value):
+    assert pattern.match(value, context={}) is NoMatch
+    with pytest.raises(ValidationError):
+        pattern.validate(value, context={})
 
 
 @pytest.mark.parametrize(
@@ -543,3 +583,94 @@ class Min(Pattern):
 )
 def test_pattern_from_typehint(annot, expected):
     assert Pattern.from_typehint(annot) == expected
+
+
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="requires python3.10 or higher")
+def test_pattern_from_typehint_uniontype():
+    # uniontype marks `type1 | type2` annotations and it's different from
+    # Union[type1, type2]
+    validator = Pattern.from_typehint(str | int | float)
+    assert validator == AnyOf(InstanceOf(str), InstanceOf(int), InstanceOf(float))
+
+
+class PlusOne(Coercible):
+    def __init__(self, value):
+        self.value = value
+
+    @classmethod
+    def __coerce__(cls, obj):
+        return cls(obj + 1)
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.value == other.value
+
+
+class PlusOneRaise(PlusOne):
+    @classmethod
+    def __coerce__(cls, obj):
+        raise TypeError("raise on coercion")
+
+
+class PlusOneChild(PlusOne):
+    pass
+
+
+class PlusTwo(PlusOne):
+    @classmethod
+    def __coerce__(cls, obj):
+        return obj + 2
+
+
+def test_pattern_from_coercible_protocol():
+    s = Pattern.from_typehint(PlusOne)
+    assert s.match(1, context={}) == PlusOne(2)
+    assert s.match(10, context={}) == PlusOne(11)
+
+
+def test_pattern_coercible_bypass_coercion():
+    s = Pattern.from_typehint(PlusOneRaise)
+    # bypass coercion since it's already an instance of SomethingRaise
+    assert s.match(PlusOneRaise(10), context={}) == PlusOneRaise(10)
+    # but actually call __coerce__ if it's not an instance
+    with pytest.raises(TypeError, match="raise on coercion"):
+        s.match(10, context={})
+
+
+def test_pattern_coercible_checks_type():
+    s = Pattern.from_typehint(PlusOneChild)
+    v = Pattern.from_typehint(PlusTwo)
+
+    assert s.match(1, context={}) == PlusOneChild(2)
+
+    assert PlusTwo.__coerce__(1) == 3
+    with pytest.raises(MatchError, match="failed"):
+        v.match(1, context={})
+
+
+T = TypeVar("T")
+
+
+class DoubledList(Coercible, List[T]):
+    @classmethod
+    def __coerce__(cls, obj):
+        return cls(list(obj) * 2)
+
+
+def test_pattern_coercible_sequence_type():
+    s = Pattern.from_typehint(Sequence[PlusOne])
+    with pytest.raises(TypeError, match=r"Sequence\(\) takes no arguments"):
+        s.match([1, 2, 3], context={})
+
+    s = Pattern.from_typehint(List[PlusOne])
+    assert s == SequenceOf(CoercedTo(PlusOne), type=list)
+    assert s.match([1, 2, 3], context={}) == [PlusOne(2), PlusOne(3), PlusOne(4)]
+
+    s = Pattern.from_typehint(Tuple[PlusOne, ...])
+    assert s == TupleOf(CoercedTo(PlusOne))
+    assert s.match([1, 2, 3], context={}) == (PlusOne(2), PlusOne(3), PlusOne(4))
+
+    s = Pattern.from_typehint(DoubledList[PlusOne])
+    assert s == SequenceOf(CoercedTo(PlusOne), type=DoubledList.__coerce__)
+    assert s.match([1, 2, 3], context={}) == DoubledList(
+        [PlusOne(2), PlusOne(3), PlusOne(4), PlusOne(2), PlusOne(3), PlusOne(4)]
+    )
