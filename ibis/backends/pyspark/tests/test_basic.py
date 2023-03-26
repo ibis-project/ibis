@@ -4,14 +4,14 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis.common.exceptions import IbisTypeError
+from ibis.expr import datatypes as dt
 
 pyspark = pytest.importorskip("pyspark")
 
 import pyspark.sql.functions as F  # noqa: E402
 
 from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name  # noqa: E402
-from ibis.expr import datatypes as dt
-from ibis.common.exceptions import IbisTypeError
 
 
 def test_basic(client):
