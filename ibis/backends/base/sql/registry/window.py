@@ -50,7 +50,7 @@ def interval_boundary_to_integer(boundary):
 
     value = boundary.value
     try:
-        multiplier = _map_interval_to_microseconds[value.output_dtype.unit]
+        multiplier = _map_interval_to_microseconds[value.output_dtype.unit.short]
     except KeyError:
         raise com.IbisInputError(
             f"Unsupported interval unit: {value.output_dtype.unit}"

@@ -94,7 +94,7 @@ PANDAS_UNITS = {
 @execute_node.register((ops.TimestampTruncate, ops.DateTruncate), pd.Series)
 def execute_timestamp_truncate(op, data, **kwargs):
     dt = data.dt
-    unit = PANDAS_UNITS.get(op.unit, op.unit)
+    unit = PANDAS_UNITS.get(op.unit.short, op.unit.short)
     try:
         return dt.floor(unit)
     except ValueError:
@@ -112,8 +112,8 @@ OFFSET_CLASS = {
 
 @execute_node.register(ops.IntervalFromInteger, pd.Series)
 def execute_interval_from_integer_series(op, data, **kwargs):
-    unit = op.unit
-    resolution = f"{op.resolution}s"
+    unit = op.unit.short
+    resolution = op.unit.plural
     cls = OFFSET_CLASS.get(unit, None)
 
     # fast path for timedelta conversion
@@ -124,8 +124,8 @@ def execute_interval_from_integer_series(op, data, **kwargs):
 
 @execute_node.register(ops.IntervalFromInteger, integer_types)
 def execute_interval_from_integer_integer_types(op, data, **kwargs):
-    unit = op.unit
-    resolution = f"{op.resolution}s"
+    unit = op.unit.short
+    resolution = op.unit.plural
     cls = OFFSET_CLASS.get(unit, None)
 
     if cls is None:
@@ -136,8 +136,8 @@ def execute_interval_from_integer_integer_types(op, data, **kwargs):
 @execute_node.register(ops.Cast, pd.Series, dt.Interval)
 def execute_cast_integer_to_interval_series(op, data, type, **kwargs):
     to = op.to
-    unit = to.unit
-    resolution = f"{to.resolution}s"
+    unit = to.unit.short
+    resolution = to.unit.plural
     cls = OFFSET_CLASS.get(unit, None)
 
     if cls is None:
@@ -148,8 +148,8 @@ def execute_cast_integer_to_interval_series(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, integer_types, dt.Interval)
 def execute_cast_integer_to_interval_integer_types(op, data, type, **kwargs):
     to = op.to
-    unit = to.unit
-    resolution = f"{to.resolution}s"
+    unit = to.unit.short
+    resolution = to.unit.plural
     cls = OFFSET_CLASS.get(unit, None)
 
     if cls is None:
@@ -238,7 +238,7 @@ def execute_interval_multiply_fdiv_series_numeric(op, left, right, **kwargs):
 
 @execute_node.register(ops.TimestampFromUNIX, (pd.Series,) + integer_types)
 def execute_timestamp_from_unix(op, data, **kwargs):
-    return pd.to_datetime(data, unit=op.unit)
+    return pd.to_datetime(data, unit=op.unit.short)
 
 
 @pre_execute.register(ops.TimestampNow)

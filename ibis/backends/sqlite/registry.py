@@ -104,7 +104,7 @@ def _truncate(func):
     def translator(t, op):
         sa_arg = t.translate(op.arg)
         try:
-            modifier = _truncate_modifiers[op.unit]
+            modifier = _truncate_modifiers[op.unit.short]
         except KeyError:
             raise com.UnsupportedOperationError(
                 f'Unsupported truncate unit {op.unit!r}'

@@ -328,7 +328,7 @@ multipolygon = value(dt.MultiPolygon)
 @rule
 def interval(arg, units=None, **kwargs):
     arg = value(dt.Interval, arg)
-    unit = arg.output_dtype.unit
+    unit = arg.output_dtype.unit.short
     if units is not None and unit not in units:
         msg = 'Interval unit `{}` is not among the allowed ones {}'
         raise com.IbisTypeError(msg.format(unit, units))

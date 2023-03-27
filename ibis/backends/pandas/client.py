@@ -113,7 +113,7 @@ def ibis_dtype_to_pandas(ibis_dtype: dt.DataType):
     if ibis_dtype.is_timestamp() and ibis_dtype.timezone:
         return DatetimeTZDtype('ns', ibis_dtype.timezone)
     elif ibis_dtype.is_interval():
-        return np.dtype(f'timedelta64[{ibis_dtype.unit}]')
+        return np.dtype(f'timedelta64[{ibis_dtype.unit.short}]')
     else:
         return _ibis_dtypes.get(type(ibis_dtype), np.dtype(np.object_))
 

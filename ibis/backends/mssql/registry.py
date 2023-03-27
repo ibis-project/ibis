@@ -99,7 +99,7 @@ _truncate_precisions = {
 
 def _timestamp_truncate(t, op):
     arg = t.translate(op.arg)
-    unit = op.unit
+    unit = op.unit.short
     if unit not in _truncate_precisions:
         raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
 
@@ -181,7 +181,7 @@ operation_registry.update(
             1,
         ),
         ops.TimestampFromUNIX: lambda t, op: _timestamp_from_unix(
-            t.translate(op.arg), op.unit
+            t.translate(op.arg), op.unit.short
         ),
         ops.DateFromYMD: fixed_arity(sa.func.datefromparts, 3),
         ops.TimestampFromYMDHMS: fixed_arity(
