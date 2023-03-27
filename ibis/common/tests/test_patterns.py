@@ -5,6 +5,7 @@ import sys
 from typing import (
     Callable,
     Dict,
+    Generic,
     List,
     Literal,
     Optional,
@@ -27,6 +28,7 @@ from ibis.common.patterns import (
     Check,
     CoercedTo,
     Coercible,
+    CoercionError,
     Contains,
     DictOf,
     EqualTo,
@@ -166,6 +168,69 @@ def test_coerced_to():
     assert p.match("1", context={}) == 2
     with pytest.raises(ValueError):
         p.match("foo", context={})
+
+
+def test_coerced_to_with_typevars():
+    T = TypeVar("T")
+    S = TypeVar("S")
+
+    class DataType:
+        ...
+
+    class Integer(DataType):
+        pass
+
+    class String(DataType):
+        pass
+
+    class DataShape:
+        ...
+
+    class Scalar(DataShape):
+        pass
+
+    class Columnar(DataShape):
+        pass
+
+    class Value(Generic[T, S], Coercible):
+        @classmethod
+        def __coerce__(cls, value, dtype=DataType, shape=DataShape):
+            if dtype is String:
+                return Literal(str(value), dtype)
+            elif dtype is Integer:
+                return Literal(int(value), dtype)
+            else:
+                raise CoercionError("Invalid dtype")
+
+        def output_dtype(self) -> T:
+            ...
+
+        def output_shape(self) -> S:
+            ...
+
+    class Literal(Value[T, Scalar]):
+        def __init__(self, value, dtype):
+            self.value = value
+            self.dtype = dtype
+
+        def output_dtype(self) -> T:
+            return self.dtype
+
+        def output_shape(self) -> Scalar:
+            return Scalar
+
+        def __eq__(self, other):
+            return (
+                type(self) == type(other)
+                and self.value == other.value
+                and self.dtype == other.dtype
+            )
+
+    p = CoercedTo(Literal[String])
+    r = p.match("foo", context={})
+    assert r == Literal("foo", String)
+    assert r.output_dtype() == String
+    assert r.output_shape() == Scalar
 
 
 def test_not():
@@ -670,7 +735,7 @@ def test_pattern_coercible_sequence_type():
     assert s.match([1, 2, 3], context={}) == (PlusOne(2), PlusOne(3), PlusOne(4))
 
     s = Pattern.from_typehint(DoubledList[PlusOne])
-    assert s == SequenceOf(CoercedTo(PlusOne), type=DoubledList.__coerce__)
+    assert s == SequenceOf(CoercedTo(PlusOne), type=DoubledList)
     assert s.match([1, 2, 3], context={}) == DoubledList(
         [PlusOne(2), PlusOne(3), PlusOne(4), PlusOne(2), PlusOne(3), PlusOne(4)]
     )

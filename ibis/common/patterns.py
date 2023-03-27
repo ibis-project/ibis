@@ -70,7 +70,7 @@ class Coercible(ABC):
 
     @classmethod
     @abstractmethod
-    def __coerce__(cls, obj):
+    def __coerce__(cls, obj, *args):
         ...
 
 
@@ -123,12 +123,10 @@ class Pattern(ABC, Hashable):
             return TupleOf(inners)
         elif issubclass(origin, Sequence):
             (value_inner,) = map(cls.from_typehint, args)
-            ctor = origin.__coerce__ if issubclass(origin, Coercible) else origin
-            return SequenceOf(value_inner, type=ctor)
+            return SequenceOf(value_inner, type=origin)
         elif issubclass(origin, Mapping):
             key_inner, value_inner = map(cls.from_typehint, args)
-            ctor = origin.__coerce__ if issubclass(origin, Coercible) else origin
-            return MappingOf(key_inner, value_inner, type=ctor)
+            return MappingOf(key_inner, value_inner, type=origin)
         elif issubclass(origin, Callable):
             if args:
                 arg_inners = tuple(map(cls.from_typehint, args[0]))
@@ -142,7 +140,7 @@ class Pattern(ABC, Hashable):
             )
 
     @abstractmethod
-    def match(self, value, *, context):
+    def match(self, value, context):
         ...
 
     @abstractmethod
@@ -220,14 +218,14 @@ class Any(Matcher):
 
     __slots__ = ()
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         return value
 
 
 class Capture(Matcher):
     __slots__ = ("pattern", "name")
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         value = self.pattern.match(value, context=context)
         context[self.name] = value
         return value
@@ -244,7 +242,7 @@ class Reference(Matcher):
 
     __slots__ = ("key",)
 
-    def match(self, *, context):
+    def match(self, context):
         return context[self.key]
 
 
@@ -259,11 +257,26 @@ class Check(Matcher):
 
     __slots__ = ("predicate",)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         if self.predicate(value):
             return value
         else:
             return NoMatch
+
+
+class Apply(Matcher):
+    """Pattern that applies a function to the value.
+
+    Parameters
+    ----------
+    func
+        The function to apply.
+    """
+
+    __slots__ = ("func",)
+
+    def match(self, value, context):
+        return self.func(value)
 
 
 class EqualTo(Matcher):
@@ -277,7 +290,7 @@ class EqualTo(Matcher):
 
     __slots__ = ("value",)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         if value == self.value:
             return value
         else:
@@ -300,7 +313,7 @@ class Option(Matcher):
     def __init__(self, pattern, default=None):
         super().__init__(pattern, default)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         default = self.default
         if value is None:
             if self.default is None:
@@ -317,7 +330,7 @@ class TypeOf(Matcher):
 
     __slots__ = ("type",)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         if type(value) is self.type:
             return value
         else:
@@ -335,7 +348,7 @@ class SubclassOf(Matcher):
 
     __slots__ = ("type",)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         if issubclass(value, self.type):
             return value
         else:
@@ -353,7 +366,7 @@ class InstanceOf(Matcher):
 
     __slots__ = ("types",)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         if isinstance(value, self.types):
             return value
         else:
@@ -399,24 +412,27 @@ class CoercedTo(Matcher):
         The type to coerce to.
     """
 
-    __slots__ = ("type", "constructor")
+    __slots__ = ("func", "origin", "args")
 
     def __init__(self, type):
-        ctor = type.__coerce__ if issubclass(type, Coercible) else type
-        super().__init__(type, ctor)
+        origin, args = get_origin(type), get_args(type)
+        if origin is None:
+            origin = type
+        func = getattr(origin, "__coerce__", origin)
+        super().__init__(func, origin, args)
 
-    def match(self, value, *, context):
-        if isinstance(value, self.type):
+    def match(self, value, context):
+        if isinstance(value, self.origin):
             return value
 
         try:
-            value = self.constructor(value)
+            value = self.func(value, *self.args)
         except CoercionError:
             return NoMatch
 
-        if not isinstance(value, self.type):
+        if not isinstance(value, self.origin):
             raise MatchError(
-                f"Coercion failed: the coercion's result {value!r} is not a {self.type!r}"
+                f"Coercion failed: the coercion's result {value!r} is not a {self.origin!r}"
             )
 
         return value
@@ -425,7 +441,7 @@ class CoercedTo(Matcher):
 class Not(Matcher):
     __slots__ = ("pattern",)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         if self.pattern.match(value, context=context) is NoMatch:
             return value
         else:
@@ -508,10 +524,13 @@ class IsIn(Matcher):
 
 
 class SequenceOf(Matcher):
-    __slots__ = ("pattern", "type", "length_pattern")
+    __slots__ = ("item_pattern", "type_pattern", "length_pattern")
 
     def __init__(self, pat, type=tuple, at_least=None, at_most=None):
-        super().__init__(pattern(pat), type, Length(at_least=at_least, at_most=at_most))
+        item_pattern = pattern(pat)
+        type_pattern = CoercedTo(type) if issubclass(type, Coercible) else Apply(type)
+        length_pattern = Length(at_least=at_least, at_most=at_most)
+        super().__init__(item_pattern, type_pattern, length_pattern)
 
     def match(self, values, *, context):
         if not is_iterable(values):
@@ -519,12 +538,14 @@ class SequenceOf(Matcher):
 
         result = []
         for value in values:
-            value = self.pattern.match(value, context=context)
+            value = self.item_pattern.match(value, context=context)
             if value is NoMatch:
                 return NoMatch
             result.append(value)
 
-        result = self.type(result)
+        result = self.type_pattern.match(result, context=context)
+        if result is NoMatch:
+            return NoMatch
 
         return self.length_pattern.match(result, context=context)
 
@@ -637,21 +658,25 @@ class CallableWith(Matcher):
 
 
 class PatternSequence(Matcher):
-    __slots__ = ("pattern_pairs",)
+    __slots__ = ("pattern_window",)
 
     def __init__(self, patterns):
         current_patterns = [
             SequenceOf(Any()) if p is Ellipsis else pattern(p) for p in patterns
         ]
         following_patterns = chain(current_patterns[1:], [Not(Any())])
-        pattern_pairs = tuple(zip(current_patterns, following_patterns))
-        super().__init__(pattern_pairs)
+        pattern_window = tuple(zip(current_patterns, following_patterns))
+        super().__init__(pattern_window)
+
+    @property
+    def first_pattern(self):
+        return self.pattern_window[0][0]
 
     def match(self, value, *, context):
         it = RewindableIterator(value)
         result = []
 
-        if not self.pattern_pairs:
+        if not self.pattern_window:
             try:
                 next(it)
             except StopIteration:
@@ -659,7 +684,7 @@ class PatternSequence(Matcher):
             else:
                 return NoMatch
 
-        for current, following in self.pattern_pairs:
+        for current, following in self.pattern_window:
             original = current
 
             if isinstance(current, Capture):
@@ -669,9 +694,9 @@ class PatternSequence(Matcher):
 
             if isinstance(current, (SequenceOf, PatternSequence)):
                 if isinstance(following, SequenceOf):
-                    following = following.pattern
+                    following = following.item_pattern
                 elif isinstance(following, PatternSequence):
-                    following = following.pattern_pairs[0][0]
+                    following = following.first_pattern
 
                 matches = []
                 while True:
