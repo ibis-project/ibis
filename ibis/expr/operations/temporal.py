@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import operator
 
-import toolz
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.annotations import attribute
+from ibis.common.enums import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 from ibis.expr.operations.core import Binary, Unary, Value
 from ibis.expr.operations.generic import Cast
 from ibis.expr.operations.logical import Between
@@ -75,13 +75,11 @@ _time_units = {
     'NANOSECOND': 'ns',
 }
 
-_timestamp_units = toolz.merge(_date_units, _time_units)
-
 
 @public
 class TimestampTruncate(Value):
     arg = rlz.timestamp
-    unit = rlz.map_to(_timestamp_units)
+    unit = rlz.coerced_to(IntervalUnit)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.timestamp
@@ -90,7 +88,7 @@ class TimestampTruncate(Value):
 @public
 class DateTruncate(Value):
     arg = rlz.date
-    unit = rlz.map_to(_date_units)
+    unit = rlz.coerced_to(DateUnit)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.date
@@ -99,7 +97,7 @@ class DateTruncate(Value):
 @public
 class TimeTruncate(Value):
     arg = rlz.time
-    unit = rlz.map_to(_time_units)
+    unit = rlz.coerced_to(TimeUnit)
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.time
@@ -251,7 +249,7 @@ class TimestampFromYMDHMS(Value):
 @public
 class TimestampFromUNIX(Value):
     arg = rlz.any
-    unit = rlz.isin({'s', 'ms', 'us', 'ns'})
+    unit = rlz.coerced_to(TimestampUnit)
 
     output_dtype = dt.timestamp
     output_shape = rlz.shape_like('arg')
@@ -327,7 +325,7 @@ class TimestampDiff(Binary):
 @public
 class ToIntervalUnit(Value):
     arg = rlz.interval
-    unit = rlz.isin({'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'})
+    unit = rlz.coerced_to(IntervalUnit)
 
     output_shape = rlz.shape_like("arg")
 
@@ -337,7 +335,7 @@ class ToIntervalUnit(Value):
         # TODO(kszucs): remove the expression wrapping required for arithmetic
         # overloads
         if dtype.unit != unit:
-            arg = util.convert_unit(arg, dtype.unit, unit)
+            arg = util.convert_unit(arg, dtype.unit.short, unit.short)
         super().__init__(arg=arg, unit=unit)
 
     @attribute.default
@@ -391,7 +389,7 @@ class IntervalFloorDivide(IntervalBinary):
 @public
 class IntervalFromInteger(Value):
     arg = rlz.integer
-    unit = rlz.isin({'Y', 'Q', 'M', 'W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns'})
+    unit = rlz.coerced_to(IntervalUnit)
 
     output_shape = rlz.shape_like("arg")
 

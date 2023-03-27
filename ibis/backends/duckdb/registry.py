@@ -77,9 +77,9 @@ def _timestamp_from_unix(t, op):
     arg, unit = op.args
     arg = t.translate(arg)
 
-    if unit == "ms":
+    if unit.short == "ms":
         return sa.func.epoch_ms(arg)
-    elif unit == "s":
+    elif unit.short == "s":
         return sa.func.to_timestamp(arg)
     else:
         raise UnsupportedOperationError(f"{unit!r} unit is not supported!")

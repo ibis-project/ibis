@@ -73,7 +73,7 @@ def _cast(op, **kw):
     arg = translate_val(op.arg, **kw)
 
     if isinstance(op.to, dt.Interval):
-        suffix = _interval_cast_suffixes[op.to.unit]
+        suffix = _interval_cast_suffixes[op.to.unit.short]
         return f"toInterval{suffix}({arg})"
 
     to = translate_val(op.to, **kw)
@@ -386,7 +386,7 @@ def _node_list(op, punct="()", **kw):
 
 def _interval_format(op):
     dtype = op.output_dtype
-    if dtype.unit in {"ms", "us", "ns"}:
+    if dtype.unit.short in {"ms", "us", "ns"}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions"
         )
@@ -397,7 +397,7 @@ def _interval_format(op):
 @translate_val.register(ops.IntervalFromInteger)
 def _interval_from_integer(op, **kw):
     dtype = op.output_dtype
-    if dtype.unit in {"ms", "us", "ns"}:
+    if dtype.unit.short in {"ms", "us", "ns"}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions"
         )
@@ -539,7 +539,7 @@ def _table_array_view(op, *, cache, **kw):
 @translate_val.register(ops.TimestampFromUNIX)
 def _timestamp_from_unix(op, **kw):
     arg = translate_val(op.arg, **kw)
-    if (unit := op.unit) in {"ms", "us", "ns"}:
+    if (unit := op.unit.short) in {"ms", "us", "ns"}:
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
     return f"toDateTime({arg})"
@@ -559,7 +559,7 @@ def _truncate(op, **kw):
         "s": "toDateTime",
     }
 
-    unit = op.unit
+    unit = op.unit.short
     arg = translate_val(op.arg, **kw)
     try:
         converter = converters[unit]

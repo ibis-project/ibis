@@ -8,6 +8,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.common.enums import IntervalUnit
 from ibis.expr import api
 
 
@@ -71,7 +72,7 @@ def test_cannot_upconvert(delta, target):
 )
 def test_multiply(expr):
     assert isinstance(expr, ir.IntervalScalar)
-    assert expr.type().unit == 'D'
+    assert expr.type().unit == IntervalUnit('D')
 
 
 @pytest.mark.parametrize(
@@ -83,7 +84,7 @@ def test_multiply(expr):
 )
 def test_add(expr):
     assert isinstance(expr, ir.IntervalScalar)
-    assert expr.type().unit == 'D'
+    assert expr.type().unit == IntervalUnit('D')
 
 
 @pytest.mark.parametrize(
@@ -95,7 +96,7 @@ def test_add(expr):
 )
 def test_subtract(expr):
     assert isinstance(expr, ir.IntervalScalar)
-    assert expr.type().unit == 'D'
+    assert expr.type().unit == IntervalUnit('D')
 
 
 @pytest.mark.parametrize(
@@ -210,7 +211,7 @@ def test_downconvert_day(case, expected):
     ],
 )
 def test_combine_with_different_kinds(a, b, unit):
-    assert (a + b).type().unit == unit
+    assert (a + b).type().unit == IntervalUnit(unit)
 
 
 @pytest.mark.parametrize(
@@ -474,7 +475,7 @@ def test_invalid_date_arithmetics():
 )
 def test_interval_properties(prop, expected_unit):
     i = api.interval(seconds=3600)
-    assert getattr(i, prop).type().unit == expected_unit
+    assert getattr(i, prop).type().unit == IntervalUnit(expected_unit)
 
 
 @pytest.mark.parametrize(
@@ -486,7 +487,7 @@ def test_interval_properties(prop, expected_unit):
     [('months', 'M'), ('quarters', 'Q'), ('years', 'Y')],
 )
 def test_interval_monthly_properties(interval, prop, expected_unit):
-    assert getattr(interval, prop).type().unit == expected_unit
+    assert getattr(interval, prop).type().unit == IntervalUnit(expected_unit)
 
 
 @pytest.mark.parametrize(
@@ -511,7 +512,7 @@ def test_integer_to_interval(column, unit, table):
     i = c.to_interval(unit)
     assert isinstance(i, ir.IntervalColumn)
     assert i.type().value_type == c.type()
-    assert i.type().unit == unit
+    assert i.type().unit == IntervalUnit(unit)
 
 
 @pytest.mark.parametrize(

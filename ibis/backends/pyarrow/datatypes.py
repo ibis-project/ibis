@@ -50,7 +50,7 @@ def from_ibis_collection(dtype: dt.Array | dt.Set):
 @to_pyarrow_type.register
 def from_ibis_interval(dtype: dt.Interval):
     try:
-        return pa.duration(dtype.unit)
+        return pa.duration(dtype.unit.short)
     except ValueError:
         raise com.IbisTypeError(f"Unsupported interval unit: {dtype.unit}")
 
