@@ -49,11 +49,8 @@ def _get_type(typestr: str) -> dt.DataType:
     try:
         return _parse_numeric(typestr)
     except parsy.ParseError:
-        # postgres can have arbitrary types unknown to ibis, so we just
-        # consider them null since we can't know what to do with them without
-        # explicit support, return null to effectively give no public API to
-        # such columns
-        return dt.null
+        # postgres can have arbitrary types unknown to ibis
+        return dt.unknown
 
 
 _type_mapping = {
@@ -181,4 +178,4 @@ def sa_pg_array(dialect, satype, nullable=True):
 
 @dt.dtype.register(PGDialect, postgresql.TSVECTOR)
 def sa_postgres_tsvector(_, satype, nullable=True):
-    return dt.String(nullable=nullable)
+    return dt.Unknown(nullable=nullable)

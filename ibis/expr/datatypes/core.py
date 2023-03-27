@@ -269,6 +269,9 @@ class DataType(Concrete):
     def is_uint8(self) -> bool:
         return isinstance(self, UInt8)
 
+    def is_unknown(self) -> bool:
+        return isinstance(self, Unknown)
+
     def is_unsigned_integer(self) -> bool:
         return isinstance(self, UnsignedInteger)
 
@@ -282,6 +285,14 @@ class DataType(Concrete):
 @dtype.register(DataType)
 def from_ibis_dtype(value: DataType) -> DataType:
     return value
+
+
+@public
+class Unknown(DataType, Singleton):
+    """An unknown type."""
+
+    scalar = ir.UnknownScalar
+    column = ir.UnknownColumn
 
 
 @public
@@ -922,6 +933,7 @@ uuid = UUID()
 macaddr = MACADDR()
 inet = INET()
 decimal = Decimal()
+unknown = Unknown()
 
 Enum = String
 
@@ -1023,6 +1035,7 @@ public(
     macaddr=macaddr,
     inet=inet,
     decimal=decimal,
+    unknown=unknown,
     Enum=Enum,
     Geography=GeoSpatial,
     Geometry=GeoSpatial,

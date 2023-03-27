@@ -115,6 +115,10 @@ else:
         return "UUID"
 
 
+class Unknown(sa.Text):
+    pass
+
+
 # TODO(cleanup)
 ibis_type_to_sqla = {
     dt.Null: sat.NullType,
@@ -141,6 +145,7 @@ ibis_type_to_sqla = {
     dt.UInt64: UInt64,
     dt.JSON: sa.JSON,
     dt.Interval: sa.Interval,
+    dt.Unknown: Unknown,
 }
 
 
@@ -260,6 +265,11 @@ def sa_double(_, satype, nullable=True):
 @dt.dtype.register(Dialect, sa.types.JSON)
 def sa_json(_, satype, nullable=True):
     return dt.JSON(nullable=nullable)
+
+
+@dt.dtype.register(Dialect, Unknown)
+def sa_unknown(_, satype, nullable=True):
+    return dt.Unknown(nullable=nullable)
 
 
 if geospatial_supported:
