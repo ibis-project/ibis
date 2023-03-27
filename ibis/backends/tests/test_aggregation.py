@@ -282,7 +282,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.bool_col[where].dropna().nunique(),
             id='nunique',
             marks=pytest.mark.notimpl(
-                ["polars", "pyspark", "datafusion"], raises=com.OperationNotDefinedError
+                ["pyspark", "datafusion"], raises=com.OperationNotDefinedError
             ),
         ),
         param(
