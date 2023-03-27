@@ -114,7 +114,7 @@ pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
 hypothesis = ">=6.58.0,<7"
 sqlalchemy = ">=1.4,<3"
-pytest-httpserver = "^1.0.6"
+pytest-httpserver = ">=1.0.5,<2"
 
 [tool.poetry.group.docs.dependencies]
 griffe = ">=0.25.3,<1"
