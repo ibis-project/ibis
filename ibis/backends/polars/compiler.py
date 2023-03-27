@@ -637,6 +637,7 @@ _reductions = {
     ops.StandardDev: 'std',
     ops.Sum: 'sum',
     ops.Variance: 'var',
+    ops.CountDistinct: 'n_unique',
 }
 
 for reduction in _reductions.keys():
