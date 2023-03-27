@@ -29,6 +29,13 @@ extras=(
   -e decompiler
 )
 template="conda-lock/{platform}-${python_version}.lock"
+
+linux_osx_extras=()
+if [ "${python_version}" != "3.11" ]; then
+  # clickhouse cityhash doesn't exist for python 3.11
+  linux_osx_extras+=(-e clickhouse)
+fi
+
 conda lock \
   --file pyproject.toml \
   --file "${python_version_file}" \
@@ -39,7 +46,7 @@ conda lock \
   --filter-extras \
   --mamba \
   --category dev --category test --category docs \
-  "${extras[@]}" -e clickhouse -e datafusion
+  "${extras[@]}" "${linux_osx_extras[@]}" -e datafusion
 
 conda lock \
   --file pyproject.toml \
