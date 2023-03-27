@@ -148,7 +148,7 @@ def parse(
 
     interval = spaceless_string("interval").then(
         parsy.seq(
-            value_type=angle_type.optional(), unit=parened_string.optional("s")
+            value_type=angle_type.optional(dt.int32), unit=parened_string.optional("s")
         ).combine_dict(dt.Interval)
     )
 
