@@ -1098,7 +1098,11 @@ class Column(Value, _FixedTextJupyterMixin):
         return ops.NTile(self, buckets).to_expr()
 
     def nth(self, n: int | ir.IntegerValue) -> Column:
-        """Return the `n`th value over a window.
+        """Return the `n`th value (0-indexed) over a window.
+
+        `.nth(0)` is equivalent to `.first()`. Negative will result in `NULL`.
+        If the value of `n` is greater than the number of rows in the window,
+        `NULL` will be returned.
 
         Parameters
         ----------
