@@ -815,6 +815,10 @@ def test_int_scalar(alltypes):
 @pytest.mark.notyet(["pyspark"])
 @pytest.mark.parametrize("method_name", ["any", "notany"])
 def test_exists(batting, awards_players, method_name):
+    years = [1980, 1981]
+    batting_years = [1871, *years]
+    batting = batting[batting.yearID.isin(batting_years)]
+    awards_players = awards_players[awards_players.yearID.isin(years)]
     method = methodcaller(method_name)
     expr = batting[method(batting.yearID == awards_players.yearID)]
     result = expr.execute()

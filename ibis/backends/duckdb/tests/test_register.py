@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import tempfile
 from pathlib import Path
 
@@ -87,28 +88,39 @@ def test_read_postgres(pgurl):  # pragma: no cover
     assert table.count().execute()
 
 
-def test_read_sqlite(data_directory):
+def test_read_sqlite(tmp_path):
+    path = tmp_path / "test.db"
+
+    sqlite_con = sqlite3.connect(str(path))
+    sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
+
     con = ibis.duckdb.connect()
-    path = data_directory / "ibis_testing.db"
-    ft = con.read_sqlite(path, table_name="functional_alltypes")
+    ft = con.read_sqlite(path, table_name="t")
     assert ft.count().execute()
 
     with pytest.raises(ValueError):
         con.read_sqlite(path)
 
 
-def test_read_sqlite_no_table_name(data_directory):
+def test_read_sqlite_no_table_name(tmp_path):
     con = ibis.duckdb.connect()
-    path = data_directory / "ibis_testing.db"
+    path = tmp_path / "test.db"
+
+    sqlite3.connect(str(path))
+
+    assert path.exists()
 
     with pytest.raises(ValueError):
         con.read_sqlite(path)
 
 
-def test_register_sqlite(data_directory):
+def test_register_sqlite(tmp_path):
+    path = tmp_path / "test.db"
+
+    sqlite_con = sqlite3.connect(str(path))
+    sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
     con = ibis.duckdb.connect()
-    path = data_directory / "ibis_testing.db"
-    ft = con.register(f"sqlite://{path}", "functional_alltypes")
+    ft = con.register(f"sqlite://{path}", "t")
     assert ft.count().execute()
 
 
