@@ -697,7 +697,7 @@ def date(op):
 @translate.register(ops.TimestampTruncate)
 def temporal_truncate(op):
     arg = translate(op.arg)
-    unit = "mo" if op.unit == "M" else op.unit
+    unit = "mo" if op.unit.short == "M" else op.unit.short
     unit = f"1{unit.lower()}"
     return arg.dt.truncate(unit, "-1w")
 
@@ -740,7 +740,7 @@ def timestamp_from_ymdhms(op):
 @translate.register(ops.TimestampFromUNIX)
 def timestamp_from_unix(op):
     arg = translate(op.arg)
-    unit = op.unit
+    unit = op.unit.short
     if unit == "s":
         arg = arg.cast(pl.Int64) * 1_000
         unit = "ms"

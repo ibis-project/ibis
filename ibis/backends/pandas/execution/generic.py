@@ -94,7 +94,7 @@ def execute_node_literal_datatype(op, datatype, **kwargs):
 def execute_interval_literal(op, value, dtype, **kwargs):
     if value is None:
         return pd.NaT
-    return pd.Timedelta(value, dtype.unit)
+    return pd.Timedelta(value, dtype.unit.short)
 
 
 @execute_node.register(ops.Limit, pd.DataFrame, integer_types, integer_types)

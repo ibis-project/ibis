@@ -77,7 +77,7 @@ def _cast(translator, op):
 def integer_to_timestamp(translator: compiler.ExprTranslator, op) -> str:
     """Interprets an integer as a timestamp."""
     arg = translator.translate(op.arg)
-    unit = op.unit
+    unit = op.unit.short
 
     if unit == "s":
         return f"TIMESTAMP_SECONDS({arg})"
@@ -91,7 +91,7 @@ def integer_to_timestamp(translator: compiler.ExprTranslator, op) -> str:
         # https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#timestamp_type
         return f"TIMESTAMP_MICROS(CAST(ROUND({arg} / 1000) AS INT64))"
 
-    raise NotImplementedError(f"cannot cast unit {unit}")
+    raise NotImplementedError(f"cannot cast unit {op.unit}")
 
 
 def _struct_field(translator, op):

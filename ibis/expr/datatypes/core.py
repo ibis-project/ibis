@@ -17,13 +17,11 @@ from multipledispatch import Dispatcher
 from public import public
 from typing_extensions import get_args, get_origin, get_type_hints
 
-from ibis.common.annotations import attribute, optional
+from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict, MapSet
+from ibis.common.enums import IntervalUnit
 from ibis.common.grounds import Concrete, Singleton
-from ibis.common.validators import (
-    Coercible,
-    map_to,
-)
+from ibis.common.validators import Coercible
 
 # TODO(kszucs): we don't support union types yet
 
@@ -619,58 +617,11 @@ class Decimal(Numeric, Parametric):
         return f"({', '.join(args)})"
 
 
-class TemporalUnit(Enum):
-    YEAR = "Y"
-    QUARTER = "Q"
-    MONTH = "M"
-    WEEK = "W"
-    DAY = "D"
-    HOUR = "h"
-    MINUTE = "m"
-    SECOND = "s"
-    MILLISECOND = "ms"
-    MICROSECOND = "us"
-    NANOSECOND = "ns"
-
-    @property
-    def singular(self) -> str:
-        return self.name.lower()
-
-    @property
-    def plural(self) -> str:
-        return self.singular + "s"
-
-    @property
-    def short(self) -> str:
-        return self.value
-
-
 @public
 class Interval(Parametric):
     """Interval values."""
 
-    __valid_units__ = {
-        'days': 'D',
-        'hours': 'h',
-        'minutes': 'm',
-        'seconds': 's',
-        'milliseconds': 'ms',
-        'microseconds': 'us',
-        'nanoseconds': 'ns',
-        'Y': 'Y',
-        'Q': 'Q',
-        'M': 'M',
-        'W': 'W',
-        'D': 'D',
-        'h': 'h',
-        'm': 'm',
-        's': 's',
-        'ms': 'ms',
-        'us': 'us',
-        'ns': 'ns',
-    }
-
-    unit = optional(map_to(__valid_units__), default='s')
+    unit: IntervalUnit = 's'
     """The time unit of the interval."""
 
     value_type: Integer = Int32()
@@ -678,21 +629,6 @@ class Interval(Parametric):
 
     scalar = "IntervalScalar"
     column = "IntervalColumn"
-
-    # based on numpy's units
-    _units = {
-        'Y': 'year',
-        'Q': 'quarter',
-        'M': 'month',
-        'W': 'week',
-        'D': 'day',
-        'h': 'hour',
-        'm': 'minute',
-        's': 'second',
-        'ms': 'millisecond',
-        'us': 'microsecond',
-        'ns': 'nanosecond',
-    }
 
     # TODO(kszucs): assert that the nullability if the value_type is equal
     # to the interval's nullability
@@ -704,7 +640,7 @@ class Interval(Parametric):
     @property
     def resolution(self):
         """The interval unit's name."""
-        return self._units[self.unit]
+        return self.unit.singular
 
     @property
     def _pretty_piece(self) -> str:

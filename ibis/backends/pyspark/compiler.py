@@ -1391,7 +1391,7 @@ def compile_extract_millisecond(t, op, **kwargs):
 @compiles(ops.DateTruncate)
 def compile_date_truncate(t, op, **kwargs):
     try:
-        unit = _time_unit_mapping[op.unit]
+        unit = _time_unit_mapping[op.unit.short]
     except KeyError:
         raise com.UnsupportedOperationError(
             f'{op.unit!r} unit is not supported in timestamp truncate'
@@ -1423,13 +1423,13 @@ def compile_timestamp_from_unix(t, op, **kwargs):
     unixtime = t.translate(op.arg, **kwargs)
     if not op.unit:
         return F.to_timestamp(F.from_unixtime(unixtime))
-    elif op.unit == 's':
+    elif op.unit.short == 's':
         fmt = 'yyyy-MM-dd HH:mm:ss'
         return F.to_timestamp(F.from_unixtime(unixtime, fmt), fmt)
     else:
         raise com.UnsupportedArgumentError(
             'PySpark backend does not support timestamp from unix time with '
-            'unit {}. Supported unit is s.'.format(op.unit)
+            'unit {}. Supported unit is s.'.format(op.unit.short)
         )
 
 
@@ -1474,9 +1474,9 @@ def _get_interval_col(t, op, allowed_units=None, **kwargs):
             f'{dtype} expression cannot be converted to interval column. '
             'Must be Interval dtype.'
         )
-    if allowed_units and dtype.unit not in allowed_units:
+    if allowed_units and dtype.unit.short not in allowed_units:
         raise com.UnsupportedArgumentError(
-            f'Interval unit "{dtype.unit}" is not allowed. Allowed units are: '
+            f'Interval unit "{dtype.unit.short}" is not allowed. Allowed units are: '
             f'{allowed_units}'
         )
 
@@ -1506,7 +1506,7 @@ def _get_interval_col(t, op, allowed_units=None, **kwargs):
         td_micros = td_nanos // 1000
         return F.expr(f'INTERVAL {td_micros} MICROSECOND')
     else:
-        return F.expr(f'INTERVAL {op.value} {_time_unit_mapping[dtype.unit]}')
+        return F.expr(f'INTERVAL {op.value} {_time_unit_mapping[dtype.unit.short]}')
 
 
 def _compile_datetime_binop(t, op, *, fn, **kwargs):
