@@ -151,36 +151,25 @@ class Backend(BaseAlchemyBackend):
         loaded = sa.column("loaded")
         installed = sa.column("installed")
         aliases = sa.column("aliases")
-
-        def q(predicate):
-            return (
-                sa.select(extension_name)
-                .select_from(sa.func.duckdb_extensions())
-                .where(
-                    sa.and_(
-                        predicate,
-                        # extension is one that we're requesting, or an alias of it
-                        sa.or_(
-                            extension_name.in_(extensions),
-                            *map(partial(sa.func.array_has, aliases), extensions),
-                        ),
-                    )
+        query = (
+            sa.select(extension_name)
+            .select_from(sa.func.duckdb_extensions())
+            .where(
+                sa.and_(
+                    # extension isn't loaded or isn't installed
+                    sa.not_(loaded & installed),
+                    # extension is one that we're requesting, or an alias of it
+                    sa.or_(
+                        extension_name.in_(extensions),
+                        *map(partial(sa.func.array_has, aliases), extensions),
+                    ),
                 )
             )
-
-        query = q(~installed)
-        with self.begin() as con:
-            extensions_to_install = con.execute(query).scalars().fetchall()
-
-        with self.begin() as con:
-            c = con.connection
-            for extension in extensions_to_install:
-                c.install_extension(extension)
-
-        query = q(~loaded & loaded.is_not(sa.null()))
+        )
         with self.begin() as con:
             c = con.connection
             for extension in con.execute(query).scalars():
+                c.install_extension(extension)
                 c.load_extension(extension)
 
     def register(
