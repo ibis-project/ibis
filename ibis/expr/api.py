@@ -418,9 +418,7 @@ def _memtable_from_pyarrow_table(
 
     if columns is not None:
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
-        schema = sch.Schema(
-            {col: typ for col, typ in zip(columns, sch.infer(data).values())}
-        )
+        schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
     return ops.InMemoryTable(
         name=(
             name
