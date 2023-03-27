@@ -15,8 +15,6 @@ in
   pydruid = super.pydruid.overridePythonAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
   });
-
-  ipython-genutils = self.ipython_genutils;
 } // super.lib.listToAttrs (
   map
     (name: {
