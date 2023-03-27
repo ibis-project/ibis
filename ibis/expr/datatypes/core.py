@@ -8,7 +8,7 @@ from abc import abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from collections.abc import Set as PySet
 from numbers import Integral, Real
-from typing import Any, Iterable, NamedTuple
+from typing import Any, Iterable, Literal, NamedTuple, Optional
 
 import numpy as np
 import toolz
@@ -17,16 +17,13 @@ from public import public
 from typing_extensions import get_args, get_origin, get_type_hints
 
 from ibis.common.annotations import attribute, optional
-from ibis.common.collections import MapSet
+from ibis.common.collections import FrozenDict, MapSet
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.validators import (
-    all_of,
-    frozendict_of,
-    instance_of,
-    isin,
+    Coercible,
     map_to,
-    validator,
 )
+from enum import Enum
 
 # TODO(kszucs): we don't support union types yet
 
@@ -82,19 +79,14 @@ def dtype_from_object(value, **kwargs) -> DataType:
         raise TypeError(f'Value {value!r} is not a valid datatype')
 
 
-@validator
-def datatype(arg, **kwargs):
-    return dtype(arg)
-
-
 @public
-class DataType(Concrete):
+class DataType(Concrete, Coercible):
     """Base class for all data types.
 
     [`DataType`][ibis.expr.datatypes.DataType] instances are immutable.
     """
 
-    nullable = optional(instance_of(bool), default=True)
+    nullable: bool = True
 
     # TODO(kszucs): remove it, prefer to use Annotable.__repr__ instead
     @property
@@ -106,6 +98,10 @@ class DataType(Concrete):
     def name(self) -> str:
         """Return the name of the data type."""
         return self.__class__.__name__
+
+    @classmethod
+    def __coerce__(cls, value):
+        return dtype(value)
 
     def __call__(self, **kwargs):
         return self.copy(**kwargs)
@@ -411,10 +407,11 @@ class Time(Temporal, Primitive):
 class Timestamp(Temporal, Parametric):
     """Timestamp values."""
 
-    timezone = optional(instance_of(str))
+    timezone: Optional[str] = None
     """The timezone of values of this type."""
 
-    scale = optional(isin(range(10)))
+    # Literal[*range(10)] is only supported from 3.11
+    scale: Optional[Literal[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]] = None
     """The scale of the timestamp if known."""
 
     scalar = "TimestampScalar"
@@ -559,10 +556,10 @@ class Float64(Floating):
 class Decimal(Numeric, Parametric):
     """Fixed-precision decimal values."""
 
-    precision = optional(instance_of(int))
+    precision: Optional[int] = None
     """The number of decimal places values of this type can hold."""
 
-    scale = optional(instance_of(int))
+    scale: Optional[int] = None
     """The number of values after the decimal point."""
 
     scalar = "DecimalScalar"
@@ -619,6 +616,33 @@ class Decimal(Numeric, Parametric):
         return f"({', '.join(args)})"
 
 
+class TemporalUnit(Enum):
+
+    YEAR = "Y"
+    QUARTER = "Q"
+    MONTH = "M"
+    WEEK = "W"
+    DAY = "D"
+    HOUR = "h"
+    MINUTE = "m"
+    SECOND = "s"
+    MILLISECOND = "ms"
+    MICROSECOND = "us"
+    NANOSECOND = "ns"
+
+    @property
+    def singular(self) -> str:
+        return self.name.lower()
+
+    @property
+    def plural(self) -> str:
+        return self.singular + "s"
+
+    @property
+    def short(self) -> str:
+        return self.value
+
+
 @public
 class Interval(Parametric):
     """Interval values."""
@@ -647,7 +671,7 @@ class Interval(Parametric):
     unit = optional(map_to(__valid_units__), default='s')
     """The time unit of the interval."""
 
-    value_type = optional(all_of([datatype, instance_of(Integer)]), default=Int32())
+    value_type: Integer = Int32()
     """The underlying type of the stored values."""
 
     scalar = "IntervalScalar"
@@ -689,7 +713,7 @@ class Interval(Parametric):
 class Struct(Parametric, MapSet):
     """Structured values."""
 
-    fields = frozendict_of(instance_of(str), datatype)
+    fields: FrozenDict[str, DataType]
 
     scalar = "StructScalar"
     column = "StructColumn"
@@ -749,7 +773,7 @@ class Struct(Parametric, MapSet):
 class Array(Variadic, Parametric):
     """Array values."""
 
-    value_type = datatype
+    value_type: DataType
 
     scalar = "ArrayScalar"
     column = "ArrayColumn"
@@ -763,7 +787,7 @@ class Array(Variadic, Parametric):
 class Set(Variadic, Parametric):
     """Set values."""
 
-    value_type = datatype
+    value_type: DataType
 
     scalar = "SetScalar"
     column = "SetColumn"
@@ -777,8 +801,8 @@ class Set(Variadic, Parametric):
 class Map(Variadic, Parametric):
     """Associative array values."""
 
-    key_type = datatype
-    value_type = datatype
+    key_type: DataType
+    value_type: DataType
 
     scalar = "MapScalar"
     column = "MapColumn"
@@ -800,10 +824,10 @@ class JSON(Variadic):
 class GeoSpatial(DataType):
     """Geospatial values."""
 
-    geotype = optional(isin({"geography", "geometry"}))
+    geotype: Optional[Literal["geography", "geometry"]] = None
     """The specific geospatial type."""
 
-    srid = optional(instance_of(int))
+    srid: Optional[int] = None
     """The spatial reference identifier."""
 
     column = "GeoSpatialColumn"
