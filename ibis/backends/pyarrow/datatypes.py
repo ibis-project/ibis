@@ -28,6 +28,8 @@ _to_pyarrow_types = {
     dt.Date: pa.date64(),
     dt.JSON: pa.string(),
     dt.Null: pa.null(),
+    # assume unknown types can be converted into strings
+    dt.Unknown: pa.string(),
 }
 
 

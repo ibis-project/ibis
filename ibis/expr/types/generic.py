@@ -5,10 +5,10 @@ from typing import TYPE_CHECKING, Any, Iterable, Literal, Sequence
 from public import public
 
 import ibis
-from ibis import util
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 
@@ -1111,6 +1111,21 @@ class Column(Value, _FixedTextJupyterMixin):
             The nth value over a window
         """
         return ops.NthValue(self, n).to_expr()
+
+
+@public
+class UnknownValue(Value):
+    pass
+
+
+@public
+class UnknownScalar(Scalar):
+    pass
+
+
+@public
+class UnknownColumn(Column):
+    pass
 
 
 @public
