@@ -1,19 +1,20 @@
 from __future__ import annotations
 
-import itertools
-import os
-import subprocess
-import tempfile
+import contextlib
+import csv
+import sqlite3
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
-import sqlalchemy as sa
 
 import ibis
 import ibis.expr.types as ir
-from ibis.backends.conftest import TEST_TABLES, init_database
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+
+if TYPE_CHECKING:
+    from ibis.backends.base import BaseBackend
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -23,6 +24,25 @@ class TestConf(BackendTest, RoundAwayFromZero):
     check_dtype = False
     returned_timestamp_unit = 's'
     supports_structs = False
+
+    def __init__(self, data_directory: Path) -> None:
+        self.connection = self.connect(data_directory)
+
+        schema = data_directory.parent.joinpath('schema', 'sqlite.sql').read_text()
+
+        with self.connection.begin() as con:
+            for stmt in filter(None, map(str.strip, schema.split(';'))):
+                con.exec_driver_sql(stmt)
+
+            for table in TEST_TABLES:
+                basename = f"{table}.csv"
+                with data_directory.joinpath(basename).open("r") as f:
+                    reader = csv.reader(f)
+                    header = next(reader)
+                    assert header, f"empty header for table: `{table}`"
+                    spec = ", ".join("?" * len(header))
+                    with contextlib.closing(con.connection.cursor()) as cur:
+                        cur.executemany(f"INSERT INTO {table} VALUES ({spec})", reader)
 
     @staticmethod
     def _load_data(
@@ -37,48 +57,11 @@ class TestConf(BackendTest, RoundAwayFromZero):
         script_dir
             Location of scripts defining schemas
         """
-        if database is None:
-            database = Path(
-                os.environ.get(
-                    "IBIS_TEST_SQLITE_DATABASE", data_dir / "ibis_testing.db"
-                )
-            )
-
-        with open(script_dir / 'schema' / 'sqlite.sql') as schema:
-            init_database(
-                url=sa.engine.make_url("sqlite://"),
-                database=str(database.absolute()),
-                schema=schema,
-            )
-
-        with tempfile.TemporaryDirectory() as tempdir:
-            for table in TEST_TABLES:
-                basename = f"{table}.csv"
-                with Path(tempdir).joinpath(basename).open("w") as f:
-                    with data_dir.joinpath(basename).open("r") as lines:
-                        # skip the first line
-                        f.write("".join(itertools.islice(lines, 1, None)))
-            subprocess.run(
-                ["sqlite3", database],
-                input="\n".join(
-                    [
-                        ".separator ,",
-                        *(
-                            f".import {str(path.absolute())!r} {path.stem}"
-                            for path in Path(tempdir).glob("*.csv")
-                        ),
-                    ]
-                ).encode(),
-            )
+        return TestConf(data_dir)
 
     @staticmethod
-    def connect(data_directory: Path):
-        path = Path(
-            os.environ.get(
-                'IBIS_TEST_SQLITE_DATABASE', data_directory / 'ibis_testing.db'
-            )
-        )
-        return ibis.sqlite.connect(str(path))  # type: ignore
+    def connect(data_directory: Path) -> BaseBackend:
+        return ibis.sqlite.connect()  # type: ignore
 
     @property
     def functional_alltypes(self) -> ir.Table:
@@ -86,20 +69,18 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
 
 
-@pytest.fixture(scope="session")
-def dbpath(data_directory):
-    default = str(data_directory / 'ibis_testing.db')
-    return os.environ.get('IBIS_TEST_SQLITE_DATABASE', default)
+@pytest.fixture
+def dbpath(tmp_path):
+    path = tmp_path / "test.db"
+    con = sqlite3.connect(path)
+    con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
+    con.execute("CREATE TABLE s AS SELECT 1 b UNION SELECT 2")
+    return path
 
 
 @pytest.fixture(scope="session")
-def con(tmp_path_factory, data_directory, script_directory, worker_id):
-    return TestConf.load_data(
-        data_directory,
-        script_directory,
-        tmp_path_factory,
-        worker_id,
-    ).connect(data_directory)
+def con(data_directory):
+    return TestConf(data_directory).connection
 
 
 @pytest.fixture(scope="session")

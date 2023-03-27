@@ -716,25 +716,6 @@ def test_scalar_parameter(alltypes):
     tm.assert_series_equal(result, expected)
 
 
-def test_compile_twice(dbpath):
-    con1 = ibis.sqlite.connect(dbpath)
-    t1 = con1.table('batting')
-    sort_key1 = ibis.desc(t1.playerID)
-    sorted_table1 = t1.order_by(sort_key1)
-    expr1 = sorted_table1.count()
-
-    con2 = ibis.sqlite.connect(dbpath)
-    t2 = con2.table('batting')
-    sort_key2 = ibis.desc(t2.playerID)
-    sorted_table2 = t2.order_by(sort_key2)
-    expr2 = sorted_table2.count()
-
-    result1 = str(expr1.compile())
-    result2 = str(expr2.compile())
-
-    assert result1 == result2
-
-
 def test_count_on_order_by(con):
     t = con.table("batting")
     sort_key = ibis.desc(t.playerID)

@@ -92,20 +92,20 @@ def test_verbose_log_queries(con):
 
 def test_table_equality(dbpath):
     con1 = ibis.sqlite.connect(dbpath)
-    batting1 = con1.table("batting")
+    t1 = con1.table("t")
 
     con2 = ibis.sqlite.connect(dbpath)
-    batting2 = con2.table("batting")
+    t2 = con2.table("t")
 
-    assert batting1.op() == batting2.op()
-    assert batting1.equals(batting2)
+    assert t1.op() == t2.op()
+    assert t1.equals(t2)
 
 
 def test_table_inequality(dbpath):
     con = ibis.sqlite.connect(dbpath)
 
-    batting = con.table("batting")
-    functional_alltypes = con.table("functional_alltypes")
+    t = con.table("t")
+    s = con.table("s")
 
-    assert batting.op() != functional_alltypes.op()
-    assert not batting.equals(functional_alltypes)
+    assert t.op() != s.op()
+    assert not t.equals(s)
