@@ -4,6 +4,7 @@ import contextlib
 import importlib
 import importlib.metadata
 import itertools
+import os
 import platform
 import sys
 from functools import lru_cache
@@ -20,6 +21,12 @@ from packaging.version import parse as vparse
 import ibis
 from ibis import util
 from ibis.backends.base import _get_backend_names
+
+SANDBOXED = (
+    platform.system() == "Linux"
+    and any(key.startswith("NIX_") for key in os.environ)
+    and os.environ.get("IN_NIX_SHELL") != "impure"
+)
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
