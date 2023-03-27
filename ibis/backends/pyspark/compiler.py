@@ -579,6 +579,11 @@ def compile_count(t, op, **kwargs):
     return compile_aggregator(t, op, fn=F.count, **kwargs)
 
 
+@compiles(ops.CountDistinct)
+def compile_count_distinct(t, op, **kwargs):
+    return compile_aggregator(t, op, fn=F.count_distinct, **kwargs)
+
+
 @compiles(ops.CountStar)
 def compile_count_star(t, op, aggcontext=None, **kwargs):
     src_table = t.translate(op.arg, **kwargs)
