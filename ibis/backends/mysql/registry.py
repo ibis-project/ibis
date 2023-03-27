@@ -47,7 +47,7 @@ _truncate_formats = {
 def _truncate(t, op):
     sa_arg = t.translate(op.arg)
     try:
-        fmt = _truncate_formats[op.unit]
+        fmt = _truncate_formats[op.unit.short]
     except KeyError:
         raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit}')
     return sa.func.date_format(sa_arg, fmt)
@@ -65,7 +65,7 @@ def _round(t, op):
 
 
 def _interval_from_integer(t, op):
-    if op.unit in {'ms', 'ns'}:
+    if op.unit.short in {'ms', 'ns'}:
         raise com.UnsupportedOperationError(
             f'MySQL does not allow operation with INTERVAL offset {op.unit}'
         )
@@ -83,7 +83,7 @@ def _interval_from_integer(t, op):
 
 def _literal(_, op):
     if op.output_dtype.is_interval():
-        if op.output_dtype.unit in {'ms', 'ns'}:
+        if op.output_dtype.unit.short in {'ms', 'ns'}:
             raise com.UnsupportedOperationError(
                 'MySQL does not allow operation '
                 f'with INTERVAL offset {op.output_dtype.unit}'

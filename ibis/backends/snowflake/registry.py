@@ -355,7 +355,7 @@ operation_registry.update(
         ),
         ops.TimestampFromYMDHMS: fixed_arity(sa.func.timestamp_from_parts, 6),
         ops.TimestampFromUNIX: lambda t, op: sa.func.to_timestamp(
-            t.translate(op.arg), _TIMESTAMP_UNITS_TO_SCALE[op.unit]
+            t.translate(op.arg), _TIMESTAMP_UNITS_TO_SCALE[op.unit.short]
         ),
         ops.StructField: lambda t, op: sa.cast(
             sa.func.get(t.translate(op.arg), op.field), t.get_sqla_type(op.output_dtype)
