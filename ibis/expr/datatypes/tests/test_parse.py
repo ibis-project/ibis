@@ -234,7 +234,7 @@ def test_parse_interval_with_invalid_value_type():
         dt.dtype("interval<float>('s')")
 
 
-@pytest.mark.parametrize('unit', ['H', 'unsupported'])
+@pytest.mark.parametrize('unit', ['X', 'unsupported'])
 def test_parse_interval_with_invalid_unit(unit):
     definition = f"interval('{unit}')"
     with pytest.raises(ValueError):

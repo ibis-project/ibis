@@ -33,7 +33,7 @@ _READER_FUNCS = {"csv": "read_csv", "csv.gz": "read_csv", "parquet": "read_parqu
 
 
 class Example(Concrete):
-    descr: Optional[str]  # noqa: UP007
+    descr: Optional[str]
     key: str
     reader: str
 
