@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.conftest import SANDBOXED, TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 if TYPE_CHECKING:
@@ -40,7 +40,12 @@ class TestConf(BackendTest, RoundAwayFromZero):
         data_dir
             Location of test data
         """
-        return TestConf(data_directory=data_dir)
+        con = TestConf(data_directory=data_dir)
+        if not SANDBOXED:
+            con.connection._load_extensions(
+                ["httpfs", "postgres_scanner", "sqlite_scanner"]
+            )
+        return con
 
     @staticmethod
     def connect(data_directory: Path) -> BaseBackend:
