@@ -107,10 +107,10 @@ Limit[r0, n=5]
 
 ## Interactive Mode
 
-For the rest of this intro, we'll turn on interactive mode, which eagerly executes queries.
-There is a small difference in the way the output is formatted, but otherwise
-this is the same as calling `execute()` on the expression with a limit of 10
-results returned.
+For the rest of this intro, we'll turn on interactive mode, which partially
+executes queries to give users a preview of the results. There is a small
+difference in the way the output is formatted, but otherwise this is the same
+as calling `execute()` on the expression with a limit of 10 results returned.
 
 ```python
 >>> ibis.options.interactive = True
@@ -163,7 +163,7 @@ We can filter so we only have penguins of the species Adelie:
 Or filter for Adelie penguins that reside on the island of Torgersen:
 
 ```python
->>> penguins.filter([penguins.island == "Torgersen", penguins.species == "Adelie"])
+>>> penguins.filter((penguins.island == "Torgersen") & (penguins.species == "Adelie"))
 ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
 ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ year  ┃
 ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
@@ -329,10 +329,11 @@ doing that again, we can use a `selector` to quickly select or deselect groups
 of columns.
 
 ```python
-from ibis import selectors as s
+>>> from ibis import selectors as s
 
 >>> penguins.mutate(bill_length_cm=penguins.bill_length_mm / 10).select(
         ~s.matches("bill_length_mm")
+        # match every column except `bill_length_mm`
     )
 ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
 ┃ species ┃ island    ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ year  ┃ bill_length_cm ┃
@@ -463,28 +464,14 @@ Ibis has several aggregate functions available to help summarize data.
 
 `mean`, `max`, `min`, `count`, `sum` (the list goes on).
 
-To aggregate an entire column, call the corresponding method on that column for
-a quick result:
+To aggregate an entire column, call the corresponding method on that column.
 
 ```python
 >>> penguins.flipper_length_mm.mean()
 200.91520467836258
 ```
 
-Or use the `aggregate` method:
-
-```python
->>> penguins.aggregate(penguins.flipper_length_mm.mean())
-┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Mean(flipper_length_mm) ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ float64                 │
-├─────────────────────────┤
-│              200.915205 │
-└─────────────────────────┘
-```
-
-That's not very useful on its own, but you can compute multiple aggregates at once:
+You can compute multiple aggregates at once using the `aggregate` method:
 
 ```python
 >>> penguins.aggregate(
@@ -619,7 +606,7 @@ How about:
 - What was the largest female penguin (by body mass) on each island in the year 2008?
 
 ```python
->>> penguins.filter([penguins.sex == "female", penguins.year == 2008]).group_by(
+>>> penguins.filter((penguins.sex == "female") & (penguins.year == 2008)).group_by(
         ["island"]
     ).aggregate(penguins.body_mass_g.max())
 ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
@@ -636,7 +623,7 @@ How about:
 - What about the largest male penguin (by body mass) on each island for each year of data collection?
 
 ```python
->>> penguins.filter([penguins.sex == "male"]).group_by(["island", "year"]).aggregate(
+>>> penguins.filter(penguins.sex == "male").group_by(["island", "year"]).aggregate(
         penguins.body_mass_g.max().name("max_body_mass")
     ).order_by(["year", "max_body_mass"])
 ┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━┓
