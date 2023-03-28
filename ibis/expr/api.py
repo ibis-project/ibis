@@ -14,7 +14,6 @@ import numpy as np
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
@@ -39,7 +38,7 @@ from ibis.expr.types import (
     null,
     struct,
 )
-from ibis.util import deprecated, experimental
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -147,7 +146,6 @@ __all__ = (
     'schema',
     'Schema',
     'selectors',
-    'sequence',
     'set_backend',
     'show_sql',
     'struct',
@@ -220,22 +218,6 @@ def param(type: dt.DataType) -> ir.Scalar:
     Sum(value): Sum(r1.value)
     """
     return ops.ScalarParameter(type).to_expr()
-
-
-@deprecated(as_of='5.0', removed_in='6.0', instead='use tuple or list instead')
-def sequence(values: Sequence[T | None]) -> ir.List:
-    """Wrap a list of Python values as an Ibis sequence type.
-
-    Parameters
-    ----------
-    values
-        Should all be None or the same type
-    Returns
-    -------
-    List
-        A list expression.
-    """
-    return [op.to_expr() for op in rlz.tuple_of(rlz.any, values)]
 
 
 def schema(
