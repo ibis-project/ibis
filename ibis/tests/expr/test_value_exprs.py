@@ -1656,11 +1656,3 @@ def test_quantile_shape():
     (b1,) = expr.op().selections
 
     assert b1.output_shape.is_columnar()
-
-
-def test_sequence():
-    with pytest.warns(FutureWarning):
-        exprs = ibis.sequence([3, 2])
-
-    for expr in exprs:
-        assert isinstance(expr, ir.ScalarExpr)
