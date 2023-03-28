@@ -16,7 +16,6 @@ from multipledispatch import Dispatcher
 from public import public
 from typing_extensions import get_args, get_origin, get_type_hints
 
-import ibis.expr.types as ir
 from ibis.common.annotations import attribute, optional
 from ibis.common.collections import MapSet
 from ibis.common.grounds import Concrete, Singleton
@@ -291,8 +290,8 @@ def from_ibis_dtype(value: DataType) -> DataType:
 class Unknown(DataType, Singleton):
     """An unknown type."""
 
-    scalar = ir.UnknownScalar
-    column = ir.UnknownColumn
+    scalar = "UnknownScalar"
+    column = "UnknownColumn"
 
 
 @public
@@ -318,16 +317,16 @@ class Parametric(DataType):
 class Null(Primitive):
     """Null values."""
 
-    scalar = ir.NullScalar
-    column = ir.NullColumn
+    scalar = "NullScalar"
+    column = "NullColumn"
 
 
 @public
 class Boolean(Primitive):
     """[`True`][True] or [`False`][False] values."""
 
-    scalar = ir.BooleanScalar
-    column = ir.BooleanColumn
+    scalar = "BooleanScalar"
+    column = "BooleanColumn"
 
 
 @public
@@ -347,8 +346,8 @@ class Numeric(DataType):
 class Integer(Primitive, Numeric):
     """Integer values."""
 
-    scalar = ir.IntegerScalar
-    column = ir.IntegerColumn
+    scalar = "IntegerScalar"
+    column = "IntegerColumn"
 
     @property
     @abstractmethod
@@ -366,8 +365,8 @@ class String(Variadic, Singleton):
     cannot assume that strings are UTF-8 encoded.
     """
 
-    scalar = ir.StringScalar
-    column = ir.StringColumn
+    scalar = "StringScalar"
+    column = "StringColumn"
 
 
 @public
@@ -383,8 +382,8 @@ class Binary(Variadic, Singleton):
     distinct types that have different behavior.
     """
 
-    scalar = ir.BinaryScalar
-    column = ir.BinaryColumn
+    scalar = "BinaryScalar"
+    column = "BinaryColumn"
 
 
 @public
@@ -396,16 +395,16 @@ class Temporal(DataType):
 class Date(Temporal, Primitive):
     """Date values."""
 
-    scalar = ir.DateScalar
-    column = ir.DateColumn
+    scalar = "DateScalar"
+    column = "DateColumn"
 
 
 @public
 class Time(Temporal, Primitive):
     """Time values."""
 
-    scalar = ir.TimeScalar
-    column = ir.TimeColumn
+    scalar = "TimeScalar"
+    column = "TimeColumn"
 
 
 @public
@@ -418,8 +417,8 @@ class Timestamp(Temporal, Parametric):
     scale = optional(isin(range(10)))
     """The scale of the timestamp if known."""
 
-    scalar = ir.TimestampScalar
-    column = ir.TimestampColumn
+    scalar = "TimestampScalar"
+    column = "TimestampColumn"
 
     @property
     def _pretty_piece(self) -> str:
@@ -465,8 +464,8 @@ class UnsignedInteger(Integer):
 class Floating(Primitive, Numeric):
     """Floating point values."""
 
-    scalar = ir.FloatingScalar
-    column = ir.FloatingColumn
+    scalar = "FloatingScalar"
+    column = "FloatingColumn"
 
     @property
     def largest(self):
@@ -566,8 +565,8 @@ class Decimal(Numeric, Parametric):
     scale = optional(instance_of(int))
     """The number of values after the decimal point."""
 
-    scalar = ir.DecimalScalar
-    column = ir.DecimalColumn
+    scalar = "DecimalScalar"
+    column = "DecimalColumn"
 
     def __init__(
         self,
@@ -651,8 +650,8 @@ class Interval(Parametric):
     value_type = optional(all_of([datatype, instance_of(Integer)]), default=Int32())
     """The underlying type of the stored values."""
 
-    scalar = ir.IntervalScalar
-    column = ir.IntervalColumn
+    scalar = "IntervalScalar"
+    column = "IntervalColumn"
 
     # based on numpy's units
     _units = {
@@ -692,8 +691,8 @@ class Struct(Parametric, MapSet):
 
     fields = frozendict_of(instance_of(str), datatype)
 
-    scalar = ir.StructScalar
-    column = ir.StructColumn
+    scalar = "StructScalar"
+    column = "StructColumn"
 
     def __class_getitem__(cls, fields):
         return cls({slice_.start: slice_.stop for slice_ in fields})
@@ -752,8 +751,8 @@ class Array(Variadic, Parametric):
 
     value_type = datatype
 
-    scalar = ir.ArrayScalar
-    column = ir.ArrayColumn
+    scalar = "ArrayScalar"
+    column = "ArrayColumn"
 
     @property
     def _pretty_piece(self) -> str:
@@ -766,8 +765,8 @@ class Set(Variadic, Parametric):
 
     value_type = datatype
 
-    scalar = ir.SetScalar
-    column = ir.SetColumn
+    scalar = "SetScalar"
+    column = "SetColumn"
 
     @property
     def _pretty_piece(self) -> str:
@@ -781,8 +780,8 @@ class Map(Variadic, Parametric):
     key_type = datatype
     value_type = datatype
 
-    scalar = ir.MapScalar
-    column = ir.MapColumn
+    scalar = "MapScalar"
+    column = "MapColumn"
 
     @property
     def _pretty_piece(self) -> str:
@@ -793,8 +792,8 @@ class Map(Variadic, Parametric):
 class JSON(Variadic):
     """JSON values."""
 
-    scalar = ir.JSONScalar
-    column = ir.JSONColumn
+    scalar = "JSONScalar"
+    column = "JSONColumn"
 
 
 @public
@@ -807,8 +806,8 @@ class GeoSpatial(DataType):
     srid = optional(instance_of(int))
     """The spatial reference identifier."""
 
-    column = ir.GeoSpatialColumn
-    scalar = ir.GeoSpatialScalar
+    column = "GeoSpatialColumn"
+    scalar = "GeoSpatialScalar"
 
     @property
     def _pretty_piece(self) -> str:
@@ -824,16 +823,16 @@ class GeoSpatial(DataType):
 class Point(GeoSpatial):
     """A point described by two coordinates."""
 
-    scalar = ir.PointScalar
-    column = ir.PointColumn
+    scalar = "PointScalar"
+    column = "PointColumn"
 
 
 @public
 class LineString(GeoSpatial):
     """A sequence of 2 or more points."""
 
-    scalar = ir.LineStringScalar
-    column = ir.LineStringColumn
+    scalar = "LineStringScalar"
+    column = "LineStringColumn"
 
 
 @public
@@ -844,56 +843,56 @@ class Polygon(GeoSpatial):
     rest represent holes in that shape (internal rings).
     """
 
-    scalar = ir.PolygonScalar
-    column = ir.PolygonColumn
+    scalar = "PolygonScalar"
+    column = "PolygonColumn"
 
 
 @public
 class MultiLineString(GeoSpatial):
     """A set of one or more line strings."""
 
-    scalar = ir.MultiLineStringScalar
-    column = ir.MultiLineStringColumn
+    scalar = "MultiLineStringScalar"
+    column = "MultiLineStringColumn"
 
 
 @public
 class MultiPoint(GeoSpatial):
     """A set of one or more points."""
 
-    scalar = ir.MultiPointScalar
-    column = ir.MultiPointColumn
+    scalar = "MultiPointScalar"
+    column = "MultiPointColumn"
 
 
 @public
 class MultiPolygon(GeoSpatial):
     """A set of one or more polygons."""
 
-    scalar = ir.MultiPolygonScalar
-    column = ir.MultiPolygonColumn
+    scalar = "MultiPolygonScalar"
+    column = "MultiPolygonColumn"
 
 
 @public
 class UUID(DataType):
     """A 128-bit number used to identify information in computer systems."""
 
-    scalar = ir.UUIDScalar
-    column = ir.UUIDColumn
+    scalar = "UUIDScalar"
+    column = "UUIDColumn"
 
 
 @public
 class MACADDR(String):
     """Media Access Control (MAC) address of a network interface."""
 
-    scalar = ir.MACADDRScalar
-    column = ir.MACADDRColumn
+    scalar = "MACADDRScalar"
+    column = "MACADDRColumn"
 
 
 @public
 class INET(String):
     """IP addresses."""
 
-    scalar = ir.INETScalar
-    column = ir.INETColumn
+    scalar = "INETScalar"
+    column = "INETColumn"
 
 
 # ---------------------------------------------------------------------
