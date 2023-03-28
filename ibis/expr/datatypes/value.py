@@ -16,7 +16,7 @@ import pytz
 import toolz
 from public import public
 
-import ibis.expr.datatypes.core as dt
+import ibis.expr.datatypes as dt
 from ibis.common.collections import frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
@@ -167,37 +167,26 @@ class _WellKnownText(NamedTuple):
 
 
 def _infer_object_array_dtype(x):
-    import pandas as pd
-    from pandas.api.types import infer_dtype
+    import pyarrow as pa
 
-    classifier = infer_dtype(x, skipna=True)
-    if classifier == "mixed":
-        value = x.iloc[0] if isinstance(x, pd.Series) else x[0]
-        if isinstance(value, (np.ndarray, pd.Series, Sequence, Mapping)):
-            return infer(value)
-        else:
-            return dt.binary
+    import ibis.backends.pyarrow.datatypes  # noqa: F401
+
+    try:
+        pa_type = pa.array(x, from_pandas=True).type
+    except pa.ArrowInvalid:
+        try:
+            # handle embedded series objects
+            return dt.highest_precedence(map(infer, x))
+        except IbisTypeError:
+            # we can still have a type error, e.g., float64 and string in the
+            # same array
+            return dt.unknown
+    except pa.ArrowTypeError:
+        # arrow can't infer the type
+        return dt.unknown
     else:
-        return {
-            'string': dt.string,
-            'bytes': dt.string,
-            'floating': dt.float64,
-            'integer': dt.int64,
-            'mixed-integer': dt.binary,
-            'mixed-integer-float': dt.float64,
-            'decimal': dt.float64,
-            'complex': dt.binary,
-            'boolean': dt.boolean,
-            'datetime64': dt.timestamp,
-            'datetime': dt.timestamp,
-            'date': dt.date,
-            'timedelta64': dt.interval,
-            'timedelta': dt.interval,
-            'time': dt.time,
-            'period': dt.binary,
-            'empty': dt.null,
-            'unicode': dt.string,
-        }[classifier]
+        # arrow inferred the type, now convert that type to an ibis type
+        return dt.dtype(pa_type)
 
 
 @infer.register(np.generic)
@@ -218,7 +207,7 @@ def infer_numpy_array(value):
 @infer.register("pandas.Series")
 def infer_pandas_series(value):
     if value.dtype == np.object_:
-        value_dtype = _infer_object_array_dtype(value)
+        value_dtype = _infer_object_array_dtype(value.values)
     else:
         value_dtype = dt.dtype(value.dtype)
 
