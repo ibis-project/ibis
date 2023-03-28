@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 import ibis.examples
@@ -8,10 +10,23 @@ pytestmark = pytest.mark.examples
 
 duckdb = pytest.importorskip("duckdb")
 
-ignored = {"wowah_data_raw"}  # this file is large (~80M)
+# large files
+ignored = frozenset(
+    (
+        "imdb_name_basics",
+        "imdb_title_akas",
+        "imdb_title_basics",
+        "imdb_title_crew",
+        "imdb_title_episode",
+        "imdb_title_principals",
+        "imdb_title_ratings",
+        "wowah_data_raw",
+    )
+    * (os.environ.get("CI") is None)
+)
 
 
-@pytest.mark.parametrize("example", sorted(set(dir(ibis.examples)) - ignored))
+@pytest.mark.parametrize("example", sorted(frozenset(dir(ibis.examples)) - ignored))
 @pytest.mark.duckdb
 @pytest.mark.backend
 @pytest.mark.xfail(
