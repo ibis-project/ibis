@@ -73,7 +73,6 @@ class Backend(BaseAlchemyBackend):
     def do_connect(
         self,
         database: str | Path = ":memory:",
-        path: str | Path = None,
         read_only: bool = False,
         temp_directory: Path | str | None = None,
         **config: Any,
@@ -84,8 +83,6 @@ class Backend(BaseAlchemyBackend):
         ----------
         database
             Path to a duckdb database.
-        path
-            Deprecated, use `database` instead.
         read_only
             Whether the database is read-only.
         temp_directory
@@ -102,12 +99,6 @@ class Backend(BaseAlchemyBackend):
         >>> ibis.duckdb.connect("database.ddb", threads=4, memory_limit="1GB")
         <ibis.backends.duckdb.Backend object at ...>
         """
-        if path is not None:
-            warnings.warn(
-                "The `path` argument is deprecated in 4.0. Use `database=...` "
-                "instead."
-            )
-            database = path
         if database != ":memory:":
             database = Path(database).absolute()
         elif temp_directory is None:
