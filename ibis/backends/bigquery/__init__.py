@@ -10,7 +10,6 @@ import google.auth.credentials
 import google.cloud.bigquery as bq
 import pandas as pd
 import pydata_google_auth
-from google.api_core.exceptions import NotFound
 from pydata_google_auth import cache
 
 import ibis
@@ -30,7 +29,6 @@ from ibis.backends.bigquery.client import (
     rename_partitioned_column,
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
-from ibis.util import deprecated
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
@@ -306,43 +304,6 @@ class Backend(BaseSQLBackend):
             result = query_ast.dml.result_handler(result)
 
         return result
-
-    @deprecated(
-        instead="use name in con.list_databases()", as_of="2.0", removed_in="6.0"
-    )
-    def exists_database(self, name):
-        """Return whether a database name exists in the current connection.
-
-        Deprecated in Ibis 2.0. Use `name in client.list_databases()`
-        instead.
-        """
-        project, dataset = self._parse_project_and_dataset(name)
-        client = self.client
-        dataset_ref = client.dataset(dataset, project=project)
-        try:
-            client.get_dataset(dataset_ref)
-        except NotFound:
-            return False
-        else:
-            return True
-
-    @deprecated(
-        instead="use `table in con.list_tables()`", as_of="2.0", removed_in="6.0"
-    )
-    def exists_table(self, name: str, database: str | None = None) -> bool:
-        """Return whether a table name exists in the database.
-
-        Deprecated in Ibis 2.0. Use `name in client.list_tables()`
-        instead.
-        """
-        table_id = self._fully_qualified_name(name, database)
-        client = self.client
-        try:
-            client.get_table(table_id)
-        except NotFound:
-            return False
-        else:
-            return True
 
     def fetch_from_cursor(self, cursor, schema):
         arrow_t = self._cursor_to_arrow(cursor)

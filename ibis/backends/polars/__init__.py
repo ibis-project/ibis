@@ -15,7 +15,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.polars.compiler import translate
-from ibis.util import deprecated, normalize_filename
+from ibis.util import normalize_filename
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -217,13 +217,6 @@ class Backend(BaseBackend):
 
     def database(self, name=None):
         return self.database_class(name, self)
-
-    @deprecated(
-        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
-    )
-    def load_data(self, table_name, obj, **kwargs):
-        # kwargs is a catch all for any options required by other backends.
-        self._tables[table_name] = obj
 
     def create_table(
         self,
