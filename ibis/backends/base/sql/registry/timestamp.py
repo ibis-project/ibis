@@ -35,7 +35,7 @@ def truncate(translator, op):
 
     arg_formatted = translator.translate(arg)
     try:
-        unit = base_unit_names[unit]
+        unit = base_unit_names[unit.short]
     except KeyError:
         raise com.UnsupportedOperationError(
             f'{unit!r} unit is not supported in timestamp truncate'
@@ -81,7 +81,7 @@ def _from_unixtime(translator, expr):
 
 def timestamp_from_unix(translator, op):
     val, unit = op.args
-    val = util.convert_unit(val, unit, 's').to_expr().cast("int32").op()
+    val = util.convert_unit(val, unit.short, 's').to_expr().cast("int32").op()
     arg = _from_unixtime(translator, val)
     return f'CAST({arg} AS timestamp)'
 
