@@ -38,6 +38,7 @@ numpy = ">=1,<2"
 pandas = ">=1.2.5,<3"
 parsy = ">=2,<3"
 pooch = { version = ">=1.6.0,<2", extras = ["progress", "xxhash"] }
+pyarrow = ">=2,<12"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
@@ -68,7 +69,6 @@ lz4 = { version = ">=3.1.10,<5", optional = true }
 packaging = { version = ">=21.3,<24", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
-pyarrow = { version = ">=2,<12", optional = true }
 pymssql = { version = ">=2.2.5,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
 pydruid = { version = ">=0.6.5,<1", optional = true, extras = ["sqlalchemy"] }
@@ -83,8 +83,12 @@ shapely = { version = ">=1.6,<1.8|>=1.9,<3", optional = true }
 # appears to cause poetry's solver to get stuck
 #
 # also, we don't support arbitrarily old versions of this library
-snowflake-connector-python = { version = ">=2.7.10,<4", optional = true }
-snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
+snowflake-connector-python = { version = ">=2.7.10,<4", optional = true, extras = [
+  "pandas"
+] }
+snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true, extras = [
+  "pandas"
+] }
 sqlalchemy = { version = ">=1.4,<3", optional = true }
 sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
@@ -106,6 +110,7 @@ pytest = ">=7.0.0,<8"
 pytest-benchmark = ">=3.4.1,<5"
 pytest-clarity = ">=1.0.1,<2"
 pytest-cov = ">=3.0.0,<5"
+pytest-httpserver = ">=1.0.5,<2"
 pytest-mock = ">=3.6.1,<4"
 pytest-profiling = ">=1.7.0,<2"
 pytest-randomly = ">=3.10.1,<4"
@@ -114,7 +119,6 @@ pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
 hypothesis = ">=6.58.0,<7"
 sqlalchemy = ">=1.4,<3"
-pytest-httpserver = ">=1.0.5,<2"
 
 [tool.poetry.group.docs.dependencies]
 griffe = ">=0.25.3,<1"
@@ -153,7 +157,6 @@ all = [
   "packaging",
   "polars",
   "psycopg2",
-  "pyarrow",
   "pydata-google-auth",
   "pydruid",
   "pymssql",
@@ -175,14 +178,13 @@ bigquery = [
   "pydata-google-auth",
 ]
 clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlalchemy"]
-dask = ["dask", "pyarrow", "regex"]
+dask = ["dask", "regex"]
 datafusion = ["datafusion"]
 druid = ["pydruid", "sqlalchemy"]
 duckdb = [
   "duckdb",
   "duckdb-engine",
   "packaging",
-  "pyarrow",
   "sqlalchemy",
   "sqlalchemy-views",
 ]
@@ -191,9 +193,9 @@ impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
 mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 pandas = ["regex"]
-polars = ["polars", "pyarrow"]
+polars = ["polars"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
-pyspark = ["pyarrow", "pyspark", "sqlalchemy"]
+pyspark = ["pyspark", "sqlalchemy"]
 snowflake = [
   "snowflake-connector-python",
   "snowflake-sqlalchemy",
