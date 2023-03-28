@@ -332,22 +332,6 @@ class GroupedArray:
     approx_median = _group_agg_dispatch('approx_median')
     group_concat = _group_agg_dispatch('group_concat')
 
-    @util.deprecated(
-        instead="Reach out at https://github.com/ibis-project/ibis if you'd like this API to remain.",
-        as_of="5.0",
-        removed_in="6.0",
-    )
-    def summary(self, exact_nunique=False):
-        """Summarize a column.
-
-        Parameters
-        ----------
-        exact_nunique
-            Whether to compute an exact count distinct.
-        """
-        metric = self.arr.summary(exact_nunique=exact_nunique)
-        return self.parent.aggregate(metric)
-
 
 class GroupedNumbers(GroupedArray):
     mean = _group_agg_dispatch('mean')

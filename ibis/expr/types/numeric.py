@@ -584,50 +584,6 @@ class NumericColumn(Column, NumericValue):
 
         return ((self - base) / binwidth).floor()
 
-    @util.deprecated(
-        instead="Reach out at https://github.com/ibis-project/ibis if you'd like this API to remain.",
-        as_of="5.0",
-        removed_in="6.0",
-    )
-    def summary(
-        self,
-        exact_nunique: bool = False,
-        prefix: str = "",
-        suffix: str = "",
-    ) -> list[NumericScalar]:
-        """Compute summary metrics from the input numeric expression.
-
-        Parameters
-        ----------
-        exact_nunique
-            Compute the exact number of distinct values. Typically slower if
-            `True`.
-        prefix
-            String prefix for metric names
-        suffix
-            String suffix for metric names
-
-        Returns
-        -------
-        list[NumericScalar]
-            Metrics list
-        """
-        if exact_nunique:
-            unique_metric = self.nunique().name("nunique")
-        else:
-            unique_metric = self.approx_nunique().name("approx_nunique")
-
-        metrics = [
-            self.count().name("count"),
-            self.isnull().sum().name("nulls"),
-            self.min().name("min"),
-            self.max().name("max"),
-            self.sum().name("sum"),
-            self.mean().name("mean"),
-            unique_metric,
-        ]
-        return [m.name(f"{prefix}{m.get_name()}{suffix}") for m in metrics]
-
 
 @public
 class IntegerValue(NumericValue):
