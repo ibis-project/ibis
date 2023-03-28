@@ -18,31 +18,6 @@ def test_embedded_identifier_quoting(alltypes):
     expr.execute()
 
 
-def test_summary_execute(alltypes):
-    table = alltypes
-
-    table = table.mutate(double_col=table.double_col * 2)
-
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        metrics = table.double_col.summary()
-    expr = table.aggregate(metrics)
-    repr(expr)
-
-    result = expr.execute()
-    assert isinstance(result, pd.DataFrame)
-
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        expr = table.group_by('string_col').aggregate(
-            [
-                table.double_col.summary(prefix='double_'),
-                table.float_col.summary(prefix='float_'),
-                table.string_col.summary(suffix='_string'),
-            ]
-        )
-    result = expr.execute()
-    assert isinstance(result, pd.DataFrame)
-
-
 def test_decimal_metadata(con):
     table = con.table('tpch_lineitem')
 
