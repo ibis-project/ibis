@@ -1,7 +1,6 @@
 from operator import methodcaller
 
 import numpy as np
-import pandas as pd
 import pandas.testing as tm
 import pytest
 
@@ -165,24 +164,3 @@ def test_anonymous_aggregate(alltypes, df):
     result = expr.execute().set_index('id')
     expected = df[df.double_col > df.double_col.mean()].set_index('id')
     tm.assert_frame_equal(result, expected, check_like=True)
-
-
-def test_boolean_summary(alltypes):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        bool_col_summary = alltypes.bool_col.summary()
-    expr = alltypes.aggregate(bool_col_summary)
-
-    result = expr.execute()
-    expected = pd.DataFrame(
-        [[7300, 0, 0, 1, 3650, 0.5, 2]],
-        columns=[
-            'count',
-            'nulls',
-            'min',
-            'max',
-            'sum',
-            'mean',
-            'approx_nunique',
-        ],
-    )
-    tm.assert_frame_equal(result, expected, check_column_type=False, check_dtype=False)
