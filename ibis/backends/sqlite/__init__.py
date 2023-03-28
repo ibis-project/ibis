@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import datetime
 import sqlite3
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterator
 
@@ -93,7 +92,6 @@ class Backend(BaseAlchemyBackend):
     def do_connect(
         self,
         database: str | Path | None = None,
-        path: str | Path | None = None,
         type_map: dict[str, str | dt.DataType] | None = None,
     ) -> None:
         """Create an Ibis client connected to a SQLite database.
@@ -106,8 +104,6 @@ class Backend(BaseAlchemyBackend):
             File path to the SQLite database file. If `None`, creates an
             in-memory transient database and you can use attach() to add more
             files
-        path
-            Deprecated, use `database`
         type_map
             An optional mapping from a string name of a SQLite "type" to the
             corresponding ibis DataType that it represents. This can be used
@@ -119,12 +115,6 @@ class Backend(BaseAlchemyBackend):
         >>> ibis.sqlite.connect("path/to/my/sqlite.db")
         """
         import pandas as pd
-
-        if path is not None:
-            warnings.warn(
-                "The `path` argument is deprecated in 4.0. Use `database=...`"
-            )
-            database = path
 
         self.database_name = "main"
 
