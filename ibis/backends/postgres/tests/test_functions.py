@@ -1202,39 +1202,6 @@ def test_boolean_reduction(alltypes, opname, df):
     assert result == op(df.bool_col)
 
 
-def test_boolean_summary(alltypes):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        bool_col_summary = alltypes.bool_col.summary()
-    expr = alltypes.aggregate(bool_col_summary)
-
-    result = expr.execute()
-    expected = pd.DataFrame(
-        [[7300, 0, 0, 1, 3650, 0.5, 2]],
-        columns=[
-            'count',
-            'nulls',
-            'min',
-            'max',
-            'sum',
-            'mean',
-            'approx_nunique',
-        ],
-    )
-
-    type_conversions = {
-        'count': 'int64',
-        'nulls': 'int64',
-        'min': 'bool',
-        'max': 'bool',
-        'sum': 'int64',
-        'approx_nunique': 'int64',
-    }
-    for k, v in type_conversions.items():
-        expected[k] = expected[k].astype(v)
-
-    tm.assert_frame_equal(result, expected)
-
-
 def test_timestamp_with_timezone(con):
     t = con.table('tzone')
     result = t.ts.execute()

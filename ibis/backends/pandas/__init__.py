@@ -11,7 +11,6 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.pandas.client import (
     PandasDatabase,
@@ -104,13 +103,6 @@ class BasePandasBackend(BaseBackend):
 
     def database(self, name=None):
         return self.database_class(name, self)
-
-    @util.deprecated(
-        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
-    )
-    def load_data(self, table_name, obj, **kwargs):
-        # kwargs is a catch all for any options required by other backends.
-        self.dictionary[table_name] = obj
 
     def get_schema(self, table_name, database=None):
         schemas = self.schemas
