@@ -104,6 +104,7 @@ jobs:
             extras:
               - postgres
               - geospatial
+            additional_deps:
               - pyarrow
             services:
               - postgres
@@ -205,6 +206,7 @@ jobs:
               extras:
                 - postgres
                 - geospatial
+              additional_deps:
                 - pyarrow
               services:
                 - postgres
@@ -305,6 +307,10 @@ jobs:
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+
+      - name: install other deps
+        if: matrix.backend.additional_deps != null
+        run: poetry run pip install "${{ join(matrix.backend.additional_deps, ' ') }}"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
