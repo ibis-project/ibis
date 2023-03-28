@@ -373,6 +373,7 @@ select = [
   "UP",  # pyupgrade
   "W",   # pycodestyle
   "YTT", # flake8-2020
+
 ]
 respect-gitignore = true
 ignore = [

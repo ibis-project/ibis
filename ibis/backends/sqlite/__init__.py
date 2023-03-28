@@ -23,6 +23,7 @@ import sqlalchemy as sa
 import toolz
 from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 
+import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.base import Database
@@ -30,10 +31,8 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
 from ibis.backends.sqlite.datatypes import parse
-from ibis.expr.schema import datatype
 
 if TYPE_CHECKING:
-    import ibis.expr.datatypes as dt
     import ibis.expr.types as ir
 
 
@@ -130,7 +129,7 @@ class Backend(BaseAlchemyBackend):
             # easier than subclassing the builtin SQLite dialect, and achieves
             # the same desired behavior.
             def _to_ischema_val(t):
-                sa_type = to_sqla_type(engine.dialect, datatype(t))
+                sa_type = to_sqla_type(engine.dialect, dt.dtype(t))
                 if isinstance(sa_type, sa.types.TypeEngine):
                     # SQLAlchemy expects a callable here, rather than an
                     # instance. Use a lambda to work around this.

@@ -110,17 +110,18 @@ def _timestamp_from_unix(t, op):
     arg, unit = op.args
     arg = t.translate(arg)
 
-    if unit == "ms":
+    unit_short = unit.short
+    if unit_short == "ms":
         try:
             arg //= 1_000
         except TypeError:
             arg = sa.func.floor(arg / 1_000)
         res = sa.func.from_unixtime(arg)
-    elif unit == "s":
+    elif unit_short == "s":
         res = sa.func.from_unixtime(arg)
-    elif unit == "us":
+    elif unit_short == "us":
         res = sa.func.from_unixtime_nanos((arg - arg % 1_000_000) * 1_000)
-    elif unit == "ns":
+    elif unit_short == "ns":
         res = sa.func.from_unixtime_nanos(arg - arg % 1_000_000_000)
     else:
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported")
