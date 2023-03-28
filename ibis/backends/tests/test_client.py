@@ -680,12 +680,6 @@ def test_invalid_connect(tmp_path):
         ibis.connect(url)
 
 
-@pytest.mark.parametrize("backend_name", ["sqlite", "duckdb"])
-def test_deprecated_path_argument(backend_name, tmp_path):
-    with pytest.warns(UserWarning, match="The `path` argument is deprecated"):
-        getattr(ibis, backend_name).connect(path=str(tmp_path / "test.db"))
-
-
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
