@@ -23,6 +23,7 @@ poetry2nix.mkPoetryApplication rec {
     poetry2nix.defaultPoetryOverrides
   ];
   preferWheels = true;
+  __darwinAllowLocalNetworking = true;
 
   buildInputs = [ graphviz-nox sqlite ];
   checkInputs = buildInputs;

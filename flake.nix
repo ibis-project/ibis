@@ -113,6 +113,8 @@
         MYSQL_PWD = "ibis";
         MSSQL_SA_PASSWORD = "1bis_Testing!";
         DRUID_URL = "druid://localhost:8082/druid/v2/sql";
+
+        __darwinAllowLocalNetworking = true;
       };
     in
     rec {

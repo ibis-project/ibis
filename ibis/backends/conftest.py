@@ -23,10 +23,12 @@ from ibis import util
 from ibis.backends.base import _get_backend_names
 
 SANDBOXED = (
-    platform.system() == "Linux"
-    and any(key.startswith("NIX_") for key in os.environ)
+    any(key.startswith("NIX_") for key in os.environ)
     and os.environ.get("IN_NIX_SHELL") != "impure"
 )
+LINUX = platform.system() == "Linux"
+MACOS = platform.system() == "Darwin"
+WINDOWS = platform.system() == "Windows"
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
