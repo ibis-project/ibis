@@ -1323,23 +1323,6 @@ def test_filter(backend, alltypes, df):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.notimpl(["polars", "datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["pyspark"],
-    raises=PysparkAnalysisException,
-    reason=(
-        "cannot resolve 'sum((functional_alltypes.bool_col IS NULL))' due to data type mismatch: "
-        "function sum requires numeric or interval types, not boolean;"
-    ),
-)
-def test_column_summary(alltypes):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        bool_col_summary = alltypes.bool_col.summary()
-    expr = alltypes.aggregate(bool_col_summary)
-    result = expr.execute()
-    assert result.shape == (1, 7)
-
-
 def test_agg_name_in_output_column(alltypes):
     query = alltypes.aggregate([alltypes.int_col.min(), alltypes.int_col.max()])
     df = query.execute()
