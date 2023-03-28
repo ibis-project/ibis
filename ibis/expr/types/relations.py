@@ -25,7 +25,6 @@ from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 if TYPE_CHECKING:
     import pandas as pd
 
-    import ibis.expr.schema as sch
     import ibis.selectors as s
     import ibis.expr.types as ir
     from ibis.common.typing import SupportsSchema
@@ -542,22 +541,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         with contextlib.suppress(com.IbisTypeError):
             return ops.TableColumn(self, key).to_expr()
-
-        # Handle deprecated `groupby` and `sort_by` methods
-        if key == "groupby":
-            warnings.warn(
-                "`Table.groupby` is deprecated and will be removed in 5.0, "
-                "use `Table.group_by` instead",
-                FutureWarning,
-            )
-            return self.group_by
-        elif key == "sort_by":
-            warnings.warn(
-                "`Table.sort_by` is deprecated and will be removed in 5.0, "
-                "use `Table.order_by` instead",
-                FutureWarning,
-            )
-            return self.order_by
 
         # A mapping of common attribute typos, mapping them to the proper name
         common_typos = {
