@@ -844,49 +844,6 @@ class Column(Value, _FixedTextJupyterMixin):
             .limit(k)
         )
 
-    @util.deprecated(
-        instead="Reach out at https://github.com/ibis-project/ibis if you'd like this API to remain.",
-        as_of="5.0",
-        removed_in="6.0",
-    )
-    def summary(
-        self,
-        exact_nunique: bool = False,
-        prefix: str = "",
-        suffix: str = "",
-    ) -> list[ir.NumericScalar]:
-        """Compute a set of summary metrics.
-
-        Parameters
-        ----------
-        exact_nunique
-            Compute the exact number of distinct values. Typically slower if
-            `True`.
-        prefix
-            String prefix for metric names
-        suffix
-            String suffix for metric names
-
-        Returns
-        -------
-        list[NumericScalar]
-            Metrics list
-        """
-        if exact_nunique:
-            unique_metric = self.nunique()
-        else:
-            unique_metric = self.approx_nunique()
-        unique_metric = unique_metric.name("uniques")
-
-        metrics = [
-            self.count().name("count"),
-            self.isnull().sum().name('nulls'),
-            unique_metric,
-        ]
-        metrics = [m.name(f"{prefix}{m.get_name()}{suffix}") for m in metrics]
-
-        return metrics
-
     def arbitrary(
         self,
         where: ir.BooleanValue | None = None,
