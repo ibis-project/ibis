@@ -9,6 +9,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis.backends.pandas import Backend
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
@@ -647,23 +648,16 @@ def test_quantile_groupby(batting, batting_df):
     tm.assert_series_equal(result, expected)
 
 
-def test_summary_execute(t):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        expr = t.group_by('plain_strings').aggregate(
-            [
-                t.plain_int64.summary(prefix='int64_'),
-                t.plain_int64.summary(suffix='_int64'),
-                t.plain_datetimes_utc.summary(prefix='datetime_'),
-                t.plain_datetimes_utc.summary(suffix='_datetime'),
-            ]
-        )
-    result = expr.execute()
-    assert isinstance(result, pd.DataFrame)
-
-
 def test_summary_numeric(batting, batting_df):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        expr = batting.aggregate(batting.G.summary())
+    expr = batting.aggregate(
+        count=_.G.count(),
+        nulls=_.G.isnull().sum(),
+        min=_.G.min(),
+        max=_.G.max(),
+        sum=_.G.sum(),
+        mean=_.G.mean(),
+        approx_nunique=_.G.nunique(),
+    )
     result = expr.execute()
     assert len(result) == 1
 
@@ -680,38 +674,12 @@ def test_summary_numeric(batting, batting_df):
     assert dict(result.iloc[0]) == expected
 
 
-def test_summary_numeric_group_by(batting, batting_df):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        expr = batting.group_by('teamID').G.summary()
-    result = expr.execute()
-    expected = (
-        batting_df.groupby('teamID')
-        .G.apply(
-            lambda s: pd.DataFrame(
-                {
-                    'count': s.count(),
-                    'nulls': s.isnull().sum(),
-                    'min': s.min(),
-                    'max': s.max(),
-                    'sum': s.sum(),
-                    'mean': s.mean(),
-                    'approx_nunique': s.nunique(),
-                },
-                index=[0],
-            )
-        )
-        .reset_index(level=1, drop=True)
-        .reset_index()
-    )
-    columns = expected.columns
-
-    # TODO: fix isnull().sum() in the pandas backend: the type is incorrect
-    tm.assert_frame_equal(result[columns], expected, check_dtype=False)
-
-
 def test_summary_non_numeric(batting, batting_df):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        expr = batting.aggregate(batting.teamID.summary())
+    expr = batting.aggregate(
+        count=_.teamID.count(),
+        nulls=_.teamID.isnull().sum(),
+        uniques=_.teamID.nunique(),
+    )
     result = expr.execute()
     assert len(result) == 1
     assert len(result.columns) == 3
@@ -721,29 +689,6 @@ def test_summary_non_numeric(batting, batting_df):
         'uniques': batting_df.teamID.nunique(),
     }
     assert dict(result.iloc[0]) == expected
-
-
-def test_summary_non_numeric_group_by(batting, batting_df):
-    with pytest.warns(FutureWarning, match="is deprecated"):
-        expr = batting.group_by('teamID').playerID.summary()
-    result = expr.execute()
-    expected = (
-        batting_df.groupby('teamID')
-        .playerID.apply(
-            lambda s: pd.DataFrame(
-                {
-                    'count': s.count(),
-                    'nulls': s.isnull().sum(),
-                    'uniques': s.nunique(),
-                },
-                index=[0],
-            )
-        )
-        .reset_index(level=1, drop=True)
-        .reset_index()
-    )
-    columns = expected.columns
-    tm.assert_frame_equal(result[columns], expected, check_dtype=False)
 
 
 def test_searched_case_scalar(client):
