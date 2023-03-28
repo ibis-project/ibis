@@ -426,13 +426,6 @@ def test_limit(table):
     assert limited.op().offset == 5
 
 
-def test_sort_by_deprecated(table):
-    with pytest.warns(FutureWarning):
-        x = table.sort_by("f")
-    y = table.order_by("f")
-    assert x.equals(y)
-
-
 def test_order_by(table):
     result = table.order_by(['f']).op()
 
@@ -630,13 +623,6 @@ def test_aggregate_keywords(table):
 
     assert_equal(expr, expected)
     assert_equal(expr2, expected)
-
-
-def test_groupby_alias(table):
-    expected = table.group_by('g').size()
-    with pytest.warns(FutureWarning, match="deprecated"):
-        result = table.groupby('g').size()
-    assert_equal(result, expected)
 
 
 def test_filter_aggregate_pushdown_predicate(table):
