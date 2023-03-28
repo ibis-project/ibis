@@ -6,6 +6,7 @@ import pandas as pd
 import pytest
 from packaging.version import parse as vparse
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -142,48 +143,59 @@ def test_pandas_dtype(pandas_dtype, ibis_dtype):
 @pytest.mark.parametrize(
     ('col_data', 'schema_type'),
     [
-        ([True, False, False], 'bool'),
-        (np.array([-3, 9, 17], dtype='int8'), 'int8'),
-        (np.array([-5, 0, 12], dtype='int16'), 'int16'),
-        (np.array([-12, 3, 25000], dtype='int32'), 'int32'),
-        (np.array([102, 67228734, -0], dtype='int64'), 'int64'),
-        (np.array([45e-3, -0.4, 99.0], dtype='float32'), 'float32'),
-        (np.array([45e-3, -0.4, 99.0], dtype='float64'), 'float64'),
-        (np.array([-3e43, 43.0, 10000000.0], dtype='float64'), 'double'),
-        (np.array([3, 0, 16], dtype='uint8'), 'uint8'),
-        (np.array([5569, 1, 33], dtype='uint16'), 'uint16'),
-        (np.array([100, 0, 6], dtype='uint32'), 'uint32'),
-        (np.array([666, 2, 3], dtype='uint64'), 'uint64'),
-        (
+        param([True, False, False], 'bool', id="bool"),
+        param(np.array([-3, 9, 17], dtype='int8'), 'int8', id="int8"),
+        param(np.array([-5, 0, 12], dtype='int16'), 'int16', id="int16"),
+        param(np.array([-12, 3, 25000], dtype='int32'), 'int32', id="int32"),
+        param(np.array([102, 67228734, -0], dtype='int64'), 'int64', id="int64"),
+        param(np.array([45e-3, -0.4, 99.0], dtype='float32'), 'float32', id="float64"),
+        param(np.array([45e-3, -0.4, 99.0], dtype='float64'), 'float64', id="float32"),
+        param(
+            np.array([-3e43, 43.0, 10000000.0], dtype='float64'), 'double', id="double"
+        ),
+        param(np.array([3, 0, 16], dtype='uint8'), 'uint8', id="uint8"),
+        param(np.array([5569, 1, 33], dtype='uint16'), 'uint16', id="uint8"),
+        param(np.array([100, 0, 6], dtype='uint32'), 'uint32', id="uint32"),
+        param(np.array([666, 2, 3], dtype='uint64'), 'uint64', id="uint64"),
+        param(
             [
                 pd.Timestamp('2010-11-01 00:01:00'),
                 pd.Timestamp('2010-11-01 00:02:00.1000'),
                 pd.Timestamp('2010-11-01 00:03:00.300000'),
             ],
             'timestamp',
+            id="timestamp",
         ),
-        (
+        param(
             [
                 pd.Timedelta('1 days'),
                 pd.Timedelta('-1 days 2 min 3us'),
                 pd.Timedelta('-2 days +23:57:59.999997'),
             ],
             "interval('ns')",
+            id="interval_ns",
         ),
-        (['foo', 'bar', 'hello'], "string"),
-        (pd.Series(['a', 'b', 'c', 'a']).astype('category'), dt.String()),
-        (pd.Series([b'1', b'2', b'3']), dt.string),
+        param(['foo', 'bar', 'hello'], "string", id="string_list"),
+        param(
+            pd.Series(['a', 'b', 'c', 'a']).astype('category'),
+            dt.String(),
+            id="string_series",
+        ),
+        param(pd.Series([b'1', b'2', b'3']), dt.binary, id="string_binary"),
         # mixed-integer
-        (pd.Series([1, 2, '3']), dt.binary),
+        param(pd.Series([1, 2, '3']), dt.unknown, id="mixed_integer"),
         # mixed-integer-float
-        (pd.Series([1, 2, 3.0]), dt.float64),
-        (
+        param(pd.Series([1, 2, 3.0]), dt.float64, id="mixed_integer_float"),
+        param(
             pd.Series([Decimal('1.0'), Decimal('2.0'), Decimal('3.0')]),
-            dt.float64,
+            dt.Decimal(2, 1),
+            id="decimal",
         ),
         # complex
-        (pd.Series([1 + 1j, 1 + 2j, 1 + 3j], dtype=object), dt.binary),
-        (
+        param(
+            pd.Series([1 + 1j, 1 + 2j, 1 + 3j], dtype=object), dt.unknown, id="complex"
+        ),
+        param(
             pd.Series(
                 [
                     pd.to_datetime('2010-11-01'),
@@ -192,9 +204,10 @@ def test_pandas_dtype(pandas_dtype, ibis_dtype):
                 ]
             ),
             dt.timestamp,
+            id="timestamp_to_datetime",
         ),
-        (pd.Series([time(1), time(2), time(3)]), dt.time),
-        (
+        param(pd.Series([time(1), time(2), time(3)]), dt.time, id="time"),
+        param(
             pd.Series(
                 [
                     pd.Period('2011-01'),
@@ -203,13 +216,17 @@ def test_pandas_dtype(pandas_dtype, ibis_dtype):
                 ],
                 dtype=object,
             ),
-            dt.binary,
+            dt.unknown,
+            id="period",
         ),
         # mixed
-        (pd.Series([b'1', '2', 3.0]), dt.binary),
+        param(pd.Series([b'1', '2', 3.0]), dt.unknown, id="mixed"),
         # empty
-        (pd.Series([], dtype='object'), dt.null),
-        (pd.Series([], dtype="string"), dt.string),
+        param(pd.Series([], dtype='object'), dt.null, id="empty_null"),
+        param(pd.Series([], dtype="string"), dt.string, id="empty_string"),
+        # array
+        param(pd.Series([[1], [], None]), dt.Array(dt.int64), id="array_int64_first"),
+        param(pd.Series([[], [1], None]), dt.Array(dt.int64), id="array_int64_second"),
     ],
 )
 def test_schema_infer(col_data, schema_type):
@@ -221,7 +238,7 @@ def test_schema_infer(col_data, schema_type):
 
 
 def test_pyarrow_string():
-    pytest.importorskip("pa")
+    pytest.importorskip("pyarrow")
 
     s = pd.Series([], dtype="string[pyarrow]")
     assert dt.dtype(s.dtype) == dt.String()

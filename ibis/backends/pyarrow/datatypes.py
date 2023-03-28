@@ -84,22 +84,36 @@ _to_ibis_dtypes = {
     pa.bool_(): dt.Boolean,
     pa.date32(): dt.Date,
     pa.date64(): dt.Date,
+    pa.null(): dt.Null,
+    pa.time32("s"): dt.Time,
+    pa.time32("ms"): dt.Time,
+    pa.time64("us"): dt.Time,
+    pa.time64("ns"): dt.Time,
 }
 
 
 @dt.dtype.register(pa.DataType)  # type: ignore[misc]
 def from_pyarrow_primitive(
-    arrow_type: pa.DataType,
-    nullable: bool = True,
+    arrow_type: pa.DataType, nullable: bool = True
 ) -> dt.DataType:
-    return _to_ibis_dtypes[arrow_type](nullable=nullable)
+    dtype = _to_ibis_dtypes.get(arrow_type, dt.unknown)
+    return dtype(nullable=nullable)
+
+
+@dt.dtype.register(pa.Decimal128Type)
+@dt.dtype.register(pa.Decimal256Type)
+def from_pyarrow_decimal(
+    arrow_type: pa.Decimal128Type | pa.Decimal256Type, nullable: bool = True
+) -> dt.Decimal:
+    return dt.Decimal(
+        precision=arrow_type.precision, scale=arrow_type.scale, nullable=nullable
+    )
 
 
 @dt.dtype.register(pa.Time32Type)  # type: ignore[misc]
 @dt.dtype.register(pa.Time64Type)  # type: ignore[misc]
 def from_pyarrow_time(
-    arrow_type: pa.TimestampType,
-    nullable: bool = True,
+    _: pa.Time32Type | pa.Time64Type, nullable: bool = True
 ) -> dt.DataType:
     return dt.Time(nullable=nullable)
 
@@ -120,8 +134,7 @@ def from_pyarrow_map(arrow_type: pa.MapType, nullable: bool = True) -> dt.DataTy
 
 @dt.dtype.register(pa.StructType)  # type: ignore[misc]
 def from_pyarrow_struct(
-    arrow_type: pa.StructType,
-    nullable: bool = True,
+    arrow_type: pa.StructType, nullable: bool = True
 ) -> dt.DataType:
     return dt.Struct.from_tuples(
         ((field.name, dt.dtype(field.type)) for field in arrow_type),
@@ -131,10 +144,9 @@ def from_pyarrow_struct(
 
 @dt.dtype.register(pa.TimestampType)  # type: ignore[misc]
 def from_pyarrow_timestamp(
-    arrow_type: pa.TimestampType,
-    nullable: bool = True,
+    arrow_type: pa.TimestampType, nullable: bool = True
 ) -> dt.DataType:
-    return dt.Timestamp(timezone=arrow_type.tz)
+    return dt.Timestamp(timezone=arrow_type.tz, nullable=nullable)
 
 
 @sch.schema.register(pa.Schema)  # type: ignore[misc]
