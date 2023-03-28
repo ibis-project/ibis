@@ -371,6 +371,7 @@ select = [
   "UP", # pyupgrade
   "W", # pycodestyle
   "YTT", # flake8-2020
+
 ]
 respect-gitignore = true
 ignore = [
@@ -414,6 +415,7 @@ ignore = [
   "SIM300", # yoda conditions
   "UP037", # remove quotes from type annotation
   "UP007", # Optional[str] -> str | None
+
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"

@@ -343,9 +343,7 @@ def endswith_d(x, this):
 
 def test_annotated_function_with_complex_type_annotations():
     @annotated
-    def test(
-        a: Annotated[str, short_str, endswith_d], b: Union[int, float]
-    ):
+    def test(a: Annotated[str, short_str, endswith_d], b: Union[int, float]):
         return a, b
 
     assert test("abcd", 1) == ("abcd", 1)

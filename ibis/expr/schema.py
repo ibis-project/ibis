@@ -7,10 +7,10 @@ from multipledispatch import Dispatcher
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
-from ibis.common.collections import MapSet
+from ibis.common.collections import FrozenDict, MapSet
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.validators import Coercible, frozendict_of, instance_of, validator
+from ibis.common.validators import Coercible
 from ibis.util import indent
 
 if TYPE_CHECKING:
@@ -39,15 +39,10 @@ result : pd.Series
 )
 
 
-@validator
-def datatype(arg, **kwargs):
-    return dt.dtype(arg)
-
-
 class Schema(Concrete, Coercible, MapSet):
     """An object for holding table schema information."""
 
-    fields = frozendict_of(instance_of(str), datatype)
+    fields: FrozenDict[str, dt.DataType]
     """A mapping of [`str`][str] to [`DataType`][ibis.expr.datatypes.DataType] objects
     representing the type of each column."""
 
