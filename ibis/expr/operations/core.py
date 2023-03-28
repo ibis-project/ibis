@@ -86,10 +86,14 @@ class Value(Node, Named):
         """
 
     def to_expr(self):
+        import ibis.expr.types as ir
+
         if self.output_shape.is_columnar():
-            return self.output_dtype.column(self)
+            typename = self.output_dtype.column
         else:
-            return self.output_dtype.scalar(self)
+            typename = self.output_dtype.scalar
+
+        return getattr(ir, typename)(self)
 
 
 @public
