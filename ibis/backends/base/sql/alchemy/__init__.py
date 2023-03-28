@@ -6,7 +6,7 @@ import contextlib
 import getpass
 import warnings
 from operator import methodcaller
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import sqlalchemy as sa
 
@@ -329,53 +329,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
         with contextlib.suppress(KeyError):
             # schemas won't be cached if created with raw_sql
             del self._schemas[qualified_name]
-
-    @util.deprecated(
-        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
-    )
-    def load_data(
-        self,
-        table_name: str,
-        data: pd.DataFrame,
-        database: str | None = None,
-        if_exists: Literal['fail', 'replace', 'append'] = 'fail',
-    ) -> None:
-        """Load data from a dataframe to the backend.
-
-        Parameters
-        ----------
-        table_name
-            Name of the table in which to load data
-        data
-            Pandas DataFrame
-        database
-            Database in which the table exists
-        if_exists
-            What to do when data in `name` already exists
-
-        Raises
-        ------
-        NotImplementedError
-            Loading data to a table from a different database is not
-            yet implemented
-        """
-        if database == self.current_database:
-            # avoid fully qualified name
-            database = None
-
-        if database is not None:
-            raise NotImplementedError(
-                'Loading data to a table from a different database is not '
-                'yet implemented'
-            )
-
-        data.to_sql(
-            table_name,
-            con=self.con,
-            index=False,
-            if_exists=if_exists,
-            schema=self._current_schema,
-        )
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
         t = self._get_sqla_table(name, schema=database)

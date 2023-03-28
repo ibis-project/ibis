@@ -906,21 +906,6 @@ class Backend(BaseSQLBackend):
             validate=validate,
         )
 
-    @util.deprecated(
-        as_of="5.0", removed_in="6.0", instead="Use create_table(overwrite=True)"
-    )
-    def load_data(
-        self,
-        table_name,
-        path,
-        database=None,
-        overwrite=False,
-        partition=None,
-    ):
-        """Loads data into an Impala table by physically moving data files."""
-        table = self.table(table_name, database=database)
-        return table.load_data(path, overwrite=overwrite, partition=partition)
-
     def drop_table(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:

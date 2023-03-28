@@ -44,13 +44,6 @@ def test_client_table_repr(table):
     assert 'PandasTable' in repr(table)
 
 
-def test_load_data(client, test_data):
-    with pytest.warns(FutureWarning):
-        client.load_data('testing', test_data)
-    assert 'testing' in client.list_tables()
-    assert client.get_schema('testing')
-
-
 def test_create_table(client, test_data):
     client.create_table('testing', obj=test_data)
     assert 'testing' in client.list_tables()
