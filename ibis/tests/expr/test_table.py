@@ -389,6 +389,20 @@ def test_column_relabel():
         table.relabel({"missing": "oops"})
 
 
+def test_relabel_format_string():
+    t = ibis.table({"x": "int", "y": "int", "z": "int"})
+
+    res = t.relabel("_{name}_")
+    sol = t.relabel({"x": "_x_", "y": "_y_", "z": "_z_"})
+    assert_equal(res, sol)
+
+    with pytest.raises(ValueError, match="Format strings must"):
+        t.relabel("no format string parameter")
+
+    with pytest.raises(ValueError, match="Format strings must"):
+        t.relabel("{unknown} format string parameter")
+
+
 def test_relabel_snake_case():
     cases = [
         ("cola", "cola"),

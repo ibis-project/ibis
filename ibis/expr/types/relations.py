@@ -1724,6 +1724,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         self,
         substitutions: Mapping[str, str]
         | Callable[[str], str | None]
+        | str
         | Literal["snake_case"],
     ) -> Table:
         """Rename columns in the table.
@@ -1731,11 +1732,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         Parameters
         ----------
         substitutions
-            A mapping or function from old to new column names. If a column
-            isn't in the mapping (or if the callable returns None) it is left
-            with its original name. May also pass the string ``"snake_case"``,
-            which will relabel all columns to use a ``snake_case`` naming
-            convention.
+            A mapping, function, or format string mapping old to new column
+            names. If a column isn't in the mapping (or if the callable returns
+            None) it is left with its original name. May also pass a format
+            string to rename all columns, like ``"prefix_{name}"``. Also
+            accepts the literal string ``"snake_case"``, which will relabel all
+            columns to use a ``snake_case`` naming convention.
 
         Returns
         -------
@@ -1790,6 +1792,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
         └────────────┴───────────────┴─────────────────────────────────────┘
 
+        Relabel columns using a format string
+
+        >>> t.relabel("p_{name}").head(1)
+        ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ p_studyName ┃ p_Sample Number ┃ p_Species                           ┃
+        ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string      │ int64           │ string                              │
+        ├─────────────┼─────────────────┼─────────────────────────────────────┤
+        │ PAL0708     │               1 │ Adelie Penguin (Pygoscelis adeliae) │
+        └─────────────┴─────────────────┴─────────────────────────────────────┘
+
         Relabel column names using a callable
 
         >>> t.relabel(str.upper).head(1)
@@ -1818,6 +1831,20 @@ class Table(Expr, _FixedTextJupyterMixin):
                 c = c.replace("-", "_")
                 return c.lower()
 
+        elif isinstance(substitutions, str):
+
+            def rename(name):
+                return substitutions.format(name=name)
+
+            # Detect the case of missing or extra format string parameters
+            try:
+                dummy_name1 = "_unlikely_column_name_1_"
+                dummy_name2 = "_unlikely_column_name_2_"
+                invalid = rename(dummy_name1) == rename(dummy_name2)
+            except KeyError:
+                invalid = True
+            if invalid:
+                raise ValueError("Format strings must take a single parameter `name`")
         else:
             rename = substitutions
 
