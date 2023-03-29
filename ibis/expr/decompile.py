@@ -162,7 +162,8 @@ def aggregation(op, table, by, metrics, predicates, having, sort_keys):
 @translate.register(ops.Join)
 def join(op, left, right, predicates):
     method = _get_method_name(op)
-    return f"{left}.{method}({right}, {_try_unwrap(predicates)})"
+    preds = _try_unwrap(predicates)
+    return f"{left}.{method}({right}, {preds}, lname='{{name}}_x', rname='{{name}}_y')"
 
 
 @translate.register(ops.SetOp)

@@ -66,7 +66,7 @@ class ScalarAggregate:
 
         table = self.tables[0]
         for other in self.tables[1:]:
-            table = table.cross_join(other)
+            table = table.cross_join(other, lname="{name}_x", rname="{name}_y")
 
         return table.projection([subbed_expr])
 

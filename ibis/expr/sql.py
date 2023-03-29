@@ -132,7 +132,11 @@ def convert_join(join, catalog):
                 predicate &= left_key == right_key
 
         catalog[left_name] = left_table.join(
-            right_table, predicates=predicate, how=join_kind
+            right_table,
+            predicates=predicate,
+            how=join_kind,
+            lname="{name}_x",
+            rname="{name}_y",
         )
 
     return catalog[left_name]
