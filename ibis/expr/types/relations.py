@@ -190,7 +190,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │        3750 │           39.1 │
         │        3800 │           39.5 │
         │        3250 │           40.3 │
-        │           ∅ │            nan │
+        │        NULL │            nan │
         │        3450 │           36.7 │
         └─────────────┴────────────────┘
 
@@ -208,7 +208,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │      3750.0 │             39 │
         │      3800.0 │             40 │
         │      3250.0 │             40 │
-        │         nan │              ∅ │
+        │         nan │           NULL │
         │      3450.0 │             37 │
         └─────────────┴────────────────┘
 
@@ -293,7 +293,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -367,7 +367,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t[2:5]
@@ -377,7 +377,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ string  │ string    │ float64        │ float64       │ int64             │ … │
         ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
 
@@ -446,7 +446,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t[s.r["bill_length_mm":"body_mass_g"]].head()
@@ -458,7 +458,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │           39.1 │          18.7 │               181 │        3750 │
         │           39.5 │          17.4 │               186 │        3800 │
         │           40.3 │          18.0 │               195 │        3250 │
-        │            nan │           nan │                 ∅ │           ∅ │
+        │            nan │           nan │              NULL │        NULL │
         │           36.7 │          19.3 │               193 │        3450 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
@@ -958,7 +958,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -1031,7 +1031,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Biscoe    │           37.8 │          18.3 │               174 │ … │
         │ Adelie  │ Biscoe    │           37.7 │          18.7 │               180 │ … │
         │ Adelie  │ Dream     │           39.5 │          16.7 │               178 │ … │
@@ -1591,7 +1591,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -1627,7 +1627,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │               181 │
         │ Adelie  │               186 │
         │ Adelie  │               195 │
-        │ Adelie  │                 ∅ │
+        │ Adelie  │              NULL │
         │ Adelie  │               193 │
         └─────────┴───────────────────┘
 
@@ -1673,7 +1673,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │           39.1 │          18.7 │               181 │        3750 │
         │           39.5 │          17.4 │               186 │        3800 │
         │           40.3 │          18.0 │               195 │        3250 │
-        │            nan │           nan │                 ∅ │           ∅ │
+        │            nan │           nan │              NULL │        NULL │
         │           36.7 │          19.3 │               193 │        3450 │
         └────────────────┴───────────────┴───────────────────┴─────────────┘
 
@@ -1890,7 +1890,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -1911,7 +1911,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Torgersen │            nan │           nan │              NULL │ … │
         │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t.drop("species", "bill_length_mm").head()
@@ -1923,7 +1923,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │          18.7 │               181 │        3750 │ male   │ … │
         │ Torgersen │          17.4 │               186 │        3800 │ female │ … │
         │ Torgersen │          18.0 │               195 │        3250 │ female │ … │
-        │ Torgersen │           nan │                 ∅ │           ∅ │ ∅      │ … │
+        │ Torgersen │           nan │              NULL │        NULL │ NULL   │ … │
         │ Torgersen │          19.3 │               193 │        3450 │ female │ … │
         └───────────┴───────────────┴───────────────────┴─────────────┴────────┴───┘
 
@@ -1939,7 +1939,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │               181 │        3750 │ male   │  2007 │
         │ Torgersen │               186 │        3800 │ female │  2007 │
         │ Torgersen │               195 │        3250 │ female │  2007 │
-        │ Torgersen │                 ∅ │           ∅ │ ∅      │  2007 │
+        │ Torgersen │              NULL │        NULL │ NULL   │  2007 │
         │ Torgersen │               193 │        3450 │ female │  2007 │
         └───────────┴───────────────────┴─────────────┴────────┴───────┘
         """
@@ -1987,7 +1987,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -2086,7 +2086,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -2138,13 +2138,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ male   │
         │ female │
         │ female │
-        │ ∅      │
+        │ NULL   │
         │ female │
         │ male   │
         │ female │
         │ male   │
-        │ ∅      │
-        │ ∅      │
+        │ NULL   │
+        │ NULL   │
         │ …      │
         └────────┘
         >>> t.fillna({"sex": "unrecorded"}).sex
@@ -2659,7 +2659,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
@@ -2764,7 +2764,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -2786,7 +2786,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -2974,16 +2974,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━┩
         │ string      │ string │ string │ int64 │ int64       │ int64        │ … │
         ├─────────────┼────────┼────────┼───────┼─────────────┼──────────────┼───┤
-        │ Afghanistan │ AF     │ AFG    │  1980 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1981 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1982 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1983 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1984 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1985 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1986 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1987 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1988 │           ∅ │            ∅ │ … │
-        │ Afghanistan │ AF     │ AFG    │  1989 │           ∅ │            ∅ │ … │
+        │ Afghanistan │ AF     │ AFG    │  1980 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1981 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1982 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1983 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1984 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1985 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1986 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1987 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1988 │        NULL │         NULL │ … │
+        │ Afghanistan │ AF     │ AFG    │  1989 │        NULL │         NULL │ … │
         │ …           │ …      │ …      │     … │           … │            … │ … │
         └─────────────┴────────┴────────┴───────┴─────────────┴──────────────┴───┘
         >>> len(who.columns)
@@ -2999,16 +2999,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
         │ string      │ string │ string │ int64 │ string    │ string │ string │ int64 │
         ├─────────────┼────────┼────────┼───────┼───────────┼────────┼────────┼───────┤
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 014    │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 1524   │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 2534   │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 3544   │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 4554   │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 5564   │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 65     │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 014    │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 1524   │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 2534   │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 014    │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 1524   │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 2534   │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 3544   │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 4554   │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 5564   │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ m      │ 65     │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 014    │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 1524   │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │ f      │ 2534   │  NULL │
         │ …           │ …      │ …      │     … │ …         │ …      │ …      │     … │
         └─────────────┴────────┴────────┴───────┴───────────┴────────┴────────┴───────┘
 
@@ -3034,16 +3034,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━╇━━━━━━━┩
         │ string      │ string │ string │ int64 │ string    │ int8   │ int8 │ int64 │
         ├─────────────┼────────┼────────┼───────┼───────────┼────────┼──────┼───────┤
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    0 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    1 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    2 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    3 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    4 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    5 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    6 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    0 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    1 │     ∅ │
-        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    2 │     ∅ │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    0 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    1 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    2 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    3 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    4 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    5 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      1 │    6 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    0 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    1 │  NULL │
+        │ Afghanistan │ AF     │ AFG    │  1980 │ sp        │      2 │    2 │  NULL │
         │ …           │ …      │ …      │     … │ …         │      … │    … │     … │
         └─────────────┴────────┴────────┴───────┴───────────┴────────┴──────┴───────┘
 
@@ -3211,13 +3211,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  4842 │       1 │     1 │      1 │     1 │       1 │     1 │     1 │ … │
         │  4843 │       1 │     1 │      1 │     1 │       1 │     1 │     1 │ … │
         │  4844 │       1 │     1 │      1 │     1 │       1 │     1 │     1 │ … │
-        │  4845 │       1 │     1 │      1 │     1 │       1 │     ∅ │     ∅ │ … │
-        │  4847 │       1 │     1 │      1 │     ∅ │       ∅ │     ∅ │     ∅ │ … │
-        │  4848 │       1 │     1 │      1 │     1 │       ∅ │     ∅ │     ∅ │ … │
-        │  4849 │       1 │     1 │      ∅ │     ∅ │       ∅ │     ∅ │     ∅ │ … │
-        │  4850 │       1 │     1 │      ∅ │     1 │       1 │     1 │     1 │ … │
-        │  4851 │       1 │     1 │      ∅ │     ∅ │       ∅ │     ∅ │     ∅ │ … │
-        │  4854 │       1 │     1 │      ∅ │     ∅ │       ∅ │     ∅ │     ∅ │ … │
+        │  4845 │       1 │     1 │      1 │     1 │       1 │  NULL │  NULL │ … │
+        │  4847 │       1 │     1 │      1 │  NULL │    NULL │  NULL │  NULL │ … │
+        │  4848 │       1 │     1 │      1 │     1 │    NULL │  NULL │  NULL │ … │
+        │  4849 │       1 │     1 │   NULL │  NULL │    NULL │  NULL │  NULL │ … │
+        │  4850 │       1 │     1 │   NULL │     1 │       1 │     1 │     1 │ … │
+        │  4851 │       1 │     1 │   NULL │  NULL │    NULL │  NULL │  NULL │ … │
+        │  4854 │       1 │     1 │   NULL │  NULL │    NULL │  NULL │  NULL │ … │
         │     … │       … │     … │      … │     … │       … │     … │     … │ … │
         └───────┴─────────┴───────┴────────┴───────┴─────────┴───────┴───────┴───┘
 

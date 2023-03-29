@@ -7,6 +7,7 @@ from math import isfinite
 import rich
 from rich.align import Align
 from rich.console import Console
+from rich.style import Style
 from rich.text import Text
 
 import ibis
@@ -108,11 +109,11 @@ def _(dtype, values):
 
 _str_escapes = str.maketrans(
     {
-        "\t": r"[dim]\t[/]",
-        "\r": r"[dim]\r[/]",
-        "\n": r"[dim]\n[/]",
-        "\v": r"[dim]\v[/]",
-        "\f": r"[dim]\f[/]",
+        "\t": r"[orange3]\t[/]",
+        "\r": r"[orange3]\r[/]",
+        "\n": r"[orange3]\n[/]",
+        "\v": r"[orange3]\v[/]",
+        "\f": r"[orange3]\f[/]",
     }
 )
 
@@ -137,7 +138,7 @@ def _(dtype, values):
                 v = "".join(
                     f"[dim]{repr(c)[1:-1]}[/]" if not c.isprintable() else c for c in v
                 )
-            text = Text.from_markup(v)
+            text = Text.from_markup(v, style="green")
         else:
             text = Text.styled("~", "dim")
         out.append(text)
@@ -147,7 +148,7 @@ def _(dtype, values):
 def format_column(dtype, values):
     import pandas as pd
 
-    null_str = Text.styled("∅", "dim")
+    null_str = Text.styled("NULL", style="dim")
     if dtype.is_floating():
         # We don't want to treat `nan` as `NULL` for floating point types
         def isnull(x):

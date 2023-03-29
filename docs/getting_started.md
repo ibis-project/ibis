@@ -123,7 +123,7 @@ as calling `execute()` on the expression with a limit of 10 results returned.
 │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
 │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
 │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
-│ Adelie  │ Torgersen │            nan │           nan │                 ∅ │           ∅ │ ∅      │  2007 │
+│ Adelie  │ Torgersen │            nan │           nan │              NULL │        NULL │ NULL   │  2007 │
 │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```
@@ -149,13 +149,13 @@ We can filter so we only have penguins of the species Adelie:
 │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
 │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
 │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
-│ Adelie  │ Torgersen │            nan │           nan │                 ∅ │           ∅ │ ∅      │  2007 │
+│ Adelie  │ Torgersen │            nan │           nan │              NULL │        NULL │ NULL   │  2007 │
 │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
 │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │        3650 │ male   │  2007 │
 │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │        3625 │ female │  2007 │
 │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │        4675 │ male   │  2007 │
-│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ ∅      │  2007 │
-│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ ∅      │  2007 │
+│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ NULL   │  2007 │
+│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │  2007 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```
@@ -172,13 +172,13 @@ Or filter for Adelie penguins that reside on the island of Torgersen:
 │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
 │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
 │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
-│ Adelie  │ Torgersen │            nan │           nan │                 ∅ │           ∅ │ ∅      │  2007 │
+│ Adelie  │ Torgersen │            nan │           nan │              NULL │        NULL │ NULL   │  2007 │
 │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
 │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │        3650 │ male   │  2007 │
 │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │        3625 │ female │  2007 │
 │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │        4675 │ male   │  2007 │
-│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ ∅      │  2007 │
-│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ ∅      │  2007 │
+│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ NULL   │  2007 │
+│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │  2007 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```
@@ -277,13 +277,13 @@ existing columns.
 │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │ … │
 │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │ … │
 │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │ … │
-│ Adelie  │ Torgersen │            nan │           nan │                 ∅ │           ∅ │ ∅      │ … │
+│ Adelie  │ Torgersen │            nan │           nan │              NULL │        NULL │ NULL   │ … │
 │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │ … │
 │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │        3650 │ male   │ … │
 │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │        3625 │ female │ … │
 │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │        4675 │ male   │ … │
-│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ ∅      │ … │
-│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ ∅      │ … │
+│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ NULL   │ … │
+│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │ … │
 │ …       │ …         │              … │             … │                 … │           … │ …      │ … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───┘
 ```
@@ -311,13 +311,13 @@ trim down the number of columns we're looking at.
 │ Adelie  │ Torgersen │          18.7 │               181 │        3750 │ male   │  2007 │           3.91 │
 │ Adelie  │ Torgersen │          17.4 │               186 │        3800 │ female │  2007 │           3.95 │
 │ Adelie  │ Torgersen │          18.0 │               195 │        3250 │ female │  2007 │           4.03 │
-│ Adelie  │ Torgersen │           nan │                 ∅ │           ∅ │ ∅      │  2007 │            nan │
+│ Adelie  │ Torgersen │           nan │              NULL │        NULL │ NULL   │  2007 │            nan │
 │ Adelie  │ Torgersen │          19.3 │               193 │        3450 │ female │  2007 │           3.67 │
 │ Adelie  │ Torgersen │          20.6 │               190 │        3650 │ male   │  2007 │           3.93 │
 │ Adelie  │ Torgersen │          17.8 │               181 │        3625 │ female │  2007 │           3.89 │
 │ Adelie  │ Torgersen │          19.6 │               195 │        4675 │ male   │  2007 │           3.92 │
-│ Adelie  │ Torgersen │          18.1 │               193 │        3475 │ ∅      │  2007 │           3.41 │
-│ Adelie  │ Torgersen │          20.2 │               190 │        4250 │ ∅      │  2007 │           4.20 │
+│ Adelie  │ Torgersen │          18.1 │               193 │        3475 │ NULL   │  2007 │           3.41 │
+│ Adelie  │ Torgersen │          20.2 │               190 │        4250 │ NULL   │  2007 │           4.20 │
 │ …       │ …         │             … │                 … │           … │ …      │     … │              … │
 └─────────┴───────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┴────────────────┘
 ```
@@ -343,13 +343,13 @@ of columns.
 │ Adelie  │ Torgersen │          18.7 │               181 │        3750 │ male   │  2007 │           3.91 │
 │ Adelie  │ Torgersen │          17.4 │               186 │        3800 │ female │  2007 │           3.95 │
 │ Adelie  │ Torgersen │          18.0 │               195 │        3250 │ female │  2007 │           4.03 │
-│ Adelie  │ Torgersen │           nan │                 ∅ │           ∅ │ ∅      │  2007 │            nan │
+│ Adelie  │ Torgersen │           nan │              NULL │        NULL │ NULL   │  2007 │            nan │
 │ Adelie  │ Torgersen │          19.3 │               193 │        3450 │ female │  2007 │           3.67 │
 │ Adelie  │ Torgersen │          20.6 │               190 │        3650 │ male   │  2007 │           3.93 │
 │ Adelie  │ Torgersen │          17.8 │               181 │        3625 │ female │  2007 │           3.89 │
 │ Adelie  │ Torgersen │          19.6 │               195 │        4675 │ male   │  2007 │           3.92 │
-│ Adelie  │ Torgersen │          18.1 │               193 │        3475 │ ∅      │  2007 │           3.41 │
-│ Adelie  │ Torgersen │          20.2 │               190 │        4250 │ ∅      │  2007 │           4.20 │
+│ Adelie  │ Torgersen │          18.1 │               193 │        3475 │ NULL   │  2007 │           3.41 │
+│ Adelie  │ Torgersen │          20.2 │               190 │        4250 │ NULL   │  2007 │           4.20 │
 │ …       │ …         │             … │                 … │           … │ …      │     … │              … │
 └─────────┴───────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┴────────────────┘
 ```
@@ -366,7 +366,7 @@ You can also use a `selector` alongside a column name.
 │ Torgersen │           39.1 │          18.7 │               181 │        3750 │  2007 │
 │ Torgersen │           39.5 │          17.4 │               186 │        3800 │  2007 │
 │ Torgersen │           40.3 │          18.0 │               195 │        3250 │  2007 │
-│ Torgersen │            nan │           nan │                 ∅ │           ∅ │  2007 │
+│ Torgersen │            nan │           nan │              NULL │        NULL │  2007 │
 │ Torgersen │           36.7 │          19.3 │               193 │        3450 │  2007 │
 │ Torgersen │           39.3 │          20.6 │               190 │        3650 │  2007 │
 │ Torgersen │           38.9 │          17.8 │               181 │        3625 │  2007 │
@@ -394,8 +394,8 @@ By default, `ibis` sorts in ascending order:
 ┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
 │ string    │ string    │ int64             │
 ├───────────┼───────────┼───────────────────┤
-│ Adelie    │ Torgersen │                 ∅ │
-│ Gentoo    │ Biscoe    │                 ∅ │
+│ Adelie    │ Torgersen │              NULL │
+│ Gentoo    │ Biscoe    │              NULL │
 │ Adelie    │ Biscoe    │               172 │
 │ Adelie    │ Biscoe    │               174 │
 │ Adelie    │ Torgersen │               176 │
@@ -419,8 +419,8 @@ You can sort in descending order using the `desc` method of a column:
 ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
 │ string  │ string    │ int64             │
 ├─────────┼───────────┼───────────────────┤
-│ Adelie  │ Torgersen │                 ∅ │
-│ Gentoo  │ Biscoe    │                 ∅ │
+│ Adelie  │ Torgersen │              NULL │
+│ Gentoo  │ Biscoe    │              NULL │
 │ Gentoo  │ Biscoe    │               231 │
 │ Gentoo  │ Biscoe    │               230 │
 │ Gentoo  │ Biscoe    │               230 │
@@ -444,8 +444,8 @@ Or you can use `ibis.desc`
 ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
 │ string  │ string    │ int64             │
 ├─────────┼───────────┼───────────────────┤
-│ Adelie  │ Torgersen │                 ∅ │
-│ Gentoo  │ Biscoe    │                 ∅ │
+│ Adelie  │ Torgersen │              NULL │
+│ Gentoo  │ Biscoe    │              NULL │
 │ Gentoo  │ Biscoe    │               231 │
 │ Gentoo  │ Biscoe    │               230 │
 │ Gentoo  │ Biscoe    │               230 │
@@ -580,12 +580,12 @@ If we need more specific groups, we can add to the `group_by`.
 ├─────────┼───────────┼────────┼──────────────────────┼────────────────────────┤
 │ Adelie  │ Torgersen │ male   │            40.586957 │                    210 │
 │ Adelie  │ Torgersen │ female │            37.554167 │                    196 │
-│ Adelie  │ Torgersen │ ∅      │            37.925000 │                    193 │
+│ Adelie  │ Torgersen │ NULL   │            37.925000 │                    193 │
 │ Adelie  │ Biscoe    │ female │            37.359091 │                    199 │
 │ Adelie  │ Biscoe    │ male   │            40.590909 │                    203 │
 │ Adelie  │ Dream     │ female │            36.911111 │                    202 │
 │ Adelie  │ Dream     │ male   │            40.071429 │                    208 │
-│ Adelie  │ Dream     │ ∅      │            37.500000 │                    179 │
+│ Adelie  │ Dream     │ NULL   │            37.500000 │                    179 │
 │ Gentoo  │ Biscoe    │ female │            45.563793 │                    222 │
 │ Gentoo  │ Biscoe    │ male   │            49.473770 │                    231 │
 │ …       │ …         │ …      │                    … │                      … │

@@ -190,13 +190,13 @@ class Value(Expr):
         │ male   │
         │ female │
         │ female │
-        │ ∅      │
+        │ NULL   │
         │ female │
         │ male   │
         │ female │
         │ male   │
-        │ ∅      │
-        │ ∅      │
+        │ NULL   │
+        │ NULL   │
         │ …      │
         └────────┘
         >>> t.sex.fillna("unrecorded").name("sex")

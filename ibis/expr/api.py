@@ -955,8 +955,8 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
     │ uint64 │ string │
     ├────────┼────────┤
     │      1 │ d      │
-    │      2 │ ∅      │
-    │      ∅ │ f      │
+    │      2 │ NULL   │
+    │   NULL │ f      │
     └────────┴────────┘
     """
     from ibis.config import _default_backend
