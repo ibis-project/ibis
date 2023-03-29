@@ -12,7 +12,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.selectors as s
+import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
 

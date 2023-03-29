@@ -1,5 +1,5 @@
 # Column Selectors
 
 <!-- prettier-ignore-start -->
-::: ibis.expr.selectors
+::: ibis.selectors
 <!-- prettier-ignore-end -->

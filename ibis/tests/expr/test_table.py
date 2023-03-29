@@ -14,8 +14,8 @@ import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-import ibis.expr.selectors as s
 import ibis.expr.types as ir
+import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
 from ibis.common.exceptions import RelationError

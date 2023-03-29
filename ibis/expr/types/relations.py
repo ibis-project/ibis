@@ -26,10 +26,10 @@ if TYPE_CHECKING:
     import pandas as pd
 
     import ibis.expr.schema as sch
-    import ibis.expr.selectors as s
+    import ibis.selectors as s
     import ibis.expr.types as ir
     from ibis.common.typing import SupportsSchema
-    from ibis.expr.selectors import IfAnyAll, Selector
+    from ibis.selectors import IfAnyAll, Selector
     from ibis.expr.types.groupby import GroupedTable
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
@@ -37,7 +37,7 @@ _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
 
 def _ensure_expr(table, expr):
     import ibis.expr.rules as rlz
-    from ibis.expr.selectors import Selector
+    from ibis.selectors import Selector
 
     # This is different than self._ensure_expr, since we don't want to
     # treat `str` or `int` values as column indices
@@ -166,7 +166,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.schema()
@@ -280,7 +280,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> from ibis import _
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
@@ -585,7 +585,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     def _ensure_expr(self, expr):
         import numpy as np
 
-        from ibis.expr.selectors import Selector
+        from ibis.selectors import Selector
 
         if isinstance(expr, str):
             # treat strings as column names
@@ -946,7 +946,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> import ibis.examples as ex
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
         >>> t = ex.penguins.fetch()
         >>> t
@@ -1021,7 +1021,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t.count()
         344
 
-        You can pass [`selectors`][ibis.expr.selectors] to `on`
+        You can pass [`selectors`][ibis.selectors] to `on`
 
         >>> t.distinct(on=~s.numeric())
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
@@ -1050,7 +1050,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ibis.common.exceptions.IbisError: Invalid value for keep: 'second' ...
         """
 
-        import ibis.expr.selectors as s
+        import ibis.selectors as s
 
         if on is None:
             # dedup everything
@@ -1464,7 +1464,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> from ibis import _
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch().select("species", "year", "bill_length_mm")
@@ -1663,7 +1663,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Projection with a selector
 
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> t.select(s.numeric() & ~s.c("year")).head()
         ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
@@ -1694,7 +1694,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
         import ibis.expr.analysis as an
-        from ibis.expr.selectors import Selector
+        from ibis.selectors import Selector
 
         exprs = list(
             itertools.chain(
@@ -1747,7 +1747,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
         >>> first3 = s.r[:3]  # first 3 columns
         >>> t = ibis.examples.penguins_raw_raw.fetch().select(first3)
@@ -1929,7 +1929,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Drop with selectors, mix and match
 
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> t.drop("species", s.startswith("bill_")).head()
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
         ┃ island    ┃ flipper_length_mm ┃ body_mass_g ┃ sex    ┃ year  ┃
@@ -2388,7 +2388,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> import ibis.examples as ex
         >>> from ibis import _
         >>> ibis.options.interactive = True
@@ -2561,7 +2561,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> from ibis import _
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
@@ -2842,7 +2842,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Basic usage
 
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> from ibis import _
         >>> ibis.options.interactive = True
         >>> relig_income = ibis.examples.relig_income_raw.fetch()
@@ -3065,7 +3065,7 @@ class Table(Expr, _FixedTextJupyterMixin):
           ...
         ibis.common.exceptions.IbisTypeError: ... Got <class 'str'>
         """
-        import ibis.expr.selectors as s
+        import ibis.selectors as s
 
         pivot_sel = s.c(cols) if isinstance(cols, str) else cols
 
@@ -3177,7 +3177,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.expr.selectors as s
+        >>> import ibis.selectors as s
         >>> from ibis import _
         >>> ibis.options.interactive = True
 
@@ -3487,7 +3487,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┴──────────┴──────────┴──────────┘
         """
         import pandas as pd
-        import ibis.expr.selectors as s
+        import ibis.selectors as s
         import ibis.expr.analysis as an
         from ibis import _
 
