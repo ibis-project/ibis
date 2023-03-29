@@ -25,6 +25,8 @@ result = (
     functional_alltypes.inner_join(
         selfreference,
         functional_alltypes.tinyint_col < selfreference.timestamp_col.minute(),
+        lname="{name}_x",
+        rname="{name}_y",
     )
     .select(
         [

@@ -9,4 +9,6 @@ star2 = ibis.table(
     name="star2", schema={"foo_id": "string", "value1": "float64", "value3": "float64"}
 )
 
-result = star1.anti_join(star2, star1.foo_id == star2.foo_id).select(star1)
+result = star1.anti_join(
+    star2, star1.foo_id == star2.foo_id, lname="{name}_x", rname="{name}_y"
+).select(star1)

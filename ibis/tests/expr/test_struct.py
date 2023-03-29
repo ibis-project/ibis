@@ -67,16 +67,16 @@ def test_unpack_from_table(t):
 
 
 def test_lift_join(t, s):
-    join = t.join(s, t.d == s.a.g)
+    join = t.join(s, t.d == s.a.g, rname="{name}_y")
     result = join.a_y.lift()
     expected = join[_.a_y.f, _.a_y.g]
     assert result.equals(expected)
 
 
 def test_unpack_join_from_table(t, s):
-    join = t.join(s, t.d == s.a.g)
+    join = t.join(s, t.d == s.a.g, rname="{name}_y")
     result = join.unpack("a_y")
-    expected = join[_.a_x, _.d, _.a_y.f, _.a_y.g]
+    expected = join[_.a, _.d, _.a_y.f, _.a_y.g]
     assert result.equals(expected)
 
 

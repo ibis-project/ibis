@@ -254,7 +254,7 @@ def test_cte_factor_distinct_but_equal(con, snapshot):
     expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
     expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
 
-    expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+    expr = expr1.join(expr2, expr1.g == expr2.g, rname="{name}_y")[[expr1]]
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -262,7 +262,7 @@ def test_cte_factor_distinct_but_equal(con, snapshot):
 def test_self_reference_join(star1, snapshot):
     t1 = star1
     t2 = t1.view()
-    expr = t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
+    expr = t1.inner_join(t2, [t1.foo_id == t2.bar_id], rname="{name}_y")[[t1]]
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -443,9 +443,9 @@ def survey():
 
 
 def test_no_cross_join(person, visited, survey, snapshot):
-    expr = person.join(survey, person.id == survey.person).join(
-        visited, visited.id == survey.taken
-    )
+    expr = person.join(
+        survey, person.id == survey.person, lname="{name}_x", rname="{name}_y"
+    ).join(visited, visited.id == survey.taken, lname="{name}_x", rname="{name}_y")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 

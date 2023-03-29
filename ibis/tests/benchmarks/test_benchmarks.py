@@ -591,7 +591,7 @@ def test_eq_datatypes(benchmark, dtypes):
 def multiple_joins(table, num_joins):
     for _ in range(num_joins):
         table = table.mutate(dummy=ibis.literal(""))
-        table = table.left_join(table, ["dummy"])[[table]]
+        table = table.left_join(table, ["dummy"], rname="{name}_y")[[table]]
 
 
 @pytest.mark.parametrize("num_joins", [1, 10])

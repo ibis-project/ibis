@@ -63,16 +63,16 @@ def test_simple_joins(star1, star2, snapshot):
     pred = t1['foo_id'] == t2['foo_id']
     pred2 = t1['bar_id'] == t2['foo_id']
 
-    expr = t1.inner_join(t2, [pred])[[t1]]
+    expr = t1.inner_join(t2, [pred], lname="{name}_x", rname="{name}_y")[[t1]]
     snapshot.assert_match(to_sql(expr), "inner.sql")
 
-    expr = t1.left_join(t2, [pred])[[t1]]
+    expr = t1.left_join(t2, [pred], lname="{name}_x", rname="{name}_y")[[t1]]
     snapshot.assert_match(to_sql(expr), "left.sql")
 
-    expr = t1.outer_join(t2, [pred])[[t1]]
+    expr = t1.outer_join(t2, [pred], lname="{name}_x", rname="{name}_y")[[t1]]
     snapshot.assert_match(to_sql(expr), "outer.sql")
 
-    expr = t1.inner_join(t2, [pred, pred2])[[t1]]
+    expr = t1.inner_join(t2, [pred, pred2], lname="{name}_x", rname="{name}_y")[[t1]]
     snapshot.assert_match(to_sql(expr), "inner_two_preds.sql")
     assert_decompile_roundtrip(expr, snapshot)
 
@@ -86,8 +86,8 @@ def test_multiple_joins(star1, star2, star3, snapshot):
     predB = t1['bar_id'] == t3['bar_id']
 
     expr = (
-        t1.left_join(t2, [predA])
-        .inner_join(t3, [predB])
+        t1.left_join(t2, [predA], lname="{name}_x", rname="{name}_y")
+        .inner_join(t3, [predB], lname="{name}_x", rname="{name}_y")
         .projection([t1, t2['value1'], t3['value2']])
     )
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -336,7 +336,9 @@ def test_subquery_in_union(alltypes, snapshot):
     expr1 = t.group_by(['a', 'g']).aggregate(t.f.sum().name('metric'))
     expr2 = expr1.view()
 
-    join1 = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+    join1 = expr1.join(expr2, expr1.g == expr2.g, lname="{name}_x", rname="{name}_y")[
+        [expr1]
+    ]
     join2 = join1.view()
 
     expr = join1.union(join2)
@@ -348,7 +350,12 @@ def test_limit_with_self_join(functional_alltypes, snapshot):
     t = functional_alltypes
     t2 = t.view()
 
-    expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
+    expr = t.join(
+        t2,
+        t.tinyint_col < t2.timestamp_col.minute(),
+        lname="{name}_x",
+        rname="{name}_y",
+    ).count()
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
 
@@ -523,7 +530,9 @@ def test_join_filtered_tables_no_pushdown(snapshot):
 
     tbl_b_filter = tbl_b.filter([tbl_b.year == 2016, tbl_b.month == 2, tbl_b.day == 29])
 
-    joined = tbl_a_filter.left_join(tbl_b_filter, ['year', 'month', 'day'])
+    joined = tbl_a_filter.left_join(
+        tbl_b_filter, ['year', 'month', 'day'], lname="{name}_x", rname="{name}_y"
+    )
     result = joined[tbl_a_filter.value_a, tbl_b_filter.value_b]
 
     join_op = result.op().table
@@ -540,7 +549,7 @@ def test_loj_subquery_filter_handling(snapshot):
     left = left[left.id < 2]
     right = right[right.id < 3]
 
-    joined = left.left_join(right, ['id', 'desc'])
+    joined = left.left_join(right, ['id', 'desc'], lname="{name}_x", rname="{name}_y")
     expr = joined[
         [left[name].name('left_' + name) for name in left.columns]
         + [right[name].name('right_' + name) for name in right.columns]
@@ -630,7 +639,9 @@ def test_subquery_used_for_self_join(con, snapshot):
     agged = t.aggregate([t.f.sum().name('total')], by=['g', 'a', 'b'])
     view = agged.view()
     metrics = [(agged.total - view.total).max().name('metric')]
-    expr = agged.inner_join(view, [agged.a == view.b]).aggregate(metrics, by=[agged.g])
+    expr = agged.inner_join(
+        view, [agged.a == view.b], lname="{name}_x", rname="{name}_y"
+    ).aggregate(metrics, by=[agged.g])
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -668,13 +679,23 @@ def test_self_join_subquery_distinct_equal(con, snapshot):
     region = con.table('tpch_region')
     nation = con.table('tpch_nation')
 
-    j1 = region.join(nation, region.r_regionkey == nation.n_regionkey)[region, nation]
+    j1 = region.join(
+        nation,
+        region.r_regionkey == nation.n_regionkey,
+        lname="{name}_x",
+        rname="{name}_y",
+    )[region, nation]
 
-    j2 = region.join(nation, region.r_regionkey == nation.n_regionkey)[
-        region, nation
-    ].view()
+    j2 = region.join(
+        nation,
+        region.r_regionkey == nation.n_regionkey,
+        lname="{name}_x",
+        rname="{name}_y",
+    )[region, nation].view()
 
-    expr = j1.join(j2, j1.r_regionkey == j2.r_regionkey)[j1.r_name, j2.n_name]
+    expr = j1.join(
+        j2, j1.r_regionkey == j2.r_regionkey, lname="{name}_x", rname="{name}_y"
+    )[j1.r_name, j2.n_name]
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -694,9 +715,24 @@ def test_tpch_self_join_failure(con, snapshot):
     ]
 
     joined_all = (
-        region.join(nation, region.r_regionkey == nation.n_regionkey)
-        .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
+        region.join(
+            nation,
+            region.r_regionkey == nation.n_regionkey,
+            lname="{name}_x",
+            rname="{name}_y",
+        )
+        .join(
+            customer,
+            customer.c_nationkey == nation.n_nationkey,
+            lname="{name}_x",
+            rname="{name}_y",
+        )
+        .join(
+            orders,
+            orders.o_custkey == customer.c_custkey,
+            lname="{name}_x",
+            rname="{name}_y",
+        )[fields_of_interest]
     )
 
     year = joined_all.odate.year().name('year')
@@ -707,9 +743,9 @@ def test_tpch_self_join_failure(con, snapshot):
     prior = annual_amounts.view()
 
     yoy_change = (current.total - prior.total).name('yoy_change')
-    yoy = current.join(prior, current.year == (prior.year - 1))[
-        current.region, current.year, yoy_change
-    ]
+    yoy = current.join(
+        prior, current.year == (prior.year - 1), lname="{name}_x", rname="{name}_y"
+    )[current.region, current.year, yoy_change]
     snapshot.assert_match(to_sql(yoy), "out.sql")
     #  Compiler.to_sql(yoy)  # fail
 
@@ -777,7 +813,7 @@ def test_limit_cte_extract(con, snapshot):
     alltypes = con.table('functional_alltypes')
     t = alltypes.limit(100)
     t2 = t.view()
-    expr = t.join(t2).projection(t)
+    expr = t.join(t2, lname="{name}_x", rname="{name}_y").projection(t)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -798,7 +834,9 @@ def test_filter_self_join_analysis_bug(snapshot):
     left = agged[agged.kind == 'foo']
     right = agged[agged.kind == 'bar']
 
-    joined = left.join(right, left.region == right.region)
+    joined = left.join(
+        right, left.region == right.region, lname="{name}_x", rname="{name}_y"
+    )
     result = joined[left.region, (left.total - right.total).name('diff')]
 
     snapshot.assert_match(to_sql(result), "result.sql")

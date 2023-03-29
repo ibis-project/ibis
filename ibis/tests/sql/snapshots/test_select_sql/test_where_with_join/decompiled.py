@@ -10,7 +10,9 @@ star2 = ibis.table(
 )
 
 result = (
-    star1.inner_join(star2, star1.foo_id == star2.foo_id)
+    star1.inner_join(
+        star2, star1.foo_id == star2.foo_id, lname="{name}_x", rname="{name}_y"
+    )
     .select([star1, star2.value1, star2.value3])
     .filter([star1.f > 0, star2.value3 < 1000])
 )

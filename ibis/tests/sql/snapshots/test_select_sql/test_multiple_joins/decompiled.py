@@ -11,7 +11,9 @@ star2 = ibis.table(
 )
 
 result = (
-    star1.left_join(star2, star1.foo_id == star2.foo_id)
+    star1.left_join(
+        star2, star1.foo_id == star2.foo_id, lname="{name}_x", rname="{name}_y"
+    )
     .select(
         [
             star1.c,
@@ -23,6 +25,6 @@ result = (
             star2.value3,
         ]
     )
-    .inner_join(star3, star1.bar_id == star3.bar_id)
+    .inner_join(star3, star1.bar_id == star3.bar_id, lname="{name}_x", rname="{name}_y")
     .select([star1, star2.value1, star3.value2])
 )

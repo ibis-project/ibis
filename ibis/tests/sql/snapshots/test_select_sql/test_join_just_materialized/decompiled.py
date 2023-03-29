@@ -29,5 +29,13 @@ tpch_region = ibis.table(
 )
 
 result = tpch_nation.inner_join(
-    tpch_region, tpch_nation.n_regionkey == tpch_region.r_regionkey
-).inner_join(tpch_customer, tpch_nation.n_nationkey == tpch_customer.c_nationkey)
+    tpch_region,
+    tpch_nation.n_regionkey == tpch_region.r_regionkey,
+    lname="{name}_x",
+    rname="{name}_y",
+).inner_join(
+    tpch_customer,
+    tpch_nation.n_nationkey == tpch_customer.c_nationkey,
+    lname="{name}_x",
+    rname="{name}_y",
+)

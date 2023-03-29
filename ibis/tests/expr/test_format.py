@@ -75,8 +75,8 @@ def test_format_multiple_join_with_projection():
     pred1 = filtered['foo_id'] == table2['foo_id']
     pred2 = filtered['bar_id'] == table3['bar_id']
 
-    j1 = filtered.left_join(table2, [pred1])
-    j2 = j1.inner_join(table3, [pred2])
+    j1 = filtered.left_join(table2, [pred1], rname="{name}_y")
+    j2 = j1.inner_join(table3, [pred2], rname="{name}_y")
 
     # Project out the desired fields
     view = j2[[filtered, table2['value1'], table3['value2']]]
@@ -165,7 +165,9 @@ def test_memoize_filtered_tables_in_join():
     right = agged[agged.kind == 'bar']
 
     cond = left.region == right.region
-    joined = left.join(right, cond)[left, right.total.name('right_total')]
+    joined = left.join(right, cond, rname="{name}_y")[
+        left, right.total.name('right_total')
+    ]
 
     result = repr(joined)
 
@@ -279,7 +281,7 @@ def test_tables_have_format_value_rules(cls):
     "f",
     [
         lambda t1, t2: t1.count(),
-        lambda t1, t2: t1.join(t2, t1.a == t2.a).count(),
+        lambda t1, t2: t1.join(t2, t1.a == t2.a, rname="{name}_y").count(),
         lambda t1, t2: ibis.union(t1, t2).count(),
     ],
 )
@@ -322,8 +324,8 @@ def test_fillna():
 def test_asof_join():
     left = ibis.table([("time1", 'int32'), ('value', 'double')])
     right = ibis.table([("time2", 'int32'), ('value2', 'double')])
-    joined = left.asof_join(right, [("time1", "time2")]).inner_join(
-        right, left.value == right.value2
+    joined = left.asof_join(right, [("time1", "time2")], rname="{name}_y").inner_join(
+        right, left.value == right.value2, rname="{name}_y"
     )
     rep = repr(joined)
     assert rep.count("InnerJoin") == 1
@@ -333,8 +335,8 @@ def test_asof_join():
 def test_two_inner_joins():
     left = ibis.table([("time1", 'int32'), ('value', 'double'), ('a', 'string')])
     right = ibis.table([("time2", 'int32'), ('value2', 'double'), ('b', 'string')])
-    joined = left.inner_join(right, left.a == right.b).inner_join(
-        right, left.value == right.value2
+    joined = left.inner_join(right, left.a == right.b, rname="{name}_y").inner_join(
+        right, left.value == right.value2, rname="{name}_y"
     )
     rep = repr(joined)
     assert rep.count("InnerJoin") == 2

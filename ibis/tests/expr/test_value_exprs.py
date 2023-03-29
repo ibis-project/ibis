@@ -1341,7 +1341,7 @@ def test_select_on_unambiguous_join(join_method):
 def test_chained_select_on_join():
     t = ibis.table([("a", dt.int64)], name="t")
     s = ibis.table([("a", dt.int64), ("b", dt.string)], name="s")
-    join = t.join(s)[t.a, s.b]
+    join = t.join(s, rname="{name}_y")[t.a, s.b]
     expr1 = join["a", "b"]
     expr2 = join.select(["a", "b"])
     assert expr1.equals(expr2)

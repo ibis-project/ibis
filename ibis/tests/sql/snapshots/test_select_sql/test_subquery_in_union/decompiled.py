@@ -21,6 +21,8 @@ agg = alltypes.group_by([alltypes.a, alltypes.g]).aggregate(
     alltypes.f.sum().name("metric")
 )
 selfreference = agg.view()
-proj = agg.inner_join(selfreference, agg.g == selfreference.g).select(agg)
+proj = agg.inner_join(
+    selfreference, agg.g == selfreference.g, lname="{name}_x", rname="{name}_y"
+).select(agg)
 
 result = proj.union(proj.view())

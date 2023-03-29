@@ -25,15 +25,17 @@ def test_rewrite_join_projection_without_other_ops(con):
     pred1 = table['foo_id'] == table2['foo_id']
     pred2 = filtered['bar_id'] == table3['bar_id']
 
-    j1 = filtered.left_join(table2, [pred1])
-    j2 = j1.inner_join(table3, [pred2])
+    j1 = filtered.left_join(table2, [pred1], rname="{name}_y")
+    j2 = j1.inner_join(table3, [pred2], rname="{name}_y")
 
     # Project out the desired fields
     view = j2[[filtered, table2['value1'], table3['value2']]]
 
     # Construct the thing we expect to obtain
     ex_pred2 = table['bar_id'] == table3['bar_id']
-    ex_expr = table.left_join(table2, [pred1]).inner_join(table3, [ex_pred2])
+    ex_expr = table.left_join(table2, [pred1], rname="{name}_y").inner_join(
+        table3, [ex_pred2], rname="{name}_y"
+    )
 
     rewritten_proj = an.substitute_parents(view.op())
 
@@ -137,7 +139,7 @@ def test_filter_self_join():
     right = agged[agged.kind == 'bar']
 
     cond = left.region == right.region
-    joined = left.join(right, cond)
+    joined = left.join(right, cond, rname="{name}_y")
 
     metric = (left.total - right.total).name('diff')
     what = [left.region, metric]

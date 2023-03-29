@@ -92,7 +92,7 @@ def with_graphviz():
 def test_join(how):
     left = ibis.table([('a', 'int64'), ('b', 'string')])
     right = ibis.table([('b', 'string'), ('c', 'int64')])
-    joined = left.join(right, left.b == right.b, how=how)
+    joined = left.join(right, left.b == right.b, how=how, rname="{name}_y")
     result = joined[left.a, right.c]
     graph = viz.to_graph(result)
     assert key(result.op()) in graph.source
@@ -142,7 +142,7 @@ def test_asof_join():
     right = ibis.table([('time', 'int32'), ('value2', 'double')])
     right = right.mutate(foo=1)
 
-    joined = api.asof_join(left, right, 'time')
+    joined = api.asof_join(left, right, 'time', rname="{name}_y")
     result = joined[left, right.foo]
     graph = viz.to_graph(result)
     assert key(result.op()) in graph.source

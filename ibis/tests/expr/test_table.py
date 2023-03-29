@@ -854,10 +854,10 @@ def test_join_deferred(con):
 def test_asof_join():
     left = ibis.table([('time', 'int32'), ('value', 'double')])
     right = ibis.table([('time', 'int32'), ('value2', 'double')])
-    joined = api.asof_join(left, right, 'time')
+    joined = api.asof_join(left, right, 'time', rname="{name}_y")
 
     assert joined.columns == [
-        "time_x",
+        "time",
         "value",
         "time_y",
         "value2",
@@ -869,10 +869,10 @@ def test_asof_join():
 def test_asof_join_with_by():
     left = ibis.table([('time', 'int32'), ('key', 'int32'), ('value', 'double')])
     right = ibis.table([('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
-    joined = api.asof_join(left, right, 'time', by='key')
+    joined = api.asof_join(left, right, 'time', by='key', rname="{name}_y")
     assert joined.columns == [
-        "time_x",
-        "key_x",
+        "time",
+        "key",
         "value",
         "time_y",
         "key_y",
@@ -904,11 +904,15 @@ def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
     left = ibis.table([('time', 'int32'), ('key', 'int32'), ('value', 'double')])
     right = ibis.table([('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
 
-    joined = api.asof_join(left, right, 'time', tolerance=ibis_interval).op()
+    joined = api.asof_join(
+        left, right, 'time', tolerance=ibis_interval, rname="{name}_y"
+    ).op()
     tolerance = joined.table.tolerance
     assert_equal(tolerance, ibis_interval.op())
 
-    joined = api.asof_join(left, right, 'time', tolerance=timedelta_interval).op()
+    joined = api.asof_join(
+        left, right, 'time', tolerance=timedelta_interval, rname="{name}_y"
+    ).op()
     tolerance = joined.table.tolerance
     assert isinstance(tolerance.to_expr(), ir.IntervalScalar)
     assert isinstance(tolerance, ops.Literal)
@@ -943,7 +947,7 @@ def test_join_combo_with_projection(table):
     t2 = t.mutate(foo=t.f * 2, bar=t.f * 4)
 
     # this works
-    joined = t.left_join(t2, [t['g'] == t2['g']])
+    joined = t.left_join(t2, [t['g'] == t2['g']], rname="{name}_y")
     proj = joined.projection([t, t2['foo'], t2['bar']])
     repr(proj)
 
@@ -977,7 +981,7 @@ def test_self_join(table):
     right = table.view()
     metric = (left['a'] - right['b']).mean().name('metric')
 
-    joined = left.inner_join(right, [right['g'] == left['g']])
+    joined = left.inner_join(right, [right['g'] == left['g']], rname="right_{name}")
 
     # Project out left table schema
     proj = joined[[left]]
@@ -993,7 +997,7 @@ def test_self_join_no_view_convenience(table):
     # #165, self joins ought to be possible when the user specifies the
     # column names to join on rather than referentially-valid expressions
 
-    result = table.join(table, [('g', 'g')])
+    result = table.join(table, [('g', 'g')], lname="{name}_x", rname="{name}_y")
     expected_cols = [f"{c}_x" if c != 'g' else 'g' for c in table.columns]
     expected_cols.extend(f"{c}_y" for c in table.columns if c != 'g')
     assert result.columns == expected_cols
@@ -1084,12 +1088,14 @@ def test_filter_join():
     repr(filtered)
 
 
-def test_inner_join_overlapping_column_names():
+def test_inner_join_overlapping_column_names_deprecated_suffixes():
     t1 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value1', 'double')])
     t2 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value2', 'double')])
 
-    joined = t1.join(t2, 'foo')
-    expected = t1.join(t2, t1.foo == t2.foo)
+    with pytest.warns(FutureWarning, match="suffixes"):
+        joined = t1.join(t2, 'foo')
+    with pytest.warns(FutureWarning, match="suffixes"):
+        expected = t1.join(t2, t1.foo == t2.foo)
     assert_equal(joined, expected)
     assert joined.columns == ["foo", "bar_x", "value1", "bar_y", "value2"]
 
@@ -1099,12 +1105,37 @@ def test_inner_join_overlapping_column_names():
     assert joined.columns == ["foo", "bar", "value1", "value2"]
 
     # Equality predicates don't have same name, need to rename
-    joined = t1.join(t2, t1.foo == t2.bar)
+    with pytest.warns(FutureWarning, match="suffixes"):
+        joined = t1.join(t2, t1.foo == t2.bar)
     assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
 
     # Not all predicates are equality, still need to rename
-    joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
+    with pytest.warns(FutureWarning, match="suffixes"):
+        joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
     assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
+
+
+def test_inner_join_overlapping_column_names():
+    t1 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value1', 'double')])
+    t2 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value2', 'double')])
+
+    joined = t1.join(t2, 'foo', rname="{name}_y")
+    expected = t1.join(t2, t1.foo == t2.foo, rname="{name}_y")
+    assert_equal(joined, expected)
+    assert joined.columns == ["foo", "bar", "value1", "bar_y", "value2"]
+
+    joined = t1.join(t2, ['foo', 'bar'])
+    expected = t1.join(t2, [t1.foo == t2.foo, t1.bar == t2.bar])
+    assert_equal(joined, expected)
+    assert joined.columns == ["foo", "bar", "value1", "value2"]
+
+    # Equality predicates don't have same name, need to rename
+    joined = t1.join(t2, t1.foo == t2.bar, rname="{name}_y")
+    assert joined.columns == ["foo", "bar", "value1", "foo_y", "bar_y", "value2"]
+
+    # Not all predicates are equality, still need to rename
+    joined = t1.join(t2, ["foo", t1.value1 < t2.value2], lname="{name}_x")
+    assert joined.columns == ["foo_x", "bar_x", "value1", "foo", "bar", "value2"]
 
 
 def test_join_key_alternatives(con):
@@ -1182,8 +1213,8 @@ def test_unravel_compound_equijoin(table):
     p2 = t1.key2 == t2.key2
     p3 = t1.key3 == t2.key3
 
-    joined = t1.inner_join(t2, [p1 & p2 & p3])
-    expected = t1.inner_join(t2, [p1, p2, p3])
+    joined = t1.inner_join(t2, [p1 & p2 & p3], rname="right_{name}")
+    expected = t1.inner_join(t2, [p1, p2, p3], rname="right_{name}")
     assert_equal(joined, expected)
 
 
@@ -1499,7 +1530,7 @@ def test_pickle_group_by(table):
 def test_pickle_asof_join():
     left = ibis.table([('time', 'int32'), ('value', 'double')])
     right = ibis.table([('time', 'int32'), ('value2', 'double')])
-    joined = api.asof_join(left, right, 'time')
+    joined = api.asof_join(left, right, 'time', rname="right_{name}")
     node = joined.op()
 
     assert_pickle_roundtrip(node)
@@ -1603,7 +1634,9 @@ def test_merge_as_of_allows_overlapping_columns():
     ]  # select columns we care about
     signal_two = signal_two.relabel({'value': 'voltage', 'field': 'signal_two'})
 
-    merged = ibis.api.asof_join(signal_one, signal_two, 'timestamp_received')
+    merged = ibis.api.asof_join(
+        signal_one, signal_two, 'timestamp_received', lname="{name}_x", rname="{name}_y"
+    )
     assert merged.columns == [
         'current',
         'timestamp_received_x',
@@ -1618,7 +1651,7 @@ def test_select_from_unambiguous_join_with_strings():
     # GH1387
     t = ibis.table([('a', 'int64'), ('b', 'string')])
     s = ibis.table([('b', 'int64'), ('c', 'string')])
-    joined = t.left_join(s, [t.b == s.c])
+    joined = t.left_join(s, [t.b == s.c], rname="right_{name}")
     expr = joined[t, 'c']
     assert expr.columns == ["a", "b", "c"]
 
@@ -1641,7 +1674,10 @@ def test_join_suffixes(how):
     right = ibis.table([("id", "int64"), ("last_name", "string")])
 
     method = getattr(left, f"{how}_join")
-    expr = method(right, suffixes=("_left", "_right"))
+
+    with pytest.warns(FutureWarning, match="suffixes"):
+        expr = method(right, suffixes=("_left", "_right"))
+
     assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
 
 
