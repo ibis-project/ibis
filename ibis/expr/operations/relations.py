@@ -611,7 +611,7 @@ class SQLStringView(PhysicalTable):
         return backend._get_schema_using_query(self.query)
 
 
-def _dedup_join_columns(expr, suffixes: tuple[str, str]):
+def _dedup_join_columns(expr, lname: str, rname: str):
     op = expr.op()
     left = op.left.to_expr()
     right = op.right.to_expr()
@@ -639,12 +639,10 @@ def _dedup_join_columns(expr, suffixes: tuple[str, str]):
     if not overlap:
         return expr
 
-    left_suffix, right_suffix = suffixes
-
     # Rename columns in the left table that overlap, unless they're known to be
     # equal to a column in the right
     left_projections = [
-        left[column].name(f"{column}{left_suffix}")
+        left[column].name(lname.format(name=column) if lname else column)
         if column in overlap and column not in equal
         else left[column]
         for column in left.columns
@@ -653,7 +651,7 @@ def _dedup_join_columns(expr, suffixes: tuple[str, str]):
     # Rename columns in the right table that overlap, dropping any columns that
     # are known to be equal to those in the left table
     right_projections = [
-        right[column].name(f"{column}{right_suffix}")
+        right[column].name(rname.format(name=column) if rname else column)
         if column in overlap
         else right[column]
         for column in right.columns

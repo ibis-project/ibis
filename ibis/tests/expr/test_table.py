@@ -794,9 +794,9 @@ def test_asof_join():
     joined = api.asof_join(left, right, 'time')
 
     assert joined.columns == [
-        "time_x",
+        "time",
         "value",
-        "time_y",
+        "time_right",
         "value2",
     ]
     pred = joined.op().table.predicates[0]
@@ -808,11 +808,11 @@ def test_asof_join_with_by():
     right = ibis.table([('time', 'int32'), ('key', 'int32'), ('value2', 'double')])
     joined = api.asof_join(left, right, 'time', by='key')
     assert joined.columns == [
-        "time_x",
-        "key_x",
+        "time",
+        "key",
         "value",
-        "time_y",
-        "key_y",
+        "time_right",
+        "key_right",
         "value2",
     ]
     by = joined.op().table.by[0]
@@ -931,8 +931,8 @@ def test_self_join_no_view_convenience(table):
     # column names to join on rather than referentially-valid expressions
 
     result = table.join(table, [('g', 'g')])
-    expected_cols = [f"{c}_x" if c != 'g' else 'g' for c in table.columns]
-    expected_cols.extend(f"{c}_y" for c in table.columns if c != 'g')
+    expected_cols = list(table.columns)
+    expected_cols.extend(f"{c}_right" for c in table.columns if c != 'g')
     assert result.columns == expected_cols
 
 
@@ -1027,7 +1027,7 @@ def test_inner_join_overlapping_column_names():
     joined = t1.join(t2, 'foo')
     expected = t1.join(t2, t1.foo == t2.foo)
     assert_equal(joined, expected)
-    assert joined.columns == ["foo", "bar_x", "value1", "bar_y", "value2"]
+    assert joined.columns == ["foo", "bar", "value1", "bar_right", "value2"]
 
     joined = t1.join(t2, ['foo', 'bar'])
     expected = t1.join(t2, [t1.foo == t2.foo, t1.bar == t2.bar])
@@ -1036,11 +1036,25 @@ def test_inner_join_overlapping_column_names():
 
     # Equality predicates don't have same name, need to rename
     joined = t1.join(t2, t1.foo == t2.bar)
-    assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
+    assert joined.columns == [
+        "foo",
+        "bar",
+        "value1",
+        "foo_right",
+        "bar_right",
+        "value2",
+    ]
 
     # Not all predicates are equality, still need to rename
     joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
-    assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
+    assert joined.columns == [
+        "foo",
+        "bar",
+        "value1",
+        "foo_right",
+        "bar_right",
+        "value2",
+    ]
 
 
 def test_join_key_alternatives(con):
@@ -1542,10 +1556,10 @@ def test_merge_as_of_allows_overlapping_columns():
     merged = ibis.api.asof_join(signal_one, signal_two, 'timestamp_received')
     assert merged.columns == [
         'current',
-        'timestamp_received_x',
+        'timestamp_received',
         'signal_one',
         'voltage',
-        'timestamp_received_y',
+        'timestamp_received_right',
         'signal_two',
     ]
 
@@ -1572,13 +1586,22 @@ def test_filter_applied_to_join():
 
 
 @pytest.mark.parametrize("how", ["inner", "left", "outer", "right"])
-def test_join_suffixes(how):
+def test_join_lname_rname(how):
     left = ibis.table([("id", "int64"), ("first_name", "string")])
     right = ibis.table([("id", "int64"), ("last_name", "string")])
-
     method = getattr(left, f"{how}_join")
-    expr = method(right, suffixes=("_left", "_right"))
-    assert expr.columns == ["id_left", "first_name", "id_right", "last_name"]
+
+    expr = method(right)
+    assert expr.columns == ["id", "first_name", "id_right", "last_name"]
+
+    expr = method(right, rname="right_{name}")
+    assert expr.columns == ["id", "first_name", "right_id", "last_name"]
+
+    expr = method(right, lname="left_{name}", rname="")
+    assert expr.columns == ["left_id", "first_name", "id", "last_name"]
+
+    expr = method(right, rname="right_{name}", lname="left_{name}")
+    assert expr.columns == ["left_id", "first_name", "right_id", "last_name"]
 
 
 def test_drop():

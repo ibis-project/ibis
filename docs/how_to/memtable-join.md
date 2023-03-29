@@ -87,24 +87,23 @@ and joining is the same as joining any two TableExpressions:
 ```python
     In [11]: # Join as you would two table expressions
         ...: measures.join(
-        ...:     mem_events
-        ...:     ,measures['event_id'] == mem_events['event_id']
-        ...:     ,suffixes=('', '__x')
+        ...:     mem_events,
+        ...:     measures['event_id'] == mem_events['event_id']
         ...: ).execute()
     Out[11]:
-        event_id measured_on  measurement  event_id__x event_name
-    0          0  2021-06-01          NaN            0         e0
-    1          0  2021-06-02          5.0            0         e0
-    2          1  2021-06-03          NaN            1         e1
-    3          1  2021-06-04          NaN            1         e1
-    4          1  2021-05-05         42.0            1         e1
-    5          2  2021-05-06         42.0            2         e2
-    6          2  2021-05-07          NaN            2         e2
-    7          2  2021-05-08         11.0            2         e2
-    8          2  2021-05-09          NaN            2         e2
-    9          2  2021-05-10          NaN            2         e2
-    10         3  2021-07-11          NaN            3         e3
-    11         3  2021-07-12          NaN            3         e3
+        event_id measured_on  measurement  event_name
+    0          0  2021-06-01          NaN          e0
+    1          0  2021-06-02          5.0          e0
+    2          1  2021-06-03          NaN          e1
+    3          1  2021-06-04          NaN          e1
+    4          1  2021-05-05         42.0          e1
+    5          2  2021-05-06         42.0          e2
+    6          2  2021-05-07          NaN          e2
+    7          2  2021-05-08         11.0          e2
+    8          2  2021-05-09          NaN          e2
+    9          2  2021-05-10          NaN          e2
+    10         3  2021-07-11          NaN          e3
+    11         3  2021-07-12          NaN          e3
 ```
 
 Note that the return result of the `join` is a TableExpression and that `execute` returns a pandas DataFrame.

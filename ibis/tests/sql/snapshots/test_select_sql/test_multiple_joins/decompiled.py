@@ -16,9 +16,9 @@ result = (
         [
             star1.c,
             star1.f,
-            star1.foo_id.name("foo_id_x"),
+            star1.foo_id,
             star1.bar_id,
-            star2.foo_id.name("foo_id_y"),
+            star2.foo_id.name("foo_id_right"),
             star2.value1,
             star2.value3,
         ]
