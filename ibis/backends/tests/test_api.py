@@ -121,7 +121,10 @@ def test_limit_chain(alltypes, expr_fn):
     "expr_fn",
     [
         param(lambda t: t, id="alltypes table"),
-        param(lambda t: t.join(t.view(), t.id == t.view().int_col), id="self join"),
+        param(
+            lambda t: t.join(t.view(), t.id == t.view().int_col, rname="{name}_y"),
+            id="self join",
+        ),
     ],
 )
 def test_unbind(alltypes, expr_fn):

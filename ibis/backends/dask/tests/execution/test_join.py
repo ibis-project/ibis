@@ -38,10 +38,12 @@ join_type = pytest.mark.parametrize(
     ],
 )
 
+kws = {"lname": "{name}_x", "rname": "{name}_y"}
+
 
 @join_type
 def test_join(how, left, right, df1, df2):
-    expr = left.join(right, left.key == right.key, how=how)[
+    expr = left.join(right, left.key == right.key, how=how, **kws)[
         left, right.other_value, right.key3
     ]
     result = expr.compile()
@@ -53,7 +55,7 @@ def test_join(how, left, right, df1, df2):
 
 
 def test_cross_join(left, right, df1, df2):
-    expr = left.cross_join(right)[left, right.other_value, right.key3]
+    expr = left.cross_join(right, **kws)[left, right.other_value, right.key3]
     result = expr.compile()
     expected = dd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
@@ -67,7 +69,7 @@ def test_cross_join(left, right, df1, df2):
 
 @join_type
 def test_join_project_left_table(how, left, right, df1, df2):
-    expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
+    expr = left.join(right, left.key == right.key, how=how, **kws)[left, right.key3]
     result = expr.compile()
     expected = dd.merge(df1, df2, how=how, on='key')[list(left.columns) + ['key3']]
     tm.assert_frame_equal(
@@ -77,7 +79,7 @@ def test_join_project_left_table(how, left, right, df1, df2):
 
 
 def test_cross_join_project_left_table(left, right, df1, df2):
-    expr = left.cross_join(right)[left, right.key3]
+    expr = left.cross_join(right, **kws)[left, right.key3]
     result = expr.compile()
     expected = dd.merge(
         df1.assign(dummy=1), df2.assign(dummy=1), how='inner', on='dummy'
@@ -90,9 +92,9 @@ def test_cross_join_project_left_table(left, right, df1, df2):
 
 @join_type
 def test_join_with_multiple_predicates(how, left, right, df1, df2):
-    expr = left.join(right, [left.key == right.key, left.key2 == right.key3], how=how)[
-        left, right.key3, right.other_value
-    ]
+    expr = left.join(
+        right, [left.key == right.key, left.key2 == right.key3], how=how, **kws
+    )[left, right.key3, right.other_value]
     result = expr.compile()
     expected = dd.merge(
         df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
@@ -106,7 +108,9 @@ def test_join_with_multiple_predicates(how, left, right, df1, df2):
 @join_type
 def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2):
     predicate = (left.key == right.key) & (left.key2 == right.key3)
-    expr = left.join(right, predicate, how=how)[left, right.key3, right.other_value]
+    expr = left.join(right, predicate, how=how, **kws)[
+        left, right.key3, right.other_value
+    ]
     result = expr.compile()
     expected = dd.merge(
         df1, df2, how=how, left_on=['key', 'key2'], right_on=['key', 'key3']
@@ -120,12 +124,12 @@ def test_join_with_multiple_predicates_written_as_one(how, left, right, df1, df2
 @join_type
 def test_join_with_invalid_predicates(how, left, right):
     predicate = (left.key == right.key) & (left.key2 <= right.key3)
-    expr = left.join(right, predicate, how=how)
+    expr = left.join(right, predicate, how=how, **kws)
     with pytest.raises(TypeError):
         expr.compile()
 
     predicate = left.key >= right.key
-    expr = left.join(right, predicate, how=how)
+    expr = left.join(right, predicate, how=how, **kws)
     with pytest.raises(TypeError):
         expr.compile()
 
@@ -135,7 +139,7 @@ def test_join_with_invalid_predicates(how, left, right):
 def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
     left = left.mutate(x=left.value * 2)
     right = right.mutate(x=right.other_value * 3)
-    expr = left.join(right, left.key == right.key, how=how)
+    expr = left.join(right, left.key == right.key, how=how, **kws)
 
     # This is undefined behavior because `x` is duplicated. This is difficult
     # to detect
@@ -148,7 +152,9 @@ def test_join_with_duplicate_non_key_columns_not_selected(how, left, right, df1,
     left = left.mutate(x=left.value * 2)
     right = right.mutate(x=right.other_value * 3)
     right = right[['key', 'other_value']]
-    expr = left.join(right, left.key == right.key, how=how)[left, right.other_value]
+    expr = left.join(right, left.key == right.key, how=how, **kws)[
+        left, right.other_value
+    ]
     result = expr.compile()
     expected = dd.merge(
         df1.assign(x=df1.value * 2),
@@ -164,7 +170,7 @@ def test_join_with_duplicate_non_key_columns_not_selected(how, left, right, df1,
 
 @join_type
 def test_join_with_post_expression_selection(how, left, right, df1, df2):
-    join = left.join(right, left.key == right.key, how=how)
+    join = left.join(right, left.key == right.key, how=how, **kws)
     expr = join[left.key, left.value, right.other_value]
     result = expr.compile()
     expected = dd.merge(df1, df2, on='key', how=how)[['key', 'value', 'other_value']]
@@ -179,7 +185,7 @@ def test_join_with_post_expression_filter(how, left):
     lhs = left[['key', 'key2']]
     rhs = left[['key2', 'value']]
 
-    joined = lhs.join(rhs, 'key2', how=how)
+    joined = lhs.join(rhs, 'key2', how=how, **kws)
     projected = joined[lhs, rhs.value]
     expr = projected[projected.value == 4]
     result = expr.compile()
@@ -201,11 +207,11 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
     rhs = left[['key2', 'value']]
     rhs2 = left[['key2', 'value']].relabel({'value': 'value2'})
 
-    joined = lhs.join(rhs, 'key2', how=how)
+    joined = lhs.join(rhs, 'key2', how=how, **kws)
     projected = joined[lhs, rhs.value]
     filtered = projected[projected.value == 4]
 
-    joined2 = filtered.join(rhs2, 'key2')
+    joined2 = filtered.join(rhs2, 'key2', **kws)
     projected2 = joined2[filtered.key, rhs2.value2]
     expr = projected2[projected2.value2 == 3]
 
@@ -229,7 +235,7 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
 @join_type
 def test_join_with_non_trivial_key(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
-    join = left.join(right, right.key.length() == left.key.length(), how=how)
+    join = left.join(right, right.key.length() == left.key.length(), how=how, **kws)
     expr = join[left.key, left.value, right.other_value]
     result = expr.compile()
 
@@ -253,7 +259,7 @@ def test_join_with_non_trivial_key(how, left, right, df1, df2):
 @join_type
 def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
-    join = left.join(right, right.key.length() == left.key.length(), how=how)
+    join = left.join(right, right.key.length() == left.key.length(), how=how, **kws)
     expr = join[left, right.other_value]
     expr = expr[expr.key.length() == 1]
     result = expr.compile()
@@ -279,7 +285,7 @@ def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
 def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     # also test that the order of operands in the predicate doesn't matter
     right = client.table('df3')
-    join = left.join(right, ['key'], how=how)
+    join = left.join(right, ['key'], how=how, **kws)
     expr = join[left.key, right.key2, right.other_value]
     result = expr.compile()
 
@@ -302,7 +308,7 @@ def test_join_with_window_function(players_base, players_df, batting, batting_df
     players = players_base
 
     # this should be semi_join
-    tbl = batting.left_join(players, ['playerID'])
+    tbl = batting.left_join(players, ['playerID'], **kws)
     t = tbl[batting.G, batting.playerID, batting.teamID]
     expr = t.group_by(t.teamID).mutate(
         team_avg=lambda d: d.G.mean(),
@@ -332,7 +338,9 @@ merge_asof_minversion = pytest.mark.skipif(
 
 @merge_asof_minversion
 def test_asof_join(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(time_right, 'time')[time_left, time_right.other_value]
+    expr = time_left.asof_join(time_right, 'time', **kws)[
+        time_left, time_right.other_value
+    ]
     result = expr.compile()
     expected = dd.merge_asof(time_df1, time_df2, on='time')
     tm.assert_frame_equal(
@@ -343,7 +351,7 @@ def test_asof_join(time_left, time_right, time_df1, time_df2):
 
 @merge_asof_minversion
 def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(time_right, time_left.time == time_right.time)[
+    expr = time_left.asof_join(time_right, time_left.time == time_right.time, **kws)[
         time_left, time_right.other_value
     ]
     result = expr.compile()
@@ -358,7 +366,7 @@ def test_asof_join_predicate(time_left, time_right, time_df1, time_df2):
 def test_keyed_asof_join(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
-    expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key')[
+    expr = time_keyed_left.asof_join(time_keyed_right, 'time', by='key', **kws)[
         time_keyed_left, time_keyed_right.other_value
     ]
     result = expr.compile()
@@ -374,7 +382,7 @@ def test_keyed_asof_join_with_tolerance(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
     expr = time_keyed_left.asof_join(
-        time_keyed_right, 'time', by='key', tolerance=2 * ibis.interval(days=1)
+        time_keyed_right, 'time', by='key', tolerance=2 * ibis.interval(days=1), **kws
     )[time_keyed_left, time_keyed_right.other_value]
     result = expr.compile()
     expected = dd.merge_asof(
@@ -454,7 +462,7 @@ def test_select_on_unambiguous_asof_join(func, npartitions):
     con = ibis.dask.connect({"t": df_t, "s": df_s})
     t = con.table("t")
     s = con.table("s")
-    join = t.asof_join(s, t.b1 == s.b2)
+    join = t.asof_join(s, t.b1 == s.b2, **kws)
     expected = dd.merge_asof(df_t, df_s, left_on=["b1"], right_on=["b2"])[["a0", "a1"]]
     assert not expected.compute(scheduler='single-threaded').empty
     expr = func(join)
@@ -481,8 +489,7 @@ def test_outer_join(npartitions):
     ibis_table_2 = conn.table("df_2")
 
     joined = ibis_table_1.outer_join(
-        ibis_table_2,
-        predicates=ibis_table_1["test"] == ibis_table_2["test_2"],
+        ibis_table_2, predicates=ibis_table_1["test"] == ibis_table_2["test_2"], **kws
     )
     result = joined.compile()
     expected = dd.merge(

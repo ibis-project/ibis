@@ -88,7 +88,7 @@ def test_mutating_join(backend, batting, awards_players, how):
     predicate = ['playerID']
     result_order = ['playerID', 'yearID', 'lgID', 'stint']
 
-    expr = left.join(right, predicate, how=how)
+    expr = left.join(right, predicate, how=how, lname="{name}_x", rname="{name}_y")
     if how == "inner":
         result = (
             expr.execute()
@@ -209,7 +209,7 @@ def test_join_with_pandas(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
     assert isinstance(awards_players_filt, pd.DataFrame)
-    expr = batting_filt.join(awards_players_filt, "yearID")
+    expr = batting_filt.join(awards_players_filt, "yearID", rname="{name}_y")
     df = expr.execute()
     assert df.yearID.nunique() == 7
 

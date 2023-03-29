@@ -109,7 +109,7 @@ def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
 
     left = ibis_table
     right = left.view()
-    join = left.join(right, 'plain_strings')[left.plain_int64]
+    join = left.join(right, 'plain_strings', rname="{name}_y")[left.plain_int64]
     result = join.execute()
     assert result is not None
     assert not result.empty
