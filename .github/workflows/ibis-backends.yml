@@ -171,6 +171,12 @@ jobs:
         exclude:
           - os: windows-latest
             backend:
+              name: datafusion
+              title: Datafusion
+              extras:
+                - datafusion
+          - os: windows-latest
+            backend:
               name: mysql
               title: MySQL
               extras:
