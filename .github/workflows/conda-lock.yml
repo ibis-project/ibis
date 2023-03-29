@@ -28,15 +28,15 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          mamba-version: "*"
+          mamba-version: "1.1.0"
           miniforge-version: latest
           miniforge-variant: Mambaforge
           activate-environment: conda-lock
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
           condarc-file: ci/conda-lock/condarc
 
       - name: install conda-lock
-        run: mamba install 'conda-lock>=1.4'
+        run: mamba install 'conda-lock=1.4'
 
       - name: generate lock file
         run: ./ci/conda-lock/generate.sh "${{ matrix.python-version }}"
