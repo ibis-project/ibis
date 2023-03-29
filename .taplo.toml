@@ -1,8 +1,1 @@
-exclude = [
-  ".direnv/*",
-  ".git/*",
-  ".benchmarks/*",
-  ".mypy_cache/*",
-  ".pytest_cache/*",
-  ".ruff_cache/*",
-]
+include = ["*.toml", "ibis/**/*.toml"]
