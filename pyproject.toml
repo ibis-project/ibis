@@ -5,7 +5,7 @@ packages = [{ include = "ibis" }]
 include = [
   "ibis/examples/*.json",
   "ibis/examples/*.txt",
-  "ibis/examples/CITATIONS.md"
+  "ibis/examples/CITATIONS.md",
 ]
 exclude = ["ibis/examples/gen_examples.R", "ibis/examples/gen_registry.py"]
 homepage = "https://ibis-project.org"
@@ -47,11 +47,11 @@ typing-extensions = ">=4.3.0,<5"
 black = { version = ">=22.1.0,<24", optional = true }
 clickhouse-cityhash = { version = ">=1.0.2,<2", optional = true }
 clickhouse-driver = { version = ">=0.1,<1", optional = true, extras = [
-  "numpy"
+  "numpy",
 ] }
 dask = { version = ">=2022.9.1", optional = true, extras = [
   "array",
-  "dataframe"
+  "dataframe",
 ] }
 datafusion = { version = ">=0.6,<0.8", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
@@ -166,7 +166,7 @@ all = [
   "snowflake-sqlalchemy",
   "sqlalchemy",
   "sqlalchemy-views",
-  "trino"
+  "trino",
 ]
 bigquery = [
   "db-dtypes",
@@ -184,7 +184,7 @@ duckdb = [
   "packaging",
   "pyarrow",
   "sqlalchemy",
-  "sqlalchemy-views"
+  "sqlalchemy-views",
 ]
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
@@ -197,7 +197,7 @@ pyspark = ["pyarrow", "pyspark", "sqlalchemy"]
 snowflake = [
   "snowflake-connector-python",
   "snowflake-sqlalchemy",
-  "sqlalchemy-views"
+  "sqlalchemy-views",
 ]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
 trino = ["trino", "sqlalchemy", "sqlalchemy-views"]
@@ -227,7 +227,7 @@ trino = "ibis.backends.trino"
 doctest_optionflags = [
   "NORMALIZE_WHITESPACE",
   "IGNORE_EXCEPTION_DETAIL",
-  "ELLIPSIS"
+  "ELLIPSIS",
 ]
 xfail_strict = true
 addopts = [
@@ -309,7 +309,7 @@ filterwarnings = [
   # sqlalchemy warns about mysql's inability to cast to bool;
   # this has no effect on ibis's output because we convert types after
   # execution
-  "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning"
+  "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
@@ -348,13 +348,13 @@ markers = [
 [tool.ruff]
 line-length = 88
 select = [
-  "B", # flake8-bugbear
+  "B",   # flake8-bugbear
   "BLE", # flake8-blind-except
-  "C4", # comprehensions
-  "D", # pydocstyle
-  "E", # pycodestyle
-  "F", # pyflakes
-  "I", # isort
+  "C4",  # comprehensions
+  "D",   # pydocstyle
+  "E",   # pycodestyle
+  "F",   # pyflakes
+  "I",   # isort
   "ICN", # flake8-import-conventions
   "ISC", # flake8-implicit-str-concat
   "PGH", # pygrep-hooks
@@ -368,29 +368,28 @@ select = [
   "T10", # flake8-debugger
   "T20", # flake8-print
   "TID", # flake8-tidy-imports
-  "UP", # pyupgrade
-  "W", # pycodestyle
+  "UP",  # pyupgrade
+  "W",   # pycodestyle
   "YTT", # flake8-2020
-
 ]
 respect-gitignore = true
 ignore = [
-  "B028", # required stacklevel argument to warn
-  "B904", # raise from e or raise from None in exception handlers
-  "C408", # dict(...) as literal
-  "D100", # public module
-  "D101", # public class
-  "D102", # public method
-  "D103", # public function
-  "D104", # public package
-  "D105", # magic methods
-  "D106", # nested class
-  "D107", # init
-  "D202", # blank lines after function docstring
-  "D203", # blank line before class docstring
-  "D213", # Multi-line docstring summary should start at the second line
-  "D401", # Imperative mood
-  "D402", # First line should not be the function's signature
+  "B028",    # required stacklevel argument to warn
+  "B904",    # raise from e or raise from None in exception handlers
+  "C408",    # dict(...) as literal
+  "D100",    # public module
+  "D101",    # public class
+  "D102",    # public method
+  "D103",    # public function
+  "D104",    # public package
+  "D105",    # magic methods
+  "D106",    # nested class
+  "D107",    # init
+  "D202",    # blank lines after function docstring
+  "D203",    # blank line before class docstring
+  "D213",    # Multi-line docstring summary should start at the second line
+  "D401",    # Imperative mood
+  "D402",    # First line should not be the function's signature
   "E501",
   "E731",
   "PGH003",
@@ -405,32 +404,29 @@ ignore = [
   "RET506",
   "RET507",
   "RET508",
-  "RUF005", # splat instead of concat
-  "SIM102", # nested ifs
-  "SIM108", # convert everything to ternary operator
-  "SIM114", # combine `if` branches using logical `or` operator
-  "SIM116", # dictionary instead of `if` statements
-  "SIM117", # nested withs
-  "SIM118", # remove .keys() calls from dictionaries
-  "SIM300", # yoda conditions
-  "UP037", # remove quotes from type annotation
-
+  "RUF005",  # splat instead of concat
+  "SIM102",  # nested ifs
+  "SIM108",  # convert everything to ternary operator
+  "SIM114",  # combine `if` branches using logical `or` operator
+  "SIM116",  # dictionary instead of `if` statements
+  "SIM117",  # nested withs
+  "SIM118",  # remove .keys() calls from dictionaries
+  "SIM300",  # yoda conditions
+  "UP037",   # remove quotes from type annotation
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
 # none of these codes will be automatically fixed by ruff
 unfixable = [
-  "T201", # print statements
-  "F401", # unused imports
+  "T201",   # print statements
+  "F401",   # unused imports
   "RUF100", # unused noqa comments
-  "F841", # unused variables
-
+  "F841",   # unused variables
 ]
 
 [tool.ruff.per-file-ignores]
 "*test*.py" = [
   "D", # ignore all docstring lints in tests
-
 ]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 "ibis/expr/selectors.py" = ["UP007"]
@@ -466,7 +462,7 @@ omit = [
   "*_version.py",
   "*tests*",
   "ibis/interactive.py",
-  "ibis/examples/gen_registry.py"
+  "ibis/examples/gen_registry.py",
 ]
 
 [tool.distutils.bdist_wheel]

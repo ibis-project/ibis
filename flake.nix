@@ -76,10 +76,11 @@
         git
         just
         nixpkgs-fmt
-        prettier
+        nodePackages.prettier
         shellcheck
         shfmt
         statix
+        taplo-cli
       ];
 
       mkDevShell = env: pkgs.mkShell {

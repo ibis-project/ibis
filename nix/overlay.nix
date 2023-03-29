@@ -26,15 +26,6 @@ in
 
   rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
 
-  prettier = pkgs.writeShellApplication {
-    name = "prettier";
-    runtimeInputs = [ ];
-    text = ''
-      ${pkgs.nodePackages.prettier}/bin/prettier \
-      --plugin-search-dir "${pkgs.nodePackages.prettier-plugin-toml}/lib" "$@"
-    '';
-  };
-
   ibis38 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python38; };
   ibis39 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python39; };
   ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };

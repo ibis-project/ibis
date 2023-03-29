@@ -12,6 +12,7 @@ ci:
     - shellcheck
     - shfmt
     - statix
+    - taplo
 default_stages:
   - commit
 repos:
@@ -73,9 +74,15 @@ repos:
         args: ["--write"]
         types_or:
           - json
-          - toml
           - yaml
           - markdown
+      - id: taplo
+        name: taplo
+        language: system
+        entry: taplo
+        args: ["fmt"]
+        types:
+          - toml
       - id: shellcheck
         name: shellcheck
         language: system
