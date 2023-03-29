@@ -21,6 +21,11 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
         schema = (script_dir / 'schema' / 'duckdb.sql').read_text()
 
+        if not SANDBOXED:
+            self.connection._load_extensions(
+                ["httpfs", "postgres_scanner", "sqlite_scanner"]
+            )
+
         with self.connection.begin() as con:
             for stmt in filter(None, map(str.strip, schema.split(';'))):
                 con.exec_driver_sql(stmt)
@@ -40,14 +45,14 @@ class TestConf(BackendTest, RoundAwayFromZero):
         data_dir
             Location of test data
         """
-        con = TestConf(data_directory=data_dir)
-        if not SANDBOXED:
-            con.connection._load_extensions(
-                ["httpfs", "postgres_scanner", "sqlite_scanner"]
-            )
-        return con
+        return TestConf(data_directory=data_dir)
 
     @staticmethod
     def connect(data_directory: Path) -> BaseBackend:
         pytest.importorskip("duckdb")
         return ibis.duckdb.connect()  # type: ignore
+
+
+@pytest.fixture(scope="session")
+def con(data_directory):
+    return TestConf(data_directory).connection
