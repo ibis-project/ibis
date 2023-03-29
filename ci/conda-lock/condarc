@@ -1,4 +1,8 @@
 # vim: ft=yaml
+channels:
+  - conda-forge
+channel_priority: strict
+
 always_yes: true
 
 # remote_connect_timeout_secs (float)

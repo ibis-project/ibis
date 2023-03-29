@@ -44,7 +44,7 @@ conda lock \
   --platform osx-64 \
   --filename-template "${template}" \
   --filter-extras \
-  --mamba \
+  --conda \
   --category dev --category test --category docs \
   "${extras[@]}" "${linux_osx_extras[@]}" -e datafusion
 
@@ -56,6 +56,6 @@ conda lock \
   --platform win-64 \
   --filename-template "${template}" \
   --filter-extras \
-  --mamba \
+  --conda \
   --category dev --category test --category docs \
   "${extras[@]}"

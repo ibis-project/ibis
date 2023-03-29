@@ -28,21 +28,27 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-          mamba-version: "1.1.0"
-          miniforge-version: latest
-          miniforge-variant: Mambaforge
+          miniconda-version: latest
           activate-environment: conda-lock
+          channels: conda-forge
+          channel-priority: strict
           python-version: "3.11"
           condarc-file: ci/conda-lock/condarc
 
+      - name: install conda libmamba solver
+        run: conda install -n base conda-libmamba-solver
+
+      - name: set solver to libmamba
+        run: conda config --set solver libmamba
+
       - name: install conda-lock
-        run: mamba install 'conda-lock=1.4'
+        run: conda install conda-lock=1.4
 
       - name: generate lock file
         run: ./ci/conda-lock/generate.sh "${{ matrix.python-version }}"
 
       - name: create conda environment
-        run: mamba create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
+        run: conda create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
 
       - name: upload conda lock files
         uses: actions/upload-artifact@v3
