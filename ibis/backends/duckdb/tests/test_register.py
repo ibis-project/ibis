@@ -79,8 +79,7 @@ def pgurl():  # pragma: no cover
 @pytest.mark.skipif(
     os.environ.get("DUCKDB_POSTGRES") is None, reason="avoiding CI shenanigans"
 )
-def test_read_postgres(pgurl):  # pragma: no cover
-    con = ibis.duckdb.connect()
+def test_read_postgres(con, pgurl):  # pragma: no cover
     table = con.read_postgres(
         f"postgres://{pgurl.username}:{pgurl.password}@{pgurl.host}:{pgurl.port}",
         table_name="duckdb_test",
@@ -88,13 +87,12 @@ def test_read_postgres(pgurl):  # pragma: no cover
     assert table.count().execute()
 
 
-def test_read_sqlite(tmp_path):
+def test_read_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
 
     sqlite_con = sqlite3.connect(str(path))
     sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
 
-    con = ibis.duckdb.connect()
     ft = con.read_sqlite(path, table_name="t")
     assert ft.count().execute()
 
@@ -102,8 +100,7 @@ def test_read_sqlite(tmp_path):
         con.read_sqlite(path)
 
 
-def test_read_sqlite_no_table_name(tmp_path):
-    con = ibis.duckdb.connect()
+def test_read_sqlite_no_table_name(con, tmp_path):
     path = tmp_path / "test.db"
 
     sqlite3.connect(str(path))
@@ -114,19 +111,16 @@ def test_read_sqlite_no_table_name(tmp_path):
         con.read_sqlite(path)
 
 
-def test_register_sqlite(tmp_path):
+def test_register_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
 
     sqlite_con = sqlite3.connect(str(path))
     sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
-    con = ibis.duckdb.connect()
     ft = con.register(f"sqlite://{path}", "t")
     assert ft.count().execute()
 
 
-def test_read_in_memory():
-    con = ibis.duckdb.connect()
-
+def test_read_in_memory(con):
     df_arrow = pa.table({"a": ["a"], "b": [1]})
     df_pandas = pd.DataFrame({"a": ["a"], "b": [1]})
     con.read_in_memory(df_arrow, table_name="df_arrow")
@@ -136,9 +130,7 @@ def test_read_in_memory():
     assert "df_pandas" in con.list_tables()
 
 
-def test_re_read_in_memory_overwrite():
-    con = ibis.duckdb.connect()
-
+def test_re_read_in_memory_overwrite(con):
     df_pandas_1 = pd.DataFrame({"a": ["a"], "b": [1], "d": ["hi"]})
     df_pandas_2 = pd.DataFrame({"a": [1], "c": [1.4]})
 
@@ -206,9 +198,7 @@ def test_set_temp_dir(tmp_path):
     assert path.exists()
 
 
-def test_s3_403_fallback(httpserver, monkeypatch):
-    con = ibis.duckdb.connect()
-
+def test_s3_403_fallback(con, httpserver, monkeypatch):
     # monkeypatch to avoid downloading extensions in tests
     monkeypatch.setattr(con, "_load_extensions", lambda x: True)
 
