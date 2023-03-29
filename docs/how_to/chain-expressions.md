@@ -59,7 +59,7 @@ join = (
     # _ is the filtered result, and re-create xmod in t2 using modf:
     .join(t2, _.xmod == modf(t2))
     # _ is the second join result:
-    .join(t1, _.xmod == modf(t1), suffixes=('', '_x'))
+    .join(t1, _.xmod == modf(t1))
     # _ is the third join result:
     .select(_.x, _.y, _.z)
     # Finally, _ is the selection result:

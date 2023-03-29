@@ -6,7 +6,6 @@ import functools
 import itertools
 import operator
 import re
-import warnings
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
 
@@ -70,7 +69,9 @@ def _regular_join_method(
         | Sequence[
             str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue
         ] = (),
-        suffixes: tuple[str, str] = ("_x", "_y"),
+        *,
+        lname: str = "",
+        rname: str = "{name}_right",
     ) -> Table:
         """Perform a join between two tables.
 
@@ -80,16 +81,19 @@ def _regular_join_method(
             Right table to join
         predicates
             Boolean or column names to join on
-        suffixes
-            Left and right suffixes that will be used to rename overlapping
-            columns.
+        lname
+            A format string to use to rename overlapping columns in the left
+            table (e.g. ``"left_{name}"``).
+        rname
+            A format string to use to rename overlapping columns in the right
+            table (e.g. ``"right_{name}"``).
 
         Returns
         -------
         Table
             Joined table
         """
-        return self.join(right, predicates, how=how, suffixes=suffixes)
+        return self.join(right, predicates, how=how, lname=lname, rname=rname)
 
     f.__name__ = name
     return f
@@ -2350,7 +2354,8 @@ class Table(Expr, _FixedTextJupyterMixin):
             'left_semi',
         ] = 'inner',
         *,
-        suffixes: tuple[str, str] = ("_x", "_y"),
+        lname: str = "",
+        rname: str = "{name}_right",
     ) -> Table:
         """Perform a join between two tables.
 
@@ -2364,9 +2369,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             Boolean or column names to join on
         how
             Join method
-        suffixes
-            Left and right suffixes that will be used to rename overlapping
-            columns.
+        lname
+            A format string to use to rename overlapping columns in the left
+            table (e.g. ``"left_{name}"``).
+        rname
+            A format string to use to rename overlapping columns in the right
+            table (e.g. ``"right_{name}"``).
 
         Examples
         --------
@@ -2468,7 +2476,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         if how in ("semi", "anti"):
             return expr
 
-        return ops.relations._dedup_join_columns(expr, suffixes=suffixes)
+        return ops.relations._dedup_join_columns(expr, lname=lname, rname=rname)
 
     def asof_join(
         left: Table,
@@ -2477,7 +2485,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         by: str | ir.Column | Sequence[str | ir.Column] = (),
         tolerance: str | ir.IntervalScalar | None = None,
         *,
-        suffixes: tuple[str, str] = ("_x", "_y"),
+        lname: str = "",
+        rname: str = "{name}_right",
     ) -> Table:
         """Perform an "as-of" join between `left` and `right`.
 
@@ -2498,9 +2507,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             column to group by before joining
         tolerance
             Amount of time to look behind when joining
-        suffixes
-            Left and right suffixes that will be used to rename overlapping
-            columns.
+        lname
+            A format string to use to rename overlapping columns in the left
+            table (e.g. ``"left_{name}"``).
+        rname
+            A format string to use to rename overlapping columns in the right
+            table (e.g. ``"right_{name}"``).
 
         Returns
         -------
@@ -2514,13 +2526,14 @@ class Table(Expr, _FixedTextJupyterMixin):
             by=by,
             tolerance=tolerance,
         )
-        return ops.relations._dedup_join_columns(op.to_expr(), suffixes=suffixes)
+        return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
 
     def cross_join(
         left: Table,
         right: Table,
         *rest: Table,
-        suffixes: tuple[str, str] = ("_x", "_y"),
+        lname: str = "",
+        rname: str = "{name}_right",
     ) -> Table:
         """Compute the cross join of a sequence of tables.
 
@@ -2532,9 +2545,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             Right table
         rest
             Additional tables to cross join
-        suffixes
-            Left and right suffixes that will be used to rename overlapping
-            columns.
+        lname
+            A format string to use to rename overlapping columns in the left
+            table (e.g. ``"left_{name}"``).
+        rname
+            A format string to use to rename overlapping columns in the right
+            table (e.g. ``"right_{name}"``).
 
         Returns
         -------
@@ -2551,37 +2567,36 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
         >>> expr = t.cross_join(agg)
         >>> expr
-        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species ┃ island    ┃ bill_length_mm_x ┃ bill_depth_mm_x ┃ … ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string  │ string    │ float64          │ float64         │ … │
-        ├─────────┼───────────┼──────────────────┼─────────────────┼───┤
-        │ Adelie  │ Torgersen │             39.1 │            18.7 │ … │
-        │ Adelie  │ Torgersen │             39.5 │            17.4 │ … │
-        │ Adelie  │ Torgersen │             40.3 │            18.0 │ … │
-        │ Adelie  │ Torgersen │              nan │             nan │ … │
-        │ Adelie  │ Torgersen │             36.7 │            19.3 │ … │
-        │ Adelie  │ Torgersen │             39.3 │            20.6 │ … │
-        │ Adelie  │ Torgersen │             38.9 │            17.8 │ … │
-        │ Adelie  │ Torgersen │             39.2 │            19.6 │ … │
-        │ Adelie  │ Torgersen │             34.1 │            18.1 │ … │
-        │ Adelie  │ Torgersen │             42.0 │            20.2 │ … │
-        │ …       │ …         │                … │               … │ … │
-        └─────────┴───────────┴──────────────────┴─────────────────┴───┘
-        >>> from pprint import pprint
-        >>> pprint(expr.columns)
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> expr.columns
         ['species',
          'island',
-         'bill_length_mm_x',
-         'bill_depth_mm_x',
-         'flipper_length_mm_x',
-         'body_mass_g_x',
+         'bill_length_mm',
+         'bill_depth_mm',
+         'flipper_length_mm',
+         'body_mass_g',
          'sex',
          'year',
-         'bill_length_mm_y',
-         'bill_depth_mm_y',
-         'flipper_length_mm_y',
-         'body_mass_g_y']
+         'bill_length_mm_right',
+         'bill_depth_mm_right',
+         'flipper_length_mm_right',
+         'body_mass_g_right']
         >>> expr.count()
         344
         >>> t.count()
@@ -2592,7 +2607,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             functools.reduce(Table.cross_join, rest, right),
             [],
         )
-        return ops.relations._dedup_join_columns(op.to_expr(), suffixes=suffixes)
+        return ops.relations._dedup_join_columns(op.to_expr(), lname=lname, rname=rname)
 
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")

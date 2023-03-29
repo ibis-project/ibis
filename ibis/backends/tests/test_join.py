@@ -101,12 +101,12 @@ def test_mutating_join(backend, batting, awards_players, how):
             expr.execute()
             .fillna(np.nan)
             .assign(
-                playerID=lambda df: df.playerID_x.where(
-                    df.playerID_x.notnull(),
-                    df.playerID_y,
+                playerID=lambda df: df.playerID.where(
+                    df.playerID.notnull(),
+                    df.playerID_right,
                 )
             )
-            .drop(['playerID_x', 'playerID_y'], axis=1)[left.columns]
+            .drop(['playerID_right'], axis=1)[left.columns]
             .sort_values(result_order)
             .reset_index(drop=True)
         )

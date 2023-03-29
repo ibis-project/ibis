@@ -373,9 +373,9 @@ def test_asof_join(time_left, time_right):
             time_left['key'] == time_right['key'],
             time_left['time'] >= time_right['time'],
         ],
-    )
+    ).drop("time_right")
     result = expr.execute()
-    result['time'] = result['time_x']
-    result.drop(['time_x', 'time_y'], axis=1, inplace=True)
-    expected = pd.merge_asof(time_left.execute(), time_right.execute(), on='time')
+    expected = pd.merge_asof(
+        time_left.execute(), time_right.execute(), on='time', suffixes=("", "_right")
+    )
     tm.assert_frame_equal(result[expected.columns], expected)

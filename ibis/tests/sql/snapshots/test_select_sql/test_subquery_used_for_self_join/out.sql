@@ -5,9 +5,9 @@ WITH t0 AS (
 )
 SELECT t0.`g`, max(t0.`total` - `total`) AS `metric`
 FROM (
-  SELECT t0.`g` AS `g_x`, t0.`a` AS `a_x`, t0.`b` AS `b_x`,
-         t0.`total` AS `total_x`, t2.`g` AS `g_y`, t2.`a` AS `a_y`,
-         t2.`b` AS `b_y`, t2.`total` AS `total_y`
+  SELECT t0.`g`, t0.`a`, t0.`b`, t0.`total`, t2.`g` AS `g_right`,
+         t2.`a` AS `a_right`, t2.`b` AS `b_right`,
+         t2.`total` AS `total_right`
   FROM t0
     INNER JOIN t0 t2
       ON t0.`a` = t2.`b`
