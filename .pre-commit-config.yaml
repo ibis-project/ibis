@@ -73,9 +73,10 @@ repos:
         entry: prettier
         args: ["--write"]
         types_or:
+          - javascript
           - json
-          - yaml
           - markdown
+          - yaml
       - id: taplo
         name: taplo
         language: system
