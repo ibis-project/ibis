@@ -26,13 +26,13 @@ Out[12]:
 │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
 │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
 │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
-│ Adelie  │ Torgersen │            nan │           nan │                 ∅ │           ∅ │ ∅      │  2007 │
+│ Adelie  │ Torgersen │            nan │           nan │              NULL │        NULL │ NULL   │  2007 │
 │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
 │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │        3650 │ male   │  2007 │
 │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │        3625 │ female │  2007 │
 │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │        4675 │ male   │  2007 │
-│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ ∅      │  2007 │
-│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ ∅      │  2007 │
+│ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │        3475 │ NULL   │  2007 │
+│ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │  2007 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```
@@ -57,13 +57,13 @@ Out[13]:
 │ Adelie  │ Torgersen │      -0.883205 │      0.784300 │         -1.416272 │   -0.563317 │ male   │ -1.257484 │
 │ Adelie  │ Torgersen │      -0.809939 │      0.126003 │         -1.060696 │   -0.500969 │ female │ -1.257484 │
 │ Adelie  │ Torgersen │      -0.663408 │      0.429833 │         -0.420660 │   -1.186793 │ female │ -1.257484 │
-│ Adelie  │ Torgersen │            nan │           nan │               nan │         nan │ ∅      │ -1.257484 │
+│ Adelie  │ Torgersen │            nan │           nan │               nan │         nan │ NULL   │ -1.257484 │
 │ Adelie  │ Torgersen │      -1.322799 │      1.088129 │         -0.562890 │   -0.937403 │ female │ -1.257484 │
 │ Adelie  │ Torgersen │      -0.846572 │      1.746426 │         -0.776236 │   -0.688012 │ male   │ -1.257484 │
 │ Adelie  │ Torgersen │      -0.919837 │      0.328556 │         -1.416272 │   -0.719186 │ female │ -1.257484 │
 │ Adelie  │ Torgersen │      -0.864888 │      1.240044 │         -0.420660 │    0.590115 │ male   │ -1.257484 │
-│ Adelie  │ Torgersen │      -1.799025 │      0.480471 │         -0.562890 │   -0.906229 │ ∅      │ -1.257484 │
-│ Adelie  │ Torgersen │      -0.352029 │      1.543873 │         -0.776236 │    0.060160 │ ∅      │ -1.257484 │
+│ Adelie  │ Torgersen │      -1.799025 │      0.480471 │         -0.562890 │   -0.906229 │ NULL   │ -1.257484 │
+│ Adelie  │ Torgersen │      -0.352029 │      1.543873 │         -0.776236 │    0.060160 │ NULL   │ -1.257484 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │         … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────────┘
 ```
@@ -87,13 +87,13 @@ Out[14]:
 │ Adelie  │ Torgersen │      -0.883205 │      0.784300 │         -1.416272 │   -0.563317 │ male   │  2007 │
 │ Adelie  │ Torgersen │      -0.809939 │      0.126003 │         -1.060696 │   -0.500969 │ female │  2007 │
 │ Adelie  │ Torgersen │      -0.663408 │      0.429833 │         -0.420660 │   -1.186793 │ female │  2007 │
-│ Adelie  │ Torgersen │            nan │           nan │               nan │         nan │ ∅      │  2007 │
+│ Adelie  │ Torgersen │            nan │           nan │               nan │         nan │ NULL   │  2007 │
 │ Adelie  │ Torgersen │      -1.322799 │      1.088129 │         -0.562890 │   -0.937403 │ female │  2007 │
 │ Adelie  │ Torgersen │      -0.846572 │      1.746426 │         -0.776236 │   -0.688012 │ male   │  2007 │
 │ Adelie  │ Torgersen │      -0.919837 │      0.328556 │         -1.416272 │   -0.719186 │ female │  2007 │
 │ Adelie  │ Torgersen │      -0.864888 │      1.240044 │         -0.420660 │    0.590115 │ male   │  2007 │
-│ Adelie  │ Torgersen │      -1.799025 │      0.480471 │         -0.562890 │   -0.906229 │ ∅      │  2007 │
-│ Adelie  │ Torgersen │      -0.352029 │      1.543873 │         -0.776236 │    0.060160 │ ∅      │  2007 │
+│ Adelie  │ Torgersen │      -1.799025 │      0.480471 │         -0.562890 │   -0.906229 │ NULL   │  2007 │
+│ Adelie  │ Torgersen │      -0.352029 │      1.543873 │         -0.776236 │    0.060160 │ NULL   │  2007 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```
@@ -183,13 +183,13 @@ Out[23]:
 │ Adelie  │ Torgersen │      39.099998 │     18.700001 │             181.0 │      3750.0 │ male   │  2007 │
 │ Adelie  │ Torgersen │      39.500000 │     17.400000 │             186.0 │      3800.0 │ female │  2007 │
 │ Adelie  │ Torgersen │      40.299999 │     18.000000 │             195.0 │      3250.0 │ female │  2007 │
-│ Adelie  │ Torgersen │            nan │           nan │               nan │         nan │ ∅      │  2007 │
+│ Adelie  │ Torgersen │            nan │           nan │               nan │         nan │ NULL   │  2007 │
 │ Adelie  │ Torgersen │      36.700001 │     19.299999 │             193.0 │      3450.0 │ female │  2007 │
 │ Adelie  │ Torgersen │      39.299999 │     20.600000 │             190.0 │      3650.0 │ male   │  2007 │
 │ Adelie  │ Torgersen │      38.900002 │     17.799999 │             181.0 │      3625.0 │ female │  2007 │
 │ Adelie  │ Torgersen │      39.200001 │     19.600000 │             195.0 │      4675.0 │ male   │  2007 │
-│ Adelie  │ Torgersen │      34.099998 │     18.100000 │             193.0 │      3475.0 │ ∅      │  2007 │
-│ Adelie  │ Torgersen │      42.000000 │     20.200001 │             190.0 │      4250.0 │ ∅      │  2007 │
+│ Adelie  │ Torgersen │      34.099998 │     18.100000 │             193.0 │      3475.0 │ NULL   │  2007 │
+│ Adelie  │ Torgersen │      42.000000 │     20.200001 │             190.0 │      4250.0 │ NULL   │  2007 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```
@@ -207,13 +207,13 @@ Out[35]:
 │ adelie  │ torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
 │ adelie  │ torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
 │ adelie  │ torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
-│ adelie  │ torgersen │            nan │           nan │                 ∅ │           ∅ │ ∅      │  2007 │
+│ adelie  │ torgersen │            nan │           nan │              NULL │        NULL │ NULL   │  2007 │
 │ adelie  │ torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
 │ adelie  │ torgersen │           39.3 │          20.6 │               190 │        3650 │ male   │  2007 │
 │ adelie  │ torgersen │           38.9 │          17.8 │               181 │        3625 │ female │  2007 │
 │ adelie  │ torgersen │           39.2 │          19.6 │               195 │        4675 │ male   │  2007 │
-│ adelie  │ torgersen │           34.1 │          18.1 │               193 │        3475 │ ∅      │  2007 │
-│ adelie  │ torgersen │           42.0 │          20.2 │               190 │        4250 │ ∅      │  2007 │
+│ adelie  │ torgersen │           34.1 │          18.1 │               193 │        3475 │ NULL   │  2007 │
+│ adelie  │ torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │  2007 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```

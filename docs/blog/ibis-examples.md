@@ -26,7 +26,7 @@ This module offers in-Ibis access to multiple small tables (the largest is aroun
 │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │        3750 │ male   │  2007 │
 │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │        3800 │ female │  2007 │
 │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │        3250 │ female │  2007 │
-│ Adelie  │ Torgersen │            nan │           nan │                 ∅ │           ∅ │ ∅      │  2007 │
+│ Adelie  │ Torgersen │            nan │           nan │              NULL │        NULL │ NULL   │  2007 │
 │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │        3450 │ female │  2007 │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
 ```

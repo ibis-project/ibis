@@ -8,7 +8,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.expr.types.pretty import format_column
 
-null = "∅"
+null = "NULL"
 
 
 def test_format_int_column():
@@ -16,8 +16,8 @@ def test_format_int_column():
     fmts, min_len, max_len = format_column(dt.int64, values)
     strs = [str(f) for f in fmts]
     assert strs == [null, "1", "2", "3", null]
-    assert min_len == 1
-    assert max_len == 1
+    assert min_len == 4
+    assert max_len == 4
 
 
 def test_format_bool_column():
@@ -139,8 +139,8 @@ def test_format_short_string_column():
     fmts, min_len, max_len = format_column(dt.string, values)
     strs = [str(f) for f in fmts]
     assert strs == [null, "~", "ab", "cd"]
-    assert min_len == 2
-    assert max_len == 2
+    assert min_len == 4
+    assert max_len == 4
 
 
 def test_format_nested_column():

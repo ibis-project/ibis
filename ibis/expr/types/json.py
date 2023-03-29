@@ -80,8 +80,8 @@ class JSONValue(Value):
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
         │ json                                     │
         ├──────────────────────────────────────────┤
-        │ ∅                                        │
-        │ ∅                                        │
+        │ NULL                                     │
+        │ NULL                                     │
         └──────────────────────────────────────────┘
 
         Try to extract an array element, returns `NULL`
@@ -92,8 +92,8 @@ class JSONValue(Value):
         ┡━━━━━━━━━━━━━━━━━━━━━┩
         │ json                │
         ├─────────────────────┤
-        │ ∅                   │
-        │ ∅                   │
+        │ NULL                │
+        │ NULL                │
         └─────────────────────┘
         """
         return ops.JSONGetItem(self, key).to_expr()
