@@ -17,11 +17,10 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis import util
+from ibis import selectors, util
 from ibis.backends.base import BaseBackend, connect
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
-from ibis.expr import selectors
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema

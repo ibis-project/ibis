@@ -1,7 +1,7 @@
 import ibis
 import ibis.examples as ex
 from ibis import deferred as _
-from ibis.expr import selectors as s
+from ibis import selectors as s
 
 ibis.options.interactive = True
 

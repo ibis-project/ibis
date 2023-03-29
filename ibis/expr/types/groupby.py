@@ -26,7 +26,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.expr.deferred import Deferred
-from ibis.expr.selectors import Selector
+from ibis.selectors import Selector
 
 _function_types = tuple(
     filter(
