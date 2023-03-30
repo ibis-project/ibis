@@ -67,7 +67,7 @@ jobs:
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
 
       - name: nix build devShell
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && matrix.os != 'macos-latest'
         run: |
           set -euo pipefail
 
