@@ -25,7 +25,7 @@ $ conda install ibis-framework
 
 Ibis can work with several file types, but at its core, it connects to existing
 databases and interacts with the data there. We'll use a local database
-(DuckDB) to get the hang of this.
+(DuckDB) to get the hang of this.[^1]
 
 ```python title="Download an example dataset"
 >>> import urllib.request
@@ -646,3 +646,10 @@ How about:
 ## Learn more
 
 That's all for this quick-start guide. If you want to learn more, check out the [tutorial](https://github.com/ibis-project/ibis-examples).
+
+[^1]:
+    Horst AM, Hill AP, Gorman KB (2020).
+    palmerpenguins: Palmer Archipelago (Antarctica) penguin data.
+    R package version 0.1.0.
+    https://allisonhorst.github.io/palmerpenguins/.
+    doi: 10.5281/zenodo.3960218.
