@@ -637,14 +637,21 @@ def _dedup_join_columns(expr, lname: str, rname: str, suffixes: tuple[str, str] 
             ):
                 equal.add(pred.left.name)
 
-    if (suffixes is not None) or ((overlap - equal) and not lname and not rname):
-        # Warn if `suffixes` is explicitly set, or if the join requires column
-        # deduplication and neither `lname` nor `rname` are set
+    if suffixes is not None:
+        # Warn if old suffixes arg is used
         warnings.warn(
-            "The `suffixes` arg (and corresponding behavior) in `join` methods is "
-            "deprecated and will be removed in 6.0. In 6.0 joins with overlapping "
-            "column names will require passing in `lname` or `rname` to explicitly "
-            "resolve the name conflicts.",
+            "The `suffixes` arg is deprecated and will be removed in 6.0. Please "
+            "use `lname` and `rname` instead. If you want to replicate the existing "
+            "behavior exactly, pass in `lname='{name}_x', rname='{name}_y'`.",
+            FutureWarning,
+        )
+    elif (overlap - equal) and not lname and not rname:
+        # join requires column deduplication and neither `lname` nor `rname` are set
+        warnings.warn(
+            "In 6.0 joins resulting in overlapping column names will require passing "
+            "in `lname` and/or `rname` to explicitly resolve the name conflicts. "
+            "If you want to replicate the existing behavior exactly, pass in "
+            "`lname='{name}_x', rname='{name}_y'`.",
             FutureWarning,
         )
 
@@ -653,9 +660,7 @@ def _dedup_join_columns(expr, lname: str, rname: str, suffixes: tuple[str, str] 
 
     if not lname and not rname:
         # Fallback to old behavior
-        if suffixes is None:
-            suffixes = ("_x", "_y")
-        left_suffix, right_suffix = suffixes
+        left_suffix, right_suffix = suffixes or ("_x", "_y")
         lname = "{name}" + left_suffix if left_suffix else ""
         rname = "{name}" + right_suffix if right_suffix else ""
 

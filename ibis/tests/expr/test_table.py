@@ -1092,9 +1092,9 @@ def test_inner_join_overlapping_column_names_deprecated_suffixes():
     t1 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value1', 'double')])
     t2 = ibis.table([('foo', 'string'), ('bar', 'string'), ('value2', 'double')])
 
-    with pytest.warns(FutureWarning, match="suffixes"):
+    with pytest.warns(FutureWarning, match="joins resulting in overlapping"):
         joined = t1.join(t2, 'foo')
-    with pytest.warns(FutureWarning, match="suffixes"):
+    with pytest.warns(FutureWarning, match="joins resulting in overlapping"):
         expected = t1.join(t2, t1.foo == t2.foo)
     assert_equal(joined, expected)
     assert joined.columns == ["foo", "bar_x", "value1", "bar_y", "value2"]
@@ -1105,12 +1105,12 @@ def test_inner_join_overlapping_column_names_deprecated_suffixes():
     assert joined.columns == ["foo", "bar", "value1", "value2"]
 
     # Equality predicates don't have same name, need to rename
-    with pytest.warns(FutureWarning, match="suffixes"):
+    with pytest.warns(FutureWarning, match="joins resulting in overlapping"):
         joined = t1.join(t2, t1.foo == t2.bar)
     assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
 
     # Not all predicates are equality, still need to rename
-    with pytest.warns(FutureWarning, match="suffixes"):
+    with pytest.warns(FutureWarning, match="joins resulting in overlapping"):
         joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
     assert joined.columns == ["foo_x", "bar_x", "value1", "foo_y", "bar_y", "value2"]
 
@@ -1669,12 +1669,30 @@ def test_filter_applied_to_join():
 
 
 @pytest.mark.parametrize("how", ["inner", "left", "outer", "right"])
+def test_join_lname_rname(how):
+    left = ibis.table([("id", "int64"), ("first_name", "string")])
+    right = ibis.table([("id", "int64"), ("last_name", "string")])
+
+    method = getattr(left, f"{how}_join")
+
+    expr = method(right, lname="left_{name}")
+    assert expr.columns == ["left_id", "first_name", "id", "last_name"]
+
+    expr = method(right, rname="right_{name}")
+    assert expr.columns == ["id", "first_name", "right_id", "last_name"]
+
+    expr = method(right, lname="left_{name}", rname="right_{name}")
+    assert expr.columns == ["left_id", "first_name", "right_id", "last_name"]
+
+
+@pytest.mark.parametrize("how", ["inner", "left", "outer", "right"])
 def test_join_suffixes(how):
     left = ibis.table([("id", "int64"), ("first_name", "string")])
     right = ibis.table([("id", "int64"), ("last_name", "string")])
 
     method = getattr(left, f"{how}_join")
 
+    # suffixes arg is explicitly deprecated
     with pytest.warns(FutureWarning, match="suffixes"):
         expr = method(right, suffixes=("_left", "_right"))
 
