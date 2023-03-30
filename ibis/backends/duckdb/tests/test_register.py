@@ -10,6 +10,8 @@ import pytest
 import ibis
 import ibis.common.exceptions as exc
 
+pytestmark = pytest.mark.xdist_group("duckdb")
+
 
 def test_read_csv(data_directory):
     t = ibis.read_csv(data_directory / "functional_alltypes.csv")
