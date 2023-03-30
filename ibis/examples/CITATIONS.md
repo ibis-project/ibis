@@ -9,3 +9,7 @@ This file includes citations and attributions required to use example datasets.
 ## [IMDB](https://datasets.imdbws.com/)
 
 - Information courtesy of IMDb (https://www.imdb.com). Used with permission.
+
+## [Palmer Penguins](https://allisonhorst.github.io/palmerpenguins/)
+
+- Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0. https://allisonhorst.github.io/palmerpenguins/. doi: 10.5281/zenodo.3960218.
