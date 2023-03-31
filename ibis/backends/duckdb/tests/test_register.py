@@ -3,7 +3,9 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pyarrow as pa
 import pytest
 
@@ -213,3 +215,9 @@ def test_s3_403_fallback(con, httpserver, monkeypatch):
     # pyarrow, which indicates the fallback worked
     with pytest.raises(pa.lib.ArrowInvalid):
         con.read_parquet(httpserver.url_for("/myfile"))
+
+
+def test_register_numpy_str(con):
+    data = pd.DataFrame({"a": [np.str_("xyz"), None]})
+    result = con.read_in_memory(data)
+    tm.assert_frame_equal(result.execute(), data)
