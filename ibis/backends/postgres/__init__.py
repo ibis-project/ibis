@@ -259,4 +259,4 @@ ORDER BY attnum"""
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
-        yield f"CREATE OR REPLACE VIEW {name} AS {definition}"
+        yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
