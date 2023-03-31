@@ -238,6 +238,12 @@ class Backend(BaseAlchemyBackend):
             f"please call one of {msg} directly"
         )
 
+    def _compile_temp_view(self, table_name, source):
+        raw_source = source.compile(
+            dialect=self.con.dialect, compile_kwargs=dict(literal_binds=True)
+        )
+        return f'CREATE OR REPLACE TEMPORARY VIEW "{table_name}" AS {raw_source}'
+
     @util.experimental
     def read_json(
         self,
@@ -263,7 +269,6 @@ class Backend(BaseAlchemyBackend):
         Table
             An ibis table expression
         """
-        import sqlalchemy_views as sav
         from packaging.version import parse as vparse
 
         if (version := vparse(self.version)) < vparse("0.7.0"):
@@ -273,18 +278,15 @@ class Backend(BaseAlchemyBackend):
         if not table_name:
             table_name = f"ibis_read_json_{next(json_n)}"
 
-        view = sav.CreateView(
-            sa.table(table_name),
-            sa.select(sa.literal_column("*")).select_from(
-                sa.func.read_json_auto(
-                    sa.func.list_value(*normalize_filenames(source_list)),
-                    _format_kwargs(kwargs),
-                )
-            ),
-            or_replace=True,
+        source = sa.select(sa.literal_column("*")).select_from(
+            sa.func.read_json_auto(
+                sa.func.list_value(*normalize_filenames(source_list)),
+                _format_kwargs(kwargs),
+            )
         )
+        view = self._compile_temp_view(table_name, source)
         with self.begin() as con:
-            con.execute(view)
+            con.exec_driver_sql(view)
 
         return self.table(table_name)
 
@@ -313,8 +315,6 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-        import sqlalchemy_views as sav
-
         source_list = normalize_filenames(source_list)
 
         if not table_name:
@@ -329,9 +329,10 @@ class Backend(BaseAlchemyBackend):
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.read_csv(sa.func.list_value(*source_list), _format_kwargs(kwargs))
         )
-        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
+
+        view = self._compile_temp_view(table_name, source)
         with self.begin() as con:
-            con.execute(view)
+            con.exec_driver_sql(view)
         return self.table(table_name)
 
     def read_parquet(
@@ -377,13 +378,8 @@ class Backend(BaseAlchemyBackend):
         return self.table(table_name)
 
     def _read_parquet_duckdb_native(
-        self,
-        source_list: str | Iterable[str],
-        table_name: str,
-        **kwargs: Any,
+        self, source_list: str | Iterable[str], table_name: str, **kwargs: Any
     ) -> None:
-        import sqlalchemy_views as sav
-
         if any(
             source.startswith(("http://", "https://", "s3://"))
             for source in source_list
@@ -395,15 +391,12 @@ class Backend(BaseAlchemyBackend):
                 sa.func.list_value(*source_list), _format_kwargs(kwargs)
             )
         )
-        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
+        view = self._compile_temp_view(table_name, source)
         with self.begin() as con:
-            con.execute(view)
+            con.exec_driver_sql(view)
 
     def _read_parquet_pyarrow_dataset(
-        self,
-        source_list: str | Iterable[str],
-        table_name: str,
-        **kwargs: Any,
+        self, source_list: str | Iterable[str], table_name: str, **kwargs: Any
     ) -> None:
         import pyarrow.dataset as ds
 
@@ -496,8 +489,6 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table.
         """
-        import sqlalchemy_views as sav
-
         if table_name is None:
             raise ValueError(
                 "`table_name` is required when registering a postgres table"
@@ -506,9 +497,9 @@ class Backend(BaseAlchemyBackend):
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.postgres_scan_pushdown(uri, schema, table_name)
         )
-        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
+        view = self._compile_temp_view(table_name, source)
         with self.begin() as con:
-            con.execute(view)
+            con.exec_driver_sql(view)
 
         return self.table(table_name)
 
@@ -540,7 +531,6 @@ class Backend(BaseAlchemyBackend):
             3   0.29  Premium     I     VS2   62.4   58.0    334  4.20  4.23  2.63
             4   0.31     Good     J     SI2   63.3   58.0    335  4.34  4.35  2.75
         """
-        import sqlalchemy_views as sav
 
         if table_name is None:
             raise ValueError("`table_name` is required when registering a sqlite table")
@@ -548,9 +538,9 @@ class Backend(BaseAlchemyBackend):
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.sqlite_scan(str(path), table_name)
         )
-        view = sav.CreateView(sa.table(table_name), source, or_replace=True)
+        view = self._compile_temp_view(table_name, source)
         with self.begin() as con:
-            con.execute(view)
+            con.exec_driver_sql(view)
 
         return self.table(table_name)
 
