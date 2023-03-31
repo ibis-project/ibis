@@ -829,9 +829,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t1.difference().equals(t1)
         True
         """
-        return functools.reduce(
+        t = functools.reduce(
             functools.partial(ops.Difference, distinct=distinct), tables, self.op()
         ).to_expr()
+        if t.equals(self):
+            return t
+        return t.select(self.columns)
 
     def aggregate(
         self,
@@ -1342,9 +1345,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t1.union().equals(t1)
         True
         """
-        return functools.reduce(
+        t = functools.reduce(
             functools.partial(ops.Union, distinct=distinct), tables, self.op()
         ).to_expr()
+        if t.equals(self):
+            return t
+        return t.select(self.columns)
 
     def intersect(self, *tables: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
@@ -1426,9 +1432,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t1.intersect().equals(t1)
         True
         """
-        return functools.reduce(
+        t = functools.reduce(
             functools.partial(ops.Intersection, distinct=distinct), tables, self.op()
         ).to_expr()
+        if t.equals(self):
+            return t
+        return t.select(self.columns)
 
     def to_array(self) -> ir.Column:
         """View a single column table as an array.

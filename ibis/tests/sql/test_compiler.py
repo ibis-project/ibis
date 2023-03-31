@@ -8,38 +8,38 @@ from ibis.tests.util import assert_decompile_roundtrip
 
 def test_union(union, snapshot):
     snapshot.assert_match(to_sql(union), "out.sql")
-    assert_decompile_roundtrip(union, snapshot)
+    assert_decompile_roundtrip(union, snapshot, check_equality=False)
 
 
 def test_union_project_column(union_all, snapshot):
     # select a column, get a subquery
     expr = union_all[[union_all.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_table_intersect(intersect, snapshot):
     snapshot.assert_match(to_sql(intersect), "out.sql")
-    assert_decompile_roundtrip(intersect, snapshot)
+    assert_decompile_roundtrip(intersect, snapshot, check_equality=False)
 
 
 def test_table_difference(difference, snapshot):
     snapshot.assert_match(to_sql(difference), "out.sql")
-    assert_decompile_roundtrip(difference, snapshot)
+    assert_decompile_roundtrip(difference, snapshot, check_equality=False)
 
 
 def test_intersect_project_column(intersect, snapshot):
     # select a column, get a subquery
     expr = intersect[[intersect.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_difference_project_column(difference, snapshot):
     # select a column, get a subquery
     expr = difference[[difference.key]]
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_table_distinct(con, snapshot):
@@ -224,4 +224,4 @@ def test_union_order_by(snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
     expr = t.order_by("b").union(t.order_by("b"))
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)

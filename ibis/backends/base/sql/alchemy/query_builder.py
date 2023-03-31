@@ -341,30 +341,16 @@ class AlchemySelectBuilder(SelectBuilder):
 class AlchemySetOp(SetOp):
     def compile(self):
         context = self.context
-        selects = []
+        distincts = self.distincts
 
-        def call(distinct, *args):
-            return (
-                self.distinct_func(*args) if distinct else self.non_distinct_func(*args)
-            )
+        assert (
+            len(set(distincts)) == 1
+        ), "more than one distinct found; this shouldn't be possible because all unions are projected"
 
-        for table in self.tables:
-            table_set = context.get_compiled_expr(table)
-            selects.append(table_set.cte().select())
-
-        if len(set(self.distincts)) == 1:
-            # distinct is either all True or all False, handle with a single
-            # call. This generates much more concise SQL.
-            return call(self.distincts[0], *selects)
-        else:
-            # We need to iteratively apply the set operations to handle
-            # disparate `distinct` values. Subqueries _must_ be converted using
-            # `.subquery().select()` to get sqlalchemy to put parenthesis in
-            # the proper places.
-            result = selects[0]
-            for select, distinct in zip(selects[1:], self.distincts):
-                result = call(distinct, result.subquery().select(), select)
-            return result
+        func = self.distinct_func if distincts[0] else self.non_distinct_func
+        return func(
+            *(context.get_compiled_expr(table).cte().select() for table in self.tables)
+        )
 
 
 class AlchemyUnion(AlchemySetOp):

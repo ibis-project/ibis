@@ -73,22 +73,19 @@ class QueryContext:
         self.top_context.subquery_memo[node] = result
         return result
 
-    def make_alias(self, node):
-        i = self._alias_counter
+    def _next_alias(self) -> str:
+        alias = self._alias_counter
+        self._alias_counter += 1
+        return f"t{alias:d}"
 
+    def make_alias(self, node):
         # check for existing tables that we're referencing from a parent context
         for ctx in itertools.islice(self._contexts(), 1, None):
-            try:
-                alias = ctx.table_refs[node]
-            except KeyError:
-                pass
-            else:
+            if (alias := ctx.table_refs.get(node)) is not None:
                 self.set_ref(node, alias)
                 return
 
-        self._alias_counter += 1
-        alias = f't{i:d}'
-        self.set_ref(node, alias)
+        self.set_ref(node, self._next_alias())
 
     def _contexts(
         self,
