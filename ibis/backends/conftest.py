@@ -295,6 +295,7 @@ def pytest_collection_modifyitems(session, config, items):
             itertools.chain(
                 *(item.iter_markers(name=name) for name in all_backends),
                 item.iter_markers(name="backend"),
+                item.iter_markers(name="backend_nodata"),
             )
         ):
             # anything else is a "core" test and is run by default
@@ -353,7 +354,7 @@ def pytest_runtest_call(item):
     backend = [
         backend.name()
         for key, backend in item.funcargs.items()
-        if key.endswith("backend")
+        if key.endswith(("backend", "backend_nodata"))
     ]
     if len(backend) > 1:
         raise ValueError(
@@ -378,7 +379,11 @@ def pytest_runtest_call(item):
         funcargs = item.funcargs
         con = funcargs.get(
             "con",
-            getattr(funcargs.get("backend"), "connection", None),
+            getattr(
+                funcargs.get("backend", funcargs.get("backend_nodata")),
+                "connection",
+                None,
+            ),
         )
 
         if con is None:
@@ -509,6 +514,20 @@ def backend(request, data_directory, script_directory, tmp_path_factory, worker_
 def con(backend):
     """Instance of a backend client."""
     return backend.connection
+
+
+@pytest.fixture(params=_get_backends_to_test(), scope='session')
+def backend_nodata(request, data_directory):
+    """Return an instance of BackendTest, loaded with data."""
+
+    cls = _get_backend_conf(request.param)
+    return cls(data_directory)
+
+
+@pytest.fixture(scope="session")
+def con_nodata(backend_nodata):
+    """Instance of a backend client."""
+    return backend_nodata.connection
 
 
 def _setup_backend(

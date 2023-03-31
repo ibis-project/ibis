@@ -44,3 +44,5 @@ def assert_decompile_roundtrip(expr, snapshot=None, check_equality=True):
 
     if check_equality:
         assert expr.unbind().equals(restored)
+    else:
+        assert expr.as_table().schema().equals(restored.as_table().schema())

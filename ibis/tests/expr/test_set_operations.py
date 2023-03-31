@@ -49,11 +49,14 @@ def test_operation_supports_schemas_with_different_field_order(method):
     u2 = getattr(a, method)(c)
 
     assert u1.schema() == a.schema()
-    assert u1.op().left == a.op()
-    assert u1.op().right == b.op()
+
+    u1 = u1.op().table
+    assert u1.left == a.op()
+    assert u1.right == b.op()
 
     # a selection is added to ensure that the field order of the right table
     # matches the field order of the left table
-    assert u2.schema() == a.schema()
-    assert u2.op().left == a.op()
-    assert u2.op().right == ops.Selection(c.op(), ['a', 'b', 'c'])
+    u2 = u2.op().table
+    assert u2.schema == a.schema()
+    assert u2.left == a.op()
+    assert u2.right == ops.Selection(c.op(), ['a', 'b', 'c'])

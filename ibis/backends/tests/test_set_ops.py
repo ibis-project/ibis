@@ -49,7 +49,6 @@ def test_union(backend, union_subsets, distinct):
 
 
 @pytest.mark.notimpl(["datafusion"])
-@pytest.mark.notyet(["bigquery"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_union_mixed_distinct(backend, union_subsets):
     (a, b, c), (da, db, dc) = union_subsets

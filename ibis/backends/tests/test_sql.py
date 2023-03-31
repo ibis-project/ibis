@@ -8,7 +8,7 @@ import ibis.common.exceptions as exc
 from ibis import _
 
 sa = pytest.importorskip("sqlalchemy")
-pytest.importorskip("sqlglot")
+sg = pytest.importorskip("sqlglot")
 
 pytestmark = pytest.mark.notimpl(["druid"])
 
@@ -138,3 +138,73 @@ def test_isin_bug(con, snapshot):
     good = t[t.x > 2].x
     expr = t.x.isin(good)
     snapshot.assert_match(str(ibis.to_sql(expr, dialect=con.name)), "out.sql")
+
+
+@pytest.mark.never(
+    ["pandas", "dask", "datafusion", "polars", "pyspark"],
+    reason="not SQL",
+    raises=NotImplementedError,
+)
+@pytest.mark.notyet(
+    ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
+)
+@pytest.mark.notimpl(
+    ["bigquery"],
+    reason="unnest not yet implemented",
+    raises=exc.OperationNotDefinedError,
+)
+@pytest.mark.xfail_version(
+    duckdb=["sqlglot<=11.4.5"],
+    raises=sg.ParseError,
+    reason="https://github.com/tobymao/sqlglot/pull/1379 not in the installed version of sqlglot",
+)
+def test_union_aliasing(con_nodata, snapshot):
+    if con_nodata.name == "snowflake":
+        pytest.skip(
+            "pivot requires random names to make snowflake work properly and cannot be snapshotted"
+        )
+    from ibis import selectors as s
+
+    t = ibis.table(
+        {
+            "field_of_study": "string",
+            "1970-71": "int64",
+            "1975-76": "int64",
+            "1980-81": "int64",
+            "1985-86": "int64",
+            "1990-91": "int64",
+            "1995-96": "int64",
+            "2000-01": "int64",
+            "2005-06": "int64",
+            "2010-11": "int64",
+            "2011-12": "int64",
+            "2012-13": "int64",
+            "2013-14": "int64",
+            "2014-15": "int64",
+            "2015-16": "int64",
+            "2016-17": "int64",
+            "2017-18": "int64",
+            "2018-19": "int64",
+            "2019-20": "int64",
+        },
+        name="humanities",
+    )
+
+    years_window = ibis.window(order_by=_.years, group_by=_.field_of_study)
+    diff_agg = (
+        t.pivot_longer(s.matches(r"\d{4}-\d{2}"), names_to="years", values_to="degrees")
+        .mutate(
+            earliest_degrees=_.degrees.first().over(years_window),
+            latest_degrees=_.degrees.last().over(years_window),
+        )
+        .mutate(diff=_.latest_degrees - _.earliest_degrees)
+        .group_by(_.field_of_study)
+        .agg(diff=_.diff.arbitrary())
+    )
+
+    top_ten = diff_agg.order_by(_.diff.desc()).limit(10)
+    bottom_ten = diff_agg.filter(_.diff < 0).order_by(_.diff).limit(10)
+
+    result = top_ten.union(bottom_ten)
+
+    snapshot.assert_match(str(ibis.to_sql(result, dialect=con_nodata.name)), "out.sql")
