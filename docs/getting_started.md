@@ -6,7 +6,7 @@ hide:
 
 # Getting Started with `ibis`
 
-This is a quick tour of some basic commands and usage patterns, just to get your feet wet.
+This is a quick tour of some basic commands and usage patterns, just to get your flippers wet.
 
 ## Install `ibis`
 
