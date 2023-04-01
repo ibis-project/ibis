@@ -1,1 +1,0 @@
-precision(`l_extendedprice`)
