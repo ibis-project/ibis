@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import re
 from functools import lru_cache
 from pathlib import Path
@@ -15,7 +14,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.datafusion.compiler import translate
-from ibis.util import normalize_filename
+from ibis.util import gen_name, normalize_filename
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -23,11 +22,6 @@ except ImportError:
     from datafusion import SessionContext
 
 import datafusion
-
-# counters for in-memory, parquet, and csv reads
-# used if no table name is specified
-pa_n = itertools.count(0)
-csv_n = itertools.count(0)
 
 
 class Backend(BaseBackend):
@@ -169,7 +163,7 @@ class Backend(BaseBackend):
             The just-registered table
         """
         path = normalize_filename(path)
-        table_name = table_name or f"ibis_read_csv_{next(csv_n)}"
+        table_name = table_name or gen_name("read_csv")
         # Our other backends support overwriting views / tables when reregistering
         self._context.deregister_table(table_name)
         self._context.register_csv(table_name, path, **kwargs)
@@ -196,7 +190,7 @@ class Backend(BaseBackend):
             The just-registered table
         """
         path = normalize_filename(path)
-        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+        table_name = table_name or gen_name("read_parquet")
         # Our other backends support overwriting views / tables when reregistering
         self._context.deregister_table(table_name)
         self._context.register_parquet(table_name, path, **kwargs)

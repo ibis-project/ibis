@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -38,9 +37,6 @@ _read_csv_defaults = {
     'mode': 'FAILFAST',
     'escape': '"',
 }
-
-pa_n = itertools.count(0)
-csv_n = itertools.count(0)
 
 
 def normalize_filenames(source_list):
@@ -613,7 +609,7 @@ class Backend(BaseSQLBackend):
         """
         source = util.normalize_filename(source)
         spark_df = self._session.read.parquet(source, **kwargs)
-        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+        table_name = table_name or util.gen_name("read_parquet")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
@@ -645,7 +641,7 @@ class Backend(BaseSQLBackend):
         """
         source_list = normalize_filenames(source_list)
         spark_df = self._session.read.csv(source_list, **kwargs)
-        table_name = table_name or f"ibis_read_csv_{next(csv_n)}"
+        table_name = table_name or util.gen_name("read_csv")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)

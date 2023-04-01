@@ -14,12 +14,8 @@ if TYPE_CHECKING:
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
-    def __init__(
-        self, data_directory: Path, extension_directory: Path | None = None
-    ) -> None:
-        self.connection = self.connect(
-            data_directory, extension_directory=str(extension_directory)
-        )
+    def __init__(self, data_directory: Path, **kwargs: Any) -> None:
+        self.connection = self.connect(data_directory, **kwargs)
 
         script_dir = data_directory.parent
 
@@ -52,11 +48,11 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return TestConf(data_directory=data_dir)
 
     @staticmethod
-    def connect(data_directory: Path, **kwargs) -> BaseBackend:
+    def connect(data_directory: Path, **kwargs: Any) -> BaseBackend:
         pytest.importorskip("duckdb")
         return ibis.duckdb.connect(**kwargs)  # type: ignore
 
 
 @pytest.fixture
 def con(data_directory, tmp_path: Path):
-    return TestConf(data_directory, extension_directory=tmp_path).connection
+    return TestConf(data_directory, extension_directory=str(tmp_path)).connection
