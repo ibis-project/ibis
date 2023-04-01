@@ -1,0 +1,1 @@
+(row_number() OVER (ORDER BY `float_col`) - 1)
