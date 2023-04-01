@@ -853,6 +853,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         having
             Post-aggregation filters. The shape requirements are the same
             `metrics`, but the output type for `having` is `boolean`.
+
+            !!! warning "Expressions like `x is None` return `bool` and **will not** generate a SQL comparison to `NULL`"
         kwargs
             Named aggregate expressions
 
