@@ -419,11 +419,7 @@ def _memtable_from_pyarrow_table(
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
         schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
     return ops.InMemoryTable(
-        name=(
-            name
-            if name is not None
-            else util.generate_unique_table_name("pyarrow_memtable")
-        ),
+        name=name if name is not None else util.gen_name("pyarrow_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PyArrowTableProxy(data),
     ).to_expr()
@@ -451,11 +447,7 @@ def _memtable_from_dataframe(
         )
         df = df.rename(columns=dict(zip(cols, newcols)))
     op = ops.InMemoryTable(
-        name=(
-            name
-            if name is not None
-            else util.generate_unique_table_name("pandas_memtable")
-        ),
+        name=name if name is not None else util.gen_name("pandas_memtable"),
         schema=sch.infer(df) if schema is None else schema,
         data=DataFrameProxy(df),
     )

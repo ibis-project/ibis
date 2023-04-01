@@ -462,7 +462,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             populate=self._load_into_cache,
             lookup=lambda name: self.table(name).op(),
             finalize=self._clean_up_cached_table,
-            generate_name=functools.partial(util.generate_unique_table_name, "cache"),
+            generate_name=functools.partial(util.gen_name, "cache"),
             key=lambda expr: expr.op(),
         )
 

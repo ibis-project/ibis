@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import itertools
 import os
 import warnings
 import weakref
@@ -29,13 +28,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
     import ibis.expr.operations as ops
-
-# counters for in-memory, parquet, csv, and json reads
-# used if no table name is specified
-pd_n = itertools.count(0)
-pa_n = itertools.count(0)
-csv_n = itertools.count(0)
-json_n = itertools.count(0)
 
 
 def normalize_filenames(source_list):
@@ -276,7 +268,7 @@ class Backend(BaseAlchemyBackend):
                 f"`read_json` requires duckdb >= 0.7.0, duckdb {version} is installed"
             )
         if not table_name:
-            table_name = f"ibis_read_json_{next(json_n)}"
+            table_name = util.gen_name("read_json")
 
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.read_json_auto(
@@ -318,7 +310,7 @@ class Backend(BaseAlchemyBackend):
         source_list = normalize_filenames(source_list)
 
         if not table_name:
-            table_name = f"ibis_read_csv_{next(csv_n)}"
+            table_name = util.gen_name("read_csv")
 
         # auto_detect and columns collide, so we set auto_detect=True
         # unless COLUMNS has been specified
@@ -362,7 +354,7 @@ class Backend(BaseAlchemyBackend):
         """
         source_list = normalize_filenames(source_list)
 
-        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+        table_name = table_name or util.gen_name("read_parquet")
 
         # Default to using the native duckdb parquet reader
         # If that fails because of auth issues, fall back to ingesting via
@@ -457,7 +449,7 @@ class Backend(BaseAlchemyBackend):
                 }
             )
 
-        table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
+        table_name = table_name or util.gen_name("read_in_memory")
         with self.begin() as con:
             con.connection.register(table_name, _clean_up_string_columns(dataframe))
 
