@@ -667,11 +667,9 @@ def alchemy_temp_table(alchemy_con) -> str:
         Random table name for a temporary usage.
     """
     name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        with contextlib.suppress(NotImplementedError):
-            alchemy_con.drop_table(name, force=True)
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        alchemy_con.drop_table(name, force=True)
 
 
 @pytest.fixture
@@ -688,11 +686,9 @@ def temp_table(con) -> str:
         Random table name for a temporary usage.
     """
     name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        with contextlib.suppress(NotImplementedError):
-            con.drop_table(name, force=True)
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        con.drop_table(name, force=True)
 
 
 @pytest.fixture
@@ -709,11 +705,9 @@ def temp_view(ddl_con) -> str:
         Random view name for a temporary usage.
     """
     name = _random_identifier('view')
-    try:
-        yield name
-    finally:
-        with contextlib.suppress(NotImplementedError):
-            ddl_con.drop_view(name, force=True)
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        ddl_con.drop_view(name, force=True)
 
 
 @pytest.fixture(scope='session')
@@ -740,10 +734,8 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
         ddl_con.create_database(name)
     except NotImplementedError:
         pytest.skip(f"{ddl_backend.name()} doesn't have create_database method.")
-    try:
-        yield name
-    finally:
-        ddl_con.drop_database(name, force=True)
+    yield name
+    ddl_con.drop_database(name, force=True)
 
 
 @pytest.fixture

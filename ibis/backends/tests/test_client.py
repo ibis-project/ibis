@@ -250,16 +250,14 @@ def test_separate_database(ddl_con, alternate_current_database, current_data_db)
 
 @pytest.fixture
 def employee_empty_temp_table(alchemy_con, test_employee_schema):
-    temp_table_name = f"temp_to_table_{guid()[:6]}"
+    temp_table_name = f"temp_employee_empty_table_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
         temp_table_name,
         test_employee_schema,
     )
-    try:
-        yield temp_table_name
-    finally:
-        alchemy_con.drop_table(temp_table_name)
+    yield temp_table_name
+    alchemy_con.drop_table(temp_table_name, force=True)
 
 
 @pytest.fixture
@@ -268,7 +266,7 @@ def employee_data_1_temp_table(
     test_employee_schema,
     test_employee_data_1,
 ):
-    temp_table_name = f"temp_to_table_{guid()[:6]}"
+    temp_table_name = f"temp_employee_data_1_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
         temp_table_name,
@@ -276,10 +274,8 @@ def employee_data_1_temp_table(
         data=test_employee_data_1,
     )
     assert temp_table_name in alchemy_con.list_tables()
-    try:
-        yield temp_table_name
-    finally:
-        alchemy_con.drop_table(temp_table_name)
+    yield temp_table_name
+    alchemy_con.drop_table(temp_table_name, force=True)
 
 
 @pytest.fixture
@@ -288,17 +284,15 @@ def employee_data_2_temp_table(
     test_employee_schema,
     test_employee_data_2,
 ):
-    temp_table_name = f"temp_to_table_{guid()[:6]}"
+    temp_table_name = f"temp_employee_data_2_{guid()[:6]}"
     _create_temp_table_with_schema(
         alchemy_con,
         temp_table_name,
         test_employee_schema,
         data=test_employee_data_2,
     )
-    try:
-        yield temp_table_name
-    finally:
-        alchemy_con.drop_table(temp_table_name)
+    yield temp_table_name
+    alchemy_con.drop_table(temp_table_name, force=True)
 
 
 def test_insert_no_overwrite_from_dataframe(
@@ -410,26 +404,17 @@ def test_insert_overwrite_from_list(
     assert len(alchemy_con.table(employee_data_1_temp_table).execute()) == 3
 
 
-@pytest.mark.broken(
-    ["snowflake"],
-    reason="quoting is incorrect because pandas doesn't expose sqlalchemy column quoting",
-)
-def test_insert_from_memtable(alchemy_con):
+def test_insert_from_memtable(alchemy_con, alchemy_temp_table):
     df = pd.DataFrame({"x": range(3)})
-    table_name = "memtable_test"
+    table_name = alchemy_temp_table
     mt = ibis.memtable(df)
     alchemy_con.create_table(table_name, schema=mt.schema())
     alchemy_con.insert(table_name, mt)
     alchemy_con.insert(table_name, mt)
 
-    try:
-        table = alchemy_con.tables[table_name]
-        assert len(table.execute()) == 6
-        assert alchemy_con.tables[table_name].schema() == ibis.schema({"x": "int64"})
-    finally:
-        with alchemy_con.begin() as con:
-            con.exec_driver_sql(f"DROP TABLE IF EXISTS {table_name}")
-        assert table_name not in alchemy_con.list_tables()
+    table = alchemy_con.tables[table_name]
+    assert len(table.execute()) == 6
+    assert alchemy_con.tables[table_name].schema() == ibis.schema({"x": "int64"})
 
 
 def test_list_databases(alchemy_con):
