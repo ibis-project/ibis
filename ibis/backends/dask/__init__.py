@@ -19,7 +19,7 @@ from ibis.backends.pandas import BasePandasBackend
 from ibis.backends.pandas.core import _apply_schema
 
 # Make sure that the pandas backend options have been loaded
-ibis.pandas
+ibis.pandas  # noqa: B018
 
 
 class Backend(BasePandasBackend):
