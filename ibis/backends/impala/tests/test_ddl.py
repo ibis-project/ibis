@@ -401,4 +401,4 @@ def test_kudu_property_raises_useful_error(con):
         NotImplementedError,
         match="kudu support using kudu-python",
     ):
-        con.kudu
+        con.kudu  # noqa: B018

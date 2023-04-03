@@ -82,12 +82,12 @@ def test_tables_accessor_getattr(con):
     )
 
     with pytest.raises(AttributeError, match="doesnt_exist"):
-        con.tables.doesnt_exist
+        con.tables.doesnt_exist  # noqa: B018
 
     # Underscore/double-underscore attributes are never available, since many
     # python apis expect checking for the absence of these to be cheap.
     with pytest.raises(AttributeError, match="_private_attr"):
-        con.tables._private_attr
+        con.tables._private_attr  # noqa: B018
 
 
 def test_tables_accessor_tab_completion(con):

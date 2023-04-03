@@ -75,7 +75,7 @@ def enable():
     """Enable tracing."""
     if options.dask is None:
         # dask options haven't been registered yet - force module __getattr__
-        ibis.dask
+        ibis.dask  # noqa: B018
 
     options.dask.enable_trace = True
     logging.getLogger('ibis.dask.trace').setLevel(logging.DEBUG)
@@ -119,7 +119,7 @@ def trace(func):
         # Similar to the pandas backend, it is possible to call this function
         # without having initialized the configuration option. This can happen
         # when tests are distributed across multiple processes, for example.
-        ibis.dask
+        ibis.dask  # noqa: B018
 
         if not options.dask.enable_trace:
             return func(*args, **kwargs)

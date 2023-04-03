@@ -117,7 +117,7 @@ def test_getitem_missing_column(table):
 
 def test_getattr_missing_column(table):
     with pytest.raises(AttributeError, match="oops"):
-        table.oops
+        table.oops  # noqa: B018
 
 
 def test_typo_method_name_recommendation(table):

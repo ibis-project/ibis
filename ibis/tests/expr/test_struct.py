@@ -38,7 +38,7 @@ def test_struct_getattr():
     assert isinstance(expr.a, ir.IntegerValue)
     assert expr.a.get_name() == "a"
     with pytest.raises(AttributeError, match="bad"):
-        expr.bad
+        expr.bad  # # noqa: B018
 
 
 def test_struct_tab_completion():
