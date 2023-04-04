@@ -973,9 +973,6 @@ def test_many_subqueries(con, snapshot):
 @pytest.mark.notyet(["polars"], reason="polars doesn't expand > 1 explode")
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["pyspark"], reason="pyspark doesn't allow more than one explode in a select"
-)
-@pytest.mark.notyet(
     ["bigquery"],
     reason="backend doesn't implement unnest",
     raises=com.OperationNotDefinedError,
