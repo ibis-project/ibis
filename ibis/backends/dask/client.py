@@ -4,18 +4,15 @@ from __future__ import annotations
 
 import dask.dataframe as dd
 import numpy as np
+import pandas as pd
+from dateutil.parser import parse as date_parse
 from pandas.api.types import DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base import Database
-from ibis.backends.pandas.client import (
-    PANDAS_DATE_TYPES,
-    PANDAS_STRING_TYPES,
-    ibis_dtype_to_pandas,
-    ibis_schema_to_pandas,
-)
+from ibis.backends.pandas.client import ibis_dtype_to_pandas, ibis_schema_to_pandas
 
 
 @sch.schema.register(dd.Series)
@@ -54,15 +51,31 @@ ibis_schema_to_dask = ibis_schema_to_pandas
 
 
 @sch.convert.register(DatetimeTZDtype, dt.Timestamp, dd.Series)
-def convert_datetimetz_to_timestamp(in_dtype, out_dtype, column):
+def convert_datetimetz_to_timestamp(_, out_dtype, column):
     output_timezone = out_dtype.timezone
     if output_timezone is not None:
         return column.dt.tz_convert(output_timezone)
-    return column.astype(out_dtype.to_dask())
+    else:
+        return column.dt.tz_localize(None)
 
 
-DASK_STRING_TYPES = PANDAS_STRING_TYPES
-DASK_DATE_TYPES = PANDAS_DATE_TYPES
+@sch.convert.register(np.dtype, dt.Timestamp, dd.Series)
+def convert_any_to_timestamp(_, out_dtype, column):
+    if isinstance(dtype := out_dtype.to_dask(), DatetimeTZDtype):
+        column = dd.to_datetime(column)
+        timezone = out_dtype.timezone
+        if getattr(column.dtype, "tz", None) is not None:
+            return column.dt.tz_convert(timezone)
+        else:
+            return column.dt.tz_localize(timezone)
+    else:
+        try:
+            return column.astype(dtype)
+        except pd.errors.OutOfBoundsDatetime:
+            try:
+                return column.map(date_parse)
+            except TypeError:
+                return column
 
 
 @sch.convert.register(np.dtype, dt.Interval, dd.Series)

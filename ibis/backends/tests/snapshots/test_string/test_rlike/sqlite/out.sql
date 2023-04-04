@@ -11,7 +11,7 @@ SELECT
   t0.double_col,
   t0.date_string_col,
   t0.string_col,
-  STRFTIME('%Y-%m-%d %H:%M:%f', t0.timestamp_col) AS timestamp_col,
+  t0.timestamp_col,
   t0.year,
   t0.month
 FROM main.functional_alltypes AS t0

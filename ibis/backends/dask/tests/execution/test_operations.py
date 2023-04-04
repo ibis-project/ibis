@@ -548,10 +548,10 @@ def test_value_counts(t, df):
     expected = (
         df.compute()
         .dup_strings.value_counts()
-        .reset_index()
-        .rename(columns={'dup_strings': 'dup_strings_count'})
-        .rename(columns={'index': 'dup_strings'})
-        .sort_values(['dup_strings'])
+        .rename("dup_strings")
+        .reset_index(name="dup_strings_count")
+        .rename(columns={"index": "dup_strings"})
+        .sort_values(["dup_strings"])
         .reset_index(drop=True)
     )
     tm.assert_frame_equal(
@@ -861,6 +861,7 @@ def test_summary_numeric(batting, batting_df):
     assert dict(result.iloc[0]) == expected
 
 
+@pytest.mark.xfail_version(dask=["pandas>=2"])
 def test_summary_numeric_group_by(batting, batting_df):
     with pytest.warns(FutureWarning, match="is deprecated"):
         expr = batting.group_by('teamID').G.summary()
@@ -900,6 +901,7 @@ def test_summary_non_numeric(batting, batting_df):
     assert dict(result.iloc[0]) == expected
 
 
+@pytest.mark.xfail_version(dask=["pandas>=2"])
 def test_summary_non_numeric_group_by(batting, batting_df):
     with pytest.warns(FutureWarning, match="is deprecated"):
         expr = batting.group_by('teamID').playerID.summary()

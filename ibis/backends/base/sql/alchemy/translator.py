@@ -44,8 +44,15 @@ class AlchemyExprTranslator(ExprTranslator):
 
     _bool_aggs_need_cast_to_int32 = True
     _has_reduction_filter_syntax = False
+    _integer_to_timestamp = staticmethod(sa.func.to_timestamp)
+    _timestamp_type = sa.TIMESTAMP
 
-    integer_to_timestamp = sa.func.to_timestamp
+    def integer_to_timestamp(self, arg, tz: str | None = None):
+        return sa.cast(
+            self._integer_to_timestamp(arg),
+            self._timestamp_type(timezone=tz is not None),
+        )
+
     native_json_type = True
     _always_quote_columns = None  # let the dialect decide how to quote
 

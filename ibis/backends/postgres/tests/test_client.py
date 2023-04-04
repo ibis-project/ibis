@@ -111,7 +111,7 @@ def test_schema_type_conversion():
 def test_interval_films_schema(con):
     t = con.table("films")
     assert t.len.type() == dt.Interval(unit="m")
-    assert t.len.execute().dtype == np.dtype("timedelta64[ns]")
+    assert issubclass(t.len.execute().dtype.type, np.timedelta64)
 
 
 @pytest.mark.parametrize(
@@ -129,7 +129,7 @@ def test_all_interval_types_execute(intervals, column, expected_dtype):
     assert expr.type() == expected_dtype
 
     series = expr.execute()
-    assert series.dtype == np.dtype("timedelta64[ns]")
+    assert issubclass(series.dtype.type, np.timedelta64)
 
 
 @pytest.mark.xfail(

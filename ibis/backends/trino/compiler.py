@@ -11,7 +11,8 @@ class TrinoSQLExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry.copy()
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _has_reduction_filter_syntax = True
-    integer_to_timestamp = sa.func.from_unixtime
+    _integer_to_timestamp = staticmethod(sa.func.from_unixtime)
+
     _forbids_frame_clause = (
         *AlchemyExprTranslator._forbids_frame_clause,
         ops.Lead,

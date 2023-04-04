@@ -127,11 +127,8 @@ def convert_datetimetz_to_timestamp(_, out_dtype, column):
     output_timezone = out_dtype.timezone
     if output_timezone is not None:
         return column.dt.tz_convert(output_timezone)
-    return column.astype(out_dtype.to_pandas(), errors='ignore')
-
-
-PANDAS_STRING_TYPES = {'string', 'unicode', 'bytes'}
-PANDAS_DATE_TYPES = {'datetime', 'datetime64', 'date'}
+    else:
+        return column.dt.tz_localize(None)
 
 
 @sch.convert.register(np.dtype, dt.Interval, pd.Series)
@@ -173,13 +170,26 @@ def convert_timestamp_to_date(in_dtype, out_dtype, column):
 def convert_any_to_any(_, out_dtype, column):
     try:
         return column.astype(out_dtype.to_pandas())
+    except Exception:  # noqa: BLE001
+        return column
+
+
+@sch.convert.register(np.dtype, dt.Timestamp, pd.Series)
+def convert_any_to_timestamp(_, out_dtype, column):
+    try:
+        return column.astype(out_dtype.to_pandas())
     except pd.errors.OutOfBoundsDatetime:
         try:
             return column.map(date_parse)
         except TypeError:
             return column
-    except Exception:  # noqa: BLE001
-        return column
+    except TypeError:
+        column = pd.to_datetime(column)
+        timezone = out_dtype.timezone
+        try:
+            return column.dt.tz_convert(timezone)
+        except TypeError:
+            return column.dt.tz_localize(timezone)
 
 
 @sch.convert.register(object, dt.Struct, pd.Series)

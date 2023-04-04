@@ -152,10 +152,13 @@ register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
     (dd.Series, str, datetime.time),
 )
 def execute_between_time(op, data, lower, upper, **kwargs):
-    # TODO - Can this be done better?
-    indexer = (
-        (data.dt.time.astype(str) >= lower) & (data.dt.time.astype(str) <= upper)
-    ).to_dask_array(True)
+    if getattr(data.dtype, "tz", None) is not None:
+        localized = data.dt.tz_convert("UTC").dt.tz_localize(None)
+    else:
+        localized = data
+
+    time = localized.dt.time.astype(str)
+    indexer = ((time >= lower) & (time <= upper)).to_dask_array(True)
 
     result = da.zeros(len(data), dtype=np.bool_)
     result[indexer] = True

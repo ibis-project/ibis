@@ -124,7 +124,7 @@ def test_timestamp_cast_noop(alltypes, at, translate):
     assert isinstance(result2, ir.TimestampColumn)
 
     expected1 = at.c.timestamp_col
-    expected2 = sa.func.to_timestamp(at.c.int_col)
+    expected2 = sa.cast(sa.func.to_timestamp(at.c.int_col), sa.TIMESTAMP())
 
     assert str(translate(result1.op())) == str(expected1)
     assert str(translate(result2.op())) == str(expected2)

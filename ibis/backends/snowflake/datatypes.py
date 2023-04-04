@@ -98,3 +98,10 @@ def _sf_map_struct(_, itype):
 @to_sqla_type.register(SnowflakeDialect, dt.JSON)
 def _sf_json(_, itype):
     return VARIANT
+
+
+@to_sqla_type.register(SnowflakeDialect, dt.Timestamp)
+def _sf_timestamp(_, itype):
+    if itype.timezone is None:
+        return TIMESTAMP_NTZ
+    return TIMESTAMP_TZ

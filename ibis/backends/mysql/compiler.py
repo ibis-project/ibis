@@ -16,7 +16,7 @@ class MySQLExprTranslator(AlchemyExprTranslator):
     # https://dev.mysql.com/doc/refman/8.0/en/spatial-function-reference.html
     _registry = operation_registry.copy()
     _rewrites = AlchemyExprTranslator._rewrites.copy()
-    integer_to_timestamp = sa.func.from_unixtime
+    _integer_to_timestamp = sa.func.from_unixtime
     native_json_type = False
     _dialect_name = "mysql"
 

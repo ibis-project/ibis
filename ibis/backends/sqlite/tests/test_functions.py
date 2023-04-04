@@ -43,13 +43,15 @@ def test_cast(alltypes, alltypes_sqla, translate, func, expected):
 @pytest.mark.parametrize(
     ('func', 'expected_func'),
     [
-        (
+        param(
             lambda t: t.timestamp_col.cast(dt.timestamp),
-            lambda at: sa.func.strftime('%Y-%m-%d %H:%M:%f', at.c.timestamp_col),
+            lambda at: at.c.timestamp_col,
+            id="timestamp_col",
         ),
-        (
+        param(
             lambda t: t.int_col.cast(dt.timestamp),
             lambda at: sa.func.datetime(at.c.int_col, 'unixepoch'),
+            id="cast_integer_to_timestamp",
         ),
     ],
 )
