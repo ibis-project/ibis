@@ -84,7 +84,10 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
 
 
 class SnowflakeTableSetFormatter(_AlchemyTableSetFormatter):
-    def _format_in_memory_table(self, _, ref_op, translator):
+    def _format_in_memory_table(self, op, ref_op, translator):
+        if _NATIVE_ARROW:
+            return super()._format_in_memory_table(op, ref_op, translator)
+
         columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
         rows = list(ref_op.data.to_frame().itertuples(index=False))
         pos_columns = [
