@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from sqlalchemy.dialects.mssql import DATETIME2
+
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
@@ -12,7 +14,10 @@ class MsSqlExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _bool_aggs_need_cast_to_int32 = True
-    integer_to_timestamp = staticmethod(_timestamp_from_unix)
+
+    _timestamp_type = DATETIME2
+    _integer_to_timestamp = staticmethod(_timestamp_from_unix)
+
     native_json_type = False
 
     _forbids_frame_clause = AlchemyExprTranslator._forbids_frame_clause + (

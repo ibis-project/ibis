@@ -65,7 +65,9 @@ def test_timestamps(db, table, data):
     t = con.table(table)
     assert t.ts.type() == dt.timestamp
     res = t.ts.execute()
-    sol = pd.Series([to_datetime(s) for s in data]).dt.tz_localize(None)
+    # we're casting to timestamp without a timezone, so remove it in the
+    # expected output
+    sol = pd.Series(to_datetime(s) for s in data).dt.tz_localize(None)
     assert res.equals(sol)
 
 

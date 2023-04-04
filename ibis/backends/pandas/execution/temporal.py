@@ -71,7 +71,10 @@ def execute_epoch_seconds(op, data, **kwargs):
     (pd.Series, str, datetime.time),
 )
 def execute_between_time(op, data, lower, upper, **kwargs):
-    indexer = pd.DatetimeIndex(data).indexer_between_time(lower, upper)
+    idx = pd.DatetimeIndex(data)
+    if idx.tz is not None:
+        idx = idx.tz_convert(None)  # make naive because times are naive
+    indexer = idx.indexer_between_time(lower, upper)
     result = np.zeros(len(data), dtype=np.bool_)
     result[indexer] = True
     return pd.Series(result)

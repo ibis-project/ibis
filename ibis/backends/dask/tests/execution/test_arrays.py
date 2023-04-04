@@ -3,6 +3,7 @@ import operator
 import numpy as np
 import pandas as pd
 import pytest
+from pytest import param
 
 import ibis
 
@@ -134,7 +135,10 @@ def test_array_slice_scalar(client, start, stop):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
+@pytest.mark.parametrize(
+    'index',
+    [param(1, marks=pytest.mark.xfail_version(dask=["pandas>=2"])), 3, 4, 11, -11],
+)
 def test_array_index(t, df, index):
     expr = t[t.array_of_float64[index].name('indexed')]
     result = expr.compile()

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 import _pytest
+import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
@@ -307,8 +308,12 @@ def pytest_collection_modifyitems(session, config, items):
                     item,
                     pytest.mark.xfail(
                         (
-                            sys.version_info >= (3, 11)
-                            and not isinstance(item, pytest.DoctestItem)
+                            not isinstance(item, pytest.DoctestItem)
+                            and (
+                                sys.version_info >= (3, 11)
+                                or vparse(pd.__version__) >= vparse("2")
+                                or vparse(np.__version__) >= vparse("1.24")
+                            )
                         ),
                         reason="PySpark doesn't support Python 3.11",
                     ),

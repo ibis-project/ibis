@@ -77,7 +77,10 @@ def _cast(op, **kw):
         return f"toInterval{suffix}({arg})"
 
     to = translate_val(op.to, **kw)
-    return f"CAST({arg} AS {to})"
+    result = f"CAST({arg} AS {to})"
+    if (timezone := getattr(op.to, "timezone", None)) is not None:
+        return f"toTimeZone({result}, {timezone!r})"
+    return result
 
 
 @translate_val.register(ops.Between)
@@ -575,11 +578,11 @@ def _date_from_ymd(op, **kw):
     m = translate_val(op.month, **kw)
     d = translate_val(op.day, **kw)
     return (
-        f"toDate(concat("
+        "toDate(concat("
         f"toString({y}), '-', "
         f"leftPad(toString({m}), 2, '0'), '-', "
         f"leftPad(toString({d}), 2, '0')"
-        f"))"
+        "))"
     )
 
 
@@ -591,20 +594,20 @@ def _timestamp_from_ymdhms(op, **kw):
     h = translate_val(op.hours, **kw)
     min = translate_val(op.minutes, **kw)
     s = translate_val(op.seconds, **kw)
-    timezone_arg = ''
-    if timezone := op.output_dtype.timezone:
-        timezone_arg = f', {timezone}'
 
-    return (
-        f"toDateTime("
+    to_datetime = (
+        "toDateTime("
         f"concat(toString({y}), '-', "
         f"leftPad(toString({m}), 2, '0'), '-', "
         f"leftPad(toString({d}), 2, '0'), ' ', "
         f"leftPad(toString({h}), 2, '0'), ':', "
         f"leftPad(toString({min}), 2, '0'), ':', "
         f"leftPad(toString({s}), 2, '0')"
-        f"), {timezone_arg})"
+        "))"
     )
+    if timezone := op.output_dtype.timezone:
+        return f"toTimeZone({to_datetime}, {timezone})"
+    return to_datetime
 
 
 @translate_val.register(ops.ExistsSubquery)

@@ -11,6 +11,7 @@ import pandas.testing as tm
 import pytest
 import rich.console
 import sqlalchemy as sa
+from packaging.version import parse as vparse
 from pytest import mark, param
 
 import ibis
@@ -519,7 +520,9 @@ def test_unsigned_integer_type(alchemy_con):
             marks=[
                 mark.pyspark,
                 pytest.mark.skipif(
-                    sys.version_info >= (3, 11),
+                    sys.version_info >= (3, 11)
+                    or vparse(pd.__version__) >= vparse("2")
+                    or vparse(np.__version__) >= vparse("1.24"),
                     reason="passes on 3.11, but no other pyspark tests do",
                 ),
             ],
@@ -530,7 +533,9 @@ def test_unsigned_integer_type(alchemy_con):
             marks=[
                 mark.pyspark,
                 pytest.mark.skipif(
-                    sys.version_info >= (3, 11),
+                    sys.version_info >= (3, 11)
+                    or vparse(pd.__version__) >= vparse("2")
+                    or vparse(np.__version__) >= vparse("1.24"),
                     reason="passes on 3.11, but no other pyspark tests do",
                 ),
             ],
@@ -541,7 +546,9 @@ def test_unsigned_integer_type(alchemy_con):
             marks=[
                 mark.pyspark,
                 pytest.mark.skipif(
-                    sys.version_info >= (3, 11),
+                    sys.version_info >= (3, 11)
+                    or vparse(pd.__version__) >= vparse("2")
+                    or vparse(np.__version__) >= vparse("1.24"),
                     reason="passes on 3.11, but no other pyspark tests do",
                 ),
             ],

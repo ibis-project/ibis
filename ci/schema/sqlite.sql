@@ -13,7 +13,7 @@ CREATE TABLE functional_alltypes (
     double_col REAL,
     date_string_col TEXT,
     string_col TEXT,
-    timestamp_col TEXT,
+    timestamp_col TIMESTAMP,
     year BIGINT,
     month BIGINT,
     CHECK (bool_col IN (0, 1))
