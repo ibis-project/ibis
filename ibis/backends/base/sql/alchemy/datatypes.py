@@ -13,6 +13,7 @@ from sqlalchemy.ext.compiler import compiles
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+from ibis.common.collections import FrozenDict
 
 if geospatial_supported:
     import geoalchemy2 as ga
@@ -29,10 +30,12 @@ def compiles_array(element, compiler, **kw):
 
 
 class StructType(sat.UserDefinedType):
+    cache_ok = True
+
     def __init__(self, fields: Mapping[str, sat.TypeEngine]) -> None:
-        self.fields = {
-            name: sat.to_instance(type) for name, type in dict(fields).items()
-        }
+        self.fields = FrozenDict(
+            {name: sat.to_instance(typ) for name, typ in fields.items()}
+        )
 
 
 @compiles(StructType, "default")
