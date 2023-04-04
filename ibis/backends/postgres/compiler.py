@@ -23,6 +23,9 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
     _has_reduction_filter_syntax = True
     _dialect_name = "postgresql"
 
+    # it does support it, but we can't use it because of support for pivot
+    supports_unnest_in_select = False
+
 
 rewrites = PostgreSQLExprTranslator.rewrites
 

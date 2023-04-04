@@ -172,7 +172,14 @@ def _round(t, op):
 def _unnest(t, op):
     arg = op.arg
     name = arg.name
-    return sa.func.unnest(t.translate(arg)).table_valued(name).render_derived().c[name]
+    row_type = op.arg.output_dtype.value_type
+    names = getattr(row_type, "names", (name,))
+    rd = sa.func.unnest(t.translate(arg)).table_valued(*names).render_derived()
+    # wrap in a row column so that we can return a single column from this rule
+    if len(names) == 1:
+        return rd.c[0]
+    row = sa.func.row(*(rd.c[name] for name in names))
+    return sa.cast(row, t.get_sqla_type(row_type))
 
 
 def _where(t, op):
