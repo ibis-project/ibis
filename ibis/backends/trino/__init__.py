@@ -73,7 +73,6 @@ class Backend(BaseAlchemyBackend):
                         url, connect_args=connect_args, poolclass=sa.pool.StaticPool
                     )
                 )
-        self._meta = sa.MetaData(schema=schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         tmpname = f"_ibis_trino_output_{util.guid()[:6]}"
