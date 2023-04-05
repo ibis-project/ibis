@@ -137,7 +137,6 @@ class Deferred:
 
 
 def _resolve(arg: Any, *, expr: ir.Expr) -> Any:
-    try:
-        return arg.resolve(expr)
-    except AttributeError:
-        return arg
+    if (func := getattr(arg, "resolve", None)) is not None:
+        return func(expr)
+    return arg
