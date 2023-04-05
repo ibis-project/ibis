@@ -96,8 +96,11 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             result = ref_op.sqla_table
         elif isinstance(ref_op, ops.UnboundTable):
             # use SQLAlchemy's TableClause for unbound tables
-            result = sa.table(
-                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
+            result = sa.Table(
+                ref_op.name,
+                sa.MetaData(),
+                *translator._schema_to_sqlalchemy_columns(ref_op.schema),
+                quote=translator._quote_table_names,
             )
         elif isinstance(ref_op, ops.SQLQueryResult):
             columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
@@ -109,8 +112,11 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             # TODO(kszucs): avoid converting to expression
             child_expr = ref_op.child.to_expr()
             definition = child_expr.compile()
-            result = sa.table(
-                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
+            result = sa.Table(
+                ref_op.name,
+                sa.MetaData(),
+                *translator._schema_to_sqlalchemy_columns(ref_op.schema),
+                quote=translator._quote_table_names,
             )
             backend = child_expr._find_backend()
             backend._create_temp_view(view=result, definition=definition)
@@ -141,7 +147,12 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
     def _format_in_memory_table(self, op, ref_op, translator):
         columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
         if self.context.compiler.cheap_in_memory_tables:
-            result = sa.table(ref_op.name, *columns)
+            result = sa.Table(
+                ref_op.name,
+                sa.MetaData(),
+                *columns,
+                quote=translator._quote_table_names,
+            )
         elif self.context.compiler.support_values_syntax_in_select:
             rows = list(ref_op.data.to_frame().itertuples(index=False))
             result = sa.values(*columns, name=ref_op.name).data(rows)

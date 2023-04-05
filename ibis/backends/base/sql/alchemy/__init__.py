@@ -69,7 +69,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
     database_class = AlchemyDatabase
     table_class = AlchemyTable
     compiler = AlchemyCompiler
-    quote_table_names = None
 
     def _build_alchemy_url(self, url, host, port, user, password, database, driver):
         if url is not None:
@@ -278,7 +277,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 colname,
                 to_sqla_type(dialect, dtype),
                 nullable=dtype.nullable,
-                quote=self.compiler.translator_class._always_quote_columns,
+                quote=self.compiler.translator_class._quote_column_names,
             )
             for colname, dtype in zip(schema.names, schema.types)
         ]
@@ -295,7 +294,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             sa.MetaData(),
             *columns,
             prefixes=prefixes,
-            quote=self.quote_table_names,
+            quote=self.compiler.translator_class._quote_table_names,
         )
 
     def drop_table(
@@ -425,7 +424,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 sa.MetaData(),
                 schema=schema,
                 autoload_with=self.con if autoload else None,
-                quote=self.quote_table_names,
+                quote=self.compiler.translator_class._quote_table_names,
             )
             nulltype_cols = frozenset(
                 col.name for col in table.c if isinstance(col.type, sa.types.NullType)
@@ -453,7 +452,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                         colname,
                         to_sqla_type(dialect, type),
                         nullable=type.nullable,
-                        quote=self.compiler.translator_class._always_quote_columns,
+                        quote=self.compiler.translator_class._quote_column_names,
                     ),
                     replace_existing=True,
                 )
@@ -620,7 +619,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def _quote(self, name: str) -> str:
         """Quote an identifier."""
-        return self.con.dialect.identifier_preparer.quote(name)
+        preparer = self.con.dialect.identifier_preparer
+        if self.compiler.translator_class._quote_table_names:
+            return preparer.quote_identifier(name)
+        return preparer.quote(name)
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
@@ -692,7 +694,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
         source = self.compile(obj)
         view = sav.CreateView(
             sa.Table(
-                name, sa.MetaData(), schema=database, quote=self.quote_table_names
+                name,
+                sa.MetaData(),
+                schema=database,
+                quote=self.compiler.translator_class._quote_table_names,
             ),
             source,
             or_replace=overwrite,
@@ -708,7 +713,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         view = sav.DropView(
             sa.Table(
-                name, sa.MetaData(), schema=database, quote=self.quote_table_names
+                name,
+                sa.MetaData(),
+                schema=database,
+                quote=self.compiler.translator_class._quote_table_names,
             ),
             if_exists=not force,
         )
