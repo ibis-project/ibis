@@ -620,7 +620,8 @@ def shares_some_roots(exprs, parents):
     # unique table dependencies of exprs and parents
     exprs_deps = set(g.traverse(_find_projections, exprs))
     parents_deps = set(g.traverse(_find_projections, parents))
-    return bool(exprs_deps & parents_deps)
+    # Also return True if exprs has no roots (e.g. literal-only expressions)
+    return bool(exprs_deps & parents_deps) or not exprs_deps
 
 
 def flatten_predicate(node):

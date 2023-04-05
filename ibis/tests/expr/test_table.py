@@ -712,6 +712,12 @@ def test_filter_aggregate_pushdown_predicate(table):
     assert_equal(filtered, expected)
 
 
+def test_filter_on_literal_then_aggregate(table):
+    # Mostly just a smoketest, this used to error on construction
+    expr = table.filter(ibis.literal(True)).agg(lambda t: t.a.sum().name("total"))
+    assert expr.columns == ["total"]
+
+
 @pytest.mark.parametrize(
     "case_fn",
     [
