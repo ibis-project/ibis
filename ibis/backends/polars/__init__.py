@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, MutableMapping
@@ -15,16 +14,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.backends.polars.compiler import translate
-from ibis.util import deprecated, normalize_filename
+from ibis.util import deprecated, gen_name, normalize_filename
 
 if TYPE_CHECKING:
     import pandas as pd
-
-# counters for in-memory, parquet, and csv reads
-# used if no table name is specified
-pd_n = itertools.count(0)
-pa_n = itertools.count(0)
-csv_n = itertools.count(0)
 
 
 class Backend(BaseBackend):
@@ -154,7 +147,7 @@ class Backend(BaseBackend):
             The just-registered table
         """
         path = normalize_filename(path)
-        table_name = table_name or f"ibis_read_csv_{next(csv_n)}"
+        table_name = table_name or gen_name("read_csv")
         try:
             self._tables[table_name] = pl.scan_csv(path, **kwargs)
         except pl.exceptions.ComputeError:
@@ -184,7 +177,7 @@ class Backend(BaseBackend):
         ir.Table
             The just-registered table
         """
-        table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
+        table_name = table_name or gen_name("read_in_memory")
         self._tables[table_name] = pl.from_pandas(source, **kwargs).lazy()
         return self.table(table_name)
 
@@ -211,7 +204,7 @@ class Backend(BaseBackend):
             The just-registered table
         """
         path = normalize_filename(path)
-        table_name = table_name or f"ibis_read_parquet_{next(pa_n)}"
+        table_name = table_name or gen_name("read_parquet")
         self._tables[table_name] = pl.scan_parquet(path, **kwargs)
         return self.table(table_name)
 

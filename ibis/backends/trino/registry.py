@@ -115,15 +115,16 @@ def _timestamp_from_unix(t, op):
             arg //= 1_000
         except TypeError:
             arg = sa.func.floor(arg / 1_000)
-        return sa.func.from_unixtime(arg)
+        res = sa.func.from_unixtime(arg)
     elif unit == "s":
-        return sa.func.from_unixtime(arg)
+        res = sa.func.from_unixtime(arg)
     elif unit == "us":
-        return sa.func.from_unixtime_nanos((arg - arg % 1_000_000) * 1_000)
+        res = sa.func.from_unixtime_nanos((arg - arg % 1_000_000) * 1_000)
     elif unit == "ns":
-        return sa.func.from_unixtime_nanos(arg - (arg % 1_000_000_000))
+        res = sa.func.from_unixtime_nanos(arg - arg % 1_000_000_000)
     else:
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported")
+    return sa.cast(res, t.get_sqla_type(op.output_dtype))
 
 
 def _neg_idx_to_pos(array, idx):
@@ -171,7 +172,14 @@ def _round(t, op):
 def _unnest(t, op):
     arg = op.arg
     name = arg.name
-    return sa.func.unnest(t.translate(arg)).table_valued(name).render_derived().c[name]
+    row_type = op.arg.output_dtype.value_type
+    names = getattr(row_type, "names", (name,))
+    rd = sa.func.unnest(t.translate(arg)).table_valued(*names).render_derived()
+    # wrap in a row column so that we can return a single column from this rule
+    if len(names) == 1:
+        return rd.c[0]
+    row = sa.func.row(*(rd.c[name] for name in names))
+    return sa.cast(row, t.get_sqla_type(row_type))
 
 
 def _where(t, op):
@@ -298,8 +306,11 @@ operation_registry.update(
             3,
         ),
         ops.TimestampFromYMDHMS: fixed_arity(
-            lambda y, mo, d, h, m, s: sa.func.from_iso8601_timestamp(
-                sa.func.format('%04d-%02d-%02dT%02d:%02d:%02d', y, mo, d, h, m, s)
+            lambda y, mo, d, h, m, s: sa.cast(
+                sa.func.from_iso8601_timestamp(
+                    sa.func.format('%04d-%02d-%02dT%02d:%02d:%02d', y, mo, d, h, m, s)
+                ),
+                sa.TIMESTAMP(timezone=False),
             ),
             6,
         ),

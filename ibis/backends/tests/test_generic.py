@@ -973,9 +973,6 @@ def test_many_subqueries(con, snapshot):
 @pytest.mark.notyet(["polars"], reason="polars doesn't expand > 1 explode")
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["pyspark"], reason="pyspark doesn't allow more than one explode in a select"
-)
-@pytest.mark.notyet(
     ["bigquery"],
     reason="backend doesn't implement unnest",
     raises=com.OperationNotDefinedError,
@@ -987,6 +984,7 @@ def test_many_subqueries(con, snapshot):
 )
 def test_pivot_longer(backend):
     diamonds = backend.diamonds
+    df = diamonds.execute()
     res = diamonds.pivot_longer(s.c("x", "y", "z"), names_to="pos", values_to="xyz")
     assert res.schema().names == (
         "carat",
@@ -999,8 +997,22 @@ def test_pivot_longer(backend):
         "pos",
         "xyz",
     )
-    df = res.limit(5).execute()
-    assert not df.empty
+    expected = pd.melt(
+        df,
+        id_vars=[
+            "carat",
+            "cut",
+            "color",
+            "clarity",
+            "depth",
+            "table",
+            "price",
+        ],
+        value_vars=list('xyz'),
+        var_name="pos",
+        value_name="xyz",
+    )
+    assert len(res.execute()) == len(expected)
 
 
 @pytest.mark.notyet(["datafusion"], raises=com.OperationNotDefinedError)

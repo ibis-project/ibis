@@ -117,7 +117,7 @@ def _table_column(t, op):
     sa_table = get_sqla_table(ctx, table)
 
     out_expr = get_col(sa_table, op)
-    out_expr.quote = t._always_quote_columns
+    out_expr.quote = t._quote_column_names
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
@@ -175,7 +175,7 @@ def _cast(t, op):
 
     # specialize going from an integer type to a timestamp
     if arg_dtype.is_integer() and typ.is_timestamp():
-        return t.integer_to_timestamp(sa_arg)
+        return t.integer_to_timestamp(sa_arg, tz=typ.timezone)
 
     if arg_dtype.is_binary() and typ.is_string():
         return sa.func.encode(sa_arg, 'escape')

@@ -117,7 +117,7 @@ def test_getitem_missing_column(table):
 
 def test_getattr_missing_column(table):
     with pytest.raises(AttributeError, match="oops"):
-        table.oops
+        table.oops  # noqa: B018
 
 
 def test_typo_method_name_recommendation(table):
@@ -712,6 +712,12 @@ def test_filter_aggregate_pushdown_predicate(table):
     assert_equal(filtered, expected)
 
 
+def test_filter_on_literal_then_aggregate(table):
+    # Mostly just a smoketest, this used to error on construction
+    expr = table.filter(ibis.literal(True)).agg(lambda t: t.a.sum().name("total"))
+    assert expr.columns == ["total"]
+
+
 @pytest.mark.parametrize(
     "case_fn",
     [
@@ -1194,11 +1200,11 @@ def test_union(
     setops_relation_error_message,
 ):
     result = setops_table_foo.union(setops_table_bar)
-    assert isinstance(result.op(), ops.Union)
-    assert not result.op().distinct
+    assert isinstance(result.op().table, ops.Union)
+    assert not result.op().table.distinct
 
     result = setops_table_foo.union(setops_table_bar, distinct=True)
-    assert result.op().distinct
+    assert result.op().table.distinct
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.union(setops_table_baz)
@@ -1211,7 +1217,7 @@ def test_intersection(
     setops_relation_error_message,
 ):
     result = setops_table_foo.intersect(setops_table_bar)
-    assert isinstance(result.op(), ops.Intersection)
+    assert isinstance(result.op().table, ops.Intersection)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.intersect(setops_table_baz)
@@ -1224,7 +1230,7 @@ def test_difference(
     setops_relation_error_message,
 ):
     result = setops_table_foo.difference(setops_table_bar)
-    assert isinstance(result.op(), ops.Difference)
+    assert isinstance(result.op().table, ops.Difference)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.difference(setops_table_baz)

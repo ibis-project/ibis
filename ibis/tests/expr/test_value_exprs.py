@@ -824,7 +824,7 @@ def test_not_without_boolean(typ):
     t = ibis.table([('a', typ)], name='t')
     c = t.a
     with pytest.raises(TypeError):
-        ~c
+        ~c  # noqa: B018
 
 
 @pytest.mark.parametrize(
@@ -1259,7 +1259,7 @@ def test_invalid_negate(value, expected_type):
     expr = ibis.literal(value)
     assert expr.type() == expected_type
     with pytest.raises(TypeError):
-        -expr
+        -expr  # noqa: B018
 
 
 @pytest.mark.parametrize(

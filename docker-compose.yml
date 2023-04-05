@@ -1,10 +1,16 @@
 version: "3.4"
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:23.2.4.12-alpine
+    image: clickhouse/clickhouse-server:23.3.1.2823-alpine
     ports:
-      - 8123:8123
       - 9000:9000
+    healthcheck:
+      interval: 1s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 9000
+      timeout: 10s
     volumes:
       - clickhouse:/var/lib/clickhouse/user_files/ibis
     networks:
@@ -16,7 +22,7 @@ services:
     environment:
       PGPASSWORD: postgres
     healthcheck:
-      interval: 30s
+      interval: 5s
       retries: 20
       test:
         - CMD-SHELL
@@ -44,8 +50,8 @@ services:
     environment:
       POSTGRES_PASSWORD: postgres
     healthcheck:
-      interval: 10s
-      retries: 3
+      interval: 1s
+      retries: 30
       test:
         - CMD
         - pg_isready
@@ -84,8 +90,8 @@ services:
       MYSQL_PASSWORD: ibis
       MYSQL_USER: ibis
     healthcheck:
-      interval: 10s
-      retries: 3
+      interval: 1s
+      retries: 30
       test:
         - CMD
         - mysqladmin
@@ -105,8 +111,8 @@ services:
     build: ./docker/postgres
     image: ibis-postgres
     healthcheck:
-      interval: 10s
-      retries: 3
+      interval: 1s
+      retries: 30
       test:
         - CMD
         - pg_isready
@@ -121,8 +127,8 @@ services:
       MSSQL_SA_PASSWORD: 1bis_Testing!
       ACCEPT_EULA: "Y"
     healthcheck:
-      interval: 10s
-      retries: 3
+      interval: 1s
+      retries: 30
       test:
         - CMD-SHELL
         - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "IF DB_ID('ibis_testing') IS NULL BEGIN CREATE DATABASE [ibis_testing] END"
@@ -140,8 +146,8 @@ services:
       POSTGRES_DB: ibis_testing
       POSTGRES_USER: postgres
     healthcheck:
-      interval: 10s
-      retries: 3
+      interval: 1s
+      retries: 30
       test:
         - CMD
         - pg_isready
@@ -157,7 +163,7 @@ services:
       - trino-postgres
     healthcheck:
       interval: 5s
-      retries: 6
+      retries: 10
       test:
         - CMD-SHELL
         - trino --execute 'SELECT 1 AS one'
@@ -182,8 +188,8 @@ services:
       - POSTGRES_USER=druid
       - POSTGRES_DB=druid
     healthcheck:
-      interval: 10s
-      retries: 9
+      interval: 1s
+      retries: 30
       timeout: 90s
       test:
         - CMD-SHELL

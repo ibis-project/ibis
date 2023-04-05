@@ -348,6 +348,7 @@ operation_registry.update(
         ops.ArrayMap: _array_map,
         ops.ArrayFilter: _array_filter,
         ops.Argument: lambda _, op: sa.literal_column(op.name),
+        ops.Unnest: unary(sa.func.unnest),
     }
 )
 

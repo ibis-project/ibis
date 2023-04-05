@@ -96,7 +96,7 @@ def test_register_csv(con, data_directory, fname, in_table_name, out_table_name)
     with pushd(data_directory):
         table = con.register(fname, table_name=in_table_name)
 
-    assert any(t.startswith(out_table_name) for t in con.list_tables())
+    assert any(out_table_name in t for t in con.list_tables())
     if con.name != "datafusion":
         table.count().execute()
 
@@ -167,14 +167,16 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
 @pytest.mark.parametrize(
     ("fname", "in_table_name", "out_table_name"),
     [
-        pytest.param(
-            "parquet://functional_alltypes.parquet",
-            None,
-            "ibis_read_parquet",
+        param(
+            "parquet://functional_alltypes.parquet", None, "ibis_read_parquet", id="url"
         ),
-        ("functional_alltypes.parquet", "funk_all", "funk_all"),
-        pytest.param("parquet://functional_alltypes.parq", "funk_all", "funk_all"),
-        ("parquet://functional_alltypes", None, "ibis_read_parquet"),
+        param("functional_alltypes.parquet", "funk_all", "funk_all", id="basename"),
+        param(
+            "parquet://functional_alltypes.parq", "funk_all", "funk_all", id="url_parq"
+        ),
+        param(
+            "parquet://functional_alltypes", None, "ibis_read_parquet", id="url_no_ext"
+        ),
     ],
 )
 @pytest.mark.notyet(
@@ -205,7 +207,7 @@ def test_register_parquet(
     with pushd(tmp_path):
         table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
 
-    assert any(t.startswith(out_table_name) for t in con.list_tables())
+    assert any(out_table_name in t for t in con.list_tables())
 
     if con.name != "datafusion":
         table.count().execute()
@@ -246,7 +248,7 @@ def test_register_iterator_parquet(
             table_name=None,
         )
 
-    assert any(t.startswith("ibis_read_parquet") for t in con.list_tables())
+    assert any("ibis_read_parquet" in t for t in con.list_tables())
 
     assert table.count().execute()
 
@@ -432,7 +434,7 @@ def test_read_parquet(
             fname = str(Path(fname).absolute())
         table = con.read_parquet(fname, table_name=in_table_name)
 
-    assert any(t.startswith(out_table_name) for t in con.list_tables())
+    assert any(out_table_name in t for t in con.list_tables())
 
     if con.name != "datafusion":
         table.count().execute()
@@ -472,6 +474,6 @@ def test_read_csv(con, data_directory, fname, in_table_name, out_table_name):
             fname = str(Path(fname).absolute())
         table = con.read_csv(fname, table_name=in_table_name)
 
-    assert any(t.startswith(out_table_name) for t in con.list_tables())
+    assert any(out_table_name in t for t in con.list_tables())
     if con.name != "datafusion":
         table.count().execute()

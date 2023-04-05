@@ -270,7 +270,7 @@ class Backend(BaseAlchemyBackend):
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"DROP VIEW IF EXISTS {name}"
-        yield f"CREATE VIEW {name} AS {definition}"
+        yield f"CREATE TEMPORARY VIEW {name} AS {definition}"
 
     def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
         return super()._get_compiled_statement(

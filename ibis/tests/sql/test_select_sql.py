@@ -341,7 +341,7 @@ def test_subquery_in_union(alltypes, snapshot):
 
     expr = join1.union(join2)
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_limit_with_self_join(functional_alltypes, snapshot):

@@ -295,6 +295,7 @@ def pytest_collection_modifyitems(session, config, items):
             itertools.chain(
                 *(item.iter_markers(name=name) for name in all_backends),
                 item.iter_markers(name="backend"),
+                item.iter_markers(name="backend_nodata"),
             )
         ):
             # anything else is a "core" test and is run by default
@@ -302,21 +303,26 @@ def pytest_collection_modifyitems(session, config, items):
                 item.add_marker(pytest.mark.core)
 
         for _ in item.iter_markers(name="pyspark"):
-            additional_markers.append(
-                (
-                    item,
-                    pytest.mark.xfail(
-                        (
-                            sys.version_info >= (3, 11)
-                            and not isinstance(item, pytest.DoctestItem)
-                        ),
-                        reason="PySpark doesn't support Python 3.11",
-                    ),
+            if not isinstance(item, pytest.DoctestItem):
+                additional_markers.append(
+                    (
+                        item,
+                        [
+                            pytest.mark.xfail(
+                                sys.version_info >= (3, 11),
+                                reason="PySpark doesn't support Python 3.11",
+                            ),
+                            pytest.mark.xfail(
+                                vparse(pd.__version__) >= vparse("2"),
+                                reason="PySpark doesn't support pandas>=2",
+                            ),
+                        ],
+                    )
                 )
-            )
 
-    for item, marker in additional_markers:
-        item.add_marker(marker)
+    for item, markers in additional_markers:
+        for marker in markers:
+            item.add_marker(marker)
 
 
 @lru_cache(maxsize=None)
@@ -348,7 +354,7 @@ def pytest_runtest_call(item):
     backend = [
         backend.name()
         for key, backend in item.funcargs.items()
-        if key.endswith("backend")
+        if key.endswith(("backend", "backend_nodata"))
     ]
     if len(backend) > 1:
         raise ValueError(
@@ -373,7 +379,11 @@ def pytest_runtest_call(item):
         funcargs = item.funcargs
         con = funcargs.get(
             "con",
-            getattr(funcargs.get("backend"), "connection", None),
+            getattr(
+                funcargs.get("backend", funcargs.get("backend_nodata")),
+                "connection",
+                None,
+            ),
         )
 
         if con is None:
@@ -504,6 +514,20 @@ def backend(request, data_directory, script_directory, tmp_path_factory, worker_
 def con(backend):
     """Instance of a backend client."""
     return backend.connection
+
+
+@pytest.fixture(params=_get_backends_to_test(), scope='session')
+def backend_nodata(request, data_directory):
+    """Return an instance of BackendTest, loaded with data."""
+
+    cls = _get_backend_conf(request.param)
+    return cls(data_directory)
+
+
+@pytest.fixture(scope="session")
+def con_nodata(backend_nodata):
+    """Instance of a backend client."""
+    return backend_nodata.connection
 
 
 def _setup_backend(
@@ -667,11 +691,9 @@ def alchemy_temp_table(alchemy_con) -> str:
         Random table name for a temporary usage.
     """
     name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        with contextlib.suppress(NotImplementedError):
-            alchemy_con.drop_table(name, force=True)
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        alchemy_con.drop_table(name, force=True)
 
 
 @pytest.fixture
@@ -688,11 +710,9 @@ def temp_table(con) -> str:
         Random table name for a temporary usage.
     """
     name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        with contextlib.suppress(NotImplementedError):
-            con.drop_table(name, force=True)
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        con.drop_table(name, force=True)
 
 
 @pytest.fixture
@@ -709,11 +729,9 @@ def temp_view(ddl_con) -> str:
         Random view name for a temporary usage.
     """
     name = _random_identifier('view')
-    try:
-        yield name
-    finally:
-        with contextlib.suppress(NotImplementedError):
-            ddl_con.drop_view(name, force=True)
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        ddl_con.drop_view(name, force=True)
 
 
 @pytest.fixture(scope='session')
@@ -740,10 +758,8 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
         ddl_con.create_database(name)
     except NotImplementedError:
         pytest.skip(f"{ddl_backend.name()} doesn't have create_database method.")
-    try:
-        yield name
-    finally:
-        ddl_con.drop_database(name, force=True)
+    yield name
+    ddl_con.drop_database(name, force=True)
 
 
 @pytest.fixture

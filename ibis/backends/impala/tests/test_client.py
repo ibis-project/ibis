@@ -30,7 +30,7 @@ def test_cursor_garbage_collection(con):
 def test_raise_ibis_error_no_hdfs(con_no_hdfs):
     # GH299
     with pytest.raises(com.IbisError):
-        con_no_hdfs.hdfs
+        con_no_hdfs.hdfs  # noqa: B018
 
 
 def test_get_table_ref(db):

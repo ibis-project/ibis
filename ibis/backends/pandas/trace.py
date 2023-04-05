@@ -86,7 +86,7 @@ def enable():
     """Enable tracing."""
     if options.pandas is None:
         # pandas options haven't been registered yet - force module __getattr__
-        ibis.pandas
+        ibis.pandas  # noqa: B018
     options.pandas.enable_trace = True
     logging.getLogger('ibis.backends.pandas.trace').setLevel(logging.DEBUG)
 
@@ -130,7 +130,7 @@ def trace(func):
         # the pandas attribute here forces the option initialization
         import ibis
 
-        ibis.pandas
+        ibis.pandas  # noqa: B018
 
         if not options.pandas.enable_trace:
             return func(*args, **kwargs)

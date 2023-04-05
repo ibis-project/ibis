@@ -22,5 +22,6 @@ agg = alltypes.group_by([alltypes.a, alltypes.g]).aggregate(
 )
 selfreference = agg.view()
 proj = agg.inner_join(selfreference, agg.g == selfreference.g).select(agg)
+union = proj.union(proj.view())
 
-result = proj.union(proj.view())
+result = union.select([union.a, union.g, union.metric])

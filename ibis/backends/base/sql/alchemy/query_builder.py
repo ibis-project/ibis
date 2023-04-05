@@ -96,8 +96,11 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             result = ref_op.sqla_table
         elif isinstance(ref_op, ops.UnboundTable):
             # use SQLAlchemy's TableClause for unbound tables
-            result = sa.table(
-                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
+            result = sa.Table(
+                ref_op.name,
+                sa.MetaData(),
+                *translator._schema_to_sqlalchemy_columns(ref_op.schema),
+                quote=translator._quote_table_names,
             )
         elif isinstance(ref_op, ops.SQLQueryResult):
             columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
@@ -109,8 +112,11 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             # TODO(kszucs): avoid converting to expression
             child_expr = ref_op.child.to_expr()
             definition = child_expr.compile()
-            result = sa.table(
-                ref_op.name, *translator._schema_to_sqlalchemy_columns(ref_op.schema)
+            result = sa.Table(
+                ref_op.name,
+                sa.MetaData(),
+                *translator._schema_to_sqlalchemy_columns(ref_op.schema),
+                quote=translator._quote_table_names,
             )
             backend = child_expr._find_backend()
             backend._create_temp_view(view=result, definition=definition)
@@ -141,7 +147,12 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
     def _format_in_memory_table(self, op, ref_op, translator):
         columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
         if self.context.compiler.cheap_in_memory_tables:
-            result = sa.table(ref_op.name, *columns)
+            result = sa.Table(
+                ref_op.name,
+                sa.MetaData(),
+                *columns,
+                quote=translator._quote_table_names,
+            )
         elif self.context.compiler.support_values_syntax_in_select:
             rows = list(ref_op.data.to_frame().itertuples(index=False))
             result = sa.values(*columns, name=ref_op.name).data(rows)
@@ -330,30 +341,16 @@ class AlchemySelectBuilder(SelectBuilder):
 class AlchemySetOp(SetOp):
     def compile(self):
         context = self.context
-        selects = []
+        distincts = self.distincts
 
-        def call(distinct, *args):
-            return (
-                self.distinct_func(*args) if distinct else self.non_distinct_func(*args)
-            )
+        assert (
+            len(set(distincts)) == 1
+        ), "more than one distinct found; this shouldn't be possible because all unions are projected"
 
-        for table in self.tables:
-            table_set = context.get_compiled_expr(table)
-            selects.append(table_set.cte().select())
-
-        if len(set(self.distincts)) == 1:
-            # distinct is either all True or all False, handle with a single
-            # call. This generates much more concise SQL.
-            return call(self.distincts[0], *selects)
-        else:
-            # We need to iteratively apply the set operations to handle
-            # disparate `distinct` values. Subqueries _must_ be converted using
-            # `.subquery().select()` to get sqlalchemy to put parenthesis in
-            # the proper places.
-            result = selects[0]
-            for select, distinct in zip(selects[1:], self.distincts):
-                result = call(distinct, result.subquery().select(), select)
-            return result
+        func = self.distinct_func if distincts[0] else self.non_distinct_func
+        return func(
+            *(context.get_compiled_expr(table).cte().select() for table in self.tables)
+        )
 
 
 class AlchemyUnion(AlchemySetOp):

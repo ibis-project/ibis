@@ -137,7 +137,7 @@ def _timestamp(_, itype):
     return TIMESTAMP(precision=itype.scale, timezone=bool(itype.timezone))
 
 
-@compiles(TIMESTAMP, "trino")
+@compiles(TIMESTAMP)
 def compiles_timestamp(typ, compiler, **kw):
     result = "TIMESTAMP"
 
@@ -150,7 +150,7 @@ def compiles_timestamp(typ, compiler, **kw):
     return result
 
 
-@compiles(ROW, "trino")
+@compiles(ROW)
 def _compiles_row(element, compiler, **kw):
     # TODO: @compiles should live in the dialect
     quote = compiler.dialect.identifier_preparer.quote
@@ -168,7 +168,7 @@ def _map(dialect, itype):
     )
 
 
-@compiles(MAP, "trino")
+@compiles(MAP)
 def compiles_map(typ, compiler, **kw):
     # TODO: @compiles should live in the dialect
     key_type = compiler.process(typ.key_type, **kw)
@@ -191,7 +191,7 @@ def _real(*_):
     return sa.REAL()
 
 
-@compiles(DOUBLE, "trino")
+@compiles(DOUBLE)
 @compiles(sa.REAL, "trino")
 def _floating(element, compiler, **kw):
     return type(element).__name__.upper()

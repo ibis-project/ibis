@@ -157,7 +157,7 @@ def test_infer_exhaustive_dataframe(npartitions):
 def test_apply_to_schema_with_timezone(npartitions):
     data = {'time': pd.date_range('2018-01-01', '2018-01-02', freq='H')}
     df = dd.from_pandas(pd.DataFrame(data), npartitions=npartitions)
-    expected = df.assign(time=df.time.astype('datetime64[ns, EST]'))
+    expected = df.assign(time=df.time.dt.tz_localize("EST"))
     desired_schema = ibis.schema([('time', 'timestamp("EST")')])
     result = desired_schema.apply_to(df.copy())
     tm.assert_frame_equal(result.compute(), expected.compute())

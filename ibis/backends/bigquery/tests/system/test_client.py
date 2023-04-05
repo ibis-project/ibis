@@ -7,6 +7,7 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import pytz
+import toolz
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -73,15 +74,12 @@ def test_count_distinct_with_filter(alltypes):
     assert result == expected
 
 
-@pytest.mark.parametrize("type", ["date", dt.date])
-def test_cast_string_to_date(alltypes, df, type):
-    import toolz
-
+def test_cast_string_to_date(alltypes, df):
     string_col = alltypes.date_string_col
     month, day, year = toolz.take(3, string_col.split("/"))
 
     expr = "20" + ibis.literal("-").join([year, month, day])
-    expr = expr.cast(type)
+    expr = expr.cast("date")
 
     result = (
         expr.execute()
@@ -91,7 +89,7 @@ def test_cast_string_to_date(alltypes, df, type):
         .rename("date_string_col")
     )
     expected = (
-        pd.to_datetime(df.date_string_col)
+        pd.to_datetime(df.date_string_col, format="%m/%d/%y")
         .dt.normalize()
         .sort_values()
         .reset_index(drop=True)

@@ -1,13 +1,13 @@
 SELECT
-  t0.x IN (
+  t0."x" IN (
     SELECT
-      t1.x
+      t1."x"
     FROM (
       SELECT
-        t0.x AS x
-      FROM t AS t0
+        t0."x" AS "x"
+      FROM "t" AS t0
       WHERE
-        t0.x > 2
+        t0."x" > 2
     ) AS t1
   ) AS "Contains(x, x)"
-FROM t AS t0
+FROM "t" AS t0

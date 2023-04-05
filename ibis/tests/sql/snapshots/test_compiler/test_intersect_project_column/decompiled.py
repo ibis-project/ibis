@@ -33,5 +33,6 @@ intersection = (
         distinct=True,
     )
 )
+proj = intersection.select([intersection.key, intersection.value])
 
-result = intersection.select(intersection.key)
+result = proj.select(proj.key)

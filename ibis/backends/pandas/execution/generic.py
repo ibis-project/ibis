@@ -16,7 +16,6 @@ import numpy as np
 import pandas as pd
 import pytz
 import toolz
-from pandas.api.types import DatetimeTZDtype
 from pandas.core.groupby import DataFrameGroupBy, SeriesGroupBy
 
 import ibis.common.exceptions as com
@@ -152,14 +151,22 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
 
     tz = type.timezone
 
-    if from_type.is_timestamp() or from_type.is_date():
-        return data.astype('M8[ns]' if tz is None else DatetimeTZDtype('ns', tz))
+    if from_type.is_timestamp():
+        from_tz = from_type.timezone
+        if tz is None and from_tz is None:
+            return data
+        elif tz is None or from_tz is None:
+            return data.dt.tz_localize(tz)
+        elif tz is not None and from_tz is not None:
+            return data.dt.tz_convert(tz)
+    elif from_type.is_date():
+        return data if tz is None else data.dt.tz_localize(tz)
 
     if from_type.is_string() or from_type.is_integer():
         if from_type.is_integer():
             timestamps = pd.to_datetime(data.values, unit="s")
         else:
-            timestamps = pd.to_datetime(data.values, infer_datetime_format=True)
+            timestamps = pd.to_datetime(data.values)
         if getattr(timestamps.dtype, "tz", None) is not None:
             method_name = "tz_convert"
         else:
@@ -192,7 +199,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
     # TODO: remove String as subclass of JSON
     if from_type.is_string() and not from_type.is_json():
         values = data.values
-        datetimes = pd.to_datetime(values, infer_datetime_format=True)
+        datetimes = pd.to_datetime(values)
         with contextlib.suppress(TypeError):
             datetimes = datetimes.tz_convert(None)
         dates = _normalize(datetimes, data.index, data.name)

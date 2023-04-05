@@ -11,6 +11,8 @@ import warnings
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.backends.base.sql.registry.geospatial as geo
 import ibis.common.exceptions as com
@@ -488,6 +490,60 @@ def _arbitrary(t, op):
     return t._reduction(func, op)
 
 
+class struct_field(GenericFunction):
+    inherit_cache = True
+
+
+@compiles(struct_field)
+def compile_struct_field_postgresql(element, compiler, **kw):
+    arg, field = element.clauses
+    return f"({compiler.process(arg, **kw)}).{field.name}"
+
+
+def _struct_field(t, op):
+    arg = op.arg
+    idx = arg.output_dtype.names.index(op.field) + 1
+    field_name = sa.literal_column(f"f{idx:d}")
+    return struct_field(
+        t.translate(arg), field_name, type_=t.get_sqla_type(op.output_dtype)
+    )
+
+
+def _struct_column(t, op):
+    types = op.output_dtype.types
+    return sa.func.row(
+        # we have to cast here, otherwise postgres refuses to allow the statement
+        *map(t.translate, map(ops.Cast, op.values, types)),
+        type_=t.get_sqla_type(
+            dt.Struct({f"f{i:d}": typ for i, typ in enumerate(types, start=1)})
+        ),
+    )
+
+
+def _unnest(t, op):
+    arg = op.arg
+    row_type = arg.output_dtype.value_type
+
+    types = getattr(row_type, "types", (row_type,))
+
+    is_struct = row_type.is_struct()
+    derived = (
+        sa.func.unnest(t.translate(arg))
+        .table_valued(
+            *(
+                sa.column(f"f{i:d}", stype)
+                for i, stype in enumerate(map(t.get_sqla_type, types), start=1)
+            )
+        )
+        .render_derived(with_types=is_struct)
+    )
+
+    # wrap in a row column so that we can return a single column from this rule
+    if not is_struct:
+        return derived.c[0]
+    return sa.func.row(*derived.c)
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -594,7 +650,7 @@ operation_registry.update(
         ),
         ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
         ops.ArrayRepeat: _array_repeat,
-        ops.Unnest: unary(sa.func.unnest),
+        ops.Unnest: _unnest,
         ops.Covariance: _covar,
         ops.Correlation: _corr,
         ops.BitwiseXor: _bitwise_op("#"),
@@ -639,5 +695,7 @@ operation_registry.update(
         ops.RStrip: unary(lambda arg: sa.func.rtrim(arg, string.whitespace)),
         ops.StartsWith: fixed_arity(lambda arg, prefix: arg.op("^@")(prefix), 2),
         ops.Arbitrary: _arbitrary,
+        ops.StructColumn: _struct_column,
+        ops.StructField: _struct_field,
     }
 )

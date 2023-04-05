@@ -271,7 +271,7 @@ def execute_cast_scalar_timestamp(op, data, type, **kwargs):
 
 def cast_series_to_timestamp(data, tz):
     if pd.api.types.is_string_dtype(data):
-        timestamps = to_datetime(data, infer_datetime_format=True)
+        timestamps = to_datetime(data)
     else:
         timestamps = to_datetime(data, unit="s")
     if getattr(timestamps.dtype, "tz", None) is not None:
@@ -290,10 +290,17 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
     tz = type.timezone
     dtype = 'M8[ns]' if tz is None else DatetimeTZDtype('ns', tz)
 
-    if from_type.is_timestamp() or from_type.is_date():
-        return data.astype(dtype)
-
-    if from_type.is_string() or from_type.is_integer():
+    if from_type.is_timestamp():
+        from_tz = from_type.timezone
+        if tz is None and from_tz is None:
+            return data
+        elif tz is None or from_tz is None:
+            return data.dt.tz_localize(tz)
+        elif tz is not None and from_tz is not None:
+            return data.dt.tz_convert(tz)
+    elif from_type.is_date():
+        return data if tz is None else data.dt.tz_localize(tz)
+    elif from_type.is_string() or from_type.is_integer():
         return data.map_partitions(
             cast_series_to_timestamp,
             tz,
@@ -319,11 +326,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
 
     if from_type.equals(dt.string):
         # TODO - this is broken
-        datetimes = data.map_partitions(
-            to_datetime,
-            infer_datetime_format=True,
-            meta=(data.name, 'datetime64[ns]'),
-        )
+        datetimes = data.map_partitions(to_datetime, meta=(data.name, 'datetime64[ns]'))
 
         # TODO - we are getting rid of the index here
         return datetimes.dt.normalize()

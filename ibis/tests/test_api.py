@@ -32,7 +32,7 @@ def test_public_backend_methods():
 def test_missing_backend():
     msg = "module 'ibis' has no attribute 'foo'."
     with pytest.raises(AttributeError, match=msg):
-        ibis.foo
+        ibis.foo  # noqa: B018
 
 
 def test_multiple_backends(mocker):
@@ -60,7 +60,7 @@ def test_multiple_backends(mocker):
 
     msg = r"\d+ packages found for backend 'foo'"
     with pytest.raises(RuntimeError, match=msg):
-        ibis.foo
+        ibis.foo  # noqa: B018
 
 
 def test_no_import_pandas():

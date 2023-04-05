@@ -44,6 +44,20 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             Location of scripts defining schemas
         """
         fsspec = pytest.importorskip("fsspec")
+        fs = fsspec.filesystem("file")
+
+        data_files = {
+            data_file
+            for data_file in fs.find(data_dir)
+            # ignore sqlite databases and markdown files
+            if not data_file.endswith((".db", ".md"))
+            # ignore files in the test data .git directory
+            if (
+                # ignore .git
+                os.path.relpath(data_file, data_dir).split(os.sep, 1)[0]
+                != ".git"
+            )
+        }
 
         # without setting the pool size
         # connections are dropped from the urllib3
@@ -52,79 +66,58 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         URLLIB_DEFAULT_POOL_SIZE = 10
 
         env = IbisTestEnv()
-        con = ibis.impala.connect(
-            host=env.impala_host,
-            port=env.impala_port,
-            hdfs_client=fsspec.filesystem(
-                env.hdfs_protocol,
-                host=env.nn_host,
-                port=env.hdfs_port,
-                user=env.hdfs_user,
-            ),
-            pool_size=URLLIB_DEFAULT_POOL_SIZE,
-        )
-
-        try:
-            fs = fsspec.filesystem("file")
-
-            data_files = {
-                data_file
-                for data_file in fs.find(data_dir)
-                # ignore sqlite databases and markdown files
-                if not data_file.endswith((".db", ".md"))
-                # ignore files in the test data .git directory
-                if (
-                    # ignore .git
-                    os.path.relpath(data_file, data_dir).split(os.sep, 1)[0]
-                    != ".git"
-                )
+        with contextlib.closing(
+            ibis.impala.connect(
+                host=env.impala_host,
+                port=env.impala_port,
+                hdfs_client=fsspec.filesystem(
+                    env.hdfs_protocol,
+                    host=env.nn_host,
+                    port=env.hdfs_port,
+                    user=env.hdfs_user,
+                ),
+                pool_size=URLLIB_DEFAULT_POOL_SIZE,
+            )
+        ) as con, concurrent.futures.ThreadPoolExecutor(
+            max_workers=int(
+                os.environ.get("IBIS_DATA_MAX_WORKERS", URLLIB_DEFAULT_POOL_SIZE)
+            )
+        ) as executor:
+            hdfs = con.hdfs
+            tasks = {
+                # make the database
+                executor.submit(impala_create_test_database, con, env),
+                # build and upload UDFs
+                *itertools.starmap(
+                    executor.submit,
+                    impala_build_and_upload_udfs(hdfs, env, fs=fs),
+                ),
+                # upload data files
+                *(
+                    executor.submit(
+                        hdfs_make_dir_and_put_file,
+                        hdfs,
+                        data_file,
+                        os.path.join(
+                            env.test_data_dir,
+                            os.path.relpath(data_file, data_dir),
+                        ),
+                    )
+                    for data_file in data_files
+                ),
             }
 
-            hdfs = con.hdfs
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=int(
-                    os.environ.get(
-                        "IBIS_DATA_MAX_WORKERS",
-                        URLLIB_DEFAULT_POOL_SIZE,
-                    )
+            for future in concurrent.futures.as_completed(tasks):
+                future.result()
+
+            # create the tables and compute stats
+            for future in concurrent.futures.as_completed(
+                executor.submit(table_future.result().compute_stats)
+                for table_future in concurrent.futures.as_completed(
+                    impala_create_tables(con, env, executor=executor)
                 )
-            ) as executor:
-                tasks = {
-                    # make the database
-                    executor.submit(impala_create_test_database, con, env),
-                    # build and upload UDFs
-                    *itertools.starmap(
-                        executor.submit,
-                        impala_build_and_upload_udfs(hdfs, env, fs=fs),
-                    ),
-                    # upload data files
-                    *(
-                        executor.submit(
-                            hdfs_make_dir_and_put_file,
-                            hdfs,
-                            data_file,
-                            os.path.join(
-                                env.test_data_dir,
-                                os.path.relpath(data_file, data_dir),
-                            ),
-                        )
-                        for data_file in data_files
-                    ),
-                }
-
-                for future in concurrent.futures.as_completed(tasks):
-                    future.result()
-
-                # create the tables and compute stats
-                for future in concurrent.futures.as_completed(
-                    executor.submit(table_future.result().compute_stats)
-                    for table_future in concurrent.futures.as_completed(
-                        impala_create_tables(con, env, executor=executor)
-                    )
-                ):
-                    future.result()
-        finally:
-            con.close()
+            ):
+                future.result()
 
     @staticmethod
     def connect(

@@ -538,6 +538,6 @@ def normalize_filename(source: str | Path) -> str:
     return source
 
 
-def generate_unique_table_name(namespace: str) -> str:
-    """Creates case-insensitive uuid4 unique table name."""
+def gen_name(namespace: str) -> str:
+    """Create a case-insensitive uuid4 unique table name."""
     return f"_ibis_{namespace}_{np.base_repr(uuid.uuid4().int, 36)}".lower()

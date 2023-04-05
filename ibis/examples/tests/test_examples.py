@@ -34,13 +34,16 @@ ignored = frozenset(
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
     raises=OSError,
 )
-def test_examples(example):
+def test_examples(example, tmp_path):
     ex = getattr(ibis.examples, example)
 
     assert example in repr(ex)
 
-    t = ex.fetch()
-    df = t.limit(1).execute()
+    # initiate an new connection for every test case for isolation
+    con = ibis.duckdb.connect(extension_directory=str(tmp_path))
+    ibis.set_backend(con)
+
+    df = ex.fetch().limit(1).execute()
     assert len(df) == 1
 
 

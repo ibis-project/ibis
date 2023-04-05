@@ -573,6 +573,7 @@ def test_elementwise_udf_struct(udf_backend, udf_alltypes):
 
 @pytest.mark.parametrize('udf', demean_struct_udfs)
 @pytest.mark.notimpl(["pyspark"])
+@pytest.mark.broken(["dask"], strict=False)
 def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
     w = ibis.window(preceding=None, following=None, group_by='year')
 
@@ -609,6 +610,7 @@ def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
 
 
 @pytest.mark.notimpl(["pyspark"])
+@pytest.mark.xfail_version(dask=["pandas>=2"])
 def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
     w = ibis.window(preceding=None, following=None, group_by='year')
 

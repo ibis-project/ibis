@@ -63,11 +63,7 @@ def test_timestamp_functions(case_func, expected_func):
 def test_cast_datetime_strings_to_date(t, df, column):
     expr = t[column].cast('date')
     result = expr.execute()
-    expected = (
-        pd.to_datetime(df[column], infer_datetime_format=True)
-        .dt.normalize()
-        .dt.tz_localize(None)
-    )
+    expected = pd.to_datetime(df[column]).dt.normalize().dt.tz_localize(None)
     tm.assert_series_equal(result, expected)
 
 
@@ -78,7 +74,7 @@ def test_cast_datetime_strings_to_date(t, df, column):
 def test_cast_datetime_strings_to_timestamp(t, df, column):
     expr = t[column].cast('timestamp')
     result = expr.execute()
-    expected = pd.to_datetime(df[column], infer_datetime_format=True)
+    expected = pd.to_datetime(df[column])
     if getattr(expected.dtype, 'tz', None) is not None:
         expected = expected.dt.tz_convert(None)
     tm.assert_series_equal(result, expected)
@@ -122,10 +118,17 @@ def test_times_ops(t, df):
 
 
 @pytest.mark.parametrize(
-    ('tz', 'rconstruct'),
-    [('US/Eastern', np.zeros), ('UTC', np.ones), (None, np.ones)],
+    ('tz', 'rconstruct', 'column'),
+    [
+        ('US/Eastern', np.ones, 'plain_datetimes_utc'),
+        ('US/Eastern', np.zeros, 'plain_datetimes_naive'),
+        ('UTC', np.ones, 'plain_datetimes_utc'),
+        ('UTC', np.ones, 'plain_datetimes_naive'),
+        (None, np.ones, 'plain_datetimes_utc'),
+        (None, np.ones, 'plain_datetimes_naive'),
+    ],
+    ids=lambda x: str(getattr(x, "__name__", x)).lower().replace("/", "_"),
 )
-@pytest.mark.parametrize('column', ['plain_datetimes_utc', 'plain_datetimes_naive'])
 def test_times_ops_with_tz(t, df, tz, rconstruct, column):
     expected = pd.Series(rconstruct(len(df), dtype=bool))
     time = t[column].time()

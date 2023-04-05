@@ -103,6 +103,7 @@ def test_context_adjustment_filter_before_window(alltypes, context, ctx_col):
 
 
 @pytest.mark.notimpl(["duckdb", "pyspark"])
+@pytest.mark.xfail_version(dask=["pandas>=2"])
 def test_context_adjustment_multi_col_udf_non_grouped(
     alltypes,
     context,

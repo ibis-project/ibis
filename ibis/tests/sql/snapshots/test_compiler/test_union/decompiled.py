@@ -21,8 +21,7 @@ functional_alltypes = ibis.table(
 )
 lit = ibis.literal(0)
 alias = functional_alltypes.string_col.name("key")
-
-result = (
+union = (
     functional_alltypes.select(
         [alias, functional_alltypes.float_col.cast("float64").name("value")]
     )
@@ -34,3 +33,5 @@ result = (
         distinct=True,
     )
 )
+
+result = union.select([union.key, union.value])

@@ -829,9 +829,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t1.difference().equals(t1)
         True
         """
-        return functools.reduce(
+        t = functools.reduce(
             functools.partial(ops.Difference, distinct=distinct), tables, self.op()
         ).to_expr()
+        if t.equals(self):
+            return t
+        return t.select(self.columns)
 
     def aggregate(
         self,
@@ -853,6 +856,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         having
             Post-aggregation filters. The shape requirements are the same
             `metrics`, but the output type for `having` is `boolean`.
+
+            !!! warning "Expressions like `x is None` return `bool` and **will not** generate a SQL comparison to `NULL`"
         kwargs
             Named aggregate expressions
 
@@ -1340,9 +1345,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t1.union().equals(t1)
         True
         """
-        return functools.reduce(
+        t = functools.reduce(
             functools.partial(ops.Union, distinct=distinct), tables, self.op()
         ).to_expr()
+        if t.equals(self):
+            return t
+        return t.select(self.columns)
 
     def intersect(self, *tables: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
@@ -1424,9 +1432,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t1.intersect().equals(t1)
         True
         """
-        return functools.reduce(
+        t = functools.reduce(
             functools.partial(ops.Intersection, distinct=distinct), tables, self.op()
         ).to_expr()
+        if t.equals(self):
+            return t
+        return t.select(self.columns)
 
     def to_array(self) -> ir.Column:
         """View a single column table as an array.
@@ -2053,7 +2064,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         return ops.CountStar(self, where).to_expr().name("count")
 
     def dropna(
-        self, subset: Sequence[str] | None = None, how: Literal["any", "all"] = "any"
+        self,
+        subset: Sequence[str] | str | None = None,
+        how: Literal["any", "all"] = "any",
     ) -> Table:
         """Remove rows with null values from the table.
 
@@ -3102,21 +3115,24 @@ class Table(Expr, _FixedTextJupyterMixin):
         elif isinstance(values_transform, Deferred):
             values_transform = values_transform.resolve
 
-        names_map = {name: [] for name in names_to}
-        values = []
+        pieces = []
 
         for pivot_col in pivot_cols:
             col_name = pivot_col.get_name()
             match_result = names_pattern.match(col_name)
-            for name, value in zip(names_to, match_result.groups()):
-                transformer = names_transform[name]
-                names_map[name].append(transformer(value))
-            values.append(values_transform(pivot_col))
+            row = {
+                name: names_transform[name](value)
+                for name, value in zip(names_to, match_result.groups())
+            }
+            row[values_to] = values_transform(pivot_col)
+            pieces.append(ibis.struct(row))
 
-        new_cols = {key: ibis.array(value).unnest() for key, value in names_map.items()}
-        new_cols[values_to] = ibis.array(values).unnest()
+        # nest into an array of structs to zip unnests together
+        pieces = ibis.array(pieces)
 
-        return self.select(~pivot_sel, **new_cols)
+        return self.select(~pivot_sel, __pivoted__=pieces.unnest()).unpack(
+            "__pivoted__"
+        )
 
     @util.experimental
     def pivot_wider(

@@ -44,10 +44,18 @@ class AlchemyExprTranslator(ExprTranslator):
 
     _bool_aggs_need_cast_to_int32 = True
     _has_reduction_filter_syntax = False
+    _integer_to_timestamp = staticmethod(sa.func.to_timestamp)
+    _timestamp_type = sa.TIMESTAMP
 
-    integer_to_timestamp = sa.func.to_timestamp
+    def integer_to_timestamp(self, arg, tz: str | None = None):
+        return sa.cast(
+            self._integer_to_timestamp(arg),
+            self._timestamp_type(timezone=tz is not None),
+        )
+
     native_json_type = True
-    _always_quote_columns = None  # let the dialect decide how to quote
+    _quote_column_names = None  # let the dialect decide how to quote
+    _quote_table_names = None
 
     _require_order_by = (
         ops.DenseRank,
@@ -70,11 +78,14 @@ class AlchemyExprTranslator(ExprTranslator):
 
     def _schema_to_sqlalchemy_columns(self, schema):
         return [
-            sa.column(name, self.get_sqla_type(dtype)) for name, dtype in schema.items()
+            sa.Column(name, self.get_sqla_type(dtype), quote=self._quote_column_names)
+            for name, dtype in schema.items()
         ]
 
-    def name(self, translated, name, force=True):
-        return translated.label(name)
+    def name(self, translated, name, force=False):
+        return translated.label(
+            sa.sql.quoted_name(name, quote=force or self._quote_column_names)
+        )
 
     def get_sqla_type(self, data_type):
         return to_sqla_type(self.dialect, data_type)
