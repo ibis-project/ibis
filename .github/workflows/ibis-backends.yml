@@ -439,7 +439,7 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }} pandas-${{ matrix.pandas-version }} numpy-${{ matrix.numpy-version }}
+    name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }} pandas-${{ matrix.pandas-version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -451,18 +451,13 @@ jobs:
         pandas-version:
           - "1.5.*"
           - "2.*.*"
-        numpy-version:
-          - "1.23.*"
-          - "1.24.*"
         include:
           - os: ubuntu-latest
             python-version: "3.8"
             pandas-version: "1.5.*"
-            numpy-version: "1.23.*"
           - os: ubuntu-latest
             python-version: "3.11"
             pandas-version: "2.*.*"
-            numpy-version: "1.24.*"
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -488,7 +483,7 @@ jobs:
       - run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - name: install minimum versions
-        run: poetry add --lock 'pandas@${{ matrix.pandas-version }}' 'numpy@${{ matrix.numpy-version }}'
+        run: poetry add --lock 'pandas@${{ matrix.pandas-version }}' 'numpy@1.23.*'
 
       - name: checkout the lock file
         run: git checkout poetry.lock
@@ -509,7 +504,7 @@ jobs:
         if: success()
         uses: codecov/codecov-action@v3
         with:
-          flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }},pandas-${{ matrix.pandas-version }},numpy-${{ matrix.numpy-version }}
+          flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }},pandas-${{ matrix.pandas-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3

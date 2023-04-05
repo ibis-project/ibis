@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any, TextIO
 
 import _pytest
-import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
@@ -303,25 +302,26 @@ def pytest_collection_modifyitems(session, config, items):
                 item.add_marker(pytest.mark.core)
 
         for _ in item.iter_markers(name="pyspark"):
-            additional_markers.append(
-                (
-                    item,
-                    pytest.mark.xfail(
-                        (
-                            not isinstance(item, pytest.DoctestItem)
-                            and (
-                                sys.version_info >= (3, 11)
-                                or vparse(pd.__version__) >= vparse("2")
-                                or vparse(np.__version__) >= vparse("1.24")
-                            )
-                        ),
-                        reason="PySpark doesn't support Python 3.11",
-                    ),
+            if not isinstance(item, pytest.DoctestItem):
+                additional_markers.append(
+                    (
+                        item,
+                        [
+                            pytest.mark.xfail(
+                                sys.version_info >= (3, 11),
+                                reason="PySpark doesn't support Python 3.11",
+                            ),
+                            pytest.mark.xfail(
+                                vparse(pd.__version__) >= vparse("2"),
+                                reason="PySpark doesn't support pandas>=2",
+                            ),
+                        ],
+                    )
                 )
-            )
 
-    for item, marker in additional_markers:
-        item.add_marker(marker)
+    for item, markers in additional_markers:
+        for marker in markers:
+            item.add_marker(marker)
 
 
 @lru_cache(maxsize=None)
