@@ -916,7 +916,7 @@ def test_literal_na(con, dtype):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
+@pytest.mark.notimpl(["dask"], raises=com.UnboundExpressionError)
 def test_memtable_bool_column(backend, con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
@@ -925,7 +925,7 @@ def test_memtable_bool_column(backend, con, monkeypatch):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["dask", "pandas"], raises=com.UnboundExpressionError)
+@pytest.mark.notimpl(["dask"], raises=com.UnboundExpressionError)
 @pytest.mark.broken(
     ["druid"],
     raises=AssertionError,
