@@ -136,8 +136,6 @@ class Backend(BaseAlchemyBackend):
 
         super().do_connect(engine)
 
-        self._meta = sa.MetaData()
-
     def _load_extensions(self, extensions):
         extension_name = sa.column("extension_name")
         loaded = sa.column("loaded")
