@@ -79,7 +79,8 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
     )
     _require_order_by = (*AlchemyExprTranslator._require_order_by, ops.Reduction)
     _dialect_name = "snowflake"
-    _always_quote_columns = True
+    _quote_column_names = True
+    _quote_table_names = True
     supports_unnest_in_select = False
 
 
@@ -144,7 +145,6 @@ $$ {defn["source"]} $$"""
 class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
-    quote_table_names = True
 
     @property
     def _current_schema(self) -> str:
@@ -368,14 +368,15 @@ class Backend(BaseAlchemyBackend):
         return self._filter_with_like(databases, like)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        df = op.data.to_frame()
         with self.begin() as con:
             write_pandas(
                 conn=con.connection.connection,
-                df=op.data.to_frame(),
+                df=df,
                 table_name=op.name,
                 table_type="temp",
                 auto_create_table=True,
-                quote_identifiers=False,
+                quote_identifiers=True,
             )
 
     def _get_temp_view_definition(

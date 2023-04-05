@@ -54,7 +54,8 @@ class AlchemyExprTranslator(ExprTranslator):
         )
 
     native_json_type = True
-    _always_quote_columns = None  # let the dialect decide how to quote
+    _quote_column_names = None  # let the dialect decide how to quote
+    _quote_table_names = None
 
     _require_order_by = (
         ops.DenseRank,
@@ -77,11 +78,14 @@ class AlchemyExprTranslator(ExprTranslator):
 
     def _schema_to_sqlalchemy_columns(self, schema):
         return [
-            sa.column(name, self.get_sqla_type(dtype)) for name, dtype in schema.items()
+            sa.Column(name, self.get_sqla_type(dtype), quote=self._quote_column_names)
+            for name, dtype in schema.items()
         ]
 
-    def name(self, translated, name, force=True):
-        return translated.label(name)
+    def name(self, translated, name, force=False):
+        return translated.label(
+            sa.sql.quoted_name(name, quote=force or self._quote_column_names)
+        )
 
     def get_sqla_type(self, data_type):
         return to_sqla_type(self.dialect, data_type)
