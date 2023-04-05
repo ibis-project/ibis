@@ -1442,6 +1442,11 @@ def execute_zero_if_null_series(op, data, **kwargs):
     return data.replace({np.nan: zero, None: zero, pd.NA: zero})
 
 
+@execute_node.register(ops.InMemoryTable)
+def execute_in_memory_table(op, **kwargs):
+    return op.data.to_frame()
+
+
 @execute_node.register(
     ops.ZeroIfNull,
     (type(None), type(pd.NA), numbers.Real, np.integer, np.floating),
