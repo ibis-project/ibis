@@ -2064,7 +2064,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         return ops.CountStar(self, where).to_expr().name("count")
 
     def dropna(
-        self, subset: Sequence[str] | None = None, how: Literal["any", "all"] = "any"
+        self,
+        subset: Sequence[str] | str | None = None,
+        how: Literal["any", "all"] = "any",
     ) -> Table:
         """Remove rows with null values from the table.
 
