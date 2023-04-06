@@ -1052,20 +1052,21 @@ test = ["pandas[test]", "pre-commit", "pytest", "pytest-rerunfailures", "pytest-
 
 [[package]]
 name = "datafusion"
-version = "0.7.0"
+version = "21.0.0"
 description = "Build and run queries against data"
 category = "main"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-0.7.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:d717d965f3f632615694e2e0211ede41a6252f1715bb9ba9e656a9392a2b5eda"},
-    {file = "datafusion-0.7.0-cp37-abi3-manylinux_2_12_x86_64.manylinux2010_x86_64.whl", hash = "sha256:55f1ac40004d2e20ca903946c2f138e39ea71e08aedf7554958875e23b7895d3"},
-    {file = "datafusion-0.7.0-cp37-abi3-win_amd64.whl", hash = "sha256:5aa2a14bbcc3c40cc42b6c1da30c002a6baa52209fbfe14836a3e9d4a623ce20"},
-    {file = "datafusion-0.7.0.tar.gz", hash = "sha256:5d85d9328acfb3651eec4dfc0c049de2b9b1bd7d30971f00eac0a901b6148782"},
+    {file = "datafusion-21.0.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:3fb1caf9b40903929a85e5be99b33be2c79090201f6d422ed610d510d2e787d3"},
+    {file = "datafusion-21.0.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:bd624dee6dca57434e308c3bb8916f42faa28adb1d2a0c167e0bb6cac157dbbe"},
+    {file = "datafusion-21.0.0-cp37-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:d117256911b26e73b9e5792e433bc8ada4474088af71b9207f735b59ce3cd406"},
+    {file = "datafusion-21.0.0-cp37-abi3-win_amd64.whl", hash = "sha256:6cd7e4080a23ae04a10a09b273423a0c5210a403412b9ff0977643cdde5feca3"},
+    {file = "datafusion-21.0.0.tar.gz", hash = "sha256:e1fe9e7ba1377472fe64abaeaa49dc84cbc69d00ff11c03d136e9c92c434cf86"},
 ]
 
 [package.dependencies]
-pyarrow = ">=1"
+pyarrow = ">=6.0.1"
 
 [[package]]
 name = "db-dtypes"
@@ -5609,4 +5610,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "45c41fe5574bfd2626bbc86724734d36f3aa682e49d80f71022356e01ad1398f"
+content-hash = "588f161ea48a26195e9aa35fa604d0e4d1a1862585b107b403328470da9d54d5"
