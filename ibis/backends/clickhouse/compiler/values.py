@@ -291,6 +291,13 @@ def _string_find(op, **kw):
     return f"locate({arg}, {substr}) - 1"
 
 
+@translate_val.register(ops.RegexSearch)
+def _regex_search(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    pattern = translate_val(op.pattern, **kw)
+    return f"multiMatchAny({arg}, [{pattern}])"
+
+
 @translate_val.register(ops.RegexExtract)
 def _regex_extract(op, **kw):
     arg = translate_val(op.arg, **kw)
@@ -311,7 +318,7 @@ def _regex_extract(op, **kw):
     #     return the Nth match group
     # else
     #   return null
-    does_match = f"match({arg}, {pattern})"
+    does_match = f"multiMatchAny({arg}, [{pattern}])"
     idx = f"CAST(nullIf({index}, 0) AS Nullable(Int64))"
     then = f"if({idx} IS NULL, {arg}, {extracted}[{idx}])"
     return f"if({does_match}, {then}, NULL)"
@@ -1029,7 +1036,6 @@ _simple_ops = {
     ops.LStrip: "trimLeft",
     ops.RStrip: "trimRight",
     ops.Strip: "trimBoth",
-    ops.RegexSearch: "match",
     ops.RegexReplace: "replaceRegexpAll",
     ops.StringAscii: "ascii",
     # Temporal operations
