@@ -2329,6 +2329,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             aggs.append(agg)
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
+    @util.deprecated(
+        instead="use `table.mutate(name=expr)`", as_of="5.1", removed_in="6.0"
+    )
     def set_column(self, name: str, expr: ir.Value) -> Table:
         """Replace an existing column with a new expression.
 
