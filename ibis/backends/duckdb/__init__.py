@@ -120,8 +120,6 @@ class Backend(BaseAlchemyBackend):
             Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
-        config.setdefault("experimental_parallel_csv", 1)
-
         engine = sa.create_engine(
             f"duckdb:///{database}",
             connect_args=dict(read_only=read_only, config=config),
