@@ -157,11 +157,3 @@ jobs:
             git pull --rebase -s recursive -X ours
             git push
           fi
-
-      - name: react on success
-        uses: peter-evans/create-or-update-comment@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
-          comment-id: ${{ github.event.client_payload.github.payload.comment.id }}
-          reaction-type: hooray
