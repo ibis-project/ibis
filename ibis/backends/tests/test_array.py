@@ -164,9 +164,8 @@ builtin_array = toolz.compose(
         raises=com.OperationNotDefinedError,
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(
-        ["datafusion", "dask"], raises=(com.OperationNotDefinedError, KeyError)
-    ),
+    pytest.mark.notimpl(["dask"], raises=KeyError),
+    pytest.mark.notimpl(["datafusion"], raises=Exception),
     duckdb_0_4_0,
 )
 
