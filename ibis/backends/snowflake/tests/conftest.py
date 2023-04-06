@@ -73,11 +73,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
         script_dir
             Location of scripts defining schemas
         """
-        from ibis.backends.snowflake import _handle_pyarrow_warning
-
-        with _handle_pyarrow_warning(action="ignore"):
-            pytest.importorskip("snowflake.connector")
-            pytest.importorskip("snowflake.sqlalchemy")
+        pytest.importorskip("snowflake.connector")
+        pytest.importorskip("snowflake.sqlalchemy")
 
         snowflake_url = _get_url()
 

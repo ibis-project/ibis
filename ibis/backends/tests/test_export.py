@@ -327,8 +327,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "clickhouse",
         "datafusion",
         "impala",
-        "mssql",
-        "mysql",
         "oracle",
         "postgres",
         "pyspark",
@@ -339,8 +337,9 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     raises=AttributeError,
     reason="read_delta not yet implemented",
 )
-@pytest.mark.notyet(["pandas"], raises=PyDeltaTableError)
+@pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
 @pytest.mark.notyet(["dask"], raises=NotImplementedError)
+@pytest.mark.notyet(["mysql"], raises=pa.ArrowInvalid)
 @pytest.mark.notyet(
     ["druid"],
     raises=pa.lib.ArrowTypeError,

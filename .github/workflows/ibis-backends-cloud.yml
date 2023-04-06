@@ -23,33 +23,19 @@ env:
 
 jobs:
   test_backends:
-    name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-latest
         python-version:
+          - "3.8"
           - "3.11"
         backend:
           - name: bigquery
             title: BigQuery
-            randomly-seed: true
-
           - name: snowflake
             title: Snowflake
-            randomly-seed: false
-
-          - name: snowflake
-            key: snowflake_pyarrow
-            title: Snowflake + PyArrow
-            randomly-seed: false
-            deps:
-              - "snowflake-connector-python[pandas]"
-              - "--optional"
-              - "snowflake-sqlalchemy[pandas]"
-              - "--optional"
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -63,13 +49,9 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip 'poetry<1.4'
-
-      - name: modify deps
-        if: matrix.backend.deps != null
-        run: poetry add ${{ join(matrix.backend.deps, ' ') }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
@@ -99,7 +81,7 @@ jobs:
             echo "SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}"
             echo "SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}"
             echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}"
-            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}_${{ matrix.backend.key || matrix.backend.name }}"
+            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}"
             echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}"
           } >> "$GITHUB_ENV"
         env:
@@ -110,23 +92,18 @@ jobs:
           SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
 
-      - name: "run parallel tests: ${{ matrix.backend.name }}; reset random seed"
-        if: matrix.backend.randomly-seed
+      - name: "run parallel tests: ${{ matrix.backend.name }}"
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
-
-      - name: "run parallel tests: ${{ matrix.backend.name }}; don't reset random seed"
-        if: ${{ !matrix.backend.randomly-seed }}
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup --randomly-dont-reset-seed
 
       - name: upload code coverage
         if: success()
         uses: codecov/codecov-action@v3
         with:
-          flags: backend,${{ matrix.backend.key || matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+          flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
         if: success() || failure()
         with:
-          name: ${{ matrix.backend.key || matrix.backend.name }}-${{ matrix.os }}-${{ matrix.python-version }}
+          name: ${{ matrix.backend.name }}-${{ matrix.python-version }}
           path: junit.xml

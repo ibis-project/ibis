@@ -2,13 +2,15 @@ from __future__ import annotations
 
 import contextlib
 import itertools
-import json
 import os
 import tempfile
 import warnings
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
+import pyarrow as pa
 import sqlalchemy as sa
+from snowflake.connector.constants import FIELD_ID_TO_NAME
+from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -19,55 +21,17 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
-
-if TYPE_CHECKING:
-    import pandas as pd
-    import pyarrow as pa
-
-    import ibis.expr.schema as sch
-
-
-@contextlib.contextmanager
-def _handle_pyarrow_warning(*, action: str):
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            action,
-            message="You have an incompatible version of 'pyarrow' installed",
-            category=UserWarning,
-        )
-        yield
-
-
-with _handle_pyarrow_warning(action="error"):
-    try:
-        import pyarrow  # noqa: ICN001
-    except ImportError:
-        _NATIVE_ARROW = False
-    else:
-        try:
-            import snowflake.connector  # noqa: F401
-        except UserWarning:
-            _NATIVE_ARROW = False
-        else:
-            _NATIVE_ARROW = True
-
-
-with _handle_pyarrow_warning(action="ignore"):
-    from snowflake.connector.constants import (
-        FIELD_ID_TO_NAME,
-        PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT,
-    )
-    from snowflake.connector.converter import (
-        SnowflakeConverter as _BaseSnowflakeConverter,
-    )
-    from snowflake.sqlalchemy import ARRAY, OBJECT, URL
-
-from ibis.backends.snowflake.datatypes import (  # noqa: E402
+from ibis.backends.snowflake.datatypes import (
     dtype_from_snowflake,
     dtype_to_snowflake,
     parse,
 )
-from ibis.backends.snowflake.registry import operation_registry  # noqa: E402
+from ibis.backends.snowflake.registry import operation_registry
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+    import ibis.expr.schema as sch
 
 
 class SnowflakeExprTranslator(AlchemyExprTranslator):
@@ -92,13 +56,6 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
 class SnowflakeCompiler(AlchemyCompiler):
     cheap_in_memory_tables = True
     translator_class = SnowflakeExprTranslator
-
-
-class _SnowFlakeConverter(_BaseSnowflakeConverter):
-    def _VARIANT_to_python(self, _):
-        return json.loads
-
-    _ARRAY_to_python = _OBJECT_to_python = _VARIANT_to_python
 
 
 _SNOWFLAKE_MAP_UDFS = {
@@ -210,21 +167,16 @@ $$ {defn["source"]} $$"""
         self.database_name = dbparams["database"]
         if connect_args is None:
             connect_args = {}
-        connect_args.setdefault("converter_class", _SnowFlakeConverter)
         connect_args.setdefault(
             "session_parameters",
             {
-                PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT: "JSON",
+                "JSON_INDENT": "0",
+                "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT": "ARROW",
                 "STRICT_JSON_OUTPUT": "TRUE",
             },
         )
-        self._default_connector_format = connect_args["session_parameters"].setdefault(
-            PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT, "JSON"
-        )
         engine = sa.create_engine(
-            url,
-            connect_args=connect_args,
-            poolclass=sa.pool.StaticPool,
+            url, connect_args=connect_args, poolclass=sa.pool.StaticPool
         )
 
         @sa.event.listens_for(engine, "connect")
@@ -268,42 +220,32 @@ $$ {defn["source"]} $$"""
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **kwargs: Any,
+        **_: Any,
     ) -> pa.Table:
-        if not _NATIVE_ARROW:
-            return super().to_pyarrow(expr, params=params, limit=limit, **kwargs)
-
-        import pyarrow as pa
-
         self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         with self.begin() as con:
-            con.exec_driver_sql(
-                f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = 'ARROW'"
-            )
             res = con.execute(sql).cursor.fetch_arrow_all()
-            con.exec_driver_sql(
-                f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = {self._default_connector_format!r}"
-            )
 
         target_schema = expr.as_table().schema().to_pyarrow()
         if res is None:
             res = pa.Table.from_pylist([], schema=target_schema)
 
-        if not res.schema.equals(target_schema, check_metadata=False):
-            res = res.rename_columns(target_schema.names).cast(target_schema)
+        res = res.rename_columns(target_schema.names).cast(target_schema)
 
         if isinstance(expr, ir.Column):
-            return res[expr.get_name()]
+            return res[0]
         elif isinstance(expr, ir.Scalar):
-            return res[expr.get_name()][0]
-        return res
+            return res[0][0]
+        else:
+            return res
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
-        if _NATIVE_ARROW and self._default_connector_format == "ARROW":
-            return cursor.cursor.fetch_pandas_all()
-        return super().fetch_from_cursor(cursor, schema)
+        if (table := cursor.cursor.fetch_arrow_all()) is None:
+            table = pa.Table.from_pylist([], schema=schema.to_pyarrow())
+        df = table.to_pandas(timestamp_as_object=True)
+        return schema.apply_to(df)
 
     def to_pyarrow_batches(
         self,
@@ -311,16 +253,9 @@ $$ {defn["source"]} $$"""
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        chunk_size: int = 1000000,
-        **kwargs: Any,
+        chunk_size: int = 1_000_000,
+        **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        if not _NATIVE_ARROW:
-            return super().to_pyarrow_batches(
-                expr, params=params, limit=limit, chunk_size=chunk_size, **kwargs
-            )
-
-        import pyarrow as pa
-
         self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
@@ -328,20 +263,13 @@ $$ {defn["source"]} $$"""
         target_columns = target_schema.names
 
         def batch_producer(con):
-            with con.begin() as c:
-                c.exec_driver_sql(
-                    f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = 'ARROW'"
+            with con.begin() as c, contextlib.closing(c.execute(sql)) as cur:
+                yield from itertools.chain.from_iterable(
+                    t.rename_columns(target_columns)
+                    .cast(target_schema)
+                    .to_batches(max_chunksize=chunk_size)
+                    for t in cur.cursor.fetch_arrow_batches()
                 )
-                with contextlib.closing(c.execute(sql)) as cur:
-                    c.exec_driver_sql(
-                        f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = {self._default_connector_format!r}"
-                    )
-                    yield from itertools.chain.from_iterable(
-                        t.rename_columns(target_columns)
-                        .cast(target_schema)
-                        .to_batches(max_chunksize=chunk_size)
-                        for t in cur.cursor.fetch_arrow_batches()
-                    )
 
         return pa.RecordBatchReader.from_batches(
             target_schema, batch_producer(self.con)

@@ -131,7 +131,7 @@ def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
         (dt.Set(dt.String(nullable=True)), pa.list_(pa.string())),
         (
             dt.Set(dt.String(nullable=False)),
-            pa.list_(pa.field('value', pa.string(), nullable=False)),
+            pa.list_(pa.field("item", pa.string(), nullable=False)),
         ),
     ],
 )
