@@ -233,6 +233,27 @@ def _regex_extract(t, op):
     return sa.func.regexp_substr(arg, pattern, 1, 1, 'ce', index)
 
 
+def _map_get(t, op):
+    arg = op.arg
+    key = op.key
+    default = op.default
+    dtype = op.output_dtype
+    sqla_type = t.get_sqla_type(dtype)
+    expr = sa.func.coalesce(
+        sa.func.get(t.translate(arg), t.translate(key)),
+        sa.func.to_variant(t.translate(default)),
+        type_=sqla_type,
+    )
+    if dtype.is_json() or dtype.is_null():
+        return expr
+
+    # cast if ibis thinks the value type is not JSON
+    #
+    # this ensures that we can get deserialized map values even though maps are
+    # always JSON in the value type inside snowflake
+    return sa.cast(expr, sqla_type)
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -264,12 +285,7 @@ operation_registry.update(
                 sa.null(),
             )
         ),
-        ops.MapGet: fixed_arity(
-            lambda arg, key, default: sa.func.coalesce(
-                sa.func.get(arg, key), sa.func.to_variant(default)
-            ),
-            3,
-        ),
+        ops.MapGet: _map_get,
         ops.MapContains: fixed_arity(
             lambda arg, key: sa.func.array_contains(
                 sa.func.to_variant(key),

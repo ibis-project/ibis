@@ -36,9 +36,52 @@ env:
   FORCE_COLOR: "1"
 
 jobs:
+  gen_lockfile_backends:
+    name: Generate Poetry Lockfile for non-Snowflake Backends
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - "3.8"
+          - "3.11"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: install python
+        id: install_python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "${{ matrix.python-version }}"
+
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry<1.4'
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
+
+      - name: remove snowflake deps that are not compatible with everything else
+        run: poetry remove snowflake-sqlalchemy snowflake-connector-python
+
+      - name: update deps originally constrained by snowflake
+        run: poetry update numpy pandas pyarrow
+
+      - name: upload deps file
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-deps-${{ matrix.python-version }}
+          path: |
+            pyproject.toml
+            poetry.lock
+
   test_backends:
     name: ${{ matrix.backend.title }} ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
+    needs:
+      - gen_lockfile_backends
     env:
       SQLALCHEMY_WARN_20: "1"
     strategy:
@@ -281,17 +324,32 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: download poetry lockfile
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-deps-${{ matrix.python-version }}
+          path: deps
+
+      - name: pull out lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mv -f deps/* .
+          rm -r deps
+
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
@@ -423,7 +481,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - name: install minimum versions
         run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
@@ -510,7 +569,8 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - name: remove conflicting deps
         if: matrix.pandas.conflicts != null
@@ -682,14 +742,15 @@ jobs:
       - uses: syphar/restore-virtualenv@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-sqlalchemy2
+          custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
           requirement_files: poetry.lock
-          custom_cache_key_element: ${{ matrix.backend.name }}-sqlalchemy2-${{ steps.install_python.outputs.python-version }}
+          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"

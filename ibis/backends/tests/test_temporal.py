@@ -2439,7 +2439,7 @@ def test_large_timestamp(con):
             id="ns",
             marks=[
                 pytest.mark.broken(
-                    ["duckdb", "impala", "pyspark", "trino", "snowflake"],
+                    ["duckdb", "impala", "pyspark", "trino"],
                     reason="drivers appear to truncate nanos",
                     raises=AssertionError,
                 ),

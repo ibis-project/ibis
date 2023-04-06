@@ -24,7 +24,7 @@ class MapValue(Value):
     >>> ibis.options.interactive = True
     >>> import pyarrow as pa
     >>> tab = pa.table({
-    ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
+    ...    "m": pa.array([[("a", 1), ("b", 2)], [("a", 1)], None],
     ...                  type=pa.map_(pa.utf8(), pa.int64()))})
     >>> t = ibis.memtable(tab)
     >>> t
@@ -90,7 +90,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
+        ...    "m": pa.array([[("a", 1), ("b", 2)], [("a", 1)], None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -151,7 +151,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
+        ...    "m": pa.array([[("a", 1), ("b", 2)], [("a", 1)], None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -201,7 +201,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
+        ...    "m": pa.array([[("a", 1), ("b", 2)], [("a", 1)], None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -248,7 +248,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
+        ...    "m": pa.array([[("a", 1), ("b", 2)], [("a", 1)], None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -288,7 +288,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
+        ...    "m": pa.array([[("a", 1), ("b", 2)], [("a", 1)], None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
