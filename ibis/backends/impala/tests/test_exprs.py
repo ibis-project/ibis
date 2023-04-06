@@ -21,8 +21,7 @@ def test_embedded_identifier_quoting(alltypes):
 def test_summary_execute(alltypes):
     table = alltypes
 
-    # also test set_column while we're at it
-    table = table.set_column('double_col', table.double_col * 2)
+    table = table.mutate(double_col=table.double_col * 2)
 
     with pytest.warns(FutureWarning, match="is deprecated"):
         metrics = table.double_col.summary()

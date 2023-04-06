@@ -299,11 +299,11 @@ def test_mutate_alter_existing_columns(table):
     assert_equal(expr, expected)
 
 
-def test_replace_column(table):
+def test_replace_column():
     tb = api.table([('a', 'int32'), ('b', 'double'), ('c', 'string')])
 
     expr = tb.b.cast('int32')
-    tb2 = tb.set_column('b', expr)
+    tb2 = tb.mutate(b=expr)
     expected = tb[tb.a, expr.name('b'), tb.c]
 
     assert_equal(tb2, expected)
@@ -1465,8 +1465,10 @@ def test_set_column(table):
     def g(x):
         return x.f * 2
 
-    result = table.set_column('f', g)
-    expected = table.set_column('f', table.f * 2)
+    with pytest.warns(FutureWarning, match=r"5\.1"):
+        result = table.set_column('f', g)
+    with pytest.warns(FutureWarning, match=r"6\.0"):
+        expected = table.set_column('f', table.f * 2)
     assert_equal(result, expected)
 
 
