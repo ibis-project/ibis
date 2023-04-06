@@ -1,102 +1,86 @@
 WITH t0 AS (
   SELECT
-    t6.field_of_study AS field_of_study,
+    t7.field_of_study AS field_of_study,
     UNNEST(
       CAST(LIST_VALUE(
-        '1970-71',
-        '1975-76',
-        '1980-81',
-        '1985-86',
-        '1990-91',
-        '1995-96',
-        '2000-01',
-        '2005-06',
-        '2010-11',
-        '2011-12',
-        '2012-13',
-        '2013-14',
-        '2014-15',
-        '2015-16',
-        '2016-17',
-        '2017-18',
-        '2018-19',
-        '2019-20'
-      ) AS TEXT[])
-    ) AS years,
-    UNNEST(
-      CAST(LIST_VALUE(
-        t6."1970-71",
-        t6."1975-76",
-        t6."1980-81",
-        t6."1985-86",
-        t6."1990-91",
-        t6."1995-96",
-        t6."2000-01",
-        t6."2005-06",
-        t6."2010-11",
-        t6."2011-12",
-        t6."2012-13",
-        t6."2013-14",
-        t6."2014-15",
-        t6."2015-16",
-        t6."2016-17",
-        t6."2017-18",
-        t6."2018-19",
-        t6."2019-20"
-      ) AS BIGINT[])
-    ) AS degrees
-  FROM humanities AS t6
+        {'years': '1970-71', 'degrees': t7."1970-71"},
+        {'years': '1975-76', 'degrees': t7."1975-76"},
+        {'years': '1980-81', 'degrees': t7."1980-81"},
+        {'years': '1985-86', 'degrees': t7."1985-86"},
+        {'years': '1990-91', 'degrees': t7."1990-91"},
+        {'years': '1995-96', 'degrees': t7."1995-96"},
+        {'years': '2000-01', 'degrees': t7."2000-01"},
+        {'years': '2005-06', 'degrees': t7."2005-06"},
+        {'years': '2010-11', 'degrees': t7."2010-11"},
+        {'years': '2011-12', 'degrees': t7."2011-12"},
+        {'years': '2012-13', 'degrees': t7."2012-13"},
+        {'years': '2013-14', 'degrees': t7."2013-14"},
+        {'years': '2014-15', 'degrees': t7."2014-15"},
+        {'years': '2015-16', 'degrees': t7."2015-16"},
+        {'years': '2016-17', 'degrees': t7."2016-17"},
+        {'years': '2017-18', 'degrees': t7."2017-18"},
+        {'years': '2018-19', 'degrees': t7."2018-19"},
+        {'years': '2019-20', 'degrees': t7."2019-20"}
+      ) AS STRUCT(years TEXT, degrees BIGINT)[])
+    ) AS __pivoted__
+  FROM humanities AS t7
 ), t1 AS (
   SELECT
     t0.field_of_study AS field_of_study,
-    t0.years AS years,
-    t0.degrees AS degrees,
-    FIRST_VALUE(t0.degrees) OVER (PARTITION BY t0.field_of_study ORDER BY t0.years ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS earliest_degrees,
-    LAST_VALUE(t0.degrees) OVER (PARTITION BY t0.field_of_study ORDER BY t0.years ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS latest_degrees
+    STRUCT_EXTRACT(t0.__pivoted__, 'years') AS years,
+    STRUCT_EXTRACT(t0.__pivoted__, 'degrees') AS degrees
   FROM t0
 ), t2 AS (
   SELECT
     t1.field_of_study AS field_of_study,
     t1.years AS years,
     t1.degrees AS degrees,
-    t1.earliest_degrees AS earliest_degrees,
-    t1.latest_degrees AS latest_degrees,
-    t1.latest_degrees - t1.earliest_degrees AS diff
+    FIRST_VALUE(t1.degrees) OVER (PARTITION BY t1.field_of_study ORDER BY t1.years ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS earliest_degrees,
+    LAST_VALUE(t1.degrees) OVER (PARTITION BY t1.field_of_study ORDER BY t1.years ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS latest_degrees
   FROM t1
 ), t3 AS (
   SELECT
     t2.field_of_study AS field_of_study,
-    FIRST(t2.diff) AS diff
+    t2.years AS years,
+    t2.degrees AS degrees,
+    t2.earliest_degrees AS earliest_degrees,
+    t2.latest_degrees AS latest_degrees,
+    t2.latest_degrees - t2.earliest_degrees AS diff
   FROM t2
-  GROUP BY
-    1
-), anon_1 AS (
-  SELECT
-    t3.field_of_study AS field_of_study,
-    t3.diff AS diff
-  FROM t3
-  ORDER BY
-    t3.diff DESC
-  LIMIT 10
 ), t4 AS (
   SELECT
     t3.field_of_study AS field_of_study,
-    t3.diff AS diff
+    FIRST(t3.diff) AS diff
   FROM t3
-  WHERE
-    t3.diff < CAST(0 AS SMALLINT)
-), anon_2 AS (
+  GROUP BY
+    1
+), anon_1 AS (
   SELECT
     t4.field_of_study AS field_of_study,
     t4.diff AS diff
   FROM t4
   ORDER BY
-    t4.diff
+    t4.diff DESC
+  LIMIT 10
+), t5 AS (
+  SELECT
+    t4.field_of_study AS field_of_study,
+    t4.diff AS diff
+  FROM t4
+  WHERE
+    t4.diff < CAST(0 AS SMALLINT)
+), anon_2 AS (
+  SELECT
+    t5.field_of_study AS field_of_study,
+    t5.diff AS diff
+  FROM t5
+  ORDER BY
+    t5.diff
   LIMIT 10
 )
 SELECT
-  t5.field_of_study,
-  t5.diff
+  t6.field_of_study,
+  t6.diff
 FROM (
   SELECT
     anon_1.field_of_study AS field_of_study,
@@ -107,4 +91,4 @@ FROM (
     anon_2.field_of_study AS field_of_study,
     anon_2.diff AS diff
   FROM anon_2
-) AS t5
+) AS t6
