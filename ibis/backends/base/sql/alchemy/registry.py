@@ -154,7 +154,7 @@ def _exists_subquery(t, op):
     filtered = (
         op.foreign_table.to_expr()
         .filter([pred.to_expr() for pred in op.predicates])
-        .projection([ir.literal(1).name("")])
+        .select(ir.literal(1).name(""))
     )
 
     sub_ctx = ctx.subcontext()

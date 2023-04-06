@@ -310,7 +310,7 @@ class ImpalaTable(ir.Table):
             if partition is not None:
                 partition_schema = self.partition_schema()
                 partition_schema_names = frozenset(partition_schema.names)
-                expr = expr.projection(
+                expr = expr.select(
                     [
                         column
                         for column in expr.columns

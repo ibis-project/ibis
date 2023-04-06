@@ -209,7 +209,7 @@ def projection_fuse_filter():
     filtered = t[t.a > 0]
 
     expr2 = filtered[t.a, t.b, t.c]
-    expr3 = filtered.projection(['a', 'b', 'c'])
+    expr3 = filtered.select(['a', 'b', 'c'])
 
     return expr1, expr2, expr3
 

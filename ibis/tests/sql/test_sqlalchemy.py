@@ -392,7 +392,7 @@ def test_where_correlated_subquery_with_join(snapshot):
         partsupp.ps_supplycost,
     ]
     subq = partsupp.join(supplier, supplier.s_suppkey == partsupp.ps_suppkey)
-    subq = subq.projection([partsupp.ps_partkey, partsupp.ps_supplycost])
+    subq = subq.select(partsupp.ps_partkey, partsupp.ps_supplycost)
     subq = subq[subq.ps_partkey == q.p_partkey]
 
     expr = q[q.ps_supplycost == subq.ps_supplycost.min()]

@@ -186,7 +186,7 @@ def test_negate(con, alltypes, translate, column, operator):
 )
 def test_negate_non_boolean(alltypes, field, df):
     t = alltypes.limit(10)
-    expr = t.projection([(-t[field]).name(field)])
+    expr = t.select((-t[field]).name(field))
     result = expr.execute()[field]
     expected = -df.head(10)[field]
     tm.assert_series_equal(result, expected)

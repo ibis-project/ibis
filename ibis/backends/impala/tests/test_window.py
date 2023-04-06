@@ -59,7 +59,7 @@ def test_window_frame_specs(alltypes, window, snapshot):
     t = alltypes
 
     w2 = window.order_by(t.f)
-    expr = t.projection([t.d.sum().over(w2).name('foo')])
+    expr = t.select(foo=t.d.sum().over(w2))
     assert_sql_equal(expr, snapshot)
 
 
@@ -83,8 +83,8 @@ def test_cumulative_functions(alltypes, name, snapshot):
     expr = cumfunc().over(w).name("foo")
     expected = func().over(ibis.cumulative_window(order_by=t.d)).name("foo")
 
-    expr1 = t.projection(expr)
-    expr2 = t.projection(expected)
+    expr1 = t.select(expr)
+    expr2 = t.select(expected)
 
     assert_sql_equal(expr1, snapshot, "out1.sql")
     assert_sql_equal(expr2, snapshot, "out2.sql")
@@ -95,7 +95,7 @@ def test_nested_analytic_function(alltypes, snapshot):
 
     w = window(order_by=t.f)
     expr = (t.f - t.f.lag()).lag().over(w).name('foo')
-    result = t.projection([expr])
+    result = t.select(expr)
     assert_sql_equal(result, snapshot)
 
 
@@ -112,7 +112,7 @@ def test_multiple_windows(alltypes, snapshot):
     w = window(group_by=t.g)
 
     expr = t.f.sum().over(w) - t.f.sum()
-    proj = t.projection([t.g, expr.name('result')])
+    proj = t.select(t.g, result=expr)
 
     assert_sql_equal(proj, snapshot)
 
@@ -154,7 +154,7 @@ def test_unsupported_aggregate_functions(alltypes, column, op):
     t = alltypes
     w = ibis.window(order_by=t.d)
     expr = getattr(t[column], op)()
-    proj = t.projection([expr.over(w).name('foo')])
+    proj = t.select(foo=expr.over(w))
     with pytest.raises(com.TranslationError):
         ImpalaCompiler.to_sql(proj)
 
@@ -172,5 +172,5 @@ def test_propagate_nested_windows(alltypes, snapshot):
     ex_expr = (t.f - t.f.lag().over(w)).lag().over(w)
     assert_equal(result, ex_expr)
 
-    expr = t.projection(col.over(w).name('foo'))
+    expr = t.select(col.over(w).name('foo'))
     assert_sql_equal(expr, snapshot)

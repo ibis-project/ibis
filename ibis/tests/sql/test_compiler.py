@@ -174,7 +174,7 @@ def test_table_drop_consistency():
     # GH2829
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'timestamp')], name='t')
 
-    expected = t.projection(["a", "c"])
+    expected = t.select(["a", "c"])
     result = t.drop("b")
 
     assert expected.schema() == result.schema()

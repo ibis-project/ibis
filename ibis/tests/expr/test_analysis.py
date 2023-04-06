@@ -141,7 +141,7 @@ def test_filter_self_join():
 
     metric = (left.total - right.total).name('diff')
     what = [left.region, metric]
-    projected = joined.projection(what)
+    projected = joined.select(what)
 
     proj_exprs = projected.op().selections
 

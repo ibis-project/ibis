@@ -12,12 +12,10 @@ from dask.dataframe.utils import tm  # noqa: E402
 
 
 def test_array_length(t):
-    expr = t.projection(
-        [
-            t.array_of_float64.length().name('array_of_float64_length'),
-            t.array_of_int64.length().name('array_of_int64_length'),
-            t.array_of_strings.length().name('array_of_strings_length'),
-        ]
+    expr = t.select(
+        t.array_of_float64.length().name('array_of_float64_length'),
+        t.array_of_int64.length().name('array_of_int64_length'),
+        t.array_of_strings.length().name('array_of_strings_length'),
     )
     result = expr.compile()
     expected = dd.from_pandas(
@@ -173,7 +171,7 @@ def test_array_index_scalar(client, index):
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
 def test_array_repeat(t, df, n, mul):
-    expr = t.projection([mul(t.array_of_strings, n).name('repeated')])
+    expr = t.select(repeated=mul(t.array_of_strings, n))
     result = expr.execute()
     expected = pd.DataFrame({'repeated': df.array_of_strings * n})
     tm.assert_frame_equal(result, expected)

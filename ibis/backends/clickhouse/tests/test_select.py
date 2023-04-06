@@ -283,7 +283,7 @@ def test_filter_predicates(diamonds):
 
     expr = diamonds
     for pred in predicates:
-        expr = expr[pred(expr)].projection([expr])
+        expr = expr[pred(expr)].select(expr)
 
     expr.execute()
 

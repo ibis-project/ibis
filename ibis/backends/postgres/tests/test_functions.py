@@ -743,9 +743,7 @@ def test_simple_window(alltypes, func, df):
     t = alltypes
     f = getattr(t.double_col, func)
     df_f = getattr(df.double_col, func)
-    result = (
-        t.projection([(t.double_col - f()).name('double_col')]).execute().double_col
-    )
+    result = t.select((t.double_col - f()).name('double_col')).execute().double_col
     expected = df.double_col - df_f()
     tm.assert_series_equal(result, expected)
 
@@ -761,7 +759,7 @@ def test_rolling_window(alltypes, func, df):
     window = ibis.window(order_by=t.timestamp_col, preceding=6, following=0)
     f = getattr(t.double_col, func)
     df_f = getattr(df.double_col.rolling(7, min_periods=0), func)
-    result = t.projection([f().over(window).name('double_col')]).execute().double_col
+    result = t.select(f().over(window).name('double_col')).execute().double_col
     expected = df_f()
     tm.assert_series_equal(result, expected)
 
@@ -797,7 +795,7 @@ def test_partitioned_window(alltypes, func, df):
 
     f = getattr(t.double_col, func)
     expr = f().over(window).name('double_col')
-    result = t.projection([expr]).execute().double_col
+    result = t.select(expr).execute().double_col
     expected = df.groupby('string_col').apply(roller(func)).reset_index(drop=True)
     tm.assert_series_equal(result, expected)
 
@@ -807,7 +805,7 @@ def test_cumulative_simple_window(alltypes, func, df):
     t = alltypes
     f = getattr(t.double_col, func)
     col = t.double_col - f().over(ibis.cumulative_window())
-    expr = t.projection([col.name('double_col')])
+    expr = t.select(col.name('double_col'))
     result = expr.execute().double_col
     expected = df.double_col - getattr(df.double_col, 'cum%s' % func)()
     tm.assert_series_equal(result, expected)
@@ -819,7 +817,7 @@ def test_cumulative_partitioned_window(alltypes, func, df):
     df = df.sort_values('string_col').reset_index(drop=True)
     window = ibis.cumulative_window(group_by=t.string_col)
     f = getattr(t.double_col, func)
-    expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+    expr = t.select((t.double_col - f().over(window)).name('double_col'))
     result = expr.execute().double_col
     expected = df.groupby(df.string_col).double_col.transform(
         lambda c: c - getattr(c, 'cum%s' % func)()
@@ -833,7 +831,7 @@ def test_cumulative_ordered_window(alltypes, func, df):
     df = df.sort_values('timestamp_col').reset_index(drop=True)
     window = ibis.cumulative_window(order_by=t.timestamp_col)
     f = getattr(t.double_col, func)
-    expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+    expr = t.select((t.double_col - f().over(window)).name('double_col'))
     result = expr.execute().double_col
     expected = df.double_col - getattr(df.double_col, 'cum%s' % func)()
     tm.assert_series_equal(result, expected)
@@ -845,7 +843,7 @@ def test_cumulative_partitioned_ordered_window(alltypes, func, df):
     df = df.sort_values(['string_col', 'timestamp_col']).reset_index(drop=True)
     window = ibis.cumulative_window(order_by=t.timestamp_col, group_by=t.string_col)
     f = getattr(t.double_col, func)
-    expr = t.projection([(t.double_col - f().over(window)).name('double_col')])
+    expr = t.select((t.double_col - f().over(window)).name('double_col'))
     result = expr.execute().double_col
     method = operator.methodcaller(f'cum{func}')
     expected = df.groupby(df.string_col).double_col.transform(lambda c: c - method(c))
@@ -931,12 +929,10 @@ def array_types(con):
 
 
 def test_array_length(array_types):
-    expr = array_types.projection(
-        [
-            array_types.x.length().name('x_length'),
-            array_types.y.length().name('y_length'),
-            array_types.z.length().name('z_length'),
-        ]
+    expr = array_types.select(
+        array_types.x.length().name('x_length'),
+        array_types.y.length().name('y_length'),
+        array_types.z.length().name('z_length'),
     )
     result = expr.execute()
     expected = pd.DataFrame(
@@ -995,7 +991,7 @@ def test_array_index(array_types, index):
     ],
 )
 def test_array_repeat(array_types, n, mul):
-    expr = array_types.projection([mul(array_types.x, n).name('repeated')])
+    expr = array_types.select(mul(array_types.x, n).name('repeated'))
     result = expr.execute()
     expected = pd.DataFrame(
         {'repeated': array_types.x.execute().map(lambda x, n=n: mul(x, n))}
@@ -1013,9 +1009,9 @@ def test_array_repeat(array_types, n, mul):
 def test_array_concat(array_types, catop):
     t = array_types
     x, y = t.x.cast('array<string>').name('x'), t.y
-    expr = t.projection([catop(x, y).name('catted')])
+    expr = t.select(catop(x, y).name('catted'))
     result = expr.execute()
-    tuples = t.projection([x, y]).execute().itertuples(index=False)
+    tuples = t.select(x, y).execute().itertuples(index=False)
     expected = pd.DataFrame({'catted': [catop(i, j) for i, j in tuples]})
     tm.assert_frame_equal(result, expected)
 
@@ -1159,7 +1155,7 @@ def test_ntile(con):
 def test_not_and_negate_bool(con, opname, df):
     op = getattr(operator, opname)
     t = con.table('functional_alltypes').limit(10)
-    expr = t.projection([op(t.bool_col).name('bool_col')])
+    expr = t.select(op(t.bool_col).name('bool_col'))
     result = expr.execute().bool_col
     expected = op(df.head(10).bool_col)
     tm.assert_series_equal(result, expected)
@@ -1180,7 +1176,7 @@ def test_not_and_negate_bool(con, opname, df):
 )
 def test_negate_non_boolean(con, field, df):
     t = con.table('functional_alltypes').limit(10)
-    expr = t.projection([(-t[field]).name(field)])
+    expr = t.select((-t[field]).name(field))
     result = expr.execute()[field]
     expected = -df.head(10)[field]
     tm.assert_series_equal(result, expected)
@@ -1188,7 +1184,7 @@ def test_negate_non_boolean(con, field, df):
 
 def test_negate_boolean(con, df):
     t = con.table('functional_alltypes').limit(10)
-    expr = t.projection([(-t.bool_col).name('bool_col')])
+    expr = t.select((-t.bool_col).name('bool_col'))
     result = expr.execute().bool_col
     expected = -df.head(10).bool_col
     tm.assert_series_equal(result, expected)

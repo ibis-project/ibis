@@ -27,7 +27,7 @@ def limit_cte_extract(con):
     alltypes = con.table('functional_alltypes')
     t = alltypes.limit(100)
     t2 = t.view()
-    return t.join(t2).projection(t)
+    return t.join(t2).select(t)
 
 
 @pytest.mark.parametrize(
@@ -52,7 +52,7 @@ def test_nested_join_base(snapshot):
     t = ibis.table(dict(uuid='string', ts='timestamp'), name='t')
     counts = t.group_by('uuid').size()
     max_counts = counts.group_by('uuid').aggregate(max_count=lambda x: x['count'].max())
-    result = max_counts.left_join(counts, 'uuid').projection([counts])
+    result = max_counts.left_join(counts, 'uuid').select(counts)
     compiled_result = ImpalaCompiler.to_sql(result)
     snapshot.assert_match(compiled_result, "out.sql")
 
@@ -68,10 +68,10 @@ def test_nested_joins_single_cte(snapshot):
 
     main_kw = max_counts.left_join(
         counts, ['uuid', max_counts.max_count == counts['count']]
-    ).projection([counts])
+    ).select(counts)
 
-    result = main_kw.left_join(last_visit, 'uuid').projection(
-        [main_kw, last_visit.last_visit]
+    result = main_kw.left_join(last_visit, 'uuid').select(
+        main_kw, last_visit.last_visit
     )
     compiled_result = ImpalaCompiler.to_sql(result)
     snapshot.assert_match(compiled_result, "out.sql")
