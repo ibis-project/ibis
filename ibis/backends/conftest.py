@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any, TextIO
 
 import _pytest
+import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
@@ -285,6 +286,11 @@ def pytest_collection_modifyitems(session, config, items):
     all_backends = _get_backend_names()
     additional_markers = []
 
+    try:
+        import pyspark
+    except ImportError:
+        pyspark = None
+
     for item in items:
         parts = item.path.parts
         backend = _get_backend_from_parts(parts)
@@ -315,6 +321,12 @@ def pytest_collection_modifyitems(session, config, items):
                             pytest.mark.xfail(
                                 vparse(pd.__version__) >= vparse("2"),
                                 reason="PySpark doesn't support pandas>=2",
+                            ),
+                            pytest.mark.skipif(
+                                pyspark is not None
+                                and vparse(pyspark.__version__) < vparse("3.3.3")
+                                and vparse(np.__version__) >= vparse("1.24"),
+                                reason="PySpark doesn't support numpy >= 1.24",
                             ),
                         ],
                     )
