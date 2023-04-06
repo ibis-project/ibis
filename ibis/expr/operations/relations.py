@@ -659,7 +659,7 @@ def _dedup_join_columns(expr, suffixes: tuple[str, str]):
         for column in right.columns
         if column not in equal
     ]
-    return expr.projection(left_projections + right_projections)
+    return expr.select(left_projections + right_projections)
 
 
 public(ExistsSubquery=ExistsSubquery, NotExistsSubquery=NotExistsSubquery)

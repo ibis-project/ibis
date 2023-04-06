@@ -134,7 +134,7 @@ def test_array_concat_scalar(client, op):
 def test_array_repeat(client, n, mul):
     table = client.table('array_table')
 
-    expr = table.projection([mul(table.array_int, n).name('repeated')])
+    expr = table.select(mul(table.array_int, n).name('repeated'))
     result = expr.execute()
 
     df = table.compile().toPandas()

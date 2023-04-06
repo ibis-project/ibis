@@ -373,7 +373,7 @@ def test_filter_predicates(con):
 
     expr = t
     for pred in predicates:
-        expr = expr[pred(expr)].projection([expr])
+        expr = expr[pred(expr)].select(expr)
 
     expr.execute()
 
@@ -672,7 +672,7 @@ def test_identical_to(con, left, right, expected):
 
 def test_not(alltypes):
     t = alltypes.limit(10)
-    expr = t.projection([(~t.double_col.isnull()).name('double_col')])
+    expr = t.select(double_col=~t.double_col.isnull())
     result = expr.execute().double_col
     expected = ~t.execute().double_col.isnull()
     tm.assert_series_equal(result, expected)

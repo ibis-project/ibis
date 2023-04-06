@@ -423,7 +423,7 @@ def test_window_analysis_combine_group_by(alltypes):
     expr3 = grouped.mutate([diff.name('diff')])
 
     window_expr = (t.d - t.d.lag().over(w)).name('diff')
-    expected = t.projection([t, window_expr])
+    expected = t.select([t, window_expr])
 
     assert expr.equals(expected)
     assert expr.equals(expr2)

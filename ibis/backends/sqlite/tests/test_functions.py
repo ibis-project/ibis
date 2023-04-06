@@ -659,7 +659,7 @@ def test_truncate_from_connection(con, alltypes):
 
 def test_not(alltypes):
     t = alltypes.limit(10)
-    expr = t.projection([(~t.double_col.isnull()).name('double_col')])
+    expr = t.select([(~t.double_col.isnull()).name('double_col')])
     result = expr.execute().double_col
     expected = ~t.execute().double_col.isnull()
     tm.assert_series_equal(result, expected)

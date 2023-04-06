@@ -17,12 +17,10 @@ def test_array_literal(client, arr, create_arr_expr):
 
 
 def test_array_length(t):
-    expr = t.projection(
-        [
-            t.array_of_float64.length().name('array_of_float64_length'),
-            t.array_of_int64.length().name('array_of_int64_length'),
-            t.array_of_strings.length().name('array_of_strings_length'),
-        ]
+    expr = t.select(
+        t.array_of_float64.length().name('array_of_float64_length'),
+        t.array_of_int64.length().name('array_of_int64_length'),
+        t.array_of_strings.length().name('array_of_strings_length'),
     )
     result = expr.execute()
     expected = pd.DataFrame(

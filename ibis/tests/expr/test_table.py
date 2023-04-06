@@ -146,7 +146,7 @@ def test_projection(table):
 def test_projection_no_list(table):
     expr = (table.f * 2).name('bar')
     result = table.select(expr)
-    expected = table.projection([expr])
+    expected = table.select([expr])
     assert_equal(result, expected)
 
 
@@ -162,7 +162,7 @@ def test_projection_with_exprs(table):
     assert schema.types == (dt.double, dt.double, dt.string)
 
     # Test with unnamed expr
-    proj = table.projection(['g', table['a'] - table['c']])
+    proj = table.select(['g', table['a'] - table['c']])
     schema = proj.schema()
     assert schema.names == ('g', 'Subtract(a, c)')
     assert schema.types == (dt.string, dt.int64)
@@ -170,7 +170,7 @@ def test_projection_with_exprs(table):
 
 def test_projection_duplicate_names(table):
     with pytest.raises(com.IntegrityError):
-        table.projection([table.c, table.c])
+        table.select([table.c, table.c])
 
 
 def test_projection_invalid_root(table):
@@ -181,7 +181,7 @@ def test_projection_invalid_root(table):
 
     exprs = [right['foo'], right['bar']]
     with pytest.raises(RelationError):
-        left.projection(exprs)
+        left.select(exprs)
 
 
 def test_projection_with_star_expr(table):
@@ -224,7 +224,7 @@ def test_projection_mutate_analysis_bug(con):
 
 def test_projection_self(table):
     result = table[table]
-    expected = table.projection(table)
+    expected = table.select(table)
 
     assert_equal(result, expected)
 
@@ -950,7 +950,7 @@ def test_join_combo_with_projection(table):
 
     # this works
     joined = t.left_join(t2, [t['g'] == t2['g']])
-    proj = joined.projection([t, t2['foo'], t2['bar']])
+    proj = joined.select([t, t2['foo'], t2['bar']])
     repr(proj)
 
 
@@ -962,7 +962,7 @@ def test_join_getitem_projection(con):
     joined = region.inner_join(nation, pred)
 
     result = joined[nation]
-    expected = joined.projection(nation)
+    expected = joined.select(nation)
     assert_equal(result, expected)
 
 
@@ -1037,10 +1037,10 @@ def test_join_project_after(table):
     pred = table1['key1'] == table2['key2']
 
     joined = table1.left_join(table2, [pred])
-    projected = joined.projection([table1, table2['stuff']])
+    projected = joined.select([table1, table2['stuff']])
     assert projected.schema().names == ('key1', 'value1', 'stuff')
 
-    projected = joined.projection([table2, table1['key1']])
+    projected = joined.select([table2, table1['key1']])
     assert projected.schema().names == ('key2', 'stuff', 'key1')
 
 
@@ -1250,7 +1250,7 @@ def test_column_ref_on_projection_rename(con):
         nation.n_name.name('nation'),
         region.r_name.name('region'),
     ]
-    joined = joined.projection(proj_exprs)
+    joined = joined.select(proj_exprs)
 
     metrics = [joined.c_acctbal.sum().name('metric')]
 
@@ -1415,9 +1415,9 @@ def test_projection2(table):
     def f(x):
         return (x.foo * 2).name('bar')
 
-    result = m.projection([f, 'f'])
+    result = m.select([f, 'f'])
     result2 = m[f, 'f']
-    expected = m.projection([f(m), 'f'])
+    expected = m.select([f(m), 'f'])
     assert_equal(result, expected)
     assert_equal(result2, expected)
 
@@ -1453,10 +1453,8 @@ def test_groupby_projection(table):
     t = table
 
     g = t.group_by('g').order_by('f')
-    expr = g.projection(
-        [lambda x: x.f.lag().name('foo'), lambda x: x.f.rank().name('bar')]
-    )
-    expected = g.projection([t.f.lag().name('foo'), t.f.rank().name('bar')])
+    expr = g.select([lambda x: x.f.lag().name('foo'), lambda x: x.f.rank().name('bar')])
+    expected = g.select([t.f.lag().name('foo'), t.f.rank().name('bar')])
 
     assert_equal(expr, expected)
 
@@ -1489,7 +1487,7 @@ def test_pickle_projection_node(table):
     def f(x):
         return (x.foo * 2).name('bar')
 
-    node = m.projection([f, 'f']).op()
+    node = m.select([f, 'f']).op()
 
     assert_pickle_roundtrip(node)
 

@@ -88,7 +88,7 @@ def test_multiple_joins(star1, star2, star3, snapshot):
     expr = (
         t1.left_join(t2, [predA])
         .inner_join(t3, [predB])
-        .projection([t1, t2['value1'], t3['value2']])
+        .select([t1, t2['value1'], t3['value2']])
     )
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
@@ -114,7 +114,7 @@ def test_join_between_joins(snapshot):
     # At one point, the expression simplification was resulting in bad refs
     # here (right.value3 referencing the table inside the right join)
     exprs = [left, right.value3, right.value4]
-    expr = joined.projection(exprs)
+    expr = joined.select(exprs)
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
@@ -237,11 +237,11 @@ def test_fuse_projections(snapshot):
 
     f2 = (table2['foo'] * 2).name('qux')
 
-    table3 = table2.projection([table2, f2])
+    table3 = table2.select([table2, f2])
     snapshot.assert_match(to_sql(table3), "project.sql")
 
     # fusion works even if there's a filter
-    table3_filtered = table2_filtered.projection([table2, f2])
+    table3_filtered = table2_filtered.select([table2, f2])
     snapshot.assert_match(to_sql(table3_filtered), "project_filter.sql")
     assert_decompile_roundtrip(table3_filtered, snapshot, check_equality=False)
 
@@ -278,7 +278,7 @@ def test_bug_project_multiple_times(customer, nation, region, snapshot):
     proj_exprs = [step1.c_name, step1.r_name, step1.n_name]
     step2 = step1.semi_join(step1.n_name.topk(10, by=topk_by), "n_name")
 
-    expr = step2.projection(proj_exprs)
+    expr = step2.select(proj_exprs)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -571,7 +571,7 @@ def test_filter_predicates(snapshot):
     expr = table
     for pred in predicates:
         filtered = expr.filter(pred(expr))
-        projected = filtered.projection([expr])
+        projected = filtered.select([expr])
         expr = projected
 
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -599,13 +599,13 @@ def test_where_with_join(star1, star2, snapshot):
     # This also tests some cases of predicate pushdown
     e1 = (
         t1.inner_join(t2, [t1.foo_id == t2.foo_id])
-        .projection([t1, t2.value1, t2.value3])
+        .select([t1, t2.value1, t2.value3])
         .filter([t1.f > 0, t2.value3 < 1000])
     )
 
     # e2 = (t1.inner_join(t2, [t1.foo_id == t2.foo_id])
     #       .filter([t1.f > 0, t2.value3 < 1000])
-    #       .projection([t1, t2.value1, t2.value3]))
+    #       .select([t1, t2.value1, t2.value3]))
 
     # return e1, e2
 
@@ -777,7 +777,7 @@ def test_limit_cte_extract(con, snapshot):
     alltypes = con.table('functional_alltypes')
     t = alltypes.limit(100)
     t2 = t.view()
-    expr = t.join(t2).projection(t)
+    expr = t.join(t2).select(t)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 

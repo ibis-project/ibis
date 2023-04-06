@@ -150,7 +150,7 @@ def table_column(translator, op):
     # context, we should format as a subquery
     if translator.permit_subquery and ctx.is_foreign_expr(op.table):
         # TODO(kszucs): avoid the expression roundtrip
-        proj_expr = op.table.to_expr().projection([op.name]).to_array().op()
+        proj_expr = op.table.to_expr().select([op.name]).to_array().op()
         return table_array_view(translator, proj_expr)
 
     alias = ctx.get_ref(op.table, search_parents=True)
@@ -168,7 +168,7 @@ def exists_subquery(translator, op):
     filtered = op.foreign_table.to_expr().filter(
         [pred.to_expr() for pred in op.predicates]
     )
-    node = filtered.projection([dummy]).op()
+    node = filtered.select(dummy).op()
 
     subquery = ctx.get_compiled_expr(node)
 

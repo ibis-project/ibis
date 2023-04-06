@@ -68,7 +68,7 @@ class ScalarAggregate:
         for other in self.tables[1:]:
             table = table.cross_join(other)
 
-        return table.projection([subbed_expr])
+        return table.select(subbed_expr)
 
     def _visit(self, expr):
         assert isinstance(expr, ir.Expr), type(expr)

@@ -84,7 +84,7 @@ class GroupedTable:
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
-        return self.projection(list(args))
+        return self.select(*args)
 
     def __getattr__(self, attr):
         if hasattr(self.table, attr):
