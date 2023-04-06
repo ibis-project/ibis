@@ -498,7 +498,7 @@ jobs:
         run: poetry install --without dev --without docs --extras pyspark
 
       - name: run tests
-        run: just ci-check -m pyspark --numprocesses auto --dist=loadgroup
+        run: just ci-check -m pyspark
 
       - name: upload code coverage
         if: success()
