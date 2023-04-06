@@ -199,7 +199,7 @@ def test_semi_join_topk(batting, awards_players):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "druid", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion", "druid"])
 @pytest.mark.broken(
     ["duckdb"],
     raises=exc.IbisTypeError,
@@ -214,7 +214,7 @@ def test_join_with_pandas(batting, awards_players):
     assert df.yearID.nunique() == 7
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas"])
+@pytest.mark.notimpl(["dask", "datafusion"])
 def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900][

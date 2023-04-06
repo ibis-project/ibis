@@ -151,7 +151,7 @@ def test_to_pyarrow_batches_borked_types(batting):
     assert len(batch) == 42
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pyspark"])
 def test_to_pyarrow_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     table = con.to_pyarrow(expr)
@@ -159,7 +159,7 @@ def test_to_pyarrow_memtable(con):
     assert len(table) == 3
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pandas", "pyspark"])
+@pytest.mark.notimpl(["dask", "datafusion", "impala", "pyspark"])
 def test_to_pyarrow_batches_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     n = 0

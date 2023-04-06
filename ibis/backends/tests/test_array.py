@@ -473,11 +473,8 @@ def test_array_slice(con, start, stop):
 )
 @pytest.mark.notimpl(
     ["dask", "pandas"],
-    raises=com.UnboundExpressionError,
-    reason=(
-        "Node of type 'InMemoryTable' has no data bound to it. "
-        "You probably tried to execute an expression without a data source."
-    ),
+    raises=com.OperationNotDefinedError,
+    reason="Operation 'ArrayMap' is not implemented for this backend",
 )
 @pytest.mark.notimpl(
     ["sqlite", "mysql"],
@@ -508,11 +505,8 @@ def test_array_map(backend, con):
 )
 @pytest.mark.notimpl(
     ["dask", "pandas"],
-    raises=com.UnboundExpressionError,
-    reason=(
-        "Node of type 'InMemoryTable' has no data bound to it. "
-        "You probably tried to execute an expression without a data source."
-    ),
+    raises=com.OperationNotDefinedError,
+    reason="Operation 'ArrayMap' is not implemented for this backend'",
 )
 @pytest.mark.notimpl(
     ["sqlite", "mysql"],
