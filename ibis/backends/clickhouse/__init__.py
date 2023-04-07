@@ -403,7 +403,8 @@ class Backend(BaseBackend):
             Table expression
         """
         schema = self.get_schema(name, database=database)
-        return ClickhouseTable(ops.DatabaseTable(name, schema, self))
+        qname = self._fully_qualified_name(name, database)
+        return ClickhouseTable(ops.DatabaseTable(qname, schema, self))
 
     def raw_sql(
         self,
@@ -446,7 +447,9 @@ class Backend(BaseBackend):
         self.con.close()
 
     def _fully_qualified_name(self, name, database):
-        return sg.table(name, db=database or self.current_database).sql()
+        return sg.table(name, db=database or self.current_database or None).sql(
+            dialect="clickhouse"
+        )
 
     def get_schema(
         self,
@@ -507,13 +510,13 @@ class Backend(BaseBackend):
         self.raw_sql(f"DROP DATABASE {'IF EXISTS ' * force}{name}")
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
-        ident = ".".join(filter(None, (database, name)))
+        ident = self._fully_qualified_name(name, database)
         self.raw_sql(f"DELETE FROM {ident}")
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        ident = ".".join(filter(None, (database, name)))
+        ident = self._fully_qualified_name(name, database)
         self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")
 
     def create_table(
@@ -526,29 +529,66 @@ class Backend(BaseBackend):
         temp: bool = False,
         overwrite: bool = False,
         # backend specific arguments
-        engine: str | None,
+        engine: str,
         order_by: Iterable[str] | None = None,
         partition_by: Iterable[str] | None = None,
         sample_by: str | None = None,
         settings: Mapping[str, Any] | None = None,
     ) -> ir.Table:
+        """Create a table in a ClickHouse database.
+
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            Optional data to create the table with
+        schema
+            Optional names and types of the table
+        database
+            Database to create the table in
+        temp
+            Create a temporary table. This is not yet supported, and exists for
+            API compatibility.
+        overwrite
+            Whether to overwrite the table
+        engine
+            The table engine to use. See [ClickHouse's `CREATE TABLE` documentation](https://clickhouse.com/docs/en/sql-reference/statements/create/table)
+            for specifics.
+        order_by
+            String column names to order by. Required for some table engines like `MergeTree`.
+        partition_by
+            String column names to partition by
+        sample_by
+            String column names to sample by
+        settings
+            Key-value pairs of settings for table creation
+
+        Returns
+        -------
+        Table
+            The new table
+        """
+        if temp:
+            raise com.IbisError("ClickHouse temporary tables are not yet supported")
+
         tmp = "TEMPORARY " * temp
         replace = "OR REPLACE " * overwrite
-        code = f"CREATE {replace}{tmp}TABLE {name}"
+        code = (
+            f"CREATE {replace}{tmp}TABLE {self._fully_qualified_name(name, database)}"
+        )
 
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
 
         if schema is not None:
-            code += f" ({schema})"
+            serialized_schema = ", ".join(
+                f"`{name}` {serialize(typ)}" for name, typ in schema.items()
+            )
+            code += f" ({serialized_schema})"
 
-        if isinstance(obj, pd.DataFrame):
+        if obj is not None and not isinstance(obj, ir.Expr):
             obj = ibis.memtable(obj, schema=schema)
-
-        if obj is not None:
-            self._register_in_memory_tables(obj)
-            query = self.compile(obj)
-            code += f" AS {query}"
 
         code += f" ENGINE = {engine}"
 
@@ -564,6 +604,11 @@ class Backend(BaseBackend):
         if settings:
             kvs = ", ".join(f"{name}={value!r}" for name, value in settings.items())
             code += f" SETTINGS {kvs}"
+
+        if obj is not None:
+            self._register_in_memory_tables(obj)
+            query = self.compile(obj)
+            code += f" AS {query}"
 
         self.raw_sql(code)
         return self.table(name, database=database)

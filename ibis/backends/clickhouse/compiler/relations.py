@@ -26,7 +26,7 @@ def _dummy(op: ops.DummyTable, **kw):
 
 @translate_rel.register(ops.PhysicalTable)
 def _physical_table(op: ops.PhysicalTable, **_):
-    return sg.table(op.name)
+    return sg.parse_one(op.name, into=sg.exp.Table)
 
 
 @translate_rel.register(ops.Selection)
