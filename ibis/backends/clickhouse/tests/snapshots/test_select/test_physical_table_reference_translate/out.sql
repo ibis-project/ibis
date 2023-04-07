@@ -1,3 +1,3 @@
 SELECT
   *
-FROM functional_alltypes
+FROM ibis_testing.functional_alltypes

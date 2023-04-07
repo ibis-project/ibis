@@ -5,4 +5,4 @@ SELECT
   toHour(t0.timestamp_col) AS hour,
   toMinute(t0.timestamp_col) AS minute,
   toSecond(t0.timestamp_col) AS second
-FROM functional_alltypes AS t0
+FROM ibis_testing.functional_alltypes AS t0

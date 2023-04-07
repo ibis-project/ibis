@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -13,6 +14,8 @@ from ibis.backends.clickhouse.tests.conftest import (
     CLICKHOUSE_USER,
     IBIS_TEST_CLICKHOUSE_DB,
 )
+from ibis.common.exceptions import IbisError
+from ibis.util import gen_name
 
 pytest.importorskip("clickhouse_driver")
 
@@ -204,3 +207,56 @@ def test_list_tables_empty_database(con, worker_id):
         assert not con.list_tables(database=dbname)
     finally:
         con.raw_sql(f"DROP DATABASE IF EXISTS {dbname}")
+
+
+@pytest.mark.parametrize(
+    "temp",
+    [
+        param(
+            True,
+            marks=pytest.mark.xfail(
+                reason="Ibis is likely making incorrect assumptions about object lifetime and cursors",
+                raises=IbisError,
+            ),
+        ),
+        False,
+    ],
+    ids=["temp", "no_temp"],
+)
+def test_create_table_no_data(con, temp):
+    name = gen_name("clickhouse_create_table_no_data")
+    schema = ibis.schema(dict(a="!int", b="string"))
+    t = con.create_table(
+        name, schema=schema, temp=temp, engine="Memory", database="tmptables"
+    )
+    try:
+        assert t.execute().empty
+    finally:
+        con.drop_table(name, force=True, database="tmptables")
+    assert name not in con.list_tables(database="tmptables")
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        {"a": [1, 2, 3], "b": [None, "b", "c"]},
+        pd.DataFrame({"a": [1, 2, 3], "b": [None, "b", "c"]}),
+    ],
+    ids=["dict", "dataframe"],
+)
+@pytest.mark.parametrize(
+    "engine",
+    ["File(Native)", "File(Parquet)", "Memory"],
+    ids=["native", "mem", "parquet"],
+)
+def test_create_table_data(con, data, engine):
+    name = gen_name("clickhouse_create_table_data")
+    schema = ibis.schema(dict(a="!int", b="string"))
+    t = con.create_table(
+        name, obj=data, schema=schema, engine=engine, database="tmptables"
+    )
+    try:
+        assert len(t.execute()) == 3
+    finally:
+        con.drop_table(name, force=True, database="tmptables")
+    assert name not in con.list_tables(database="tmptables")
