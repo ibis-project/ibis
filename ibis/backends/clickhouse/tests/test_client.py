@@ -1,6 +1,7 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from clickhouse_driver.dbapi import OperationalError
 from pytest import param
 
 import ibis
@@ -257,6 +258,32 @@ def test_create_table_data(con, data, engine):
     )
     try:
         assert len(t.execute()) == 3
+    finally:
+        con.drop_table(name, force=True, database="tmptables")
+    assert name not in con.list_tables(database="tmptables")
+
+
+@pytest.mark.parametrize(
+    "engine",
+    [
+        "File(Native)",
+        param(
+            "File(Parquet)",
+            marks=pytest.mark.xfail(
+                reason="Parquet file size is 0 bytes", raises=OperationalError
+            ),
+        ),
+        "Memory",
+    ],
+    ids=["native", "mem", "parquet"],
+)
+def test_truncate_table(con, engine):
+    name = gen_name("clickhouse_create_table_data")
+    t = con.create_table(name, obj={"a": [1]}, engine=engine, database="tmptables")
+    try:
+        assert len(t.execute()) == 1
+        con.truncate_table(name, database="tmptables")
+        assert len(t.execute()) == 0
     finally:
         con.drop_table(name, force=True, database="tmptables")
     assert name not in con.list_tables(database="tmptables")

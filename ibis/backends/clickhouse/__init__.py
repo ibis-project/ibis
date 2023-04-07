@@ -511,7 +511,7 @@ class Backend(BaseBackend):
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
         ident = self._fully_qualified_name(name, database)
-        self.raw_sql(f"DELETE FROM {ident}")
+        self.raw_sql(f"TRUNCATE TABLE {ident}")
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
