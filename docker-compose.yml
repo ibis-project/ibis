@@ -72,6 +72,13 @@ services:
       - 8051:8051
     networks:
       - impala
+    healthcheck:
+      interval: 5s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - kudu cluster ksck kudu:7051
+      timeout: 10s
   kudu-tserver:
     cap_add:
       - SYS_TIME
@@ -83,6 +90,13 @@ services:
       - 8050:8050
     networks:
       - impala
+    healthcheck:
+      interval: 5s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - kudu cluster ksck kudu:7051
+      timeout: 10s
   mysql:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
