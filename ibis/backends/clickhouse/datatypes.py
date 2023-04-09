@@ -217,6 +217,11 @@ def _(ty: dt.DataType) -> str:
     return type(ty).__name__.capitalize()
 
 
+@serialize_raw.register(dt.Binary)
+def _(_: dt.Binary) -> str:
+    return "BLOB"
+
+
 @serialize_raw.register(dt.Boolean)
 def _(_: dt.Boolean) -> str:
     return _bool_type()
@@ -249,7 +254,7 @@ def _(ty: dt.Timestamp) -> str:
         scale = 3
 
     if (timezone := ty.timezone) is not None:
-        return f"DateTime64({scale:d}, {timezone})"
+        return f"DateTime64({scale:d}, {timezone!r})"
     return f"DateTime64({scale:d})"
 
 

@@ -485,7 +485,7 @@ def test_unsigned_integer_type(alchemy_con, alchemy_temp_table):
     "url",
     [
         param(
-            "clickhouse://default@localhost:9000/ibis_testing",
+            "clickhouse://default@localhost:8123/ibis_testing",
             marks=mark.clickhouse,
             id="clickhouse",
         ),
@@ -999,7 +999,7 @@ def test_set_backend_name(name, monkeypatch):
     "url",
     [
         param(
-            "clickhouse://default@localhost:9000/ibis_testing",
+            "clickhouse://default@localhost:8123/ibis_testing",
             marks=mark.clickhouse,
             id="clickhouse",
         ),

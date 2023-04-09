@@ -17,7 +17,7 @@ from ibis.backends.tests.base import (
 )
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
-CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 9000))
+CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 8123))
 CLICKHOUSE_USER = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
 CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
 IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
@@ -33,7 +33,7 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
 
     @property
     def native_bool(self) -> bool:
-        [(value,)] = self.connection._client.execute("SELECT true")
+        [(value,)] = self.connection.con.query("SELECT true").result_set
         return isinstance(value, bool)
 
     @classmethod
@@ -64,26 +64,29 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
-        clickhouse_driver = pytest.importorskip("clickhouse_driver")
+        cc = pytest.importorskip("clickhouse_connect")
 
-        client = clickhouse_driver.Client(
-            host=host, port=port, user=user, password=password
+        client = cc.get_client(
+            host=host,
+            port=port,
+            user=user,
+            password=password,
+            settings={
+                "allow_experimental_object_type": 1,
+                "output_format_json_named_tuples_as_objects": 1,
+            },
         )
 
-        with contextlib.suppress(clickhouse_driver.errors.ServerException):
-            client.execute(f"CREATE DATABASE {database} ENGINE = Atomic")
-
-        client.execute(f"USE {database}")
-        client.execute("SET allow_experimental_object_type = 1")
-        client.execute("SET output_format_json_named_tuples_as_objects = 1")
+        with contextlib.suppress(cc.driver.exceptions.DatabaseError):
+            client.command(f"CREATE DATABASE {database} ENGINE = Atomic")
 
         with open(script_dir / 'schema' / 'clickhouse.sql') as schema:
             for stmt in filter(None, map(str.strip, schema.read().split(";"))):
-                client.execute(stmt)
+                client.command(stmt)
 
     @staticmethod
     def connect(data_directory: Path):
-        pytest.importorskip("clickhouse_driver")
+        pytest.importorskip("clickhouse_connect")
         return ibis.clickhouse.connect(
             host=CLICKHOUSE_HOST,
             port=CLICKHOUSE_PORT,

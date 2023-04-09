@@ -1,7 +1,6 @@
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from clickhouse_driver.dbapi import OperationalError
 from pytest import param
 
 import ibis
@@ -11,7 +10,7 @@ from ibis import config
 from ibis.common.exceptions import IbisError
 from ibis.util import gen_name
 
-pytest.importorskip("clickhouse_driver")
+cc = pytest.importorskip("clickhouse_connect")
 
 
 def test_run_sql(con):
@@ -138,7 +137,7 @@ def test_insert_with_less_columns(temporary_alltypes, df):
     records = df.loc[:10, ['string_col']].copy()
     records['date_col'] = None
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(cc.driver.exceptions.ProgrammingError):
         temporary.insert(records)
 
 
@@ -147,7 +146,7 @@ def test_insert_with_more_columns(temporary_alltypes, df):
     records = df[:10].copy()
     records['non_existing_column'] = 'raise on me'
 
-    with pytest.raises(AssertionError):
+    with pytest.raises(cc.driver.exceptions.ProgrammingError):
         temporary.insert(records)
 
 
@@ -241,7 +240,8 @@ def test_create_table_data(con, data, engine, temp_table):
         param(
             "File(Parquet)",
             marks=pytest.mark.xfail(
-                reason="Parquet file size is 0 bytes", raises=OperationalError
+                reason="Parquet file size is 0 bytes",
+                raises=cc.driver.exceptions.DatabaseError,
             ),
         ),
         "Memory",

@@ -38,16 +38,7 @@ def mean_udf(s):
 
 
 aggregate_test_params = [
-    param(
-        lambda t: t.double_col.mean(),
-        lambda t: t.double_col.mean(),
-        id='mean',
-        marks=mark.broken(
-            ["druid"],
-            reason="sqlalchemy dialect returns incorrect type",
-            raises=AssertionError,
-        ),
-    ),
+    param(lambda t: t.double_col.mean(), lambda t: t.double_col.mean(), id='mean'),
     param(
         lambda t: mean_udf(t.double_col),
         lambda t: t.double_col.mean(),
@@ -77,26 +68,8 @@ aggregate_test_params = [
             ),
         ],
     ),
-    param(
-        lambda t: t.double_col.min(),
-        lambda t: t.double_col.min(),
-        id='min',
-        marks=mark.broken(
-            ["druid"],
-            reason="sqlalchemy dialect returns incorrect type",
-            raises=AssertionError,
-        ),
-    ),
-    param(
-        lambda t: t.double_col.max(),
-        lambda t: t.double_col.max(),
-        id='max',
-        marks=mark.broken(
-            ["druid"],
-            reason="sqlalchemy dialect returns incorrect type",
-            raises=AssertionError,
-        ),
-    ),
+    param(lambda t: t.double_col.min(), lambda t: t.double_col.min(), id='min'),
+    param(lambda t: t.double_col.max(), lambda t: t.double_col.max(), id='max'),
     param(
         # int_col % 3 so there are no ties for most common value
         lambda t: (t.int_col % 3).mode(),
@@ -122,11 +95,6 @@ aggregate_test_params = [
         lambda t: (t.double_col + 5).sum(),
         lambda t: (t.double_col + 5).sum(),
         id='complex_sum',
-        marks=mark.broken(
-            ["druid"],
-            reason="sqlalchemy dialect returns incorrect type",
-            raises=AssertionError,
-        ),
     ),
     param(
         lambda t: t.timestamp_col.max(),
@@ -1002,7 +970,7 @@ def test_quantile(
                 ),
                 pytest.mark.notyet(
                     ["clickhouse"],
-                    raises=ValueError,
+                    raises=(ValueError, AttributeError),
                     reason="ClickHouse only implements `sample` correlation coefficient",
                 ),
                 pytest.mark.notyet(

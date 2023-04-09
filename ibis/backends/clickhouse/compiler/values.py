@@ -427,8 +427,10 @@ def _interval_from_integer(op, **kw):
 def _literal(op, **kw):
     value = op.value
     dtype = op.output_dtype
-    if value is None and op.output_dtype.nullable:
-        return _null_literal(op)
+    if value is None and dtype.nullable:
+        if dtype.is_null():
+            return "Null"
+        return f"CAST(Null AS {serialize(dtype)})"
     if dtype.is_boolean():
         return str(int(bool(value)))
     elif dtype.is_inet():

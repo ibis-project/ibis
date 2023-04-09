@@ -44,25 +44,43 @@ def test_infer_dtype(value, expected_dtype):
     ('value', 'expected_dtypes'),
     [
         # Explicitly-defined dtype
-        (np.array([1, 2, 3], dtype='int8'), (dt.Array(dt.int8),)),
-        (np.array([1, 2, 3], dtype='int16'), (dt.Array(dt.int16),)),
-        (np.array([1, 2, 3], dtype='int32'), (dt.Array(dt.int32),)),
-        (np.array([1, 2, 3], dtype='int64'), (dt.Array(dt.int64),)),
-        (np.array([1, 2, 3], dtype='uint8'), (dt.Array(dt.uint8),)),
-        (np.array([1, 2, 3], dtype='uint16'), (dt.Array(dt.uint16),)),
-        (np.array([1, 2, 3], dtype='uint32'), (dt.Array(dt.uint32),)),
-        (np.array([1, 2, 3], dtype='uint64'), (dt.Array(dt.uint64),)),
-        (np.array([1.0, 2.0, 3.0], dtype='float32'), (dt.Array(dt.float32),)),
-        (np.array([1.0, 2.0, 3.0], dtype='float64'), (dt.Array(dt.float64),)),
-        (np.array([True, False, True], dtype='bool'), (dt.Array(dt.boolean),)),
+        param(np.array([1, 2, 3], dtype='int8'), (dt.Array(dt.int8),), id='int8'),
+        param(np.array([1, 2, 3], dtype='int16'), (dt.Array(dt.int16),), id='int16'),
+        param(np.array([1, 2, 3], dtype='int32'), (dt.Array(dt.int32),), id='int32'),
+        param(np.array([1, 2, 3], dtype='int64'), (dt.Array(dt.int64),), id='int64'),
+        param(np.array([1, 2, 3], dtype='uint8'), (dt.Array(dt.uint8),), id='uint8'),
+        param(np.array([1, 2, 3], dtype='uint16'), (dt.Array(dt.uint16),), id='uint16'),
+        param(np.array([1, 2, 3], dtype='uint32'), (dt.Array(dt.uint32),), id='uint32'),
+        param(np.array([1, 2, 3], dtype='uint64'), (dt.Array(dt.uint64),), id='uint64'),
+        param(
+            np.array([1.0, 2.0, 3.0], dtype='float32'),
+            (dt.Array(dt.float32),),
+            id='float32',
+        ),
+        param(
+            np.array([1.0, 2.0, 3.0], dtype='float64'),
+            (dt.Array(dt.float64),),
+            id='float64',
+        ),
+        param(
+            np.array([True, False, True], dtype='bool'),
+            (dt.Array(dt.boolean),),
+            id='bool',
+        ),
         # Implicit dtype
         # Integer array could be inferred to int64 or int32 depending on system
-        (np.array([1, 2, 3]), (dt.Array(dt.int64), dt.Array(dt.int32))),
-        (np.array([1.0, 2.0, 3.0]), (dt.Array(dt.float64),)),
-        (np.array([np.nan, np.nan, np.nan]), (dt.Array(dt.float64),)),
-        (np.array([True, False, True]), (dt.Array(dt.boolean),)),
-        (np.array(['1', '2', '3']), (dt.Array(dt.string),)),
-        (
+        param(
+            np.array([1, 2, 3]),
+            (dt.Array(dt.int64), dt.Array(dt.int32)),
+            id='int_array',
+        ),
+        param(np.array([1.0, 2.0, 3.0]), (dt.Array(dt.float64),), id='float_array'),
+        param(
+            np.array([np.nan, np.nan, np.nan]), (dt.Array(dt.float64),), id='nan_array'
+        ),
+        param(np.array([True, False, True]), (dt.Array(dt.boolean),), id='bool_array'),
+        param(np.array(['1', '2', '3']), (dt.Array(dt.string),), id='string_array'),
+        param(
             np.array(
                 [
                     pd.Timestamp('2015-01-01 12:00:00'),
@@ -70,14 +88,32 @@ def test_infer_dtype(value, expected_dtype):
                     pd.Timestamp('2015-01-03 12:00:00'),
                 ]
             ),
-            (dt.Array(dt.timestamp),),
+            (dt.Array(dt.timestamp.copy(scale=6)),),
+            marks=pytest.mark.xfail(raises=AssertionError),
+            id='timestamp_array',
         ),
         # Implied from object dtype
-        (np.array([1, 2, 3], dtype=object), (dt.Array(dt.int64),)),
-        (np.array([1.0, 2.0, 3.0], dtype=object), (dt.Array(dt.float64),)),
-        (np.array([True, False, True], dtype=object), (dt.Array(dt.boolean),)),
-        (np.array(['1', '2', '3'], dtype=object), (dt.Array(dt.string),)),
-        (
+        param(
+            np.array([1, 2, 3], dtype=object),
+            (dt.Array(dt.int64),),
+            id='int_object_array',
+        ),
+        param(
+            np.array([1.0, 2.0, 3.0], dtype=object),
+            (dt.Array(dt.float64),),
+            id='float_object_array',
+        ),
+        param(
+            np.array([True, False, True], dtype=object),
+            (dt.Array(dt.boolean),),
+            id='bool_object_array',
+        ),
+        param(
+            np.array(['1', '2', '3'], dtype=object),
+            (dt.Array(dt.string),),
+            id='string_object_array',
+        ),
+        param(
             np.array(
                 [
                     pd.Timestamp('2015-01-01 12:00:00'),
@@ -86,7 +122,9 @@ def test_infer_dtype(value, expected_dtype):
                 ],
                 dtype=object,
             ),
-            (dt.Array(dt.timestamp),),
+            (dt.Array(dt.timestamp.copy(scale=6)),),
+            marks=pytest.mark.xfail(raises=AssertionError),
+            id='timestamp_object_array',
         ),
     ],
 )

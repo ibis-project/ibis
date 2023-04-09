@@ -3,13 +3,14 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:23.4.2.11-alpine
     ports:
+      - 8123:8123
       - 9000:9000
     healthcheck:
       interval: 1s
       retries: 10
       test:
         - CMD-SHELL
-        - nc -z 127.0.0.1 9000
+        - nc -z 127.0.0.1 8123 && nc -z 127.0.0.1 9000
       timeout: 10s
     volumes:
       - clickhouse:/var/lib/clickhouse/user_files/ibis

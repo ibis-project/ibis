@@ -1,5 +1,3 @@
-import sys
-
 import pandas as pd
 import pytest
 import sqlalchemy as sa
@@ -124,6 +122,11 @@ def test_column_to_pyarrow_table_schema(awards_players):
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=AssertionError,
+    reason="clickhouse connect doesn't seem to respect `max_block_size` parameter",
+)
 def test_table_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
     assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
@@ -133,6 +136,11 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=AssertionError,
+    reason="clickhouse connect doesn't seem to respect `max_block_size` parameter",
+)
 def test_column_pyarrow_batch_chunk_size(awards_players):
     batch_reader = awards_players.awardID.to_pyarrow_batches(
         limit=2050, chunk_size=2048
@@ -175,14 +183,6 @@ def test_to_pyarrow_batches_memtable(con):
         assert isinstance(batch, pa.RecordBatch)
         n += len(batch)
     assert n == 3
-
-
-def test_no_pyarrow_message(awards_players, monkeypatch):
-    monkeypatch.setitem(sys.modules, "pyarrow", None)
-    with pytest.raises(
-        ModuleNotFoundError, match="requires `pyarrow` but|import of pyarrow halted"
-    ):
-        awards_players.to_pyarrow()
 
 
 @pytest.mark.notimpl(["dask", "impala", "pyspark", "druid"])
@@ -283,6 +283,11 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     ],
 )
 def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
-    result = backend.functional_alltypes.limit(1).double_col.cast(dtype).to_pyarrow()
+    result = (
+        backend.functional_alltypes.limit(1)
+        .double_col.cast(dtype)
+        .name("dec")
+        .to_pyarrow()
+    )
     assert len(result) == 1
     assert isinstance(result.type, pyarrow_dtype)

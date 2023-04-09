@@ -46,8 +46,10 @@ sqlglot = ">=10.4.3,<13"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 black = { version = ">=22.1.0,<24", optional = true }
-clickhouse-driver = { version = ">=0.1,<1", optional = true, extras = [
+clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
+  "arrow",
   "numpy",
+  "pandas",
 ] }
 dask = { version = ">=2022.9.1", optional = true, extras = [
   "array",
@@ -134,7 +136,7 @@ requests = ">=2,<3"
 # generate the `all` extra using nix run '.#gen-all-extras'
 all = [
   "black",
-  "clickhouse-driver",
+  "clickhouse-connect",
   "dask",
   "datafusion",
   "db-dtypes",
@@ -171,7 +173,7 @@ bigquery = [
   "google-cloud-bigquery-storage",
   "pydata-google-auth",
 ]
-clickhouse = ["clickhouse-driver", "sqlalchemy"]
+clickhouse = ["clickhouse-connect", "sqlalchemy"]
 dask = ["dask", "regex"]
 datafusion = ["datafusion"]
 druid = ["pydruid", "sqlalchemy"]

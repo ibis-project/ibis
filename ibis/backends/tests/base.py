@@ -149,6 +149,7 @@ class BackendTest(abc.ABC):
     ) -> None:
         left = left.reset_index(drop=True)
         right = right.reset_index(drop=True)
+        kwargs.setdefault('check_dtype', cls.check_dtype)
         tm.assert_frame_equal(left, right, *args, **kwargs)
 
     @staticmethod

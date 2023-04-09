@@ -23,8 +23,8 @@ pytestmark = pytest.mark.notimpl(
 )
 
 try:
-    from clickhouse_driver.dbapi.errors import (
-        OperationalError as ClickHouseOperationalError,
+    from clickhouse_connect.driver.exceptions import (
+        DatabaseError as ClickHouseOperationalError,
     )
 except ImportError:
     ClickHouseOperationalError = None

@@ -25,9 +25,9 @@ except ImportError:
     DuckDBConversionException = None
 
 try:
-    import clickhouse_driver
+    import clickhouse_connect as cc
 
-    ClickhouseDriverOperationalError = clickhouse_driver.dbapi.errors.OperationalError
+    ClickhouseDriverOperationalError = cc.driver.ProgrammingError
 except ImportError:
     ClickhouseDriverOperationalError = None
 
