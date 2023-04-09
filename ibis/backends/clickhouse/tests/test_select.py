@@ -5,7 +5,7 @@ from pytest import param
 
 import ibis
 
-clickhouse_driver = pytest.importorskip("clickhouse_driver")
+cc = pytest.importorskip("clickhouse_connect")
 
 
 @pytest.fixture(scope='module')
@@ -334,7 +334,7 @@ def test_join_with_external_table_errors(alltypes):
         external_table.a, external_table.c, alltypes.id
     ]
 
-    with pytest.raises(clickhouse_driver.dbapi.errors.OperationalError):
+    with pytest.raises(cc.driver.exceptions.DatabaseError):
         expr.execute()
 
     with pytest.raises(TypeError):

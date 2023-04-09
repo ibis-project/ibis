@@ -5,7 +5,7 @@ from pytest import param
 import ibis
 from ibis import literal as L
 
-pytest.importorskip("clickhouse_driver")
+pytest.importorskip("clickhouse_connect")
 
 
 @pytest.mark.parametrize(

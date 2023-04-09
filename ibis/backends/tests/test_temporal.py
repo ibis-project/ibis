@@ -41,8 +41,8 @@ except ImportError:
     ArrowInvalid = None
 
 try:
-    from clickhouse_driver.dbapi.errors import (
-        OperationalError as ClickhouseOperationalError,
+    from clickhouse_connect.driver.exceptions import (
+        InternalError as ClickhouseOperationalError,
     )
 except ImportError:
     ClickhouseOperationalError = None
@@ -1865,15 +1865,7 @@ def test_timestamp_literal(con, backend):
             'Europe/London',
             '2022-02-04 16:20:00GMT',
             id="name",
-            marks=[
-                pytest.mark.broken(['mssql'], raises=TypeError),
-                pytest.mark.broken(
-                    ['clickhouse'],
-                    'Code: 62. DB::Exception: Syntax error: failed at position 340 (\'/\') '
-                    '(line 16, col 38): / London))). Expected one of: token, Comma. ',
-                    raises=ClickhouseOperationalError,
-                ),
-            ],
+            marks=[pytest.mark.broken(['mssql'], raises=TypeError)],
         ),
         param(
             'PST8PDT',
@@ -2052,7 +2044,12 @@ INTERVAL_BACKEND_TYPES = {
 @pytest.mark.notimpl(
     ["datafusion"],
     raises=Exception,
-    reaason='This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
+    reason='This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
+)
+@pytest.mark.notyet(
+    ['clickhouse'],
+    reason="Driver doesn't know how to handle intervals",
+    raises=ClickhouseOperationalError,
 )
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
@@ -2255,7 +2252,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     raises=AssertionError,
 )
 @pytest.mark.notimpl(
-    ["datafusion", "polars", "druid"],
+    ["polars", "druid"],
     reason="Arrow backends assume a ns resolution timestamps",
     raises=com.OperationNotDefinedError,
 )
@@ -2264,7 +2261,6 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="No literal value renderer is available for literal value \"datetime.datetime(2419, 10, 11, 10, 10, 25)\" with datatype DATETIME",
     raises=sa.exc.CompileError,
 )
-@pytest.mark.notimpl(["datafusion"], raises=ArrowInvalid)
 @pytest.mark.notimpl(
     ["polars"],
     raises=(AssertionError, PolarsComputeError),
@@ -2283,6 +2279,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="bigquery returns a datetime with a timezone",
     raises=AssertionError,
 )
+@pytest.mark.notimpl(["datafusion"], raises=ArrowInvalid)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     value = ibis.timestamp("2419-10-11 10:10:25")
@@ -2413,7 +2410,7 @@ def test_large_timestamp(con):
             id="ns",
             marks=[
                 pytest.mark.broken(
-                    ["clickhouse", "duckdb", "impala", "pyspark", "trino", "snowflake"],
+                    ["duckdb", "impala", "pyspark", "trino", "snowflake"],
                     reason="drivers appear to truncate nanos",
                     raises=AssertionError,
                 ),

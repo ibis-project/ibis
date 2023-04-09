@@ -327,11 +327,11 @@ def test_unnest_simple(backend):
         array_types.execute()
         .x.explode()
         .reset_index(drop=True)
-        .astype("float64")
+        .astype("Float64")
         .rename("tmp")
     )
     expr = array_types.x.cast("!array<float64>").unnest()
-    result = expr.execute().rename("tmp")
+    result = expr.execute().astype("Float64").rename("tmp")
     tm.assert_series_equal(result, expected)
 
 

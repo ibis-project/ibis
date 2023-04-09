@@ -12,7 +12,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 
-pytest.importorskip("clickhouse_driver")
+pytest.importorskip("clickhouse_connect")
 
 
 @pytest.mark.parametrize('to_type', ['int8', 'int16', 'float32', 'float', '!float64'])
