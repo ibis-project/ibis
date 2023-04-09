@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
+    supports_map = True
+
     def __init__(self, data_directory: Path, **kwargs: Any) -> None:
         self.connection = self.connect(data_directory, **kwargs)
 
