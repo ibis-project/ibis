@@ -3,9 +3,9 @@ from __future__ import annotations
 import parsy
 import sqlalchemy as sa
 import toolz
-from duckdb_engine import Dialect as DuckDBDialect
 from sqlalchemy.dialects import postgresql
 
+import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.common.parsing import (
@@ -92,11 +92,46 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
     return ty.parse(text)
 
 
-@to_sqla_type.register(DuckDBDialect, dt.UUID)
-def sa_duckdb_uuid(*_):
-    return postgresql.UUID(as_uuid=True)
+try:
+    from duckdb_engine import Dialect as DuckDBDialect
+except ImportError:
+    pass
+else:
 
+    @dt.dtype.register(DuckDBDialect, sat.UInt64)
+    @dt.dtype.register(DuckDBDialect, sat.UInt32)
+    @dt.dtype.register(DuckDBDialect, sat.UInt16)
+    @dt.dtype.register(DuckDBDialect, sat.UInt8)
+    def dtype_uint(_, satype, nullable=True):
+        return getattr(dt, satype.__class__.__name__)(nullable=nullable)
 
-@to_sqla_type.register(DuckDBDialect, (dt.MACADDR, dt.INET))
-def sa_duckdb_macaddr(*_):
-    return sa.TEXT()
+    @dt.dtype.register(DuckDBDialect, sat.ArrayType)
+    def _(dialect, satype, nullable=True):
+        return dt.Array(dt.dtype(dialect, satype.value_type), nullable=nullable)
+
+    @dt.dtype.register(DuckDBDialect, sat.MapType)
+    def _(dialect, satype, nullable=True):
+        return dt.Map(
+            dt.dtype(dialect, satype.key_type),
+            dt.dtype(dialect, satype.value_type),
+            nullable=nullable,
+        )
+
+    @to_sqla_type.register(DuckDBDialect, dt.UUID)
+    def sa_duckdb_uuid(*_):
+        return postgresql.UUID()
+
+    @to_sqla_type.register(DuckDBDialect, (dt.MACADDR, dt.INET))
+    def sa_duckdb_macaddr(*_):
+        return sa.TEXT()
+
+    @to_sqla_type.register(DuckDBDialect, dt.Map)
+    def sa_duckdb_map(dialect, itype):
+        return sat.MapType(
+            to_sqla_type(dialect, itype.key_type),
+            to_sqla_type(dialect, itype.value_type),
+        )
+
+    @to_sqla_type.register(DuckDBDialect, dt.Array)
+    def _(dialect, itype):
+        return sat.ArrayType(to_sqla_type(dialect, itype.value_type))

@@ -207,6 +207,11 @@ def convert_array_to_series(in_dtype, out_dtype, column):
     return column.map(lambda x: list(x) if util.is_iterable(x) else x)
 
 
+@sch.convert.register(np.dtype, dt.Map, pd.Series)
+def convert_map_to_series(in_dtype, out_dtype, column):
+    return column.map(lambda x: dict(x) if util.is_iterable(x) else x)
+
+
 @sch.convert.register(np.dtype, dt.JSON, pd.Series)
 def convert_json_to_series(in_, out, col: pd.Series):
     def try_json(x):

@@ -5,6 +5,8 @@ import pandas.testing as tm
 import pytest
 from pytest import param
 
+from ibis.common.exceptions import OperationNotDefinedError
+
 pytestmark = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
@@ -43,12 +45,13 @@ def test_json_getitem(json_t, expr_fn, expected):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "duckdb", "mysql", "pandas"])
+@pytest.mark.notimpl(["dask", "mysql", "pandas"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
 @pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
 @pytest.mark.notyet(
     ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
 )
+@pytest.mark.notimpl(["duckdb"], raises=OperationNotDefinedError)
 def test_json_map(json_t):
     expr = json_t.js.map.name("res")
     result = expr.execute()
@@ -67,12 +70,13 @@ def test_json_map(json_t):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "duckdb", "mysql", "pandas"])
+@pytest.mark.notimpl(["dask", "mysql", "pandas"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
     ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
 )
 @pytest.mark.notyet(["bigquery"], reason="doesn't allow null in arrays")
+@pytest.mark.notimpl(["duckdb"], raises=OperationNotDefinedError)
 def test_json_array(json_t):
     expr = json_t.js.array.name("res")
     result = expr.execute()

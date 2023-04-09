@@ -111,3 +111,8 @@ INSERT INTO win VALUES
     ('a', 2, 0),
     ('a', 3, 1),
     ('a', 4, 1);
+
+CREATE OR REPLACE TABLE map (kv MAP(STRING, BIGINT));
+INSERT INTO map VALUES
+    (MAP(['a', 'b', 'c'], [1, 2, 3])),
+    (MAP(['d', 'e', 'f'], [4, 5, 6]));

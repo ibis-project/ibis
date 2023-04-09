@@ -136,17 +136,17 @@ def _literal(t, op):
     elif dtype.is_string():
         return sa.literal(value)
     elif dtype.is_map():
-        raise NotImplementedError(
-            f"Ibis dtype `{dtype}` with mapping type "
-            f"`{type(value).__name__}` isn't yet supported with the duckdb "
-            "backend"
+        return sa.func.map(
+            sa.func.list_value(*value.keys()), sa.func.list_value(*value.values())
         )
     else:
         return sa.cast(sa.literal(value), sqla_type)
 
 
+if_ = getattr(sa.func, "if")
+
+
 def _neg_idx_to_pos(array, idx):
-    if_ = getattr(sa.func, "if")
     arg_length = sa.func.array_length(array)
     return if_(idx < 0, arg_length + sa.func.greatest(idx, -arg_length), idx)
 
@@ -259,6 +259,32 @@ def _array_filter(t, op):
     )
 
 
+def _map_keys(t, op):
+    m = t.translate(op.arg)
+    return sa.cast(
+        sa.func.json_keys(sa.func.to_json(m)), t.get_sqla_type(op.output_dtype)
+    )
+
+
+def _map_values(t, op):
+    m_json = sa.func.to_json(t.translate(op.arg))
+    return sa.cast(
+        sa.func.json_extract_string(m_json, sa.func.json_keys(m_json)),
+        t.get_sqla_type(op.output_dtype),
+    )
+
+
+def _map_merge(t, op):
+    left = sa.func.to_json(t.translate(op.left))
+    right = sa.func.to_json(t.translate(op.right))
+    pairs = sa.func.json_merge_patch(left, right)
+    keys = sa.func.json_keys(pairs)
+    return sa.cast(
+        sa.func.map(keys, sa.func.json_extract_string(pairs, keys)),
+        t.get_sqla_type(op.output_dtype),
+    )
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -291,7 +317,6 @@ operation_registry.update(
         ops.Ln: unary(sa.func.ln),
         ops.Log: _log,
         ops.IsNan: unary(sa.func.isnan),
-        # TODO: map operations, but DuckDB's maps are multimaps
         ops.Modulus: fixed_arity(operator.mod, 2),
         ops.Round: _round,
         ops.StructField: (
@@ -349,6 +374,20 @@ operation_registry.update(
         ops.ArrayFilter: _array_filter,
         ops.Argument: lambda _, op: sa.literal_column(op.name),
         ops.Unnest: unary(sa.func.unnest),
+        ops.MapGet: fixed_arity(
+            lambda arg, key, default: sa.func.coalesce(
+                sa.func.list_extract(sa.func.element_at(arg, key), 1), default
+            ),
+            3,
+        ),
+        ops.Map: fixed_arity(sa.func.map, 2),
+        ops.MapContains: fixed_arity(
+            lambda arg, key: sa.func.array_length(sa.func.element_at(arg, key)) != 0, 2
+        ),
+        ops.MapLength: unary(sa.func.cardinality),
+        ops.MapKeys: _map_keys,
+        ops.MapValues: _map_values,
+        ops.MapMerge: _map_merge,
     }
 )
 
@@ -361,14 +400,9 @@ _invalid_operations = {
     ops.NTile,
     # ibis.expr.operations.strings
     ops.Translate,
-    # ibis.expr.operations.maps
-    ops.MapGet,
-    ops.MapContains,
-    ops.MapKeys,
-    ops.MapValues,
-    ops.MapMerge,
-    ops.MapLength,
-    ops.Map,
+    # ibis.expr.operations.json
+    ops.ToJSONMap,
+    ops.ToJSONArray,
 }
 
 operation_registry = {
