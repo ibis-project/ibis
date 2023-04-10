@@ -418,36 +418,9 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-
-        def _clean_up_string_columns(
-            t: pa.Table | pd.DataFrame,
-        ) -> pa.Table | pd.DataFrame:
-            """Work around an upstream duckdb type inference bug.
-
-            https://github.com/ibis-project/ibis/pull/5880
-
-            DuckDB doesn't infer the type of `numpy.str_` objects and considers
-            them NULL when scanning a pandas DataFrame.
-            """
-            import pandas as pd
-
-            if not isinstance(t, pd.DataFrame):
-                return t
-
-            from ibis.backends.pandas.client import sch
-
-            schema = sch.infer(t)
-            return t.assign(
-                **{
-                    name: col.map(str, na_action="ignore")
-                    for name, col in t.items()
-                    if schema[name].is_string()
-                }
-            )
-
-        table_name = table_name or util.gen_name("read_in_memory")
+        table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
         with self.begin() as con:
-            con.connection.register(table_name, _clean_up_string_columns(dataframe))
+            con.connection.register(table_name, dataframe)
 
         return self.table(table_name)
 
@@ -746,7 +719,8 @@ class Backend(BaseAlchemyBackend):
 
         name = op.name
         table = op.data.to_pyarrow(schema)
-        self.read_in_memory(table, table_name=name)
+        with self.begin() as con:
+            con.connection.register(name, table)
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **kwargs: Any
