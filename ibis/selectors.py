@@ -1,5 +1,7 @@
 """Convenient column selectors.
 
+!!! tip "Check out the [blog post on selectors](../blog/selectors.md) for examples!"
+
 ## Rationale
 
 Column selectors are convenience functions for selecting columns that share some property.
@@ -12,12 +14,15 @@ subsequent computation.
 Without selectors this becomes quite verbose and tedious to write:
 
 ```python
+>>> import ibis
+>>> t = ibis.table(...)  # doctest: +SKIP
 >>> t.select([t[c] for c in t.columns if t[c].type().is_numeric()])  # doctest: +SKIP
 ```
 
 Compare that to the [`numeric`][ibis.selectors.numeric] selector:
 
 ```python
+>>> import ibis.selectors as s
 >>> t.select(s.numeric())  # doctest: +SKIP
 ```
 
@@ -179,15 +184,24 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
     --------
     Select according to a specific `DataType` instance
 
-    >>> t.select(s.of_type(dt.Array(dt.string)))  # doctest: +SKIP
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(name="string", siblings="array<string>", parents="array<int64>"))
+    >>> expr = t.select(s.of_type(dt.Array(dt.string)))
+    >>> expr.columns
+    ['siblings']
 
     Strings are also accepted
 
-    >>> t.select(s.of_type("map<string, float>"))  # doctest: +SKIP
+    >>> expr = t.select(s.of_type("array<string>"))
+    >>> expr.columns
+    ['siblings']
 
     Select by category of `DataType` by passing the `DataType` class
 
-    >>> t.select(s.of_type(dt.Struct))  # doctest: +SKIP
+    >>> expr = t.select(s.of_type(dt.Array))
+    >>> expr.columns
+    ['siblings', 'parents']
 
     See Also
     --------
@@ -259,11 +273,19 @@ def contains(
     --------
     Select columns that contain either `"a"` or `"b"`
 
-    >>> t.select(s.contains(("a", "b")))  # doctest: +SKIP
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(a="int64", b="string", c="float", d="array<int16>", ab="struct<x: int>"))
+    >>> expr = t.select(s.contains(("a", "b")))
+    >>> expr.columns
+    ['a', 'b', 'ab']
 
-    Select columns that contain all of `"a"` and `"b"`
+    Select columns that contain all of `"a"` and `"b"`, that is, both `"a"` and
+    `"b"` must be in each column's name to match.
 
-    >>> t.select(s.contains(("a", "b"), how=all))  # doctest: +SKIP
+    >>> expr = t.select(s.contains(("a", "b"), how=all))
+    >>> expr.columns
+    ['ab']
 
     See Also
     --------
@@ -288,7 +310,12 @@ def matches(regex: str | re.Pattern) -> Selector:
 
     Examples
     --------
-    >>> t.select(s.matches(r"ab+"))  # doctest: +SKIP
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(ab="string", abd="int", be="array<string>"))
+    >>> expr = t.select(s.matches(r"ab+"))
+    >>> expr.columns
+    ['ab', 'abd']
 
     See Also
     --------
