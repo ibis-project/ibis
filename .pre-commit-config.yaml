@@ -17,7 +17,7 @@ default_stages:
   - commit
 repos:
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.23
+    rev: v1.6.24
     hooks:
       - id: actionlint
   - repo: https://github.com/psf/black
