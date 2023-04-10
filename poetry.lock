@@ -5588,7 +5588,7 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [extras]
 all = ["black", "clickhouse-cityhash", "clickhouse-driver", "dask", "datafusion", "db-dtypes", "duckdb", "duckdb-engine", "fsspec", "GeoAlchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "lz4", "packaging", "polars", "psycopg2", "pyarrow", "pydata-google-auth", "pydruid", "pymssql", "pymysql", "pyspark", "regex", "requests", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-views", "trino"]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
-clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
+clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlalchemy"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
 decompiler = ["black"]
@@ -5610,4 +5610,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "c1c43bb35102c7cd65d626771a6902d2fe1658ced135824ffdafb8455c743deb"
+content-hash = "fae994d433caf9ad455002de0d1aa4b85c769ba63c436bfd6e67a2e5ddae582f"
