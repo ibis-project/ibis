@@ -157,9 +157,9 @@ extra:
     supported:
       icon: :material-check-decagram:{ .verified }
       description: Tested in CI. If this doesn't work for you, please [file an issue](https://github.com/ibis-project/ibis/issues/new).
-    bug:
-      icon: :material-bug:{ .bug }
-      description: Should work but doesn't because upstream is broken. Supported on a best-effort basis.
+    unknown:
+      icon: :fontawesome-solid-triangle-exclamation:{ .caution }
+      description: Not tested in CI. Unknown if this setup works.
     unsupported:
       icon: :material-cancel:{ .cancel }
       description: Unlikely to ever be supported or no upstream support.
