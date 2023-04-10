@@ -9,54 +9,6 @@ hide:
 
 - [`git`](https://git-scm.com/)
 
-=== "Nix"
-
-    #### Support Matrix
-
-    |      Python Version :material-arrow-right: |                       Python 3.8                       |                     Python 3.9                     |                    Python 3.10                     |                    Python 3.11                     |
-    | -----------------------------------------: | :----------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
-    | **Operating System** :material-arrow-down: |                                                        |                                                    |                                                    |                                                    |
-    |                                  **Linux** |  {{ config.extra.support_levels.supported.icon }}[^1]  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
-    |                         **macOS (x86_64)** |    {{ config.extra.support_levels.supported.icon }}    |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
-    |                        **macOS (aarch64)** |   {{ config.extra.support_levels.unknown.icon }}[^2]   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |
-    |                                **Windows** | {{ config.extra.support_levels.unsupported.icon }}[^3] | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} |
-
-    1. [Install `nix`](https://nixos.org/download.html)
-    1. Install `gh`:
-
-        === "`nix-shell`"
-
-            ```sh
-            nix-shell -p gh
-            ```
-
-        === "`nix-env`"
-
-            ```sh
-            nix-env -iA gh
-            ```
-
-    1. Fork and clone the ibis repository:
-
-        ```sh
-        gh repo fork --clone --remote ibis-project/ibis
-        ```
-
-    1. Set up the public `ibis` Cachix cache to pull pre-built dependencies:
-
-        ```sh
-        nix-shell -p cachix --run 'cachix use ibis'
-        ```
-
-    1. Run `nix-shell` in the checkout directory:
-
-        ```sh
-        cd ibis
-        nix-shell
-        ```
-
-        This may take a while due to artifact download from the cache.
-
 === "Conda"
 
     !!! info "Some optional dependencies for Windows are not available through `conda`/`mamba`"
@@ -161,6 +113,54 @@ hide:
         ```sh
         pip install -e .
         ```
+
+=== "Nix"
+
+    #### Support Matrix
+
+    |      Python Version :material-arrow-right: |                       Python 3.8                       |                     Python 3.9                     |                    Python 3.10                     |                    Python 3.11                     |
+    | -----------------------------------------: | :----------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
+    | **Operating System** :material-arrow-down: |                                                        |                                                    |                                                    |                                                    |
+    |                                  **Linux** |  {{ config.extra.support_levels.supported.icon }}[^1]  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
+    |                         **macOS (x86_64)** |    {{ config.extra.support_levels.supported.icon }}    |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
+    |                        **macOS (aarch64)** |   {{ config.extra.support_levels.unknown.icon }}[^2]   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |
+    |                                **Windows** | {{ config.extra.support_levels.unsupported.icon }}[^3] | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} |
+
+    1. [Install `nix`](https://nixos.org/download.html)
+    1. Install `gh`:
+
+        === "`nix-shell`"
+
+            ```sh
+            nix-shell -p gh
+            ```
+
+        === "`nix-env`"
+
+            ```sh
+            nix-env -iA gh
+            ```
+
+    1. Fork and clone the ibis repository:
+
+        ```sh
+        gh repo fork --clone --remote ibis-project/ibis
+        ```
+
+    1. Set up the public `ibis` Cachix cache to pull pre-built dependencies:
+
+        ```sh
+        nix-shell -p cachix --run 'cachix use ibis'
+        ```
+
+    1. Run `nix-shell` in the checkout directory:
+
+        ```sh
+        cd ibis
+        nix-shell
+        ```
+
+        This may take a while due to artifact download from the cache.
 
 ## Building the Docs
 
