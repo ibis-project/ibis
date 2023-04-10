@@ -22,6 +22,7 @@ from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
+from ibis.backends.pandas.client import DataFrameProxy
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -418,7 +419,7 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-        table_name = table_name or f"ibis_read_in_memory_{next(pd_n)}"
+        table_name = table_name or util.gen_name("read_in_memory")
         with self.begin() as con:
             con.connection.register(table_name, dataframe)
 
@@ -710,6 +711,8 @@ class Backend(BaseAlchemyBackend):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # in theory we could use pandas dataframes, but when using dataframes
         # with pyarrow datatypes later reads of this data segfault
+        import pandas as pd
+
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
             raise exc.IbisTypeError(
@@ -717,10 +720,34 @@ class Backend(BaseAlchemyBackend):
                 f"got null typed columns: {null_columns}"
             )
 
-        name = op.name
-        table = op.data.to_pyarrow(schema)
-        with self.begin() as con:
-            con.connection.register(name, table)
+        # only register if we haven't already done so
+        if (name := op.name) not in self.list_tables():
+            if isinstance(data := op.data, DataFrameProxy):
+                table = data.to_frame()
+
+                # convert to object string dtypes because duckdb is either
+                # 1. extremely slow to register DataFrames with not-pyarrow
+                #    string dtypes
+                # 2. broken for string[pyarrow] dtypes (segfault)
+                if conversions := {
+                    colname: "str"
+                    for colname, col in table.items()
+                    if isinstance(col.dtype, pd.StringDtype)
+                }:
+                    table = table.astype(conversions)
+            else:
+                table = data.to_pyarrow(schema)
+
+            # register creates a transaction, and we can't nest transactions so
+            # we create a function to encapsulate the whole shebang
+            def _register(name, table):
+                with self.begin() as con:
+                    con.connection.register(name, table)
+
+            try:
+                _register(name, table)
+            except duckdb.NotImplementedException:
+                _register(name, data.to_pyarrow(schema))
 
     def _get_sqla_table(
         self, name: str, schema: str | None = None, **kwargs: Any
