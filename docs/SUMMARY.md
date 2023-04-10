@@ -1,6 +1,7 @@
 * [Home](index.md)
 * [Install](install.md)
 * [Docs](docs/index.md)
+    * [Getting Started](getting_started.md)
     * [How To Guide](how_to/)
     * [Execution Backends](backends/)
     * [User Guide](user_guide/)
@@ -22,6 +23,7 @@
     * [Ibis for SQL Programmers](ibis-for-sql-programmers.ipynb)
     * [Ibis for pandas Users](ibis-for-pandas-users.ipynb)
     * [Backend Operations Matrix](backends/support_matrix.md)
+    * [Why Ibis?](why_ibis.md)
 * [Releases](release_notes.md)
 * Blog
     * [Campaign Finance Analysis with Ibis](blog/rendered/campaign-finance.ipynb)
