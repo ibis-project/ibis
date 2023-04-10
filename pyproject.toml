@@ -174,7 +174,7 @@ bigquery = [
   "google-cloud-bigquery-storage",
   "pydata-google-auth",
 ]
-clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4"]
+clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlalchemy"]
 dask = ["dask", "pyarrow", "regex"]
 datafusion = ["datafusion"]
 druid = ["pydruid", "sqlalchemy"]
