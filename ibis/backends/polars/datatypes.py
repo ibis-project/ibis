@@ -75,12 +75,20 @@ def to_ibis_dtype(typ):
 
 @to_ibis_dtype.register(pl.Datetime)
 def from_polars_datetime(typ):
-    return dt.Timestamp(timezone=typ.tz)
+    try:
+        timezone = typ.time_zone
+    except AttributeError:  # pragma: no cover
+        timezone = typ.tz  # pragma: no cover
+    return dt.Timestamp(timezone=timezone)
 
 
 @to_ibis_dtype.register(pl.Duration)
 def from_polars_duration(typ):
-    return dt.Interval(unit=typ.tu)
+    try:
+        time_unit = typ.time_unit
+    except AttributeError:  # pragma: no cover
+        time_unit = typ.tu  # pragma: no cover
+    return dt.Interval(unit=time_unit)
 
 
 @to_ibis_dtype.register(pl.List)
