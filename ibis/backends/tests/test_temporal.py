@@ -2206,10 +2206,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="No literal value renderer is available for literal value \"datetime.datetime(2419, 10, 11, 10, 10, 25)\" with datatype DATETIME",
     raises=sa.exc.CompileError,
 )
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=IndexError,
-)
+@pytest.mark.notimpl(["datafusion"], raises=ArrowInvalid)
 @pytest.mark.notimpl(
     ["polars"],
     raises=(AssertionError, PolarsComputeError),
@@ -2306,10 +2303,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     reason='No literal value renderer is available for literal value "datetime.datetime(4567, 1, 1, 0, 0)" with datatype DATETIME',
 )
 @pytest.mark.notimpl(["pyspark"], raises=pd.errors.OutOfBoundsDatetime)
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=IndexError,
-)
+@pytest.mark.notimpl(["datafusion"], raises=ArrowInvalid)
 @pytest.mark.notimpl(
     ["polars"],
     raises=PolarsPanicException,

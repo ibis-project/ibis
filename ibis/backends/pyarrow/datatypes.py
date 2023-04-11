@@ -74,6 +74,13 @@ def from_ibis_decimal(dtype: dt.Decimal):
     precision = dtype.precision
     scale = dtype.scale
 
+    # set default precision and scale to something; unclear how to choose this
+    if precision is None:
+        precision = 38
+
+    if scale is None:
+        scale = 9
+
     if precision <= 38:
         return pa.decimal128(precision, scale)
     elif precision <= 76:

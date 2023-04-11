@@ -266,6 +266,8 @@ class _FileIOHandler:
             table = pa.Table.from_batches(
                 self.to_pyarrow_batches(expr, params=params, limit=limit, **kwargs)
             )
+        except pa.lib.ArrowInvalid:
+            raise
         except ValueError:
             # The pyarrow batches iterator is empty so pass in an empty
             # iterator and a pyarrow schema

@@ -254,6 +254,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 'mysql': 1.1,
                 'mssql': 1.1,
                 "druid": 1.1,
+                'datafusion': decimal.Decimal('1.1'),
             },
             {
                 'bigquery': "NUMERIC",
@@ -299,6 +300,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 'dask': decimal.Decimal('1.1'),
                 'mssql': 1.1,
                 'druid': 1.1,
+                'datafusion': decimal.Decimal('1.1'),
             },
             {
                 'bigquery': "NUMERIC",
@@ -367,6 +369,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
                     raises=sa.exc.ProgrammingError,
                 ),
+                pytest.mark.notyet(["datafusion"], raises=Exception),
             ],
             id="decimal-big",
         ),
@@ -436,6 +439,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 15: Column 'Infinity' not found in any table",
                     raises=sa.exc.ProgrammingError,
                 ),
+                pytest.mark.broken(["datafusion"], raises=ValueError),
             ],
             id="decimal-infinity+",
         ),
@@ -505,6 +509,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 16: Column 'Infinity' not found in any table",
                     raises=sa.exc.ProgrammingError,
                 ),
+                pytest.mark.broken(["datafusion"], raises=ValueError),
             ],
             id="decimal-infinity-",
         ),
@@ -585,16 +590,13 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 10: Column 'NaN' not found in any table",
                     raises=sa.exc.ProgrammingError,
                 ),
+                pytest.mark.broken(["datafusion"], raises=ValueError),
             ],
             id="decimal-NaN",
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ['polars', 'datafusion'],
-    "Unsupported type",
-    raises=(NotImplementedError, ValueError),
-)
+@pytest.mark.notimpl(['polars'], raises=ValueError)
 def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     backend_name = backend.name()
 
