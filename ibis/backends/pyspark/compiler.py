@@ -1999,3 +1999,45 @@ def compile_array_string_join(t, op, **kwargs):
     arg = t.translate(op.arg, **kwargs)
     sep = t.translate(op.sep, raw=True, **kwargs)
     return F.concat_ws(sep, arg)
+
+
+@compiles(ops.ArrayContains)
+def compile_array_contains(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    other = t.translate(op.other, **kwargs)
+    return F.when(
+        ~F.isnull(arg), F.coalesce(F.array_contains(arg, other), F.lit(False))
+    ).otherwise(F.lit(None))
+
+
+@compiles(ops.ArrayPosition)
+def compile_array_pos(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    other = t.translate(op.other, raw=True, **kwargs)
+    return F.array_position(arg, other) - 1
+
+
+@compiles(ops.ArrayDistinct)
+def compile_array_distinct(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    return F.array_distinct(arg)
+
+
+@compiles(ops.ArraySort)
+def compile_array_sort(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    return F.array_sort(arg)
+
+
+@compiles(ops.ArrayRemove)
+def compile_array_remove(t, op, **kwargs):
+    arg = t.translate(op.arg, **kwargs)
+    other = t.translate(op.other, raw=True, **kwargs)
+    return F.array_remove(arg, other)
+
+
+@compiles(ops.ArrayUnion)
+def compile_array_union(t, op, **kwargs):
+    left = t.translate(op.left, **kwargs)
+    right = t.translate(op.right, **kwargs)
+    return F.array_union(left, right)

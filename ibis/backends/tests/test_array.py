@@ -478,7 +478,7 @@ def test_array_slice(con, start, stop):
 @pytest.mark.notimpl(
     ["sqlite", "mysql"],
     raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
+    reason="argument passes none of the following rules: ...",
 )
 def test_array_map(backend, con):
     t = ibis.memtable(
@@ -493,9 +493,11 @@ def test_array_map(backend, con):
 @pytest.mark.notimpl(
     [
         "bigquery",
+        "dask",
         "datafusion",
         "impala",
         "mssql",
+        "pandas",
         "polars",
         "postgres",
         "snowflake",
@@ -503,14 +505,9 @@ def test_array_map(backend, con):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    ["dask", "pandas"],
-    raises=com.OperationNotDefinedError,
-    reason="Operation 'ArrayMap' is not implemented for this backend'",
-)
-@pytest.mark.notimpl(
     ["sqlite", "mysql"],
     raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
+    reason="argument passes none of the following rules: ...",
 )
 def test_array_filter(backend, con):
     t = ibis.memtable(
@@ -520,3 +517,163 @@ def test_array_filter(backend, con):
     result = con.execute(expr)
     expected = pd.DataFrame({"a": [[2], [4]]})
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["bigquery", "datafusion", "mssql", "pandas", "polars", "postgres"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["datafusion"], raises=Exception)
+@pytest.mark.notimpl(
+    ["dask"], raises=KeyError, reason="array_types table isn't defined"
+)
+@pytest.mark.never(["impala"], reason="array_types table isn't defined")
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules:....",
+)
+def test_array_contains(backend, con):
+    t = backend.array_types
+    expr = t.x.contains(1)
+    result = con.execute(expr)
+    expected = t.x.execute().map(lambda lst: 1 in lst)
+    backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "impala",
+        "mssql",
+        "pandas",
+        "polars",
+        "postgres",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules:....",
+)
+def test_array_position(backend, con):
+    t = ibis.memtable({"a": [[1], [], [42, 42], []]})
+    expr = t.a.index(42)
+    result = con.execute(expr)
+    expected = pd.Series([-1, -1, 0, -1], dtype="object")
+    backend.assert_series_equal(result, expected, check_names=False, check_dtype=False)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "impala",
+        "mssql",
+        "pandas",
+        "polars",
+        "postgres",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules:....",
+)
+def test_array_remove(backend, con):
+    t = ibis.memtable({"a": [[3, 2], [], [42, 2], [2, 2], []]})
+    expr = t.a.remove(2)
+    result = con.execute(expr)
+    expected = pd.Series([[3], [], [42], [], []], dtype="object")
+    backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "impala",
+        "mssql",
+        "pandas",
+        "polars",
+        "postgres",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules:....",
+)
+def test_array_unique(backend, con):
+    t = ibis.memtable({"a": [[1, 3, 3], [], [42, 42], []]})
+    expr = t.a.unique()
+    result = con.execute(expr).map(set, na_action="ignore")
+    expected = pd.Series([{3, 1}, set(), {42}, set()], dtype="object")
+    backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "impala",
+        "mssql",
+        "pandas",
+        "polars",
+        "postgres",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules:....",
+)
+def test_array_sort(backend, con):
+    t = ibis.memtable({"a": [[3, 2], [], [42, 42], []]})
+    expr = t.a.sort()
+    result = con.execute(expr)
+    expected = pd.Series([[2, 3], [], [42, 42], []], dtype="object")
+    backend.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "impala",
+        "mssql",
+        "pandas",
+        "polars",
+        "postgres",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["trino", "pyspark"],
+    raises=AssertionError,
+    reason="array_distinct([NULL]) seems to differ from other backends",
+)
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules:....",
+)
+def test_array_union(con):
+    t = ibis.memtable({"a": [[3, 2], [], []], "b": [[1, 3], [None], [5]]})
+    expr = t.a.union(t.b)
+    result = con.execute(expr).map(set, na_action="ignore")
+    expected = pd.Series([{1, 2, 3}, set(), {5}], dtype="object")
+    assert len(result) == len(expected)
+
+    for i, (lhs, rhs) in enumerate(zip(result, expected)):
+        assert lhs == rhs, f"row {i:d} differs"

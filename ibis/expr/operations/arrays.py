@@ -135,3 +135,54 @@ class Unnest(Value):
         return self.arg.output_dtype.value_type
 
     output_shape = rlz.Shape.COLUMNAR
+
+
+@public
+class ArrayContains(Value):
+    arg = rlz.array
+    other = rlz.any
+
+    output_dtype = dt.boolean
+    output_shape = rlz.shape_like("args")
+
+
+@public
+class ArrayPosition(Value):
+    arg = rlz.array
+    other = rlz.any
+
+    output_dtype = dt.int64
+    output_shape = rlz.shape_like("args")
+
+
+@public
+class ArrayRemove(Value):
+    arg = rlz.array
+    other = rlz.any
+
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("args")
+
+
+@public
+class ArrayDistinct(Value):
+    arg = rlz.array
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("arg")
+
+
+@public
+class ArraySort(Value):
+    arg = rlz.array
+
+    output_dtype = rlz.dtype_like("arg")
+    output_shape = rlz.shape_like("arg")
+
+
+@public
+class ArrayUnion(Value):
+    left = rlz.array
+    right = rlz.array
+
+    output_dtype = rlz.dtype_like("args")
+    output_shape = rlz.shape_like("args")

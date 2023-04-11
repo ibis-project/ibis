@@ -127,8 +127,10 @@ def _timestamp_from_unix(t, op):
     return sa.cast(res, t.get_sqla_type(op.output_dtype))
 
 
+if_ = getattr(sa.func, "if")
+
+
 def _neg_idx_to_pos(array, idx):
-    if_ = getattr(sa.func, "if")
     arg_length = sa.func.cardinality(array)
     return if_(idx < 0, arg_length + sa.func.greatest(idx, -arg_length), idx)
 
@@ -183,7 +185,6 @@ def _unnest(t, op):
 
 
 def _where(t, op):
-    if_ = getattr(sa.func, "if")
     return if_(
         t.translate(op.bool_expr),
         t.translate(op.true_expr),
@@ -277,6 +278,23 @@ operation_registry.update(
             lambda arg, times: sa.func.flatten(sa.func.repeat(arg, times)), 2
         ),
         ops.ArraySlice: _array_slice,
+        ops.ArrayMap: _array_map,
+        ops.ArrayFilter: _array_filter,
+        ops.ArrayContains: fixed_arity(
+            lambda arr, el: if_(
+                arr != sa.null(),
+                sa.func.coalesce(sa.func.contains(arr, el), sa.false()),
+                sa.null(),
+            ),
+            2,
+        ),
+        ops.ArrayPosition: fixed_arity(
+            lambda lst, el: sa.func.array_position(lst, el) - 1, 2
+        ),
+        ops.ArrayDistinct: fixed_arity(sa.func.array_distinct, 1),
+        ops.ArraySort: fixed_arity(sa.func.array_sort, 1),
+        ops.ArrayRemove: fixed_arity(sa.func.array_remove, 2),
+        ops.ArrayUnion: fixed_arity(sa.func.array_union, 2),
         ops.JSONGetItem: _json_get_item,
         ops.ExtractDayOfYear: unary(sa.func.day_of_year),
         ops.ExtractWeekOfYear: unary(sa.func.week_of_year),
@@ -381,8 +399,6 @@ operation_registry.update(
             lambda sep, arr: sa.func.array_join(arr, sep), 2
         ),
         ops.StartsWith: fixed_arity(sa.func.starts_with, 2),
-        ops.ArrayMap: _array_map,
-        ops.ArrayFilter: _array_filter,
         ops.Argument: lambda _, op: sa.literal_column(op.name),
     }
 )

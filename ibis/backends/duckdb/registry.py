@@ -8,6 +8,7 @@ import numpy as np
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
+from toolz.curried import flip
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql import alchemy
@@ -311,6 +312,20 @@ operation_registry.update(
         ops.ArrayIndex: _array_index(
             index_converter=_neg_idx_to_pos, func=sa.func.list_extract
         ),
+        ops.ArrayMap: _array_map,
+        ops.ArrayFilter: _array_filter,
+        ops.ArrayContains: fixed_arity(sa.func.list_has, 2),
+        ops.ArrayPosition: fixed_arity(
+            lambda lst, el: sa.func.list_indexof(lst, el) - 1, 2
+        ),
+        ops.ArrayDistinct: fixed_arity(sa.func.list_distinct, 1),
+        ops.ArraySort: fixed_arity(sa.func.list_sort, 1),
+        ops.ArrayRemove: lambda t, op: _array_filter(
+            t, ops.ArrayFilter(op.arg, flip(ops.NotEquals, op.other))
+        ),
+        ops.ArrayUnion: fixed_arity(
+            lambda left, right: sa.func.list_distinct(sa.func.list_cat(left, right)), 2
+        ),
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
@@ -370,8 +385,6 @@ operation_registry.update(
         ops.SimpleCase: _simple_case,
         ops.StartsWith: fixed_arity(sa.func.prefix, 2),
         ops.EndsWith: fixed_arity(sa.func.suffix, 2),
-        ops.ArrayMap: _array_map,
-        ops.ArrayFilter: _array_filter,
         ops.Argument: lambda _, op: sa.literal_column(op.name),
         ops.Unnest: unary(sa.func.unnest),
         ops.MapGet: fixed_arity(

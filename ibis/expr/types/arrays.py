@@ -471,6 +471,294 @@ class ArrayValue(Value):
         """
         return ops.ArrayFilter(self, func=predicate).to_expr()
 
+    def contains(self, other: ir.Value) -> ir.BooleanValue:
+        """Return whether the array contains `other`.
+
+        Parameters
+        ----------
+        other
+            Ibis expression to check for existence of in `self`
+
+        Returns
+        -------
+        BooleanValue
+            Whether `other` is contained in `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1], [], [42, 42], None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [1]                  │
+        │ []                   │
+        │ [42, 42]             │
+        │ NULL                 │
+        └──────────────────────┘
+        >>> t.arr.contains(42)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayContains(arr, 42) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                │
+        ├────────────────────────┤
+        │ False                  │
+        │ False                  │
+        │ True                   │
+        │ NULL                   │
+        └────────────────────────┘
+        >>> t.arr.contains(None)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayContains(arr, None) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                  │
+        ├──────────────────────────┤
+        │ NULL                     │
+        │ NULL                     │
+        │ NULL                     │
+        │ NULL                     │
+        └──────────────────────────┘
+        """
+        return ops.ArrayContains(self, other).to_expr()
+
+    def index(self, other: ir.Value) -> ir.IntegerValue:
+        """Return the position of `other` in an array.
+
+        Parameters
+        ----------
+        other
+            Ibis expression to existence of in `self`
+
+        Returns
+        -------
+        BooleanValue
+            The position of `other` in `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1], [], [42, 42], None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [1]                  │
+        │ []                   │
+        │ [42, 42]             │
+        │ NULL                 │
+        └──────────────────────┘
+        >>> t.arr.index(42)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayPosition(arr, 42) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64                  │
+        ├────────────────────────┤
+        │                     -1 │
+        │                     -1 │
+        │                      0 │
+        │                   NULL │
+        └────────────────────────┘
+        >>> t.arr.index(800)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayPosition(arr, 800) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64                   │
+        ├─────────────────────────┤
+        │                      -1 │
+        │                      -1 │
+        │                      -1 │
+        │                    NULL │
+        └─────────────────────────┘
+        >>> t.arr.index(None)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayPosition(arr, None) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64                    │
+        ├──────────────────────────┤
+        │                     NULL │
+        │                     NULL │
+        │                     NULL │
+        │                     NULL │
+        └──────────────────────────┘
+        """
+        return ops.ArrayPosition(self, other).to_expr()
+
+    def remove(self, other: ir.Value) -> ir.ArrayValue:
+        """Remove `other` from `self`.
+
+        Parameters
+        ----------
+        other
+            Element to remove from `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[3, 2], [], [42, 2], [2, 2], None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [3, 2]               │
+        │ []                   │
+        │ [42, 2]              │
+        │ [2, 2]               │
+        │ NULL                 │
+        └──────────────────────┘
+        >>> t.arr.remove(2)
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayRemove(arr, 2)  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [3]                  │
+        │ []                   │
+        │ [42]                 │
+        │ []                   │
+        │ NULL                 │
+        └──────────────────────┘
+        """
+        return ops.ArrayRemove(self, other).to_expr()
+
+    def unique(self) -> ir.ArrayValue:
+        """Return the unique values in an array.
+
+        !!! note "Element ordering in array may not be retained."
+
+        Returns
+        -------
+        ArrayValue
+            Unique values in an array
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1, 3, 3], [], [42, 42], None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [1, 3, ... +1]       │
+        │ []                   │
+        │ [42, 42]             │
+        │ NULL                 │
+        └──────────────────────┘
+        >>> t.arr.unique()
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayDistinct(arr)   ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [3, 1]               │
+        │ []                   │
+        │ [42]                 │
+        │ NULL                 │
+        └──────────────────────┘
+        """
+        return ops.ArrayDistinct(self).to_expr()
+
+    def sort(self) -> ir.ArrayValue:
+        """Sort the elements in an array.
+
+        Returns
+        -------
+        ArrayValue
+            Sorted values in an array
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[3, 2], [], [42, 42], None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr                  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [3, 2]               │
+        │ []                   │
+        │ [42, 42]             │
+        │ NULL                 │
+        └──────────────────────┘
+        >>> t.arr.sort()
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArraySort(arr)       ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │
+        ├──────────────────────┤
+        │ [2, 3]               │
+        │ []                   │
+        │ [42, 42]             │
+        │ NULL                 │
+        └──────────────────────┘
+        """
+        return ops.ArraySort(self).to_expr()
+
+    def union(self, other: ir.ArrayValue) -> ir.ArrayValue:
+        """Union two arrays.
+
+        Parameters
+        ----------
+        other
+            Another array to union with `self`
+
+        Returns
+        -------
+        ArrayValue
+            Unioned arrays
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr1": [[3, 2], [], None], "arr2": [[1, 3], [None], [5]]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr1                 ┃ arr2                 ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>          │ array<int8>          │
+        ├──────────────────────┼──────────────────────┤
+        │ [3, 2]               │ [1, 3]               │
+        │ []                   │ [None]               │
+        │ NULL                 │ [5]                  │
+        └──────────────────────┴──────────────────────┘
+        >>> t.arr1.union(t.arr2)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayUnion(arr1, arr2) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int8>            │
+        ├────────────────────────┤
+        │ [1, 2, ... +1]         │
+        │ []                     │
+        │ [5]                    │
+        └────────────────────────┘
+        >>> t.arr1.union(t.arr2).contains(3)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayContains(ArrayUnion(arr1, arr2), 3) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                                  │
+        ├──────────────────────────────────────────┤
+        │ True                                     │
+        │ False                                    │
+        │ False                                    │
+        └──────────────────────────────────────────┘
+        """
+        return ops.ArrayUnion(self, other).to_expr()
+
 
 @public
 class ArrayScalar(Scalar, ArrayValue):
