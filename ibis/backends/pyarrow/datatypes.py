@@ -69,6 +69,21 @@ def from_ibis_map(dtype: dt.Map) -> pa.MapType:
     return pa.map_(to_pyarrow_type(dtype.key_type), to_pyarrow_type(dtype.value_type))
 
 
+@to_pyarrow_type.register
+def from_ibis_decimal(dtype: dt.Decimal):
+    precision = dtype.precision
+    scale = dtype.scale
+
+    if precision <= 38:
+        return pa.decimal128(precision, scale)
+    elif precision <= 76:
+        return pa.decimal256(precision, scale)
+    else:
+        raise com.IbisError(
+            f"Invalid `precision` value for pyarrow decimal types: {precision:d}"
+        )
+
+
 _to_ibis_dtypes = {
     pa.int8(): dt.Int8,
     pa.int16(): dt.Int16,

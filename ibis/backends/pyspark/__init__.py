@@ -68,6 +68,9 @@ class _PySparkCursor:
         result = self.query.collect()  # blocks until finished
         return result
 
+    def fetchmany(self, nrows: int):
+        raise NotImplementedError()
+
     @property
     def columns(self):
         """Return the columns of the result set."""

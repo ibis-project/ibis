@@ -2,11 +2,18 @@ import sys
 
 import pandas as pd
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
+import ibis.expr.datatypes as dt
 
 pa = pytest.importorskip("pyarrow")
+
+try:
+    from pyspark.sql.utils import ParseException
+except ImportError:
+    ParseException = None
 
 limit = [
     param(
@@ -237,3 +244,43 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     df = pd.read_csv(outcsv, dtype=awards_players.schema().to_pandas())
 
     backend.assert_frame_equal(awards_players.execute(), df)
+
+
+@pytest.mark.parametrize(
+    ("dtype", "pyarrow_dtype"),
+    [
+        param(
+            dt.Decimal(38, 9),
+            pa.Decimal128Type,
+            id="decimal128",
+            marks=[
+                pytest.mark.broken(
+                    ["impala"], raises=AttributeError, reason="fetchmany doesn't exist"
+                ),
+                pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notyet(["dask"], raises=NotImplementedError),
+                pytest.mark.notyet(["pyspark"], raises=NotImplementedError),
+            ],
+        ),
+        param(
+            dt.Decimal(76, 38),
+            pa.Decimal256Type,
+            id="decimal256",
+            marks=[
+                pytest.mark.broken(["pandas"], raises=AssertionError),
+                pytest.mark.notyet(["impala"], reason="precision not supported"),
+                pytest.mark.notyet(
+                    ["druid", "duckdb", "snowflake", "trino"],
+                    raises=sa.exc.ProgrammingError,
+                ),
+                pytest.mark.notyet(["dask"], raises=NotImplementedError),
+                pytest.mark.notyet(["mssql", "mysql"], raises=sa.exc.OperationalError),
+                pytest.mark.notyet(["pyspark"], raises=ParseException),
+            ],
+        ),
+    ],
+)
+def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
+    result = backend.functional_alltypes.limit(1).double_col.cast(dtype).to_pyarrow()
+    assert len(result) == 1
+    assert isinstance(result.type, pyarrow_dtype)
