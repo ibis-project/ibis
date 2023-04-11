@@ -591,7 +591,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
     ],
 )
 @pytest.mark.notimpl(
-    ['polars', 'datafusion'], "Unsupported type", raises=NotImplementedError
+    ['polars', 'datafusion'],
+    "Unsupported type",
+    raises=(NotImplementedError, ValueError),
 )
 def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     backend_name = backend.name()

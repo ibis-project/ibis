@@ -336,13 +336,9 @@ class Backend(BaseBackend):
             df = lf.collect()
 
         table = df.to_arrow()
-        if isinstance(expr, ir.Table):
-            schema = expr.schema().to_pyarrow()
-            return table.cast(schema)
-        elif isinstance(expr, ir.Value):
-            schema = sch.schema({expr.get_name(): expr.type().to_pyarrow()})
-            schema = schema.to_pyarrow()
-            return table.cast(schema)
+        if isinstance(expr, (ir.Table, ir.Value)):
+            schema = expr.as_table().schema().to_pyarrow()
+            return table.rename_columns(schema.names).cast(schema)
         else:
             raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
 
