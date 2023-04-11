@@ -84,10 +84,10 @@ shapely = { version = ">=1.6,<1.8|>=1.9,<3", optional = true }
 #
 # also, we don't support arbitrarily old versions of this library
 snowflake-connector-python = { version = ">=2.7.10,<4", optional = true, extras = [
-  "pandas"
+  "pandas",
 ] }
 snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true, extras = [
-  "pandas"
+  "pandas",
 ] }
 sqlalchemy = { version = ">=1.4,<3", optional = true }
 sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
@@ -407,16 +407,16 @@ ignore = [
   "RET506",
   "RET507",
   "RET508",
-  "RUF005", # splat instead of concat
-  "SIM102", # nested ifs
-  "SIM108", # convert everything to ternary operator
-  "SIM114", # combine `if` branches using logical `or` operator
-  "SIM116", # dictionary instead of `if` statements
-  "SIM117", # nested withs
-  "SIM118", # remove .keys() calls from dictionaries
-  "SIM300", # yoda conditions
-  "UP037",  # remove quotes from type annotation
-  "UP007",  # Optional[str] -> str | None
+  "RUF005",  # splat instead of concat
+  "SIM102",  # nested ifs
+  "SIM108",  # convert everything to ternary operator
+  "SIM114",  # combine `if` branches using logical `or` operator
+  "SIM116",  # dictionary instead of `if` statements
+  "SIM117",  # nested withs
+  "SIM118",  # remove .keys() calls from dictionaries
+  "SIM300",  # yoda conditions
+  "UP037",   # remove quotes from type annotation
+  "UP007",   # Optional[str] -> str | None
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
