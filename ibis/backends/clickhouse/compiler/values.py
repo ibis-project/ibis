@@ -7,6 +7,7 @@ from operator import add, mul, sub
 from typing import Any, Literal, Mapping
 
 import sqlglot as sg
+from toolz import flip
 
 import ibis
 import ibis.common.exceptions as com
@@ -1076,6 +1077,12 @@ _simple_ops = {
     ops.BitwiseLeftShift: "bitShiftLeft",
     ops.BitwiseRightShift: "bitShiftRight",
     ops.BitwiseNot: "bitNot",
+    ops.ArrayDistinct: "arrayDistinct",
+    ops.ArraySort: "arraySort",
+    ops.ArrayContains: "has",
+    ops.FirstValue: "first_value",
+    ops.LastValue: "last_value",
+    ops.NTile: "ntile",
 }
 
 
@@ -1268,11 +1275,6 @@ shift_like(ops.Lag, "lagInFrame")
 shift_like(ops.Lead, "leadInFrame")
 
 
-@translate_val.register(ops.NTile)
-def _ntile(op, **kw):
-    return f'ntile({translate_val(op.buckets, **kw)})'
-
-
 @translate_val.register(ops.RowNumber)
 def _row_number(_, **kw):
     return "row_number()"
@@ -1286,16 +1288,6 @@ def _dense_rank(_, **kw):
 @translate_val.register(ops.MinRank)
 def _rank(_, **kw):
     return "rank()"
-
-
-@translate_val.register(ops.FirstValue)
-def _first_value(op, **kw):
-    return f"first_value({translate_val(op.arg, **kw)})"
-
-
-@translate_val.register(ops.LastValue)
-def _last_value(op, **kw):
-    return f"last_value({translate_val(op.arg, **kw)})"
 
 
 @translate_val.register(ops.ExtractProtocol)
@@ -1368,3 +1360,20 @@ def _array_filter(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
     return f"arrayFilter(({op.parameter}) -> {result}, {arg})"
+
+
+@translate_val.register(ops.ArrayPosition)
+def _array_position(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    el = translate_val(op.other, **kw)
+    return f"indexOf({arg}, {el}) - 1"
+
+
+@translate_val.register(ops.ArrayRemove)
+def _array_remove(op, **kw):
+    return translate_val(ops.ArrayFilter(op.arg, flip(ops.NotEquals, op.other)), **kw)
+
+
+@translate_val.register(ops.ArrayUnion)
+def _array_union(op, **kw):
+    return translate_val(ops.ArrayDistinct(ops.ArrayConcat(op.left, op.right)), **kw)

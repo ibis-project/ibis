@@ -221,6 +221,9 @@ class DataType(Concrete):
     def is_multipolygon(self) -> bool:
         return isinstance(self, MultiPolygon)
 
+    def is_nested(self) -> bool:
+        return isinstance(self, (Array, Map, Struct, Set))
+
     def is_null(self) -> bool:
         return isinstance(self, Null)
 

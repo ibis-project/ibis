@@ -21,7 +21,6 @@ from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
-from ibis.config import options
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -260,10 +259,22 @@ class Backend(BaseBackend):
                 raise TypeError(f'Schema is empty for external table {name}')
 
             df = obj.data.to_frame()
-            structure = list(zip(schema.names, map(serialize, schema.types)))
-            external_tables_list.append(
-                dict(name=name, data=df.to_dict("records"), structure=structure)
+            structure = list(
+                zip(
+                    schema.names,
+                    map(
+                        serialize,
+                        (
+                            # unwrap nested structures because clickhouse does
+                            # not accept nullable arrays, maps or structs
+                            typ.copy(nullable=not typ.is_nested())
+                            for typ in schema.types
+                        ),
+                    ),
+                )
             )
+            data = dict(name=name, data=df.to_dict("records"), structure=structure)
+            external_tables_list.append(data)
         return external_tables_list
 
     def _client_execute(self, query, external_tables=None):
@@ -446,16 +457,12 @@ class Backend(BaseBackend):
         self._client.disconnect()
         self.con.close()
 
-    def _fully_qualified_name(self, name, database):
+    def _fully_qualified_name(self, name: str, database: str | None) -> str:
         return sg.table(name, db=database or self.current_database or None).sql(
             dialect="clickhouse"
         )
 
-    def get_schema(
-        self,
-        table_name: str,
-        database: str | None = None,
-    ) -> sch.Schema:
+    def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
         Parameters
@@ -476,22 +483,16 @@ class Backend(BaseBackend):
             f"DESCRIBE {qualified_name}"
         )
 
-        return sch.Schema.from_tuples(zip(column_names, map(parse, types)))
-
-    def _ensure_temp_db_exists(self):
-        name = (options.clickhouse.temp_db,)
-        if name not in self.list_databases():
-            self.create_database(name, force=True)
+        return sch.Schema(dict(zip(column_names, map(parse, types))))
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         [(raw_plans,)] = self._client.execute(
             f"EXPLAIN json = 1, description = 0, header = 1 {query}"
         )
         [plan] = json.loads(raw_plans)
-        fields = [
-            (field["Name"], parse(field["Type"])) for field in plan["Plan"]["Header"]
-        ]
-        return sch.Schema.from_tuples(fields)
+        return sch.Schema(
+            {field["Name"]: parse(field["Type"]) for field in plan["Plan"]["Header"]}
+        )
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
@@ -502,12 +503,12 @@ class Backend(BaseBackend):
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"
     ) -> None:
-        self.raw_sql(
-            f"CREATE DATABASE {'IF NOT EXISTS ' * force}{name} ENGINE = {engine}"
-        )
+        if_not_exists = "IF NOT EXISTS " * force
+        self.raw_sql(f"CREATE DATABASE {if_not_exists}{name} ENGINE = {engine}")
 
     def drop_database(self, name: str, *, force: bool = False) -> None:
-        self.raw_sql(f"DROP DATABASE {'IF EXISTS ' * force}{name}")
+        if_exists = "IF EXISTS " * force
+        self.raw_sql(f"DROP DATABASE {if_exists}{name}")
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
         ident = self._fully_qualified_name(name, database)
@@ -621,16 +622,16 @@ class Backend(BaseBackend):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        name = ".".join(filter(None, (database, name)))
+        qualname = self._fully_qualified_name(name, database)
         replace = "OR REPLACE " * overwrite
         query = self.compile(obj)
-        code = f"CREATE {replace}VIEW {name} AS {query}"
+        code = f"CREATE {replace}VIEW {qualname} AS {query}"
         self.raw_sql(code)
         return self.table(name, database=database)
 
     def drop_view(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
-        name = ".".join(filter(None, (database, name)))
-        if_not_exists = "IF EXISTS " * force
-        self.raw_sql(f"DROP VIEW {if_not_exists}{name}")
+        name = self._fully_qualified_name(name, database)
+        if_exists = "IF EXISTS " * force
+        self.raw_sql(f"DROP VIEW {if_exists}{name}")

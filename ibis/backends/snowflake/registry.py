@@ -320,7 +320,6 @@ operation_registry.update(
                 "",
             )
         ),
-        # snowflake typeof only accepts VARIANT
         ops.ArrayIndex: fixed_arity(sa.func.get, 2),
         ops.ArrayLength: fixed_arity(sa.func.array_size, 1),
         ops.ArrayConcat: fixed_arity(sa.func.array_cat, 2),
@@ -333,7 +332,21 @@ operation_registry.update(
                 sa.func.ifnull(arg, sa.func.parse_json("null")), type_=ARRAY
             )
         ),
+        ops.ArrayContains: fixed_arity(sa.func.array_contains, 2),
+        ops.ArrayPosition: fixed_arity(
+            lambda lst, el: sa.func.array_position(lst, el) - 1, 2
+        ),
+        ops.ArrayDistinct: fixed_arity(sa.func.array_distinct, 1),
+        ops.ArrayRemove: fixed_arity(
+            lambda lst, el: sa.func.array_except(lst, sa.func.array_construct(el)),
+            2,
+        ),
+        ops.ArrayUnion: fixed_arity(
+            lambda left, right: sa.func.array_distinct(sa.func.array_cat(left, right)),
+            2,
+        ),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
+        # snowflake typeof only accepts VARIANT, so we cast
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
         ops.All: reduction(sa.func.booland_agg),
         ops.NotAll: reduction(lambda arg: ~sa.func.booland_agg(arg)),
@@ -384,6 +397,7 @@ _invalid_operations = {
     ops.NTile,
     # ibis.expr.operations.array
     ops.ArrayRepeat,
+    ops.ArraySort,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,
     # ibis.expr.operations.strings
