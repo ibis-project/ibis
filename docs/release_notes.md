@@ -1,6 +1,110 @@
 Release Notes
 ---
 
+## [5.1.0](https://github.com/ibis-project/ibis/compare/5.0.0...5.1.0) (2023-04-11)
+
+
+### Features
+
+* **api:** expand `distinct` API for dropping duplicates based on column subsets ([3720ea5](https://github.com/ibis-project/ibis/commit/3720ea5d86b45b5455870ade991d2de755254760))
+* **api:** implement pyarrow memtables ([9d4fbbd](https://github.com/ibis-project/ibis/commit/9d4fbbd0e9da85146a15f698be34cd7bb63bfe05))
+* **api:** support passing a format string to `Table.relabel` ([0583959](https://github.com/ibis-project/ibis/commit/05839595ca203715e36d528dae83cd68a804a05d))
+* **api:** thread kwargs around properly to support more complex connection arguments ([7e0e15b](https://github.com/ibis-project/ibis/commit/7e0e15b0f226b523968384a59942dda840f60911))
+* **backends:** add more array functions ([5208801](https://github.com/ibis-project/ibis/commit/5208801cc38ff2ccb02fc9f7e83ad40c44222af1))
+* **bigquery:** make `to_pyarrow_batches()` smarter ([42f5987](https://github.com/ibis-project/ibis/commit/42f5987762da25a63a598b5fdf0abc3eea5ae8e0))
+* **bigquery:** support bignumeric type ([d7c0f49](https://github.com/ibis-project/ibis/commit/d7c0f49eebae9649b968a9554f62c7175742a3c2))
+* default repr to showing all columns in Jupyter notebooks ([91a0811](https://github.com/ibis-project/ibis/commit/91a08113a9913971abba49683953b7e342bbb8aa))
+* **druid:** add re_search support ([946202b](https://github.com/ibis-project/ibis/commit/946202b8058ee8df83a8cb4ac326d4c9c94ff1a5))
+* **duckdb:** add map operations ([a4c4e77](https://github.com/ibis-project/ibis/commit/a4c4e77be24e3692608d6f1773bf563bf9a39085))
+* **duckdb:** support sqlalchemy 2 ([679bb52](https://github.com/ibis-project/ibis/commit/679bb52daa72793ab5ea598e1f0399780c2a0801))
+* **mssql:** implement ops.StandardDev, ops.Variance ([e322f1d](https://github.com/ibis-project/ibis/commit/e322f1d5c36d725c9e96b764f86242482e4f577a))
+* **pandas:** support memtable in pandas backend ([6e4d621](https://github.com/ibis-project/ibis/commit/6e4d621754557c08e60fd46212ee9eac39594aed)), closes [#5467](https://github.com/ibis-project/ibis/issues/5467)
+* **polars:** implement count distinct ([aea4ccd](https://github.com/ibis-project/ibis/commit/aea4ccd7bc85b020d23506c610daf3fe5b204c2f))
+* **postgres:** implement `ops.Arbitrary` ([ee8dbab](https://github.com/ibis-project/ibis/commit/ee8dbabfa210257102010d76f7ae7f0cd4d01e05))
+* **pyspark:** `pivot_longer` ([f600c90](https://github.com/ibis-project/ibis/commit/f600c90f5abc06f167a1110bcecf66c6b7ed35f2))
+* **pyspark:** add ArrayFilter operation ([2b1301e](https://github.com/ibis-project/ibis/commit/2b1301e14fe6abf80ce0d942fbaa5ba5427b9b7a))
+* **pyspark:** add ArrayMap operation ([e2c159c](https://github.com/ibis-project/ibis/commit/e2c159cb497eb5268dc253dc50348b86020bd21c))
+* **pyspark:** add DateDiff operation ([bfd6109](https://github.com/ibis-project/ibis/commit/bfd61093feb7da46edf56ba9d4b9dbc151700629))
+* **pyspark:** add partial support for interval types ([067120d](https://github.com/ibis-project/ibis/commit/067120df1f3c0d2b45af60fc1b28cb4b0463d5fb))
+* **pyspark:** add read_csv, read_parquet, and register ([7bd22af](https://github.com/ibis-project/ibis/commit/7bd22af6158ff60d2aa70d41a7d5156a67e14bfa))
+* **pyspark:** implement count distinct ([db29e10](https://github.com/ibis-project/ibis/commit/db29e10fe7fd26ef8e9024686fef38fc137546b0))
+* **pyspark:** support basic caching ([ab0df7a](https://github.com/ibis-project/ibis/commit/ab0df7aac6f06727d857c7c23a3279f341bdee64))
+* **snowflake:** add optional 'connect_args' param ([8bf2043](https://github.com/ibis-project/ibis/commit/8bf2043d1a1a5517e51f0638686596d0428a3f3c))
+* **snowflake:** native pyarrow support ([ce3d6a4](https://github.com/ibis-project/ibis/commit/ce3d6a450e780e5efcc65ca056ec3e2ec41a2001))
+* **sqlalchemy:** support unknown types ([fde79fa](https://github.com/ibis-project/ibis/commit/fde79fa0ee48b0b87bc7e82023e2b81d621c8cef))
+* **sqlite:** implement `ops.Arbitrary` ([9bcdf77](https://github.com/ibis-project/ibis/commit/9bcdf77ddafce75f0e5d8714d01dde81ed0b90f2))
+* **sql:** use temp views where possible ([5b9d8c0](https://github.com/ibis-project/ibis/commit/5b9d8c0db244e2742f2eddeca0787661aa516642))
+* **table:** implement `pivot_wider` API ([60e7731](https://github.com/ibis-project/ibis/commit/60e7731f5e58c1236c6bf50a29cebe807fa08c77))
+* **ux:** move `ibis.expr.selectors` to `ibis.selectors` and deprecate for removal in 6.0 ([0ae639d](https://github.com/ibis-project/ibis/commit/0ae639d6ca8f91cd098f069b4bb118b9c6d05059))
+
+
+### Bug Fixes
+
+* **api:** disambiguate attribute errors from a missing `resolve` method ([e12c4df](https://github.com/ibis-project/ibis/commit/e12c4df0436a7e8f13f8e63d0af1e7a780012ca6))
+* **api:** support filter on literal followed by aggregate ([68d65c8](https://github.com/ibis-project/ibis/commit/68d65c89098563e7a48073837ad8d73ec0f2bdba))
+* **clickhouse:** do not render aliases when compiling aggregate expression components ([46caf3b](https://github.com/ibis-project/ibis/commit/46caf3b877a4c7e0457dd78a1085bfcff082a2d9))
+* **clickhouse:** ensure that clickhouse depends on sqlalchemy for `make_url` usage ([ea10a27](https://github.com/ibis-project/ibis/commit/ea10a2752e02ab8e30396f7e5244b6a20c80ddd3))
+* **clickhouse:** ensure that truncate works ([1639914](https://github.com/ibis-project/ibis/commit/163991453e233cb1a9c92bb571327bf3840d10a1))
+* **clickhouse:** fix `create_table` implementation ([5a54489](https://github.com/ibis-project/ibis/commit/5a544898ab221731a6f6a847c24afda64c39e44c))
+* **clickhouse:** workaround sqlglot issue with calling `match` ([762f4d6](https://github.com/ibis-project/ibis/commit/762f4d64a61c8e961682bdb7f8ac5832973625fb))
+* **deps:** support pandas 2.0 ([4f1d9fe](https://github.com/ibis-project/ibis/commit/4f1d9fefb991733d14d03677bb63fdee93a7fc60))
+* **duckdb:** branch to avoid unnecessary dataframe construction ([9d5d943](https://github.com/ibis-project/ibis/commit/9d5d94311889dd99f29affc4524b02f362c55f0f))
+* **duckdb:** disable the progress bar by default ([1a1892c](https://github.com/ibis-project/ibis/commit/1a1892c1f567672a16140943d9406c6a0796b4a5))
+* **duckdb:** drop use of experimental parallel csv reader ([47d8b92](https://github.com/ibis-project/ibis/commit/47d8b92cc021b8f5fd1b284bab8c1ac8e1e71a07))
+* **duckdb:** generate `SIMILAR TO` instead of tilde to workaround sqlglot issue ([434da27](https://github.com/ibis-project/ibis/commit/434da2755a2ed41884b035bcec3810143c6ccd05))
+* improve typing signature of .dropna() ([e11de3f](https://github.com/ibis-project/ibis/commit/e11de3fe0aab878fe88ea5a2cf65ebbf6374cc99))
+* **mssql:** improve aggregation on expressions ([58aa78d](https://github.com/ibis-project/ibis/commit/58aa78d7ac78c3b4dc7159e184740c6daa8cdb54))
+* **mssql:** remove invalid aggregations ([1ce3ef9](https://github.com/ibis-project/ibis/commit/1ce3ef963ec3caf22a2a985873f93666fc17dcb0))
+* **polars:** backwards compatibility for the `time_zone` and `time_unit` properties ([3a2c4df](https://github.com/ibis-project/ibis/commit/3a2c4df9c73b2ce99be2b7730b529df53d617be1))
+* **postgres:** allow inference of unknown types ([343fb37](https://github.com/ibis-project/ibis/commit/343fb375d11e612807061818c612d387903ca469))
+* **pyspark:** fail when aggregation contains a `having` filter ([bd81a9f](https://github.com/ibis-project/ibis/commit/bd81a9ff5f8fafb674a238eb6a0abb31849eb39e))
+* **pyspark:** raise proper error when trying to generate sql ([51afc13](https://github.com/ibis-project/ibis/commit/51afc134ecb99fcd81d496e9c2660147320a6c2f))
+* **snowflake:** fix new array operations; remove `ArrayRemove` operation ([772668b](https://github.com/ibis-project/ibis/commit/772668bec9d535a21f1c5435e80f47753429182f))
+* **snowflake:** make sure ephemeral tables following backend quoting rules ([9a845df](https://github.com/ibis-project/ibis/commit/9a845df3e0c473c129c94c45b3683aaf68863410))
+* **snowflake:** make sure pyarrow is used when possible ([01f5154](https://github.com/ibis-project/ibis/commit/01f5154e76c1f24a1e2bf5b71133eecc43ab7c59))
+* **sql:** ensure that set operations resolve to a single relation ([3a02965](https://github.com/ibis-project/ibis/commit/3a029653e01ea853ba16200210d7e462618d151b))
+* **sql:** generate consistent `pivot_longer` semantics in the presence of multiple `unnest`s ([6bc301a](https://github.com/ibis-project/ibis/commit/6bc301ab07c33b2afb3d66750367e086ddc96400))
+* **sqlglot:** work with newer versions ([6f7302d](https://github.com/ibis-project/ibis/commit/6f7302d52cfdb37c4d0b73fbfa0fa9defbf034cb))
+* **trino,duckdb,postgres:** make cumulative `notany`/`notall` aggregations work ([c2e985f](https://github.com/ibis-project/ibis/commit/c2e985f493fcb3306cc74793ac457661ee942967))
+* **trino:** only support `how='first'` with `arbitrary` reduction ([315b5e7](https://github.com/ibis-project/ibis/commit/315b5e73b264c0f47a4c2be229386b790763de58))
+* **ux:** use guaranteed length-1 characters for `NULL` values ([8618789](https://github.com/ibis-project/ibis/commit/86187899803a34921f53063ec114caf693cfdff4))
+
+
+### Refactors
+
+* **api:** remove explicit use of `.projection` in favor of the shorter `.select` ([73df8df](https://github.com/ibis-project/ibis/commit/73df8df279127021fa42f996225d1f38696e5c14))
+* **cache:** factor out ref counted cache ([c816f00](https://github.com/ibis-project/ibis/commit/c816f006779cbeb04bd835e9c14b206ec9bb1f06))
+* **duckdb:** simplify `to_pyarrow_batches` implementation ([d6235ee](https://github.com/ibis-project/ibis/commit/d6235ee0d12a0c3136ef09e19832d82169b7bb40))
+* **duckdb:** source loaded and installed extensions from duckdb ([fb06262](https://github.com/ibis-project/ibis/commit/fb0626281b03aa0c4239b9b0bd813f2fe0bf1ce2))
+* **duckdb:** use native duckdb parquet reader unless auth required ([e9f57eb](https://github.com/ibis-project/ibis/commit/e9f57eb19934c3e84a4a72246a6f2874ad88dcd8))
+* generate uuid-based names for temp tables ([a1164df](https://github.com/ibis-project/ibis/commit/a1164df5d1bc4fa454371626a0527d30ca8dd296))
+* **memtable:** clean up dispatch code ([9a19302](https://github.com/ibis-project/ibis/commit/9a1930226f22b5707f03e64309e31dd8c59e37ff))
+* **memtable:** dedup table proxy code ([3bccec0](https://github.com/ibis-project/ibis/commit/3bccec06ac736674ed72865b1275b6cae6b190fd))
+* **sqlalchemy:** remove unused `_meta` instance attributes ([523e198](https://github.com/ibis-project/ibis/commit/523e1981732ca4c36c2c4c6be0a7e871c566dcb7))
+
+
+### Deprecations
+
+* **api:** deprecate `Table.set_column` in favor of `Table.mutate` ([954a6b7](https://github.com/ibis-project/ibis/commit/954a6b7a88e2727d598d4d2e5c3ac4d7cccd5f7e))
+
+
+### Documentation
+
+* add a getting started guide ([8fd03ce](https://github.com/ibis-project/ibis/commit/8fd03cefc49eab144e94344711e805bf6b5be40e))
+* add warning about comparisons to `None` ([5cf186a](https://github.com/ibis-project/ibis/commit/5cf186acad6578d84ad5b8d63ff9180d3c4a8df6))
+* **blog:** add campaign finance blog post ([383c708](https://github.com/ibis-project/ibis/commit/383c708ed0aa4dab61482157c371d32a28ac733d))
+* **blog:** add campaign finance to `SUMMARY.md` ([0bdd093](https://github.com/ibis-project/ibis/commit/0bdd093f9ca3728d4c40a8f7ce8abe5301c2f0d2))
+* clean up agg argument descriptions and add join examples ([93d3059](https://github.com/ibis-project/ibis/commit/93d3059f33280f625326866d291d7d206fe2077e))
+* **comparison:** add a "why ibis" page ([011cc19](https://github.com/ibis-project/ibis/commit/011cc1939eef94e45d688e1ae3dc45a8c3649863))
+* move conda before nix in dev setup instructions ([6b2cbaa](https://github.com/ibis-project/ibis/commit/6b2cbaaa33f0c9cc7b0174e082d5155f045cc2fe))
+* **nth:** improve docstring for nth() ([fb7b34b](https://github.com/ibis-project/ibis/commit/fb7b34b424cb333cb956d0c20f145e5d2f52f5bc))
+* patch docs build to fix anchor links ([51be459](https://github.com/ibis-project/ibis/commit/51be4592473e99b20dcdb56d67c4fece40a0a1b0))
+* **penguins:** add citation for palmer penguins data ([679848d](https://github.com/ibis-project/ibis/commit/679848d0c28d1c18156a929344330902e585fb10))
+* **penguins:** change to flipper ([eec3706](https://github.com/ibis-project/ibis/commit/eec370606bf25ec2fbb53451036d5000f5b24afe))
+* refresh environment setup pages ([b609571](https://github.com/ibis-project/ibis/commit/b6095714b8cfed2c11092fefd330470075b77f66))
+* **selectors:** make doctests more complete and actually run them ([c8f2964](https://github.com/ibis-project/ibis/commit/c8f2964e224b07d5d676fd57106043883da4d207))
+* style and review fixes in getting started guide ([3b0f8db](https://github.com/ibis-project/ibis/commit/3b0f8dbe93b6112101e084737e8733fa61c6558a))
+
 ## [5.0.0](https://github.com/ibis-project/ibis/compare/4.1.0...5.0.0) (2023-03-15)
 
 
