@@ -1403,17 +1403,6 @@ def test_groupby_projection(table):
     assert_equal(expr, expected)
 
 
-def test_set_column(table):
-    def g(x):
-        return x.f * 2
-
-    with pytest.warns(FutureWarning, match=r"5\.1"):
-        result = table.set_column('f', g)
-    with pytest.warns(FutureWarning, match=r"6\.0"):
-        expected = table.set_column('f', table.f * 2)
-    assert_equal(result, expected)
-
-
 def test_pickle_table_expr():
     schema = [('time', 'timestamp'), ('key', 'string'), ('value', 'double')]
     t0 = ibis.table(schema, name='t0')

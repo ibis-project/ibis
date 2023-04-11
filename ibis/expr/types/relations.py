@@ -2316,41 +2316,6 @@ class Table(Expr, _FixedTextJupyterMixin):
             aggs.append(agg)
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
-    @util.deprecated(
-        instead="use `table.mutate(name=expr)`", as_of="5.1", removed_in="6.0"
-    )
-    def set_column(self, name: str, expr: ir.Value) -> Table:
-        """Replace an existing column with a new expression.
-
-        Parameters
-        ----------
-        name
-            Column name to replace
-        expr
-            New data for column
-
-        Returns
-        -------
-        Table
-            Table expression with new columns
-        """
-        expr = self._ensure_expr(expr)
-
-        if expr.get_name() != name:
-            expr = expr.name(name)
-
-        if name not in self:
-            raise KeyError(f'{name} is not in the table')
-
-        proj_exprs = []
-        for key in self.columns:
-            if key == name:
-                proj_exprs.append(expr)
-            else:
-                proj_exprs.append(self[key])
-
-        return self.select(proj_exprs)
-
     def join(
         left: Table,
         right: Table,
