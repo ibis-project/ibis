@@ -251,3 +251,8 @@ def _(ty: dt.Timestamp) -> str:
     if (timezone := ty.timezone) is not None:
         return f"DateTime64({scale:d}, {timezone})"
     return f"DateTime64({scale:d})"
+
+
+@serialize_raw.register(dt.Decimal)
+def _(ty: dt.Decimal) -> str:
+    return f"Decimal({ty.precision}, {ty.scale})"
