@@ -332,15 +332,17 @@ operation_registry.update(
                 sa.func.ifnull(arg, sa.func.parse_json("null")), type_=ARRAY
             )
         ),
-        ops.ArrayContains: fixed_arity(sa.func.array_contains, 2),
-        ops.ArrayPosition: fixed_arity(
-            lambda lst, el: sa.func.array_position(lst, el) - 1, 2
+        ops.ArrayContains: fixed_arity(
+            lambda arr, el: sa.func.array_contains(sa.func.to_variant(el), arr), 2
         ),
-        ops.ArrayDistinct: fixed_arity(sa.func.array_distinct, 1),
-        ops.ArrayRemove: fixed_arity(
-            lambda lst, el: sa.func.array_except(lst, sa.func.array_construct(el)),
+        ops.ArrayPosition: fixed_arity(
+            # snowflake is zero-based here, so we don't need to substract 1 from the result
+            lambda lst, el: sa.func.coalesce(
+                sa.func.array_position(sa.func.to_variant(el), lst), -1
+            ),
             2,
         ),
+        ops.ArrayDistinct: fixed_arity(sa.func.array_distinct, 1),
         ops.ArrayUnion: fixed_arity(
             lambda left, right: sa.func.array_distinct(sa.func.array_cat(left, right)),
             2,
@@ -396,6 +398,7 @@ _invalid_operations = {
     ops.CumulativeOp,
     ops.NTile,
     # ibis.expr.operations.array
+    ops.ArrayRemove,
     ops.ArrayRepeat,
     ops.ArraySort,
     # ibis.expr.operations.reductions

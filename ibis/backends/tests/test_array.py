@@ -577,6 +577,7 @@ def test_array_position(backend, con):
         "pandas",
         "polars",
         "postgres",
+        "snowflake",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -629,6 +630,7 @@ def test_array_unique(backend, con):
         "pandas",
         "polars",
         "postgres",
+        "snowflake",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -659,7 +661,7 @@ def test_array_sort(backend, con):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
-    ["trino", "pyspark"],
+    ["snowflake", "trino", "pyspark"],
     raises=AssertionError,
     reason="array_distinct([NULL]) seems to differ from other backends",
 )

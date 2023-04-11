@@ -89,12 +89,19 @@ class SnowflakeTableSetFormatter(_AlchemyTableSetFormatter):
         if _NATIVE_ARROW:
             return super()._format_in_memory_table(op, ref_op, translator)
 
-        columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
-        rows = list(ref_op.data.to_frame().itertuples(index=False))
-        pos_columns = [
-            sa.column(f"${idx}") for idx in range(1, len(ref_op.schema.names) + 1)
-        ]
-        return sa.select(*pos_columns).select_from(sa.values(*columns).data(rows))
+        import ibis
+
+        schema = ref_op.schema
+        selects = (
+            sa.select(
+                *(
+                    translator.translate(ibis.literal(col, typ).op()).label(name)
+                    for col, (name, typ) in zip(row, schema.items())
+                )
+            )
+            for row in ref_op.data.to_frame().itertuples(index=False)
+        )
+        return sa.union_all(*selects)
 
 
 class SnowflakeCompiler(AlchemyCompiler):
