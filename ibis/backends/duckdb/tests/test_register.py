@@ -215,11 +215,13 @@ def test_s3_403_fallback(con, httpserver, monkeypatch):
         con.read_parquet(httpserver.url_for("/myfile"))
 
 
-@pytest.mark.broken(
-    ["duckdb"],
+@pytest.mark.xfail_version(
+    duckdb=["duckdb<=0.7.1"],
     reason="""
 the fix for this (issue #5879) caused a serious performance regression in the repr.
 added this xfail in #5959, which also reverted the bugfix that caused the regression.
+
+the issue was fixed upstream in duckdb in https://github.com/duckdb/duckdb/pull/6978
     """,
 )
 def test_register_numpy_str(con):
