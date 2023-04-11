@@ -7,7 +7,6 @@ import uuid as pyuuid
 from abc import abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from collections.abc import Set as PySet
-from enum import Enum
 from numbers import Integral, Real
 from typing import Any, Iterable, Literal, NamedTuple, Optional
 

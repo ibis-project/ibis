@@ -906,7 +906,7 @@ def test_isin_uncorrelated_filter(
         "float64",
         "timestamp",
         "date",
-        param("time", marks=pytest.mark.notyet(["datafusion"])),
+        "time",
     ],
 )
 def test_literal_na(con, dtype):
