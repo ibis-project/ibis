@@ -299,7 +299,7 @@ filterwarnings = [
   "ignore:Class ST_.+ will not make use of SQL compilation caching:",
   "ignore:UserDefinedType Geometry:",
   # google
-  "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('google.*'\\):DeprecationWarning",
+  "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
   # pyspark on python 3.11
   "ignore:typing\\.io is deprecated:DeprecationWarning",
   # warnings from google's use of the cgi module
