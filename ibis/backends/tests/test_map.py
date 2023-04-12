@@ -2,10 +2,12 @@ import contextlib
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.util import guid
 
@@ -28,6 +30,27 @@ def test_map_table(backend):
     table = backend.map
     assert table.kv.type().is_map()
     assert not table.limit(1).execute().empty
+
+
+@pytest.mark.notimpl(["pandas", "dask"])
+@pytest.mark.notyet(["duckdb"], raises=exc.UnsupportedOperationError)
+def test_column_map_values(backend):
+    table = backend.map
+    result = table.kv.values().name("values").execute().map(sorted)
+    expected = pd.Series([[1, 2, 3], [4, 5, 6]], name="values")
+    tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["pandas", "dask"])
+@pytest.mark.notyet(["duckdb"], raises=exc.UnsupportedOperationError)
+def test_column_map_merge(backend):
+    table = backend.map
+    expr = (table.kv.cast("map<string, int8>") + ibis.map({"d": 1})).name("merged")
+    result = expr.execute()
+    expected = pd.Series(
+        [{'a': 1, 'b': 2, 'c': 3, 'd': 1}, {'d': 1, 'e': 5, 'f': 6}], name="merged"
+    )
+    tm.assert_series_equal(result, expected)
 
 
 def test_literal_map_keys(con):

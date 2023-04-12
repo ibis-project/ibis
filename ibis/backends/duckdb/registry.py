@@ -268,6 +268,10 @@ def _map_keys(t, op):
 
 
 def _map_values(t, op):
+    if not isinstance(op.arg, ops.Literal):
+        raise UnsupportedOperationError(
+            "Extracting values of non-literal maps is not yet supported by DuckDB"
+        )
     m_json = sa.func.to_json(t.translate(op.arg))
     return sa.cast(
         sa.func.json_extract_string(m_json, sa.func.json_keys(m_json)),
@@ -276,6 +280,10 @@ def _map_values(t, op):
 
 
 def _map_merge(t, op):
+    if not isinstance(op.left, ops.Literal) or not isinstance(op.right, ops.Literal):
+        raise UnsupportedOperationError(
+            "Merging non-literal maps is not yet supported by DuckDB"
+        )
     left = sa.func.to_json(t.translate(op.left))
     right = sa.func.to_json(t.translate(op.right))
     pairs = sa.func.json_merge_patch(left, right)
