@@ -439,7 +439,7 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }} pandas-${{ matrix.pandas-version }}
+    name: PySpark ${{ matrix.os }} python-${{ matrix.python-version }} pandas-${{ matrix.pandas.version }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -448,16 +448,24 @@ jobs:
           - ubuntu-latest
         python-version:
           - "3.10"
-        pandas-version:
-          - "1.5.*"
-          - "2.*.*"
+        pandas:
+          - version: "1.5.*"
+          - version: "2.*.*"
+            conflicts:
+              - snowflake-sqlalchemy
+              - snowflake-connector-python
         include:
           - os: ubuntu-latest
             python-version: "3.8"
-            pandas-version: "1.5.*"
+            pandas:
+              version: "1.5.*"
           - os: ubuntu-latest
             python-version: "3.11"
-            pandas-version: "2.*.*"
+            pandas:
+              version: "2.*.*"
+              conflicts:
+                - snowflake-sqlalchemy
+                - snowflake-connector-python
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -482,8 +490,12 @@ jobs:
 
       - run: python -m pip install --upgrade pip 'poetry<1.4'
 
+      - name: remove conflicting deps
+        if: matrix.pandas.conflicts != null
+        run: poetry remove ${{ join(matrix.pandas.conflicts, ' ') }}
+
       - name: install minimum versions
-        run: poetry add --lock 'pandas@${{ matrix.pandas-version }}' 'numpy@1.23.*'
+        run: poetry add --lock 'pandas@${{ matrix.pandas.version }}' 'numpy@1.23.*'
 
       - name: checkout the lock file
         run: git checkout poetry.lock
@@ -504,7 +516,7 @@ jobs:
         if: success()
         uses: codecov/codecov-action@v3
         with:
-          flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }},pandas-${{ matrix.pandas-version }}
+          flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }},pandas-${{ matrix.pandas.version }}
 
       - name: publish test report
         uses: actions/upload-artifact@v3
