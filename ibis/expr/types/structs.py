@@ -20,21 +20,29 @@ def struct(
     value: Iterable[tuple[str, V]] | Mapping[str, V],
     type: str | dt.DataType | None = None,
 ) -> StructValue:
-    """Create a struct literal from a [`dict`][dict] or other mapping.
+    """Create a struct expression.
+
+    If the input expressions are all column expressions, then the output will be
+    a `StructColumn`.
+
+    If the input expressions are Python literals, then the output will be a
+    `StructScalar`.
 
     Parameters
     ----------
     value
-        The underlying data for literal struct value
+        The underlying data for literal struct value or a pairs of field names
+        and column expressions.
     type
         An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the ibis type of `value`.
+        the ibis type of `value`. This is only used if all of the input values
+        are literals.
 
     Returns
     -------
-    StructScalar
-        An expression representing a literal struct (compound type with fields
-        of fixed types)
+    StructValue
+        An expression representing a literal or column struct (compound type with
+        fields of fixed types)
 
     Examples
     --------
@@ -44,6 +52,35 @@ def struct(
 
     Create a struct literal from a [`dict`][dict] with a specified type
     >>> t = ibis.struct(dict(a=1, b='foo'), type='struct<a: float, b: string>')
+
+    Specify a specific type for the struct literal
+    >>> t = ibis.struct(dict(a=1, b=40), type='struct<a: float, b: int32>')
+
+    Create a struct array from multiple arrays
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({'a': [1, 2, 3], 'b': ['foo', 'bar', 'baz']})
+    >>> ibis.struct([('a', t.a), ('b', t.b)])
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ StructColumn()              ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ struct<a: int64, b: string> │
+    ├─────────────────────────────┤
+    │ {'a': 1, 'b': 'foo'}        │
+    │ {'a': 2, 'b': 'bar'}        │
+    │ {'a': 3, 'b': 'baz'}        │
+    └─────────────────────────────┘
+
+    Create a struct array from columns and literals
+    >>> ibis.struct([('a', t.a), ('b', 'foo')])
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ StructColumn()              ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ struct<a: int64, b: string> │
+    ├─────────────────────────────┤
+    │ {'a': 1, 'b': 'foo'}        │
+    │ {'a': 2, 'b': 'foo'}        │
+    │ {'a': 3, 'b': 'foo'}        │
+    └─────────────────────────────┘
     """
     import ibis.expr.operations as ops
 
@@ -58,6 +95,51 @@ def struct(
 
 @public
 class StructValue(Value):
+    """A struct literal or column.
+
+    Can be constructed with [`ibis.struct()`][ibis.expr.types.struct].
+
+    Examples
+    --------
+
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+    >>> t
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ s                           ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ struct<a: int64, b: string> │
+    ├─────────────────────────────┤
+    │ {'a': 1, 'b': 'foo'}        │
+    │ {'a': 3, 'b': None}         │
+    │ NULL                        │
+    └─────────────────────────────┘
+
+    Can use either `.` or `[]` to access fields:
+
+    >>> t.s.a
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     3 │
+    │  NULL │
+    └───────┘
+    >>> t.s['a']
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     3 │
+    │  NULL │
+    └───────┘
+    """
+
     def __dir__(self):
         out = set(dir(type(self)))
         out.update(
@@ -84,9 +166,38 @@ class StructValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> s = ibis.struct(dict(fruit="pear", weight=0))
-        >>> s['fruit']
-        fruit: StructField(...)
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ s                           ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ struct<a: int64, b: string> │
+        ├─────────────────────────────┤
+        │ {'a': 1, 'b': 'foo'}        │
+        │ {'a': 3, 'b': None}         │
+        │ NULL                        │
+        └─────────────────────────────┘
+        >>> t.s['a']
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     3 │
+        │  NULL │
+        └───────┘
+        >>> t.s['b']
+        ┏━━━━━━━━┓
+        ┃ b      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ foo    │
+        │ NULL   │
+        │ NULL   │
+        └────────┘
         """
         return ops.StructField(self, name).to_expr()
 
@@ -179,6 +290,44 @@ class StructValue(Value):
         -------
         list[AnyValue]
             Value expressions corresponding to the struct fields.
+
+        Examples
+        --------
+
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ s                           ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ struct<a: int64, b: string> │
+        ├─────────────────────────────┤
+        │ {'a': 1, 'b': 'foo'}        │
+        │ {'a': 3, 'b': None}         │
+        │ NULL                        │
+        └─────────────────────────────┘
+        >>> a, b = t.s.destructure()
+        >>> a
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     3 │
+        │  NULL │
+        └───────┘
+        >>> b
+        ┏━━━━━━━━┓
+        ┃ b      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ foo    │
+        │ NULL   │
+        │ NULL   │
+        └────────┘
         """
         return [self[field_name] for field_name in self.type().names]
 
