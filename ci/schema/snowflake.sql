@@ -92,7 +92,7 @@ CREATE OR REPLACE TABLE map ("kv" OBJECT);
 
 INSERT INTO map ("kv")
     SELECT object_construct('a', 1, 'b', 2, 'c', 3) UNION
-    SELECT object_construct('d', 4, 'e', 5, 'c', 6);
+    SELECT object_construct('d', 4, 'e', 5, 'f', 6);
 
 
 CREATE OR REPLACE TABLE struct ("abc" OBJECT);
