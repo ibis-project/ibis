@@ -3,6 +3,7 @@ import sqlite3
 import tempfile
 from pathlib import Path
 
+import duckdb
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
@@ -11,6 +12,8 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as exc
+import ibis.expr.datatypes as dt
+from ibis.backends.conftest import LINUX, SANDBOXED
 
 
 def test_read_csv(data_directory):
@@ -120,6 +123,46 @@ def test_register_sqlite(con, tmp_path):
     sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
     ft = con.register(f"sqlite://{path}", "t")
     assert ft.count().execute()
+
+
+# Because we create a new connection and the test requires loading/installing a
+# DuckDB extension, we need to xfail these on Nix.
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=duckdb.IOException,
+)
+def test_attach_sqlite(data_directory):
+    # Create a new connection here because we already have the `ibis_testing`
+    # tables loaded in to the `con` fixture.
+    con = ibis.duckdb.connect()
+
+    sqlite_db = data_directory / "ibis_testing.db"
+
+    con.attach_sqlite(sqlite_db)
+    assert set(con.list_tables()) == {
+        "functional_alltypes",
+        "awards_players",
+        "batting",
+        "diamonds",
+    }
+
+    fa = con.tables.functional_alltypes
+    assert len(set(fa.schema().types)) > 1
+
+    # overwrite existing sqlite_db and force schema to all strings
+    con.attach_sqlite(sqlite_db, overwrite=True, all_varchar=True)
+    assert set(con.list_tables()) == {
+        "functional_alltypes",
+        "awards_players",
+        "batting",
+        "diamonds",
+    }
+
+    fa = con.tables.functional_alltypes
+    types = fa.schema().types
+    assert len(set(types)) == 1
+    assert dt.String(nullable=True) in set(types)
 
 
 def test_read_in_memory(con):

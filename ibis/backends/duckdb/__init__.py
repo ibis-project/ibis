@@ -488,6 +488,7 @@ class Backend(BaseAlchemyBackend):
         if table_name is None:
             raise ValueError("`table_name` is required when registering a sqlite table")
         self._load_extensions(["sqlite"])
+
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.sqlite_scan(str(path), table_name)
         )
@@ -496,6 +497,40 @@ class Backend(BaseAlchemyBackend):
             con.exec_driver_sql(view)
 
         return self.table(table_name)
+
+    def attach_sqlite(
+        self, path: str | Path, overwrite: bool = False, all_varchar: bool = False
+    ) -> None:
+        """Attach a SQLite database to the current DuckDB session.
+
+        Parameters
+        ----------
+        path
+            The path to the SQLite database.
+        overwrite
+            Allow overwriting any tables or views that already exist in your current
+            session with the contents of the SQLite database.
+        all_varchar
+            Set all SQLite columns to type `VARCHAR` to avoid type errors on ingestion.
+
+        Returns
+        -------
+        None
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.connect("duckdb://")
+        >>> con.attach_sqlite("ci/ibis-testing-data/ibis_testing.db")
+        >>> con.list_tables()
+        ['functional_alltypes', 'awards_players', 'batting', 'diamonds']
+        """
+        self._load_extensions(["sqlite"])
+        with self.begin() as con:
+            con.execute(sa.text(f"SET GLOBAL sqlite_all_varchar={all_varchar}"))
+            con.execute(
+                sa.text(f"CALL sqlite_attach('{str(path)}', overwrite={overwrite})")
+            )
 
     def to_pyarrow_batches(
         self,
