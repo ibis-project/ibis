@@ -890,8 +890,7 @@ def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
     cols = {f"c_{i}": ibis._.id + i for i in range(50)}
     expr = alltypes.mutate(**cols).select(*cols)
 
-    console = rich.console.Console(force_jupyter=is_jupyter)
-    console.options.max_width = 80
+    console = rich.console.Console(force_jupyter=is_jupyter, width=80)
     options = console.options.copy()
 
     # max_columns = 0
