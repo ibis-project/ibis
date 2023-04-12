@@ -257,8 +257,11 @@ class Table(Expr, _FixedTextJupyterMixin):
             # also needs to be forwarded to `console.render`.
             options = options.update(max_width=1_000_000)
             width = None
-        else:
+        elif ibis.options.repr.interactive.console_width is None:
             width = options.max_width
+        else:
+            width = ibis.options.repr.interactive.console_width
+            options = options.update(max_width=width)
 
         table = to_rich_table(self, width)
         return console.render(table, options=options)

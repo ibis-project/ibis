@@ -97,6 +97,7 @@ class Interactive(Config):
     max_string: int = 80
     max_depth: int = 1
     show_types: bool = True
+    console_width: Optional[int] = None
 
 
 class Repr(Config):
