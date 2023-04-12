@@ -46,7 +46,6 @@ sqlglot = ">=10.4.3,<12"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 black = { version = ">=22.1.0,<24", optional = true }
-clickhouse-cityhash = { version = ">=1.0.2,<2", optional = true }
 clickhouse-driver = { version = ">=0.1,<1", optional = true, extras = [
   "numpy",
 ] }
@@ -65,7 +64,6 @@ google-cloud-bigquery = { version = ">=3,<4", optional = true }
 google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
 graphviz = { version = ">=0.16,<1", optional = true }
 impyla = { version = ">=0.17,<1", optional = true }
-lz4 = { version = ">=3.1.10,<5", optional = true }
 packaging = { version = ">=21.3,<24", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
@@ -135,7 +133,6 @@ requests = ">=2,<3"
 # generate the `all` extra using nix run '.#gen-all-extras'
 all = [
   "black",
-  "clickhouse-cityhash",
   "clickhouse-driver",
   "dask",
   "datafusion",
@@ -149,7 +146,6 @@ all = [
   "google-cloud-bigquery-storage",
   "graphviz",
   "impyla",
-  "lz4",
   "packaging",
   "polars",
   "psycopg2",
@@ -173,7 +169,7 @@ bigquery = [
   "google-cloud-bigquery-storage",
   "pydata-google-auth",
 ]
-clickhouse = ["clickhouse-driver", "clickhouse-cityhash", "lz4", "sqlalchemy"]
+clickhouse = ["clickhouse-driver", "sqlalchemy"]
 dask = ["dask", "regex"]
 datafusion = ["datafusion"]
 druid = ["pydruid", "sqlalchemy"]

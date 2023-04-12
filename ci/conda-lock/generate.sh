@@ -13,9 +13,12 @@ python_version_file="$(mktemp --suffix=.yml)"
 
 extras=(
   -e bigquery
+  -e clickhouse
   -e dask
   -e druid
   -e duckdb
+  # this doesn't work on any platform yet (issues with resolving some google deps)
+  # -e geospatial
   -e impala
   -e mssql
   -e mysql
@@ -31,32 +34,21 @@ extras=(
 )
 template="conda-lock/{platform}-${python_version}.lock"
 
-linux_osx_extras=()
-if [ "${python_version}" != "3.11" ]; then
-  # clickhouse cityhash doesn't exist for python 3.11
-  linux_osx_extras+=(-e clickhouse)
-fi
+function conda_lock() {
+  local platforms
+  platforms=(--platform "$1" --platform "$2")
+  shift 2
+  conda lock \
+    --file pyproject.toml \
+    --file "${python_version_file}" \
+    --kind explicit \
+    "${platforms[@]}" \
+    --filename-template "${template}" \
+    --filter-extras \
+    --conda="$(which conda)" \
+    --category dev --category test --category docs \
+    "${@}"
+}
 
-conda lock \
-  --file pyproject.toml \
-  --file "${python_version_file}" \
-  --kind explicit \
-  --platform linux-64 \
-  --platform osx-64 \
-  --filename-template "${template}" \
-  --filter-extras \
-  --conda="$(which conda)" \
-  --category dev --category test --category docs \
-  "${extras[@]}" "${linux_osx_extras[@]}" -e datafusion
-
-conda lock \
-  --file pyproject.toml \
-  --file "${python_version_file}" \
-  --kind explicit \
-  --platform osx-arm64 \
-  --platform win-64 \
-  --filename-template "${template}" \
-  --filter-extras \
-  --conda="$(which conda)" \
-  --category dev --category test --category docs \
-  "${extras[@]}"
+conda_lock linux-64 osx-64 "${extras[@]}" -e datafusion
+conda_lock osx-arm64 win-64 "${extras[@]}"
