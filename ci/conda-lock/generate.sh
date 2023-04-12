@@ -14,6 +14,7 @@ python_version_file="$(mktemp --suffix=.yml)"
 extras=(
   -e bigquery
   -e dask
+  -e druid
   -e duckdb
   -e impala
   -e mssql
