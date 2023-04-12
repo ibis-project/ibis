@@ -1,10 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from public import public
 
 import ibis.expr.operations as ops
+from ibis.expr.types.arrays import ArrayColumn
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
@@ -13,6 +14,55 @@ if TYPE_CHECKING:
 
 @public
 class MapValue(Value):
+    """A map literal or column expression.
+
+    Can be constructed with [`ibis.map()`][ibis.expr.types.map].
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> import pyarrow as pa
+    >>> tab = pa.table({
+    ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
+    ...                  type=pa.map_(pa.utf8(), pa.int64()))})
+    >>> t = ibis.memtable(tab)
+    >>> t
+    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ m                    ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━┩
+    │ map<string, int64>   │
+    ├──────────────────────┤
+    │ {'a': 1, 'b': 2}     │
+    │ {'a': 1}             │
+    │ NULL                 │
+    └──────────────────────┘
+
+    Can use `[]` to access values:
+    >>> t.m['a']
+    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ MapGet(m, 'a', None) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━┩
+    │ int64                │
+    ├──────────────────────┤
+    │                    1 │
+    │                    1 │
+    │                 NULL │
+    └──────────────────────┘
+
+    To provide default values, use `get`:
+    >>> t.m.get('b', 0)
+    ┏━━━━━━━━━━━━━━━━━━━┓
+    ┃ MapGet(m, 'b', 0) ┃
+    ┡━━━━━━━━━━━━━━━━━━━┩
+    │ int64             │
+    ├───────────────────┤
+    │                 2 │
+    │                 0 │
+    │                 0 │
+    └───────────────────┘
+    """
+
     def get(
         self,
         key: ir.Value,
@@ -40,7 +90,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None], 
+        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -101,7 +151,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None], 
+        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -151,7 +201,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None], 
+        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -191,14 +241,14 @@ class MapValue(Value):
         -------
         BooleanValue
             Boolean indicating the presence of `key` in the map expression
-        
+
         Examples
         --------
         >>> import ibis
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None], 
+        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -238,7 +288,7 @@ class MapValue(Value):
         >>> import pyarrow as pa
         >>> ibis.options.interactive = True
         >>> tab = pa.table({
-        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None], 
+        ...    "m": pa.array([{"a": 1, "b": 2}, {"a": 1}, None],
         ...                  type=pa.map_(pa.utf8(), pa.int64()))})
         >>> t = ibis.memtable(tab)
         >>> t
@@ -342,8 +392,15 @@ class MapColumn(Column, MapValue):
 
 
 @public
-def map(keys, values=None) -> MapValue:
-    """Create a map literal from a [`dict`][dict], other mapping or two sequences.
+def map(
+    keys: Iterable[Any] | Mapping[Any, Any] | ArrayColumn,
+    values: Iterable[Any] | ArrayColumn | None = None,
+) -> MapValue:
+    """Create a map expression.
+
+    If the `keys` and `values` are Python literals, then the output will be a
+    `MapScalar`. If the `keys` and `values` are expressions (`ArrayColumn`),
+    then the the output will be a `MapColumn`.
 
     Parameters
     ----------
