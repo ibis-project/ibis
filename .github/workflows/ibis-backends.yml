@@ -310,7 +310,7 @@ jobs:
           path: junit.xml
 
       - name: Show docker compose logs on fail
-        if: ${{ failure() }}
+        if: matrix.backend.services != null && failure()
         run: docker compose logs
 
   test_backends_min_version:
@@ -435,7 +435,7 @@ jobs:
           path: junit.xml
 
       - name: Show docker compose logs on fail
-        if: ${{ failure() }}
+        if: matrix.backend.services != null && failure()
         run: docker compose logs
 
   test_pyspark:
@@ -670,7 +670,7 @@ jobs:
           path: junit.xml
 
       - name: Show docker compose logs on fail
-        if: ${{ failure() }}
+        if: matrix.backend.services != null && failure()
         run: docker compose logs
 
   backends:
