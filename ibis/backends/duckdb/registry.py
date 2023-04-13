@@ -267,12 +267,20 @@ def _map_keys(t, op):
     )
 
 
+def _is_map_literal(op):
+    return isinstance(op, ops.Literal) or (
+        isinstance(op, ops.Map)
+        and isinstance(op.keys, ops.Literal)
+        and isinstance(op.values, ops.Literal)
+    )
+
+
 def _map_values(t, op):
-    if not isinstance(op.arg, ops.Literal):
+    if not _is_map_literal(arg := op.arg):
         raise UnsupportedOperationError(
             "Extracting values of non-literal maps is not yet supported by DuckDB"
         )
-    m_json = sa.func.to_json(t.translate(op.arg))
+    m_json = sa.func.to_json(t.translate(arg))
     return sa.cast(
         sa.func.json_extract_string(m_json, sa.func.json_keys(m_json)),
         t.get_sqla_type(op.output_dtype),
@@ -280,7 +288,7 @@ def _map_values(t, op):
 
 
 def _map_merge(t, op):
-    if not isinstance(op.left, ops.Literal) or not isinstance(op.right, ops.Literal):
+    if not (_is_map_literal(op.left) and _is_map_literal(op.right)):
         raise UnsupportedOperationError(
             "Merging non-literal maps is not yet supported by DuckDB"
         )
