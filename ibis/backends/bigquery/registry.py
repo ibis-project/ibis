@@ -22,6 +22,7 @@ from ibis.backends.base.sql.registry import (
     unary,
 )
 from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
+from ibis.common.enums import DateUnit, IntervalUnit, TimeUnit
 
 
 def _extract_field(sql_attr):
@@ -297,36 +298,19 @@ def _arbitrary(translator, op):
     return f"ANY_VALUE({translator.translate(arg)})"
 
 
-_date_units = {
-    "Y": "YEAR",
-    "Q": "QUARTER",
-    "W": "WEEK(MONDAY)",
-    "M": "MONTH",
-    "D": "DAY",
-}
-
-
-_timestamp_units = {
-    "us": "MICROSECOND",
-    "ms": "MILLISECOND",
-    "s": "SECOND",
-    "m": "MINUTE",
-    "h": "HOUR",
-}
-_timestamp_units.update(_date_units)
-
-
 def _truncate(kind, units):
     def truncator(translator, op):
         arg, unit = op.args
         trans_arg = translator.translate(arg)
-        valid_unit = units.get(unit)
-        if valid_unit is None:
+        if unit not in units:
             raise com.UnsupportedOperationError(
-                "BigQuery does not support truncating {} values to unit "
-                "{!r}".format(arg.output_dtype, unit)
+                f"BigQuery does not support truncating {arg.output_dtype} values to unit {unit!r}"
             )
-        return f"{kind}_TRUNC({trans_arg}, {valid_unit})"
+        if unit.name == "WEEK":
+            unit = "WEEK(MONDAY)"
+        else:
+            unit = unit.name
+        return f"{kind}_TRUNC({trans_arg}, {unit})"
 
     return truncator
 
@@ -339,7 +323,7 @@ def _timestamp_op(func, units):
         if unit not in units:
             raise com.UnsupportedOperationError(
                 "BigQuery does not allow binary operation "
-                "{} with INTERVAL offset {}".format(func, unit)
+                f"{func} with INTERVAL offset {unit}"
             )
         formatted_arg = translator.translate(arg)
         formatted_offset = translator.translate(offset)
@@ -591,6 +575,20 @@ def _interval_multiply(t, op):
     return f"INTERVAL EXTRACT({unit} from {left}) * {right} {unit}"
 
 
+# BigQuery doesn't support nanosecond intervals
+_DATE_UNITS = frozenset(DateUnit)
+_TIME_UNITS = frozenset(TimeUnit) - {TimeUnit.NANOSECOND}
+_INTERVAL_UNITS = frozenset(IntervalUnit) - {IntervalUnit.NANOSECOND}
+_INTERVAL_DATE_UNITS = _INTERVAL_UNITS - {
+    IntervalUnit.HOUR,
+    IntervalUnit.MINUTE,
+    IntervalUnit.SECOND,
+    IntervalUnit.MILLISECOND,
+    IntervalUnit.MICROSECOND,
+}
+_INTERVAL_TIME_UNITS = _INTERVAL_UNITS - _INTERVAL_DATE_UNITS
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -622,9 +620,9 @@ OPERATION_REGISTRY = {
     # Temporal functions
     ops.Date: unary("DATE"),
     ops.DateFromYMD: fixed_arity("DATE", 3),
-    ops.DateAdd: _timestamp_op("DATE_ADD", {"D", "W", "M", "Q", "Y"}),
-    ops.DateSub: _timestamp_op("DATE_SUB", {"D", "W", "M", "Q", "Y"}),
-    ops.DateTruncate: _truncate("DATE", _date_units),
+    ops.DateAdd: _timestamp_op("DATE_ADD", _INTERVAL_DATE_UNITS),
+    ops.DateSub: _timestamp_op("DATE_SUB", _INTERVAL_DATE_UNITS),
+    ops.DateTruncate: _truncate("DATE", _DATE_UNITS | _INTERVAL_DATE_UNITS),
     ops.DayOfWeekIndex: bigquery_day_of_week_index,
     ops.DayOfWeekName: bigquery_day_of_week_name,
     ops.ExtractEpochSeconds: _extract_field("epochseconds"),
@@ -642,13 +640,16 @@ OPERATION_REGISTRY = {
     ops.StringToTimestamp: compiles_string_to_timestamp,
     ops.Time: unary("TIME"),
     ops.TimeFromHMS: fixed_arity("TIME", 3),
-    ops.TimeTruncate: _truncate("TIME", _timestamp_units),
-    ops.TimestampAdd: _timestamp_op("TIMESTAMP_ADD", {"h", "m", "s", "ms", "us"}),
+    ops.TimeTruncate: _truncate("TIME", _TIME_UNITS | _INTERVAL_TIME_UNITS),
+    ops.TimestampAdd: _timestamp_op("TIMESTAMP_ADD", _INTERVAL_TIME_UNITS),
     ops.TimestampFromUNIX: integer_to_timestamp,
     ops.TimestampFromYMDHMS: fixed_arity("DATETIME", 6),
     ops.TimestampNow: fixed_arity("CURRENT_TIMESTAMP", 0),
-    ops.TimestampSub: _timestamp_op("TIMESTAMP_SUB", {"h", "m", "s", "ms", "us"}),
-    ops.TimestampTruncate: _truncate("TIMESTAMP", _timestamp_units),
+    ops.TimestampSub: _timestamp_op("TIMESTAMP_SUB", _INTERVAL_TIME_UNITS),
+    ops.TimestampTruncate: _truncate(
+        "TIMESTAMP",
+        _DATE_UNITS | _TIME_UNITS | _INTERVAL_DATE_UNITS | _INTERVAL_TIME_UNITS,
+    ),
     ops.IntervalMultiply: _interval_multiply,
     ops.Hash: _hash,
     ops.StringReplace: fixed_arity("REPLACE", 3),
