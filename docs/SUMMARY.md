@@ -22,6 +22,7 @@
         * [Configuration](api/config.md)
     * [Ibis for SQL Programmers](ibis-for-sql-programmers.ipynb)
     * [Ibis for pandas Users](ibis-for-pandas-users.ipynb)
+    * [Ibis for dplyr Users](ibis-for-dplyr-users.ipynb)
     * [Backend Operations Matrix](backends/support_matrix.md)
     * [Why Ibis?](why_ibis.md)
 * [Releases](release_notes.md)
