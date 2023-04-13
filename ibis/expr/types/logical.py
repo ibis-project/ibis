@@ -289,6 +289,9 @@ class BooleanColumn(NumericColumn, BooleanValue):
         False
         >>> (t.arr > 4).notany()
         True
+        >>> m = ibis.memtable({"arr": [True, True, True, False]})
+        >>> (t.arr == None).notany(where=t.arr != None)
+        True
         """
         import ibis.expr.analysis as an
 
@@ -343,6 +346,10 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> (t.arr >= 1).notall()
         False
         >>> (t.arr > 2).notall()
+        True
+        >>> (t.arr == 2).notall(where=t.arr == 2)
+        False
+        >>> (t.arr == 2).notall(where=t.arr >= 2)
         True
         """
         return ops.NotAll(self, where=where).to_expr()
