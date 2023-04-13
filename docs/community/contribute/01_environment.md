@@ -51,6 +51,7 @@ hide:
             === "{{ os }}"
 
                 ```sh
+                # Create a dev environment for {{platform}}
                 cd ibis
                 {{ manager }} create -n ibis-dev --file=conda-lock/{{ platform }}-3.10.lock
                 ```
