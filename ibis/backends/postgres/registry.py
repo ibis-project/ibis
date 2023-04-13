@@ -561,8 +561,8 @@ operation_registry.update(
         # boolean reductions
         ops.Any: reduction(sa.func.bool_or),
         ops.All: reduction(sa.func.bool_and),
-        ops.NotAny: reduction(lambda x: sa.not_(sa.func.bool_or(x))),
-        ops.NotAll: reduction(lambda x: sa.not_(sa.func.bool_and(x))),
+        ops.NotAny: reduction(lambda x: sa.func.bool_and(~x)),
+        ops.NotAll: reduction(lambda x: sa.func.bool_or(~x)),
         # strings
         ops.GroupConcat: _string_agg,
         ops.Capitalize: unary(sa.func.initcap),

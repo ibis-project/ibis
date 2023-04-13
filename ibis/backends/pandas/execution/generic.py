@@ -804,6 +804,8 @@ def execute_any_all_series(op, data, mask, aggcontext=None, **kwargs):
 
 @execute_node.register((ops.Any, ops.All), SeriesGroupBy, type(None))
 def execute_any_all_series_group_by(op, data, mask, aggcontext=None, **kwargs):
+    if mask is not None:
+        data = data.obj.loc[mask].groupby(get_grouping(data.grouper.groupings))
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
         result = aggcontext.agg(data, type(op).__name__.lower())
     else:
@@ -819,6 +821,8 @@ def execute_any_all_series_group_by(op, data, mask, aggcontext=None, **kwargs):
 @execute_node.register((ops.NotAny, ops.NotAll), pd.Series, (pd.Series, type(None)))
 def execute_notany_notall_series(op, data, mask, aggcontext=None, **kwargs):
     name = type(op).__name__.lower()[len("Not") :]
+    if mask is not None:
+        data = data.loc[mask]
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
         result = ~aggcontext.agg(data, name)
     else:
@@ -833,6 +837,8 @@ def execute_notany_notall_series(op, data, mask, aggcontext=None, **kwargs):
 @execute_node.register((ops.NotAny, ops.NotAll), SeriesGroupBy, type(None))
 def execute_notany_notall_series_group_by(op, data, mask, aggcontext=None, **kwargs):
     name = type(op).__name__.lower()[len("Not") :]
+    if mask is not None:
+        data = data.obj.loc[mask].groupby(get_grouping(data.grouper.groupings))
     if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
         result = ~aggcontext.agg(data, name)
     else:

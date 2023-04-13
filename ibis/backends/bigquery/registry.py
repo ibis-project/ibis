@@ -452,22 +452,6 @@ def _corr(translator, op):
     return compiles_covar_corr("CORR")(translator, op)
 
 
-def bigquery_compile_any(translator, op):
-    return f"LOGICAL_OR({translator.translate(op.arg)})"
-
-
-def bigquery_compile_notany(translator, op):
-    return f"LOGICAL_AND(NOT ({translator.translate(op.arg)}))"
-
-
-def bigquery_compile_all(translator, op):
-    return f"LOGICAL_AND({translator.translate(op.arg)})"
-
-
-def bigquery_compile_notall(translator, op):
-    return f"LOGICAL_OR(NOT ({translator.translate(op.arg)}))"
-
-
 def _identical_to(t, op):
     left = t.translate(op.left)
     right = t.translate(op.right)
@@ -594,14 +578,12 @@ OPERATION_REGISTRY = {
     # Literal
     ops.Literal: _literal,
     # Logical
-    ops.Any: bigquery_compile_any,
-    ops.All: bigquery_compile_all,
+    ops.Any: reduction("LOGICAL_OR"),
+    ops.All: reduction("LOGICAL_AND"),
     ops.IfNull: fixed_arity("IFNULL", 2),
     ops.NullIf: fixed_arity("NULLIF", 2),
     ops.NullIfZero: _nullifzero,
     ops.ZeroIfNull: _zeroifnull,
-    ops.NotAny: bigquery_compile_notany,
-    ops.NotAll: bigquery_compile_notall,
     # Reductions
     ops.ApproxMedian: compiles_approx,
     ops.Covariance: _covar,

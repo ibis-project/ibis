@@ -211,19 +211,7 @@ def calc_zscore(s):
             ),
             id='cumnotany',
             marks=[
-                pytest.mark.notyet(
-                    ["sqlite"],
-                    reason="notany() over window not supported",
-                    raises=sa.exc.OperationalError,
-                ),
-                pytest.mark.notyet(
-                    ["impala"],
-                    reason="notany() over window not supported",
-                    raises=HiveServer2Error,
-                ),
-                pytest.mark.broken(
-                    ["mssql", "mysql", "snowflake"], raises=sa.exc.ProgrammingError
-                ),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
             ],
         ),
@@ -248,19 +236,7 @@ def calc_zscore(s):
             ),
             id='cumnotall',
             marks=[
-                pytest.mark.notyet(
-                    ["sqlite"],
-                    reason="notall() over window not supported",
-                    raises=sa.exc.OperationalError,
-                ),
-                pytest.mark.notyet(
-                    ["impala"],
-                    reason="notall() over window not supported",
-                    raises=HiveServer2Error,
-                ),
-                pytest.mark.broken(
-                    ["mssql", "mysql", "snowflake"], raises=sa.exc.ProgrammingError
-                ),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
             ],
         ),
