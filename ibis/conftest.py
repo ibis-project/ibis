@@ -11,6 +11,8 @@ def add_ibis(monkeypatch, doctest_namespace):
     # disable color for doctests so we don't have to include
     # escape codes in docstrings
     monkeypatch.setitem(os.environ, "NO_COLOR", "1")
+    # Explicitly set the column width
+    monkeypatch.setitem(os.environ, "COLUMNS", "80")
     # reset interactive mode to False for doctests that don't execute
     # expressions
     ibis.options.interactive = False
