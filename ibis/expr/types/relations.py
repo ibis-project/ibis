@@ -2556,7 +2556,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │                 ∅ │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
