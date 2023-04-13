@@ -323,22 +323,24 @@ def _bucket(op):
 
 @rewrites(ops.Any)
 def _any_expand(op):
-    return ops.Max(op.arg)
+    return ops.Max(op.arg, where=op.where)
 
 
 @rewrites(ops.NotAny)
 def _notany_expand(op):
-    return ops.Equals(ops.Max(op.arg), ops.Literal(0, dtype=op.arg.output_dtype))
+    zero = ops.Literal(0, dtype=op.arg.output_dtype)
+    return ops.Min(ops.Equals(op.arg, zero), where=op.where)
 
 
 @rewrites(ops.All)
 def _all_expand(op):
-    return ops.Min(op.arg)
+    return ops.Min(op.arg, where=op.where)
 
 
 @rewrites(ops.NotAll)
 def _notall_expand(op):
-    return ops.Equals(ops.Min(op.arg), ops.Literal(0, dtype=op.arg.output_dtype))
+    zero = ops.Literal(0, dtype=op.arg.output_dtype)
+    return ops.Max(ops.Equals(op.arg, zero), where=op.where)
 
 
 @rewrites(ops.Cast)

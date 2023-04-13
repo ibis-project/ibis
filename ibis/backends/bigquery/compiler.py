@@ -99,6 +99,16 @@ class BigQueryExprTranslator(sql_compiler.ExprTranslator):
 compiles = BigQueryExprTranslator.compiles
 
 
+@BigQueryExprTranslator.rewrites(ops.NotAll)
+def _rewrite_notall(op):
+    return ops.Any(ops.Not(op.arg), where=op.where)
+
+
+@BigQueryExprTranslator.rewrites(ops.NotAny)
+def _rewrite_notany(op):
+    return ops.All(ops.Not(op.arg), where=op.where)
+
+
 class BigQueryTableSetFormatter(sql_compiler.TableSetFormatter):
     def _quote_identifier(self, name):
         if re.match(r"^[A-Za-z][A-Za-z_0-9]*$", name):

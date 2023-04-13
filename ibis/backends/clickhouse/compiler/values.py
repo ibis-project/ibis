@@ -177,12 +177,12 @@ def _count_star(op, **kw):
 
 @translate_val.register(ops.NotAny)
 def _not_any(op, **kw):
-    return translate_val(ops.Not(ops.Any(op.arg)), **kw)
+    return translate_val(ops.All(ops.Not(op.arg), where=op.where), **kw)
 
 
 @translate_val.register(ops.NotAll)
 def _not_all(op, **kw):
-    return translate_val(ops.Not(ops.All(op.arg)), **kw)
+    return translate_val(ops.Any(ops.Not(op.arg), where=op.where), **kw)
 
 
 def _quantile_like(func_name: str, op: ops.Node, quantile: str, **kw):
