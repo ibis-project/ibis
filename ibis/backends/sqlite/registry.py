@@ -22,6 +22,7 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.base.sql.alchemy.registry import _gen_string_find
 from ibis.backends.base.sql.alchemy.registry import _literal as base_literal
+from ibis.common.enums import DateUnit, IntervalUnit
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
@@ -93,10 +94,14 @@ def _extract_quarter(t, op):
 
 
 _truncate_modifiers = {
-    'Y': 'start of year',
-    'M': 'start of month',
-    'D': 'start of day',
-    'W': 'weekday 1',
+    DateUnit.DAY: 'start of day',
+    DateUnit.WEEK: 'weekday 1',
+    DateUnit.MONTH: 'start of month',
+    DateUnit.YEAR: 'start of year',
+    IntervalUnit.DAY: 'start of day',
+    IntervalUnit.WEEK: 'weekday 1',
+    IntervalUnit.MONTH: 'start of month',
+    IntervalUnit.YEAR: 'start of year',
 }
 
 
@@ -104,7 +109,7 @@ def _truncate(func):
     def translator(t, op):
         sa_arg = t.translate(op.arg)
         try:
-            modifier = _truncate_modifiers[op.unit.short]
+            modifier = _truncate_modifiers[op.unit]
         except KeyError:
             raise com.UnsupportedOperationError(
                 f'Unsupported truncate unit {op.unit!r}'
@@ -208,6 +213,36 @@ def _arbitrary(t, op):
     return reduction(getattr(sa.func, f"_ibis_sqlite_arbitrary_{how}"))(t, op)
 
 
+_INTERVAL_DATE_UNITS = frozenset(
+    (IntervalUnit.YEAR, IntervalUnit.MONTH, IntervalUnit.DAY)
+)
+
+
+def _timestamp_op(func, sign, units):
+    def _formatter(translator, op):
+        arg, offset = op.args
+
+        unit = offset.output_dtype.unit
+        if unit not in units:
+            raise com.UnsupportedOperationError(
+                "SQLite does not allow binary operation "
+                f"{func} with INTERVAL offset {unit}"
+            )
+        offset = translator.translate(offset)
+        result = getattr(sa.func, func)(
+            translator.translate(arg),
+            f"{sign}{offset.value} {unit.plural}",
+        )
+        return result
+
+    return _formatter
+
+
+def _date_diff(t, op):
+    left, right = map(t.translate, op.args)
+    return sa.func.julianday(left) - sa.func.julianday(right)
+
+
 operation_registry.update(
     {
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
@@ -242,6 +277,9 @@ operation_registry.update(
         ),
         ops.DateTruncate: _truncate(sa.func.date),
         ops.Date: unary(sa.func.date),
+        ops.DateAdd: _timestamp_op("DATE", "+", _INTERVAL_DATE_UNITS),
+        ops.DateSub: _timestamp_op("DATE", "-", _INTERVAL_DATE_UNITS),
+        ops.DateDiff: _date_diff,
         ops.Time: unary(sa.func.time),
         ops.TimestampTruncate: _truncate(sa.func.datetime),
         ops.Strftime: fixed_arity(
