@@ -83,12 +83,8 @@ shapely = { version = ">=1.6,<1.8|>=1.9,<3", optional = true }
 # appears to cause poetry's solver to get stuck
 #
 # also, we don't support arbitrarily old versions of this library
-snowflake-connector-python = { version = ">=2.7.10,<4", optional = true, extras = [
-  "pandas",
-] }
-snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true, extras = [
-  "pandas",
-] }
+snowflake-connector-python = { version = ">=2.7.10,<4", optional = true }
+snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 sqlalchemy = { version = ">=1.4,<3", optional = true }
 sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
