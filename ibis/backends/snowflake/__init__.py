@@ -136,19 +136,6 @@ _SNOWFLAKE_MAP_UDFS = {
 }
 
 
-def _make_udf(name, defn, *, quote) -> str:
-    signature = ", ".join(
-        f'{quote(argname)} {sa.types.to_instance(typ)}'
-        for argname, typ in defn["inputs"].items()
-    )
-    return f"""\
-CREATE FUNCTION IF NOT EXISTS {name}({signature})
-RETURNS {sa.types.to_instance(defn["returns"])}
-LANGUAGE JAVASCRIPT
-AS
-$$ {defn["source"]} $$"""
-
-
 class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
@@ -165,7 +152,27 @@ class Backend(BaseAlchemyBackend):
     @property
     def version(self) -> str:
         with self.begin() as con:
-            return con.exec_driver_sql("SELECT CURRENT_VERSION()").scalar()
+            return con.execute(sa.select(sa.func.current_version())).scalar()
+
+    def _compile_sqla_type(self, typ) -> str:
+        return sa.types.to_instance(typ).compile(dialect=self.con.dialect)
+
+    def _make_udf(self, name: str, defn) -> str:
+        dialect = self.con.dialect
+        quote = dialect.preparer(dialect).quote_identifier
+        signature = ", ".join(
+            f"{quote(argname)} {self._compile_sqla_type(typ)}"
+            for argname, typ in defn["inputs"].items()
+        )
+        return_type = self._compile_sqla_type(defn["returns"])
+        return f"""\
+CREATE FUNCTION IF NOT EXISTS {name}({signature})
+RETURNS {return_type}
+LANGUAGE JAVASCRIPT
+RETURNS NULL ON NULL INPUT
+IMMUTABLE
+AS
+$$ {defn["source"]} $$"""
 
     def do_connect(
         self,
@@ -216,7 +223,7 @@ class Backend(BaseAlchemyBackend):
                 try:
                     cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
                     for name, defn in _SNOWFLAKE_MAP_UDFS.items():
-                        cur.execute(_make_udf(name, defn, quote=quote))
+                        cur.execute(self._make_udf(name, defn))
                     cur.execute(f"USE SCHEMA {quote(database)}.{quote(schema)}")
                 except Exception as e:  # noqa: BLE001
                     warnings.warn(

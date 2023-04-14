@@ -449,5 +449,5 @@ def map(
     └──────────────────────┘
     """
     if values is None:
-        keys, values = list(keys.keys()), list(keys.values())
+        keys, values = tuple(keys.keys()), tuple(keys.values())
     return ops.Map(keys, values).to_expr()
