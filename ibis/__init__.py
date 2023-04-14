@@ -111,5 +111,8 @@ def __getattr__(name: str) -> BaseBackend:
     proxy._to_sql = backend._to_sql
     if hasattr(backend, "_sqlglot_dialect"):
         proxy._sqlglot_dialect = backend._sqlglot_dialect
+    # Add any additional methods that should be exposed at the top level
+    for name in getattr(backend, "_top_level_methods", ()):
+        setattr(proxy, name, getattr(backend, name))
 
     return proxy
