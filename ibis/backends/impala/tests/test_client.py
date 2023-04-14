@@ -21,6 +21,10 @@ def db(con, test_data_db):
     return con.database(test_data_db)
 
 
+def test_hdfs_connect_function_is_public():
+    assert hasattr(ibis.impala, "hdfs_connect")
+
+
 def test_cursor_garbage_collection(con):
     for _ in range(5):
         con.raw_sql('select 1').fetchall()

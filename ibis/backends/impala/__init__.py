@@ -182,6 +182,7 @@ class Backend(BaseSQLBackend):
     name = 'impala'
     # not 100% accurate, but very close
     _sqlglot_dialect = "hive"
+    _top_level_methods = ("hdfs_connect",)
     database_class = ImpalaDatabase
     table_expr_class = ImpalaTable
     compiler = ImpalaCompiler
