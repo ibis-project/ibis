@@ -77,6 +77,11 @@ def sort_key(op):
 def selection(op):
     plan = translate(op.table)
 
+    if op.predicates:
+        predicates = map(translate, op.predicates)
+        predicate = functools.reduce(operator.and_, predicates)
+        plan = plan.filter(predicate)
+
     selections = []
     for arg in op.selections or [op.table]:
         # TODO(kszucs) it would be nice if we wouldn't need to handle the
@@ -99,11 +104,6 @@ def selection(op):
             )
 
     plan = plan.select(*selections)
-
-    if op.predicates:
-        predicates = map(translate, op.predicates)
-        predicate = functools.reduce(operator.and_, predicates)
-        plan = plan.filter(predicate)
 
     if op.sort_keys:
         sort_keys = map(translate, op.sort_keys)
