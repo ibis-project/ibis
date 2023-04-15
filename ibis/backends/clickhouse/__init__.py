@@ -530,7 +530,7 @@ class Backend(BaseBackend):
         temp: bool = False,
         overwrite: bool = False,
         # backend specific arguments
-        engine: str,
+        engine: str = "File(Native)",
         order_by: Iterable[str] | None = None,
         partition_by: Iterable[str] | None = None,
         sample_by: str | None = None,
