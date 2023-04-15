@@ -120,7 +120,7 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["clickhouse", "datafusion", "polars", "druid"])
+@mark.notimpl(["datafusion", "polars", "druid"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, dict())
@@ -199,7 +199,7 @@ def test_rename_table(con, temp_table, new_schema):
         con.drop_table(temp_table, force=True)
 
 
-@mark.notimpl(["bigquery", "clickhouse", "datafusion", "polars", "druid"])
+@mark.notimpl(["bigquery", "datafusion", "polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
@@ -747,7 +747,7 @@ def test_agg_memory_table(con):
         param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
     ],
 )
-@pytest.mark.notimpl(["clickhouse", "dask", "datafusion", "pandas", "polars", "druid"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])
 def test_create_from_in_memory_table(backend, con, t):
     if backend.name() == "snowflake":
         pytest.skip("snowflake is unreliable here")
