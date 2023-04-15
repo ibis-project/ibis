@@ -9,6 +9,8 @@ from operator import methodcaller
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.expression import ClauseElement, Executable
 
 import ibis
 import ibis.common.exceptions as com
@@ -63,12 +65,42 @@ __all__ = (
 )
 
 
+class CreateTableAs(Executable, ClauseElement):
+    inherit_cache = True
+
+    def __init__(
+        self,
+        name,
+        query,
+        temp: bool = False,
+        overwrite: bool = False,
+    ):
+        self.name = name
+        self.query = query
+        self.temp = temp
+        self.overwrite = overwrite
+
+
+@compiles(CreateTableAs)
+def _create_table_as(element, compiler, **kw):
+    stmt = "CREATE "
+
+    if element.overwrite:
+        stmt += "OR REPLACE "
+
+    if element.temp:
+        stmt += "TEMPORARY "
+
+    return stmt + f"TABLE {element.name} AS {compiler.process(element.query, **kw)}"
+
+
 class BaseAlchemyBackend(BaseSQLBackend):
     """Backend class for backends that compile to SQLAlchemy expressions."""
 
     database_class = AlchemyDatabase
     table_class = AlchemyTable
     compiler = AlchemyCompiler
+    supports_temporary_tables = True
 
     def _build_alchemy_url(self, url, host, port, user, password, database, driver):
         if url is not None:
@@ -228,25 +260,59 @@ class BaseAlchemyBackend(BaseSQLBackend):
             schema = obj.schema()
 
         self._schemas[self._fully_qualified_name(name, database)] = schema
-        table = self._table_from_schema(
-            name,
-            schema,
-            database=database or self.current_database,
-            temp=temp,
-        )
 
         if has_expr := obj is not None:
             # this has to happen outside the `begin` block, so that in-memory
             # tables are visible inside the transaction created by it
             self._register_in_memory_tables(obj)
 
-        with self.begin() as bind:
-            if overwrite:
-                table.drop(bind=bind, checkfirst=True)
-            table.create(bind=bind)
-            if has_expr:
+        table = self._table_from_schema(
+            name, schema, database=database or self.current_database, temp=temp
+        )
+
+        if has_expr:
+            if self.supports_create_or_replace:
+                ctas = CreateTableAs(
+                    name, self.compile(obj), temp=temp, overwrite=overwrite
+                )
+                with self.begin() as bind:
+                    bind.execute(ctas)
+            else:
+                tmptable = self._table_from_schema(
+                    util.gen_name("tmp_table_insert"),
+                    schema,
+                    # some backends don't support temporary tables
+                    temp=self.supports_temporary_tables,
+                )
                 method = self._get_insert_method(obj)
-                bind.execute(method(table.insert()))
+                insert = table.insert().from_select(tmptable.columns, tmptable.select())
+
+                with self.begin() as bind:
+                    # 1. write `obj` to a unique temp table
+                    tmptable.create(bind=bind)
+
+                # try/finally here so that a successfully created tmptable gets
+                # cleaned up no matter what
+                try:
+                    with self.begin() as bind:
+                        bind.execute(method(tmptable.insert()))
+
+                        # 2. recreate the existing table
+                        if overwrite:
+                            table.drop(bind=bind, checkfirst=True)
+                        table.create(bind=bind)
+
+                        # 3. insert the temp table's data into the (re)created table
+                        bind.execute(insert)
+                finally:
+                    with self.begin() as bind:
+                        # 4. clean up the temp table
+                        tmptable.drop(bind=bind)
+        else:
+            with self.begin() as bind:
+                if overwrite:
+                    table.drop(bind=bind, checkfirst=True)
+                table.create(bind=bind)
         return self.table(name, database=database)
 
     def _get_insert_method(self, expr):
@@ -537,11 +603,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
             if overwrite:
                 self.drop_table(table_name, database=database)
-                self.create_table(
-                    table_name,
-                    schema=to_table_schema,
-                    database=database,
-                )
+                self.create_table(table_name, schema=to_table_schema, database=database)
 
             to_table = self._get_sqla_table(table_name, schema=database)
 

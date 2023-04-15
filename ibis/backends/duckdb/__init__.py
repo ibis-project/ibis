@@ -49,6 +49,7 @@ def _format_kwargs(kwargs: Mapping[str, Any]):
 class Backend(BaseAlchemyBackend):
     name = "duckdb"
     compiler = DuckDBSQLCompiler
+    supports_create_or_replace = True
 
     def current_database(self) -> str:
         return "main"

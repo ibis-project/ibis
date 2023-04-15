@@ -16,6 +16,7 @@ class Backend(BaseAlchemyBackend):
     name = "mssql"
     compiler = MsSqlCompiler
     _sqlglot_dialect = "tsql"
+    supports_create_or_replace = False
 
     def do_connect(
         self,

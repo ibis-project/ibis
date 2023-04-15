@@ -18,6 +18,8 @@ from ibis.backends.trino.datatypes import parse
 class Backend(BaseAlchemyBackend):
     name = "trino"
     compiler = TrinoSQLCompiler
+    supports_create_or_replace = False
+    supports_temporary_tables = False
 
     def current_database(self) -> str:
         raise NotImplementedError(type(self))

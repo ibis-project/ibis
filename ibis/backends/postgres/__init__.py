@@ -49,6 +49,7 @@ DROP FUNCTION IF EXISTS public._ibis_first_agg(anyelement, anyelement), public._
 class Backend(BaseAlchemyBackend):
     name = 'postgres'
     compiler = PostgreSQLCompiler
+    supports_create_or_replace = False
 
     def do_connect(
         self,

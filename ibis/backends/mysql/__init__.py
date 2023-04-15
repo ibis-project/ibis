@@ -17,6 +17,7 @@ from ibis.backends.mysql.datatypes import _type_from_cursor_info
 class Backend(BaseAlchemyBackend):
     name = 'mysql'
     compiler = MySQLCompiler
+    supports_create_or_replace = False
 
     def do_connect(
         self,
