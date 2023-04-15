@@ -75,6 +75,7 @@ class Backend(BaseAlchemyBackend):
     # if there is technical debt that makes this required
     database_class = Database
     compiler = SQLiteCompiler
+    supports_create_or_replace = False
 
     def __getstate__(self) -> dict:
         r = super().__getstate__()

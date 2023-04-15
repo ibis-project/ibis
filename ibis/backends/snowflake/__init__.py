@@ -139,6 +139,7 @@ _SNOWFLAKE_MAP_UDFS = {
 class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
+    supports_create_or_replace = True
 
     @property
     def _current_schema(self) -> str:

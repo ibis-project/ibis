@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import contextlib
 import os
 import platform
 import re
@@ -18,7 +21,8 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.util import guid
+from ibis.backends.base import BaseBackend
+from ibis.util import gen_name, guid
 
 
 @pytest.fixture
@@ -1201,3 +1205,40 @@ def test_persist_expression_release(con, alltypes):
 
     with pytest.raises(Exception, match=cached_table.op().name):
         cached_table.execute()
+
+
+@contextlib.contextmanager
+def gen_test_name(con: BaseBackend) -> str:
+    name = gen_name("test_table")
+    try:
+        yield name
+    finally:
+        con.drop_table(name, force=True)
+
+
+@mark.notimpl(
+    ["bigquery", "datafusion", "polars"],
+    raises=NotImplementedError,
+    reason="overwriting not implemented in ibis for this backend",
+)
+@mark.broken(
+    ["druid"], raises=sa.exc.ProgrammingError, reason="generated SQL fails to parse"
+)
+@mark.notimpl(["impala"], reason="impala doesn't support memtable")
+@mark.notimpl(["pyspark"])
+def test_overwrite(ddl_con):
+    t0 = ibis.memtable({"a": [1, 2, 3]})
+
+    with gen_test_name(ddl_con) as x, gen_test_name(ddl_con) as y:
+        t1 = ddl_con.create_table(x, t0)
+
+        t2 = t1.filter(t1.a < 3)
+        expected_count = 2
+
+        assert t2.count().execute() == expected_count
+        assert ddl_con.create_table(y, t2).count().execute() == expected_count
+        assert (
+            ddl_con.create_table(x, t2, overwrite=True).count().execute()
+            == expected_count
+        )
+        assert t2.count().execute() == expected_count

@@ -20,6 +20,7 @@ from ibis.backends.druid.compiler import DruidCompiler
 class Backend(BaseAlchemyBackend):
     name = 'druid'
     compiler = DruidCompiler
+    supports_create_or_replace = False
 
     def do_connect(
         self,
