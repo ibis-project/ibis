@@ -5,6 +5,7 @@ import functools
 import inspect
 import math
 import operator
+from collections import defaultdict
 from typing import Callable
 
 try:
@@ -300,6 +301,21 @@ class _ibis_sqlite_var:
         count = self.count
         if count:
             return self.sum_of_squares_of_differences / (count - self.offset)
+        return None
+
+
+@udaf
+class _ibis_sqlite_mode:
+    def __init__(self):
+        self.counter = defaultdict(int)
+
+    def step(self, value):
+        if value is not None:
+            self.counter[value] += 1
+
+    def finalize(self):
+        if self.counter:
+            return max(self.counter, key=self.counter.get)
         return None
 
 
