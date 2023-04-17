@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import functools
 
 import pyspark.sql.types as pt
@@ -35,14 +36,25 @@ _SPARK_DTYPE_TO_IBIS_DTYPE = {
     pt.NullType: dt.Null,
     pt.ShortType: dt.Int16,
     pt.StringType: dt.String,
-    pt.TimestampType: dt.Timestamp,
 }
+
+
+@dt.dtype.register(pt.TimestampType)
+def _spark_timestamp(spark_dtype_obj, nullable=True):
+    return dt.Timestamp(nullable=nullable)
+
+
+with contextlib.suppress(AttributeError):
+
+    @dt.dtype.register(pt.TimestampNTZType)
+    def _spark_timestamp_ntz(_, nullable=True):
+        return dt.Timestamp(nullable=nullable)
 
 
 @dt.dtype.register(pt.DataType)
 def _spark_dtype(spark_dtype_obj, nullable=True):
     """Convert Spark SQL type objects to ibis type objects."""
-    ibis_type_class = _SPARK_DTYPE_TO_IBIS_DTYPE.get(type(spark_dtype_obj))
+    ibis_type_class = _SPARK_DTYPE_TO_IBIS_DTYPE[type(spark_dtype_obj)]
     return ibis_type_class(nullable=nullable)
 
 
@@ -120,6 +132,14 @@ def _dtype(ibis_dtype_obj):
     """Convert ibis types types to Spark SQL."""
     dtype = _IBIS_DTYPE_TO_SPARK_DTYPE[type(ibis_dtype_obj)]
     return dtype()
+
+
+@spark_dtype.register(dt.Timestamp)
+def _timestamp(ibis_dtype_obj):
+    if ibis_dtype_obj.timezone is None:
+        with contextlib.suppress(AttributeError):
+            return pt.TimestampNTZType()
+    return pt.TimestampType()
 
 
 @spark_dtype.register(dt.Decimal)
