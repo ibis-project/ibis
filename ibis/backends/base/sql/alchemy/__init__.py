@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql import quoted_name
 from sqlalchemy.sql.expression import ClauseElement, Executable
 
 import ibis
@@ -74,11 +75,13 @@ class CreateTableAs(Executable, ClauseElement):
         query,
         temp: bool = False,
         overwrite: bool = False,
+        quote: bool | None = None,
     ):
         self.name = name
         self.query = query
         self.temp = temp
         self.overwrite = overwrite
+        self.quote = quote
 
 
 @compiles(CreateTableAs)
@@ -91,7 +94,8 @@ def _create_table_as(element, compiler, **kw):
     if element.temp:
         stmt += "TEMPORARY "
 
-    return stmt + f"TABLE {element.name} AS {compiler.process(element.query, **kw)}"
+    name = compiler.preparer.quote(quoted_name(element.name, quote=element.quote))
+    return stmt + f"TABLE {name} AS {compiler.process(element.query, **kw)}"
 
 
 class BaseAlchemyBackend(BaseSQLBackend):
@@ -273,7 +277,11 @@ class BaseAlchemyBackend(BaseSQLBackend):
         if has_expr:
             if self.supports_create_or_replace:
                 ctas = CreateTableAs(
-                    name, self.compile(obj), temp=temp, overwrite=overwrite
+                    name,
+                    self.compile(obj),
+                    temp=temp,
+                    overwrite=overwrite,
+                    quote=self.compiler.translator_class._quote_table_names,
                 )
                 with self.begin() as bind:
                     bind.execute(ctas)
