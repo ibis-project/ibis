@@ -58,6 +58,9 @@ def gzip_csv(data_directory, tmp_path):
             "fancy stones",
             "fancy stones",
             id="file_atypical_name",
+            marks=pytest.mark.notyet(
+                ["pyspark"], reason="no spaces allowed in view names"
+            ),
         ),
         param(
             ["file://diamonds.csv", "diamonds.csv"],
