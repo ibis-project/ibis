@@ -11,9 +11,11 @@ import ibis.expr.datatypes as dt
 pa = pytest.importorskip("pyarrow")
 
 try:
-    from pyspark.sql.utils import ParseException
+    from pyspark.errors.exceptions.captured import (
+        ArithmeticException as PySparkArithmeticException,
+    )
 except ImportError:
-    ParseException = None
+    PySparkArithmeticException = None
 
 limit = [
     param(
@@ -275,7 +277,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
                 ),
                 pytest.mark.notyet(["dask"], raises=NotImplementedError),
                 pytest.mark.notyet(["mssql", "mysql"], raises=sa.exc.OperationalError),
-                pytest.mark.notyet(["pyspark"], raises=ParseException),
+                pytest.mark.notyet(["pyspark"], raises=PySparkArithmeticException),
             ],
         ),
     ],
