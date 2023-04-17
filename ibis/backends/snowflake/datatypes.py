@@ -12,6 +12,7 @@ from snowflake.sqlalchemy import (
     VARIANT,
 )
 from snowflake.sqlalchemy.snowdialect import SnowflakeDialect
+from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import to_sqla_type
@@ -105,3 +106,20 @@ def _sf_timestamp(_, itype):
     if itype.timezone is None:
         return TIMESTAMP_NTZ
     return TIMESTAMP_TZ
+
+
+@to_sqla_type.register(SnowflakeDialect, dt.String)
+def _sf_string(_, itype):
+    # 16MB
+    return sa.VARCHAR(2**24)
+
+
+@to_sqla_type.register(SnowflakeDialect, dt.Binary)
+def _sf_binary(_, itype):
+    # 8MB
+    return sa.VARBINARY(2**23)
+
+
+@compiles(sa.types.NullType, "snowflake")
+def compiles_nulltype(element, compiler, **kw):
+    return "VARIANT"

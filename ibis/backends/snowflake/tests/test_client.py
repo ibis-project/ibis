@@ -1,5 +1,12 @@
 from __future__ import annotations
 
+import os
+
+import pandas as pd
+import pandas.testing as tm
+import pyarrow as pa
+import pytest
+
 import ibis
 from ibis.util import guid
 
@@ -23,3 +30,28 @@ def test_cross_db_access(con):
             con.raw_sql(f"DROP SCHEMA {schema}")
     finally:
         con.raw_sql(f"DROP DATABASE {db}")
+
+
+@pytest.fixture(scope="session")
+def simple_con():
+    if (url := os.environ.get("SNOWFLAKE_URL")) is None:
+        pytest.skip("no snowflake credentials")
+    return ibis.connect(url)
+
+
+@pytest.mark.parametrize(
+    "data",
+    [
+        # raw
+        {"key": list("abc"), "value": [[1], [2], [3]]},
+        # dataframe
+        pd.DataFrame({"key": list("abc"), "value": [[1], [2], [3]]}),
+        # pyarrow table
+        pa.Table.from_pydict({"key": list("abc"), "value": [[1], [2], [3]]}),
+    ],
+)
+def test_basic_memtable_registration(simple_con, data):
+    expected = pd.DataFrame({"key": list("abc"), "value": [[1], [2], [3]]})
+    t = ibis.memtable(data)
+    result = simple_con.execute(t)
+    tm.assert_frame_equal(result, expected)

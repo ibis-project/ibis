@@ -17,7 +17,7 @@ class PyArrowTableProxy(TableProxy):
     def to_frame(self) -> pd.DataFrame:
         return self._data.to_pandas()
 
-    def to_pyarrow(self, _: sch.Schema) -> pa.Table:
+    def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
         return self._data
 
 
