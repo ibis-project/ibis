@@ -134,7 +134,7 @@
         ibis310 = mkDevShell pkgs.ibisDevEnv310;
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
 
-        default = ibis310;
+        default = ibis311;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";
