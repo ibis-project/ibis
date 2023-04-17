@@ -243,6 +243,18 @@ def _date_diff(t, op):
     return sa.func.julianday(left) - sa.func.julianday(right)
 
 
+def _mode(t, op):
+    sa_arg = op.arg
+
+    if sa_arg.output_dtype.is_boolean():
+        sa_arg = ops.Cast(op.arg, to=dt.int32)
+
+    if op.where is not None:
+        sa_arg = ops.Where(op.where, sa_arg, None)
+
+    return sa.func._ibis_sqlite_mode(t.translate(sa_arg))
+
+
 operation_registry.update(
     {
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
@@ -356,6 +368,7 @@ operation_registry.update(
         ops.BitOr: reduction(sa.func._ibis_sqlite_bit_or),
         ops.BitAnd: reduction(sa.func._ibis_sqlite_bit_and),
         ops.BitXor: reduction(sa.func._ibis_sqlite_bit_xor),
+        ops.Mode: _mode,
         ops.Degrees: unary(sa.func._ibis_sqlite_degrees),
         ops.Radians: unary(sa.func._ibis_sqlite_radians),
         # sqlite doesn't implement a native xor operator
