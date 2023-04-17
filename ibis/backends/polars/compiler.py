@@ -78,7 +78,11 @@ def literal(op):
     if dtype.is_array():
         value = pl.Series("", value)
         typ = to_polars_type(dtype)
-        return pl.lit(value, dtype=typ).list()
+        val = pl.lit(value, dtype=typ)
+        try:
+            return val.implode()
+        except AttributeError:  # pragma: no cover
+            return val.list()  # pragma: no cover
     elif dtype.is_struct():
         values = [
             pl.lit(v, dtype=to_polars_type(dtype[k])).alias(k) for k, v in value.items()
@@ -809,7 +813,10 @@ def array_collect(op):
     arg = translate(op.arg)
     if (where := op.where) is not None:
         arg = arg.filter(translate(where))
-    return arg.list()
+    try:
+        return arg.implode()
+    except AttributeError:  # pragma: no cover
+        return arg.list()  # pragma: no cover
 
 
 @translate.register(ops.Unnest)
