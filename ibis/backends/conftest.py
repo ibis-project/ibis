@@ -301,20 +301,6 @@ def pytest_collection_modifyitems(session, config, items):
             if not any(item.iter_markers(name="benchmark")):
                 item.add_marker(pytest.mark.core)
 
-        for _ in item.iter_markers(name="pyspark"):
-            if not isinstance(item, pytest.DoctestItem):
-                additional_markers.append(
-                    (
-                        item,
-                        [
-                            pytest.mark.xfail(
-                                vparse(pd.__version__) >= vparse("2"),
-                                reason="PySpark doesn't support pandas>=2",
-                            ),
-                        ],
-                    )
-                )
-
     for item, markers in additional_markers:
         for marker in markers:
             item.add_marker(marker)
