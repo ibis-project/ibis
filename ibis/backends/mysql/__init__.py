@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import warnings
 from typing import Iterable, Literal
 
 import sqlalchemy as sa
@@ -104,7 +105,10 @@ class Backend(BaseAlchemyBackend):
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
             with dbapi_connection.cursor() as cur:
-                cur.execute("SET @@session.time_zone = 'UTC'")
+                try:
+                    cur.execute("SET @@session.time_zone = 'UTC'")
+                except sa.exc.OperationalError:
+                    warnings.warn("Unable to set session timezone to UTC.")
 
         super().do_connect(engine)
 
