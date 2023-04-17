@@ -1,13 +1,16 @@
 import decimal
 
+import pandas as pd
 import pytest
 import pytz
+from packaging.version import parse as vparse
 from pandas import Timestamp
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 
+dask = pytest.importorskip("dask")
 pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402
 
@@ -136,7 +139,14 @@ def test_cast_date(t, df, column):
     tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 
 
-@pytest.mark.parametrize('type', [dt.Decimal(9, 0), dt.Decimal(12, 3)])
+@pytest.mark.xfail(
+    vparse(dask.__version__) == vparse("2023.4.0")
+    and vparse(pd.__version__) >= vparse("2.0.0"),
+    reason="dask version 2023.4.0 with pandas 2.0 breaks decimal support",
+)
+@pytest.mark.parametrize(
+    'type', [dt.Decimal(9, 0), dt.Decimal(12, 3)], ids=["nine", "twelve"]
+)
 def test_cast_to_decimal(t, df, type):
     expr = t.float64_as_strings.cast(type)
     result = expr.compile()

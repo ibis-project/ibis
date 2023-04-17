@@ -1,5 +1,4 @@
 import decimal
-import functools
 import math
 import operator
 from operator import methodcaller
@@ -7,12 +6,14 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import OperationNotDefinedError
 
+dask = pytest.importorskip("dask")
 dd = pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402
 
@@ -52,17 +53,11 @@ def test_binary_boolean_operations(t, df, op):
     )
 
 
-def operate(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except decimal.InvalidOperation:
-            return decimal.Decimal('NaN')
-
-    return wrapper
-
-
+@pytest.mark.xfail(
+    vparse(dask.__version__) == vparse("2023.4.0")
+    and vparse(pd.__version__) >= vparse("2.0.0"),
+    reason="dask version 2023.4.0 with pandas 2.0 breaks decimal support",
+)
 @pytest.mark.parametrize(
     ('ibis_func', 'dask_func'),
     [
@@ -87,19 +82,19 @@ def operate(func):
             lambda x: x if not x else decimal.Decimal(1).copy_sign(x),
             id="sign",
         ),
-        param(methodcaller('sqrt'), operate(lambda x: x.sqrt()), id="sqrt"),
+        param(methodcaller('sqrt'), methodcaller('sqrt'), id="sqrt"),
         param(
             methodcaller('log', 2),
-            operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
+            lambda x: x.ln() / decimal.Decimal(2).ln(),
             id="log_2",
         ),
-        param(methodcaller('ln'), operate(lambda x: x.ln()), id="ln"),
+        param(methodcaller('ln'), lambda x: x.ln(), id="ln"),
         param(
             methodcaller('log2'),
-            operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
+            lambda x: x.ln() / decimal.Decimal(2).ln(),
             id="log2",
         ),
-        param(methodcaller('log10'), operate(lambda x: x.log10()), id="log10"),
+        param(methodcaller('log10'), methodcaller('log10'), id="log10"),
     ],
 )
 def test_math_functions_decimal(t, df, ibis_func, dask_func):
@@ -125,7 +120,8 @@ def test_math_functions_decimal(t, df, ibis_func, dask_func):
     tm.assert_series_equal(computed_result, computed_expected)
 
 
-def test_round_decimal_with_negative_places(t, df):
+@pytest.mark.xfail_version(dask=["dask==2023.4.0"])
+def test_round_decimal_with_negative_places(t):
     type = dt.Decimal(12, 3)
     expr = t.float64_as_strings.cast(type).round(-1)
     result = expr.compile()
