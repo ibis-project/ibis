@@ -36,7 +36,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
             for table in TEST_TABLES:
                 basename = f"{table}.csv"
-                with data_directory.joinpath(basename).open("r") as f:
+                with data_directory.joinpath("csv", basename).open("r") as f:
                     reader = csv.reader(f)
                     header = next(reader)
                     assert header, f"empty header for table: `{table}`"

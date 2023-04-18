@@ -104,10 +104,7 @@ def test_query_schema(ddl_backend, expr_fn, expected):
 
 @pytest.mark.notimpl(["datafusion", "snowflake", "polars", "mssql"])
 @pytest.mark.notyet(["sqlite"])
-@pytest.mark.never(
-    ["dask", "pandas"],
-    reason="dask and pandas do not support SQL",
-)
+@pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
@@ -127,13 +124,17 @@ backend_type_mapping = {
 @mark.notimpl(["datafusion", "polars", "druid"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
-    backend_mapping = backend_type_mapping.get(con.name, dict())
+    backend_mapping = backend_type_mapping.get(con.name, {})
 
-    for column_name, column_type in new_table.schema().items():
-        assert (
-            backend_mapping.get(new_schema[column_name], new_schema[column_name])
-            == column_type
-        )
+    result = ibis.schema(
+        {
+            column_name: backend_mapping.get(
+                new_schema[column_name], new_schema[column_name]
+            )
+            for column_name in new_table.schema().keys()
+        }
+    )
+    assert result == new_table.schema()
 
 
 @pytest.fixture(scope="session")

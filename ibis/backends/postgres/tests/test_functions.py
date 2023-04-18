@@ -73,8 +73,6 @@ def test_date_cast(alltypes, at, translate):
 @pytest.mark.parametrize(
     'column',
     [
-        'index',
-        'Unnamed: 0',
         'id',
         'bool_col',
         'tinyint_col',

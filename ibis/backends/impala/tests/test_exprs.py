@@ -3,6 +3,7 @@ from decimal import Decimal
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.types as ir
@@ -19,7 +20,7 @@ def test_embedded_identifier_quoting(alltypes):
 
 
 def test_decimal_metadata(con):
-    table = con.table('tpch_lineitem')
+    table = con.table('lineitem')
 
     expr = table.l_quantity
     assert expr.type().precision == 12
@@ -171,15 +172,20 @@ def test_int_builtins(con, expr, expected):
     assert result == expected, ImpalaCompiler.to_sql(expr)
 
 
-def test_column_types(alltypes):
-    df = alltypes.execute()
-    assert df.tinyint_col.dtype.name == 'int8'
-    assert df.smallint_col.dtype.name == 'int16'
-    assert df.int_col.dtype.name == 'int32'
-    assert df.bigint_col.dtype.name == 'int64'
-    assert df.float_col.dtype.name == 'float32'
-    assert df.double_col.dtype.name == 'float64'
-    assert df.timestamp_col.dtype.name == 'datetime64[ns]'
+@pytest.mark.parametrize(
+    ("col", "expected"),
+    [
+        param("tinyint_col", "int8", id="tinyint"),
+        param("smallint_col", "int16", id="smallint"),
+        param("int_col", "int32", id="int"),
+        param("bigint_col", "int64", id="bigint"),
+        param("float_col", "float32", id="float"),
+        param("double_col", "float64", id="double"),
+        param("timestamp_col", "datetime64[ns]", id="timestamp"),
+    ],
+)
+def test_column_types(alltypes_df, col, expected):
+    assert alltypes_df[col].dtype.name == expected
 
 
 @pytest.mark.parametrize(
@@ -337,7 +343,7 @@ def test_div_floordiv(con, expr, expected):
 
 
 def test_filter_predicates(con):
-    t = con.table('tpch_nation')
+    t = con.table('nation')
 
     predicates = [
         lambda x: x.n_name.lower().like('%ge%'),
@@ -366,7 +372,7 @@ def test_casted_expr_impala_bug(alltypes):
 
 
 def test_decimal_timestamp_builtins(con):
-    table = con.table('tpch_lineitem')
+    table = con.table('lineitem')
 
     dc = table.l_quantity
     ts = table.l_receiptdate.cast('timestamp')
@@ -520,10 +526,10 @@ def test_anti_join_self_reference_works(con, alltypes):
 
 
 def test_tpch_self_join_failure(con):
-    region = con.table('tpch_region')
-    nation = con.table('tpch_nation')
-    customer = con.table('tpch_customer')
-    orders = con.table('tpch_orders')
+    region = con.table('region')
+    nation = con.table('nation')
+    customer = con.table('customer')
+    orders = con.table('orders')
 
     fields_of_interest = [
         region.r_name.name('region'),
@@ -557,10 +563,10 @@ def test_tpch_self_join_failure(con):
 
 def test_tpch_correlated_subquery_failure(con):
     # #183 and other issues
-    region = con.table('tpch_region')
-    nation = con.table('tpch_nation')
-    customer = con.table('tpch_customer')
-    orders = con.table('tpch_orders')
+    region = con.table('region')
+    nation = con.table('nation')
+    customer = con.table('customer')
+    orders = con.table('orders')
 
     fields_of_interest = [
         customer,

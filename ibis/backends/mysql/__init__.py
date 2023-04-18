@@ -71,8 +71,6 @@ class Backend(BaseAlchemyBackend):
         MySQLTable[table]
           name: functional_alltypes
           schema:
-            index : int64
-            Unnamed: 0 : int64
             id : int32
             bool_col : int8
             tinyint_col : int8

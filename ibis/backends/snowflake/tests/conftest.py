@@ -24,7 +24,7 @@ def copy_into(con, data_dir: Path, table: str) -> None:
     stage = "ibis_testing"
     csv = f"{table}.csv"
     con.exec_driver_sql(
-        f"PUT file://{data_dir.joinpath(csv).absolute()} @{stage}/{csv}"
+        f"PUT file://{data_dir.joinpath('csv', csv).absolute()} @{stage}/{csv}"
     )
     con.exec_driver_sql(
         f"COPY INTO {table} FROM @{stage}/{csv} FILE_FORMAT = (FORMAT_NAME = ibis_testing)"

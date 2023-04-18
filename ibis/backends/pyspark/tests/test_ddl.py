@@ -40,8 +40,8 @@ def test_drop_non_empty_database(con, alltypes, temp_table_db):
 
 
 @pytest.fixture
-def temp_base(tmp_dir):
-    base = pjoin(tmp_dir, util.gen_name("temp_base"))
+def temp_base():
+    base = pjoin(f"/tmp/{util.gen_name('pyspark_testing')}", util.gen_name("temp_base"))
     yield base
     shutil.rmtree(base, ignore_errors=True)
 

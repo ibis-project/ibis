@@ -76,24 +76,15 @@ def df():
 def batting_df(data_directory):
     num_rows = 1000
     start_index = 30
-    df = pd.read_csv(
-        data_directory / 'batting.csv',
-        index_col=None,
-        sep=',',
-        header=0,
-        skiprows=range(1, start_index + 1),
-        nrows=num_rows,
-    )
+    df = pd.read_parquet(data_directory / 'parquet' / 'batting.parquet').iloc[
+        start_index : start_index + num_rows
+    ]
     return df.reset_index(drop=True)
 
 
 @pytest.fixture(scope='module')
 def awards_players_df(data_directory):
-    return pd.read_csv(
-        data_directory / 'awards_players.csv',
-        index_col=None,
-        sep=',',
-    )
+    return pd.read_parquet(data_directory / 'parquet' / 'awards_players.parquet')
 
 
 @pytest.fixture(scope='module')

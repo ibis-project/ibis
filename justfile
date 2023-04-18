@@ -64,7 +64,7 @@ doctest *args:
     pytest --doctest-modules {{ args }} "${doctest_modules[@]}"
 
 # download testing data
-download-data owner="ibis-project" repo="testing-data" rev="master":
+download-data owner="cpcloud" repo="testing-data" rev="cleanup":
     #!/usr/bin/env bash
     outdir="{{ justfile_directory() }}/ci/ibis-testing-data"
     rm -rf "$outdir"
@@ -74,8 +74,13 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
     if [ "{{ rev }}" = "master" ]; then
         args+=("--depth" "1")
     fi
+
     args+=("$outdir")
     git clone "${args[@]}"
+
+    if [ "{{ rev }}" != "master" ]; then
+        git -C "${outdir}" checkout "{{ rev }}"
+    fi
 
 # start backends using docker compose; no arguments starts all backends
 up *backends:

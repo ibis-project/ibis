@@ -43,9 +43,9 @@ def test_get_table_ref(db):
 
 
 def test_run_sql(con, test_data_db):
-    table = con.sql(f"SELECT li.* FROM {test_data_db}.tpch_lineitem li")
+    table = con.sql(f"SELECT li.* FROM {test_data_db}.lineitem li")
 
-    li = con.table('tpch_lineitem')
+    li = con.table('lineitem')
     assert isinstance(table, ir.Table)
     assert_equal(table.schema(), li.schema())
 
@@ -76,8 +76,8 @@ def test_explain(con):
 
 
 def test_get_schema(con, test_data_db):
-    t = con.table('tpch_lineitem')
-    schema = con.get_schema('tpch_lineitem', database=test_data_db)
+    t = con.table('lineitem')
+    schema = con.get_schema('lineitem', database=test_data_db)
     assert_equal(t.schema(), schema)
 
 
@@ -112,7 +112,7 @@ def test_adapt_scalar_array_results(con, alltypes):
 
 
 def test_interactive_repr_call_failure(con):
-    t = con.table('tpch_lineitem').limit(100000)
+    t = con.table('lineitem').limit(100000)
 
     t = t[t, t.l_receiptdate.cast('timestamp').name('date')]
 
@@ -155,17 +155,17 @@ def test_verbose_log_queries(con, test_data_db):
 
     with config.option_context('verbose', True):
         with config.option_context('verbose_log', queries.append):
-            con.table('tpch_orders', database=test_data_db)
+            con.table('orders', database=test_data_db)
 
     # we can't make assertions about the length of queries, since the Python GC
     # could've collected a temporary pandas table any time between construction
     # of `queries` and the assertion
-    expected = f'DESCRIBE {test_data_db}.`tpch_orders`'
+    expected = f'DESCRIBE {test_data_db}.`orders`'
     assert expected in queries
 
 
 def test_sql_query_limits(con, test_data_db):
-    table = con.table('tpch_nation', database=test_data_db)
+    table = con.table('nation', database=test_data_db)
     with config.option_context('sql.default_limit', 100000):
         # table has 25 rows
         assert len(table.execute()) == 25
@@ -206,7 +206,7 @@ def test_database_default_current_database(con):
 
 
 def test_close_drops_temp_tables(con, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
+    hdfs_path = pjoin(test_data_dir, 'impala/parquet/region')
 
     table = con.parquet_file(hdfs_path)
 

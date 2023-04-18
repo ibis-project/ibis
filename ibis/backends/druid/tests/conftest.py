@@ -99,11 +99,10 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
 
     @classmethod
     def service_spec(cls, data_dir: Path):
-        files = [data_dir.joinpath("functional_alltypes.parquet")]
-        files.extend(
-            data_dir.joinpath("parquet", name, f"{name}.parquet")
-            for name in ("diamonds", "batting", "awards_players")
-        )
+        files = [
+            data_dir.joinpath("parquet", f"{name}.parquet")
+            for name in ("diamonds", "batting", "awards_players", "functional_alltypes")
+        ]
         return ServiceSpec(
             name="druid-coordinator", data_volume="/opt/shared", files=files
         )

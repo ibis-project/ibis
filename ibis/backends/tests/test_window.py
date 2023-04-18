@@ -910,7 +910,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
         return df
 
     expected = (
-        df.groupby("month")
+        df.groupby("month", group_keys=False)
         .apply(agg)
         .sort_values(["id"])
         .reset_index(drop=True)

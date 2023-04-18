@@ -70,7 +70,7 @@ def t(table):
 
 @pytest.fixture
 def tpch_customer(con):
-    return con.table("tpch_customer")
+    return con.table("customer")
 
 
 @pytest.fixture
@@ -320,7 +320,7 @@ def test_identity_primitive_types(
     reason='Unknown reason. xfailing to restore the CI for udf tests. #2358'
 )
 def test_decimal_fail(udfcon, test_data_db, udf_ll):
-    col = udfcon.table('tpch_customer').c_acctbal
+    col = udfcon.table('customer').c_acctbal
     literal = ibis.literal(1).cast('decimal(12,2)')
     name = '__tmp_udf_' + util.guid()
 

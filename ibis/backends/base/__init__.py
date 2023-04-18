@@ -456,6 +456,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     table_class: type[ops.DatabaseTable] = ops.DatabaseTable
     name: ClassVar[str]
 
+    supports_temporary_tables = False
+
     def __init__(self, *args, **kwargs):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs

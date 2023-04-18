@@ -32,7 +32,7 @@ def pushd(new_dir):
 def gzip_csv(data_directory, tmp_path):
     basename = "diamonds.csv"
     f = tmp_path.joinpath(f"{basename}.gz")
-    data = data_directory.joinpath(basename).read_bytes()
+    data = data_directory.joinpath("csv", basename).read_bytes()
     f.write_bytes(gzip.compress(data))
     return str(f.absolute())
 
@@ -93,7 +93,7 @@ def gzip_csv(data_directory, tmp_path):
     ]
 )
 def test_register_csv(con, data_directory, fname, in_table_name, out_table_name):
-    with pushd(data_directory):
+    with pushd(data_directory / "csv"):
         table = con.register(fname, table_name=in_table_name)
 
     assert any(out_table_name in t for t in con.list_tables())
@@ -143,7 +143,7 @@ def test_register_with_dotted_name(con, data_directory, tmp_path):
     basename = "foo.bar.baz/diamonds.csv"
     f = tmp_path.joinpath(basename)
     f.parent.mkdir()
-    data = data_directory.joinpath("diamonds.csv").read_bytes()
+    data = data_directory.joinpath("csv", "diamonds.csv").read_bytes()
     f.write_bytes(data)
     table = con.register(str(f.absolute()))
 
@@ -200,7 +200,7 @@ def test_register_parquet(
     pq = pytest.importorskip("pyarrow.parquet")
 
     fname = Path(fname)
-    table = read_table(data_directory / fname.name)
+    table = read_table(data_directory / "csv" / fname.name)
 
     pq.write_table(table, tmp_path / fname.name)
 
@@ -238,7 +238,7 @@ def test_register_iterator_parquet(
 ):
     pq = pytest.importorskip("pyarrow.parquet")
 
-    table = read_table(data_directory / "functional_alltypes.csv")
+    table = read_table(data_directory / "csv" / "functional_alltypes.csv")
 
     pq.write_table(table, tmp_path / "functional_alltypes.parquet")
 
@@ -424,7 +424,8 @@ def test_read_parquet(
     pq = pytest.importorskip("pyarrow.parquet")
 
     fname = Path(fname)
-    table = read_table(data_directory / fname.name)
+    fname = Path(data_directory) / "parquet" / fname.name
+    table = pq.read_table(fname)
 
     pq.write_table(table, tmp_path / fname.name)
 
@@ -468,7 +469,7 @@ def test_read_parquet(
     ]
 )
 def test_read_csv(con, data_directory, fname, in_table_name, out_table_name):
-    with pushd(data_directory):
+    with pushd(data_directory / "csv"):
         if con.name == "pyspark":
             # pyspark doesn't respect CWD
             fname = str(Path(fname).absolute())

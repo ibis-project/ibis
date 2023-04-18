@@ -74,6 +74,9 @@ class ClickhouseTable(ir.Table):
 class Backend(BaseBackend):
     name = 'clickhouse'
 
+    # ClickHouse itself does, but the client driver does not
+    supports_temporary_tables = False
+
     class Options(ibis.config.Config):
         """Clickhouse options.
 

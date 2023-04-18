@@ -84,7 +84,7 @@ class TestConf(BackendTest, RoundHalfToEven):
             )
             with engine.begin() as con:
                 for table in TEST_TABLES:
-                    csv_path = data_dir / f"{table}.csv"
+                    csv_path = data_dir / "csv" / f"{table}.csv"
                     lines = [
                         f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
                         f"INTO TABLE {table}",
