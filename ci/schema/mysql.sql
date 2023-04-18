@@ -54,8 +54,6 @@ CREATE TABLE awards_players (
 DROP TABLE IF EXISTS functional_alltypes;
 
 CREATE TABLE functional_alltypes (
-    `index` BIGINT,
-    `Unnamed: 0` BIGINT,
     id INTEGER,
     bool_col BOOLEAN,
     tinyint_col TINYINT,
@@ -70,8 +68,6 @@ CREATE TABLE functional_alltypes (
     year INTEGER,
     month INTEGER
 ) DEFAULT CHARACTER SET = utf8;
-
-CREATE INDEX `ix_functional_alltypes_index` ON functional_alltypes (`index`);
 
 DROP TABLE IF EXISTS json_t CASCADE;
 

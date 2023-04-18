@@ -43,6 +43,6 @@ def test_multiple_argument_udf(alltypes):
     result = expr.execute()
 
     df = alltypes[['smallint_col', 'int_col']].execute()
-    expected = (df.smallint_col + df.int_col).astype('int64')
+    expected = (df.smallint_col + df.int_col).astype('int32')
 
     tm.assert_series_equal(result, expected.rename('tmp'))

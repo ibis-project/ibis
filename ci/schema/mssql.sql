@@ -70,8 +70,6 @@ WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
 DROP TABLE IF EXISTS functional_alltypes;
 
 CREATE TABLE functional_alltypes (
-    "index" BIGINT,
-    "Unnamed: 0" BIGINT,
     id INTEGER,
     bool_col BIT,
     tinyint_col SMALLINT,
@@ -90,8 +88,6 @@ CREATE TABLE functional_alltypes (
 BULK INSERT functional_alltypes
 FROM '/data/functional_alltypes.csv'
 WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
-
-CREATE INDEX "ix_functional_alltypes_index" ON functional_alltypes ("index");
 
 DROP TABLE IF EXISTS win;
 

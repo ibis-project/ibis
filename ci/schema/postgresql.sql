@@ -63,8 +63,6 @@ CREATE TABLE awards_players (
 DROP TABLE IF EXISTS functional_alltypes CASCADE;
 
 CREATE TABLE functional_alltypes (
-    "index" BIGINT,
-    "Unnamed: 0" BIGINT,
     id INTEGER,
     bool_col BOOLEAN,
     tinyint_col SMALLINT,
@@ -79,8 +77,6 @@ CREATE TABLE functional_alltypes (
     year INTEGER,
     month INTEGER
 );
-
-CREATE INDEX "ix_functional_alltypes_index" ON functional_alltypes ("index");
 
 DROP TABLE IF EXISTS tzone CASCADE;
 

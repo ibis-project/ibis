@@ -10,7 +10,6 @@ import pytest
 import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import win
 
@@ -44,40 +43,21 @@ def get_common_spark_testing_client(data_directory, connect):
         .getOrCreate()
     )
     _spark_testing_client = connect(spark)
-    s = _spark_testing_client._session
+    s: SparkSession = _spark_testing_client._session
     num_partitions = 4
 
-    s.read.csv(
-        path=str(data_directory / 'functional_alltypes.csv'),
-        schema=spark_dtype(
-            ibis.schema(
-                {
-                    # cast below, Spark can't read 0/1 as bool
-                    name: {"bool_col": "int8"}.get(name, dtype)
-                    for name, dtype in TEST_TABLES["functional_alltypes"].items()
-                }
-            )
-        ),
-        mode='FAILFAST',
-        header=True,
-    ).repartition(num_partitions).sort('index').withColumn(
-        "bool_col", F.column("bool_col").cast("boolean")
-    ).createOrReplaceTempView(
-        'functional_alltypes'
-    )
+    sort_cols = {"functional_alltypes": "id"}
 
-    for name, schema in TEST_TABLES.items():
-        if name != "functional_alltypes":
-            s.read.csv(
-                path=str(data_directory / f'{name}.csv'),
-                schema=spark_dtype(schema),
-                header=True,
-            ).repartition(num_partitions).createOrReplaceTempView(name)
+    for name in TEST_TABLES.keys():
+        path = str(data_directory / "parquet" / f"{name}.parquet")
+        t = s.read.parquet(path).repartition(num_partitions)
+        if (sort_col := sort_cols.get(name)) is not None:
+            t = t.sort(sort_col)
+        t.createOrReplaceTempView(name)
 
-    df_simple = s.createDataFrame([(1, 'a')], ['foo', 'bar'])
-    df_simple.createOrReplaceTempView('simple')
+    s.createDataFrame([(1, 'a')], ['foo', 'bar']).createOrReplaceTempView('simple')
 
-    df_struct = s.createDataFrame(
+    s.createDataFrame(
         [
             Row(abc=Row(a=1.0, b='banana', c=2)),
             Row(abc=Row(a=2.0, b='apple', c=3)),
@@ -87,33 +67,17 @@ def get_common_spark_testing_client(data_directory, connect):
             Row(abc=None),
             Row(abc=Row(a=3.0, b='orange', c=None)),
         ],
-        schema=pt.StructType(
-            [
-                pt.StructField(
-                    "abc",
-                    pt.StructType(
-                        [
-                            pt.StructField("a", pt.DoubleType(), True),
-                            pt.StructField("b", pt.StringType(), True),
-                            pt.StructField("c", pt.IntegerType(), True),
-                        ]
-                    ),
-                )
-            ]
-        ),
-    )
-    df_struct.createOrReplaceTempView('struct')
+    ).createOrReplaceTempView('struct')
 
-    df_nested_types = s.createDataFrame(
+    s.createDataFrame(
         [([1, 2], [[3, 4], [5, 6]], {'a': [[2, 4], [3, 5]]})],
         [
             'list_of_ints',
             'list_of_list_of_ints',
             'map_string_list_of_list_of_ints',
         ],
-    )
-    df_nested_types.createOrReplaceTempView('nested_types')
-    df_array_types = s.createDataFrame(
+    ).createOrReplaceTempView('nested_types')
+    s.createDataFrame(
         [
             (
                 [1, 2, 3],
@@ -144,21 +108,18 @@ def get_common_spark_testing_client(data_directory, connect):
             ),
         ],
         ["x", "y", "z", "grouper", "scalar_column", "multi_dim"],
-    )
-    df_array_types.createOrReplaceTempView("array_types")
+    ).createOrReplaceTempView("array_types")
 
-    df_complicated = s.createDataFrame(
+    s.createDataFrame(
         [({(1, 3): [[2, 4], [3, 5]]},)], ['map_tuple_list_of_list_of_ints']
-    )
-    df_complicated.createOrReplaceTempView('complicated')
+    ).createOrReplaceTempView('complicated')
 
-    df_udf = s.createDataFrame(
+    s.createDataFrame(
         [('a', 1, 4.0, 'a'), ('b', 2, 5.0, 'a'), ('c', 3, 6.0, 'b')],
         ['a', 'b', 'c', 'key'],
-    )
-    df_udf.createOrReplaceTempView('udf')
+    ).createOrReplaceTempView('udf')
 
-    df_udf_nan = s.createDataFrame(
+    s.createDataFrame(
         pd.DataFrame(
             {
                 'a': np.arange(10, dtype=float),
@@ -166,27 +127,24 @@ def get_common_spark_testing_client(data_directory, connect):
                 'key': list('ddeefffggh'),
             }
         )
-    )
-    df_udf_nan.createOrReplaceTempView('udf_nan')
+    ).createOrReplaceTempView('udf_nan')
 
-    df_udf_null = s.createDataFrame(
+    s.createDataFrame(
         [(float(i), None if i % 2 else 3.0, 'ddeefffggh'[i]) for i in range(10)],
         ['a', 'b', 'key'],
-    )
-    df_udf_null.createOrReplaceTempView('udf_null')
+    ).createOrReplaceTempView('udf_null')
 
-    df_udf_random = s.createDataFrame(
+    s.createDataFrame(
         pd.DataFrame(
             {
-                'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-                'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+                'a': np.arange(4.0).tolist() + np.random.rand(3).tolist(),
+                'b': np.arange(4.0).tolist() + np.random.rand(3).tolist(),
                 'key': list('ddeefff'),
             }
         )
-    )
-    df_udf_random.createOrReplaceTempView('udf_random')
+    ).createOrReplaceTempView('udf_random')
 
-    df_json_t = s.createDataFrame(
+    s.createDataFrame(
         pd.DataFrame(
             {
                 "js": [
@@ -199,11 +157,9 @@ def get_common_spark_testing_client(data_directory, connect):
                 ]
             }
         )
-    )
-    df_json_t.createOrReplaceTempView("json_t")
+    ).createOrReplaceTempView("json_t")
 
-    win_t = s.createDataFrame(win)
-    win_t.createOrReplaceTempView("win")
+    s.createDataFrame(win).createOrReplaceTempView("win")
 
     return _spark_testing_client
 
@@ -379,12 +335,7 @@ def temp_database(con, test_data_db):
 
 @pytest.fixture(scope='session')
 def alltypes(con):
-    return con.table('functional_alltypes').relabel({'Unnamed: 0': 'Unnamed:0'})
-
-
-@pytest.fixture(scope='session')
-def tmp_dir():
-    return f'/tmp/__ibis_test_{util.guid()}'
+    return con.table('functional_alltypes')
 
 
 @pytest.fixture

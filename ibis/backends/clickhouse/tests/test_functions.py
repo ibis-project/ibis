@@ -42,7 +42,6 @@ def test_cast_string_col(alltypes, translate, to_type, snapshot):
 @pytest.mark.parametrize(
     'column',
     [
-        'index',
         'id',
         'bool_col',
         'tinyint_col',

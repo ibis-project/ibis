@@ -63,20 +63,13 @@ def df(npartitions):
 
 @pytest.fixture(scope='module')
 def batting_df(data_directory):
-    df = dd.read_csv(
-        data_directory / 'batting.csv',
-        assume_missing=True,
-        dtype={"lgID": "object"},
-    )
+    df = dd.read_parquet(data_directory / 'parquet' / 'batting.parquet')
     return df.sample(frac=0.01).reset_index(drop=True)
 
 
 @pytest.fixture(scope='module')
 def awards_players_df(data_directory):
-    return dd.read_csv(
-        data_directory / 'awards_players.csv',
-        assume_missing=True,
-    )
+    return dd.read_parquet(data_directory / 'parquet' / 'awards_players.parquet')
 
 
 @pytest.fixture(scope='module')

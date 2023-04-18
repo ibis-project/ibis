@@ -1,6 +1,4 @@
 SELECT
-  t0.`index`,
-  t0.`Unnamed: 0`,
   t0.id,
   t0.bool_col = 1 AS bool_col,
   t0.tinyint_col,

@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 import ast
-import collections
 import concurrent.futures
 import contextlib
 import itertools
+import operator
 import os
 import subprocess
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 import pytest
+import toolz
 
 import ibis
 import ibis.expr.types as ir
 from ibis import options, util
-from ibis.backends.base import BaseBackend
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
@@ -46,18 +46,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         fsspec = pytest.importorskip("fsspec")
         fs = fsspec.filesystem("file")
 
-        data_files = {
-            data_file
-            for data_file in fs.find(data_dir)
-            # ignore sqlite databases and markdown files
-            if not data_file.endswith((".db", ".md"))
-            # ignore files in the test data .git directory
-            if (
-                # ignore .git
-                os.path.relpath(data_file, data_dir).split(os.sep, 1)[0]
-                != ".git"
-            )
-        }
+        data_files = fs.find(data_dir / "impala")
 
         # without setting the pool size
         # connections are dropped from the urllib3
@@ -66,6 +55,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         URLLIB_DEFAULT_POOL_SIZE = 10
 
         env = IbisTestEnv()
+        futures = []
         with contextlib.closing(
             ibis.impala.connect(
                 host=env.impala_host,
@@ -110,14 +100,42 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             for future in concurrent.futures.as_completed(tasks):
                 future.result()
 
-            # create the tables and compute stats
-            for future in concurrent.futures.as_completed(
-                executor.submit(table_future.result().compute_stats)
-                for table_future in concurrent.futures.as_completed(
-                    impala_create_tables(con, env, executor=executor)
+            # create tables and compute stats
+            compute_stats = operator.methodcaller("compute_stats")
+            futures.append(
+                executor.submit(
+                    toolz.compose(compute_stats, con.avro_file),
+                    os.path.join(env.test_data_dir, 'impala', 'avro', 'tpch', 'region'),
+                    avro_schema={
+                        "type": "record",
+                        "name": "a",
+                        "fields": [
+                            {"name": "R_REGIONKEY", "type": ["null", "int"]},
+                            {"name": "R_NAME", "type": ["null", "string"]},
+                            {"name": "R_COMMENT", "type": ["null", "string"]},
+                        ],
+                    },
+                    name="tpch_region_avro",
+                    database=env.test_data_db,
+                    persist=True,
                 )
-            ):
-                future.result()
+            )
+
+            futures.extend(
+                executor.submit(
+                    toolz.compose(compute_stats, con.parquet_file),
+                    path,
+                    name=os.path.basename(path),
+                    database=env.test_data_db,
+                    persist=True,
+                    schema=TEST_TABLES.get(os.path.basename(path)),
+                )
+                for path in con.hdfs.ls(
+                    os.path.join(env.test_data_dir, 'impala', 'parquet')
+                )
+            )
+            for fut in concurrent.futures.as_completed(futures):
+                fut.result()
 
     @staticmethod
     def connect(
@@ -427,17 +445,17 @@ def impala_create_test_database(con, env):
     con.create_table(
         'alltypes',
         schema=ibis.schema(
-            [
-                ('a', 'int8'),
-                ('b', 'int16'),
-                ('c', 'int32'),
-                ('d', 'int64'),
-                ('e', 'float'),
-                ('f', 'double'),
-                ('g', 'string'),
-                ('h', 'boolean'),
-                ('i', 'timestamp'),
-            ]
+            dict(
+                a='int8',
+                b='int16',
+                c='int32',
+                d='int64',
+                e='float',
+                f='double',
+                g='string',
+                h='boolean',
+                i='timestamp',
+            )
         ),
         database=env.test_data_db,
     )
@@ -447,67 +465,3 @@ def impala_create_test_database(con, env):
         database=env.test_data_db,
     )
     con.table("win", database=env.test_data_db).insert(win, overwrite=True)
-
-
-PARQUET_SCHEMAS = {
-    "functional_alltypes": ibis.schema(
-        {
-            name: dtype
-            for name, dtype in TEST_TABLES["functional_alltypes"].items()
-            if name not in {"index", "Unnamed: 0"}
-        }
-    ),
-    "tpch_region": ibis.schema(
-        [
-            ("r_regionkey", "int16"),
-            ("r_name", "string"),
-            ("r_comment", "string"),
-        ]
-    ),
-}
-
-PARQUET_SCHEMAS.update(
-    (table, schema)
-    for table, schema in TEST_TABLES.items()
-    if table != "functional_alltypes"
-)
-
-AVRO_SCHEMAS = {
-    "tpch_region_avro": {
-        "type": "record",
-        "name": "a",
-        "fields": [
-            {"name": "R_REGIONKEY", "type": ["null", "int"]},
-            {"name": "R_NAME", "type": ["null", "string"]},
-            {"name": "R_COMMENT", "type": ["null", "string"]},
-        ],
-    }
-}
-
-ALL_SCHEMAS = collections.ChainMap(PARQUET_SCHEMAS, AVRO_SCHEMAS)
-
-
-def impala_create_tables(
-    con: BaseBackend,
-    env: IbisTestEnv,
-    *,
-    executor: concurrent.futures.Executor,
-) -> Iterator[concurrent.futures.Future]:
-    test_data_dir = env.test_data_dir
-    avro_files = [
-        (con.avro_file, os.path.join(test_data_dir, 'avro', path))
-        for path in con.hdfs.ls(os.path.join(test_data_dir, 'avro'))
-    ]
-    parquet_files = [
-        (con.parquet_file, os.path.join(test_data_dir, 'parquet', path))
-        for path in con.hdfs.ls(os.path.join(test_data_dir, 'parquet'))
-    ]
-    for method, path in itertools.chain(parquet_files, avro_files):
-        yield executor.submit(
-            method,
-            path,
-            ALL_SCHEMAS.get(os.path.basename(path)),
-            name=os.path.basename(path),
-            database=env.test_data_db,
-            persist=True,
-        )

@@ -3,7 +3,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -33,34 +32,23 @@ class TestConf(PandasTest):
         return ibis.dask.connect(
             {
                 "functional_alltypes": dd.from_pandas(
-                    pd.read_csv(
-                        data_directory / "functional_alltypes.csv",
-                        index_col=None,
-                        dtype={
-                            "bool_col": bool,
-                            "string_col": str,
-                            "tinyint_col": np.int8,
-                            "smallint_col": np.int16,
-                            "int_col": np.int32,
-                            "bigint_col": np.int64,
-                            "float_col": np.float32,
-                            "double_col": np.float64,
-                        },
-                        parse_dates=["timestamp_col"],
-                        encoding="utf-8",
+                    pd.read_parquet(
+                        data_directory / "parquet" / "functional_alltypes.parquet"
                     ),
                     npartitions=NPARTITIONS,
                 ),
                 "batting": dd.from_pandas(
-                    pd.read_csv(data_directory / "batting.csv"),
+                    pd.read_parquet(data_directory / "parquet" / "batting.parquet"),
                     npartitions=NPARTITIONS,
                 ),
                 "awards_players": dd.from_pandas(
-                    pd.read_csv(data_directory / "awards_players.csv"),
+                    pd.read_parquet(
+                        data_directory / "parquet" / "awards_players.parquet"
+                    ),
                     npartitions=NPARTITIONS,
                 ),
                 'diamonds': dd.from_pandas(
-                    pd.read_csv(str(data_directory / 'diamonds.csv')),
+                    pd.read_parquet(data_directory / "parquet" / "diamonds.parquet"),
                     npartitions=NPARTITIONS,
                 ),
                 'json_t': dd.from_pandas(

@@ -505,7 +505,7 @@ def test_elementwise_udf_destructure_exact_once(
         path.touch()
         return v + 1, v + 2
 
-    struct = add_one_struct_exact_once(udf_alltypes['index'])
+    struct = add_one_struct_exact_once(udf_alltypes['id'])
 
     if method == "destructure":
         expr = udf_alltypes.mutate(struct.destructure())

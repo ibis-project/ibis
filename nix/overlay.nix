@@ -18,13 +18,12 @@ let
 in
 {
   ibisTestingData = pkgs.fetchFromGitHub {
-    owner = "ibis-project";
+    name = "ibis-testing-data";
+    owner = "cpcloud";
     repo = "testing-data";
-    rev = "master";
-    sha256 = "sha256-NbgEe0w/qf9hCr9rRfIpyaH9pv25I8x0ykY7EJxDOuk=";
+    rev = "cleanup";
+    sha256 = "sha256-q1b5IcOl5oIFXP7/P5RufncjHEVrWp4NjoU2uo/BE9U=";
   };
-
-  rustNightly = pkgs.rust-bin.selectLatestNightlyWith (toolchain: toolchain.minimal);
 
   ibis38 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python38; };
   ibis39 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python39; };

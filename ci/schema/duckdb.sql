@@ -46,8 +46,6 @@ CREATE OR REPLACE TABLE awards_players (
 );
 
 CREATE OR REPLACE TABLE functional_alltypes (
-    "index" BIGINT,
-    "Unnamed: 0" BIGINT,
     id INTEGER,
     bool_col BOOLEAN,
     tinyint_col SMALLINT,

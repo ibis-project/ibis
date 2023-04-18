@@ -35,7 +35,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
             name=cls.name(),
             data_volume="/data",
             files=[
-                data_dir.joinpath(f"{name}.csv")
+                data_dir.joinpath("csv", f"{name}.csv")
                 for name in (
                     "diamonds",
                     "batting",

@@ -182,30 +182,13 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                 e.submit(
                     make_job,
                     client.load_table_from_file,
-                    io.BytesIO(data_dir.joinpath("struct_table.avro").read_bytes()),
+                    io.BytesIO(
+                        data_dir.joinpath("avro", "struct_table.avro").read_bytes()
+                    ),
                     bq.TableReference(testing_dataset, "struct_table"),
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,
                         source_format=bq.SourceFormat.AVRO,
-                    ),
-                )
-            )
-
-            futures.append(
-                e.submit(
-                    make_job,
-                    client.load_table_from_file,
-                    io.BytesIO(
-                        data_dir.joinpath("functional_alltypes.csv").read_bytes()
-                    ),
-                    functional_alltypes_parted,
-                    job_config=bq.LoadJobConfig(
-                        schema=ibis_schema_to_bq_schema(
-                            TEST_TABLES["functional_alltypes"]
-                        ),
-                        write_disposition=write_disposition,
-                        source_format=bq.SourceFormat.CSV,
-                        skip_leading_rows=1,
                     ),
                 )
             )
@@ -264,21 +247,22 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                 )
             )
 
-            for table, schema in TEST_TABLES.items():
-                futures.append(
-                    e.submit(
-                        make_job,
-                        client.load_table_from_file,
-                        io.BytesIO(data_dir.joinpath(f"{table}.csv").read_bytes()),
-                        bq.TableReference(testing_dataset, table),
-                        job_config=bq.LoadJobConfig(
-                            schema=ibis_schema_to_bq_schema(schema),
-                            write_disposition=bq.WriteDisposition.WRITE_TRUNCATE,
-                            source_format=bq.SourceFormat.CSV,
-                            skip_leading_rows=1,
-                        ),
-                    )
+            futures.extend(
+                e.submit(
+                    make_job,
+                    client.load_table_from_file,
+                    io.BytesIO(
+                        data_dir.joinpath("parquet", f"{table}.parquet").read_bytes()
+                    ),
+                    bq.TableReference(testing_dataset, table),
+                    job_config=bq.LoadJobConfig(
+                        schema=ibis_schema_to_bq_schema(schema),
+                        write_disposition=write_disposition,
+                        source_format=bq.SourceFormat.PARQUET,
+                    ),
                 )
+                for table, schema in TEST_TABLES.items()
+            )
 
             for fut in concurrent.futures.as_completed(futures):
                 fut.result()

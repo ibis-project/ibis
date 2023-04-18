@@ -208,7 +208,7 @@ def test_rename_table(con, temp_database):
     tmp_db = temp_database
 
     orig_name = 'tmp_rename_test'
-    con.create_table(orig_name, con.table('tpch_region'))
+    con.create_table(orig_name, con.table('region'))
     table = con.table(orig_name)
 
     old_name = table.name
@@ -277,7 +277,7 @@ def test_change_format(con, table):
 
 
 def test_query_avro(con, test_data_dir, tmp_db):
-    hdfs_path = pjoin(test_data_dir, 'avro/tpch_region_avro')
+    hdfs_path = pjoin(test_data_dir, 'impala/avro/tpch/region')
 
     avro_schema = {
         "fields": [
@@ -372,7 +372,7 @@ def test_temp_table_concurrency(con, test_data_dir):
         return t.order_by(t.r_regionkey).limit(1, offset=offset).execute()
 
     nthreads = multiprocessing.cpu_count()
-    hdfs_path = pjoin(test_data_dir, 'parquet/tpch_region')
+    hdfs_path = pjoin(test_data_dir, 'impala/parquet/region')
 
     num_rows = int(con.parquet_file(hdfs_path).count().execute())
     with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:

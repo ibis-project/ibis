@@ -19,23 +19,22 @@ class TestConf(BackendTest, RoundAwayFromZero):
     def __init__(self, data_directory: Path, **kwargs: Any) -> None:
         self.connection = self.connect(data_directory, **kwargs)
 
-        script_dir = data_directory.parent
-
-        schema = (script_dir / 'schema' / 'duckdb.sql').read_text()
-
         if not SANDBOXED:
             self.connection._load_extensions(
                 ["httpfs", "postgres_scanner", "sqlite_scanner"]
             )
 
+        script_dir = data_directory.parent
+        schema = script_dir.joinpath("schema", "duckdb.sql").read_text()
+
         with self.connection.begin() as con:
-            for stmt in filter(None, map(str.strip, schema.split(';'))):
+            for stmt in filter(None, map(str.strip, schema.split(";"))):
                 con.exec_driver_sql(stmt)
 
             for table in TEST_TABLES:
-                src = data_directory / f'{table}.csv'
+                src = data_directory / "csv" / f"{table}.csv"
                 con.exec_driver_sql(
-                    f"COPY {table} FROM {str(src)!r} (DELIMITER ',', HEADER, SAMPLE_SIZE 1)"
+                    f"COPY {table} FROM {str(src)!r} (DELIMITER ',', HEADER)"
                 )
 
     @staticmethod

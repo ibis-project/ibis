@@ -1,8 +1,6 @@
 DROP TABLE IF EXISTS functional_alltypes;
 
 CREATE TABLE functional_alltypes (
-    "index" BIGINT,
-    "Unnamed: 0" BIGINT,
     id BIGINT,
     bool_col BOOLEAN,
     tinyint_col BIGINT,
@@ -18,8 +16,6 @@ CREATE TABLE functional_alltypes (
     month BIGINT,
     CHECK (bool_col IN (0, 1))
 );
-
-CREATE INDEX ix_functional_alltypes_index ON "functional_alltypes" ("index");
 
 DROP TABLE IF EXISTS awards_players;
 
