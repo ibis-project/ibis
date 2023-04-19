@@ -82,6 +82,16 @@ def trans_json(t):
     return "JSON"
 
 
+@ibis_type_to_bigquery_type.register(dt.GeoSpatial)
+def trans_geography(t):
+    if (t.geotype, t.srid) == ("geography", 4326):
+        return "GEOGRAPHY"
+    raise TypeError(
+        "BigQuery geography uses points on WGS84 reference ellipsoid."
+        f"Current geotype: {t.geotype}, Current srid: {t.srid}"
+    )
+
+
 def spread_type(dt: dt.DataType):
     """Returns a generator that contains all the types in the given type.
 
