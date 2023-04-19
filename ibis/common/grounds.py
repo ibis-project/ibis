@@ -27,10 +27,7 @@ class BaseMeta(ABCMeta):
 
 class Base(metaclass=BaseMeta):
     __slots__ = ('__weakref__',)
-
-    @classmethod
-    def __create__(cls, *args, **kwargs) -> Base:
-        return type.__call__(cls, *args, **kwargs)
+    __create__ = classmethod(type.__call__)
 
 
 class AnnotableMeta(BaseMeta):
