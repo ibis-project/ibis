@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from itertools import tee
 from types import MappingProxyType
 from typing import Any, Hashable, Mapping, TypeVar
 
@@ -148,7 +150,7 @@ class FrozenDict(Mapping[K, V], Hashable):
         return str(self.__view__)
 
     def __repr__(self):
-        return f"{self.__class__.__name__}({self.__view__!r})"
+        return f"{self.__class__.__name__}({dict(self.__view__)!r})"
 
     def __setattr__(self, name: str, _: Any) -> None:
         raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
@@ -206,6 +208,48 @@ class DotDict(dict):
 
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
+
+
+class RewindableIterator(Iterator):
+    """Iterator that can be rewound to a checkpoint.
+
+    Examples
+    --------
+    >>> it = RewindableIterator(range(5))
+    >>> next(it)
+    0
+    >>> next(it)
+    1
+    >>> it.checkpoint()
+    >>> next(it)
+    2
+    >>> next(it)
+    3
+    >>> it.rewind()
+    >>> next(it)
+    2
+    >>> next(it)
+    3
+    >>> next(it)
+    4
+    """
+
+    def __init__(self, iterable):
+        self._iterator = iter(iterable)
+        self._checkpoint = None
+
+    def __next__(self):
+        return next(self._iterator)
+
+    def rewind(self):
+        """Rewind the iterator to the last checkpoint."""
+        if self._checkpoint is None:
+            raise ValueError("No checkpoint to rewind to.")
+        self._iterator, self._checkpoint = tee(self._checkpoint)
+
+    def checkpoint(self):
+        """Create a checkpoint of the current iterator state."""
+        self._iterator, self._checkpoint = tee(self._iterator)
 
 
 public(frozendict=FrozenDict, dotdict=DotDict)

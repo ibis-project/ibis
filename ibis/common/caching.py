@@ -1,13 +1,32 @@
 from __future__ import annotations
 
+import functools
 import weakref
 from collections import Counter, defaultdict
+from collections.abc import Iterator
 from typing import Any, Callable, MutableMapping
 
-import toolz
 from bidict import bidict
 
+from ibis.common.collections import FrozenDict
 from ibis.common.exceptions import IbisError
+
+
+def memoize(func: Callable) -> Callable:
+    """Memoize a function."""
+    cache = {}
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        key = (args, FrozenDict(kwargs))
+        try:
+            return cache[key]
+        except KeyError:
+            result = func(*args, **kwargs)
+            cache[key] = result
+            return result
+
+    return wrapper
 
 
 class WeakCache(MutableMapping):
@@ -19,13 +38,13 @@ class WeakCache(MutableMapping):
     def __setattr__(self, name, value):
         raise TypeError(f"can't set {name}")
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._data)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Any]:
         return iter(self._data)
 
-    def __setitem__(self, key, value):
+    def __setitem__(self, key, value) -> None:
         # construct an alternative representation of the key using the id()
         # of the key's components, this prevents infinite recursions
         identifiers = tuple(id(item) for item in key)
@@ -78,7 +97,7 @@ class RefCountedCache:
         self.lookup = lookup
         self.finalize = finalize
         self.names = defaultdict(generate_name)
-        self.key = key or toolz.identity
+        self.key = key or (lambda x: x)
 
     def get(self, key, default=None):
         try:

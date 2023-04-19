@@ -63,12 +63,7 @@ class Validator(Callable):
         Parameters
         ----------
         annot
-            The typehint annotation to construct a validator from. If a string is
-            available then it must be evaluated before passing it to this function
-            using the ``evaluate_typehint`` function.
-        module
-            The module to evaluate the type annotation in. This is only used
-            when the first argument is a string (or ForwardRef).
+            The typehint annotation to construct a validator from.
 
         Returns
         -------
