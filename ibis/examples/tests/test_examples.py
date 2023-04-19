@@ -51,3 +51,23 @@ def test_non_example():
     gobbledygook = f"{ibis.util.guid()}"
     with pytest.raises(AttributeError, match=gobbledygook):
         getattr(ibis.examples, gobbledygook)
+
+
+@pytest.mark.duckdb
+@pytest.mark.backend
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=OSError,
+)
+@pytest.mark.parametrize(
+    ("example", "expected"),
+    [
+        ("band_members", ["name", "band"]),
+        ("band_instruments", ["name", "plays"]),
+        ("band_instruments2", ["artist", "plays"]),
+    ],
+    ids=["members", "instruments", "instruments2"],
+)
+def test_band(example, expected):
+    assert getattr(ibis.examples, example).fetch().columns == expected
