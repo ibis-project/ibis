@@ -9,7 +9,7 @@ from weakref import WeakValueDictionary
 from ibis.common.annotations import EMPTY, Argument, Attribute, Signature, attribute
 from ibis.common.caching import WeakCache
 from ibis.common.collections import FrozenDict
-from ibis.common.typing import evaluate_typehint
+from ibis.common.typing import evaluate_annotations
 from ibis.common.validators import Validator
 
 
@@ -45,10 +45,10 @@ class AnnotableMeta(BaseMeta):
                 signatures.append(parent.__signature__)
 
         # collection type annotations and convert them to validators
-        module = dct.get('__module__')
-        annots = dct.get('__annotations__', {})
-        for name, typehint in annots.items():
-            typehint = evaluate_typehint(typehint, module)
+        module_name = dct.get('__module__')
+        annotations = dct.get('__annotations__', {})
+        typehints = evaluate_annotations(annotations, module_name)
+        for name, typehint in typehints.items():
             validator = Validator.from_typehint(typehint)
             if name in dct:
                 dct[name] = Argument.default(dct[name], validator, typehint=typehint)

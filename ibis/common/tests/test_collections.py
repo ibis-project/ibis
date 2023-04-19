@@ -2,7 +2,7 @@ from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 
 import pytest
 
-from ibis.common.collections import DotDict, FrozenDict, MapSet
+from ibis.common.collections import DotDict, FrozenDict, MapSet, RewindableIterator
 from ibis.tests.util import assert_pickle_roundtrip
 
 
@@ -221,3 +221,34 @@ def test_frozendict():
 
     assert hash(d)
     assert_pickle_roundtrip(d)
+
+
+def test_rewindable_iterator():
+    it = RewindableIterator(range(10))
+    assert next(it) == 0
+    assert next(it) == 1
+    with pytest.raises(ValueError, match="No checkpoint to rewind to"):
+        it.rewind()
+
+    it.checkpoint()
+    assert next(it) == 2
+    assert next(it) == 3
+    it.rewind()
+    assert next(it) == 2
+    assert next(it) == 3
+    assert next(it) == 4
+    it.checkpoint()
+    assert next(it) == 5
+    assert next(it) == 6
+    it.rewind()
+    assert next(it) == 5
+    assert next(it) == 6
+    assert next(it) == 7
+    it.rewind()
+    assert next(it) == 5
+    assert next(it) == 6
+    assert next(it) == 7
+    assert next(it) == 8
+    assert next(it) == 9
+    with pytest.raises(StopIteration):
+        next(it)
