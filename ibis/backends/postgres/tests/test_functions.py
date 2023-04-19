@@ -1,5 +1,4 @@
 import operator
-import os
 import string
 import warnings
 from datetime import date, datetime
@@ -11,10 +10,12 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config
 from ibis import literal as L
+from ibis.backends.conftest import WINDOWS
 
 pytest.importorskip("psycopg2")
 sa = pytest.importorskip("sqlalchemy")
@@ -144,21 +145,24 @@ def test_timestamp_cast_noop(alltypes, at, translate):
         param(
             'DD BAR "%c" FOO "D',
             marks=pytest.mark.xfail(
-                condition=os.name == 'nt',
+                condition=WINDOWS,
+                raises=exc.UnsupportedOperationError,
                 reason='Locale-specific format specs not available on Windows',
             ),
         ),
         param(
             'DD BAR "%x" FOO "D',
             marks=pytest.mark.xfail(
-                condition=os.name == 'nt',
+                condition=WINDOWS,
+                raises=exc.UnsupportedOperationError,
                 reason='Locale-specific format specs not available on Windows',
             ),
         ),
         param(
             'DD BAR "%X" FOO "D',
             marks=pytest.mark.xfail(
-                condition=os.name == 'nt',
+                condition=WINDOWS,
+                raises=exc.UnsupportedOperationError,
                 reason='Locale-specific format specs not available on Windows',
             ),
         ),

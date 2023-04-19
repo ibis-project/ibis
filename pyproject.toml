@@ -280,8 +280,6 @@ filterwarnings = [
   'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
   # ibis
   'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
-  # ibis on postgres + windows
-  "ignore:locale specific date formats:UserWarning",
   # spark
   "ignore:distutils Version classes are deprecated:DeprecationWarning",
   "ignore:The distutils package is deprecated and slated for removal:DeprecationWarning",

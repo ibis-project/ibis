@@ -118,10 +118,9 @@ try:
         }
     )
 except AttributeError:
-    warnings.warn(
-        'locale specific date formats (%%c, %%x, %%X) are not yet implemented '
-        'for %s' % platform.system()
-    )
+    HAS_LANGINFO = False
+else:
+    HAS_LANGINFO = True
 
 
 # translate strftime spec into mostly equivalent PostgreSQL spec
@@ -156,7 +155,8 @@ _scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
 
 _lexicon_values = frozenset(_strftime_to_postgresql_rules.values())
 
-_strftime_blacklist = frozenset(['%w', '%U', '%c', '%x', '%X', '%e'])
+_locale_specific_formats = frozenset(['%c', '%x', '%X'])
+_strftime_blacklist = frozenset(['%w', '%U', '%e']) | _locale_specific_formats
 
 
 def _reduce_tokens(tokens, arg):
@@ -170,6 +170,10 @@ def _reduce_tokens(tokens, arg):
 
     # TODO: how much of a hack is this?
     for token in tokens:
+        if token in _locale_specific_formats and not HAS_LANGINFO:
+            raise com.UnsupportedOperationError(
+                f"Format string component {token!r} is not supported on {platform.system()}"
+            )
         # we are a non-special token %A, %d, etc.
         if token in non_special_tokens:
             curtokens.append(_strftime_to_postgresql_rules[token])
