@@ -51,6 +51,17 @@ def test_no_ambiguities():
         ),
         param(dt.Decimal(38, 9), "NUMERIC", id="decimal-numeric"),
         param(dt.Decimal(76, 38), "BIGNUMERIC", id="decimal-bignumeric"),
+        param(
+            dt.GeoSpatial(geotype="geography", srid=4326), "GEOGRAPHY", id="geography"
+        ),
+        param(
+            dt.GeoSpatial(geotype="geography"),
+            "GEOGRAPHY",
+            marks=pytest.mark.xfail(
+                raises=TypeError, reason="Should use the WGS84 reference ellipsoid."
+            ),
+            id="geography",
+        ),
     ],
 )
 def test_simple(datatype, expected):
