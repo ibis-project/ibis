@@ -25,6 +25,9 @@ class Node(Hashable):
     def __children__(self, filter=None):
         return tuple(_flatten_collections(self.__args__, filter or Node))
 
+    def __rich_repr__(self):
+        return zip(self.__argnames__, self.__args__)
+
     def map(self, fn, filter=None):
         results = {}
         for node in Graph.from_bfs(self, filter=filter).toposort():

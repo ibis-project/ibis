@@ -35,12 +35,17 @@ from ibis.common.validators import (
     mapping_of,
     min_,
     pair_of,
+    ref,
     sequence_of,
     str_,
     tuple_of,
 )
 
 T = TypeVar("T")
+
+
+def test_ref():
+    assert ref("b", this={"a": 1, "b": 2}) == 2
 
 
 @pytest.mark.parametrize(
