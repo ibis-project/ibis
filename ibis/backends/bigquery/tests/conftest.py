@@ -9,8 +9,9 @@ import pathlib
 from pathlib import Path
 from typing import Any, Mapping
 
+import google.api_core.exceptions as gexc
 import google.auth
-from google.api_core.exceptions import NotFound
+import pytest
 from google.cloud import bigquery as bq
 
 import ibis
@@ -94,9 +95,14 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
         client = bq.Client(project=project_id, credentials=credentials)
 
+        try:
+            client.query("SELECT 1")
+        except gexc.Forbidden:
+            pytest.skip("User does not have permission to create dataset")
+
         testing_dataset = bq.DatasetReference(project_id, DATASET_ID)
 
-        with contextlib.suppress(NotFound):
+        with contextlib.suppress(gexc.NotFound):
             client.create_dataset(testing_dataset, exists_ok=True)
 
         # day partitioning
@@ -287,8 +293,15 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         project_id = (
             os.environ.get(PROJECT_ID_ENV_VAR, default_project_id) or DEFAULT_PROJECT_ID
         )
-        return ibis.bigquery.connect(
-            project_id=project_id,
-            dataset_id=DATASET_ID,
-            credentials=credentials,
+        con = ibis.bigquery.connect(
+            project_id=project_id, dataset_id=DATASET_ID, credentials=credentials
         )
+        expr = ibis.literal(1)
+        try:
+            con.execute(expr)
+        except gexc.Forbidden:
+            pytest.skip(
+                f"User does not have access to execute queries against BigQuery project: {project_id}"
+            )
+        else:
+            return con
