@@ -27,7 +27,6 @@ from ibis.common.enums import DateUnit, IntervalUnit
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
-
 sqlite_cast = Dispatcher("sqlite_cast")
 
 
@@ -255,6 +254,23 @@ def _mode(t, op):
     return sa.func._ibis_sqlite_mode(t.translate(sa_arg))
 
 
+def _arg_min_max(agg_func):
+    def translate(t, op: ops.ArgMin | ops.ArgMax):
+        arg = t.translate(op.arg)
+        key = t.translate(op.key)
+
+        conditions = [arg != sa.null()]
+
+        if (where := op.where) is not None:
+            conditions.append(t.translate(where))
+
+        agg = agg_func(key).filter(sa.and_(*conditions))
+
+        return sa.func.json_extract(sa.func.json_array(arg, agg), '$[0]')
+
+    return translate
+
+
 operation_registry.update(
     {
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
@@ -369,6 +385,8 @@ operation_registry.update(
         ops.BitAnd: reduction(sa.func._ibis_sqlite_bit_and),
         ops.BitXor: reduction(sa.func._ibis_sqlite_bit_xor),
         ops.Mode: _mode,
+        ops.ArgMin: _arg_min_max(sa.func.min),
+        ops.ArgMax: _arg_min_max(sa.func.max),
         ops.Degrees: unary(sa.func._ibis_sqlite_degrees),
         ops.Radians: unary(sa.func._ibis_sqlite_radians),
         # sqlite doesn't implement a native xor operator

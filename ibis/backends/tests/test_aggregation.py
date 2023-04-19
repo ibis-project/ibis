@@ -1,3 +1,5 @@
+import sys
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -9,6 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
+from ibis.backends.conftest import WINDOWS
 from ibis.udf.vectorized import reduction
 
 try:
@@ -134,7 +137,6 @@ argidx_not_grouped_marks = [
     "datafusion",
     "impala",
     "mysql",
-    "sqlite",
     "polars",
     "mssql",
     "druid",
@@ -143,7 +145,15 @@ argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
 
 def make_argidx_params(marks):
-    marks = pytest.mark.notyet(marks, raises=com.OperationNotDefinedError)
+    marks = [
+        pytest.mark.notyet(marks, raises=com.OperationNotDefinedError),
+        pytest.mark.broken(
+            ["sqlite"],
+            condition=WINDOWS and sys.version_info < (3, 11),
+            reason="JSON functions aren't available",
+            raises=sa.exc.OperationalError,
+        ),
+    ]
     return [
         param(
             lambda t: t.timestamp_col.argmin(t.id),
@@ -439,19 +449,35 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col.argmin(t.int_col, where=where),
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmin()],
             id='argmin',
-            marks=pytest.mark.notyet(
-                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql", "druid"],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    ["impala", "mysql", "polars", "datafusion", "mssql", "druid"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(
+                    ["sqlite"],
+                    condition=WINDOWS and sys.version_info < (3, 11),
+                    reason="JSON functions aren't available",
+                    raises=sa.exc.OperationalError,
+                ),
+            ],
         ),
         param(
             lambda t, where: t.double_col.argmax(t.int_col, where=where),
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmax()],
             id='argmax',
-            marks=pytest.mark.notyet(
-                ["impala", "mysql", "sqlite", "polars", "datafusion", "mssql", "druid"],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    ["impala", "mysql", "polars", "datafusion", "mssql", "druid"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(
+                    ["sqlite"],
+                    condition=WINDOWS and sys.version_info < (3, 11),
+                    reason="JSON functions aren't available",
+                    raises=sa.exc.OperationalError,
+                ),
+            ],
         ),
         param(
             lambda t, where: t.double_col.std(how='sample', where=where),
