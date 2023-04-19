@@ -306,6 +306,7 @@ class Backend(BaseAlchemyBackend):
         if any(source.startswith(("http://", "https://")) for source in source_list):
             self._load_extensions(["httpfs"])
 
+        kwargs.setdefault("header", True)
         kwargs["auto_detect"] = kwargs.pop("auto_detect", "columns" not in kwargs)
         source = sa.select(sa.literal_column("*")).select_from(
             sa.func.read_csv(sa.func.list_value(*source_list), _format_kwargs(kwargs))
