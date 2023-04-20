@@ -12,6 +12,10 @@ from ibis.expr.operations.core import Value
 class Analytic(Value):
     output_shape = rlz.Shape.COLUMNAR
 
+    @property
+    def __window_op__(self):
+        return self
+
 
 @public
 class ShiftBase(Analytic):

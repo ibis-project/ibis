@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from public import public
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
@@ -12,6 +13,10 @@ from ibis.expr.operations.generic import _Negatable
 @public
 class Reduction(Value):
     output_shape = rlz.Shape.SCALAR
+
+    @property
+    def __window_op__(self):
+        return self
 
 
 class Filterable(Value):
@@ -38,6 +43,42 @@ class Arbitrary(Filterable, Reduction):
     how = rlz.isin({'first', 'last', 'heavy'})
 
     output_dtype = rlz.dtype_like('arg')
+
+
+@public
+class First(Filterable, Reduction):
+    """Retrieve the first element."""
+
+    arg = rlz.column(rlz.any)
+    output_dtype = rlz.dtype_like("arg")
+
+    @property
+    def __window_op__(self):
+        import ibis.expr.operations as ops
+
+        if self.where is not None:
+            raise exc.OperationNotDefinedError(
+                "FirstValue cannot be filtered in a window context"
+            )
+        return ops.FirstValue(arg=self.arg)
+
+
+@public
+class Last(Filterable, Reduction):
+    """Retrieve the last element."""
+
+    arg = rlz.column(rlz.any)
+    output_dtype = rlz.dtype_like("arg")
+
+    @property
+    def __window_op__(self):
+        import ibis.expr.operations as ops
+
+        if self.where is not None:
+            raise exc.OperationNotDefinedError(
+                "LastValue cannot be filtered in a window context"
+            )
+        return ops.LastValue(arg=self.arg)
 
 
 @public

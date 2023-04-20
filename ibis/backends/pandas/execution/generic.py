@@ -635,6 +635,16 @@ def execute_reduction_series_groupby(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(data, type(op).__name__.lower())
 
 
+@execute_node.register(ops.First, SeriesGroupBy, type(None))
+def execute_first_series_groupby(op, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(data, lambda x: getattr(x, "iat", x)[0])
+
+
+@execute_node.register(ops.Last, SeriesGroupBy, type(None))
+def execute_last_series_groupby(op, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(data, lambda x: getattr(x, "iat", x)[-1])
+
+
 variance_ddof = {'pop': 0, 'sample': 1}
 
 
@@ -697,6 +707,20 @@ def execute_reduction_series_gb_mask(op, data, mask, aggcontext=None, **kwargs):
     )
 
 
+@execute_node.register(ops.First, SeriesGroupBy, SeriesGroupBy)
+def execute_first_series_gb_mask(op, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data, functools.partial(_filtered_reduction, mask.obj, lambda x: x.iloc[0])
+    )
+
+
+@execute_node.register(ops.Last, SeriesGroupBy, SeriesGroupBy)
+def execute_last_series_gb_mask(op, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data, functools.partial(_filtered_reduction, mask.obj, lambda x: x.iloc[-1])
+    )
+
+
 @execute_node.register(
     (ops.CountDistinct, ops.ApproxCountDistinct),
     SeriesGroupBy,
@@ -743,6 +767,18 @@ def execute_count_star_frame_groupby(op, data, _, **kwargs):
 def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
     operand = data[mask] if mask is not None else data
     return aggcontext.agg(operand, type(op).__name__.lower())
+
+
+@execute_node.register(ops.First, pd.Series, (pd.Series, type(None)))
+def execute_first_series_mask(op, data, mask, aggcontext=None, **kwargs):
+    operand = data[mask] if mask is not None else data
+    return aggcontext.agg(operand, lambda x: x.iloc[0])
+
+
+@execute_node.register(ops.Last, pd.Series, (pd.Series, type(None)))
+def execute_last_series_mask(op, data, mask, aggcontext=None, **kwargs):
+    operand = data[mask] if mask is not None else data
+    return aggcontext.agg(operand, lambda x: x.iloc[-1])
 
 
 @execute_node.register(

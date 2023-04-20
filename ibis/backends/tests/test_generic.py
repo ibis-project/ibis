@@ -1053,7 +1053,7 @@ def test_pivot_wider(backend):
         param(
             "last",
             marks=pytest.mark.notimpl(
-                ["bigquery", "snowflake", "trino"],
+                ["bigquery", "trino"],
                 raises=com.UnsupportedOperationError,
                 reason="backend doesn't support how='last'",
             ),

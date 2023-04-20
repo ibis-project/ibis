@@ -711,5 +711,7 @@ operation_registry.update(
         ops.Arbitrary: _arbitrary,
         ops.StructColumn: _struct_column,
         ops.StructField: _struct_field,
+        ops.First: reduction(sa.func.public._ibis_first),
+        ops.Last: reduction(sa.func.public._ibis_last),
     }
 )

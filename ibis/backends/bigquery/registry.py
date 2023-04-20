@@ -298,6 +298,28 @@ def _arbitrary(translator, op):
     return f"ANY_VALUE({translator.translate(arg)})"
 
 
+def _first(translator, op):
+    arg = op.arg
+    where = op.where
+
+    if where is not None:
+        arg = ops.Where(where, arg, ibis.NA)
+
+    arg = translator.translate(arg)
+    return f"ARRAY_AGG({arg} IGNORE NULLS)[SAFE_OFFSET(0)]"
+
+
+def _last(translator, op):
+    arg = op.arg
+    where = op.where
+
+    if where is not None:
+        arg = ops.Where(where, arg, ibis.NA)
+
+    arg = translator.translate(arg)
+    return f"ARRAY_REVERSE(ARRAY_AGG({arg} IGNORE NULLS))[SAFE_OFFSET(0)]"
+
+
 def _truncate(kind, units):
     def truncator(translator, op):
         arg, unit = op.args
@@ -662,6 +684,8 @@ OPERATION_REGISTRY = {
     ops.Log: _log,
     ops.Log2: _log2,
     ops.Arbitrary: _arbitrary,
+    ops.First: _first,
+    ops.Last: _last,
     # Geospatial Columnar
     ops.GeoUnaryUnion: unary("ST_UNION_AGG"),
     # Geospatial

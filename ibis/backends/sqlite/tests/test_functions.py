@@ -706,11 +706,10 @@ def test_scalar_parameter(alltypes):
     tm.assert_series_equal(result, expected)
 
 
-def test_count_on_order_by(con):
+def test_count_on_order_by(con, snapshot):
     t = con.table("batting")
     sort_key = ibis.desc(t.playerID)
     sorted_table = t.order_by(sort_key)
     expr = sorted_table.count()
-    result = str(expr.compile().compile(compile_kwargs={'literal_binds': True}))
-    expected = "SELECT count(*) AS count \nFROM batting AS t0"
-    assert result == expected
+    result = str(ibis.to_sql(expr, dialect="sqlite"))
+    snapshot.assert_match(result, "out.sql")

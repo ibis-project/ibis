@@ -1031,6 +1031,8 @@ _simple_ops = {
     ops.ArrayCollect: "groupArray",
     ops.Count: "count",
     ops.CountDistinct: "uniq",
+    ops.First: "any",
+    ops.Last: "anyLast",
     # string operations
     ops.StringLength: "length",
     ops.Lowercase: "lower",
@@ -1240,10 +1242,11 @@ def _window(op: ops.WindowFunction, **kw: Any):
         return translate_val(arg, **kw)
 
     window_formatted = format_window_frame(op, op.frame, **kw)
-    func_formatted = translate_val(op.func, **kw)
+    func = op.func.__window_op__
+    func_formatted = translate_val(func, **kw)
     result = f'{func_formatted} {window_formatted}'
 
-    if isinstance(op.func, ops.RankBase):
+    if isinstance(func, ops.RankBase):
         return f"({result} - 1)"
 
     return result

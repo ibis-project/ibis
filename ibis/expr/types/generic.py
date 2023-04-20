@@ -1287,19 +1287,57 @@ class Column(Value, _FixedTextJupyterMixin):
             .agg(**{f"{name}_count": lambda t: t.count()})
         )
 
-    def first(self) -> Column:
+    def first(self, where: ir.BooleanValue | None = None) -> Value:
         """Return the first value of a column.
 
-        Equivalent to SQL's `FIRST_VALUE` window function.
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"chars": ["a", "b", "c", "d"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ chars  ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ a      │
+        │ b      │
+        │ c      │
+        │ d      │
+        └────────┘
+        >>> t.chars.first()
+        'a'
+        >>> t.chars.first(where=t.chars != 'a')
+        'b'
         """
-        return ops.FirstValue(self).to_expr()
+        return ops.First(self, where=where).to_expr()
 
-    def last(self) -> Column:
+    def last(self, where: ir.BooleanValue | None = None) -> Value:
         """Return the last value of a column.
 
-        Equivalent to SQL's `LAST_VALUE` window function.
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"chars": ["a", "b", "c", "d"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ chars  ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ a      │
+        │ b      │
+        │ c      │
+        │ d      │
+        └────────┘
+        >>> t.chars.last()
+        'd'
+        >>> t.chars.last(where=t.chars != 'd')
+        'c'
         """
-        return ops.LastValue(self).to_expr()
+        return ops.Last(self, where=where).to_expr()
 
     def rank(self) -> ir.IntegerColumn:
         """Compute position of first element within each equal-value group in sorted order.

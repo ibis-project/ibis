@@ -19,9 +19,8 @@ def table(mockcon):
         pytest.param(
             lambda t: t.string_col.lead(default=0), id="lead_explicit_default"
         ),
-        pytest.param(lambda t: t.double_col.first(), id="first"),
-        pytest.param(lambda t: t.double_col.last(), id="last"),
-        # (t.double_col.nth(4), 'first_value(lag(double_col, 4 - 1))')
+        pytest.param(lambda t: t.double_col.first().over(order_by="id"), id="first"),
+        pytest.param(lambda t: t.double_col.last().over(order_by="id"), id="last"),
         pytest.param(lambda t: t.double_col.ntile(3), id="ntile"),
         pytest.param(lambda t: t.double_col.percent_rank(), id="percent_rank"),
     ],
