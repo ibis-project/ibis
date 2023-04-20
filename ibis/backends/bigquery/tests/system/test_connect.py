@@ -1,5 +1,6 @@
 from unittest import mock
 
+import google.api_core.exceptions as gexc
 import pydata_google_auth
 import pytest
 from google.auth import credentials as auth
@@ -14,7 +15,10 @@ def test_repeated_project_name(project_id, credentials):
         dataset_id=f"{project_id}.testing",
         credentials=credentials,
     )
-    assert "functional_alltypes" in con.list_tables()
+    try:
+        assert "functional_alltypes" in con.list_tables()
+    except gexc.Forbidden:
+        pytest.skip("Cannot access BigQuery")
 
 
 def test_project_id_different_from_default_credentials(monkeypatch):
@@ -31,10 +35,7 @@ def test_project_id_different_from_default_credentials(monkeypatch):
 
 
 def test_without_dataset(project_id, credentials):
-    con = ibis.bigquery.connect(
-        project_id=project_id,
-        credentials=credentials,
-    )
+    con = ibis.bigquery.connect(project_id=project_id, credentials=credentials)
     with pytest.raises(ValueError, match="Unable to determine BigQuery"):
         con.list_tables()
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 
+import google.api_core.exceptions as gexc
 import google.auth
 import google.auth.exceptions
 import pytest
@@ -60,16 +61,24 @@ def credentials(default_credentials):
 
 @pytest.fixture(scope="session")
 def client(credentials, project_id, dataset_id):
-    return ibis.bigquery.connect(
+    con = ibis.bigquery.connect(
         project_id=project_id, dataset_id=dataset_id, credentials=credentials
     )
+    try:
+        return con.sql("SELECT 1")
+    except gexc.Forbidden:
+        pytest.skip("Cannot access BigQuery")
 
 
 @pytest.fixture(scope="session")
 def client2(credentials, project_id, dataset_id):
-    return ibis.bigquery.connect(
+    con = ibis.bigquery.connect(
         project_id=project_id, dataset_id=dataset_id, credentials=credentials
     )
+    try:
+        return con.sql("SELECT 1")
+    except gexc.Forbidden:
+        pytest.skip("Cannot access BigQuery")
 
 
 @pytest.fixture(scope="session")
@@ -99,8 +108,14 @@ def numeric_table(client):
 
 @pytest.fixture(scope="session")
 def public(project_id, credentials):
-    return ibis.bigquery.connect(
+    con = ibis.bigquery.connect(
         project_id=project_id,
         dataset_id="bigquery-public-data.stackoverflow",
         credentials=credentials,
     )
+    try:
+        con.sql("SELECT 1")
+    except gexc.Forbidden:
+        pytest.skip("Cannot access BigQuery")
+    else:
+        return con
