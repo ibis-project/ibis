@@ -427,7 +427,7 @@ def test_egraph_rewrite_to_pattern():
 
 def test_egraph_rewrite_dynamic():
     def applier(egraph, match, a, mul, times):
-        return p.Add(a, a).to_enode()
+        return ENode(ops.Add, (a, a))
 
     node = (one * 2).op()
 
