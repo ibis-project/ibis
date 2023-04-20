@@ -90,6 +90,16 @@ class Value(Expr):
         -------
         Value
             Casted expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = False
+        >>> t = ibis.table(dict(a="int64"), name="t")
+        >>> t.a.cast("float")
+        r0 := UnboundTable: t
+          a int64
+        Cast(a, float64): Cast(r0.a, to=float64)
         """
         op = ops.Cast(self, to=target_type)
 
@@ -180,7 +190,7 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch()
+        >>> t = ibis.examples.penguins.fetch().limit(5)
         >>> t.sex
         ┏━━━━━━━━┓
         ┃ sex    ┃
@@ -192,12 +202,6 @@ class Value(Expr):
         │ female │
         │ NULL   │
         │ female │
-        │ male   │
-        │ female │
-        │ male   │
-        │ NULL   │
-        │ NULL   │
-        │ …      │
         └────────┘
         >>> t.sex.fillna("unrecorded").name("sex")
         ┏━━━━━━━━━━━━┓
@@ -210,12 +214,6 @@ class Value(Expr):
         │ female     │
         │ unrecorded │
         │ female     │
-        │ male       │
-        │ female     │
-        │ male       │
-        │ unrecorded │
-        │ unrecorded │
-        │ …          │
         └────────────┘
 
         Returns
@@ -261,6 +259,24 @@ class Value(Expr):
         -------
         BooleanValue
             Expression indicating membership in the provided range
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().limit(5)
+        >>> t.bill_length_mm.between(35, 38)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Between(bill_length_mm, 35, 38) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                         │
+        ├─────────────────────────────────┤
+        │ False                           │
+        │ False                           │
+        │ False                           │
+        │ NULL                            │
+        │ True                            │
+        └─────────────────────────────────┘
         """
         return ops.Between(self, lower, upper).to_expr()
 
@@ -312,6 +328,36 @@ class Value(Expr):
         -------
         BooleanValue
             Whether `self`'s values are not contained in `values`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().limit(5)
+        >>> t.bill_depth_mm
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ bill_depth_mm ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ float64       │
+        ├───────────────┤
+        │          18.7 │
+        │          17.4 │
+        │          18.0 │
+        │           nan │
+        │          19.3 │
+        └───────────────┘
+        >>> t.bill_depth_mm.notin([18.7, 18.1])
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ NotContains(bill_depth_mm) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                    │
+        ├────────────────────────────┤
+        │ False                      │
+        │ True                       │
+        │ True                       │
+        │ NULL                       │
+        │ True                       │
+        └────────────────────────────┘
         """
         return ops.NotContains(self, values).to_expr()
 
@@ -340,6 +386,32 @@ class Value(Expr):
         -------
         Value
             Replaced values
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.island.value_counts()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ island    ┃ island_count ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ string    │ int64        │
+        ├───────────┼──────────────┤
+        │ Torgersen │           52 │
+        │ Biscoe    │          168 │
+        │ Dream     │          124 │
+        └───────────┴──────────────┘
+        >>> t.island.substitute({"Torgersen": "torg", "Biscoe": "bisc"}).value_counts()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ SimpleCase(island, island) ┃ SimpleCase(island, island)_count ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                     │ int64                            │
+        ├────────────────────────────┼──────────────────────────────────┤
+        │ torg                       │                               52 │
+        │ bisc                       │                              168 │
+        │ Dream                      │                              124 │
+        └────────────────────────────┴──────────────────────────────────┘
         """
         expr = self.case()
         if isinstance(value, dict):
@@ -409,11 +481,73 @@ class Value(Expr):
             return ops.WindowFunction(self, window).to_expr()
 
     def isnull(self) -> ir.BooleanValue:
-        """Return whether this expression is NULL."""
+        """Return whether this expression is NULL.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().limit(5)
+        >>> t.bill_depth_mm
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ bill_depth_mm ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ float64       │
+        ├───────────────┤
+        │          18.7 │
+        │          17.4 │
+        │          18.0 │
+        │           nan │
+        │          19.3 │
+        └───────────────┘
+        >>> t.bill_depth_mm.isnull()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ IsNull(bill_depth_mm) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean               │
+        ├───────────────────────┤
+        │ False                 │
+        │ False                 │
+        │ False                 │
+        │ True                  │
+        │ False                 │
+        └───────────────────────┘
+        """
         return ops.IsNull(self).to_expr()
 
     def notnull(self) -> ir.BooleanValue:
-        """Return whether this expression is not NULL."""
+        """Return whether this expression is not NULL.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().limit(5)
+        >>> t.bill_depth_mm
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ bill_depth_mm ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ float64       │
+        ├───────────────┤
+        │          18.7 │
+        │          17.4 │
+        │          18.0 │
+        │           nan │
+        │          19.3 │
+        └───────────────┘
+        >>> t.bill_depth_mm.notnull()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ NotNull(bill_depth_mm) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                │
+        ├────────────────────────┤
+        │ True                   │
+        │ True                   │
+        │ True                   │
+        │ False                  │
+        │ True                   │
+        └────────────────────────┘
+        """
         return ops.NotNull(self).to_expr()
 
     def case(self):
@@ -464,6 +598,41 @@ class Value(Expr):
         -------
         Value
             Value expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2, 4]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ values ┃
+        ┡━━━━━━━━┩
+        │ int64  │
+        ├────────┤
+        │      1 │
+        │      2 │
+        │      1 │
+        │      2 │
+        │      3 │
+        │      2 │
+        │      4 │
+        └────────┘
+        >>> number_letter_map = ((1, "a"), (2, "b"), (3, "c"))
+        >>> t.values.cases(number_letter_map, default="unk").name("replace")
+        ┏━━━━━━━━━┓
+        ┃ replace ┃
+        ┡━━━━━━━━━┩
+        │ string  │
+        ├─────────┤
+        │ a       │
+        │ b       │
+        │ a       │
+        │ b       │
+        │ c       │
+        │ b       │
+        │ unk     │
+        └─────────┘
         """
         builder = self.case()
         for case, result in case_result_pairs:
@@ -549,6 +718,15 @@ class Value(Expr):
         -------
         BooleanValue
             Whether this expression is not distinct from `other`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> one = ibis.literal(1)
+        >>> two = ibis.literal(2)
+        >>> two.identical_to(one + one)
+        True
         """
         try:
             return ops.IdenticalTo(self, other).to_expr()
@@ -573,6 +751,32 @@ class Value(Expr):
         -------
         StringScalar
             Concatenated string expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().limit(5)
+        >>> t[["bill_length_mm", "bill_depth_mm"]]
+        ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┓
+        ┃ bill_length_mm ┃ bill_depth_mm ┃
+        ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━┩
+        │ float64        │ float64       │
+        ├────────────────┼───────────────┤
+        │           39.1 │          18.7 │
+        │           39.5 │          17.4 │
+        │           40.3 │          18.0 │
+        │            nan │           nan │
+        │           36.7 │          19.3 │
+        └────────────────┴───────────────┘
+        >>> t.bill_length_mm.group_concat()
+        '39.1,39.5,40.3,36.7'
+
+        >>> t.bill_length_mm.group_concat(sep=": ")
+        '39.1: 39.5: 40.3: 36.7'
+
+        >>> t.bill_length_mm.group_concat(sep=": ", where=t.bill_depth_mm > 18)
+        '39.1: 36.7'
         """
         return ops.GroupConcat(self, sep=sep, where=where).to_expr()
 
@@ -640,6 +844,20 @@ class Value(Expr):
         ----------
         kwargs
             Same as keyword arguments to [`execute`][ibis.expr.types.core.Expr.execute]
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().limit(5)
+        >>> t.to_pandas()
+          species     island  bill_length_mm  ...  body_mass_g     sex  year
+        0  Adelie  Torgersen            39.1  ...       3750.0    male  2007
+        1  Adelie  Torgersen            39.5  ...       3800.0  female  2007
+        2  Adelie  Torgersen            40.3  ...       3250.0  female  2007
+        3  Adelie  Torgersen             NaN  ...          NaN    None  2007
+        4  Adelie  Torgersen            36.7  ...       3450.0  female  2007
+        [5 rows x 8 columns]
         """
         return self.execute(**kwargs)
 
@@ -736,6 +954,16 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         Scalar
             An approximate count of the distinct elements of `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.body_mass_g.approx_nunique()
+        94
+        >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
+        55
         """
         return ops.ApproxCountDistinct(self, where).to_expr()
 
@@ -760,27 +988,143 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         Scalar
             An approximation of the median of `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.body_mass_g.approx_median()
+        4030
+        >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
+        3700
         """
         return ops.ApproxMedian(self, where).to_expr()
 
     def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
-        """Return the mode of a column."""
+        """Return the mode of a column.
+
+        Parameters
+        ----------
+        where
+            Filter in values when `where` is `True`
+
+        Returns
+        -------
+        Scalar
+            The mode of `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.body_mass_g.mode()
+        3800
+        >>> t.body_mass_g.mode(where=t.species == "Gentoo")
+        5000
+        """
         return ops.Mode(self, where).to_expr()
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
-        """Return the maximum of a column."""
+        """Return the maximum of a column.
+
+        Parameters
+        ----------
+        where
+            Filter in values when `where` is `True`
+
+        Returns
+        -------
+        Scalar
+            The maximum value in `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.body_mass_g.max()
+        6300
+        >>> t.body_mass_g.max(where=t.species == "Chinstrap")
+        4800
+        """
         return ops.Max(self, where).to_expr()
 
     def min(self, where: ir.BooleanValue | None = None) -> Scalar:
-        """Return the minimum of a column."""
+        """Return the minimum of a column.
+
+        Parameters
+        ----------
+        where
+            Filter in values when `where` is `True`
+
+        Returns
+        -------
+        Scalar
+            The minimum value in `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.body_mass_g.min()
+        2700
+        >>> t.body_mass_g.min(where=t.species == "Adelie")
+        2850
+        """
         return ops.Min(self, where).to_expr()
 
     def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
-        """Return the value of `self` that maximizes `key`."""
+        """Return the value of `self` that maximizes `key`.
+
+        Parameters
+        ----------
+        where
+            Filter in values when `where` is `True`
+
+        Returns
+        -------
+        Scalar
+            The value of `self` that maximizes `key`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.species.argmax(t.body_mass_g)
+        'Gentoo'
+        >>> t.species.argmax(t.body_mass_g, where=t.island == "Dream")
+        'Chinstrap'
+        """
         return ops.ArgMax(self, key=key, where=where).to_expr()
 
     def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
-        """Return the value of `self` that minimizes `key`."""
+        """Return the value of `self` that minimizes `key`.
+
+        Parameters
+        ----------
+        where
+            Filter in values when `where` is `True`
+
+        Returns
+        -------
+        Scalar
+            The value of `self` that minimizes `key`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.species.argmin(t.body_mass_g)
+        'Chinstrap'
+
+        >>> t.species.argmin(t.body_mass_g, where=t.island == "Biscoe")
+        'Adelie'
+        """
         return ops.ArgMin(self, key=key, where=where).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
@@ -795,6 +1139,16 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         IntegerScalar
             Number of distinct elements in an expression
+
+        Examples
+        -------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.body_mass_g.nunique()
+        94
+        >>> t.body_mass_g.nunique(where=t.species == "Adelie")
+        55
         """
         return ops.CountDistinct(self, where).to_expr()
 
@@ -955,20 +1309,28 @@ class Column(Value, _FixedTextJupyterMixin):
 
         Equivalent to SQL's `RANK()` window function.
 
-        Examples
-        --------
-        values   ranks
-        1        0
-        1        0
-        2        2
-        2        2
-        2        2
-        3        5
-
         Returns
         -------
         Int64Column
             The min rank
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(rank=t.values.rank())
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ values ┃ rank  ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ int64  │ int64 │
+        ├────────┼───────┤
+        │      1 │     0 │
+        │      1 │     0 │
+        │      2 │     2 │
+        │      2 │     2 │
+        │      2 │     2 │
+        │      3 │     5 │
+        └────────┴───────┘
         """
         return ops.MinRank(self).to_expr()
 
@@ -979,20 +1341,29 @@ class Column(Value, _FixedTextJupyterMixin):
 
         Equivalent to SQL's `DENSE_RANK()`.
 
-        Examples
-        --------
-        values   ranks
-        1        0
-        1        0
-        2        1
-        2        1
-        2        1
-        3        2
-
         Returns
         -------
         IntegerColumn
             The rank
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(rank=t.values.dense_rank())
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ values ┃ rank  ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ int64  │ int64 │
+        ├────────┼───────┤
+        │      1 │     0 │
+        │      1 │     0 │
+        │      2 │     1 │
+        │      2 │     1 │
+        │      2 │     1 │
+        │      3 │     2 │
+        └────────┴───────┘
         """
         return ops.DenseRank(self).to_expr()
 
