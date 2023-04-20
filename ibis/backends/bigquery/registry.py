@@ -124,14 +124,8 @@ def _array_index(translator, op):
 
 
 def _hash(translator, op):
-    arg, how = op.args
-
-    arg_formatted = translator.translate(arg)
-
-    if how == "farm_fingerprint":
-        return f"farm_fingerprint({arg_formatted})"
-    else:
-        raise NotImplementedError(how)
+    arg_formatted = translator.translate(op.arg)
+    return f"farm_fingerprint({arg_formatted})"
 
 
 def _string_find(translator, op):

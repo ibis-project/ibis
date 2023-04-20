@@ -193,6 +193,7 @@ operation_registry.update(
         ),
         ops.TimestampTruncate: _timestamp_truncate,
         ops.DateTruncate: _timestamp_truncate,
+        ops.Hash: unary(sa.func.checksum),
     }
 )
 

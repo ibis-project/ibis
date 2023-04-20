@@ -388,6 +388,7 @@ operation_registry.update(
         ops.StartsWith: fixed_arity(sa.func.startswith, 2),
         ops.EndsWith: fixed_arity(sa.func.endswith, 2),
         ops.GroupConcat: _group_concat,
+        ops.Hash: unary(sa.func.hash),
     }
 )
 

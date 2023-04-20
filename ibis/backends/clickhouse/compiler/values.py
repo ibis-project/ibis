@@ -350,6 +350,12 @@ def _sign(op, **kw):
 
 @translate_val.register(ops.Hash)
 def _hash(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return f"sipHash64({arg})"
+
+
+@translate_val.register(ops.HashBytes)
+def _hash_bytes(op, **kw):
     algorithms = {
         "MD5",
         "halfMD5",

@@ -63,20 +63,17 @@ class Value(Expr):
         """Return the [DataType] of this expression."""
         return self.op().output_dtype
 
-    def hash(self, how: str = "fnv") -> ir.IntegerValue:
+    def hash(self) -> ir.IntegerValue:
         """Compute an integer hash value.
 
-        Parameters
-        ----------
-        how
-            Hash algorithm to use
+        !!! info "The hashing function used is backend-dependent."
 
         Returns
         -------
         IntegerValue
             The hash value of `self`
         """
-        return ops.Hash(self, how).to_expr()
+        return ops.Hash(self).to_expr()
 
     def cast(self, target_type: dt.DataType) -> Value:
         """Cast expression to indicated data type.

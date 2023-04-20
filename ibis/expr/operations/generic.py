@@ -264,7 +264,6 @@ class Pi(Constant):
 @public
 class Hash(Value):
     arg = rlz.any
-    how = rlz.isin({'fnv', 'farm_fingerprint'})
 
     output_dtype = dt.int64
     output_shape = rlz.shape_like("arg")
@@ -273,7 +272,24 @@ class Hash(Value):
 @public
 class HashBytes(Value):
     arg = rlz.one_of({rlz.value(dt.string), rlz.value(dt.binary)})
-    how = rlz.isin({'md5', 'sha1', 'sha256', 'sha512'})
+    # TODO: these don't necessarily all belong here
+    how = rlz.isin(
+        {
+            "md5",
+            "MD5",
+            "sha1",
+            "SHA1",
+            "SHA224",
+            "sha256",
+            "SHA256",
+            "sha512",
+            "intHash32",
+            "intHash64",
+            "cityHash64",
+            "sipHash64",
+            "sipHash128",
+        }
+    )
 
     output_dtype = dt.binary
     output_shape = rlz.shape_like("arg")

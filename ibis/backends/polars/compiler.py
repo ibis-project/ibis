@@ -1024,3 +1024,8 @@ def execute_union(op, **kwargs):
     if op.distinct:
         return result.unique()
     return result
+
+
+@translate.register(ops.Hash)
+def execute_hash(op, **kwargs):
+    return translate(op.arg).hash()
