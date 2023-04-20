@@ -23,6 +23,7 @@ import numpy as np
 import toolz
 from multipledispatch.variadic import Variadic
 
+import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import make_selected_obj
@@ -105,6 +106,16 @@ def execute_reduction_series_gb_mask(op, data, mask, aggcontext=None, **kwargs):
 def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
     operand = data[mask] if mask is not None else data
     return aggcontext.agg(operand, type(op).__name__.lower())
+
+
+@execute_node.register(
+    (ops.First, ops.Last), ddgb.SeriesGroupBy, (ddgb.SeriesGroupBy, type(None))
+)
+@execute_node.register((ops.First, ops.Last), dd.Series, (dd.Series, type(None)))
+def execute_first_last_dask(op, data, mask, aggcontext=None, **kwargs):
+    raise exc.OperationNotDefinedError(
+        "Dask does not support first or last aggregations"
+    )
 
 
 @execute_node.register(

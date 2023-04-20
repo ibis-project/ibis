@@ -418,5 +418,11 @@ operation_registry.update(
             lambda: 0.5 + sa.func.random() / sa.cast(-1 << 64, sa.REAL), 0
         ),
         ops.Arbitrary: _arbitrary,
+        ops.First: lambda t, op: t.translate(
+            ops.Arbitrary(op.arg, where=op.where, how="first")
+        ),
+        ops.Last: lambda t, op: t.translate(
+            ops.Arbitrary(op.arg, where=op.where, how="last")
+        ),
     }
 )

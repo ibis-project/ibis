@@ -834,7 +834,9 @@ def test_cumulative_partitioned_ordered_window(alltypes, func, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(('func', 'shift_amount'), [('lead', -1), ('lag', 1)])
+@pytest.mark.parametrize(
+    ('func', 'shift_amount'), [('lead', -1), ('lag', 1)], ids=["lead", "lag"]
+)
 def test_analytic_shift_functions(alltypes, df, func, shift_amount):
     method = getattr(alltypes.double_col, func)
     expr = method(1)
@@ -843,18 +845,17 @@ def test_analytic_shift_functions(alltypes, df, func, shift_amount):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize(('func', 'expected_index'), [('first', -1), ('last', 0)])
+@pytest.mark.parametrize(
+    ('func', 'expected_index'), [('first', -1), ('last', 0)], ids=["first", "last"]
+)
 def test_first_last_value(alltypes, df, func, expected_index):
     col = alltypes.order_by(ibis.desc(alltypes.string_col)).double_col
     method = getattr(col, func)
-    expr = method()
-    result = expr.execute().rename('double_col')
-    expected = pd.Series(
-        df.double_col.iloc[expected_index],
-        index=pd.RangeIndex(len(df)),
-        name='double_col',
-    )
-    tm.assert_series_equal(result, expected)
+    # test that we traverse into expression trees
+    expr = (1 + method()) - 1
+    result = expr.execute()
+    expected = df.double_col.iloc[expected_index]
+    assert result == expected
 
 
 def test_null_column(alltypes):

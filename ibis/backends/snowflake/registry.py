@@ -130,15 +130,17 @@ def _nth_value(t, op):
 
 
 def _arbitrary(t, op):
-    if op.how != "first":
-        raise com.UnsupportedOperationError(
-            "Snowflake only supports the `first` option for `.arbitrary()`"
+    if (how := op.how) == "first":
+        return t._reduction(lambda x: sa.func.get(sa.func.array_agg(x), 0), op)
+    elif how == "last":
+        return t._reduction(
+            lambda x: sa.func.get(
+                sa.func.array_agg(x), sa.func.array_size(sa.func.array_agg(x)) - 1
+            ),
+            op,
         )
-
-    # we can't use any_value here because it respects nulls
-    #
-    # yes it's slower, but it's also consistent with every other backend
-    return t._reduction(sa.func.min, op)
+    else:
+        raise com.UnsupportedOperationError("how must be 'first' or 'last'")
 
 
 @compiles(Cast, "snowflake")
@@ -377,6 +379,12 @@ operation_registry.update(
         ),
         ops.NthValue: _nth_value,
         ops.Arbitrary: _arbitrary,
+        ops.First: reduction(lambda x: sa.func.get(sa.func.array_agg(x), 0)),
+        ops.Last: reduction(
+            lambda x: sa.func.get(
+                sa.func.array_agg(x), sa.func.array_size(sa.func.array_agg(x)) - 1
+            )
+        ),
         ops.StructColumn: lambda t, op: sa.func.object_construct_keep_null(
             *itertools.chain.from_iterable(zip(op.names, map(t.translate, op.values)))
         ),

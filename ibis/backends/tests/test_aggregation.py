@@ -591,7 +591,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "snowflake", "trino"],
+                    ["bigquery", "trino"],
                     raises=com.UnsupportedOperationError,
                     reason="backend only supports the `first` option for `.arbitrary()",
                 ),
@@ -628,6 +628,24 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     reason="Snowflake only supports the `first` option for `.arbitrary()",
                 ),
             ],
+        ),
+        param(
+            lambda t, where: t.double_col.first(where=where),
+            lambda t, where: t.double_col[where].iloc[0],
+            id='first',
+            marks=pytest.mark.notimpl(
+                ["dask", "datafusion", "druid", "impala", "mssql", "mysql"],
+                raises=com.OperationNotDefinedError,
+            ),
+        ),
+        param(
+            lambda t, where: t.double_col.last(where=where),
+            lambda t, where: t.double_col[where].iloc[-1],
+            id='last',
+            marks=pytest.mark.notimpl(
+                ["dask", "datafusion", "druid", "impala", "mssql", "mysql"],
+                raises=com.OperationNotDefinedError,
+            ),
         ),
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),
@@ -1171,7 +1189,7 @@ def test_group_concat(
     ],
 )
 @mark.notimpl(
-    ["pandas", "dask"],
+    ["dask"],
     raises=NotImplementedError,
     reason="sorting on aggregations not yet implemented",
 )
@@ -1201,7 +1219,7 @@ def test_topk_op(alltypes, df, result_fn, expected_fn):
         )
     ],
 )
-@mark.notimpl(["datafusion", "pandas"], raises=com.OperationNotDefinedError)
+@mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @mark.broken(
     ["bigquery"],
     raises=GoogleBadRequest,
@@ -1216,7 +1234,7 @@ def test_topk_op(alltypes, df, result_fn, expected_fn):
     ),
 )
 @mark.notimpl(
-    ["pandas", "dask"],
+    ["dask"],
     raises=NotImplementedError,
     reason="sorting on aggregations not yet implemented",
 )

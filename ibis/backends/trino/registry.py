@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from functools import partial
+from typing import Literal
 
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
@@ -227,6 +228,10 @@ def _array_filter(t, op):
     )
 
 
+def _first_last(t, op, *, offset: Literal[-1, 1]):
+    return sa.func.element_at(t._reduction(sa.func.array_agg, op), offset)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -401,6 +406,8 @@ operation_registry.update(
         ),
         ops.StartsWith: fixed_arity(sa.func.starts_with, 2),
         ops.Argument: lambda _, op: sa.literal_column(op.name),
+        ops.First: partial(_first_last, offset=1),
+        ops.Last: partial(_first_last, offset=-1),
     }
 )
 

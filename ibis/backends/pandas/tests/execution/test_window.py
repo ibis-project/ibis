@@ -107,15 +107,15 @@ def test_lag_delta(t, df, range_offset, default, range_window):
 def test_first(t, df):
     expr = t.dup_strings.first()
     result = expr.execute()
-    expected = df.dup_strings.iloc[np.repeat(0, len(df))].reset_index(drop=True)
-    tm.assert_series_equal(result, expected)
+    expected = df.dup_strings.iat[0]
+    assert result == expected
 
 
 def test_last(t, df):
     expr = t.dup_strings.last()
     result = expr.execute()
-    expected = df.dup_strings.iloc[np.repeat(-1, len(df))].reset_index(drop=True)
-    tm.assert_series_equal(result, expected)
+    expected = df.dup_strings.iat[-1]
+    assert result == expected
 
 
 def test_group_by_mutate_analytic(t, df):

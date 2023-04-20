@@ -128,20 +128,22 @@ def window(translator, op):
         ops.ApproxCountDistinct,
     )
 
-    if isinstance(op.func, _unsupported_reductions):
+    func = op.func.__window_op__
+
+    if isinstance(func, _unsupported_reductions):
         raise com.UnsupportedOperationError(
-            f'{type(op.func)} is not supported in window functions'
+            f'{type(func)} is not supported in window functions'
         )
 
-    if isinstance(op.func, ops.CumulativeOp):
-        arg = cumulative_to_window(translator, op.func, op.frame)
+    if isinstance(func, ops.CumulativeOp):
+        arg = cumulative_to_window(translator, func, op.frame)
         return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
     frame = op.frame
-    if isinstance(op.func, translator._require_order_by) and not frame.order_by:
-        frame = frame.copy(order_by=(op.func.arg,))
+    if isinstance(func, translator._require_order_by) and not frame.order_by:
+        frame = frame.copy(order_by=(func.arg,))
 
     # Time ranges need to be converted to microseconds.
     if isinstance(frame, ops.RangeWindowFrame):
@@ -153,12 +155,12 @@ def window(translator, op):
                 'Rows with max lookback is not implemented for SQL-based backends.'
             )
 
-    window_formatted = format_window_frame(translator, op.func, frame)
+    window_formatted = format_window_frame(translator, func, frame)
 
-    arg_formatted = translator.translate(op.func)
+    arg_formatted = translator.translate(func.__window_op__)
     result = f'{arg_formatted} {window_formatted}'
 
-    if isinstance(op.func, ops.RankBase):
+    if isinstance(func, ops.RankBase):
         return f'({result} - 1)'
     else:
         return result

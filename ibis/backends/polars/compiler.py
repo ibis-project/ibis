@@ -643,6 +643,8 @@ _reductions = {
     ops.Variance: 'var',
     ops.CountDistinct: 'n_unique',
     ops.Median: 'median',
+    ops.First: 'first',
+    ops.Last: 'last',
 }
 
 for reduction in _reductions.keys():

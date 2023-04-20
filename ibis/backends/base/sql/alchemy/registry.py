@@ -334,16 +334,18 @@ def _translate_window_boundary(boundary):
 
 
 def _window_function(t, window):
-    if isinstance(window.func, ops.CumulativeOp):
-        func = _cumulative_to_window(t, window.func, window.frame).op()
+    func = window.func.__window_op__
+
+    if isinstance(func, ops.CumulativeOp):
+        func = _cumulative_to_window(t, func, window.frame).op()
         return t.translate(func)
 
-    reduction = t.translate(window.func)
+    reduction = t.translate(func)
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
-    if isinstance(window.func, t._require_order_by) and not window.frame.order_by:
-        order_by = t.translate(window.func.arg)  # .args[0])
+    if isinstance(func, t._require_order_by) and not window.frame.order_by:
+        order_by = t.translate(func.arg)  # .args[0])
     else:
         order_by = [t.translate(arg) for arg in window.frame.order_by]
 
@@ -361,7 +363,7 @@ def _window_function(t, window):
     else:
         raise NotImplementedError(type(window.frame))
 
-    if t._forbids_frame_clause and isinstance(window.func, t._forbids_frame_clause):
+    if t._forbids_frame_clause and isinstance(func, t._forbids_frame_clause):
         # some functions on some backends don't support frame clauses
         additional_params = {}
     else:
@@ -373,7 +375,7 @@ def _window_function(t, window):
         reduction, partition_by=partition_by, order_by=order_by, **additional_params
     )
 
-    if isinstance(window.func, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)):
+    if isinstance(func, (ops.RowNumber, ops.DenseRank, ops.MinRank, ops.NTile)):
         return result - 1
     else:
         return result
