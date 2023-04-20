@@ -92,6 +92,11 @@ def test_read_postgres(con, pgurl):  # pragma: no cover
     assert table.count().execute()
 
 
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=duckdb.IOException,
+)
 def test_read_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
 
@@ -116,6 +121,11 @@ def test_read_sqlite_no_table_name(con, tmp_path):
         con.read_sqlite(path)
 
 
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=duckdb.IOException,
+)
 def test_register_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
 

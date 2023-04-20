@@ -41,7 +41,7 @@
 
       backendDevDeps = with pkgs; [
         # impala UDFs
-        clang_12
+        clang_15
         cmake
         ninja
         # snowflake
@@ -122,7 +122,7 @@
       packages = {
         inherit (pkgs) ibis38 ibis39 ibis310 ibis311;
 
-        default = pkgs.ibis311;
+        default = pkgs.ibis310;
 
         inherit (pkgs) update-lock-files gen-all-extras gen-examples check-poetry-version;
       };
