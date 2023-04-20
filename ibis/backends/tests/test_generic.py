@@ -4,6 +4,7 @@ from operator import invert, methodcaller, neg
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 import toolz
@@ -1167,3 +1168,26 @@ def test_distinct_on_keep_is_none(backend, on):
         .reset_index(drop=True)
     )
     assert len(result) == len(expected)
+
+
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "pandas",
+        "postgres",
+    ]
+)
+@pytest.mark.notyet(
+    [
+        "sqlite",
+        "datafusion",
+        "druid",  # ???
+        "mysql",  # CHECKSUM TABLE but not column
+        "trino",  # checksum returns varbinary
+    ]
+)
+def test_hash_consistent(backend, alltypes):
+    h1 = alltypes.string_col.hash().execute(limit=10)
+    h2 = alltypes.string_col.hash().execute(limit=10)
+    tm.assert_series_equal(h1, h2)
+    assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this

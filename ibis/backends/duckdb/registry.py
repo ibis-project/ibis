@@ -417,6 +417,7 @@ operation_registry.update(
         ops.MapKeys: _map_keys,
         ops.MapValues: _map_values,
         ops.MapMerge: _map_merge,
+        ops.Hash: unary(sa.func.hash),
     }
 )
 

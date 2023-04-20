@@ -189,19 +189,6 @@ def round(translator, op):
     return f'round({arg_formatted})'
 
 
-# XXX this is not added to operation_registry, but looks like impala is
-# using it in the tests, and it works, even if it's not imported anywhere
-def hash(translator, op):
-    how = op.how
-
-    arg_formatted = translator.translate(op.arg)
-
-    if how == 'fnv':
-        return f'fnv_hash({arg_formatted})'
-    else:
-        raise NotImplementedError(how)
-
-
 def concat(translator, op):
     joined_args = ', '.join(map(translator.translate, op.arg))
     return f"concat({joined_args})"
@@ -272,7 +259,6 @@ operation_registry = {
     ops.Round: round,
     ops.Sign: sign,
     ops.Sqrt: unary('sqrt'),
-    ops.Hash: hash,
     ops.HashBytes: hashbytes,
     ops.RandomScalar: lambda *_: 'rand(utc_to_unix_micros(utc_timestamp()))',
     ops.Log: log,

@@ -1,0 +1,1 @@
+sipHash64(string_col)
