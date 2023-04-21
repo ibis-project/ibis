@@ -107,6 +107,20 @@ class TestConf(BackendTest, RoundHalfToEven):
 
 
 @pytest.fixture(scope='session')
+def setup_privs():
+    engine = sa.create_engine(f"mysql+pymysql://root:@{MYSQL_HOST}:{MYSQL_PORT:d}")
+    with engine.begin() as con:
+        # allow the ibis user to use any database
+        con.exec_driver_sql("CREATE SCHEMA IF NOT EXISTS `test_schema`")
+        con.exec_driver_sql(
+            f"GRANT CREATE,SELECT,DROP ON `test_schema`.* TO `{MYSQL_USER}`@`%%`"
+        )
+    yield
+    with engine.begin() as con:
+        con.exec_driver_sql("DROP SCHEMA IF EXISTS `test_schema`")
+
+
+@pytest.fixture(scope='session')
 def con():
     return ibis.mysql.connect(
         host=MYSQL_HOST,
@@ -114,4 +128,11 @@ def con():
         password=MYSQL_PASS,
         database=IBIS_TEST_MYSQL_DB,
         port=MYSQL_PORT,
+    )
+
+
+@pytest.fixture(scope='session')
+def con_nodb():
+    return ibis.mysql.connect(
+        host=MYSQL_HOST, user=MYSQL_USER, password=MYSQL_PASS, port=MYSQL_PORT
     )

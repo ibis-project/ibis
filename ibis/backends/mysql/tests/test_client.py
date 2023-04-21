@@ -86,3 +86,18 @@ def test_blob_type(con, coltype):
     finally:
         with con.begin() as c:
             c.exec_driver_sql(f"DROP TABLE {tmp}")
+
+
+@pytest.fixture(scope="session")
+def tmp_t(con_nodb):
+    with con_nodb.begin() as c:
+        c.exec_driver_sql("CREATE TABLE IF NOT EXISTS test_schema.t (x INET6)")
+    yield
+    with con_nodb.begin() as c:
+        c.exec_driver_sql("DROP TABLE IF EXISTS test_schema.t")
+
+
+@pytest.mark.usefixtures("setup_privs", "tmp_t")
+def test_get_schema_from_query_other_schema(con_nodb):
+    t = con_nodb.table("t", schema="test_schema")
+    assert t.schema() == ibis.schema({"x": dt.string})
