@@ -280,19 +280,22 @@ class Backend(BaseSQLBackend):
         self._temp_objects = set()
         self._hdfs = hdfs_client
 
-        params = {
-            'host': host,
-            'port': port,
-            'database': database,
-            'timeout': timeout,
-            'use_ssl': use_ssl,
-            'ca_cert': str(ca_cert),
-            'user': user,
-            'password': password,
-            'auth_mechanism': auth_mechanism,
-            'kerberos_service_name': kerberos_service_name,
-        }
-        self.con = ImpalaConnection(pool_size=pool_size, **params)
+        params = {}
+        if ca_cert is not None:
+            params["ca_cert"] = str(ca_cert)
+        self.con = ImpalaConnection(
+            pool_size=pool_size,
+            host=host,
+            port=port,
+            database=database,
+            timeout=timeout,
+            use_ssl=use_ssl,
+            user=user,
+            password=password,
+            auth_mechanism=auth_mechanism,
+            kerberos_service_name=kerberos_service_name,
+            **params,
+        )
 
         self._ensure_temp_db_exists()
 
