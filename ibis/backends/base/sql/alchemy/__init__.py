@@ -467,8 +467,15 @@ class BaseAlchemyBackend(BaseSQLBackend):
         """Handle cases where SQLAlchemy cannot infer the column types of `table`."""
 
         self.inspector.reflect_table(table, table.columns)
+
         dialect = self.con.dialect
-        quoted_name = dialect.identifier_preparer.quote(table.name)
+
+        quoted_name = ".".join(
+            map(
+                dialect.identifier_preparer.quote,
+                filter(None, [table.schema, table.name]),
+            )
+        )
 
         for colname, type in self._metadata(quoted_name):
             if colname in nulltype_cols:
