@@ -2545,6 +2545,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> from ibis import _
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
+        >>> t.count()
+        344
         >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
         >>> expr = t.cross_join(agg)
         >>> expr
@@ -2579,8 +2581,6 @@ class Table(Expr, _FixedTextJupyterMixin):
          'flipper_length_mm_right',
          'body_mass_g_right']
         >>> expr.count()
-        344
-        >>> t.count()
         344
         """
         op = ops.CrossJoin(

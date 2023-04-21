@@ -101,7 +101,6 @@ class StructValue(Value):
 
     Examples
     --------
-
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
@@ -198,17 +197,75 @@ class StructValue(Value):
         │ NULL   │
         │ NULL   │
         └────────┘
+        >>> t.s['foo_bar']
+        Traceback (most recent call last):
+            ...
+        KeyError: 'foo_bar'
         """
+        if name not in self.names:
+            raise KeyError(name)
         return ops.StructField(self, name).to_expr()
 
     def __setstate__(self, instance_dictionary):
         self.__dict__ = instance_dictionary
 
     def __getattr__(self, name: str) -> ir.Value:
-        """Extract the `name` field from this struct."""
-        if name in self.names:
-            return self.__getitem__(name)
-        raise AttributeError(name)
+        """Extract the `name` field from this struct.
+
+        Parameters
+        ----------
+        name
+            The name of the field to access.
+
+        Returns
+        -------
+        Value
+            An expression with the type of the field being accessed.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ s                           ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ struct<a: int64, b: string> │
+        ├─────────────────────────────┤
+        │ {'a': 1, 'b': 'foo'}        │
+        │ {'a': 3, 'b': None}         │
+        │ NULL                        │
+        └─────────────────────────────┘
+        >>> t.s.a
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     3 │
+        │  NULL │
+        └───────┘
+        >>> t.s.b
+        ┏━━━━━━━━┓
+        ┃ b      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ foo    │
+        │ NULL   │
+        │ NULL   │
+        └────────┘
+        >>> t.s.foo_bar
+        Traceback (most recent call last):
+            ...
+        AttributeError: foo_bar
+        """
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(name) from None
 
     @property
     def names(self) -> Sequence[str]:
@@ -241,14 +298,15 @@ class StructValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> lines = '''
-        ...     {"pos": {"lat": 10.1, "lon": 30.3}}
-        ...     {"pos": {"lat": 10.2, "lon": 30.2}}
-        ...     {"pos": {"lat": 10.3, "lon": 30.1}}
-        ... '''
-        >>> with open("/tmp/lines.json", "w") as f:
-        ...     _ = f.write(lines)
-        >>> t = ibis.read_json("/tmp/lines.json")
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "pos": [
+        ...             {"lat": 10.1, "lon": 30.3},
+        ...             {"lat": 10.2, "lon": 30.2},
+        ...             {"lat": 10.3, "lon": 30.1},
+        ...         ]
+        ...     }
+        ... )
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ pos                                ┃
@@ -293,7 +351,6 @@ class StructValue(Value):
 
         Examples
         --------
-
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})

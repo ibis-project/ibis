@@ -14,11 +14,7 @@ if TYPE_CHECKING:
 
 @public
 class BooleanValue(NumericValue):
-    def ifelse(
-        self,
-        true_expr: ir.Value,
-        false_expr: ir.Value,
-    ) -> ir.Value:
+    def ifelse(self, true_expr: ir.Value, false_expr: ir.Value) -> ir.Value:
         """Construct a ternary conditional expression.
 
         Parameters
@@ -26,7 +22,7 @@ class BooleanValue(NumericValue):
         true_expr
             Expression to return if `self` evaluates to `True`
         false_expr
-            Expression to return if `self` evaluates to `False`
+            Expression to return if `self` evaluates to `False` or `NULL`
 
         Returns
         -------
@@ -36,11 +32,19 @@ class BooleanValue(NumericValue):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([("is_person", "boolean")], name="t")
-        >>> expr = t.is_person.ifelse("yes", "no")
-        >>> print(ibis.impala.compile(expr.name("tmp")))
-        SELECT if(t0.`is_person`, 'yes', 'no') AS `tmp`
-        FROM t t0
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"is_person": [True, False, True, None]})
+        >>> t.is_person.ifelse("yes", "no")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Where(is_person, 'yes', 'no') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                        │
+        ├───────────────────────────────┤
+        │ yes                           │
+        │ no                            │
+        │ yes                           │
+        │ no                            │
+        └───────────────────────────────┘
         """
         # Result will be the result of promotion of true/false exprs. These
         # might be conflicting types; same type resolution as case expressions
@@ -49,7 +53,6 @@ class BooleanValue(NumericValue):
 
     def __and__(self, other: BooleanValue) -> BooleanValue:
         """Construct a binary AND conditional expression with `self` and `other`.
-
 
         Parameters
         ----------
@@ -99,7 +102,6 @@ class BooleanValue(NumericValue):
     def __or__(self, other: BooleanValue) -> BooleanValue:
         """Construct a binary OR conditional expression with `self` and `other`.
 
-
         Parameters
         ----------
         self
@@ -135,7 +137,6 @@ class BooleanValue(NumericValue):
 
     def __xor__(self, other: BooleanValue) -> BooleanValue:
         """Construct a binary XOR conditional expression with `self` and `other`.
-
 
         Parameters
         ----------
@@ -198,7 +199,6 @@ class BooleanValue(NumericValue):
     def __invert__(self) -> BooleanValue:
         """Construct a unary NOT conditional expression with `self`.
 
-
         Parameters
         ----------
         self
@@ -250,7 +250,8 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         Returns
         -------
-        Boolean Value
+        BooleanValue
+            Whether at least one element is `True`.
 
         Examples
         --------
@@ -279,7 +280,9 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         Returns
         -------
-        Boolean Value
+        BooleanValue
+            Whether no elements are `True`.
+
         Examples
         --------
         >>> import ibis
@@ -306,8 +309,9 @@ class BooleanColumn(NumericColumn, BooleanValue):
             Optional filter for the aggregation
 
         Returns
-            -------
-            Boolean Value
+        -------
+        BooleanValue
+            Whether all elements are `True`
 
         Examples
         --------
@@ -336,7 +340,8 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         Returns
         -------
-        Boolean Value
+        BooleanValue
+            Whether not all elements are `True`
 
         Examples
         --------
@@ -359,7 +364,8 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         Returns
         -------
-        BooleanColumns
+        BooleanColumn
+            A boolean column with the cumulative `any` aggregate.
 
         Examples
         --------
@@ -397,7 +403,8 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         Returns
         -------
-        BooleanColumns
+        BooleanColumn
+            A boolean column with the cumulative `all` aggregate.
 
         Examples
         --------
