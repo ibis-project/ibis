@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import enum
 import inspect
 import math
 import numbers
@@ -70,8 +71,11 @@ class MatchError(Exception):
     ...
 
 
-class NoMatch:
-    """Sentinel value for when a pattern doesn't match."""
+class NoMatchType(enum.Enum):
+    NoMatch = "NoMatch"
+
+
+NoMatch = NoMatchType.NoMatch  # Sentinel value for when a pattern doesn't match.
 
 
 # TODO(kszucs): have an As[int] or Coerced[int] type in ibis.common.typing which
