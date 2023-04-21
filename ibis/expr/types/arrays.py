@@ -771,10 +771,7 @@ class ArrayColumn(Column, ArrayValue):
 
 
 @public
-def array(
-    values: Iterable[V],
-    type: str | dt.DataType | None = None,
-) -> ArrayValue:
+def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayValue:
     """Create an array expression.
 
     If the input expressions are all column expressions, then the output will
@@ -809,13 +806,32 @@ def array(
     Examples
     --------
     Create an array column from column expressions
+
     >>> import ibis
-    >>> t = ibis.table([('a', 'int64'), ('b', 'int64')], name='t')
-    >>> result = ibis.array([t.a, t.b])
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({'a': [1, 2, 3], 'b': [4, 5, 6]})
+    >>> ibis.array([t.a, t.b])
+    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ ArrayColumn()        ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<int64>         │
+    ├──────────────────────┤
+    │ [1, 4]               │
+    │ [2, 5]               │
+    │ [3, 6]               │
+    └──────────────────────┘
 
     Create an array scalar from Python literals
-    >>> import ibis
-    >>> result = ibis.array([1.0, 2.0, 3.0])
+
+    >>> ibis.array([1.0, 2.0, 3.0])
+    [1.0, 2.0, 3.0]
+
+    Mixing scalar and column expressions is not allowed
+
+    >>> ibis.array([t.a, 1.0])
+    Traceback (most recent call last):
+        ...
+    ibis.common.exceptions.IbisTypeError: To create an array column using `array`, all input values must be column expressions.
     """
     if all(isinstance(value, Column) for value in values):
         return ops.ArrayColumn(values).to_expr()
