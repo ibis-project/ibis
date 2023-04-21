@@ -65,9 +65,11 @@ def client(credentials, project_id, dataset_id):
         project_id=project_id, dataset_id=dataset_id, credentials=credentials
     )
     try:
-        return con.sql("SELECT 1")
+        con.sql("SELECT 1")
     except gexc.Forbidden:
         pytest.skip("Cannot access BigQuery")
+    else:
+        return con
 
 
 @pytest.fixture(scope="session")
@@ -76,9 +78,11 @@ def client2(credentials, project_id, dataset_id):
         project_id=project_id, dataset_id=dataset_id, credentials=credentials
     )
     try:
-        return con.sql("SELECT 1")
+        con.sql("SELECT 1")
     except gexc.Forbidden:
         pytest.skip("Cannot access BigQuery")
+    else:
+        return con
 
 
 @pytest.fixture(scope="session")
