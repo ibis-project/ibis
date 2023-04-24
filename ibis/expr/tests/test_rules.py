@@ -7,7 +7,6 @@ from toolz import identity
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.exceptions import IbisTypeError
@@ -256,38 +255,6 @@ def test_invalid_column_or_scalar(validator, value, expected):
 
 
 @pytest.mark.parametrize(
-    ('check_table', 'value', 'expected'),
-    [
-        (table, "int_col", table.int_col),
-        (table, table.int_col, table.int_col),
-    ],
-)
-def test_valid_column_from(check_table, value, expected):
-    validator = rlz.column_from(rlz.ref("table"))
-    this = dict(table=table.op())
-    assert validator(value, this=this).equals(expected.op())
-
-
-@pytest.mark.parametrize(
-    ('check_table', 'validator', 'value'),
-    [
-        (table, rlz.column_from(rlz.ref("not_table")), "int_col"),
-        (table, rlz.column_from(rlz.ref("table")), "col_not_in_table"),
-        (
-            table,
-            rlz.column_from(rlz.ref("table")),
-            similar_table.int_col,
-        ),
-    ],
-)
-def test_invalid_column_from(check_table, validator, value):
-    test = dict(table=check_table.op())
-
-    with pytest.raises(IbisTypeError):
-        validator(value, this=test)
-
-
-@pytest.mark.parametrize(
     'table',
     [
         ibis.table([('group', dt.int64), ('value', dt.double)]),
@@ -322,14 +289,3 @@ def test_optional(validator, input):
     else:
         assert rlz.optional(validator).validate(input) == expected
     assert rlz.optional(validator).validate(None) is None
-
-
-def test_base_table_of_failure_mode():
-    class BrokenUseOfBaseTableOf(ops.Node):
-        arg = rlz.any
-        foo = rlz.function_of(rlz.base_table_of(rlz.ref("arg"), strict=True))
-
-    arg = ibis.literal("abc")
-
-    with pytest.raises(IbisTypeError, match="doesn't have a base table"):
-        BrokenUseOfBaseTableOf(arg, identity)

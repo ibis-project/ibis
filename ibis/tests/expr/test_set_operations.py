@@ -59,4 +59,6 @@ def test_operation_supports_schemas_with_different_field_order(method):
     u2 = u2.op().table
     assert u2.schema == a.schema()
     assert u2.left == a.op()
-    assert u2.right == ops.Selection(c.op(), ['a', 'b', 'c'])
+
+    columns = [ops.TableColumn(c, name) for name in 'abc']
+    assert u2.right == ops.Selection(c.op(), columns)

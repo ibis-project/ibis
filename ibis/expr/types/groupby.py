@@ -27,6 +27,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.expr.deferred import Deferred
 from ibis.selectors import Selector
+from ibis.expr.types.relations import bind_expr
 
 _function_types = tuple(
     filter(
@@ -238,12 +239,12 @@ class GroupedTable:
             return ops.RowsWindowFrame(
                 table=self.table,
                 group_by=self.by,
-                order_by=self._order_by,
+                order_by=bind_expr(self.table, self._order_by),
             )
         else:
             return self._window.copy(
-                groupy_by=self._window.group_by + self.by,
-                order_by=self._window.order_by + self._order_by,
+                groupy_by=bind_expr(self.table, self._window.group_by + self.by),
+                order_by=bind_expr(self.table, self._window.order_by + self._order_by),
             )
 
     def over(

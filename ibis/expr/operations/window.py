@@ -30,18 +30,7 @@ class WindowFrame(Value):
     """A window frame operation bound to a table."""
 
     table = rlz.table
-    group_by = rlz.optional(
-        rlz.tuple_of(
-            rlz.one_of(
-                [
-                    rlz.column_from(rlz.ref("table")),
-                    rlz.function_of(rlz.ref("table")),
-                    rlz.any,
-                ]
-            )
-        ),
-        default=(),
-    )
+    group_by = rlz.optional(rlz.tuple_of(rlz.any), default=())
     order_by = rlz.optional(
         rlz.tuple_of(rlz.sort_key_from(rlz.ref("table"))), default=()
     )
