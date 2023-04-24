@@ -13,7 +13,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.bigquery.client import bigquery_param
-from ibis.util import guid
 
 
 def test_column_execute(alltypes, df):
@@ -338,33 +337,25 @@ def test_approx_median(alltypes):
     assert result in (6, 7)
 
 
-def test_create_table_bignumeric(client):
-    temp_table_name = f"temp_to_table_{guid()[:6]}"
+def test_create_table_bignumeric(client, temp_table):
     schema = ibis.schema({'col1': dt.Decimal(76, 38)})
-    temporary_table = client.create_table(temp_table_name, schema=schema)
-    try:
-        client.raw_sql(
-            f"INSERT {client.current_database}.{temp_table_name} (col1) VALUES (10.2)"
-        )
-        df = temporary_table.execute()
-        assert df.shape == (1, 1)
-    finally:
-        client.drop_table(temp_table_name)
+    temporary_table = client.create_table(temp_table, schema=schema)
+    client.raw_sql(
+        f"INSERT {client.current_database}.{temp_table} (col1) VALUES (10.2)"
+    )
+    df = temporary_table.execute()
+    assert df.shape == (1, 1)
 
 
-def test_geography_table(client):
-    temp_table_name = f"temp_to_table_{guid()[:6]}"
+def test_geography_table(client, temp_table):
     schema = ibis.schema({'col1': dt.GeoSpatial(geotype="geography", srid=4326)})
-    temporary_table = client.create_table(temp_table_name, schema=schema)
-    try:
-        client.raw_sql(
-            f"INSERT {client.current_database}.{temp_table_name} (col1) VALUES (ST_GEOGPOINT(1,3))"
-        )
-        df = temporary_table.execute()
-        assert df.shape == (1, 1)
+    temporary_table = client.create_table(temp_table, schema=schema)
+    client.raw_sql(
+        f"INSERT {client.current_database}.{temp_table} (col1) VALUES (ST_GEOGPOINT(1,3))"
+    )
+    df = temporary_table.execute()
+    assert df.shape == (1, 1)
 
-        assert temporary_table.schema() == ibis.schema(
-            [("col1", dt.GeoSpatial(geotype="geography", srid=4326))]
-        )
-    finally:
-        client.drop_table(temp_table_name)
+    assert temporary_table.schema() == ibis.schema(
+        [("col1", dt.GeoSpatial(geotype="geography", srid=4326))]
+    )

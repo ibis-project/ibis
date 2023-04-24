@@ -189,18 +189,13 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
     ]
 )
 @mark.broken(["druid"], reason="sqlalchemy dialect is broken")
-def test_rename_table(con, temp_table, new_schema):
-    temp_table_original = f'{temp_table}_original'
-    con.create_table(temp_table_original, schema=new_schema)
-    try:
-        t = con.table(temp_table_original)
-        t.rename(temp_table)
+def test_rename_table(con, temp_table, temp_table_orig, new_schema):
+    con.create_table(temp_table_orig, schema=new_schema)
+    t = con.table(temp_table_orig)
+    t.rename(temp_table)
 
-        assert con.table(temp_table) is not None
-        assert temp_table in con.list_tables()
-    finally:
-        con.drop_table(temp_table_original, force=True)
-        con.drop_table(temp_table, force=True)
+    assert con.table(temp_table) is not None
+    assert temp_table in con.list_tables()
 
 
 @mark.notimpl(["bigquery", "datafusion", "polars", "druid"])
@@ -444,17 +439,11 @@ def test_list_databases(alchemy_con):
 @pytest.mark.notyet(
     ["trino"], reason="memory connector doesn't allow writing to tables"
 )
-def test_in_memory(alchemy_backend):
+def test_in_memory(alchemy_backend, alchemy_temp_table):
     con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
-    table_name = f"t{guid()[:6]}"
     with con.begin() as c:
-        c.exec_driver_sql(f"CREATE TABLE {table_name} (x int)")
-    try:
-        assert table_name in con.list_tables()
-    finally:
-        with con.begin() as c:
-            c.exec_driver_sql(f"DROP TABLE IF EXISTS {table_name}")
-        assert table_name not in con.list_tables()
+        c.exec_driver_sql(f"CREATE TABLE {alchemy_temp_table} (x int)")
+    assert alchemy_temp_table in con.list_tables()
 
 
 @pytest.mark.notyet(
@@ -462,17 +451,13 @@ def test_in_memory(alchemy_backend):
     raises=TypeError,
     reason="postgres, mysql and sqlite do not support unsigned integer types",
 )
-def test_unsigned_integer_type(alchemy_con):
-    tname = f"t{guid()[:6]}"
+def test_unsigned_integer_type(alchemy_con, alchemy_temp_table):
     alchemy_con.create_table(
-        tname,
+        alchemy_temp_table,
         schema=ibis.schema(dict(a="uint8", b="uint16", c="uint32", d="uint64")),
         overwrite=True,
     )
-    try:
-        assert tname in alchemy_con.list_tables()
-    finally:
-        alchemy_con.drop_table(tname, force=True)
+    assert alchemy_temp_table in alchemy_con.list_tables()
 
 
 @pytest.mark.backend
@@ -743,36 +728,32 @@ def test_agg_memory_table(con):
 @pytest.mark.parametrize(
     "t",
     [
-        param(ibis.memtable([("a", 1.0)], columns=["a", "b"]), id="python"),
+        param(
+            ibis.memtable([("a", 1.0)], columns=["a", "b"]),
+            marks=pytest.mark.notimpl(["pandas"]),
+            id="python",
+        ),
         param(
             ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
+            marks=pytest.mark.notimpl(["pandas"]),
             id="pandas-memtable",
         ),
         param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])
-def test_create_from_in_memory_table(backend, con, t):
+@pytest.mark.notimpl(["dask", "datafusion", "druid"])
+def test_create_from_in_memory_table(backend, con, t, temp_table):
     if backend.name() == "snowflake":
         pytest.skip("snowflake is unreliable here")
-    tmp_name = f"t{guid()[:6]}"
-    con.create_table(tmp_name, t)
-    try:
-        assert tmp_name in con.list_tables()
-    finally:
-        con.drop_table(tmp_name)
-        assert tmp_name not in con.list_tables()
+    con.create_table(temp_table, t)
+    assert temp_table in con.list_tables()
 
 
 @pytest.mark.usefixtures("backend")
-def test_default_backend_option():
-    orig = ibis.options.default_backend
-    ibis.options.default_backend = ibis.pandas
-    try:
-        backend = ibis.config._default_backend()
-        assert backend.name == "pandas"
-    finally:
-        ibis.options.default_backend = orig
+def test_default_backend_option(monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", ibis.pandas)
+    backend = ibis.config._default_backend()
+    assert backend.name == "pandas"
 
 
 # backend is used to ensure that this test runs in CI in the setting
@@ -1045,18 +1026,14 @@ def test_set_backend_url(url, monkeypatch):
     ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
 @pytest.mark.broken(["druid"], reason="sqlalchemy dialect is broken")
-def test_create_table_timestamp(con):
+def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
     )
-    name = f"timestamp_scale_{guid()}"
-    con.create_table(name, schema=schema, overwrite=True)
-    try:
-        rows = con.raw_sql(f"DESCRIBE {name}").fetchall()
-        result = ibis.schema((name, typ) for name, typ, *_ in rows)
-        assert result == schema
-    finally:
-        con.drop_table(name, force=True)
+    con.create_table(temp_table, schema=schema, overwrite=True)
+    rows = con.raw_sql(f"DESCRIBE {temp_table}").fetchall()
+    result = ibis.schema((name, typ) for name, typ, *_ in rows)
+    assert result == schema
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])

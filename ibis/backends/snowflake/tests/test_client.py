@@ -8,28 +8,31 @@ import pyarrow as pa
 import pytest
 
 import ibis
-from ibis.util import guid
+from ibis.util import gen_name
 
 
-def test_cross_db_access(con):
-    db, schema = f"tmp_db_{guid()}", f"tmp_schema_{guid()}"
-    schema = f"{db}.{schema}"
-    table = f"tmp_table_{guid()}"
-    con.raw_sql(f"CREATE DATABASE IF NOT EXISTS {db}")
-    try:
-        con.raw_sql(f"CREATE SCHEMA IF NOT EXISTS {schema}")
-        try:
-            con.raw_sql(f'CREATE TEMP TABLE {schema}."{table}" ("x" INT)')
-            try:
-                t = con.table(table, schema=schema)
-                assert t.schema() == ibis.schema(dict(x="int"))
-                assert t.execute().empty
-            finally:
-                con.raw_sql(f'DROP TABLE {schema}."{table}"')
-        finally:
-            con.raw_sql(f"DROP SCHEMA {schema}")
-    finally:
-        con.raw_sql(f"DROP DATABASE {db}")
+@pytest.fixture
+def temp_db(con):
+    db = gen_name("tmp_db")
+    con.raw_sql(f"CREATE DATABASE {db}")
+    yield db
+    con.raw_sql(f"DROP DATABASE {db}")
+
+
+@pytest.fixture
+def temp_schema(con, temp_db):
+    schema = gen_name("tmp_schema")
+    con.raw_sql(f"CREATE SCHEMA {temp_db}.{schema}")
+    yield schema
+    con.raw_sql(f"DROP SCHEMA {temp_db}.{schema}")
+
+
+def test_cross_db_access(con, temp_db, temp_schema):
+    table = gen_name("tmp_table")
+    con.raw_sql(f'CREATE TABLE {temp_db}.{temp_schema}."{table}" ("x" INT)')
+    t = con.table(table, schema=f"{temp_db}.{temp_schema}")
+    assert t.schema() == ibis.schema(dict(x="int"))
+    assert t.execute().empty
 
 
 @pytest.fixture(scope="session")

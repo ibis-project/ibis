@@ -8,13 +8,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config
-from ibis.backends.clickhouse.tests.conftest import (
-    CLICKHOUSE_HOST,
-    CLICKHOUSE_PASS,
-    CLICKHOUSE_PORT,
-    CLICKHOUSE_USER,
-    IBIS_TEST_CLICKHOUSE_DB,
-)
 from ibis.common.exceptions import IbisError
 from ibis.util import gen_name
 
@@ -122,33 +115,19 @@ def test_embedded_identifier_quoting(alltypes):
     expr.execute()
 
 
-@pytest.fixture(scope="session")
-def tmpcon():
-    return ibis.clickhouse.connect(
-        host=CLICKHOUSE_HOST,
-        port=CLICKHOUSE_PORT,
-        password=CLICKHOUSE_PASS,
-        database="tmptables",
-        user=CLICKHOUSE_USER,
-    )
-
-
 @pytest.fixture
-def temporary_alltypes(tmpcon):
-    id = ibis.util.guid()
-    table = f"temporary_alltypes_{id}"
-    tmpcon.raw_sql(
-        f"CREATE TABLE {table} AS {IBIS_TEST_CLICKHOUSE_DB}.functional_alltypes"
-    )
-    yield tmpcon.table(table)
-    tmpcon.raw_sql(f"DROP TABLE {table}")
+def temporary_alltypes(con):
+    table = gen_name("temporary_alltypes")
+    con.raw_sql(f"CREATE TABLE {table} AS functional_alltypes")
+    yield con.table(table)
+    con.drop_table(table)
 
 
 def test_insert(temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df[:10]
 
-    assert len(temporary.execute()) == 0
+    assert temporary.count().execute() == 0
     temporary.insert(records)
 
     tm.assert_frame_equal(temporary.execute(), records)
@@ -198,16 +177,22 @@ def test_get_schema_using_query(con, query, expected_schema):
 def test_list_tables_database(con):
     tables = con.list_tables()
     tables2 = con.list_tables(database=con.current_database)
-    assert tables == tables2
+    # some overlap, but not necessarily identical because
+    # a database may have temporary tables added/removed between list_tables
+    # calls
+    assert set(tables) & set(tables2)
 
 
-def test_list_tables_empty_database(con, worker_id):
-    dbname = f"tmpdb_{worker_id}"
-    con.raw_sql(f"CREATE DATABASE IF NOT EXISTS {dbname}")
-    try:
-        assert not con.list_tables(database=dbname)
-    finally:
-        con.raw_sql(f"DROP DATABASE IF EXISTS {dbname}")
+@pytest.fixture
+def temp_db(con, worker_id):
+    dbname = f"clickhouse_create_database_{worker_id}"
+    con.create_database(dbname, force=True)
+    yield dbname
+    con.drop_database(dbname, force=True)
+
+
+def test_list_tables_empty_database(con, temp_db):
+    assert not con.list_tables(database=temp_db)
 
 
 @pytest.mark.parametrize(
@@ -224,17 +209,10 @@ def test_list_tables_empty_database(con, worker_id):
     ],
     ids=["temp", "no_temp"],
 )
-def test_create_table_no_data(con, temp):
-    name = gen_name("clickhouse_create_table_no_data")
+def test_create_table_no_data(con, temp, temp_table):
     schema = ibis.schema(dict(a="!int", b="string"))
-    t = con.create_table(
-        name, schema=schema, temp=temp, engine="Memory", database="tmptables"
-    )
-    try:
-        assert t.execute().empty
-    finally:
-        con.drop_table(name, force=True, database="tmptables")
-    assert name not in con.list_tables(database="tmptables")
+    t = con.create_table(temp_table, schema=schema, temp=temp, engine="Memory")
+    assert t.execute().empty
 
 
 @pytest.mark.parametrize(
@@ -250,17 +228,10 @@ def test_create_table_no_data(con, temp):
     ["File(Native)", "File(Parquet)", "Memory"],
     ids=["native", "mem", "parquet"],
 )
-def test_create_table_data(con, data, engine):
-    name = gen_name("clickhouse_create_table_data")
+def test_create_table_data(con, data, engine, temp_table):
     schema = ibis.schema(dict(a="!int", b="string"))
-    t = con.create_table(
-        name, obj=data, schema=schema, engine=engine, database="tmptables"
-    )
-    try:
-        assert len(t.execute()) == 3
-    finally:
-        con.drop_table(name, force=True, database="tmptables")
-    assert name not in con.list_tables(database="tmptables")
+    t = con.create_table(temp_table, obj=data, schema=schema, engine=engine)
+    assert len(t.execute()) == 3
 
 
 @pytest.mark.parametrize(
@@ -277,13 +248,8 @@ def test_create_table_data(con, data, engine):
     ],
     ids=["native", "mem", "parquet"],
 )
-def test_truncate_table(con, engine):
-    name = gen_name("clickhouse_create_table_data")
-    t = con.create_table(name, obj={"a": [1]}, engine=engine, database="tmptables")
-    try:
-        assert len(t.execute()) == 1
-        con.truncate_table(name, database="tmptables")
-        assert len(t.execute()) == 0
-    finally:
-        con.drop_table(name, force=True, database="tmptables")
-    assert name not in con.list_tables(database="tmptables")
+def test_truncate_table(con, engine, temp_table):
+    t = con.create_table(temp_table, obj={"a": [1]}, engine=engine)
+    assert len(t.execute()) == 1
+    con.truncate_table(temp_table)
+    assert t.execute().empty

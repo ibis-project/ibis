@@ -3,7 +3,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis import _, util
+from ibis import _
 
 table_dot_sql_notimpl = pytest.mark.notimpl(
     ["bigquery", "clickhouse", "impala", "druid"]
@@ -179,16 +179,11 @@ def test_table_dot_sql_repr(con):
 @table_dot_sql_notimpl
 @dot_sql_notimpl
 @dot_sql_never
-def test_table_dot_sql_does_not_clobber_existing_tables(con):
-    name = f"ibis_{util.guid()}"
-    t = con.create_table(name, schema=ibis.schema(dict(a="string")))
-    try:
-        expr = t.sql("SELECT 1 as x FROM functional_alltypes")
-        with pytest.raises(ValueError):
-            expr.alias(name)
-    finally:
-        con.drop_table(name, force=True)
-        assert name not in con.list_tables()
+def test_table_dot_sql_does_not_clobber_existing_tables(con, temp_table):
+    t = con.create_table(temp_table, schema=ibis.schema(dict(a="string")))
+    expr = t.sql("SELECT 1 as x FROM functional_alltypes")
+    with pytest.raises(ValueError):
+        expr.alias(temp_table)
 
 
 @table_dot_sql_notimpl

@@ -1260,7 +1260,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
 )
 @pytest.mark.notimpl(["druid"], raises=KeyError)
 def test_sa_default_numeric_precision_and_scale(
-    con, backend, default_precisions, default_scales
+    con, backend, default_precisions, default_scales, temp_table
 ):
     sa = pytest.importorskip("sqlalchemy")
     # TODO: find a better way to access ibis.sql.alchemy
@@ -1283,22 +1283,15 @@ def test_sa_default_numeric_precision_and_scale(
         sqla_types.append(sa.Column(name, t, nullable=True))
         ibis_types.append((name, ibis_type(nullable=True)))
 
-    # Create a table with the numeric types.
-    table_name = 'test_sa_default_param_decimal'
-
-    is_snowflake = con.name == "snowflake"
-    table = sa.Table(table_name, sa.MetaData(), *sqla_types, quote=is_snowflake)
+    table = sa.Table(temp_table, sa.MetaData(), *sqla_types, quote=True)
     with con.begin() as bind:
         table.create(bind=bind, checkfirst=True)
 
-    try:
-        # Check that we can correctly recover the default precision and scale.
-        schema = schema_from_table(table, dialect=con.con.dialect)
-        expected = ibis.schema(ibis_types)
+    # Check that we can correctly recover the default precision and scale.
+    schema = schema_from_table(table, dialect=con.con.dialect)
+    expected = ibis.schema(ibis_types)
 
-        assert_equal(schema, expected)
-    finally:
-        con.drop_table(f'{table_name}' if is_snowflake else table_name, force=True)
+    assert_equal(schema, expected)
 
 
 @pytest.mark.notimpl(

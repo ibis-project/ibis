@@ -571,7 +571,9 @@ class Backend(BaseBackend):
             The new table
         """
         if temp:
-            raise com.IbisError("ClickHouse temporary tables are not yet supported")
+            raise com.IbisError(
+                "ClickHouse temporary tables are not yet supported due to a bug in `clickhouse_driver`"
+            )
 
         tmp = "TEMPORARY " * temp
         replace = "OR REPLACE " * overwrite

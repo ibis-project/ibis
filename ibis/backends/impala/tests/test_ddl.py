@@ -1,3 +1,4 @@
+import os
 from posixpath import join as pjoin
 
 import pytest
@@ -14,16 +15,21 @@ pytest.importorskip("impala")
 from ibis.backends.impala.compat import HS2Error  # noqa: E402
 
 
+@pytest.fixture
+def temp_view(con) -> str:
+    name = util.gen_name('view')
+    yield name
+    con.drop_view(name, force=True)
+
+
 def test_create_exists_view(con, temp_view):
-    tmp_name = temp_view
-    assert tmp_name not in con.list_tables()
+    assert temp_view not in con.list_tables()
 
     t1 = con.table('functional_alltypes').group_by('string_col').size()
-    t2 = con.create_view(tmp_name, t1)
+    t2 = con.create_view(temp_view, t1)
 
-    assert tmp_name in con.list_tables()
-    # just check it works for now
-    assert t2.execute() is not None
+    assert temp_view in con.list_tables()
+    assert not t2.execute().empty
 
 
 def test_drop_non_empty_database(con, alltypes, temp_table_db):
@@ -35,20 +41,21 @@ def test_drop_non_empty_database(con, alltypes, temp_table_db):
         con.drop_database(temp_database)
 
 
-@pytest.mark.hdfs
-def test_create_database_with_location(con, tmp_dir, hdfs):
+@pytest.fixture
+def temp_db(con, hdfs, tmp_dir):
     base = pjoin(tmp_dir, util.guid())
-    name = f'__ibis_test_{util.guid()}'
-    tmp_path = pjoin(base, name)
+    name = util.gen_name("test_database")
+    yield pjoin(base, name)
+    con.drop_database(name)
+    hdfs.rm(base, recursive=True)
 
-    con.create_database(name, path=tmp_path)
-    try:
-        assert hdfs.exists(base)
-    finally:
-        try:
-            con.drop_database(name)
-        finally:
-            hdfs.rm(base, recursive=True)
+
+@pytest.mark.hdfs
+def test_create_database_with_location(con, temp_db, hdfs):
+    base = os.path.dirname(temp_db)
+    name = os.path.basename(temp_db)
+    con.create_database(name, path=temp_db)
+    assert hdfs.exists(base)
 
 
 @pytest.mark.hdfs
@@ -60,9 +67,8 @@ def test_create_table_with_location_execute(
     tmp_path = pjoin(base, name)
 
     expr = alltypes
-    table_name = temp_table
 
-    con.create_table(table_name, obj=expr, location=tmp_path, database=test_data_db)
+    con.create_table(temp_table, obj=expr, location=tmp_path, database=test_data_db)
     assert hdfs.exists(tmp_path)
 
 
@@ -76,16 +82,15 @@ def test_drop_table_not_exist(con):
 def test_truncate_table(con, alltypes, temp_table):
     expr = alltypes.limit(1)
 
-    table_name = temp_table
-    con.create_table(table_name, obj=expr)
+    con.create_table(temp_table, obj=expr)
 
     try:
-        con.truncate_table(table_name)
+        con.truncate_table(temp_table)
     except HS2Error as e:
         if 'AnalysisException' in e.args[0]:
             pytest.skip('TRUNCATE not available in this version of Impala')
 
-    t = con.table(table_name)
+    t = con.table(temp_table)
     nrows = t.count().execute()
     assert not nrows
 
@@ -93,9 +98,8 @@ def test_truncate_table(con, alltypes, temp_table):
 def test_truncate_table_expression(con, alltypes, temp_table):
     expr = alltypes.limit(1)
 
-    table_name = temp_table
-    con.create_table(table_name, obj=expr)
-    t = con.table(table_name)
+    con.create_table(temp_table, obj=expr)
+    t = con.table(temp_table)
     t.truncate()
     nrows = t.count().execute()
     assert not nrows
@@ -118,26 +122,24 @@ def test_create_empty_table(con, temp_table):
         ]
     )
 
-    table_name = temp_table
-    con.create_table(table_name, schema=schema)
+    con.create_table(temp_table, schema=schema)
 
-    result_schema = con.get_schema(table_name)
+    result_schema = con.get_schema(temp_table)
     assert_equal(result_schema, schema)
 
-    assert con.table(table_name).execute().empty
+    assert con.table(temp_table).execute().empty
 
 
 def test_insert_table(con, alltypes, temp_table, test_data_db):
     expr = alltypes
-    table_name = temp_table
     db = test_data_db
 
-    con.create_table(table_name, expr.limit(0), database=db)
+    con.create_table(temp_table, expr.limit(0), database=db)
 
-    con.insert(table_name, expr.limit(10), database=db)
+    con.insert(temp_table, expr.limit(10), database=db)
 
     # check using ImpalaTable.insert
-    t = con.table(table_name, database=db)
+    t = con.table(temp_table, database=db)
     t.insert(expr.limit(10))
 
     sz = t.count()
@@ -150,17 +152,16 @@ def test_insert_table(con, alltypes, temp_table, test_data_db):
 
 def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     # GH #235
-    table_name = temp_table
     db = test_data_db
 
     expr = alltypes
     con.create_table(
-        table_name,
+        temp_table,
         schema=expr['tinyint_col', 'int_col', 'string_col'].schema(),
         database=db,
     )
 
-    t = con.table(table_name, database=db)
+    t = con.table(temp_table, database=db)
 
     to_insert = expr[
         expr.tinyint_col, expr.smallint_col.name('int_col'), expr.string_col
@@ -229,21 +230,19 @@ def path_uuid():
 
 @pytest.fixture
 def table(con, tmp_db, tmp_dir, path_uuid):
-    table_name = f'table_{util.guid()}'
+    table_name = f"table_{util.guid()}"
     fake_path = pjoin(tmp_dir, path_uuid)
-    schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
+    schema = ibis.schema([("foo", "string"), ("bar", "int64")])
     con.create_table(
         table_name,
         database=tmp_db,
         schema=schema,
-        format='parquet',
+        format="parquet",
         external=True,
         location=fake_path,
     )
-    try:
-        yield con.table(table_name, database=tmp_db)
-    finally:
-        con.drop_table(table_name, database=tmp_db)
+    yield con.table(table_name, database=tmp_db)
+    con.drop_table(table_name, database=tmp_db)
 
 
 def test_change_location(con, table, tmp_dir, path_uuid):
@@ -307,19 +306,19 @@ def test_query_avro(con, test_data_dir, tmp_db):
     assert len(df) == 5
 
 
-def test_create_table_reserved_identifier(con):
-    table_name = 'distinct'
+@pytest.fixture
+def temp_table_id(con):
+    name = "distinct"
+    yield name
+    con.drop_table(name)
+
+
+def test_create_table_reserved_identifier(con, temp_table_id):
     expr = con.table('functional_alltypes')
     expected = expr.count().execute()
-    con.create_table(table_name, expr)
-    try:
-        result = con.table(table_name).count().execute()
-    except Exception:
-        raise
-    else:
-        assert result == expected
-    finally:
-        con.drop_table(table_name)
+    con.create_table(temp_table_id, expr)
+    result = con.table(temp_table_id).count().execute()
+    assert result == expected
 
 
 def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
@@ -354,13 +353,9 @@ CREATE TABLE IF NOT EXISTS {name} (
   group2 CHAR(10)
 )"""
     )
-    try:
-        yield con.table(name)
-    finally:
-        try:
-            assert name in con.list_tables(), name
-        finally:
-            con.drop_table(name, force=True)
+    assert name in con.list_tables(), name
+    yield con.table(name)
+    con.drop_table(name, force=True)
 
 
 def test_varchar_char_support(temp_char_table):

@@ -247,17 +247,9 @@ def test_value_exprs_repr():
     assert "Sum(r0.a)" in repr(t.a.sum())
 
 
-@pytest.fixture
-def show_types():
-    old = ibis.options.repr.show_types
-    ibis.options.repr.show_types = True
-    try:
-        yield
-    finally:
-        ibis.options.repr.show_types = old
+def test_show_types(monkeypatch):
+    monkeypatch.setattr(ibis.options.repr, "show_types", True)
 
-
-def test_show_types(show_types):
     t = ibis.table(dict(a="int64", b="string"), name="t")
     expr = t.a / 1.0
     assert "# int64" in repr(t.a)
@@ -278,7 +270,7 @@ def test_tables_have_format_value_rules(cls):
 @pytest.mark.parametrize(
     "f",
     [
-        lambda t1, t2: t1.count(),
+        lambda t1, _: t1.count(),
         lambda t1, t2: t1.join(t2, t1.a == t2.a).count(),
         lambda t1, t2: ibis.union(t1, t2).count(),
     ],

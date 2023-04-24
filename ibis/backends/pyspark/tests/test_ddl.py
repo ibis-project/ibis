@@ -1,4 +1,5 @@
 import os
+import shutil
 from posixpath import join as pjoin
 
 import pytest
@@ -11,80 +12,90 @@ from ibis.tests.util import assert_equal
 pyspark = pytest.importorskip("pyspark")
 
 
-def test_create_exists_view(client, alltypes, temp_view):
-    tmp_name = temp_view
-    assert tmp_name not in client.list_tables()
+@pytest.fixture
+def temp_view(con) -> str:
+    name = util.gen_name('view')
+    yield name
+    con.drop_view(name, force=True)
+
+
+def test_create_exists_view(con, alltypes, temp_view):
+    assert temp_view not in con.list_tables()
 
     t1 = alltypes.group_by('string_col').size()
-    t2 = client.create_view(tmp_name, t1)
+    t2 = con.create_view(temp_view, t1)
 
-    assert tmp_name in client.list_tables()
+    assert temp_view in con.list_tables()
     # just check it works for now
     assert t2.execute() is not None
 
 
-def test_drop_non_empty_database(client, alltypes, temp_table_db):
+def test_drop_non_empty_database(con, alltypes, temp_table_db):
     temp_database, temp_table = temp_table_db
-    client.create_table(temp_table, alltypes, database=temp_database)
-    assert temp_table in client.list_tables(database=temp_database)
+    con.create_table(temp_table, alltypes, database=temp_database)
+    assert temp_table in con.list_tables(database=temp_database)
 
     with pytest.raises(pyspark.sql.utils.AnalysisException):
-        client.drop_database(temp_database)
+        con.drop_database(temp_database)
 
 
-def test_create_database_with_location(client, tmp_dir):
-    base = pjoin(tmp_dir, util.guid())
-    name = f'__ibis_test_{util.guid()}'
-    tmp_path = pjoin(base, name)
-
-    client.create_database(name, path=tmp_path)
-    try:
-        assert os.path.exists(base)
-    finally:
-        try:
-            client.drop_database(name, force=True)
-        finally:
-            os.rmdir(base)
+@pytest.fixture
+def temp_base(tmp_dir):
+    base = pjoin(tmp_dir, util.gen_name("temp_base"))
+    yield base
+    shutil.rmtree(base, ignore_errors=True)
 
 
-def test_drop_table_not_exist(client):
+@pytest.fixture
+def temp_db(con, temp_base):
+    name = util.gen_name("temp_db")
+    yield pjoin(temp_base, name)
+    con.drop_database(name, force=True)
+
+
+def test_create_database_with_location(con, temp_db):
+    base = os.path.dirname(temp_db)
+    name = os.path.basename(temp_db)
+    con.create_database(name, path=temp_db)
+    assert os.path.exists(base)
+
+
+def test_drop_table_not_exist(con):
     non_existent_table = f'ibis_table_{util.guid()}'
     with pytest.raises(Exception):
-        client.drop_table(non_existent_table)
-    client.drop_table(non_existent_table, force=True)
+        con.drop_table(non_existent_table)
+    con.drop_table(non_existent_table, force=True)
 
 
-def test_truncate_table(client, alltypes, temp_table):
+def test_truncate_table(con, alltypes, temp_table):
     expr = alltypes.limit(1)
 
-    table_name = temp_table
-    client.create_table(table_name, obj=expr)
+    con.create_table(temp_table, obj=expr)
 
-    client.truncate_table(table_name)
+    con.truncate_table(temp_table)
 
-    t = client.table(table_name)
+    t = con.table(temp_table)
     nrows = t.count().execute()
     assert not nrows
 
 
-def test_truncate_table_expression(client, alltypes, temp_table):
+def test_truncate_table_expression(con, alltypes, temp_table):
     expr = alltypes.limit(1)
 
-    table_name = temp_table
-    t = client.create_table(table_name, obj=expr)
+    t = con.create_table(temp_table, obj=expr)
     t.truncate()
     nrows = t.count().execute()
     assert not nrows
 
 
-def test_ctas_from_table_expr(client, alltypes, temp_table_db):
+def test_ctas_from_table_expr(con, alltypes, temp_table_db):
     expr = alltypes
     db, table_name = temp_table_db
 
-    client.create_table(table_name, expr, database=db)
+    con.create_table(table_name, expr, database=db)
 
 
-def test_create_empty_table(client, temp_table):
+def test_create_empty_table(con, temp_table):
     schema = ibis.schema(
         [
             ('a', 'string'),
@@ -94,26 +105,24 @@ def test_create_empty_table(client, temp_table):
         ]
     )
 
-    table_name = temp_table
-    client.create_table(table_name, schema=schema)
+    con.create_table(temp_table, schema=schema)
 
-    result_schema = client.get_schema(table_name)
+    result_schema = con.get_schema(temp_table)
     assert_equal(result_schema, schema)
 
-    assert client.table(table_name).execute().empty
+    assert con.table(temp_table).execute().empty
 
 
-def test_insert_table(client, alltypes, temp_table, test_data_db):
+def test_insert_table(con, alltypes, temp_table, test_data_db):
     expr = alltypes
-    table_name = temp_table
     db = test_data_db
 
-    client.create_table(table_name, expr.limit(0), database=db)
+    con.create_table(temp_table, expr.limit(0), database=db)
 
-    client.insert(table_name, expr.limit(10), database=db)
+    con.insert(temp_table, expr.limit(10), database=db)
 
     # check using SparkTable.insert
-    t = client.table(table_name, database=db)
+    t = con.table(temp_table, database=db)
     t.insert(expr.limit(10))
 
     sz = t.count()
@@ -124,13 +133,12 @@ def test_insert_table(client, alltypes, temp_table, test_data_db):
     assert sz.execute() == 10
 
 
-def test_insert_validate_types(client, alltypes, test_data_db, temp_table):
-    table_name = temp_table
+def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     db = test_data_db
 
     expr = alltypes
-    t = client.create_table(
-        table_name,
+    t = con.create_table(
+        temp_table,
         schema=expr['tinyint_col', 'int_col', 'string_col'].schema(),
         database=db,
     )
@@ -154,33 +162,29 @@ def test_insert_validate_types(client, alltypes, test_data_db, temp_table):
         t.insert(limit_expr)
 
 
-def test_compute_stats(client, alltypes):
-    name = 'functional_alltypes_table'
-    try:
-        t = client.create_table(name, alltypes)
-        t.compute_stats()
-        t.compute_stats(noscan=True)
-        client.compute_stats(name)
-    finally:
-        client.drop_table(name, force=True)
+def test_compute_stats(con, alltypes, temp_table):
+    t = con.create_table(temp_table, alltypes)
+    t.compute_stats()
+    t.compute_stats(noscan=True)
+    con.compute_stats(temp_table)
 
 
 @pytest.fixture
-def created_view(client, alltypes):
+def created_view(con, alltypes):
     name = util.guid()
     expr = alltypes.limit(10)
-    client.create_view(name, expr)
+    con.create_view(name, expr)
     return name
 
 
-def test_drop_view(client, alltypes, created_view):
-    client.drop_view(created_view)
-    assert created_view not in client.list_tables()
+def test_drop_view(con, created_view):
+    con.drop_view(created_view)
+    assert created_view not in con.list_tables()
 
 
-def test_rename_table(client, alltypes):
+def test_rename_table(con, alltypes):
     orig_name = 'tmp_rename_test'
-    table = client.create_table(orig_name, alltypes)
+    table = con.create_table(orig_name, alltypes)
 
     old_name = table.name
 
@@ -188,45 +192,42 @@ def test_rename_table(client, alltypes):
     renamed = table.rename(new_name)
     renamed.execute()
 
-    t = client.table(new_name)
+    t = con.table(new_name)
     assert_equal(renamed, t)
 
     assert table.name == old_name
 
 
 @pytest.fixture
-def table(client, temp_database):
+def table(con, temp_database):
     table_name = f'table_{util.guid()}'
     schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
-    try:
-        yield client.create_table(
-            table_name, database=temp_database, schema=schema, format='parquet'
-        )
-    finally:
-        client.drop_table(table_name, database=temp_database)
+    yield con.create_table(
+        table_name, database=temp_database, schema=schema, format='parquet'
+    )
+    con.drop_table(table_name, database=temp_database)
 
 
-def test_change_properties(client, table):
+def test_change_properties(con, table):
     props = {'foo': '1', 'bar': '2'}
 
     table.alter(tbl_properties=props)
-    tbl_props_rows = client.raw_sql(f"show tblproperties {table.name}").fetchall()
+    tbl_props_rows = con.raw_sql(f"show tblproperties {table.name}").fetchall()
     for row in tbl_props_rows:
         key = row.key
         value = row.value
         assert value == props[key]
 
 
-def test_create_table_reserved_identifier(client, alltypes):
-    table_name = 'distinct'
+@pytest.fixture
+def keyword_t(con):
+    yield "distinct"
+    con.drop_table("distinct")
+
+
+def test_create_table_reserved_identifier(con, alltypes, keyword_t):
     expr = alltypes
     expected = expr.count().execute()
-    try:
-        t = client.create_table(table_name, expr)
-        result = t.count().execute()
-    except Exception:
-        raise
-    else:
-        assert result == expected
-    finally:
-        client.drop_table(table_name)
+    t = con.create_table(keyword_t, expr)
+    result = t.count().execute()
+    assert result == expected

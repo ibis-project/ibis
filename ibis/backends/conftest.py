@@ -225,10 +225,6 @@ def init_database(
     return engine
 
 
-def _random_identifier(suffix: str) -> str:
-    return f"__ibis_test_{suffix}_{util.guid()}"
-
-
 def _get_backend_conf(backend_str: str):
     """Convert a backend string to the test class for the backend."""
     conftest = importlib.import_module(f"ibis.backends.{backend_str}.tests.conftest")
@@ -702,7 +698,7 @@ def alchemy_temp_table(alchemy_con) -> str:
     name : string
         Random table name for a temporary usage.
     """
-    name = _random_identifier('table')
+    name = util.gen_name('alchemy_table')
     yield name
     with contextlib.suppress(NotImplementedError):
         alchemy_con.drop_table(name, force=True)
@@ -721,7 +717,23 @@ def temp_table(con) -> str:
     name : string
         Random table name for a temporary usage.
     """
-    name = _random_identifier('table')
+    name = util.gen_name('temp_table')
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        con.drop_table(name, force=True)
+
+
+@pytest.fixture
+def temp_table2(con) -> str:
+    name = util.gen_name('temp_table2')
+    yield name
+    with contextlib.suppress(NotImplementedError):
+        con.drop_table(name, force=True)
+
+
+@pytest.fixture
+def temp_table_orig(con, temp_table):
+    name = f"{temp_table}_orig"
     yield name
     with contextlib.suppress(NotImplementedError):
         con.drop_table(name, force=True)
@@ -740,7 +752,7 @@ def temp_view(ddl_con) -> str:
     name : string
         Random view name for a temporary usage.
     """
-    name = _random_identifier('view')
+    name = util.gen_name('view')
     yield name
     with contextlib.suppress(NotImplementedError):
         ddl_con.drop_view(name, force=True)
@@ -765,7 +777,7 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
     -------
     str
     """
-    name = _random_identifier('database')
+    name = util.gen_name('database')
     try:
         ddl_con.create_database(name)
     except NotImplementedError:

@@ -574,33 +574,21 @@ def test_column_access_after_sort(alltypes, df, column):
 
 
 @pytest.fixture
-def mj1(con):
-    con.create_table(
-        "mj1",
-        schema=ibis.schema(dict(id1="int32", val1="float64")),
-        overwrite=True,
+def mj1(con, temp_table):
+    return con.create_table(
+        temp_table,
+        pd.DataFrame(dict(id1=[1, 2], val1=[10.0, 20.0])),
+        schema=ibis.schema(dict(id1="int64", val1="float64")),
     )
-    try:
-        con.insert(
-            "mj1",
-            pd.DataFrame(dict(id1=[1, 2], val1=[10, 20])),
-            overwrite=True,
-        )
-        yield con.table("mj1")
-    finally:
-        con.drop_table("mj1", force=True)
 
 
 @pytest.fixture
-def mj2(con):
-    con.create_table(
-        "mj2", schema=ibis.schema(dict(id2="int32", val2="float64")), overwrite=True
+def mj2(con, temp_table_orig):
+    return con.create_table(
+        temp_table_orig,
+        pd.DataFrame(dict(id2=[1, 2], val2=[15.0, 25.0])),
+        schema=ibis.schema(dict(id2="int64", val2="float64")),
     )
-    try:
-        con.insert("mj2", pd.DataFrame(dict(id2=[1, 2], val2=[15, 25])), overwrite=True)
-        yield con.table("mj2")
-    finally:
-        con.drop_table("mj2", force=True)
 
 
 def test_simple_join(mj1, mj2):
