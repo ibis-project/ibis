@@ -33,18 +33,15 @@ def df():
 def unpart_t(con, df, tmp_db):
     pd_name = f'__ibis_test_partition_{util.guid()}'
     con.create_table(pd_name, df, database=tmp_db)
-    try:
-        yield con.table(pd_name, database=tmp_db)
-    finally:
-        assert pd_name in con.list_tables(database=tmp_db), pd_name
-        con.drop_table(pd_name, database=tmp_db)
+    assert pd_name in con.list_tables(database=tmp_db), pd_name
+    yield con.table(pd_name, database=tmp_db)
+    con.drop_table(pd_name, database=tmp_db)
 
 
 def test_is_partitioned(con, temp_table):
     schema = ibis.schema([('foo', 'string'), ('year', 'int32'), ('month', 'string')])
-    name = temp_table
-    con.create_table(name, schema=schema, partition=['year', 'month'])
-    assert con.table(name).is_partitioned
+    con.create_table(temp_table, schema=schema, partition=['year', 'month'])
+    assert con.table(temp_table).is_partitioned
 
 
 def test_create_table_with_partition_column(con, temp_table_db):
@@ -82,8 +79,7 @@ def test_create_partitioned_separate_schema(con, temp_table):
     schema = ibis.schema([('day', 'int8'), ('value', 'double')])
     part_schema = ibis.schema([('year', 'int32'), ('month', 'string')])
 
-    name = temp_table
-    con.create_table(name, schema=schema, partition=part_schema)
+    con.create_table(temp_table, schema=schema, partition=part_schema)
 
     # the partition column get put at the end of the table
     ex_schema = ibis.schema(
@@ -94,10 +90,10 @@ def test_create_partitioned_separate_schema(con, temp_table):
             ('month', 'string'),
         ]
     )
-    table_schema = con.get_schema(name)
+    table_schema = con.get_schema(temp_table)
     assert_equal(table_schema, ex_schema)
 
-    partition_schema = con.table(name).partition_schema()
+    partition_schema = con.table(temp_table).partition_schema()
     assert_equal(partition_schema, part_schema)
 
 
@@ -127,28 +123,28 @@ def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
     verify_partitioned_table(part_t, df, unique_keys)
 
 
-def test_create_partitioned_table_from_expr(con, alltypes):
+@pytest.fixture
+def tmp_parted(con):
+    name = f'tmppart_{util.guid()}'
+    yield name
+    con.drop_table(name, force=True)
+
+
+def test_create_partitioned_table_from_expr(con, alltypes, tmp_parted):
     t = alltypes
     expr = t[t.id <= 10][['id', 'double_col', 'month', 'year']]
-    name = f'tmppart_{util.guid()}'
-    try:
-        con.create_table(name, expr, partition=[t.year])
-    except Exception:
-        raise
-    else:
-        new = con.table(name)
-        expected = expr.execute().sort_values('id').reset_index(drop=True)
-        result = new.execute().sort_values('id').reset_index(drop=True)
-        tm.assert_frame_equal(result, expected)
-    finally:
-        con.drop_table(name, force=True)
+    name = tmp_parted
+    con.create_table(name, expr, partition=[t.year])
+    new = con.table(name)
+    expected = expr.execute().sort_values('id').reset_index(drop=True)
+    result = new.execute().sort_values('id').reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
 
 
 def test_add_drop_partition_no_location(con, temp_table):
     schema = ibis.schema([('foo', 'string'), ('year', 'int32'), ('month', 'int16')])
-    name = temp_table
-    con.create_table(name, schema=schema, partition=['year', 'month'])
-    table = con.table(name)
+    con.create_table(temp_table, schema=schema, partition=['year', 'month'])
+    table = con.table(temp_table)
 
     part = {'year': 2007, 'month': 4}
 
@@ -164,10 +160,9 @@ def test_add_drop_partition_no_location(con, temp_table):
 @pytest.mark.hdfs
 def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
     schema = ibis.schema([('foo', 'string'), ('year', 'int32'), ('month', 'int16')])
-    name = temp_table
-    con.create_table(name, schema=schema, partition=['year', 'month'])
+    con.create_table(temp_table, schema=schema, partition=['year', 'month'])
 
-    table = con.table(name)
+    table = con.table(temp_table)
 
     part = {'year': 2007, 'month': 4}
 
@@ -190,10 +185,9 @@ def test_add_drop_partition_owned_by_impala(hdfs, con, temp_table):
 
 def test_add_drop_partition_hive_bug(con, temp_table):
     schema = ibis.schema([('foo', 'string'), ('year', 'int32'), ('month', 'int16')])
-    name = temp_table
-    con.create_table(name, schema=schema, partition=['year', 'month'])
+    con.create_table(temp_table, schema=schema, partition=['year', 'month'])
 
-    table = con.table(name)
+    table = con.table(temp_table)
 
     part = {'year': 2007, 'month': 4}
 

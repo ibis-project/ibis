@@ -23,24 +23,6 @@ sa = pytest.importorskip("sqlalchemy")
 from sqlalchemy.dialects import postgresql  # noqa: E402
 
 
-@pytest.fixture
-def guid(con):
-    name = ibis.util.guid()
-    try:
-        yield name
-    finally:
-        con.drop_table(name, force=True)
-
-
-@pytest.fixture
-def guid2(con):
-    name = ibis.util.guid()
-    try:
-        yield name
-    finally:
-        con.drop_table(name, force=True)
-
-
 @pytest.mark.parametrize(
     ('left_func', 'right_func'),
     [
@@ -1026,39 +1008,39 @@ def test_array_concat_mixed_types(array_types):
 
 
 @pytest.fixture
-def t(con, guid):
+def t(con, temp_table):
     with con.begin() as c:
         c.exec_driver_sql(
-            f"CREATE TABLE {con._quote(guid)} (id SERIAL PRIMARY KEY, name TEXT)"
+            f"CREATE TABLE {con._quote(temp_table)} (id SERIAL PRIMARY KEY, name TEXT)"
         )
-    return con.table(guid)
+    return con.table(temp_table)
 
 
 @pytest.fixture
-def s(con, t, guid, guid2):
-    assert t.op().name == guid
-    assert t.op().name != guid2
+def s(con, t, temp_table2):
+    temp_table = t.op().name
+    assert temp_table != temp_table2
 
     with con.begin() as c:
         c.exec_driver_sql(
             f"""
-            CREATE TABLE {con._quote(guid2)} (
+            CREATE TABLE {con._quote(temp_table2)} (
               id SERIAL PRIMARY KEY,
-              left_t_id INTEGER REFERENCES {con._quote(guid)},
+              left_t_id INTEGER REFERENCES {con._quote(temp_table)},
               cost DOUBLE PRECISION
             )
             """
         )
-    return con.table(guid2)
+    return con.table(temp_table2)
 
 
 @pytest.fixture
-def trunc(con, guid):
-    quoted = con._quote(guid)
+def trunc(con, temp_table):
+    quoted = con._quote(temp_table)
     with con.begin() as c:
         c.exec_driver_sql(f"CREATE TABLE {quoted} (id SERIAL PRIMARY KEY, name TEXT)")
         c.exec_driver_sql(f"INSERT INTO {quoted} (name) VALUES ('a'), ('b'), ('c')")
-    return con.table(guid)
+    return con.table(temp_table)
 
 
 def test_semi_join(t, s):
@@ -1087,9 +1069,9 @@ def test_anti_join(t, s):
     assert str(result) == str(expected)
 
 
-def test_create_table_from_expr(con, trunc, guid2):
-    con.create_table(guid2, obj=trunc)
-    t = con.table(guid2)
+def test_create_table_from_expr(con, trunc, temp_table2):
+    con.create_table(temp_table2, obj=trunc)
+    t = con.table(temp_table2)
     assert list(t['name'].execute()) == list('abc')
 
 
@@ -1227,10 +1209,10 @@ def tz(request):
 
 
 @pytest.fixture
-def tzone_compute(con, guid, tz):
+def tzone_compute(con, temp_table, tz):
     schema = ibis.schema([('ts', dt.Timestamp(tz)), ('b', 'double'), ('c', 'string')])
-    con.create_table(guid, schema=schema)
-    t = con.table(guid)
+    con.create_table(temp_table, schema=schema, temp=True)
+    t = con.table(temp_table)
 
     n = 10
     df = pd.DataFrame(
@@ -1242,18 +1224,14 @@ def tzone_compute(con, guid, tz):
     )
 
     df.to_sql(
-        guid,
+        temp_table,
         con.con,
         index=False,
         if_exists='append',
         dtype={'ts': sa.TIMESTAMP(timezone=True), 'b': sa.FLOAT, 'c': sa.TEXT},
     )
 
-    try:
-        yield t
-    finally:
-        con.drop_table(guid)
-        assert guid not in con.list_tables()
+    yield t
 
 
 def test_ts_timezone_is_preserved(tzone_compute, tz):

@@ -761,19 +761,16 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid"])
-def test_interactive(alltypes):
+def test_interactive(alltypes, monkeypatch):
+    monkeypatch.setattr(ibis.options, "interactive", True)
+
     expr = alltypes.mutate(
         str_col=_.string_col.replace("1", "").nullif("2"),
         date_col=_.timestamp_col.date(),
         delta_col=lambda t: ibis.now() - t.timestamp_col,
     )
 
-    orig = ibis.options.interactive
-    ibis.options.interactive = True
-    try:
-        repr(expr)
-    finally:
-        ibis.options.interactive = orig
+    repr(expr)
 
 
 def test_correlated_subquery(alltypes):

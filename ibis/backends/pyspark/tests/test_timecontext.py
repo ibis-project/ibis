@@ -17,8 +17,8 @@ from ibis.backends.pyspark.compiler import (  # noqa: E402
 from ibis.backends.pyspark.timecontext import combine_time_context  # noqa: E402
 
 
-def test_table_with_timecontext(client):
-    table = client.table('time_indexed_table')
+def test_table_with_timecontext(con):
+    table = con.table('time_indexed_table')
     context = (pd.Timestamp('20170102'), pd.Timestamp('20170103'))
     result = table.execute(timecontext=context)
     expected = table.execute()
@@ -69,9 +69,9 @@ def test_combine_time_context(contexts, expected):
     assert combine_time_context(contexts) == expected
 
 
-def test_adjust_context_scope(client):
+def test_adjust_context_scope(con):
     """Test that `adjust_context` has access to `scope` by default."""
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
 
     # Window is the only context-adjusted node that the PySpark backend
     # can compile. Ideally we would test the context adjustment logic for

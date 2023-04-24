@@ -880,10 +880,8 @@ class Node(Comparable):
 def cache():
     Node.num_equal_calls = 0
     cache = Node.__cache__
-    try:
-        yield cache
-    finally:
-        assert len(cache) == 0
+    yield cache
+    assert not cache
 
 
 def pair(a, b):

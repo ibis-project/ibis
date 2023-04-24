@@ -9,7 +9,7 @@ import pytest
 
 import ibis
 from ibis import util
-from ibis.backends.conftest import TEST_TABLES, _random_identifier
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.pyspark.datatypes import spark_dtype
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import win
@@ -212,8 +212,8 @@ def get_pyspark_testing_client(data_directory):
     return get_common_spark_testing_client(data_directory, ibis.pyspark.connect)
 
 
-def set_pyspark_database(client, database):
-    client._session.catalog.setCurrentDatabase(database)
+def set_pyspark_database(con, database):
+    con._session.catalog.setCurrentDatabase(database)
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -225,14 +225,14 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
 
 @pytest.fixture(scope='session')
-def client(data_directory):
-    client = get_pyspark_testing_client(data_directory)
+def con(data_directory):
+    con = TestConf.connect(data_directory)
 
-    df = client._session.range(0, 10)
+    df = con._session.range(0, 10)
     df = df.withColumn("str_col", F.lit('value'))
     df.createTempView('basic_table')
 
-    df_nulls = client._session.createDataFrame(
+    df_nulls = con._session.createDataFrame(
         [
             ['k1', np.NaN, 'Alfred', None],
             ['k1', 3.0, None, 'joker'],
@@ -243,12 +243,12 @@ def client(data_directory):
     )
     df_nulls.createTempView('null_table')
 
-    df_dates = client._session.createDataFrame(
+    df_dates = con._session.createDataFrame(
         [['2018-01-02'], ['2018-01-03'], ['2018-01-04']], ['date_str']
     )
     df_dates.createTempView('date_table')
 
-    df_arrays = client._session.createDataFrame(
+    df_arrays = con._session.createDataFrame(
         [
             ['k1', [1, 2, 3], ['a']],
             ['k2', [4, 5], ['test1', 'test2', 'test3']],
@@ -260,7 +260,7 @@ def client(data_directory):
     )
     df_arrays.createTempView('array_table')
 
-    df_time_indexed = client._session.createDataFrame(
+    df_time_indexed = con._session.createDataFrame(
         [
             [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 1, 1.0],
             [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 2, 2.0],
@@ -276,7 +276,7 @@ def client(data_directory):
 
     df_time_indexed.createTempView('time_indexed_table')
 
-    df_interval = client._session.createDataFrame(
+    df_interval = con._session.createDataFrame(
         [
             [
                 timedelta(days=10),
@@ -317,7 +317,7 @@ def client(data_directory):
 
     df_interval.createTempView('interval_table')
 
-    df_interval_invalid = client._session.createDataFrame(
+    df_interval_invalid = con._session.createDataFrame(
         [[timedelta(days=10, hours=10, minutes=10, seconds=10)]],
         pt.StructType(
             [
@@ -333,7 +333,7 @@ def client(data_directory):
 
     df_interval_invalid.createTempView('invalid_interval_table')
 
-    return client
+    return con
 
 
 class IbisWindow:
@@ -360,40 +360,26 @@ def ibis_windows(request):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def test_data_db(client):
+def test_data_db(con):
     name = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
-    client.create_database(name)
-    try:
-        set_pyspark_database(client, name)
-        yield name
-    finally:
-        client.drop_database(name, force=True)
+    con.create_database(name)
+    set_pyspark_database(con, name)
+    yield name
+    con.drop_database(name, force=True)
 
 
 @pytest.fixture
-def temp_database(client, test_data_db):
-    name = _random_identifier('database')
-    client.create_database(name)
-    try:
-        yield name
-    finally:
-        set_pyspark_database(client, test_data_db)
-        client.drop_database(name, force=True)
-
-
-@pytest.fixture
-def temp_table(client):
-    name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        assert name in client.list_tables(), name
-        client.drop_table(name)
+def temp_database(con, test_data_db):
+    name = util.gen_name('database')
+    con.create_database(name)
+    yield name
+    set_pyspark_database(con, test_data_db)
+    con.drop_database(name, force=True)
 
 
 @pytest.fixture(scope='session')
-def alltypes(client):
-    return client.table('functional_alltypes').relabel({'Unnamed: 0': 'Unnamed:0'})
+def alltypes(con):
+    return con.table('functional_alltypes').relabel({'Unnamed: 0': 'Unnamed:0'})
 
 
 @pytest.fixture(scope='session')
@@ -402,20 +388,8 @@ def tmp_dir():
 
 
 @pytest.fixture
-def temp_table_db(client, temp_database):
-    name = _random_identifier('table')
-    try:
-        yield temp_database, name
-    finally:
-        assert name in client.list_tables(database=temp_database), name
-        client.drop_table(name, database=temp_database)
-
-
-@pytest.fixture
-def temp_view(client):
-    name = _random_identifier('view')
-    try:
-        yield name
-    finally:
-        assert name in client.list_tables(), name
-        client.drop_view(name)
+def temp_table_db(con, temp_database):
+    name = util.gen_name('table')
+    yield temp_database, name
+    assert name in con.list_tables(database=temp_database), name
+    con.drop_table(name, database=temp_database)

@@ -21,8 +21,8 @@ from pyspark.sql.window import Window  # noqa: E402
     ],
     indirect=['ibis_windows'],
 )
-def test_time_indexed_window(client, ibis_windows, spark_range):
-    table = client.table('time_indexed_table')
+def test_time_indexed_window(con, ibis_windows, spark_range):
+    table = con.table('time_indexed_table')
     result = table.mutate(mean=table['value'].mean().over(ibis_windows[0])).compile()
     result_pd = result.toPandas()
     spark_table = table.compile()
@@ -48,8 +48,8 @@ def test_time_indexed_window(client, ibis_windows, spark_range):
     ],
     indirect=['ibis_windows'],
 )
-def test_multiple_windows(client, ibis_windows, spark_range):
-    table = client.table('time_indexed_table')
+def test_multiple_windows(con, ibis_windows, spark_range):
+    table = con.table('time_indexed_table')
     result = table.mutate(
         mean_1h=table['value'].mean().over(ibis_windows[0]),
         mean_2h=table['value'].mean().over(ibis_windows[1]),

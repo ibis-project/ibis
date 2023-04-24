@@ -26,7 +26,7 @@ from pyspark.sql.window import Window  # noqa: E402
     ],
     indirect=['ibis_windows'],
 )
-def test_window_with_timecontext(client, ibis_windows, spark_range):
+def test_window_with_timecontext(con, ibis_windows, spark_range):
     """Test context adjustment for trailing / range window.
 
     We expand context according to window sizes, for example, for a table of:
@@ -49,7 +49,7 @@ def test_window_with_timecontext(client, ibis_windows, spark_range):
     2020-01-01   a      2
     2020-01-02   b      2
     """
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170103', tz='UTC'),
@@ -78,7 +78,7 @@ def test_window_with_timecontext(client, ibis_windows, spark_range):
     [([(None, 0)], (Window.unboundedPreceding, 0))],
     indirect=['ibis_windows'],
 )
-def test_cumulative_window(client, ibis_windows, spark_range):
+def test_cumulative_window(con, ibis_windows, spark_range):
     """Test context adjustment for cumulative window.
 
     For cumulative window, by defination we should look back infinately.
@@ -94,7 +94,7 @@ def test_cumulative_window(client, ibis_windows, spark_range):
     2020-01-02   b      1
     2020-01-03   c      2
     """
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),
@@ -129,14 +129,14 @@ def test_cumulative_window(client, ibis_windows, spark_range):
     ],
     indirect=['ibis_windows'],
 )
-def test_multiple_trailing_window(client, ibis_windows, spark_range):
+def test_multiple_trailing_window(con, ibis_windows, spark_range):
     """Test context adjustment for multiple trailing window.
 
     When there are multiple window ops, we need to verify contexts are
     adjusted correctly for all windows. In this tests we are constucting
     one trailing window for 1h and another trailng window for 2h
     """
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),
@@ -180,7 +180,7 @@ def test_multiple_trailing_window(client, ibis_windows, spark_range):
     ],
     indirect=['ibis_windows'],
 )
-def test_chained_trailing_window(client, ibis_windows, spark_range):
+def test_chained_trailing_window(con, ibis_windows, spark_range):
     """Test context adjustment for chained windows.
 
     When there are chained window ops, we need to verify contexts are
@@ -188,7 +188,7 @@ def test_chained_trailing_window(client, ibis_windows, spark_range):
     one trailing window for 1h and trailng window on the new column for
     2h
     """
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),
@@ -238,7 +238,7 @@ def test_chained_trailing_window(client, ibis_windows, spark_range):
     ],
     indirect=['ibis_windows'],
 )
-def test_rolling_with_cumulative_window(client, ibis_windows, spark_range):
+def test_rolling_with_cumulative_window(con, ibis_windows, spark_range):
     """Test context adjustment for rolling window and cumulative window.
 
     cumulative window should calculate only with in user's context,
@@ -254,7 +254,7 @@ def test_rolling_with_cumulative_window(client, ibis_windows, spark_range):
     2020-01-02   b      2            1
     2020-01-03   c      2            2
     """
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),
@@ -298,7 +298,7 @@ def test_rolling_with_cumulative_window(client, ibis_windows, spark_range):
     [([(ibis.interval(hours=1), 0)], [(-3600, 0)])],
     indirect=['ibis_windows'],
 )
-def test_rolling_with_non_window_op(client, ibis_windows, spark_range):
+def test_rolling_with_non_window_op(con, ibis_windows, spark_range):
     """Test context adjustment for rolling window and non window ops.
 
     non window ops should calculate only with in user's context,
@@ -318,7 +318,7 @@ def test_rolling_with_non_window_op(client, ibis_windows, spark_range):
     count should return 3 for every row, rather 4, based on the
     adjusted context (01-01, 01-04).
     """
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),
@@ -347,11 +347,11 @@ def test_rolling_with_non_window_op(client, ibis_windows, spark_range):
     tm.assert_frame_equal(result_pd, expected)
 
 
-def test_complex_window(client):
+def test_complex_window(con):
     """Test window with different sizes mix context adjustment for window op
     that require context adjustment and non window op that doesn't adjust
     context."""
-    table = client.table('time_indexed_table')
+    table = con.table('time_indexed_table')
     context = (
         pd.Timestamp('20170102 07:00:00', tz='UTC'),
         pd.Timestamp('20170105', tz='UTC'),

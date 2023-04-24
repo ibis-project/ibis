@@ -16,7 +16,7 @@ import ibis
 import ibis.expr.types as ir
 from ibis import options, util
 from ibis.backends.base import BaseBackend
-from ibis.backends.conftest import TEST_TABLES, _random_identifier
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.impala.compiler import ImpalaCompiler, ImpalaExprTranslator
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
 from ibis.backends.tests.data import win
@@ -278,10 +278,8 @@ def con_no_hdfs(env, data_directory, backend):
     con = backend.connect(data_directory, with_hdfs=False)
     con.disable_codegen(disabled=not env.use_codegen)
     assert con.get_options()['DISABLE_CODEGEN'] == str(int(not env.use_codegen))
-    try:
-        yield con
-    finally:
-        con.close()
+    yield con
+    con.close()
 
 
 @pytest.fixture(scope="module")
@@ -289,10 +287,8 @@ def con(env, data_directory, backend):
     con = backend.connect(data_directory)
     con.disable_codegen(disabled=not env.use_codegen)
     assert con.get_options()['DISABLE_CODEGEN'] == str(int(not env.use_codegen))
-    try:
-        yield con
-    finally:
-        con.close()
+    yield con
+    con.close()
 
 
 @pytest.fixture
@@ -303,17 +299,15 @@ def tmp_db(env, con, test_data_db):
 
     if tmp_db not in con.list_databases():
         con.create_database(tmp_db)
-    try:
-        yield tmp_db
-    finally:
-        with contextlib.suppress(impala.error.HiveServer2Error):
-            # The database can be dropped by another process during tear down
-            # in the middle of dropping this one if tests are running in
-            # parallel.
-            #
-            # We only care that it gets dropped before all tests are finished
-            # running.
-            con.drop_database(tmp_db, force=True)
+    yield tmp_db
+    with contextlib.suppress(impala.error.HiveServer2Error):
+        # The database can be dropped by another process during tear down
+        # in the middle of dropping this one if tests are running in
+        # parallel.
+        #
+        # We only care that it gets dropped before all tests are finished
+        # running.
+        con.drop_database(tmp_db, force=True)
 
 
 @pytest.fixture(scope="module")
@@ -322,10 +316,8 @@ def con_no_db(env, data_directory, backend):
     if not env.use_codegen:
         con.disable_codegen()
     assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    try:
-        yield con
-    finally:
-        con.close()
+    yield con
+    con.close()
 
 
 @pytest.fixture(scope="module")
@@ -340,42 +332,18 @@ def alltypes_df(alltypes):
 
 @pytest.fixture
 def temp_database(con, test_data_db):
-    name = _random_identifier('database')
+    name = util.gen_name('database')
     con.create_database(name)
-    try:
-        yield name
-    finally:
-        con.drop_database(name, force=True)
-
-
-@pytest.fixture
-def temp_table(con):
-    name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        assert name in con.list_tables(), name
-        con.drop_table(name)
+    yield name
+    con.drop_database(name, force=True)
 
 
 @pytest.fixture
 def temp_table_db(con, temp_database):
-    name = _random_identifier('table')
-    try:
-        yield temp_database, name
-    finally:
-        assert name in con.list_tables(database=temp_database), name
-        con.drop_table(name, database=temp_database)
-
-
-@pytest.fixture
-def temp_view(con):
-    name = _random_identifier('view')
-    try:
-        yield name
-    finally:
-        assert name in con.list_tables(), name
-        con.drop_view(name)
+    name = util.gen_name('table')
+    yield temp_database, name
+    assert name in con.list_tables(database=temp_database), name
+    con.drop_table(name, database=temp_database)
 
 
 @pytest.fixture
@@ -388,10 +356,8 @@ def temp_parquet_table(con, tmp_db, temp_parquet_table_schema):
     name = util.guid()
     db = con.database(tmp_db)
     db.create_table(name, schema=temp_parquet_table_schema, format='parquet')
-    try:
-        yield db[name]
-    finally:
-        db.client.drop_table(name, database=tmp_db)
+    yield db[name]
+    db.client.drop_table(name, database=tmp_db)
 
 
 @pytest.fixture
@@ -399,10 +365,8 @@ def temp_parquet_table2(con, tmp_db, temp_parquet_table_schema):
     name = util.guid()
     db = con.database(tmp_db)
     db.create_table(name, schema=temp_parquet_table_schema, format='parquet')
-    try:
-        yield db[name]
-    finally:
-        db.client.drop_table(name, database=tmp_db)
+    yield db[name]
+    db.client.drop_table(name, database=tmp_db)
 
 
 @pytest.fixture(scope="session")
@@ -426,10 +390,8 @@ TBLPROPERTIES (
   'kudu.num_tablet_replicas' = '1'
 )"""
     )
-    try:
-        yield con.table(name)
-    finally:
-        con.drop_table(name, database=test_data_db)
+    yield con.table(name)
+    con.drop_table(name, database=test_data_db)
 
 
 def translate(expr, context=None, named=False):

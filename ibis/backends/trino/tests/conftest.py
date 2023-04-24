@@ -3,13 +3,13 @@ from __future__ import annotations
 import itertools
 import os
 from pathlib import Path
-from typing import Any, Generator
+from typing import Any
 
 import pandas as pd
 import pytest
 
 import ibis
-from ibis.backends.conftest import TEST_TABLES, _random_identifier
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import struct_types
 from ibis.util import consume
@@ -184,13 +184,3 @@ def translate():
 
     context = Backend.compiler.make_context()
     return lambda expr: (Backend.compiler.translator_class(expr, context).get_result())
-
-
-@pytest.fixture
-def temp_table(con) -> Generator[str, None, None]:
-    """Return a temporary table name."""
-    name = _random_identifier('table')
-    try:
-        yield name
-    finally:
-        con.drop_table(name, force=True)

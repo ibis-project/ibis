@@ -78,9 +78,6 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
         with contextlib.suppress(clickhouse_driver.errors.ServerException):
             client.execute(f"CREATE DATABASE {database} ENGINE = Atomic")
 
-        client.execute("DROP DATABASE IF EXISTS tmptables")
-        client.execute("CREATE DATABASE tmptables ENGINE = Atomic")
-
         client.execute(f"USE {database}")
         client.execute("SET allow_experimental_object_type = 1")
         client.execute("SET output_format_json_named_tuples_as_objects = 1")

@@ -14,16 +14,16 @@ import pyspark.sql.functions as F  # noqa: E402
 from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name  # noqa: E402
 
 
-def test_basic(client):
-    table = client.table('basic_table')
+def test_basic(con):
+    table = con.table('basic_table')
     result = table.compile().toPandas()
     expected = pd.DataFrame({'id': range(0, 10), 'str_col': 'value'})
 
     tm.assert_frame_equal(result, expected)
 
 
-def test_projection(client):
-    table = client.table('basic_table')
+def test_projection(con):
+    table = con.table('basic_table')
     result1 = table.mutate(v=table['id']).compile().toPandas()
 
     expected1 = pd.DataFrame(
@@ -51,30 +51,30 @@ def test_projection(client):
     tm.assert_frame_equal(result2, expected2)
 
 
-def test_aggregation_col(client):
-    table = client.table('basic_table')
+def test_aggregation_col(con):
+    table = con.table('basic_table')
     result = table['id'].count().execute()
     assert result == table.compile().count()
 
 
-def test_aggregation(client):
-    table = client.table('basic_table')
+def test_aggregation(con):
+    table = con.table('basic_table')
     result = table.aggregate(max=table['id'].max()).compile()
     expected = table.compile().agg(F.max('id').alias('max'))
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-def test_group_by(client):
-    table = client.table('basic_table')
+def test_group_by(con):
+    table = con.table('basic_table')
     result = table.group_by('id').aggregate(max=table['id'].max()).compile()
     expected = table.compile().groupby('id').agg(F.max('id').alias('max'))
 
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-def test_window(client):
-    table = client.table('basic_table')
+def test_window(con):
+    table = con.table('basic_table')
     w = ibis.window()
     result = table.mutate(
         grouped_demeaned=table['id'] - table['id'].mean().over(w)
@@ -90,8 +90,8 @@ def test_window(client):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-def test_greatest(client):
-    table = client.table('basic_table')
+def test_greatest(con):
+    table = con.table('basic_table')
     result = table.mutate(greatest=ibis.greatest(table.id)).compile()
     df = table.compile()
     expected = table.compile().withColumn('greatest', df.id)
@@ -99,8 +99,8 @@ def test_greatest(client):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-def test_selection(client):
-    table = client.table('basic_table')
+def test_selection(con):
+    table = con.table('basic_table')
     table = table.mutate(id2=table['id'] * 2)
 
     result1 = table[['id']].compile()
@@ -121,8 +121,8 @@ def test_selection(client):
     )
 
 
-def test_join(client):
-    table = client.table('basic_table')
+def test_join(con):
+    table = con.table('basic_table')
     result = table.join(table, ['id', 'str_col'])[table.id, table.str_col].compile()
     spark_table = table.compile()
     expected = spark_table.join(spark_table, ['id', 'str_col'])
@@ -149,8 +149,8 @@ def test_join(client):
         ),
     ],
 )
-def test_filter(client, filter_fn, expected_fn):
-    table = client.table('basic_table')
+def test_filter(con, filter_fn, expected_fn):
+    table = con.table('basic_table')
 
     result = filter_fn(table).compile()
 
@@ -160,8 +160,8 @@ def test_filter(client, filter_fn, expected_fn):
     tm.assert_frame_equal(result.toPandas(), expected.toPandas())
 
 
-def test_cast(client):
-    table = client.table('basic_table')
+def test_cast(con):
+    table = con.table('basic_table')
 
     result = table.mutate(id_string=table.id.cast('string')).compile()
 
@@ -171,9 +171,9 @@ def test_cast(client):
     tm.assert_frame_equal(result.toPandas(), df.toPandas())
 
 
-def test_alias_after_select(client):
+def test_alias_after_select(con):
     # Regression test for issue 2136
-    table = client.table('basic_table')
+    table = con.table('basic_table')
     table = table[['id']]
     table = table.mutate(id2=table['id'])
 
@@ -215,8 +215,8 @@ def test_can_be_replaced_by_column_name(selection_fn, selection_idx, expected):
     assert result == expected
 
 
-def test_interval_columns(client):
-    table = client.table('interval_table')
+def test_interval_columns(con):
+    table = con.table('interval_table')
     assert table.schema() == ibis.schema(
         pairs=[
             ('interval_day', dt.Interval('D')),
@@ -237,8 +237,8 @@ def test_interval_columns(client):
     tm.assert_frame_equal(table.execute(), expected)
 
 
-def test_interval_columns_invalid(client):
+def test_interval_columns_invalid(con):
     with pytest.raises(
         IbisTypeError, match="DayTimeIntervalType couldn't be converted to Interval"
     ):
-        client.table('invalid_interval_table')
+        con.table('invalid_interval_table')

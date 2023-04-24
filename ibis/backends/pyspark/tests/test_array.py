@@ -8,8 +8,8 @@ import ibis
 pytest.importorskip("pyspark")
 
 
-def test_array_length(client):
-    table = client.table('array_table')
+def test_array_length(con):
+    table = con.table('array_table')
 
     result = table.mutate(length=table.array_int.length()).compile()
 
@@ -18,11 +18,11 @@ def test_array_length(client):
     tm.assert_frame_equal(result.toPandas(), expected)
 
 
-def test_array_length_scalar(client):
+def test_array_length_scalar(con):
     raw_value = [1, 2, 3]
     value = ibis.literal(raw_value)
     expr = value.length()
-    result = client.execute(expr)
+    result = con.execute(expr)
     expected = len(raw_value)
     assert result == expected
 
@@ -42,8 +42,8 @@ def test_array_length_scalar(client):
         (-3, -1),
     ],
 )
-def test_array_slice(client, start, stop):
-    table = client.table('array_table')
+def test_array_slice(con, start, stop):
+    table = con.table('array_table')
 
     result = table.mutate(sliced=table.array_int[start:stop]).compile()
 
@@ -67,18 +67,18 @@ def test_array_slice(client, start, stop):
         (-3, -1),
     ],
 )
-def test_array_slice_scalar(client, start, stop):
+def test_array_slice_scalar(con, start, stop):
     raw_value = [-11, 42, 10]
     value = ibis.literal(raw_value)
     expr = value[start:stop]
-    result = client.execute(expr)
+    result = con.execute(expr)
     expected = raw_value[start:stop]
     assert result == expected
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11, -11])
-def test_array_index(client, index):
-    table = client.table('array_table')
+def test_array_index(con, index):
+    table = con.table('array_table')
     expr = table[table.array_int[index].name('indexed')]
     result = expr.execute()
 
@@ -94,18 +94,18 @@ def test_array_index(client, index):
 
 
 @pytest.mark.parametrize('index', [1, 3, 4, 11])
-def test_array_index_scalar(client, index):
+def test_array_index_scalar(con, index):
     raw_value = [-10, 1, 2, 42]
     value = ibis.literal(raw_value)
     expr = value[index]
-    result = client.execute(expr)
+    result = con.execute(expr)
     expected = raw_value[index] if index < len(raw_value) else np.nan
     assert result == expected or (np.isnan(result) and np.isnan(expected))
 
 
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
-def test_array_concat(client, op):
-    table = client.table('array_table')
+def test_array_concat(con, op):
+    table = con.table('array_table')
     x = table.array_int.cast('array<string>')
     y = table.array_str
     expr = op(x, y).name('array_result')
@@ -119,20 +119,20 @@ def test_array_concat(client, op):
 
 
 @pytest.mark.parametrize('op', [lambda x, y: x + y, lambda x, y: y + x])
-def test_array_concat_scalar(client, op):
+def test_array_concat_scalar(con, op):
     raw_left = [1, 2, 3]
     raw_right = [3, 4]
     left = ibis.literal(raw_left)
     right = ibis.literal(raw_right)
     expr = op(left, right)
-    result = client.execute(expr)
+    result = con.execute(expr)
     assert result == op(raw_left, raw_right)
 
 
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
-def test_array_repeat(client, n, mul):
-    table = client.table('array_table')
+def test_array_repeat(con, n, mul):
+    table = con.table('array_table')
 
     expr = table.select(mul(table.array_int, n).name('repeated'))
     result = expr.execute()
@@ -144,17 +144,17 @@ def test_array_repeat(client, n, mul):
 
 @pytest.mark.parametrize('n', [1, 3, 4, 7, -2])  # negative returns empty list
 @pytest.mark.parametrize('mul', [lambda x, n: x * n, lambda x, n: n * x])
-def test_array_repeat_scalar(client, n, mul):
+def test_array_repeat_scalar(con, n, mul):
     raw_array = [1, 2]
     array = ibis.literal(raw_array)
     expr = mul(array, n)
-    result = client.execute(expr)
+    result = con.execute(expr)
     expected = mul(raw_array, n)
     assert result == expected
 
 
-def test_array_collect(client):
-    table = client.table('array_table')
+def test_array_collect(con):
+    table = con.table('array_table')
     expr = table.group_by(table.key).aggregate(collected=table.array_int.collect())
     result = expr.execute().sort_values('key').reset_index(drop=True)
 
@@ -168,8 +168,8 @@ def test_array_collect(client):
     tm.assert_frame_equal(result, expected)
 
 
-def test_array_filter(client):
-    table = client.table('array_table')
+def test_array_filter(con):
+    table = con.table('array_table')
     expr = table.select(
         table.array_int.filter(lambda item: item != 3).name('array_int')
     )

@@ -4,8 +4,8 @@ import pytest
 pytest.importorskip("pyspark")
 
 
-def test_isnull(client):
-    table = client.table('null_table')
+def test_isnull(con):
+    table = con.table('null_table')
     table_pandas = table.compile().toPandas()
 
     for col, _ in table_pandas.items():
@@ -14,8 +14,8 @@ def test_isnull(client):
         tm.assert_frame_equal(result, expected)
 
 
-def test_notnull(client):
-    table = client.table('null_table')
+def test_notnull(con):
+    table = con.table('null_table')
     table_pandas = table.compile().toPandas()
 
     for col, _ in table_pandas.items():

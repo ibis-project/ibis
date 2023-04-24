@@ -77,18 +77,12 @@ broken_sqlalchemy_autoload = pytest.mark.xfail(
     ],
     ids=str,
 )
-def test_get_schema_from_query(con, server_type, expected_type):
-    raw_name = f"tmp_{ibis.util.guid()}"
-    name = con._quote(raw_name)
+def test_get_schema_from_query(con, server_type, expected_type, temp_table):
     expected_schema = ibis.schema(dict(x=expected_type))
-    try:
-        with con.begin() as c:
-            c.exec_driver_sql(f"CREATE TABLE {name} (x {server_type})")
-        expected_schema = ibis.schema(dict(x=expected_type))
-        result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-        assert result_schema == expected_schema
-        t = con.table(raw_name)
-        assert t.schema() == expected_schema
-    finally:
-        with con.begin() as c:
-            c.exec_driver_sql(f"DROP TABLE IF EXISTS {name}")
+    with con.begin() as c:
+        c.exec_driver_sql(f"CREATE TABLE [{temp_table}] (x {server_type})")
+    expected_schema = ibis.schema(dict(x=expected_type))
+    result_schema = con._get_schema_using_query(f"SELECT * FROM [{temp_table}]")
+    assert result_schema == expected_schema
+    t = con.table(temp_table)
+    assert t.schema() == expected_schema

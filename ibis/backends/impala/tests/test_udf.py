@@ -252,12 +252,9 @@ def _register_uda(inputs, output, name):
 
 
 @pytest.fixture
-def udfcon(con):
-    con.disable_codegen(False)
-    try:
-        yield con
-    finally:
-        con.disable_codegen(True)
+def udfcon(con, monkeypatch):
+    monkeypatch.setitem(con.con.options, "DISABLE_CODEGEN", "0")
+    return con
 
 
 @pytest.fixture

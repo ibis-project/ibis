@@ -1,5 +1,3 @@
-import contextlib
-
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
@@ -9,7 +7,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.util import guid
 
 pytestmark = [
     pytest.mark.never(
@@ -233,18 +230,10 @@ def test_map_get_with_null_on_null_type_with_non_null(con):
     assert con.execute(expr) == 1
 
 
-@pytest.fixture
-def tmptable(con):
-    name = f"tmp_{guid()}"
-    yield name
-
-    # some backends don't implement drop
-    with contextlib.suppress(NotImplementedError):
-        con.drop_table(name, force=True)
-
-
-def test_map_create_table(con, tmptable):
-    t = con.create_table(tmptable, schema=ibis.schema(dict(xyz="map<string, string>")))
+def test_map_create_table(con, temp_table):
+    t = con.create_table(
+        temp_table, schema=ibis.schema(dict(xyz="map<string, string>"))
+    )
     assert t.schema()["xyz"].is_map()
 
 
