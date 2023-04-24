@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import re
-from functools import partial
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import chain, repeat
 from pathlib import Path
 from typing import Any
 
 import pytest
-from aiohttp import ClientSession
+from requests import Session
 
 import ibis
 from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
@@ -32,7 +32,7 @@ class DruidDataLoadError(Exception):
     pass
 
 
-async def wait_for_ingest(session: ClientSession, *, datasource: str) -> bool:
+def wait_for_ingest(session: Session, *, datasource: str) -> bool:
     """Wait for datasources to be queryable."""
     # https://druid.apache.org/docs/latest/ingestion/faq.html#how-do-i-know-when-i-can-make-query-to-druid-after-submitting-batch-ingestion-task
     #
@@ -46,25 +46,23 @@ async def wait_for_ingest(session: ClientSession, *, datasource: str) -> bool:
     url = f"{BASE_URL}/coordinator/v1/datasources/{datasource}/loadstatus"
     force_refresh = chain(("true",), repeat("false"))
     while not all_segments_loaded:
-        async with session.get(
-            url, params={"forceMetadataRefresh": next(force_refresh)}
-        ) as resp:
-            resp.raise_for_status()
-            js = await resp.json()
+        resp = session.get(url, params={"forceMetadataRefresh": next(force_refresh)})
+        resp.raise_for_status()
+        js = resp.json()
 
         # floating point comparison ¯\_(ツ)_/¯
         all_segments_loaded = js[datasource] == 100.0
-        await asyncio.sleep(REQUEST_INTERVAL)
+        time.sleep(REQUEST_INTERVAL)
     return all_segments_loaded
 
 
-async def run_query(session: ClientSession, query: str) -> None:
+def run_query(session: Session, query: str) -> None:
     """Run a data loading query."""
-    async with session.post(
+    resp = session.post(
         DDL_URL, data=json.dumps(dict(query=query)), headers=DDL_HEADERS
-    ) as resp:
-        resp.raise_for_status()
-        js = await resp.json()
+    )
+    resp.raise_for_status()
+    js = resp.json()
 
     task_id = js["taskId"]
     url = f"{BASE_URL}/indexer/v1/task/{task_id}/status"
@@ -72,20 +70,20 @@ async def run_query(session: ClientSession, query: str) -> None:
     all_data_queryable = False
 
     while not all_data_queryable:
-        async with session.get(url) as resp:
-            resp.raise_for_status()
-            js = await resp.json()
+        resp = session.get(url)
+        resp.raise_for_status()
+        js = resp.json()
 
         status_blob = js["status"]
         status_string = status_blob["status"]
         if status_string == "SUCCESS":
             match = re.search(r'^REPLACE INTO "(?P<datasource>\w+)"', query)
-            all_data_queryable = await wait_for_ingest(
+            all_data_queryable = wait_for_ingest(
                 session, datasource=match.groupdict()["datasource"]
             )
         elif status_string == "FAILED":
             raise DruidDataLoadError(status_blob["errorMsg"])
-        await asyncio.sleep(REQUEST_INTERVAL)
+        time.sleep(REQUEST_INTERVAL)
 
 
 class TestConf(ServiceBackendTest, RoundHalfToEven):
@@ -126,18 +124,17 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
             None,
             map(
                 str.strip,
-                (script_dir / 'schema' / 'druid.sql').read_text().split(";"),
+                (script_dir / "schema" / "druid.sql").read_text().split(";"),
             ),
         )
 
-        # gather executes immediately, but we need to wait for asyncio.run to
-        # create the event loop
-        async def load_data(queries):
-            """Run data loading queries."""
-            async with ClientSession() as session:
-                await asyncio.gather(*map(partial(run_query, session), queries))
-
-        asyncio.run(load_data(queries))
+        # run queries concurrently using threads; lots of time is spent on IO
+        # making requests to check whether data loading is complete
+        with Session() as session, ThreadPoolExecutor() as executor:
+            for fut in as_completed(
+                executor.submit(run_query, session, query) for query in queries
+            ):
+                fut.result()
 
     @staticmethod
     def connect(_: Path):

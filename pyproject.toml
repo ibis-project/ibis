@@ -96,9 +96,9 @@ pre-commit = ">=3.1,<4"
 ruff = ">=0.0.205,<1"
 
 [tool.poetry.group.test.dependencies]
-aiohttp = ">=3.8.4,<4"
 black = ">=22.1.0,<24"
 filelock = ">=3.7.0,<4"
+hypothesis = ">=6.58.0,<7"
 packaging = ">=21.3,<24"
 pytest = ">=7.0.0,<8"
 pytest-benchmark = ">=3.4.1,<5"
@@ -111,7 +111,7 @@ pytest-randomly = ">=3.10.1,<4"
 pytest-repeat = ">=0.9.1,<0.10"
 pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
-hypothesis = ">=6.58.0,<7"
+requests = ">=2,<3"
 sqlalchemy = ">=1.4,<3"
 
 [tool.poetry.group.docs.dependencies]
