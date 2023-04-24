@@ -244,7 +244,7 @@ class Backend(BaseBackend):
             )
 
         if isinstance(obj, ir.Table):
-            obj = obj.to_pyarrow()
+            obj = self.to_pyarrow(obj)
 
         if not isinstance(obj, (pl.DataFrame, pl.LazyFrame)):
             obj = pl.LazyFrame(obj)
