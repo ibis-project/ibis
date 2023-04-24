@@ -500,7 +500,7 @@ def execute_series_lead_lag_timedelta(
 
 @execute_node.register(ops.FirstValue, pd.Series)
 def execute_series_first_value(op, data, **kwargs):
-    return data.values[0]
+    return data.iloc[np.repeat(0, len(data))]
 
 
 def _getter(x: pd.Series | np.ndarray, idx: int):
@@ -514,7 +514,7 @@ def execute_series_group_by_first_value(op, data, aggcontext=None, **kwargs):
 
 @execute_node.register(ops.LastValue, pd.Series)
 def execute_series_last_value(op, data, **kwargs):
-    return data.values[-1]
+    return data.iloc[np.repeat(-1, len(data))]
 
 
 @execute_node.register(ops.LastValue, SeriesGroupBy)
