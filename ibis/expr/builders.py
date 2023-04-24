@@ -11,6 +11,7 @@ from ibis.common.annotations import annotated
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.expr.deferred import Deferred
+from ibis.expr.types.relations import bind_expr
 
 
 class Builder(Concrete):
@@ -177,14 +178,17 @@ class WindowBuilder(Builder):
     def lookback(self, value):
         return self.copy(max_lookback=value)
 
+    @annotated(table=rlz.table)
     def bind(self, table):
+        groupings = bind_expr(table.to_expr(), self.groupings)
+        orderings = bind_expr(table.to_expr(), self.orderings)
         if self.how == "rows":
             return ops.RowsWindowFrame(
                 table=table,
                 start=self.start,
                 end=self.end,
-                group_by=self.groupings,
-                order_by=self.orderings,
+                group_by=groupings,
+                order_by=orderings,
                 max_lookback=self.max_lookback,
             )
         elif self.how == "range":
@@ -192,8 +196,8 @@ class WindowBuilder(Builder):
                 table=table,
                 start=self.start,
                 end=self.end,
-                group_by=self.groupings,
-                order_by=self.orderings,
+                group_by=groupings,
+                order_by=orderings,
             )
         else:
             raise ValueError(f"Unsupported `{self.how}` window type")

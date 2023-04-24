@@ -129,26 +129,12 @@ def sort_key_from(table_ref, key, **kwargs):
         True: True,
     }
 
-    if callable(key):
-        key = function_of(table_ref, key, **kwargs)
-
     if isinstance(key, ops.SortKey):
         return key
     elif isinstance(key, tuple):
         key, order = key
     else:
         key, order = key, True
-
-    if isinstance(key, (str, int)):
-        # Actual str/int keys must refer to columns in the table, we don't want
-        # to fallback to converting them to expressions with ibis.literal
-        key = column_from(table_ref, key, **kwargs)
-    else:
-        key = one_of(
-            (function_of(table_ref), column_from(table_ref), any),
-            key,
-            **kwargs,
-        )
 
     if isinstance(order, str):
         order = order.lower()
@@ -493,74 +479,6 @@ def table(arg, schema=None, **kwargs):
             f'Argument is not a table with column subset of {schema}'
         )
     return arg
-
-
-@public
-@rule
-def column_from(table_ref, column, **kwargs):
-    """A column from a named table.
-
-    This validator accepts columns passed as string, integer, or column
-    expression. In the case of a column expression, this validator
-    checks if the column in the table is equal to the column being
-    passed.
-    """
-    import ibis.expr.operations as ops
-
-    # TODO(kszucs): should avoid converting to TableExpr
-    table = table_ref(**kwargs).to_expr()
-
-    # TODO(kszucs): should avoid converting to a ColumnExpr
-    if isinstance(column, ops.Node):
-        column = column.to_expr()
-
-    column = table._ensure_expr(column)
-
-    if not isinstance(column, ir.Column):
-        raise com.IbisTypeError(
-            f"value must be an int or str or Column, got {type(column).__name__}"
-        )
-
-    if not column.has_name():
-        raise com.IbisTypeError(f"Passed column {column} has no name")
-
-    maybe_column = column.get_name()
-    try:
-        if column.equals(table[maybe_column]):
-            return column.op()
-        else:
-            raise com.IbisTypeError(f"Passed column is not a column in {type(table)}")
-    except com.IbisError:
-        raise com.IbisTypeError(f"Cannot get column {maybe_column} from {type(table)}")
-
-
-@public
-@rule
-def base_table_of(table_ref, *, this, strict=True):
-    from ibis.expr.analysis import find_first_base_table
-
-    arg = table_ref(this=this)
-    base = find_first_base_table(arg)
-    if strict and base is None:
-        raise com.IbisTypeError(f"`{arg}` doesn't have a base table")
-    return base
-
-
-@public
-@rule
-def function_of(table_ref, fn, *, output_rule=any, this=None):
-    arg = table_ref(this=this).to_expr()
-
-    if util.is_function(fn):
-        arg = fn(arg)
-    elif isinstance(fn, Deferred):
-        arg = fn.resolve(arg)
-    else:
-        raise com.IbisTypeError(
-            'argument `fn` must be a function, lambda or deferred operation'
-        )
-
-    return output_rule(arg, this=this)
 
 
 @public
