@@ -920,8 +920,7 @@ class Object(Matcher):
     __slots__ = ("type", "field_patterns")
 
     def __init__(self, type, *args, **kwargs):
-        match_args = getattr(type, "__match_args__", tuple())
-        kwargs.update(dict(zip(args, match_args)))
+        kwargs.update(dict(zip(type.__match_args__, args)))
         super().__init__(type, frozendict(kwargs))
 
     def match(self, value, context):
@@ -1198,3 +1197,41 @@ def match(pat: Pattern, value: AnyType, context: dict[str, AnyType] = None):
         return NoMatch
 
     return context
+
+
+class Topmost(Matcher):
+    """Traverse the value tree topmost first and match the first value that matches."""
+
+    __slots__ = ("searcher", "filter")
+
+    def __init__(self, searcher, filter=None):
+        super().__init__(pattern(searcher), filter)
+
+    def match(self, value, context):
+        result = self.searcher.match(value, context)
+        if result is not NoMatch:
+            return result
+
+        for child in value.__children__(self.filter):
+            result = self.match(child, context)
+            if result is not NoMatch:
+                return result
+
+        return NoMatch
+
+
+class Innermost(Matcher):
+    """Traverse the value tree innermost first and match the first value that matches."""
+
+    __slots__ = ("searcher", "filter")
+
+    def __init__(self, searcher, filter=None):
+        super().__init__(pattern(searcher), filter)
+
+    def match(self, value, context):
+        for child in value.__children__(self.filter):
+            result = self.match(child, context)
+            if result is not NoMatch:
+                return result
+
+        return self.searcher.match(value, context)
