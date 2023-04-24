@@ -55,3 +55,19 @@ def test_basic_memtable_registration(simple_con, data):
     t = ibis.memtable(data)
     result = simple_con.execute(t)
     tm.assert_frame_equal(result, expected)
+
+
+def test_repeated_memtable_registration(simple_con, mocker):
+    data = {"key": list("abc"), "value": [[1], [2], [3]]}
+    expected = pd.DataFrame(data)
+    t = ibis.memtable(data)
+
+    spy = mocker.spy(simple_con, "_register_in_memory_table")
+
+    n = 2
+
+    for _ in range(n):
+        tm.assert_frame_equal(simple_con.execute(t), expected)
+
+    # assert that we called _register_in_memory_table exactly n times
+    assert spy.call_count == n
