@@ -190,7 +190,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
 
-        df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
+        try:
+            df = pd.DataFrame.from_records(
+                cursor, columns=schema.names, coerce_float=True
+            )
+        except Exception:
+            # clean up the cursor if we fail to create the DataFrame
+            #
+            # in the sqlite case failing to close the cursor results in
+            # artificially locked tables
+            cursor.close()
+            raise
         df = schema.apply_to(df)
         if not df.empty and geospatial_supported:
             return self._to_geodataframe(df, schema)
