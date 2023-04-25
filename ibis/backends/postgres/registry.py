@@ -444,6 +444,14 @@ def _quantile(t, op):
     )
 
 
+def _approx_median(t, op):
+    arg = op.arg
+    if (where := op.where) is not None:
+        arg = ops.Where(where, arg, None)
+
+    return sa.func.percentile_cont(0.5).within_group(t.translate(arg))
+
+
 def _binary_variance_reduction(func):
     def variance_compiler(t, op):
         x = op.left
@@ -659,6 +667,7 @@ operation_registry.update(
         ops.Correlation: _corr,
         ops.BitwiseXor: _bitwise_op("#"),
         ops.Mode: _mode,
+        ops.ApproxMedian: _approx_median,
         ops.Quantile: _quantile,
         ops.MultiQuantile: _quantile,
         ops.TimestampNow: lambda t, op: sa.literal_column(
