@@ -14,6 +14,6 @@ SELECT
   t0.timestamp_col,
   t0.year,
   t0.month
-FROM main.functional_alltypes AS t0
+FROM functional_alltypes AS t0
 WHERE
   _IBIS_SQLITE_REGEX_SEARCH(t0.string_col, '0')

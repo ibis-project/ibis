@@ -437,18 +437,23 @@ class BaseAlchemyBackend(BaseSQLBackend):
         else:
             util.log(query_str)
 
+    @staticmethod
+    def _new_sa_metadata():
+        return sa.MetaData()
+
     def _get_sqla_table(
         self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
     ) -> sa.Table:
         # If the underlying table (or more likely, view) has changed, remove it
         # to ensure a correct reflection
+        meta = self._new_sa_metadata()
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore", message="Did not recognize type", category=sa.exc.SAWarning
             )
             table = sa.Table(
                 name,
-                sa.MetaData(),
+                meta,
                 schema=schema,
                 autoload_with=self.con if autoload else None,
                 quote=self.compiler.translator_class._quote_table_names,

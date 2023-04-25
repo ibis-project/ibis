@@ -65,7 +65,7 @@ class ISODATETIME(DATETIME):
     list of datetime formats SQLite accepts.
     """
 
-    def result_processor(self, value, dialect):
+    def result_processor(self, *_):
         return to_datetime
 
 
@@ -171,9 +171,8 @@ class Backend(BaseAlchemyBackend):
         with self.begin() as con:
             con.exec_driver_sql(f"ATTACH DATABASE {str(path)!r} AS {self._quote(name)}")
 
-    def _get_sqla_table(
-        self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
-    ) -> sa.Table:
+    @staticmethod
+    def _new_sa_metadata():
         meta = sa.MetaData()
 
         @sa.event.listens_for(meta, "column_reflect")
@@ -181,12 +180,7 @@ class Backend(BaseAlchemyBackend):
             if type(column_info["type"]) is TIMESTAMP:
                 column_info["type"] = ISODATETIME()
 
-        return sa.Table(
-            name,
-            meta,
-            schema=schema or self.current_database,
-            autoload_with=self.con if autoload else None,
-        )
+        return meta
 
     def table(self, name: str, database: str | None = None, **_: Any) -> ir.Table:
         """Create a table expression from a table in the SQLite database.
@@ -226,6 +220,8 @@ class Backend(BaseAlchemyBackend):
         view = f"__ibis_sqlite_metadata{util.guid()}"
 
         with self.begin() as con:
+            if query in self.list_tables():
+                query = f"SELECT * FROM {query}"
             # create a view that should only be visible in this transaction
             con.exec_driver_sql(f"CREATE TEMPORARY VIEW {view} AS {query}")
 
