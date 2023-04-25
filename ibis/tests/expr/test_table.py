@@ -438,9 +438,12 @@ def test_order_by(table):
     result2 = table.order_by('f').op()
     assert_equal(result, result2)
 
-    result2 = table.order_by([('f', False)])
-    result3 = table.order_by([('f', 'descending')])
-    result4 = table.order_by([('f', 0)])
+    with pytest.warns(FutureWarning):
+        result2 = table.order_by([('f', False)])
+    with pytest.warns(FutureWarning):
+        result3 = table.order_by([('f', 'descending')])
+    with pytest.warns(FutureWarning):
+        result4 = table.order_by([('f', 0)])
 
     key2 = result2.op().sort_keys[0]
     key3 = result3.op().sort_keys[0]
@@ -456,11 +459,9 @@ def test_order_by_desc_deferred_sort_key(table):
     result = table.group_by('g').size().order_by(ibis.desc('count'))
 
     tmp = table.group_by('g').size()
-    expected = tmp.order_by((tmp['count'], False))
-    expected2 = tmp.order_by(ibis.desc(tmp['count']))
+    expected = tmp.order_by(ibis.desc(tmp['count']))
 
     assert_equal(result, expected)
-    assert_equal(result, expected2)
 
 
 def test_order_by_asc_deferred_sort_key(table):

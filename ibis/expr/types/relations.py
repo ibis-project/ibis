@@ -1231,8 +1231,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     1 │ c      │     4 │
         └───────┴────────┴───────┘
         """
+        used_tuple_syntax = False
         if isinstance(by, tuple):
             by = [by]
+            used_tuple_syntax = True
 
         sort_keys = []
         for item in util.promote_list(by):
@@ -1242,9 +1244,18 @@ class Table(Expr, _FixedTextJupyterMixin):
                         "Tuple must be of length 2, got {}".format(len(item))
                     )
                 item = (bind_expr(self, item[0]), item[1])
+                used_tuple_syntax = True
             else:
                 item = bind_expr(self, item)
             sort_keys.append(item)
+
+        if used_tuple_syntax:
+            util.warn_deprecated(
+                "table.order_by((key, True)) and table.order_by((key, False)) syntax",
+                as_of="6.0",
+                removed_in="7.0",
+                instead="Use ibis.desc(key) or ibis.asc(key) instead",
+            )
 
         return self.op().order_by(sort_keys).to_expr()
 

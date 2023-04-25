@@ -221,11 +221,22 @@ def test_aggregate(star1, expr_fn, snapshot):
 
 @pytest.mark.parametrize(
     "key",
-    ["f", ("f", 0), ["c", ("f", 0)], ibis.random()],
-    ids=["column", "ascending", "mixed", "random"],
+    ["f", ibis.random()],
+    ids=["column", "random"],
 )
 def test_order_by(star1, key, snapshot):
     expr = star1.order_by(key)
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+@pytest.mark.parametrize(
+    "key",
+    [("f", 0), ["c", ("f", 0)]],
+    ids=["ascending", "mixed"],
+)
+def test_order_by_deprecated(star1, key, snapshot):
+    with pytest.warns(FutureWarning):
+        expr = star1.order_by(key)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
