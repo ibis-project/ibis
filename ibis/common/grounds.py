@@ -155,8 +155,14 @@ class Annotable(Base, metaclass=AnnotableMeta):
 
 
 class Immutable(Base):
+    def __copy__(self):
+        return self
+
+    def __deepcopy__(self, memo):
+        return self
+
     def __setattr__(self, name: str, _: Any) -> None:
-        raise TypeError(
+        raise AttributeError(
             f"Attribute {name!r} cannot be assigned to immutable instance of "
             f"type {type(self)}"
         )
