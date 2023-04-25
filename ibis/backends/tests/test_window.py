@@ -654,11 +654,8 @@ def test_simple_ungrouped_unbound_following_window(
             id='unordered-lag',
             marks=[
                 pytest.mark.broken(
-                    ["bigquery", "trino"],
-                    reason=(
-                        "this isn't actually broken: the trino backend "
-                        "result is equal up to ordering"
-                    ),
+                    ["trino"],
+                    reason="this isn't actually broken: the backend result is equal up to ordering",
                     raises=AssertionError,
                 ),
                 pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
