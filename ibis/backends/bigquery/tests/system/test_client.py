@@ -28,20 +28,20 @@ def test_column_execute(alltypes, df):
     )
 
 
-def test_list_tables(client):
-    tables = client.list_tables(like="functional_alltypes")
+def test_list_tables(con):
+    tables = con.list_tables(like="functional_alltypes")
     assert set(tables) == {"functional_alltypes", "functional_alltypes_parted"}
 
 
-def test_current_database(client, dataset_id):
-    assert client.current_database == dataset_id
-    assert client.current_database == client.dataset_id
-    assert client.list_tables(database=client.current_database) == client.list_tables()
+def test_current_database(con, dataset_id):
+    assert con.current_database == dataset_id
+    assert con.current_database == con.dataset_id
+    assert con.list_tables(database=con.current_database) == con.list_tables()
 
 
-def test_database(client):
-    database = client.database(client.dataset_id)
-    assert database.list_tables() == client.list_tables()
+def test_database(con):
+    database = con.database(con.dataset_id)
+    assert database.list_tables() == con.list_tables()
 
 
 def test_array_collect(struct_table):
@@ -96,17 +96,17 @@ def test_cast_string_to_date(alltypes, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_has_partitions(alltypes, parted_alltypes, client):
-    col = client.partition_column
+def test_has_partitions(alltypes, parted_alltypes, con):
+    col = con.partition_column
     assert col not in alltypes.columns
     assert col in parted_alltypes.columns
 
 
-def test_different_partition_col_name(monkeypatch, client):
+def test_different_partition_col_name(monkeypatch, con):
     col = "FOO_BAR"
-    monkeypatch.setattr(client, "partition_column", col)
-    alltypes = client.table("functional_alltypes")
-    parted_alltypes = client.table("functional_alltypes_parted")
+    monkeypatch.setattr(con, "partition_column", col)
+    alltypes = con.table("functional_alltypes")
+    parted_alltypes = con.table("functional_alltypes_parted")
     assert col not in alltypes.columns
     assert col in parted_alltypes.columns
 
@@ -183,8 +183,8 @@ def test_repr_struct_of_array_of_struct():
     assert result.to_api_repr() == expected
 
 
-def test_raw_sql(client):
-    assert client.raw_sql("SELECT 1").fetchall() == [(1,)]
+def test_raw_sql(con):
+    assert con.raw_sql("SELECT 1").fetchall() == [(1,)]
 
 
 def test_parted_column_rename(parted_alltypes):
@@ -202,9 +202,9 @@ def test_scalar_param_partition_time(parted_alltypes):
 
 
 @pytest.mark.parametrize("kind", ["date", "timestamp"])
-def test_parted_column(client, kind):
+def test_parted_column(con, kind):
     table_name = f"{kind}_column_parted"
-    t = client.table(table_name)
+    t = con.table(table_name)
     expected_column = f"my_{kind}_parted_col"
     assert t.columns == [expected_column, "string_col", "int_col"]
 
@@ -222,23 +222,23 @@ def test_cross_project_query(public, snapshot):
     assert df.tags.dtype == object
 
 
-def test_set_database(client2):
-    client2.set_database("bigquery-public-data.epa_historical_air_quality")
-    tables = client2.list_tables()
+def test_set_database(con2):
+    con2.set_database("bigquery-public-data.epa_historical_air_quality")
+    tables = con2.list_tables()
     assert "co_daily_summary" in tables
 
 
-def test_exists_table_different_project(client):
+def test_exists_table_different_project(con):
     name = "co_daily_summary"
     database = "bigquery-public-data.epa_historical_air_quality"
 
-    assert name in client.list_tables(database=database)
-    assert "foobar" not in client.list_tables(database=database)
+    assert name in con.list_tables(database=database)
+    assert "foobar" not in con.list_tables(database=database)
 
 
-def test_multiple_project_queries(client):
-    so = client.table("posts_questions", database="bigquery-public-data.stackoverflow")
-    trips = client.table("trips", database="nyc-tlc.yellow")
+def test_multiple_project_queries(con):
+    so = con.table("posts_questions", database="bigquery-public-data.stackoverflow")
+    trips = con.table("trips", database="nyc-tlc.yellow")
     join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
     result = join.compile()
     expected = """\
@@ -249,10 +249,10 @@ FROM `bigquery-public-data.stackoverflow.posts_questions` t0
     assert result == expected
 
 
-def test_multiple_project_queries_database_api(client):
-    stackoverflow = client.database("bigquery-public-data.stackoverflow")
+def test_multiple_project_queries_database_api(con):
+    stackoverflow = con.database("bigquery-public-data.stackoverflow")
     posts_questions = stackoverflow.posts_questions
-    yellow = client.database("nyc-tlc.yellow")
+    yellow = con.database("nyc-tlc.yellow")
     trips = yellow.trips
     predicate = posts_questions.tags == trips.rate_code
     join = posts_questions.join(trips, predicate)[[posts_questions.title]]
@@ -265,10 +265,10 @@ FROM `bigquery-public-data.stackoverflow.posts_questions` t0
     assert result == expected
 
 
-def test_multiple_project_queries_execute(client):
-    stackoverflow = client.database("bigquery-public-data.stackoverflow")
+def test_multiple_project_queries_execute(con):
+    stackoverflow = con.database("bigquery-public-data.stackoverflow")
     posts_questions = stackoverflow.posts_questions.limit(5)
-    yellow = client.database("nyc-tlc.yellow")
+    yellow = con.database("nyc-tlc.yellow")
     trips = yellow.trips.limit(5)
     predicate = posts_questions.tags == trips.rate_code
     cols = [posts_questions.title]
@@ -278,12 +278,12 @@ def test_multiple_project_queries_execute(client):
     assert len(result) == 5
 
 
-def test_string_to_timestamp(client):
+def test_string_to_timestamp(con):
     timestamp = pd.Timestamp(
         datetime.datetime(year=2017, month=2, day=6), tz=pytz.timezone("UTC")
     )
     expr = ibis.literal("2017-02-06").to_timestamp("%F")
-    result = client.execute(expr)
+    result = con.execute(expr)
     assert result == timestamp
 
     timestamp_tz = pd.Timestamp(
@@ -291,12 +291,12 @@ def test_string_to_timestamp(client):
         tz=pytz.timezone("UTC"),
     )
     expr_tz = ibis.literal("2017-02-06 America/New_York").to_timestamp("%F %Z")
-    result_tz = client.execute(expr_tz)
+    result_tz = con.execute(expr_tz)
     assert result_tz == timestamp_tz
 
 
-def test_timestamp_column_parted_is_not_renamed(client):
-    t = client.table("timestamp_column_parted")
+def test_timestamp_column_parted_is_not_renamed(con):
+    t = con.table("timestamp_column_parted")
     assert "_PARTITIONTIME" not in t.columns
     assert "PARTITIONTIME" not in t.columns
 
@@ -337,21 +337,19 @@ def test_approx_median(alltypes):
     assert result in (6, 7)
 
 
-def test_create_table_bignumeric(client, temp_table):
+def test_create_table_bignumeric(con, temp_table):
     schema = ibis.schema({'col1': dt.Decimal(76, 38)})
-    temporary_table = client.create_table(temp_table, schema=schema)
-    client.raw_sql(
-        f"INSERT {client.current_database}.{temp_table} (col1) VALUES (10.2)"
-    )
+    temporary_table = con.create_table(temp_table, schema=schema)
+    con.raw_sql(f"INSERT {con.current_database}.{temp_table} (col1) VALUES (10.2)")
     df = temporary_table.execute()
     assert df.shape == (1, 1)
 
 
-def test_geography_table(client, temp_table):
+def test_geography_table(con, temp_table):
     schema = ibis.schema({'col1': dt.GeoSpatial(geotype="geography", srid=4326)})
-    temporary_table = client.create_table(temp_table, schema=schema)
-    client.raw_sql(
-        f"INSERT {client.current_database}.{temp_table} (col1) VALUES (ST_GEOGPOINT(1,3))"
+    temporary_table = con.create_table(temp_table, schema=schema)
+    con.raw_sql(
+        f"INSERT {con.current_database}.{temp_table} (col1) VALUES (ST_GEOGPOINT(1,3))"
     )
     df = temporary_table.execute()
     assert df.shape == (1, 1)

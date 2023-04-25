@@ -14,8 +14,8 @@ DATASET_ID = "testing"
 
 
 @pytest.fixture(scope="module")
-def alltypes(client):
-    t = client.table("functional_alltypes")
+def alltypes(con):
+    t = con.table("functional_alltypes")
     expr = t[t.bigint_col.isin([10, 20])].limit(10)
     return expr
 
@@ -88,17 +88,17 @@ def test_udf_compose(alltypes, df):
     tm.assert_series_equal(result, expected, check_names=False)
 
 
-def test_udf_scalar(client):
+def test_udf_scalar(con):
     @udf([dt.double, dt.double], dt.double)
     def my_add(x, y):
         return x + y
 
     expr = my_add(1, 2)
-    result = client.execute(expr)
+    result = con.execute(expr)
     assert result == 3
 
 
-def test_multiple_calls_has_one_definition(client):
+def test_multiple_calls_has_one_definition(con):
     @udf([dt.string], dt.double)
     def my_str_len(s):
         return s.length
@@ -110,10 +110,10 @@ def test_multiple_calls_has_one_definition(client):
 
     # generated javascript is identical
     assert add.left.sql == add.right.sql
-    assert client.execute(expr) == 8.0
+    assert con.execute(expr) == 8.0
 
 
-def test_udf_libraries(client):
+def test_udf_libraries(con):
     @udf(
         [dt.Array(dt.string)],
         dt.double,
@@ -127,12 +127,12 @@ def test_udf_libraries(client):
     raw_data = ["aaa", "bb", "c"]
     data = ibis.literal(raw_data)
     expr = string_length(data)
-    result = client.execute(expr)
+    result = con.execute(expr)
     expected = sum(map(len, raw_data))
     assert result == expected
 
 
-def test_udf_with_len(client):
+def test_udf_with_len(con):
     @udf([dt.string], dt.double)
     def my_str_len(x):
         return len(x)
@@ -141,8 +141,8 @@ def test_udf_with_len(client):
     def my_array_len(x):
         return len(x)
 
-    assert client.execute(my_str_len("aaa")) == 3
-    assert client.execute(my_array_len(["aaa", "bb"])) == 2
+    assert con.execute(my_str_len("aaa")) == 3
+    assert con.execute(my_array_len(["aaa", "bb"])) == 2
 
 
 @pytest.mark.parametrize(
@@ -158,7 +158,7 @@ def test_udf_with_len(client):
         ),
     ],
 )
-def test_udf_sql(client, argument_type):
+def test_udf_sql(con, argument_type):
     format_t = udf.sql(
         "format_t",
         params={'input': argument_type},
@@ -169,4 +169,4 @@ def test_udf_sql(client, argument_type):
     s = ibis.literal("abcd")
     expr = format_t(s)
 
-    client.execute(expr)
+    con.execute(expr)
