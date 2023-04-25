@@ -24,10 +24,6 @@ from ibis.tests.util import assert_decompile_roundtrip
             id="agg_string_columns",
         ),
         param(lambda star1, **_: star1.order_by("f"), id="single_column"),
-        param(
-            lambda star1, **_: star1.order_by(["c", ("f", 0)]),
-            id="mixed_columns_ascending",
-        ),
         param(lambda star1, **_: star1.limit(10), id="limit_simple"),
         param(lambda star1, **_: star1.limit(10, offset=5), id="limit_with_offset"),
         param(lambda star1, **_: star1[star1.f > 0].limit(10), id="filter_then_limit"),

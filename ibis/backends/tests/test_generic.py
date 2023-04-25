@@ -509,11 +509,6 @@ def test_select_sort_sort(alltypes):
         param(_.id, {"by": "id"}),
         param(lambda _: _.id, {"by": "id"}),
         param(
-            ("id", False),
-            {"by": "id", "ascending": False},
-            marks=pytest.mark.notimpl(["dask"]),
-        ),
-        param(
             ibis.desc("id"),
             {"by": "id", "ascending": False},
             marks=pytest.mark.notimpl(["dask"]),
@@ -524,7 +519,7 @@ def test_select_sort_sort(alltypes):
             marks=pytest.mark.notimpl(["dask"]),
         ),
         param(
-            ["id", ("int_col", False)],
+            ["id", ibis.desc("int_col")],
             {"by": ["id", "int_col"], "ascending": [True, False]},
             marks=pytest.mark.notimpl(["dask"]),
         ),
