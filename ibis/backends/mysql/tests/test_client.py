@@ -1,3 +1,7 @@
+from datetime import date
+
+import pandas as pd
+import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -93,3 +97,36 @@ def tmp_t(con_nodb):
 def test_get_schema_from_query_other_schema(con_nodb):
     t = con_nodb.table("t", schema="test_schema")
     assert t.schema() == ibis.schema({"x": dt.string})
+
+
+def test_zero_timestamp_data(con):
+    sql = """
+    CREATE TEMPORARY TABLE ztmp_date_issue
+    (
+        name      CHAR(10) NULL,
+        tradedate DATETIME NOT NULL,
+        date      DATETIME NULL
+    );
+    """
+    with con.begin() as c:
+        c.exec_driver_sql(sql)
+        c.exec_driver_sql(
+            """
+            INSERT INTO ztmp_date_issue VALUES
+                ('C', '2018-10-22', 0),
+                ('B', '2017-06-07', 0),
+                ('C', '2022-12-21', 0)
+            """
+        )
+    t = con.table("ztmp_date_issue")
+    result = t.execute()
+    expected = pd.DataFrame(
+        {
+            "name": ["C", "B", "C"],
+            "tradedate": pd.to_datetime(
+                [date(2018, 10, 22), date(2017, 6, 7), date(2022, 12, 21)]
+            ),
+            "date": [pd.NaT, pd.NaT, pd.NaT],
+        }
+    )
+    tm.assert_frame_equal(result, expected)
