@@ -7,11 +7,12 @@ import warnings
 from typing import Iterable, Literal
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mysql.compiler import MySQLCompiler
-from ibis.backends.mysql.datatypes import _type_from_cursor_info
+from ibis.backends.mysql.datatypes import MySQLDateTime, _type_from_cursor_info
 
 
 class Backend(BaseAlchemyBackend):
@@ -112,6 +113,16 @@ class Backend(BaseAlchemyBackend):
                     warnings.warn("Unable to set session timezone to UTC.")
 
         super().do_connect(engine)
+
+    def _new_sa_metadata(self):
+        meta = super()._new_sa_metadata()
+
+        @sa.event.listens_for(meta, "column_reflect")
+        def column_reflect(inspector, table, column_info):
+            if isinstance(column_info["type"], mysql.DATETIME):
+                column_info["type"] = MySQLDateTime()
+
+        return meta
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         if (

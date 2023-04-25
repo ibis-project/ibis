@@ -7,6 +7,7 @@ from sqlalchemy.dialects import mysql
 from sqlalchemy.dialects.mysql.base import MySQLDialect
 
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy import to_sqla_type
 
 # binary character set
 # used to distinguish blob binary vs blob text
@@ -253,3 +254,20 @@ def mysql_tinyint(satype, nullable=True):
 @dt.dtype.register(mysql.BLOB)
 def mysql_blob(satype, nullable=True):
     return dt.Binary(nullable=nullable)
+
+
+class MySQLDateTime(mysql.DATETIME):
+    """Custom DATETIME type for MySQL that handles zero values."""
+
+    def result_processor(self, *_):
+        return lambda v: None if v == "0000-00-00 00:00:00" else v
+
+
+@dt.dtype.register(MySQLDateTime)
+def mysql_timestamp(_, nullable=True):
+    return dt.Timestamp(nullable=nullable)
+
+
+@to_sqla_type.register(MySQLDialect, dt.Timestamp)
+def _mysql_timestamp(*_):
+    return MySQLDateTime()
