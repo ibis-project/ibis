@@ -7,7 +7,7 @@ import io
 import os
 import pathlib
 from pathlib import Path
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
 import google.api_core.exceptions as gexc
 import google.auth
@@ -16,11 +16,15 @@ from google.cloud import bigquery as bq
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.selectors as s
 from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
 from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedComparator
 from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
 
 DATASET_ID = "ibis_gbq_testing"
 DEFAULT_PROJECT_ID = "ibis-gbq"
@@ -266,6 +270,11 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
             for fut in concurrent.futures.as_completed(futures):
                 fut.result()
+
+    @property
+    def functional_alltypes(self) -> ir.Table:
+        t = super().functional_alltypes
+        return t.select(~s.c("index", "Unnamed_0"))
 
     @staticmethod
     def connect(data_directory: pathlib.Path) -> Backend:
