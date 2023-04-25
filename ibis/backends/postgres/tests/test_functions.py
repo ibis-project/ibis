@@ -717,7 +717,7 @@ def test_interactive_repr_shows_error(alltypes):
     # #591. Doing this in PostgreSQL because so many built-in functions are
     # not available
 
-    expr = alltypes.double_col.approx_median()
+    expr = alltypes.int_col.convert_base(10, 2)
 
     with config.option_context('interactive', True):
         result = repr(expr)
