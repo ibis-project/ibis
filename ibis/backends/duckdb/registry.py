@@ -418,6 +418,7 @@ operation_registry.update(
         ops.MapValues: _map_values,
         ops.MapMerge: _map_merge,
         ops.Hash: unary(sa.func.hash),
+        ops.Median: reduction(sa.func.median),
     }
 )
 

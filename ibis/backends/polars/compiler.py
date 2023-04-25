@@ -642,6 +642,7 @@ _reductions = {
     ops.Sum: 'sum',
     ops.Variance: 'var',
     ops.CountDistinct: 'n_unique',
+    ops.Median: 'median',
 }
 
 for reduction in _reductions.keys():
