@@ -112,8 +112,9 @@ class Backend(BaseAlchemyBackend):
 
         super().do_connect(engine)
 
-    def _new_sa_metadata(self):
-        meta = super()._new_sa_metadata()
+    @staticmethod
+    def _new_sa_metadata():
+        meta = sa.MetaData()
 
         @sa.event.listens_for(meta, "column_reflect")
         def column_reflect(inspector, table, column_info):
