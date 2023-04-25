@@ -1016,6 +1016,7 @@ _simple_ops = {
     ops.RandomScalar: "randCanonical",
     # Unary aggregates
     ops.ApproxMedian: "median",
+    ops.Median: "quantileExactExclusive",
     # TODO: there is also a `uniq` function which is the
     #       recommended way to approximate cardinality
     ops.ApproxCountDistinct: "uniqHLL12",

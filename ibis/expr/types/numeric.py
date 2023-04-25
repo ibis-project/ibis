@@ -313,6 +313,22 @@ class NumericScalar(Scalar, NumericValue):
 
 @public
 class NumericColumn(Column, NumericValue):
+    def median(self, where: ir.BooleanValue | None = None) -> NumericScalar:
+        """Return the median of the column.
+
+        Parameters
+        ----------
+        where
+            Optional boolean expression. If given, only the values where
+            `where` evaluates to true will be considered for the median.
+
+        Returns
+        -------
+        NumericScalar
+            Median of the column
+        """
+        return ops.Median(self, where=where).to_expr()
+
     def quantile(
         self,
         quantile: Sequence[NumericValue | float],
