@@ -389,6 +389,7 @@ operation_registry.update(
         ops.EndsWith: fixed_arity(sa.func.endswith, 2),
         ops.GroupConcat: _group_concat,
         ops.Hash: unary(sa.func.hash),
+        ops.ApproxMedian: reduction(lambda x: sa.func.approx_percentile(x, 0.5)),
     }
 )
 

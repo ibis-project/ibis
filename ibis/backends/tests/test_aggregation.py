@@ -1010,7 +1010,7 @@ def test_corr_cov(
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "sqlite", "snowflake", "mssql", "druid"],
+    ["datafusion", "mysql", "sqlite", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
