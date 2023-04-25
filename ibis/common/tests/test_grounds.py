@@ -182,6 +182,26 @@ class MyExpr(Concrete):
     c: Map[str, Integer]
 
 
+def test_immutable():
+    class Foo(Immutable):
+        __slots__ = ("a", "b")
+
+        def __init__(self, a, b):
+            object.__setattr__(self, "a", a)
+            object.__setattr__(self, "b", b)
+
+    foo = Foo(1, 2)
+    assert foo.a == 1
+    assert foo.b == 2
+    with pytest.raises(AttributeError):
+        foo.a = 2
+    with pytest.raises(AttributeError):
+        foo.b = 3
+
+    assert copy.copy(foo) is foo
+    assert copy.deepcopy(foo) is foo
+
+
 def test_annotable():
     class InBetween(BetweenSimple):
         pass
@@ -307,11 +327,11 @@ def test_composition_of_annotable_and_immutable():
         upper = optional(is_int, default=None)
 
     obj = AnnImm(3, lower=0, upper=4)
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         obj.value = 1
 
     obj = ImmAnn(3, lower=0, upper=4)
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         obj.value = 1
 
 
@@ -715,15 +735,6 @@ def test_multiple_inheritance_optional_argument_order():
     )
 
 
-def test_immutability():
-    class Value(Annotable, Immutable):
-        a = is_int
-
-    op = Value(1)
-    with pytest.raises(TypeError):
-        op.a = 3
-
-
 class Value(Annotable):
     i = is_int
     j = attribute(is_int)
@@ -1071,7 +1082,7 @@ def test_concrete():
     assert obj.argnames == ("value", "lower", "upper")
 
     # immutable
-    with pytest.raises(TypeError):
+    with pytest.raises(AttributeError):
         obj.value = 11
 
     # hashable
