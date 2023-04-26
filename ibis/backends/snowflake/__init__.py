@@ -6,7 +6,6 @@ import json
 import os
 import tempfile
 import warnings
-import weakref
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import sqlalchemy as sa
@@ -286,35 +285,28 @@ $$ {defn["source"]} $$"""
         self._register_in_memory_tables(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
-        con = self.con.connect()
-        con.exec_driver_sql(
-            f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = 'ARROW'"
-        )
-        cursor = con.execute(sql)
-        con.exec_driver_sql(
-            f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = {self._default_connector_format!r}"
-        )
-        raw_cursor = cursor.cursor
         target_schema = expr.as_table().schema().to_pyarrow()
         target_columns = target_schema.names
-        reader = pa.RecordBatchReader.from_batches(
-            target_schema,
-            itertools.chain.from_iterable(
-                (
-                    t.rename_columns(target_columns)
-                    .cast(target_schema)
-                    .to_batches(max_chunksize=chunk_size)
+
+        def batch_producer(con):
+            with con.begin() as c:
+                c.exec_driver_sql(
+                    f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = 'ARROW'"
                 )
-                for t in raw_cursor.fetch_arrow_batches()
-            ),
+                with contextlib.closing(c.execute(sql)) as cur:
+                    con.exec_driver_sql(
+                        f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = {self._default_connector_format!r}"
+                    )
+                    yield from itertools.chain.from_iterable(
+                        t.rename_columns(target_columns)
+                        .cast(target_schema)
+                        .to_batches(max_chunksize=chunk_size)
+                        for t in cur.cursor.fetch_arrow_batches()
+                    )
+
+        return pa.RecordBatchReader.from_batches(
+            target_schema, batch_producer(self.con)
         )
-
-        def close(cursor=cursor, con=con):
-            cursor.close()
-            con.close()
-
-        weakref.finalize(reader, close)
-        return reader
 
     def _get_sqla_table(
         self,
