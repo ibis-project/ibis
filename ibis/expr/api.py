@@ -319,8 +319,13 @@ def memtable(
     data
         Any data accepted by the `pandas.DataFrame` constructor or a `pyarrow.Table`.
 
+        Examples of acceptable objects are a `pandas.DataFrame`, a `pyarrow.Table`,
+        a list of dicts of non-ibis Python objects, etc.
+        `ibis` objects, like `MapValue`, will result in an error.
+
         Do not depend on the underlying storage type (e.g., pyarrow.Table), it's subject
         to change across non-major releases.
+
     columns
         Optional [`Iterable`][typing.Iterable] of [`str`][str] column names.
     schema
