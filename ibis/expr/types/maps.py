@@ -396,7 +396,7 @@ def map(
     keys: Iterable[Any] | Mapping[Any, Any] | ArrayColumn,
     values: Iterable[Any] | ArrayColumn | None = None,
 ) -> MapValue:
-    """Create a map expression.
+    """Create a [map container object](https://docs.python.org/3/glossary.html#term-mapping).
 
     If the `keys` and `values` are Python literals, then the output will be a
     `MapScalar`. If the `keys` and `values` are expressions (`ArrayColumn`),
