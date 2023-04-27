@@ -72,9 +72,7 @@ def _default_cast_impl(arg, from_, to, translator=None):
 
 def _strftime_int(fmt):
     def translator(t, op):
-        # TODO(kszucs): avoid expr roundtrip, should be done in rewrite phase
-        new_expr = op.arg.to_expr().strftime(fmt).cast(dt.int32)
-        return t.translate(new_expr.op())
+        return sa.cast(sa.func.strftime(fmt, t.translate(op.arg)), sa.INT)
 
     return translator
 
@@ -271,6 +269,18 @@ def _arg_min_max(agg_func):
     return translate
 
 
+def _day_of_the_week_name(arg):
+    return sa.case(
+        (sa.func.strftime('%w', arg) == '0', 'Sunday'),
+        (sa.func.strftime('%w', arg) == '1', 'Monday'),
+        (sa.func.strftime('%w', arg) == '2', 'Tuesday'),
+        (sa.func.strftime('%w', arg) == '3', 'Wednesday'),
+        (sa.func.strftime('%w', arg) == '4', 'Thursday'),
+        (sa.func.strftime('%w', arg) == '5', 'Friday'),
+        (sa.func.strftime('%w', arg) == '6', 'Saturday'),
+    )
+
+
 operation_registry.update(
     {
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
@@ -332,6 +342,13 @@ operation_registry.update(
         ops.ExtractMillisecond: fixed_arity(
             lambda arg: (sa.func.strftime('%f', arg) * 1000) % 1000, 1
         ),
+        ops.DayOfWeekIndex: fixed_arity(
+            lambda arg: sa.cast(
+                sa.cast(sa.func.strftime('%w', arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
+            ),
+            1,
+        ),
+        ops.DayOfWeekName: fixed_arity(_day_of_the_week_name, 1),
         ops.TimestampNow: fixed_arity(lambda: sa.func.datetime("now"), 0),
         ops.RegexSearch: fixed_arity(sa.func._ibis_sqlite_regex_search, 2),
         ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
