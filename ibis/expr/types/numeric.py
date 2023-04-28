@@ -30,6 +30,22 @@ class NumericValue(Value):
         -------
         NumericValue
             A numeric value expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.negate()
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ Negate(values) ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ int64          │
+        ├────────────────┤
+        │              1 │
+        │              0 │
+        │             -1 │
+        └────────────────┘
         """
         op = self.op()
         try:
@@ -72,6 +88,45 @@ class NumericValue(Value):
         -------
         NumericValue
             The rounded expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1.22, 1.64, 2.15, 2.54]})
+        >>> t
+        ┏━━━━━━━━━┓
+        ┃ values  ┃
+        ┡━━━━━━━━━┩
+        │ float64 │
+        ├─────────┤
+        │    1.22 │
+        │    1.64 │
+        │    2.15 │
+        │    2.54 │
+        └─────────┘
+        >>> t.values.round()
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ Round(values) ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ int64         │
+        ├───────────────┤
+        │             1 │
+        │             2 │
+        │             2 │
+        │             3 │
+        └───────────────┘
+        >>> t.values.round(digits=1)
+        ┏━━━━━━━━━━━━━━━━━━┓
+        ┃ Round(values, 1) ┃
+        ┡━━━━━━━━━━━━━━━━━━┩
+        │ float64          │
+        ├──────────────────┤
+        │              1.2 │
+        │              1.6 │
+        │              2.2 │
+        │              2.5 │
+        └──────────────────┘
         """
         return ops.Round(self, digits).to_expr()
 
@@ -87,6 +142,38 @@ class NumericValue(Value):
         -------
         NumericValue
             Logarithm of `arg` with base `base`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> from math import e
+        >>> t = ibis.memtable({"values": [e, e**2, e**3]})
+        >>> t.values.log()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Log(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ float64     │
+        ├─────────────┤
+        │         1.0 │
+        │         2.0 │
+        │         3.0 │
+        └─────────────┘
+
+
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [10, 100, 1000]})
+        >>> t.values.log(base=10)
+        ┏━━━━━━━━━━━━━━━━━┓
+        ┃ Log(values, 10) ┃
+        ┡━━━━━━━━━━━━━━━━━┩
+        │ float64         │
+        ├─────────────────┤
+        │             1.0 │
+        │             2.0 │
+        │             3.0 │
+        └─────────────────┘
         """
         return ops.Log(self, base).to_expr()
 
@@ -108,6 +195,27 @@ class NumericValue(Value):
         -------
         NumericValue
             Clipped input
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": range(8)})
+        >>> t.values.clip(lower=3, upper=6)
+        ┏━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Clip(values, 3, 6) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━┩
+        │ int64              │
+        ├────────────────────┤
+        │                  3 │
+        │                  3 │
+        │                  3 │
+        │                  3 │
+        │                  4 │
+        │                  5 │
+        │                  6 │
+        │                  6 │
+        └────────────────────┘
         """
         if lower is None and upper is None:
             raise ValueError("at least one of lower and upper must be provided")
@@ -115,15 +223,72 @@ class NumericValue(Value):
         return ops.Clip(self, lower, upper).to_expr()
 
     def abs(self) -> NumericValue:
-        """Return the absolute value of `self`."""
+        """Return the absolute value of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 2, -3, 4]})
+        >>> t.values.abs()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Abs(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ int64       │
+        ├─────────────┤
+        │           1 │
+        │           2 │
+        │           3 │
+        │           4 │
+        └─────────────┘
+        """
         return ops.Abs(self).to_expr()
 
     def ceil(self) -> DecimalValue | IntegerValue:
-        """Return the ceiling of `self`."""
+        """Return the ceiling of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 1.1, 2, 2.1, 3.3]})
+        >>> t.values.ceil()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Ceil(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ int64        │
+        ├──────────────┤
+        │            1 │
+        │            2 │
+        │            2 │
+        │            3 │
+        │            4 │
+        └──────────────┘
+        """
         return ops.Ceil(self).to_expr()
 
     def degrees(self) -> NumericValue:
-        """Compute the degrees of `self` radians."""
+        """Compute the degrees of `self` radians.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> from math import pi
+        >>> t = ibis.memtable({"values": [0, pi / 2, pi, 3 * pi / 2, 2 * pi]})
+        >>> t.values.degrees()
+        ┏━━━━━━━━━━━━━━━━━┓
+        ┃ Degrees(values) ┃
+        ┡━━━━━━━━━━━━━━━━━┩
+        │ float64         │
+        ├─────────────────┤
+        │             0.0 │
+        │            90.0 │
+        │           180.0 │
+        │           270.0 │
+        │           360.0 │
+        └─────────────────┘
+        """
         return ops.Degrees(self).to_expr()
 
     rad2deg = degrees
@@ -135,37 +300,181 @@ class NumericValue(Value):
         -------
         NumericValue
             $e^\texttt{self}$
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": range(4)})
+        >>> t.values.exp()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Exp(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ float64     │
+        ├─────────────┤
+        │    1.000000 │
+        │    2.718282 │
+        │    7.389056 │
+        │   20.085537 │
+        └─────────────┘
         """
         return ops.Exp(self).to_expr()
 
     def floor(self) -> DecimalValue | IntegerValue:
-        """Return the floor of an expression."""
+        """Return the floor of an expression.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 1.1, 2, 2.1, 3.3]})
+        >>> t.values.floor()
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ Floor(values) ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ int64         │
+        ├───────────────┤
+        │             1 │
+        │             1 │
+        │             2 │
+        │             2 │
+        │             3 │
+        └───────────────┘
+
+        """
         return ops.Floor(self).to_expr()
 
     def log2(self) -> NumericValue:
-        r"""Compute $\log_{2}\left(\texttt{self}\right)$."""
+        r"""Compute $\log_{2}\left(\texttt{self}\right)$.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 4, 8]})
+        >>> t.values.log2()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Log2(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ float64      │
+        ├──────────────┤
+        │          0.0 │
+        │          1.0 │
+        │          2.0 │
+        │          3.0 │
+        └──────────────┘
+        """
         return ops.Log2(self).to_expr()
 
     def log10(self) -> NumericValue:
-        r"""Compute $\log_{10}\left(\texttt{self}\right)$."""
+        r"""Compute $\log_{10}\left(\texttt{self}\right)$.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 10, 100]})
+        >>> t.values.log10()
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ Log10(values) ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ float64       │
+        ├───────────────┤
+        │           0.0 │
+        │           1.0 │
+        │           2.0 │
+        └───────────────┘
+        """
         return ops.Log10(self).to_expr()
 
     def ln(self) -> NumericValue:
-        r"""Compute $\ln\left(\texttt{self}\right)$."""
+        r"""Compute $\ln\left(\texttt{self}\right)$.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2.718281828, 3]})
+        >>> t.values.ln()
+        ┏━━━━━━━━━━━━┓
+        ┃ Ln(values) ┃
+        ┡━━━━━━━━━━━━┩
+        │ float64    │
+        ├────────────┤
+        │   0.000000 │
+        │   1.000000 │
+        │   1.098612 │
+        └────────────┘
+        """
         return ops.Ln(self).to_expr()
 
     def radians(self) -> NumericValue:
-        """Compute radians from `self` degrees."""
+        """Compute radians from `self` degrees.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [0, 90, 180, 270, 360]})
+        >>> t.values.radians()
+        ┏━━━━━━━━━━━━━━━━━┓
+        ┃ Radians(values) ┃
+        ┡━━━━━━━━━━━━━━━━━┩
+        │ float64         │
+        ├─────────────────┤
+        │        0.000000 │
+        │        1.570796 │
+        │        3.141593 │
+        │        4.712389 │
+        │        6.283185 │
+        └─────────────────┘
+        """
         return ops.Radians(self).to_expr()
 
     deg2rad = radians
 
     def sign(self) -> NumericValue:
-        """Return the sign of the input."""
+        """Return the sign of the input.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 2, -3, 4]})
+        >>> t.values.sign()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Sign(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ int64        │
+        ├──────────────┤
+        │           -1 │
+        │            1 │
+        │           -1 │
+        │            1 │
+        └──────────────┘
+        """
         return ops.Sign(self).to_expr()
 
     def sqrt(self) -> NumericValue:
-        """Compute the square root of `self`."""
+        """Compute the square root of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 4, 9, 16]})
+        >>> t.values.sqrt()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Sqrt(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ float64      │
+        ├──────────────┤
+        │          1.0 │
+        │          2.0 │
+        │          3.0 │
+        │          4.0 │
+        └──────────────┘
+        """
         return ops.Sqrt(self).to_expr()
 
     def nullifzero(self) -> NumericValue:
@@ -177,35 +486,172 @@ class NumericValue(Value):
         return ops.ZeroIfNull(self).to_expr()
 
     def acos(self) -> NumericValue:
-        """Compute the arc cosine of `self`."""
+        """Compute the arc cosine of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.acos()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Acos(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ float64      │
+        ├──────────────┤
+        │     3.141593 │
+        │     1.570796 │
+        │     0.000000 │
+        └──────────────┘
+
+        """
         return ops.Acos(self).to_expr()
 
     def asin(self) -> NumericValue:
-        """Compute the arc sine of `self`."""
+        """Compute the arc sine of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.asin()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Asin(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ float64      │
+        ├──────────────┤
+        │    -1.570796 │
+        │     0.000000 │
+        │     1.570796 │
+        └──────────────┘
+        """
         return ops.Asin(self).to_expr()
 
     def atan(self) -> NumericValue:
-        """Compute the arc tangent of `self`."""
+        """Compute the arc tangent of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.atan()
+        ┏━━━━━━━━━━━━━━┓
+        ┃ Atan(values) ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ float64      │
+        ├──────────────┤
+        │    -0.785398 │
+        │     0.000000 │
+        │     0.785398 │
+        └──────────────┘
+        """
         return ops.Atan(self).to_expr()
 
     def atan2(self, other: NumericValue) -> NumericValue:
-        """Compute the two-argument version of arc tangent."""
+        """Compute the two-argument version of arc tangent.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.atan2(0)
+        ┏━━━━━━━━━━━━━━━━━━┓
+        ┃ Atan2(values, 0) ┃
+        ┡━━━━━━━━━━━━━━━━━━┩
+        │ float64          │
+        ├──────────────────┤
+        │        -1.570796 │
+        │         0.000000 │
+        │         1.570796 │
+        └──────────────────┘
+        """
         return ops.Atan2(self, other).to_expr()
 
     def cos(self) -> NumericValue:
-        """Compute the cosine of `self`."""
+        """Compute the cosine of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.cos()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Cos(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ float64     │
+        ├─────────────┤
+        │    0.540302 │
+        │    1.000000 │
+        │    0.540302 │
+        └─────────────┘
+        """
         return ops.Cos(self).to_expr()
 
     def cot(self) -> NumericValue:
-        """Compute the cotangent of `self`."""
+        """Compute the cotangent of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.cot()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Cot(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ float64     │
+        ├─────────────┤
+        │   -0.642093 │
+        │         inf │
+        │    0.642093 │
+        └─────────────┘
+        """
         return ops.Cot(self).to_expr()
 
     def sin(self) -> NumericValue:
-        """Compute the sine of `self`."""
+        """Compute the sine of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.sin()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Sin(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ float64     │
+        ├─────────────┤
+        │   -0.841471 │
+        │    0.000000 │
+        │    0.841471 │
+        └─────────────┘
+        """
         return ops.Sin(self).to_expr()
 
     def tan(self) -> NumericValue:
-        """Compute the tangent of `self`."""
+        """Compute the tangent of `self`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [-1, 0, 1]})
+        >>> t.values.tan()
+        ┏━━━━━━━━━━━━━┓
+        ┃ Tan(values) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ float64     │
+        ├─────────────┤
+        │   -1.557408 │
+        │    0.000000 │
+        │    1.557408 │
+        └─────────────┘
+        """
         return ops.Tan(self).to_expr()
 
     def __add__(self, other: NumericValue) -> NumericValue | NotImplemented:
