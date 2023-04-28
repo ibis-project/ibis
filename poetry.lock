@@ -2323,18 +2323,18 @@ mkdocs = "*"
 
 [[package]]
 name = "mkdocs-gen-files"
-version = "0.4.0"
+version = "0.5.0"
 description = "MkDocs plugin to programmatically generate documentation pages during the build"
 category = "dev"
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = ">=3.7"
 files = [
-    {file = "mkdocs-gen-files-0.4.0.tar.gz", hash = "sha256:377bff8ee8e93515916689f483d971643f83a94eed7e92318854da8f344f0163"},
-    {file = "mkdocs_gen_files-0.4.0-py3-none-any.whl", hash = "sha256:3241a4c947ecd11763ca77cc645015305bf71a0e1b9b886801c114fcf9971e71"},
+    {file = "mkdocs_gen_files-0.5.0-py3-none-any.whl", hash = "sha256:7ac060096f3f40bd19039e7277dd3050be9a453c8ac578645844d4d91d7978ea"},
+    {file = "mkdocs_gen_files-0.5.0.tar.gz", hash = "sha256:4c7cf256b5d67062a788f6b1d035e157fc1a9498c2399be9af5257d4ff4d19bc"},
 ]
 
 [package.dependencies]
-mkdocs = ">=1.0.3,<2.0.0"
+mkdocs = ">=1.0.3"
 
 [[package]]
 name = "mkdocs-git-revision-date-localized-plugin"
@@ -5068,4 +5068,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "a7b8427d88b99ce9d9365acb000e5bd04e92cf7d53748fb9f7f1fabfea51c392"
+content-hash = "f95627b2bdc8577c4aa7a1fa6cea6ef6a813d1d48152967ada604023fbbf57a8"
