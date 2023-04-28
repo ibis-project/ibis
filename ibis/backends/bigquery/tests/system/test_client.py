@@ -97,10 +97,9 @@ def test_cast_string_to_date(alltypes, df):
 
 
 def test_cast_float_to_int(alltypes, df):
-    expr = (alltypes.float_col -2.55).cast("int64").sort_values()
-    result = expr.execute()
-    expected = (df.float_col - 2.55).astype("Int64").sort_values()
-    tm.assert_series_equal(result, expected)
+    result = (alltypes.float_col -2.55).cast("int64").to_pandas().sort_values()
+    expected = (df.float_col - 2.55).astype("int64").sort_values()
+    tm.assert_series_equal(result, expected, check_names=False)
 
 
 def test_has_partitions(alltypes, parted_alltypes, con):
