@@ -56,6 +56,12 @@ def bigquery_cast_interval_to_integer(compiled_arg, from_, to):
     return f"EXTRACT({from_.resolution.upper()} from {compiled_arg})"
 
 
+@bigquery_cast.register(str, dt.Floating, dt.Integer)
+def bigquery_cast_floating_to_integer(compiled_arg, from_, to):
+    """Convert FLOAT64 to INT64 without rounding."""
+    return f"CAST(TRUNC({compiled_arg}) AS INT64)"
+
+
 @bigquery_cast.register(str, dt.DataType, dt.DataType)
 def bigquery_cast_generate(compiled_arg, from_, to):
     """Cast to desired type."""

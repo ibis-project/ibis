@@ -96,6 +96,13 @@ def test_cast_string_to_date(alltypes, df):
     tm.assert_series_equal(result, expected)
 
 
+def test_cast_float_to_int(alltypes, df):
+    expr = alltypes.float_col.sub(2.55).cast("int64").sort_values()
+    result = expr.execute()
+    expected = (df.float_col - 2.55).astype("Int64").sort_values()
+    tm.assert_series_equal(result, expected)
+
+
 def test_has_partitions(alltypes, parted_alltypes, con):
     col = con.partition_column
     assert col not in alltypes.columns
