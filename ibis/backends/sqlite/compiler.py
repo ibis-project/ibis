@@ -16,9 +16,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 from sqlalchemy.dialects import sqlite
 
-import ibis
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
     AlchemyCompiler,
     AlchemyExprTranslator,
@@ -34,34 +32,6 @@ class SQLiteExprTranslator(AlchemyExprTranslator):
 
 
 rewrites = SQLiteExprTranslator.rewrites
-
-
-@rewrites(ops.DayOfWeekIndex)
-def day_of_week_index(op):
-    # TODO(kszucs): avoid expr roundtrip
-    expr = op.arg.to_expr()
-    new_expr = ((expr.strftime('%w').cast(dt.int16) + 6) % 7).cast(dt.int16)
-    return new_expr.op()
-
-
-@rewrites(ops.DayOfWeekName)
-def day_of_week_name(op):
-    # TODO(kszucs): avoid expr roundtrip
-    expr = op.arg.to_expr()
-    new_expr = (
-        expr.day_of_week.index()
-        .case()
-        .when(0, 'Monday')
-        .when(1, 'Tuesday')
-        .when(2, 'Wednesday')
-        .when(3, 'Thursday')
-        .when(4, 'Friday')
-        .when(5, 'Saturday')
-        .when(6, 'Sunday')
-        .else_(ibis.NA)
-        .end()
-    )
-    return new_expr.op()
 
 
 class SQLiteCompiler(AlchemyCompiler):
