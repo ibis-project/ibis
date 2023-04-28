@@ -6,5 +6,5 @@ FROM (
     COUNT(*) AS count
   FROM ibis_testing.functional_alltypes AS t0
   GROUP BY
-    1
+    t0.string_col
 ) AS t1

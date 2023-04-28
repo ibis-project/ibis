@@ -9,4 +9,4 @@ FROM t0 AS t0
 WHERE
   t0.value = 42
 GROUP BY
-  1
+  t0.key
