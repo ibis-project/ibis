@@ -360,6 +360,16 @@ services:
     networks:
       - druid
 
+  oracle:
+    image: gvenzl/oracle-free:23
+    environment: 
+      ORACLE_PASSWORD: ibis
+      ORACLE_DATABASE: ibis_testing
+      APP_USER: ibis
+      APP_USER_PASSWORD: ibis
+    ports:
+      - 1521:1521
+
 networks:
   impala:
   mysql:
