@@ -64,6 +64,7 @@ google-cloud-bigquery = { version = ">=3,<4", optional = true }
 google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
 graphviz = { version = ">=0.16,<1", optional = true }
 impyla = { version = ">=0.17,<1", optional = true }
+oracledb = {version = "^1.3.1", optional = true}
 packaging = { version = ">=21.3,<24", optional = true }
 polars = { version = ">=0.14.18,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
@@ -81,8 +82,8 @@ shapely = { version = ">=1.6,<1.8|>=1.9,<3", optional = true }
 # appears to cause poetry's solver to get stuck
 #
 # also, we don't support arbitrarily old versions of this library
-snowflake-connector-python = { version = ">=2.7.10,<4", optional = true }
-snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
+# snowflake-connector-python = { version = ">=2.7.10,<4", optional = true }
+# snowflake-sqlalchemy = { version = ">=1.4.1,<2", optional = true }
 sqlalchemy = { version = ">=1.4,<3", optional = true }
 sqlalchemy-views = { version = ">=0.3.1,<1", optional = true }
 trino = { version = ">=0.319,<1", optional = true, extras = ["sqlalchemy"] }
@@ -112,7 +113,7 @@ pytest-repeat = ">=0.9.1,<0.10"
 pytest-snapshot = ">=0.9.0,<1"
 pytest-xdist = ">=2.3.0,<4"
 requests = ">=2,<3"
-sqlalchemy = ">=1.4,<3"
+sqlalchemy = ">=2,<3"
 
 [tool.poetry.group.docs.dependencies]
 griffe = ">=0.25.3,<1"
@@ -146,6 +147,7 @@ all = [
   "google-cloud-bigquery-storage",
   "graphviz",
   "impyla",
+  "oracle",
   "packaging",
   "polars",
   "psycopg2",
@@ -157,8 +159,8 @@ all = [
   "regex",
   "requests",
   "shapely",
-  "snowflake-connector-python",
-  "snowflake-sqlalchemy",
+  # "snowflake-connector-python",
+  # "snowflake-sqlalchemy",
   "sqlalchemy",
   "sqlalchemy-views",
   "trino",
@@ -184,15 +186,16 @@ geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
 mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
+oracle = ["sqlalchemy", "oracledb", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["polars"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
 pyspark = ["pyspark", "sqlalchemy"]
-snowflake = [
-  "snowflake-connector-python",
-  "snowflake-sqlalchemy",
-  "sqlalchemy-views",
-]
+# snowflake = [
+#   "snowflake-connector-python",
+#   "snowflake-sqlalchemy",
+#   "sqlalchemy-views",
+# ]
 sqlite = ["regex", "sqlalchemy", "sqlalchemy-views"]
 trino = ["trino", "sqlalchemy", "sqlalchemy-views"]
 # non-backend extras
@@ -209,11 +212,12 @@ duckdb = "ibis.backends.duckdb"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
 mssql = "ibis.backends.mssql"
+oracle = "ibis.backends.oracle"
 pandas = "ibis.backends.pandas"
 polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
 pyspark = "ibis.backends.pyspark"
-snowflake = "ibis.backends.snowflake"
+# snowflake = "ibis.backends.snowflake"
 sqlite = "ibis.backends.sqlite"
 trino = "ibis.backends.trino"
 
@@ -328,11 +332,12 @@ markers = [
   "impala: Apache Impala tests",
   "mysql: MySQL tests",
   "mssql: MS SQL Server tests",
+  "oracle: Oracle tests",
   "pandas: Pandas tests",
   "polars: Polars tests",
   "postgres: PostgreSQL tests",
   "pyspark: PySpark tests",
-  "snowflake: Snowflake tests",
+  # "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",
 ]
