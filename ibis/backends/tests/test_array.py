@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import sqlalchemy as sa
 import toolz
 from packaging.version import parse as parse_version
 
@@ -23,6 +24,11 @@ try:
 
 except ImportError:
     PolarsComputeError = None
+
+try:
+    from clickhouse_driver.dbapi.errors import OperationalError
+except ImportError:
+    OperationalError = None
 
 pytestmark = [
     pytest.mark.never(
@@ -164,7 +170,6 @@ builtin_array = toolz.compose(
         raises=com.OperationNotDefinedError,
     ),
     # someone just needs to implement these
-    pytest.mark.notimpl(["dask"], raises=KeyError),
     pytest.mark.notimpl(["datafusion"], raises=Exception),
     duckdb_0_4_0,
 )
@@ -191,10 +196,9 @@ unnest = toolz.compose(
     raises=AssertionError,
 )
 @pytest.mark.never(
-    ["bigquery"],
-    reason="doesn't support arrays of arrays",
-    raises=AssertionError,
+    ["bigquery"], reason="doesn't support arrays of arrays", raises=AssertionError
 )
+@pytest.mark.notimpl(["dask"], raises=AssertionError)
 def test_array_discovery_postgres(backend):
     t = backend.array_types
     expected = ibis.schema(
@@ -226,6 +230,7 @@ def test_array_discovery_postgres(backend):
     reason="doesn't support arrays of arrays",
     raises=AssertionError,
 )
+@pytest.mark.never(["dask"], raises=AssertionError, reason="allows nullable types")
 def test_array_discovery_clickhouse(backend):
     t = backend.array_types
     expected = ibis.schema(
@@ -315,6 +320,7 @@ def test_array_discovery_snowflake(backend):
 
 
 @unnest
+@pytest.mark.notimpl(["dask"], raises=ValueError)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -331,6 +337,7 @@ def test_unnest_simple(backend):
 
 @unnest
 @pytest.mark.notimpl("polars", raises=PolarsComputeError, reason="Series shape: (6,)")
+@pytest.mark.notimpl("dask", raises=com.OperationNotDefinedError)
 def test_unnest_complex(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -367,6 +374,7 @@ def test_unnest_complex(backend):
     raises=AssertionError,
 )
 @pytest.mark.notimpl("polars", raises=PolarsComputeError, reason="Series shape: (6,)")
+@pytest.mark.notimpl(["dask"], raises=ValueError)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -387,6 +395,7 @@ def test_unnest_idempotent(backend):
 
 @unnest
 @pytest.mark.notimpl("polars", raises=PolarsComputeError, reason="Series shape: (6,)")
+@pytest.mark.notimpl(["dask"], raises=ValueError)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -413,6 +422,7 @@ def test_unnest_no_nulls(backend):
 
 @unnest
 @pytest.mark.notimpl("polars", raises=AssertionError, reason="Series are different")
+@pytest.mark.notimpl("dask", raises=ValueError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -443,12 +453,11 @@ def test_unnest_default_name(backend):
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["dask", "datafusion", 'snowflake'],
-    raises=AttributeError,
-    reason="AttributeError: array_types",
+    ["datafusion"], raises=Exception, reason="array_types table isn't defined"
 )
-def test_array_slice(con, start, stop):
-    array_types = con.tables.array_types
+@pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
+def test_array_slice(backend, start, stop):
+    array_types = backend.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
     result = expr.execute()
     expected = pd.DataFrame(
@@ -524,9 +533,7 @@ def test_array_filter(backend, con):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["datafusion"], raises=Exception)
-@pytest.mark.notimpl(
-    ["dask"], raises=KeyError, reason="array_types table isn't defined"
-)
+@pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(["impala"], reason="array_types table isn't defined")
 @pytest.mark.notimpl(
     ["sqlite", "mysql"],
@@ -679,3 +686,24 @@ def test_array_union(con):
 
     for i, (lhs, rhs) in enumerate(zip(result, expected)):
         assert lhs == rhs, f"row {i:d} differs"
+
+
+@unnest
+@pytest.mark.notimpl(
+    ["clickhouse"],
+    raises=OperationalError,
+    reason="ClickHouse won't accept dicts for struct type values",
+)
+@pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules: ...",
+)
+def test_unnest_struct(con):
+    data = {"value": [[{'a': 1}, {'a': 2}], [{'a': 3}, {'a': 4}]]}
+    t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
+    expr = t.value.unnest()
+    result = con.execute(expr)
+    expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
+    tm.assert_series_equal(result, expected)
