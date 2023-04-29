@@ -2800,7 +2800,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def pivot_longer(
         self,
-        cols: str | s.Selector,
+        col: str | s.Selector,
         *,
         names_to: str | Iterable[str] = "name",
         names_pattern: str | re.Pattern = r"(.+)",
@@ -2814,8 +2814,8 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        cols
-            String column names or selectors.
+        col
+            String column name or selector.
         names_to
             A string or iterable of strings indicating how to name the new
             pivoted columns.
@@ -3066,7 +3066,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         import ibis.selectors as s
 
-        pivot_sel = s.c(cols) if isinstance(cols, str) else cols
+        pivot_sel = s.c(col) if isinstance(col, str) else col
 
         pivot_cols = pivot_sel.expand(self)
         if not pivot_cols:
