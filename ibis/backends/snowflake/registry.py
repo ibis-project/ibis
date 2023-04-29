@@ -6,9 +6,7 @@ import numpy as np
 import sqlalchemy as sa
 from snowflake.sqlalchemy import ARRAY, OBJECT, VARIANT
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.sql import sqltypes
 from sqlalchemy.sql.elements import Cast
-from sqlalchemy.sql.functions import GenericFunction
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -163,29 +161,21 @@ def compiles_object_type(element, compiler, **kw):
     return type(element).__name__.upper()
 
 
-class _flatten(GenericFunction):
-    def __init__(self, arg, *, type: sa.types.TypeEngine) -> None:
-        super().__init__(arg)
-        self.type = sqltypes.TableValueType(sa.Column("value", type))
-
-
-@compiles(_flatten, "snowflake")
-def compiles_flatten(element, compiler, **kw):
-    arg = compiler.function_argspec(element, **kw)
-    return f"FLATTEN(INPUT => {arg}, MODE => 'ARRAY')"
-
-
 def _unnest(t, op):
     arg = t.translate(op.arg)
     # HACK: https://community.snowflake.com/s/question/0D50Z000086MVhnSAG/has-anyone-found-a-way-to-unnest-an-array-without-loosing-the-null-values
     sep = util.guid()
-    sqla_type = t.get_sqla_type(op.output_dtype)
-    col = (
-        _flatten(sa.func.split(sa.func.array_to_string(arg, sep), sep), type=sqla_type)
+    col = sa.func.nullif(
+        sa.func.split_to_table(sa.func.array_to_string(arg, sep), sep)
+        .table_valued("value")  # seq, index, value is supported but we only need value
         .lateral()
-        .c["value"]
+        .c["value"],
+        "",
     )
-    return sa.cast(sa.func.nullif(col, ""), type_=sqla_type)
+    return sa.cast(
+        sa.func.coalesce(sa.func.try_parse_json(col), sa.func.to_variant(col)),
+        type_=t.get_sqla_type(op.output_dtype),
+    )
 
 
 def _group_concat(t, op):

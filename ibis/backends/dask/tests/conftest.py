@@ -9,7 +9,7 @@ import pytest
 
 import ibis
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
-from ibis.backends.tests.data import win
+from ibis.backends.tests.data import array_types, win
 
 dd = pytest.importorskip("dask.dataframe")
 
@@ -67,6 +67,7 @@ class TestConf(PandasTest):
                     npartitions=NPARTITIONS,
                 ),
                 "win": dd.from_pandas(win, npartitions=NPARTITIONS),
+                "array_types": dd.from_pandas(array_types, npartitions=NPARTITIONS),
             }
         )
 
