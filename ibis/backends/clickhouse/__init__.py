@@ -93,7 +93,7 @@ class Backend(BaseBackend):
 
     def __init__(self, *args, external_tables=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self._external_tables = toolz.valmap(
+        self._static_external_tables = toolz.valmap(
             lambda v: ibis.memtable(v).op(), external_tables or {}
         )
 
@@ -214,9 +214,10 @@ class Backend(BaseBackend):
         # This won't start a connection until `cursor` is called, so in
         # the common case this is cheap.
         self.con = clickhouse_driver.dbapi.connect(**options)
-        self._external_tables = toolz.valmap(
+        self._static_external_tables = toolz.valmap(
             lambda v: ibis.memtable(v).op(), external_tables or {}
         )
+        self._external_tables = {}
 
     @property
     def version(self) -> str:
@@ -255,6 +256,7 @@ class Backend(BaseBackend):
         """Merge registered external tables with any new external tables."""
         external_tables_list = []
         for name, obj in toolz.merge(
+            self._static_external_tables,
             self._external_tables,
             toolz.valmap(lambda v: ibis.memtable(v).op(), external_tables or {}),
         ).items():
@@ -442,8 +444,11 @@ class Backend(BaseBackend):
 
         ibis.util.log(query)
         cursor.set_types_check(True)
-        cursor.execute(query)
-        return cursor
+        try:
+            cursor.execute(query)
+            return cursor
+        finally:
+            self._external_tables.clear()
 
     def fetch_from_cursor(self, cursor, schema):
         import pandas as pd
