@@ -1402,34 +1402,64 @@ def wrap_case_result(raw, expr):
     return result
 
 
-@execute_node.register(ops.SearchedCase, tuple, tuple, object)
-def execute_searched_case(op, whens, thens, otherwise, **kwargs):
-    whens = [execute(arg, **kwargs) for arg in whens]
-    thens = [execute(arg, **kwargs) for arg in thens]
+def _build_select(op, whens, thens, otherwise, func=None, **kwargs):
+    if func is None:
+        func = lambda x: x
+
+    whens_ = []
+    grouped = 0
+    for when in whens:
+        res = execute(when, **kwargs)
+        obj = getattr(res, "obj", res)
+        grouped += obj is not res
+        whens_.append(obj)
+
+    thens_ = []
+    for then in thens:
+        res = execute(then, **kwargs)
+        obj = getattr(res, "obj", res)
+        grouped += obj is not res
+        thens_.append(obj)
+
     if otherwise is None:
         otherwise = np.nan
-    raw = np.select(whens, thens, otherwise)
+
+    raw = np.select(func(whens_), thens_, otherwise)
+
+    if grouped:
+        return pd.Series(raw).groupby(get_grouping(res.grouper.groupings))
     return wrap_case_result(raw, op.to_expr())
+
+
+@execute_node.register(ops.SearchedCase, tuple, tuple, object)
+def execute_searched_case(op, whens, thens, otherwise, **kwargs):
+    return _build_select(op, whens, thens, otherwise, **kwargs)
 
 
 @execute_node.register(ops.SimpleCase, object, tuple, tuple, object)
 def execute_simple_case_scalar(op, value, whens, thens, otherwise, **kwargs):
-    whens = [execute(arg, **kwargs) for arg in whens]
-    thens = [execute(arg, **kwargs) for arg in thens]
-    if otherwise is None:
-        otherwise = np.nan
-    raw = np.select(np.asarray(whens) == value, thens, otherwise)
-    return wrap_case_result(raw, op.to_expr())
+    value = getattr(value, "obj", value)
+    return _build_select(
+        op,
+        whens,
+        thens,
+        otherwise,
+        func=lambda whens: np.asarray(whens) == value,
+        **kwargs,
+    )
 
 
-@execute_node.register(ops.SimpleCase, pd.Series, tuple, tuple, object)
+@execute_node.register(ops.SimpleCase, (pd.Series, SeriesGroupBy), tuple, tuple, object)
 def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
-    whens = [execute(arg, **kwargs) for arg in whens]
-    thens = [execute(arg, **kwargs) for arg in thens]
-    if otherwise is None:
-        otherwise = np.nan
-    raw = np.select([value == when for when in whens], thens, otherwise)
-    return wrap_case_result(raw, op.to_expr())
+    value = getattr(value, "obj", value)
+    return _build_select(
+        op,
+        whens,
+        thens,
+        otherwise,
+        func=lambda whens: [value == when for when in whens],
+        **kwargs,
+    )
 
 
 @execute_node.register(ops.Distinct, pd.DataFrame)

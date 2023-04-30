@@ -7,6 +7,7 @@ import sqlalchemy as sa
 import sqlglot
 from pytest import mark, param
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
@@ -1333,3 +1334,15 @@ def test_agg_name_in_output_column(alltypes):
     df = query.execute()
     assert "min" in df.columns[0].lower()
     assert "max" in df.columns[1].lower()
+
+
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+def test_grouped_case(backend, con):
+    table = ibis.memtable({"key": [1, 1, 2, 2], "value": [10, 30, 20, 40]})
+
+    case_expr = ibis.case().when(table.value < 25, table.value).else_(ibis.null()).end()
+
+    expr = table.group_by("key").aggregate(mx=case_expr.max()).order_by("key")
+    result = con.execute(expr)
+    expected = pd.DataFrame({"key": [1, 2], "mx": [10, 20]})
+    backend.assert_frame_equal(result, expected)
