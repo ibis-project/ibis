@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import ast
-import contextlib
 import json
+from contextlib import closing, suppress
 from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
 import clickhouse_driver
@@ -146,7 +146,7 @@ class Backend(BaseBackend):
         return self.connect(**kwargs)
 
     def _convert_kwargs(self, kwargs):
-        with contextlib.suppress(KeyError):
+        with suppress(KeyError):
             kwargs["secure"] = bool(ast.literal_eval(kwargs["secure"]))
 
     def do_connect(
@@ -348,12 +348,9 @@ class Backend(BaseBackend):
     ) -> Iterable[list]:
         self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params)
-        cursor = self.raw_sql(sql)
-        try:
+        with closing(self.raw_sql(sql)) as cursor:
             while batch := cursor.fetchmany(chunk_size):
                 yield batch
-        finally:
-            cursor.close()
 
     def execute(
         self,
@@ -367,10 +364,8 @@ class Backend(BaseBackend):
         table_expr = expr.as_table()
         sql = self.compile(table_expr, limit=limit, **kwargs)
         self._log(sql)
-        result = self.fetch_from_cursor(
-            self.raw_sql(sql, external_tables=external_tables),
-            table_expr.schema(),
-        )
+        with closing(self.raw_sql(sql, external_tables=external_tables)) as cursor:
+            result = self.fetch_from_cursor(cursor, table_expr.schema())
         if isinstance(expr, ir.Scalar):
             return result.iloc[0, 0]
         elif isinstance(expr, ir.Column):
@@ -446,6 +441,7 @@ class Backend(BaseBackend):
             cursor.set_external_table(**kws)
 
         ibis.util.log(query)
+        cursor.set_types_check(True)
         cursor.execute(query)
         return cursor
 
@@ -507,21 +503,27 @@ class Backend(BaseBackend):
         self, name: str, *, force: bool = False, engine: str = "Atomic"
     ) -> None:
         if_not_exists = "IF NOT EXISTS " * force
-        self.raw_sql(f"CREATE DATABASE {if_not_exists}{name} ENGINE = {engine}")
+        with closing(
+            self.raw_sql(f"CREATE DATABASE {if_not_exists}{name} ENGINE = {engine}")
+        ):
+            pass
 
     def drop_database(self, name: str, *, force: bool = False) -> None:
         if_exists = "IF EXISTS " * force
-        self.raw_sql(f"DROP DATABASE {if_exists}{name}")
+        with closing(self.raw_sql(f"DROP DATABASE {if_exists}{name}")):
+            pass
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
         ident = self._fully_qualified_name(name, database)
-        self.raw_sql(f"TRUNCATE TABLE {ident}")
+        with closing(self.raw_sql(f"TRUNCATE TABLE {ident}")):
+            pass
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
         ident = self._fully_qualified_name(name, database)
-        self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")
+        with closing(self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")):
+            pass
 
     def create_table(
         self,
@@ -616,7 +618,8 @@ class Backend(BaseBackend):
             query = self.compile(obj)
             code += f" AS {query}"
 
-        self.raw_sql(code)
+        with closing(self.raw_sql(code)):
+            pass
         return self.table(name, database=database)
 
     def create_view(
@@ -631,7 +634,8 @@ class Backend(BaseBackend):
         replace = "OR REPLACE " * overwrite
         query = self.compile(obj)
         code = f"CREATE {replace}VIEW {qualname} AS {query}"
-        self.raw_sql(code)
+        with closing(self.raw_sql(code)):
+            pass
         return self.table(name, database=database)
 
     def drop_view(
@@ -639,4 +643,5 @@ class Backend(BaseBackend):
     ) -> None:
         name = self._fully_qualified_name(name, database)
         if_exists = "IF EXISTS " * force
-        self.raw_sql(f"DROP VIEW {if_exists}{name}")
+        with closing(self.raw_sql(f"DROP VIEW {if_exists}{name}")):
+            pass
