@@ -74,7 +74,7 @@ def test_create_table_with_location_execute(
 
 def test_drop_table_not_exist(con):
     non_existent_table = f'ibis_table_{util.guid()}'
-    with pytest.raises(Exception):
+    with pytest.raises(HS2Error):
         con.drop_table(non_existent_table)
     con.drop_table(non_existent_table, force=True)
 
