@@ -1209,9 +1209,7 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
             "gt",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "dask",
-                    ],
+                    ["dask"],
                     raises=ValueError,
                     reason="Metadata inference failed in `gt`.",
                 ),
@@ -1226,9 +1224,7 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
             "ge",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "dask",
-                    ],
+                    ["dask"],
                     raises=ValueError,
                     reason="Metadata inference failed in `ge`.",
                 ),
@@ -1243,9 +1239,7 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
             "lt",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "dask",
-                    ],
+                    ["dask"],
                     raises=ValueError,
                     reason="Metadata inference failed in `lt`.",
                 ),
@@ -1260,9 +1254,7 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
             "le",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "dask",
-                    ],
+                    ["dask"],
                     raises=ValueError,
                     reason="Metadata inference failed in `le`.",
                 ),
@@ -1286,6 +1278,11 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     ["druid"],
     raises=AttributeError,
     reason="Can only use .dt accessor with datetimelike values",
+)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=BaseException,  # pyo3_runtime.PanicException is not a subclass of Exception
+    reason="failed to determine supertype of datetime[ns, UTC] and datetime[ns]",
 )
 def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name):
     ts = np.datetime64('2010-03-02 00:00:00.000123')
