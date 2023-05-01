@@ -35,7 +35,7 @@ array_literal = param(
     ibis.array([1]),
     marks=[
         mark.never(
-            ["mysql", "mssql"],
+            ["mysql", "mssql", "oracle"],
             raises=sa.exc.CompileError,
             reason="arrays not supported in the backend",
         ),
@@ -56,7 +56,7 @@ no_structs = mark.never(
     reason="structs not supported in the backend",
 )
 no_struct_literals = mark.notimpl(
-    ["postgres", "mssql"], reason="struct literals are not yet implemented"
+    ["postgres", "mssql", "oracle"], reason="struct literals are not yet implemented"
 )
 not_sql = mark.never(
     ["pandas", "dask"],
@@ -149,7 +149,7 @@ def test_isin_bug(con, snapshot):
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
 )
 @pytest.mark.notimpl(
-    ["bigquery"],
+    ["bigquery", "oracle"],
     reason="unnest not yet implemented",
     raises=exc.OperationNotDefinedError,
 )

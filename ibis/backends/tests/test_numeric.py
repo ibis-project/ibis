@@ -255,6 +255,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 'mssql': 1.1,
                 "druid": 1.1,
                 'datafusion': decimal.Decimal('1.1'),
+                'oracle': 1.1,
             },
             {
                 'bigquery': "NUMERIC",
@@ -301,6 +302,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 'mssql': 1.1,
                 'druid': 1.1,
                 'datafusion': decimal.Decimal('1.1'),
+                'oracle': 1.1,
             },
             {
                 'bigquery': "NUMERIC",
@@ -343,6 +345,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 'mssql': 1.1,
                 'druid': 1.1,
+                'oracle': 1.1,
             },
             {
                 'bigquery': "BIGNUMERIC",
@@ -440,6 +443,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.broken(["datafusion"], raises=ValueError),
+                pytest.mark.broken(
+                    ['oracle'],
+                    "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
+                    raises=sa.exc.DatabaseError,
+                ),
             ],
             id="decimal-infinity+",
         ),
@@ -510,6 +518,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.broken(["datafusion"], raises=ValueError),
+                pytest.mark.broken(
+                    ['oracle'],
+                    "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
+                    raises=sa.exc.DatabaseError,
+                ),
             ],
             id="decimal-infinity-",
         ),
@@ -591,6 +604,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.broken(["datafusion"], raises=ValueError),
+                pytest.mark.broken(
+                    ['oracle'],
+                    "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
+                    raises=sa.exc.DatabaseError,
+                ),
             ],
             id="decimal-NaN",
         ),
@@ -702,7 +720,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     ],
 )
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "datafusion", "mssql"],
+    ["mysql", "sqlite", "datafusion", "mssql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.xfail(
@@ -938,6 +956,11 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Oracle SIGN function has different behavior for BINARY_FLOAT vs NUMERIC",
+                ),
             ],
         ),
         param(
@@ -947,6 +970,11 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Oracle SIGN function has different behavior for BINARY_FLOAT vs NUMERIC",
                 ),
             ],
         ),
@@ -1181,10 +1209,46 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.parametrize(
     'column',
     [
-        'tinyint_col',
-        'smallint_col',
-        'int_col',
-        'bigint_col',
+        param(
+            'tinyint_col',
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                )
+            ],
+        ),
+        param(
+            'smallint_col',
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                )
+            ],
+        ),
+        param(
+            'int_col',
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                )
+            ],
+        ),
+        param(
+            'bigint_col',
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                )
+            ],
+        ),
         param(
             'float_col',
             marks=[
@@ -1232,6 +1296,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
                 "duckdb": None,
                 "sqlite": None,
                 "mssql": None,
+                "oracle": 38,
             },
             {
                 'postgres': None,
@@ -1241,6 +1306,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
                 "duckdb": None,
                 "sqlite": None,
                 "mssql": None,
+                "oracle": 0,
             },
         )
     ],
@@ -1379,6 +1445,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
     ],
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -1414,6 +1481,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     ],
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pyspark_no_bitshift
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
@@ -1444,6 +1512,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     [param(4, L(2), id="int_col"), param(L(4), 2, id="col_int")],
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
     result = con.execute(expr)
@@ -1452,6 +1521,7 @@ def test_bitwise_scalars(con, op, left, right):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -1460,6 +1530,7 @@ def test_bitwise_not_scalar(con):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()

@@ -22,6 +22,7 @@ pytestmark = pytest.mark.notimpl(
         "mssql",
         "trino",
         "druid",
+        "oracle",
     ]
 )
 

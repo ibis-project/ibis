@@ -102,13 +102,20 @@ def test_query_schema(ddl_backend, expr_fn, expected):
     assert schema.equals(expected)
 
 
+_LIMIT = {
+    "oracle": "FETCH FIRST 10 ROWS ONLY",
+}
+
+
 @pytest.mark.notimpl(["datafusion", "snowflake", "polars", "mssql"])
 @pytest.mark.notyet(["sqlite"])
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
-    expr = con.sql(f"SELECT * FROM {table} LIMIT 10")
+    limit = _LIMIT.get(backend.name(), "LIMIT 10")
+    expr = con.sql(f"SELECT * FROM {table} {limit}")
     result = expr.execute()
     assert len(result) == 10
 
@@ -147,7 +154,7 @@ def tmpcon(alchemy_con):
     return alchemy_con._from_url(alchemy_con.con.url)
 
 
-@mark.notimpl(["trino", "druid"])
+@mark.notimpl(["trino", "druid", "oracle"])
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
@@ -181,6 +188,7 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "duckdb",
         "mysql",
         "pandas",
+        "oracle",
         "postgres",
         "sqlite",
         "snowflake",
@@ -385,6 +393,11 @@ def test_insert_overwrite_from_expr(
 @pytest.mark.notyet(
     ["trino"], reason="memory connector doesn't allow writing to tables"
 )
+@pytest.mark.notyet(
+    "oracle",
+    reason="No support for in-place multirow inserts",
+    raises=sa.exc.CompileError,
+)
 def test_insert_overwrite_from_list(
     alchemy_con,
     employee_data_1_temp_table,
@@ -428,12 +441,13 @@ def test_list_databases(alchemy_con):
         "duckdb": {"information_schema", "main"},
         "snowflake": {"IBIS_TESTING"},
         "trino": {"default"},
+        "oracle": set(),
     }
     assert test_databases[alchemy_con.name] <= set(alchemy_con.list_databases())
 
 
 @pytest.mark.never(
-    ["bigquery", "postgres", "mssql", "mysql", "snowflake"],
+    ["bigquery", "postgres", "mssql", "mysql", "snowflake", "oracle"],
     reason="backend does not support client-side in-memory tables",
     raises=(sa.exc.OperationalError, TypeError),
 )
@@ -1026,6 +1040,7 @@ def test_set_backend_url(url, monkeypatch):
 @pytest.mark.notimpl(
     ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
+@pytest.mark.broken(["oracle"], reason="oracle doesn't like `DESCRIBE` from sqlalchemy")
 @pytest.mark.broken(["druid"], reason="sqlalchemy dialect is broken")
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
@@ -1037,7 +1052,9 @@ def test_create_table_timestamp(con, temp_table):
     assert result == schema
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid", "oracle"]
+)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
@@ -1057,7 +1074,9 @@ def test_persist_expression_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 1
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid", "oracle"]
+)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
@@ -1071,7 +1090,9 @@ def test_persist_expression(alltypes):
     tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid", "oracle"]
+)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
@@ -1087,7 +1108,9 @@ def test_persist_expression_contextmanager(alltypes):
         tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid", "oracle"]
+)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
@@ -1106,7 +1129,9 @@ def test_persist_expression_contextmanager_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 0
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid", "oracle"]
+)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
@@ -1142,7 +1167,9 @@ def test_persist_expression_multiple_refs(con, alltypes):
     assert name2 not in con.list_tables()
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid", "oracle"]
+)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )

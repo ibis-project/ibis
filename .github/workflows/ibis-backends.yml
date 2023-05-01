@@ -612,6 +612,12 @@ jobs:
             title: DuckDB
             extras:
               - duckdb
+          - name: oracle
+            title: oracle
+            extras:
+              - oracle
+            services:
+              - oracle
     steps:
       - name: checkout
         uses: actions/checkout@v3

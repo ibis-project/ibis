@@ -199,7 +199,10 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumany',
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
+            ],
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -213,6 +216,7 @@ def calc_zscore(s):
             marks=[
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
             ],
         ),
         param(
@@ -224,7 +228,10 @@ def calc_zscore(s):
                 .astype(bool)
             ),
             id='cumall',
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
+            ],
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
@@ -238,6 +245,7 @@ def calc_zscore(s):
             marks=[
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
             ],
         ),
         param(
@@ -325,6 +333,7 @@ def test_grouped_bounded_expanding_window(
                         "impala",
                         "mssql",
                         "mysql",
+                        "oracle",
                         "postgres",
                         "sqlite",
                         "snowflake",
@@ -476,6 +485,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
                         "impala",
                         "mssql",
                         "mysql",
+                        "oracle",
                         "postgres",
                         "sqlite",
                         "snowflake",
@@ -599,6 +609,7 @@ def test_simple_ungrouped_unbound_following_window(
                         "impala",
                         "mssql",
                         "mysql",
+                        "oracle",
                         "postgres",
                         "sqlite",
                         "snowflake",
@@ -628,6 +639,7 @@ def test_simple_ungrouped_unbound_following_window(
                         "impala",
                         "mssql",
                         "mysql",
+                        "oracle",
                         "postgres",
                         "sqlite",
                         "snowflake",
@@ -658,6 +670,7 @@ def test_simple_ungrouped_unbound_following_window(
                     reason="this isn't actually broken: the backend result is equal up to ordering",
                     raises=AssertionError,
                 ),
+                pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["pyspark"],
@@ -696,6 +709,7 @@ def test_simple_ungrouped_unbound_following_window(
                     ),
                     raises=AssertionError,
                 ),
+                pytest.mark.broken(["oracle"], raises=AssertionError),
                 pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["pyspark"],
@@ -724,6 +738,7 @@ def test_simple_ungrouped_unbound_following_window(
                         "impala",
                         "mssql",
                         "mysql",
+                        "oracle",
                         "postgres",
                         "pyspark",
                         "sqlite",
@@ -753,6 +768,7 @@ def test_simple_ungrouped_unbound_following_window(
                     "impala",
                     "mssql",
                     "mysql",
+                    "oracle",
                     "postgres",
                     "pyspark",
                     "sqlite",

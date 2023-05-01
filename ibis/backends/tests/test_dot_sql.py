@@ -10,8 +10,8 @@ table_dot_sql_notimpl = pytest.mark.notimpl(
 )
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
 dot_sql_notyet = pytest.mark.notyet(
-    ["snowflake"],
-    reason="snowflake column names are case insensitive",
+    ["snowflake", "oracle"],
+    reason="snowflake and oracle column names are case insensitive",
 )
 dot_sql_never = pytest.mark.never(
     ["dask", "pandas", "polars"],
@@ -179,6 +179,7 @@ def test_table_dot_sql_repr(con):
 @table_dot_sql_notimpl
 @dot_sql_notimpl
 @dot_sql_never
+@pytest.mark.notimpl(["oracle"])
 def test_table_dot_sql_does_not_clobber_existing_tables(con, temp_table):
     t = con.create_table(temp_table, schema=ibis.schema(dict(a="string")))
     expr = t.sql("SELECT 1 as x FROM functional_alltypes")
@@ -189,7 +190,7 @@ def test_table_dot_sql_does_not_clobber_existing_tables(con, temp_table):
 @table_dot_sql_notimpl
 @dot_sql_notimpl
 @dot_sql_never
-@pytest.mark.notimpl(["trino"])
+@pytest.mark.notimpl(["trino", "oracle"])
 def test_dot_sql_alias_with_params(backend, alltypes, df):
     t = alltypes
     x = t.select(x=t.string_col + " abc").alias("foo")

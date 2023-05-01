@@ -88,9 +88,14 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         'day',
         param(
             'day_of_year',
-            marks=pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
+            marks=[
+                pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
+                pytest.mark.notyet(["oracle"], raises=com.OperationNotDefinedError),
+            ],
         ),
-        'quarter',
+        param(
+            'quarter', marks=pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
+        ),
         'hour',
         'minute',
         'second',
@@ -161,6 +166,11 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
                 ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-30076: invalid extract field for extract source",
+                ),
             ],
         ),
         param(
@@ -172,6 +182,11 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     ["druid"],
                     raises=sa.exc.CompileError,
                     reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
+                ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-30076: invalid extract field for extract source",
                 ),
             ],
         ),
@@ -185,6 +200,11 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason="No literal value renderer is available for literal value \"datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)\" with datatype DATETIME",
                 ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-30076: invalid extract field for extract source",
+                ),
             ],
         ),
         param(
@@ -192,7 +212,9 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             359,
             id='millisecond',
             marks=[
-                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["druid", "oracle"], raises=com.OperationNotDefinedError
+                ),
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=com.UnsupportedOperationError,
@@ -205,7 +227,9 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             1,
             id='day_of_week_index',
             marks=[
-                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["druid", "oracle"], raises=com.OperationNotDefinedError
+                ),
             ],
         ),
         param(
@@ -214,7 +238,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id='day_of_week_full_name',
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid"], raises=com.OperationNotDefinedError
+                    ["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -226,7 +250,7 @@ def test_timestamp_extract_literal(con, func, expected):
     assert con.execute(func(value).name("tmp")) == expected
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -247,7 +271,7 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -263,7 +287,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -421,7 +445,7 @@ PANDAS_UNITS = {
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -466,9 +490,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
     ["polars", "druid"], reason="snaps to the UNIX epoch", raises=AssertionError
 )
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-    ],
+    ["datafusion", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -654,7 +676,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "trino", "mssql"],
+    ["datafusion", "sqlite", "snowflake", "trino", "mssql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -700,6 +722,7 @@ def test_integer_to_interval_timestamp(
         "mssql",
         "trino",
         "druid",
+        "oracle",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -884,7 +907,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "trino"],
+    ["datafusion", "mssql", "trino", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
@@ -1139,7 +1162,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "impala", "sqlite", "mssql", "trino"],
+    ["datafusion", "impala", "sqlite", "mssql", "trino", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -1302,7 +1325,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "mssql", "trino"],
+    ["datafusion", "sqlite", "snowflake", "mssql", "trino", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1323,7 +1346,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     ['pyspark'], reason="PySpark does not support casting columns to intervals"
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "mssql", "trino"],
+    ["datafusion", "sqlite", "snowflake", "mssql", "trino", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -1424,6 +1447,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
     [
         "datafusion",
         "mssql",
+        "oracle",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1495,7 +1519,7 @@ unit_factors = {'s': 10**9, 'ms': 10**6, 'us': 10**3, 'ns': 1}
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "postgres", "sqlite", "druid"],
+    ["datafusion", "mysql", "postgres", "sqlite", "druid", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 def test_integer_to_timestamp(backend, con, unit):
@@ -1583,6 +1607,7 @@ def test_integer_to_timestamp(backend, con, unit):
         'datafusion',
         'mssql',
         'druid',
+        'oracle',
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1609,7 +1634,7 @@ def test_string_to_timestamp(alltypes, fmt):
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", 'druid'], raises=com.OperationNotDefinedError
+    ["datafusion", "mssql", 'druid', "oracle"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
@@ -1621,7 +1646,9 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(["datafusion", "mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["datafusion", "mssql", "oracle"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1664,7 +1691,7 @@ def test_day_of_week_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -1692,7 +1719,7 @@ def test_day_of_week_column_group_by(
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "druid"], raises=com.OperationNotDefinedError
+    ["datafusion", "mssql", "druid", "oracle"], raises=com.OperationNotDefinedError
 )
 def test_now(con):
     expr = ibis.now()
@@ -1707,7 +1734,9 @@ def test_now(con):
 
 @pytest.mark.notimpl(["dask"], reason="Limit #2553", raises=AssertionError)
 @pytest.mark.notimpl(["polars"], reason="assert 1 == 5", raises=AssertionError)
-@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError
+)
 def test_now_from_projection(alltypes):
     n = 5
     expr = alltypes[[ibis.now().name('ts')]].limit(n)
@@ -1741,6 +1770,9 @@ DATE_BACKEND_TYPES = {
 )
 @pytest.mark.notimpl(
     ['druid'], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
+)
+@pytest.mark.notimpl(
+    ['oracle'], raises=sa.exc.DatabaseError, reason="ORA-00936 missing expression"
 )
 @pytest.mark.broken(
     ["mysql"],
@@ -1794,6 +1826,9 @@ TIMESTAMP_BACKEND_TYPES = {
     raises=sa.exc.OperationalError,
     reason="(pymysql.err.OperationalError) (1305, 'FUNCTION ibis_testing.make_timestamp does not exist')",
 )
+@pytest.mark.notimpl(
+    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
+)
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_timestamp_literal(con, backend):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
@@ -1837,6 +1872,9 @@ TIMESTAMP_TIMEZONE_BACKEND_TYPES = {
     ),
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
+)
 @pytest.mark.parametrize(
     ('timezone', 'expected'),
     [
@@ -1905,6 +1943,7 @@ TIME_BACKEND_TYPES = {
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["clickhouse", "impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.broken(
     [
         "mysql",
@@ -1948,6 +1987,7 @@ def test_time_literal(con, backend):
 @pytest.mark.notimpl(
     ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
     "microsecond",
     [
@@ -2059,6 +2099,9 @@ def test_interval_literal(con, backend):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'year'",
 )
+@pytest.mark.broken(
+    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936: missing expression"
+)
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
@@ -2083,6 +2126,9 @@ def test_date_column_from_ymd(con, alltypes, df):
     ["mysql"],
     raises=sa.exc.OperationalError,
     reason="(pymysql.err.OperationalError) (1305, 'FUNCTION ibis_testing.make_timestamp does not exist')",
+)
+@pytest.mark.notimpl(
+    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904 make timestamp invalid"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(con, alltypes, df):
@@ -2112,6 +2158,9 @@ def test_timestamp_column_from_ymdhms(con, alltypes, df):
     raises=Exception,
     reason="Arrow error: Cast error: Cannot cast string '2022-02-24' to value of Date64 type",
 )
+@pytest.mark.notimpl(
+    ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-01861 literal does not match"
+)
 def test_date_scalar_from_iso(con):
     expr = ibis.literal('2022-02-24')
     expr2 = ibis.date(expr)
@@ -2132,6 +2181,11 @@ def test_date_scalar_from_iso(con):
     raises=Exception,
     reason="Arrow error: Cast error: Cannot cast string '2010-11-13' to value of Date64 type",
 )
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=sa.exc.DatabaseError,
+    reason="ORA-22849 type CLOB is not supported",
+)
 def test_date_column_from_iso(con, alltypes, df):
     expr = (
         alltypes.year.cast('string')
@@ -2147,7 +2201,9 @@ def test_date_column_from_iso(con, alltypes, df):
     tm.assert_series_equal(golden.rename('tmp'), actual.rename('tmp'))
 
 
-@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notyet(
     ["pyspark"],
     raises=com.UnsupportedOperationError,
@@ -2171,6 +2227,11 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     reason=(
         "This feature is not implemented: Unsupported CAST from Int32 to Timestamp(Nanosecond, None)"
     ),
+)
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=sa.exc.DatabaseError,
+    reason="ORA-00932",
 )
 @pytest.mark.broken(
     ["druid"],
@@ -2198,6 +2259,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature to_timestamp(<NUMERIC>)",
 )
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -2275,6 +2337,7 @@ def build_date_col(t):
     reason="impala doesn't support dates",
     raises=com.UnsupportedBackendType,
 )
+@pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
     [
@@ -2401,6 +2464,11 @@ def test_large_timestamp(con):
         "java.lang.UnsupportedOperationException: class "
         "org.apache.calcite.sql.SqlIdentifier: LONG"
     ),
+)
+@pytest.mark.notimpl(
+    ['oracle'],
+    raises=sa.exc.DatabaseError,
+    reason="ORA-01843: invalid month was specified",
 )
 def test_timestamp_precision_output(con, ts, scale, unit):
     dtype = dt.Timestamp(scale=scale)

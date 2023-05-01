@@ -34,6 +34,7 @@ UUID_EXPECTED_VALUES = {
     'mysql': TEST_UUID,
     'mssql': TEST_UUID,
     'dask': TEST_UUID,
+    'oracle': TEST_UUID,
 }
 
 pytestmark = pytest.mark.notimpl(
