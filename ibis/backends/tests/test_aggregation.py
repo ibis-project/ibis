@@ -1029,7 +1029,7 @@ def test_corr_cov(
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
-    ["dask", "pandas"],
+    ["dask"],
     raises=AttributeError,
     reason="'Series' object has no attribute 'approxmedian'",
 )

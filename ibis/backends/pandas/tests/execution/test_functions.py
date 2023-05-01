@@ -270,3 +270,20 @@ def test_signature_does_not_match_input_type(dtype, value):
     result = result.tolist()
     assert result == [value]
     assert type(result[0]) is type(value)
+
+
+@pytest.mark.parametrize(
+    ('ibis_func', 'pandas_func'),
+    [
+        (
+            lambda x: x.approx_median(),
+            lambda x: x.median(),
+        )
+    ],
+)
+@pytest.mark.parametrize('column', ['float64_with_zeros', 'int64_with_zeros'])
+def test_approx_median(t, df, ibis_func, pandas_func, column):
+    expr = ibis_func(t[column])
+    result = expr.execute()
+    expected = pandas_func(df[column])
+    assert expected == result

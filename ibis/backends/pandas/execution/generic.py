@@ -916,6 +916,23 @@ def execute_mode_series_groupby(_, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(data, mode)
 
 
+@execute_node.register(ops.ApproxMedian, pd.Series, (pd.Series, type(None)))
+def execute_approx_median_series(_, data, mask, aggcontext=None, **kwargs):
+    return aggcontext.agg(
+        data[mask] if mask is not None else data, lambda x: x.median()
+    )
+
+
+@execute_node.register(ops.ApproxMedian, SeriesGroupBy, (SeriesGroupBy, type(None)))
+def execute_approx_median_series_groupby(_, data, mask, aggcontext=None, **kwargs):
+    median = pd.Series.median
+
+    if mask is not None:
+        median = functools.partial(_filtered_reduction, mask.obj, median)
+
+    return aggcontext.agg(data, median)
+
+
 @execute_node.register((ops.Not, ops.Negate), (bool, np.bool_))
 def execute_not_bool(_, data, **kwargs):
     return not data
