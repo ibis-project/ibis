@@ -575,3 +575,9 @@ def test_scalar_param_scope(alltypes):
 SELECT t\\d+\\.\\*, @param_\\d+ AS `param`
 FROM functional_alltypes t\\d+"""
     assert re.match(expected, result) is not None
+
+
+def test_cast_float_to_int(alltypes, snapshot):
+    expr = alltypes.double_col.cast("int64")
+    result = to_sql(expr)
+    snapshot.assert_match(result, "out.sql")
