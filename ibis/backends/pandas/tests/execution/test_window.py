@@ -209,6 +209,15 @@ def test_batting_quantile(players, players_df):
     tm.assert_frame_equal(result, expected)
 
 
+def test_batting_approx_median(players, players_df):
+    expr = players.mutate(hits_median=lambda t: t.H.approx_median())
+    hits_median = players_df.groupby('playerID').H.transform('median')
+    expected = players_df.assign(hits_median=hits_median)
+    cols = expected.columns.tolist()
+    result = expr.execute()[cols].sort_values(cols).reset_index(drop=True)
+    tm.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize('op', ['sum', 'mean', 'min', 'max'])
 def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
     ibis_method = methodcaller(f'cum{op}')
