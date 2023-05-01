@@ -199,7 +199,7 @@ def created_view(con, alltypes):
     return name
 
 
-def test_drop_view(con, alltypes, created_view):
+def test_drop_view(con, created_view):
     con.drop_view(created_view)
     assert created_view not in con.list_tables()
 
@@ -245,7 +245,7 @@ def table(con, tmp_db, tmp_dir, path_uuid):
     con.drop_table(table_name, database=tmp_db)
 
 
-def test_change_location(con, table, tmp_dir, path_uuid):
+def test_change_location(table, tmp_dir, path_uuid):
     old_loc = table.metadata().location
 
     new_path = pjoin(tmp_dir, 'new-path')
@@ -255,7 +255,7 @@ def test_change_location(con, table, tmp_dir, path_uuid):
     assert new_loc == old_loc.replace(path_uuid, 'new-path')
 
 
-def test_change_properties(con, table):
+def test_change_properties(table):
     props = {'foo': '1', 'bar': '2'}
 
     table.alter(tbl_properties=props)
@@ -269,7 +269,7 @@ def test_change_properties(con, table):
         assert v == serde_props[k]
 
 
-def test_change_format(con, table):
+def test_change_format(table):
     table.alter(format='avro')
 
     meta = table.metadata()
