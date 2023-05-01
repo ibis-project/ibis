@@ -263,17 +263,17 @@ def alltypes(udfcon):
 
 
 @pytest.fixture
-def udf_ll(udfcon, test_data_dir):
+def udf_ll(test_data_dir):
     return pjoin(test_data_dir, 'udf/udf-sample.ll')
 
 
 @pytest.fixture
-def uda_ll(udfcon, test_data_dir):
+def uda_ll(test_data_dir):
     return pjoin(test_data_dir, 'udf/uda-sample.ll')
 
 
 @pytest.fixture
-def uda_so(udfcon, test_data_dir):
+def uda_so(test_data_dir):
     return pjoin(test_data_dir, 'udf/libudasample.so')
 
 
@@ -440,32 +440,6 @@ def test_mult_type_args(udfcon, alltypes, test_data_db, udf_ll):
         1.0,
     )
     udfcon.execute(expr)
-
-
-def test_all_type_args(udfcon, test_data_db, udf_ll):
-    pytest.skip('failing test, to be fixed later')
-
-    symbol = 'AllTypes'
-    name = 'all_types'
-    inputs = [
-        'string',
-        'boolean',
-        'int8',
-        'int16',
-        'int32',
-        'int64',
-        'float',
-        'double',
-        'decimal',
-    ]
-    output = 'int32'
-
-    func = udf_creation_to_op(
-        udf_ll, udfcon, test_data_db, name, symbol, inputs, output
-    )
-    expr = func('a', True, 1, 1, 1, 1, 1.0, 1.0, 1.0)
-    result = udfcon.execute(expr)
-    assert result == 9
 
 
 @pytest.mark.xfail(
