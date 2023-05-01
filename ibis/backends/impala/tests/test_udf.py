@@ -17,6 +17,8 @@ from ibis.expr import rules
 
 pytest.importorskip("impala")
 
+from ibis.backends.impala.compat import HS2Error  # noqa: E402
+
 
 @pytest.fixture(scope="module")
 def table(mockcon):
@@ -461,13 +463,13 @@ def test_udf_varargs(udfcon, alltypes, udf_ll, test_data_db):
 
 def test_drop_udf_not_exists(udfcon):
     random_name = util.guid()
-    with pytest.raises(Exception):
+    with pytest.raises(HS2Error):
         udfcon.drop_udf(random_name)
 
 
 def test_drop_uda_not_exists(udfcon):
     random_name = util.guid()
-    with pytest.raises(Exception):
+    with pytest.raises(HS2Error):
         udfcon.drop_uda(random_name)
 
 

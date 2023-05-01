@@ -491,15 +491,15 @@ def test_order_by_scalar(table, key, expected):
 
 
 @pytest.mark.parametrize(
-    "key",
+    ("key", "exc_type"),
     [
-        "bogus",
-        ("bogus", False),
-        ibis.desc("bogus"),
-        1000,
-        (1000, False),
-        _.bogus,
-        _.bogus.desc(),
+        ("bogus", com.IbisTypeError),
+        (("bogus", False), com.IbisTypeError),
+        (ibis.desc("bogus"), com.IbisTypeError),
+        (1000, IndexError),
+        ((1000, False), IndexError),
+        (_.bogus, AttributeError),
+        (_.bogus.desc(), AttributeError),
     ],
 )
 @pytest.mark.parametrize(
@@ -510,13 +510,11 @@ def test_order_by_scalar(table, key, expected):
         param(lambda t: t.group_by("a").agg(new=_.b.sum()), id="aggregation"),
     ],
 )
-def test_order_by_nonexistent_column_errors(table, expr_func, key):
+def test_order_by_nonexistent_column_errors(table, expr_func, key, exc_type):
     # `order_by` is implemented on a few different operations, we check them
     # all in turn here.
     expr = expr_func(table)
-    # Depending on the expression, this can raise a few different errors.
-    # For now just check that an exception is raised.
-    with pytest.raises(Exception):
+    with pytest.raises(exc_type):
         expr.order_by(key)
 
 
