@@ -1052,9 +1052,7 @@ class Backend(BaseSQLBackend):
                         )
                     return
                 else:
-                    raise Exception(
-                        f"More than one function with {name} found. Please specify force=True"
-                    )
+                    raise com.DuplicateUDFError(name)
             elif len(result) == 1:
                 func = result.pop()
                 self._drop_single_function(
@@ -1065,7 +1063,7 @@ class Backend(BaseSQLBackend):
                 )
                 return
             else:
-                raise Exception(f"No function found with name {name}")
+                raise com.MissingUDFError(name)
         self._drop_single_function(
             name, input_types, database=database, aggregate=aggregate
         )

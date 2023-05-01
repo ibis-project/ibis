@@ -92,6 +92,28 @@ class BackendConfigurationNotRegistered(IbisError):
         )
 
 
+class DDLError(IbisError):
+    """DDL related errors."""
+
+
+class DuplicateUDFError(DDLError):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.name = name
+
+    def __str__(self) -> str:
+        return f"More than one function with {self.name} found."
+
+
+class MissingUDFError(DDLError):
+    def __init__(self, name: str) -> None:
+        super().__init__(name)
+        self.name = name
+
+    def __str__(self) -> str:
+        return f"No function found with name {self.name}"
+
+
 def mark_as_unsupported(f: Callable) -> Callable:
     """Decorate an unsupported method."""
 
