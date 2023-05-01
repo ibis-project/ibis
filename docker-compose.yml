@@ -362,13 +362,26 @@ services:
 
   oracle:
     image: gvenzl/oracle-free:23
-    environment: 
+    environment:
       ORACLE_PASSWORD: ibis
-      ORACLE_DATABASE: ibis_testing
+      ORACLE_DATABASE: IBIS_TESTING
       APP_USER: ibis
       APP_USER_PASSWORD: ibis
     ports:
       - 1521:1521
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - ./healthcheck.sh
+      timeout: 30s
+    restart: on-failure
+    networks:
+      - oracle
+    volumes:
+      - $PWD/ci/ibis-testing-data/csv:/opt/oracle/csv:ro
+      - $PWD/ci/schema/oracle:/opt/oracle/ctl:ro
 
 networks:
   impala:
@@ -378,6 +391,7 @@ networks:
   postgres:
   trino:
   druid:
+  oracle:
 
 volumes:
   middle_var:

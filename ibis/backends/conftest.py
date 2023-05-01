@@ -217,7 +217,10 @@ def init_database(
 
     if schema:
         with engine.begin() as conn:
-            for stmt in filter(None, map(str.strip, schema.read().split(';'))):
+            for stmt in filter(
+                None,
+                map(str.strip, schema.read().split(';')),
+            ):
                 conn.exec_driver_sql(stmt)
 
     return engine
@@ -571,7 +574,16 @@ def ddl_con(ddl_backend):
 
 @pytest.fixture(
     params=_get_backends_to_test(
-        keep=("duckdb", "mssql", "mysql", "postgres", "snowflake", "sqlite", "trino")
+        keep=(
+            "duckdb",
+            "mssql",
+            "mysql",
+            "oracle",
+            "postgres",
+            "snowflake",
+            "sqlite",
+            "trino",
+        )
     ),
     scope='session',
 )

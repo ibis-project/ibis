@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
         "impala",
         "mssql",
         "mysql",
+        "oracle",
         "pandas",
         "polars",
         "postgres",

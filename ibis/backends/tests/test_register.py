@@ -15,7 +15,7 @@ from ibis.backends.conftest import TEST_TABLES
 if TYPE_CHECKING:
     import pyarrow as pa
 
-pytestmark = pytest.mark.notimpl(["druid"])
+pytestmark = pytest.mark.notimpl(["druid", "oracle"])
 
 
 @contextlib.contextmanager

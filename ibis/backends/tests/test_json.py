@@ -10,7 +10,7 @@ from ibis.common.exceptions import OperationNotDefinedError
 pytestmark = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
-    pytest.mark.notimpl(["datafusion", "mssql", "druid"]),
+    pytest.mark.notimpl(["datafusion", "mssql", "druid", "oracle"]),
 ]
 
 

@@ -41,6 +41,11 @@ from ibis.common.exceptions import OperationNotDefinedError
                 "postgres": "text",
             },
             id="string-quote1",
+            marks=pytest.mark.broken(
+                ["oracle"],
+                raises=sa.exc.DatabaseError,
+                reason="ORA-01741: illegal zero length identifier",
+            ),
         ),
         param(
             "STRI\"NG",
@@ -55,6 +60,11 @@ from ibis.common.exceptions import OperationNotDefinedError
                 "postgres": "text",
             },
             id="string-quote2",
+            marks=pytest.mark.broken(
+                ["oracle"],
+                raises=sa.exc.DatabaseError,
+                reason="ORA-25716",
+            ),
         ),
     ],
 )
@@ -172,7 +182,8 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql"], raises=com.OperationNotDefinedError
+                    ["datafusion", "mssql", "oracle"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=AssertionError),
             ],
@@ -183,7 +194,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql"],
+                    ["datafusion", "mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["pyspark"], raises=AssertionError),
@@ -200,7 +211,8 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid"], raises=com.OperationNotDefinedError
+                    ["mysql", "mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["impala"], raises=AssertionError),
             ],
@@ -211,7 +223,8 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid"], raises=com.OperationNotDefinedError
+                    ["mysql", "mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["pyspark"], raises=AssertionError),
             ],
@@ -222,7 +235,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract_whole_group',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid"],
+                    ["mysql", "mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -245,7 +258,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_replace_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ['datafusion', "mysql", "mssql", "druid"],
+                    ['datafusion', "mysql", "mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -260,7 +273,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_replace',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mysql", "mssql", "druid"],
+                    ["datafusion", "mysql", "mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -273,19 +286,50 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.repeat(2),
             lambda t: t.string_col * 2,
             id="repeat_method",
+            marks=pytest.mark.notimpl(
+                ["oracle"],
+                raises=sa.exc.DatabaseError,
+                reason="ORA-00904: REPEAT invalid identifier",
+            ),
         ),
-        param(lambda t: 2 * t.string_col, lambda t: 2 * t.string_col, id="repeat_left"),
         param(
-            lambda t: t.string_col * 2, lambda t: t.string_col * 2, id="repeat_right"
+            lambda t: 2 * t.string_col,
+            lambda t: 2 * t.string_col,
+            id="repeat_left",
+            marks=pytest.mark.notimpl(
+                ["oracle"],
+                raises=sa.exc.DatabaseError,
+                reason="ORA-00904: REPEAT invalid identifier",
+            ),
+        ),
+        param(
+            lambda t: t.string_col * 2,
+            lambda t: t.string_col * 2,
+            id="repeat_right",
+            marks=pytest.mark.notimpl(
+                ["oracle"],
+                raises=sa.exc.DatabaseError,
+                reason="ORA-00904: REPEAT invalid identifier",
+            ),
         ),
         param(
             lambda t: t.string_col.translate('01', 'ab'),
             lambda t: t.string_col.str.translate(str.maketrans('01', 'ab')),
             id='translate',
-            marks=pytest.mark.notimpl(
-                ["clickhouse", "duckdb", "mssql", "mysql", "polars", "druid"],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "duckdb",
+                        "mssql",
+                        "mysql",
+                        "polars",
+                        "druid",
+                        "oracle",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+            ],
         ),
         param(
             lambda t: t.string_col.find('a'),
@@ -322,6 +366,7 @@ def test_string_col_is_unicode(alltypes, df):
                     "mssql",
                     "trino",
                     "druid",
+                    "oracle",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -341,6 +386,7 @@ def test_string_col_is_unicode(alltypes, df):
                     "mssql",
                     "trino",
                     "druid",
+                    "oracle",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -660,7 +706,16 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.date_string_col.str.split('/'),
             id='split',
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "impala", "mysql", "sqlite", "mssql", "druid"],
+                [
+                    "dask",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "sqlite",
+                    "mssql",
+                    "druid",
+                    "oracle",
+                ],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -708,7 +763,8 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "mssql", "druid"], raises=com.OperationNotDefinedError
+    ["datafusion", "mysql", "mssql", "druid", "oracle"],
+    raises=com.OperationNotDefinedError,
 )
 def test_re_replace_global(con):
     expr = ibis.literal("aba").re_replace("a", "c")
@@ -726,6 +782,11 @@ def test_re_replace_global(con):
     ),
 )
 @pytest.mark.notimpl(["druid"], raises=com.IbisTypeError)
+@pytest.mark.broken(
+    ["oracle"],
+    raises=sa.exc.DatabaseError,
+    reason="ORA-61801: only boolean column or attribute can be used as a predicate",
+)
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.case()
@@ -815,6 +876,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "pyspark",
         "sqlite",
         "druid",
+        "oracle",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -833,7 +895,8 @@ def test_capitalize(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars", "druid"], raises=OperationNotDefinedError
+    ["dask", "datafusion", "pandas", "polars", "druid", "oracle"],
+    raises=OperationNotDefinedError,
 )
 @pytest.mark.notyet(
     ["impala", "mssql", "mysql", "sqlite"],
@@ -851,7 +914,7 @@ def test_array_string_join(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "mysql", "pyspark", "druid"],
+    ["datafusion", "mssql", "mysql", "pyspark", "druid", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 def test_subs_with_re_replace(con):
@@ -882,6 +945,10 @@ def test_multiple_subs(con):
     ["druid"],
     raises=ValueError,
     reason="sqlglot doesn't support a druid dialect",
+)
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OperationNotDefinedError,
 )
 def test_rlike(backend, snapshot, alltypes):
     if backend.name() == "snowflake" and not os.environ.get("CI"):  # pragma: no cover

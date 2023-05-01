@@ -66,6 +66,7 @@ aggregate_test_params = [
                     "mssql",
                     "trino",
                     "druid",
+                    "oracle",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -112,6 +113,7 @@ aggregate_test_params = [
                 "pyspark",
                 "trino",
                 "druid",
+                "oracle",
             ],
             raises=com.OperationNotDefinedError,
         ),
@@ -147,6 +149,7 @@ argidx_not_grouped_marks = [
     "polars",
     "mssql",
     "druid",
+    "oracle",
 ]
 argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
@@ -237,6 +240,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "mssql",
         "trino",
         "druid",
+        "oracle",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -331,6 +335,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notany'",
                 ),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-02000: missing AS keyword",
+                ),
             ],
         ),
         param(
@@ -346,6 +355,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
+                ),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-02000: missing AS keyword",
                 ),
             ],
         ),
@@ -379,6 +393,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notall'",
                 ),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-02000: missing AS keyword",
+                ),
             ],
         ),
         param(
@@ -394,6 +413,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
+                ),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-02000: missing AS keyword",
                 ),
             ],
         ),
@@ -414,6 +438,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "pyspark.sql.utils.AnalysisException: "
                         "function sum requires numeric or interval types, not boolean;"
                     ),
+                ),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-02000: missing AS keyword",
                 ),
             ],
         ),
@@ -437,25 +466,21 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: (t.int_col % 3).mode(where=where),
             lambda t, where: (t.int_col % 3)[where].mode().iloc[0],
             id='mode',
-            marks=[
-                pytest.mark.notyet(
-                    [
-                        "bigquery",
-                        "clickhouse",
-                        "datafusion",
-                        "impala",
-                        "mysql",
-                        "pyspark",
-                        "mssql",
-                        "trino",
-                        "druid",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.xfail_version(
-                    pyspark=["pyspark<3.4.0"], raises=AttributeError
-                ),
-            ],
+            marks=pytest.mark.notyet(
+                [
+                    "bigquery",
+                    "clickhouse",
+                    "datafusion",
+                    "impala",
+                    "mysql",
+                    "pyspark",
+                    "mssql",
+                    "trino",
+                    "druid",
+                    "oracle",
+                ],
+                raises=com.OperationNotDefinedError,
+            ),
         ),
         param(
             lambda t, where: t.double_col.argmin(t.int_col, where=where),
@@ -463,7 +488,15 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmin',
             marks=[
                 pytest.mark.notyet(
-                    ["impala", "mysql", "polars", "datafusion", "mssql", "druid"],
+                    [
+                        "impala",
+                        "mysql",
+                        "polars",
+                        "datafusion",
+                        "mssql",
+                        "druid",
+                        "oracle",
+                    ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -480,7 +513,15 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='argmax',
             marks=[
                 pytest.mark.notyet(
-                    ["impala", "mysql", "polars", "datafusion", "mssql", "druid"],
+                    [
+                        "impala",
+                        "mysql",
+                        "polars",
+                        "datafusion",
+                        "mssql",
+                        "druid",
+                        "oracle",
+                    ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -568,7 +609,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_default',
             marks=pytest.mark.notimpl(
-                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid"],
+                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -577,7 +618,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[0],
             id='arbitrary_first',
             marks=pytest.mark.notimpl(
-                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid"],
+                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -587,7 +628,15 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='arbitrary_last',
             marks=[
                 pytest.mark.notimpl(
-                    ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid"],
+                    [
+                        'impala',
+                        'mysql',
+                        'polars',
+                        'datafusion',
+                        "mssql",
+                        "druid",
+                        "oracle",
+                    ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
@@ -608,6 +657,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "dask",
                         "datafusion",
                         "druid",
+                        "oracle",
                         "impala",
                         "mssql",
                         "mysql",
@@ -634,7 +684,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[0],
             id='first',
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "druid", "impala", "mssql", "mysql"],
+                ["dask", "datafusion", "druid", "impala", "mssql", "mysql", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -643,7 +693,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].iloc[-1],
             id='last',
             marks=pytest.mark.notimpl(
-                ["dask", "datafusion", "druid", "impala", "mssql", "mysql"],
+                ["dask", "datafusion", "druid", "impala", "mssql", "mysql", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
@@ -665,6 +715,10 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'Series' object has no attribute 'bitand'",
                 ),
+                pytest.mark.notimpl(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                ),
             ],
         ),
         param(
@@ -684,6 +738,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'Series' object has no attribute 'bitor'",
                 ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-00904: 'BIT_OR': invalid identifier",
+                ),
             ],
         ),
         param(
@@ -702,6 +761,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["dask"],
                     raises=AttributeError,
                     reason="'Series' object has no attribute 'bitxor'",
+                ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-00904: 'BIT_XOR': invalid identifier",
                 ),
             ],
         ),
@@ -724,7 +788,15 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 mark.notimpl(
-                    ["impala", "mysql", "sqlite", "datafusion", "mssql", "druid"],
+                    [
+                        "impala",
+                        "mysql",
+                        "sqlite",
+                        "datafusion",
+                        "mssql",
+                        "druid",
+                        "oracle",
+                    ],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -790,6 +862,7 @@ def test_reduction_ops(
                         "polars",
                         "sqlite",
                         "druid",
+                        "oracle",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -826,6 +899,7 @@ def test_reduction_ops(
                         "polars",
                         "sqlite",
                         "druid",
+                        "oracle",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -908,7 +982,8 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["mysql", "impala", "sqlite"], raises=com.OperationNotDefinedError
+                    ["mysql", "impala", "sqlite"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -956,7 +1031,7 @@ def test_quantile(
                     reason="Correlation with how='sample' is not supported.",
                 ),
                 pytest.mark.notyet(
-                    ["trino", "postgres", "duckdb", "snowflake"],
+                    ["trino", "postgres", "duckdb", "snowflake", "oracle"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),
@@ -977,6 +1052,11 @@ def test_quantile(
                 ),
                 pytest.mark.notyet(
                     ["mysql", "impala", "sqlite"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-61804: boolean data type is invalid for an arithmetic function",
                 ),
             ],
         ),
@@ -1006,6 +1086,11 @@ def test_quantile(
                     ["pyspark"],
                     raises=ValueError,
                     reason="PySpark only implements sample correlation",
+                ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=sa.exc.DatabaseError,
+                    reason="ORA-61804: boolean data type is invalid for an arithmetic function",
                 ),
             ],
         ),
@@ -1160,6 +1245,11 @@ def test_median(alltypes, df):
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature group_concat(<CHARACTER>, <CHARACTER>)",
 )
+@mark.notyet(
+    ["oracle"],
+    raises=sa.exc.DatabaseError,
+    reason="ORA-00904: 'GROUP_CONCAT': invalid identifier",
+)
 def test_group_concat(
     backend,
     alltypes,
@@ -1269,6 +1359,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
         "mssql",
         "trino",
         "druid",
+        "oracle",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1306,6 +1397,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "mssql",
         "trino",
         "druid",
+        "oracle",
     ],
     raises=com.OperationNotDefinedError,
 )
