@@ -120,6 +120,15 @@ class Mean(Filterable, Reduction):
 
 
 @public
+class Median(Filterable, Reduction):
+    arg = rlz.column(rlz.numeric)
+
+    @attribute.default
+    def output_dtype(self):
+        return dt.higher_precedence(self.arg.output_dtype, dt.float64)
+
+
+@public
 class Quantile(Filterable, Reduction):
     arg = rlz.any
     quantile = rlz.strict_numeric

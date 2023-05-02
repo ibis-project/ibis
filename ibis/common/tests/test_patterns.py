@@ -24,6 +24,7 @@ import pytest
 from typing_extensions import Annotated
 
 from ibis.common.collections import FrozenDict
+from ibis.common.graph import Node
 from ibis.common.patterns import (
     AllOf,
     Any,
@@ -39,6 +40,7 @@ from ibis.common.patterns import (
     EqualTo,
     FrozenDictOf,
     Function,
+    Innermost,
     InstanceOf,
     IsIn,
     LazyInstanceOf,
@@ -57,6 +59,7 @@ from ibis.common.patterns import (
     Reference,
     SequenceOf,
     SubclassOf,
+    Topmost,
     TupleOf,
     TypeOf,
     ValidationError,
@@ -387,11 +390,14 @@ def test_mapping_of():
 
 def test_object_pattern():
     class Foo:
+        __match_args__ = ("a", "b")
+
         def __init__(self, a, b):
             self.a = a
             self.b = b
 
-    assert match(Object(Foo, 1, b=2), Foo(1, 2)) == {}
+    p = Object(Foo, 1, b=2)
+    assert match(p, Foo(1, 2)) == {}
 
 
 def test_callable_with():
@@ -791,3 +797,68 @@ def test_pattern_function():
         return x > 0
 
     assert pattern(f) == Function(f)
+
+
+class Term(Node):
+    def __eq__(self, other):
+        return type(self) is type(other) and self.__args__ == other.__args__
+
+    def __hash__(self):
+        return hash((self.__class__, self.__args__))
+
+
+class Lit(Term):
+    __argnames__ = ("value",)
+    __match_args__ = ("value",)
+
+    def __init__(self, value):
+        self.value = value
+
+    @property
+    def __args__(self):
+        return (self.value,)
+
+
+class Binary(Term):
+    __argnames__ = ("left", "right")
+    __match_args__ = ("left", "right")
+
+    def __init__(self, left, right):
+        self.left = left
+        self.right = right
+
+    @property
+    def __args__(self):
+        return (self.left, self.right)
+
+
+class Add(Binary):
+    pass
+
+
+class Mul(Binary):
+    pass
+
+
+one = Lit(1)
+two = Mul(Lit(2), one)
+
+three = Add(one, two)
+six = Mul(two, three)
+seven = Add(one, six)
+
+
+def test_topmost_innermost():
+    inner = Object(Mul, Capture(Any(), "a"), Capture(Any(), "b"))
+    assert inner.match(six, {}) is six
+
+    context = {}
+    p = Topmost(inner)
+    m = p.match(seven, context)
+    assert m is six
+    assert context == {"a": two, "b": three}
+
+    p = Innermost(inner)
+    m = p.match(seven, context)
+    assert m is two
+    assert context == {"a": Lit(2), "b": one}

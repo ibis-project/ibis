@@ -108,8 +108,8 @@ aggregate_test_params = [
                 "datafusion",
                 "impala",
                 "mysql",
-                "pyspark",
                 "mssql",
+                "pyspark",
                 "trino",
                 "druid",
             ],
@@ -437,20 +437,25 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: (t.int_col % 3).mode(where=where),
             lambda t, where: (t.int_col % 3)[where].mode().iloc[0],
             id='mode',
-            marks=pytest.mark.notyet(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "datafusion",
-                    "impala",
-                    "mysql",
-                    "pyspark",
-                    "mssql",
-                    "trino",
-                    "druid",
-                ],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "datafusion",
+                        "impala",
+                        "mysql",
+                        "pyspark",
+                        "mssql",
+                        "trino",
+                        "druid",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.4.0"], raises=AttributeError
+                ),
+            ],
         ),
         param(
             lambda t, where: t.double_col.argmin(t.int_col, where=where),
@@ -1031,12 +1036,27 @@ def test_corr_cov(
 @pytest.mark.broken(
     ["dask", "pandas"],
     raises=AttributeError,
-    reason="'Series' object has no attribute 'approxmedian'",
+    reason="'Series' object has no attribute 'approx_median'",
 )
 def test_approx_median(alltypes):
     expr = alltypes.double_col.approx_median()
     result = expr.execute()
     assert isinstance(result, float)
+
+
+@pytest.mark.notimpl(
+    ["bigquery", "datafusion", "druid", "sqlite"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notyet(
+    ["impala", "mysql", "mssql", "druid", "pyspark", "trino"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(["dask"], raises=NotImplementedError)
+def test_median(alltypes, df):
+    expr = alltypes.double_col.median()
+    result = expr.execute()
+    expected = df.double_col.median()
+    assert result == expected
 
 
 @mark.parametrize(

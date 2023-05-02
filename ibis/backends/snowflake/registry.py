@@ -390,6 +390,7 @@ operation_registry.update(
         ops.GroupConcat: _group_concat,
         ops.Hash: unary(sa.func.hash),
         ops.ApproxMedian: reduction(lambda x: sa.func.approx_percentile(x, 0.5)),
+        ops.Median: reduction(sa.func.median),
     }
 )
 

@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import ast
+import contextlib
 import os
 import warnings
-import weakref
 from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
 import duckdb
+import pyarrow as pa
 import sqlalchemy as sa
 import toolz
 
@@ -26,7 +27,6 @@ from ibis.backends.pandas.client import DataFrameProxy
 
 if TYPE_CHECKING:
     import pandas as pd
-    import pyarrow as pa
 
     import ibis.expr.operations as ops
 
@@ -561,29 +561,20 @@ class Backend(BaseAlchemyBackend):
         chunk_size
             !!! warning "DuckDB returns 1024 size batches regardless of what argument is passed."
         """
-        self._import_pyarrow()
         self._register_in_memory_tables(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
-        con = self.con.connect()
+        def batch_producer(con):
+            with con.begin() as c, contextlib.closing(c.execute(sql)) as cur:
+                yield from cur.cursor.fetch_record_batch(chunk_size=chunk_size)
 
-        # end the current transaction started by sqlalchemy; without this
-        # duckdb-engine raises an exception disallowing nested transactions
-        #
-        # not clear if the value of returning a RecordBatchReader versus an
-        # iterator of record batches is worth the cursor leakage here
-        con.exec_driver_sql("COMMIT")
-
-        cursor = con.execute(sql)
-
-        reader = cursor.cursor.fetch_record_batch(chunk_size=chunk_size)
-        # Use a weakref finalizer to keep the cursor alive until the record
-        # batch reader is garbage collected. It would be nicer if we could make
-        # the cursor cleanup happen when the reader is closed, but that's not
-        # currently possible with pyarrow.
-        weakref.finalize(reader, lambda: cursor.close())
-        return reader
+        # batch_producer keeps the `self.con` member alive long enough to
+        # exhaust the record batch reader, even if the backend or connection
+        # have gone out of scope in the caller
+        return pa.RecordBatchReader.from_batches(
+            expr.as_table().schema().to_pyarrow(), batch_producer(self.con)
+        )
 
     def to_pyarrow(
         self,
