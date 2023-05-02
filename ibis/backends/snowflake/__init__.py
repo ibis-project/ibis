@@ -294,7 +294,7 @@ $$ {defn["source"]} $$"""
                     f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = 'ARROW'"
                 )
                 with contextlib.closing(c.execute(sql)) as cur:
-                    con.exec_driver_sql(
+                    c.exec_driver_sql(
                         f"ALTER SESSION SET {PARAMETER_PYTHON_CONNECTOR_QUERY_RESULT_FORMAT} = {self._default_connector_format!r}"
                     )
                     yield from itertools.chain.from_iterable(
