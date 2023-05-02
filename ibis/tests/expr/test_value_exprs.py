@@ -7,8 +7,8 @@ from decimal import Decimal
 from operator import attrgetter, methodcaller
 
 import numpy as np
-import pandas as pd
 import pytest
+import pytz
 import toolz
 from pytest import param
 
@@ -1141,12 +1141,14 @@ def test_large_timestamp():
     assert result == expected
 
 
-@pytest.mark.parametrize('tz', [None, 'UTC'])
-def test_timestamp_with_timezone(tz):
-    expr = ibis.timestamp('2017-01-01', timezone=tz)
-    expected = pd.Timestamp('2017-01-01', tz=tz)
-    result = expr.op().value
-    assert expected == result
+def test_timestamp_with_timezone():
+    expr = ibis.timestamp('2017-01-01', timezone=None)
+    expected = datetime(2017, 1, 1, tzinfo=None)
+    assert expr.op().value == expected
+
+    expr = ibis.timestamp('2017-01-01', timezone='UTC')
+    expected = datetime(2017, 1, 1, tzinfo=pytz.timezone('UTC'))
+    assert expr.op().value == expected
 
 
 @pytest.mark.parametrize('tz', [None, 'UTC'])
