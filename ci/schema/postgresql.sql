@@ -18,6 +18,8 @@ CREATE TABLE diamonds (
     z FLOAT
 );
 
+COPY diamonds FROM '/data/diamonds.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
+
 DROP TABLE IF EXISTS batting CASCADE;
 
 CREATE TABLE batting (
@@ -45,6 +47,8 @@ CREATE TABLE batting (
     "GIDP" BIGINT
 );
 
+COPY batting FROM '/data/batting.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
+
 DROP TABLE IF EXISTS awards_players CASCADE;
 
 CREATE TABLE awards_players (
@@ -59,6 +63,8 @@ CREATE TABLE awards_players (
     ) STORED,
     simvec VECTOR GENERATED always AS ('[1,2,3]'::VECTOR) STORED
 );
+
+COPY awards_players FROM '/data/awards_players.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
 
 DROP TABLE IF EXISTS functional_alltypes CASCADE;
 
@@ -77,6 +83,8 @@ CREATE TABLE functional_alltypes (
     year INTEGER,
     month INTEGER
 );
+
+COPY functional_alltypes FROM '/data/functional_alltypes.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
 
 DROP TABLE IF EXISTS tzone CASCADE;
 
@@ -170,13 +178,15 @@ CREATE TABLE IF NOT EXISTS not_supported_intervals (
 
 DROP TABLE IF EXISTS geo CASCADE;
 
-CREATE TABLE IF NOT EXISTS geo (
+CREATE TABLE geo (
     id BIGSERIAL PRIMARY KEY,
     geo_point GEOMETRY(POINT),
     geo_linestring GEOMETRY(LINESTRING),
     geo_polygon GEOMETRY(POLYGON),
     geo_multipolygon GEOMETRY(MULTIPOLYGON)
 );
+
+COPY geo FROM '/data/geo.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
 
 CREATE INDEX IF NOT EXISTS idx_geo_geo_linestring ON geo USING GIST (geo_linestring);
 CREATE INDEX IF NOT EXISTS idx_geo_geo_multipolygon ON geo USING GIST (geo_multipolygon);

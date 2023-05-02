@@ -135,6 +135,8 @@ services:
       - 5432:5432
     networks:
       - postgres
+    volumes:
+      - $PWD/ci/ibis-testing-data/csv:/data:ro
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
@@ -150,7 +152,7 @@ services:
     ports:
       - 1433:1433
     volumes:
-      - mssql:/data
+      - $PWD/ci/ibis-testing-data/csv:/data:ro
     networks:
       - mssql
   trino-postgres:
@@ -172,6 +174,8 @@ services:
       - 5433:5432
     networks:
       - trino
+    volumes:
+      - $PWD/ci/ibis-testing-data/csv:/data:ro
   trino:
     depends_on:
       - trino-postgres
@@ -195,8 +199,6 @@ services:
   druid-postgres:
     image: postgres:15.2-alpine
     container_name: druid-postgres
-    volumes:
-      - metadata_data:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=FoolishPassword
       - POSTGRES_USER=druid
@@ -310,6 +312,7 @@ services:
     volumes:
       - druid:/opt/shared
       - middle_var:/opt/druid/var
+      - $PWD/ci/ibis-testing-data/parquet:/data:ro
     depends_on:
       - druid-zookeeper
       - druid-postgres
@@ -367,7 +370,6 @@ networks:
   druid:
 
 volumes:
-  metadata_data:
   middle_var:
   historical_var:
   broker_var:
@@ -375,4 +377,3 @@ volumes:
   router_var:
   clickhouse:
   druid:
-  mssql:
