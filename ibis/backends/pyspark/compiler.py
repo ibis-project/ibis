@@ -539,21 +539,7 @@ def compile_any(t, op, *, aggcontext=None, **kwargs):
 
 @compiles(ops.NotAny)
 def compile_notany(t, op, *args, aggcontext=None, **kwargs):
-    # The code here is a little ugly because the translation are different
-    # with different context.
-    # When translating col.notany() (context is None), we returns the dataframe
-    # so we need to negate the aggregator, i.e., df.select(~F.max(col))
-    # When traslating col.notany().over(w), we need to negate the result
-    # after the window translation, i.e., ~(F.max(col).over(w))
-
-    if aggcontext is None:
-
-        def fn(col):
-            return ~F.max(col)
-
-        return compile_aggregator(t, op, *args, fn=fn, aggcontext=aggcontext, **kwargs)
-    else:
-        return ~compile_any(t, op, *args, aggcontext=aggcontext, **kwargs)
+    return ~compile_any(t, op, *args, aggcontext=aggcontext, **kwargs)
 
 
 @compiles(ops.All)
@@ -563,15 +549,7 @@ def compile_all(t, op, *args, **kwargs):
 
 @compiles(ops.NotAll)
 def compile_notall(t, op, *, aggcontext=None, **kwargs):
-    # See comments for opts.NotAny for reasoning for the if/else
-    if aggcontext is None:
-
-        def fn(col):
-            return ~F.min(col)
-
-        return compile_aggregator(t, op, fn=fn, aggcontext=aggcontext, **kwargs)
-    else:
-        return ~compile_all(t, op, aggcontext=aggcontext, **kwargs)
+    return ~compile_all(t, op, aggcontext=aggcontext, **kwargs)
 
 
 @compiles(ops.Count)
