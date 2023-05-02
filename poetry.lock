@@ -2704,6 +2704,47 @@ signals = ["blinker (>=1.4.0)"]
 signedtoken = ["cryptography (>=3.0.0)", "pyjwt (>=2.0.0,<3)"]
 
 [[package]]
+name = "oracledb"
+version = "1.3.1"
+description = "Python interface to Oracle Database"
+category = "main"
+optional = true
+python-versions = ">=3.6"
+files = [
+    {file = "oracledb-1.3.1-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:ae37b751ec1a1195e731d9f28eedb6abcf233b84436c0edda6e7163ad2a24ab0"},
+    {file = "oracledb-1.3.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:48fabce88c674566e1c87e9f743cdae85bc178239ccdfedf6f4af21e9d6840bb"},
+    {file = "oracledb-1.3.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:e65c4598ef0390fa2e214ade63da19233553303812bdd9da84a764adf8e8962a"},
+    {file = "oracledb-1.3.1-cp310-cp310-win32.whl", hash = "sha256:e811ed3579dcb4dbf768c5af591ad70474e6dcc49a27472d24851a91a71147fc"},
+    {file = "oracledb-1.3.1-cp310-cp310-win_amd64.whl", hash = "sha256:3addbdf7c5d110b8d31e132f2e1263f151ade950288d9ceea9ae01acefe563d4"},
+    {file = "oracledb-1.3.1-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:dab0b5c01346cdc237adbb33dcced0a1286e51506f697c654089630cec1ee8bd"},
+    {file = "oracledb-1.3.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:10a4ed0b046cc36421380b2e9e4b8052c25209fa199e58c244190571997583d4"},
+    {file = "oracledb-1.3.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:f2173ef1edce4a66009f9d1af33fe2fac9a70c0d03c833cf373d6b54402c07a8"},
+    {file = "oracledb-1.3.1-cp311-cp311-win32.whl", hash = "sha256:84775f9441f0975a54407e642a923f7b13d06b993b8b656168892718599d3573"},
+    {file = "oracledb-1.3.1-cp311-cp311-win_amd64.whl", hash = "sha256:860e69c31a5f45bf83c6f76728cdefd6f6cd72931e8657594a3cf09d6b3c0a48"},
+    {file = "oracledb-1.3.1-cp36-cp36m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:babab331ae31fca8b7a7a3d5cdf0bb0cb70ec1893283d81acd1bc429b9796ba5"},
+    {file = "oracledb-1.3.1-cp36-cp36m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:09fe99fe47054199942557dc822bc9ccd277b1e20b4caafc35dd16cca59edcca"},
+    {file = "oracledb-1.3.1-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:aa3a1d2222be20c8c778fb735d871123e2220d8c66d17d9cbcebd31a4d0b27fd"},
+    {file = "oracledb-1.3.1-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:9728424d64064e31c79137539f69f3bcf50fe861a8833d2dc04c2fe6fa6f9711"},
+    {file = "oracledb-1.3.1-cp37-cp37m-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d3d074b76e2cf459554c25b38c13962003112ae3de939a6da0a6ab37711c5379"},
+    {file = "oracledb-1.3.1-cp37-cp37m-win32.whl", hash = "sha256:46e2b01b10fe547f6d1ccb4f57d8596bf982caf876cb1c7006892ddb7fd3896a"},
+    {file = "oracledb-1.3.1-cp37-cp37m-win_amd64.whl", hash = "sha256:edfb982e562d11fb14242c23c80d5a82fe0606ac4aeedcc987c85eeb3d2ff131"},
+    {file = "oracledb-1.3.1-cp38-cp38-macosx_11_0_universal2.whl", hash = "sha256:93d9321cbaee556809da35a8facd45eb846f31df70c267758305fa25a1e3ce33"},
+    {file = "oracledb-1.3.1-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:29b4fbc90c0dbcacdf3f83bc4a9f34defd04c56ffa732998ed78a36f5d7f4c8d"},
+    {file = "oracledb-1.3.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:69f6021a4aa3430e7afc59b8bfcbddacb223f5cb59bd35eba72bdba7e2949251"},
+    {file = "oracledb-1.3.1-cp38-cp38-win32.whl", hash = "sha256:ec0857b5120ac07b8325c84e2ec86b3455a7cbc2fb59896857f6a3ff31a63a23"},
+    {file = "oracledb-1.3.1-cp38-cp38-win_amd64.whl", hash = "sha256:c653b820602ff5cd11a40f0666af1e451e5c5324cf15acf37ad0088051c90490"},
+    {file = "oracledb-1.3.1-cp39-cp39-macosx_10_9_universal2.whl", hash = "sha256:d264eac7cbbc6fdacd8eb91e812110ff8a63fde32306173dfb610064162ca609"},
+    {file = "oracledb-1.3.1-cp39-cp39-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:54f3d01681a2208bcdf4a510277b216977c328d2d00478a943b4dbf777d751e6"},
+    {file = "oracledb-1.3.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c3cb7940030c86d158231cddfbb1bb7dc95f71c786d8fb1772b95b4141e6923c"},
+    {file = "oracledb-1.3.1-cp39-cp39-win32.whl", hash = "sha256:792a80d4f7579578ac5432e1408b13e45cf3d43c1ccda19e71d860dbd8cc98e5"},
+    {file = "oracledb-1.3.1-cp39-cp39-win_amd64.whl", hash = "sha256:d8a2c1833294a53f4b0dd26c7b74fa553c5e959dbb4c57b647910096f43aa8e2"},
+    {file = "oracledb-1.3.1.tar.gz", hash = "sha256:fce1bebdb0d8b88f908e0e1d0d8e5c24ce44e1be041b36032c28c3ba88e21314"},
+]
+
+[package.dependencies]
+cryptography = ">=3.2.1"
+
+[[package]]
 name = "oscrypto"
 version = "1.3.0"
 description = "TLS (SSL) sockets, key generation, encryption, decryption, signing, verification and KDFs using the OS crypto libraries. Does not require a compiler, and relies on the OS for patching. Works on Windows, OS X and Linux/BSD."
@@ -5044,7 +5085,7 @@ docs = ["furo", "jaraco.packaging (>=9)", "jaraco.tidelift (>=1.4)", "rst.linker
 testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more-itertools", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=1.3)", "pytest-flake8", "pytest-mypy (>=0.9.1)"]
 
 [extras]
-all = ["black", "clickhouse-driver", "dask", "datafusion", "db-dtypes", "duckdb", "duckdb-engine", "fsspec", "GeoAlchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "packaging", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymssql", "pymysql", "pyspark", "regex", "requests", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-views", "trino"]
+all = ["black", "clickhouse-driver", "dask", "datafusion", "db-dtypes", "duckdb", "duckdb-engine", "fsspec", "GeoAlchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymssql", "pymysql", "pyspark", "regex", "requests", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-views", "trino"]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
 clickhouse = ["clickhouse-driver", "sqlalchemy"]
 dask = ["dask", "regex"]
@@ -5056,6 +5097,7 @@ geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
 mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
+oracle = ["sqlalchemy", "oracledb", "packaging", "sqlalchemy-views"]
 pandas = ["regex"]
 polars = ["polars"]
 postgres = ["psycopg2", "sqlalchemy", "sqlalchemy-views"]
@@ -5068,4 +5110,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "a2b6fc854dd88d4e3bffe3a8f9a06763aaad1eda38e450eb20d657be632bf268"
+content-hash = "3f24a9904072f6b44853b0b9ecfae0ee6fe7648b6a9586a58bc476cac68d7095"

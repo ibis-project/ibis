@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import sqlalchemy as sa
 import toolz
+from packaging.version import parse as vparse
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import (
@@ -41,6 +42,17 @@ def _corr(t, op):
     return t._reduction(sa.func.corr, op)
 
 
+def _literal(t, op):
+    if (
+        # handle UUIDs in sqlalchemy < 2
+        vparse(sa.__version__) < vparse("2")
+        and (dtype := op.output_dtype).is_uuid()
+        and (value := op.value) is not None
+    ):
+        return sa.literal(str(value), type_=t.get_sqla_type(dtype))
+    return _alchemy_literal(t, op)
+
+
 def _second(t, op):
     # Oracle returns fractional seconds, so `floor` the result to match
     # the behavior of other backends
@@ -77,6 +89,7 @@ operation_registry.update(
         ops.StringFind: _gen_string_find(sa.func.instr),
         # Generic
         ops.Hash: unary(sa.func.ora_hash),
+        ops.Literal: _literal,
     }
 )
 
