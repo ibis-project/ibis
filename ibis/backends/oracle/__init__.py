@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-import warnings
-from typing import Any, Iterable
+import sys
 
-import sqlalchemy as sa
+import oracledb
 
 # Wow, this is truly horrible
 # Get out your clippers, it's time to shave a yak.
@@ -20,6 +19,7 @@ oracledb.__version__ = oracledb.version = "7"
 
 sys.modules["cx_Oracle"] = oracledb
 
+import warnings  # noqa: E402
 from typing import Any, Iterable  # noqa: E402
 
 import sqlalchemy as sa  # noqa: E402
@@ -32,7 +32,7 @@ from ibis.backends.base.sql.alchemy import (  # noqa: E402
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
-from ibis.backends.oracle.registry import operation_registry
+from ibis.backends.oracle.registry import operation_registry  # noqa: E402
 
 
 class OracleExprTranslator(AlchemyExprTranslator):
@@ -95,7 +95,7 @@ class Backend(BaseAlchemyBackend):
             Database to connect to
         """
         url = sa.engine.url.make_url(
-            f"oracle+oracledb://{user}:{password}@{host}:{port}/{database}"
+            f"oracle://{user}:{password}@{host}:{port}/{database}"
         )
 
         # Creating test DB and user
@@ -128,10 +128,7 @@ class Backend(BaseAlchemyBackend):
         engine = sa.create_engine(
             url,
             poolclass=sa.pool.StaticPool,
-            connect_args={
-                "service_name": database,
-            },
-            isolation_level="READ COMMITTED",
+            connect_args={"service_name": database},
         )
 
         @sa.event.listens_for(engine, "connect")

@@ -5,7 +5,7 @@ import contextlib
 import os
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, TextIO
+from typing import Any, TextIO
 
 import pytest
 import sqlalchemy as sa
@@ -17,9 +17,6 @@ ORACLE_USER = os.environ.get('IBIS_TEST_ORACLE_USER', 'ibis')
 ORACLE_PASS = os.environ.get('IBIS_TEST_ORACLE_PASSWORD', 'ibis')
 ORACLE_HOST = os.environ.get('IBIS_TEST_ORACLE_HOST', 'localhost')
 ORACLE_PORT = int(os.environ.get('IBIS_TEST_ORACLE_PORT', 1521))
-
-if TYPE_CHECKING:
-    import ibis.expr.types as ir
 
 
 class TestConf(BackendTest, RoundHalfToEven):
@@ -73,7 +70,7 @@ class TestConf(BackendTest, RoundHalfToEven):
         with open(script_dir / 'schema' / 'oracle.sql') as schema:
             init_oracle_database(
                 url=sa.engine.make_url(
-                    f"oracle+oracledb://{user}:{password}@{host}:{port:d}/{database}",
+                    f"oracle://{user}:{password}@{host}:{port:d}/{database}",
                 ),
                 database=database,
                 schema=schema,
