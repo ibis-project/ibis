@@ -5,6 +5,7 @@ from enum import Enum, EnumMeta
 
 import dateutil.parser
 import dateutil.tz
+import pytz
 from public import public
 
 from ibis.common.dispatch import lazy_singledispatch
@@ -123,7 +124,7 @@ def normalize_timezone(tz):
             return dateutil.tz.gettz(tz)
     elif isinstance(tz, (int, float)):
         return datetime.timezone(datetime.timedelta(hours=tz))
-    elif isinstance(tz, dateutil.tz.tzoffset):
+    elif isinstance(tz, (dateutil.tz.tzoffset, pytz._FixedOffset)):
         # this way we have a proper tzname() output, e.g. "UTC+01:00"
         return datetime.timezone(tz.utcoffset(None))
     elif isinstance(tz, datetime.tzinfo):

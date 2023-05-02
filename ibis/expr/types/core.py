@@ -511,7 +511,7 @@ def _binop(
     >>> import ibis.expr.operations as ops
     >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
     >>> expr
-    TimeAdd(datetime.time(1, 0), 1): datetime.time(1, 0) + 1 h
+    TimeAdd('01:00', 1): '01:00' + 1 h
     >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
     NotImplemented
     """

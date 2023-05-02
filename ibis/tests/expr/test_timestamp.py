@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import dateutil.parser
 import numpy as np
 import pandas as pd
 import pytest
@@ -63,7 +64,7 @@ def test_timestamp_literals(function, value):
 
 
 def test_invalid_timestamp_literal():
-    with pytest.raises(ValueError):
+    with pytest.raises(dateutil.parser.ParserError):
         ibis.timestamp('2015-01-01 00:71')
 
 
