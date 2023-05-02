@@ -3,7 +3,6 @@ from __future__ import annotations
 import concurrent.futures
 import functools
 import os
-from functools import partial
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -12,7 +11,6 @@ import sqlalchemy as sa
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-from ibis.util import consume
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -82,30 +80,30 @@ class TestConf(BackendTest, RoundAwayFromZero):
         raw_url = sa.engine.make_url(snowflake_url)
         _, schema = raw_url.database.rsplit("/", 1)
         url = raw_url.set(database="")
-        con = sa.create_engine(url)
+        con = sa.create_engine(
+            url, connect_args={"session_parameters": {"MULTI_STATEMENT_COUNT": "0"}}
+        )
 
         dbschema = f"ibis_testing.{schema}"
 
-        stmts = [
-            "CREATE DATABASE IF NOT EXISTS ibis_testing",
-            f"CREATE SCHEMA IF NOT EXISTS {dbschema}",
-            f"USE SCHEMA {dbschema}",
-            *script_dir.joinpath("schema", "snowflake.sql").read_text().split(";"),
-        ]
+        with con.begin() as c:
+            c.exec_driver_sql(
+                f"""\
+CREATE DATABASE IF NOT EXISTS ibis_testing;
+CREATE SCHEMA IF NOT EXISTS ibis_testing.{dbschema};
+USE ibis_testing.{dbschema};
+{script_dir.joinpath("schema", "snowflake.sql").read_text()}"""
+            )
 
         with con.begin() as c:
-            consume(map(c.exec_driver_sql, filter(None, map(str.strip, stmts))))
-
             # not much we can do to make this faster, but running these in
             # multiple threads seems to save about 2x
             with concurrent.futures.ThreadPoolExecutor() as exe:
-                for result in concurrent.futures.as_completed(
-                    map(
-                        partial(exe.submit, partial(copy_into, c, data_dir)),
-                        TEST_TABLES,
-                    )
+                for future in concurrent.futures.as_completed(
+                    exe.submit(copy_into, c, data_dir, table)
+                    for table in TEST_TABLES.keys()
                 ):
-                    result.result()
+                    future.result()
 
     @property
     def functional_alltypes(self) -> ir.Table:

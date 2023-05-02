@@ -10,7 +10,7 @@ import sys
 import tempfile
 import textwrap
 import warnings
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping
 
 import pyarrow as pa
 import sqlalchemy as sa
@@ -188,14 +188,26 @@ $$ {defn["source"]} $$"""
         if connect_args is None:
             connect_args = {}
 
-        connect_args.setdefault(
-            "session_parameters",
-            {
-                "JSON_INDENT": "0",
-                "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT": "ARROW",
-                "STRICT_JSON_OUTPUT": "TRUE",
-            },
+        session_parameters = connect_args.setdefault("session_parameters", {})
+
+        # enable multiple SQL statements by default
+        session_parameters.setdefault("MULTI_STATEMENT_COUNT", "0")
+        # don't format JSON output by default
+        session_parameters.setdefault("JSON_INDENT", "0")
+
+        # overwrite session parameters that are required for ibis + snowflake
+        # to work
+        session_parameters.update(
+            dict(
+                # Use Arrow for query results
+                PYTHON_CONNECTOR_QUERY_RESULT_FORMAT="ARROW",
+                # JSON output must be strict for null versus undefined
+                STRICT_JSON_OUTPUT="TRUE",
+                # Timezone must be UTC
+                TIMEZONE="UTC",
+            ),
         )
+
         if authenticator is not None:
             connect_args.setdefault("authenticator", authenticator)
 
@@ -209,7 +221,6 @@ $$ {defn["source"]} $$"""
             dialect = engine.dialect
             quote = dialect.preparer(dialect).quote_identifier
             with dbapi_connection.cursor() as cur:
-                cur.execute("ALTER SESSION SET TIMEZONE = 'UTC'")
                 (database, schema) = cur.execute(
                     "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
                 ).fetchone()
@@ -353,21 +364,24 @@ $$""".format(
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         target_schema = expr.as_table().schema().to_pyarrow()
-        target_columns = target_schema.names
-
-        def batch_producer(con):
-            with con.begin() as c, contextlib.closing(c.execute(sql)) as cur:
-                yield from itertools.chain.from_iterable(
-                    t.rename_columns(target_columns)
-                    .cast(target_schema)
-                    .to_batches(max_chunksize=chunk_size)
-                    # yields pyarrow.Table objects, which are then converted to record batches
-                    for t in cur.cursor.fetch_arrow_batches()
-                )
 
         return pa.RecordBatchReader.from_batches(
-            target_schema, batch_producer(self.con)
+            target_schema,
+            self._make_batch_iter(
+                sql, target_schema=target_schema, chunk_size=chunk_size
+            ),
         )
+
+    def _make_batch_iter(
+        self, sql: str, *, target_schema: sch.Schema, chunk_size: int
+    ) -> Iterator[pa.RecordBatch]:
+        with self.begin() as con, contextlib.closing(con.execute(sql)) as cur:
+            yield from itertools.chain.from_iterable(
+                t.rename_columns(target_schema.names)
+                .cast(target_schema)
+                .to_batches(max_chunksize=chunk_size)
+                for t in cur.cursor.fetch_arrow_batches()
+            )
 
     def _get_sqla_table(
         self,
