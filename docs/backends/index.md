@@ -42,4 +42,4 @@ The pandas backend is the only direct execution backend. A full description
 of the implementation can be found in the module docstring of the pandas
 backend located in `ibis/backends/pandas/core.py`.
 
-- [Pandas](Pandas.md)
+- [pandas](pandas.md)
