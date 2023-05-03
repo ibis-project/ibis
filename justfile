@@ -64,7 +64,7 @@ doctest *args:
     pytest --doctest-modules {{ args }} "${doctest_modules[@]}"
 
 # download testing data
-download-data owner="cpcloud" repo="testing-data" rev="cleanup":
+download-data owner="ibis-project" repo="testing-data" rev="master":
     #!/usr/bin/env bash
     outdir="{{ justfile_directory() }}/ci/ibis-testing-data"
     rm -rf "$outdir"
