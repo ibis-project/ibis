@@ -10,6 +10,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.enums import IntervalUnit
 from ibis.expr import api
+from ibis.tests.util import assert_equal
 
 
 def test_temporal_literals():
@@ -18,6 +19,73 @@ def test_temporal_literals():
 
     timestamp = ibis.literal('2017-01-01 12:00:33', 'timestamp')
     assert isinstance(timestamp, ir.TimestampScalar)
+
+
+def test_interval_function_integers():
+    # No args, default to 0 seconds
+    assert_equal(ibis.interval(), ibis.interval(0, "s"))
+
+    # Default unit is seconds
+    assert_equal(ibis.interval(1), ibis.interval(1, "s"))
+
+    # unit is used if provided
+    res = ibis.interval(1, "D")
+    sol = ibis.literal(1, type=dt.Interval("D", value_type=ibis.literal(1).type()))
+    assert_equal(res, sol)
+
+
+def test_interval_function_timedelta():
+    res = ibis.interval(datetime.timedelta())
+    sol = ibis.interval()
+    assert_equal(res, sol)
+
+    res = ibis.interval(datetime.timedelta(microseconds=10))
+    sol = ibis.interval(10, "us")
+    assert_equal(res, sol)
+
+    res = ibis.interval(datetime.timedelta(days=5))
+    sol = ibis.interval(5, "D")
+    assert_equal(res, sol)
+
+    res = ibis.interval(datetime.timedelta(seconds=10, microseconds=2))
+    sol = ibis.interval(2, "us") + ibis.interval(10, "s")
+    assert_equal(res, sol)
+
+
+@pytest.mark.parametrize(
+    "kw,unit",
+    [
+        ("nanoseconds", "ns"),
+        ("microseconds", "us"),
+        ("milliseconds", "ms"),
+        ("seconds", "s"),
+        ("minutes", "m"),
+        ("hours", "h"),
+        ("days", "D"),
+        ("weeks", "W"),
+        ("months", "M"),
+        ("quarters", "Q"),
+        ("years", "Y"),
+    ],
+)
+def test_interval_function_unit_keywords(kw, unit):
+    res = ibis.interval(**{kw: 1})
+    sol = ibis.interval(1, unit)
+    assert_equal(res, sol)
+
+
+def test_interval_function_multiple_keywords():
+    res = ibis.interval(microseconds=10, hours=3, days=2)
+    sol = ibis.interval(10, "us") + ibis.interval(3, "h") + ibis.interval(2, "D")
+    assert_equal(res, sol)
+
+
+def test_interval_function_invalid():
+    with pytest.raises(TypeError, match="integer or timedelta"):
+        ibis.interval(1.5)
+
+    with pytest.raises(TypeError, match="'value' and 'microseconds'"):
+        ibis.interval(1, microseconds=2)
 
 
 @pytest.mark.parametrize(

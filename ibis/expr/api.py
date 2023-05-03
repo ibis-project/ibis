@@ -717,6 +717,7 @@ def _time_from_deferred(value: Deferred) -> Deferred:
 def interval(
     value: int | datetime.timedelta | None = None,
     unit: str = 's',
+    *,
     years: int | None = None,
     quarters: int | None = None,
     months: int | None = None,
@@ -734,7 +735,7 @@ def interval(
     Parameters
     ----------
     value
-        Interval value. If passed, must be combined with `unit`.
+        Interval value.
     unit
         Unit of `value`
     years
@@ -765,37 +766,46 @@ def interval(
     IntervalScalar
         An interval expression
     """
+    keyword_value_unit = [
+        ("nanoseconds", nanoseconds, "ns"),
+        ("microseconds", microseconds, "us"),
+        ("milliseconds", milliseconds, "ms"),
+        ("seconds", seconds, "s"),
+        ("minutes", minutes, "m"),
+        ("hours", hours, "h"),
+        ("days", days, "D"),
+        ("weeks", weeks, "W"),
+        ("months", months, "M"),
+        ("quarters", quarters, "Q"),
+        ("years", years, "Y"),
+    ]
     if value is not None:
+        for kw, v, _ in keyword_value_unit:
+            if v is not None:
+                raise TypeError(f"Cannot provide both 'value' and '{kw}'")
         if isinstance(value, datetime.timedelta):
-            unit = 's'
-            value = int(value.total_seconds())
-        elif not isinstance(value, int):
-            raise ValueError('Interval value must be an integer')
+            components = [
+                (value.microseconds, "us"),
+                (value.seconds, "s"),
+                (value.days, "D"),
+            ]
+            components = [(v, u) for v, u in components if v]
+        elif isinstance(value, int):
+            components = [(value, unit)]
+        else:
+            raise TypeError("value must be an integer or timedelta")
     else:
-        kwds = [
-            ('Y', years),
-            ('Q', quarters),
-            ('M', months),
-            ('W', weeks),
-            ('D', days),
-            ('h', hours),
-            ('m', minutes),
-            ('s', seconds),
-            ('ms', milliseconds),
-            ('us', microseconds),
-            ('ns', nanoseconds),
-        ]
-        defined_units = [(k, v) for k, v in kwds if v is not None]
+        components = [(v, u) for _, v, u in keyword_value_unit if v is not None]
 
-        if len(defined_units) != 1:
-            raise ValueError('Exactly one argument is required')
+    # If no components, default to 0 s
+    if not components:
+        components.append((0, "s"))
 
-        unit, value = defined_units[0]
-
-    value_type = literal(value).type()
-    type = dt.Interval(unit, value_type=value_type)
-
-    return literal(value, type=type)
+    intervals = [
+        literal(v, type=dt.Interval(u, value_type=literal(v).type()))
+        for v, u in components
+    ]
+    return functools.reduce(operator.add, intervals)
 
 
 def case() -> bl.SearchedCaseBuilder:
