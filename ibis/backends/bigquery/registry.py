@@ -376,9 +376,10 @@ def _geo_simplify(translator, op):
 
 
 STRFTIME_FORMAT_FUNCTIONS = {
-    dt.Date: "DATE",
-    dt.Time: "TIME",
-    dt.Timestamp: "TIMESTAMP",
+    dt.date: "DATE",
+    dt.time: "TIME",
+    dt.Timestamp(timezone=None): "DATETIME",
+    dt.Timestamp(timezone="UTC"): "TIMESTAMP",
 }
 
 
@@ -404,19 +405,26 @@ def compiles_strftime(translator, op):
     arg = op.arg
     format_str = op.format_str
     arg_type = arg.output_dtype
-    strftime_format_func_name = STRFTIME_FORMAT_FUNCTIONS[type(arg_type)]
+    strftime_format_func_name = STRFTIME_FORMAT_FUNCTIONS[arg_type]
     fmt_string = translator.translate(format_str)
     arg_formatted = translator.translate(arg)
-    if isinstance(arg_type, dt.Timestamp):
+    if isinstance(arg_type, dt.Timestamp) and arg_type.timezone is None:
+        return "FORMAT_{}({}, {})".format(
+            strftime_format_func_name,
+            fmt_string,
+            arg_formatted,
+        )
+    elif isinstance(arg_type, dt.Timestamp):
         return "FORMAT_{}({}, {}, {!r})".format(
             strftime_format_func_name,
             fmt_string,
             arg_formatted,
-            arg_type.timezone if arg_type.timezone is not None else "UTC",
+            arg_type.timezone,
         )
-    return "FORMAT_{}({}, {})".format(
-        strftime_format_func_name, fmt_string, arg_formatted
-    )
+    else:
+        return "FORMAT_{}({}, {})".format(
+            strftime_format_func_name, fmt_string, arg_formatted
+        )
 
 
 def compiles_string_to_timestamp(translator, op):

@@ -363,3 +363,22 @@ def test_geography_table(con, temp_table):
     assert temporary_table.schema() == ibis.schema(
         [("col1", dt.GeoSpatial(geotype="geography", srid=4326))]
     )
+
+
+def test_timestamp_table(con, temp_table):
+    schema = ibis.schema(
+        {'datetime_col': dt.Timestamp(), 'timestamp_col': dt.Timestamp(timezone="UTC")}
+    )
+    temporary_table = con.create_table(temp_table, schema=schema)
+    con.raw_sql(
+        f"INSERT {con.current_database}.{temp_table} (datetime_col, timestamp_col) VALUES (CURRENT_DATETIME(), CURRENT_TIMESTAMP())"
+    )
+    df = temporary_table.execute()
+    assert df.shape == (1, 2)
+
+    assert temporary_table.schema() == ibis.schema(
+        [
+            ("datetime_col", dt.Timestamp()),
+            ("timestamp_col", dt.Timestamp(timezone="UTC")),
+        ]
+    )

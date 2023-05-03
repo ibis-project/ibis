@@ -23,10 +23,9 @@ _DTYPE_TO_IBIS_TYPE = {
     "BOOL": dt.boolean,
     "STRING": dt.string,
     "DATE": dt.date,
-    # FIXME: enforce no tz info
-    "DATETIME": dt.timestamp,
+    "DATETIME": dt.Timestamp(timezone=None),
     "TIME": dt.time,
-    "TIMESTAMP": dt.timestamp,
+    "TIMESTAMP": dt.Timestamp(timezone="UTC"),
     "BYTES": dt.binary,
     "NUMERIC": dt.Decimal(38, 9),
     "GEOGRAPHY": dt.GeoSpatial(geotype="geography", srid=4326),

@@ -277,6 +277,11 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'epoch_seconds'",
 )
+@pytest.mark.broken(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="UNIX_SECONDS does not support DATETIME arguments",
+)
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name('tmp')
     result = expr.execute()
@@ -1196,11 +1201,6 @@ def test_temporal_binop_pandas_timedelta(
 
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
 @pytest.mark.notimpl(
-    ["bigquery"],
-    raises=TypeError,
-    reason="BigQuery does not support timestamps with timezones",
-)
-@pytest.mark.notimpl(
     ["polars"],
     raises=TypeError,
     reason="casting a timezone aware value to timezone aware dtype was removed",
@@ -1291,11 +1291,6 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
         "eq",
         "ne",
     ],
-)
-@pytest.mark.notimpl(
-    ["bigquery"],
-    raises=TypeError,
-    reason="BigQuery does not support timestamps with timezones",
 )
 @pytest.mark.broken(
     ["druid"],
@@ -1842,18 +1837,6 @@ def test_timestamp_literal(con, backend):
         assert con.execute(expr.typeof()) == TIMESTAMP_BACKEND_TYPES[backend_name]
 
 
-TIMESTAMP_TIMEZONE_BACKEND_TYPES = {
-    'bigquery': "DATETIME",
-    'clickhouse': 'Nullable(DateTime64(3))',
-    'impala': 'TIMESTAMP',
-    'snowflake': 'TIMESTAMP_NTZ',
-    'sqlite': "text",
-    'trino': 'timestamp(3) with time zone',
-    "duckdb": "TIMESTAMP WITH TIME ZONE",
-    "postgres": "timestamp with time zone",
-}
-
-
 @pytest.mark.notimpl(
     ["pandas", "datafusion", "mysql", "dask", "pyspark"],
     raises=com.OperationNotDefinedError,
@@ -1903,8 +1886,8 @@ TIMESTAMP_TIMEZONE_BACKEND_TYPES = {
 )
 @pytest.mark.notimpl(
     ['bigquery'],
-    "BigQuery does not support timestamps with timezones",
-    raises=TypeError,
+    "BigQuery does not support timestamps with timezones other than 'UTC'",
+    raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
     ["druid"],

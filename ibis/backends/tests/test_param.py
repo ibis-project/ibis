@@ -12,6 +12,11 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
 
+try:
+    from google.api_core.exceptions import BadRequest as GoogleBadRequest
+except ImportError:
+    GoogleBadRequest = None
+
 
 @pytest.mark.parametrize(
     ('column', 'raw_value'),
@@ -120,21 +125,42 @@ def test_scalar_param_map(con):
             "timestamp",
             "timestamp_col",
             id="string_timestamp",
-            marks=pytest.mark.notimpl(["druid"]),
+            marks=[
+                pytest.mark.notimpl(["druid"]),
+                pytest.mark.broken(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="No matching for operator = for argument types: DATETIME, TIMESTAMP",
+                ),
+            ],
         ),
         param(
             datetime.date(2009, 1, 20),
             "timestamp",
             "timestamp_col",
             id="date_timestamp",
-            marks=pytest.mark.notimpl(["druid"]),
+            marks=[
+                pytest.mark.notimpl(["druid"]),
+                pytest.mark.broken(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="No matching for operator = for argument types: DATETIME, TIMESTAMP",
+                ),
+            ],
         ),
         param(
             datetime.datetime(2009, 1, 20, 1, 2, 3),
             "timestamp",
             "timestamp_col",
             id="datetime_timestamp",
-            marks=pytest.mark.notimpl(["druid"]),
+            marks=[
+                pytest.mark.notimpl(["druid"]),
+                pytest.mark.broken(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="No matching for operator = for argument types: DATETIME, TIMESTAMP",
+                ),
+            ],
         ),
     ],
 )
