@@ -395,7 +395,7 @@ def mockcon():
 @pytest.fixture(scope="module")
 def kudu_table(con, test_data_db):
     name = 'kudu_backed_table'
-    con.raw_sql(
+    cur = con.raw_sql(
         f"""\
 CREATE TABLE {test_data_db}.{name} (
   a STRING,
@@ -408,6 +408,7 @@ TBLPROPERTIES (
   'kudu.num_tablet_replicas' = '1'
 )"""
     )
+    cur.close()
     yield con.table(name)
     con.drop_table(name, database=test_data_db)
 

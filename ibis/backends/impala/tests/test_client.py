@@ -1,4 +1,5 @@
 import datetime
+from contextlib import closing
 from posixpath import join as pjoin
 
 import pandas as pd
@@ -23,12 +24,6 @@ def db(con, test_data_db):
 
 def test_hdfs_connect_function_is_public():
     assert hasattr(ibis.impala, "hdfs_connect")
-
-
-def test_cursor_garbage_collection(con):
-    for _ in range(5):
-        con.raw_sql('select 1').fetchall()
-        con.raw_sql('select 1').fetchone()
 
 
 def test_raise_ibis_error_no_hdfs(con_no_hdfs):
@@ -62,9 +57,8 @@ def test_sql_with_limit(con):
 
 def test_raw_sql(con):
     query = 'SELECT * from functional_alltypes limit 10'
-    cur = con.raw_sql(query)
-    rows = cur.fetchall()
-    cur.release()
+    with closing(con.raw_sql(query)) as cur:
+        rows = cur.fetchall()
     assert len(rows) == 10
 
 
@@ -295,7 +289,7 @@ def test_datetime_to_int_cast(con):
 
 def test_set_option_with_dot(con):
     con.set_options({'request_pool': 'baz.quux'})
-    result = dict(row[:2] for row in con.raw_sql('set').fetchall())
+    result = con.get_options()
     assert result['REQUEST_POOL'] == 'baz.quux'
 
 
