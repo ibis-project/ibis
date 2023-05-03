@@ -131,11 +131,7 @@ class BaseSQLBackend(BaseBackend):
         query
             DDL or DML statement
         """
-        cursor = self.con.execute(query)
-        if cursor:
-            return cursor
-        cursor.release()
-        return None
+        return self.con.execute(query)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):

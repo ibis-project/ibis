@@ -305,7 +305,8 @@ class ImpalaTable(ir.Table):
                 partition_schema=partition_schema,
                 overwrite=overwrite,
             )
-            return self._client.raw_sql(statement.compile())
+            self._client._safe_exec_sql(statement.compile())
+            return self
 
     def load_data(self, path, overwrite=False, partition=None):
         """Load data into an Impala table.
@@ -333,7 +334,8 @@ class ImpalaTable(ir.Table):
             overwrite=overwrite,
         )
 
-        return self._client.raw_sql(stmt.compile())
+        self._client._safe_exec_sql(stmt.compile())
+        return self
 
     @property
     def name(self):
@@ -348,7 +350,7 @@ class ImpalaTable(ir.Table):
         if not m and database is None:
             database = self._database
         statement = RenameTable(self._qualified_name, new_name, new_database=database)
-        self._client.raw_sql(statement)
+        self._client._safe_exec_sql(statement)
 
         op = self.op().copy(name=statement.new_qualified_name)
         return type(self)(op)
@@ -385,7 +387,8 @@ class ImpalaTable(ir.Table):
         stmt = ddl.AddPartition(
             self._qualified_name, spec, part_schema, location=location
         )
-        return self._client.raw_sql(stmt)
+        self._client._safe_exec_sql(stmt)
+        return self
 
     def alter(
         self,
@@ -410,7 +413,8 @@ class ImpalaTable(ir.Table):
 
         def _run_ddl(**kwds):
             stmt = AlterTable(self._qualified_name, **kwds)
-            return self._client.raw_sql(stmt)
+            self._client._safe_exec_sql(stmt)
+            return self
 
         return self._alter_table_helper(
             _run_ddl,
@@ -451,7 +455,8 @@ class ImpalaTable(ir.Table):
 
         def _run_ddl(**kwds):
             stmt = ddl.AlterPartition(self._qualified_name, spec, part_schema, **kwds)
-            return self._client.raw_sql(stmt)
+            self._client._safe_exec_sql(stmt)
+            return self
 
         return self._alter_table_helper(
             _run_ddl,
@@ -474,7 +479,8 @@ class ImpalaTable(ir.Table):
         """Drop an existing table partition."""
         part_schema = self.partition_schema()
         stmt = ddl.DropPartition(self._qualified_name, spec, part_schema)
-        return self._client.raw_sql(stmt)
+        self._client._safe_exec_sql(stmt)
+        return self
 
     def partitions(self):
         """Return information about the table's partitions.

@@ -1,4 +1,5 @@
 import os
+from contextlib import closing
 from posixpath import join as pjoin
 
 import pytest
@@ -346,13 +347,16 @@ def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
 @pytest.fixture
 def temp_char_table(con):
     name = "testing_varchar_support"
-    con.raw_sql(
-        f"""\
+    with closing(
+        con.raw_sql(
+            f"""\
 CREATE TABLE IF NOT EXISTS {name} (
   group1 VARCHAR(10),
   group2 CHAR(10)
 )"""
-    )
+        )
+    ):
+        pass
     assert name in con.list_tables(), name
     yield con.table(name)
     con.drop_table(name, force=True)
