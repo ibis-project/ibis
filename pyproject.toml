@@ -117,7 +117,7 @@ sqlalchemy = ">=1.4,<3"
 [tool.poetry.group.docs.dependencies]
 griffe = ">=0.25.3,<1"
 ipykernel = ">=6,<7"
-mkdocs = ">=1.2.3,<1.4.3"
+mkdocs = ">=1.2.3,<1.4.4"
 mkdocs-exclude = ">=1.0.2,<2"
 mkdocs-gen-files = ">=0.3.4,<0.6.0"
 mkdocs-git-revision-date-localized-plugin = ">=1.1.0,<2"
