@@ -1,5 +1,5 @@
 ---
-backend_name: Pandas
+backend_name: pandas
 backend_url: https://pandas.pydata.org/
 backend_module: pandas
 intro: Ibis's pandas backend is available in core Ibis.
@@ -69,7 +69,7 @@ def zscore(series):
     return (series - series.mean()) / series.std()
 ```
 
-### Details of Pandas UDFs
+### Details of pandas UDFs
 
 - Element-wise provide support
   for applying your UDF to any combination of scalar values and columns.

@@ -1,4 +1,4 @@
-# Pandas-like Backend Base Classes
+# pandas-like Backend Base Classes
 
 These base classes underlie the pandas-based backends.
 

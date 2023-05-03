@@ -67,7 +67,7 @@ AlchemyTable: penguins
 
 Ibis is lazily evaluated, so instead of seeing the data, we see the schema of
 the table, instead. To peek at the data, we can call `head` and then `execute`
-to get the first few rows of the table as a Pandas DataFrame.
+to get the first few rows of the table as a pandas DataFrame.
 
 ```python
 >>> penguins.head().execute()
@@ -98,9 +98,9 @@ r0 := AlchemyTable: penguins
 Limit[r0, n=5]
 ```
 
-!!! note "Results in Pandas DataFrame"
+!!! note "Results in pandas DataFrame"
 
-    Ibis returns results as a Pandas DataFrame by default. It isn't using Pandas to
+    Ibis returns results as a pandas DataFrame by default. It isn't using pandas to
     perform any of the computation. The query is executed by the backend (DuckDB in
     this case). Only when the query is executed does Ibis then pull back the results
     and convert them into a DataFrame.

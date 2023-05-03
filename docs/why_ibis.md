@@ -58,7 +58,7 @@ Ibis to quickly and easily switch to a different backend that supports
 out-of-core execution.
 
 Ibis syntax is similar to `pandas` syntax, but it isn't a drop-in replacement.
-Check out our [Ibis for Pandas Users guide](./ibis-for-pandas-users.ipynb) if
+Check out our [Ibis for pandas Users guide](./ibis-for-pandas-users.ipynb) if
 you'd like to give Ibis a try!
 
 ## `sqlalchemy` and `sqlglot`
