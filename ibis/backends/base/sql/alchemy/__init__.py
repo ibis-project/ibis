@@ -278,7 +278,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         if has_expr := obj is not None:
             # this has to happen outside the `begin` block, so that in-memory
             # tables are visible inside the transaction created by it
-            self._register_in_memory_tables(obj)
+            self._run_pre_execute_hooks(obj)
 
         table = self._table_from_schema(
             name, schema, database=database or self.current_database, temp=temp

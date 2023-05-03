@@ -148,7 +148,7 @@ class BaseSQLBackend(BaseBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
     ) -> Iterable[list]:
-        self._register_in_memory_tables(expr)
+        self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
@@ -246,9 +246,7 @@ class BaseSQLBackend(BaseBackend):
 
         schema = self.ast_schema(query_ast, **kwargs)
 
-        # register all in memory tables if the backend supports cheap access
-        # to them
-        self._register_in_memory_tables(expr)
+        self._run_pre_execute_hooks(expr)
 
         with self._safe_raw_sql(sql, **kwargs) as cursor:
             result = self.fetch_from_cursor(cursor, schema)
@@ -265,6 +263,10 @@ class BaseSQLBackend(BaseBackend):
         if self.compiler.cheap_in_memory_tables:
             for memtable in an.find_memtables(expr.op()):
                 self._register_in_memory_table(memtable)
+
+    def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
+        """Backend-specific hooks to run before an expression is executed."""
+        self._register_in_memory_tables(expr)
 
     @abc.abstractmethod
     def fetch_from_cursor(self, cursor, schema):

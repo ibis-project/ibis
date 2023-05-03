@@ -236,7 +236,7 @@ $$ {defn["source"]} $$"""
 
         import pyarrow as pa
 
-        self._register_in_memory_tables(expr)
+        self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         with self.begin() as con:
@@ -282,7 +282,7 @@ $$ {defn["source"]} $$"""
 
         import pyarrow as pa
 
-        self._register_in_memory_tables(expr)
+        self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         target_schema = expr.as_table().schema().to_pyarrow()
