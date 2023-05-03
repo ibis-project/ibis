@@ -125,6 +125,7 @@ class Backend(BaseAlchemyBackend):
             # the progress bar causes kernel crashes in jupyterlab ¯\_(ツ)_/¯
             dbapi_connection.execute("SET enable_progress_bar = false")
 
+        self._record_batch_readers_consumed = {}
         super().do_connect(engine)
 
     def _load_extensions(self, extensions):
@@ -395,13 +396,15 @@ class Backend(BaseAlchemyBackend):
             con.connection.register(table_name, dataset)
 
     def read_in_memory(
-        self, dataframe: pd.DataFrame | pa.Table, table_name: str | None = None
+        self,
+        source: pd.DataFrame | pa.Table | pa.RecordBatchReader,
+        table_name: str | None = None,
     ) -> ir.Table:
-        """Register a Pandas DataFrame or pyarrow Table as a table in the current database.
+        """Register a Pandas DataFrame or pyarrow object as a table in the current database.
 
         Parameters
         ----------
-        dataframe
+        source
             The data source.
         table_name
             An optional name to use for the created table. This defaults to
@@ -414,7 +417,12 @@ class Backend(BaseAlchemyBackend):
         """
         table_name = table_name or util.gen_name("read_in_memory")
         with self.begin() as con:
-            con.connection.register(table_name, dataframe)
+            con.connection.register(table_name, source)
+
+        if isinstance(source, pa.RecordBatchReader):
+            # Ensure the reader isn't marked as started, in case the name is
+            # being overwritten.
+            self._record_batch_readers_consumed[table_name] = False
 
         return self.table(table_name)
 
@@ -534,6 +542,26 @@ class Backend(BaseAlchemyBackend):
                 sa.text(f"CALL sqlite_attach('{str(path)}', overwrite={overwrite})")
             )
 
+    def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
+        from ibis.expr.analysis import find_physical_tables
+
+        # Warn for any tables depending on RecordBatchReaders that have already
+        # started being consumed.
+        for t in find_physical_tables(expr.op()):
+            started = self._record_batch_readers_consumed.get(t.name)
+            if started is True:
+                warnings.warn(
+                    f"Table {t.name!r} is backed by a `pyarrow.RecordBatchReader` "
+                    "that has already been partially consumed. This may lead to "
+                    "unexpected results. Either recreate the table from a new "
+                    "`pyarrow.RecordBatchReader`, or use `Table.cache()`/"
+                    "`con.create_table()` to consume and store the results in "
+                    "the backend to reuse later."
+                )
+            elif started is False:
+                self._record_batch_readers_consumed[t.name] = True
+        super()._run_pre_execute_hooks(expr)
+
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
@@ -542,7 +570,7 @@ class Backend(BaseAlchemyBackend):
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **_: Any,
-    ) -> pa.ipc.RecordBatchReader:
+    ) -> pa.RecordBatchReader:
         """Return a stream of record batches.
 
         The returned `RecordBatchReader` contains a cursor with an unbounded lifetime.
@@ -561,7 +589,7 @@ class Backend(BaseAlchemyBackend):
         chunk_size
             !!! warning "DuckDB returns 1024 size batches regardless of what argument is passed."
         """
-        self._register_in_memory_tables(expr)
+        self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
@@ -584,9 +612,7 @@ class Backend(BaseAlchemyBackend):
         limit: int | str | None = None,
         **_: Any,
     ) -> pa.Table:
-        pa = self._import_pyarrow()
-
-        self._register_in_memory_tables(expr)
+        self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 

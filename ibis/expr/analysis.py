@@ -118,6 +118,18 @@ def reduction_to_aggregation(node):
     return agg
 
 
+def find_physical_tables(node):
+    """Find every first occurrence of a `ir.PhysicalTable` object in `node`."""
+
+    def finder(node):
+        if isinstance(node, ops.PhysicalTable):
+            return g.halt, node
+        else:
+            return g.proceed, None
+
+    return list(toolz.unique(g.traverse(finder, node)))
+
+
 def find_immediate_parent_tables(input_node, keep_input=True):
     """Find every first occurrence of a `ir.Table` object in `input_node`.
 

@@ -288,3 +288,29 @@ def test_register_numpy_str(con):
     data = pd.DataFrame({"a": [np.str_("xyz"), None]})
     result = con.read_in_memory(data)
     tm.assert_frame_equal(result.execute(), data)
+
+
+def test_register_recordbatchreader_warns(con):
+    table = pa.Table.from_batches(
+        [
+            pa.RecordBatch.from_pydict({"x": [1, 2]}),
+            pa.RecordBatch.from_pydict({"x": [3, 4]}),
+        ]
+    )
+    reader = table.to_reader()
+    sol = table.to_pandas()
+    t = con.read_in_memory(reader)
+
+    # First execute is fine
+    res = t.execute()
+    tm.assert_frame_equal(res, sol)
+
+    # Later executes warn
+    with pytest.warns(UserWarning, match="RecordBatchReader"):
+        t.limit(2).execute()
+
+    # Re-registering over the name with a new reader is fine
+    reader = table.to_reader()
+    t = con.read_in_memory(reader, table_name=t.get_name())
+    res = t.execute()
+    tm.assert_frame_equal(res, sol)
