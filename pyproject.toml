@@ -38,7 +38,7 @@ numpy = ">=1,<2"
 pandas = ">=1.2.5,<3"
 parsy = ">=2,<3"
 pooch = { version = ">=1.6.0,<2", extras = ["progress", "xxhash"] }
-pyarrow = ">=2,<12"
+pyarrow = ">=2,<13"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
