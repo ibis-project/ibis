@@ -31,7 +31,9 @@ TEMPLATED_REDIRECTS = {
 }
 
 # Untemplated redirects
-REDIRECTS = {}
+REDIRECTS = {
+    "/backends/Pandas/": "/backends/pandas/",
+}
 
 # Fill in templates
 REDIRECTS.update(
