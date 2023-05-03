@@ -2,6 +2,7 @@ import pytest
 from multipledispatch.conflict import ambiguities
 from pytest import param
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.datatypes import (
     ibis_type_to_bigquery_type,
@@ -37,14 +38,19 @@ def test_no_ambiguities():
             id="struct",
         ),
         param(dt.date, "DATE", id="date"),
-        param(dt.timestamp, "TIMESTAMP", id="timestamp"),
+        param(dt.timestamp, "DATETIME", id="datetime"),
+        param(
+            dt.Timestamp(timezone="UTC"),
+            "TIMESTAMP",
+            id="timestamp_with_utc_tz",
+        ),
         param(
             dt.Timestamp(timezone="US/Eastern"),
             "TIMESTAMP",
             marks=pytest.mark.xfail(
-                raises=TypeError, reason="Not supported in BigQuery"
+                raises=com.UnsupportedOperationError, reason="Not supported in BigQuery"
             ),
-            id="timestamp_with_tz",
+            id="timestamp_with_other_tz",
         ),
         param(
             "array<struct<a: string>>", "ARRAY<STRUCT<a STRING>>", id="array<struct>"
@@ -58,7 +64,8 @@ def test_no_ambiguities():
             dt.GeoSpatial(geotype="geography"),
             "GEOGRAPHY",
             marks=pytest.mark.xfail(
-                raises=TypeError, reason="Should use the WGS84 reference ellipsoid."
+                raises=com.UnsupportedOperationError,
+                reason="Should use the WGS84 reference ellipsoid.",
             ),
             id="geography",
         ),

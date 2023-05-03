@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from multipledispatch import Dispatcher
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
 ibis_type_to_bigquery_type = Dispatcher("ibis_type_to_bigquery_type")
@@ -54,9 +55,14 @@ def trans_date(t):
 
 @ibis_type_to_bigquery_type.register(dt.Timestamp)
 def trans_timestamp(t):
-    if t.timezone is not None:
-        raise TypeError("BigQuery does not support timestamps with timezones")
-    return "TIMESTAMP"
+    if t.timezone is None:
+        return "DATETIME"
+    elif t.timezone == 'UTC':
+        return "TIMESTAMP"
+    else:
+        raise com.UnsupportedOperationError(
+            "BigQuery does not support timestamps with timezones other than 'UTC'"
+        )
 
 
 @ibis_type_to_bigquery_type.register(dt.DataType)
@@ -86,7 +92,7 @@ def trans_json(t):
 def trans_geography(t):
     if (t.geotype, t.srid) == ("geography", 4326):
         return "GEOGRAPHY"
-    raise TypeError(
+    raise com.UnsupportedOperationError(
         "BigQuery geography uses points on WGS84 reference ellipsoid."
         f"Current geotype: {t.geotype}, Current srid: {t.srid}"
     )

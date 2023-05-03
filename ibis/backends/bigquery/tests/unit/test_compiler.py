@@ -31,7 +31,7 @@ def alltypes():
                 double_col="float64",
                 date_string_col="string",
                 string_col="string",
-                timestamp_col="timestamp",
+                timestamp_col=dt.Timestamp(timezone="UTC"),
                 year="int32",
                 month="int32",
             )
