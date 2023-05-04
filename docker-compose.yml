@@ -186,7 +186,7 @@ services:
         - CMD-SHELL
         - trino --execute 'SELECT 1 AS one'
       timeout: 30s
-    image: trinodb/trino:415
+    image: trinodb/trino:416
     ports:
       - 8080:8080
     networks:
