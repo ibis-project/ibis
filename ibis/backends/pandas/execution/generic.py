@@ -196,8 +196,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
             data.values, data.index, data.name, timezone=from_type.timezone
         )
 
-    # TODO: remove String as subclass of JSON
-    if from_type.is_string() and not from_type.is_json():
+    if from_type.is_string():
         values = data.values
         datetimes = pd.to_datetime(values)
         with contextlib.suppress(TypeError):
