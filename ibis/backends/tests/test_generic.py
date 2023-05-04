@@ -923,15 +923,44 @@ def test_memtable_bool_column(backend, con, monkeypatch):
     backend.assert_series_equal(t.a.execute(), pd.Series([True, False, True], name="a"))
 
 
-@pytest.mark.parametrize("dtype", [None, "string"])
-def test_memtable_null_str(backend, con, monkeypatch, dtype):
-    """Ensure that null strings are translated to null, not string literal '<NA>'"""
-    monkeypatch.setattr(ibis.options, "default_backend", con)
+@pytest.mark.notimpl(
+    ["datafusion"], reason="no memtable support", raises=com.OperationNotDefinedError
+)
+@pytest.mark.broken(
+    ["druid"], reason="returns empty string for None", raises=AssertionError
+)
+def test_memtable_null_str_default_dtype(con):
+    """Ensure that null strings are translated to some kind of null value."""
+    t = ibis.memtable(pd.DataFrame({"a": ["a", None, "c"]}))
+    result = con.execute(t.a)
+    assert result.iat[0] == "a"
+    assert pd.isna(result.iat[1])
+    assert result.iat[2] == "c"
 
-    strings = ["a", None, "c"]
-    df = pd.DataFrame({"a": strings}, dtype=dtype)
-    t = ibis.memtable(df)
-    assert t.a.execute().tolist() == strings
+
+@pytest.mark.notimpl(
+    ["datafusion"], reason="no memtable support", raises=com.OperationNotDefinedError
+)
+@pytest.mark.notyet(
+    ["duckdb"], reason="conversion is broken in 0.7.1", raises=AssertionError
+)
+@pytest.mark.notyet(["mysql"], reason="NA comes back as string", raises=AssertionError)
+@pytest.mark.notyet(["mssql"], reason="NA not supported", raises=ValueError)
+@pytest.mark.notyet(["sqlite"], reason="NA not supported", raises=sa.exc.InterfaceError)
+@pytest.mark.notyet(
+    ["postgres"], reason="NA not supported", raises=sa.exc.ProgrammingError
+)
+@pytest.mark.notyet(
+    ["trino"], reason="NA not supported", raises=sa.exc.NotSupportedError
+)
+@pytest.mark.notyet(["druid"], reason="NA not supported", raises=sa.exc.CompileError)
+def test_memtable_null_string_dtype(con):
+    """Ensure that null strings are translated to null, not string literal '<NA>'."""
+    t = ibis.memtable(pd.DataFrame({"a": ["a", None, "c"]}, dtype="string"))
+    result = con.execute(t.a)
+    assert result.iat[0] == "a"
+    assert pd.isna(result.iat[1])
+    assert result.iat[2] == "c"
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
