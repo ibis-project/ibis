@@ -262,8 +262,8 @@ def build_df_from_projection(
     #
     # If cardinality changes (e.g. unnest/explode), trying to do this
     # won't work so don't try?
-    for i in range(len(new_pieces)):
-        new_pieces[i] = new_pieces[i].sort_index()
+    for i, piece in enumerate(new_pieces):
+        new_pieces[i] = piece.sort_index()
         if len(new_pieces[i].index) == len(data.index):
             new_pieces[i].index = data.index
 
