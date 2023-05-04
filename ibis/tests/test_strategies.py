@@ -1,6 +1,8 @@
 import hypothesis as h
 import numpy as np
+import pytest
 
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -146,6 +148,22 @@ def test_schema_to_pandas(schema):
 def test_memtable(memtable):
     assert isinstance(memtable, ir.TableExpr)
     assert isinstance(memtable.schema(), sch.Schema)
+
+
+@h.given(its.all_dtypes, its.null_values)
+def test_typed_null_underlying_value(dtype, null_value):
+    h.assume(dtype.nullable)
+
+    expr = ibis.literal(null_value, type=dtype)
+    assert expr.op().value is None
+
+
+@h.given(its.all_dtypes, its.null_values)
+def test_null_not_nullable(dtype, null_value):
+    h.assume(not dtype.nullable)
+
+    with pytest.raises(TypeError):
+        ibis.literal(null_value, type=dtype)
 
 
 # TODO(kszucs): we enforce field name uniqueness in the schema, but we don't for Struct datatype

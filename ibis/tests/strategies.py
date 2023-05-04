@@ -4,6 +4,7 @@ import hypothesis as h
 import hypothesis.extra.pandas as past
 import hypothesis.extra.pytz as tzst
 import hypothesis.strategies as st
+import pandas as pd
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -179,3 +180,6 @@ def memtable(draw, schema=schema(primitive_dtypes)):  # noqa: B008
 
     df = draw(dataframe)
     return ibis.memtable(df)
+
+
+null_values = st.sampled_from([None, pd.NA])

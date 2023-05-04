@@ -21,7 +21,14 @@ def _boolean_literal_format(translator, op):
 
 
 def _string_literal_format(translator, op):
-    return "'{}'".format(op.value.replace("'", "\\'"))
+    import pandas as pd
+
+    value = op.value
+    if pd.isna(value):
+        return "NULL"
+
+    value = value.replace("'", "\\'")
+    return f"'{value}'"
 
 
 def _number_literal_format(translator, op):

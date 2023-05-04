@@ -207,6 +207,7 @@ class Literal(Value):
                     "shapely.geometry.BaseGeometry",
                     "numpy.generic",
                     "numpy.ndarray",
+                    "pandas._libs.missing.NAType",
                 )
             ),
         )
