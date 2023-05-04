@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import time
 import traceback
 from typing import TYPE_CHECKING
 
@@ -158,31 +157,8 @@ class ImpalaCursor:
 
     def _wait_synchronous(self):
         # Wait to finish, but cancel if KeyboardInterrupt
-        from impala.hiveserver2 import OperationalError
-
-        loop_start = time.time()
-
-        def _sleep_interval(start_time):
-            elapsed = time.time() - start_time
-            if elapsed < 0.05:
-                return 0.01
-            elif elapsed < 1.0:
-                return 0.05
-            elif elapsed < 10.0:
-                return 0.1
-            elif elapsed < 60.0:
-                return 0.5
-            return 1.0
-
-        cur = self._cursor
         try:
-            while True:
-                state = cur.status()
-                if self._cursor._op_state_is_error(state):
-                    raise OperationalError("Operation is in ERROR_STATE")
-                if not cur._op_state_is_executing(state):
-                    break
-                time.sleep(_sleep_interval(loop_start))
+            self._cursor._wait_to_finish()
         except KeyboardInterrupt:
             util.log('Canceling query')
             self.cancel()
