@@ -34,8 +34,20 @@ jobs:
         backend:
           - name: bigquery
             title: BigQuery
-          - name: snowflake
-            title: Snowflake
+        include:
+          - python-version: "3.8"
+            backend:
+              name: snowflake
+              title: Snowflake + Snowpark
+              deps:
+                - "snowflake-snowpark-python"
+                - "--optional"
+                - "--python"
+                - "~3.8"
+          - python-version: "3.11"
+            backend:
+              name: snowflake
+              title: Snowflake
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -52,6 +64,10 @@ jobs:
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - run: python -m pip install --upgrade pip 'poetry<1.4'
+
+      - name: install additional deps
+        if: matrix.backend.deps != null
+        run: poetry add ${{ join(matrix.backend.deps, ' ') }}
 
       - uses: syphar/restore-pip-download-cache@v1
         with:

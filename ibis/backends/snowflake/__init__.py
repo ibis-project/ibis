@@ -94,6 +94,8 @@ class Backend(BaseAlchemyBackend):
     compiler = SnowflakeCompiler
     supports_create_or_replace = True
 
+    _top_level_methods = ("from_snowpark",)
+
     @functools.cached_property
     def _pandas_converter(self):
         from ibis.backends.snowflake.converter import SnowflakePandasConverter
@@ -136,9 +138,10 @@ $$ {defn["source"]} $$"""
 
     def do_connect(
         self,
-        user: str,
-        account: str,
+        *,
         database: str,
+        user: str | None = None,
+        account: str | None = None,
         password: str | None = None,
         authenticator: str | None = None,
         connect_args: Mapping[str, Any] | None = None,
@@ -175,6 +178,9 @@ $$ {defn["source"]} $$"""
             See https://docs.snowflake.com/en/developer-guide/python-connector/sqlalchemy#additional-connection-parameters
             for more details
         """
+        if connect_args is None:
+            connect_args = {}
+
         dbparams = dict(zip(("database", "schema"), database.split("/", 1)))
         if dbparams.get("schema") is None:
             raise ValueError(
@@ -182,37 +188,43 @@ $$ {defn["source"]} $$"""
                 f"database e.g., {dbparams['database']}/my_schema"
             )
 
-        # snowflake-connector-python does not handle `None` for password, but
-        # accepts the empty string
-        url = URL(
-            account=account, user=user, password=password or "", **dbparams, **kwargs
-        )
-        self.database_name = dbparams["database"]
-        if connect_args is None:
-            connect_args = {}
+        if (creator := kwargs.pop("__creator__", None)) is None:
+            if authenticator is not None:
+                connect_args.setdefault("authenticator", authenticator)
 
-        connect_args.setdefault(
-            "session_parameters",
-            {
-                "JSON_INDENT": "0",
-                "PYTHON_CONNECTOR_QUERY_RESULT_FORMAT": "ARROW",
-                "STRICT_JSON_OUTPUT": "TRUE",
-            },
-        )
-        if authenticator is not None:
-            connect_args.setdefault("authenticator", authenticator)
-
-        engine = sa.create_engine(
-            url, connect_args=connect_args, poolclass=sa.pool.StaticPool
-        )
+            # snowflake-connector-python does not handle `None` for password, but
+            # accepts the empty string
+            url = URL(
+                account=account,
+                user=user,
+                password=password or "",
+                **dbparams,
+                **kwargs,
+            )
+            engine = sa.create_engine(
+                url, connect_args=connect_args, poolclass=sa.pool.StaticPool
+            )
+        else:
+            # we're connecting from a snowpark session most likely
+            engine = sa.create_engine(
+                "snowflake://", creator=creator, poolclass=sa.pool.StaticPool
+            )
 
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
-            """Register UDFs on a `"connect"` event."""
+            """Register UDFs and ibis-specific configuration on a `"connect"` event."""
             dialect = engine.dialect
             quote = dialect.preparer(dialect).quote_identifier
             with dbapi_connection.cursor() as cur:
-                cur.execute("ALTER SESSION SET TIMEZONE = 'UTC'")
+                cur.execute(
+                    """
+                    ALTER SESSION SET
+                        JSON_INDENT = 0
+                        PYTHON_CONNECTOR_QUERY_RESULT_FORMAT = 'ARROW'
+                        STRICT_JSON_OUTPUT = TRUE
+                        TIMEZONE = 'UTC'
+                    """
+                )
                 (database, schema) = cur.execute(
                     "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
                 ).fetchone()
@@ -226,7 +238,7 @@ $$ {defn["source"]} $$"""
                         f"Unable to create map UDFs, some functionality will not work: {e}"
                     )
 
-        res = super().do_connect(engine)
+        eng = super().do_connect(engine)
 
         def normalize_name(name):
             if name is None:
@@ -239,7 +251,54 @@ $$ {defn["source"]} $$"""
                 return name
 
         self.con.dialect.normalize_name = normalize_name
-        return res
+        self.database_name = self._default_database = dbparams["database"]
+        self._default_schema = dbparams["schema"]
+        return eng
+
+    @classmethod
+    def from_snowpark(cls, session) -> Backend:
+        """Create an Ibis Snowflake backend from a Snowpark session.
+
+        Parameters
+        ----------
+        session
+            A snowpark session.
+
+        Returns
+        -------
+        Backend
+            An Ibis Snowflake backend instance.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> import snowflake.snowpark as sp  # doctest: +SKIP
+        >>> session = sp.Session.builder.configs(...).create()  # doctest: +SKIP
+        >>> con = ibis.snowflake.from_snowpark(session)  # doctest: +SKIP
+        >>> batting = con.tables.BATTING  # doctest: +SKIP
+        >>> batting[["playerID", "RBI"]].head()  # doctest: +SKIP
+        ┏━━━━━━━━━━━┳━━━━━━━┓
+        ┃ playerID  ┃ RBI   ┃
+        ┡━━━━━━━━━━━╇━━━━━━━┩
+        │ string    │ int64 │
+        ├───────────┼───────┤
+        │ abercda01 │     0 │
+        │ addybo01  │    13 │
+        │ allisar01 │    19 │
+        │ allisdo01 │    27 │
+        │ ansonca01 │    16 │
+        └───────────┴───────┘
+        """
+        con = session._conn._conn
+        # workaround a misconfigured implementation of the DBAPI cursor
+        # when con._paramstyle is not set to "pyformat"
+        #
+        # when using snowpark, con._paramstyle is set to qmark
+        con._paramstyle = "pyformat"
+        return cls(
+            database=f"{con.database}/{con.schema}", __creator__=lambda con=con: con
+        ).reconnect()
 
     def to_pyarrow(
         self,
@@ -311,7 +370,8 @@ $$ {defn["source"]} $$"""
         autoload: bool = True,
         **kwargs: Any,
     ) -> sa.Table:
-        default_db, default_schema = self.con.url.database.split("/", 1)
+        default_db = self._default_database
+        default_schema = self._default_schema
         if schema is None:
             schema = default_schema
         *db, schema = schema.split(".")
