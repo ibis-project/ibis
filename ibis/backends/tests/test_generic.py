@@ -923,6 +923,17 @@ def test_memtable_bool_column(backend, con, monkeypatch):
     backend.assert_series_equal(t.a.execute(), pd.Series([True, False, True], name="a"))
 
 
+@pytest.mark.parametrize("dtype", [None, "string"])
+def test_memtable_null_str(backend, con, monkeypatch, dtype):
+    """Ensure that null strings are translated to null, not string literal '<NA>'"""
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    strings = ["a", None, "c"]
+    df = pd.DataFrame({"a": strings}, dtype=dtype)
+    t = ibis.memtable(df)
+    assert t.a.execute().tolist() == strings
+
+
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
