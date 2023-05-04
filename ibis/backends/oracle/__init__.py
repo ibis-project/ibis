@@ -7,11 +7,27 @@ from typing import Any, Iterable
 
 import sqlalchemy as sa
 
-import ibis.backends.oracle.datatypes as odt
-import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
-import ibis.expr.schema as sch
-from ibis.backends.base.sql.alchemy import (
+# Wow, this is truly horrible
+# Get out your clippers, it's time to shave a yak.
+#
+# 1. snowflake-sqlalchemy doesn't support sqlalchemy 2.0
+# 2. oracledb is only supported in sqlalchemy 2.0
+# 3. Ergo, module hacking is required to avoid doing a silly amount of work
+#    to create multiple lockfiles or port snowflake away from sqlalchemy
+# 4. Also the version needs to be spoofed to be >= 7 or else the cx_Oracle
+#    dialect barfs
+oracledb.__version__ = oracledb.version = "7"
+
+sys.modules["cx_Oracle"] = oracledb
+
+from typing import Any, Iterable  # noqa: E402
+
+import sqlalchemy as sa  # noqa: E402
+
+import ibis.backends.oracle.datatypes as odt  # noqa: E402
+import ibis.expr.datatypes as dt  # noqa: E402
+import ibis.expr.operations as ops  # noqa: E402
+from ibis.backends.base.sql.alchemy import (  # noqa: E402
     AlchemyCompiler,
     AlchemyExprTranslator,
     BaseAlchemyBackend,
@@ -51,6 +67,7 @@ class Backend(BaseAlchemyBackend):
     name = 'oracle'
     compiler = OracleCompiler
     supports_create_or_replace = False
+    supports_temporary_tables = False
 
     def do_connect(
         self,
@@ -155,26 +172,3 @@ class Backend(BaseAlchemyBackend):
             else:
                 typ = odt.parse(type_code).copy(nullable=is_nullable)
             yield name, typ
-
-    def _table_from_schema(
-        self,
-        name: str,
-        schema: sch.Schema,
-        database: str | None = None,
-        temp: bool = False,
-    ) -> sa.Table:
-        table = super()._table_from_schema(
-            name, schema=schema, database=database, temp=temp
-        )
-        if temp:
-            # Oracle complains about this missing `GLOBAL` keyword so we add it
-            # in here.  Not sure if this is always necessary or only some of the
-            # time
-            table._prefixes.insert(0, "GLOBAL")
-        return table
-
-    # TODO: figure out when/how oracle drops temp tables
-    # def list_tables(self, like=None, database=None):
-    #     tables = self.inspector.get_table_names(schema=database)
-    #     views = self.inspector.get_view_names(schema=database)
-    #     return self._filter_with_like(tables + views, like)

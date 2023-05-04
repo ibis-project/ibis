@@ -1186,7 +1186,9 @@ def test_persist_expression_repeated_cache(alltypes):
             assert not nested_cached_table.to_pandas().empty
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(
+    ["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid", "oracle"]
+)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
