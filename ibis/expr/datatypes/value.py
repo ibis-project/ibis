@@ -172,7 +172,7 @@ def _infer_object_array_dtype(x):
     import ibis.backends.pyarrow.datatypes  # noqa: F401
 
     try:
-        pa_type = pa.array(x, from_pandas=True).type
+        pa_type = pa.infer_type(x, from_pandas=True)
     except pa.ArrowInvalid:
         try:
             # handle embedded series objects
