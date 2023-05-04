@@ -1,7 +1,7 @@
 version: "3.4"
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:23.4.1.1943-alpine
+    image: clickhouse/clickhouse-server:23.4.2.11-alpine
     ports:
       - 9000:9000
     healthcheck:
