@@ -127,7 +127,12 @@ class Backend(BaseAlchemyBackend):
         engine = sa.create_engine(
             url,
             poolclass=sa.pool.StaticPool,
-            connect_args={"service_name": database},
+            # We set the statement cache size to 0 because Oracle will otherwise
+            # attempt to reuse prepared statements even if the type of the bound variable
+            # has changed.
+            # This is apparently accepted behavior.
+            # https://python-oracledb.readthedocs.io/en/latest/user_guide/appendix_b.html#statement-caching-in-thin-and-thick-modes
+            connect_args={"service_name": database, "stmtcachesize": 0},
         )
 
         super().do_connect(engine)
