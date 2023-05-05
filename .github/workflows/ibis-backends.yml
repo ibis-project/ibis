@@ -146,6 +146,7 @@ jobs:
               - druid
           - name: oracle
             title: Oracle
+            serial: true
             extras:
               - oracle
             services:
@@ -240,6 +241,7 @@ jobs:
             backend:
               name: oracle
               title: Oracle
+              serial: true
               extras:
                 - oracle
               services:
@@ -628,6 +630,7 @@ jobs:
               - duckdb
           - name: oracle
             title: Oracle
+            serial: true
             extras:
               - oracle
             services:
