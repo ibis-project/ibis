@@ -19,7 +19,6 @@ oracledb.__version__ = oracledb.version = "7"
 
 sys.modules["cx_Oracle"] = oracledb
 
-import warnings  # noqa: E402
 from typing import Any, Iterable  # noqa: E402
 
 import sqlalchemy as sa  # noqa: E402
@@ -130,14 +129,6 @@ class Backend(BaseAlchemyBackend):
             poolclass=sa.pool.StaticPool,
             connect_args={"service_name": database},
         )
-
-        @sa.event.listens_for(engine, "connect")
-        def connect(dbapi_connection, connection_record):
-            with dbapi_connection.cursor() as cur:
-                try:
-                    cur.execute("COMMIT")
-                except sa.exc.OperationalError:
-                    warnings.warn("RUH ROH NO COMMIT")
 
         res = super().do_connect(engine)
 
