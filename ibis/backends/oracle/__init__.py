@@ -130,7 +130,7 @@ class Backend(BaseAlchemyBackend):
             connect_args={"service_name": database},
         )
 
-        res = super().do_connect(engine)
+        super().do_connect(engine)
 
         def normalize_name(name):
             if name is None:
@@ -143,7 +143,6 @@ class Backend(BaseAlchemyBackend):
                 return name
 
         self.con.dialect.normalize_name = normalize_name
-        return res
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         query = f"SELECT * FROM ({query.strip(';')}) FETCH FIRST 0 ROWS ONLY"
