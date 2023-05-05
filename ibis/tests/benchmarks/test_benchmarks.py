@@ -203,9 +203,11 @@ def pt():
             'key': np.random.choice(16000, size=n),
             'low_card_key': np.random.choice(30, size=n),
             'value': np.random.rand(n),
-            'timestamps': pd.date_range(start='now', periods=n, freq='s').values,
+            'timestamps': pd.date_range(
+                start='2023-05-05 16:37:57', periods=n, freq='s'
+            ).values,
             'timestamp_strings': pd.date_range(
-                start='now', periods=n, freq='s'
+                start='2023-05-05 16:37:39', periods=n, freq='s'
             ).values.astype(str),
             'repeated_timestamps': pd.date_range(start='2018-09-01', periods=30).repeat(
                 int(n / 30)
