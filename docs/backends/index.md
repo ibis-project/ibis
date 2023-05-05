@@ -30,6 +30,7 @@ another kind of expression and typically have high-level APIs for execution.
 - [DuckDB](DuckDB.md)
 - [MS SQL Server](MSSQL.md)
 - [MySQL](MySQL.md)
+- [Oracle](Oracle.md)
 - [Polars](Polars.md)
 - [PostgreSQL](PostgreSQL.md)
 - [SQLite](SQLite.md)
