@@ -62,6 +62,7 @@ Ibis acts as a universal frontend to the following systems:
 - [DuckDB](https://ibis-project.org/backends/DuckDB/)
 - [HeavyAI](https://github.com/heavyai/ibis-heavyai)
 - [MySQL](https://ibis-project.org/backends/MySQL/)
+- [Oracle](https://ibis-project.org/backends/Oracle/) (experimental)
 - [Pandas](https://ibis-project.org/backends/Pandas/)
 - [Polars](https://ibis-project.org/backends/Polars/) (experimental)
 - [PostgreSQL](https://ibis-project.org/backends/PostgreSQL/)
