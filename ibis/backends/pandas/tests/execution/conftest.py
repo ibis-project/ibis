@@ -32,6 +32,8 @@ def df():
             'float64_as_strings': ['100.01', '234.23', '-999.34'],
             'int64_as_strings': list(map(str, range(1, 4))),
             'strings_with_space': [' ', 'abab', 'ddeeffgg'],
+            'translate_from_strings': ['rmz', 'abc', 'ghj'],
+            'translate_to_strings': ['lns', 'ovk', 'jfr'],
             'int64_with_zeros': [0, 1, 0],
             'float64_with_zeros': [1.0, 0.0, 1.0],
             'float64_positive': [1.0, 2.0, 1.0],

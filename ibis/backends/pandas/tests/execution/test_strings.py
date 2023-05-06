@@ -128,3 +128,38 @@ def test_string_ops(t, df, case_func, expected_func):
 def test_sql_like_to_regex(pattern, expected):
     result = sql_like_to_regex(pattern, escape='^')
     assert result == f'^{expected}$'
+
+
+@pytest.mark.parametrize(
+    ('from_func', 'to_func', 'from_str', 'to_str'),
+    [
+        param(
+            lambda s: s.translate_from_strings,
+            lambda s: s.translate_to_strings,
+            "rmzabcghj",
+            "lnsovkjfr",
+            id='from_series_to_series',
+        ),
+        param(
+            lambda s: "abc",
+            lambda s: s.translate_to_strings,
+            "abc",
+            "ovk",
+            id='from_string_to_series',
+        ),
+        param(
+            lambda s: s.translate_from_strings,
+            lambda s: "ovk",
+            "abcg",
+            "ovko",
+            id='from_series_to_string',
+        ),
+    ],
+)
+def test_translate(
+    t, df, from_func: callable, to_func: callable, from_str: str, to_str: str
+):
+    result = t.strings_with_space.translate(from_func(t), to_func(t)).execute()
+    table = str.maketrans(from_str, to_str)
+    series = df.strings_with_space.str.translate(table)
+    tm.assert_series_equal(result, series, check_names=False)

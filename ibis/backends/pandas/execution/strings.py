@@ -55,16 +55,17 @@ def execute_string_substring_int_series(op, data, start, length, **kwargs):
 def execute_substring_series_series(op, data, start, length, **kwargs):
     end = start + length
 
-    def iterate(value, start_iter=start.values.flat, end_iter=end.values.flat):
-        begin = next(start_iter)
-        end = next(end_iter)
-        if (begin is not None and pd.isnull(begin)) or (
-            end is not None and pd.isnull(end)
-        ):
-            return None
-        return value[begin:end]
-
-    return data.map(iterate)
+    return pd.Series(
+        [
+            None
+            if (begin is not None and pd.isnull(begin))
+            or (stop is not None and pd.isnull(stop))
+            else value[begin:stop]
+            for value, begin, stop in zip(data, start.values, end.values)
+        ],
+        dtype=data.dtype,
+        name=data.name,
+    )
 
 
 @execute_node.register(ops.Strip, pd.Series)
@@ -109,16 +110,6 @@ def execute_string_lower(op, data, **kwargs):
 @execute_node.register(ops.Uppercase, pd.Series)
 def execute_string_upper(op, data, **kwargs):
     return data.str.upper()
-
-
-@execute_node.register(ops.StartsWith, pd.Series)
-def execute_startswith(op, data, start, **kwargs):
-    return data.str.startswith(start)
-
-
-@execute_node.register(ops.EndsWith, pd.Series)
-def execute_endswith(op, data, end, **kwargs):
-    return data.str.endswith(end)
 
 
 @execute_node.register(ops.Capitalize, (pd.Series, str))
@@ -211,8 +202,8 @@ def sql_like_to_regex(pattern: str, escape: str | None = None) -> str:
 
 @execute_node.register(ops.StringSQLLike, pd.Series, str, (str, type(None)))
 def execute_string_like_series_string(op, data, pattern, escape, **kwargs):
-    new_pattern = re.compile(sql_like_to_regex(pattern, escape=escape))
-    return data.map(lambda x, pattern=new_pattern: pattern.search(x) is not None)
+    new_pattern = sql_like_to_regex(pattern, escape=escape)
+    return data.str.contains(new_pattern, regex=True)
 
 
 @execute_node.register(ops.StringSQLLike, SeriesGroupBy, str, str)
@@ -275,12 +266,12 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
 
 @execute_node.register(ops.StartsWith, pd.Series, str)
 def execute_series_starts_with(op, data, pattern, **kwargs):
-    return data.map(lambda x, p=pattern: x.startswith(p))
+    return data.str.startswith(pattern)
 
 
 @execute_node.register(ops.EndsWith, pd.Series, str)
 def execute_series_ends_with(op, data, pattern, **kwargs):
-    return data.map(lambda x, p=pattern: x.endswith(p))
+    return data.str.endswith(pattern)
 
 
 @execute_node.register(ops.RegexExtract, pd.Series, str, integer_types)
@@ -328,23 +319,34 @@ def execute_series_regex_replace_gb(op, data, pattern, replacement, **kwargs):
 
 @execute_node.register(ops.Translate, pd.Series, pd.Series, pd.Series)
 def execute_series_translate_series_series(op, data, from_string, to_string, **kwargs):
-    to_string_iter = iter(to_string)
-    table = from_string.apply(
-        lambda x, y: str.maketrans(x, y=next(y)), args=(to_string_iter,)
+    tables = [
+        str.maketrans(source, target) for source, target in zip(from_string, to_string)
+    ]
+    return pd.Series(
+        [string.translate(table) for string, table in zip(data, tables)],
+        dtype=data.dtype,
+        name=data.name,
     )
-    return data.str.translate(table)
 
 
 @execute_node.register(ops.Translate, pd.Series, pd.Series, str)
 def execute_series_translate_series_scalar(op, data, from_string, to_string, **kwargs):
-    table = from_string.map(lambda x, y=to_string: str.maketrans(x=x, y=y))
-    return data.str.translate(table)
+    tables = [str.maketrans(source, to_string) for source in from_string]
+    return pd.Series(
+        [string.translate(table) for string, table in zip(data, tables)],
+        dtype=data.dtype,
+        name=data.name,
+    )
 
 
 @execute_node.register(ops.Translate, pd.Series, str, pd.Series)
 def execute_series_translate_scalar_series(op, data, from_string, to_string, **kwargs):
-    table = to_string.map(lambda y, x=from_string: str.maketrans(x=x, y=y))
-    return data.str.translate(table)
+    tables = [str.maketrans(from_string, target) for target in to_string]
+    return pd.Series(
+        [string.translate(table) for string, table in zip(data, tables)],
+        dtype=data.dtype,
+        name=data.name,
+    )
 
 
 @execute_node.register(ops.Translate, pd.Series, str, str)
