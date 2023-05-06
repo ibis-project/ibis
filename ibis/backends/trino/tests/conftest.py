@@ -10,7 +10,7 @@ import pytest
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.backends.tests.base import RoundAwayFromZero, ServiceBackendTest, ServiceSpec
 from ibis.backends.tests.data import struct_types
 from ibis.util import consume
 
@@ -32,13 +32,21 @@ IBIS_TEST_TRINO_DB = os.environ.get(
 sa = pytest.importorskip("sqlalchemy")
 
 
-class TestConf(BackendTest, RoundAwayFromZero):
+class TestConf(ServiceBackendTest, RoundAwayFromZero):
     # trino rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
     returned_timestamp_unit = 's'
     supports_structs = True
     supports_map = True
+
+    @classmethod
+    def service_spec(cls, data_dir: Path) -> ServiceSpec:
+        return ServiceSpec(
+            name="trino-postgres",
+            data_volume="/data",
+            files=data_dir.joinpath("csv").glob("*.csv"),
+        )
 
     @staticmethod
     def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:

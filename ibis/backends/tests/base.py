@@ -5,7 +5,7 @@ import concurrent.futures
 import inspect
 import subprocess
 from pathlib import Path
-from typing import Any, Mapping, NamedTuple
+from typing import Any, Iterable, Mapping, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -225,7 +225,7 @@ class BackendTest(abc.ABC):
 class ServiceSpec(NamedTuple):
     name: str
     data_volume: str
-    files: list[Path]
+    files: Iterable[Path]
 
 
 class ServiceBackendTest(BackendTest):

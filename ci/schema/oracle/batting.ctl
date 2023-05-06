@@ -1,6 +1,6 @@
 options (SKIP=1)
 load data
-  infile '/opt/oracle/csv/batting.csv'
+  infile '/opt/oracle/data/batting.csv'
   into table "batting"
   fields terminated by "," optionally enclosed by '"'
   TRAILING NULLCOLS

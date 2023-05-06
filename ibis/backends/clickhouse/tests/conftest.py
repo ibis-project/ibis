@@ -41,7 +41,7 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
         return ServiceSpec(
             name=cls.name(),
             data_volume="/var/lib/clickhouse/user_files/ibis",
-            files=list(data_dir.joinpath("parquet").glob("*.parquet")),
+            files=data_dir.joinpath("parquet").glob("*.parquet"),
         )
 
     @staticmethod
