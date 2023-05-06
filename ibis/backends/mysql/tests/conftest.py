@@ -10,7 +10,7 @@ from packaging.version import parse as parse_version
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES, init_database
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
 
 MYSQL_USER = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
 MYSQL_PASS = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
@@ -19,7 +19,7 @@ MYSQL_PORT = int(os.environ.get('IBIS_TEST_MYSQL_PORT', 3306))
 IBIS_TEST_MYSQL_DB = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
 
 
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
@@ -28,6 +28,14 @@ class TestConf(BackendTest, RoundHalfToEven):
     supports_arrays_outside_of_select = supports_arrays
     native_bool = False
     supports_structs = False
+
+    @classmethod
+    def service_spec(cls, data_dir: Path) -> ServiceSpec:
+        return ServiceSpec(
+            name=cls.name(),
+            data_volume="/data",
+            files=data_dir.joinpath("csv").glob("*.csv"),
+        )
 
     def __init__(self, data_directory: Path) -> None:
         super().__init__(data_directory)

@@ -13,7 +13,11 @@ import pytest
 from requests import Session
 
 import ibis
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import (
+    RoundHalfToEven,
+    ServiceBackendTest,
+    ServiceSpec,
+)
 
 DRUID_URL = os.environ.get(
     "DRUID_URL", "druid://localhost:8082/druid/v2/sql?header=true"
@@ -86,7 +90,7 @@ def run_query(session: Session, query: str) -> None:
         time.sleep(REQUEST_INTERVAL)
 
 
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest, RoundHalfToEven):
     # druid has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
@@ -96,6 +100,14 @@ class TestConf(BackendTest, RoundHalfToEven):
     native_bool = True
     supports_structs = False
     supports_json = False  # it does, but we haven't implemented it
+
+    @classmethod
+    def service_spec(cls, data_dir: Path) -> ServiceSpec:
+        return ServiceSpec(
+            name="druid-middlemanager",
+            data_volume="/data",
+            files=data_dir.joinpath("parquet").glob("*.parquet"),
+        )
 
     @staticmethod
     def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:

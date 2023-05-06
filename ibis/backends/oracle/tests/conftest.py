@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import concurrent.futures
 import contextlib
+import itertools
 import os
 import subprocess
 from pathlib import Path
@@ -11,7 +12,7 @@ import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
 
 ORACLE_USER = os.environ.get('IBIS_TEST_ORACLE_USER', 'ibis')
 ORACLE_PASS = os.environ.get('IBIS_TEST_ORACLE_PASSWORD', 'ibis')
@@ -19,7 +20,7 @@ ORACLE_HOST = os.environ.get('IBIS_TEST_ORACLE_HOST', 'localhost')
 ORACLE_PORT = int(os.environ.get('IBIS_TEST_ORACLE_PORT', 1521))
 
 
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest, RoundHalfToEven):
     check_dtype = False
     supports_window_operations = False
     returned_timestamp_unit = 's'
@@ -30,6 +31,17 @@ class TestConf(BackendTest, RoundHalfToEven):
     native_bool = False
     supports_structs = False
     supports_json = False
+
+    @classmethod
+    def service_spec(cls, data_dir: Path) -> ServiceSpec:
+        return ServiceSpec(
+            name=cls.name(),
+            data_volume="/opt/oracle/data",
+            files=itertools.chain(
+                data_dir.joinpath("csv").glob("*.csv"),
+                data_dir.parent.joinpath("schema", "oracle").glob("*.ctl"),
+            ),
+        )
 
     @staticmethod
     def _load_data(
@@ -89,7 +101,7 @@ class TestConf(BackendTest, RoundHalfToEven):
                         "oracle",
                         "sqlldr",
                         f"{user}/{password}@{host}:{port:d}/{database}",
-                        f"control=ctl/{ctl_file.name}",
+                        f"control=data/{ctl_file.name}",
                     ],
                     stdout=subprocess.DEVNULL,
                 )

@@ -116,6 +116,8 @@ services:
       - 3306:3306
     networks:
       - mysql
+    volumes:
+      - mysql:/data
   postgres:
     user: postgres
     environment:
@@ -136,7 +138,7 @@ services:
     networks:
       - postgres
     volumes:
-      - $PWD/ci/ibis-testing-data/csv:/data:ro
+      - postgres:/data
   mssql:
     image: mcr.microsoft.com/mssql/server:2022-latest
     environment:
@@ -152,7 +154,7 @@ services:
     ports:
       - 1433:1433
     volumes:
-      - $PWD/ci/ibis-testing-data/csv:/data:ro
+      - mssql:/data
     networks:
       - mssql
   trino-postgres:
@@ -175,7 +177,7 @@ services:
     networks:
       - trino
     volumes:
-      - $PWD/ci/ibis-testing-data/csv:/data:ro
+      - trino-postgres:/data
   trino:
     depends_on:
       - trino-postgres
@@ -312,7 +314,7 @@ services:
     volumes:
       - druid:/opt/shared
       - middle_var:/opt/druid/var
-      - $PWD/ci/ibis-testing-data/parquet:/data:ro
+      - druid-data:/data
     depends_on:
       - druid-zookeeper
       - druid-postgres
@@ -380,8 +382,7 @@ services:
     networks:
       - oracle
     volumes:
-      - $PWD/ci/ibis-testing-data/csv:/opt/oracle/csv:ro
-      - $PWD/ci/schema/oracle:/opt/oracle/ctl:ro
+      - oracle:/opt/oracle/data
 
 networks:
   impala:
@@ -394,10 +395,17 @@ networks:
   oracle:
 
 volumes:
-  middle_var:
-  historical_var:
   broker_var:
   coordinator_var:
-  router_var:
-  clickhouse:
   druid:
+  historical_var:
+  middle_var:
+  router_var:
+  # test data volumes
+  clickhouse:
+  druid-data:
+  mssql:
+  mysql:
+  oracle:
+  postgres:
+  trino-postgres:

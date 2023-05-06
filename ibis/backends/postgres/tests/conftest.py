@@ -22,7 +22,7 @@ import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import init_database
-from ibis.backends.tests.base import BackendTest, RoundHalfToEven
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
 
 PG_USER = os.environ.get(
     'IBIS_TEST_POSTGRES_USER', os.environ.get('PGUSER', 'postgres')
@@ -39,12 +39,20 @@ IBIS_TEST_POSTGRES_DB = os.environ.get(
 )
 
 
-class TestConf(BackendTest, RoundHalfToEven):
+class TestConf(ServiceBackendTest, RoundHalfToEven):
     # postgres rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
     returned_timestamp_unit = 's'
     supports_structs = False
+
+    @classmethod
+    def service_spec(cls, data_dir: Path) -> ServiceSpec:
+        return ServiceSpec(
+            name=cls.name(),
+            data_volume="/data",
+            files=data_dir.joinpath("csv").glob("*.csv"),
+        )
 
     @staticmethod
     def _load_data(
