@@ -160,8 +160,8 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             raw_rows = (
                 sa.select(
                     *(
-                        translator.translate(ops.Literal(val, dtype=type_))
-                        for val, type_ in zip(row, op.schema.types)
+                        translator.translate(ops.Literal(val, dtype=type_)).label(name)
+                        for val, (name, type_) in zip(row, op.schema.items())
                     )
                 )
                 for row in op.data.to_frame().itertuples(index=False)

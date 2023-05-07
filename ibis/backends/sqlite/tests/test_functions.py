@@ -713,3 +713,9 @@ def test_count_on_order_by(con, snapshot):
     expr = sorted_table.count()
     result = str(ibis.to_sql(expr, dialect="sqlite"))
     snapshot.assert_match(result, "out.sql")
+
+
+def test_memtable_compilation(con):
+    expr = ibis.memtable({"a": [1, 2, 3]})
+    t = con.compile(expr)
+    assert t.exported_columns[0].name == "a"
