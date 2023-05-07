@@ -211,5 +211,5 @@ def test_get_schema_from_query(con, pg_type, expected_type):
 
 @pytest.mark.parametrize("col", ["search", "simvec"])
 def test_unknown_column_type(con, col):
-    awards_players = con.table("awards_players")
+    awards_players = con.table("awards_players_special_types")
     assert awards_players[col].type().is_unknown()

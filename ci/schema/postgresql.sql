@@ -57,14 +57,18 @@ CREATE TABLE awards_players (
     "yearID" BIGINT,
     "lgID" TEXT,
     tie TEXT,
-    notes TEXT,
-    search TSVECTOR GENERATED ALWAYS AS (
-      setweight(to_tsvector('simple', notes), 'A')::TSVECTOR
-    ) STORED,
-    simvec VECTOR GENERATED always AS ('[1,2,3]'::VECTOR) STORED
+    notes TEXT
 );
 
 COPY awards_players FROM '/data/awards_players.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
+
+DROP VIEW IF EXISTS awards_players_special_types CASCADE;
+CREATE VIEW awards_players_special_types AS
+SELECT
+    *,
+    setweight(to_tsvector('simple', notes), 'A')::TSVECTOR AS search,
+    '[1,2,3]'::VECTOR AS simvec
+FROM awards_players;
 
 DROP TABLE IF EXISTS functional_alltypes CASCADE;
 
