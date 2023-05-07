@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import atexit
+import contextlib
 import sys
 
 import oracledb
@@ -19,7 +21,7 @@ oracledb.__version__ = oracledb.version = "7"
 
 sys.modules["cx_Oracle"] = oracledb
 
-from typing import Any, Iterable  # noqa: E402
+from typing import TYPE_CHECKING, Any, Iterable  # noqa: E402
 
 import sqlalchemy as sa  # noqa: E402
 
@@ -32,6 +34,9 @@ from ibis.backends.base.sql.alchemy import (  # noqa: E402
     BaseAlchemyBackend,
 )
 from ibis.backends.oracle.registry import operation_registry  # noqa: E402
+
+if TYPE_CHECKING:
+    import ibis.expr.schema as sch
 
 
 class OracleExprTranslator(AlchemyExprTranslator):
@@ -63,10 +68,11 @@ class OracleCompiler(AlchemyCompiler):
 
 
 class Backend(BaseAlchemyBackend):
-    name = 'oracle'
+    name = "oracle"
     compiler = OracleCompiler
     supports_create_or_replace = False
-    supports_temporary_tables = False
+    supports_temporary_tables = True
+    _temporary_prefix = "GLOBAL TEMPORARY"
 
     def do_connect(
         self,
@@ -164,3 +170,34 @@ class Backend(BaseAlchemyBackend):
             else:
                 typ = odt.parse(type_code).copy(nullable=is_nullable)
             yield name, typ
+
+    def _table_from_schema(
+        self,
+        name: str,
+        schema: sch.Schema,
+        temp: bool = False,
+        database: str | None = None,
+        **kwargs: Any,
+    ) -> sa.Table:
+        if temp:
+            kwargs["oracle_on_commit"] = "PRESERVE ROWS"
+        t = super()._table_from_schema(name, schema, temp, database, **kwargs)
+        if temp:
+            atexit.register(self._clean_up_tmp_table, t)
+        return t
+
+    def _clean_up_tmp_table(self, tmptable: sa.Table) -> None:
+        with self.begin() as bind:
+            # global temporary tables cannot be dropped without first truncating them
+            #
+            # https://stackoverflow.com/questions/32423397/force-oracle-drop-global-temp-table
+            #
+            # ignore DatabaseError exceptions because the table may not exist
+            # because it's already been deleted
+            with contextlib.suppress(sa.exc.DatabaseError):
+                bind.exec_driver_sql(f'TRUNCATE TABLE "{tmptable.name}"')
+            with contextlib.suppress(sa.exc.DatabaseError):
+                tmptable.drop(bind=bind)
+
+    def _clean_up_cached_table(self, op):
+        self._clean_up_tmp_table(op.sqla_table)
