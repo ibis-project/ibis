@@ -105,6 +105,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     table_class = AlchemyTable
     compiler = AlchemyCompiler
     supports_temporary_tables = True
+    _temporary_prefix = "TEMPORARY"
 
     def _build_alchemy_url(self, url, host, port, user, password, database, driver):
         if url is not None:
@@ -210,6 +211,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def begin(self):
         with self.con.begin() as bind:
             yield bind
+
+    def _clean_up_tmp_table(self, tmptable: sa.Table) -> None:
+        with self.begin() as bind:
+            tmptable.drop(bind=bind)
 
     def create_table(
         self,
@@ -323,9 +328,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                         # 3. insert the temp table's data into the (re)created table
                         bind.execute(insert)
                 finally:
-                    with self.begin() as bind:
-                        # 4. clean up the temp table
-                        tmptable.drop(bind=bind)
+                    self._clean_up_tmp_table(tmptable)
         else:
             with self.begin() as bind:
                 if overwrite:
@@ -367,18 +370,21 @@ class BaseAlchemyBackend(BaseSQLBackend):
         ]
 
     def _table_from_schema(
-        self, name: str, schema: sch.Schema, temp: bool = False, **_: Any
+        self,
+        name: str,
+        schema: sch.Schema,
+        temp: bool = False,
+        database: str | None = None,
+        **kwargs: Any,
     ) -> sa.Table:
-        prefixes = []
-        if temp:
-            prefixes.append('TEMPORARY')
         columns = self._columns_from_schema(name, schema)
         return sa.Table(
             name,
             sa.MetaData(),
             *columns,
-            prefixes=prefixes,
+            prefixes=[self._temporary_prefix] if temp else [],
             quote=self.compiler.translator_class._quote_table_names,
+            **kwargs,
         )
 
     def drop_table(
