@@ -4,8 +4,6 @@ import json
 import os
 from typing import TYPE_CHECKING, Any, Optional
 
-import pooch
-
 import ibis
 from ibis.common.grounds import Concrete
 
@@ -17,18 +15,9 @@ except ImportError:
 if TYPE_CHECKING:
     import ibis.expr.types as ir
 
-
-_EXAMPLES = pooch.create(
-    path=pooch.os_cache("ibis-framework"),
-    # the trailing slash matters here
-    base_url="https://storage.googleapis.com/ibis-examples/data/",
-    version=ibis.__version__,
-)
-with resources.files(__name__).joinpath("registry.txt").open(mode="r") as _f:
-    _EXAMPLES.load_registry(_f)
+_EXAMPLES = None
 
 _METADATA = json.loads(resources.files(__name__).joinpath("metadata.json").read_text())
-
 _READER_FUNCS = {"csv": "read_csv", "csv.gz": "read_csv", "parquet": "read_parquet"}
 
 
@@ -40,10 +29,6 @@ class Example(Concrete):
     def fetch(self, **kwargs: Any) -> ir.Table:
         reader = getattr(ibis, self.reader)
         return reader(_EXAMPLES.fetch(self.key, progressbar=True), **kwargs)
-
-
-def __dir__() -> list[str]:
-    return sorted(_METADATA.keys())
 
 
 def _make_fetch_docstring(*, name: str, reader: str):
@@ -65,7 +50,25 @@ Examples
 """
 
 
+def __dir__() -> list[str]:
+    return sorted(_METADATA.keys())
+
+
 def __getattr__(name: str) -> Example:
+    global _EXAMPLES  # noqa: PLW0603
+
+    if _EXAMPLES is None:
+        import pooch
+
+        _EXAMPLES = pooch.create(
+            path=pooch.os_cache("ibis-framework"),
+            # the trailing slash matters here
+            base_url="https://storage.googleapis.com/ibis-examples/data/",
+            version=ibis.__version__,
+        )
+        with resources.files(__name__).joinpath("registry.txt").open(mode="r") as _f:
+            _EXAMPLES.load_registry(_f)
+
     spec = _METADATA.get(name, {})
 
     if (key := spec.get("key")) is None:
