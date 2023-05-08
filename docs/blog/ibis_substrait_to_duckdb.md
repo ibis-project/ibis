@@ -18,9 +18,9 @@ communicating consistently with those backends.
 other things) query plans. It's still in its early days, but there is already
 nascent support for Substrait in [Apache Arrow](https://arrow.apache.org/docs/dev/cpp/streaming_execution.html#substrait), [DuckDB](https://duckdb.org/docs/extensions/substrait), and [Velox](https://engineering.fb.com/2022/08/31/open-source/velox/).
 
-Ibis supports producing Substrait plans from Ibis expressions, with the help of
-the [ibis-substrait](https://github.com/ibis-project/ibis-substrait) library.
-Let's take a quick peek at how we might use it for query execution.
+Ibis supports producing Substrait plans from Ibis table expressions, with the
+help of the [ibis-substrait](https://github.com/ibis-project/ibis-substrait)
+library. Let's take a quick peek at how we might use it for query execution.
 
 ## Getting started
 
@@ -50,7 +50,7 @@ con.execute(
 ## Query Creation
 
 For our example, we'll build up a query using Ibis but without connecting to our
-execution engine (DuckDB). Once we have an Ibis expression, we'll create a
+execution engine (DuckDB). Once we have an Ibis table expression, we'll create a
 Substrait plan, then execute that plan directly on DuckDB to get results.
 
 To do this, all we need is some knowledge of the schema of the tables we want to
@@ -164,12 +164,13 @@ topfilms = (
 )
 ```
 
-Now that we have an Ibis expression, it's time for Substrait to enter the scene.
+Now that we have an Ibis table expression, it's time for Substrait to enter
+the scene.
 
 ## Substrait Serialization
 
-We're going to import `ibis_substrait` and compile the `topfilms` expression
-into a Substrait plan.
+We're going to import `ibis_substrait` and compile the `topfilms` table 
+expression into a Substrait plan.
 
 ```python
 from ibis_substrait.compiler.core import SubstraitCompiler
