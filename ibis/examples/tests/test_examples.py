@@ -9,6 +9,7 @@ from ibis.backends.conftest import LINUX, SANDBOXED
 pytestmark = pytest.mark.examples
 
 duckdb = pytest.importorskip("duckdb")
+pytest.importorskip("pooch")
 
 # large files
 ignored = frozenset(
