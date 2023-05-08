@@ -5,10 +5,10 @@ to inspect or reconfigure the backend used by default.
 
 ## String Generating Backends
 
-The first category of backend translate Ibis expressions into string queries.
+The first category of backend translate Ibis table expressions into query strings.
 
-The compiler turns each expression into a string query and passes that query to the
-database through a driver API for execution.
+The compiler turns each table expression into a query string and passes that query
+to the database through a driver API for execution.
 
 - [Apache Impala](Impala.md)
 - [ClickHouse](ClickHouse.md)
@@ -17,11 +17,12 @@ database through a driver API for execution.
 
 ## Expression Generating Backends
 
-The next category of backends translates ibis expressions into another
-system's expressions, for example, SQLAlchemy.
+The next category of backends translates Ibis table expressions into another
+system's table expression objects, for example, SQLAlchemy.
 
-Instead of generating strings for each expression these backends produce
-another kind of expression and typically have high-level APIs for execution.
+Instead of generating a query string for each table expression, these backends
+produce another kind of table expression object and typically have high-level APIs
+for execution.
 
 - [Apache Arrow Datafusion](Datafusion.md)
 - [Apache Druid](Druid.md)
