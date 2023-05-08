@@ -169,7 +169,7 @@ the scene.
 
 ## Substrait Serialization
 
-We're going to import `ibis_substrait` and compile the `topfilms` table 
+We're going to import `ibis_substrait` and compile the `topfilms` table
 expression into a Substrait plan.
 
 ```python
