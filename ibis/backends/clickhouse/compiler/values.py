@@ -303,26 +303,18 @@ def _regex_search(op, **kw):
 @translate_val.register(ops.RegexExtract)
 def _regex_extract(op, **kw):
     arg = translate_val(op.arg, **kw)
-    pattern = translate_val(op.pattern, **kw)
-    index = "Null" if op.index is None else translate_val(op.index, **kw)
-
-    # arg can be Nullable, which is not allowed in extractAll, so cast to non
-    # nullable type
     arg = f"CAST({arg} AS String)"
 
-    # extract all matches in pattern
-    extracted = f"CAST(extractAll({arg}, {pattern}) AS Array(Nullable(String)))"
+    wrapped_op_pattern = op.pattern.copy(value="(" + op.pattern.value + ")")
+    pattern = translate_val(wrapped_op_pattern, **kw)
 
-    # if there's a match
-    #   if the index IS zero or null
-    #     return the full string
-    #   else
-    #     return the Nth match group
-    # else
-    #   return null
-    does_match = f"multiMatchAny({arg}, [{pattern}])"
-    idx = f"CAST(nullIf({index}, 0) AS Nullable(Int64))"
-    then = f"if({idx} IS NULL, {arg}, {extracted}[{idx}])"
+    then = f"extractGroups({arg}, {pattern})[1]"
+    if op.index is not None:
+        index = translate_val(op.index, **kw)
+        then = f"extractGroups({arg}, {pattern})[{index} + 1]"
+
+    does_match = f"notEmpty({then})"
+
     return f"if({does_match}, {then}, NULL)"
 
 
