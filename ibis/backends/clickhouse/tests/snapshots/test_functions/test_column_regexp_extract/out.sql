@@ -1,1 +1,1 @@
-if(multiMatchAny(CAST(string_col AS String), ['[\\d]+']), if(CAST(nullIf(3, 0) AS Nullable(Int64)) IS NULL, CAST(string_col AS String), CAST(extractAll(CAST(string_col AS String), '[\\d]+') AS Array(Nullable(String)))[CAST(nullIf(3, 0) AS Nullable(Int64))]), NULL)
+if(notEmpty(extractGroups(CAST(string_col AS String), '([\\d]+)')[3 + 1]), extractGroups(CAST(string_col AS String), '([\\d]+)')[3 + 1], NULL)

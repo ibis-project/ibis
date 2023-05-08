@@ -1030,13 +1030,13 @@ class StringValue(Value):
         Parameters
         ----------
         pattern
-            Reguar expression pattern string
+            Regular expression pattern string
         index
             The index of the match group to return.
 
             The behavior of this function follows the behavior of Python's
-            [`re.match`](https://docs.python.org/3/library/re.html#match-objects):
-            when `index` is zero and there's a match, return the entire string,
+            [`match objects`](https://docs.python.org/3/library/re.html#match-objects):
+            when `index` is zero and there's a match, return the entire match,
             otherwise return the content of the `index`-th match group.
 
         Returns
