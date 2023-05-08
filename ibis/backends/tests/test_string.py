@@ -211,9 +211,21 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_extract(r'(\d+)', 1),
+            lambda t: ("xyz" + t.string_col + "abcd").re_extract(r'(\d+)', 0),
             lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
             id='re_extract',
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(["impala"], raises=AssertionError),
+            ],
+        ),
+        param(
+            lambda t: ("xyz" + t.string_col + "abcd").re_extract(r'(\d+)abc', 1),
+            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
+            id='re_extract_group',
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -283,9 +295,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["impala", "clickhouse", "snowflake"], raises=AssertionError
-                ),
+                pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
                 pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
@@ -300,9 +310,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["impala", "clickhouse", "snowflake"], raises=AssertionError
-                ),
+                pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
                 pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
@@ -327,7 +335,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala", "dask", "pandas"], raises=AssertionError),
+                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(

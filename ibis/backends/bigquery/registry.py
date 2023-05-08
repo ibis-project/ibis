@@ -163,8 +163,16 @@ def _regex_extract(translator, op):
     regex = _translate_pattern(translator, op.pattern)
     index = translator.translate(op.index)
     matches = f"REGEXP_CONTAINS({arg}, {regex})"
-    extract = f"REGEXP_EXTRACT_ALL({arg}, {regex})[SAFE_ORDINAL({index})]"
-    return f"IF({matches}, IF(COALESCE({index}, 0) = 0, {arg}, {extract}), NULL)"
+
+    extract = f'''
+    IF(
+    {index} = 0,
+    REGEXP_EXTRACT({arg}, {regex}),
+    REGEXP_REPLACE({arg}, CONCAT({regex}, ".*"), CONCAT("\\", CAST({index} AS STRING)))
+    )
+    '''
+
+    return f"IF({matches}, {extract}, NULL)"
 
 
 def _regex_replace(translator, op):

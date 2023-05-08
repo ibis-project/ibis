@@ -277,15 +277,14 @@ def execute_series_ends_with(op, data, pattern, **kwargs):
 @execute_node.register(ops.RegexExtract, pd.Series, str, integer_types)
 def execute_series_regex_extract(op, data, pattern, index, **kwargs):
     pattern = re.compile(pattern)
-
-    def extract(x, pattern=pattern, index=index):
-        match = pattern.match(x)
-        if match is not None:
-            return match.group(index) or np.nan
-        return np.nan
-
-    extracted = data.apply(extract)
-    return extracted
+    return pd.Series(
+        [
+            None if (match is None or index > match.lastindex) else match[index]
+            for match in map(pattern.search, data)
+        ],
+        dtype=data.dtype,
+        name=data.name,
+    )
 
 
 @execute_node.register(ops.RegexExtract, SeriesGroupBy, str, integer_types)
