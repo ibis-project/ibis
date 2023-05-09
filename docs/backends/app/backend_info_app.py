@@ -52,6 +52,7 @@ def backends_info_df():
             "impala": ["string", "sql"],
             "mssql": ["sqlalchemy", "sql"],
             "mysql": ["sqlalchemy", "sql"],
+            "oracle": ["sqlalchemy", "sql"],
             "pandas": ["dataframe"],
             "polars": ["dataframe"],
             "postgres": ["sqlalchemy", "sql"],
