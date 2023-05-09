@@ -559,7 +559,7 @@ jobs:
         run: poetry remove snowflake-sqlalchemy
 
       - name: add sqlalchemy 2
-        run: poetry add --lock --optional 'sqlalchemy>=2,<2.0.11'
+        run: poetry add --lock --optional 'sqlalchemy>=2,<3'
 
       - name: checkout the lock file
         run: git checkout poetry.lock

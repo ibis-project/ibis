@@ -956,20 +956,20 @@ files = [
 
 [[package]]
 name = "duckdb-engine"
-version = "0.7.0"
+version = "0.7.1"
 description = "SQLAlchemy driver for duckdb"
 category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "duckdb_engine-0.7.0-py3-none-any.whl", hash = "sha256:272f8cb27cf7599372f6b2628c147c41cd656a316272d8ababdcc81447a5455c"},
-    {file = "duckdb_engine-0.7.0.tar.gz", hash = "sha256:3c17b2dba582fe7d74731d6cb52d73eaba7555a31ca602f7837dfc40f9db90c4"},
+    {file = "duckdb_engine-0.7.1-py3-none-any.whl", hash = "sha256:b4d9c2684e7712d71e60aac2e18127c9ffb028e204cf7133189da8627b1e27c7"},
+    {file = "duckdb_engine-0.7.1.tar.gz", hash = "sha256:51b7822bd778d922dd86aee2a5d8dc6dc8905ed1205c8bce82b4a614dad34650"},
 ]
 
 [package.dependencies]
 duckdb = ">=0.4.0"
 numpy = "*"
-sqlalchemy = ">=1.3.19"
+sqlalchemy = ">=1.3.22"
 
 [[package]]
 name = "dunamai"
