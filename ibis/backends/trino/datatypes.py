@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from functools import partial
+from typing import Any
 
 import parsy
 import sqlalchemy as sa
+import trino.client
 from sqlalchemy.ext.compiler import compiles
-from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, ROW, TIMESTAMP
+from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, TIMESTAMP
+from trino.sqlalchemy.datatype import ROW as _ROW
 from trino.sqlalchemy.dialect import TrinoDialect
 
 import ibis.expr.datatypes as dt
@@ -21,6 +24,24 @@ from ibis.common.parsing import (
     spaceless,
     spaceless_string,
 )
+
+
+class ROW(_ROW):
+    _result_is_tuple = hasattr(trino.client, "NamedRowTuple")
+
+    def result_processor(self, dialect, coltype: str) -> None:
+        if not coltype.lower().startswith("row"):
+            return None
+
+        def process(
+            value, result_is_tuple: bool = self._result_is_tuple
+        ) -> dict[str, Any] | None:
+            if value is None or not result_is_tuple:
+                return value
+            else:
+                return dict(zip(value._names, value))
+
+        return process
 
 
 def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
@@ -127,9 +148,7 @@ def _string(_, itype):
 
 @to_sqla_type.register(TrinoDialect, dt.Struct)
 def _struct(dialect, itype):
-    return ROW(
-        [(name, to_sqla_type(dialect, typ)) for name, typ in itype.fields.items()]
-    )
+    return ROW((name, to_sqla_type(dialect, typ)) for name, typ in itype.fields.items())
 
 
 @to_sqla_type.register(TrinoDialect, dt.Timestamp)

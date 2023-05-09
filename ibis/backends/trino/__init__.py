@@ -7,12 +7,13 @@ from typing import Iterator
 
 import sqlalchemy as sa
 import toolz
+from trino.sqlalchemy.datatype import ROW as _ROW
 
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.trino.compiler import TrinoSQLCompiler
-from ibis.backends.trino.datatypes import parse
+from ibis.backends.trino.datatypes import ROW, parse
 
 
 class Backend(BaseAlchemyBackend):
@@ -75,6 +76,17 @@ class Backend(BaseAlchemyBackend):
                         url, connect_args=connect_args, poolclass=sa.pool.StaticPool
                     )
                 )
+
+    @staticmethod
+    def _new_sa_metadata():
+        meta = sa.MetaData()
+
+        @sa.event.listens_for(meta, "column_reflect")
+        def column_reflect(inspector, table, column_info):
+            if isinstance(typ := column_info["type"], _ROW):
+                column_info["type"] = ROW(typ.attr_types)
+
+        return meta
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         tmpname = f"_ibis_trino_output_{util.guid()[:6]}"

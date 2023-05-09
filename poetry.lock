@@ -4782,14 +4782,14 @@ test = ["argcomplete (>=2.0)", "pre-commit", "pytest", "pytest-mock"]
 
 [[package]]
 name = "trino"
-version = "0.322.0"
+version = "0.323.0"
 description = "Client for the Trino distributed SQL Engine"
 category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "trino-0.322.0-py3-none-any.whl", hash = "sha256:cec1e9852ab3e4891c8df8422c093962a9d7e752b9092343cde281b9f9506026"},
-    {file = "trino-0.322.0.tar.gz", hash = "sha256:6a0f39452ddc3e8da62623560b4bd9f4dbe69f8eb440e9f4d2c0f9c8e0fcfef8"},
+    {file = "trino-0.323.0-py3-none-any.whl", hash = "sha256:0ccae8c0ce91ae4613ca1a1f5939550e2e166ce6ae5fa1b715164ccb1a82ea9a"},
+    {file = "trino-0.323.0.tar.gz", hash = "sha256:6257602a2e040e1e28d8612a1566a870de8936d3aab3f7b1baf1fd420665c9ba"},
 ]
 
 [package.dependencies]
