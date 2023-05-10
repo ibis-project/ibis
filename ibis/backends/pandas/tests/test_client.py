@@ -6,7 +6,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.pandas.client import PandasTable
 
 
 @pytest.fixture
@@ -37,11 +36,6 @@ def test_connect_no_args():
 
 def test_client_table(table):
     assert isinstance(table.op(), ibis.expr.operations.DatabaseTable)
-    assert isinstance(table.op(), PandasTable)
-
-
-def test_client_table_repr(table):
-    assert 'PandasTable' in repr(table)
 
 
 def test_create_table(client, test_data):

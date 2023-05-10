@@ -563,6 +563,11 @@ def get_node_arguments_parameter(node):
     return ()
 
 
+@get_node_arguments.register(ops.DatabaseTable)
+def get_node_arguments_table(node):
+    return (node.source,)
+
+
 @get_node_arguments.register(ops.DropNa)
 def get_node_arguments_dropna(node):
     return (node.table,)

@@ -66,6 +66,7 @@ class DatabaseTable(PhysicalTable):
     name = rlz.instance_of(str)
     schema = rlz.instance_of(sch.Schema)
     source = rlz.client
+    namespace = rlz.optional(rlz.instance_of(str))
 
 
 @public

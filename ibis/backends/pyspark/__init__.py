@@ -26,7 +26,7 @@ from ibis.backends.base.sql.ddl import (
 )
 from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable, spark_dataframe_schema
-from ibis.backends.pyspark.compiler import PySparkDatabaseTable, PySparkExprTranslator
+from ibis.backends.pyspark.compiler import PySparkExprTranslator
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -107,8 +107,6 @@ class PySparkCompiler(Compiler):
 class Backend(BaseSQLBackend):
     compiler = PySparkCompiler
     name = 'pyspark'
-    table_class = PySparkDatabaseTable
-    table_expr_class = PySparkTable
 
     class Options(ibis.config.Config):
         """PySpark options.
@@ -280,8 +278,8 @@ class Backend(BaseSQLBackend):
         qualified_name = self._fully_qualified_name(name, database)
 
         schema = self.get_schema(qualified_name)
-        node = self.table_class(qualified_name, schema, self)
-        return self.table_expr_class(node)
+        node = ops.DatabaseTable(qualified_name, schema, self)
+        return PySparkTable(node)
 
     def create_database(
         self,

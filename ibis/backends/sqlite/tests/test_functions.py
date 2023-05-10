@@ -37,7 +37,7 @@ sa = pytest.importorskip("sqlalchemy")
 )
 def test_cast(alltypes, alltypes_sqla, translate, func, expected):
     expr = func(alltypes)
-    assert translate(expr.op()) == str(expected(alltypes_sqla))
+    assert translate(expr.op()) == str(expected(alltypes_sqla.alias("t0")))
 
 
 @pytest.mark.parametrize(
@@ -60,7 +60,7 @@ def test_timestamp_cast_noop(
 ):
     # See GH #592
     result = func(alltypes)
-    expected = expected_func(alltypes_sqla)
+    expected = expected_func(alltypes_sqla.alias("t0"))
     assert translate(result.op()) == sqla_compile(expected)
 
 

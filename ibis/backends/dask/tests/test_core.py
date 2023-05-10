@@ -10,7 +10,6 @@ dd = pytest.importorskip("dask.dataframe")
 
 from dask.dataframe.utils import tm  # noqa: E402
 
-from ibis.backends.dask import Backend  # noqa: E402
 from ibis.backends.dask.core import execute  # noqa: E402
 from ibis.backends.dask.dispatch import (  # noqa: E402
     execute_node,
@@ -64,22 +63,6 @@ def test_missing_data_sources():
     expr = t.a.length()
     with pytest.raises(com.UnboundExpressionError):
         execute(expr.op())
-
-
-def test_missing_data_on_custom_client():
-    class MyBackend(Backend):
-        def table(self, name):
-            return ops.DatabaseTable(
-                name, ibis.schema([('a', 'int64')]), self
-            ).to_expr()
-
-    con = MyBackend()
-    t = con.table('t')
-    with pytest.raises(
-        com.OperationNotDefinedError,
-        match="Operation 'DatabaseTable' is not implemented for this backend",
-    ):
-        con.execute(t)
 
 
 def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):

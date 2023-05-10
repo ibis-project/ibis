@@ -17,7 +17,7 @@ from __future__ import annotations
 import datetime
 import sqlite3
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import Iterator
 
 import sqlalchemy as sa
 import toolz
@@ -26,14 +26,10 @@ from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.backends.base import Database
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
 from ibis.backends.sqlite.datatypes import parse
-
-if TYPE_CHECKING:
-    import ibis.expr.types as ir
 
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
@@ -71,9 +67,6 @@ class ISODATETIME(DATETIME):
 
 class Backend(BaseAlchemyBackend):
     name = 'sqlite'
-    # TODO check if there is a reason to not use the parent AlchemyDatabase, or
-    # if there is technical debt that makes this required
-    database_class = Database
     compiler = SQLiteCompiler
     supports_create_or_replace = False
 
@@ -181,25 +174,6 @@ class Backend(BaseAlchemyBackend):
                 column_info["type"] = ISODATETIME()
 
         return meta
-
-    def table(self, name: str, database: str | None = None, **_: Any) -> ir.Table:
-        """Create a table expression from a table in the SQLite database.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Name of the attached database that the table is located in.
-
-        Returns
-        -------
-        Table
-            Table expression
-        """
-        alch_table = self._get_sqla_table(name, schema=database)
-        node = self.table_class(source=self, sqla_table=alch_table)
-        return self.table_expr_class(node)
 
     def _table_from_schema(
         self, name, schema, database: str | None = None, temp: bool = True

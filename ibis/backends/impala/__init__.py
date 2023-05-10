@@ -184,8 +184,6 @@ class Backend(BaseSQLBackend):
     # not 100% accurate, but very close
     _sqlglot_dialect = "hive"
     _top_level_methods = ("hdfs_connect",)
-    database_class = ImpalaDatabase
-    table_expr_class = ImpalaTable
     compiler = ImpalaCompiler
 
     class Options(ibis.config.Config):
@@ -305,6 +303,22 @@ class Backend(BaseSQLBackend):
         with self._safe_raw_sql('select version()') as cursor:
             (result,) = cursor.fetchone()
         return result
+
+    @util.deprecated(instead='use equivalent methods in the backend')
+    def database(self, name: str | None = None):
+        """Return a `Database` object for the `name` database.
+
+        Parameters
+        ----------
+        name
+            Name of the database to return the object for.
+
+        Returns
+        -------
+        Database
+            A database object for the specified database.
+        """
+        return ImpalaDatabase(name=name or self.current_database, client=self)
 
     def list_databases(self, like=None):
         with self._safe_raw_sql('SHOW DATABASES') as cur:
@@ -547,6 +561,10 @@ class Backend(BaseSQLBackend):
                 yield writer.delimited_table(writer.write_temp_csv())
         else:
             yield obj
+
+    def table(self, name: str, database: str | None = None, **kwargs: Any) -> ir.Table:
+        expr = super().table(name, database=database, **kwargs)
+        return ImpalaTable(expr.op())
 
     def create_table(
         self,

@@ -452,8 +452,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     required methods.
     """
 
-    database_class = Database
-    table_class: type[ops.DatabaseTable] = ops.DatabaseTable
     name: ClassVar[str]
 
     supports_temporary_tables = False
@@ -471,12 +469,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         )
 
     def __getstate__(self):
-        return dict(
-            database_class=self.database_class,
-            table_class=self.table_class,
-            _con_args=self._con_args,
-            _con_kwargs=self._con_kwargs,
-        )
+        return dict(_con_args=self._con_args, _con_kwargs=self._con_kwargs)
 
     def __rich_repr__(self):
         yield "name", self.name
@@ -502,7 +495,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         Hashable
             Database identity
         """
-        parts = [self.table_class.__name__]
+        parts = [self.__class__]
         parts.extend(self._con_args)
         parts.extend(f'{k}={v}' for k, v in self._con_kwargs.items())
         return '_'.join(map(str, parts))
@@ -565,7 +558,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         Database
             A database object for the specified database.
         """
-        return self.database_class(name=name or self.current_database, client=self)
+        return Database(name=name or self.current_database, client=self)
 
     @property
     @abc.abstractmethod

@@ -132,8 +132,9 @@ def gdf(geotable):
 
 
 @pytest.fixture(scope='module')
-def at(alltypes):
-    return alltypes.op().sqla_table
+def alltypes_sqla(con, alltypes):
+    name = alltypes.op().name
+    return con._get_sqla_table(name)
 
 
 @pytest.fixture(scope='module')

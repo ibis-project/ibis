@@ -7,13 +7,13 @@ import dask.dataframe as dd
 import pandas as pd
 from dask.base import DaskMethodsMixin
 
+import ibis.backends.dask.client
+
 # import the pandas execution module to register dispatched implementations of
 # execute_node that the dask backend will later override
 import ibis.backends.pandas.execution
 import ibis.config
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.dask.client import DaskDatabase, DaskTable, ibis_schema_to_dask
 from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
 from ibis.backends.pandas.core import _apply_schema
@@ -24,8 +24,6 @@ ibis.pandas  # noqa: B018
 
 class Backend(BasePandasBackend):
     name = 'dask'
-    database_class = DaskDatabase
-    table_class = DaskTable
     backend_table_type = dd.DataFrame
 
     def do_connect(
@@ -118,10 +116,6 @@ class Backend(BasePandasBackend):
     @staticmethod
     def _from_pandas(df: pd.DataFrame, npartitions: int = 1) -> dd.DataFrame:
         return dd.from_pandas(df, npartitions=npartitions)
-
-    @staticmethod
-    def _convert_schema(schema: sch.Schema):
-        return ibis_schema_to_dask(schema)
 
     @classmethod
     def _convert_object(cls, obj: dd.DataFrame) -> dd.DataFrame:

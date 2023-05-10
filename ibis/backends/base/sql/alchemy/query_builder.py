@@ -8,7 +8,6 @@ from sqlalchemy import sql
 
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.database import AlchemyTable
 from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
@@ -92,8 +91,8 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
         translator = ctx.compiler.translator_class(ref_op, ctx)
 
-        if isinstance(ref_op, AlchemyTable):
-            result = ref_op.sqla_table
+        if isinstance(ref_op, ops.DatabaseTable):
+            result = ref_op.source._get_sqla_table(ref_op.name, schema=ref_op.namespace)
         elif isinstance(ref_op, ops.UnboundTable):
             # use SQLAlchemy's TableClause for unbound tables
             result = sa.Table(

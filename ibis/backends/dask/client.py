@@ -9,9 +9,7 @@ from dateutil.parser import parse as date_parse
 from pandas.api.types import DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import Database
 from ibis.backends.pandas.client import ibis_dtype_to_pandas, ibis_schema_to_pandas
 
 
@@ -106,11 +104,3 @@ def convert_any_to_any(_, out_dtype, column):
 
 dt.DataType.to_dask = ibis_dtype_to_dask
 sch.Schema.to_dask = ibis_schema_to_dask
-
-
-class DaskTable(ops.DatabaseTable):
-    pass
-
-
-class DaskDatabase(Database):
-    pass

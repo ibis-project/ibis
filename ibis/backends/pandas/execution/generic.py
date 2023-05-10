@@ -26,7 +26,6 @@ from ibis.backends.base.df.scope import Scope
 from ibis.backends.base.df.timecontext import TimeContext, get_time_col
 from ibis.backends.pandas import Backend as PandasBackend
 from ibis.backends.pandas import aggcontext as agg_ctx
-from ibis.backends.pandas.client import PandasTable
 from ibis.backends.pandas.core import (
     boolean_types,
     date_types,
@@ -1293,7 +1292,7 @@ for typ in (str, *scalar_types):
         execute_node.register(ops.Where, cond_typ, typ, type(None))(execute_node_where)
 
 
-@execute_node.register(PandasTable, PandasBackend)
+@execute_node.register(ops.DatabaseTable, PandasBackend)
 def execute_database_table_client(
     op, client, timecontext: TimeContext | None, **kwargs
 ):
