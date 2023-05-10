@@ -318,6 +318,10 @@ class SelfReference(TableNode):
     table = rlz.table
 
     @property
+    def name(self) -> str:
+        return f"{self.table.name}_ref"
+
+    @property
     def schema(self):
         return self.table.schema
 
