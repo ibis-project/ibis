@@ -27,8 +27,7 @@ def operation(op):
 
 @translate.register(ops.DatabaseTable)
 def table(op):
-    name, _, client = op.args
-    return client._context.table(name)
+    return op.source._context.table(op.name)
 
 
 @translate.register(ops.Alias)

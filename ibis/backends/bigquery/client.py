@@ -11,7 +11,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.base import Database
 from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
 
 NATIVE_PARTITION_COL = "_PARTITIONTIME"
@@ -123,10 +122,6 @@ class BigQueryCursor:
 
     def __exit__(self, *_):
         """No-op for compatibility."""
-
-
-class BigQueryDatabase(Database):
-    """A BigQuery dataset."""
 
 
 @functools.singledispatch

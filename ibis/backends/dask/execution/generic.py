@@ -20,7 +20,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.dask import Backend as DaskBackend
-from ibis.backends.dask.client import DaskTable
 from ibis.backends.dask.core import execute
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import (
@@ -166,7 +165,7 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
 
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
-execute_node.register(DaskTable, DaskBackend)(execute_database_table_client)
+execute_node.register(ops.DatabaseTable, DaskBackend)(execute_database_table_client)
 
 
 @execute_node.register(ops.Alias, object)

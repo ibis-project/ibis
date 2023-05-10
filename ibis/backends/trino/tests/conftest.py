@@ -177,11 +177,6 @@ def gdf(geotable):
 
 
 @pytest.fixture(scope='module')
-def at(alltypes):
-    return alltypes.op().sqla_table
-
-
-@pytest.fixture(scope='module')
 def intervals(con):
     return con.table("intervals")
 

@@ -14,10 +14,8 @@ from dateutil.parser import parse as date_parse
 from pandas.api.types import CategoricalDtype, DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
-import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.backends.base import Database
 from ibis.expr.operations.relations import TableProxy
 
 _ibis_dtypes = toolz.valmap(
@@ -237,11 +235,3 @@ class DataFrameProxy(TableProxy):
         from ibis.backends.pyarrow.datatypes import ibis_to_pyarrow_schema
 
         return pa.Table.from_pandas(self._data, schema=ibis_to_pyarrow_schema(schema))
-
-
-class PandasTable(ops.DatabaseTable):
-    pass
-
-
-class PandasDatabase(Database):
-    pass

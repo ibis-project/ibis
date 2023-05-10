@@ -30,8 +30,6 @@ class BaseSQLBackend(BaseBackend):
     """Base backend class for backends that compile to SQL."""
 
     compiler = Compiler
-    table_class = ops.DatabaseTable
-    table_expr_class = ir.Table
 
     def _from_url(self, url: str, **kwargs: Any) -> BaseBackend:
         """Connect to a backend using a URL `url`.
@@ -89,8 +87,8 @@ class BaseSQLBackend(BaseBackend):
             )
         qualified_name = self._fully_qualified_name(name, database)
         schema = self.get_schema(qualified_name)
-        node = self.table_class(qualified_name, schema, self)
-        return self.table_expr_class(node)
+        node = ops.DatabaseTable(qualified_name, schema, self)
+        return node.to_expr()
 
     def _fully_qualified_name(self, name, database):
         # XXX

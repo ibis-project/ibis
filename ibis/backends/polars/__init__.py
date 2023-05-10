@@ -12,7 +12,7 @@ import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend
+from ibis.backends.base import BaseBackend, Database
 from ibis.backends.polars.compiler import translate
 from ibis.util import gen_name, normalize_filename
 
@@ -57,7 +57,7 @@ class Backend(BaseBackend):
 
     def table(self, name: str, _schema: sch.Schema = None) -> ir.Table:
         schema = sch.infer(self._tables[name])
-        return self.table_class(name, schema, self).to_expr()
+        return ops.DatabaseTable(name, schema, self).to_expr()
 
     def register(
         self,
@@ -209,7 +209,7 @@ class Backend(BaseBackend):
         return self.table(table_name)
 
     def database(self, name=None):
-        return self.database_class(name, self)
+        return Database(name, self)
 
     def create_table(
         self,

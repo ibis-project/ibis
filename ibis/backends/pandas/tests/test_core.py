@@ -83,22 +83,6 @@ def test_missing_data_sources():
         execute(expr.op())
 
 
-def test_missing_data_on_custom_client():
-    class MyBackend(Backend):
-        def table(self, name):
-            return ops.DatabaseTable(
-                name, ibis.schema([('a', 'int64')]), self
-            ).to_expr()
-
-    con = MyBackend()
-    t = con.table('t')
-    with pytest.raises(
-        com.OperationNotDefinedError,
-        match="Operation 'DatabaseTable' is not implemented for this backend",
-    ):
-        con.execute(t)
-
-
 def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
     count = [0]
 

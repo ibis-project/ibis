@@ -98,7 +98,7 @@ class Backend(BaseBackend):
         database = catalog.database('public')
         table = database.table(name)
         schema = sch.schema(table.schema)
-        return self.table_class(name, schema, self).to_expr()
+        return ops.DatabaseTable(name, schema, self).to_expr()
 
     def register(
         self, source: str | Path, table_name: str | None = None, **kwargs: Any

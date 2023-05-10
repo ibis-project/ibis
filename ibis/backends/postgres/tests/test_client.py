@@ -81,7 +81,7 @@ def test_list_databases(con):
     assert POSTGRES_TEST_DB in con.list_databases()
 
 
-def test_schema_type_conversion():
+def test_schema_type_conversion(con):
     typespec = [
         # name, type, nullable
         ('json', postgresql.JSON, True, dt.JSON),

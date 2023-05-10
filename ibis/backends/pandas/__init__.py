@@ -12,11 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
-from ibis.backends.pandas.client import (
-    PandasDatabase,
-    PandasTable,
-    ibis_schema_to_pandas,
-)
+from ibis.backends.pandas.client import ibis_schema_to_pandas
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -99,10 +95,7 @@ class BasePandasBackend(BaseBackend):
     def table(self, name: str, schema: sch.Schema = None):
         df = self.dictionary[name]
         schema = sch.infer(df, schema=schema or self.schemas.get(name, None))
-        return self.table_class(name, schema, self).to_expr()
-
-    def database(self, name=None):
-        return self.database_class(name, self)
+        return ops.DatabaseTable(name, schema, self).to_expr()
 
     def get_schema(self, table_name, database=None):
         schemas = self.schemas
@@ -147,7 +140,7 @@ class BasePandasBackend(BaseBackend):
                 )
             df = self._convert_object(obj)
         else:
-            pandas_schema = self._convert_schema(schema)
+            pandas_schema = ibis_schema_to_pandas(schema)
             dtypes = dict(pandas_schema)
             df = self._from_pandas(pd.DataFrame(columns=dtypes.keys()).astype(dtypes))
 
@@ -185,10 +178,6 @@ class BasePandasBackend(BaseBackend):
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:
         return True
-
-    @staticmethod
-    def _convert_schema(schema: sch.Schema):
-        return ibis_schema_to_pandas(schema)
 
     @staticmethod
     def _from_pandas(df: pd.DataFrame) -> pd.DataFrame:
@@ -236,8 +225,6 @@ class BasePandasBackend(BaseBackend):
 
 class Backend(BasePandasBackend):
     name = 'pandas'
-    database_class = PandasDatabase
-    table_class = PandasTable
 
     def to_pyarrow(
         self,

@@ -58,15 +58,15 @@ from sqlalchemy.dialects import postgresql  # noqa: E402
         ),
     ],
 )
-def test_cast(alltypes, at, translate, left_func, right_func):
+def test_cast(alltypes, alltypes_sqla, translate, left_func, right_func):
     left = left_func(alltypes)
-    right = right_func(at)
+    right = right_func(alltypes_sqla.alias("t0"))
     assert str(translate(left.op()).compile()) == str(right.compile())
 
 
-def test_date_cast(alltypes, at, translate):
+def test_date_cast(alltypes, alltypes_sqla, translate):
     result = alltypes.date_string_col.cast('date')
-    expected = sa.cast(at.c.date_string_col, sa.DATE)
+    expected = sa.cast(alltypes_sqla.alias("t0").c.date_string_col, sa.DATE)
     assert str(translate(result.op())) == str(expected)
 
 
@@ -88,15 +88,15 @@ def test_date_cast(alltypes, at, translate):
         'month',
     ],
 )
-def test_noop_cast(alltypes, at, translate, column):
+def test_noop_cast(alltypes, alltypes_sqla, translate, column):
     col = alltypes[column]
     result = col.cast(col.type())
-    expected = at.c[column]
+    expected = alltypes_sqla.alias("t0").c[column]
     assert result.equals(col)
     assert str(translate(result.op())) == str(expected)
 
 
-def test_timestamp_cast_noop(alltypes, at, translate):
+def test_timestamp_cast_noop(alltypes, alltypes_sqla, translate):
     # See GH #592
     result1 = alltypes.timestamp_col.cast('timestamp')
     result2 = alltypes.int_col.cast('timestamp')
@@ -104,8 +104,10 @@ def test_timestamp_cast_noop(alltypes, at, translate):
     assert isinstance(result1, ir.TimestampColumn)
     assert isinstance(result2, ir.TimestampColumn)
 
-    expected1 = at.c.timestamp_col
-    expected2 = sa.cast(sa.func.to_timestamp(at.c.int_col), sa.TIMESTAMP())
+    expected1 = alltypes_sqla.alias("t0").c.timestamp_col
+    expected2 = sa.cast(
+        sa.func.to_timestamp(alltypes_sqla.alias("t0").c.int_col), sa.TIMESTAMP()
+    )
 
     assert str(translate(result1.op())) == str(expected1)
     assert str(translate(result2.op())) == str(expected2)
@@ -1042,8 +1044,10 @@ def trunc(con, temp_table):
     return con.table(temp_table)
 
 
-def test_semi_join(t, s):
-    t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
+def test_semi_join(con, t, s):
+    t_a = con._get_sqla_table(t.op().name).alias('t0')
+    s_a = con._get_sqla_table(s.op().name).alias('t1')
+
     expr = t.semi_join(s, t.id == s.id)
     result = expr.compile().compile(compile_kwargs={'literal_binds': True})
     base = (
@@ -1055,8 +1059,10 @@ def test_semi_join(t, s):
     assert str(result) == str(expected)
 
 
-def test_anti_join(t, s):
-    t_a, s_a = t.op().sqla_table.alias('t0'), s.op().sqla_table.alias('t1')
+def test_anti_join(con, t, s):
+    t_a = con._get_sqla_table(t.op().name).alias('t0')
+    s_a = con._get_sqla_table(s.op().name).alias('t1')
+
     expr = t.anti_join(s, t.id == s.id)
     result = expr.compile().compile(compile_kwargs={'literal_binds': True})
     base = (

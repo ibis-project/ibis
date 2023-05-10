@@ -186,7 +186,8 @@ class Backend(BaseAlchemyBackend):
             atexit.register(self._clean_up_tmp_table, t)
         return t
 
-    def _clean_up_tmp_table(self, tmptable: sa.Table) -> None:
+    def _clean_up_tmp_table(self, name: str) -> None:
+        tmptable = self._get_sqla_table(name)
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
             #
@@ -200,4 +201,4 @@ class Backend(BaseAlchemyBackend):
                 tmptable.drop(bind=bind)
 
     def _clean_up_cached_table(self, op):
-        self._clean_up_tmp_table(op.sqla_table)
+        self._clean_up_tmp_table(op.name)

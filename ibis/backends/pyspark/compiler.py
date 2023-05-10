@@ -30,10 +30,6 @@ from ibis.config import options
 from ibis.util import any_of, guid
 
 
-class PySparkDatabaseTable(ops.DatabaseTable):
-    pass
-
-
 class AggregationContext(enum.Enum):
     ENTIRE = 0
     WINDOW = 1
@@ -95,7 +91,7 @@ compiles = PySparkExprTranslator.compiles
 # reduced at some point
 
 
-@compiles(PySparkDatabaseTable)
+@compiles(ops.DatabaseTable)
 def compile_datasource(t, op, *, timecontext, **kwargs):
     df = op.source._session.table(op.name)
     return filter_by_time_context(df, timecontext).alias(op.name)

@@ -17,11 +17,10 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.base import Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
-    BigQueryDatabase,
-    BigQueryTable,
     bigquery_field_to_ibis_dtype,
     bigquery_param,
     ibis_schema_to_bigquery_schema,
@@ -64,8 +63,6 @@ def _create_client_info(application_name):
 class Backend(BaseSQLBackend):
     name = "bigquery"
     compiler = BigQueryCompiler
-    database_class = BigQueryDatabase
-    table_class = BigQueryTable
 
     def _from_url(self, url: str, **kwargs):
         result = urlparse(url)
@@ -266,7 +263,7 @@ class Backend(BaseSQLBackend):
                 "client.database('my_dataset') or set_database('my_dataset') "
                 "to assign your client a dataset."
             )
-        return self.database_class(name or self.dataset, self)
+        return Database(name or self.dataset, self)
 
     def execute(self, expr, params=None, limit="default", **kwargs):
         """Compile and execute the given Ibis expression.

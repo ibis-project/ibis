@@ -15,12 +15,12 @@ from sqlalchemy.sql.expression import ClauseElement, Executable
 
 import ibis
 import ibis.common.exceptions as com
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.alchemy.database import AlchemyDatabase, AlchemyTable
 from ibis.backends.base.sql.alchemy.datatypes import schema_from_table, to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
@@ -42,16 +42,12 @@ from ibis.backends.base.sql.alchemy.translator import (
 if TYPE_CHECKING:
     import pandas as pd
 
-    import ibis.expr.datatypes as dt
 
 __all__ = (
     'BaseAlchemyBackend',
     'AlchemyExprTranslator',
     'AlchemyContext',
     'AlchemyCompiler',
-    'AlchemyTable',
-    'AlchemyDatabase',
-    'AlchemyContext',
     'sqlalchemy_operation_registry',
     'sqlalchemy_window_functions_registry',
     'reduction',
@@ -101,8 +97,6 @@ def _create_table_as(element, compiler, **kw):
 class BaseAlchemyBackend(BaseSQLBackend):
     """Backend class for backends that compile to SQLAlchemy expressions."""
 
-    database_class = AlchemyDatabase
-    table_class = AlchemyTable
     compiler = AlchemyCompiler
     supports_temporary_tables = True
     _temporary_prefix = "TEMPORARY"
@@ -358,11 +352,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return methodcaller("from_select", list(expr.columns), compiled)
 
     def _columns_from_schema(self, name: str, schema: sch.Schema) -> list[sa.Column]:
-        dialect = self.con.dialect
         return [
             sa.Column(
                 colname,
-                to_sqla_type(dialect, dtype),
+                to_sqla_type(self.con.dialect, dtype),
                 nullable=dtype.nullable,
                 quote=self.compiler.translator_class._quote_column_names,
             )
@@ -505,23 +498,13 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 table.append_column(
                     sa.Column(
                         colname,
-                        to_sqla_type(dialect, type),
+                        to_sqla_type(self.con.dialect, type),
                         nullable=type.nullable,
                         quote=self.compiler.translator_class._quote_column_names,
                     ),
                     replace_existing=True,
                 )
         return table
-
-    def _sqla_table_to_expr(self, table: sa.Table) -> ir.Table:
-        schema = self._schemas.get(table.name)
-        node = self.table_class(
-            source=self,
-            sqla_table=table,
-            name=table.name,
-            schema=schema,
-        )
-        return self.table_expr_class(node)
 
     def raw_sql(self, query) -> None:
         """Execute a query string.
@@ -564,6 +547,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         Table
             Table expression
         """
+        namespace = schema
         if database is not None:
             if not isinstance(database, str):
                 raise com.IbisTypeError(
@@ -571,8 +555,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 )
             if database != self.current_database:
                 return self.database(name=database).table(name=name, schema=schema)
-        sqla_table = self._get_sqla_table(name, database=database, schema=schema)
-        return self._sqla_table_to_expr(sqla_table)
+
+        sqla_table = self._get_sqla_table(name, schema=schema)
+
+        schema = sch.infer(
+            sqla_table, schema=self._schemas.get(name), dialect=self.con.dialect
+        )
+
+        node = ops.DatabaseTable(
+            name=name, schema=schema, source=self, namespace=namespace
+        )
+        return node.to_expr()
 
     def _insert_dataframe(
         self, table_name: str, df: pd.DataFrame, overwrite: bool
