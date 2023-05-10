@@ -4,6 +4,7 @@ import collections
 import enum
 import functools
 import operator
+from functools import partial, reduce
 
 import pyspark
 import pyspark.sql.functions as F
@@ -396,7 +397,7 @@ def compile_aggregation(t, op, **kwargs):
         )
 
     if op.predicates:
-        predicate = functools.reduce(ops.And, op.predicates)
+        predicate = reduce(ops.And, op.predicates)
         src_table = src_table.filter(t.translate(predicate, **kwargs))
 
     if op.by:
@@ -1121,14 +1122,9 @@ def compile_join(t, op, how, **kwargs):
     left_df = t.translate(op.left, **kwargs)
     right_df = t.translate(op.right, **kwargs)
 
-    pred_columns = []
-    for pred in op.predicates:
-        if not isinstance(pred, ops.Equals):
-            raise NotImplementedError(
-                f"Only equality predicate is supported, but got {type(pred)}"
-            )
-        pred_columns.append(pred.left.name)
-
+    pred_columns = reduce(
+        operator.and_, map(partial(t.translate, **kwargs), op.predicates)
+    )
     return left_df.join(right_df, pred_columns, how)
 
 
