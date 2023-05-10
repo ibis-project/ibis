@@ -29,7 +29,6 @@ pytestmark = pytest.mark.broken(["druid"], raises=AssertionError)
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )
-@pytest.mark.broken(['mysql'], "string argument without an encoding", raises=TypeError)
 def test_binary_literal(con, backend):
     expr = ibis.literal(b"A")
     result = con.execute(expr)
