@@ -55,6 +55,39 @@ def test_of_type(t, obj, expected):
 
 
 @pytest.mark.parametrize(
+    "name,expected",
+    [
+        ("array", ["c_array"]),
+        ("decimal", ["c_dec52"]),
+        ("floating", ["c_f32", "c_f64"]),
+        ("geospatial", ["c_point"]),
+        ("integer", ["c_i32", "c_u64"]),
+        ("map", ["c_map"]),
+        ("numeric", ["c_dec52", "c_f32", "c_f64", "c_i32", "c_u64"]),
+        ("struct", ["c_struct"]),
+        ("temporal", ["c_timestamp", "c_date"]),
+    ],
+)
+def test_of_type_abstract(name, expected):
+    t = ibis.table(
+        dict(
+            c_array="array<int>",
+            c_dec52="decimal(5, 2)",
+            c_f32="float32",
+            c_f64="float64",
+            c_point="point",
+            c_i32="int32",
+            c_u64="uint64",
+            c_map="map<string,int>",
+            c_struct="struct<a:int>",
+            c_timestamp="timestamp",
+            c_date="date",
+        )
+    )
+    assert t.select(s.of_type(name)).equals(t.select(*expected))
+
+
+@pytest.mark.parametrize(
     ("prefixes", "expected"),
     [("a", ("a",)), (("a", "e"), ("a", "e"))],
     ids=["string", "tuple"],

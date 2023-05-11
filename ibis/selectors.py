@@ -197,17 +197,42 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
     >>> expr.columns
     ['siblings']
 
-    Select by category of `DataType` by passing the `DataType` class
+    Abstract/unparametrized types may also be specified by their string name
+    (e.g. "integer" for any integer type), or by passing in a `DataType` class
+    instead. The following options are equivalent.
 
-    >>> expr = t.select(s.of_type(dt.Array))
-    >>> expr.columns
+    >>> expr1 = t.select(s.of_type("array"))
+    >>> expr2 = t.select(s.of_type(dt.Array))
+    >>> expr1.equals(expr2)
+    True
+    >>> expr2.columns
     ['siblings', 'parents']
 
     See Also
     --------
     [`numeric`][ibis.selectors.numeric]
     """
-    if inspect.isclass(dtype):
+    if isinstance(dtype, str):
+        # A mapping of abstract or parametric types, to allow selecting all
+        # subclasses/parametrizations of these types, rather than only a
+        # specific instance.
+        abstract = {
+            "array": dt.Array,
+            "decimal": dt.Decimal,
+            "floating": dt.Floating,
+            "geospatial": dt.GeoSpatial,
+            "integer": dt.Integer,
+            "map": dt.Map,
+            "numeric": dt.Numeric,
+            "struct": dt.Struct,
+            "temporal": dt.Temporal,
+        }
+        if cls := abstract.get(dtype.lower()):
+            predicate = lambda col: isinstance(col.type(), cls)
+        else:
+            dtype = dt.dtype(dtype)
+            predicate = lambda col: col.type() == dtype
+    elif inspect.isclass(dtype):
         predicate = lambda col: isinstance(col.type(), dtype)
     else:
         dtype = dt.dtype(dtype)
