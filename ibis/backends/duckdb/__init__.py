@@ -41,8 +41,15 @@ def normalize_filenames(source_list):
 def _format_kwargs(kwargs: Mapping[str, Any]):
     bindparams, pieces = [], []
     for name, value in kwargs.items():
-        bindparams.append(sa.bindparam(name, value))
-        pieces.append(f"{name} = :{name}")
+        bindparam = sa.bindparam(name, value)
+        if not isinstance(
+            bindparam.type, sa.sql.sqltypes.NullType
+        ):  # the parameter type is not null
+            bindparams.append(bindparam)
+            pieces.append(f"{name} = :{name}")
+        else:  # fallback to string strategy
+            pieces.append(f"{name} = {value!r}")
+
     return sa.text(", ".join(pieces)).bindparams(*bindparams)
 
 
