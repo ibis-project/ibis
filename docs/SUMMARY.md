@@ -2,7 +2,7 @@
 * [Install](install.md)
 * [Docs](docs/index.md)
     * [Getting Started](getting_started.md)
-    * [How To Guide](how_to/)
+    * [How To Guides](how_to/)
     * [Execution Backends](backends/)
     * [User Guide](user_guide/)
     * API Reference
