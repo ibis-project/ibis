@@ -21,6 +21,23 @@ def test_read_csv(data_directory):
     assert t.count().execute()
 
 
+def test_read_csv_with_columns(data_directory):
+    t = ibis.read_csv(
+        data_directory / "csv" / "awards_players.csv",
+        header=True,
+        columns={
+            'playerID': 'VARCHAR',
+            'awardID': 'VARCHAR',
+            'yearID': 'DATE',
+            'lgID': 'VARCHAR',
+            'tie': 'VARCHAR',
+            'notes': 'VARCHAR',
+        },
+        dateformat="%Y",
+    )
+    assert t.count().execute()
+
+
 def test_read_parquet(data_directory):
     t = ibis.read_parquet(data_directory / "parquet" / "functional_alltypes.parquet")
     assert t.count().execute()
