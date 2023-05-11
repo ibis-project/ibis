@@ -15,7 +15,7 @@ Backends are shown in descending order of the number of supported operations.
     operation coverage.
 
 <div class="streamlit-app">
-  <iframe id="streamlit-app" src="https://ibis-project.streamlit.app/?embedded=true"></iframe>
+  <iframe class="streamlit-app-inner" src="https://ibis-project.streamlit.app/?embedded=true"></iframe>
 </div>
 
 !!! note "This app is built using [`streamlit`](https://streamlit.io/)"

@@ -1,0 +1,3 @@
+git+https://github.com/cpcloud/ibis.git@streamlit-connection#egg=ibis-framework[clickhouse]
+requests
+streamlit

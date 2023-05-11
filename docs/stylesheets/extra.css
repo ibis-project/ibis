@@ -47,7 +47,7 @@
   display: table;
 }
 
-#streamlit-app {
+.streamlit-app-inner {
   height: 1000px;
   width: 100%;
   border: none;
