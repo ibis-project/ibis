@@ -17,8 +17,8 @@ from typing_extensions import get_args, get_origin, get_type_hints
 
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict, MapSet
-from ibis.common.enums import IntervalUnit
 from ibis.common.grounds import Concrete, Singleton
+from ibis.common.temporal import IntervalUnit
 from ibis.common.validators import Coercible
 
 # TODO(kszucs): we don't support union types yet

@@ -8,7 +8,7 @@ import hypothesis.strategies as st
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.common.enums import IntervalUnit
+from ibis.common.temporal import IntervalUnit
 
 # pyarrow also has hypothesis strategies various pyarrow objects
 

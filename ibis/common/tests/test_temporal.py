@@ -1,0 +1,157 @@
+from datetime import datetime, timedelta, timezone
+
+import dateutil
+import pandas as pd
+import pytest
+import pytz
+
+from ibis.common.temporal import IntervalUnit, normalize_datetime, normalize_timezone
+from ibis.common.validators import coerced_to
+
+interval_units = pytest.mark.parametrize(
+    ["singular", "plural", "short"],
+    [
+        ("year", "years", "Y"),
+        ("quarter", "quarters", "Q"),
+        ("month", "months", "M"),
+        ("week", "weeks", "W"),
+        ("day", "days", "D"),
+        ("hour", "hours", "h"),
+        ("minute", "minutes", "m"),
+        ("second", "seconds", "s"),
+        ("millisecond", "milliseconds", "ms"),
+        ("microsecond", "microseconds", "us"),
+        ("nanosecond", "nanoseconds", "ns"),
+    ],
+)
+
+
+@interval_units
+def test_interval_units(singular, plural, short):
+    u = IntervalUnit[singular.upper()]
+    assert u.singular == singular
+    assert u.plural == plural
+    assert u.short == short
+
+
+@interval_units
+def test_interval_unit_coercions(singular, plural, short):
+    u = IntervalUnit[singular.upper()]
+    v = coerced_to(IntervalUnit)
+    assert v(singular) == u
+    assert v(plural) == u
+    assert v(short) == u
+
+
+@pytest.mark.parametrize(
+    ("alias", "expected"),
+    [
+        ("HH24", "h"),
+        ("J", "D"),
+        ("MI", "m"),
+        ("SYYYY", "Y"),
+        ("YY", "Y"),
+        ("YYY", "Y"),
+        ("YYYY", "Y"),
+    ],
+)
+def test_interval_unit_aliases(alias, expected):
+    v = coerced_to(IntervalUnit)
+    assert v(alias) == IntervalUnit(expected)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        (None, None),
+        (pytz.UTC, pytz.UTC),
+        ("UTC", dateutil.tz.tzutc()),
+        ("Europe/Budapest", dateutil.tz.gettz("Europe/Budapest")),
+        (+2, timezone(timedelta(seconds=7200))),
+        (-2, timezone(timedelta(seconds=-7200))),
+        (dateutil.tz.tzoffset(None, 3600), timezone(timedelta(seconds=3600))),
+    ],
+)
+def test_normalize_timezone(value, expected):
+    assert normalize_timezone(value) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        # datetime object
+        (datetime(2017, 1, 1), datetime(2017, 1, 1)),
+        (datetime(2017, 1, 1, 0, 0, 0, 1), datetime(2017, 1, 1, 0, 0, 0, 1)),
+        (
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=timezone.utc),
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+        ),
+        # date object
+        (datetime(2017, 1, 1).date(), datetime(2017, 1, 1)),
+        # pandas timestamp object
+        (pd.Timestamp("2017-01-01"), datetime(2017, 1, 1)),
+        (pd.Timestamp("2017-01-01 00:00:00.000001"), datetime(2017, 1, 1, 0, 0, 0, 1)),
+        # pandas timestamp object with timezone
+        (
+            pd.Timestamp("2017-01-01 00:00:00.000001+00:00"),
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+        ),
+        (
+            pd.Timestamp("2017-01-01 00:00:00.000001+01:00"),
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.tzoffset(None, 3600)),
+        ),
+        # datetime string
+        ("2017-01-01", datetime(2017, 1, 1)),
+        ("2017-01-01 00:00:00.000001", datetime(2017, 1, 1, 0, 0, 0, 1)),
+        # datetime string with timezone offset
+        (
+            "2017-01-01 00:00:00.000001+00:00",
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+        ),
+        (
+            "2017-01-01 00:00:00.000001+01:00",
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.tzoffset(None, 3600)),
+        ),
+        # datetime string with timezone
+        (
+            "2017-01-01 00:00:00.000001 UTC",
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+        ),
+        (
+            "2017-01-01 00:00:00.000001 GMT",
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+        ),
+        # plain integer
+        (1000, datetime(1970, 1, 1, 0, 16, 40)),
+        # floating point
+        (1000.123, datetime(1970, 1, 1, 0, 16, 40, 123000)),
+    ],
+)
+def test_normalize_datetime(value, expected):
+    result = normalize_datetime(value)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        # timezone naive datetime
+        (datetime(2017, 1, 1), None),
+        (datetime(2017, 1, 1, 0, 0, 0, 1), None),
+        # timezone aware datetime
+        (datetime(2022, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC), "UTC"),
+        # timezone aware datetime with timezone offset
+        (
+            datetime(2022, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.tzoffset(None, 3600)),
+            "UTC+01:00",
+        ),
+        # timezone aware datetime with timezone name
+        (datetime(2022, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.gettz("CET")), "CET"),
+        # pandas timestamp with timezone
+        (pd.Timestamp("2022-01-01 00:00:00.000001+00:00"), "UTC"),
+        (pd.Timestamp("2022-01-01 00:00:00.000001+01:00"), "UTC+01:00"),
+    ],
+)
+def test_normalized_datetime_tzname(value, expected):
+    result = normalize_datetime(value)
+    assert result.tzname() == expected

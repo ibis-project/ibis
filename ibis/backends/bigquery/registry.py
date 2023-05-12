@@ -22,7 +22,7 @@ from ibis.backends.base.sql.registry import (
     unary,
 )
 from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
-from ibis.common.enums import DateUnit, IntervalUnit, TimeUnit
+from ibis.common.temporal import DateUnit, IntervalUnit, TimeUnit
 
 
 def _extract_field(sql_attr):

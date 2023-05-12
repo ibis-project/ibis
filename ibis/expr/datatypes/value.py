@@ -6,13 +6,9 @@ import decimal
 import enum
 import ipaddress
 import uuid
-from functools import partial
-from operator import methodcaller
 from typing import TYPE_CHECKING, Any, Mapping, NamedTuple, Sequence
 
-import dateutil.parser
 import numpy as np
-import pytz
 import toolz
 from public import public
 
@@ -20,6 +16,7 @@ import ibis.expr.datatypes as dt
 from ibis.common.collections import frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
+from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.datatypes.cast import highest_precedence
 
 if TYPE_CHECKING:
@@ -259,86 +256,60 @@ def infer_shapely_multipolygon(value) -> dt.MultiPolygon:
 
 def normalize(typ, value):
     """Ensure that the Python type underlying a literal resolves to a single type."""
+
+    dtype = dt.dtype(typ)
     if value is None:
-        if not typ.nullable:
+        if not dtype.nullable:
             raise TypeError("Cannot convert `None` to non-nullable type {typ!r}")
         return None
 
-    if typ.is_boolean():
+    if dtype.is_boolean():
         return bool(value)
-    elif typ.is_integer():
+    elif dtype.is_integer():
         return int(value)
-    elif typ.is_floating():
+    elif dtype.is_floating():
         return float(value)
-    elif typ.is_string() and not typ.is_json():
+    elif dtype.is_string() and not dtype.is_json():
         return str(value)
-    elif typ.is_decimal():
+    elif dtype.is_decimal():
         out = decimal.Decimal(value)
         if isinstance(value, int):
-            return out.scaleb(-typ.scale)
+            return out.scaleb(-dtype.scale)
         return out
-    elif typ.is_uuid():
+    elif dtype.is_uuid():
         return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
-    elif typ.is_array():
-        return tuple(normalize(typ.value_type, item) for item in value)
-    elif typ.is_map():
-        return frozendict({k: normalize(typ.value_type, v) for k, v in value.items()})
-    elif typ.is_struct():
+    elif dtype.is_array():
+        return tuple(normalize(dtype.value_type, item) for item in value)
+    elif dtype.is_map():
+        return frozendict({k: normalize(dtype.value_type, v) for k, v in value.items()})
+    elif dtype.is_struct():
         return frozendict(
-            {k: normalize(typ[k], v) for k, v in value.items() if k in typ.fields}
+            {k: normalize(dtype[k], v) for k, v in value.items() if k in dtype.fields}
         )
-    elif typ.is_geospatial():
+    elif dtype.is_geospatial():
         if isinstance(value, (tuple, list)):
-            if typ.is_point():
+            if dtype.is_point():
                 return tuple(normalize(dt.float64, item) for item in value)
-            elif typ.is_linestring() or typ.is_multipoint():
+            elif dtype.is_linestring() or dtype.is_multipoint():
                 return tuple(normalize(dt.point, item) for item in value)
-            elif typ.is_polygon() or typ.is_multilinestring():
+            elif dtype.is_polygon() or dtype.is_multilinestring():
                 return tuple(normalize(dt.linestring, item) for item in value)
-            elif typ.is_multipolygon():
+            elif dtype.is_multipolygon():
                 return tuple(normalize(dt.polygon, item) for item in value)
         return _WellKnownText(value.wkt)
-    elif (is_timestamp := typ.is_timestamp()) or typ.is_date():
-        import pandas as pd
-
-        converter = (
-            partial(_convert_timezone, tz=typ.timezone)
-            if is_timestamp
-            else methodcaller("date")
-        )
-
-        if isinstance(value, str):
-            return converter(dateutil.parser.parse(value))
-        elif isinstance(value, pd.Timestamp):
-            return converter(value.to_pydatetime())
-        elif isinstance(value, datetime.datetime):
-            return converter(value)
-        elif isinstance(value, datetime.date):
-            return converter(
-                datetime.datetime(year=value.year, month=value.month, day=value.day)
-            )
-        elif isinstance(value, np.datetime64):
-            original_value = value
-            raw_value = value.item()
-            if isinstance(raw_value, int):
-                unit, _ = np.datetime_data(original_value)
-                return converter(pd.Timestamp(raw_value, unit=unit).to_pydatetime())
-            elif isinstance(raw_value, datetime.datetime):
-                return converter(raw_value)
-            elif is_timestamp:
-                return datetime.datetime(raw_value.year, raw_value.month, raw_value.day)
-            else:
-                return raw_value
-
-        raise TypeError(
-            f"Unsupported {'timestamp' if is_timestamp else 'date'} literal type: {type(value)}"
-        )
+    elif dtype.is_date():
+        return normalize_datetime(value).date()
+    elif dtype.is_timestamp():
+        value = normalize_datetime(value)
+        tzinfo = normalize_timezone(dtype.timezone)
+        if tzinfo is None:
+            return value
+        elif value.tzinfo is None or value.tzinfo.utcoffset(value) is None:
+            return value.replace(tzinfo=tzinfo)
+        else:
+            return value.astimezone(tzinfo)
     else:
         return value
-
-
-def _convert_timezone(value: datetime.datetime, *, tz: str | None) -> datetime.datetime:
-    return value if tz is None else value.astimezone(tz=pytz.timezone(tz))
 
 
 public(infer=infer, normalize=normalize)

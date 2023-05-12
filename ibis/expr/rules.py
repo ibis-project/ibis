@@ -12,7 +12,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute, optional
-from ibis.common.enums import IntervalUnit
+from ibis.common.temporal import IntervalUnit
 from ibis.common.validators import (
     bool_,
     callable_with,  # noqa: F401
