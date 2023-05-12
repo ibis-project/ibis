@@ -25,7 +25,7 @@ def make_struct_op_meta(op: ir.Expr) -> list[tuple[str, np.dtype]]:
     return list(
         zip(
             op.return_type.names,
-            [x.to_dask() for x in op.return_type.types],
+            [x.to_pandas() for x in op.return_type.types],
         )
     )
 
@@ -78,7 +78,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
             df = dd.map_partitions(op.func, *args, meta=meta)
         else:
             name = args[0].name if len(args) == 1 else None
-            meta = pd.Series([], name=name, dtype=op.return_type.to_dask())
+            meta = pd.Series([], name=name, dtype=op.return_type.to_pandas())
             df = dd.map_partitions(op.func, *args, meta=meta)
 
         cache[(op, timecontext)] = df
@@ -120,7 +120,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 meta = make_struct_op_meta(op)
             else:
                 meta = make_meta_series(
-                    dtype=op.return_type.to_dask(),
+                    dtype=op.return_type.to_pandas(),
                     name=args[0].name,
                 )
             result = dd.from_delayed(lazy_result, meta=meta)
@@ -151,7 +151,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
                 # manully construct a dd.core.Scalar out of the delayed result
                 result = dd.from_delayed(
                     lazy_result,
-                    meta=op.return_type.to_dask(),
+                    meta=op.return_type.to_pandas(),
                     # otherwise dask complains this is a scalar
                     verify_meta=False,
                 )
@@ -183,7 +183,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             columns.append(column)
         parent_df = dd.concat(columns, axis=1)
 
-        out_type = op.return_type.to_dask()
+        out_type = op.return_type.to_pandas()
 
         grouped_df = parent_df.groupby(groupings)
         col_names = [col._meta._selected_obj.name for col in args]
@@ -230,7 +230,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
         columns.extend(arg.obj[arg._meta.obj.name] for arg in args)
         parent_df = dd.concat(columns, axis=1)
 
-        out_type = op.return_type.to_dask()
+        out_type = op.return_type.to_pandas()
 
         grouped_df = parent_df.groupby(groupings)
         col_names = [col._meta._selected_obj.name for col in args]

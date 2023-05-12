@@ -10,7 +10,6 @@ from pandas.api.types import DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.pandas.client import ibis_dtype_to_pandas, ibis_schema_to_pandas
 
 
 @sch.schema.register(dd.Series)
@@ -43,11 +42,6 @@ def infer_dask_schema(df, schema=None):
     return sch.schema(pairs)
 
 
-ibis_dtype_to_dask = ibis_dtype_to_pandas
-
-ibis_schema_to_dask = ibis_schema_to_pandas
-
-
 @sch.convert.register(DatetimeTZDtype, dt.Timestamp, dd.Series)
 def convert_datetimetz_to_timestamp(_, out_dtype, column):
     output_timezone = out_dtype.timezone
@@ -59,7 +53,7 @@ def convert_datetimetz_to_timestamp(_, out_dtype, column):
 
 @sch.convert.register(np.dtype, dt.Timestamp, dd.Series)
 def convert_any_to_timestamp(_, out_dtype, column):
-    if isinstance(dtype := out_dtype.to_dask(), DatetimeTZDtype):
+    if isinstance(dtype := out_dtype.to_pandas(), DatetimeTZDtype):
         column = dd.to_datetime(column)
         timezone = out_dtype.timezone
         if getattr(column.dtype, "tz", None) is not None:
@@ -100,7 +94,3 @@ def convert_boolean_to_series(in_dtype, out_dtype, column):
 @sch.convert.register(object, dt.DataType, dd.Series)
 def convert_any_to_any(_, out_dtype, column):
     return column.astype(out_dtype.to_dask())
-
-
-dt.DataType.to_dask = ibis_dtype_to_dask
-sch.Schema.to_dask = ibis_schema_to_dask

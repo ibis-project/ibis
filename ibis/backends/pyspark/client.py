@@ -19,9 +19,8 @@ if TYPE_CHECKING:
 def spark_dataframe_schema(df):
     """Infer the schema of a Spark SQL `DataFrame` object."""
     # df.schema is a pt.StructType
-    schema_struct = dt.dtype(df.schema)
-
-    return sch.schema(schema_struct.names, schema_struct.types)
+    struct_dtype = dt.dtype(df.schema)
+    return sch.Schema(struct_dtype)
 
 
 class PySparkTable(ir.Table):

@@ -10,6 +10,7 @@ from numbers import Integral, Real
 from typing import Any, Iterable, Literal, NamedTuple, Optional
 
 import numpy as np
+import pandas as pd
 import toolz
 from multipledispatch import Dispatcher
 from public import public
@@ -122,17 +123,44 @@ class DataType(Concrete, Coercible):
 
         return castable(self, other, **kwargs)
 
+    @classmethod
+    def from_numpy(cls, numpy_type):
+        """Return the equivalent ibis datatype."""
+        from ibis.formats.numpy import dtype_from_numpy
+
+        return dtype_from_numpy(numpy_type)
+
+    @classmethod
+    def from_pandas(cls, pandas_type):
+        """Return the equivalent ibis datatype."""
+        from ibis.formats.pandas import dtype_from_pandas
+
+        return dtype_from_pandas(pandas_type)
+
+    @classmethod
+    def from_pyarrow(cls, arrow_type):
+        """Return the equivalent pyarrow datatype."""
+        from ibis.formats.pyarrow import dtype_to_pyarrow
+
+        return dtype_to_pyarrow(arrow_type)
+
+    def to_numpy(self):
+        """Return the equivalent numpy datatype."""
+        from ibis.formats.numpy import dtype_to_numpy
+
+        return dtype_to_numpy(self)
+
     def to_pandas(self):
         """Return the equivalent pandas datatype."""
-        from ibis.backends.pandas.client import ibis_dtype_to_pandas
+        from ibis.formats.pandas import dtype_to_pandas
 
-        return ibis_dtype_to_pandas(self)
+        return dtype_to_pandas(self)
 
     def to_pyarrow(self):
         """Return the equivalent pyarrow datatype."""
-        from ibis.backends.pyarrow.datatypes import to_pyarrow_type
+        from ibis.formats.pyarrow import dtype_to_pyarrow
 
-        return to_pyarrow_type(self)
+        return dtype_to_pyarrow(self)
 
     def is_array(self) -> bool:
         return isinstance(self, Array)
@@ -273,6 +301,20 @@ class DataType(Concrete, Coercible):
 @dtype.register(DataType)
 def from_ibis_dtype(value: DataType) -> DataType:
     return value
+
+
+@dtype.register(np.dtype)
+def from_numpy_dtype(value):
+    from ibis.formats.numpy import dtype_from_numpy
+
+    return dtype_from_numpy(value)
+
+
+@dtype.register(pd.core.dtypes.base.ExtensionDtype)
+def from_pandas_extension_dtype(value):
+    from ibis.formats.pandas import dtype_from_pandas
+
+    return dtype_from_pandas(value)
 
 
 @public
@@ -890,54 +932,6 @@ _python_dtypes = {
     pydecimal.Decimal: decimal,
     pyuuid.UUID: uuid,
 }
-
-_numpy_dtypes = {
-    np.dtype("bool"): boolean,
-    np.dtype("int8"): int8,
-    np.dtype("int16"): int16,
-    np.dtype("int32"): int32,
-    np.dtype("int64"): int64,
-    np.dtype("uint8"): uint8,
-    np.dtype("uint16"): uint16,
-    np.dtype("uint32"): uint32,
-    np.dtype("uint64"): uint64,
-    np.dtype("float16"): float16,
-    np.dtype("float32"): float32,
-    np.dtype("float64"): float64,
-    np.dtype("double"): float64,
-    np.dtype("unicode"): string,
-    np.dtype("str"): string,
-    np.dtype("datetime64"): timestamp,
-    np.dtype("datetime64[Y]"): timestamp,
-    np.dtype("datetime64[M]"): timestamp,
-    np.dtype("datetime64[W]"): timestamp,
-    np.dtype("datetime64[D]"): timestamp,
-    np.dtype("datetime64[h]"): timestamp,
-    np.dtype("datetime64[m]"): timestamp,
-    np.dtype("datetime64[s]"): timestamp,
-    np.dtype("datetime64[ms]"): timestamp,
-    np.dtype("datetime64[us]"): timestamp,
-    np.dtype("datetime64[ns]"): timestamp,
-    np.dtype("timedelta64"): interval,
-    np.dtype("timedelta64[Y]"): Interval("Y"),
-    np.dtype("timedelta64[M]"): Interval("M"),
-    np.dtype("timedelta64[W]"): Interval("W"),
-    np.dtype("timedelta64[D]"): Interval("D"),
-    np.dtype("timedelta64[h]"): Interval("h"),
-    np.dtype("timedelta64[m]"): Interval("m"),
-    np.dtype("timedelta64[s]"): Interval("s"),
-    np.dtype("timedelta64[ms]"): Interval("ms"),
-    np.dtype("timedelta64[us]"): Interval("us"),
-    np.dtype("timedelta64[ns]"): Interval("ns"),
-}
-
-
-@dtype.register(np.dtype)
-def from_numpy_dtype(value):
-    try:
-        return _numpy_dtypes[value]
-    except KeyError:
-        raise TypeError(f"numpy dtype {value!r} is not supported")
 
 
 public(

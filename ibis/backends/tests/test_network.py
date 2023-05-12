@@ -9,18 +9,18 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
 MACADDR_BACKEND_TYPE = {
-    'bigquery': "STRING",
-    'clickhouse': "String",
+    'bigquery': 'STRING',
+    'clickhouse': 'String',
     'duckdb': 'VARCHAR',
-    'snowflake': "VARCHAR",
-    'sqlite': "text",
+    'snowflake': 'VARCHAR',
+    'sqlite': 'text',
     'trino': 'varchar(17)',
-    "impala": 'STRING',
-    "postgres": "text",
+    'impala': 'STRING',
+    'postgres': 'text',
 }
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["polars"], raises=NotImplementedError)
 def test_macaddr_literal(con, backend):
     test_macaddr = "00:00:0A:BB:28:FC"
     expr = ibis.literal(test_macaddr, type=dt.macaddr)
@@ -44,23 +44,24 @@ def test_macaddr_literal(con, backend):
                 'snowflake': '127.0.0.1',
                 'sqlite': '127.0.0.1',
                 'trino': '127.0.0.1',
-                "impala": '127.0.0.1',
-                "postgres": '127.0.0.1',
+                'impala': '127.0.0.1',
+                'postgres': '127.0.0.1',
                 'pandas': '127.0.0.1',
                 'pyspark': '127.0.0.1',
                 'mysql': '127.0.0.1',
                 'dask': '127.0.0.1',
                 'mssql': '127.0.0.1',
+                'datafusion': '127.0.0.1',
             },
             {
-                'bigquery': "STRING",
-                'clickhouse': "IPv4",
+                'bigquery': 'STRING',
+                'clickhouse': 'IPv4',
                 'duckdb': 'VARCHAR',
-                'snowflake': "VARCHAR",
-                'sqlite': "text",
+                'snowflake': 'VARCHAR',
+                'sqlite': 'text',
                 'trino': 'varchar(9)',
-                "impala": 'STRING',
-                "postgres": "text",
+                'impala': 'STRING',
+                "postgres": 'text',
             },
             id='ipv4',
         ),
@@ -73,29 +74,30 @@ def test_macaddr_literal(con, backend):
                 'snowflake': '2001:db8::1',
                 'sqlite': '2001:db8::1',
                 'trino': '2001:db8::1',
-                "impala": '2001:db8::1',
-                "postgres": '2001:db8::1',
+                'impala': '2001:db8::1',
+                'postgres': '2001:db8::1',
                 'pandas': '2001:db8::1',
                 'pyspark': '2001:db8::1',
                 'mysql': '2001:db8::1',
                 'dask': '2001:db8::1',
                 'mssql': '2001:db8::1',
+                'datafusion': '2001:db8::1',
             },
             {
-                'bigquery': "STRING",
-                'clickhouse': "IPv6",
+                'bigquery': 'STRING',
+                'clickhouse': 'IPv6',
                 'duckdb': 'VARCHAR',
-                'snowflake': "VARCHAR",
-                'sqlite': "text",
+                'snowflake': 'VARCHAR',
+                'sqlite': 'text',
                 'trino': 'varchar(11)',
-                "impala": 'STRING',
-                "postgres": "text",
+                'impala': 'STRING',
+                'postgres': 'text',
             },
             id='ipv6',
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(["druid", "oracle"], raises=KeyError)
 def test_inet_literal(con, backend, test_value, expected_values, expected_types):
     backend_name = backend.name()

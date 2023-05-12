@@ -23,7 +23,7 @@ from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import parse
-from ibis.backends.pandas.client import DataFrameProxy
+from ibis.expr.operations.relations import PandasDataFrameProxy
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -780,7 +780,7 @@ class Backend(BaseAlchemyBackend):
 
         # only register if we haven't already done so
         if (name := op.name) not in self.list_tables():
-            if isinstance(data := op.data, DataFrameProxy):
+            if isinstance(data := op.data, PandasDataFrameProxy):
                 table = data.to_frame()
 
                 # convert to object string dtypes because duckdb is either
