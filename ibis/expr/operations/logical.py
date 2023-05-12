@@ -136,7 +136,6 @@ class Contains(Value):
             rlz.tuple_of(rlz.any),
             rlz.column(rlz.any),
             rlz.array,
-            rlz.set_,
         ]
     )
 

@@ -91,8 +91,6 @@ def _literal(_, op):
         text_unit = op.output_dtype.resolution.upper()
         sa_text = sa.text(f'INTERVAL :value {text_unit}')
         return sa_text.bindparams(value=op.value)
-    elif op.output_dtype.is_set():
-        return list(map(sa.literal, op.value))
     elif op.output_dtype.is_binary():
         # the cast to BINARY is necessary here, otherwise the data come back as
         # Python strings

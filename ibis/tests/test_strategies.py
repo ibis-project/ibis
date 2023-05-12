@@ -83,20 +83,6 @@ def test_array_array_dtype(dtype):
     assert isinstance(dtype.value_type.value_type, dt.Primitive)
 
 
-@h.given(its.set_dtypes(its.primitive_dtypes))
-def test_set_dtype(dtype):
-    assert isinstance(dtype, dt.Set)
-    assert isinstance(dtype.value_type, dt.Primitive)
-    assert dtype.is_set() is True
-
-
-@h.given(its.set_dtypes(its.array_dtypes(its.numeric_dtypes)))
-def test_set_array_dtype(dtype):
-    assert isinstance(dtype, dt.Set)
-    assert isinstance(dtype.value_type, dt.Array)
-    assert isinstance(dtype.value_type.value_type, dt.Numeric)
-
-
 @h.given(its.map_dtypes(its.primitive_dtypes, its.boolean_dtype))
 def test_map_dtype(dtype):
     assert isinstance(dtype, dt.Map)

@@ -153,7 +153,6 @@ def parse(
     )
 
     array = spaceless_string("array").then(angle_type).map(dt.Array)
-    set = spaceless_string("set").then(angle_type).map(dt.Set)
 
     map = (
         spaceless_string("map")
@@ -181,7 +180,6 @@ def parse(
         | varchar_or_char
         | interval
         | array
-        | set
         | map
         | struct
         | spaceless_string("json", "uuid", "macaddr", "inet").map(

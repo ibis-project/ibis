@@ -54,7 +54,7 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
             raise AssertionError('invalid field length for BIT type')
     elif flags.is_set:
         # sets are limited to strings
-        typ = dt.Set(dt.string)
+        typ = dt.Array(dt.string)
     elif flags.is_unsigned and flags.is_num:
         typ = getattr(dt, f"U{typ.__name__}")
     elif type_code in TEXT_TYPES:
@@ -125,7 +125,7 @@ _type_mapping = {
     "JSON": dt.JSON,
     "NEWDECIMAL": dt.Decimal,
     "ENUM": dt.String,
-    "SET": lambda nullable: dt.Set(dt.string, nullable=nullable),
+    "SET": lambda nullable: dt.Array(dt.string, nullable=nullable),
     "TINY_BLOB": dt.Binary,
     "MEDIUM_BLOB": dt.Binary,
     "LONG_BLOB": dt.Binary,
@@ -209,7 +209,7 @@ def sa_mysql_datetime(_, satype, nullable=True):
 
 @dt.dtype.register(MySQLDialect, mysql.SET)
 def sa_mysql_set(_, satype, nullable=True):
-    return dt.Set(dt.string, nullable=nullable)
+    return dt.Array(dt.string, nullable=nullable)
 
 
 @dt.dtype.register(MySQLDialect, mysql.DOUBLE)

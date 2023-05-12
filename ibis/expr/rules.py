@@ -296,7 +296,6 @@ strict_numeric = one_of([integer, floating, decimal])
 soft_numeric = one_of([integer, floating, decimal, boolean])
 numeric = soft_numeric
 
-set_ = value(dt.Set)
 array = value(dt.Array)
 struct = value(dt.Struct)
 mapping = value(dt.Map)
@@ -559,7 +558,6 @@ public(
     point=point,
     polygon=polygon,
     ref=ref,
-    set_=set_,
     soft_numeric=soft_numeric,
     str_=str_,
     strict_numeric=strict_numeric,

@@ -44,8 +44,7 @@ def to_pyarrow_type(dtype: dt.DataType) -> pa.DataType:
 
 
 @to_pyarrow_type.register(dt.Array)
-@to_pyarrow_type.register(dt.Set)
-def from_ibis_collection(dtype: dt.Array | dt.Set) -> pa.ListType:
+def from_ibis_collection(dtype: dt.Array) -> pa.ListType:
     return pa.list_(to_pyarrow_type(dtype.value_type))
 
 

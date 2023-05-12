@@ -50,9 +50,9 @@ class Foo(enum.Enum):
         (decimal.Decimal(1.5), dt.decimal),
         # parametric types
         (list('abc'), dt.Array(dt.string)),
-        (set('abc'), dt.Set(dt.string)),
-        ({1, 5, 5, 6}, dt.Set(dt.int8)),
-        (frozenset(list('abc')), dt.Set(dt.string)),
+        (set('abc'), dt.Array(dt.string)),
+        ({1, 5, 5, 6}, dt.Array(dt.int8)),
+        (frozenset(list('abc')), dt.Array(dt.string)),
         ([1, 2, 3], dt.Array(dt.int8)),
         ([1, 128], dt.Array(dt.int16)),
         ([1, 128, 32768], dt.Array(dt.int32)),

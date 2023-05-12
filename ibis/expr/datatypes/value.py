@@ -57,20 +57,12 @@ def infer_map(value: Mapping[Any, Any]) -> dt.Map:
         return dt.Struct(toolz.valmap(infer, value, factory=type(value)))
 
 
-@infer.register((list, tuple))
+@infer.register((list, tuple, set, frozenset))
 def infer_list(values: Sequence[Any]) -> dt.Array:
     """Infer the [`Array`][ibis.expr.datatypes.Array] type of `value`."""
     if not values:
         return dt.Array(dt.null)
     return dt.Array(highest_precedence(map(infer, values)))
-
-
-@infer.register((set, frozenset))
-def infer_set(values: set) -> dt.Set:
-    """Infer the [`Set`][ibis.expr.datatypes.Set] type of `value`."""
-    if not values:
-        return dt.Set(dt.null)
-    return dt.Set(highest_precedence(map(infer, values)))
 
 
 @infer.register(datetime.time)
@@ -289,8 +281,6 @@ def normalize(typ, value):
         return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
     elif typ.is_array():
         return tuple(normalize(typ.value_type, item) for item in value)
-    elif typ.is_set():
-        return frozenset(normalize(typ.value_type, item) for item in value)
     elif typ.is_map():
         return frozendict({k: normalize(typ.value_type, v) for k, v in value.items()})
     elif typ.is_struct():

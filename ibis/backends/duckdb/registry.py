@@ -114,7 +114,7 @@ def _literal(t, op):
 
     if dtype.is_interval():
         return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
-    elif dtype.is_set() or dtype.is_array():
+    elif dtype.is_array():
         values = value.tolist() if isinstance(value, np.ndarray) else value
         return sa.cast(sa.func.list_value(*values), sqla_type)
     elif dtype.is_floating():
