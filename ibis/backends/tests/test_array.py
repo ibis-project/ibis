@@ -186,7 +186,7 @@ unnest = toolz.compose(
 
 @builtin_array
 @pytest.mark.never(
-    ["clickhouse", "duckdb", "pandas", "pyspark", "snowflake", "polars"],
+    ["clickhouse", "duckdb", "pandas", "pyspark", "snowflake", "polars", "trino"],
     reason="backend does not flatten array types",
     raises=AssertionError,
 )
@@ -253,11 +253,6 @@ def test_array_discovery_clickhouse(backend):
 @pytest.mark.notyet(
     ["clickhouse", "postgres"],
     reason="backend does not support nullable nested types",
-    raises=AssertionError,
-)
-@pytest.mark.notimpl(
-    ["trino"],
-    reason="trino supports nested arrays, but not with the postgres connector",
     raises=AssertionError,
 )
 @pytest.mark.never(
