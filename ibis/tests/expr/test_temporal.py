@@ -144,27 +144,47 @@ def test_multiply(expr):
 
 
 @pytest.mark.parametrize(
-    'expr',
+    ('expr', 'expected_unit'),
     [
-        api.interval(days=1) + api.interval(days=1),
-        api.interval(days=2) + api.interval(hours=4),
+        (
+            api.interval(days=1) + api.interval(days=1),
+            IntervalUnit('D'),
+        ),
+        (
+            api.interval(days=2) + api.interval(hours=4),
+            IntervalUnit('h'),
+        ),
+        (
+            api.interval(seconds=1) + ibis.interval(minutes=2),
+            IntervalUnit('s'),
+        ),
     ],
 )
-def test_add(expr):
+def test_add(expr, expected_unit):
     assert isinstance(expr, ir.IntervalScalar)
-    assert expr.type().unit == IntervalUnit('D')
+    assert expr.type().unit == expected_unit
 
 
 @pytest.mark.parametrize(
-    'expr',
+    ('expr', 'expected_unit'),
     [
-        api.interval(days=3) - api.interval(days=1),
-        api.interval(days=2) - api.interval(hours=4),
+        (
+            api.interval(days=3) - api.interval(days=1),
+            IntervalUnit('D'),
+        ),
+        (
+            api.interval(days=2) - api.interval(hours=4),
+            IntervalUnit('h'),
+        ),
+        (
+            api.interval(minutes=2) - api.interval(seconds=1),
+            IntervalUnit('s'),
+        ),
     ],
 )
-def test_subtract(expr):
+def test_subtract(expr, expected_unit):
     assert isinstance(expr, ir.IntervalScalar)
-    assert expr.type().unit == IntervalUnit('D')
+    assert expr.type().unit == expected_unit
 
 
 @pytest.mark.parametrize(

@@ -301,9 +301,17 @@ class IntervalBinary(Binary):
             else arg
             for arg in (self.left, self.right)
         ]
-        value_dtype = rlz._promote_integral_binop(integer_args, self.op)
 
-        return self.left.output_dtype.copy(value_type=value_dtype)
+        interval_unit_args = [
+            arg.output_dtype.unit
+            for arg in (self.left, self.right)
+            if arg.output_dtype.is_interval()
+        ]
+
+        value_dtype = rlz._promote_integral_binop(integer_args, self.op)
+        unit = rlz._promote_interval_resolution(interval_unit_args)
+
+        return self.left.output_dtype.copy(value_type=value_dtype, unit=unit)
 
 
 @public
