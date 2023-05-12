@@ -178,10 +178,7 @@ def can_cast_struct(source, target, **kwargs):
 
 
 @castable.register(dt.Array, dt.Array)
-@castable.register(dt.Set, dt.Set)
-def can_cast_array_or_set(
-    source: dt.Array | dt.Set, target: dt.Array | dt.Set, **kwargs
-) -> bool:
+def can_cast_array_or_set(source: dt.Array, target: dt.Array, **kwargs) -> bool:
     return castable(source.value_type, target.value_type)
 
 
@@ -204,18 +201,11 @@ def can_cast_special_string(source, target, **kwargs):
     return True
 
 
-@dt.dtype.register(list)
+@dt.dtype.register((list, collections.abc.Set))
 def from_list(values: list[Any]) -> dt.Array:
     if not values:
         return dt.Array(dt.null)
     return dt.Array(highest_precedence(map(dt.dtype, values)))
-
-
-@dt.dtype.register(collections.abc.Set)
-def from_set(values: collections.abc.Set) -> dt.Set:
-    if not values:
-        return dt.Set(dt.null)
-    return dt.Set(highest_precedence(map(dt.dtype, values)))
 
 
 public(castable=castable)

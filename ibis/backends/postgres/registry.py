@@ -387,8 +387,6 @@ def _literal(t, op):
 
     if dtype.is_interval():
         return sa.literal_column(f"INTERVAL '{value} {dtype.resolution}'")
-    elif dtype.is_set():
-        return list(map(sa.literal, value))
     elif dtype.is_geospatial():
         # inline_metadata ex: 'SRID=4326;POINT( ... )'
         return sa.literal_column(geo.translate_literal(op, inline_metadata=True))

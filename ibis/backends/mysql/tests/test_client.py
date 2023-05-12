@@ -47,7 +47,7 @@ MYSQL_TYPES = [
     ("json", dt.string),
     ("enum('small', 'medium', 'large')", dt.string),
     ("inet6", dt.string),
-    ("set('a', 'b', 'c', 'd')", dt.Set(dt.string)),
+    ("set('a', 'b', 'c', 'd')", dt.Array(dt.string)),
     ("mediumblob", dt.binary),
     ("blob", dt.binary),
     ("uuid", dt.string),

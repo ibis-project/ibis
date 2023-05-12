@@ -5,7 +5,7 @@ import decimal
 import sys
 import uuid
 from dataclasses import dataclass
-from typing import Dict, List, NamedTuple, Set, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 
 import pytest
 
@@ -26,10 +26,8 @@ def test_validate_type():
             'map<int64, array<map<string, int8>>>',
             dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8))),
         ),
-        ('set<uint8>', dt.Set(dt.uint8)),
         ([dt.uint8], dt.Array(dt.uint8)),
         ([dt.float32, dt.float64], dt.Array(dt.float64)),
-        ({dt.string}, dt.Set(dt.string)),
     ]
     + [
         (f"{cls.__name__.lower()}{suffix}", expected)
@@ -104,7 +102,6 @@ class FooStruct:
     qa: dt.Decimal(12, 2)
     r: dt.Array(dt.int16)
     s: dt.Map(dt.string, dt.int16)
-    t: dt.Set(dt.int16)
 
 
 class BarStruct:
@@ -132,7 +129,6 @@ class BarStruct:
     qa: dt.Decimal[12, 2]
     r: dt.Array[dt.Int16]
     s: dt.Map[dt.String, dt.Int16]
-    t: dt.Set[dt.Int16]
 
 
 baz_struct = dt.Struct(
@@ -161,7 +157,6 @@ baz_struct = dt.Struct(
         'qa': dt.Decimal(12, 2),
         'r': dt.Array(dt.int16),
         's': dt.Map(dt.string, dt.int16),
-        't': dt.Set(dt.int16),
     }
 )
 
@@ -190,10 +185,6 @@ class MyTuple(list):
     pass
 
 
-class MySet(set):
-    pass
-
-
 class MyDict(dict):
     pass
 
@@ -219,7 +210,6 @@ class PyStruct:
     j: decimal.Decimal
     k: List[int]  # noqa: UP006
     l: Dict[str, int]  # noqa: UP006, E741
-    m: Set[int]  # noqa: UP006
     n: Tuple[str]  # noqa: UP006
     o: uuid.UUID
     p: type(None)
@@ -231,8 +221,6 @@ class PyStruct2:
     kb: MyList[int]
     la: dict[str, int]
     lb: MyDict[str, int]
-    ma: set[int]
-    mb: MySet[int]
     na: tuple[str]
     nb: MyTuple[str]
 
@@ -253,7 +241,6 @@ py_struct = dt.Struct(
         'j': dt.decimal,
         'k': dt.Array(dt.int64),
         'l': dt.Map(dt.string, dt.int64),
-        'm': dt.Set(dt.int64),
         'n': dt.Array(dt.string),
         'o': dt.UUID,
         'p': dt.null,
@@ -272,8 +259,6 @@ py_struct_2 = dt.Struct(
         'kb': dt.Array(dt.int64),
         'la': dt.Map(dt.string, dt.int64),
         'lb': dt.Map(dt.string, dt.int64),
-        'ma': dt.Set(dt.int64),
-        'mb': dt.Set(dt.int64),
         'na': dt.Array(dt.string),
         'nb': dt.Array(dt.string),
     }
@@ -298,7 +283,6 @@ class FooDataClass:
     [
         (dt.Interval, dt.Interval()),
         (dt.Array[dt.Null], dt.Array(dt.Null())),
-        (dt.Set[dt.Null], dt.Set(dt.Null())),
         (dt.Map[dt.Null, dt.Null], dt.Map(dt.Null(), dt.Null())),
         (dt.Timestamp['UTC'], dt.Timestamp(timezone='UTC')),
         (dt.Timestamp['UTC', 6], dt.Timestamp(timezone='UTC', scale=6)),
@@ -536,7 +520,6 @@ def get_leaf_classes(op):
         dt.Map,
         dt.Numeric,
         dt.Primitive,
-        dt.Set,
         dt.SignedInteger,
         dt.Struct,
         dt.Temporal,
@@ -610,3 +593,7 @@ def test_is_temporal():
     assert dt.date.is_temporal()
     assert dt.timestamp.is_temporal()
     assert not dt.Array(dt.Map(dt.string, dt.string)).is_temporal()
+
+
+def test_set_is_an_alias_of_array():
+    assert dt.Set is dt.Array

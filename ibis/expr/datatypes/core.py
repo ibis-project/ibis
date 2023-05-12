@@ -6,7 +6,6 @@ import numbers
 import uuid as pyuuid
 from abc import abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
-from collections.abc import Set as PySet
 from numbers import Integral, Real
 from typing import Any, Iterable, Literal, NamedTuple, Optional
 
@@ -69,9 +68,6 @@ def dtype_from_object(value, **kwargs) -> DataType:
     elif issubclass(origin_type, Mapping):
         key_type, value_type = map(dtype, get_args(value))
         return Map(key_type, value_type)
-    elif issubclass(origin_type, PySet):
-        (value_type,) = map(dtype, get_args(value))
-        return Set(value_type)
     else:
         raise TypeError(f'Value {value!r} is not a valid datatype')
 
@@ -214,7 +210,7 @@ class DataType(Concrete, Coercible):
         return isinstance(self, MultiPolygon)
 
     def is_nested(self) -> bool:
-        return isinstance(self, (Array, Map, Struct, Set))
+        return isinstance(self, (Array, Map, Struct))
 
     def is_null(self) -> bool:
         return isinstance(self, Null)
@@ -230,9 +226,6 @@ class DataType(Concrete, Coercible):
 
     def is_primitive(self) -> bool:
         return isinstance(self, Primitive)
-
-    def is_set(self) -> bool:
-        return isinstance(self, Set)
 
     def is_signed_integer(self) -> bool:
         return isinstance(self, SignedInteger)
@@ -721,20 +714,6 @@ class Array(Variadic, Parametric):
 
 
 @public
-class Set(Variadic, Parametric):
-    """Set values."""
-
-    value_type: DataType
-
-    scalar = "SetScalar"
-    column = "SetColumn"
-
-    @property
-    def _pretty_piece(self) -> str:
-        return f"<{self.value_type}>"
-
-
-@public
 class Map(Variadic, Parametric):
     """Associative array values."""
 
@@ -999,4 +978,5 @@ public(
     Enum=Enum,
     Geography=GeoSpatial,
     Geometry=GeoSpatial,
+    Set=Array,
 )

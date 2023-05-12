@@ -91,8 +91,6 @@ def literal(translator, op):
         typeclass = 'timestamp'
     elif dtype.is_interval():
         typeclass = 'interval'
-    elif dtype.is_set():
-        typeclass = 'set'
     else:
         raise NotImplementedError(f'Unsupported type: {dtype!r}')
 

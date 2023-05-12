@@ -488,9 +488,6 @@ def _literal(op, **kw):
     elif isinstance(op.output_dtype, dt.Map):
         values = ", ".join(_map_literal_values(op))
         return f"map({values})"
-    elif isinstance(op.output_dtype, dt.Set):
-        args = ", ".join(map(repr, value))
-        return f"({args})"
     elif isinstance(op.output_dtype, dt.Struct):
         fields = ", ".join(f"{value} as `{key}`" for key, value in op.value.items())
         return f"tuple({fields})"

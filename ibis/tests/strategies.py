@@ -78,10 +78,6 @@ def array_dtypes(item_strategy=primitive_dtypes):
     return st.builds(dt.Array, value_type=item_strategy, nullable=nullable)
 
 
-def set_dtypes(item_strategy=primitive_dtypes):
-    return st.builds(dt.Set, value_type=item_strategy, nullable=nullable)
-
-
 def map_dtypes(key_strategy=primitive_dtypes, value_strategy=primitive_dtypes):
     return st.builds(
         dt.Map, key_type=key_strategy, value_type=value_strategy, nullable=nullable
@@ -138,7 +134,6 @@ variadic_dtypes = st.one_of(
     inet_dtype,
     macaddr_dtype,
     array_dtypes(),
-    set_dtypes(),
     map_dtypes(),
 )
 
@@ -151,7 +146,6 @@ all_dtypes = st.deferred(
         | variadic_dtypes
         | struct_dtypes()
         | array_dtypes(all_dtypes)
-        | set_dtypes(all_dtypes)
         | map_dtypes(all_dtypes, all_dtypes)
         | struct_dtypes(all_dtypes)
     )
