@@ -831,6 +831,38 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             ],
         ),
         param(
+            lambda t, _: t.timestamp_col
+            + (ibis.interval(days=4) + ibis.interval(hours=2)),
+            lambda t, _: t.timestamp_col
+            + (pd.Timedelta(days=4) + pd.Timedelta(hours=2)),
+            id='timestamp-add-interval-binop-different-units',
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "sqlite",
+                        "postgres",
+                        "polars",
+                        "mysql",
+                        "impala",
+                        "snowflake",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                    ],
+                    raises=com.UnsupportedOperationError,
+                ),
+                pytest.mark.notimpl(
+                    ["druid"],
+                    raises=com.IbisTypeError,
+                    reason="Given argument with datatype interval(<IntervalUnit.HOUR: 'h'>) is not implicitly castable to string",
+                ),
+            ],
+        ),
+        param(
             lambda t, _: t.timestamp_col - ibis.interval(days=17),
             lambda t, _: t.timestamp_col - pd.Timedelta(days=17),
             id='timestamp-subtract-interval',

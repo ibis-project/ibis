@@ -12,6 +12,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute, optional
+from ibis.common.enums import IntervalUnit
 from ibis.common.validators import (
     bool_,
     callable_with,  # noqa: F401
@@ -429,6 +430,14 @@ def numeric_like(name, op):
         return result
 
     return output_dtype
+
+
+def _promote_interval_resolution(units: list[IntervalUnit]) -> IntervalUnit:
+    # Find the smallest unit present in units
+    for unit in reversed(IntervalUnit):
+        if unit in units:
+            return unit
+    raise AssertionError('unreachable')
 
 
 # TODO(kszucs): it could be as simple as rlz.instance_of(ops.TableNode)
