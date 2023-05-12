@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
 import pyarrow as pa
 
@@ -22,6 +22,9 @@ except ImportError:
     from datafusion import SessionContext
 
 import datafusion
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 class Backend(BaseBackend):
@@ -101,21 +104,65 @@ class Backend(BaseBackend):
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def register(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        source: str | Path | pa.Table | pa.RecordBatch | pa.Dataset | pd.DataFrame,
+        table_name: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
-        """Register a CSV or Parquet file with `table_name` located at `source`.
+        """Register a data set with `table_name` located at `source`.
 
         Parameters
         ----------
         source
-            The path to the file
+            The data source(s). May be a path to a file or directory of
+            parquet/csv files, a pandas dataframe, or a pyarrow table, dataset
+            or record batch.
         table_name
             The name of the table
         kwargs
             Datafusion-specific keyword arguments
+
+        Examples
+        --------
+        Register a csv:
+
+        >>> import ibis
+        >>> conn = ibis.datafusion.connect(config)
+        >>> conn.register("path/to/data.csv", "my_table")
+        >>> conn.table("my_table")
+
+        Register a PyArrow table:
+
+        >>> import pyarrow as pa
+        >>> tab = pa.table({"x": [1, 2, 3]})
+        >>> conn.register(tab, "my_table")
+        >>> conn.table("my_table")
+
+        Register a PyArrow dataset:
+
+        >>> import pyarrow.dataset as ds
+        >>> dataset = ds.dataset("path/to/table")
+        >>> conn.register(dataset, "my_table")
+        >>> conn.table("my_table")
         """
+        import pandas as pd
+
         if isinstance(source, (str, Path)):
             first = str(source)
+        elif isinstance(source, pa.Table):
+            self._context.deregister_table(table_name)
+            self._context.register_record_batches(table_name, [source.to_batches()])
+            return self.table(table_name)
+        elif isinstance(source, pa.RecordBatch):
+            self._context.deregister_table(table_name)
+            self._context.register_record_batches(table_name, [[source]])
+            return self.table(table_name)
+        elif isinstance(source, pa.dataset.Dataset):
+            self._context.deregister_table(table_name)
+            self._context.register_dataset(table_name, source)
+            return self.table(table_name)
+        elif isinstance(source, pd.DataFrame):
+            return self.register(pa.Table.from_pandas(source), table_name, **kwargs)
         else:
             raise ValueError("`source` must be either a string or a pathlib.Path")
 
@@ -207,14 +254,14 @@ class Backend(BaseBackend):
             return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Column):
             # expression must be named for the projection
-            expr = expr.name('tmp').as_table()
+            expr = expr.as_table()
             return self.compile(expr, params, **kwargs)
         elif isinstance(expr, ir.Scalar):
             if an.find_immediate_parent_tables(expr.op()):
                 # there are associated datafusion tables so convert the expr
                 # to a selection which we can directly convert to a datafusion
                 # plan
-                expr = expr.name('tmp').as_table()
+                expr = expr.as_table()
                 frame = self.compile(expr, params, **kwargs)
             else:
                 # doesn't have any tables associated so create a plan from a
