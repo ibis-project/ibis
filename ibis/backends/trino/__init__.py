@@ -12,6 +12,7 @@ from trino.sqlalchemy.datatype import ROW as _ROW
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
 from ibis.backends.trino.datatypes import ROW, parse
 
@@ -85,6 +86,10 @@ class Backend(BaseAlchemyBackend):
         def column_reflect(inspector, table, column_info):
             if isinstance(typ := column_info["type"], _ROW):
                 column_info["type"] = ROW(typ.attr_types)
+            elif isinstance(typ, sa.ARRAY):
+                column_info["type"] = toolz.nth(
+                    typ.dimensions or 1, toolz.iterate(ArrayType, typ.item_type)
+                )
 
         return meta
 
