@@ -7,7 +7,7 @@ Ibis supports the [streamlit `experimental_connection` interface](https://blog.s
 Check out the example application below that shows the top N ingredients from a corpus of recipes using [the ClickHouse backend](../backends/ClickHouse.md)!
 
 <div class="streamlit-app">
-  <iframe class="streamlit-app-inner" src="https://cpcloud-docsexample-streamlit-appexample-streamlit-app-qau9wt.streamlit.app/?embedded=true"></iframe>
+  <iframe class="streamlit-app-inner" src="https://ibis-example.streamlit.app/?embedded=true"></iframe>
 </div>
 
 And here's the source code for the application:
