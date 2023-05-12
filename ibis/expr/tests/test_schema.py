@@ -1,11 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import time
+from decimal import Decimal
 from typing import Dict, List, NamedTuple, Tuple
 
+import numpy as np
 import pandas as pd
 import pandas.testing as tm
+import pyarrow as pa
 import pytest
+from pytest import param
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
@@ -102,15 +107,24 @@ def test_whole_schema():
     assert sch.schema(schema) == sch.schema(expected)
 
 
-def test_schema_names_and_types_length_must_match():
+def test_schema_from_tuples():
+    schema = sch.Schema.from_tuples(
+        [
+            ('a', 'int64'),
+            ('b', 'string'),
+            ('c', 'double'),
+            ('d', 'boolean'),
+        ]
+    )
+    expected = sch.Schema(
+        {'a': dt.int64, 'b': dt.string, 'c': dt.double, 'd': dt.boolean}
+    )
+
+    assert schema == expected
+
+    # test that duplicate field names are prohibited
     with pytest.raises(IntegrityError):
-        sch.schema(["a", "b"], ["int", "str", "float"])
-
-    schema = sch.schema(["a", "b"], ["int", "str"])
-
-    assert isinstance(schema, sch.Schema)
-    assert schema.names == ("a", "b")
-    assert schema.types == (dt.int64, dt.string)
+        sch.Schema.from_tuples([('a', 'int64'), ('a', 'string')])
 
 
 def test_schema_subset():
@@ -126,12 +140,11 @@ def test_schema_subset():
 
 def test_empty_schema():
     s1 = sch.Schema({})
-    s2 = sch.schema()
-    s3 = sch.schema([])
+    s2 = sch.schema([])
 
-    assert s1 == s2 == s3
+    assert s1 == s2
 
-    for s in [s1, s2, s3]:
+    for s in [s1, s2]:
         assert len(s.items()) == 0
         assert repr(s) == "ibis.Schema {\n}"
 
@@ -153,20 +166,19 @@ def test_nullable_output():
     assert 'baz  !boolean' not in sch_str
 
 
-# perhaps move it arounds
 @pytest.fixture
 def df():
     return pd.DataFrame({"A": pd.Series([1], dtype="int8"), "b": ["x"]})
 
 
 def test_apply_to_column_rename(df):
-    schema = sch.schema([("a", "int8"), ("B", "string")])
+    schema = sch.Schema({"a": "int8", "B": "string"})
     expected = df.rename({"A": "a", "b": "B"}, axis=1)
     tm.assert_frame_equal(schema.apply_to(df.copy()), expected)
 
 
 def test_apply_to_column_order(df):
-    schema = sch.schema([("a", "int8"), ("b", "string")])
+    schema = sch.Schema({"a": "int8", "b": "string"})
     expected = df.rename({"A": "a"}, axis=1)
     new_df = schema.apply_to(df.copy())
     tm.assert_frame_equal(new_df, expected)
@@ -176,11 +188,6 @@ def test_api_accepts_schema_objects():
     s1 = sch.schema(dict(a="int", b="str"))
     s2 = sch.schema(s1)
     assert s1 == s2
-
-
-def test_names_types():
-    s = sch.schema(["a"], ["array<float64>"])
-    assert s == sch.schema(dict(a="array<float64>"))
 
 
 def test_schema_mapping_api():
@@ -325,11 +332,6 @@ def test_schema_is_coercible():
     assert o.schema == s
 
 
-def test_schema_shorthand_supports_kwargs():
-    s = sch.schema(a=dt.int64, b=dt.Array(dt.int64))
-    assert s == sch.Schema({'a': dt.int64, 'b': dt.Array(dt.int64)})
-
-
 def test_schema_set_operations():
     a = sch.Schema({'a': dt.string, 'b': dt.int64, 'c': dt.float64})
     b = sch.Schema({'a': dt.string, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date})
@@ -359,3 +361,125 @@ def test_schema_set_operations():
     assert c < d
     assert d >= c
     assert d > c
+
+
+def test_schema_infer_pyarrow_table():
+    table = pa.Table.from_arrays(
+        [
+            pa.array([1, 2, 3]),
+            pa.array(['a', 'b', 'c']),
+            pa.array([True, False, True]),
+        ],
+        ['a', 'b', 'c'],
+    )
+    s = sch.infer(table)
+    assert s == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+
+
+def test_schema_from_pyarrow_schema():
+    schema = pa.schema(
+        [
+            pa.field('a', pa.int64()),
+            pa.field('b', pa.string()),
+            pa.field('c', pa.bool_()),
+        ]
+    )
+    s = sch.schema(schema)
+    assert s == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+
+
+@pytest.mark.parametrize(
+    ('col_data', 'schema_type'),
+    [
+        param([True, False, False], 'bool', id="bool"),
+        param(np.array([-3, 9, 17], dtype='int8'), 'int8', id="int8"),
+        param(np.array([-5, 0, 12], dtype='int16'), 'int16', id="int16"),
+        param(np.array([-12, 3, 25000], dtype='int32'), 'int32', id="int32"),
+        param(np.array([102, 67228734, -0], dtype='int64'), 'int64', id="int64"),
+        param(np.array([45e-3, -0.4, 99.0], dtype='float32'), 'float32', id="float64"),
+        param(np.array([45e-3, -0.4, 99.0], dtype='float64'), 'float64', id="float32"),
+        param(
+            np.array([-3e43, 43.0, 10000000.0], dtype='float64'), 'double', id="double"
+        ),
+        param(np.array([3, 0, 16], dtype='uint8'), 'uint8', id="uint8"),
+        param(np.array([5569, 1, 33], dtype='uint16'), 'uint16', id="uint8"),
+        param(np.array([100, 0, 6], dtype='uint32'), 'uint32', id="uint32"),
+        param(np.array([666, 2, 3], dtype='uint64'), 'uint64', id="uint64"),
+        param(
+            [
+                pd.Timestamp('2010-11-01 00:01:00'),
+                pd.Timestamp('2010-11-01 00:02:00.1000'),
+                pd.Timestamp('2010-11-01 00:03:00.300000'),
+            ],
+            'timestamp',
+            id="timestamp",
+        ),
+        param(
+            [
+                pd.Timedelta('1 days'),
+                pd.Timedelta('-1 days 2 min 3us'),
+                pd.Timedelta('-2 days +23:57:59.999997'),
+            ],
+            "interval('ns')",
+            id="interval_ns",
+        ),
+        param(['foo', 'bar', 'hello'], "string", id="string_list"),
+        param(
+            pd.Series(['a', 'b', 'c', 'a']).astype('category'),
+            dt.String(),
+            id="string_series",
+        ),
+        param(pd.Series([b'1', b'2', b'3']), dt.binary, id="string_binary"),
+        # mixed-integer
+        param(pd.Series([1, 2, '3']), dt.unknown, id="mixed_integer"),
+        # mixed-integer-float
+        param(pd.Series([1, 2, 3.0]), dt.float64, id="mixed_integer_float"),
+        param(
+            pd.Series([Decimal('1.0'), Decimal('2.0'), Decimal('3.0')]),
+            dt.Decimal(2, 1),
+            id="decimal",
+        ),
+        # complex
+        param(
+            pd.Series([1 + 1j, 1 + 2j, 1 + 3j], dtype=object), dt.unknown, id="complex"
+        ),
+        param(
+            pd.Series(
+                [
+                    pd.to_datetime('2010-11-01'),
+                    pd.to_datetime('2010-11-02'),
+                    pd.to_datetime('2010-11-03'),
+                ]
+            ),
+            dt.timestamp,
+            id="timestamp_to_datetime",
+        ),
+        param(pd.Series([time(1), time(2), time(3)]), dt.time, id="time"),
+        param(
+            pd.Series(
+                [
+                    pd.Period('2011-01'),
+                    pd.Period('2011-02'),
+                    pd.Period('2011-03'),
+                ],
+                dtype=object,
+            ),
+            dt.unknown,
+            id="period",
+        ),
+        # mixed
+        param(pd.Series([b'1', '2', 3.0]), dt.unknown, id="mixed"),
+        # empty
+        param(pd.Series([], dtype='object'), dt.null, id="empty_null"),
+        param(pd.Series([], dtype="string"), dt.string, id="empty_string"),
+        # array
+        param(pd.Series([[1], [], None]), dt.Array(dt.int64), id="array_int64_first"),
+        param(pd.Series([[], [1], None]), dt.Array(dt.int64), id="array_int64_second"),
+    ],
+)
+def test_infer_pandas_dataframe_schema(col_data, schema_type):
+    df = pd.DataFrame({'col': col_data})
+
+    inferred = sch.infer(df)
+    expected = sch.schema([('col', schema_type)])
+    assert inferred == expected

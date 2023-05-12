@@ -857,9 +857,9 @@ def test_equijoin_schema_merge():
     pred = table1['key1'] == table2['key2']
     join_types = ['inner_join', 'left_join', 'outer_join']
 
-    ex_schema = sch.schema(
-        ['key1', 'value1', 'key2', 'stuff'],
-        ['string', 'double', 'string', 'int32'],
+    ex_schema = ibis.schema(
+        names=['key1', 'value1', 'key2', 'stuff'],
+        types=['string', 'double', 'string', 'int32'],
     )
 
     for fname in join_types:

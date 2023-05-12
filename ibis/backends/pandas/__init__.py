@@ -12,7 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
-from ibis.backends.pandas.client import ibis_schema_to_pandas
+from ibis.formats.pandas import schema_to_pandas
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -140,7 +140,7 @@ class BasePandasBackend(BaseBackend):
                 )
             df = self._convert_object(obj)
         else:
-            pandas_schema = ibis_schema_to_pandas(schema)
+            pandas_schema = schema_to_pandas(schema)
             dtypes = dict(pandas_schema)
             df = self._from_pandas(pd.DataFrame(columns=dtypes.keys()).astype(dtypes))
 

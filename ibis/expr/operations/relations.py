@@ -11,7 +11,6 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
@@ -21,6 +20,7 @@ from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Named, Node, Value
 from ibis.expr.operations.generic import TableColumn
 from ibis.expr.operations.logical import Equals, ExistsSubquery, NotExistsSubquery
+from ibis.expr.schema import Schema
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -41,7 +41,7 @@ class TableNode(Node):
 
     @property
     @abstractmethod
-    def schema(self) -> sch.Schema:
+    def schema(self) -> Schema:
         ...
 
     def to_expr(self):
@@ -57,14 +57,14 @@ class PhysicalTable(TableNode, Named):
 
 @public
 class UnboundTable(PhysicalTable):
-    schema = rlz.coerced_to(sch.Schema)
+    schema = rlz.coerced_to(Schema)
     name = rlz.optional(rlz.instance_of(str), default=genname)
 
 
 @public
 class DatabaseTable(PhysicalTable):
     name = rlz.instance_of(str)
-    schema = rlz.instance_of(sch.Schema)
+    schema = rlz.instance_of(Schema)
     source = rlz.client
     namespace = rlz.optional(rlz.instance_of(str))
 
@@ -74,7 +74,7 @@ class SQLQueryResult(TableNode):
     """A table sourced from the result set of a select query."""
 
     query = rlz.instance_of(str)
-    schema = rlz.instance_of(sch.Schema)
+    schema = rlz.instance_of(Schema)
     source = rlz.client
 
 
@@ -97,10 +97,10 @@ class TableProxy(Immutable):
         """Convert this input to a pandas DataFrame."""
 
     @abc.abstractmethod
-    def to_pyarrow(self, schema: sch.Schema) -> pa.Table:  # pragma: no cover
+    def to_pyarrow(self, schema: Schema) -> pa.Table:  # pragma: no cover
         """Convert this input to a PyArrow Table."""
 
-    def to_pyarrow_bytes(self, schema: sch.Schema) -> bytes:
+    def to_pyarrow_bytes(self, schema: Schema) -> bytes:
         import pyarrow as pa
 
         data = self.to_pyarrow(schema=schema)
@@ -110,10 +110,34 @@ class TableProxy(Immutable):
         return out.getvalue()
 
 
+class PyArrowTableProxy(TableProxy):
+    __slots__ = ()
+
+    def to_frame(self):
+        return self._data.to_pandas()
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        return self._data
+
+
+class PandasDataFrameProxy(TableProxy):
+    __slots__ = ()
+
+    def to_frame(self) -> pd.DataFrame:
+        return self._data
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        import pyarrow as pa
+
+        from ibis.formats.pyarrow import schema_to_pyarrow
+
+        return pa.Table.from_pandas(self._data, schema=schema_to_pyarrow(schema))
+
+
 @public
 class InMemoryTable(PhysicalTable):
     name = rlz.instance_of(str)
-    schema = rlz.instance_of(sch.Schema)
+    schema = rlz.instance_of(Schema)
     data = rlz.instance_of(TableProxy)
 
 
@@ -213,7 +237,7 @@ class Join(TableNode):
         left, right = self.left.schema, self.right.schema
         if duplicates := left.keys() & right.keys():
             raise com.IntegrityError(f'Duplicate column name(s): {duplicates}')
-        return sch.Schema({**left, **right})
+        return Schema({**left, **right})
 
 
 @public
@@ -356,7 +380,7 @@ class Projection(TableNode):
                 names.extend(schema.names)
                 types.extend(schema.types)
 
-        return sch.schema(names, types)
+        return Schema.from_tuples(zip(names, types))
 
 
 @public
@@ -420,7 +444,7 @@ class DummyTable(TableNode):
 
     @property
     def schema(self):
-        return sch.Schema({op.name: op.output_dtype for op in self.values})
+        return Schema({op.name: op.output_dtype for op in self.values})
 
 
 @public
@@ -466,7 +490,7 @@ class Aggregation(TableNode):
         for value in self.by + self.metrics:
             names.append(value.name)
             types.append(value.output_dtype)
-        return sch.schema(names, types)
+        return Schema.from_tuples(zip(names, types))
 
     def order_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents

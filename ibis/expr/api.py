@@ -254,8 +254,12 @@ def schema(
     """
     if pairs is not None:
         return sch.schema(pairs)
-    else:
-        return sch.schema(names, types)
+
+    # validate lengths of names and types are the same
+    if len(names) != len(types):
+        raise ValueError('Schema names and types must have the same length')
+
+    return sch.Schema.from_tuples(zip(names, types))
 
 
 def table(
@@ -346,7 +350,7 @@ def memtable(
     >>> t
     InMemoryTable
       data:
-        DataFrameProxy:
+        PandasDataFrameProxy:
              a
           0  1
           1  2
@@ -355,7 +359,7 @@ def memtable(
     >>> t
     InMemoryTable
       data:
-        DataFrameProxy:
+        PandasDataFrameProxy:
              a    b
           0  1  foo
           1  2  baz
@@ -367,7 +371,7 @@ def memtable(
     >>> t
     InMemoryTable
       data:
-        DataFrameProxy:
+        PandasDataFrameProxy:
              a    b
           0  1  foo
           1  2  baz
@@ -379,7 +383,7 @@ def memtable(
     >>> t
     InMemoryTable
       data:
-        DataFrameProxy:
+        PandasDataFrameProxy:
              col0 col1
           0     1  foo
           1     2  baz
@@ -400,7 +404,7 @@ def _memtable_from_pyarrow_table(
     schema: SupportsSchema | None = None,
     columns: Iterable[str] | None = None,
 ):
-    from ibis.backends.pyarrow import PyArrowTableProxy
+    from ibis.expr.operations.relations import PyArrowTableProxy
 
     if columns is not None:
         assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
@@ -422,7 +426,7 @@ def _memtable_from_dataframe(
 ) -> Table:
     import pandas as pd
 
-    from ibis.backends.pandas.client import DataFrameProxy
+    from ibis.expr.operations.relations import PandasDataFrameProxy
 
     df = pd.DataFrame(data, columns=columns)
     if df.columns.inferred_type != "string":
@@ -436,7 +440,7 @@ def _memtable_from_dataframe(
     op = ops.InMemoryTable(
         name=name if name is not None else util.gen_name("pandas_memtable"),
         schema=sch.infer(df) if schema is None else schema,
-        data=DataFrameProxy(df),
+        data=PandasDataFrameProxy(df),
     )
     return op.to_expr()
 

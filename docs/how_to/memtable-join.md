@@ -74,7 +74,7 @@ Converting a pandas DataFrame to a MemTable is as simple as feeding it to `ibis.
     Out[10]:
     PandasInMemoryTable
       data:
-        DataFrameProxy:
+        PandasDataFrameProxy:
              event_id event_name
           0         0         e0
           1         1         e1

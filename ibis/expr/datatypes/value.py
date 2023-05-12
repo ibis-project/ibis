@@ -6,9 +6,8 @@ import decimal
 import enum
 import ipaddress
 import uuid
-from typing import TYPE_CHECKING, Any, Mapping, NamedTuple, Sequence
+from typing import Any, Mapping, NamedTuple, Sequence
 
-import numpy as np
 import toolz
 from public import public
 
@@ -18,9 +17,6 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.datatypes.cast import highest_precedence
-
-if TYPE_CHECKING:
-    import pandas as pd
 
 
 @lazy_singledispatch
@@ -144,63 +140,11 @@ def infer_ipaddr(
     return dt.inet
 
 
-@public
-class _WellKnownText(NamedTuple):
-    text: str
-
-    def __str__(self):
-        return self.text
-
-    def __repr__(self):
-        return self.text
-
-
-def _infer_object_array_dtype(x):
-    import pyarrow as pa
-
-    import ibis.backends.pyarrow.datatypes  # noqa: F401
-
-    try:
-        pa_type = pa.array(x, from_pandas=True).type
-    except pa.ArrowInvalid:
-        try:
-            # handle embedded series objects
-            return dt.highest_precedence(map(infer, x))
-        except IbisTypeError:
-            # we can still have a type error, e.g., float64 and string in the
-            # same array
-            return dt.unknown
-    except pa.ArrowTypeError:
-        # arrow can't infer the type
-        return dt.unknown
-    else:
-        # arrow inferred the type, now convert that type to an ibis type
-        return dt.dtype(pa_type)
-
-
-@infer.register(np.generic)
+@infer.register("numpy.generic")
 def infer_numpy_scalar(value):
-    return dt.dtype(value.dtype)
+    from ibis.formats.numpy import dtype_from_numpy
 
-
-@infer.register(np.ndarray)
-def infer_numpy_array(value):
-    np_dtype = value.dtype
-    if np_dtype.type == np.object_:
-        return dt.Array(_infer_object_array_dtype(value))
-    elif np_dtype.type == np.str_:
-        return dt.Array(dt.string)
-    return dt.Array(dt.dtype(np_dtype))
-
-
-@infer.register("pandas.Series")
-def infer_pandas_series(value):
-    if value.dtype == np.object_:
-        value_dtype = _infer_object_array_dtype(value.values)
-    else:
-        value_dtype = dt.dtype(value.dtype)
-
-    return dt.Array(value_dtype)
+    return dtype_from_numpy(value.dtype)
 
 
 @infer.register("pandas.Timestamp")
@@ -212,7 +156,7 @@ def infer_pandas_timestamp(value):
 
 
 @infer.register("pandas.Timedelta")
-def infer_interval_pandas(value: pd.Timedelta) -> dt.Interval:
+def infer_interval_pandas(value) -> dt.Interval:
     # pandas Timedelta has more granularity
     unit_fields = value.components._fields
     time_units = [
@@ -222,6 +166,20 @@ def infer_interval_pandas(value: pd.Timedelta) -> dt.Interval:
     # we can attempt a conversion in the simplest case, i.e. there is exactly
     # one unit (e.g. pd.Timedelta('2 days') vs. pd.Timedelta('2 days 3 hours')
     return dt.Interval(time_units[0]) if len(time_units) == 1 else dt.interval
+
+
+@infer.register("numpy.ndarray")
+@infer.register("pandas.Series")
+def infer_numpy_array(value):
+    from ibis.formats.numpy import dtype_from_numpy
+    from ibis.formats.pyarrow import _infer_array_dtype
+
+    if value.dtype.kind == 'O':
+        value_dtype = _infer_array_dtype(value)
+    else:
+        value_dtype = dtype_from_numpy(value.dtype)
+
+    return dt.Array(value_dtype)
 
 
 @infer.register("shapely.geometry.Point")
@@ -252,6 +210,17 @@ def infer_shapely_multipoint(value) -> dt.MultiPoint:
 @infer.register("shapely.geometry.MultiPolygon")
 def infer_shapely_multipolygon(value) -> dt.MultiPolygon:
     return dt.multipolygon
+
+
+@public
+class _WellKnownText(NamedTuple):
+    text: str
+
+    def __str__(self):
+        return self.text
+
+    def __repr__(self):
+        return self.text
 
 
 def normalize(typ, value):
