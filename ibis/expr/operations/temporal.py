@@ -8,7 +8,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.annotations import attribute
-from ibis.common.enums import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
+from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 from ibis.expr.operations.core import Binary, Unary, Value
 from ibis.expr.operations.generic import Cast
 from ibis.expr.operations.logical import Between

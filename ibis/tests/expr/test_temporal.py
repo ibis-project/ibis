@@ -8,7 +8,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.enums import IntervalUnit
+from ibis.common.temporal import IntervalUnit
 from ibis.expr import api
 from ibis.tests.util import assert_equal
 

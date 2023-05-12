@@ -22,7 +22,7 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.base.sql.alchemy.registry import _gen_string_find
 from ibis.backends.base.sql.alchemy.registry import _literal as base_literal
-from ibis.common.enums import DateUnit, IntervalUnit
+from ibis.common.temporal import DateUnit, IntervalUnit
 
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
