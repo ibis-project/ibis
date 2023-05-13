@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from functools import partial
+from functools import partial, reduce
 from typing import Literal
 
 import sqlalchemy as sa
+import toolz
 from sqlalchemy.ext.compiler import compiles
 from trino.sqlalchemy.datatype import DOUBLE
 
@@ -232,6 +233,47 @@ def _first_last(t, op, *, offset: Literal[-1, 1]):
     return sa.func.element_at(t._reduction(sa.func.array_agg, op), offset)
 
 
+_MAX_ZIP_ARGUMENTS = 5
+
+
+def _zip(t, op):
+    chunks = (
+        (len(chunk), sa.func.zip(*chunk) if len(chunk) > 1 else chunk[0])
+        for chunk in toolz.partition_all(_MAX_ZIP_ARGUMENTS, map(t.translate, op.arg))
+    )
+
+    # more than one chunk means more than 5 arguments to zip, which trino
+    # doesn't support
+    #
+    # help trino out by reducing chunks of 5
+    def reducer(left, right):
+        left_n, left_chunk = left
+        lhs = (
+            ", ".join(f"x[{i:d}]" for i in range(1, left_n + 1)) if left_n > 1 else "x"
+        )
+
+        right_n, right_chunk = right
+        rhs = (
+            ", ".join(f"y[{i:d}]" for i in range(1, right_n + 1))
+            if right_n > 1
+            else "y"
+        )
+
+        row_str = f"ROW({lhs}, {rhs})"
+        chunk = sa.func.zip_with(
+            left_chunk, right_chunk, sa.literal_column(f"(x, y) -> {row_str}")
+        )
+        return left_n + right_n, chunk
+
+    all_n, chunk = reduce(reducer, chunks)
+
+    dtype = op.output_dtype
+
+    assert all_n == len(dtype.value_type)
+
+    return sa.type_coerce(chunk, t.get_sqla_type(dtype))
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -408,6 +450,7 @@ operation_registry.update(
         ops.Argument: lambda _, op: sa.literal_column(op.name),
         ops.First: partial(_first_last, offset=1),
         ops.Last: partial(_first_last, offset=-1),
+        ops.Zip: _zip,
     }
 )
 
