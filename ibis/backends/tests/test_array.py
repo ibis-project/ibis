@@ -702,3 +702,19 @@ def test_unnest_struct(con):
     result = con.execute(expr)
     expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
     tm.assert_series_equal(result, expected)
+
+
+def test_zip6(con):
+    t = con.tables.array_types
+
+    res = t.x.zip(t.z, t.z, t.z, t.z, t.z, t.z)
+    df = res.execute()
+    assert not df.empty
+
+
+def test_zip2(con):
+    t = con.tables.array_types
+
+    res = t.x.zip(t.z)
+    df = res.execute()
+    assert not df.empty
