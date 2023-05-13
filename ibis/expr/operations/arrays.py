@@ -186,3 +186,21 @@ class ArrayUnion(Value):
 
     output_dtype = rlz.dtype_like("args")
     output_shape = rlz.shape_like("args")
+
+
+@public
+class Zip(Value):
+    arg = rlz.tuple_of(rlz.array, min_length=2)
+
+    output_shape = rlz.shape_like("arg")
+
+    @attribute.default
+    def output_dtype(self):
+        return dt.Array(
+            dt.Struct(
+                {
+                    f"f{i:d}": array.output_dtype.value_type
+                    for i, array in enumerate(self.arg, start=1)
+                }
+            )
+        )
