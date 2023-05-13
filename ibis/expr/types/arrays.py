@@ -759,6 +759,24 @@ class ArrayValue(Value):
         """
         return ops.ArrayUnion(self, other).to_expr()
 
+    def zip(self, other: ir.Array, *others: ir.Array) -> ir.Array:
+        """Zip two or more arrays together.
+
+        Parameters
+        ----------
+        other
+            Another array to zip with `self`
+        others
+            Additional arrays to zip with `self`
+
+        Returns
+        -------
+        Array
+            Array of structs where each struct field is an element of each input
+            array.
+        """
+        return ops.Zip((self, other, *others)).to_expr()
+
 
 @public
 class ArrayScalar(Scalar, ArrayValue):

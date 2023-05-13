@@ -4,6 +4,7 @@ from typing import Mapping
 
 import sqlalchemy as sa
 import sqlalchemy.types as sat
+import toolz
 from multipledispatch import Dispatcher
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.engine.default import DefaultDialect
