@@ -704,17 +704,35 @@ def test_unnest_struct(con):
     tm.assert_series_equal(result, expected)
 
 
-def test_zip6(con):
-    t = con.tables.array_types
+@pytest.mark.never(
+    ["impala", "mssql", "mysql", "sqlite"],
+    raises=com.OperationNotDefinedError,
+    reason="no array support",
+)
+@pytest.mark.notyet(["bigquery"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "datafusion",
+        "druid",
+        "duckdb",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "snowflake",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+def test_zip(backend):
+    t = backend.array_types
 
-    res = t.x.zip(t.z, t.z, t.z, t.z, t.z, t.z)
-    df = res.execute()
-    assert not df.empty
+    x = t.x.execute()
+    res = t.x.zip(t.x)
+    s = res.execute()
+    assert len(x[0]) == len(s[0])
 
-
-def test_zip2(con):
-    t = con.tables.array_types
-
-    res = t.x.zip(t.z)
-    df = res.execute()
-    assert not df.empty
+    x = t.x.execute()
+    res = t.x.zip(t.x, t.x, t.x, t.x, t.x, t.x)
+    s = res.execute()
+    assert len(x[0]) == len(s[0])

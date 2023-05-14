@@ -19,6 +19,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     native_bool = False
     supports_structs = False
     supports_json = False
+    supports_arrays = False
 
     @staticmethod
     def connect(data_directory: Path):

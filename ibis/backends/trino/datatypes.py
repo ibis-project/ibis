@@ -85,24 +85,10 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
         parsy.seq(LPAREN.then(ty).skip(COMMA), ty.skip(RPAREN)).combine(dt.Map)
     )
 
-    def make_tuple(pairs):
-        result = []
-        for i, typ in enumerate(pairs, start=1):
-            if len(typ) == 2:
-                name, typ = typ
-            else:
-                name = f"f{i:d}"
-            result.append((name, typ))
-        return dt.Struct.from_tuples(result)
-
     struct = (
         spaceless_string("row")
         .then(LPAREN)
-        .then(
-            parsy.seq(parsy.alt(parsy.seq(spaceless(FIELD), ty), ty))
-            .sep_by(COMMA)
-            .map(make_tuple)
-        )
+        .then(parsy.seq(spaceless(FIELD), ty).sep_by(COMMA).map(dt.Struct.from_tuples))
         .skip(RPAREN)
     )
 

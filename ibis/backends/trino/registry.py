@@ -233,20 +233,18 @@ def _first_last(t, op, *, offset: Literal[-1, 1]):
     return sa.func.element_at(t._reduction(sa.func.array_agg, op), offset)
 
 
-_MAX_ZIP_ARGUMENTS = 5
-
-
 def _zip(t, op):
-    chunks = (
-        (len(chunk), sa.func.zip(*chunk) if len(chunk) > 1 else chunk[0])
-        for chunk in toolz.partition_all(_MAX_ZIP_ARGUMENTS, map(t.translate, op.arg))
-    )
-
     # more than one chunk means more than 5 arguments to zip, which trino
     # doesn't support
     #
-    # help trino out by reducing chunks of 5
-    def reducer(left, right):
+    # help trino out by reducing in chunks of 5 using zip_with
+    max_zip_arguments = 5
+    chunks = (
+        (len(chunk), sa.func.zip(*chunk) if len(chunk) > 1 else chunk[0])
+        for chunk in toolz.partition_all(max_zip_arguments, map(t.translate, op.arg))
+    )
+
+    def combine_zipped(left, right):
         left_n, left_chunk = left
         lhs = (
             ", ".join(f"x[{i:d}]" for i in range(1, left_n + 1)) if left_n > 1 else "x"
@@ -259,13 +257,12 @@ def _zip(t, op):
             else "y"
         )
 
-        row_str = f"ROW({lhs}, {rhs})"
-        chunk = sa.func.zip_with(
-            left_chunk, right_chunk, sa.literal_column(f"(x, y) -> {row_str}")
+        zipped_chunk = sa.func.zip_with(
+            left_chunk, right_chunk, sa.literal_column(f"(x, y) -> ROW({lhs}, {rhs})")
         )
-        return left_n + right_n, chunk
+        return left_n + right_n, zipped_chunk
 
-    all_n, chunk = reduce(reducer, chunks)
+    all_n, chunk = reduce(combine_zipped, chunks)
 
     dtype = op.output_dtype
 
