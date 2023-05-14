@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+import contextlib
 import functools
 from functools import partial
 from operator import add, mul, sub
@@ -1386,3 +1387,14 @@ def _array_remove(op, **kw):
 @translate_val.register(ops.ArrayUnion)
 def _array_union(op, **kw):
     return translate_val(ops.ArrayDistinct(ops.ArrayConcat(op.left, op.right)), **kw)
+
+
+@translate_val.register(ops.Zip)
+def _array_zip(op: ops.Zip, **kw: Any) -> str:
+    arglist = []
+    for arg in op.arg:
+        sql_arg = translate_val(arg, **kw)
+        with contextlib.suppress(AttributeError):
+            sql_arg = sql_arg.sql(dialect="clickhouse")
+        arglist.append(sql_arg)
+    return f"arrayZip({', '.join(arglist)})"

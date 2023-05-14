@@ -24,6 +24,17 @@ class ArrayType(sat.UserDefinedType):
     def __init__(self, value_type: sat.TypeEngine):
         self.value_type = sat.to_instance(value_type)
 
+    def result_processor(self, dialect, coltype) -> None:
+        if not coltype.lower().startswith("array"):
+            return None
+
+        inner_processor = (
+            self.value_type.result_processor(dialect, coltype[len("array(") : -1])
+            or toolz.identity
+        )
+
+        return lambda v: v if v is None else list(map(inner_processor, v))
+
 
 @compiles(ArrayType, "default")
 def compiles_array(element, compiler, **kw):
