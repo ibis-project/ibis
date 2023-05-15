@@ -3,7 +3,7 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.backends.polars.datatypes import to_ibis_dtype, to_polars_type
+from ibis.backends.polars.datatypes import dtype_from_polars, dtype_to_polars
 
 
 @pytest.mark.parametrize(
@@ -50,9 +50,9 @@ from ibis.backends.polars.datatypes import to_ibis_dtype, to_polars_type
     ],
 )
 def test_to_from_ibis_type(ibis_dtype, polars_type):
-    assert to_polars_type(ibis_dtype) == polars_type
-    assert to_ibis_dtype(polars_type) == ibis_dtype
+    assert dtype_to_polars(ibis_dtype) == polars_type
+    assert dtype_from_polars(polars_type) == ibis_dtype
 
 
 def test_categorical():
-    assert to_ibis_dtype(pl.Categorical()) == dt.string
+    assert dtype_from_polars(pl.Categorical()) == dt.string

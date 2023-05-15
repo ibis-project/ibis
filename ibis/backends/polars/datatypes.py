@@ -26,12 +26,12 @@ _to_polars_types = {
     dt.Float64: pl.Float64,
 }
 
-_to_ibis_dtypes = {v: k for k, v in _to_polars_types.items()}
-_to_ibis_dtypes[pl.Categorical] = dt.String
+_from_polars_types = {v: k for k, v in _to_polars_types.items()}
+_from_polars_types[pl.Categorical] = dt.String
 
 
 @functools.singledispatch
-def to_polars_type(dtype):
+def dtype_to_polars(dtype):
     """Convert ibis dtype to the polars counterpart."""
     try:
         return _to_polars_types[dtype.__class__]  # else return  pl.Object?
@@ -39,17 +39,17 @@ def to_polars_type(dtype):
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
 
-@to_polars_type.register(dt.Decimal)
+@dtype_to_polars.register(dt.Decimal)
 def from_ibis_decimal(dtype):
     return pl.Decimal(dtype.precision, dtype.scale)
 
 
-@to_polars_type.register(dt.Timestamp)
+@dtype_to_polars.register(dt.Timestamp)
 def from_ibis_timestamp(dtype):
     return pl.Datetime("ns", dtype.timezone)
 
 
-@to_polars_type.register(dt.Interval)
+@dtype_to_polars.register(dt.Interval)
 def from_ibis_interval(dtype):
     if dtype.unit.short in {'us', 'ns', 'ms'}:
         return pl.Duration(dtype.unit.short)
@@ -57,28 +57,28 @@ def from_ibis_interval(dtype):
         raise ValueError(f"Unsupported polars duration unit: {dtype.unit}")
 
 
-@to_polars_type.register(dt.Struct)
+@dtype_to_polars.register(dt.Struct)
 def from_ibis_struct(dtype):
     fields = [
-        pl.Field(name=name, dtype=to_polars_type(dtype))
+        pl.Field(name=name, dtype=dtype_to_polars(dtype))
         for name, dtype in dtype.fields.items()
     ]
     return pl.Struct(fields)
 
 
-@to_polars_type.register(dt.Array)
+@dtype_to_polars.register(dt.Array)
 def from_ibis_array(dtype):
-    return pl.List(to_polars_type(dtype.value_type))
+    return pl.List(dtype_to_polars(dtype.value_type))
 
 
 @functools.singledispatch
-def to_ibis_dtype(typ):
+def dtype_from_polars(typ):
     """Convert polars dtype to the ibis counterpart."""
-    klass = _to_ibis_dtypes[typ]
+    klass = _from_polars_types[typ]
     return klass()
 
 
-@to_ibis_dtype.register(pl.Datetime)
+@dtype_from_polars.register(pl.Datetime)
 def from_polars_datetime(typ):
     try:
         timezone = typ.time_zone
@@ -87,7 +87,7 @@ def from_polars_datetime(typ):
     return dt.Timestamp(timezone=timezone)
 
 
-@to_ibis_dtype.register(pl.Duration)
+@dtype_from_polars.register(pl.Duration)
 def from_polars_duration(typ):
     try:
         time_unit = typ.time_unit
@@ -96,24 +96,25 @@ def from_polars_duration(typ):
     return dt.Interval(unit=time_unit)
 
 
-@to_ibis_dtype.register(pl.List)
+@dtype_from_polars.register(pl.List)
 def from_polars_list(typ):
-    return dt.Array(to_ibis_dtype(typ.inner))
+    return dt.Array(dtype_from_polars(typ.inner))
 
 
-@to_ibis_dtype.register(pl.Struct)
+@dtype_from_polars.register(pl.Struct)
 def from_polars_struct(typ):
     return dt.Struct.from_tuples(
-        [(field.name, to_ibis_dtype(field.dtype)) for field in typ.fields]
+        [(field.name, dtype_from_polars(field.dtype)) for field in typ.fields]
     )
 
 
-@to_ibis_dtype.register(pl.Decimal)
+@dtype_from_polars.register(pl.Decimal)
 def from_polars_decimal(typ: pl.Decimal):
     return dt.Decimal(precision=typ.precision, scale=typ.scale)
 
 
+# TODO(kszucs): remove this overload or move to ibis.expr.schema
 @sch.infer.register(pl.LazyFrame)
 def from_polars_schema(df: pl.LazyFrame) -> sch.Schema:
-    fields = [(name, to_ibis_dtype(typ)) for name, typ in df.schema.items()]
+    fields = [(name, dtype_from_polars(typ)) for name, typ in df.schema.items()]
     return sch.Schema.from_tuples(fields)
