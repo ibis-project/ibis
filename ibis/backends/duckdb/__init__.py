@@ -742,7 +742,13 @@ class Backend(BaseAlchemyBackend):
             {
                 name: (
                     col.to_pylist()
-                    if pat.is_nested(col.type)
+                    if (
+                        pat.is_nested(col.type)
+                        or
+                        # pyarrow / duckdb type null literals columns as int32?
+                        # but calling `to_pylist()` will render it as None
+                        col.null_count
+                    )
                     else col.to_pandas(timestamp_as_object=True)
                 )
                 for name, col in zip(table.column_names, table.columns)
