@@ -772,13 +772,21 @@ def execute_reduction_series_mask(op, data, mask, aggcontext=None, **kwargs):
 @execute_node.register(ops.First, pd.Series, (pd.Series, type(None)))
 def execute_first_series_mask(op, data, mask, aggcontext=None, **kwargs):
     operand = data[mask] if mask is not None else data
-    return aggcontext.agg(operand, lambda x: x.iloc[0])
+
+    def _first(x):
+        return getattr(x, "iloc", x)[0]
+
+    return aggcontext.agg(operand, _first)
 
 
 @execute_node.register(ops.Last, pd.Series, (pd.Series, type(None)))
 def execute_last_series_mask(op, data, mask, aggcontext=None, **kwargs):
     operand = data[mask] if mask is not None else data
-    return aggcontext.agg(operand, lambda x: x.iloc[-1])
+
+    def _last(x):
+        return getattr(x, "iloc", x)[-1]
+
+    return aggcontext.agg(operand, _last)
 
 
 @execute_node.register(

@@ -87,9 +87,17 @@ def _post_process_order_by(
     assert order_by and not group_by
     indexed_parent = parent.set_index(order_by)
     index = indexed_parent.index
-    names = index.names
-    if len(names) > 1:
-        series = series.reorder_levels(names)
+
+    # get the names of the levels that will be in the result
+    series_index_names = frozenset(series.index.names)
+
+    # get the levels common to series.index, in the order that they occur in
+    # the parent's index
+    reordered_levels = [name for name in index.names if name in series_index_names]
+
+    if len(reordered_levels) > 1:
+        series = series.reorder_levels(reordered_levels)
+
     series = series.iloc[index.argsort(kind='mergesort')]
     return series
 

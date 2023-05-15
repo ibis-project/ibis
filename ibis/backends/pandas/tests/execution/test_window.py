@@ -118,6 +118,23 @@ def test_last(t, df):
     assert result == expected
 
 
+def test_first_and_last_over_window(t):
+    def simple_window_ops(table):
+        w = ibis.window(
+            order_by=[table.plain_uint64, table.dup_ints],
+            preceding=1,
+            following=0,
+        )
+        return table.mutate(
+            x_first=t.plain_uint64.first().over(w),
+            x_last=t.plain_uint64.last().over(w),
+            y_first=t.dup_ints.first().over(w),
+            y_last=t.dup_ints.last().over(w),
+        )
+
+    assert simple_window_ops(t).execute() is not None
+
+
 def test_group_by_mutate_analytic(t, df):
     gb = t.group_by(t.dup_strings)
     expr = gb.mutate(
