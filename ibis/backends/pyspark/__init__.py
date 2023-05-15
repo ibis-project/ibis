@@ -25,8 +25,9 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.backends.pyspark import ddl
-from ibis.backends.pyspark.client import PySparkTable, spark_dataframe_schema
+from ibis.backends.pyspark.client import PySparkTable
 from ibis.backends.pyspark.compiler import PySparkExprTranslator
+from ibis.backends.pyspark.datatypes import dtype_from_pyspark
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -245,8 +246,9 @@ class Backend(BaseSQLBackend):
         return _PySparkCursor(query)
 
     def _get_schema_using_query(self, query):
-        cur = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
-        return spark_dataframe_schema(cur.query)
+        cursor = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
+        struct = dtype_from_pyspark(cursor.query.schema)
+        return sch.Schema(struct)
 
     def _get_jtable(self, name, database=None):
         try:
@@ -341,8 +343,8 @@ class Backend(BaseSQLBackend):
             )
 
         df = self._session.table(table_name)
-
-        return sch.infer(df)
+        struct = dtype_from_pyspark(df.schema)
+        return sch.Schema(struct)
 
     def create_table(
         self,

@@ -238,7 +238,6 @@ def test_interval_columns(con):
 
 
 def test_interval_columns_invalid(con):
-    with pytest.raises(
-        IbisTypeError, match="DayTimeIntervalType couldn't be converted to Interval"
-    ):
+    msg = r"DayTimeIntervalType\(0, 1\) couldn't be converted to Interval"
+    with pytest.raises(IbisTypeError, match=msg):
         con.table('invalid_interval_table')

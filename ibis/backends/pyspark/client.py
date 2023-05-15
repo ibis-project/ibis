@@ -2,25 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
-import pyspark as ps
-
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.backends.pyspark import ddl
 
 if TYPE_CHECKING:
     import pandas as pd
-
-
-@sch.infer.register(ps.sql.dataframe.DataFrame)
-def spark_dataframe_schema(df):
-    """Infer the schema of a Spark SQL `DataFrame` object."""
-    # df.schema is a pt.StructType
-    struct_dtype = dt.dtype(df.schema)
-    return sch.Schema(struct_dtype)
 
 
 class PySparkTable(ir.Table):
