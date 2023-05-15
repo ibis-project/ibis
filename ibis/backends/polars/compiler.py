@@ -15,7 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
-from ibis.backends.polars.datatypes import to_polars_type
+from ibis.backends.polars.datatypes import dtype_to_polars
 
 
 def _assert_literal(op):
@@ -50,7 +50,7 @@ def pandas_in_memory_table(op):
     for name, current_dtype in sch.infer(lf).items():
         desired_dtype = op.schema[name]
         if current_dtype != desired_dtype:
-            typ = to_polars_type(desired_dtype)
+            typ = dtype_to_polars(desired_dtype)
             columns.append(pl.col(name).cast(typ))
 
     if columns:
@@ -77,7 +77,7 @@ def literal(op):
 
     if dtype.is_array():
         value = pl.Series("", value)
-        typ = to_polars_type(dtype)
+        typ = dtype_to_polars(dtype)
         val = pl.lit(value, dtype=typ)
         try:
             return val.implode()
@@ -85,7 +85,8 @@ def literal(op):
             return val.list()  # pragma: no cover
     elif dtype.is_struct():
         values = [
-            pl.lit(v, dtype=to_polars_type(dtype[k])).alias(k) for k, v in value.items()
+            pl.lit(v, dtype=dtype_to_polars(dtype[k])).alias(k)
+            for k, v in value.items()
         ]
         return pl.struct(values)
     elif dtype.is_interval():
@@ -95,7 +96,7 @@ def literal(op):
     elif dtype.is_binary():
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
     else:
-        typ = to_polars_type(dtype)
+        typ = dtype_to_polars(dtype)
         return pl.lit(op.value, dtype=typ)
 
 
@@ -141,7 +142,7 @@ def cast(op):
                 return arg.dt.truncate("1s")
             return arg
 
-    typ = to_polars_type(to)
+    typ = dtype_to_polars(to)
     return arg.cast(typ)
 
 
@@ -416,7 +417,7 @@ _string_unary = {
 @translate.register(ops.StringLength)
 def string_length(op):
     arg = translate(op.arg)
-    typ = to_polars_type(op.output_dtype)
+    typ = dtype_to_polars(op.output_dtype)
     return arg.str.lengths().cast(typ)
 
 
@@ -553,7 +554,7 @@ def str_right(op):
 @translate.register(ops.Round)
 def round(op):
     arg = translate(op.arg)
-    typ = to_polars_type(op.output_dtype)
+    typ = dtype_to_polars(op.output_dtype)
     if op.digits is not None:
         _assert_literal(op.digits)
         digits = op.digits.value
@@ -609,7 +610,7 @@ def repeat(op):
 @translate.register(ops.Sign)
 def sign(op):
     arg = translate(op.arg)
-    typ = to_polars_type(op.output_dtype)
+    typ = dtype_to_polars(op.output_dtype)
     return arg.sign().cast(typ)
 
 
@@ -962,7 +963,7 @@ def bitwise_binops(op):
     else:
         result = pl.map([left, right], lambda cols: ufunc(cols[0], cols[1]))
 
-    return result.cast(to_polars_type(op.output_dtype))
+    return result.cast(dtype_to_polars(op.output_dtype))
 
 
 @translate.register(ops.BitwiseNot)
@@ -998,7 +999,7 @@ def binop(op):
 @translate.register(ops.ElementWiseVectorizedUDF)
 def elementwise_udf(op):
     func_args = list(map(translate, op.func_args))
-    return_type = to_polars_type(op.return_type)
+    return_type = dtype_to_polars(op.return_type)
 
     return pl.map(func_args, lambda args: op.func(*args), return_dtype=return_type)
 
