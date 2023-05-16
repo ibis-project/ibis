@@ -5,6 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import util
 
 pa = pytest.importorskip("pyarrow")
 
@@ -50,6 +51,7 @@ def test_table_to_pyarrow_batches(limit, awards_players):
     assert isinstance(batch, pa.RecordBatch)
     if limit is not None:
         assert len(batch) == limit
+    util.consume(batch_reader)
 
 
 @pytest.mark.notyet(
@@ -63,6 +65,7 @@ def test_column_to_pyarrow_batches(limit, awards_players):
     assert isinstance(batch, pa.RecordBatch)
     if limit is not None:
         assert len(batch) == limit
+    util.consume(batch_reader)
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
@@ -133,6 +136,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) <= 2048
+    util.consume(batch_reader)
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
@@ -149,6 +153,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) <= 2048
+    util.consume(batch_reader)
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
@@ -165,6 +170,7 @@ def test_to_pyarrow_batches_borked_types(batting):
     batch = batch_reader.read_next_batch()
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) == 42
+    util.consume(batch_reader)
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pyspark"])
