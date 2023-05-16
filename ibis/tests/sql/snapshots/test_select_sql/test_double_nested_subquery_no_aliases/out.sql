@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t2.`key1`, t2.`key2`, t2.`key3`, sum(t2.`value`) AS `total`
-  FROM foo_table t2
+  FROM `foo_table` t2
   GROUP BY 1, 2, 3
 )
 SELECT t1.`key1`, sum(t1.`total`) AS `total`

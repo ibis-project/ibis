@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t2.`g`, t2.`a`, t2.`b`, sum(t2.`f`) AS `total`
-  FROM alltypes t2
+  FROM `alltypes` t2
   GROUP BY 1, 2, 3
 )
 SELECT t0.`g`, max(t0.`total` - `total`) AS `metric`

@@ -154,7 +154,7 @@ def test_verbose_log_queries(con, test_data_db):
     # we can't make assertions about the length of queries, since the Python GC
     # could've collected a temporary pandas table any time between construction
     # of `queries` and the assertion
-    expected = f'DESCRIBE {test_data_db}.`orders`'
+    expected = f'DESCRIBE `{test_data_db}`.`orders`'
     assert expected in queries
 
 
@@ -204,7 +204,7 @@ def test_close_drops_temp_tables(con, test_data_dir):
 
     table = con.parquet_file(hdfs_path)
 
-    name = table.op().name
+    name = table._qualified_name
     assert len(con.list_tables(like=name))
     con.close()
 

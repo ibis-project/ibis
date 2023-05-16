@@ -21,5 +21,4 @@ result = (
     )
     .select([tpch_nation, tpch_region.r_name.name("region")])
     .count()
-    .name("count")
 )

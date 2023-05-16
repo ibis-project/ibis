@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+import sqlglot as sg
+
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.compiler import DDL, DML
@@ -431,27 +433,23 @@ class DropFunction(DropObject):
 
 
 class RenameTable(AlterTable):
-    def __init__(self, old_name, new_name, old_database=None, new_database=None):
-        # if either database is None, the name is assumed to be fully scoped
-        self.old_name = old_name
-        self.old_database = old_database
-        self.new_name = new_name
-        self.new_database = new_database
-
-        new_qualified_name = new_name
-        if new_database is not None:
-            new_qualified_name = self._get_scoped_name(new_name, new_database)
-
-        old_qualified_name = old_name
-        if old_database is not None:
-            old_qualified_name = self._get_scoped_name(old_name, old_database)
-
-        self.old_qualified_name = old_qualified_name
-        self.new_qualified_name = new_qualified_name
+    def __init__(
+        self,
+        old_name: str,
+        new_name: str,
+        old_database: str | None = None,
+        new_database: str | None = None,
+        dialect: str = "hive",
+    ):
+        self._old = sg.table(old_name, db=old_database, quoted=True).sql(
+            dialect=dialect
+        )
+        self._new = sg.table(new_name, db=new_database, quoted=True).sql(
+            dialect=dialect
+        )
 
     def compile(self):
-        cmd = f'{self.old_qualified_name} RENAME TO {self.new_qualified_name}'
-        return self._wrap_command(cmd)
+        return self._wrap_command(f"{self._old} RENAME TO {self._new}")
 
 
 __all__ = (

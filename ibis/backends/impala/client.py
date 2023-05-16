@@ -5,6 +5,7 @@ import traceback
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
+import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
@@ -187,29 +188,21 @@ class ImpalaTable(ir.Table):
     """A physical table in the Impala-Hive metastore."""
 
     @property
-    def _qualified_name(self):
-        return self.op().args[0]
+    def _qualified_name(self) -> str:
+        op = self.op()
+        return sg.table(op.name, db=op.namespace).sql(dialect="hive")
 
     @property
-    def _unqualified_name(self):
-        return self._match_name()[1]
+    def _unqualified_name(self) -> str:
+        return self.op().name
 
     @property
     def _client(self):
         return self.op().source
 
-    def _match_name(self):
-        m = fully_qualified_re.match(self._qualified_name)
-        if not m:
-            raise com.IbisError(
-                f'Cannot determine database name from {self._qualified_name}'
-            )
-        db, quoted, unquoted = m.groups()
-        return db, quoted or unquoted
-
     @property
-    def _database(self):
-        return self._match_name()[0]
+    def _database(self) -> str:
+        return self.op().namespace
 
     def compute_stats(self, incremental=False):
         """Invoke Impala COMPUTE STATS command on the table."""
@@ -338,10 +331,10 @@ class ImpalaTable(ir.Table):
         return self
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.op().name
 
-    def rename(self, new_name, database=None):
+    def rename(self, new_name: str, database: str | None = None) -> ImpalaTable:
         """Rename table inside Impala.
 
         References to the old table are no longer valid.
@@ -349,11 +342,13 @@ class ImpalaTable(ir.Table):
         m = fully_qualified_re.match(new_name)
         if not m and database is None:
             database = self._database
-        statement = RenameTable(self._qualified_name, new_name, new_database=database)
+        statement = RenameTable(
+            self.name, new_name, old_database=self._database, new_database=database
+        )
         self._client._safe_exec_sql(statement)
 
-        op = self.op().copy(name=statement.new_qualified_name)
-        return type(self)(op)
+        op = self.op().copy(name=new_name, namespace=database)
+        return self.__class__(op)
 
     @property
     def is_partitioned(self):
@@ -363,15 +358,13 @@ class ImpalaTable(ir.Table):
     def partition_schema(self):
         """Return the schema for the partition columns."""
         schema = self.schema()
-        name_to_type = dict(zip(schema.names, schema.types))
-
         result = self.partitions()
 
         partition_fields = []
-        for x in result.columns:
-            if x not in name_to_type:
+        for col in result.columns:
+            if col not in schema:
                 break
-            partition_fields.append((x, name_to_type[x]))
+            partition_fields.append((col, schema[col]))
 
         return sch.Schema(dict(partition_fields))
 

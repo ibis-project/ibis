@@ -2,10 +2,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
+import sqlglot as sg
+
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.backends.base.sql.ddl import fully_qualified_re
 from ibis.backends.pyspark import ddl
 
 if TYPE_CHECKING:
@@ -14,23 +15,17 @@ if TYPE_CHECKING:
 
 class PySparkTable(ir.Table):
     @property
-    def _qualified_name(self):
-        return self.op().args[0]
-
-    def _match_name(self):
-        m = fully_qualified_re.match(self._qualified_name)
-        if not m:
-            return None, self._qualified_name
-        db, quoted, unquoted = m.groups()
-        return db, quoted or unquoted
+    def _qualified_name(self) -> str:
+        op = self.op()
+        return sg.table(op.name, db=op.namespace, quoted=True).sql(dialect="spark")
 
     @property
-    def _database(self):
-        return self._match_name()[0]
+    def _database(self) -> str:
+        return self.op().namespace
 
     @property
-    def _unqualified_name(self):
-        return self._match_name()[1]
+    def _unqualified_name(self) -> str:
+        return self.name
 
     @property
     def name(self):
@@ -145,7 +140,7 @@ class PySparkTable(ir.Table):
             new_name, self._database
         )
 
-        statement = ddl.RenameTable(self._qualified_name, new_name)
+        statement = ddl.RenameTable(self.name, new_name)
         self._client.raw_sql(statement.compile())
 
         op = self.op().copy(name=new_qualified_name)
