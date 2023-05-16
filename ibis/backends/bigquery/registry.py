@@ -341,14 +341,16 @@ def _timestamp_op(func, units):
     def _formatter(translator, op):
         arg, offset = op.args
 
+        formatted_arg = translator.translate(arg)
+        formatted_offset = translator.translate(offset)
+
         unit = offset.output_dtype.unit
         if unit not in units:
             raise com.UnsupportedOperationError(
                 "BigQuery does not allow binary operation "
                 f"{func} with INTERVAL offset {unit}"
             )
-        formatted_arg = translator.translate(arg)
-        formatted_offset = translator.translate(offset)
+
         result = f"{func}({formatted_arg}, {formatted_offset})"
         return result
 

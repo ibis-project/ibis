@@ -814,14 +814,9 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                         "postgres",
                         "snowflake",
                         "sqlite",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    [
                         "bigquery",
                     ],
-                    raises=com.UnsupportedOperationError,
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
                     ["druid"],
@@ -846,14 +841,9 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                         "mysql",
                         "impala",
                         "snowflake",
-                    ],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    [
                         "bigquery",
                     ],
-                    raises=com.UnsupportedOperationError,
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
                     ["druid"],
