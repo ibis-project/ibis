@@ -34,12 +34,14 @@ class ROW(_ROW):
             return None
 
         def process(
-            value, result_is_tuple: bool = self._result_is_tuple
+            value,
+            result_is_tuple: bool = self._result_is_tuple,
+            names: tuple[str, ...] = tuple(name for name, _ in self.attr_types),
         ) -> dict[str, Any] | None:
             if value is None or not result_is_tuple:
                 return value
             else:
-                return dict(zip(value._names, value))
+                return dict(zip(names, value))
 
         return process
 
