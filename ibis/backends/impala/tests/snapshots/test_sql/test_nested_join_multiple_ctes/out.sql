@@ -9,12 +9,12 @@ WITH t0 AS (
 t1 AS (
   SELECT t3.`userid`, t3.`movieid`, t3.`rating`,
          CAST(t3.`timestamp` AS timestamp) AS `datetime`
-  FROM ratings t3
+  FROM `ratings` t3
 ),
 t2 AS (
   SELECT t1.*, t3.`title`
   FROM t1
-    INNER JOIN movies t3
+    INNER JOIN `movies` t3
       ON t1.`movieid` = t3.`movieid`
 )
 SELECT t2.*

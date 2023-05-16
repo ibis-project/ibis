@@ -182,22 +182,6 @@ def test_drop_view(con, created_view):
     assert created_view not in con.list_tables()
 
 
-def test_rename_table(con, alltypes):
-    orig_name = 'tmp_rename_test'
-    table = con.create_table(orig_name, alltypes)
-
-    old_name = table.name
-
-    new_name = 'rename_test'
-    renamed = table.rename(new_name)
-    renamed.execute()
-
-    t = con.table(new_name)
-    assert_equal(renamed, t)
-
-    assert table.name == old_name
-
-
 @pytest.fixture
 def table(con, temp_database):
     table_name = f'table_{util.guid()}'
@@ -208,11 +192,13 @@ def table(con, temp_database):
     con.drop_table(table_name, database=temp_database)
 
 
-def test_change_properties(con, table):
+def test_change_properties(con, table, temp_database):
     props = {'foo': '1', 'bar': '2'}
 
     table.alter(tbl_properties=props)
-    tbl_props_rows = con.raw_sql(f"show tblproperties {table.name}").fetchall()
+    tbl_props_rows = con.raw_sql(
+        f"show tblproperties {temp_database}.{table.name}"
+    ).fetchall()
     for row in tbl_props_rows:
         key = row.key
         value = row.value

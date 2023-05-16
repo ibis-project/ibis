@@ -379,3 +379,14 @@ def test_asof_join(time_left, time_right):
         time_left.execute(), time_right.execute(), on='time', suffixes=("", "_right")
     )
     tm.assert_frame_equal(result[expected.columns], expected)
+
+
+def test_count_name(snapshot):
+    t = ibis.table(dict(a="string", b="bool"), name="t")
+
+    expr = t.group_by(t.a).agg(
+        A=t.count(where=~t.b).zeroifnull(), B=t.count(where=t.b).zeroifnull()
+    )
+
+    ibis.show_sql(expr, dialect="clickhouse")
+    snapshot.assert_match(str(ibis.to_sql(expr, dialect="clickhouse")), "out.sql")

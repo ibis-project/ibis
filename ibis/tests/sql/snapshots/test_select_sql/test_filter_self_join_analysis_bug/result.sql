@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t3.`region`, t3.`kind`, sum(t3.`amount`) AS `total`
-  FROM purchases t3
+  FROM `purchases` t3
   GROUP BY 1, 2
 ),
 t1 AS (

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import fsspec
 import numpy as np
+import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -402,7 +403,7 @@ class Backend(BaseSQLBackend):
             return name
 
         database = database or self.current_database
-        return f'{database}.`{name}`'
+        return sg.table(name, db=database, quoted=True).sql(dialect="hive")
 
     def _get_list(self, cur):
         tuples = cur.fetchall()
@@ -847,7 +848,9 @@ class Backend(BaseSQLBackend):
         self._safe_exec_sql(stmt)
         return self._wrap_new_table(name, database, persist)
 
-    def _get_concrete_table_path(self, name, database, persist=False):
+    def _get_concrete_table_path(
+        self, name: str, database: str | None, persist: bool = False
+    ) -> tuple[str, str]:
         if not persist:
             if name is None:
                 name = f'__ibis_tmp_{util.guid()}'
@@ -876,7 +879,7 @@ class Backend(BaseSQLBackend):
 
     def _wrap_new_table(self, name, database, persist):
         qualified_name = self._fully_qualified_name(name, database)
-        t = self.table(qualified_name)
+        t = self.table(name, database=database)
         if not persist:
             self._temp_objects.add(
                 # weakref the op instead of the expression because the table is
@@ -887,13 +890,10 @@ class Backend(BaseSQLBackend):
 
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
-        set_card = (
-            "alter table {} set tblproperties('numRows'='{}', "
-            "'STATS_GENERATED_VIA_STATS_TASK' = 'true')".format(
-                qualified_name, cardinality
-            )
+        self._safe_exec_sql(
+            f"ALTER TABLE {qualified_name} SET tblproperties('numRows'='{cardinality:d}', "
+            "'STATS_GENERATED_VIA_STATS_TASK' = 'true')"
         )
-        self._safe_exec_sql(set_card)
 
         return t
 

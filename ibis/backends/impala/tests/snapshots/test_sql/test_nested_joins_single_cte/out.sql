@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t4.`uuid`, count(1) AS `count`
-  FROM t t4
+  FROM `t` t4
   GROUP BY 1
 ),
 t1 AS (
@@ -10,7 +10,7 @@ t1 AS (
 ),
 t2 AS (
   SELECT t4.`uuid`, max(t4.`ts`) AS `last_visit`
-  FROM t t4
+  FROM `t` t4
   GROUP BY 1
 ),
 t3 AS (

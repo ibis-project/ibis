@@ -545,9 +545,7 @@ def test_slice(table):
 def test_table_count(table):
     result = table.count()
     assert isinstance(result, ir.IntegerScalar)
-    assert isinstance(result.op(), ops.Alias)
-    assert isinstance(result.op().arg, ops.CountStar)
-    assert result.get_name() == 'count'
+    assert isinstance(result.op(), ops.CountStar)
 
 
 def test_len_raises_expression_error(table):

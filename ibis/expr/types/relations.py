@@ -2068,7 +2068,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> type(t.count())
         <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
-        return ops.CountStar(self, where).to_expr().name("count")
+        return ops.CountStar(self, where).to_expr()
 
     def dropna(
         self,

@@ -11,7 +11,7 @@ def spy(con, mocker):
 
 @pytest.fixture
 def qname(test_data_db):
-    return f"{test_data_db}.`functional_alltypes`"
+    return f"`{test_data_db}`.`functional_alltypes`"
 
 
 def test_invalidate_metadata(con, spy, test_data_db, qname):

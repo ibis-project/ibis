@@ -3,6 +3,7 @@ from __future__ import annotations
 from io import StringIO
 from typing import Iterable
 
+import sqlglot as sg
 import toolz
 
 import ibis.common.exceptions as com
@@ -101,13 +102,15 @@ class TableSetFormatter:
         if isinstance(ref_op, ops.InMemoryTable):
             result = self._format_in_memory_table(ref_op)
         elif isinstance(ref_op, ops.PhysicalTable):
-            name = ref_op.name
             # TODO(kszucs): add a mandatory `name` field to the base
             # PhyisicalTable instead of the child classes, this should prevent
             # this error scenario
-            if name is None:
+            if (name := ref_op.name) is None:
                 raise com.RelationError(f'Table did not have a name: {op!r}')
-            result = self._quote_identifier(name)
+
+            result = sg.table(
+                name, db=getattr(ref_op, "namespace", None), quoted=True
+            ).sql(dialect="hive")
         else:
             # A subquery
             if ctx.is_extracted(ref_op):

@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t2.`uuid`, count(1) AS `count`
-  FROM t t2
+  FROM `t` t2
   GROUP BY 1
 ),
 t1 AS (

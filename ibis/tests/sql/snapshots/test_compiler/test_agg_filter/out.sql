@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t2.*, t2.`b` * 2 AS `b2`
-  FROM my_table t2
+  FROM `my_table` t2
 ),
 t1 AS (
   SELECT t0.`a`, t0.`b2`

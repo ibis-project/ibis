@@ -1,13 +1,13 @@
 WITH t0 AS (
   SELECT t2.*
-  FROM b t2
+  FROM `b` t2
   WHERE (t2.`year` = 2016) AND
         (t2.`month` = 2) AND
         (t2.`day` = 29)
 ),
 t1 AS (
   SELECT t2.*
-  FROM a t2
+  FROM `a` t2
   WHERE (t2.`year` = 2016) AND
         (t2.`month` = 2) AND
         (t2.`day` = 29)

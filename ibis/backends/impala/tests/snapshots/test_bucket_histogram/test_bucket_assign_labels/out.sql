@@ -15,6 +15,6 @@ FROM (
       WHEN (25 <= t1.`f`) AND (t1.`f` <= 50) THEN 3
       ELSE CAST(NULL AS tinyint)
     END AS `tier`, count(1) AS `count`
-  FROM alltypes t1
+  FROM `alltypes` t1
   GROUP BY 1
 ) t0

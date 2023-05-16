@@ -45,7 +45,7 @@ def test_select_sql(alltypes, star1, expr_fn, snapshot):
 def test_nameless_table(snapshot):
     # Generate a unique table name when we haven't passed on
     nameless = ibis.table([('key', 'string')])
-    assert to_sql(nameless) == f'SELECT t0.*\nFROM {nameless.op().name} t0'
+    assert to_sql(nameless) == f'SELECT t0.*\nFROM `{nameless.op().name}` t0'
 
     expr = ibis.table([('key', 'string')], name='baz')
     snapshot.assert_match(to_sql(expr), "out.sql")

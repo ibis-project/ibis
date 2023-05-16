@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t4.`col`, NULL AS `filter`
-  FROM x t4
+  FROM `x` t4
 ),
 t1 AS (
   SELECT t0.*

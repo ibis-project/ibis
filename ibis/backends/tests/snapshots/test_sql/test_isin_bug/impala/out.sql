@@ -5,9 +5,9 @@ SELECT
     FROM (
       SELECT
         t0.*
-      FROM t AS t0
+      FROM `t` AS t0
       WHERE
         t0.`x` > 2
     ) AS t1
   ) AS `Contains(x, x)`
-FROM t AS t0
+FROM `t` AS t0

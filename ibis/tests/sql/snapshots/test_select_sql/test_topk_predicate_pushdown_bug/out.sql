@@ -1,9 +1,9 @@
 WITH t0 AS (
   SELECT t3.*, t4.`n_name`, t5.`r_name`
-  FROM tpch_customer t3
-    INNER JOIN tpch_nation t4
+  FROM `tpch_customer` t3
+    INNER JOIN `tpch_nation` t4
       ON t3.`c_nationkey` = t4.`n_nationkey`
-    INNER JOIN tpch_region t5
+    INNER JOIN `tpch_region` t5
       ON t4.`n_regionkey` = t5.`r_regionkey`
 ),
 t1 AS (

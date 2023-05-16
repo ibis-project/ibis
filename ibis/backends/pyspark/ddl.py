@@ -223,4 +223,4 @@ class AlterTable(AlterTable):
 
 class RenameTable(RenameTable):
     def __init__(self, old_name, new_name):
-        super().__init__(old_name, new_name, old_database=None, new_database=None)
+        super().__init__(old_name, new_name, dialect="spark")
