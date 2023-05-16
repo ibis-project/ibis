@@ -775,7 +775,8 @@ class ArrayValue(Value):
             Array of structs where each struct field is an element of each input
             array.
         """
-        return ops.Zip((self, other, *others)).to_expr()
+
+        return ops.ArrayZip((self, other, *others)).to_expr()
 
 
 @public

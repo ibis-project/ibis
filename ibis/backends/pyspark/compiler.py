@@ -2043,6 +2043,6 @@ def compile_hash_column(t, op, **kwargs):
     return F.hash(t.translate(op.arg, **kwargs))
 
 
-@compiles(ops.Zip)
+@compiles(ops.ArrayZip)
 def compile_zip(t, op, **kwargs):
     return F.arrays_zip(*map(partial(t.translate, **kwargs), op.arg))

@@ -447,7 +447,7 @@ operation_registry.update(
         ops.Argument: lambda _, op: sa.literal_column(op.name),
         ops.First: partial(_first_last, offset=1),
         ops.Last: partial(_first_last, offset=-1),
-        ops.Zip: _zip,
+        ops.ArrayZip: _zip,
     }
 )
 
