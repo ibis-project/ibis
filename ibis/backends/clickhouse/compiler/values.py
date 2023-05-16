@@ -1389,8 +1389,8 @@ def _array_union(op, **kw):
     return translate_val(ops.ArrayDistinct(ops.ArrayConcat(op.left, op.right)), **kw)
 
 
-@translate_val.register(ops.Zip)
-def _array_zip(op: ops.Zip, **kw: Any) -> str:
+@translate_val.register(ops.ArrayZip)
+def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
     arglist = []
     for arg in op.arg:
         sql_arg = translate_val(arg, **kw)

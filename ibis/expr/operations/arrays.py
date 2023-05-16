@@ -189,7 +189,7 @@ class ArrayUnion(Value):
 
 
 @public
-class Zip(Value):
+class ArrayZip(Value):
     arg = rlz.tuple_of(rlz.array, min_length=2)
 
     output_shape = rlz.shape_like("arg")
