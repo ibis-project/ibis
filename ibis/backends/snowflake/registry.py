@@ -49,8 +49,8 @@ def _literal(t, op):
             value.second,
             value.microsecond * 1_000,
         )
-        if (tz := value.tzinfo) is not None:
-            return sa.func.timestamp_tz_from_parts(*args, str(tz))
+        if value.tzinfo is not None:
+            return sa.func.timestamp_tz_from_parts(*args, dtype.timezone)
         else:
             return sa.func.timestamp_from_parts(*args)
     elif dtype.is_date():
