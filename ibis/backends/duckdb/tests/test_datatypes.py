@@ -111,3 +111,11 @@ def test_null_dtype():
         match="DuckDB cannot yet reliably handle `null` typed columns",
     ):
         con.execute(t)
+
+
+def test_parse_quoted_struct_field():
+    import ibis.backends.duckdb.datatypes as ddt
+
+    assert ddt.parse('STRUCT("a" INT, "a b c" INT)') == dt.Struct(
+        {"a": dt.int32, "a b c": dt.int32}
+    )

@@ -14,6 +14,7 @@ from ibis.common.parsing import (
     LBRACKET,
     LPAREN,
     PRECISION,
+    RAW_STRING,
     RBRACKET,
     RPAREN,
     SCALE,
@@ -80,10 +81,12 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
         .skip(RPAREN)
     )
 
+    field = spaceless(parsy.alt(FIELD, RAW_STRING))
+
     struct = (
         spaceless_string("struct")
         .then(LPAREN)
-        .then(parsy.seq(spaceless(FIELD), ty).sep_by(COMMA).map(dt.Struct.from_tuples))
+        .then(parsy.seq(field, ty).sep_by(COMMA).map(dt.Struct.from_tuples))
         .skip(RPAREN)
     )
 
