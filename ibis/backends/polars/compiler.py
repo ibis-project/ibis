@@ -668,6 +668,23 @@ def mode(op):
     return arg.mode().min()
 
 
+@translate.register(ops.Correlation)
+def correlation(op):
+    x = op.left
+    if (x_type := x.output_dtype).is_boolean():
+        x = ops.Cast(x, dt.Int32(nullable=x_type.nullable))
+
+    y = op.right
+    if (y_type := y.output_dtype).is_boolean():
+        y = ops.Cast(y, dt.Int32(nullable=y_type.nullable))
+
+    if (where := op.where) is not None:
+        x = ops.Where(where, x, None)
+        y = ops.Where(where, y, None)
+
+    return pl.corr(translate(x), translate(y))
+
+
 @translate.register(ops.Distinct)
 def distinct(op):
     table = translate(op.table)
