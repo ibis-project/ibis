@@ -12,6 +12,6 @@ SELECT
   t0.`timestamp_col`,
   t0.`year`,
   t0.`month`
-FROM `ibis-gbq.ibis_gbq_testing.functional_alltypes` AS t0
+FROM `ibis-gbq`.ibis_gbq_testing.functional_alltypes AS t0
 WHERE
   REGEXP_CONTAINS(t0.`string_col`, '0')
