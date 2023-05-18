@@ -14,8 +14,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.udf.validate as v
 from ibis import IbisError
-from ibis.backends.base.sql.alchemy import to_sqla_type
 from ibis.backends.postgres.compiler import PostgreSQLExprTranslator, PostgresUDFNode
+from ibis.backends.postgres.datatypes import dtype_to_postgres
 
 _udf_name_cache: MutableMapping[str, Any] = collections.defaultdict(itertools.count)
 
@@ -26,21 +26,12 @@ class PostgresUDFError(IbisError):
     pass
 
 
-def _ibis_to_pg_sa_type(ibis_type):
-    """Map an ibis DataType to a Postgres-compatible sqlalchemy type."""
-    return to_sqla_type(_postgres_dialect, ibis_type)
-
-
-def _sa_type_to_postgres_str(sa_type):
-    """Map a postgres-compatible sqlalchemy type to a postgres string."""
-    if callable(sa_type):
-        sa_type = sa_type()
-    return sa_type.compile(dialect=_postgres_dialect)
-
-
 def _ibis_to_postgres_str(ibis_type):
     """Map an ibis DataType to a Postgres-appropriate string."""
-    return _sa_type_to_postgres_str(_ibis_to_pg_sa_type(ibis_type))
+    satype = dtype_to_postgres(ibis_type)
+    if callable(satype):
+        satype = satype()
+    return satype.compile(dialect=_postgres_dialect)
 
 
 def _create_udf_node(

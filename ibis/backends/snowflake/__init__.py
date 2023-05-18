@@ -62,7 +62,11 @@ with _handle_pyarrow_warning(action="ignore"):
     )
     from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 
-from ibis.backends.snowflake.datatypes import parse  # noqa: E402
+from ibis.backends.snowflake.datatypes import (  # noqa: E402
+    dtype_from_snowflake,
+    dtype_to_snowflake,
+    parse,
+)
 from ibis.backends.snowflake.registry import operation_registry  # noqa: E402
 
 
@@ -80,6 +84,9 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
     _quote_column_names = True
     _quote_table_names = True
     supports_unnest_in_select = False
+
+    get_sqla_type = staticmethod(dtype_to_snowflake)
+    get_ibis_type = staticmethod(dtype_from_snowflake)
 
 
 class SnowflakeCompiler(AlchemyCompiler):
@@ -368,7 +375,7 @@ $$ {defn["source"]} $$"""
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 
-        from ibis.backends.snowflake.datatypes import to_sqla_type
+        from ibis.backends.snowflake.datatypes import dtype_to_snowflake
 
         dialect = self.con.dialect
         quote = dialect.preparer(dialect).quote_identifier
@@ -407,7 +414,7 @@ $$ {defn["source"]} $$"""
                 schema = ", ".join(
                     "{name} {typ}".format(
                         name=quote(col),
-                        typ=sa.types.to_instance(to_sqla_type(dialect, typ)).compile(
+                        typ=sa.types.to_instance(dtype_to_snowflake(typ)).compile(
                             dialect=dialect
                         ),
                     )

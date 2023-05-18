@@ -1,15 +1,9 @@
 from __future__ import annotations
 
-from sqlalchemy.dialects import postgresql
-
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCompiler,
-    AlchemyExprTranslator,
-    to_sqla_type,
-)
+from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
+from ibis.backends.postgres.datatypes import dtype_from_postgres, dtype_to_postgres
 from ibis.backends.postgres.registry import operation_registry
 
 
@@ -26,6 +20,9 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
     # it does support it, but we can't use it because of support for pivot
     supports_unnest_in_select = False
 
+    get_sqla_type = staticmethod(dtype_to_postgres)
+    get_ibis_type = staticmethod(dtype_from_postgres)
+
 
 rewrites = PostgreSQLExprTranslator.rewrites
 
@@ -40,13 +37,3 @@ def _any_all_no_op(expr):
 
 class PostgreSQLCompiler(AlchemyCompiler):
     translator_class = PostgreSQLExprTranslator
-
-
-@to_sqla_type.register(postgresql.dialect, (dt.Float16, dt.Float32))
-def _float16_float32(_, itype, type_map=None):
-    return postgresql.REAL
-
-
-@to_sqla_type.register(postgresql.dialect, dt.Float64)
-def _float64(_, itype, type_map=None):
-    return postgresql.DOUBLE_PRECISION

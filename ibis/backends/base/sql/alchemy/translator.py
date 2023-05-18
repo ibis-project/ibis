@@ -4,17 +4,22 @@ import functools
 import operator
 
 import sqlalchemy as sa
+from sqlalchemy.engine.default import DefaultDialect
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import to_sqla_type
-from ibis.backends.base.sql.alchemy.datatypes import _DEFAULT_DIALECT
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     sqlalchemy_operation_registry,
 )
 from ibis.backends.base.sql.compiler import ExprTranslator, QueryContext
+
+_DEFAULT_DIALECT = DefaultDialect()
 
 
 class AlchemyContext(QueryContext):
@@ -69,6 +74,9 @@ class AlchemyExprTranslator(ExprTranslator):
 
     supports_unnest_in_select = True
 
+    get_sqla_type = staticmethod(dtype_to_sqlalchemy)
+    get_ibis_type = staticmethod(dtype_from_sqlalchemy)
+
     @functools.cached_property
     def dialect(self) -> sa.engine.interfaces.Dialect:
         if (name := self._dialect_name) == "default":
@@ -86,9 +94,6 @@ class AlchemyExprTranslator(ExprTranslator):
         return translated.label(
             sa.sql.quoted_name(name, quote=force or self._quote_column_names)
         )
-
-    def get_sqla_type(self, data_type):
-        return to_sqla_type(self.dialect, data_type)
 
     def _maybe_cast_bool(self, op, arg):
         if (

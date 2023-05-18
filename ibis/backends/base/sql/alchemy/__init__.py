@@ -21,7 +21,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql import BaseSQLBackend
-from ibis.backends.base.sql.alchemy.datatypes import schema_from_table, to_sqla_type
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
 from ibis.backends.base.sql.alchemy.registry import (
@@ -56,7 +55,6 @@ __all__ = (
     'unary',
     'infix_op',
     'get_sqla_table',
-    'to_sqla_type',
     'schema_from_table',
     'varargs',
 )
@@ -360,7 +358,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return [
             sa.Column(
                 colname,
-                to_sqla_type(self.con.dialect, dtype),
+                self.compiler.translator_class.get_sqla_type(dtype),
                 nullable=dtype.nullable,
                 quote=self.compiler.translator_class._quote_column_names,
             )
@@ -478,6 +476,42 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 return table
             return self._handle_failed_column_type_inference(table, nulltype_cols)
 
+    # TODO(kszucs): remove the schema parameter
+    @classmethod
+    def _schema_from_sqla_table(
+        cls,
+        table: sa.sql.TableClause,
+        schema: sch.Schema | None = None,
+    ) -> sch.Schema:
+        """Retrieve an ibis schema from a SQLAlchemy `Table`.
+
+        Parameters
+        ----------
+        table
+            Table whose schema to infer
+        schema
+            Predefined ibis schema to pull types from
+        dialect
+            Optional sqlalchemy dialect
+
+        Returns
+        -------
+        schema
+            An ibis schema corresponding to the types of the columns in `table`.
+        """
+        schema = schema if schema is not None else {}
+        pairs = []
+        for column in table.columns:
+            name = column.name
+            if name in schema:
+                dtype = schema[name]
+            else:
+                dtype = cls.compiler.translator_class.get_ibis_type(
+                    column.type, nullable=column.nullable
+                )
+            pairs.append((name, dtype))
+        return sch.schema(pairs)
+
     def _handle_failed_column_type_inference(
         self, table: sa.Table, nulltype_cols: Iterable[str]
     ) -> sa.Table:
@@ -501,7 +535,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 table.append_column(
                     sa.Column(
                         colname,
-                        to_sqla_type(self.con.dialect, type),
+                        self.compiler.translator_class.get_sqla_type(type),
                         nullable=type.nullable,
                         quote=self.compiler.translator_class._quote_column_names,
                     ),
@@ -561,10 +595,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         sqla_table = self._get_sqla_table(name, schema=schema)
 
-        schema = sch.infer(
-            sqla_table, schema=self._schemas.get(name), dialect=self.con.dialect
+        schema = self._schema_from_sqla_table(
+            sqla_table, schema=self._schemas.get(name)
         )
-
         node = ops.DatabaseTable(
             name=name, schema=schema, source=self, namespace=namespace
         )

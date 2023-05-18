@@ -3,7 +3,6 @@ from pandas import Timestamp
 from pytest import param
 
 import ibis
-from ibis import literal as L
 
 pytest.importorskip("clickhouse_connect")
 
@@ -11,8 +10,8 @@ pytest.importorskip("clickhouse_connect")
 @pytest.mark.parametrize(
     'expr',
     [
-        L(Timestamp('2015-01-01 12:34:56')),
-        L(Timestamp('2015-01-01 12:34:56').to_pydatetime()),
+        ibis.literal(Timestamp('2015-01-01 12:34:56')),
+        ibis.literal(Timestamp('2015-01-01 12:34:56').to_pydatetime()),
         ibis.timestamp('2015-01-01 12:34:56'),
     ],
 )

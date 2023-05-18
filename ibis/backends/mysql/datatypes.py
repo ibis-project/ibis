@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from functools import partial
 
-import sqlalchemy as sa
+import sqlalchemy.types as sat
 from sqlalchemy.dialects import mysql
-from sqlalchemy.dialects.mysql.base import MySQLDialect
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 
 # binary character set
 # used to distinguish blob binary vs blob text
@@ -166,96 +168,6 @@ class _FieldFlags:
         return (self.NUM & self.value) != 0
 
 
-@dt.dtype.register(MySQLDialect, (sa.NUMERIC, mysql.NUMERIC))
-def sa_mysql_numeric(_, satype, nullable=True):
-    # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
-    return dt.Decimal(satype.precision or 10, satype.scale or 0, nullable=nullable)
-
-
-@dt.dtype.register(MySQLDialect, mysql.YEAR)
-@dt.dtype.register(MySQLDialect, mysql.TINYINT)
-def sa_mysql_tinyint(_, satype, nullable=True):
-    return dt.Int8(nullable=nullable)
-
-
-@dt.dtype.register(MySQLDialect, mysql.BIT)
-def sa_mysql_bit(_, satype, nullable=True):
-    if 1 <= (length := satype.length) <= 8:
-        return dt.Int8(nullable=nullable)
-    elif 9 <= length <= 16:
-        return dt.Int16(nullable=nullable)
-    elif 17 <= length <= 32:
-        return dt.Int32(nullable=nullable)
-    elif 33 <= length <= 64:
-        return dt.Int64(nullable=nullable)
-    else:
-        raise ValueError(f"Invalid MySQL BIT length: {length:d}")
-
-
-@dt.dtype.register(MySQLDialect, mysql.FLOAT)
-def sa_real(_, satype, nullable=True):
-    return dt.Float32(nullable=nullable)
-
-
-@dt.dtype.register(MySQLDialect, mysql.TIMESTAMP)
-def sa_mysql_timestamp(_, satype, nullable=True):
-    return dt.Timestamp(timezone="UTC", nullable=nullable)
-
-
-@dt.dtype.register(MySQLDialect, mysql.DATETIME)
-def sa_mysql_datetime(_, satype, nullable=True):
-    return dt.Timestamp(nullable=nullable)
-
-
-@dt.dtype.register(MySQLDialect, mysql.SET)
-def sa_mysql_set(_, satype, nullable=True):
-    return dt.Array(dt.string, nullable=nullable)
-
-
-@dt.dtype.register(MySQLDialect, mysql.DOUBLE)
-def sa_mysql_double(_, satype, nullable=True):
-    # TODO: handle asdecimal=True
-    return dt.Float64(nullable=nullable)
-
-
-@dt.dtype.register(
-    MySQLDialect,
-    (
-        mysql.TINYBLOB,
-        mysql.MEDIUMBLOB,
-        mysql.BLOB,
-        mysql.LONGBLOB,
-        mysql.BINARY,
-        mysql.VARBINARY,
-    ),
-)
-def sa_binary(_, satype, nullable=True):
-    return dt.Binary(nullable=nullable)
-
-
-# TODO(kszucs): unsigned integers
-
-
-@dt.dtype.register((mysql.DOUBLE, mysql.REAL))
-def mysql_double(satype, nullable=True):
-    return dt.Float64(nullable=nullable)
-
-
-@dt.dtype.register(mysql.FLOAT)
-def mysql_float(satype, nullable=True):
-    return dt.Float32(nullable=nullable)
-
-
-@dt.dtype.register(mysql.TINYINT)
-def mysql_tinyint(satype, nullable=True):
-    return dt.Int8(nullable=nullable)
-
-
-@dt.dtype.register(mysql.BLOB)
-def mysql_blob(satype, nullable=True):
-    return dt.Binary(nullable=nullable)
-
-
 class MySQLDateTime(mysql.DATETIME):
     """Custom DATETIME type for MySQL that handles zero values."""
 
@@ -263,11 +175,78 @@ class MySQLDateTime(mysql.DATETIME):
         return lambda v: None if v == "0000-00-00 00:00:00" else v
 
 
-@dt.dtype.register(MySQLDateTime)
-def mysql_timestamp(_, nullable=True):
-    return dt.Timestamp(nullable=nullable)
+_to_mysql_types = {
+    dt.Boolean: mysql.BOOLEAN,
+    dt.Int8: mysql.TINYINT,
+    dt.Int16: mysql.SMALLINT,
+    dt.Int32: mysql.INTEGER,
+    dt.Int64: mysql.BIGINT,
+    dt.Float16: mysql.FLOAT,
+    dt.Float32: mysql.FLOAT,
+    dt.Float64: mysql.DOUBLE,
+    dt.String: mysql.TEXT,
+    dt.JSON: mysql.JSON,
+    dt.Timestamp: MySQLDateTime,
+}
+
+_from_mysql_types = {
+    mysql.BIGINT: dt.Int64,
+    mysql.BINARY: dt.Binary,
+    mysql.BLOB: dt.Binary,
+    mysql.BOOLEAN: dt.Boolean,
+    mysql.DATETIME: dt.Timestamp,
+    mysql.DOUBLE: dt.Float64,
+    mysql.FLOAT: dt.Float32,
+    mysql.INTEGER: dt.Int32,
+    mysql.JSON: dt.JSON,
+    mysql.LONGBLOB: dt.Binary,
+    mysql.LONGTEXT: dt.String,
+    mysql.MEDIUMBLOB: dt.Binary,
+    mysql.MEDIUMINT: dt.Int32,
+    mysql.MEDIUMTEXT: dt.String,
+    mysql.REAL: dt.Float64,
+    mysql.SMALLINT: dt.Int16,
+    mysql.TEXT: dt.String,
+    mysql.DATE: dt.Date,
+    mysql.TINYBLOB: dt.Binary,
+    mysql.TINYINT: dt.Int8,
+    mysql.VARBINARY: dt.Binary,
+    mysql.VARCHAR: dt.String,
+    mysql.ENUM: dt.String,
+    mysql.CHAR: dt.String,
+    mysql.TIME: dt.Time,
+    mysql.YEAR: dt.Int8,
+    MySQLDateTime: dt.Timestamp,
+}
 
 
-@to_sqla_type.register(MySQLDialect, dt.Timestamp)
-def _mysql_timestamp(*_):
-    return MySQLDateTime()
+def dtype_to_mysql(dtype):
+    try:
+        return _to_mysql_types[type(dtype)]
+    except KeyError:
+        return dtype_to_sqlalchemy(dtype, converter=dtype_to_mysql)
+
+
+def dtype_from_mysql(typ, nullable=True):
+    if isinstance(typ, (sat.NUMERIC, mysql.NUMERIC, mysql.DECIMAL)):
+        # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
+        return dt.Decimal(typ.precision or 10, typ.scale or 0, nullable=nullable)
+    elif isinstance(typ, mysql.BIT):
+        if 1 <= (length := typ.length) <= 8:
+            return dt.Int8(nullable=nullable)
+        elif 9 <= length <= 16:
+            return dt.Int16(nullable=nullable)
+        elif 17 <= length <= 32:
+            return dt.Int32(nullable=nullable)
+        elif 33 <= length <= 64:
+            return dt.Int64(nullable=nullable)
+        else:
+            raise ValueError(f"Invalid MySQL BIT length: {length:d}")
+    elif isinstance(typ, mysql.TIMESTAMP):
+        return dt.Timestamp(timezone="UTC", nullable=nullable)
+    elif isinstance(typ, mysql.SET):
+        return dt.Set(dt.string, nullable=nullable)
+    elif dtype := _from_mysql_types[type(typ)]:
+        return dtype(nullable=nullable)
+    else:
+        return dtype_from_sqlalchemy(dtype, converter=dtype_from_mysql)

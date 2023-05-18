@@ -3,47 +3,45 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import oracledb
-import sqlalchemy as sa
+import sqlalchemy.types as sat
 from sqlalchemy.dialects import oracle
-from sqlalchemy.dialects.oracle.base import OracleDialect
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 
 if TYPE_CHECKING:
     from oracle.base_impl import DbType
 
 
-@dt.dtype.register(OracleDialect, oracle.ROWID)
-def sa_oracle_rowid(_, satype, nullable=False):
-    return dt.String(nullable=nullable)
+def dtype_from_oracle(typ, nullable=True):
+    if isinstance(typ, oracle.ROWID):
+        return dt.String(nullable=nullable)
+    elif isinstance(typ, sat.Float):
+        return dt.Float64(nullable=nullable)
+    elif isinstance(typ, sat.Numeric):
+        if typ.scale == 0:
+            # kind of a lie, should be int128 because 38 digits
+            return dt.Int64(nullable=nullable)
+        else:
+            return dt.Decimal(
+                precision=typ.precision or 38,
+                scale=typ.scale or 0,
+                nullable=nullable,
+            )
+    else:
+        return dtype_from_sqlalchemy(typ, converter=dtype_from_oracle)
 
 
-@dt.dtype.register(OracleDialect, sa.Numeric)
-def sa_oracle_numeric(_, satype, nullable=True):
-    if (scale := satype.scale) == 0:
-        # kind of a lie, should be int128 because 38 digits
-        return dt.Int64(nullable=nullable)
-    return dt.Decimal(
-        precision=satype.precision or 38,
-        scale=scale or 0,
-        nullable=nullable,
-    )
-
-
-@dt.dtype.register(OracleDialect, (sa.REAL, sa.FLOAT, sa.Float))
-def dtype(_, satype, nullable=True):
-    return dt.Float64(nullable=nullable)
-
-
-@to_sqla_type.register(OracleDialect, dt.Float64)
-def oracle_sa_float64(_, itype):
-    return sa.Float(precision=53).with_variant(oracle.FLOAT(14), 'oracle')
-
-
-@to_sqla_type.register(OracleDialect, dt.Float32)
-def oracle_sa_float32(_, itype):
-    return sa.Float(precision=23).with_variant(oracle.FLOAT(7), 'oracle')
+def dtype_to_oracle(dtype):
+    if isinstance(dtype, dt.Float64):
+        return sat.Float(precision=53).with_variant(oracle.FLOAT(14), 'oracle')
+    elif isinstance(dtype, dt.Float32):
+        return sat.Float(precision=23).with_variant(oracle.FLOAT(7), 'oracle')
+    else:
+        return dtype_to_sqlalchemy(dtype, converter=dtype_to_oracle)
 
 
 _ORACLE_TYPES = {
@@ -72,5 +70,4 @@ _ORACLE_TYPES = {
 
 def parse(typ: DbType) -> dt.DataType:
     """Parse a Oracle type into an ibis data type."""
-
     return _ORACLE_TYPES[typ]

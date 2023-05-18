@@ -4,15 +4,17 @@ from functools import partial
 from typing import Any
 
 import parsy
-import sqlalchemy as sa
+import sqlalchemy.types as sat
 import trino.client
 from sqlalchemy.ext.compiler import compiles
 from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, TIMESTAMP
 from trino.sqlalchemy.datatype import ROW as _ROW
-from trino.sqlalchemy.dialect import TrinoDialect
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 from ibis.common.parsing import (
     COMMA,
     FIELD,
@@ -44,6 +46,44 @@ class ROW(_ROW):
                 return dict(zip(names, value))
 
         return process
+
+
+@compiles(TIMESTAMP)
+def compiles_timestamp(typ, compiler, **kw):
+    result = "TIMESTAMP"
+
+    if (prec := typ.precision) is not None:
+        result += f"({prec:d})"
+
+    if typ.timezone:
+        result += " WITH TIME ZONE"
+
+    return result
+
+
+@compiles(ROW)
+def _compiles_row(element, compiler, **kw):
+    # TODO: @compiles should live in the dialect
+    quote = compiler.dialect.identifier_preparer.quote
+    content = ", ".join(
+        f"{quote(field)} {compiler.process(typ, **kw)}"
+        for field, typ in element.attr_types
+    )
+    return f"ROW({content})"
+
+
+@compiles(MAP)
+def compiles_map(typ, compiler, **kw):
+    # TODO: @compiles should live in the dialect
+    key_type = compiler.process(typ.key_type, **kw)
+    value_type = compiler.process(typ.value_type, **kw)
+    return f"MAP({key_type}, {value_type})"
+
+
+@compiles(DOUBLE)
+@compiles(sat.REAL, "trino")
+def _floating(element, compiler, **kw):
+    return type(element).__name__.upper()
 
 
 def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
@@ -98,121 +138,52 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
     return ty.parse(text)
 
 
-@dt.dtype.register(TrinoDialect, DOUBLE)
-def sa_trino_double(_, satype, nullable=True):
-    return dt.Float64(nullable=nullable)
+_from_trino_types = {
+    DOUBLE: dt.Float64,
+    sat.REAL: dt.Float32,
+    JSON: dt.JSON,
+}
 
 
-@dt.dtype.register(TrinoDialect, sa.REAL)
-def sa_trino_real(_, satype, nullable=True):
-    return dt.Float32(nullable=nullable)
+def dtype_from_trino(typ, nullable=True):
+    if dtype := _from_trino_types.get(type(typ)):
+        return dtype(nullable=nullable)
+    elif isinstance(typ, sat.NUMERIC):
+        return dt.Decimal(typ.precision or 18, typ.scale or 3, nullable=nullable)
+    elif isinstance(typ, sat.ARRAY):
+        value_dtype = dtype_from_trino(typ.item_type)
+        return dt.Array(value_dtype, nullable=nullable)
+    elif isinstance(typ, ROW):
+        fields = ((k, dtype_from_trino(v)) for k, v in typ.attr_types)
+        return dt.Struct.from_tuples(fields, nullable=nullable)
+    elif isinstance(typ, MAP):
+        return dt.Map(
+            dtype_from_trino(typ.key_type),
+            dtype_from_trino(typ.value_type),
+            nullable=nullable,
+        )
+    elif isinstance(typ, TIMESTAMP):
+        return dt.Timestamp(
+            timezone="UTC" if typ.timezone else None,
+            scale=typ.precision,
+            nullable=nullable,
+        )
+    else:
+        return dtype_from_sqlalchemy(typ, converter=dtype_from_trino)
 
 
-@dt.dtype.register(TrinoDialect, sa.ARRAY)
-def sa_trino_array(dialect, satype, nullable=True):
-    value_dtype = dt.dtype(dialect, satype.item_type)
-    return dt.Array(value_dtype, nullable=nullable)
-
-
-@dt.dtype.register(TrinoDialect, ROW)
-def sa_trino_row(dialect, satype, nullable=True):
-    fields = ((name, dt.dtype(dialect, typ)) for name, typ in satype.attr_types)
-    return dt.Struct.from_tuples(fields, nullable=nullable)
-
-
-@dt.dtype.register(TrinoDialect, MAP)
-def sa_trino_map(dialect, satype, nullable=True):
-    return dt.Map(
-        dt.dtype(dialect, satype.key_type),
-        dt.dtype(dialect, satype.value_type),
-        nullable=nullable,
-    )
-
-
-@dt.dtype.register(TrinoDialect, TIMESTAMP)
-def sa_trino_timestamp(_, satype, nullable=True):
-    return dt.Timestamp(
-        timezone="UTC" if satype.timezone else None,
-        scale=satype.precision,
-        nullable=nullable,
-    )
-
-
-@dt.dtype.register(TrinoDialect, JSON)
-def sa_trino_json(_, satype, nullable=True):
-    return dt.JSON(nullable=nullable)
-
-
-@to_sqla_type.register(TrinoDialect, dt.String)
-def _string(_, itype):
-    return sa.VARCHAR()
-
-
-@to_sqla_type.register(TrinoDialect, dt.Struct)
-def _struct(dialect, itype):
-    return ROW((name, to_sqla_type(dialect, typ)) for name, typ in itype.fields.items())
-
-
-@to_sqla_type.register(TrinoDialect, dt.Timestamp)
-def _timestamp(_, itype):
-    return TIMESTAMP(precision=itype.scale, timezone=bool(itype.timezone))
-
-
-@compiles(TIMESTAMP)
-def compiles_timestamp(typ, compiler, **kw):
-    result = "TIMESTAMP"
-
-    if (prec := typ.precision) is not None:
-        result += f"({prec:d})"
-
-    if typ.timezone:
-        result += " WITH TIME ZONE"
-
-    return result
-
-
-@compiles(ROW)
-def _compiles_row(element, compiler, **kw):
-    # TODO: @compiles should live in the dialect
-    quote = compiler.dialect.identifier_preparer.quote
-    content = ", ".join(
-        f"{quote(field)} {compiler.process(typ, **kw)}"
-        for field, typ in element.attr_types
-    )
-    return f"ROW({content})"
-
-
-@to_sqla_type.register(TrinoDialect, dt.Map)
-def _map(dialect, itype):
-    return MAP(
-        to_sqla_type(dialect, itype.key_type), to_sqla_type(dialect, itype.value_type)
-    )
-
-
-@compiles(MAP)
-def compiles_map(typ, compiler, **kw):
-    # TODO: @compiles should live in the dialect
-    key_type = compiler.process(typ.key_type, **kw)
-    value_type = compiler.process(typ.value_type, **kw)
-    return f"MAP({key_type}, {value_type})"
-
-
-@dt.dtype.register(TrinoDialect, sa.NUMERIC)
-def sa_trino_numeric(_, satype, nullable=True):
-    return dt.Decimal(satype.precision or 18, satype.scale or 3, nullable=nullable)
-
-
-@to_sqla_type.register(TrinoDialect, dt.Float64)
-def _double(*_):
-    return DOUBLE()
-
-
-@to_sqla_type.register(TrinoDialect, dt.Float32)
-def _real(*_):
-    return sa.REAL()
-
-
-@compiles(DOUBLE)
-@compiles(sa.REAL, "trino")
-def _floating(element, compiler, **kw):
-    return type(element).__name__.upper()
+def dtype_to_trino(dtype):
+    if isinstance(dtype, dt.Float64):
+        return DOUBLE()
+    elif isinstance(dtype, dt.Float32):
+        return sat.REAL()
+    elif dtype.is_string():
+        return sat.VARCHAR()
+    elif dtype.is_struct():
+        return ROW((name, dtype_to_trino(typ)) for name, typ in dtype.fields.items())
+    elif dtype.is_map():
+        return MAP(dtype_to_trino(dtype.key_type), dtype_to_trino(dtype.value_type))
+    elif dtype.is_timestamp():
+        return TIMESTAMP(precision=dtype.scale, timezone=bool(dtype.timezone))
+    else:
+        return dtype_to_sqlalchemy(dtype, converter=dtype_to_trino)

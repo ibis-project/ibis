@@ -26,10 +26,10 @@ from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend, to_sqla_type
+from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
-from ibis.backends.sqlite.datatypes import parse
+from ibis.backends.sqlite.datatypes import dtype_to_sqlite, parse
 
 
 def to_datetime(value: str | None) -> datetime.datetime | None:
@@ -123,7 +123,7 @@ class Backend(BaseAlchemyBackend):
             # easier than subclassing the builtin SQLite dialect, and achieves
             # the same desired behavior.
             def _to_ischema_val(t):
-                sa_type = to_sqla_type(engine.dialect, dt.dtype(t))
+                sa_type = dtype_to_sqlite(dt.dtype(t))
                 if isinstance(sa_type, sa.types.TypeEngine):
                     # SQLAlchemy expects a callable here, rather than an
                     # instance. Use a lambda to work around this.

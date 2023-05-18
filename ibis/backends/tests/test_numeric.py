@@ -67,7 +67,7 @@ except ImportError:
                 'snowflake': "INTEGER",
                 'sqlite': "integer",
                 'trino': 'integer',
-                "duckdb": "SMALLINT",
+                "duckdb": "TINYINT",
                 "postgres": "integer",
             },
             id="int8",
@@ -1329,8 +1329,6 @@ def test_sa_default_numeric_precision_and_scale(
     con, backend, default_precisions, default_scales, temp_table
 ):
     sa = pytest.importorskip("sqlalchemy")
-    # TODO: find a better way to access ibis.sql.alchemy
-    from ibis.backends.base.sql.alchemy import schema_from_table
 
     default_precision = default_precisions[backend.name()]
     default_scale = default_scales[backend.name()]
@@ -1354,7 +1352,7 @@ def test_sa_default_numeric_precision_and_scale(
         table.create(bind=bind, checkfirst=True)
 
     # Check that we can correctly recover the default precision and scale.
-    schema = schema_from_table(table, dialect=con.con.dialect)
+    schema = con._schema_from_sqla_table(table)
     expected = ibis.schema(ibis_types)
 
     assert_equal(schema, expected)

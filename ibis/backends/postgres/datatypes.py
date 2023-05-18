@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import parsy
 import sqlalchemy as sa
+import sqlalchemy.dialects.postgresql as psql
 import toolz
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.dialects.postgresql.base import PGDialect
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 from ibis.common.parsing import (
     COMMA,
     LBRACKET,
@@ -42,6 +44,7 @@ def _parse_numeric(
     return ty.parse(text)
 
 
+# TODO(kszucs): rename to dtype_from_postgres_typeinfo or parse_postgres_typeinfo
 def _get_type(typestr: str) -> dt.DataType:
     is_array = typestr.endswith(_BRACKETS)
     if (typ := _type_mapping.get(typestr.replace(_BRACKETS, ""))) is not None:
@@ -88,54 +91,20 @@ _type_mapping = {
     "uuid": dt.uuid,
 }
 
-
-@to_sqla_type.register(PGDialect, dt.Array)
-def _pg_array(dialect, itype):
-    # Unwrap the array element type because sqlalchemy doesn't allow arrays of
-    # arrays. This doesn't affect the underlying data.
-    while itype.is_array():
-        itype = itype.value_type
-    return sa.ARRAY(to_sqla_type(dialect, itype))
-
-
-@to_sqla_type.register(PGDialect, dt.Map)
-def _pg_map(dialect, itype):
-    if not (itype.key_type.is_string() and itype.value_type.is_string()):
-        raise TypeError(f"PostgreSQL only supports map<string, string>, got: {itype}")
-    return postgresql.HSTORE()
+_from_postgres_types = {
+    psql.DOUBLE_PRECISION: dt.Float64,
+    psql.UUID: dt.UUID,
+    psql.MACADDR: dt.MACADDR,
+    psql.INET: dt.INET,
+    psql.JSONB: dt.JSON,
+    psql.JSON: dt.JSON,
+    psql.TSVECTOR: dt.Unknown,
+    psql.BYTEA: dt.Binary,
+    psql.UUID: dt.UUID,
+}
 
 
-@dt.dtype.register(PGDialect, postgresql.DOUBLE_PRECISION)
-def sa_double(_, satype, nullable=True):
-    return dt.Float64(nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.UUID)
-def sa_uuid(_, satype, nullable=True):
-    return dt.UUID(nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.MACADDR)
-def sa_macaddr(_, satype, nullable=True):
-    return dt.MACADDR(nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.HSTORE)
-def sa_hstore(_, satype, nullable=True):
-    return dt.Map(dt.string, dt.string, nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.INET)
-def sa_inet(_, satype, nullable=True):
-    return dt.INET(nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.JSONB)
-def sa_json(_, satype, nullable=True):
-    return dt.JSON(nullable=nullable)
-
-
-_POSTGRES_FIELD_TO_IBIS_UNIT = {
+_postgres_interval_fields = {
     "YEAR": "Y",
     "MONTH": "M",
     "DAY": "D",
@@ -152,30 +121,43 @@ _POSTGRES_FIELD_TO_IBIS_UNIT = {
 }
 
 
-@dt.dtype.register(PGDialect, postgresql.INTERVAL)
-def sa_postgres_interval(_, satype, nullable=True):
-    field = satype.fields.upper()
-    if (unit := _POSTGRES_FIELD_TO_IBIS_UNIT.get(field, None)) is None:
-        raise ValueError(f"Unknown PostgreSQL interval field {field!r}")
-    elif unit in {"Y", "M"}:
-        raise ValueError(
-            "Variable length intervals are not yet supported with PostgreSQL"
-        )
-    return dt.Interval(unit=unit, nullable=nullable)
+def dtype_to_postgres(dtype):
+    if dtype.is_floating():
+        if isinstance(dtype, dt.Float64):
+            return psql.DOUBLE_PRECISION
+        else:
+            return psql.REAL
+    elif dtype.is_array():
+        # Unwrap the array element type because sqlalchemy doesn't allow arrays of
+        # arrays. This doesn't affect the underlying data.
+        while dtype.is_array():
+            dtype = dtype.value_type
+        return sa.ARRAY(dtype_to_postgres(dtype))
+    elif dtype.is_map():
+        if not (dtype.key_type.is_string() and dtype.value_type.is_string()):
+            raise TypeError(
+                f"PostgreSQL only supports map<string, string>, got: {dtype}"
+            )
+        return psql.HSTORE()
+    elif dtype.is_uuid():
+        return psql.UUID()
+    else:
+        return dtype_to_sqlalchemy(dtype, converter=dtype_to_postgres)
 
 
-@dt.dtype.register(PGDialect, sa.ARRAY)
-def sa_pg_array(dialect, satype, nullable=True):
-    dimensions = satype.dimensions
-    if dimensions is not None and dimensions != 1:
-        raise NotImplementedError(
-            f"Nested array types not yet supported for {dialect.name} dialect"
-        )
-
-    value_dtype = dt.dtype(dialect, satype.item_type)
-    return dt.Array(value_dtype, nullable=nullable)
-
-
-@dt.dtype.register(PGDialect, postgresql.TSVECTOR)
-def sa_postgres_tsvector(_, satype, nullable=True):
-    return dt.Unknown(nullable=nullable)
+def dtype_from_postgres(typ, nullable=True):
+    if dtype := _from_postgres_types.get(type(typ)):
+        return dtype(nullable=nullable)
+    elif isinstance(typ, psql.HSTORE):
+        return dt.Map(dt.string, dt.string, nullable=nullable)
+    elif isinstance(typ, psql.INTERVAL):
+        field = typ.fields.upper()
+        if (unit := _postgres_interval_fields.get(field, None)) is None:
+            raise ValueError(f"Unknown PostgreSQL interval field {field!r}")
+        elif unit in {"Y", "M"}:
+            raise ValueError(
+                "Variable length intervals are not yet supported with PostgreSQL"
+            )
+        return dt.Interval(unit=unit, nullable=nullable)
+    else:
+        return dtype_from_sqlalchemy(typ, converter=dtype_from_postgres)

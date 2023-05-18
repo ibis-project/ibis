@@ -68,7 +68,7 @@ WITH t0 AS (
     t4.diff AS diff
   FROM t4
   WHERE
-    t4.diff < CAST(0 AS SMALLINT)
+    t4.diff < CAST(0 AS TINYINT)
 ), anon_2 AS (
   SELECT
     t5.field_of_study AS field_of_study,

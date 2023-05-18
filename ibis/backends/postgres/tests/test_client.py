@@ -30,8 +30,6 @@ sa = pytest.importorskip("sqlalchemy")
 
 from sqlalchemy.dialects import postgresql  # noqa: E402
 
-from ibis.backends.base.sql.alchemy import schema_from_table  # noqa: E402
-
 POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing')
 IBIS_POSTGRES_HOST = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
 IBIS_POSTGRES_PORT = os.environ.get('IBIS_TEST_POSTGRES_PORT', '5432')
@@ -102,7 +100,7 @@ def test_schema_type_conversion(con):
 
     # Check that we can correctly create a schema with dt.any for the
     # missing types.
-    schema = schema_from_table(table, dialect=postgresql.dialect())
+    schema = con._schema_from_sqla_table(table)
     expected = ibis.schema(ibis_types)
 
     assert_equal(schema, expected)

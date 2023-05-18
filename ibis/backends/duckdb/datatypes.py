@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import duckdb_engine.datatypes as ducktypes
 import parsy
-import sqlalchemy as sa
+import sqlalchemy.dialects.postgresql as psql
 import toolz
-from sqlalchemy.dialects import postgresql
 
-import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 from ibis.common.parsing import (
     COMMA,
     FIELD,
@@ -95,46 +97,43 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
     return ty.parse(text)
 
 
-try:
-    from duckdb_engine import Dialect as DuckDBDialect
-except ImportError:
-    pass
-else:
+_from_duckdb_types = {
+    psql.BYTEA: dt.Binary,
+    psql.UUID: dt.UUID,
+    ducktypes.TinyInteger: dt.Int8,
+    ducktypes.SmallInteger: dt.Int16,
+    ducktypes.Integer: dt.Int32,
+    ducktypes.BigInteger: dt.Int64,
+    ducktypes.UTinyInteger: dt.UInt8,
+    ducktypes.USmallInteger: dt.UInt16,
+    ducktypes.UInteger: dt.UInt32,
+    ducktypes.UBigInteger: dt.UInt64,
+}
 
-    @dt.dtype.register(DuckDBDialect, sat.UInt64)
-    @dt.dtype.register(DuckDBDialect, sat.UInt32)
-    @dt.dtype.register(DuckDBDialect, sat.UInt16)
-    @dt.dtype.register(DuckDBDialect, sat.UInt8)
-    def dtype_uint(_, satype, nullable=True):
-        return getattr(dt, satype.__class__.__name__)(nullable=nullable)
+_to_duckdb_types = {
+    dt.UUID: psql.UUID,
+    dt.Int8: ducktypes.TinyInteger,
+    dt.Int16: ducktypes.SmallInteger,
+    dt.Int32: ducktypes.Integer,
+    dt.Int64: ducktypes.BigInteger,
+    dt.UInt8: ducktypes.UTinyInteger,
+    dt.UInt16: ducktypes.USmallInteger,
+    dt.UInt32: ducktypes.UInteger,
+    dt.UInt64: ducktypes.UBigInteger,
+}
 
-    @dt.dtype.register(DuckDBDialect, sat.ArrayType)
-    def _(dialect, satype, nullable=True):
-        return dt.Array(dt.dtype(dialect, satype.value_type), nullable=nullable)
 
-    @dt.dtype.register(DuckDBDialect, sat.MapType)
-    def _(dialect, satype, nullable=True):
-        return dt.Map(
-            dt.dtype(dialect, satype.key_type),
-            dt.dtype(dialect, satype.value_type),
-            nullable=nullable,
+def dtype_from_duckdb(typ, nullable=True):
+    if dtype := _from_duckdb_types.get(type(typ)):
+        return dtype(nullable=nullable)
+    else:
+        return dtype_from_sqlalchemy(
+            typ, nullable=nullable, converter=dtype_from_duckdb
         )
 
-    @to_sqla_type.register(DuckDBDialect, dt.UUID)
-    def sa_duckdb_uuid(*_):
-        return postgresql.UUID()
 
-    @to_sqla_type.register(DuckDBDialect, (dt.MACADDR, dt.INET))
-    def sa_duckdb_macaddr(*_):
-        return sa.TEXT()
-
-    @to_sqla_type.register(DuckDBDialect, dt.Map)
-    def sa_duckdb_map(dialect, itype):
-        return sat.MapType(
-            to_sqla_type(dialect, itype.key_type),
-            to_sqla_type(dialect, itype.value_type),
-        )
-
-    @to_sqla_type.register(DuckDBDialect, dt.Array)
-    def _(dialect, itype):
-        return sat.ArrayType(to_sqla_type(dialect, itype.value_type))
+def dtype_to_duckdb(dtype):
+    if typ := _to_duckdb_types.get(type(dtype)):
+        return typ
+    else:
+        return dtype_to_sqlalchemy(dtype, converter=dtype_to_duckdb)
