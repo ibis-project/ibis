@@ -455,7 +455,7 @@ def _literal(op, **kw):
             type_name = 'Decimal128'
         else:
             type_name = 'Decimal256'
-        return f"to{type_name}({str(value)}, {dtype.scale})"
+        return f"to{type_name}({value!s}, {dtype.scale})"
     elif dtype.is_numeric():
         return repr(value)
     elif dtype.is_interval():
