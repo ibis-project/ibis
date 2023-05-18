@@ -325,9 +325,12 @@ $$ {defn["source"]} $$"""
         if ident:
             with self.begin() as con:
                 con.exec_driver_sql(f"USE {ident}")
-        result = super()._get_sqla_table(
-            name, schema=schema, autoload=autoload, database=db, **kwargs
-        )
+        try:
+            result = super()._get_sqla_table(
+                name, schema=schema, autoload=autoload, database=db, **kwargs
+            )
+        except sa.exc.NoSuchTableError:
+            raise sa.exc.NoSuchTableError(name)
 
         with self.begin() as con:
             con.exec_driver_sql(f"USE {default_db}.{default_schema}")
