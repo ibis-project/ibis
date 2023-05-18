@@ -453,8 +453,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def _get_sqla_table(
         self, name: str, schema: str | None = None, autoload: bool = True, **_: Any
     ) -> sa.Table:
-        # If the underlying table (or more likely, view) has changed, remove it
-        # to ensure a correct reflection
         meta = self._new_sa_metadata()
         with warnings.catch_warnings():
             warnings.filterwarnings(

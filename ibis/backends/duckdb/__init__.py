@@ -22,7 +22,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
-from ibis.backends.duckdb.datatypes import parse
+from ibis.backends.duckdb.datatypes import parse, to_sqla_type
 from ibis.expr.operations.relations import PandasDataFrameProxy
 
 if TYPE_CHECKING:
@@ -77,6 +77,45 @@ class Backend(BaseAlchemyBackend):
         import importlib.metadata
 
         return importlib.metadata.version("duckdb")
+
+    @staticmethod
+    def _new_sa_metadata():
+        meta = sa.MetaData()
+
+        # _new_sa_metadata is invoked whenever `_get_sqla_table` is called, so
+        # it's safe to store columns as keys, that is, columns from different
+        # tables with the same name won't collide
+        complex_type_info_cache = {}
+
+        @sa.event.listens_for(meta, "column_reflect")
+        def column_reflect(inspector, table, column_info):
+            import duckdb_engine.datatypes as ddt
+
+            # duckdb_engine as of 0.7.2 doesn't expose the inner types of any
+            # complex types so we have to extract it from duckdb directly
+            ddt_struct_type = getattr(ddt, "Struct", sa.types.NullType)
+            ddt_map_type = getattr(ddt, "Map", sa.types.NullType)
+            if isinstance(
+                column_info["type"], (sa.ARRAY, ddt_struct_type, ddt_map_type)
+            ):
+                engine = inspector.engine
+                colname = column_info["name"]
+                if (coltype := complex_type_info_cache.get(colname)) is None:
+                    quote = engine.dialect.identifier_preparer.quote_identifier
+                    quoted_colname = quote(colname)
+                    quoted_tablename = quote(table.name)
+                    with engine.connect() as con:
+                        # The .connection property is used to avoid creating a
+                        # nested transaction
+                        con.connection.execute(
+                            f"DESCRIBE SELECT {quoted_colname} FROM {quoted_tablename}"
+                        )
+                        _, typ, *_ = con.connection.fetchone()
+                    complex_type_info_cache[colname] = coltype = parse(typ)
+
+                column_info["type"] = to_sqla_type(engine.dialect, coltype)
+
+        return meta
 
     def do_connect(
         self,
