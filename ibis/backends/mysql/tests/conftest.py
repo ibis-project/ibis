@@ -144,3 +144,13 @@ def con_nodb():
     return ibis.mysql.connect(
         host=MYSQL_HOST, user=MYSQL_USER, password=MYSQL_PASS, port=MYSQL_PORT
     )
+
+
+@pytest.fixture(scope='module')
+def alltypes(con):
+    return con.tables.functional_alltypes
+
+
+@pytest.fixture(scope='module')
+def df(alltypes):
+    return alltypes.execute()

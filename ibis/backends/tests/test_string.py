@@ -211,7 +211,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "oracle"],
+                    ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["impala"], raises=AssertionError),
@@ -223,7 +223,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "oracle"],
+                    ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["pyspark"], raises=AssertionError),
@@ -235,7 +235,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_extract_whole_group',
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "mssql", "druid", "oracle"],
+                    ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(

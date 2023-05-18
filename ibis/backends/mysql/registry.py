@@ -32,7 +32,6 @@ operation_registry.update(sqlalchemy_window_functions_registry)
 if geospatial_supported:
     operation_registry.update(geospatial_functions)
 
-
 _truncate_formats = {
     's': '%Y-%m-%d %H:%i:%s',
     'm': '%Y-%m-%d %H:%i:00',
@@ -124,6 +123,20 @@ def _json_get_item(t, op):
     return sa.func.json_extract(arg, path)
 
 
+def _regex_extract(arg, pattern, index):
+    return sa.func.IF(
+        arg.op('REGEXP')(pattern),
+        sa.func.IF(
+            index == 0,
+            sa.func.REGEXP_SUBSTR(arg, pattern),
+            sa.func.REGEXP_REPLACE(
+                sa.func.REGEXP_SUBSTR(arg, pattern), pattern, fr"\{index.value}"
+            ),
+        ),
+        None,
+    )
+
+
 class _mysql_trim(GenericFunction):
     inherit_cache = True
 
@@ -169,6 +182,7 @@ operation_registry.update(
             lambda arg, end: arg.op("LIKE BINARY")(sa.func.concat("%", end)), 2
         ),
         ops.RegexSearch: fixed_arity(lambda x, y: x.op('REGEXP')(y), 2),
+        ops.RegexExtract: fixed_arity(_regex_extract, 3),
         # math
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
         ops.Log2: unary(sa.func.log2),
