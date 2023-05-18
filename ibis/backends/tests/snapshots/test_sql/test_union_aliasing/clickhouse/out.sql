@@ -10,9 +10,7 @@ FROM (
     FROM (
       SELECT
         t4.field_of_study,
-        ANY (
-          t4.diff
-        ) AS diff
+        any(t4.diff) AS diff
       FROM (
         SELECT
           *,
@@ -74,9 +72,7 @@ FROM (
       FROM (
         SELECT
           t4.field_of_study,
-          ANY (
-            t4.diff
-          ) AS diff
+          any(t4.diff) AS diff
         FROM (
           SELECT
             *,
