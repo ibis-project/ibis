@@ -910,15 +910,15 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
     ...     _ = f.write(lines)
     >>> t = ibis.read_json("/tmp/lines.json")
     >>> t
-    ┏━━━━━━━━┳━━━━━━━━┓
-    ┃ a      ┃ b      ┃
-    ┡━━━━━━━━╇━━━━━━━━┩
-    │ uint64 │ string │
-    ├────────┼────────┤
-    │      1 │ d      │
-    │      2 │ NULL   │
-    │   NULL │ f      │
-    └────────┴────────┘
+    ┏━━━━━━━┳━━━━━━━━┓
+    ┃ a     ┃ b      ┃
+    ┡━━━━━━━╇━━━━━━━━┩
+    │ int32 │ string │
+    ├───────┼────────┤
+    │     1 │ d      │
+    │     2 │ NULL   │
+    │  NULL │ f      │
+    └───────┴────────┘
     """
     from ibis.config import _default_backend
 
