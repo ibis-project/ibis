@@ -292,7 +292,7 @@ return {f.__name__}({args});\
         )
         return_type = ibis_type_to_bigquery_type(dt.dtype(output_type))
         libraries_opts = (
-            f"\nOPTIONS (\n    library={repr(list(libraries))}\n)" if libraries else ""
+            f"\nOPTIONS (\n    library={list(libraries)!r}\n)" if libraries else ""
         )
         determinism_formatted = {
             True: 'DETERMINISTIC\n',

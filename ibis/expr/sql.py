@@ -335,7 +335,7 @@ class SQLString:
         return self.sql
 
     def _repr_markdown_(self) -> str:
-        return f"```sql\n{str(self)}\n```"
+        return f"```sql\n{self!s}\n```"
 
 
 @public

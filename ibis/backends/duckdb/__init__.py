@@ -546,7 +546,7 @@ class Backend(BaseAlchemyBackend):
         with self.begin() as con:
             con.execute(sa.text(f"SET GLOBAL sqlite_all_varchar={all_varchar}"))
             con.execute(
-                sa.text(f"CALL sqlite_attach('{str(path)}', overwrite={overwrite})")
+                sa.text(f"CALL sqlite_attach('{path!s}', overwrite={overwrite})")
             )
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:

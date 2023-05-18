@@ -51,7 +51,7 @@ class Schema(Concrete, Coercible, MapSet):
         return "ibis.Schema {{{}\n}}".format(
             indent(
                 ''.join(
-                    f'\n{name.ljust(space)}{str(type)}' for name, type in self.items()
+                    f'\n{name.ljust(space)}{type!s}' for name, type in self.items()
                 ),
                 2,
             )
