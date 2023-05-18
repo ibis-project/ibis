@@ -23,7 +23,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
-from ibis.backends.duckdb.datatypes import parse, to_sqla_type
+from ibis.backends.duckdb.datatypes import dtype_to_duckdb, parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
 
 if TYPE_CHECKING:
@@ -114,7 +114,7 @@ class Backend(BaseAlchemyBackend):
                         _, typ, *_ = con.connection.fetchone()
                     complex_type_info_cache[colname] = coltype = parse(typ)
 
-                column_info["type"] = to_sqla_type(engine.dialect, coltype)
+                column_info["type"] = dtype_to_duckdb(coltype)
 
         return meta
 

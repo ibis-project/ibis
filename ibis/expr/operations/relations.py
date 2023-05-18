@@ -55,6 +55,8 @@ class PhysicalTable(TableNode, Named):
     pass
 
 
+# TODO(kszucs): PhysicalTable should have a source attribute and UnbountTable
+# should just extend TableNode
 @public
 class UnboundTable(PhysicalTable):
     schema = rlz.coerced_to(Schema)
@@ -76,6 +78,10 @@ class SQLQueryResult(TableNode):
     query = rlz.instance_of(str)
     schema = rlz.instance_of(Schema)
     source = rlz.client
+
+
+# TODO(kszucs): Add a pseudohashable wrapper and use that from InMemoryTable
+# subclasses PandasTable, PyArrowTable
 
 
 class TableProxy(Immutable):

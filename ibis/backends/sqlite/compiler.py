@@ -13,15 +13,8 @@ from __future__ import annotations
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sqlalchemy as sa
-from sqlalchemy.dialects import sqlite
-
-import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCompiler,
-    AlchemyExprTranslator,
-    to_sqla_type,
-)
+from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
+from ibis.backends.sqlite.datatypes import dtype_from_sqlite, dtype_to_sqlite
 from ibis.backends.sqlite.registry import operation_registry
 
 
@@ -30,6 +23,9 @@ class SQLiteExprTranslator(AlchemyExprTranslator):
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _dialect_name = "sqlite"
 
+    get_sqla_type = staticmethod(dtype_to_sqlite)
+    get_ibis_type = staticmethod(dtype_from_sqlite)
+
 
 rewrites = SQLiteExprTranslator.rewrites
 
@@ -37,8 +33,3 @@ rewrites = SQLiteExprTranslator.rewrites
 class SQLiteCompiler(AlchemyCompiler):
     translator_class = SQLiteExprTranslator
     support_values_syntax_in_select = False
-
-
-@to_sqla_type.register(sqlite.dialect, (dt.Float32, dt.Float64))
-def _floating_point(_, itype):
-    return sa.REAL

@@ -3,10 +3,8 @@ from __future__ import annotations
 from sqlalchemy.dialects.mssql import DATETIME2
 
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy import (
-    AlchemyCompiler,
-    AlchemyExprTranslator,
-)
+from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
+from ibis.backends.mssql.datatypes import dtype_from_mssql, dtype_to_mssql
 from ibis.backends.mssql.registry import _timestamp_from_unix, operation_registry
 
 
@@ -26,6 +24,9 @@ class MsSqlExprTranslator(AlchemyExprTranslator):
     )
     _require_order_by = AlchemyExprTranslator._require_order_by + (ops.Reduction,)
     _dialect_name = "mssql"
+
+    get_sqla_type = staticmethod(dtype_to_mssql)
+    get_ibis_type = staticmethod(dtype_from_mssql)
 
 
 rewrites = MsSqlExprTranslator.rewrites

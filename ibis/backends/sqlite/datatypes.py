@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+import sqlalchemy.types as sat
 from sqlalchemy.dialects import sqlite
-from sqlalchemy.dialects.sqlite.base import SQLiteDialect
 
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 
 
 def parse(text: str) -> dt.DataType:
@@ -42,11 +46,17 @@ def parse(text: str) -> dt.DataType:
     return dt.decimal
 
 
-@dt.dtype.register(SQLiteDialect, sqlite.NUMERIC)
-def sa_numeric(_, satype, nullable=True):
-    return dt.Decimal(satype.precision, satype.scale, nullable=nullable)
+def dtype_to_sqlite(dtype):
+    if dtype.is_floating():
+        return sa.REAL
+    else:
+        return dtype_to_sqlalchemy(dtype, converter=dtype_to_sqlite)
 
 
-@dt.dtype.register(SQLiteDialect, sa.REAL)
-def sa_double(_, satype, nullable=True):
-    return dt.Float64(nullable=nullable)
+def dtype_from_sqlite(typ, nullable=True):
+    if isinstance(typ, sat.REAL):
+        return dt.Float64(nullable=nullable)
+    elif isinstance(typ, sqlite.JSON):
+        return dt.JSON(nullable=nullable)
+    else:
+        return dtype_from_sqlalchemy(typ, converter=dtype_from_sqlite)

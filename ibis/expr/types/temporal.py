@@ -8,7 +8,7 @@ from public import public
 if TYPE_CHECKING:
     import pandas as pd
 
-    from ibis.expr import types as ir
+    import ibis.expr.types as ir
 
 import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop

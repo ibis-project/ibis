@@ -91,4 +91,4 @@ def schema_to_numpy(schema):
 
 def schema_from_numpy(schema):
     ibis_types = {name: dtype_from_numpy(typ) for name, typ in schema}
-    return sch.schema(ibis_types)
+    return sch.Schema(ibis_types)

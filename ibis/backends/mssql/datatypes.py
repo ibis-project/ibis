@@ -2,10 +2,12 @@ from functools import partial
 from typing import Optional, TypedDict
 
 from sqlalchemy.dialects import mssql
-from sqlalchemy.dialects.mssql.base import MSDialect
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy import to_sqla_type
+from ibis.backends.base.sql.alchemy.datatypes import (
+    dtype_from_sqlalchemy,
+    dtype_to_sqlalchemy,
+)
 
 
 class _FieldDescription(TypedDict):
@@ -20,7 +22,7 @@ class _FieldDescription(TypedDict):
 def _type_from_result_set_info(col: _FieldDescription) -> dt.DataType:
     """Construct an ibis type from MSSQL result set description."""
     typename = col['system_type_name'].split('(')[0].upper()
-    typ = _type_mapping.get(typename)
+    typ = _from_mssql_typenames.get(typename)
     if typ is None:
         raise NotImplementedError(
             f"MSSQL type {col['system_type_name']} is not supported"
@@ -43,7 +45,7 @@ def _type_from_result_set_info(col: _FieldDescription) -> dt.DataType:
 
 
 # The following MSSQL 2022 types are not supported: 'XML', 'SQL_VARIANT', 'SYSNAME', 'HIERARCHYID',
-_type_mapping = {
+_from_mssql_typenames = {
     # Exact numerics
     'BIGINT': dt.Int64,
     'BIT': dt.Boolean,
@@ -87,7 +89,7 @@ _type_mapping = {
 }
 
 
-_MSSQL_TYPE_MAP = {
+_to_mssql_types = {
     dt.Boolean: mssql.BIT,
     dt.Int8: mssql.TINYINT,
     dt.Int16: mssql.SMALLINT,
@@ -100,60 +102,47 @@ _MSSQL_TYPE_MAP = {
 }
 
 
-@to_sqla_type.register(mssql.dialect, tuple(_MSSQL_TYPE_MAP.keys()))
-def _simple_types(_, itype):
-    return _MSSQL_TYPE_MAP[type(itype)]
-
-
-@to_sqla_type.register(mssql.dialect, dt.Timestamp)
-def _datetime(_, itype):
-    if (precision := itype.scale) is None:
-        precision = 7
-    if itype.timezone is not None:
-        return mssql.DATETIMEOFFSET(precision=precision)
+def dtype_to_mssql(dtype):
+    if typ := _to_mssql_types.get(type(dtype)):
+        return typ
+    elif dtype.is_timestamp():
+        if (precision := dtype.scale) is None:
+            precision = 7
+        if dtype.timezone is not None:
+            return mssql.DATETIMEOFFSET(precision=precision)
+        else:
+            return mssql.DATETIME2(precision=precision)
     else:
-        return mssql.DATETIME2(precision=precision)
+        return dtype_to_sqlalchemy(dtype, converter=dtype_to_mssql)
 
 
-@dt.dtype.register(MSDialect, mssql.TINYINT)
-def sa_mysql_tinyint(_, satype, nullable=True):
-    return dt.Int8(nullable=nullable)
+_from_mssql_types = {
+    mssql.TINYINT: dt.Int8,
+    mssql.BIT: dt.Boolean,
+    mssql.MONEY: dt.Int64,
+    mssql.SMALLMONEY: dt.Int32,
+    mssql.UNIQUEIDENTIFIER: dt.UUID,
+    mssql.BINARY: dt.Binary,
+    mssql.TIMESTAMP: dt.Binary,
+    mssql.NVARCHAR: dt.String,
+    mssql.NTEXT: dt.String,
+    mssql.VARBINARY: dt.Binary,
+    mssql.IMAGE: dt.Binary,
+    mssql.TIME: dt.Time,
+    mssql.NCHAR: dt.String,
+}
 
 
-@dt.dtype.register(MSDialect, mssql.BIT)
-def sa_mssql_bit(_, satype, nullable=True):
-    return dt.Boolean(nullable=nullable)
-
-
-@dt.dtype.register(MSDialect, mssql.MONEY)
-def sa_bigint(_, satype, nullable=True):
-    return dt.Int64(nullable=nullable)
-
-
-@dt.dtype.register(MSDialect, mssql.SMALLMONEY)
-def sa_mssql_smallmoney(_, satype, nullable=True):
-    return dt.Int32(nullable=nullable)
-
-
-@dt.dtype.register(MSDialect, mssql.UNIQUEIDENTIFIER)
-def sa_mssql_uuid(_, satype, nullable=True):
-    return dt.UUID(nullable=nullable)
-
-
-@dt.dtype.register(MSDialect, (mssql.BINARY, mssql.TIMESTAMP))
-def sa_mssql_binary(_, satype, nullable=True):
-    return dt.Binary(nullable=nullable)
-
-
-@dt.dtype.register(MSDialect, mssql.DATETIMEOFFSET)
-def _datetimeoffset(_, sa_type, nullable=True):
-    if (prec := sa_type.precision) is None:
-        prec = 7
-    return dt.Timestamp(scale=prec, timezone="UTC", nullable=nullable)
-
-
-@dt.dtype.register(MSDialect, mssql.DATETIME2)
-def _datetime2(_, sa_type, nullable=True):
-    if (prec := sa_type.precision) is None:
-        prec = 7
-    return dt.Timestamp(scale=prec, nullable=nullable)
+def dtype_from_mssql(typ, nullable=True):
+    if dtype := _from_mssql_types.get(type(typ)):
+        return dtype(nullable=nullable)
+    elif isinstance(typ, mssql.DATETIMEOFFSET):
+        if (prec := typ.precision) is None:
+            prec = 7
+        return dt.Timestamp(scale=prec, timezone="UTC", nullable=nullable)
+    elif isinstance(typ, mssql.DATETIME2):
+        if (prec := typ.precision) is None:
+            prec = 7
+        return dt.Timestamp(scale=prec, nullable=nullable)
+    else:
+        return dtype_from_sqlalchemy(typ, nullable=nullable, converter=dtype_from_mssql)

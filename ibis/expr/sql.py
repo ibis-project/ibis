@@ -307,7 +307,7 @@ def show_sql(
     >>> expr = t.select(c=_.a * 2)
     >>> ibis.show_sql(expr)  # duckdb dialect by default
     SELECT
-      t0.a * CAST(2 AS SMALLINT) AS c
+      t0.a * CAST(2 AS TINYINT) AS c
     FROM t AS t0
     >>> ibis.show_sql(expr, dialect="mysql")
     SELECT

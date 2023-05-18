@@ -155,11 +155,6 @@ def tmpcon(alchemy_con):
 
 
 @mark.notimpl(["trino", "druid"], reason="doesn't implement temporary tables")
-@mark.notimpl(
-    ["oracle"],
-    reason="temporary tables are tied to all existing sessions so reconnect doesn't trigger a cleanup",
-    raises=AssertionError,
-)
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
 )
