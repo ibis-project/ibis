@@ -1018,8 +1018,8 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.mode()
         3800
-        >>> t.body_mass_g.mode(where=t.species == "Gentoo")
-        5000
+        >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
+        5550
         """
         return ops.Mode(self, where).to_expr()
 

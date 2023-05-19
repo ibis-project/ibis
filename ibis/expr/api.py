@@ -913,7 +913,7 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
     ┏━━━━━━━┳━━━━━━━━┓
     ┃ a     ┃ b      ┃
     ┡━━━━━━━╇━━━━━━━━┩
-    │ int32 │ string │
+    │ int64 │ string │
     ├───────┼────────┤
     │     1 │ d      │
     │     2 │ NULL   │

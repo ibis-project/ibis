@@ -98,7 +98,12 @@ def convert_datetimetz_to_timestamp(_, out_dtype, column):
 
 @sch.convert.register(np.dtype, dt.Interval, pd.Series)
 def convert_any_to_interval(_, out_dtype, column):
-    return column.values.astype(out_dtype.to_pandas())
+    values = column.values
+    pandas_dtype = out_dtype.to_pandas()
+    try:
+        return values.astype(pandas_dtype)
+    except ValueError:  # can happen when `column` is DateOffsets
+        return column
 
 
 @sch.convert.register(np.dtype, dt.String, pd.Series)
