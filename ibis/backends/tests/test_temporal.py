@@ -916,6 +916,11 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'TimestampScalar'",
                 ),
+                pytest.mark.xfail_version(
+                    duckdb=["duckdb>=0.8.0"],
+                    raises=AssertionError,
+                    reason="duckdb 0.8.0 returns DateOffset columns",
+                ),
             ],
         ),
         param(
@@ -2072,6 +2077,11 @@ INTERVAL_BACKEND_TYPES = {
     ['clickhouse'],
     reason="Driver doesn't know how to handle intervals",
     raises=ClickhouseOperationalError,
+)
+@pytest.mark.xfail_version(
+    duckdb=["duckdb>=0.8.0"],
+    raises=AssertionError,
+    reason="duckdb 0.8.0 returns DateOffset columns",
 )
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
