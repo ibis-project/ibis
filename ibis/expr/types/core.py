@@ -217,23 +217,16 @@ class Expr(Immutable):
         list[BaseBackend]
             A list of the backends found.
         """
-        import ibis.expr.operations as ops
-        from ibis.backends.base import BaseBackend
+        backends = set()
+        has_unbound = False
+        node_types = (ops.DatabaseTable, ops.SQLQueryResult, ops.UnboundTable)
+        for table in self.op().find(node_types):
+            if isinstance(table, ops.UnboundTable):
+                has_unbound = True
+            else:
+                backends.add(table.source)
 
-        def finder(node):
-            # BaseBackend objects are not operation instances, so they don't
-            # get traversed, this is why we need to select backends out from
-            # the node's arguments
-            backends = [arg for arg in node.args if isinstance(arg, BaseBackend)]
-            return g.proceed, (backends, isinstance(node, ops.UnboundTable))
-
-        all_backends = []
-        any_unbound = False
-        for backends, has_unbound in g.traverse(finder, self.op()):
-            all_backends += backends
-            any_unbound |= has_unbound
-
-        return list(toolz.unique(all_backends)), any_unbound
+        return list(backends), has_unbound
 
     def _find_backend(self, *, use_default: bool = False) -> BaseBackend:
         """Find the backend attached to an expression.
