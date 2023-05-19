@@ -724,15 +724,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return ops.SelfReference(self).to_expr()
 
-    def difference(self, *tables: Table, distinct: bool = True) -> Table:
+    def difference(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        tables
-            One or more table expressions
+        table:
+            A table expression
+        *rest:
+            Additional table expressions
         distinct
             Only diff distinct rows not occurring in the calling table
 
@@ -777,39 +779,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├───────┤
         │     1 │
         └───────┘
-
-        Passing no arguments to `difference` returns the table expression
-
-        This can be useful when you have a sequence of tables to process, and
-        you don't know the length prior to running your program (for example, user input).
-
-        >>> t1
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t1.difference()
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t1.difference().equals(t1)
-        True
         """
-        t = functools.reduce(
-            functools.partial(ops.Difference, distinct=distinct), tables, self.op()
-        ).to_expr()
-        if t.equals(self):
-            return t
-        return t.select(self.columns)
+        node = ops.Difference(self, table, distinct=distinct)
+        for table in rest:
+            node = ops.Difference(node, table, distinct=distinct)
+        return node.to_expr().select(self.columns)
 
     def aggregate(
         self,
@@ -1247,15 +1221,17 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return self.op().order_by(sort_keys).to_expr()
 
-    def union(self, *tables: Table, distinct: bool = False) -> Table:
+    def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        *tables
-            One or more table expressions
+        table
+            A table expression
+        *rest
+            Additional table expressions
         distinct
             Only return distinct rows
 
@@ -1313,49 +1289,23 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     2 │
         │     3 │
         └───────┘
-
-        Passing no arguments to `union` returns the table expression
-
-        This can be useful when you have a sequence of tables to process, and
-        you don't know the length prior to running your program (for example, user input).
-
-        >>> t1
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t1.union()
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t1.union().equals(t1)
-        True
         """
-        t = functools.reduce(
-            functools.partial(ops.Union, distinct=distinct), tables, self.op()
-        ).to_expr()
-        if t.equals(self):
-            return t
-        return t.select(self.columns)
+        node = ops.Union(self, table, distinct=distinct)
+        for table in rest:
+            node = ops.Union(node, table, distinct=distinct)
+        return node.to_expr().select(self.columns)
 
-    def intersect(self, *tables: Table, distinct: bool = True) -> Table:
+    def intersect(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
 
         The input tables must have identical schemas.
 
         Parameters
         ----------
-        *tables
-            One or more table expressions
+        table
+            A table expression
+        *rest
+            Additional table expressions
         distinct
             Only return distinct rows
 
@@ -1400,39 +1350,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├───────┤
         │     2 │
         └───────┘
-
-        Passing no arguments to `intersect` returns the table expression.
-
-        This can be useful when you have a sequence of tables to process, and
-        you don't know the length prior to running your program (for example, user input).
-
-        >>> t1
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t1.intersect()
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t1.intersect().equals(t1)
-        True
         """
-        t = functools.reduce(
-            functools.partial(ops.Intersection, distinct=distinct), tables, self.op()
-        ).to_expr()
-        if t.equals(self):
-            return t
-        return t.select(self.columns)
+        node = ops.Intersection(self, table, distinct=distinct)
+        for table in rest:
+            node = ops.Intersection(node, table, distinct=distinct)
+        return node.to_expr().select(self.columns)
 
     def to_array(self) -> ir.Column:
         """View a single column table as an array.

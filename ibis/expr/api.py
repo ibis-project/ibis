@@ -1274,6 +1274,21 @@ def trailing_range_window(preceding, order_by, group_by=None):
     )
 
 
+@functools.wraps(ir.Table.union)
+def union(table: ir.Table, *rest: ir.Table, distinct: bool = False):
+    return table.union(*rest, distinct=distinct) if rest else table
+
+
+@functools.wraps(ir.Table.intersect)
+def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True):
+    return table.intersect(*rest, distinct=distinct) if rest else table
+
+
+@functools.wraps(ir.Table.difference)
+def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True):
+    return table.difference(*rest, distinct=distinct) if rest else table
+
+
 e = ops.E().to_expr()
 pi = ops.Pi().to_expr()
 
@@ -1341,10 +1356,6 @@ aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
 join = ir.Table.join
 asof_join = ir.Table.asof_join
-
-union = ir.Table.union
-intersect = ir.Table.intersect
-difference = ir.Table.difference
 
 _ = deferred = Deferred()
 """Deferred expression object.
