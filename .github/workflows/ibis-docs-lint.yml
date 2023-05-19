@@ -116,8 +116,8 @@ jobs:
           comment-on-alert: true
           alert-threshold: "300%"
 
-      - name: show things with bench in their name
-        run: find . -name '*bench*' -type d
+      - name: checkout gh-pages
+        run: git checkout gh-pages
 
       - name: upload benchmark data
         uses: actions/upload-artifact@v3
