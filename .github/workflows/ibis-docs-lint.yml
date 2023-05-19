@@ -124,6 +124,7 @@ jobs:
         with:
           name: bench
           path: ./bench
+          if-no-files-found: error
 
   docs_pr:
     runs-on: ubuntu-latest
