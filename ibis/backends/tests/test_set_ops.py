@@ -141,10 +141,16 @@ def test_difference(backend, alltypes, df, distinct):
 
 
 @pytest.mark.parametrize("method", ["intersect", "difference", "union"])
-@pytest.mark.parametrize("source", [ibis, ir.Table], ids=["top_level", "method"])
-def test_empty_set_op(alltypes, method, source):
-    result = getattr(source, method)(alltypes)
+def test_table_set_operations_api(alltypes, method):
+    # top level variadic
+    result = getattr(ibis, method)(alltypes)
     assert result.equals(alltypes)
+
+    # table level methods require at least one argument
+    with pytest.raises(
+        TypeError, match="missing 1 required positional argument: 'table'"
+    ):
+        getattr(ir.Table, method)(alltypes)
 
 
 @pytest.mark.parametrize(
