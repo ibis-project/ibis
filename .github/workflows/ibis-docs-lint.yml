@@ -111,16 +111,19 @@ jobs:
           tool: pytest
           github-token: ${{ steps.generate-token.outputs.token }}
           output-file-path: .benchmarks/output.json
-          benchmark-data-dir-path: bench
+          benchmark-data-dir-path: ./bench
           auto-push: false
           comment-on-alert: true
           alert-threshold: "300%"
+
+      - name: show things with bench in their name
+        run: find . -name '*bench*' -type d
 
       - name: upload benchmark data
         uses: actions/upload-artifact@v3
         with:
           name: bench
-          path: bench
+          path: ./bench
 
   docs_pr:
     runs-on: ubuntu-latest
