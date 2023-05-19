@@ -311,7 +311,7 @@ jobs:
           IBIS_TEST_IMPALA_PORT: 21050
           IBIS_TEST_WEBHDFS_PORT: 50070
           IBIS_TEST_WEBHDFS_USER: hdfs
-          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: upload code coverage
         if: success()
