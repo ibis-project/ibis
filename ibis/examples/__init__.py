@@ -65,6 +65,7 @@ def __getattr__(name: str) -> Example:
             # the trailing slash matters here
             base_url="https://storage.googleapis.com/ibis-examples/data/",
             version=ibis.__version__,
+            env="IBIS_EXAMPLES_DATA",
         )
         with resources.files(__name__).joinpath("registry.txt").open(mode="r") as _f:
             _EXAMPLES.load_registry(_f)
