@@ -253,6 +253,72 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
+            lambda t: t.date_string_col.re_extract(r'(\d+)\D(\d+)\D(\d+)', 1),
+            lambda t: t.date_string_col.str.extract(
+                r'(\d+)\D(\d+)\D(\d+)', expand=False
+            ).iloc[:, 0],
+            id='re_extract_group_1',
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(["impala"], raises=AssertionError),
+            ],
+        ),
+        param(
+            lambda t: t.date_string_col.re_extract(r'(\d+)\D(\d+)\D(\d+)', 2),
+            lambda t: t.date_string_col.str.extract(
+                r'(\d+)\D(\d+)\D(\d+)', expand=False
+            ).iloc[:, 1],
+            id='re_extract_group_2',
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(["impala", "clickhouse"], raises=AssertionError),
+            ],
+        ),
+        param(
+            lambda t: t.date_string_col.re_extract(r'(\d+)\D(\d+)\D(\d+)', 3),
+            lambda t: t.date_string_col.str.extract(
+                r'(\d+)\D(\d+)\D(\d+)', expand=False
+            ).iloc[:, 2],
+            id='re_extract_group_3',
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(["impala", "clickhouse"], raises=AssertionError),
+            ],
+        ),
+        param(
+            lambda t: t.date_string_col.re_extract(r'^(\d+)', 1),
+            lambda t: t.date_string_col.str.extract(r'^(\d+)', expand=False),
+            id='re_extract_group_at_beginning',
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(["impala"], raises=AssertionError),
+            ],
+        ),
+        param(
+            lambda t: t.date_string_col.re_extract(r'(\d+)$', 1),
+            lambda t: t.date_string_col.str.extract(r'(\d+)$', expand=False),
+            id='re_extract_group_at_end',
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql", "druid", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.broken(["impala", "dask", "pandas"], raises=AssertionError),
+            ],
+        ),
+        param(
             lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
             lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
             id='re_replace_posix',
