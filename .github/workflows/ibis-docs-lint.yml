@@ -112,9 +112,15 @@ jobs:
           github-token: ${{ steps.generate-token.outputs.token }}
           output-file-path: .benchmarks/output.json
           benchmark-data-dir-path: bench
-          auto-push: true
+          auto-push: false
           comment-on-alert: true
           alert-threshold: "300%"
+
+      - name: upload benchmark data
+        uses: actions/upload-artifact@v3
+        with:
+          name: bench
+          path: bench
 
   docs_pr:
     runs-on: ubuntu-latest
@@ -186,6 +192,12 @@ jobs:
 
           git config user.name 'ibis-docs-bot[bot]'
           git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
+
+      - name: download benchmark data
+        uses: actions/download-artifact@v3
+        with:
+          name: bench
+          path: docs/bench
 
       - name: build and push dev docs
         run: |
