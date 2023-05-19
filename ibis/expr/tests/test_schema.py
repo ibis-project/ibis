@@ -1,22 +1,31 @@
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass
-from datetime import time
-from decimal import Decimal
 from typing import Dict, List, NamedTuple, Tuple
 
 import numpy as np
-import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
-from pytest import param
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Annotable
+
+has_pandas = False
+with contextlib.suppress(ImportError):
+    import pandas as pd
+
+    has_pandas = True
+
+has_dask = False
+with contextlib.suppress(ImportError):
+    import dask.dataframe as dd  # noqa: F401
+
+    has_dask = True
 
 
 def test_whole_schema():
@@ -376,110 +385,77 @@ def test_schema_infer_pyarrow_table():
     assert s == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
 
 
-def test_schema_from_pyarrow_schema():
-    schema = pa.schema(
+def test_schema_from_to_pyarrow_schema():
+    pyarrow_schema = pa.schema(
         [
             pa.field('a', pa.int64()),
             pa.field('b', pa.string()),
             pa.field('c', pa.bool_()),
         ]
     )
-    s = sch.schema(schema)
-    assert s == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+    ibis_schema = sch.schema(pyarrow_schema)
+    restored_schema = ibis_schema.to_pyarrow()
+
+    assert ibis_schema == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+    assert restored_schema == pyarrow_schema
+
+
+def test_schema_from_to_numpy_dtypes():
+    numpy_dtypes = [
+        ('a', np.dtype('int64')),
+        ('b', np.dtype('str')),
+        ('c', np.dtype('bool')),
+    ]
+    ibis_schema = sch.schema(numpy_dtypes)
+    assert ibis_schema == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+
+    restored_dtypes = ibis_schema.to_numpy()
+    expected_dtypes = [
+        ('a', np.dtype('int64')),
+        ('b', np.dtype('object')),
+        ('c', np.dtype('bool')),
+    ]
+    assert restored_dtypes == expected_dtypes
 
 
 @pytest.mark.parametrize(
-    ('col_data', 'schema_type'),
+    'method',
     [
-        param([True, False, False], 'bool', id="bool"),
-        param(np.array([-3, 9, 17], dtype='int8'), 'int8', id="int8"),
-        param(np.array([-5, 0, 12], dtype='int16'), 'int16', id="int16"),
-        param(np.array([-12, 3, 25000], dtype='int32'), 'int32', id="int32"),
-        param(np.array([102, 67228734, -0], dtype='int64'), 'int64', id="int64"),
-        param(np.array([45e-3, -0.4, 99.0], dtype='float32'), 'float32', id="float64"),
-        param(np.array([45e-3, -0.4, 99.0], dtype='float64'), 'float64', id="float32"),
-        param(
-            np.array([-3e43, 43.0, 10000000.0], dtype='float64'), 'double', id="double"
+        pytest.param(
+            'to_dask',
+            marks=pytest.mark.skipif(not has_dask, reason='dask not installed'),
         ),
-        param(np.array([3, 0, 16], dtype='uint8'), 'uint8', id="uint8"),
-        param(np.array([5569, 1, 33], dtype='uint16'), 'uint16', id="uint8"),
-        param(np.array([100, 0, 6], dtype='uint32'), 'uint32', id="uint32"),
-        param(np.array([666, 2, 3], dtype='uint64'), 'uint64', id="uint64"),
-        param(
-            [
-                pd.Timestamp('2010-11-01 00:01:00'),
-                pd.Timestamp('2010-11-01 00:02:00.1000'),
-                pd.Timestamp('2010-11-01 00:03:00.300000'),
-            ],
-            'timestamp',
-            id="timestamp",
+        pytest.param(
+            'to_pandas',
+            marks=pytest.mark.skipif(not has_pandas, reason='pandas not installed'),
         ),
-        param(
-            [
-                pd.Timedelta('1 days'),
-                pd.Timedelta('-1 days 2 min 3us'),
-                pd.Timedelta('-2 days +23:57:59.999997'),
-            ],
-            "interval('ns')",
-            id="interval_ns",
-        ),
-        param(['foo', 'bar', 'hello'], "string", id="string_list"),
-        param(
-            pd.Series(['a', 'b', 'c', 'a']).astype('category'),
-            dt.String(),
-            id="string_series",
-        ),
-        param(pd.Series([b'1', b'2', b'3']), dt.binary, id="string_binary"),
-        # mixed-integer
-        param(pd.Series([1, 2, '3']), dt.unknown, id="mixed_integer"),
-        # mixed-integer-float
-        param(pd.Series([1, 2, 3.0]), dt.float64, id="mixed_integer_float"),
-        param(
-            pd.Series([Decimal('1.0'), Decimal('2.0'), Decimal('3.0')]),
-            dt.Decimal(2, 1),
-            id="decimal",
-        ),
-        # complex
-        param(
-            pd.Series([1 + 1j, 1 + 2j, 1 + 3j], dtype=object), dt.unknown, id="complex"
-        ),
-        param(
-            pd.Series(
-                [
-                    pd.to_datetime('2010-11-01'),
-                    pd.to_datetime('2010-11-02'),
-                    pd.to_datetime('2010-11-03'),
-                ]
-            ),
-            dt.timestamp,
-            id="timestamp_to_datetime",
-        ),
-        param(pd.Series([time(1), time(2), time(3)]), dt.time, id="time"),
-        param(
-            pd.Series(
-                [
-                    pd.Period('2011-01'),
-                    pd.Period('2011-02'),
-                    pd.Period('2011-03'),
-                ],
-                dtype=object,
-            ),
-            dt.unknown,
-            id="period",
-        ),
-        # mixed
-        param(pd.Series([b'1', '2', 3.0]), dt.unknown, id="mixed"),
-        # empty
-        param(pd.Series([], dtype='object'), dt.null, id="empty_null"),
-        param(pd.Series([], dtype="string"), dt.string, id="empty_string"),
-        # array
-        param(pd.Series([[1], [], None]), dt.Array(dt.int64), id="array_int64_first"),
-        param(pd.Series([[], [1], None]), dt.Array(dt.int64), id="array_int64_second"),
     ],
 )
-def test_infer_pandas_dataframe_schema(col_data, schema_type):
-    df = pd.DataFrame({'col': col_data})
+def test_schema_from_to_pandas_dask_dtypes(method):
+    pandas_schema = pd.Series(
+        [
+            ('a', np.dtype('int64')),
+            ('b', np.dtype('str')),
+            ('c', pd.CategoricalDtype(['a', 'b', 'c'])),
+            ('d', pd.DatetimeTZDtype(tz='US/Eastern', unit='ns')),
+        ]
+    )
+    ibis_schema = sch.schema(pandas_schema)
+    expected = sch.Schema(
+        {
+            'a': dt.int64,
+            'b': dt.string,
+            'c': dt.string,
+            'd': dt.Timestamp(timezone='US/Eastern'),
+        }
+    )
+    assert ibis_schema == expected
 
-    inferred = sch.infer(df)
-    expected = sch.schema([('col', schema_type)])
-    assert inferred == expected
+    restored_dtypes = getattr(ibis_schema, method)()
+    expected_dtypes = [
+        ('a', np.dtype('int64')),
+        ('b', np.dtype('object')),
+        ('c', np.dtype('object')),
+        ('d', pd.DatetimeTZDtype(tz='US/Eastern', unit='ns')),
+    ]
+    assert restored_dtypes == expected_dtypes

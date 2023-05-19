@@ -2,6 +2,8 @@ import hypothesis as h
 import hypothesis.extra.numpy as npst
 import hypothesis.strategies as st
 import numpy as np
+import pytest
+from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as ibst
@@ -104,3 +106,34 @@ def test_schema_from_numpy(numpy_schema):
 
     for name, numpy_type in numpy_schema:
         assert dtype_to_numpy(ibis_schema[name]) == numpy_type
+
+
+@pytest.mark.parametrize(
+    ('numpy_dtype', 'ibis_dtype'),
+    [
+        (np.bool_, dt.boolean),
+        (np.int8, dt.int8),
+        (np.int16, dt.int16),
+        (np.int32, dt.int32),
+        (np.int64, dt.int64),
+        (np.uint8, dt.uint8),
+        (np.uint16, dt.uint16),
+        (np.uint32, dt.uint32),
+        (np.uint64, dt.uint64),
+        (np.float16, dt.float16),
+        (np.float32, dt.float32),
+        (np.float64, dt.float64),
+        (np.double, dt.double),
+        (np.str_, dt.string),
+        (np.datetime64, dt.timestamp),
+    ],
+)
+def test_dtype_from_numpy(numpy_dtype, ibis_dtype):
+    assert dtype_from_numpy(np.dtype(numpy_dtype)) == ibis_dtype
+
+
+def test_dtype_from_numpy_dtype_timedelta():
+    if vparse(pytest.importorskip("pyarrow").__version__) < vparse("9"):
+        pytest.skip("pyarrow < 9 globally mutates the timedelta64 numpy dtype")
+
+    assert dtype_from_numpy(np.dtype(np.timedelta64)) == dt.interval

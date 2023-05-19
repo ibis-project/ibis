@@ -5,7 +5,7 @@ import pytest
 from pytest import param
 
 import ibis
-import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 
 
 @pytest.fixture
@@ -35,7 +35,7 @@ def test_connect_no_args():
 
 
 def test_client_table(table):
-    assert isinstance(table.op(), ibis.expr.operations.DatabaseTable)
+    assert isinstance(table.op(), ops.DatabaseTable)
 
 
 def test_create_table(client, test_data):
@@ -87,61 +87,3 @@ def test_datetime64_infer(client, unit):
     expr = ibis.literal(value, type='timestamp')
     result = client.execute(expr)
     assert result == pd.Timestamp(value).to_pydatetime()
-
-
-@pytest.mark.parametrize(
-    ("ext_dtype", "expected"),
-    [
-        (pd.StringDtype(), dt.string),
-        (pd.Int8Dtype(), dt.int8),
-        (pd.Int16Dtype(), dt.int16),
-        (pd.Int32Dtype(), dt.int32),
-        (pd.Int64Dtype(), dt.int64),
-        (pd.UInt8Dtype(), dt.uint8),
-        (pd.UInt16Dtype(), dt.uint16),
-        (pd.UInt32Dtype(), dt.uint32),
-        (pd.UInt64Dtype(), dt.uint64),
-        (pd.BooleanDtype(), dt.boolean),
-    ],
-    ids=str,
-)
-def test_infer_nullable_dtypes(ext_dtype, expected):
-    assert dt.dtype(ext_dtype) == expected
-
-
-@pytest.mark.parametrize(
-    ("arrow_dtype", "expected"),
-    [
-        ("string", dt.string),
-        ("int8", dt.int8),
-        ("int16", dt.int16),
-        ("int32", dt.int32),
-        ("int64", dt.int64),
-        ("uint8", dt.uint8),
-        ("uint16", dt.uint16),
-        ("uint32", dt.uint32),
-        ("uint64", dt.uint64),
-        param(
-            "list<item: string>",
-            dt.Array(dt.string),
-            marks=pytest.mark.xfail(
-                reason="list repr in dtype Series argument doesn't work",
-                raises=TypeError,
-            ),
-            id="list_string",
-        ),
-    ],
-    ids=str,
-)
-def test_infer_pandas_arrow_dtype(arrow_dtype, expected):
-    pytest.importorskip("pyarrow")
-    ser = pd.Series([], dtype=f"{arrow_dtype}[pyarrow]")
-    dtype = ser.dtype
-    assert dt.dtype(dtype) == expected
-
-
-def test_infer_pandas_arrow_list_dtype():
-    pa = pytest.importorskip("pyarrow")
-    ser = pd.Series([], dtype=pd.ArrowDtype(pa.list_(pa.string())))
-    dtype = ser.dtype
-    assert dt.dtype(dtype) == dt.Array(dt.string)

@@ -64,7 +64,7 @@ def schema_from_pandas(schema):
     return sch.schema(ibis_types)
 
 
-def _infer_pandas_schema(df: pd.DataFrame, schema=None):
+def schema_from_pandas_dataframe(df: pd.DataFrame, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []

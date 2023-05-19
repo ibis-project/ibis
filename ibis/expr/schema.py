@@ -153,6 +153,12 @@ class Schema(Concrete, Coercible, MapSet):
         # construct the schema
         return cls(dict(zip(names, types)))
 
+    def to_numpy(self):
+        """Return the equivalent numpy dtypes."""
+        from ibis.formats.numpy import schema_to_numpy
+
+        return schema_to_numpy(self)
+
     def to_pandas(self):
         """Return the equivalent pandas datatypes."""
         from ibis.formats.pandas import schema_to_pandas
@@ -164,6 +170,12 @@ class Schema(Concrete, Coercible, MapSet):
         from ibis.formats.pyarrow import schema_to_pyarrow
 
         return schema_to_pyarrow(self)
+
+    def to_dask(self):
+        """Return the equivalent dask dtypes."""
+        from ibis.formats.dask import schema_to_dask
+
+        return schema_to_dask(self)
 
     def as_struct(self) -> dt.Struct:
         return dt.Struct(self)
@@ -330,18 +342,25 @@ def from_pandas_series(s):
     return schema_from_pandas(s)
 
 
-@infer.register("pandas.DataFrame")
-def infer_pandas_dataframe(df, schema=None):
-    from ibis.formats.pandas import _infer_pandas_schema
-
-    return _infer_pandas_schema(df, schema)
-
-
 @schema.register("pyarrow.Schema")
 def from_pyarrow_schema(schema):
     from ibis.formats.pyarrow import schema_from_pyarrow
 
     return schema_from_pyarrow(schema)
+
+
+@infer.register("pandas.DataFrame")
+def infer_pandas_dataframe(df, schema=None):
+    from ibis.formats.pandas import schema_from_pandas_dataframe
+
+    return schema_from_pandas_dataframe(df, schema)
+
+
+@infer.register("dask.dataframe.DataFrame")
+def infer_dask_dataframe(df, schema=None):
+    from ibis.formats.dask import schema_from_dask_dataframe
+
+    return schema_from_dask_dataframe(df, schema)
 
 
 # TODO(kszucs): do we really need the schema kwarg?

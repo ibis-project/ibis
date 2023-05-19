@@ -3,6 +3,7 @@ import decimal
 import enum
 from collections import OrderedDict
 
+import numpy as np
 import pandas as pd
 import pytest
 import pytz
@@ -83,6 +84,24 @@ class Foo(enum.Enum):
             ),
         ),
         (Foo.a, dt.Enum()),
+        # numpy types
+        (np.int8(5), dt.int8),
+        (np.int16(-1), dt.int16),
+        (np.int32(2), dt.int32),
+        (np.int64(-5), dt.int64),
+        (np.uint8(5), dt.uint8),
+        (np.uint16(50), dt.uint16),
+        (np.uint32(500), dt.uint32),
+        (np.uint64(5000), dt.uint64),
+        (np.float32(5.5), dt.float32),
+        (np.float64(5.55), dt.float64),
+        (np.bool_(True), dt.boolean),
+        (np.bool_(False), dt.boolean),
+        # pandas types
+        (
+            pd.Timestamp('2015-01-01 12:00:00', tz='US/Eastern'),
+            dt.Timestamp('US/Eastern'),
+        ),
     ],
 )
 def test_infer_dtype(value, expected_dtype):

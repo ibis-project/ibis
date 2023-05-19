@@ -7,16 +7,17 @@ import dask.dataframe as dd
 import pandas as pd
 from dask.base import DaskMethodsMixin
 
-import ibis.backends.dask.client
-
 # import the pandas execution module to register dispatched implementations of
 # execute_node that the dask backend will later override
 import ibis.backends.pandas.execution
 import ibis.config
+import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
 from ibis.backends.pandas.core import _apply_schema
+from ibis.formats.dask import schema_from_dask_dataframe
 
 # Make sure that the pandas backend options have been loaded
 ibis.pandas  # noqa: B018
@@ -108,6 +109,12 @@ class Backend(BasePandasBackend):
         }
 
         return execute_and_reset(query.op(), params=params, **kwargs)
+
+    def table(self, name: str, schema: sch.Schema = None):
+        df = self.dictionary[name]
+        schema = schema or self.schemas.get(name, None)
+        schema = schema_from_dask_dataframe(df, schema=schema)
+        return ops.DatabaseTable(name, schema, self).to_expr()
 
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:
