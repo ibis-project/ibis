@@ -10,6 +10,11 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import OperationNotDefinedError
 
+try:
+    from google.api_core.exceptions import BadRequest
+except ImportError:
+    BadRequest = None
+
 
 @pytest.mark.parametrize(
     ("text_value", "expected_types"),
@@ -263,7 +268,8 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
+                pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
+                pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
         param(
@@ -277,7 +283,10 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala", "clickhouse"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["impala", "clickhouse", "snowflake"], raises=AssertionError
+                ),
+                pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
         param(
@@ -291,7 +300,10 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala", "clickhouse"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["impala", "clickhouse", "snowflake"], raises=AssertionError
+                ),
+                pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
         param(
