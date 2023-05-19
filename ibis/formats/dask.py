@@ -10,15 +10,22 @@ from pandas.api.types import DatetimeTZDtype
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis.formats.pandas import (
+    _infer_array_dtype,
+    dtype_from_pandas,
+    dtype_to_pandas,
+    schema_from_pandas,
+    schema_to_pandas,
+)
+
+dtype_from_dask = dtype_from_pandas
+dtype_to_dask = dtype_to_pandas
+
+schema_from_dask = schema_from_pandas
+schema_to_dask = schema_to_pandas
 
 
-@sch.schema.register(dd.Series)
-def schema_from_series(s):
-    return sch.schema(tuple(s.items()))
-
-
-@sch.infer.register(dd.DataFrame)
-def infer_dask_schema(df, schema=None):
+def schema_from_dask_dataframe(df, schema=None):
     schema = schema if schema is not None else {}
 
     pairs = []
@@ -27,15 +34,15 @@ def infer_dask_schema(df, schema=None):
             raise TypeError('Column names must be strings to use the dask backend')
 
         if column_name in schema:
-            ibis_dtype = dt.dtype(schema[column_name])
+            ibis_dtype = schema[column_name]
         elif dask_dtype == np.object_:
             # TODO: don't call compute here. ibis should just assume that
             # object dtypes are strings, which is what dask does. The user
             # can always explicitly pass in `schema=...` when creating a
             # table if they want to use a different dtype.
-            ibis_dtype = dt.infer(df[column_name].compute()).value_type
+            ibis_dtype = _infer_array_dtype(df[column_name].compute())
         else:
-            ibis_dtype = dt.dtype(dask_dtype)
+            ibis_dtype = dtype_from_dask(dask_dtype)
 
         pairs.append((column_name, ibis_dtype))
 
@@ -53,7 +60,7 @@ def convert_datetimetz_to_timestamp(_, out_dtype, column):
 
 @sch.convert.register(np.dtype, dt.Timestamp, dd.Series)
 def convert_any_to_timestamp(_, out_dtype, column):
-    if isinstance(dtype := out_dtype.to_pandas(), DatetimeTZDtype):
+    if isinstance(dtype := out_dtype.to_dask(), DatetimeTZDtype):
         column = dd.to_datetime(column)
         timezone = out_dtype.timezone
         if getattr(column.dtype, "tz", None) is not None:

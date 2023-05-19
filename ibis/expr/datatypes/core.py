@@ -139,10 +139,17 @@ class DataType(Concrete, Coercible):
 
     @classmethod
     def from_pyarrow(cls, arrow_type):
-        """Return the equivalent pyarrow datatype."""
+        """Return the equivalent ibis datatype."""
         from ibis.formats.pyarrow import dtype_to_pyarrow
 
         return dtype_to_pyarrow(arrow_type)
+
+    @classmethod
+    def from_dask(cls, dask_type):
+        """Return the equivalent ibis datatype."""
+        from ibis.formats.dask import dtype_from_dask
+
+        return dtype_from_dask(dask_type)
 
     def to_numpy(self):
         """Return the equivalent numpy datatype."""
@@ -161,6 +168,12 @@ class DataType(Concrete, Coercible):
         from ibis.formats.pyarrow import dtype_to_pyarrow
 
         return dtype_to_pyarrow(self)
+
+    def to_dask(self):
+        """Return the equivalent dask datatype."""
+        from ibis.formats.dask import dtype_to_dask
+
+        return dtype_to_dask(self)
 
     def is_array(self) -> bool:
         return isinstance(self, Array)

@@ -72,7 +72,7 @@ def test_cast_datetime_strings_to_date(t, df, column):
     ['datetime_strings_naive', 'datetime_strings_ny', 'datetime_strings_utc'],
 )
 def test_cast_datetime_strings_to_timestamp(t, df, column):
-    expr = t[column].cast('timestamp')
+    expr = t[column].cast(dt.Timestamp(scale=9))
     result = expr.execute()
     expected = pd.to_datetime(df[column])
     if getattr(expected.dtype, 'tz', None) is not None:

@@ -7,7 +7,7 @@ from ibis.backends.base.df.scope import Scope
 from ibis.backends.pandas.dispatch import execute_node as pandas_execute_node
 
 dd = pytest.importorskip("dask.dataframe")
-
+import pandas as pd  # noqa: E402
 from dask.dataframe.utils import tm  # noqa: E402
 
 from ibis.backends.dask.core import execute  # noqa: E402
@@ -18,7 +18,7 @@ from ibis.backends.dask.dispatch import (  # noqa: E402
 )
 
 
-def test_from_dataframe(dataframe, ibis_table, core_client):
+def test_table_from_dataframe(dataframe, ibis_table, core_client):
     t = core_client.from_dataframe(dataframe)
     result = t.execute()
     expected = ibis_table.execute()
@@ -32,6 +32,15 @@ def test_from_dataframe(dataframe, ibis_table, core_client):
     t = core_client.from_dataframe(dataframe, name='foo', client=client)
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
+
+
+def test_array_literal_from_series(core_client):
+    values = [1, 2, 3, 4]
+    s = dd.from_pandas(pd.Series(values), npartitions=1)
+    expr = ibis.array(s)
+
+    assert expr.equals(ibis.array(values))
+    assert core_client.execute(expr) == pytest.approx([1, 2, 3, 4])
 
 
 def test_pre_execute_basic():
