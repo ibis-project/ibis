@@ -1,12 +1,16 @@
 from datetime import date
+from operator import methodcaller
 
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import sqlalchemy as sa
 from pytest import param
+from sqlalchemy.dialects import mysql
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.util import gen_name
 
 MYSQL_TYPES = [
     ("tinyint", dt.int8),
@@ -130,3 +134,35 @@ def test_zero_timestamp_data(con):
         }
     )
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.fixture(scope="module")
+def enum_t(con):
+    name = gen_name("mysql_enum_test")
+    t = sa.Table(
+        name, sa.MetaData(), sa.Column("sml", mysql.ENUM("small", "medium", "large"))
+    )
+    with con.begin() as bind:
+        t.create(bind=bind)
+        bind.execute(t.insert().values(sml="small"))
+
+    yield con.table(name)
+    con.drop_table(name, force=True)
+
+
+@pytest.mark.parametrize(
+    ("expr_fn", "expected"),
+    [
+        (methodcaller("startswith", "s"), pd.Series([True], name="sml")),
+        (methodcaller("endswith", "m"), pd.Series([False], name="sml")),
+        (methodcaller("re_search", "mall"), pd.Series([True], name="sml")),
+        (methodcaller("lstrip"), pd.Series(["small"], name="sml")),
+        (methodcaller("rstrip"), pd.Series(["small"], name="sml")),
+        (methodcaller("strip"), pd.Series(["small"], name="sml")),
+    ],
+    ids=["startswith", "endswith", "re_search", "lstrip", "rstrip", "strip"],
+)
+def test_enum_as_string(enum_t, expr_fn, expected):
+    expr = expr_fn(enum_t.sml).name("sml")
+    res = expr.execute()
+    tm.assert_series_equal(res, expected)
