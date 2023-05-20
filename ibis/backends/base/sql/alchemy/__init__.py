@@ -121,7 +121,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     def do_connect(self, con: sa.engine.Engine) -> None:
         self.con = con
-        self._inspector = sa.inspect(self.con)
+        self._inspector = None
         self._schemas: dict[str, sch.Schema] = {}
         self._temp_views: set[str] = set()
 
@@ -141,6 +141,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     @property
     def inspector(self):
+        if self._inspector is None:
+            self._inspector = sa.inspect(self.con)
         self._inspector.info_cache.clear()
         return self._inspector
 
