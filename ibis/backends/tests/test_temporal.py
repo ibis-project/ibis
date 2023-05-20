@@ -2066,7 +2066,7 @@ INTERVAL_BACKEND_TYPES = {
     raises=(NotImplementedError, AttributeError),
 )
 @pytest.mark.broken(
-    ['bigquery'], "Could not convert object to NumPy timedelta", raises=ValueError
+    ['bigquery'], reason="BigQuery returns DateOffset arrays", raises=AssertionError
 )
 @pytest.mark.notimpl(
     ["datafusion"],
