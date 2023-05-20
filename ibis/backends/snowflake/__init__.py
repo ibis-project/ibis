@@ -110,6 +110,16 @@ _SNOWFLAKE_MAP_UDFS = {
         "returns": OBJECT,
         "source": "return Object.assign(...ks.map((k, i) => ({[k]: vs[i]})))",
     },
+    "ibis_udfs.public.array_zip": {
+        "inputs": {"arrays": ARRAY},
+        "returns": ARRAY,
+        "source": """\
+const longest = arrays.reduce((a, b) => a.length > b.length ? a : b, []);
+const keys = Array.from(Array(arrays.length).keys()).map(key => `f${key + 1}`);
+return longest.map((_, i) => {
+    return Object.assign(...keys.map((key, j) => ({[key]: arrays[j][i]})));
+})""",
+    },
 }
 
 
@@ -144,7 +154,7 @@ class Backend(BaseAlchemyBackend):
         )
         return_type = self._compile_sqla_type(defn["returns"])
         return f"""\
-CREATE FUNCTION IF NOT EXISTS {name}({signature})
+CREATE OR REPLACE FUNCTION {name}({signature})
 RETURNS {return_type}
 LANGUAGE JAVASCRIPT
 RETURNS NULL ON NULL INPUT
