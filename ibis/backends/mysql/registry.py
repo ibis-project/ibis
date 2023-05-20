@@ -176,12 +176,20 @@ operation_registry.update(
         ),
         # LIKE in mysql is case insensitive
         ops.StartsWith: fixed_arity(
-            lambda arg, start: arg.op("LIKE BINARY")(sa.func.concat(start, "%")), 2
+            lambda arg, start: sa.type_coerce(
+                arg.op("LIKE BINARY")(sa.func.concat(start, "%")), sa.BOOLEAN()
+            ),
+            2,
         ),
         ops.EndsWith: fixed_arity(
-            lambda arg, end: arg.op("LIKE BINARY")(sa.func.concat("%", end)), 2
+            lambda arg, end: sa.type_coerce(
+                arg.op("LIKE BINARY")(sa.func.concat("%", end)), sa.BOOLEAN()
+            ),
+            2,
         ),
-        ops.RegexSearch: fixed_arity(lambda x, y: x.op('REGEXP')(y), 2),
+        ops.RegexSearch: fixed_arity(
+            lambda x, y: sa.type_coerce(x.op('REGEXP')(y), sa.BOOLEAN()), 2
+        ),
         ops.RegexExtract: fixed_arity(_regex_extract, 3),
         # math
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),
