@@ -715,7 +715,6 @@ def test_unnest_struct(con):
         "dask",
         "datafusion",
         "druid",
-        "duckdb",
         "oracle",
         "pandas",
         "polars",
