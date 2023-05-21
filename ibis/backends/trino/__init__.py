@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import warnings
 from functools import cached_property
 from typing import Iterator
@@ -80,14 +81,20 @@ class Backend(BaseAlchemyBackend):
 
         return meta
 
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        tmpname = f"_ibis_trino_output_{util.guid()[:6]}"
+    @contextlib.contextmanager
+    def _prepare_metadata(self, query: str) -> Iterator[dict[str, str]]:
+        name = util.gen_name("ibis_trino_metadata")
         with self.begin() as con:
-            con.exec_driver_sql(f"PREPARE {tmpname} FROM {query}")
-            for name, type in toolz.pluck(
-                ["Column Name", "Type"],
-                con.exec_driver_sql(f"DESCRIBE OUTPUT {tmpname}").mappings(),
-            ):
-                ibis_type = parse(type)
-                yield name, ibis_type(nullable=True)
-            con.exec_driver_sql(f"DEALLOCATE PREPARE {tmpname}")
+            con.exec_driver_sql(f"PREPARE {name} FROM {query}")
+            try:
+                yield con.exec_driver_sql(f"DESCRIBE OUTPUT {name}").mappings()
+            finally:
+                con.exec_driver_sql(f"DEALLOCATE PREPARE {name}")
+
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        with self._prepare_metadata(query) as mappings:
+            yield from (
+                # trino types appear to be always nullable
+                (name, parse(trino_type).copy(nullable=True))
+                for name, trino_type in toolz.pluck(["Column Name", "Type"], mappings)
+            )
