@@ -127,6 +127,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     @property
     def version(self):
+        if self._inspector is None:
+            self._inspector = sa.inspect(self.con)
         return '.'.join(map(str, self.con.dialect.server_version_info))
 
     def list_tables(self, like=None, database=None):
@@ -143,7 +145,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def inspector(self):
         if self._inspector is None:
             self._inspector = sa.inspect(self.con)
-        self._inspector.info_cache.clear()
+        else:
+            self._inspector.info_cache.clear()
         return self._inspector
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
