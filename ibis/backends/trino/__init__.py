@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import warnings
+from functools import cached_property
 from typing import Iterator
 
 import sqlalchemy as sa
@@ -26,12 +27,10 @@ class Backend(BaseAlchemyBackend):
     def current_database(self) -> str:
         raise NotImplementedError(type(self))
 
-    @property
+    @cached_property
     def version(self) -> str:
-        # TODO: there is a `PRAGMA version` we could use instead
-        import importlib.metadata
-
-        return importlib.metadata.version("trino")
+        with self.begin() as con:
+            return con.execute(sa.select(sa.func.version())).scalar()
 
     def do_connect(
         self,
