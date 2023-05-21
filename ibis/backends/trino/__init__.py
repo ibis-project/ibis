@@ -60,23 +60,11 @@ class Backend(BaseAlchemyBackend):
                 message=r"The dbapi\(\) classmethod on dialect classes has been renamed",
                 category=sa.exc.SADeprecationWarning,
             )
-            try:
-                super().do_connect(
-                    sa.create_engine(
-                        url,
-                        connect_args={
-                            **connect_args,
-                            "experimental_python_types": True,
-                        },
-                        poolclass=sa.pool.StaticPool,
-                    )
+            super().do_connect(
+                sa.create_engine(
+                    url, connect_args=connect_args, poolclass=sa.pool.StaticPool
                 )
-            except TypeError:
-                super().do_connect(
-                    sa.create_engine(
-                        url, connect_args=connect_args, poolclass=sa.pool.StaticPool
-                    )
-                )
+            )
 
     @staticmethod
     def _new_sa_metadata():
