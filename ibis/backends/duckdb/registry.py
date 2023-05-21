@@ -4,8 +4,10 @@ import operator
 from functools import partial
 from typing import Any, Mapping
 
+import duckdb
 import numpy as np
 import sqlalchemy as sa
+from packaging.version import parse as vparse
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 from toolz.curried import flip
@@ -36,6 +38,8 @@ operation_registry = {
     op: operation_registry[op]
     for op in operation_registry.keys() - geospatial_functions.keys()
 }
+
+_SUPPORTS_MAPS = vparse(duckdb.__version__) >= vparse("0.8.0")
 
 
 def _round(t, op):
@@ -433,9 +437,11 @@ operation_registry.update(
             lambda arg, key: sa.func.array_length(sa.func.element_at(arg, key)) != 0, 2
         ),
         ops.MapLength: unary(sa.func.cardinality),
-        ops.MapKeys: _map_keys,
-        ops.MapValues: _map_values,
-        ops.MapMerge: _map_merge,
+        ops.MapKeys: unary(sa.func.map_keys) if _SUPPORTS_MAPS else _map_keys,
+        ops.MapValues: unary(sa.func.map_values) if _SUPPORTS_MAPS else _map_values,
+        ops.MapMerge: (
+            fixed_arity(sa.func.map_concat, 2) if _SUPPORTS_MAPS else _map_merge
+        ),
         ops.Hash: unary(sa.func.hash),
         ops.Median: reduction(sa.func.median),
         ops.First: reduction(sa.func.first),
