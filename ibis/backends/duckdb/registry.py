@@ -302,6 +302,24 @@ def _map_merge(t, op):
     )
 
 
+def _array_zip(t, op):
+    args = tuple(map(t.translate, op.arg))
+
+    i = sa.literal_column("i", type_=sa.INTEGER)
+    dtype = op.output_dtype
+    return array_map(
+        sa.func.range(1, sa.func.greatest(*map(sa.func.array_length, args)) + 1),
+        i,
+        struct_pack(
+            {
+                name: sa.func.list_extract(arg, i)
+                for name, arg in zip(dtype.value_type.names, args)
+            },
+            type=t.get_sqla_type(dtype),
+        ),
+    )
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -342,6 +360,7 @@ operation_registry.update(
         ops.ArrayUnion: fixed_arity(
             lambda left, right: sa.func.list_distinct(sa.func.list_cat(left, right)), 2
         ),
+        ops.ArrayZip: _array_zip,
         ops.DayOfWeekName: unary(sa.func.dayname),
         ops.Literal: _literal,
         ops.Log2: unary(sa.func.log2),
