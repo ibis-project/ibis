@@ -598,22 +598,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.starwars.fetch()
+        >>> t = ibis.examples.penguins.fetch()
         >>> t.columns
-        ['name',
-         'height',
-         'mass',
-         'hair_color',
-         'skin_color',
-         'eye_color',
-         'birth_year',
+        ['species',
+         'island',
+         'bill_length_mm',
+         'bill_depth_mm',
+         'flipper_length_mm',
+         'body_mass_g',
          'sex',
-         'gender',
-         'homeworld',
-         'species',
-         'films',
-         'vehicles',
-         'starships']
+         'year']
         """
         return list(self.schema().names)
 
@@ -629,23 +623,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.starwars.fetch()
+        >>> t = ibis.examples.penguins.fetch()
         >>> t.schema()
         ibis.Schema {
-          name        string
-          height      int64
-          mass        float64
-          hair_color  string
-          skin_color  string
-          eye_color   string
-          birth_year  float64
-          sex         string
-          gender      string
-          homeworld   string
-          species     string
-          films       string
-          vehicles    string
-          starships   string
+          species            string
+          island             string
+          bill_length_mm     float64
+          bill_depth_mm      float64
+          flipper_length_mm  int64
+          body_mass_g        int64
+          sex                string
+          year               int64
         }
         """
         return self.op().schema
@@ -2298,7 +2286,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch(table_name="penguins")
+        >>> t = ibis.examples.penguins.fetch()
         >>> t.info()
         ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━┳━━━┓
         ┃ name              ┃ type    ┃ nullable ┃ nulls ┃ non_nulls ┃ null_frac ┃ … ┃
@@ -2752,7 +2740,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch(table_name="penguins")
+        >>> t = ibis.examples.penguins.fetch()
         >>> cached_penguins = t.mutate(computation="Heavy Computation").cache()
         >>> cached_penguins
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
@@ -2889,7 +2877,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Simliarly for a different example dataset, we convert names to values
         but using a different selector and the default `values_to` value.
 
-        >>> world_bank_pop = ibis.examples.world_bank_pop_raw.fetch(header=1)
+        >>> world_bank_pop = ibis.examples.world_bank_pop_raw.fetch()
         >>> world_bank_pop.head()
         ┏━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━┓
         ┃ country ┃ indicator   ┃ 2000         ┃ 2001         ┃ 2002         ┃ … ┃

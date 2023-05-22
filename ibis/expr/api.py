@@ -847,26 +847,7 @@ def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Ta
     Examples
     --------
     >>> import ibis
-    >>> ibis.options.interactive = True
-    >>> t = ibis.examples.Batting_raw.fetch()
-    >>> t
-    ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
-    ┃ playerID  ┃ yearID ┃ stint ┃ teamID ┃ lgID   ┃ G     ┃ AB    ┃ R     ┃ … ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
-    │ string    │ int64  │ int64 │ string │ string │ int64 │ int64 │ int64 │ … │
-    ├───────────┼────────┼───────┼────────┼────────┼───────┼───────┼───────┼───┤
-    │ abercda01 │   1871 │     1 │ TRO    │ NA     │     1 │     4 │     0 │ … │
-    │ addybo01  │   1871 │     1 │ RC1    │ NA     │    25 │   118 │    30 │ … │
-    │ allisar01 │   1871 │     1 │ CL1    │ NA     │    29 │   137 │    28 │ … │
-    │ allisdo01 │   1871 │     1 │ WS3    │ NA     │    27 │   133 │    28 │ … │
-    │ ansonca01 │   1871 │     1 │ RC1    │ NA     │    25 │   120 │    29 │ … │
-    │ armstbo01 │   1871 │     1 │ FW1    │ NA     │    12 │    49 │     9 │ … │
-    │ barkeal01 │   1871 │     1 │ RC1    │ NA     │     1 │     4 │     0 │ … │
-    │ barnero01 │   1871 │     1 │ BS1    │ NA     │    31 │   157 │    66 │ … │
-    │ barrebi01 │   1871 │     1 │ FW1    │ NA     │     1 │     5 │     1 │ … │
-    │ barrofr01 │   1871 │     1 │ BS1    │ NA     │    18 │    86 │    13 │ … │
-    │ …         │      … │     … │ …      │ …      │     … │     … │     … │ … │
-    └───────────┴────────┴───────┴────────┴────────┴───────┴───────┴───────┴───┘
+    >>> t = ibis.read_csv("path/to/data.csv")  # doctest: +SKIP
     """
     from ibis.config import _default_backend
 
@@ -947,26 +928,7 @@ def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> i
     Examples
     --------
     >>> import ibis
-    >>> ibis.options.interactive = True
-    >>> t = ibis.examples.Batting_raw.fetch()
-    >>> t
-    ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
-    ┃ playerID  ┃ yearID ┃ stint ┃ teamID ┃ lgID   ┃ G     ┃ AB    ┃ R     ┃ … ┃
-    ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
-    │ string    │ int64  │ int64 │ string │ string │ int64 │ int64 │ int64 │ … │
-    ├───────────┼────────┼───────┼────────┼────────┼───────┼───────┼───────┼───┤
-    │ abercda01 │   1871 │     1 │ TRO    │ NA     │     1 │     4 │     0 │ … │
-    │ addybo01  │   1871 │     1 │ RC1    │ NA     │    25 │   118 │    30 │ … │
-    │ allisar01 │   1871 │     1 │ CL1    │ NA     │    29 │   137 │    28 │ … │
-    │ allisdo01 │   1871 │     1 │ WS3    │ NA     │    27 │   133 │    28 │ … │
-    │ ansonca01 │   1871 │     1 │ RC1    │ NA     │    25 │   120 │    29 │ … │
-    │ armstbo01 │   1871 │     1 │ FW1    │ NA     │    12 │    49 │     9 │ … │
-    │ barkeal01 │   1871 │     1 │ RC1    │ NA     │     1 │     4 │     0 │ … │
-    │ barnero01 │   1871 │     1 │ BS1    │ NA     │    31 │   157 │    66 │ … │
-    │ barrebi01 │   1871 │     1 │ FW1    │ NA     │     1 │     5 │     1 │ … │
-    │ barrofr01 │   1871 │     1 │ BS1    │ NA     │    18 │    86 │    13 │ … │
-    │ …         │      … │     … │ …      │ …      │     … │     … │     … │ … │
-    └───────────┴────────┴───────┴────────┴────────┴───────┴───────┴───────┴───┘
+    >>> t = ibis.read_parquet("path/to/data.parquet")  # doctest: +SKIP
     """
     from ibis.config import _default_backend
 
