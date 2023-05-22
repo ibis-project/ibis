@@ -1592,6 +1592,18 @@ def test_join_lname_rname(how):
     assert expr.columns == ["left_id", "first_name", "right_id", "last_name"]
 
 
+def test_join_lname_rname_still_collide():
+    t1 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})
+    t2 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})
+    t3 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})
+
+    with pytest.raises(com.IntegrityError) as rec:
+        t1.left_join(t2, "id").left_join(t3, "id")
+
+    assert "`['col1_right', 'col2_right', 'id_right']`" in str(rec.value)
+    assert "`lname='', rname='{name}_right'`" in str(rec.value)
+
+
 def test_drop():
     t = ibis.table(dict.fromkeys("abcd", "int"))
 

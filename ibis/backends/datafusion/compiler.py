@@ -510,3 +510,39 @@ def regex_extract(op):
         name="string_array_get",
     )
     return string_array_get(df.functions.regexp_match(arg, pattern))
+
+
+@translate.register(ops.StringReplace)
+def string_replace(op):
+    arg = translate(op.arg)
+    pattern = translate(op.pattern)
+    replacement = translate(op.replacement)
+    return df.functions.replace(arg, pattern, replacement)
+
+
+@translate.register(ops.RegexReplace)
+def regex_replace(op):
+    arg = translate(op.arg)
+    pattern = translate(op.pattern)
+    replacement = translate(op.replacement)
+    return df.functions.regexp_replace(arg, pattern, replacement, df.lit("g"))
+
+
+@translate.register(ops.StringFind)
+def string_find(op):
+    if op.end is not None:
+        raise NotImplementedError("`end` not yet implemented")
+
+    arg = translate(op.arg)
+    pattern = translate(op.substr)
+
+    if (op_start := op.start) is not None:
+        sub_string = ops.Substring(op.arg, op_start)
+        arg = translate(sub_string)
+        pos = df.functions.strpos(arg, pattern)
+        start = translate(op_start)
+        return df.functions.coalesce(
+            df.functions.nullif(pos + start, start), df.lit(0)
+        ) - df.lit(1)
+
+    return df.functions.strpos(arg, pattern) - df.lit(1)

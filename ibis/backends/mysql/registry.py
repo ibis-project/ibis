@@ -20,7 +20,6 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.registry import (
-    _gen_string_find,
     geospatial_functions,
 )
 
@@ -137,6 +136,17 @@ def _regex_extract(arg, pattern, index):
     )
 
 
+def _string_find(t, op):
+    arg = t.translate(op.arg)
+    substr = t.translate(op.substr)
+
+    if op_start := op.start:
+        start = t.translate(op_start)
+        return sa.func.locate(substr, arg, start) - 1
+
+    return sa.func.locate(substr, arg) - 1
+
+
 class _mysql_trim(GenericFunction):
     inherit_cache = True
 
@@ -164,7 +174,7 @@ operation_registry.update(
         # static checks are not happy with using "if" as a property
         ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
         # strings
-        ops.StringFind: _gen_string_find(sa.func.locate),
+        ops.StringFind: _string_find,
         ops.FindInSet: (
             lambda t, op: (
                 sa.func.find_in_set(
@@ -176,12 +186,20 @@ operation_registry.update(
         ),
         # LIKE in mysql is case insensitive
         ops.StartsWith: fixed_arity(
-            lambda arg, start: arg.op("LIKE BINARY")(sa.func.concat(start, "%")), 2
+            lambda arg, start: sa.type_coerce(
+                arg.op("LIKE BINARY")(sa.func.concat(start, "%")), sa.BOOLEAN()
+            ),
+            2,
         ),
         ops.EndsWith: fixed_arity(
-            lambda arg, end: arg.op("LIKE BINARY")(sa.func.concat("%", end)), 2
+            lambda arg, end: sa.type_coerce(
+                arg.op("LIKE BINARY")(sa.func.concat("%", end)), sa.BOOLEAN()
+            ),
+            2,
         ),
-        ops.RegexSearch: fixed_arity(lambda x, y: x.op('REGEXP')(y), 2),
+        ops.RegexSearch: fixed_arity(
+            lambda x, y: sa.type_coerce(x.op('REGEXP')(y), sa.BOOLEAN()), 2
+        ),
         ops.RegexExtract: fixed_arity(_regex_extract, 3),
         # math
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),

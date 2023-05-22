@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import warnings
+from functools import cached_property
 from typing import Iterator
 
 import sqlalchemy as sa
@@ -26,12 +28,10 @@ class Backend(BaseAlchemyBackend):
     def current_database(self) -> str:
         raise NotImplementedError(type(self))
 
-    @property
+    @cached_property
     def version(self) -> str:
-        # TODO: there is a `PRAGMA version` we could use instead
-        import importlib.metadata
-
-        return importlib.metadata.version("trino")
+        with self.begin() as con:
+            return con.execute(sa.select(sa.func.version())).scalar()
 
     def do_connect(
         self,
@@ -60,23 +60,11 @@ class Backend(BaseAlchemyBackend):
                 message=r"The dbapi\(\) classmethod on dialect classes has been renamed",
                 category=sa.exc.SADeprecationWarning,
             )
-            try:
-                super().do_connect(
-                    sa.create_engine(
-                        url,
-                        connect_args={
-                            **connect_args,
-                            "experimental_python_types": True,
-                        },
-                        poolclass=sa.pool.StaticPool,
-                    )
+            super().do_connect(
+                sa.create_engine(
+                    url, connect_args=connect_args, poolclass=sa.pool.StaticPool
                 )
-            except TypeError:
-                super().do_connect(
-                    sa.create_engine(
-                        url, connect_args=connect_args, poolclass=sa.pool.StaticPool
-                    )
-                )
+            )
 
     @staticmethod
     def _new_sa_metadata():
@@ -93,14 +81,20 @@ class Backend(BaseAlchemyBackend):
 
         return meta
 
-    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        tmpname = f"_ibis_trino_output_{util.guid()[:6]}"
+    @contextlib.contextmanager
+    def _prepare_metadata(self, query: str) -> Iterator[dict[str, str]]:
+        name = util.gen_name("ibis_trino_metadata")
         with self.begin() as con:
-            con.exec_driver_sql(f"PREPARE {tmpname} FROM {query}")
-            for name, type in toolz.pluck(
-                ["Column Name", "Type"],
-                con.exec_driver_sql(f"DESCRIBE OUTPUT {tmpname}").mappings(),
-            ):
-                ibis_type = parse(type)
-                yield name, ibis_type(nullable=True)
-            con.exec_driver_sql(f"DEALLOCATE PREPARE {tmpname}")
+            con.exec_driver_sql(f"PREPARE {name} FROM {query}")
+            try:
+                yield con.exec_driver_sql(f"DESCRIBE OUTPUT {name}").mappings()
+            finally:
+                con.exec_driver_sql(f"DEALLOCATE PREPARE {name}")
+
+    def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        with self._prepare_metadata(query) as mappings:
+            yield from (
+                # trino types appear to be always nullable
+                (name, parse(trino_type).copy(nullable=True))
+                for name, trino_type in toolz.pluck(["Column Name", "Type"], mappings)
+            )

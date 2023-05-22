@@ -336,7 +336,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_replace_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ['datafusion', "mysql", "mssql", "druid", "oracle"],
+                    ["mysql", "mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -351,7 +351,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_replace',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mysql", "mssql", "druid", "oracle"],
+                    ["mysql", "mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -413,9 +413,16 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.find('a'),
             lambda t: t.string_col.str.find('a'),
             id='find',
-            marks=pytest.mark.notimpl(
-                ["datafusion", "polars"], raises=com.OperationNotDefinedError
-            ),
+            marks=pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
+        ),
+        param(
+            lambda t: t.date_string_col.find('13', 3),
+            lambda t: t.date_string_col.str.find('13', 3),
+            id='find_start',
+            marks=[
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
+                pytest.mark.notyet(["bigquery"], raises=NotImplementedError),
+            ],
         ),
         param(
             lambda t: t.string_col.lpad(10, 'a'),
@@ -826,9 +833,6 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.replace("1", "42"),
             lambda t: t.string_col.str.replace("1", "42"),
             id="replace",
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
     ],
 )
@@ -841,7 +845,7 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "mssql", "druid", "oracle"],
+    ["mysql", "mssql", "druid", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 def test_re_replace_global(con):

@@ -281,15 +281,16 @@ def _substring(op, **kw):
 
 @translate_val.register(ops.StringFind)
 def _string_find(op, **kw):
-    if op.start is not None:
-        raise com.UnsupportedOperationError(
-            "String find doesn't support start argument"
-        )
     if op.end is not None:
         raise com.UnsupportedOperationError("String find doesn't support end argument")
 
     arg = translate_val(op.arg, **kw)
     substr = translate_val(op.substr, **kw)
+
+    if op.start is not None:
+        op_start = translate_val(op.start)
+        return f"locate({arg}, {substr}, {op_start}) - 1"
+
     return f"locate({arg}, {substr}) - 1"
 
 

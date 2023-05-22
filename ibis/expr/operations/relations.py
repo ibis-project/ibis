@@ -648,7 +648,25 @@ def _dedup_join_columns(expr, lname: str, rname: str):
         for column in right.columns
         if column not in equal
     ]
-    return expr.select(left_projections + right_projections)
+    projections = left_projections + right_projections
+
+    # Certain configurations can result in the renamed columns still colliding,
+    # here we check for duplicates again, and raise a nicer error message if
+    # any exist.
+    seen = set()
+    collisions = set()
+    for column in projections:
+        name = column.get_name()
+        if name in seen:
+            collisions.add(name)
+        seen.add(name)
+    if collisions:
+        raise com.IntegrityError(
+            f"Joining with `lname={lname!r}, rname={rname!r}` resulted in multiple "
+            f"columns mapping to the following names `{sorted(collisions)}`. Please "
+            f"adjust `lname` and/or `rname` accordingly"
+        )
+    return expr.select(projections)
 
 
 public(ExistsSubquery=ExistsSubquery, NotExistsSubquery=NotExistsSubquery)

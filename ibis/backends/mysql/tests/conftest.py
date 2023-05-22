@@ -39,26 +39,16 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
 
     def __init__(self, data_directory: Path) -> None:
         super().__init__(data_directory)
-        # mariadb supports window operations after version 10.2
-        # but the sqlalchemy version string looks like:
-        # 5.5.5.10.2.12.MariaDB.10.2.12+maria~jessie
-        # or 10.4.12.MariaDB.1:10.4.12+maria~bionic
-        # example of possible results:
-        # https://github.com/sqlalchemy/sqlalchemy/blob/rel_1_3/
-        # test/dialect/mysql/test_dialect.py#L244-L268
         con = self.connection
-        if 'MariaDB' in str(con.version):
-            # we might move this parsing step to the mysql client
-            version_detail = con.con.dialect._parse_server_version(str(con.version))
-            version = (
-                version_detail[:3]
-                if version_detail[3] == 'MariaDB'
-                else version_detail[3:6]
-            )
-            self.__class__.supports_window_operations = version >= (10, 2)
-        elif parse_version(con.version) >= parse_version('8.0'):
-            # mysql supports window operations after version 8
-            self.__class__.supports_window_operations = True
+        with con.begin() as c:
+            version = c.exec_driver_sql("SELECT VERSION()").scalar()
+
+        # mariadb supports window operations after version 10.2
+        # mysql supports window operations after version 8
+        min_version = "10.2" if "MariaDB" in version else "8.0"
+        self.__class__.supports_window_operations = parse_version(
+            con.version
+        ) >= parse_version(min_version)
 
     @staticmethod
     def _load_data(
