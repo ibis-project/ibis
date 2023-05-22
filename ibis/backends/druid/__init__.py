@@ -102,7 +102,7 @@ WHERE TABLE_NAME = :table_name"""
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
-                message="|".join(
+                message="|".join(  # noqa: FLY002
                     (
                         "Did not recognize type",
                         "Dialect druid:rest will not make use of SQL compilation caching",

@@ -435,7 +435,7 @@ def _fmt_table_op_in_memory_table(op: ops.InMemoryTable, **_: Any) -> str:
 def _fmt_table_op_dummy_table(op: ops.DummyTable, **_: Any) -> str:
     formatted_schema = fmt_schema(op.schema)
     schema_field = util.indent(f"schema:\n{formatted_schema}", spaces=2)
-    return "\n".join([op.__class__.__name__, schema_field])
+    return f"{op.__class__.__name__}\n{schema_field}"
 
 
 @functools.singledispatch
