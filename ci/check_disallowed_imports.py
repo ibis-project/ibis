@@ -11,10 +11,10 @@ CURRENT_DIR = pathlib.Path(__file__).parent.absolute()
 
 
 def generate_dependency_graph(*args):
-    command = ("pydeps", "--nodot", "--show-deps") + args
+    command = ("pydeps", "--show-deps", *args)
     print(f"Running: {' '.join(command)}")  # noqa: T201
-    result = subprocess.run(command, check=True, capture_output=True, text=True)
-    return json.loads(result.stdout)
+    result = subprocess.check_output(command, text=True)
+    return json.loads(result)
 
 
 def check_dependency_rules(dependency_graph, disallowed_imports):
