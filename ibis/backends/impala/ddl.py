@@ -282,7 +282,7 @@ class CreateUDF(CreateFunction):
         param_line = "location '{}' symbol='{}'".format(
             self.func.lib_path, self.func.so_symbol
         )
-        return ' '.join([create_decl, impala_sig, param_line])
+        return f'{create_decl} {impala_sig} {param_line}'
 
 
 class CreateUDA(CreateFunction):
@@ -304,7 +304,8 @@ class CreateUDA(CreateFunction):
             if value is not None:
                 tokens.append(f"{fn}='{value}'")
 
-        return ' '.join([create_decl, impala_sig]) + ' ' + '\n'.join(tokens)
+        joined_tokens = '\n'.join(tokens)
+        return f"{create_decl} {impala_sig} {joined_tokens}"
 
 
 class DropFunction(DropFunction):

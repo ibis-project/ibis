@@ -202,7 +202,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     make_job,
                     client.load_table_from_file,
                     io.StringIO(
-                        "\n".join(
+                        "\n".join(  # noqa: FLY002
                             [
                                 """{"string_col": "1st value", "numeric_col": 0.999999999}""",
                                 """{"string_col": "2nd value", "numeric_col": 0.000000002}""",

@@ -362,14 +362,13 @@ select = [
   "D",   # pydocstyle
   "E",   # pycodestyle
   "F",   # pyflakes
+  "FLY", # flynt (format string conversion)
   "I",   # isort
   "ICN", # flake8-import-conventions
+  "INP", # flake8-no-pep420 (implicit namespace packages)
   "ISC", # flake8-implicit-str-concat
   "PGH", # pygrep-hooks
-  "PLC", # pylint
-  "PLE", # pylint
-  "PLR", # pylint import style
-  "PLW", # pylint
+  "PL",  # pylint
   "RET", # flake8-return
   "RUF", # ruff-specific rules
   "SIM", # flake8-simplify
@@ -438,6 +437,8 @@ unfixable = [
 "*test*.py" = [
   "D", # ignore all docstring lints in tests
 ]
+"ci/*.py" = ["INP001"]
+"docs/*.py" = ["INP001"]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 "ibis/selectors.py" = ["UP007"]
 
