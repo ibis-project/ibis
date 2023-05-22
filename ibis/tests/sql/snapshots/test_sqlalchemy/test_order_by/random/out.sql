@@ -5,4 +5,4 @@ SELECT
   t0.bar_id
 FROM star1 AS t0
 ORDER BY
-  RANDOM()
+  RANDOM() NULLS FIRST

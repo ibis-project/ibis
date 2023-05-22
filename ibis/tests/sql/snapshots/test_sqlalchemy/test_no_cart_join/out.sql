@@ -18,4 +18,4 @@ JOIN t0
 GROUP BY
   1
 ORDER BY
-  t0.ancestor_node_sort_order
+  t0.ancestor_node_sort_order NULLS FIRST
