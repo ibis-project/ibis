@@ -163,15 +163,14 @@ def _regex_extract(translator, op):
     regex = _translate_pattern(translator, op.pattern)
     index = translator.translate(op.index)
     matches = f"REGEXP_CONTAINS({arg}, {regex})"
-
-    extract = f'''
-    IF(
-    {index} = 0,
-    REGEXP_EXTRACT({arg}, {regex}),
-    REGEXP_REPLACE({arg}, CONCAT({regex}, ".*"), CONCAT("\\", CAST({index} AS STRING)))
+    # non-greedily match the regex's prefix so the regex can match as much as possible
+    nonzero_index_replace = fr"REGEXP_REPLACE({arg}, CONCAT('.*?', {regex}, '.*'), CONCAT('\\', CAST({index} AS STRING)))"
+    # zero index replacement means capture everything matched by the regex, so
+    # we wrap the regex in an outer group
+    zero_index_replace = (
+        fr"REGEXP_REPLACE({arg}, CONCAT('.*?', CONCAT('(', {regex}, ')'), '.*'), '\\1')"
     )
-    '''
-
+    extract = f"IF({index} = 0, {zero_index_replace}, {nonzero_index_replace})"
     return f"IF({matches}, {extract}, NULL)"
 
 
