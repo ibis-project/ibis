@@ -355,3 +355,10 @@ def test_destruct_selection():
 )
 def test_format_literal(literal, typ, output):
     assert repr(ibis.literal(literal, type=typ)) == output
+
+
+def test_format_dummy_table():
+    t = ops.DummyTable([ibis.array([1], type="array<int8>").name("foo")]).to_expr()
+    result = repr(t)
+    assert "DummyTable" in result
+    assert "foo array<int8>" in result
