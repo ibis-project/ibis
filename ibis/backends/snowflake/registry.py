@@ -194,6 +194,15 @@ def _group_concat(t, op):
     )
 
 
+def _array_zip(t, op):
+    return sa.type_coerce(
+        sa.func.ibis_udfs.public.array_zip(
+            sa.func.array_construct(*map(t.translate, op.arg))
+        ),
+        t.get_sqla_type(op.output_dtype),
+    )
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -204,6 +213,7 @@ operation_registry.update(
     {
         ops.JSONGetItem: fixed_arity(sa.func.get, 2),
         ops.StringFind: _string_find,
+        ops.ArrayZip: _array_zip,
         ops.Map: fixed_arity(
             lambda keys, values: sa.func.iff(
                 sa.func.is_array(keys) & sa.func.is_array(values),

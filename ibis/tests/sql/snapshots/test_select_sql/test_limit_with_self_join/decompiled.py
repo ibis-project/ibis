@@ -57,5 +57,4 @@ result = (
         ]
     )
     .count()
-    .name("count")
 )

@@ -1,5 +1,5 @@
 SELECT
-  COUNT(*) AS count
+  COUNT(*) AS "CountStar()"
 FROM (
   SELECT
     t1."playerID" AS "playerID",

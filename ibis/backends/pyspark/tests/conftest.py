@@ -318,7 +318,7 @@ def ibis_windows(request):
 @pytest.fixture(scope='session', autouse=True)
 def test_data_db(con):
     name = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
-    con.create_database(name)
+    con.create_database(name, force=True)
     set_pyspark_database(con, name)
     yield name
     con.drop_database(name, force=True)

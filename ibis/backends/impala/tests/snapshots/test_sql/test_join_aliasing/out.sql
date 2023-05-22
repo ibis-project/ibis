@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t7.*, t7.`a` + 20 AS `d`
-  FROM test_table t7
+  FROM `test_table` t7
 ),
 t1 AS (
   SELECT t0.`d`, t0.`c`

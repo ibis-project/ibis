@@ -3501,6 +3501,21 @@ google-auth-oauthlib = {version = ">=0.4.0", markers = "python_version >= \"3.6\
 setuptools = "*"
 
 [[package]]
+name = "pydeps"
+version = "1.12.7"
+description = "Display module dependencies"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pydeps-1.12.7-py3-none-any.whl", hash = "sha256:835caa7d3f3b75da8cbcba95a6b738cbca9e34c4a6db9d96a455eaa2db6630f2"},
+    {file = "pydeps-1.12.7.tar.gz", hash = "sha256:73fd4b8657d954ac7355aad27321a79de594805a7b0e3ec15228b63f117f6132"},
+]
+
+[package.dependencies]
+stdlib-list = "*"
+
+[[package]]
 name = "pydruid"
 version = "0.6.5"
 description = "A Python connector for Druid."
@@ -4789,6 +4804,21 @@ pure-eval = "*"
 tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
+name = "stdlib-list"
+version = "0.8.0"
+description = "A list of Python Standard Libraries (2.6-7, 3.2-9)."
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "stdlib-list-0.8.0.tar.gz", hash = "sha256:a1e503719720d71e2ed70ed809b385c60cd3fb555ba7ec046b96360d30b16d9f"},
+    {file = "stdlib_list-0.8.0-py3-none-any.whl", hash = "sha256:2ae0712a55b68f3fbbc9e58d6fa1b646a062188f49745b495f94d3310a9fdd3e"},
+]
+
+[package.extras]
+develop = ["sphinx"]
+
+[[package]]
 name = "termcolor"
 version = "2.3.0"
 description = "ANSI color formatting for output in terminal"
@@ -5386,4 +5416,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "f36570c34d38949ce899063b64fa2dfe675f79475781be2abc6974afe21e1f26"
+content-hash = "18f25b0e72535113f46e1cad90fee262fecbe4dae314c069645549b23679efa2"

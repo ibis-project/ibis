@@ -30,7 +30,9 @@ def test_map_table(backend):
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-@pytest.mark.notyet(["duckdb"], raises=exc.UnsupportedOperationError)
+@pytest.mark.xfail_version(
+    duckdb=["duckdb<0.8.0"], raises=exc.UnsupportedOperationError
+)
 def test_column_map_values(backend):
     table = backend.map
     result = table.kv.values().name("values").execute().map(sorted)
@@ -39,7 +41,9 @@ def test_column_map_values(backend):
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-@pytest.mark.notyet(["duckdb"], raises=exc.UnsupportedOperationError)
+@pytest.mark.xfail_version(
+    duckdb=["duckdb<0.8.0"], raises=exc.UnsupportedOperationError
+)
 def test_column_map_merge(backend):
     table = backend.map
     expr = (table.kv.cast("map<string, int8>") + ibis.map({"d": 1})).name("merged")

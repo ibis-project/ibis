@@ -711,17 +711,7 @@ def test_unnest_struct(con):
 )
 @pytest.mark.notyet(["bigquery"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    [
-        "dask",
-        "datafusion",
-        "druid",
-        "duckdb",
-        "oracle",
-        "pandas",
-        "polars",
-        "postgres",
-        "snowflake",
-    ],
+    ["dask", "datafusion", "druid", "oracle", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
 )
 def test_zip(backend):
@@ -729,10 +719,14 @@ def test_zip(backend):
 
     x = t.x.execute()
     res = t.x.zip(t.x)
+    assert res.type().value_type.names == ("f1", "f2")
     s = res.execute()
+    assert len(s[0][0]) == len(res.type().value_type)
     assert len(x[0]) == len(s[0])
 
     x = t.x.execute()
-    res = t.x.zip(t.x, t.x, t.x, t.x, t.x, t.x)
+    res = t.x.zip(t.x, t.x, t.x, t.x, t.x)
+    assert res.type().value_type.names == ("f1", "f2", "f3", "f4", "f5", "f6")
     s = res.execute()
+    assert len(s[0][0]) == len(res.type().value_type)
     assert len(x[0]) == len(s[0])

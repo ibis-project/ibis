@@ -51,7 +51,7 @@ def test_query_parquet_file_with_schema(con, test_data_dir):
 
     table = con.parquet_file(hdfs_path, schema=schema)
 
-    name = table.op().name
+    name = table._qualified_name
 
     # table exists
     con.table(name)

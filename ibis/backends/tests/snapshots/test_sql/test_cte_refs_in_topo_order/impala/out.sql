@@ -1,7 +1,7 @@
 WITH t0 AS (
   SELECT
     t4.*
-  FROM leaf AS t4
+  FROM `leaf` AS t4
   WHERE
     TRUE
 ), t1 AS (
