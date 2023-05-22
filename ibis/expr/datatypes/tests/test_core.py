@@ -10,6 +10,7 @@ from typing import Dict, List, NamedTuple, Tuple
 import pytest
 
 import ibis.expr.datatypes as dt
+from ibis.common.temporal import TimestampUnit
 
 
 def test_validate_type():
@@ -499,6 +500,30 @@ def test_timestamp_with_scale(scale, tz):
 @pytest.mark.parametrize("scale", range(10))
 def test_timestamp_with_scale_no_tz(scale):
     assert dt.parse(f"timestamp({scale:d})") == dt.Timestamp(scale=scale)
+
+
+def test_timestamp_unit():
+    assert dt.Timestamp().unit == TimestampUnit.SECOND
+    assert dt.Timestamp(scale=0).unit == TimestampUnit.SECOND
+    for scale in range(1, 3):
+        assert dt.Timestamp(scale=scale).unit == TimestampUnit.MILLISECOND
+    for scale in range(4, 7):
+        assert dt.Timestamp(scale=scale).unit == TimestampUnit.MICROSECOND
+    for scale in range(7, 10):
+        assert dt.Timestamp(scale=scale).unit == TimestampUnit.NANOSECOND
+
+
+def test_timestamp_from_unit():
+    assert dt.Timestamp.from_unit('s') == dt.Timestamp(scale=0)
+    assert dt.Timestamp.from_unit('ms', timezone='UTC') == dt.Timestamp(
+        scale=3, timezone='UTC'
+    )
+    assert dt.Timestamp.from_unit('us', nullable=True) == dt.Timestamp(
+        scale=6, nullable=True
+    )
+    assert dt.Timestamp.from_unit('ns', timezone='UTC', nullable=False) == dt.Timestamp(
+        scale=9, timezone='UTC', nullable=False
+    )
 
 
 def get_leaf_classes(op):

@@ -19,7 +19,7 @@ from typing_extensions import get_args, get_origin, get_type_hints
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict, MapSet
 from ibis.common.grounds import Concrete, Singleton
-from ibis.common.temporal import IntervalUnit
+from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.common.validators import Coercible
 
 # TODO(kszucs): we don't support union types yet
@@ -316,6 +316,7 @@ def from_ibis_dtype(value: DataType) -> DataType:
     return value
 
 
+# TODO(kszucs): turn this to lazy singledispatch
 @dtype.register(np.dtype)
 def from_numpy_dtype(value):
     from ibis.formats.numpy import dtype_from_numpy
@@ -323,6 +324,7 @@ def from_numpy_dtype(value):
     return dtype_from_numpy(value)
 
 
+# TODO(kszucs): turn this to lazy singledispatch
 @dtype.register(pd.core.dtypes.base.ExtensionDtype)
 def from_pandas_extension_dtype(value):
     from ibis.formats.pandas import dtype_from_pandas
@@ -464,6 +466,36 @@ class Timestamp(Temporal, Parametric):
 
     scalar = "TimestampScalar"
     column = "TimestampColumn"
+
+    @classmethod
+    def from_unit(cls, unit, timezone=None, nullable=True):
+        """Return a timestamp type with the given unit and timezone."""
+        unit = TimestampUnit(unit)
+        if unit == TimestampUnit.SECOND:
+            scale = 0
+        elif unit == TimestampUnit.MILLISECOND:
+            scale = 3
+        elif unit == TimestampUnit.MICROSECOND:
+            scale = 6
+        elif unit == TimestampUnit.NANOSECOND:
+            scale = 9
+        else:
+            raise ValueError(f"Invalid unit {unit}")
+        return cls(scale=scale, timezone=timezone, nullable=nullable)
+
+    @property
+    def unit(self) -> str:
+        """Return the unit of the timestamp."""
+        if self.scale is None or self.scale == 0:
+            return TimestampUnit.SECOND
+        elif 1 <= self.scale <= 3:
+            return TimestampUnit.MILLISECOND
+        elif 4 <= self.scale <= 6:
+            return TimestampUnit.MICROSECOND
+        elif 7 <= self.scale <= 9:
+            return TimestampUnit.NANOSECOND
+        else:
+            raise ValueError(f"Invalid scale {self.scale}")
 
     @property
     def _pretty_piece(self) -> str:
