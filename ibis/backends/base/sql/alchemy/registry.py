@@ -441,13 +441,19 @@ def _substring(t, op):
 
 def _gen_string_find(func):
     def string_find(t, op):
-        if op.start is not None:
-            raise NotImplementedError("`start` not yet implemented")
-
         if op.end is not None:
             raise NotImplementedError("`end` not yet implemented")
 
-        return func(t.translate(op.arg), t.translate(op.substr)) - 1
+        arg = t.translate(op.arg)
+        sub_string = t.translate(op.substr)
+
+        if (op_start := op.start) is not None:
+            start = t.translate(op_start)
+            arg = sa.func.substr(arg, start + 1)
+            pos = func(arg, sub_string)
+            return sa.case((pos > 0, pos - 1 + start), else_=-1)
+
+        return func(arg, sub_string) - 1
 
     return string_find
 

@@ -416,6 +416,15 @@ def test_string_col_is_unicode(alltypes, df):
             marks=pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
         ),
         param(
+            lambda t: t.date_string_col.find('13', 3),
+            lambda t: t.date_string_col.str.find('13', 3),
+            id='find_start',
+            marks=[
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
+                pytest.mark.notyet(["bigquery"], raises=NotImplementedError),
+            ],
+        ),
+        param(
             lambda t: t.string_col.lpad(10, 'a'),
             lambda t: t.string_col.str.pad(10, fillchar='a', side='left'),
             id='lpad',
