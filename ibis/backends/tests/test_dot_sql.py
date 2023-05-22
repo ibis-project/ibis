@@ -20,6 +20,10 @@ dot_sql_never = pytest.mark.never(
 
 pytestmark = [pytest.mark.xdist_group("dot_sql")]
 
+_NAMES = {
+    "bigquery": "ibis_gbq_testing.functional_alltypes",
+}
+
 
 @dot_sql_notimpl
 @dot_sql_notyet
@@ -34,7 +38,7 @@ pytestmark = [pytest.mark.xdist_group("dot_sql")]
 def test_con_dot_sql(backend, con, schema):
     alltypes = con.table("functional_alltypes")
     # pull out the quoted name
-    name = alltypes.op().name
+    name = _NAMES.get(con.name, alltypes.op().name)
     t = (
         con.sql(
             f"""

@@ -1,1 +1,1 @@
-DROP TABLE IF EXISTS bar.`foo`
+DROP TABLE IF EXISTS `bar`.`foo`

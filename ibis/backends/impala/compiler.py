@@ -34,6 +34,8 @@ class ImpalaExprTranslator(ExprTranslator):
         ops.ApproxCountDistinct,
         ops.GroupConcat,
     )
+    _dialect_name = "hive"
+    _quote_identifiers = True
 
 
 rewrites = ImpalaExprTranslator.rewrites

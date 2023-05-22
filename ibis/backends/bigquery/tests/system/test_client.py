@@ -41,7 +41,7 @@ def test_current_database(con, dataset_id):
 
 def test_database(con):
     database = con.database(con.dataset_id)
-    assert database.list_tables() == con.list_tables()
+    assert database.list_tables(like="alltypes") == con.list_tables(like="alltypes")
 
 
 def test_array_collect(struct_table):
@@ -249,8 +249,8 @@ def test_multiple_project_queries(con):
     result = join.compile()
     expected = """\
 SELECT t0.`title`
-FROM `bigquery-public-data.stackoverflow.posts_questions` t0
-  INNER JOIN `nyc-tlc.yellow.trips` t1
+FROM `bigquery-public-data.stackoverflow`.posts_questions t0
+  INNER JOIN `nyc-tlc.yellow`.trips t1
     ON t0.`tags` = t1.`rate_code`"""
     assert result == expected
 
@@ -265,8 +265,8 @@ def test_multiple_project_queries_database_api(con):
     result = join.compile()
     expected = """\
 SELECT t0.`title`
-FROM `bigquery-public-data.stackoverflow.posts_questions` t0
-  INNER JOIN `nyc-tlc.yellow.trips` t1
+FROM `bigquery-public-data.stackoverflow`.posts_questions t0
+  INNER JOIN `nyc-tlc.yellow`.trips t1
     ON t0.`tags` = t1.`rate_code`"""
     assert result == expected
 

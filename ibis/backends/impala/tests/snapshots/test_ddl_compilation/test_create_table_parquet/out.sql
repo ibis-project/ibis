@@ -1,4 +1,4 @@
-CREATE TABLE bar.`some_table`
+CREATE TABLE `bar`.`some_table`
 STORED AS PARQUET
 AS
 SELECT t0.*

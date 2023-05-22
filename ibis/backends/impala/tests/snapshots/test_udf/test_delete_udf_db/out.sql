@@ -1,1 +1,1 @@
-DROP FUNCTION test.`test_name`(string, string)
+DROP FUNCTION `test`.`test_name`(string, string)

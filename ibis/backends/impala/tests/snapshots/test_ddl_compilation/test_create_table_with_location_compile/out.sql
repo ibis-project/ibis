@@ -1,4 +1,4 @@
-CREATE TABLE foo.`another_table`
+CREATE TABLE `foo`.`another_table`
 (`foo` string,
  `bar` tinyint,
  `baz` smallint)

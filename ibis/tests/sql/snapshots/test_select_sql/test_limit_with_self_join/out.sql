@@ -15,7 +15,7 @@ FROM (
          t2.`string_col` AS `string_col_right`,
          t2.`timestamp_col` AS `timestamp_col_right`,
          t2.`year` AS `year_right`, t2.`month` AS `month_right`
-  FROM `functional_alltypes` t1
-    INNER JOIN `functional_alltypes` t2
+  FROM functional_alltypes t1
+    INNER JOIN functional_alltypes t2
       ON t1.`tinyint_col` < extract(t2.`timestamp_col`, 'minute')
 ) t0

@@ -1,1 +1,1 @@
-ALTER TABLE bar.`foo` SET CACHED IN 'my_pool'
+ALTER TABLE `bar`.`foo` SET CACHED IN 'my_pool'

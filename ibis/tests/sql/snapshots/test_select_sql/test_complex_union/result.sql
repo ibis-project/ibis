@@ -1,10 +1,10 @@
 WITH t0 AS (
   SELECT t5.`diag`, t5.`status`
-  FROM `aids2_two` t5
+  FROM aids2_two t5
 ),
 t1 AS (
   SELECT t5.`diag`, t5.`status`
-  FROM `aids2_one` t5
+  FROM aids2_one t5
 ),
 t2 AS (
   SELECT t0.`diag` + 1 AS `diag`, t0.`status`
@@ -18,11 +18,11 @@ SELECT t4.`diag`, t4.`status`
 FROM (
   WITH t0 AS (
     SELECT t5.`diag`, t5.`status`
-    FROM `aids2_two` t5
+    FROM aids2_two t5
   ),
   t1 AS (
     SELECT t5.`diag`, t5.`status`
-    FROM `aids2_one` t5
+    FROM aids2_one t5
   ),
   t2 AS (
     SELECT t0.`diag` + 1 AS `diag`, t0.`status`
