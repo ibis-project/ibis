@@ -10,4 +10,4 @@ FROM (
     t1.a = 1
 ) AS t0
 ORDER BY
-  CONCAT(t0.b, 'a')
+  CONCAT(t0.b, 'a') NULLS FIRST
