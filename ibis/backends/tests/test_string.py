@@ -281,7 +281,6 @@ def test_string_col_is_unicode(alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
-                pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
         param(
@@ -296,7 +295,6 @@ def test_string_col_is_unicode(alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
-                pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
         param(
@@ -311,7 +309,6 @@ def test_string_col_is_unicode(alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
-                pytest.mark.notyet(["bigquery"], raises=BadRequest),
             ],
         ),
         param(
