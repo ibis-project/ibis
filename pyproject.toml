@@ -97,6 +97,7 @@ ipython = ">=8.7.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 pre-commit = ">=3.1,<4"
 ruff = ">=0.0.205,<1"
+pydeps = ">=1.12.7,<2"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<24"
@@ -343,6 +344,14 @@ markers = [
   "sqlite: SQLite tests",
   "trino: Trino tests",
 ]
+
+[tool.pydeps]
+exclude = ["__future__", "collections", "os", "re", "sys"]
+verbose = 0
+pylib = false
+show_dot = false
+no_dot = true
+show_deps = true
 
 [tool.ruff]
 line-length = 88
