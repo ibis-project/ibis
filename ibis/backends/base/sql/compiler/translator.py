@@ -182,6 +182,8 @@ class ExprTranslator:
         ops.GroupConcat,
         ops.ApproxCountDistinct,
     )
+    _dialect_name = "hive"
+    _quote_identifiers = None
 
     def __init__(self, node, context, named=False, permit_subquery=False):
         self.node = node

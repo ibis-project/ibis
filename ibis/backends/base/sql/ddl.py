@@ -97,15 +97,11 @@ def _serdeproperties(props):
 
 class _BaseQualifiedSQLStatement:
     def _get_scoped_name(self, obj_name, database):
-        if database:
-            return f'{database}.`{obj_name}`'
-        elif not is_fully_qualified(obj_name):
-            if _is_quoted(obj_name):
-                return obj_name
-            else:
-                return f'`{obj_name}`'
-        else:
+        if is_fully_qualified(obj_name):
             return obj_name
+        if _is_quoted(obj_name):
+            obj_name = obj_name[1:-1]
+        return sg.table(obj_name, db=database, quoted=True).sql(dialect="hive")
 
 
 class BaseDDL(DDL, _BaseQualifiedSQLStatement):

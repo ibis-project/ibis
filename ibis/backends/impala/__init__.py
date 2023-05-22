@@ -403,7 +403,9 @@ class Backend(BaseSQLBackend):
             return name
 
         database = database or self.current_database
-        return sg.table(name, db=database, quoted=True).sql(dialect="hive")
+        return sg.table(name, db=database, quoted=True).sql(
+            dialect=getattr(self, "_sqlglot_dialect", self.name)
+        )
 
     def _get_list(self, cur):
         tuples = cur.fetchall()

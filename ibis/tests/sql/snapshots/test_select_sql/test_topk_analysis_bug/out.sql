@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t3.`dest`, avg(t3.`arrdelay`) AS `Mean(arrdelay)`
-  FROM `airlines` t3
+  FROM airlines t3
   WHERE t3.`dest` IN ('ORD', 'JFK', 'SFO')
   GROUP BY 1
 ),
@@ -12,7 +12,7 @@ t1 AS (
 ),
 t2 AS (
   SELECT t3.*
-  FROM `airlines` t3
+  FROM airlines t3
   WHERE t3.`dest` IN ('ORD', 'JFK', 'SFO')
 )
 SELECT `origin`, count(1) AS `count`

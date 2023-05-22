@@ -1,6 +1,6 @@
 WITH t0 AS (
   SELECT t3.`arrdelay`, t3.`dest`
-  FROM `airlines` t3
+  FROM airlines t3
 ),
 t1 AS (
   SELECT t0.*, avg(t0.`arrdelay`) OVER (PARTITION BY t0.`dest`) AS `dest_avg`,

@@ -1,4 +1,4 @@
-CREATE EXTERNAL TABLE IF NOT EXISTS foo.`new_table`
+CREATE EXTERNAL TABLE IF NOT EXISTS `foo`.`new_table`
 (`foo` string,
  `bar` tinyint,
  `baz` smallint)

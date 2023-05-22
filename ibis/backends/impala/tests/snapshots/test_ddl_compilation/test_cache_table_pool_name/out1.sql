@@ -1,1 +1,1 @@
-ALTER TABLE bar.`foo` SET CACHED IN 'default'
+ALTER TABLE `bar`.`foo` SET CACHED IN 'default'

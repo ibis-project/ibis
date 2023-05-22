@@ -109,8 +109,10 @@ class TableSetFormatter:
                 raise com.RelationError(f'Table did not have a name: {op!r}')
 
             result = sg.table(
-                name, db=getattr(ref_op, "namespace", None), quoted=True
-            ).sql(dialect="hive")
+                name,
+                db=getattr(ref_op, "namespace", None),
+                quoted=self.parent.translator_class._quote_identifiers,
+            ).sql(dialect=self.parent.translator_class._dialect_name)
         else:
             # A subquery
             if ctx.is_extracted(ref_op):

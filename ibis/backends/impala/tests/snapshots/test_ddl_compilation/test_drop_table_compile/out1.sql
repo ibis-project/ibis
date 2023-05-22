@@ -1,1 +1,1 @@
-DROP TABLE bar.`foo`
+DROP TABLE `bar`.`foo`
