@@ -70,12 +70,6 @@ hide:
             pip install -e .
             ```
 
-        1. If you want to run the backend test suite you'll need to install `docker-compose`:
-
-            ```sh
-            {{ manager }} install docker-compose -c conda-forge
-            ```
-
     {% endfor %}
 
 === "pip"
