@@ -9,7 +9,6 @@ import itertools
 import uuid
 from operator import attrgetter
 
-import numpy as np
 from public import public
 
 import ibis.expr.datatypes as dt
@@ -169,31 +168,36 @@ class Least(Value):
 
 @public
 class Literal(Value):
-    __valid_input_types__ = (
-        bytes,
-        datetime.date,
-        datetime.datetime,
-        datetime.time,
-        datetime.timedelta,
-        enum.Enum,
-        float,
-        frozenset,
-        int,
-        ipaddress.IPv4Address,
-        ipaddress.IPv6Address,
-        frozendict,
-        np.generic,
-        np.ndarray,
-        str,
-        tuple,
-        type(None),
-        uuid.UUID,
-        decimal.Decimal,
-    )
     value = rlz.one_of(
         (
-            rlz.instance_of(__valid_input_types__),
-            rlz.lazy_instance_of("shapely.geometry.BaseGeometry"),
+            rlz.instance_of(
+                (
+                    bytes,
+                    datetime.date,
+                    datetime.datetime,
+                    datetime.time,
+                    datetime.timedelta,
+                    enum.Enum,
+                    float,
+                    frozenset,
+                    int,
+                    ipaddress.IPv4Address,
+                    ipaddress.IPv6Address,
+                    frozendict,
+                    str,
+                    tuple,
+                    type(None),
+                    uuid.UUID,
+                    decimal.Decimal,
+                )
+            ),
+            rlz.lazy_instance_of(
+                (
+                    "shapely.geometry.BaseGeometry",
+                    "numpy.generic",
+                    "numpy.ndarray",
+                )
+            ),
         )
     )
     dtype = rlz.datatype
