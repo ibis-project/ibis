@@ -20,7 +20,6 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.registry import (
-    _gen_string_find,
     geospatial_functions,
 )
 
@@ -137,6 +136,17 @@ def _regex_extract(arg, pattern, index):
     )
 
 
+def _string_find(t, op):
+    arg = t.translate(op.arg)
+    substr = t.translate(op.substr)
+
+    if op_start := op.start:
+        start = t.translate(op_start)
+        return sa.func.locate(substr, arg, start) - 1
+
+    return sa.func.locate(substr, arg) - 1
+
+
 class _mysql_trim(GenericFunction):
     inherit_cache = True
 
@@ -164,7 +174,7 @@ operation_registry.update(
         # static checks are not happy with using "if" as a property
         ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
         # strings
-        ops.StringFind: _gen_string_find(sa.func.locate),
+        ops.StringFind: _string_find,
         ops.FindInSet: (
             lambda t, op: (
                 sa.func.find_in_set(

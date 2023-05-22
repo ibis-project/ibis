@@ -530,13 +530,19 @@ def regex_replace(op):
 
 @translate.register(ops.StringFind)
 def string_find(op):
+    if op.end is not None:
+        raise NotImplementedError("`end` not yet implemented")
+
     arg = translate(op.arg)
     pattern = translate(op.substr)
 
-    if op.start is not None:
-        raise NotImplementedError("`start` not yet implemented")
-
-    if op.end is not None:
-        raise NotImplementedError("`end` not yet implemented")
+    if (op_start := op.start) is not None:
+        sub_string = ops.Substring(op.arg, op_start)
+        arg = translate(sub_string)
+        pos = df.functions.strpos(arg, pattern)
+        start = translate(op_start)
+        return df.functions.coalesce(
+            df.functions.nullif(pos + start, start), df.lit(0)
+        ) - df.lit(1)
 
     return df.functions.strpos(arg, pattern) - df.lit(1)
