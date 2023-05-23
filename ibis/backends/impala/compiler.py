@@ -29,6 +29,11 @@ class ImpalaExprTranslator(ExprTranslator):
         ops.FirstValue,
         ops.LastValue,
     )
+    _unsupported_reductions = (
+        ops.ApproxMedian,
+        ops.ApproxCountDistinct,
+        ops.GroupConcat,
+    )
 
 
 rewrites = ImpalaExprTranslator.rewrites

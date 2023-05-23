@@ -76,6 +76,8 @@ class BigQueryExprTranslator(sql_compiler.ExprTranslator):
         ops.Lead,
     )
 
+    _unsupported_reductions = (ops.ApproxMedian, ops.ApproxCountDistinct)
+
     def name(self, translated: str, name: str):
         # replace invalid characters in automatically generated names
         if self._valid_name_pattern.match(name) is None:

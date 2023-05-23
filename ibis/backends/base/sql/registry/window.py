@@ -122,11 +122,7 @@ def format_window_frame(translator, func, frame):
 
 
 def window(translator, op):
-    _unsupported_reductions = (
-        ops.ApproxMedian,
-        ops.GroupConcat,
-        ops.ApproxCountDistinct,
-    )
+    _unsupported_reductions = translator._unsupported_reductions
 
     func = op.func.__window_op__
 

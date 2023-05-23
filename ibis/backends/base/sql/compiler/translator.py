@@ -177,6 +177,11 @@ class ExprTranslator:
         ops.CumeDist,
         ops.NTile,
     )
+    _unsupported_reductions = (
+        ops.ApproxMedian,
+        ops.GroupConcat,
+        ops.ApproxCountDistinct,
+    )
 
     def __init__(self, node, context, named=False, permit_subquery=False):
         self.node = node
