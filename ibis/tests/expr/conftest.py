@@ -107,3 +107,14 @@ def pytest_pyfunc_call(pyfuncitem):
             len(markers) == 1
         ), f"More than one xfail_unsupported marker found on test {pyfuncitem}"
         pytest.xfail(reason=repr(e))
+
+
+@pytest.fixture
+def graphviz():
+    """A fixture to ensure the graphviz library and CLI are installed"""
+    graphviz = pytest.importorskip("graphviz")
+    try:
+        graphviz.version()
+    except graphviz.ExecutableNotFound:
+        pytest.skip("graphviz CLI not installed")
+    return graphviz
