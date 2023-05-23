@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import contextlib
 from dataclasses import dataclass
 from typing import Dict, List, NamedTuple, Tuple
 
-import numpy as np
-import pandas.testing as tm
-import pyarrow as pa
 import pytest
 
 import ibis.expr.datatypes as dt
@@ -14,18 +10,6 @@ import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Annotable
-
-has_pandas = False
-with contextlib.suppress(ImportError):
-    import pandas as pd
-
-    has_pandas = True
-
-has_dask = False
-with contextlib.suppress(ImportError):
-    import dask.dataframe as dd  # noqa: F401
-
-    has_dask = True
 
 
 def test_whole_schema():
@@ -373,96 +357,3 @@ def test_schema_set_operations():
     assert c < d
     assert d >= c
     assert d > c
-
-
-def test_schema_infer_pyarrow_table():
-    table = pa.Table.from_arrays(
-        [
-            pa.array([1, 2, 3]),
-            pa.array(['a', 'b', 'c']),
-            pa.array([True, False, True]),
-        ],
-        ['a', 'b', 'c'],
-    )
-    s = sch.infer(table)
-    assert s == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
-
-
-def test_schema_from_to_pyarrow_schema():
-    pyarrow_schema = pa.schema(
-        [
-            pa.field('a', pa.int64()),
-            pa.field('b', pa.string()),
-            pa.field('c', pa.bool_()),
-        ]
-    )
-    ibis_schema = sch.schema(pyarrow_schema)
-    restored_schema = ibis_schema.to_pyarrow()
-
-    assert ibis_schema == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
-    assert restored_schema == pyarrow_schema
-
-
-def test_schema_from_to_numpy_dtypes():
-    numpy_dtypes = [
-        ('a', np.dtype('int64')),
-        ('b', np.dtype('str')),
-        ('c', np.dtype('bool')),
-    ]
-    ibis_schema = sch.Schema.from_numpy(numpy_dtypes)
-    assert ibis_schema == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
-
-    restored_dtypes = ibis_schema.to_numpy()
-    expected_dtypes = [
-        ('a', np.dtype('int64')),
-        ('b', np.dtype('object')),
-        ('c', np.dtype('bool')),
-    ]
-    assert restored_dtypes == expected_dtypes
-
-
-@pytest.mark.parametrize(
-    ('from_method', 'to_method'),
-    [
-        pytest.param(
-            'from_dask',
-            'to_dask',
-            marks=pytest.mark.skipif(not has_dask, reason='dask not installed'),
-        ),
-        pytest.param(
-            'from_pandas',
-            'to_pandas',
-            marks=pytest.mark.skipif(not has_pandas, reason='pandas not installed'),
-        ),
-    ],
-)
-def test_schema_from_to_pandas_dask_dtypes(from_method, to_method):
-    pandas_schema = pd.Series(
-        [
-            ('a', np.dtype('int64')),
-            ('b', np.dtype('str')),
-            ('c', pd.CategoricalDtype(['a', 'b', 'c'])),
-            ('d', pd.DatetimeTZDtype(tz='US/Eastern', unit='ns')),
-        ]
-    )
-    ibis_schema = getattr(sch.Schema, from_method)(pandas_schema)
-    assert ibis_schema == sch.schema(pandas_schema)
-
-    expected = sch.Schema(
-        {
-            'a': dt.int64,
-            'b': dt.string,
-            'c': dt.string,
-            'd': dt.Timestamp(timezone='US/Eastern'),
-        }
-    )
-    assert ibis_schema == expected
-
-    restored_dtypes = getattr(ibis_schema, to_method)()
-    expected_dtypes = [
-        ('a', np.dtype('int64')),
-        ('b', np.dtype('object')),
-        ('c', np.dtype('object')),
-        ('d', pd.DatetimeTZDtype(tz='US/Eastern', unit='ns')),
-    ]
-    assert restored_dtypes == expected_dtypes
