@@ -35,10 +35,13 @@ def check_dependency_rules(dependency_graph, allowed_imports, disallowed_imports
 
 
 disallowed_imports = {
-    "ibis.expr.datatypes.*": ["numpy", "pandas"],
+    "ibis.expr.*": ["numpy", "pandas", "pyarrow"],
 }
 
-allowed_imports = {"ibis.expr.datatypes.tests.test_value": ["numpy", "pandas"]}
+allowed_imports = {
+    "ibis.expr.*.test_*_pandas.py": ["numpy", "pandas"],
+    "ibis.expr.*.test_*_pyarrow.py": ["pyarrow"],
+}
 
 
 if __name__ == '__main__':
