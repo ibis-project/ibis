@@ -179,6 +179,8 @@ class BasePandasBackend(BaseBackend):
 
     @classmethod
     def _supports_conversion(cls, obj: Any) -> bool:
+        if isinstance(obj, ir.Table):
+            return isinstance(obj.op(), ops.InMemoryTable)
         return True
 
     @staticmethod
@@ -187,6 +189,10 @@ class BasePandasBackend(BaseBackend):
 
     @classmethod
     def _convert_object(cls, obj: Any) -> Any:
+        if isinstance(obj, ir.Table):
+            # Support memtables
+            assert isinstance(obj.op(), ops.InMemoryTable)
+            return obj.op().data.to_frame()
         return cls.backend_table_type(obj)
 
     @classmethod
