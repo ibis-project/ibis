@@ -279,7 +279,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='any',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -295,7 +295,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='notany',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -316,7 +316,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='any_negate',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -337,7 +337,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='all',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -353,7 +353,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='notall',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -374,7 +374,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='all_negate',
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "datafusion"],
+                    ["datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
