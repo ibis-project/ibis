@@ -95,11 +95,7 @@ def test_order_by():
     assert key(expr.op()) in graph.source
 
 
-@pytest.mark.skipif(
-    bool(os.environ.get('APPVEYOR', None)),
-    reason='Not sure what the prerequisites for running this on Windows are',
-)
-def test_optional_graphviz_repr(monkeypatch):
+def test_optional_graphviz_repr(monkeypatch, graphviz):
     monkeypatch.setattr(ibis.options, 'graphviz_repr', True)
 
     t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
@@ -149,7 +145,7 @@ def test_filter():
     assert "predicates[1]" in graph.source
 
 
-def test_html_escape(monkeypatch):
+def test_html_escape(monkeypatch, graphviz):
     monkeypatch.setattr(ibis.options, 'graphviz_repr', True)
     # Check that we correctly escape HTML <> characters in the graphviz
     # representation. If an error is thrown, _repr_png_ returns None.
