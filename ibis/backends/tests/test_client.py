@@ -750,12 +750,10 @@ def test_agg_memory_table(con):
     [
         param(
             ibis.memtable([("a", 1.0)], columns=["a", "b"]),
-            marks=pytest.mark.notimpl(["pandas"]),
             id="python",
         ),
         param(
             ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
-            marks=pytest.mark.notimpl(["pandas"]),
             id="pandas-memtable",
         ),
         param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
