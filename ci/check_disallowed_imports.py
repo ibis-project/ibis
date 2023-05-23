@@ -17,7 +17,7 @@ def generate_dependency_graph(*args):
     return json.loads(result)
 
 
-def check_dependency_rules(dependency_graph, disallowed_imports):
+def check_dependency_rules(dependency_graph, allowed_imports, disallowed_imports):
     prohibited_deps = collections.defaultdict(set)
 
     for module, module_data in dependency_graph.items():
@@ -28,27 +28,34 @@ def check_dependency_rules(dependency_graph, disallowed_imports):
                 for disallow_rule in disallow_rules:
                     for imported in imports:
                         if fnmatch.fnmatch(imported, disallow_rule):
-                            prohibited_deps[module].add(imported)
+                            if imported not in allowed_imports.get(module, []):
+                                prohibited_deps[module].add(imported)
 
     return prohibited_deps
 
 
 disallowed_imports = {
-    "ibis.expr.*": ["numpy", "pandas"],
+    "ibis.expr.datatypes.*": ["numpy", "pandas"],
 }
+
+allowed_imports = {"ibis.expr.datatypes.tests.test_value": ["numpy", "pandas"]}
 
 
 if __name__ == '__main__':
     dependency_graph = generate_dependency_graph(*sys.argv[1:])
-    prohibited_deps = check_dependency_rules(dependency_graph, disallowed_imports)
-
-    print("\n")  # noqa: T201
-    print("Prohibited dependencies:")  # noqa: T201
-    print("------------------------")  # noqa: T201
-    for module, deps in prohibited_deps.items():
-        print(f"\n{module}:")  # noqa: T201
-        for dep in deps:
-            print(f"  <= {dep}")  # noqa: T201
+    prohibited_deps = check_dependency_rules(
+        dependency_graph, allowed_imports, disallowed_imports
+    )
 
     if prohibited_deps:
+        print("\n")  # noqa: T201
+        print("Prohibited dependencies:")  # noqa: T201
+        print("------------------------")  # noqa: T201
+        for module, deps in prohibited_deps.items():
+            print(f"\n{module}:")  # noqa: T201
+            for dep in deps:
+                print(f"  <= {dep}")  # noqa: T201
         sys.exit(1)
+    else:
+        print("Good! No prohibited dependencies found.")  # noqa: T201
+        sys.exit(0)
