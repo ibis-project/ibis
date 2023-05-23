@@ -646,6 +646,8 @@ _reductions = {
     ops.Median: 'median',
     ops.First: 'first',
     ops.Last: 'last',
+    ops.All: 'all',
+    ops.Any: 'any',
 }
 
 for reduction in _reductions.keys():
@@ -1050,3 +1052,21 @@ def execute_union(op, **kwargs):
 @translate.register(ops.Hash)
 def execute_hash(op, **kwargs):
     return translate(op.arg).hash()
+
+
+@translate.register(ops.NotAll)
+def execute_not_all(op, **kwargs):
+    arg = op.arg
+    if (op_where := op.where) is not None:
+        arg = ops.Where(op_where, arg, None)
+
+    return translate(arg).all().is_not()
+
+
+@translate.register(ops.NotAny)
+def execute_not_any(op, **kwargs):
+    arg = op.arg
+    if (op_where := op.where) is not None:
+        arg = ops.Where(op_where, arg, None)
+
+    return translate(arg).any().is_not()
