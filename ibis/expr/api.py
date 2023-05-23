@@ -9,8 +9,6 @@ import operator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, NamedTuple, Sequence, TypeVar
 
-import numpy as np
-
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -1026,7 +1024,7 @@ class RowsWithMaxLookback(NamedTuple):
 
 
 def rows_with_max_lookback(
-    rows: int | np.integer, max_lookback: ir.IntervalValue
+    rows: int, max_lookback: ir.IntervalValue
 ) -> RowsWithMaxLookback:
     """Create a bound preceding value for use with trailing window functions.
 
