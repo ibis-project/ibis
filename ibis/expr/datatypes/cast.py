@@ -8,6 +8,7 @@ from public import public
 
 import ibis.expr.datatypes.core as dt
 from ibis.common.exceptions import IbisTypeError
+from ibis.common.temporal import normalize_datetime
 
 castable = Dispatcher('castable')
 
@@ -145,19 +146,14 @@ def can_cast_integer_to_interval(
     return True
 
 
-@castable.register(dt.String, (dt.Date, dt.Time, dt.Timestamp))
+@castable.register(dt.String, dt.Temporal)
 def can_cast_string_to_temporal(
-    source: dt.String,
-    target: dt.Date | dt.Time | dt.Timestamp,
-    value: str | None = None,
-    **kwargs,
+    source: dt.String, target: dt.Temporal, value: str | None = None, **kwargs
 ) -> bool:
-    import pandas as pd
-
     if value is None:
         return False
     try:
-        pd.Timestamp(value)
+        normalize_datetime(value)
     except ValueError:
         return False
     else:
