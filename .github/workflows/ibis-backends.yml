@@ -298,6 +298,9 @@ jobs:
         if: matrix.backend.additional_deps != null
         run: poetry run pip install "${{ join(matrix.backend.additional_deps, ' ') }}"
 
+      - name: show installed deps
+        run: poetry run pip list
+
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
