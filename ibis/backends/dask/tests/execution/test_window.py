@@ -539,7 +539,9 @@ def test_window_grouping_key_has_scope(t, df):
     result = expr.execute(params={param: "a"})
     expected = df.groupby(df.dup_strings + "a").plain_int64.transform("mean").compute()
 
-    tm.assert_series_equal(result, expected, check_names=False)
+    tm.assert_series_equal(
+        result, expected.sort_index().reset_index(drop=True), check_names=False
+    )
 
 
 @pytest.mark.xfail(
