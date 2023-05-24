@@ -10,7 +10,6 @@ from ibis import util
 from ibis.common.annotations import attribute
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 from ibis.expr.operations.core import Binary, Unary, Value
-from ibis.expr.operations.generic import Cast
 from ibis.expr.operations.logical import Between
 
 
@@ -295,23 +294,14 @@ class ToIntervalUnit(Value):
 class IntervalBinary(Binary):
     @attribute.default
     def output_dtype(self):
-        integer_args = [
-            Cast(arg, to=arg.output_dtype.value_type)
-            if arg.output_dtype.is_interval()
-            else arg
-            for arg in (self.left, self.right)
-        ]
-
         interval_unit_args = [
             arg.output_dtype.unit
             for arg in (self.left, self.right)
             if arg.output_dtype.is_interval()
         ]
-
-        value_dtype = rlz._promote_integral_binop(integer_args, self.op)
         unit = rlz._promote_interval_resolution(interval_unit_args)
 
-        return self.left.output_dtype.copy(value_type=value_dtype, unit=unit)
+        return self.left.output_dtype.copy(unit=unit)
 
 
 @public
@@ -351,7 +341,7 @@ class IntervalFromInteger(Value):
 
     @attribute.default
     def output_dtype(self):
-        return dt.Interval(self.unit, value_type=self.arg.output_dtype)
+        return dt.Interval(self.unit)
 
     @property
     def resolution(self):

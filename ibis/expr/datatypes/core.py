@@ -703,18 +703,8 @@ class Interval(Parametric):
     unit: IntervalUnit = 's'
     """The time unit of the interval."""
 
-    value_type: Integer = Int32()
-    """The underlying type of the stored values."""
-
     scalar = "IntervalScalar"
     column = "IntervalColumn"
-
-    # TODO(kszucs): assert that the nullability if the value_type is equal
-    # to the interval's nullability
-
-    @property
-    def bounds(self):
-        return self.value_type.bounds
 
     @property
     def resolution(self):

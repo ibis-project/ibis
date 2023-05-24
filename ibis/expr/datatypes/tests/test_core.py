@@ -98,7 +98,6 @@ class FooStruct:
     ob: dt.Timestamp('UTC', 6)
     p: dt.interval
     pa: dt.Interval('s')
-    pb: dt.Interval('s', dt.int16)
     q: dt.decimal
     qa: dt.Decimal(12, 2)
     r: dt.Array(dt.int16)
@@ -125,7 +124,6 @@ class BarStruct:
     ob: dt.Timestamp['UTC', 6]  # noqa: F821
     p: dt.Interval
     pa: dt.Interval['s']
-    pb: dt.Interval['s', dt.Int16]
     q: dt.Decimal
     qa: dt.Decimal[12, 2]
     r: dt.Array[dt.Int16]
@@ -153,7 +151,6 @@ baz_struct = dt.Struct(
         'ob': dt.Timestamp('UTC', 6),
         'p': dt.interval,
         'pa': dt.Interval('s'),
-        'pb': dt.Interval('s', dt.int16),
         'q': dt.decimal,
         'qa': dt.Decimal(12, 2),
         'r': dt.Array(dt.int16),
@@ -288,7 +285,6 @@ class FooDataClass:
         (dt.Timestamp['UTC'], dt.Timestamp(timezone='UTC')),
         (dt.Timestamp['UTC', 6], dt.Timestamp(timezone='UTC', scale=6)),
         (dt.Interval['s'], dt.Interval('s')),
-        (dt.Interval['s', dt.Int16], dt.Interval('s', dt.Int16())),
         (dt.Decimal[12, 2], dt.Decimal(12, 2)),
         (
             dt.Struct['a' : dt.Int16, 'b' : dt.Int32],

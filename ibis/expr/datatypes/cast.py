@@ -129,7 +129,7 @@ def can_cast_decimals(source: dt.Decimal, target: dt.Decimal, **kwargs) -> bool:
 
 @castable.register(dt.Interval, dt.Interval)
 def can_cast_intervals(source: dt.Interval, target: dt.Interval, **kwargs) -> bool:
-    return source.unit == target.unit and castable(source.value_type, target.value_type)
+    return source.unit == target.unit
 
 
 @castable.register(dt.Integer, dt.Boolean)
@@ -143,7 +143,7 @@ def can_cast_integer_to_boolean(
 def can_cast_integer_to_interval(
     source: dt.Integer, target: dt.Interval, **kwargs
 ) -> bool:
-    return castable(source, target.value_type)
+    return True
 
 
 @castable.register(dt.String, (dt.Date, dt.Time, dt.Timestamp))

@@ -142,16 +142,12 @@ def parse(
         .combine_dict(dt.Timestamp)
     )
 
-    ty = parsy.forward_declaration()
-
-    angle_type = LANGLE.then(ty).skip(RANGLE)
-
     interval = spaceless_string("interval").then(
-        parsy.seq(
-            value_type=angle_type.optional(dt.int32), unit=parened_string.optional("s")
-        ).combine_dict(dt.Interval)
+        parsy.seq(unit=parened_string.optional("s")).combine_dict(dt.Interval)
     )
 
+    ty = parsy.forward_declaration()
+    angle_type = LANGLE.then(ty).skip(RANGLE)
     array = spaceless_string("array").then(angle_type).map(dt.Array)
 
     map = (
