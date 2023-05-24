@@ -164,4 +164,4 @@ extra:
       icon: :material-cancel:{ .cancel }
       description: Unlikely to ever be supported or no upstream support.
 
-copyright: "Copyright &copy; 2014-2022"
+copyright: "Copyright &copy; Ibis Maintainers"

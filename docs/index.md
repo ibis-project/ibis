@@ -53,4 +53,4 @@ ORDER BY t1.year DESC
 - **Performant**: Execute queries as fast as the database engine itself.
 - **Interactive**: Explore data in a notebook or REPL.
 - **Extensible**: Add new operations, optimizations, and custom APIs.
-- **Free and open-source**: licensed under Apache 2.0, [available on Github](https://github.com/ibis-project/ibis/blob/master/README.md)
+- **Free and open-source**: licensed under Apache 2.0, [available on Github](https://github.com/ibis-project/ibis/blob/master/README.md).
