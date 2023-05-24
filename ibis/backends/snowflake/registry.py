@@ -14,6 +14,8 @@ from ibis import util
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     geospatial_functions,
+    get_col,
+    get_sqla_table,
     reduction,
     unary,
 )
@@ -64,6 +66,26 @@ def _literal(t, op):
     elif dtype.is_uuid():
         return sa.literal(str(value))
     return _postgres_literal(t, op)
+
+
+def _table_column(t, op):
+    ctx = t.context
+    table = op.table
+
+    sa_table = get_sqla_table(ctx, table)
+    out_expr = get_col(sa_table, op)
+
+    if (dtype := op.output_dtype).is_timestamp() and (
+        timezone := dtype.timezone
+    ) is not None:
+        out_expr = sa.func.convert_timezone(timezone, out_expr).label(op.name)
+
+    # If the column does not originate from the table set in the current SELECT
+    # context, we should format as a subquery
+    if t.permit_subquery and ctx.is_foreign_expr(table):
+        return sa.select(out_expr)
+
+    return out_expr
 
 
 def _string_find(t, op):
@@ -407,6 +429,7 @@ operation_registry.update(
         ops.Hash: unary(sa.func.hash),
         ops.ApproxMedian: reduction(lambda x: sa.func.approx_percentile(x, 0.5)),
         ops.Median: reduction(sa.func.median),
+        ops.TableColumn: _table_column,
     }
 )
 
