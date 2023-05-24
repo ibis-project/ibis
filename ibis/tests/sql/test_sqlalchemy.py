@@ -64,12 +64,17 @@ def test_sqla_schema_conversion():
     typespec = [
         # name, type, nullable
         ('smallint', sat.SMALLINT, False, dt.int16),
+        ('smallint_', sat.SmallInteger, False, dt.int16),
         ('int', sat.INTEGER, True, dt.int32),
         ('integer', sat.INTEGER, True, dt.int32),
+        ('integer_', sat.Integer, True, dt.int32),
         ('bigint', sat.BIGINT, False, dt.int64),
+        ('bigint_', sat.BigInteger, False, dt.int64),
         ('real', sat.REAL, True, dt.float32),
         ('bool', sat.BOOLEAN, True, dt.bool),
+        ('bool_', sat.Boolean, True, dt.bool),
         ('timestamp', sat.DATETIME, True, dt.timestamp),
+        ('timestamp_', sat.DateTime, True, dt.timestamp),
     ]
 
     sqla_types = []
