@@ -194,7 +194,7 @@ class Backend(BaseAlchemyBackend):
         return t
 
     def _clean_up_tmp_table(self, name: str) -> None:
-        tmptable = self._get_sqla_table(name)
+        tmptable = self._get_sqla_table(name, autoload=False)
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
             #
