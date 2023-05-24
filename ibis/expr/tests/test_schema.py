@@ -406,7 +406,7 @@ def test_schema_from_to_numpy_dtypes():
         ('b', np.dtype('str')),
         ('c', np.dtype('bool')),
     ]
-    ibis_schema = sch.schema(numpy_dtypes)
+    ibis_schema = sch.Schema.from_numpy(numpy_dtypes)
     assert ibis_schema == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
 
     restored_dtypes = ibis_schema.to_numpy()
@@ -419,19 +419,21 @@ def test_schema_from_to_numpy_dtypes():
 
 
 @pytest.mark.parametrize(
-    'method',
+    ('from_method', 'to_method'),
     [
         pytest.param(
+            'from_dask',
             'to_dask',
             marks=pytest.mark.skipif(not has_dask, reason='dask not installed'),
         ),
         pytest.param(
+            'from_pandas',
             'to_pandas',
             marks=pytest.mark.skipif(not has_pandas, reason='pandas not installed'),
         ),
     ],
 )
-def test_schema_from_to_pandas_dask_dtypes(method):
+def test_schema_from_to_pandas_dask_dtypes(from_method, to_method):
     pandas_schema = pd.Series(
         [
             ('a', np.dtype('int64')),
@@ -440,7 +442,9 @@ def test_schema_from_to_pandas_dask_dtypes(method):
             ('d', pd.DatetimeTZDtype(tz='US/Eastern', unit='ns')),
         ]
     )
-    ibis_schema = sch.schema(pandas_schema)
+    ibis_schema = getattr(sch.Schema, from_method)(pandas_schema)
+    assert ibis_schema == sch.schema(pandas_schema)
+
     expected = sch.Schema(
         {
             'a': dt.int64,
@@ -451,7 +455,7 @@ def test_schema_from_to_pandas_dask_dtypes(method):
     )
     assert ibis_schema == expected
 
-    restored_dtypes = getattr(ibis_schema, method)()
+    restored_dtypes = getattr(ibis_schema, to_method)()
     expected_dtypes = [
         ('a', np.dtype('int64')),
         ('b', np.dtype('object')),

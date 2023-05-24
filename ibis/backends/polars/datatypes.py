@@ -113,8 +113,6 @@ def from_polars_decimal(typ: pl.Decimal):
     return dt.Decimal(precision=typ.precision, scale=typ.scale)
 
 
-# TODO(kszucs): remove this overload or move to ibis.expr.schema
-@sch.infer.register(pl.LazyFrame)
-def from_polars_schema(df: pl.LazyFrame) -> sch.Schema:
-    fields = [(name, dtype_from_polars(typ)) for name, typ in df.schema.items()]
+def schema_from_polars(schema: pl.Schema) -> sch.Schema:
+    fields = [(name, dtype_from_polars(typ)) for name, typ in schema.items()]
     return sch.Schema.from_tuples(fields)

@@ -27,8 +27,6 @@ def test_validate_type():
             'map<int64, array<map<string, int8>>>',
             dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8))),
         ),
-        ([dt.uint8], dt.Array(dt.uint8)),
-        ([dt.float32, dt.float64], dt.Array(dt.float64)),
     ]
     + [
         (f"{cls.__name__.lower()}{suffix}", expected)

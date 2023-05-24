@@ -212,6 +212,10 @@ def infer_shapely_multipolygon(value) -> dt.MultiPolygon:
     return dt.multipolygon
 
 
+# lock the dispatcher to prevent adding new implementations
+del infer.register
+
+
 @public
 class _WellKnownText(NamedTuple):
     text: str

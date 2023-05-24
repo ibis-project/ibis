@@ -14,6 +14,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Database
 from ibis.backends.polars.compiler import translate
+from ibis.backends.polars.datatypes import schema_from_polars
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
@@ -56,7 +57,8 @@ class Backend(BaseBackend):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str, _schema: sch.Schema = None) -> ir.Table:
-        schema = sch.infer(self._tables[name])
+        table = self._tables[name]
+        schema = schema_from_polars(table.schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def register(

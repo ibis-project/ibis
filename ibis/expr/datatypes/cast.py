@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import collections
 import functools
-from typing import Any, Iterator
+from typing import Iterator
 
 from multipledispatch import Dispatcher
 from public import public
@@ -199,13 +198,6 @@ def can_cast_geospatial(source, target, **kwargs):
 @castable.register(dt.INET, dt.INET)
 def can_cast_special_string(source, target, **kwargs):
     return True
-
-
-@dt.dtype.register((list, collections.abc.Set))
-def from_list(values: list[Any]) -> dt.Array:
-    if not values:
-        return dt.Array(dt.null)
-    return dt.Array(highest_precedence(map(dt.dtype, values)))
 
 
 public(castable=castable)

@@ -227,14 +227,18 @@ def test_infer_numpy_scalar(value, expected_dtype):
     ],
 )
 def test_from_numpy_dtype(numpy_dtype, ibis_dtype):
-    assert dt.dtype(np.dtype(numpy_dtype)) == ibis_dtype
+    numpy_dtype = np.dtype(numpy_dtype)
+    assert dt.DataType.from_numpy(numpy_dtype) == ibis_dtype
+    assert dt.dtype(numpy_dtype) == ibis_dtype
 
 
 def test_from_numpy_timedelta():
     if vparse(pytest.importorskip("pyarrow").__version__) < vparse("9"):
         pytest.skip("pyarrow < 9 globally mutates the timedelta64 numpy dtype")
 
-    assert dt.dtype(np.dtype(np.timedelta64)) == dt.interval
+    numpy_dtype = np.dtype(np.timedelta64)
+    assert dt.DataType.from_numpy(numpy_dtype) == dt.interval
+    assert dt.dtype(numpy_dtype) == dt.interval
 
 
 @pytest.mark.parametrize(

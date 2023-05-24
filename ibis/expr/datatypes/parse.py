@@ -7,7 +7,6 @@ import parsy
 from public import public
 
 import ibis.expr.datatypes.core as dt
-from ibis.common.exceptions import IbisTypeError
 from ibis.common.parsing import (
     COLON,
     COMMA,
@@ -186,11 +185,3 @@ def parse(
     )
 
     return ty.parse(text)
-
-
-@dt.dtype.register(str)
-def from_string(value: str) -> dt.DataType:
-    try:
-        return parse(value)
-    except SyntaxError:
-        raise IbisTypeError(f'{value!r} cannot be parsed as a datatype')

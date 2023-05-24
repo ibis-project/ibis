@@ -974,13 +974,6 @@ def test_time_timestamp_invalid_compare(op, left, right):
     assert result.type().equals(dt.boolean)
 
 
-def test_scalar_parameter_set():
-    value = ibis.param({dt.int64})
-
-    assert isinstance(value.op(), ops.ScalarParameter)
-    assert value.type().equals(dt.Array(dt.int64))
-
-
 @pytest.mark.parametrize(
     ('left', 'right', 'expected'),
     [

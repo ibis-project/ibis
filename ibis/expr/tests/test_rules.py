@@ -28,7 +28,6 @@ similar_table = ibis.table(
         ('array<string>', dt.Array(dt.string)),
         (int, dt.int64),
         (float, dt.float64),
-        ([float], dt.Array(dt.float64)),
     ],
 )
 def test_valid_datatype(value, expected):

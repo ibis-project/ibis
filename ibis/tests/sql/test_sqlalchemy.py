@@ -35,9 +35,8 @@ L = sa.literal
 
 def to_sql(expr, *args, **kwargs) -> str:
     compiled = AlchemyCompiler.to_sql(expr, *args, **kwargs)
-    return sg.parse_one(
-        str(compiled.compile(compile_kwargs=dict(literal_binds=True)))
-    ).sql(pretty=True, dialect="duckdb")
+    sqlstring = str(compiled.compile(compile_kwargs=dict(literal_binds=True)))
+    return sg.parse_one(sqlstring).sql(pretty=True, dialect="duckdb")
 
 
 @pytest.fixture(scope="module")
