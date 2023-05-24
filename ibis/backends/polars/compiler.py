@@ -14,8 +14,7 @@ from packaging.version import parse as vparse
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
-from ibis.backends.polars.datatypes import dtype_to_polars
+from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
 
 
 def _assert_literal(op):
@@ -45,9 +44,10 @@ def table(op):
 @translate.register(ops.InMemoryTable)
 def pandas_in_memory_table(op):
     lf = pl.from_pandas(op.data.to_frame()).lazy()
+    schema = schema_from_polars(lf.schema)
 
     columns = []
-    for name, current_dtype in sch.infer(lf).items():
+    for name, current_dtype in schema.items():
         desired_dtype = op.schema[name]
         if current_dtype != desired_dtype:
             typ = dtype_to_polars(desired_dtype)

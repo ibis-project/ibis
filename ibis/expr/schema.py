@@ -153,6 +153,34 @@ class Schema(Concrete, Coercible, MapSet):
         # construct the schema
         return cls(dict(zip(names, types)))
 
+    @classmethod
+    def from_numpy(self, numpy_schema):
+        """Return the equivalent ibis schema."""
+        from ibis.formats.numpy import schema_from_numpy
+
+        return schema_from_numpy(numpy_schema)
+
+    @classmethod
+    def from_pandas(self, pandas_schema):
+        """Return the equivalent ibis schema."""
+        from ibis.formats.pandas import schema_from_pandas
+
+        return schema_from_pandas(pandas_schema)
+
+    @classmethod
+    def from_pyarrow(self, pyarrow_schema):
+        """Return the equivalent ibis schema."""
+        from ibis.formats.pyarrow import schema_from_pyarrow
+
+        return schema_from_pyarrow(pyarrow_schema)
+
+    @classmethod
+    def from_dask(self, dask_schema):
+        """Return the equivalent ibis schema."""
+        from ibis.formats.dask import schema_from_dask
+
+        return schema_from_dask(dask_schema)
+
     def to_numpy(self):
         """Return the equivalent numpy dtypes."""
         from ibis.formats.numpy import schema_to_numpy
@@ -370,3 +398,8 @@ def infer_pyarrow_table(table, schema=None):
 
     schema = schema if schema is not None else table.schema
     return schema_from_pyarrow(schema)
+
+
+# lock the dispatchers to avoid adding new implementations
+del infer.register
+del schema.register
