@@ -1,18 +1,11 @@
 import pytest
-from multipledispatch.conflict import ambiguities
 from pytest import param
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.datatypes import (
-    ibis_type_to_bigquery_type,
+    dtype_to_bigquery,
     spread_type,
 )
-
-
-def test_no_ambiguities():
-    ambs = ambiguities(ibis_type_to_bigquery_type.funcs)
-    assert not ambs
 
 
 @pytest.mark.parametrize(
@@ -48,12 +41,14 @@ def test_no_ambiguities():
             dt.Timestamp(timezone="US/Eastern"),
             "TIMESTAMP",
             marks=pytest.mark.xfail(
-                raises=com.UnsupportedOperationError, reason="Not supported in BigQuery"
+                raises=TypeError, reason="Not supported in BigQuery"
             ),
             id="timestamp_with_other_tz",
         ),
         param(
-            "array<struct<a: string>>", "ARRAY<STRUCT<a STRING>>", id="array<struct>"
+            dt.Array(dt.Struct({'a': dt.string})),
+            "ARRAY<STRUCT<a STRING>>",
+            id="array<struct>",
         ),
         param(dt.Decimal(38, 9), "NUMERIC", id="decimal-numeric"),
         param(dt.Decimal(76, 38), "BIGNUMERIC", id="decimal-bignumeric"),
@@ -64,7 +59,7 @@ def test_no_ambiguities():
             dt.GeoSpatial(geotype="geography"),
             "GEOGRAPHY",
             marks=pytest.mark.xfail(
-                raises=com.UnsupportedOperationError,
+                raises=TypeError,
                 reason="Should use the WGS84 reference ellipsoid.",
             ),
             id="geography",
@@ -72,13 +67,13 @@ def test_no_ambiguities():
     ],
 )
 def test_simple(datatype, expected):
-    assert ibis_type_to_bigquery_type(datatype) == expected
+    assert dtype_to_bigquery(datatype) == expected
 
 
 @pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(8, 3)])
 def test_simple_failure_mode(datatype):
     with pytest.raises(TypeError):
-        ibis_type_to_bigquery_type(datatype)
+        dtype_to_bigquery(datatype)
 
 
 @pytest.mark.parametrize(

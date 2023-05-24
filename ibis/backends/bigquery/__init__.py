@@ -15,19 +15,18 @@ from pydata_google_auth import cache
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
-    bigquery_field_to_ibis_dtype,
     bigquery_param,
-    ibis_schema_to_bigquery_schema,
     parse_project_and_dataset,
     rename_partitioned_column,
+    schema_from_bigquery_table,
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
+from ibis.backends.bigquery.datatypes import schema_from_bigquery, schema_to_bigquery
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
@@ -218,16 +217,12 @@ class Backend(BaseSQLBackend):
     def _get_schema_using_query(self, query):
         job_config = bq.QueryJobConfig(dry_run=True, use_query_cache=False)
         job = self.client.query(query, job_config=job_config)
-        fields = self._adapt_types(job.schema)
-        return sch.Schema(fields)
+        return schema_from_bigquery(job.schema)
 
     def _get_table_schema(self, qualified_name):
         dataset, table = qualified_name.rsplit(".", 1)
         assert dataset is not None, "dataset is None"
         return self.get_schema(table, database=dataset)
-
-    def _adapt_types(self, descr):
-        return {col.name: bigquery_field_to_ibis_dtype(col) for col in descr}
 
     def _execute(self, stmt, results=True, query_parameters=None):
         job_config = bq.job.QueryJobConfig()
@@ -383,8 +378,8 @@ class Backend(BaseSQLBackend):
     def get_schema(self, name, database=None):
         table_id = self._fully_qualified_name(name, database)
         table_ref = bq.TableReference.from_string(table_id)
-        bq_table = self.client.get_table(table_ref)
-        return sch.infer(bq_table)
+        table = self.client.get_table(table_ref)
+        return schema_from_bigquery_table(table)
 
     def list_databases(self, like=None):
         results = [
@@ -428,8 +423,7 @@ class Backend(BaseSQLBackend):
             )
         if schema is not None:
             table_id = self._fully_qualified_name(name, database)
-            bigquery_schema = ibis_schema_to_bigquery_schema(schema)
-            table = bq.Table(table_id, schema=bigquery_schema)
+            table = bq.Table(table_id, schema=schema_to_bigquery(schema))
             self.client.create_table(table)
         else:
             project_id, dataset = self._parse_project_and_dataset(database)

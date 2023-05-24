@@ -10,82 +10,24 @@ import pandas as pd
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.schema as sch
-from ibis.backends.bigquery.datatypes import ibis_type_to_bigquery_type
+from ibis.backends.bigquery.datatypes import dtype_to_bigquery, schema_from_bigquery
 
 NATIVE_PARTITION_COL = "_PARTITIONTIME"
 
 
-_DTYPE_TO_IBIS_TYPE = {
-    "INT64": dt.int64,
-    "FLOAT64": dt.double,
-    "BOOL": dt.boolean,
-    "STRING": dt.string,
-    "DATE": dt.date,
-    "DATETIME": dt.Timestamp(timezone=None),
-    "TIME": dt.time,
-    "TIMESTAMP": dt.Timestamp(timezone="UTC"),
-    "BYTES": dt.binary,
-    "NUMERIC": dt.Decimal(38, 9),
-    "GEOGRAPHY": dt.GeoSpatial(geotype="geography", srid=4326),
-}
+def schema_from_bigquery_table(table):
+    schema = schema_from_bigquery(table.schema)
 
-
-_LEGACY_TO_STANDARD = {
-    "INTEGER": "INT64",
-    "FLOAT": "FLOAT64",
-    "BOOLEAN": "BOOL",
-}
-
-
-@dt.dtype.register(bq.schema.SchemaField)
-def bigquery_field_to_ibis_dtype(field):
-    """Convert BigQuery `field` to an ibis type."""
-    typ = field.field_type
-    if typ == "RECORD":
-        fields = field.fields
-        assert fields, "RECORD fields are empty"
-        names = [el.name for el in fields]
-        ibis_types = list(map(dt.dtype, fields))
-        ibis_type = dt.Struct(dict(zip(names, ibis_types)))
-    else:
-        ibis_type = _LEGACY_TO_STANDARD.get(typ, typ)
-        ibis_type = _DTYPE_TO_IBIS_TYPE.get(ibis_type, ibis_type)
-    if field.mode == "REPEATED":
-        ibis_type = dt.Array(ibis_type)
-    return ibis_type
-
-
-@sch.infer.register(bq.table.Table)
-def bigquery_schema(table):
-    """Infer the schema of a BigQuery `table` object."""
-    fields = {el.name: dt.dtype(el) for el in table.schema}
+    # Check for partitioning information
     partition_info = table._properties.get("timePartitioning", None)
-
-    # We have a partitioned table
     if partition_info is not None:
+        # We have a partitioned table
         partition_field = partition_info.get("field", NATIVE_PARTITION_COL)
-
         # Only add a new column if it's not already a column in the schema
-        fields.setdefault(partition_field, dt.timestamp)
-    return sch.schema(fields)
+        if partition_field not in schema:
+            schema |= {partition_field: dt.timestamp}
 
-
-def ibis_schema_to_bigquery_schema(schema: sch.Schema):
-    return [
-        (
-            bq.SchemaField(
-                name,
-                ibis_type_to_bigquery_type(type_),
-                mode='NULLABLE' if type_.nullable else 'REQUIRED',
-            )
-            if not type_.is_array()
-            else bq.SchemaField(
-                name, ibis_type_to_bigquery_type(type_.value_type), mode='REPEATED'
-            )
-        )
-        for name, type_ in schema.items()
-    ]
+    return schema
 
 
 class BigQueryCursor:
@@ -142,7 +84,7 @@ def bq_param_array(dtype: dt.Array, value, name):
     value_type = dtype.value_type
 
     try:
-        bigquery_type = ibis_type_to_bigquery_type(value_type)
+        bigquery_type = dtype_to_bigquery(value_type)
     except NotImplementedError:
         raise com.UnsupportedBackendType(dtype)
     else:

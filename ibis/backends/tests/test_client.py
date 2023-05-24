@@ -207,7 +207,7 @@ def test_rename_table(con, temp_table, temp_table_orig, new_schema):
     assert temp_table in con.list_tables()
 
 
-@mark.notimpl(["bigquery", "datafusion", "polars", "druid"])
+@mark.notimpl(["datafusion", "polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
