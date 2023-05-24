@@ -28,6 +28,7 @@ from ibis import util
 from ibis.expr.deferred import Deferred
 from ibis.selectors import Selector
 from ibis.expr.types.relations import bind_expr
+import ibis.common.exceptions as com
 
 _function_types = tuple(
     filter(
@@ -79,6 +80,10 @@ class GroupedTable:
                 ),
             )
         )
+
+        if not self.by:
+            raise com.IbisInputError("The grouping keys list is empty")
+
         self._order_by = order_by or []
         self._having = having or []
         self._window = window

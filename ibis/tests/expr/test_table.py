@@ -1447,6 +1447,13 @@ def test_group_by_key_function():
     assert expr.columns == ['new_key', 'foo']
 
 
+def test_group_by_no_keys():
+    t = ibis.table([('a', 'timestamp'), ('b', 'string'), ('c', 'double')])
+
+    with pytest.raises(com.IbisInputError):
+        t.group_by(s.startswith("x")).aggregate(foo=t.c.mean())
+
+
 def test_unbound_table_name():
     t = ibis.table([('a', 'timestamp')])
     name = t.op().name
@@ -1812,3 +1819,9 @@ def test_invalid_keep_distinct():
     t = ibis.table(dict(a="int", b="string"), name="t")
     with pytest.raises(com.IbisError, match="Invalid value for `keep`:"):
         t.distinct(on="a", keep="invalid")
+
+
+def test_invalid_distinct_empty_key():
+    t = ibis.table(dict(a="int", b="string"), name="t")
+    with pytest.raises(com.IbisInputError):
+        t.distinct(on="c", keep="first")
