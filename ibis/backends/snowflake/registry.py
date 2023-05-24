@@ -203,6 +203,14 @@ def _array_zip(t, op):
     )
 
 
+def _regex_extract(t, op):
+    arg = t.translate(op.arg)
+    pattern = t.translate(op.pattern)
+    index = t.translate(op.index)
+    # https://docs.snowflake.com/en/sql-reference/functions/regexp_substr
+    return sa.func.regexp_substr(arg, pattern, 1, 1, 'ce', index)
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -361,7 +369,7 @@ operation_registry.update(
         ops.BitXor: reduction(sa.func.bitxor_agg),
         ops.DateFromYMD: fixed_arity(sa.func.date_from_parts, 3),
         ops.StringToTimestamp: fixed_arity(sa.func.to_timestamp_tz, 2),
-        ops.RegexExtract: fixed_arity(sa.func.regexp_substr, 3),
+        ops.RegexExtract: _regex_extract,
         ops.RegexSearch: fixed_arity(sa.sql.operators.custom_op("REGEXP"), 2),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.ExtractMillisecond: fixed_arity(
