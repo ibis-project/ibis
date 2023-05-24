@@ -255,18 +255,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
-                    ["snowflake"],
-                    raises=sa.exc.ProgrammingError,
-                    reason=(
-                        '(snowflake.connector.errors.ProgrammingError) 100050 (22023): '
-                        'Invalid parameter value: 0. Reason: Position must be positive'
-                    ),
-                ),
-                pytest.mark.broken(
-                    ["impala"],
-                    raises=AssertionError,
-                ),
+                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -280,7 +269,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
+                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -294,7 +283,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
+                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -308,7 +297,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala", "snowflake"], raises=AssertionError),
+                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
