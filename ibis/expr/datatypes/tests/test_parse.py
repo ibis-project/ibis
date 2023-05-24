@@ -220,18 +220,7 @@ def test_parse_timestamp_with_scale_no_tz(scale):
 )
 def test_parse_interval(unit):
     definition = f"interval('{unit}')"
-    assert dt.Interval(unit, dt.int32) == dt.dtype(definition)
-
-    definition = f"interval<uint16>('{unit}')"
-    assert dt.Interval(unit, dt.uint16) == dt.dtype(definition)
-
-    definition = f"interval<int64>('{unit}')"
-    assert dt.Interval(unit, dt.int64) == dt.dtype(definition)
-
-
-def test_parse_interval_with_invalid_value_type():
-    with pytest.raises(TypeError):
-        dt.dtype("interval<float>('s')")
+    assert dt.Interval(unit) == dt.dtype(definition)
 
 
 @pytest.mark.parametrize('unit', ['X', 'unsupported'])

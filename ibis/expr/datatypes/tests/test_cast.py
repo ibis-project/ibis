@@ -20,7 +20,7 @@ import ibis.expr.datatypes as dt
         (dt.uint32, dt.float32),
         (dt.uint32, dt.float64),
         (dt.uint64, dt.int64),
-        (dt.Interval('s', dt.int16), dt.Interval('s', dt.int32)),
+        (dt.Interval('s'), dt.Interval('s')),
     ],
 )
 def test_implicitly_castable_primitives(source, target):
@@ -38,7 +38,7 @@ def test_implicitly_castable_primitives(source, target):
         (dt.Decimal(12, 2), dt.int32),
         (dt.timestamp, dt.boolean),
         (dt.boolean, dt.interval),
-        (dt.Interval('s', dt.int64), dt.Interval('s', dt.int16)),
+        (dt.Interval('s'), dt.Interval('ns')),
     ],
 )
 def test_implicitly_uncastable_primitives(source, target):

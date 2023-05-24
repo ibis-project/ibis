@@ -30,7 +30,7 @@ def test_interval_function_integers():
 
     # unit is used if provided
     res = ibis.interval(1, "D")
-    sol = ibis.literal(1, type=dt.Interval("D", value_type=ibis.literal(1).type()))
+    sol = ibis.literal(1, type=dt.Interval("D"))
     assert_equal(res, sol)
 
 
@@ -486,7 +486,7 @@ def test_timestamp_arithmetics():
     for expr in [ts2 - ts1, ts1 - ts2]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.TimestampDiff)
-        assert expr.type() == dt.Interval('s', dt.int32)
+        assert expr.type() == dt.Interval('s')
 
     for expr in [ts1 - i1, ts2 - i1]:
         assert isinstance(expr, ir.TimestampScalar)
@@ -505,7 +505,7 @@ def test_date_arithmetics():
     for expr in [d1 - d2, d2 - d1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.DateDiff)
-        assert expr.type() == dt.Interval('D', dt.int32)
+        assert expr.type() == dt.Interval('D')
 
     for expr in [d1 - i1, d2 - i1]:
         assert isinstance(expr, ir.DateScalar)
@@ -524,7 +524,7 @@ def test_time_arithmetics():
     for expr in [t1 - t2, t2 - t1]:
         assert isinstance(expr, ir.IntervalScalar)
         assert isinstance(expr.op(), ops.TimeDiff)
-        assert expr.type() == dt.Interval('s', dt.int32)
+        assert expr.type() == dt.Interval('s')
 
     for expr in [t1 - i1, t2 - i1]:
         assert isinstance(expr, ir.TimeScalar)
@@ -599,7 +599,6 @@ def test_integer_to_interval(column, unit, table):
     c = table[column]
     i = c.to_interval(unit)
     assert isinstance(i, ir.IntervalColumn)
-    assert i.type().value_type == c.type()
     assert i.type().unit == IntervalUnit(unit)
 
 

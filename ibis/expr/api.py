@@ -774,10 +774,7 @@ def interval(
     if not components:
         components.append((0, "s"))
 
-    intervals = [
-        literal(v, type=dt.Interval(u, value_type=literal(v).type()))
-        for v, u in components
-    ]
+    intervals = [literal(v, type=dt.Interval(u)) for v, u in components]
     return functools.reduce(operator.add, intervals)
 
 

@@ -111,12 +111,12 @@ def test_window_builder_range():
 
     w9 = w0.range(-ibis.interval(days=1), 10)
     assert w9.start == ops.WindowBoundary(ibis.interval(days=1), preceding=True)
-    value = ibis.literal(10).cast("interval<int8>('D')")
+    value = ibis.literal(10).cast("interval('D')")
     assert w9.end == ops.WindowBoundary(value, preceding=False)
     assert w9.how == 'range'
 
     w10 = w0.range(5, ibis.interval(seconds=11))
-    value = ibis.literal(5).cast("interval<int8>('s')")
+    value = ibis.literal(5).cast("interval('s')")
     assert w10.start == ops.WindowBoundary(value, preceding=False)
     assert w10.end == ops.WindowBoundary(ibis.interval(seconds=11), preceding=False)
     assert w10.how == 'range'
@@ -157,12 +157,12 @@ def test_window_builder_between():
 
     w7 = w0.between(-ibis.interval(days=1), 10)
     assert w7.start == ops.WindowBoundary(ibis.interval(days=1), preceding=True)
-    value = ibis.literal(10).cast("interval<int8>('D')")
+    value = ibis.literal(10).cast("interval('D')")
     assert w7.end == ops.WindowBoundary(value, preceding=False)
     assert w7.how == 'range'
 
     w8 = w0.between(5, ibis.interval(seconds=11))
-    value = ibis.literal(5).cast("interval<int8>('s')")
+    value = ibis.literal(5).cast("interval('s')")
     assert w8.start == ops.WindowBoundary(value, preceding=False)
     assert w8.end == ops.WindowBoundary(ibis.interval(seconds=11), preceding=False)
     assert w8.how == 'range'
