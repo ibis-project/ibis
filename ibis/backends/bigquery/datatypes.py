@@ -1,103 +1,133 @@
 from __future__ import annotations
 
-from multipledispatch import Dispatcher
+import google.cloud.bigquery as bq
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 
-ibis_type_to_bigquery_type = Dispatcher("ibis_type_to_bigquery_type")
-
-
-@ibis_type_to_bigquery_type.register(str)
-def trans_string_default(datatype):
-    return ibis_type_to_bigquery_type(dt.dtype(datatype))
-
-
-@ibis_type_to_bigquery_type.register(dt.Floating)
-def trans_float64(t):
-    return "FLOAT64"
-
-
-@ibis_type_to_bigquery_type.register(dt.Integer)
-def trans_integer(t):
-    return "INT64"
+_from_bigquery_types = {
+    "INT64": dt.Int64,
+    "INTEGER": dt.Int64,
+    "FLOAT": dt.Float64,
+    "FLOAT64": dt.Float64,
+    "BOOL": dt.Boolean,
+    "BOOLEAN": dt.Boolean,
+    "STRING": dt.String,
+    "DATE": dt.Date,
+    "TIME": dt.Time,
+    "BYTES": dt.Binary,
+    "JSON": dt.JSON,
+}
 
 
-@ibis_type_to_bigquery_type.register(dt.Binary)
-def trans_binary(t):
-    return "BYTES"
-
-
-@ibis_type_to_bigquery_type.register(dt.UInt64)
-def trans_lossy_integer(t):
-    raise TypeError("Conversion from uint64 to BigQuery integer type (int64) is lossy")
-
-
-@ibis_type_to_bigquery_type.register(dt.Array)
-def trans_array(t):
-    return f"ARRAY<{ibis_type_to_bigquery_type(t.value_type)}>"
-
-
-@ibis_type_to_bigquery_type.register(dt.Struct)
-def trans_struct(t):
-    return "STRUCT<{}>".format(
-        ", ".join(
-            f"{name} {ibis_type_to_bigquery_type(dt.dtype(type_))}"
-            for name, type_ in t.fields.items()
-        )
-    )
-
-
-@ibis_type_to_bigquery_type.register(dt.Date)
-def trans_date(t):
-    return "DATE"
-
-
-@ibis_type_to_bigquery_type.register(dt.Timestamp)
-def trans_timestamp(t):
-    if t.timezone is None:
-        return "DATETIME"
-    elif t.timezone == 'UTC':
-        return "TIMESTAMP"
+def dtype_from_bigquery(typ: str, nullable=True) -> dt.DataType:
+    if typ == "DATETIME":
+        return dt.Timestamp(timezone=None, nullable=nullable)
+    elif typ == "TIMESTAMP":
+        return dt.Timestamp(timezone="UTC", nullable=nullable)
+    elif typ == "NUMERIC":
+        return dt.Decimal(38, 9, nullable=nullable)
+    elif typ == "BIGNUMERIC":
+        return dt.Decimal(76, 38, nullable=nullable)
+    elif typ == "GEOGRAPHY":
+        return dt.GeoSpatial(geotype="geography", srid=4326, nullable=nullable)
     else:
-        raise com.UnsupportedOperationError(
-            "BigQuery does not support timestamps with timezones other than 'UTC'"
+        try:
+            return _from_bigquery_types[typ](nullable=nullable)
+        except KeyError:
+            raise TypeError(f"Unable to convert BigQuery type to ibis: {typ}")
+
+
+def dtype_from_bigquery_field(field: bq.SchemaField) -> dt.DataType:
+    typ = field.field_type
+    if typ == "RECORD":
+        assert field.fields, "RECORD fields are empty"
+        fields = {f.name: dtype_from_bigquery_field(f) for f in field.fields}
+        dtype = dt.Struct(fields)
+    else:
+        dtype = dtype_from_bigquery(typ)
+
+    mode = field.mode
+    if mode == "NULLABLE":
+        return dtype.copy(nullable=True)
+    elif mode == "REQUIRED":
+        return dtype.copy(nullable=False)
+    elif mode == "REPEATED":
+        return dt.Array(dtype)
+    else:
+        raise TypeError(f"Unknown BigQuery field.mode: {mode}")
+
+
+def dtype_to_bigquery(dtype: dt.DataType) -> str:
+    if dtype.is_floating():
+        return "FLOAT64"
+    elif dtype.is_uint64():
+        raise TypeError(
+            "Conversion from uint64 to BigQuery integer type (int64) is lossy"
         )
+    elif dtype.is_integer():
+        return "INT64"
+    elif dtype.is_binary():
+        return "BYTES"
+    elif dtype.is_date():
+        return "DATE"
+    elif dtype.is_timestamp():
+        if dtype.timezone is None:
+            return "DATETIME"
+        elif dtype.timezone == 'UTC':
+            return "TIMESTAMP"
+        else:
+            raise TypeError(
+                "BigQuery does not support timestamps with timezones other than 'UTC'"
+            )
+    elif dtype.is_decimal():
+        if (dtype.precision, dtype.scale) == (76, 38):
+            return 'BIGNUMERIC'
+        if (dtype.precision, dtype.scale) in [(38, 9), (None, None)]:
+            return "NUMERIC"
+        raise TypeError(
+            "BigQuery only supports decimal types with precision of 38 and "
+            f"scale of 9 (NUMERIC) or precision of 76 and scale of 38 (BIGNUMERIC). "
+            f"Current precision: {dtype.precision}. Current scale: {dtype.scale}"
+        )
+    elif dtype.is_array():
+        return f"ARRAY<{dtype_to_bigquery(dtype.value_type)}>"
+    elif dtype.is_struct():
+        fields = (f"{k} {dtype_to_bigquery(v)}" for k, v in dtype.fields.items())
+        return "STRUCT<{}>".format(", ".join(fields))
+    elif dtype.is_json():
+        return "JSON"
+    elif dtype.is_geospatial():
+        if (dtype.geotype, dtype.srid) == ("geography", 4326):
+            return "GEOGRAPHY"
+        raise TypeError(
+            "BigQuery geography uses points on WGS84 reference ellipsoid."
+            f"Current geotype: {dtype.geotype}, Current srid: {dtype.srid}"
+        )
+    else:
+        return str(dtype).upper()
 
 
-@ibis_type_to_bigquery_type.register(dt.DataType)
-def trans_type(t):
-    return str(t).upper()
+def schema_to_bigquery(schema: sch.Schema) -> list[bq.SchemaField]:
+    result = []
+    for name, dtype in schema.items():
+        if isinstance(dtype, dt.Array):
+            mode = "REPEATED"
+            dtype = dtype.value_type
+        else:
+            mode = "REQUIRED" if not dtype.nullable else "NULLABLE"
+        field = bq.SchemaField(name, dtype_to_bigquery(dtype), mode=mode)
+        result.append(field)
+    return result
 
 
-@ibis_type_to_bigquery_type.register(dt.Decimal)
-def trans_numeric(t):
-    if (t.precision, t.scale) == (76, 38):
-        return 'BIGNUMERIC'
-    if (t.precision, t.scale) in [(38, 9), (None, None)]:
-        return "NUMERIC"
-    raise TypeError(
-        "BigQuery only supports decimal types with precision of 38 and "
-        f"scale of 9 (NUMERIC) or precision of 76 and scale of 38 (BIGNUMERIC). "
-        f"Current precision: {t.precision}. Current scale: {t.scale}"
-    )
+def schema_from_bigquery(fields: list[bq.SchemaField]) -> sch.Schema:
+    return sch.Schema({f.name: dtype_from_bigquery_field(f) for f in fields})
 
 
-@ibis_type_to_bigquery_type.register(dt.JSON)
-def trans_json(t):
-    return "JSON"
-
-
-@ibis_type_to_bigquery_type.register(dt.GeoSpatial)
-def trans_geography(t):
-    if (t.geotype, t.srid) == ("geography", 4326):
-        return "GEOGRAPHY"
-    raise com.UnsupportedOperationError(
-        "BigQuery geography uses points on WGS84 reference ellipsoid."
-        f"Current geotype: {t.geotype}, Current srid: {t.srid}"
-    )
-
-
+# TODO(kszucs): we can eliminate this function by making dt.DataType traversible
+# using ibis.common.graph.Node, similarly to how we traverse ops.Node instances:
+# node.find(types)
 def spread_type(dt: dt.DataType):
     """Returns a generator that contains all the types in the given type.
 
