@@ -17,7 +17,7 @@ import ibis.expr.types as ir
 from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
 from ibis.backends.pandas.core import _apply_schema
-from ibis.formats.dask import schema_from_dask_dataframe
+from ibis.formats.pandas import schema_from_dask_dataframe
 
 # Make sure that the pandas backend options have been loaded
 ibis.pandas  # noqa: B018

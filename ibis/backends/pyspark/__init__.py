@@ -29,6 +29,7 @@ from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable
 from ibis.backends.pyspark.compiler import PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import dtype_from_pyspark
+from ibis.formats.pandas import convert_pandas_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -210,7 +211,8 @@ class Backend(BaseSQLBackend):
         """Execute an expression."""
         table_expr = expr.as_table()
         df = self.compile(table_expr, **kwargs).toPandas()
-        result = table_expr.schema().apply_to(df)
+
+        result = convert_pandas_dataframe(df, table_expr.schema())
         if isinstance(expr, ir.Table):
             return result
         elif isinstance(expr, ir.Column):

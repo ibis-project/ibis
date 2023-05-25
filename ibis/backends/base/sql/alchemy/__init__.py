@@ -37,6 +37,7 @@ from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
 )
+from ibis.formats.pandas import convert_pandas_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -163,6 +164,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         with self.begin() as con:
             yield con.execute(*args, **kwargs)
 
+    # TODO(kszucs): move to ibis.formats.pandas
     @staticmethod
     def _to_geodataframe(df, schema):
         """Convert `df` to a `GeoDataFrame`.
@@ -199,7 +201,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             # artificially locked tables
             cursor.close()
             raise
-        df = schema.apply_to(df)
+        df = convert_pandas_dataframe(df, schema)
         if not df.empty and geospatial_supported:
             return self._to_geodataframe(df, schema)
         return df
