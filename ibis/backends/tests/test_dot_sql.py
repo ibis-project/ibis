@@ -1,9 +1,11 @@
 import pandas as pd
 import pytest
+import sqlglot as sg
 from pytest import param
 
 import ibis
 from ibis import _
+from ibis.backends.base import _IBIS_TO_SQLGLOT_DIALECT, _get_backend_names
 
 try:
     from polars.exceptions import ComputeError as PolarsComputeError
@@ -27,6 +29,11 @@ pytestmark = [pytest.mark.xdist_group("dot_sql")]
 _NAMES = {
     "bigquery": "ibis_gbq_testing.functional_alltypes",
 }
+
+try:
+    from clickhouse_connect.driver.exceptions import DatabaseError
+except ImportError:
+    DatabaseError = None
 
 
 @dot_sql_notimpl
@@ -229,3 +236,59 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     expected2 = df.bigint_col.rename("x")
     backend.assert_series_equal(foo1.x.execute(), expected1)
     backend.assert_series_equal(foo2.x.execute(), expected2)
+
+
+_NO_SQLGLOT_DIALECT = {"pandas", "dask", "datafusion", "polars", "druid"}
+no_sqlglot_dialect = sorted(
+    param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
+)
+
+
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        *sorted(_get_backend_names() - _NO_SQLGLOT_DIALECT),
+        *no_sqlglot_dialect,
+    ],
+)
+@pytest.mark.broken(["clickhouse"], raises=DatabaseError)
+@pytest.mark.notyet(["trino"], raises=NotImplementedError)
+@table_dot_sql_notimpl
+@dot_sql_notimpl
+@dot_sql_notyet
+@dot_sql_never
+def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
+    name = "foo2"
+    foo = alltypes.select(x=_.int_col + 1).alias(name)
+    expr = sg.select("x").from_(sg.table(name, quoted=True))
+    dialect = _IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect)
+    sqlstr = expr.sql(dialect=dialect, pretty=True)
+    dot_sql_expr = foo.sql(sqlstr, dialect=dialect)
+    result = dot_sql_expr.execute()
+    expected = df.int_col.add(1).rename("x")
+    backend.assert_series_equal(result.x, expected)
+
+
+@pytest.mark.parametrize(
+    "dialect",
+    [
+        *sorted(_get_backend_names() - {"pyspark", *_NO_SQLGLOT_DIALECT}),
+        *no_sqlglot_dialect,
+    ],
+)
+@pytest.mark.notyet(["druid"], raises=ValueError)
+@pytest.mark.notyet(["snowflake", "bigquery"])
+@pytest.mark.notyet(
+    ["oracle"], strict=False, reason="only works with backends that quote everything"
+)
+@dot_sql_notimpl
+@dot_sql_never
+def test_con_dot_sql_transpile(backend, con, dialect, df):
+    t = sg.table("functional_alltypes")
+    foo = sg.select(sg.alias(sg.column("int_col") + 1, "x")).from_(t)
+    dialect = _IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect)
+    sqlstr = foo.sql(dialect=dialect, pretty=True)
+    expr = con.sql(sqlstr, dialect=dialect)
+    result = expr.execute()
+    expected = df.int_col.add(1).rename("x")
+    backend.assert_series_equal(result.x, expected)

@@ -101,7 +101,8 @@ class PySparkCompiler(Compiler):
 
 class Backend(BaseSQLBackend):
     compiler = PySparkCompiler
-    name = 'pyspark'
+    name = "pyspark"
+    _sqlglot_dialect = "spark"
 
     class Options(ibis.config.Config):
         """PySpark options.

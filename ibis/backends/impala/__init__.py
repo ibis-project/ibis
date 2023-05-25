@@ -182,10 +182,10 @@ def _column_batches_to_dataframe(names, batches):
 
 class Backend(BaseSQLBackend):
     name = 'impala'
-    # not 100% accurate, but very close
-    _sqlglot_dialect = "hive"
-    _top_level_methods = ("hdfs_connect",)
     compiler = ImpalaCompiler
+
+    _sqlglot_dialect = "hive"  # not 100% accurate, but very close
+    _top_level_methods = ("hdfs_connect",)
 
     class Options(ibis.config.Config):
         """Impala specific options.

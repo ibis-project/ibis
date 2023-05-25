@@ -31,6 +31,10 @@ class BaseSQLBackend(BaseBackend):
 
     compiler = Compiler
 
+    @property
+    def _sqlglot_dialect(self) -> str:
+        return self.name
+
     def _from_url(self, url: str, **kwargs: Any) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 
@@ -94,7 +98,9 @@ class BaseSQLBackend(BaseBackend):
         # XXX
         return name
 
-    def sql(self, query: str, schema: sch.Schema | None = None) -> ir.Table:
+    def sql(
+        self, query: str, schema: sch.Schema | None = None, dialect: str | None = None
+    ) -> ir.Table:
         """Convert a SQL query to an Ibis table expression.
 
         Parameters
@@ -104,12 +110,16 @@ class BaseSQLBackend(BaseBackend):
         schema
             The expected schema for this query. If not provided, will be
             inferred automatically if possible.
+        dialect
+            Optional string indicating the dialect of `query`. The default
+            value of `None` will use the backend's native dialect.
 
         Returns
         -------
         Table
             Table expression
         """
+        query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
             schema = self._get_schema_using_query(query)
         else:

@@ -28,6 +28,8 @@ from ibis.backends.clickhouse.datatypes import parse, serialize
 if TYPE_CHECKING:
     import pandas as pd
 
+    from ibis.common.typing import SupportsSchema
+
 
 def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
@@ -56,7 +58,7 @@ class ClickhouseTable(ir.Table):
 
 
 class Backend(BaseBackend):
-    name = 'clickhouse'
+    name = "clickhouse"
 
     # ClickHouse itself does, but the client driver does not
     supports_temporary_tables = False
@@ -73,14 +75,20 @@ class Backend(BaseBackend):
         bool_type: Literal["Bool", "UInt8", "Int8"] = "Bool"
 
     def _log(self, sql: str) -> None:
-        """Log the SQL, usually to the standard output.
+        """Log `sql`.
 
-        This method can be implemented by subclasses. The logging
-        happens when `ibis.options.verbose` is `True`.
+        This method can be implemented by subclasses. Logging occurs when
+        `ibis.options.verbose` is `True`.
         """
         util.log(sql)
 
-    def sql(self, query: str, schema=None) -> ir.Table:
+    def sql(
+        self,
+        query: str,
+        schema: SupportsSchema | None = None,
+        dialect: str | None = None,
+    ) -> ir.Table:
+        query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
             schema = self._get_schema_using_query(query)
         return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()

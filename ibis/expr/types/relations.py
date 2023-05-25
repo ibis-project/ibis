@@ -2658,15 +2658,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         expr.compile()
         return expr
 
-    def sql(self, query: str) -> ir.Table:
+    def sql(self, query: str, dialect: str | None = None) -> ir.Table:
         """Run a SQL query against a table expression.
-
-        !!! note "The SQL string is backend specific"
-
-            `query` must be valid SQL for the execution backend the expression
-            will run against.
-
-            This restriction may be lifted in a future version of ibis.
 
         See [`Table.alias`][ibis.expr.types.relations.Table.alias] for
         details on using named table expressions in a SQL string.
@@ -2675,6 +2668,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         ----------
         query
             Query string
+        dialect
+            Optional string indicating the dialect of `query`. The default
+            value of `None` will use the backend's native dialect.
 
         Returns
         -------
@@ -2698,11 +2694,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │            38.950980 │
         └───────────┴──────────────────────┘
         """
-        op = ops.SQLStringView(
-            child=self,
-            name=next(_ALIASES),
-            query=query,
-        )
+
+        # only transpile if dialect was passed
+        if dialect is not None:
+            backend = self._find_backend()
+            query = backend._transpile_sql(query, dialect=dialect)
+        op = ops.SQLStringView(child=self, name=next(_ALIASES), query=query)
         return op.to_expr()
 
     def to_pandas(self, **kwargs) -> pd.DataFrame:
