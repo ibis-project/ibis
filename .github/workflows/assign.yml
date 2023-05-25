@@ -1,4 +1,6 @@
 name: Assign Issue
+permissions:
+  issues: write
 on:
   issue_comment:
     types:
