@@ -240,11 +240,11 @@ class _WellKnownText(NamedTuple):
 
 def normalize(typ, value):
     """Ensure that the Python type underlying a literal resolves to a single type."""
-
     dtype = dt.dtype(typ)
-    if value is None:
+    # checking __name__ is a hack to avoid importing pandas _just_ to check for NA
+    if value is None or type(value).__name__ == "NAType":
         if not dtype.nullable:
-            raise TypeError("Cannot convert `None` to non-nullable type {typ!r}")
+            raise TypeError(f"Cannot convert `{value!s}` to non-nullable type {typ!r}")
         return None
 
     if dtype.is_boolean():
