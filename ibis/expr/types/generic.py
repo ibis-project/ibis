@@ -112,6 +112,60 @@ class Value(Expr):
 
         return op.to_expr()
 
+    def try_cast(self, target_type: dt.DataType) -> Value:
+        """Try cast expression to indicated data type.
+        If the cast fails for a row, the value is returned
+        as null or NaN depending on target_type and backend behavior.
+
+        Parameters
+        ----------
+        target_type
+            Type to try cast to
+
+        Returns
+        -------
+        Value
+            Casted expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"numbers": [1, 2, 3, 4], "strings": ["1.0", "2", "hello", "world"]})
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ numbers ┃ strings ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ int64   │ string  │
+        ├─────────┼─────────┤
+        │       1 │ 1.0     │
+        │       2 │ 2       │
+        │       3 │ hello   │
+        │       4 │ world   │
+        └─────────┴─────────┘
+        >>> t = t.mutate(numbers_to_strings=_.numbers.try_cast("string"))
+        >>> t = t.mutate(strings_to_numbers=_.strings.try_cast("int"))
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+        ┃ numbers ┃ strings ┃ numbers_to_strings ┃ strings_to_numbers ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+        │ int64   │ string  │ string             │ int64              │
+        ├─────────┼─────────┼────────────────────┼────────────────────┤
+        │       1 │ 1.0     │ 1                  │                  1 │
+        │       2 │ 2       │ 2                  │                  2 │
+        │       3 │ hello   │ 3                  │               NULL │
+        │       4 │ world   │ 4                  │               NULL │
+        └─────────┴─────────┴────────────────────┴────────────────────┘
+        """
+        op = ops.TryCast(self, to=target_type)
+
+        if op.to == self.type():
+            # noop case if passed type is the same
+            return self
+
+        return op.to_expr()
+
     def coalesce(self, *args: Value) -> Value:
         """Return the first non-null value from `args`.
 

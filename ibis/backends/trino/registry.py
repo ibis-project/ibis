@@ -19,6 +19,7 @@ from ibis.backends.base.sql.alchemy.registry import (
     reduction,
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
+    try_cast,
     unary,
 )
 from ibis.backends.postgres.registry import _corr, _covar
@@ -271,6 +272,20 @@ def _zip(t, op):
     return sa.type_coerce(chunk, t.get_sqla_type(dtype))
 
 
+@compiles(try_cast, "trino")
+def compiles_try_cast(element, compiler, **kw):
+    return "TRY_CAST({} AS {})".format(
+        compiler.process(element.clauses.clauses[0], **kw),
+        compiler.visit_typeclause(element),
+    )
+
+
+def _try_cast(t, op):
+    arg = t.translate(op.arg)
+    to = t.get_sqla_type(op.to)
+    return try_cast(arg, type_=to)
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -448,6 +463,7 @@ operation_registry.update(
         ops.First: partial(_first_last, offset=1),
         ops.Last: partial(_first_last, offset=-1),
         ops.ArrayZip: _zip,
+        ops.TryCast: _try_cast,
     }
 )
 

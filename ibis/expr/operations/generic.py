@@ -90,6 +90,17 @@ class Cast(Value):
 
 
 @public
+class TryCast(Value):
+    """Explicitly try cast value to a specific data type."""
+
+    arg = rlz.any
+    to = rlz.datatype
+
+    output_shape = rlz.shape_like("arg")
+    output_dtype = property(attrgetter("to"))
+
+
+@public
 class TypeOf(Unary):
     output_dtype = dt.string
 

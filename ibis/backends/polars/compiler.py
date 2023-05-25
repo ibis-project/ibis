@@ -116,17 +116,33 @@ _TIMESTAMP_SCALE_TO_UNITS = {
 
 
 @translate.register(ops.Cast)
-def cast(op, **kw):
-    arg = translate(op.arg, **kw)
+def cast(op, **kwargs):
+    return _cast(op, strict=True)
+
+
+@translate.register(ops.TryCast)
+def try_cast(op, **kwargs):
+    return _cast(op, strict=False)
+
+
+def _cast(op, strict=True, **kwargs):
+    arg = translate(op.arg, **kwargs)
     dtype = op.arg.output_dtype
     to = op.to
 
     if to.is_interval():
+        if not strict:
+            raise NotImplementedError(f"Unsupported try_cast to type: {to!r}")
         return _make_duration(arg, to)
     elif to.is_date():
+        if not strict:
+            raise NotImplementedError(f"Unsupported try_cast to type: {to!r}")
         if dtype.is_string():
             return arg.str.strptime(pl.Date, "%Y-%m-%d")
     elif to.is_timestamp():
+        if not strict:
+            raise NotImplementedError(f"Unsupported try_cast to type: {to!r}")
+
         time_zone = to.timezone
         time_unit = _TIMESTAMP_SCALE_TO_UNITS.get(to.scale, "us")
 
@@ -144,7 +160,7 @@ def cast(op, **kw):
             return arg
 
     typ = dtype_to_polars(to)
-    return arg.cast(typ)
+    return arg.cast(typ, strict=strict)
 
 
 @translate.register(ops.TableColumn)

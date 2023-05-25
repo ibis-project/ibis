@@ -1,4 +1,5 @@
 import contextlib
+import datetime
 import decimal
 from operator import invert, methodcaller, neg
 
@@ -23,6 +24,13 @@ try:
     DuckDBConversionException = duckdb.ConversionException
 except ImportError:
     DuckDBConversionException = None
+
+try:
+    import trino
+
+    TrinoUserError = trino.exceptions.TrinoUserError
+except ImportError:
+    TrinoUserError = None
 
 try:
     import clickhouse_connect as cc
@@ -1180,3 +1188,92 @@ def test_hash_consistent(backend, alltypes):
     h2 = alltypes.string_col.hash().execute(limit=10)
     tm.assert_series_equal(h1, h2)
     assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this
+
+
+@pytest.mark.notimpl(
+    [
+        "pandas",
+        "dask",
+        "bigquery",
+        "datafusion",
+        "druid",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+    ]
+)
+@pytest.mark.parametrize(
+    ("from_val", "to_type", "expected"),
+    [
+        param(0, "float", 0.0),
+        param(0.0, "int", 0),
+        param("0", "int", 0),
+        param("0.0", "float", 0.0),
+        param(
+            "a",
+            "int",
+            None,
+            marks=pytest.mark.notyet(["polars"], reason="polars casts to nan"),
+        ),
+        param(
+            datetime.datetime(2023, 1, 1),
+            "int",
+            None,
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"], reason="clickhouse casts this to 1686156304"
+                ),
+                pytest.mark.notyet(["trino"], reason="trino raises a TrinoUserError"),
+                pytest.mark.notyet(
+                    ["polars"], reason="polars casts this to 1686157562300325000"
+                ),
+            ],
+        ),
+    ],
+)
+def test_try_cast_expected(con, from_val, to_type, expected):
+    assert con.execute(ibis.literal(from_val).try_cast(to_type)) == expected
+
+
+@pytest.mark.notimpl(
+    [
+        "pandas",
+        "dask",
+        "bigquery",
+        "datafusion",
+        "druid",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+    ]
+)
+@pytest.mark.parametrize(
+    ("from_val", "to_type", "func"),
+    [
+        param("a", "float", np.isnan),
+        param(
+            datetime.datetime(2023, 1, 1),
+            "float",
+            np.isnan,
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"], reason="clickhouse casts this to to a number"
+                ),
+                pytest.mark.notyet(["trino"], reason="trino raises a TrinoUserError"),
+                pytest.mark.notyet(["polars"], reason="polars casts this to a number"),
+            ],
+        ),
+    ],
+)
+def test_try_cast_func(con, from_val, to_type, func):
+    assert func(con.execute(ibis.literal(from_val).try_cast(to_type)))
