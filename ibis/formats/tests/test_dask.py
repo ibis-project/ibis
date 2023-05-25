@@ -7,7 +7,13 @@ import ibis.expr.datatypes as dt
 
 dd = pytest.importorskip("dask.dataframe")
 
-from ibis.formats.dask import schema_from_dask_dataframe  # noqa: E402
+
+from dask.dataframe.utils import tm  # noqa: E402
+
+from ibis.formats.pandas import (  # noqa: E402
+    convert_pandas_dataframe,
+    schema_from_dask_dataframe,
+)
 
 
 @pytest.mark.parametrize(
@@ -193,3 +199,12 @@ def test_schema_infer_exhaustive_dataframe():
     ]
 
     assert schema_from_dask_dataframe(df) == ibis.schema(expected)
+
+
+def test_convert_dataframe_with_timezone():
+    data = {'time': pd.date_range('2018-01-01', '2018-01-02', freq='H')}
+    df = dd.from_pandas(pd.DataFrame(data), npartitions=2)
+    expected = df.assign(time=df.time.dt.tz_localize("EST"))
+    desired_schema = ibis.schema([('time', 'timestamp("EST")')])
+    result = convert_pandas_dataframe(df.copy(), desired_schema)
+    tm.assert_frame_equal(result.compute(), expected.compute())

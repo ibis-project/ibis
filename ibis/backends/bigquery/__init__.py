@@ -28,6 +28,7 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.backends.bigquery.datatypes import schema_from_bigquery, schema_to_bigquery
+from ibis.formats.pandas import convert_pandas_dataframe
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
@@ -336,7 +337,7 @@ class Backend(BaseSQLBackend):
     def fetch_from_cursor(self, cursor, schema):
         arrow_t = self._cursor_to_arrow(cursor)
         df = arrow_t.to_pandas(timestamp_as_object=True)
-        return schema.apply_to(df)
+        return convert_pandas_dataframe(df, schema)
 
     def _cursor_to_arrow(
         self,

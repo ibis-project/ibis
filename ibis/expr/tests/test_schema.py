@@ -183,13 +183,16 @@ def df():
 def test_apply_to_column_rename(df):
     schema = sch.Schema({"a": "int8", "B": "string"})
     expected = df.rename({"A": "a", "b": "B"}, axis=1)
-    tm.assert_frame_equal(schema.apply_to(df.copy()), expected)
+    with pytest.warns(FutureWarning):
+        df = schema.apply_to(df.copy())
+    tm.assert_frame_equal(df, expected)
 
 
 def test_apply_to_column_order(df):
     schema = sch.Schema({"a": "int8", "b": "string"})
     expected = df.rename({"A": "a"}, axis=1)
-    new_df = schema.apply_to(df.copy())
+    with pytest.warns(FutureWarning):
+        new_df = schema.apply_to(df.copy())
     tm.assert_frame_equal(new_df, expected)
 
 

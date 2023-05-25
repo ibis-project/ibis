@@ -172,10 +172,10 @@ def infer_interval_pandas(value) -> dt.Interval:
 @infer.register("pandas.Series")
 def infer_numpy_array(value):
     from ibis.formats.numpy import dtype_from_numpy
-    from ibis.formats.pyarrow import _infer_array_dtype
+    from ibis.formats.pyarrow import infer_sequence_dtype
 
     if value.dtype.kind == 'O':
-        value_dtype = _infer_array_dtype(value)
+        value_dtype = infer_sequence_dtype(value)
     else:
         value_dtype = dtype_from_numpy(value.dtype)
 

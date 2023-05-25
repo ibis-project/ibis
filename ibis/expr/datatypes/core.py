@@ -187,9 +187,7 @@ class DataType(Concrete, Coercible):
     @classmethod
     def from_dask(cls, dask_type, nullable=True) -> Self:
         """Return the equivalent ibis datatype."""
-        from ibis.formats.dask import dtype_from_dask
-
-        return dtype_from_dask(dask_type, nullable=nullable)
+        return cls.from_pandas(dask_type, nullable=nullable)
 
     def to_numpy(self):
         """Return the equivalent numpy datatype."""
@@ -211,9 +209,7 @@ class DataType(Concrete, Coercible):
 
     def to_dask(self):
         """Return the equivalent dask datatype."""
-        from ibis.formats.dask import dtype_to_dask
-
-        return dtype_to_dask(self)
+        return self.to_pandas()
 
     def is_array(self) -> bool:
         return isinstance(self, Array)

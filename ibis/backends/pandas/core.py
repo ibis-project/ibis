@@ -131,6 +131,7 @@ from ibis.backends.pandas.dispatch import (
     pre_execute,
 )
 from ibis.backends.pandas.trace import trace
+from ibis.formats.pandas import convert_pandas_dataframe
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)
@@ -493,13 +494,14 @@ def execute_and_reset(
 def _apply_schema(op: ops.Node, result: pd.DataFrame | pd.Series):
     assert isinstance(op, ops.Node), type(op)
     if isinstance(result, pd.DataFrame):
-        df = result.reset_index()
-        schema = op.schema
-        return schema.apply_to(df.loc[:, list(schema.names)])
+        df = result.reset_index().loc[:, list(op.schema.names)]
+        return convert_pandas_dataframe(df, op.schema)
     elif isinstance(result, pd.Series):
         schema = op.to_expr().as_table().schema()
-        return schema.apply_to(result.to_frame()).iloc[:, 0].reset_index(drop=True)
-    return result
+        df = convert_pandas_dataframe(result.to_frame(), schema)
+        return df.iloc[:, 0].reset_index(drop=True)
+    else:
+        return result
 
 
 compute_time_context = Dispatcher(

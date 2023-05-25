@@ -3,8 +3,6 @@ from __future__ import annotations
 from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any
 
-from multipledispatch import Dispatcher
-
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict, MapSet
@@ -12,32 +10,10 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.validators import Coercible
-from ibis.util import indent
+from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
     import pandas as pd
-
-convert = Dispatcher(
-    'convert',
-    doc="""\
-Convert `column` to the pandas dtype corresponding to `out_dtype`, where the
-dtype of `column` is `in_dtype`.
-
-Parameters
-----------
-in_dtype : Union[np.dtype, pandas_dtype]
-    The dtype of `column`, used for dispatching
-out_dtype : ibis.expr.datatypes.DataType
-    The requested ibis type of the output
-column : pd.Series
-    The column to convert
-
-Returns
--------
-result : pd.Series
-    The converted column
-""",
-)
 
 
 class Schema(Concrete, Coercible, MapSet):
@@ -154,32 +130,30 @@ class Schema(Concrete, Coercible, MapSet):
         return cls(dict(zip(names, types)))
 
     @classmethod
-    def from_numpy(self, numpy_schema):
+    def from_numpy(cls, numpy_schema):
         """Return the equivalent ibis schema."""
         from ibis.formats.numpy import schema_from_numpy
 
         return schema_from_numpy(numpy_schema)
 
     @classmethod
-    def from_pandas(self, pandas_schema):
+    def from_pandas(cls, pandas_schema):
         """Return the equivalent ibis schema."""
         from ibis.formats.pandas import schema_from_pandas
 
         return schema_from_pandas(pandas_schema)
 
     @classmethod
-    def from_pyarrow(self, pyarrow_schema):
+    def from_pyarrow(cls, pyarrow_schema):
         """Return the equivalent ibis schema."""
         from ibis.formats.pyarrow import schema_from_pyarrow
 
         return schema_from_pyarrow(pyarrow_schema)
 
     @classmethod
-    def from_dask(self, dask_schema):
+    def from_dask(cls, dask_schema):
         """Return the equivalent ibis schema."""
-        from ibis.formats.dask import schema_from_dask
-
-        return schema_from_dask(dask_schema)
+        return cls.from_pandas(dask_schema)
 
     def to_numpy(self):
         """Return the equivalent numpy dtypes."""
@@ -201,9 +175,7 @@ class Schema(Concrete, Coercible, MapSet):
 
     def to_dask(self):
         """Return the equivalent dask dtypes."""
-        from ibis.formats.dask import schema_to_dask
-
-        return schema_to_dask(self)
+        return self.to_pandas()
 
     def as_struct(self) -> dt.Struct:
         return dt.Struct(self)
@@ -232,103 +204,14 @@ class Schema(Concrete, Coercible, MapSet):
         """
         return self.names[i]
 
+    @deprecated(
+        as_of="6.0",
+        instead="use ibis.formats.pandas.convert_pandas_dataframe() instead",
+    )
     def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Apply the schema `self` to a pandas `DataFrame`.
+        from ibis.formats.pandas import convert_pandas_dataframe
 
-        This method mutates the input `DataFrame`.
-
-        Parameters
-        ----------
-        df
-            Input DataFrame
-
-        Returns
-        -------
-        DataFrame
-            Type-converted DataFrame
-
-        Examples
-        --------
-        Import the necessary modules
-
-        >>> import numpy as np
-        >>> import pandas as pd
-        >>> import ibis
-        >>> import ibis.expr.datatypes as dt
-
-        Construct a DataFrame with string timestamps and an `int8` column that
-        we're going to upcast.
-
-        >>> data = dict(
-        ...     times=[
-        ...         "2022-01-01 12:00:00",
-        ...         "2022-01-01 13:00:01",
-        ...         "2022-01-01 14:00:02",
-        ...     ],
-        ...     x=np.array([-1, 0, 1], dtype="int8")
-        ... )
-        >>> df = pd.DataFrame(data)
-        >>> df
-                         times  x
-        0  2022-01-01 12:00:00 -1
-        1  2022-01-01 13:00:01  0
-        2  2022-01-01 14:00:02  1
-        >>> df.dtypes
-        times    object
-        x          int8
-        dtype: object
-
-        Construct an ibis Schema that we want to cast to.
-
-        >>> sch = ibis.schema({"times": dt.timestamp, "x": "int16"})
-        >>> sch
-        ibis.Schema {
-          times  timestamp
-          x      int16
-        }
-
-        Apply the schema
-
-        >>> sch.apply_to(df)
-                        times  x
-        0 2022-01-01 12:00:00 -1
-        1 2022-01-01 13:00:01  0
-        2 2022-01-01 14:00:02  1
-        >>> df.dtypes  # `df` is mutated by the method
-        times    datetime64[ns]
-        x                 int16
-        dtype: object
-        """
-        schema_names = self.names
-        data_columns = df.columns
-
-        assert len(schema_names) == len(
-            data_columns
-        ), "schema column count does not match input data column count"
-
-        for column, dtype in zip(data_columns, self.types):
-            pandas_dtype = dtype.to_pandas()
-
-            col = df[column]
-            col_dtype = col.dtype
-
-            try:
-                not_equal = pandas_dtype != col_dtype
-            except TypeError:
-                # ugh, we can't compare dtypes coming from pandas,
-                # assume not equal
-                not_equal = True
-
-            if not_equal or not dtype.is_primitive():
-                new_col = convert(col_dtype, dtype, col)
-            else:
-                new_col = col
-            df[column] = new_col
-
-        # return data with the schema's columns which may be different than the
-        # input columns
-        df.columns = schema_names
-        return df
+        return convert_pandas_dataframe(df, self)
 
 
 @lazy_singledispatch
@@ -382,13 +265,6 @@ def infer_pandas_dataframe(df, schema=None):
     from ibis.formats.pandas import schema_from_pandas_dataframe
 
     return schema_from_pandas_dataframe(df, schema)
-
-
-@infer.register("dask.dataframe.DataFrame")
-def infer_dask_dataframe(df, schema=None):
-    from ibis.formats.dask import schema_from_dask_dataframe
-
-    return schema_from_dask_dataframe(df, schema)
 
 
 # TODO(kszucs): do we really need the schema kwarg?

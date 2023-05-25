@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import pyarrow as pa
 
 import ibis.expr.datatypes as dt
@@ -164,13 +166,14 @@ def schema_to_pyarrow(schema: Schema) -> pa.Schema:
     return pa.schema(fields)
 
 
-def _infer_array_dtype(x):
+def infer_sequence_dtype(sequence: Sequence) -> dt.DataType:
     try:
-        pyarrow_type = pa.array(x, from_pandas=True).type
+        pyarrow_type = pa.array(sequence, from_pandas=True).type
+        # pyarrow_type = pa.infer_type(sequence, from_pandas=True)
     except pa.ArrowInvalid:
         try:
             # handle embedded series objects
-            return dt.highest_precedence(map(dt.infer, x))
+            return dt.highest_precedence(map(dt.infer, sequence))
         except TypeError:
             # we can still have a type error, e.g., float64 and string in the
             # same array

@@ -3,13 +3,16 @@ from decimal import Decimal
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pyarrow as pa
 import pytest
 from pytest import param
 
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats.pandas import (
+    convert_pandas_dataframe,
     dtype_from_pandas,
     dtype_to_pandas,
     schema_from_pandas,
@@ -421,3 +424,13 @@ def test_schema_from_various_dataframes(col_data, schema_type):
     inferred = schema_from_pandas_dataframe(df)
     expected = sch.Schema({'col': schema_type})
     assert inferred == expected
+
+
+def test_convert_dataframe_with_timezone():
+    data = {'time': pd.date_range('2018-01-01', '2018-01-02', freq='H')}
+    df = expected = pd.DataFrame(data).assign(
+        time=lambda df: df.time.dt.tz_localize("EST")
+    )
+    desired_schema = ibis.schema(dict(time='timestamp("EST")'))
+    result = convert_pandas_dataframe(df.copy(), desired_schema)
+    tm.assert_frame_equal(expected, result)
