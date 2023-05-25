@@ -35,6 +35,9 @@ if TYPE_CHECKING:
 __all__ = ('BaseBackend', 'Database', 'connect')
 
 
+_IBIS_TO_SQLGLOT_DIALECT = {"mssql": "tsql", "impala": "hive", "pyspark": "spark"}
+
+
 class Database:
     """Generic Database class."""
 
@@ -936,6 +939,26 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     def _clean_up_cached_table(self, op):
         raise NotImplementedError(self.name)
+
+    def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
+        # only transpile if dialect was passed
+        if dialect is None:
+            return query
+
+        import sqlglot as sg
+
+        # only transpile if the backend dialect doesn't match the input dialect
+        name = self.name
+        if (output_dialect := getattr(self, "_sqlglot_dialect", name)) is None:
+            raise NotImplementedError(f"No known sqlglot dialect for backend {name}")
+
+        if dialect != output_dialect:
+            (query,) = sg.transpile(
+                query,
+                read=_IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect),
+                write=output_dialect,
+            )
+        return query
 
 
 @functools.lru_cache(maxsize=None)
