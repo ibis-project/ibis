@@ -85,6 +85,11 @@ def _cast(op, **kw):
     return result
 
 
+@translate_val.register(ops.TryCast)
+def _try_cast(op, **kw):
+    return f"accurateCastOrNull({translate_val(op.arg, **kw)}, '{serialize(op.to)}')"
+
+
 @translate_val.register(ops.Between)
 def _between(op, **kw):
     arg = translate_val(op.arg, **kw)

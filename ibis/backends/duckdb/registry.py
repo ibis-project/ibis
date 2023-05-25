@@ -21,6 +21,7 @@ from ibis.backends.base.sql.alchemy.registry import (
     array_map,
     geospatial_functions,
     reduction,
+    try_cast,
 )
 from ibis.backends.base.sql.alchemy.registry import (
     _translate_case as _base_translate_case,
@@ -319,6 +320,20 @@ def _array_zip(t, op):
     )
 
 
+@compiles(try_cast, "duckdb")
+def compiles_try_cast(element, compiler, **kw):
+    return "TRY_CAST({} AS {})".format(
+        compiler.process(element.clauses.clauses[0], **kw),
+        compiler.visit_typeclause(element),
+    )
+
+
+def _try_cast(t, op):
+    arg = t.translate(op.arg)
+    to = t.get_sqla_type(op.to)
+    return try_cast(arg, type_=to)
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -327,6 +342,7 @@ operation_registry.update(
                 t.get_sqla_type(op.output_dtype),
             )
         ),
+        ops.TryCast: _try_cast,
         ops.ArrayConcat: fixed_arity(sa.func.array_concat, 2),
         ops.ArrayRepeat: fixed_arity(
             lambda arg, times: sa.func.flatten(

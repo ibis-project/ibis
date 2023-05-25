@@ -22,6 +22,10 @@ class substr(GenericFunction):
     inherit_cache = True
 
 
+class try_cast(GenericFunction):
+    pass
+
+
 def variance_reduction(func_name, suffix=None):
     suffix = suffix or {'sample': '_samp', 'pop': '_pop'}
 
