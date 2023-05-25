@@ -951,7 +951,7 @@ def test_memtable_null_str_default_dtype(con):
     ["postgres"], reason="NA not supported", raises=sa.exc.ProgrammingError
 )
 @pytest.mark.notyet(
-    ["trino"], reason="NA not supported", raises=sa.exc.NotSupportedError
+    ["oracle", "trino"], reason="NA not supported", raises=sa.exc.NotSupportedError
 )
 @pytest.mark.notyet(["druid"], reason="NA not supported", raises=sa.exc.CompileError)
 def test_memtable_null_string_dtype(con):
