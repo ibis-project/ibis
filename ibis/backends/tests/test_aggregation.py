@@ -114,7 +114,6 @@ argidx_not_grouped_marks = [
     "datafusion",
     "impala",
     "mysql",
-    "polars",
     "mssql",
     "druid",
     "oracle",
@@ -459,7 +458,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     [
                         "impala",
                         "mysql",
-                        "polars",
                         "datafusion",
                         "mssql",
                         "druid",
@@ -484,7 +482,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     [
                         "impala",
                         "mysql",
-                        "polars",
                         "datafusion",
                         "mssql",
                         "druid",
