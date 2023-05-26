@@ -83,7 +83,7 @@ class Backend(BaseSQLBackend):
         auth_cache: str = "default",
         partition_column: str | None = "PARTITIONTIME",
     ):
-        """Create a :class:`Backend` for use with Ibis.
+        """Create a `Backend` for use with Ibis.
 
         Parameters
         ----------
