@@ -1,10 +1,12 @@
 from unittest import mock
 
+import google.api_core.client_options
 import google.api_core.exceptions as gexc
 import pydata_google_auth
 import pytest
 from google.auth import credentials as auth
 from google.cloud import bigquery as bq
+from google.cloud import bigquery_storage_v1 as bqstorage
 
 import ibis
 
@@ -178,3 +180,35 @@ def test_auth_cache_unknown(project_id):
             dataset_id="bigquery-public-data.stackoverflow",
             auth_cache="not_a_real_cache",
         )
+
+
+def test_client_with_regional_endpoints(
+    project_id, credentials, dataset_id, dataset_id_tokyo, region_tokyo
+):
+    bq_options = google.api_core.client_options.ClientOptions(
+        api_endpoint=f"https://{region_tokyo}-bigquery.googleapis.com"
+    )
+    bq_client = bq.Client(
+        client_options=bq_options, project=project_id, credentials=credentials
+    )
+
+    # Note there is no protocol specifier for gRPC APIs.
+    bqstorage_options = google.api_core.client_options.ClientOptions(
+        api_endpoint=f"{region_tokyo}-bigquerystorage.googleapis.com"
+    )
+    bqstorage_client = bqstorage.BigQueryReadClient(
+        client_options=bqstorage_options, credentials=credentials
+    )
+
+    con = ibis.bigquery.connect(
+        client=bq_client, storage_client=bqstorage_client, project_id=project_id
+    )
+
+    # Fails because dataset not in Tokyo.
+    with pytest.raises(gexc.NotFound, match=dataset_id):
+        con.table(f"{dataset_id}.functional_alltypes")
+
+    # Succeeds because dataset is in Tokyo.
+    alltypes = con.table(f"{dataset_id_tokyo}.functional_alltypes")
+    df = alltypes.limit(2).execute()
+    assert len(df.index) == 2

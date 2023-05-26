@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
 import google.cloud.bigquery as bq
+import google.cloud.bigquery_storage_v1 as bqstorage
 import pandas as pd
 import pydata_google_auth
 from pydata_google_auth import cache
@@ -45,9 +46,7 @@ CLIENT_ID = "546535678771-gvffde27nd83kfl6qbrnletqvkdmsese.apps.googleuserconten
 CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
 
 
-def _create_client_info(application_name):
-    from google.api_core.client_info import ClientInfo
-
+def _create_user_agent(application_name: str) -> str:
     user_agent = []
 
     if application_name:
@@ -56,7 +55,19 @@ def _create_client_info(application_name):
     user_agent_default_template = f"ibis/{ibis.__version__}"
     user_agent.append(user_agent_default_template)
 
-    return ClientInfo(user_agent=" ".join(user_agent))
+    return " ".join(user_agent)
+
+
+def _create_client_info(application_name):
+    from google.api_core.client_info import ClientInfo
+
+    return ClientInfo(user_agent=_create_user_agent(application_name))
+
+
+def _create_client_info_gapic(application_name):
+    from google.api_core.gapic_v1.client_info import ClientInfo
+
+    return ClientInfo(user_agent=_create_user_agent(application_name))
 
 
 class Backend(BaseSQLBackend):
@@ -82,6 +93,8 @@ class Backend(BaseSQLBackend):
         auth_external_data: bool = False,
         auth_cache: str = "default",
         partition_column: str | None = "PARTITIONTIME",
+        client: bq.Client | None = None,
+        storage_client: bqstorage.BigQueryReadClient | None = None,
     ):
         """Create a `Backend` for use with Ibis.
 
@@ -125,15 +138,24 @@ class Backend(BaseSQLBackend):
         partition_column
             Identifier to use instead of default ``_PARTITIONTIME`` partition
             column. Defaults to ``'PARTITIONTIME'``.
+        client
+            A ``Client`` from the ``google.cloud.bigquery`` package. If not
+            set, one is created using the ``project_id`` and ``credentials``.
+        storage_client
+            A ``BigQueryReadClient`` from the
+            ``google.cloud.bigquery_storage_v1`` package. If not set, one is
+            created using the ``project_id`` and ``credentials``.
 
         Returns
         -------
         Backend
             An instance of the BigQuery backend.
         """
-        default_project_id = ""
+        default_project_id = client.project if client is not None else project_id
 
-        if credentials is None:
+        # Only need `credentials` to create a `client` and
+        # `storage_client`, so only one or the other needs to be set.
+        if (client is None or storage_client is None) and credentials is None:
             scopes = SCOPES
             if auth_external_data:
                 scopes = EXTERNAL_DATA_SCOPES
@@ -170,11 +192,23 @@ class Backend(BaseSQLBackend):
             self.dataset,
         ) = parse_project_and_dataset(project_id, dataset_id)
 
-        self.client = bq.Client(
-            project=self.billing_project,
-            credentials=credentials,
-            client_info=_create_client_info(application_name),
-        )
+        if client is not None:
+            self.client = client
+        else:
+            self.client = bq.Client(
+                project=self.billing_project,
+                credentials=credentials,
+                client_info=_create_client_info(application_name),
+            )
+
+        if storage_client is not None:
+            self.storage_client = storage_client
+        else:
+            self.storage_client = bqstorage.BigQueryReadClient(
+                credentials=credentials,
+                client_info=_create_client_info_gapic(application_name),
+            )
+
         self.partition_column = partition_column
 
     def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
@@ -315,8 +349,7 @@ class Backend(BaseSQLBackend):
         if method is None:
             method = lambda result: result.to_arrow(
                 progress_bar_type=None,
-                bqstorage_client=None,
-                create_bqstorage_client=True,
+                bqstorage_client=self.storage_client,
             )
         query = cursor.query
         query_result = query.result(page_size=chunk_size)
@@ -370,7 +403,9 @@ class Backend(BaseSQLBackend):
         cursor = self.raw_sql(sql, params=params, **kwargs)
         batch_iter = self._cursor_to_arrow(
             cursor,
-            method=lambda result: result.to_arrow_iterable(),
+            method=lambda result: result.to_arrow_iterable(
+                bqstorage_client=self.storage_client
+            ),
             chunk_size=chunk_size,
         )
         return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)

@@ -27,6 +27,8 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 DATASET_ID = "ibis_gbq_testing"
+DATASET_ID_TOKYO = "ibis_gbq_testing_tokyo"
+REGION_TOKYO = "asia-northeast1"
 DEFAULT_PROJECT_ID = "ibis-gbq"
 PROJECT_ID_ENV_VAR = "GOOGLE_BIGQUERY_PROJECT_ID"
 
@@ -108,6 +110,14 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
         with contextlib.suppress(gexc.NotFound):
             client.create_dataset(testing_dataset, exists_ok=True)
+
+        testing_dataset_tokyo = bq.Dataset(
+            bq.DatasetReference(project_id, DATASET_ID_TOKYO)
+        )
+        testing_dataset_tokyo.location = REGION_TOKYO
+
+        with contextlib.suppress(gexc.NotFound):
+            client.create_dataset(testing_dataset_tokyo, exists_ok=True)
 
         # day partitioning
         functional_alltypes_parted = bq.Table(
@@ -259,6 +269,25 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                         data_dir.joinpath("parquet", f"{table}.parquet").read_bytes()
                     ),
                     bq.TableReference(testing_dataset, table),
+                    job_config=bq.LoadJobConfig(
+                        schema=ibis_schema_to_bq_schema(schema),
+                        write_disposition=write_disposition,
+                        source_format=bq.SourceFormat.PARQUET,
+                    ),
+                )
+                for table, schema in TEST_TABLES.items()
+            )
+
+            # Test regional endpoints with non-US data.
+
+            futures.extend(
+                e.submit(
+                    make_job,
+                    client.load_table_from_file,
+                    io.BytesIO(
+                        data_dir.joinpath("parquet", f"{table}.parquet").read_bytes()
+                    ),
+                    bq.TableReference(testing_dataset_tokyo, table),
                     job_config=bq.LoadJobConfig(
                         schema=ibis_schema_to_bq_schema(schema),
                         write_disposition=write_disposition,
