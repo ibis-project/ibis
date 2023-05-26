@@ -3,7 +3,7 @@
 -- says that NUMBER(9) -> NUMBER(9)
 -- says that BIGINT -> NUMBER(18);
 
-DROP TABLE "diamonds";
+DROP TABLE IF EXISTS "diamonds";
 
 CREATE TABLE "diamonds" (
     "carat" BINARY_FLOAT,
@@ -18,7 +18,7 @@ CREATE TABLE "diamonds" (
     "z" BINARY_FLOAT
 );
 
-DROP TABLE "batting";
+DROP TABLE IF EXISTS "batting";
 
 CREATE TABLE "batting" (
     "playerID" VARCHAR2(255),
@@ -45,7 +45,7 @@ CREATE TABLE "batting" (
     "GIDP" NUMBER(18)
 );
 
-DROP TABLE "awards_players";
+DROP TABLE IF EXISTS "awards_players";
 
 CREATE TABLE "awards_players" (
     "playerID" VARCHAR2(255),
@@ -56,7 +56,7 @@ CREATE TABLE "awards_players" (
     "notes" VARCHAR2(255)
 ) ;
 
-DROP TABLE "functional_alltypes";
+DROP TABLE IF EXISTS "functional_alltypes";
 
 CREATE TABLE "functional_alltypes" (
     "id" NUMBER(9),
@@ -77,7 +77,7 @@ CREATE TABLE "functional_alltypes" (
     "month" NUMBER(9)
 );
 
-DROP TABLE "win";
+DROP TABLE IF EXISTS "win";
 
 CREATE TABLE "win" ("g" VARCHAR2(8), "x" NUMBER(18), "y" NUMBER(18));
 INSERT INTO "win" VALUES
