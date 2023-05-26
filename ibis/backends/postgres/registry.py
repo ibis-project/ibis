@@ -496,7 +496,7 @@ def _arbitrary(t, op):
         raise com.UnsupportedOperationError(
             f"postgres backend doesn't support how={how!r} for the arbitrary() aggregate"
         )
-    func = getattr(sa.func.public, f"_ibis_{op.how}")
+    func = getattr(sa.func, op.how)
     return t._reduction(func, op)
 
 
@@ -709,7 +709,7 @@ operation_registry.update(
         ops.Arbitrary: _arbitrary,
         ops.StructColumn: _struct_column,
         ops.StructField: _struct_field,
-        ops.First: reduction(sa.func.public._ibis_first),
-        ops.Last: reduction(sa.func.public._ibis_last),
+        ops.First: reduction(sa.func.first),
+        ops.Last: reduction(sa.func.last),
     }
 )
