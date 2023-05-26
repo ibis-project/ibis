@@ -178,6 +178,28 @@ $$ {defn["source"]} $$"""
         connect_args: Mapping[str, Any] | None = None,
         **kwargs: Any,
     ):
+        """Connect to Snowflake.
+
+        Parameters
+        ----------
+        user
+            Username
+        password
+            Password
+        account
+            A Snowflake organization ID and a Snowflake user ID, separated by a hyphen.
+            Note that a Snowflake user ID is a separate identifier from a username.
+            See https://ibis-project.org/backends/Snowflake/ for details
+        database
+            A Snowflake database and a Snowflake schema, separated by a `/`.
+            See https://ibis-project.org/backends/Snowflake/ for details
+        connect_args
+            Additional arguments passed to the SQLAlchemy engine creation call.
+        kwargs:
+            Additiional arguments passed to the SQLAlchemy URL constructor.
+            See https://docs.snowflake.com/en/developer-guide/python-connector/sqlalchemy#additional-connection-parameters
+            for more details
+        """
         dbparams = dict(zip(("database", "schema"), database.split("/", 1)))
         if dbparams.get("schema") is None:
             raise ValueError(
