@@ -1070,3 +1070,30 @@ def execute_not_any(op, **kwargs):
         arg = ops.Where(op_where, arg, None)
 
     return translate(arg).any().is_not()
+
+
+def _arg_min_max(op, func, **kwargs):
+    key = op.key
+    arg = op.arg
+
+    if (op_where := op.where) is not None:
+        key = ops.Where(op_where, key, None)
+        arg = ops.Where(op_where, arg, None)
+
+    translate_arg = translate(arg)
+    translate_key = translate(key)
+
+    not_null_mask = translate_arg.is_not_null() & translate_key.is_not_null()
+    return translate_arg.filter(not_null_mask).take(
+        func(translate_key.filter(not_null_mask))
+    )
+
+
+@translate.register(ops.ArgMax)
+def execute_arg_max(op, **kwargs):
+    return _arg_min_max(op, pl.Expr.arg_max, **kwargs)
+
+
+@translate.register(ops.ArgMin)
+def execute_arg_min(op, **kwargs):
+    return _arg_min_max(op, pl.Expr.arg_min, **kwargs)
