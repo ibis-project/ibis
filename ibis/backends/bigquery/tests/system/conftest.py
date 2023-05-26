@@ -12,6 +12,8 @@ import ibis
 DEFAULT_PROJECT_ID = "ibis-gbq"
 PROJECT_ID_ENV_VAR = "GOOGLE_BIGQUERY_PROJECT_ID"
 DATASET_ID = "ibis_gbq_testing"
+DATASET_ID_TOKYO = "ibis_gbq_testing_tokyo"
+REGION_TOKYO = "asia-northeast1"
 
 
 def pytest_addoption(parser):
@@ -32,6 +34,16 @@ def pytest_addoption(parser):
 @pytest.fixture(scope="session")
 def dataset_id() -> str:
     return DATASET_ID
+
+
+@pytest.fixture(scope="session")
+def dataset_id_tokyo() -> str:
+    return DATASET_ID_TOKYO
+
+
+@pytest.fixture(scope="session")
+def region_tokyo() -> str:
+    return REGION_TOKYO
 
 
 @pytest.fixture(scope="session")
