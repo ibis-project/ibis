@@ -309,6 +309,8 @@ filterwarnings = [
   # this has no effect on ibis's output because we convert types after
   # execution
   "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning",
+  # snowflake vendors an older version requests
+  "ignore:'urllib3\\.contrib\\.pyopenssl' module is deprecated and will be removed in a future release of urllib3:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
