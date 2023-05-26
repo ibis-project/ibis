@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import warnings
 from typing import TYPE_CHECKING, Iterable, Literal
 
 import sqlalchemy as sa
@@ -17,37 +16,8 @@ if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
 
 
-# adapted from https://wiki.postgresql.org/wiki/First/last_%28aggregate%29
-_CREATE_FIRST_LAST_AGGS_SQL = """\
-CREATE OR REPLACE FUNCTION public._ibis_first_agg (anyelement, anyelement)
-RETURNS anyelement
-LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
-'SELECT $1';
-
-CREATE OR REPLACE AGGREGATE public._ibis_first (anyelement) (
-  SFUNC = public._ibis_first_agg,
-  STYPE = anyelement,
-  PARALLEL = safe
-);
-
-CREATE OR REPLACE FUNCTION public._ibis_last_agg (anyelement, anyelement)
-RETURNS anyelement
-LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE AS
-'SELECT $2';
-
-CREATE OR REPLACE AGGREGATE public._ibis_last (anyelement) (
-  SFUNC = public._ibis_last_agg,
-  STYPE = anyelement,
-  PARALLEL = safe
-);"""
-
-_DROP_FIRST_LAST_AGGS_SQL = """\
-DROP AGGREGATE IF EXISTS public._ibis_first(anyelement), public._ibis_last(anyelement);
-DROP FUNCTION IF EXISTS public._ibis_first_agg(anyelement, anyelement), public._ibis_last_agg(anyelement, anyelement);"""
-
-
 class Backend(BaseAlchemyBackend):
-    name = 'postgres'
+    name = "postgres"
     compiler = PostgreSQLCompiler
     supports_create_or_replace = False
 
@@ -148,28 +118,6 @@ class Backend(BaseAlchemyBackend):
         def connect(dbapi_connection, connection_record):
             with dbapi_connection.cursor() as cur:
                 cur.execute("SET TIMEZONE = UTC")
-
-        @sa.event.listens_for(engine, "before_execute")
-        def receive_before_execute(
-            conn, clauseelement, multiparams, params, execution_options
-        ):
-            with conn.connection.cursor() as cur:
-                try:
-                    cur.execute(_CREATE_FIRST_LAST_AGGS_SQL)
-                except Exception as e:  # noqa: BLE001
-                    # a user may not have permissions to create funtions and/or aggregates
-                    warnings.warn(f"Unable to create first/last aggregates: {e}")
-
-        @sa.event.listens_for(engine, "after_execute")
-        def receive_after_execute(
-            conn, clauseelement, multiparams, params, execution_options, result
-        ):
-            with conn.connection.cursor() as cur:
-                try:
-                    cur.execute(_DROP_FIRST_LAST_AGGS_SQL)
-                except Exception as e:  # noqa: BLE001
-                    # a user may not have permissions to drop funtions and/or aggregates
-                    warnings.warn(f"Unable to drop first/last aggregates: {e}")
 
         super().do_connect(engine)
 

@@ -35,7 +35,7 @@ WITH t0 AS (
 ), t4 AS (
   SELECT
     t3.field_of_study AS field_of_study,
-    public._IBIS_FIRST(t3.diff) AS diff
+    FIRST(t3.diff) AS diff
   FROM t3
   GROUP BY
     1
