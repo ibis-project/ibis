@@ -4,6 +4,7 @@ import calendar
 import functools
 import math
 import operator
+from functools import partial
 from typing import Mapping
 
 import numpy as np
@@ -27,22 +28,22 @@ def _assert_literal(op):
 
 
 @functools.singledispatch
-def translate(expr):
+def translate(expr, *, ctx):
     raise NotImplementedError(expr)
 
 
 @translate.register(ops.Node)
-def operation(op):
+def operation(op, **_):
     raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
 
 @translate.register(ops.DatabaseTable)
-def table(op):
+def table(op, **_):
     return op.source._tables[op.name]
 
 
 @translate.register(ops.InMemoryTable)
-def pandas_in_memory_table(op):
+def pandas_in_memory_table(op, **_):
     lf = pl.from_pandas(op.data.to_frame()).lazy()
     schema = schema_from_polars(lf.schema)
 
@@ -60,8 +61,8 @@ def pandas_in_memory_table(op):
 
 
 @translate.register(ops.Alias)
-def alias(op):
-    arg = translate(op.arg)
+def alias(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.alias(op.name)
 
 
@@ -71,7 +72,7 @@ def _make_duration(value, dtype):
 
 
 @translate.register(ops.Literal)
-def literal(op):
+def literal(op, **_):
     value = op.value
     dtype = op.dtype
 
@@ -115,8 +116,8 @@ _TIMESTAMP_SCALE_TO_UNITS = {
 
 
 @translate.register(ops.Cast)
-def cast(op):
-    arg = translate(op.arg)
+def cast(op, **kw):
+    arg = translate(op.arg, **kw)
     dtype = op.arg.output_dtype
     to = op.to
 
@@ -147,13 +148,13 @@ def cast(op):
 
 
 @translate.register(ops.TableColumn)
-def column(op):
+def column(op, **_):
     return pl.col(op.name)
 
 
 @translate.register(ops.SortKey)
-def sort_key(op):
-    arg = translate(op.expr)
+def sort_key(op, **kw):
+    arg = translate(op.expr, **kw)
     descending = op.descending
     try:
         return arg.sort(descending=descending)
@@ -162,11 +163,11 @@ def sort_key(op):
 
 
 @translate.register(ops.Selection)
-def selection(op):
-    lf = translate(op.table)
+def selection(op, **kw):
+    lf = translate(op.table, **kw)
 
     if op.predicates:
-        predicates = map(translate, op.predicates)
+        predicates = map(partial(translate, **kw), op.predicates)
         predicate = functools.reduce(operator.and_, predicates)
         lf = lf.filter(predicate)
 
@@ -175,9 +176,9 @@ def selection(op):
         if isinstance(arg, ops.TableNode):
             for name in arg.schema.names:
                 column = ops.TableColumn(table=arg, name=name)
-                selections.append(translate(column))
+                selections.append(translate(column, **kw))
         elif isinstance(arg, ops.Value):
-            selections.append(translate(arg))
+            selections.append(translate(arg, **kw))
         else:
             raise com.TranslationError(
                 "DataFusion backend is unable to compile selection with "
@@ -199,32 +200,32 @@ def selection(op):
 
 
 @translate.register(ops.Limit)
-def limit(op):
+def limit(op, **kw):
     if op.offset:
         raise NotImplementedError("DataFusion does not support offset")
-    return translate(op.table).limit(op.n)
+    return translate(op.table, **kw).limit(op.n)
 
 
 @translate.register(ops.Aggregation)
-def aggregation(op):
-    lf = translate(op.table)
+def aggregation(op, **kw):
+    lf = translate(op.table, **kw)
 
     if op.predicates:
         lf = lf.filter(
             functools.reduce(
                 operator.and_,
-                map(translate, op.predicates),
+                map(partial(translate, **kw), op.predicates),
             )
         )
 
     if op.by:
-        group_by = [translate(arg) for arg in op.by]
+        group_by = [translate(arg, **kw) for arg in op.by]
         lf = lf.groupby(group_by).agg
     else:
         lf = lf.select
 
     if op.metrics:
-        metrics = [translate(arg).alias(arg.name) for arg in op.metrics]
+        metrics = [translate(arg, **kw).alias(arg.name) for arg in op.metrics]
         lf = lf(metrics)
 
     return lf
@@ -241,9 +242,9 @@ _join_types = {
 
 
 @translate.register(ops.Join)
-def join(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def join(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
 
     if isinstance(op, ops.RightJoin):
         how = 'left'
@@ -254,8 +255,8 @@ def join(op):
     left_on, right_on = [], []
     for pred in op.predicates:
         if isinstance(pred, ops.Equals):
-            left_on.append(translate(pred.left))
-            right_on.append(translate(pred.right))
+            left_on.append(translate(pred.left, **kw))
+            right_on.append(translate(pred.right, **kw))
         else:
             raise com.TranslationError(
                 "Polars backend is unable to compile join predicate "
@@ -266,7 +267,7 @@ def join(op):
 
 
 @translate.register(ops.DropNa)
-def dropna(op):
+def dropna(op, **kw):
     if op.how != 'any':
         raise com.UnsupportedArgumentError(
             f"Polars does not support how={op.how} for dropna"
@@ -274,16 +275,16 @@ def dropna(op):
     if op.subset is None:
         subset = None
     elif not len(op.subset):
-        return translate(op.table)
+        return translate(op.table, **kw)
     else:
         subset = [arg.name for arg in op.subset]
 
-    return translate(op.table).drop_nulls(subset)
+    return translate(op.table, **kw).drop_nulls(subset)
 
 
 @translate.register(ops.FillNa)
-def fillna(op):
-    table = translate(op.table)
+def fillna(op, **kw):
+    table = translate(op.table, **kw)
 
     columns = []
     for name, dtype in op.table.schema.items():
@@ -309,99 +310,99 @@ def fillna(op):
 
 
 @translate.register(ops.IfNull)
-def ifnull(op):
-    arg = translate(op.arg)
-    value = translate(op.ifnull_expr)
+def ifnull(op, **kw):
+    arg = translate(op.arg, **kw)
+    value = translate(op.ifnull_expr, **kw)
     return arg.fill_null(value)
 
 
 @translate.register(ops.ZeroIfNull)
-def zeroifnull(op):
-    arg = translate(op.arg)
+def zeroifnull(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.fill_null(0)
 
 
 @translate.register(ops.NullIf)
-def nullif(op):
-    arg = translate(op.arg)
-    null_if_expr = translate(op.null_if_expr)
+def nullif(op, **kw):
+    arg = translate(op.arg, **kw)
+    null_if_expr = translate(op.null_if_expr, **kw)
     return pl.when(arg == null_if_expr).then(None).otherwise(arg)
 
 
 @translate.register(ops.NullIfZero)
-def nullifzero(op):
-    arg = translate(op.arg)
+def nullifzero(op, **kw):
+    arg = translate(op.arg, **kw)
     return pl.when(arg == 0).then(None).otherwise(arg)
 
 
 @translate.register(ops.Where)
-def where(op):
-    bool_expr = translate(op.bool_expr)
-    true_expr = translate(op.true_expr)
-    false_null_expr = translate(op.false_null_expr)
+def where(op, **kw):
+    bool_expr = translate(op.bool_expr, **kw)
+    true_expr = translate(op.true_expr, **kw)
+    false_null_expr = translate(op.false_null_expr, **kw)
     return pl.when(bool_expr).then(true_expr).otherwise(false_null_expr)
 
 
 @translate.register(ops.SimpleCase)
-def simple_case(op):
-    base = translate(op.base)
-    default = translate(op.default)
+def simple_case(op, **kw):
+    base = translate(op.base, **kw)
+    default = translate(op.default, **kw)
     for case, result in reversed(list(zip(op.cases, op.results))):
-        case = base == translate(case)
-        result = translate(result)
+        case = base == translate(case, **kw)
+        result = translate(result, **kw)
         default = pl.when(case).then(result).otherwise(default)
     return default
 
 
 @translate.register(ops.SearchedCase)
-def searched_case(op):
-    default = translate(op.default)
+def searched_case(op, **kw):
+    default = translate(op.default, **kw)
     for case, result in reversed(list(zip(op.cases, op.results))):
-        case = translate(case)
-        result = translate(result)
+        case = translate(case, **kw)
+        result = translate(result, **kw)
         default = pl.when(case).then(result).otherwise(default)
     return default
 
 
 @translate.register(ops.Coalesce)
-def coalesce(op):
+def coalesce(op, **kw):
     arg = list(map(translate, op.arg))
     return pl.coalesce(arg)
 
 
 @translate.register(ops.Least)
-def least(op):
-    arg = [translate(arg) for arg in op.arg]
+def least(op, **kw):
+    arg = [translate(arg, **kw) for arg in op.arg]
     return pl.min(arg)
 
 
 @translate.register(ops.Greatest)
-def greatest(op):
-    arg = [translate(arg) for arg in op.arg]
+def greatest(op, **kw):
+    arg = [translate(arg, **kw) for arg in op.arg]
     return pl.max(arg)
 
 
 @translate.register(ops.Contains)
-def contains(op):
-    value = translate(op.value)
+def contains(op, **kw):
+    value = translate(op.value, **kw)
 
     if isinstance(op.options, tuple):
         options = list(map(translate, op.options))
         return pl.any([value == option for option in options])
     else:
-        options = translate(op.options)
+        options = translate(op.options, **kw)
         return value.is_in(options)
 
 
 @translate.register(ops.NotContains)
-def not_contains(op):
-    value = translate(op.value)
+def not_contains(op, **kw):
+    value = translate(op.value, **kw)
 
     if isinstance(op.options, tuple):
         options = list(map(translate, op.options))
         return ~pl.any([value == option for option in options])
     else:
-        options = translate(op.options)
+        options = translate(op.options, **kw)
         return ~value.is_in(options)
 
 
@@ -415,15 +416,15 @@ _string_unary = {
 
 
 @translate.register(ops.StringLength)
-def string_length(op):
-    arg = translate(op.arg)
+def string_length(op, **kw):
+    arg = translate(op.arg, **kw)
     typ = dtype_to_polars(op.output_dtype)
     return arg.str.lengths().cast(typ)
 
 
 @translate.register(ops.StringUnary)
-def string_unary(op):
-    arg = translate(op.arg)
+def string_unary(op, **kw):
+    arg = translate(op.arg, **kw)
     func = _string_unary.get(type(op))
     if func is None:
         raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
@@ -433,55 +434,55 @@ def string_unary(op):
 
 
 @translate.register(ops.Capitalize)
-def captalize(op):
-    arg = translate(op.arg)
+def captalize(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.apply(lambda x: x.capitalize())
 
 
 @translate.register(ops.Reverse)
-def reverse(op):
-    arg = translate(op.arg)
+def reverse(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.apply(lambda x: x[::-1])
 
 
 @translate.register(ops.StringSplit)
-def string_split(op):
-    arg = translate(op.arg)
+def string_split(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.delimiter)
     return arg.str.split(op.delimiter.value)
 
 
 @translate.register(ops.StringReplace)
-def string_replace(op):
-    arg = translate(op.arg)
-    pat = translate(op.pattern)
-    rep = translate(op.replacement)
+def string_replace(op, **kw):
+    arg = translate(op.arg, **kw)
+    pat = translate(op.pattern, **kw)
+    rep = translate(op.replacement, **kw)
     return arg.str.replace(pat, rep, literal=True)
 
 
 @translate.register(ops.StartsWith)
-def string_startswith(op):
-    arg = translate(op.arg)
+def string_startswith(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.start)
     return arg.str.starts_with(op.start.value)
 
 
 @translate.register(ops.EndsWith)
-def string_endswith(op):
-    arg = translate(op.arg)
+def string_endswith(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.end)
     return arg.str.ends_with(op.end.value)
 
 
 @translate.register(ops.StringConcat)
-def string_concat(op):
-    args = [translate(arg) for arg in op.arg]
+def string_concat(op, **kw):
+    args = [translate(arg, **kw) for arg in op.arg]
     return pl.concat_str(args)
 
 
 @translate.register(ops.StringJoin)
-def string_join(op):
-    args = [translate(arg) for arg in op.arg]
+def string_join(op, **kw):
+    args = [translate(arg, **kw) for arg in op.arg]
     _assert_literal(op.sep)
     sep = op.sep.value
     try:
@@ -491,69 +492,69 @@ def string_join(op):
 
 
 @translate.register(ops.Substring)
-def string_substrig(op):
-    arg = translate(op.arg)
+def string_substrig(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.start)
     _assert_literal(op.length)
     return arg.str.slice(op.start.value, op.length.value)
 
 
 @translate.register(ops.StringContains)
-def string_contains(op):
-    haystack = translate(op.haystack)
+def string_contains(op, **kw):
+    haystack = translate(op.haystack, **kw)
     _assert_literal(op.needle)
     return haystack.str.contains(op.needle.value)
 
 
 @translate.register(ops.RegexSearch)
-def regex_search(op):
-    arg = translate(op.arg)
+def regex_search(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.pattern)
     return arg.str.contains(op.pattern.value)
 
 
 @translate.register(ops.RegexExtract)
-def regex_extract(op):
-    arg = translate(op.arg)
+def regex_extract(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.pattern)
     _assert_literal(op.index)
     return arg.str.extract(op.pattern.value, op.index.value)
 
 
 @translate.register(ops.RegexReplace)
-def regex_replace(op):
-    arg = translate(op.arg)
-    pattern = translate(op.pattern)
-    replacement = translate(op.replacement)
+def regex_replace(op, **kw):
+    arg = translate(op.arg, **kw)
+    pattern = translate(op.pattern, **kw)
+    replacement = translate(op.replacement, **kw)
     return arg.str.replace_all(pattern, replacement)
 
 
 @translate.register(ops.LPad)
-def lpad(op):
-    arg = translate(op.arg)
+def lpad(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.length)
     _assert_literal(op.pad)
     return arg.str.rjust(op.length.value, op.pad.value)
 
 
 @translate.register(ops.RPad)
-def rpad(op):
-    arg = translate(op.arg)
+def rpad(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.length)
     _assert_literal(op.pad)
     return arg.str.ljust(op.length.value, op.pad.value)
 
 
 @translate.register(ops.StrRight)
-def str_right(op):
-    arg = translate(op.arg)
+def str_right(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.nchars)
     return arg.str.slice(-op.nchars.value, None)
 
 
 @translate.register(ops.Round)
-def round(op):
-    arg = translate(op.arg)
+def round(op, **kw):
+    arg = translate(op.arg, **kw)
     typ = dtype_to_polars(op.output_dtype)
     if op.digits is not None:
         _assert_literal(op.digits)
@@ -564,20 +565,20 @@ def round(op):
 
 
 @translate.register(ops.Radians)
-def radians(op):
-    arg = translate(op.arg)
+def radians(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg * math.pi / 180
 
 
 @translate.register(ops.Degrees)
-def degrees(op):
-    arg = translate(op.arg)
+def degrees(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg * 180 / math.pi
 
 
 @translate.register(ops.Clip)
-def clip(op):
-    arg = translate(op.arg)
+def clip(op, **kw):
+    arg = translate(op.arg, **kw)
 
     if op.lower is not None and op.upper is not None:
         _assert_literal(op.lower)
@@ -594,42 +595,42 @@ def clip(op):
 
 
 @translate.register(ops.Log)
-def log(op):
-    arg = translate(op.arg)
+def log(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.base)
     return arg.log(op.base.value)
 
 
 @translate.register(ops.Repeat)
-def repeat(op):
-    arg = translate(op.arg)
+def repeat(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.times)
     return arg.apply(lambda x: x * op.times.value)
 
 
 @translate.register(ops.Sign)
-def sign(op):
-    arg = translate(op.arg)
+def sign(op, **kw):
+    arg = translate(op.arg, **kw)
     typ = dtype_to_polars(op.output_dtype)
     return arg.sign().cast(typ)
 
 
 @translate.register(ops.Power)
-def power(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def power(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     return left.pow(right)
 
 
 @translate.register(ops.StructField)
-def struct_field(op):
-    arg = translate(op.arg)
+def struct_field(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.struct.field(op.name)
 
 
 @translate.register(ops.StructColumn)
-def struct_column(op):
-    fields = [translate(v).alias(k) for k, v in zip(op.names, op.values)]
+def struct_column(op, **kw):
+    fields = [translate(v, **kw).alias(k) for k, v in zip(op.names, op.values)]
     return pl.struct(fields)
 
 
@@ -653,25 +654,25 @@ _reductions = {
 for reduction in _reductions.keys():
 
     @translate.register(reduction)
-    def reduction(op):
-        arg = translate(op.arg)
+    def reduction(op, **kw):
+        arg = translate(op.arg, **kw)
         agg = _reductions[type(op)]
         if (where := op.where) is not None:
-            arg = arg.filter(translate(where))
+            arg = arg.filter(translate(where, **kw))
         method = getattr(arg, agg)
         return method()
 
 
 @translate.register(ops.Mode)
-def mode(op):
-    arg = translate(op.arg)
+def mode(op, **kw):
+    arg = translate(op.arg, **kw)
     if (where := op.where) is not None:
-        arg = arg.filter(translate(where))
+        arg = arg.filter(translate(where, **kw))
     return arg.mode().min()
 
 
 @translate.register(ops.Correlation)
-def correlation(op):
+def correlation(op, **kw):
     x = op.left
     if (x_type := x.output_dtype).is_boolean():
         x = ops.Cast(x, dt.Int32(nullable=x_type.nullable))
@@ -684,89 +685,88 @@ def correlation(op):
         x = ops.Where(where, x, None)
         y = ops.Where(where, y, None)
 
-    return pl.corr(translate(x), translate(y))
+    return pl.corr(translate(x, **kw), translate(y, **kw))
 
 
 @translate.register(ops.Distinct)
-def distinct(op):
-    table = translate(op.table)
+def distinct(op, **kw):
+    table = translate(op.table, **kw)
     return table.unique()
 
 
 @translate.register(ops.CountStar)
-def count_star(op):
+def count_star(op, **kw):
     if (where := op.where) is not None:
-        condition = translate(where)
+        condition = translate(where, **kw)
         return condition.filter(condition).count()
     return pl.count()
 
 
 @translate.register(ops.TimestampNow)
-def timestamp_now(op):
-    now = pd.Timestamp("now", tz="UTC").tz_localize(None)
-    return pl.lit(now)
+def timestamp_now(op, **_):
+    return pl.lit(pd.Timestamp("now", tz="UTC").tz_localize(None))
 
 
 @translate.register(ops.Strftime)
-def strftime(op):
-    arg = translate(op.arg)
+def strftime(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.format_str)
     return arg.dt.strftime(op.format_str.value)
 
 
 @translate.register(ops.Date)
-def date(op):
-    arg = translate(op.arg)
+def date(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.cast(pl.Date)
 
 
 @translate.register(ops.DateTruncate)
 @translate.register(ops.TimestampTruncate)
-def temporal_truncate(op):
-    arg = translate(op.arg)
+def temporal_truncate(op, **kw):
+    arg = translate(op.arg, **kw)
     unit = "mo" if op.unit.short == "M" else op.unit.short
     unit = f"1{unit.lower()}"
     return arg.dt.truncate(unit, "-1w")
 
 
 @translate.register(ops.DateFromYMD)
-def date_from_ymd(op):
+def date_from_ymd(op, **kw):
     return pl.date(
-        year=translate(op.year),
-        month=translate(op.month),
-        day=translate(op.day),
+        year=translate(op.year, **kw),
+        month=translate(op.month, **kw),
+        day=translate(op.day, **kw),
     )
 
 
 @translate.register(ops.Atan2)
-def atan2(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def atan2(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     return pl.map([left, right], lambda cols: np.arctan2(cols[0], cols[1]))
 
 
 @translate.register(ops.Modulus)
-def modulus(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def modulus(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     return pl.map([left, right], lambda cols: np.mod(cols[0], cols[1]))
 
 
 @translate.register(ops.TimestampFromYMDHMS)
-def timestamp_from_ymdhms(op):
+def timestamp_from_ymdhms(op, **kw):
     return pl.datetime(
-        year=translate(op.year),
-        month=translate(op.month),
-        day=translate(op.day),
-        hour=translate(op.hours),
-        minute=translate(op.minutes),
-        second=translate(op.seconds),
+        year=translate(op.year, **kw),
+        month=translate(op.month, **kw),
+        day=translate(op.day, **kw),
+        hour=translate(op.hours, **kw),
+        minute=translate(op.minutes, **kw),
+        second=translate(op.seconds, **kw),
     )
 
 
 @translate.register(ops.TimestampFromUNIX)
-def timestamp_from_unix(op):
-    arg = translate(op.arg)
+def timestamp_from_unix(op, **kw):
+    arg = translate(op.arg, **kw)
     unit = op.unit.short
     if unit == "s":
         arg = arg.cast(pl.Int64) * 1_000
@@ -775,46 +775,46 @@ def timestamp_from_unix(op):
 
 
 @translate.register(ops.IntervalFromInteger)
-def interval_from_integer(op):
-    arg = translate(op.arg)
+def interval_from_integer(op, **kw):
+    arg = translate(op.arg, **kw)
     return _make_duration(arg, dt.Interval(unit=op.unit))
 
 
 @translate.register(ops.StringToTimestamp)
-def string_to_timestamp(op):
-    arg = translate(op.arg)
+def string_to_timestamp(op, **kw):
+    arg = translate(op.arg, **kw)
     _assert_literal(op.format_str)
     return arg.str.strptime(pl.Datetime, op.format_str.value)
 
 
 @translate.register(ops.TimestampAdd)
-def timestamp_add(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def timestamp_add(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     return left + right
 
 
 @translate.register(ops.TimestampSub)
 @translate.register(ops.DateDiff)
 @translate.register(ops.IntervalSubtract)
-def timestamp_sub(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def timestamp_sub(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     return left - right
 
 
 @translate.register(ops.TimestampDiff)
-def timestamp_diff(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def timestamp_diff(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     # TODO: truncating both to seconds is necessary to conform to the output
     # type of the operation
     return left.dt.truncate("1s") - right.dt.truncate("1s")
 
 
 @translate.register(ops.ArrayLength)
-def array_length(op):
-    arg = translate(op.arg)
+def array_length(op, **kw):
+    arg = translate(op.arg, **kw)
     try:
         return arg.arr.lengths()
     except AttributeError:
@@ -822,9 +822,9 @@ def array_length(op):
 
 
 @translate.register(ops.ArrayConcat)
-def array_concat(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def array_concat(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     try:
         return left.arr.concat(right)
     except AttributeError:
@@ -832,16 +832,16 @@ def array_concat(op):
 
 
 @translate.register(ops.ArrayColumn)
-def array_column(op):
+def array_column(op, **kw):
     cols = list(map(translate, op.cols))
     return pl.concat_list(cols)
 
 
 @translate.register(ops.ArrayCollect)
-def array_collect(op):
-    arg = translate(op.arg)
+def array_collect(op, **kw):
+    arg = translate(op.arg, **kw)
     if (where := op.where) is not None:
-        arg = arg.filter(translate(where))
+        arg = arg.filter(translate(where, **kw))
     try:
         return arg.implode()
     except AttributeError:  # pragma: no cover
@@ -849,8 +849,8 @@ def array_collect(op):
 
 
 @translate.register(ops.Unnest)
-def unnest(op):
-    arg = translate(op.arg)
+def unnest(op, **kw):
+    arg = translate(op.arg, **kw)
     try:
         return arg.arr.explode()
     except AttributeError:
@@ -872,15 +872,15 @@ _date_methods = {
 
 
 @translate.register(ops.ExtractTemporalField)
-def extract_date_field(op):
-    arg = translate(op.arg)
+def extract_date_field(op, **kw):
+    arg = translate(op.arg, **kw)
     method = operator.methodcaller(_date_methods[type(op)])
     return method(arg.dt).cast(pl.Int32)
 
 
 @translate.register(ops.ExtractEpochSeconds)
-def extract_epoch_seconds(op):
-    arg = translate(op.arg)
+def extract_epoch_seconds(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.dt.epoch('s').cast(pl.Int32)
 
 
@@ -917,8 +917,8 @@ _unary = {
 
 
 @translate.register(ops.DayOfWeekName)
-def day_of_week_name(op):
-    index = translate(op.arg).dt.weekday() - _day_of_week_offset
+def day_of_week_name(op, **kw):
+    index = translate(op.arg, **kw).dt.weekday() - _day_of_week_offset
     arg = None
     for i, name in enumerate(calendar.day_name):
         arg = pl.when(index == i).then(name).otherwise(arg)
@@ -926,8 +926,8 @@ def day_of_week_name(op):
 
 
 @translate.register(ops.Unary)
-def unary(op):
-    arg = translate(op.arg)
+def unary(op, **kw):
+    arg = translate(op.arg, **kw)
     func = _unary.get(type(op))
     if func is None:
         raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
@@ -945,9 +945,9 @@ _comparisons = {
 
 
 @translate.register(ops.Comparison)
-def comparison(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def comparison(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     func = _comparisons.get(type(op))
     if func is None:
         raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
@@ -955,12 +955,12 @@ def comparison(op):
 
 
 @translate.register(ops.Between)
-def between(op):
+def between(op, **kw):
     op_arg = op.arg
-    arg = translate(op_arg)
+    arg = translate(op_arg, **kw)
     dtype = op_arg.output_dtype
-    lower = translate(ops.Cast(op.lower_bound, dtype))
-    upper = translate(ops.Cast(op.upper_bound, dtype))
+    lower = translate(ops.Cast(op.lower_bound, dtype), **kw)
+    upper = translate(ops.Cast(op.upper_bound, dtype), **kw)
     return arg.is_between(lower, upper, closed="both")
 
 
@@ -974,12 +974,12 @@ _bitwise_binops = {
 
 
 @translate.register(ops.BitwiseBinary)
-def bitwise_binops(op):
+def bitwise_binops(op, **kw):
     ufunc = _bitwise_binops.get(type(op))
     if ufunc is None:
         raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
-    left = translate(op.left)
-    right = translate(op.right)
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
 
     if isinstance(op.right, ops.Literal):
         result = left.map(lambda col: ufunc(col, op.right.value))
@@ -992,8 +992,8 @@ def bitwise_binops(op):
 
 
 @translate.register(ops.BitwiseNot)
-def bitwise_not(op):
-    arg = translate(op.arg)
+def bitwise_not(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.map(lambda x: np.invert(x))
 
 
@@ -1012,9 +1012,9 @@ _binops = {
 
 
 @translate.register(ops.Binary)
-def binop(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def binop(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     func = _binops.get(type(op))
     if func is None:
         raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
@@ -1022,60 +1022,60 @@ def binop(op):
 
 
 @translate.register(ops.ElementWiseVectorizedUDF)
-def elementwise_udf(op):
-    func_args = list(map(translate, op.func_args))
+def elementwise_udf(op, **kw):
+    func_args = [translate(arg, **kw) for arg in op.func_args]
     return_type = dtype_to_polars(op.return_type)
 
     return pl.map(func_args, lambda args: op.func(*args), return_dtype=return_type)
 
 
 @translate.register(ops.E)
-def execute_e(op, **kwargs):
+def execute_e(op, **_):
     return pl.lit(np.e)
 
 
 @translate.register(ops.Pi)
-def execute_pi(op, **kwargs):
+def execute_pi(op, **_):
     return pl.lit(np.pi)
 
 
 @translate.register(ops.Time)
-def execute_time(op, **kwargs):
-    arg = translate(op.arg, **kwargs)
+def execute_time(op, **kw):
+    arg = translate(op.arg, **kw)
     if op.arg.output_dtype.is_timestamp():
         return arg.dt.truncate("1us").cast(pl.Time)
     return arg
 
 
 @translate.register(ops.Union)
-def execute_union(op, **kwargs):
-    result = pl.concat([translate(op.left, **kwargs), translate(op.right, **kwargs)])
+def execute_union(op, **kw):
+    result = pl.concat([translate(op.left, **kw), translate(op.right, **kw)])
     if op.distinct:
         return result.unique()
     return result
 
 
 @translate.register(ops.Hash)
-def execute_hash(op, **kwargs):
-    return translate(op.arg).hash()
+def execute_hash(op, **kw):
+    return translate(op.arg, **kw).hash()
 
 
 @translate.register(ops.NotAll)
-def execute_not_all(op, **kwargs):
+def execute_not_all(op, **kw):
     arg = op.arg
     if (op_where := op.where) is not None:
         arg = ops.Where(op_where, arg, None)
 
-    return translate(arg).all().is_not()
+    return translate(arg, **kw).all().is_not()
 
 
 @translate.register(ops.NotAny)
-def execute_not_any(op, **kwargs):
+def execute_not_any(op, **kw):
     arg = op.arg
     if (op_where := op.where) is not None:
         arg = ops.Where(op_where, arg, None)
 
-    return translate(arg).any().is_not()
+    return translate(arg, **kw).any().is_not()
 
 
 def _arg_min_max(op, func, **kwargs):
@@ -1103,3 +1103,17 @@ def execute_arg_max(op, **kwargs):
 @translate.register(ops.ArgMin)
 def execute_arg_min(op, **kwargs):
     return _arg_min_max(op, pl.Expr.arg_min, **kwargs)
+
+
+@translate.register(ops.SQLStringView)
+def execute_sql_string_view(op, *, ctx: pl.SQLContext, **kw):
+    child = translate(op.child, ctx=ctx, **kw)
+    ctx.register(op.name, child)
+    return ctx.execute(op.query)
+
+
+@translate.register(ops.View)
+def execute_view(op, *, ctx: pl.SQLContext, **kw):
+    child = translate(op.child, ctx=ctx, **kw)
+    ctx.register(op.name, child)
+    return child
