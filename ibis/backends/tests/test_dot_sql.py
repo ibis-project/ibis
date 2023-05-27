@@ -5,6 +5,11 @@ from pytest import param
 import ibis
 from ibis import _
 
+try:
+    from polars.exceptions import ComputeError as PolarsComputeError
+except ImportError:
+    PolarsComputeError = None
+
 table_dot_sql_notimpl = pytest.mark.notimpl(
     ["bigquery", "clickhouse", "impala", "druid"]
 )
@@ -14,8 +19,7 @@ dot_sql_notyet = pytest.mark.notyet(
     reason="snowflake and oracle column names are case insensitive",
 )
 dot_sql_never = pytest.mark.never(
-    ["dask", "pandas", "polars"],
-    reason="dask and pandas do not accept SQL",
+    ["dask", "pandas"], reason="dask and pandas do not accept SQL"
 )
 
 pytestmark = [pytest.mark.xdist_group("dot_sql")]
@@ -31,7 +35,14 @@ _NAMES = {
 @pytest.mark.parametrize(
     "schema",
     [
-        param(None, id="implicit_schema", marks=pytest.mark.notimpl(["druid"])),
+        param(
+            None,
+            id="implicit_schema",
+            marks=[
+                pytest.mark.notimpl(["druid"]),
+                pytest.mark.notyet(["polars"], raises=PolarsComputeError),
+            ],
+        ),
         param({"s": "string", "new_col": "double"}, id="explicit_schema"),
     ],
 )
@@ -74,6 +85,7 @@ def test_con_dot_sql(backend, con, schema):
 @dot_sql_notyet
 @dot_sql_never
 @pytest.mark.notimpl(["trino"])
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql(backend, con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -112,6 +124,7 @@ def test_table_dot_sql(backend, con):
 @dot_sql_notyet
 @dot_sql_never
 @pytest.mark.notimpl(["trino"])
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql_with_join(backend, con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -160,6 +173,7 @@ def test_table_dot_sql_with_join(backend, con):
 @dot_sql_notyet
 @dot_sql_never
 @pytest.mark.notimpl(["trino"])
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql_repr(con):
     alltypes = con.table("functional_alltypes")
     t = (
@@ -184,6 +198,7 @@ def test_table_dot_sql_repr(con):
 @dot_sql_notimpl
 @dot_sql_never
 @pytest.mark.notimpl(["oracle"])
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql_does_not_clobber_existing_tables(con, temp_table):
     t = con.create_table(temp_table, schema=ibis.schema(dict(a="string")))
     expr = t.sql("SELECT 1 as x FROM functional_alltypes")

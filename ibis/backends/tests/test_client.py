@@ -128,7 +128,7 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["datafusion", "polars", "druid"])
+@mark.notimpl(["datafusion", "druid"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, {})
