@@ -1,8 +1,11 @@
+import duckdb_engine
 import pytest
+import sqlalchemy as sa
 import sqlglot as sg
 from packaging.version import parse as vparse
 from pytest import param
 
+import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.backends.duckdb.datatypes import parse
@@ -119,3 +122,12 @@ def test_parse_quoted_struct_field():
     assert ddt.parse('STRUCT("a" INT, "a b c" INT)') == dt.Struct(
         {"a": dt.int32, "a b c": dt.int32}
     )
+
+
+def test_generate_quoted_struct():
+    typ = sat.StructType(
+        {"in come": sa.TEXT(), "my count": sa.BIGINT(), "thing": sa.INT()}
+    )
+    result = typ.compile(dialect=duckdb_engine.Dialect())
+    expected = 'STRUCT("in come" TEXT, "my count" BIGINT, thing INTEGER)'
+    assert result == expected

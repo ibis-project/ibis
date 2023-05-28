@@ -47,8 +47,9 @@ class StructType(sat.UserDefinedType):
 
 @compiles(StructType, "default")
 def compiles_struct(element, compiler, **kw):
+    quote = compiler.dialect.identifier_preparer.quote
     content = ", ".join(
-        f"{field} {compiler.process(typ, **kw)}"
+        f"{quote(field)} {compiler.process(typ, **kw)}"
         for field, typ in element.fields.items()
     )
     return f"STRUCT({content})"
