@@ -214,9 +214,6 @@ def test_coerced_to():
 
 
 def test_generic_coerced_to():
-    T = TypeVar("T")
-    S = TypeVar("S")
-
     class DataType:
         def __eq__(self, other):
             return type(self) == type(other)
@@ -752,9 +749,6 @@ def test_pattern_coercible_checks_type():
 
     assert PlusTwo.__coerce__(1) == 3
     assert v.match(1, context={}) is NoMatch
-
-
-T = TypeVar("T")
 
 
 class DoubledList(Coercible, List[T]):

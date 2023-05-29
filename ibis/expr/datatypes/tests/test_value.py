@@ -53,7 +53,7 @@ class Foo(enum.Enum):
         # parametric types
         (list('abc'), dt.Array(dt.string)),
         (set('abc'), dt.Array(dt.string)),
-        ({1, 5, 5, 6}, dt.Array(dt.int8)),
+        ({1, 5, 6}, dt.Array(dt.int8)),
         (frozenset(list('abc')), dt.Array(dt.string)),
         ([1, 2, 3], dt.Array(dt.int8)),
         ([1, 128], dt.Array(dt.int16)),
