@@ -201,3 +201,16 @@ def test_dot_sql_alias_with_params(backend, alltypes, df):
     result = x.execute()
     expected = df.string_col.add(" abc").rename("x")
     backend.assert_series_equal(result.x, expected)
+
+
+@table_dot_sql_notimpl
+@dot_sql_notimpl
+@dot_sql_never
+@pytest.mark.notimpl(["trino", "oracle"])
+def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
+    foo1 = alltypes.select(x=alltypes.string_col).alias("foo")
+    foo2 = alltypes.select(x=alltypes.bigint_col).alias("foo")
+    expected1 = df.string_col.rename("x")
+    expected2 = df.bigint_col.rename("x")
+    backend.assert_series_equal(foo1.x.execute(), expected1)
+    backend.assert_series_equal(foo2.x.execute(), expected2)
