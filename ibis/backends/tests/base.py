@@ -101,10 +101,8 @@ class BackendTest(abc.ABC):
     def connect(data_directory: Path):
         """Return a connection with data loaded from `data_directory`."""
 
-    @staticmethod
-    def _load_data(  # noqa: B027
-        data_directory: Path, script_directory: Path, **kwargs: Any
-    ) -> None:
+    @staticmethod  # noqa: B027
+    def _load_data(data_directory: Path, script_directory: Path, **kwargs: Any) -> None:
         """Load test data into a backend.
 
         Default implementation is a no-op.
@@ -131,8 +129,8 @@ class BackendTest(abc.ABC):
                 fn.touch()
         return cls(data_dir)
 
-    @classmethod
-    def preload(cls, data_dir: Path):  # noqa: B027
+    @classmethod  # noqa: B027
+    def preload(cls, data_dir: Path):
         """Code to execute before loading data."""
 
     @classmethod
