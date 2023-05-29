@@ -234,26 +234,28 @@ class Backend(BaseAlchemyBackend):
         )
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        raw_name = util.guid()
-        name = self._quote(raw_name)
+        name = util.gen_name("postgres_metadata")
         type_info_sql = """\
 SELECT
   attname,
   format_type(atttypid, atttypmod) AS type
 FROM pg_attribute
-WHERE attrelid = CAST(:raw_name AS regclass)
+WHERE attrelid = CAST(:name AS regclass)
   AND attnum > 0
   AND NOT attisdropped
 ORDER BY attnum"""
         if self.inspector.has_table(query):
             query = f"TABLE {query}"
+
+        text = sa.text(type_info_sql).bindparams(name=name)
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE TEMPORARY VIEW {name} AS {query}")
-            type_info = con.execute(
-                sa.text(type_info_sql).bindparams(raw_name=raw_name)
-            )
-            yield from ((col, _get_type(typestr)) for col, typestr in type_info)
-            con.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
+            try:
+                yield from (
+                    (col, _get_type(typestr)) for col, typestr in con.execute(text)
+                )
+            finally:
+                con.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
