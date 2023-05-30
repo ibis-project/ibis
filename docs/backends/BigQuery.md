@@ -1,7 +1,10 @@
 ---
 backend_name: Google BigQuery
 backend_url: https://cloud.google.com/bigquery
+exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
 ---
+
+{% include 'backends/badges.md' %}
 
 ## Install
 
@@ -22,7 +25,7 @@ Install `ibis` and dependencies for the BigQuery backend:
 
 {% endfor %}
 
-## Usage
+## Connect
 
 ### `ibis.bigquery.connect`
 

@@ -1,7 +1,10 @@
 ---
 backend_name: Snowflake
 backend_url: https://snowflake.com/
+exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
 ---
+
+{% include 'backends/badges.md' %}
 
 !!! experimental "Introduced in v4.0"
 
@@ -26,7 +29,7 @@ Install `ibis` and dependencies for the Snowflake backend:
 
 {% endfor %}
 
-## Usage
+## Connect
 
 ### `ibis.snowflake.connect`
 
@@ -42,6 +45,8 @@ con = ibis.snowflake.connect(
 <!-- prettier-ignore-start -->
 !!! info "`ibis.snowflake.connect` is a thin wrapper around [`ibis.backends.snowflake.Backend.do_connect`][ibis.backends.snowflake.Backend.do_connect]."
 <!-- prettier-ignore-end -->
+
+### Connection Parameters
 
 <!-- prettier-ignore-start -->
 ::: ibis.backends.snowflake.Backend.do_connect
