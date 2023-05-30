@@ -15,7 +15,88 @@
   "packageRules": [
     {
       "matchManagers": ["docker-compose", "dockerfile", "github-actions"],
-      "automerge": true
+      "automerge": true,
+      "autoApprove": true
+    },
+    {
+      "matchPackagePatterns": ["clickhouse-connect"],
+      "labels": ["backends - clickhouse"]
+    },
+    {
+      "matchPackagePatterns": ["dask"],
+      "labels": ["backends - dask"]
+    },
+    {
+      "matchPackagePatterns": ["datafusion"],
+      "labels": ["backends - datafusion"]
+    },
+    {
+      "matchPackagePatterns": [
+        "db-dtypes",
+        "google-cloud-bigquery",
+        "google-cloud-bigquery-storage",
+        "pydata-google-auth"
+      ],
+      "labels": ["backends - bigquery"]
+    },
+    {
+      "matchPackagePatterns": ["duckdb", "duckdb-engine"],
+      "labels": ["backends - duckdb"]
+    },
+    {
+      "matchPackagePatterns": ["fsspec", "impyla"],
+      "labels": ["backends - impala"]
+    },
+    {
+      "matchPackagePatterns": ["oracledb"],
+      "labels": ["backends - oracle"]
+    },
+    {
+      "matchPackagePatterns": ["polars"],
+      "labels": ["backends - polars"]
+    },
+    {
+      "matchPackagePatterns": ["psycopg2"],
+      "labels": ["backends - postgres"]
+    },
+    {
+      "matchPackagePatterns": ["pydruid"],
+      "labels": ["backends - druid"]
+    },
+    {
+      "matchPackagePatterns": ["pymssql"],
+      "labels": ["backends - mssql"]
+    },
+    {
+      "matchPackagePatterns": ["pymssql"],
+      "labels": ["backends - mssql"]
+    },
+    {
+      "matchPackagePatterns": ["pyspark"],
+      "labels": ["backends - pyspark"]
+    },
+    {
+      "matchPackagePatterns": [
+        "snowflake-connector-python",
+        "snowflake-sqlalchemy"
+      ],
+      "labels": ["backends - snowflake"]
+    },
+    {
+      "matchPackagePatterns": ["trino"],
+      "labels": ["backends - trino"]
+    },
+    {
+      "matchDepTypes": ["dev"],
+      "labels": ["developer-tools"]
+    },
+    {
+      "matchDepTypes": ["test"],
+      "labels": ["tests"]
+    },
+    {
+      "matchDepTypes": ["docs"],
+      "labels": ["docs"]
     }
   ]
 }
