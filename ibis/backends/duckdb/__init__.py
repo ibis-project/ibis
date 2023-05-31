@@ -473,6 +473,50 @@ class Backend(BaseAlchemyBackend):
 
         return self.table(table_name)
 
+    def read_delta(
+        self,
+        source_table: str,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a Delta Lake table as a table in the current database.
+
+        Parameters
+        ----------
+        source_table
+            The data source. Must be a directory
+            containing a Delta Lake table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Additional keyword arguments passed to DuckDB loading function.
+            Additional keyword arguments passed to deltalake.DeltaTable.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+        """
+        source_table = normalize_filenames(source_table)[0]
+
+        table_name = table_name or util.gen_name("read_delta")
+
+        try:
+            from deltalake import DeltaTable
+        except ImportError:
+            raise ImportError(
+                "The deltalake extra is required to use the "
+                "read_delta method. You can install it using pip:\n\n"
+                "pip install ibis-framework[deltalake]\n"
+            )
+
+        delta_table = DeltaTable(source_table, **kwargs)
+
+        return self.read_in_memory(
+            delta_table.to_pyarrow_dataset(), table_name=table_name
+        )
+
     def list_tables(self, like=None, database=None):
         tables = self.inspector.get_table_names(schema=database)
         views = self.inspector.get_view_names(schema=database)

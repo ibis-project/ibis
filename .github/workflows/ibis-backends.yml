@@ -59,6 +59,7 @@ jobs:
             title: DuckDB
             extras:
               - duckdb
+              - deltalake
           - name: pandas
             title: Pandas
             extras:
@@ -75,6 +76,7 @@ jobs:
             title: Polars
             extras:
               - polars
+              - deltalake
           - name: mysql
             title: MySQL
             services:

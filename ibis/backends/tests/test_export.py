@@ -1,4 +1,5 @@
 import pandas as pd
+import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 from packaging.version import parse as vparse
@@ -6,6 +7,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import selectors as s
 from ibis import util
 
 pa = pytest.importorskip("pyarrow")
@@ -313,3 +315,44 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     )
     assert len(result) == 1
     assert isinstance(result.type, pyarrow_dtype)
+
+
+@pytest.mark.notyet(
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ],
+    raises=AttributeError,
+    reason="read_delta not yet implemented",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=pa.lib.ArrowTypeError,
+    reason="arrow type conversion fails in `to_delta` call",
+)
+def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
+    pytest.importorskip("deltalake")
+
+    # delta can't handle nanosecond timestamp columns it seems
+    t = alltypes.drop(s.c("__time", "timestamp_col")).head()
+    expected = t.execute()
+    path = tmp_path / "test.delta"
+    t.to_delta(path)
+
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    dt = ibis.read_delta(path)
+    result = dt.to_pandas()
+
+    tm.assert_frame_equal(result, expected)

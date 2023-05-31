@@ -444,6 +444,45 @@ class _FileIOHandler:
             for batch in batch_reader:
                 writer.write_batch(batch)
 
+    @util.experimental
+    def to_delta(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a Delta Lake table.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to Delta Lake table.
+        path
+            The data source. A string or Path to the Delta Lake table.
+        params
+            Mapping of scalar parameter expressions to value.
+        kwargs
+            Additional keyword arguments passed to deltalake.writer.write_deltalake method
+
+        """
+        try:
+            from deltalake.writer import write_deltalake
+        except ImportError:
+            raise ImportError(
+                "The deltalake extra is required to use the "
+                "to_delta method. You can install it using pip:\n\n"
+                "pip install ibis-framework[deltalake]\n"
+            )
+
+        batch_reader = expr.to_pyarrow_batches(params=params)
+
+        write_deltalake(path, batch_reader, **kwargs)
+
 
 class BaseBackend(abc.ABC, _FileIOHandler):
     """Base backend class.

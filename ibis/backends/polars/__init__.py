@@ -224,6 +224,41 @@ class Backend(BaseBackend):
         self._add_table(table_name, pl.scan_parquet(path, **kwargs))
         return self.table(table_name)
 
+    def read_delta(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a Delta Lake as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source(s). Path to a Delta Lake table directory.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_delta.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        try:
+            import deltalake  # noqa: F401
+        except ImportError:
+            raise ImportError(
+                "The deltalake extra is required to use the "
+                "read_delta method. You can install it using pip:\n\n"
+                "pip install ibis-framework[polars,deltalake]\n"
+            )
+        path = normalize_filename(path)
+        table_name = table_name or gen_name("read_delta")
+        self._add_table(table_name, pl.scan_delta(path, **kwargs))
+        return self.table(table_name)
+
     def database(self, name=None):
         return Database(name, self)
 

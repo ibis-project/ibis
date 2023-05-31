@@ -136,6 +136,7 @@ __all__ = (
     'random',
     'range_window',
     'read_csv',
+    'read_delta',
     'read_json',
     'read_parquet',
     'row_number',
@@ -934,6 +935,32 @@ def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> i
 
     con = _default_backend()
     return con.read_parquet(sources, **kwargs)
+
+
+def read_delta(source: str | Path, **kwargs: Any) -> ir.Table:
+    """Lazily load a Delta Lake table.
+
+    Parameters
+    ----------
+    source
+        A filesystem path or URL.
+    kwargs
+        Backend-specific keyword arguments for the file type.
+
+    Returns
+    -------
+    ir.Table
+        Table expression representing a file
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.read_delta("path/to/delta")  # doctest: +SKIP
+    """
+    from ibis.config import _default_backend
+
+    con = _default_backend()
+    return con.read_delta(source, **kwargs)
 
 
 def set_backend(backend: str | BaseBackend) -> None:

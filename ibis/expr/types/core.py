@@ -467,6 +467,32 @@ class Expr(Immutable):
         """
         self._find_backend(use_default=True).to_csv(self, path, **kwargs)
 
+    @experimental
+    def to_delta(
+        self,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a Delta Lake table
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the Delta Lake table directory.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.csv.CSVWriter
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
+        """
+        self._find_backend(use_default=True).to_delta(self, path, **kwargs)
+
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
         from ibis.expr.analysis import substitute_unbound
