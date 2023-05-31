@@ -63,6 +63,21 @@ con = ibis.duckdb.connect("mydb.duckdb")  # (1)
       heading_level: 4
 <!-- prettier-ignore-end -->
 
+### `ibis.connect` URL format
+
+In addition to `ibis.duckdb.connect`, you can also connect to DuckDB by
+passing a properly formatted DuckDB connection URL to `ibis.connect`
+
+```python
+con = ibis.connect("duckdb:///path/to/local/file")
+```
+
+```python
+con = ibis.connect("duckdb://") # (1)
+```
+
+1. ephemeral, in-memory database
+
 ## File Support
 
 <!-- prettier-ignore-start -->
