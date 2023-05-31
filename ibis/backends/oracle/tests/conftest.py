@@ -175,13 +175,6 @@ def init_oracle_database(
                 # XXX: maybe should just remove the comments in the sql file
                 # so we don't end up writing an entire parser here.
                 if not stmt.startswith("--"):
-                    # TODO: find a nicer way to do this (but for now, keep this
-                    # as a special case in the oracle conftest)
-                    # But srsly, why is there no `CREATE OR REPLACE TABLE`?
-                    if stmt.startswith("DROP TABLE"):
-                        with contextlib.suppress(sa.exc.DatabaseError):
-                            conn.exec_driver_sql(stmt)
-                    else:
-                        conn.exec_driver_sql(stmt)
+                    conn.exec_driver_sql(stmt)
 
     return engine
