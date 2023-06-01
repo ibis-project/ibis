@@ -5,6 +5,7 @@ edit_uri: ""
 repo_url: https://github.com/ibis-project/ibis
 extra_css:
   - stylesheets/extra.css
+  - stylesheets/code_select.css
 extra_javascript:
   - javascripts/mathjax.js
   - https://polyfill.io/v3/polyfill.min.js?features=es6
@@ -16,6 +17,7 @@ theme:
     - navigation.tabs.sticky
     - content.code.annotate
     - content.tabs.link
+    - content.code.copy
     - header.autohide
     - navigation.indexes
     - navigation.instant
@@ -120,7 +122,9 @@ markdown_extensions:
         custom_icons:
           - docs/static/icons
   - pymdownx.details
-  - pymdownx.highlight
+  - pymdownx.highlight:
+      use_pygments: true
+      pygments_lang_class: true
   - pymdownx.inlinehilite
   - pymdownx.magiclink:
       provider: github
