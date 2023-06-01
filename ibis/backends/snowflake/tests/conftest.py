@@ -59,10 +59,12 @@ class TestConf(BackendTest, RoundAwayFromZero):
         if (snowflake_url := os.environ.get("SNOWFLAKE_URL")) is None:
             pytest.skip("SNOWFLAKE_URL environment variable is not defined")
 
-        url = sa.engine.make_url(snowflake_url).set(database="")
+        raw_url = sa.engine.make_url(snowflake_url)
+        _, schema = raw_url.database.rsplit("/", 1)
+        url = raw_url.set(database="")
         con = sa.create_engine(url)
 
-        dbschema = f"ibis_testing.{url.username}"
+        dbschema = f"ibis_testing.{schema}"
 
         stmts = [
             "CREATE DATABASE IF NOT EXISTS ibis_testing",
