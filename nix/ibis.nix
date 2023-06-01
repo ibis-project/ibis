@@ -25,6 +25,8 @@ poetry2nix.mkPoetryApplication rec {
   preferWheels = true;
   __darwinAllowLocalNetworking = true;
 
+  POETRY_DYNAMIC_VERSIONING_BYPASS = "1";
+
   buildInputs = [ graphviz-nox sqlite ];
   checkInputs = buildInputs;
   nativeCheckInputs = checkInputs;
