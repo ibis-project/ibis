@@ -16,7 +16,7 @@ Install `ibis` and dependencies for the PySpark backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[pyspark]`
+    pip install 'ibis-framework[pyspark]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

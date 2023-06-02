@@ -15,7 +15,7 @@ Install `ibis` and dependencies for the Postgres backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[postgres]`
+    pip install 'ibis-framework[postgres]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

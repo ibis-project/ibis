@@ -18,7 +18,7 @@ Install `ibis` and dependencies for the Druid backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[druid]`
+    pip install 'ibis-framework[druid]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

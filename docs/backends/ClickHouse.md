@@ -14,7 +14,7 @@ Install `ibis` and dependencies for the ClickHouse backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[clickhouse]`
+    pip install 'ibis-framework[clickhouse]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

@@ -16,7 +16,7 @@ Install `ibis` and dependencies for the Apache Datafusion backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[datafusion]`
+    pip install 'ibis-framework[datafusion]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

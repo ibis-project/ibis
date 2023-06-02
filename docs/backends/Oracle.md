@@ -22,7 +22,7 @@ Install `ibis` and dependencies for the Oracle backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[oracle]`
+    pip install 'ibis-framework[oracle]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}
