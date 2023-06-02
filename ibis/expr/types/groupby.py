@@ -159,7 +159,9 @@ class GroupedTable:
             window=self._window,
         )
 
-    def mutate(self, *exprs: ir.Value | Sequence[ir.Value], **kwexprs: ir.Value) -> ir.Table:
+    def mutate(
+        self, *exprs: ir.Value | Sequence[ir.Value], **kwexprs: ir.Value
+    ) -> ir.Table:
         """Return a table projection with window functions applied.
 
         Any arguments can be functions.
