@@ -105,7 +105,7 @@ class GroupedTable:
         else:
             return GroupedArray(col, self)
 
-    def aggregate(self, metrics=None, **kwds):
+    def aggregate(self, metrics=None, **kwds) -> ir.Table:
         """Compute aggregates over a group by."""
         return self.table.aggregate(metrics, by=self.by, having=self._having, **kwds)
 
@@ -159,7 +159,7 @@ class GroupedTable:
             window=self._window,
         )
 
-    def mutate(self, *exprs: ir.Value | Sequence[ir.Value], **kwexprs: ir.Value):
+    def mutate(self, *exprs: ir.Value | Sequence[ir.Value], **kwexprs: ir.Value) -> ir.Table:
         """Return a table projection with window functions applied.
 
         Any arguments can be functions.
@@ -207,7 +207,7 @@ class GroupedTable:
         exprs = self._selectables(*exprs, **kwexprs)
         return self.table.mutate(exprs)
 
-    def select(self, *exprs, **kwexprs):
+    def select(self, *exprs, **kwexprs) -> ir.Table:
         """Project new columns out of the grouped table.
 
         See Also
