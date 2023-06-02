@@ -21,7 +21,7 @@ in
     name = "ibis-testing-data";
     owner = "ibis-project";
     repo = "testing-data";
-    rev = "master";
+    rev = "2b3968deaa1a28791b2901dbbcc9bfd3d2f23e9b";
     sha256 = "sha256-q1b5IcOl5oIFXP7/P5RufncjHEVrWp4NjoU2uo/BE9U=";
   };
 
