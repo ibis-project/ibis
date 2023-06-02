@@ -399,6 +399,41 @@ class Across(Selector):
 
 @public
 def across(selector, func, names=None) -> Across:
+    """Applies the same data transformation function across multiple columns.
+
+    Parameters
+    ----------
+    selector: an expression that selects columns on which the transformation function will be applied.
+    func: a function (or a dictionary of functions) to use to transform the data.
+    names: a lambda function or a format string to name the columns created by the transformation function.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> import ibis.selectors as s
+    >>> from ibis import _
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.select(s.startswith("bill")).mutate(s.across(s.numeric(), dict(centered =_ - _.mean()), names = "{fn}_{col}"))
+    ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ bill_length_mm ┃ bill_depth_mm ┃ centered_bill_length_mm ┃ centered_bill_depth_mm ┃
+    ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ float64        │ float64       │ float64                 │ float64                │
+    ├────────────────┼───────────────┼─────────────────────────┼────────────────────────┤
+    │           39.1 │          18.7 │                -4.82193 │                1.54883 │
+    │           39.5 │          17.4 │                -4.42193 │                0.24883 │
+    │           40.3 │          18.0 │                -3.62193 │                0.84883 │
+    │            nan │           nan │                     nan │                    nan │
+    │           36.7 │          19.3 │                -7.22193 │                2.14883 │
+    │           39.3 │          20.6 │                -4.62193 │                3.44883 │
+    │           38.9 │          17.8 │                -5.02193 │                0.64883 │
+    │           39.2 │          19.6 │                -4.72193 │                2.44883 │
+    │           34.1 │          18.1 │                -9.82193 │                0.94883 │
+    │           42.0 │          20.2 │                -1.92193 │                3.04883 │
+    │              … │             … │                       … │                      … │
+    └────────────────┴───────────────┴─────────────────────────┴────────────────────────┘
+
+    """
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
     funcs = frozendict(func if isinstance(func, Mapping) else {None: func})
