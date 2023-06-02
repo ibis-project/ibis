@@ -23,7 +23,7 @@ Install `ibis` and dependencies for the DuckDB backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[duckdb]`
+    pip install 'ibis-framework[duckdb]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

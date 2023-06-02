@@ -15,7 +15,7 @@ Install `ibis` and dependencies for the MySQL backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[mysql]`
+    pip install 'ibis-framework[mysql]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

@@ -14,7 +14,7 @@ Install `ibis` and dependencies for the SQLite backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[sqlite]`
+    pip install 'ibis-framework[sqlite]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

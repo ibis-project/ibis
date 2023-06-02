@@ -16,7 +16,7 @@ Install `ibis` and dependencies for the MSSQL backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[mssql]`
+    pip install 'ibis-framework[mssql]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}

@@ -13,7 +13,7 @@ Install `ibis` and dependencies for the BigQuery backend:
 === "pip"
 
     ```sh
-    pip install 'ibis-framework[bigquery]`
+    pip install 'ibis-framework[bigquery]'
     ```
 
 {% for mgr in ["conda", "mamba"] %}
