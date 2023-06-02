@@ -33,7 +33,7 @@ When there are multiple properties to check it gets worse:
 ...     [
 ...         t[c] for c in t.columns
 ...         if t[c].type().is_numeric()
-...         if ("a" in c.get_name() or "cd" in c.get_name())
+...         if ("a" in c or "cd" in c)
 ...     ]
 ... )
 ```
