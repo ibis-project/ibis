@@ -3,7 +3,6 @@ from __future__ import annotations
 from io import StringIO
 from typing import Iterable
 
-import sqlglot as sg
 import toolz
 
 import ibis.common.exceptions as com
@@ -107,6 +106,8 @@ class TableSetFormatter:
             # this error scenario
             if (name := ref_op.name) is None:
                 raise com.RelationError(f'Table did not have a name: {op!r}')
+
+            import sqlglot as sg
 
             result = sg.table(
                 name,

@@ -107,6 +107,7 @@ poetry-dynamic-versioning = ">=0.18.0,<1"
 pre-commit = ">=3.1,<4"
 pydeps = ">=1.12.7,<2"
 ruff = ">=0.0.271,<0.273"
+tuna = ">=0.5.11,<1"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<24"
@@ -452,6 +453,7 @@ target-version = "py38"
 # none of these codes will be automatically fixed by ruff
 unfixable = [
   "T201",   # print statements
+  "TCH004", # lifting TYPE_CHECKING imports
   "F401",   # unused imports
   "RUF100", # unused noqa comments
   "F841",   # unused variables

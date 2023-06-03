@@ -5,7 +5,6 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Mapping
 
 import duckdb
-import numpy as np
 import sqlalchemy as sa
 from packaging.version import parse as vparse
 from sqlalchemy.ext.compiler import compiles
@@ -111,6 +110,8 @@ def compiles_struct_pack(element, compiler, **kw):
 
 
 def _literal(t, op):
+    import numpy as np
+
     dtype = op.output_dtype
     value = op.value
 
@@ -125,6 +126,8 @@ def _literal(t, op):
         values = value.tolist() if isinstance(value, np.ndarray) else value
         return sa.cast(sa.func.list_value(*values), sqla_type)
     elif dtype.is_floating():
+        import numpy as np
+
         if not np.isfinite(value):
             if np.isnan(value):
                 value = "NaN"

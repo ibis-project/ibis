@@ -12,10 +12,6 @@ from functools import cached_property
 from posixpath import join as pjoin
 from typing import TYPE_CHECKING, Any, Literal
 
-import fsspec
-import numpy as np
-import sqlglot as sg
-
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.datatypes as dt
@@ -48,11 +44,11 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.config import options
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import fsspec
     import pandas as pd
 
 
@@ -123,6 +119,8 @@ class _type_parser:
 
 
 def _chunks_to_pandas_array(chunks):
+    import numpy as np
+
     total_length = 0
     have_nulls = False
     for c in chunks:
@@ -209,6 +207,8 @@ class Backend(BaseSQLBackend):
         protocol: str = "webhdfs",
         **kwargs: Any,
     ) -> fsspec.spec.AbstractFileSystem:
+        import fsspec
+
         return fsspec.filesystem(protocol, *args, **kwargs)
 
     def do_connect(
@@ -348,6 +348,8 @@ class Backend(BaseSQLBackend):
         names = [name for name, *_ in cursor.description]
         df = _column_batches_to_dataframe(names, batches)
         if schema:
+            from ibis.formats.pandas import PandasData
+
             return PandasData.convert_table(df, schema)
         return df
 
@@ -403,6 +405,8 @@ class Backend(BaseSQLBackend):
     def _fully_qualified_name(self, name, database):
         if is_fully_qualified(name):
             return name
+
+        import sqlglot as sg
 
         database = database or self.current_database
         return sg.table(name, db=database, quoted=True).sql(

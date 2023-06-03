@@ -665,6 +665,7 @@ jobs:
               - mssql
             extras:
               - mssql
+              - geospatial
           - name: mysql
             title: MySQL
             services:

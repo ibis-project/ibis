@@ -4,30 +4,18 @@ from __future__ import annotations
 import base64
 import collections
 import functools
-import importlib.metadata
 import itertools
-import logging
 import operator
 import os
 import sys
 import textwrap
 import types
-import uuid
 import warnings
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Callable,
-    Iterator,
-    Mapping,
-    Sequence,
-    TypeVar,
-)
-from uuid import uuid4
-
-import toolz
+from typing import TYPE_CHECKING, Any, Callable, Iterator, Mapping, Sequence, TypeVar
 
 if TYPE_CHECKING:
+    import logging
+    from importlib.metadata import EntryPoint
     from numbers import Real
     from pathlib import Path
 
@@ -41,14 +29,14 @@ K = TypeVar("K")
 V = TypeVar("V")
 
 
-# https://www.compart.com/en/unicode/U+22EE
-VERTICAL_ELLIPSIS = "\u22EE"
-# https://www.compart.com/en/unicode/U+2026
-HORIZONTAL_ELLIPSIS = "\u2026"
+VERTICAL_ELLIPSIS = "\u22EE"  # https://www.compart.com/en/unicode/U+22EE
+HORIZONTAL_ELLIPSIS = "\u2026"  # https://www.compart.com/en/unicode/U+2026
 
 
 def guid() -> str:
     """Return a uuid4 hexadecimal value."""
+    from uuid import uuid4
+
     return uuid4().hex
 
 
@@ -88,8 +76,12 @@ def is_one_of(values: Sequence[T], t: type[U]) -> Iterator[bool]:
     return (isinstance(x, t) for x in values)
 
 
-any_of = toolz.compose(any, is_one_of)
-all_of = toolz.compose(all, is_one_of)
+def any_of(values: Sequence[T], t: type[U]) -> bool:
+    return any(is_one_of(values, t))
+
+
+def all_of(values: Sequence[T], t: type[U]) -> bool:
+    return all(is_one_of(values, t))
 
 
 def promote_list(val: V | Sequence[V]) -> list[V]:
@@ -323,6 +315,8 @@ def get_logger(
     -------
     logging.Logger
     """
+    import logging
+
     logging.basicConfig()
     handler = logging.StreamHandler()
 
@@ -481,8 +475,10 @@ def experimental(func):
     return func
 
 
-def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
+def backend_entry_points() -> list[EntryPoint]:
     """Get the list of installed `ibis.backend` entrypoints."""
+
+    import importlib.metadata
 
     if sys.version_info < (3, 10):
         eps = importlib.metadata.entry_points()["ibis.backends"]
@@ -502,6 +498,8 @@ def import_object(qualname: str) -> Any:
 
     >>> from ibis import examples as ex
     """
+    import importlib
+
     mod_name, name = qualname.rsplit(".", 1)
     mod = importlib.import_module(mod_name)
     try:
@@ -542,5 +540,7 @@ def normalize_filename(source: str | Path) -> str:
 
 def gen_name(namespace: str) -> str:
     """Create a case-insensitive uuid4 unique table name."""
-    uid = base64.b32encode(uuid.uuid4().bytes).decode().rstrip("=").lower()
+    from uuid import uuid4
+
+    uid = base64.b32encode(uuid4().bytes).decode().rstrip("=").lower()
     return f"_ibis_{namespace}_{uid}"

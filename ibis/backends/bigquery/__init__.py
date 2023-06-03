@@ -6,13 +6,6 @@ import contextlib
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
 from urllib.parse import parse_qs, urlparse
 
-import google.auth.credentials
-import google.cloud.bigquery as bq
-import google.cloud.bigquery_storage_v1 as bqstorage
-import pandas as pd
-import pydata_google_auth
-from pydata_google_auth import cache
-
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
@@ -28,12 +21,15 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.backends.bigquery.datatypes import BigQuerySchema
-from ibis.formats.pandas import PandasData
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
 
 if TYPE_CHECKING:
+    import google.auth.credentials
+    import google.cloud.bigquery as bq
+    import google.cloud.bigquery_storage_v1 as bqstorage
+    import pandas as pd
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
 
@@ -159,6 +155,9 @@ class Backend(BaseSQLBackend):
         # Only need `credentials` to create a `client` and
         # `storage_client`, so only one or the other needs to be set.
         if (client is None or storage_client is None) and credentials is None:
+            import pydata_google_auth
+            from pydata_google_auth import cache
+
             scopes = SCOPES
             if auth_external_data:
                 scopes = EXTERNAL_DATA_SCOPES
@@ -198,6 +197,8 @@ class Backend(BaseSQLBackend):
         if client is not None:
             self.client = client
         else:
+            import google.cloud.bigquery as bq
+
             self.client = bq.Client(
                 project=self.billing_project,
                 credentials=credentials,
@@ -207,6 +208,9 @@ class Backend(BaseSQLBackend):
         if storage_client is not None:
             self.storage_client = storage_client
         else:
+            # this import is very expensive (~1s) so we only do it if needed
+            import google.cloud.bigquery_storage_v1 as bqstorage
+
             self.storage_client = bqstorage.BigQueryReadClient(
                 credentials=credentials,
                 client_info=_create_client_info_gapic(application_name),
@@ -252,6 +256,8 @@ class Backend(BaseSQLBackend):
         raise ValueError(f"Got too many components in table name: {name}")
 
     def _get_schema_using_query(self, query):
+        import google.cloud.bigquery as bq
+
         job_config = bq.QueryJobConfig(dry_run=True, use_query_cache=False)
         job = self.client.query(query, job_config=job_config)
         return BigQuerySchema.to_ibis(job.schema)
@@ -262,6 +268,8 @@ class Backend(BaseSQLBackend):
         return self.get_schema(table, database=dataset)
 
     def _execute(self, stmt, results=True, query_parameters=None):
+        import google.cloud.bigquery as bq
+
         job_config = bq.job.QueryJobConfig()
         job_config.query_parameters = query_parameters or []
         job_config.use_legacy_sql = False  # False by default in >=0.28
@@ -337,6 +345,8 @@ class Backend(BaseSQLBackend):
         return result
 
     def fetch_from_cursor(self, cursor, schema):
+        from ibis.formats.pandas import PandasData
+
         arrow_t = self._cursor_to_arrow(cursor)
         df = arrow_t.to_pandas(timestamp_as_object=True)
         return PandasData.convert_table(df, schema)
@@ -374,7 +384,6 @@ class Backend(BaseSQLBackend):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        self._import_pyarrow()
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         cursor = self.raw_sql(sql, params=params, **kwargs)
@@ -397,7 +406,7 @@ class Backend(BaseSQLBackend):
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ):
-        pa = self._import_pyarrow()
+        import pyarrow as pa
 
         schema = expr.as_table().schema()
 
@@ -414,6 +423,8 @@ class Backend(BaseSQLBackend):
         return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
 
     def get_schema(self, name, database=None):
+        import google.cloud.bigquery as bq
+
         table_id = self._fully_qualified_name(name, database)
         table_ref = bq.TableReference.from_string(table_id)
         table = self.client.get_table(table_ref)
@@ -427,6 +438,8 @@ class Backend(BaseSQLBackend):
         return self._filter_with_like(results, like)
 
     def list_tables(self, like=None, database=None):
+        import google.cloud.bigquery as bq
+
         project, dataset = self._parse_project_and_dataset(database)
         dataset_ref = bq.DatasetReference(project, dataset)
         result = [table.table_id for table in self.client.list_tables(dataset_ref)]
@@ -437,6 +450,8 @@ class Backend(BaseSQLBackend):
 
     @property
     def version(self):
+        import google.cloud.bigquery as bq
+
         return bq.__version__
 
     def create_table(
@@ -468,6 +483,7 @@ Please align the two schemas, or provide only one of the two arguments."""
                 )
 
         if obj is not None:
+            import pandas as pd
             import pyarrow as pa
 
             project_id, dataset = self._parse_project_and_dataset(database)
@@ -479,6 +495,8 @@ Please align the two schemas, or provide only one of the two arguments."""
             table_ref = f"`{project_id}`.`{dataset}`.`{name}`"
             self.raw_sql(f'CREATE TABLE {table_ref} AS ({sql_select})')
         elif schema is not None:
+            import google.cloud.bigquery as bq
+
             table_id = self._fully_qualified_name(name, database)
             table = bq.Table(table_id, schema=BigQuerySchema.from_ibis(schema))
             self.client.create_table(table)

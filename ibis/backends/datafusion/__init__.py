@@ -5,8 +5,6 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
 
-import pyarrow as pa
-
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
@@ -25,6 +23,7 @@ import datafusion
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 
 class Backend(BaseBackend):
@@ -147,6 +146,7 @@ class Backend(BaseBackend):
         >>> conn.table("my_table")
         """
         import pandas as pd
+        import pyarrow as pa
 
         if isinstance(source, (str, Path)):
             first = str(source)
@@ -323,7 +323,8 @@ class Backend(BaseBackend):
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
-        pa = self._import_pyarrow()
+        import pyarrow as pa
+
         frame = self._get_frame(expr, params, limit, **kwargs)
         return pa.ipc.RecordBatchReader.from_batches(frame.schema(), frame.collect())
 

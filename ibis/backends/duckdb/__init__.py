@@ -10,10 +10,7 @@ from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
-import duckdb
-import pyarrow as pa
 import sqlalchemy as sa
-import toolz
 from packaging.version import parse as vparse
 
 import ibis.common.exceptions as exc
@@ -25,10 +22,11 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType, parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
+    import duckdb
     import pandas as pd
+    import pyarrow as pa
 
     import ibis.expr.operations as ops
 
@@ -169,6 +167,8 @@ class Backend(BaseAlchemyBackend):
 
         @sa.event.listens_for(engine, "connect")
         def configure_connection(dbapi_connection, connection_record):
+            import duckdb
+
             dbapi_connection.execute("SET TimeZone = 'UTC'")
             # the progress bar in duckdb <0.8.0 causes kernel crashes in
             # jupyterlab, fixed in https://github.com/duckdb/duckdb/pull/6831
@@ -231,7 +231,6 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
-
         if isinstance(source, (str, Path)):
             first = str(source)
         elif isinstance(source, (list, tuple)):
@@ -398,6 +397,8 @@ class Backend(BaseAlchemyBackend):
         # Default to using the native duckdb parquet reader
         # If that fails because of auth issues, fall back to ingesting via
         # pyarrow dataset
+        import duckdb
+
         try:
             self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
         except sa.exc.OperationalError as e:
@@ -463,6 +464,8 @@ class Backend(BaseAlchemyBackend):
         ir.Table
             The just-registered table
         """
+        import pyarrow as pa
+
         table_name = table_name or util.gen_name("read_in_memory")
         with self.begin() as con:
             con.connection.register(table_name, source)
@@ -585,7 +588,6 @@ class Backend(BaseAlchemyBackend):
             3   0.29  Premium     I     VS2   62.4   58.0    334  4.20  4.23  2.63
             4   0.31     Good     J     SI2   63.3   58.0    335  4.34  4.35  2.75
         """
-
         if table_name is None:
             raise ValueError("`table_name` is required when registering a sqlite table")
         self._load_extensions(["sqlite"])
@@ -680,6 +682,9 @@ class Backend(BaseAlchemyBackend):
         chunk_size
             !!! warning "DuckDB returns 1024 size batches regardless of what argument is passed."
         """
+        import duckdb
+        import pyarrow as pa
+
         self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
@@ -698,6 +703,7 @@ class Backend(BaseAlchemyBackend):
         # batch_producer keeps the `self.con` member alive long enough to
         # exhaust the record batch reader, even if the backend or connection
         # have gone out of scope in the caller
+
         return pa.RecordBatchReader.from_batches(
             expr.as_table().schema().to_pyarrow(), batch_producer(self.con)
         )
@@ -710,6 +716,8 @@ class Backend(BaseAlchemyBackend):
         limit: int | str | None = None,
         **_: Any,
     ) -> pa.Table:
+        import pyarrow as pa
+
         self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
@@ -827,6 +835,8 @@ class Backend(BaseAlchemyBackend):
         import pandas as pd
         import pyarrow.types as pat
 
+        from ibis.formats.pandas import PandasData
+
         table = cursor.cursor.fetch_arrow_table()
 
         df = pd.DataFrame(
@@ -849,17 +859,16 @@ class Backend(BaseAlchemyBackend):
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as con:
-            rows = con.exec_driver_sql(f"DESCRIBE {query}")
-
-            for name, type, null in toolz.pluck(
-                ["column_name", "column_type", "null"], rows.mappings()
-            ):
-                ibis_type = parse(type)
-                yield name, ibis_type.copy(nullable=null.lower() == "yes")
+            for row in con.exec_driver_sql(f"DESCRIBE {query}").mappings():
+                ibis_type = parse(row["column_type"])
+                yield row["column_name"], ibis_type.copy(
+                    nullable=row["null"].lower() == "yes"
+                )
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # in theory we could use pandas dataframes, but when using dataframes
         # with pyarrow datatypes later reads of this data segfault
+        import duckdb
         import pandas as pd
 
         schema = op.schema

@@ -6,7 +6,6 @@ import base64
 import datetime
 from typing import TYPE_CHECKING, Literal
 
-import numpy as np
 from multipledispatch import Dispatcher
 
 import ibis
@@ -263,6 +262,8 @@ def _literal(translator, op):
         return translator.translate(ops.Literal(str(value), dtype=dt.str))
 
     if isinstance(dtype, dt.Numeric):
+        import numpy as np
+
         if not np.isfinite(value):
             return f"CAST({str(value)!r} AS FLOAT64)"
 

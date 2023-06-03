@@ -6,7 +6,6 @@ import decimal
 import enum
 import ipaddress
 import itertools
-import uuid
 from operator import attrgetter
 
 from public import public
@@ -198,7 +197,6 @@ class Literal(Value):
                     str,
                     tuple,
                     type(None),
-                    uuid.UUID,
                     decimal.Decimal,
                 )
             ),
@@ -207,6 +205,7 @@ class Literal(Value):
                     "shapely.geometry.BaseGeometry",
                     "numpy.generic",
                     "numpy.ndarray",
+                    "uuid.UUID",
                 )
             ),
         )

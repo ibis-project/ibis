@@ -2,19 +2,15 @@ from __future__ import annotations
 
 import contextlib
 import os
-import webbrowser
 from typing import TYPE_CHECKING, Any, Mapping, Tuple
 
-import toolz
 from public import public
 
-import ibis.common.graph as g
 import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
 from ibis.util import experimental
-from rich.jupyter import JupyterMixin
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -26,11 +22,13 @@ if TYPE_CHECKING:
     TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
 
 
-class _FixedTextJupyterMixin(JupyterMixin):
+class _FixedTextJupyterMixin:
     """JupyterMixin adds a spurious newline to text, this fixes the issue."""
 
     def _repr_mimebundle_(self, *args, **kwargs):
-        bundle = super()._repr_mimebundle_(*args, **kwargs)
+        from rich.jupyter import JupyterMixin
+
+        bundle = JupyterMixin._repr_mimebundle_(self, *args, **kwargs)
         bundle["text/plain"] = bundle["text/plain"].rstrip()
         return bundle
 
@@ -152,6 +150,8 @@ class Expr(Immutable):
         ImportError
             If ``graphviz`` is not installed.
         """
+        import webbrowser
+
         import ibis.expr.visualize as viz
 
         path = viz.draw(

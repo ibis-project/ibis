@@ -1,10 +1,14 @@
 from __future__ import annotations
 
-import google.cloud.bigquery as bq
+from typing import TYPE_CHECKING
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats import SchemaMapper, TypeMapper
+
+if TYPE_CHECKING:
+    import google.cloud.bigquery as bq
+
 
 _from_bigquery_types = {
     "INT64": dt.Int64,

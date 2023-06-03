@@ -7,7 +7,6 @@ import re
 import string
 import subprocess
 import sys
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -24,9 +23,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.util import gen_name, guid
-
-if TYPE_CHECKING:
-    from ibis.backends.base import BaseBackend
 
 
 @pytest.fixture
@@ -653,8 +649,8 @@ def tmp_db(request, tmp_path):
             ],  # hard to test in CI since tmpdir & cwd are on different drives
             id="relative-path",
         ),
-        param(lambda p: "duckdb://", id="in-memory-empty"),
-        param(lambda p: "duckdb://:memory:", id="in-memory-explicit"),
+        param(lambda _: "duckdb://", id="in-memory-empty"),
+        param(lambda _: "duckdb://:memory:", id="in-memory-explicit"),
         param(
             lambda p: f"duckdb://{p}?read_only=1",
             id="duckdb_read_write_int",
@@ -1255,7 +1251,7 @@ def test_persist_expression_release(con, alltypes):
 
 
 @contextlib.contextmanager
-def gen_test_name(con: BaseBackend) -> str:
+def gen_test_name(con) -> str:
     name = gen_name("test_table")
     try:
         yield name

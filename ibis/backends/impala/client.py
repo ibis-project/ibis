@@ -5,7 +5,6 @@ import traceback
 from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
-import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
@@ -189,6 +188,8 @@ class ImpalaTable(ir.Table):
 
     @property
     def _qualified_name(self) -> str:
+        import sqlglot as sg
+
         op = self.op()
         return sg.table(op.name, db=op.namespace).sql(dialect="hive")
 

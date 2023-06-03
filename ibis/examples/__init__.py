@@ -1,24 +1,15 @@
 from __future__ import annotations
 
-import json
-import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import ibis
-from ibis.common.grounds import Concrete
-
-try:
-    import importlib_resources as resources
-except ImportError:
-    from importlib import resources
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
 
-_EXAMPLES = None
-
-_METADATA = json.loads(resources.files(__name__).joinpath("metadata.json").read_text())
+# loaded lazily
+_EXAMPLES = _METADATA = None
 
 # These backends load the data directly using `read_csv`/`read_parquet`. All
 # other backends load the data using pyarrow, then passing it off to
@@ -26,9 +17,15 @@ _METADATA = json.loads(resources.files(__name__).joinpath("metadata.json").read_
 _DIRECT_BACKENDS = frozenset({"duckdb", "polars"})
 
 
-class Example(Concrete):
-    descr: Optional[str]
-    key: str
+class Example:
+    __slots__ = "descr", "key"
+
+    def __init__(self, descr: str | None, key: str) -> None:
+        self.descr = descr
+        self.key = key
+
+    def __hash__(self) -> int:
+        return hash((type(self), self.descr, self.key))
 
     def fetch(
         self,
@@ -105,12 +102,13 @@ Examples
 """
 
 
-def __dir__() -> list[str]:
-    return sorted(_METADATA.keys())
+def _load_metadata():
+    try:
+        import importlib_resources as resources
+    except ImportError:
+        from importlib import resources
 
-
-def __getattr__(name: str) -> Example:
-    global _EXAMPLES  # noqa: PLW0603
+    global _EXAMPLES, _METADATA  # noqa: PLW0603
 
     if _EXAMPLES is None:
         import pooch
@@ -125,14 +123,28 @@ def __getattr__(name: str) -> Example:
         with resources.files(__name__).joinpath("registry.txt").open(mode="r") as _f:
             _EXAMPLES.load_registry(_f)
 
+    if _METADATA is None:
+        import json
+
+        _METADATA = json.loads(
+            resources.files(__name__).joinpath("metadata.json").read_text()
+        )
+
+
+def __dir__() -> list[str]:
+    _load_metadata()
+    return sorted(_METADATA.keys())
+
+
+def __getattr__(name: str) -> Example:
+    _load_metadata()
+
     spec = _METADATA.get(name, {})
 
     if (key := spec.get("key")) is None:
         raise AttributeError(name)
 
     description = spec.get("description")
-
-    _, ext = key.split(os.extsep, maxsplit=1)
 
     fields = {"__doc__": description} if description is not None else {}
 

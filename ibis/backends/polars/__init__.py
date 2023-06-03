@@ -13,7 +13,6 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Database
-from ibis.backends.polars.compiler import translate
 from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
 from ibis.util import gen_name, normalize_filename
 
@@ -335,6 +334,8 @@ class Backend(BaseBackend):
     @classmethod
     @lru_cache
     def _get_operations(cls):
+        from ibis.backends.polars.compiler import translate
+
         return frozenset(op for op in translate.registry if issubclass(op, ops.Value))
 
     @classmethod
@@ -350,6 +351,8 @@ class Backend(BaseBackend):
         )
 
     def compile(self, expr: ir.Expr, params: Mapping[ir.Expr, object] = None, **_: Any):
+        from ibis.backends.polars.compiler import translate
+
         node = expr.op()
         ctx = self._context
         if params:
@@ -437,7 +440,8 @@ class Backend(BaseBackend):
         limit: int | None = None,
         **kwargs: Any,
     ):
-        pa = self._import_pyarrow()
+        import pyarrow as pa
+
         result = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
         if isinstance(expr, ir.Table):
             return result
@@ -460,7 +464,6 @@ class Backend(BaseBackend):
         chunk_size: int = 1_000_000,
         **kwargs: Any,
     ):
-        self._import_pyarrow()
         table = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
         return table.to_reader(chunk_size)
 

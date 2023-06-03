@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 import collections.abc
 import functools
-import importlib.metadata
 import keyword
 import re
 import sys
@@ -225,17 +224,6 @@ class TablesAccessor(collections.abc.Mapping):
 
 
 class _FileIOHandler:
-    @staticmethod
-    def _import_pyarrow():
-        try:
-            import pyarrow  # noqa: ICN001
-        except ImportError:
-            raise ModuleNotFoundError(
-                "Exporting to arrow formats requires `pyarrow` but it is not installed"
-            )
-        else:
-            return pyarrow
-
     @util.experimental
     def to_pyarrow(
         self,
@@ -267,7 +255,8 @@ class _FileIOHandler:
         Table
             A pyarrow table holding the results of the executed expression.
         """
-        pa = self._import_pyarrow()
+        import pyarrow as pa
+
         self._run_pre_execute_hooks(expr)
         try:
             # Can't construct an array from record batches
@@ -409,7 +398,6 @@ class _FileIOHandler:
 
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
         """
-        self._import_pyarrow()
         import pyarrow.parquet as pq
 
         batch_reader = expr.to_pyarrow_batches(params=params)
@@ -445,7 +433,6 @@ class _FileIOHandler:
 
         https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
         """
-        self._import_pyarrow()
         import pyarrow.csv as pcsv
 
         batch_reader = expr.to_pyarrow_batches(params=params)
@@ -1026,6 +1013,7 @@ def _get_backend_names() -> frozenset[str]:
     If a `set` is used, then any in-place modifications to the set
     are visible to every caller of this function.
     """
+    import importlib.metadata
 
     if sys.version_info < (3, 10):
         entrypoints = importlib.metadata.entry_points()["ibis.backends"]

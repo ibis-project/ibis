@@ -6,12 +6,8 @@ from contextlib import closing, suppress
 from functools import partial
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Literal, Mapping
 
-import clickhouse_connect as cc
-import pyarrow as pa
-import sqlalchemy as sa
 import sqlglot as sg
 import toolz
-from clickhouse_connect.driver.external import ExternalData
 
 import ibis
 import ibis.common.exceptions as com
@@ -24,10 +20,11 @@ from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
+    from clickhouse_connect.driver.external import ExternalData
 
     from ibis.common.typing import SupportsSchema
 
@@ -109,6 +106,8 @@ class Backend(BaseBackend):
         BaseBackend
             A backend instance
         """
+        import sqlalchemy as sa
+
         url = sa.engine.make_url(url)
 
         kwargs = toolz.merge(
@@ -175,6 +174,8 @@ class Backend(BaseBackend):
         >>> client
         <ibis.clickhouse.client.ClickhouseClient object at 0x...>
         """
+        import clickhouse_connect as cc
+
         self.con = cc.get_client(
             host=host,
             # 8123 is the default http port 443 is https
@@ -221,6 +222,8 @@ class Backend(BaseBackend):
 
     def _normalize_external_tables(self, external_tables=None) -> ExternalData | None:
         """Merge registered external tables with any new external tables."""
+        from clickhouse_connect.driver.external import ExternalData
+
         external_data = ExternalData()
         n = 0
         for name, obj in (external_tables or {}).items():
@@ -341,6 +344,8 @@ class Backend(BaseBackend):
            between Python object -> arrow. We can go directly to record batches
            without pandas in the middle.
         """
+        import pyarrow as pa
+
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 
@@ -374,6 +379,8 @@ class Backend(BaseBackend):
     ) -> Any:
         """Execute an expression."""
         import pandas as pd
+
+        from ibis.formats.pandas import PandasData
 
         table = expr.as_table()
         sql = self.compile(table, limit=limit, **kwargs)
@@ -472,6 +479,8 @@ class Backend(BaseBackend):
 
     def fetch_from_cursor(self, cursor, schema):
         import pandas as pd
+
+        from ibis.formats.pandas import PandasData
 
         df = pd.DataFrame.from_records(iter(cursor), columns=schema.names)
         return PandasData.convert_table(df, schema)

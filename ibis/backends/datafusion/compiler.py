@@ -6,13 +6,10 @@ import operator
 
 import datafusion as df
 import datafusion.functions
-import pyarrow as pa
-import pyarrow.compute as pc
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.formats.pyarrow import PyArrowType
 
 
 @functools.singledispatch
@@ -38,6 +35,10 @@ def alias(op):
 
 @translate.register(ops.Literal)
 def literal(op):
+    import pyarrow as pa
+
+    from ibis.formats.pyarrow import PyArrowType
+
     if isinstance(op.value, (set, frozenset)):
         value = list(op.value)
     else:
@@ -51,6 +52,8 @@ def literal(op):
 
 @translate.register(ops.Cast)
 def cast(op):
+    from ibis.formats.pyarrow import PyArrowType
+
     arg = translate(op.arg)
     typ = PyArrowType.from_ibis(op.to)
     return arg.cast(to=typ)
@@ -163,12 +166,16 @@ def abs(op):
 
 @translate.register(ops.Ceil)
 def ceil(op):
+    import pyarrow as pa
+
     arg = translate(op.arg)
     return df.functions.ceil(arg).cast(pa.int64())
 
 
 @translate.register(ops.Floor)
 def floor(op):
+    import pyarrow as pa
+
     arg = translate(op.arg)
     return df.functions.floor(arg).cast(pa.int64())
 
@@ -180,6 +187,8 @@ def round(op):
         raise com.UnsupportedOperationError(
             'Rounding to specific digits is not supported in datafusion'
         )
+    import pyarrow as pa
+
     return df.functions.round(arg).cast(pa.int64())
 
 
@@ -363,6 +372,8 @@ def count_star(_):
 def sum(op):
     arg = translate(op.arg)
     if op.arg.output_dtype.is_boolean():
+        import pyarrow as pa
+
         arg = arg.cast(pa.int64())
     return df.functions.sum(arg)
 
@@ -456,6 +467,8 @@ def e(_):
 
 @translate.register(ops.ElementWiseVectorizedUDF)
 def elementwise_udf(op):
+    from ibis.formats.pyarrow import PyArrowType
+
     udf = df.udf(
         op.func,
         input_types=list(map(PyArrowType.from_ibis, op.input_type)),
@@ -502,6 +515,11 @@ def regex_extract(op):
             "re_extract `index` expressions must be literals. "
             "Arbitrary expressions are not supported in the DataFusion backend"
         )
+
+    import pyarrow.compute as pc
+
+    from ibis.formats.pyarrow import PyArrowType
+
     string_array_get = df.udf(
         lambda arr, index=index: pc.list_element(arr, index),
         input_types=[PyArrowType.from_ibis(dt.Array(dt.string))],

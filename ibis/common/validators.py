@@ -20,7 +20,6 @@ import toolz
 from typing_extensions import Annotated, get_args, get_origin
 
 from ibis.common.collections import FrozenDict
-from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.patterns import Coercible
 from ibis.util import flatten_iterable, is_function, is_iterable
@@ -248,6 +247,8 @@ class lazy_instance_of(Validator):
     """
 
     def __init__(self, classes):
+        from ibis.common.dispatch import lazy_singledispatch
+
         classes = (classes,) if isinstance(classes, str) else tuple(classes)
         self._classes = classes
         self._check = lazy_singledispatch(lambda x: False)

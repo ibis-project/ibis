@@ -4978,6 +4978,18 @@ sqlalchemy = ["sqlalchemy (>=1.3)"]
 tests = ["black", "httpretty (<1.1)", "isort", "pre-commit", "pytest", "pytest-runner", "requests-kerberos", "sqlalchemy (>=1.3)"]
 
 [[package]]
+name = "tuna"
+version = "0.5.11"
+description = "Visualize Python performance profiles"
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+files = [
+    {file = "tuna-0.5.11-py3-none-any.whl", hash = "sha256:ab352a6d836014ace585ecd882148f1f7c68be9ea4bf9e9298b7127594dab2ef"},
+    {file = "tuna-0.5.11.tar.gz", hash = "sha256:d47f3e39e80af961c8df016ac97d1643c3c60b5eb451299da0ab5fe411d8866c"},
+]
+
+[[package]]
 name = "typing-extensions"
 version = "4.6.3"
 description = "Backported and Experimental Type Hints for Python 3.7+"
@@ -5351,4 +5363,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "d73c83d14542d69ea1fa2b61a143fadb4b02103dca51e3b3ccba159066725ec3"
+content-hash = "16c5cbbdef3c4b023976d9829c45ac192f4fe9edc8feeda2ff5822d2bbc2adc9"

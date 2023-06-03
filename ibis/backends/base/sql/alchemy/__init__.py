@@ -37,7 +37,6 @@ from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
 )
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -179,23 +178,28 @@ class BaseAlchemyBackend(BaseSQLBackend):
         Required libraries for geospatial support must be installed and
         a geospatial column is present in the dataframe.
         """
-        import geopandas as gpd
-        from geoalchemy2 import shape
 
         geom_col = None
         for name, dtype in schema.items():
             if dtype.is_geospatial():
-                geom_col = geom_col or name
+                from geoalchemy2 import shape
+
+                if not geom_col:
+                    geom_col = name
                 df[name] = df[name].map(
                     lambda row: None if row is None else shape.to_shape(row)
                 )
         if geom_col:
+            import geopandas as gpd
+
             df[geom_col] = gpd.array.GeometryArray(df[geom_col].values)
-            df = gpd.GeoDataFrame(df, geometry=geom_col)
+            return gpd.GeoDataFrame(df, geometry=geom_col)
         return df
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
+
+        from ibis.formats.pandas import PandasData
 
         try:
             df = pd.DataFrame.from_records(

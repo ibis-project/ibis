@@ -5,15 +5,19 @@ import numbers
 from abc import ABCMeta
 from decimal import Decimal
 from enum import Enum, EnumMeta
+from typing import TYPE_CHECKING, Any, NoReturn
 
-import dateutil.parser
-import dateutil.tz
-import pytz
 from public import public
 
 from ibis import util
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.patterns import Coercible
+
+if TYPE_CHECKING:
+    import dateutil.tz
+    import numpy as np
+    import pandas as pd
+    import pytz
 
 
 class ABCEnumMeta(EnumMeta, ABCMeta):
@@ -178,7 +182,18 @@ def normalize_timedelta(
     return int(value)
 
 
-def normalize_timezone(tz):
+def normalize_timezone(
+    tz: str
+    | int
+    | float
+    | datetime.tzinfo
+    | dateutil.tz.tzoffset
+    | pytz._FixedOffset
+    | None,
+) -> datetime.tzinfo:
+    import dateutil.tz
+    import pytz
+
     if tz is None:
         return None
     elif isinstance(tz, str):
@@ -198,12 +213,14 @@ def normalize_timezone(tz):
 
 
 @lazy_singledispatch
-def normalize_datetime(value):
+def normalize_datetime(value: Any) -> NoReturn:
     raise TypeError(f"Unable to normalize {type(value)} to timestamp")
 
 
 @normalize_datetime.register(str)
-def _from_str(value):
+def _from_str(value: str) -> datetime.datetime:
+    import dateutil.parser
+
     lower = value.lower()
     if lower == "now":
         return datetime.datetime.now()
@@ -215,32 +232,27 @@ def _from_str(value):
 
 
 @normalize_datetime.register(numbers.Number)
-def _from_number(value):
+def _from_number(value: numbers.Number) -> datetime.datetime:
     return datetime.datetime.utcfromtimestamp(value)
 
 
 @normalize_datetime.register(datetime.date)
-def _from_date(value):
+def _from_date(value: datetime.date) -> datetime.datetime:
     return datetime.datetime(year=value.year, month=value.month, day=value.day)
 
 
 @normalize_datetime.register(datetime.datetime)
-def _from_datetime(value):
+def _from_datetime(value: datetime.datetime) -> datetime.datetime:
     return value.replace(tzinfo=normalize_timezone(value.tzinfo))
 
 
-@normalize_datetime.register('pandas.Timestamp')
-def _from_pandas_timestamp(value):
+@normalize_datetime.register("pandas.Timestamp")
+def _from_pandas_timestamp(value: pd.Timestamp):
     # TODO(kszucs): it would make sense to preserve nanoseconds precision by
     # keeping the pandas.Timestamp object
     return value.to_pydatetime()
 
 
-@normalize_datetime.register('numpy.datetime64')
-def _from_numpy_datetime64(value):
-    try:
-        import pandas as pd
-    except ImportError:
-        raise TypeError("Unable to convert np.datetime64 without pandas")
-    else:
-        return pd.Timestamp(value).to_pydatetime()
+@normalize_datetime.register("numpy.datetime64")
+def _from_numpy_datetime64(value: np.datetime64) -> datetime.datetime:
+    return value.astype("datetime64[us]").item()

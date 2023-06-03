@@ -1,14 +1,6 @@
 from __future__ import annotations
 
 import sqlalchemy.types as sat
-from snowflake.sqlalchemy import (
-    ARRAY,
-    OBJECT,
-    TIMESTAMP_LTZ,
-    TIMESTAMP_NTZ,
-    TIMESTAMP_TZ,
-    VARIANT,
-)
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
@@ -46,6 +38,14 @@ def parse(text: str) -> dt.DataType:
 class SnowflakeType(AlchemyType):
     @classmethod
     def from_ibis(cls, dtype):
+        from snowflake.sqlalchemy import (
+            ARRAY,
+            OBJECT,
+            TIMESTAMP_NTZ,
+            TIMESTAMP_TZ,
+            VARIANT,
+        )
+
         if dtype.is_array():
             return ARRAY
         elif dtype.is_map() or dtype.is_struct():
@@ -68,6 +68,15 @@ class SnowflakeType(AlchemyType):
 
     @classmethod
     def to_ibis(cls, typ, nullable=True):
+        from snowflake.sqlalchemy import (
+            ARRAY,
+            OBJECT,
+            TIMESTAMP_LTZ,
+            TIMESTAMP_NTZ,
+            TIMESTAMP_TZ,
+            VARIANT,
+        )
+
         if isinstance(typ, (sat.REAL, sat.FLOAT, sat.Float)):
             return dt.Float64(nullable=nullable)
         elif isinstance(typ, TIMESTAMP_NTZ):

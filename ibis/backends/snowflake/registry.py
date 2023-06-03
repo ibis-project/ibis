@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import itertools
 
-import numpy as np
 import sqlalchemy as sa
-from snowflake.sqlalchemy import ARRAY, OBJECT, VARIANT
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.elements import Cast
 
@@ -36,6 +34,8 @@ def _literal(t, op):
         return sa.null()
 
     if dtype.is_floating():
+        import numpy as np
+
         if np.isnan(value):
             return _SF_NAN
 
@@ -176,13 +176,6 @@ def compiles_cast(element, compiler, **kw):
 @compiles(sa.VARCHAR, "snowflake")
 def compiles_string(element, compiler, **kw):
     return "VARCHAR"
-
-
-@compiles(OBJECT, "snowflake")
-@compiles(ARRAY, "snowflake")
-@compiles(VARIANT, "snowflake")
-def compiles_object_type(element, compiler, **kw):
-    return type(element).__name__.upper()
 
 
 def _unnest(t, op):
@@ -377,7 +370,7 @@ operation_registry.update(
         ops.ArraySlice: _array_slice,
         ops.ArrayCollect: reduction(
             lambda arg: sa.func.array_agg(
-                sa.func.ifnull(arg, sa.func.parse_json("null")), type_=ARRAY
+                sa.func.ifnull(arg, sa.func.parse_json("null"))
             )
         ),
         ops.ArrayContains: fixed_arity(

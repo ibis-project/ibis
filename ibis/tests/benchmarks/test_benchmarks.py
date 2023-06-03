@@ -1,9 +1,12 @@
+import compileall
 import copy
 import functools
 import inspect
 import itertools
 import os
 import string
+import subprocess
+import sys
 
 import numpy as np
 import pandas as pd
@@ -190,7 +193,7 @@ def test_compile(benchmark, module, expr_fn, t, base, large_expr):
         expr = expr_fn(t, base, large_expr)
         try:
             benchmark(mod.compile, expr)
-        except sa.exc.NoSuchModuleError as e:
+        except (ImportError, sa.exc.NoSuchModuleError) as e:
             pytest.skip(str(e))
 
 
@@ -694,7 +697,7 @@ def test_compile_with_drops(
     else:
         try:
             benchmark(mod.compile, expr)
-        except sa.exc.NoSuchModuleError as e:
+        except (ImportError, sa.exc.NoSuchModuleError) as e:
             pytest.skip(str(e))
 
 
@@ -741,3 +744,27 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
     )
 
     benchmark.pedantic(lineitem.to_pandas, rounds=5, iterations=1, warmup_rounds=1)
+
+
+@pytest.fixture(scope="session")
+def compile_bytecode():
+    compileall.compile_dir(
+        os.path.dirname(ibis.__file__), quiet=1, workers=os.cpu_count()
+    )
+
+
+@pytest.mark.parametrize("backend_name", sorted(_get_backend_names()))
+@pytest.mark.usefixtures("compile_bytecode")
+def test_import_times(benchmark, backend_name):
+    module_name = f"ibis.backends.{backend_name}"
+    pytest.importorskip(module_name)
+
+    # import in a subprocess to avoid current process's import caching
+    benchmark(
+        subprocess.run, [sys.executable, "-c", f"import {module_name}"], check=True
+    )
+
+
+@pytest.mark.usefixtures("compile_bytecode")
+def test_import(benchmark):
+    benchmark(subprocess.run, [sys.executable, "-c", "import ibis"], check=True)

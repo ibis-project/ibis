@@ -1,4 +1,6 @@
 import os
+import subprocess
+import sys
 import uuid
 
 import pytest
@@ -98,3 +100,12 @@ def test_load_example(backend_name, example, columns):
     con = getattr(ibis, backend_name).connect()
     t = getattr(ibis.examples, example).fetch(backend=con)
     assert t.columns == columns
+
+
+def test_examples_dunder_dir():
+    # run in a subprocess to ensure that __dir__ isn't populated in the current
+    # interpreter
+    script = "import ibis.examples as ex; print(dir(ex), end='')"
+    assert subprocess.check_output(
+        [sys.executable, "-c", script], text=True
+    ).splitlines()

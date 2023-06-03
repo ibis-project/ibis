@@ -12,11 +12,8 @@ import textwrap
 import warnings
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
-import pyarrow as pa
 import sqlalchemy as sa
 import sqlalchemy.types as sat
-from snowflake.connector.constants import FIELD_ID_TO_NAME
-from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -28,14 +25,36 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
-from ibis.backends.snowflake.converter import SnowflakePandasData
-from ibis.backends.snowflake.datatypes import SnowflakeType, parse
+from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
     import ibis.expr.schema as sch
+
+
+@contextlib.contextmanager
+def _handle_pyarrow_warning(*, action: str):
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            action,
+            message="You have an incompatible version of 'pyarrow' installed",
+            category=UserWarning,
+        )
+        yield
+
+
+def _normalize_name(name):
+    if name is None:
+        return None
+    elif not name:
+        return ""
+    elif name.lower() == name:
+        return sa.sql.quoted_name(name, quote=True)
+    else:
+        return name
 
 
 class SnowflakeExprTranslator(AlchemyExprTranslator):
@@ -62,23 +81,23 @@ class SnowflakeCompiler(AlchemyCompiler):
 
 _SNOWFLAKE_MAP_UDFS = {
     "ibis_udfs.public.object_merge": {
-        "inputs": {"obj1": OBJECT, "obj2": OBJECT},
-        "returns": OBJECT,
+        "inputs": {"obj1": "OBJECT", "obj2": "OBJECT"},
+        "returns": "OBJECT",
         "source": "return Object.assign(obj1, obj2)",
     },
     "ibis_udfs.public.object_values": {
-        "inputs": {"obj": OBJECT},
-        "returns": ARRAY,
+        "inputs": {"obj": "OBJECT"},
+        "returns": "ARRAY",
         "source": "return Object.values(obj)",
     },
     "ibis_udfs.public.object_from_arrays": {
-        "inputs": {"ks": ARRAY, "vs": ARRAY},
-        "returns": OBJECT,
+        "inputs": {"ks": "ARRAY", "vs": "ARRAY"},
+        "returns": "OBJECT",
         "source": "return Object.assign(...ks.map((k, i) => ({[k]: vs[i]})))",
     },
     "ibis_udfs.public.array_zip": {
-        "inputs": {"arrays": ARRAY},
-        "returns": ARRAY,
+        "inputs": {"arrays": "ARRAY"},
+        "returns": "ARRAY",
         "source": """\
 const longest = arrays.reduce((a, b) => a.length > b.length ? a : b, []);
 const keys = Array.from(Array(arrays.length).keys()).map(key => `f${key + 1}`);
@@ -118,8 +137,7 @@ class Backend(BaseAlchemyBackend):
         dialect = self.con.dialect
         quote = dialect.preparer(dialect).quote_identifier
         signature = ", ".join(
-            f"{quote(argname)} {self._compile_sqla_type(typ)}"
-            for argname, typ in defn["inputs"].items()
+            f"{quote(argname)} {typ}" for argname, typ in defn["inputs"].items()
         )
         return_type = self._compile_sqla_type(defn["returns"])
         return f"""\
@@ -179,6 +197,9 @@ $$ {defn["source"]} $$"""
                 f"database e.g., {dbparams['database']}/my_schema"
             )
 
+        from snowflake.sqlalchemy import ARRAY, OBJECT, URL, VARIANT
+        from sqlalchemy.ext.compiler import compiles
+
         # snowflake-connector-python does not handle `None` for password, but
         # accepts the empty string
         url = URL(
@@ -223,19 +244,17 @@ $$ {defn["source"]} $$"""
                         f"Unable to create map UDFs, some functionality will not work: {e}"
                     )
 
+        @compiles(OBJECT, "snowflake")
+        @compiles(ARRAY, "snowflake")
+        @compiles(VARIANT, "snowflake")
+        def compiles_object_type(element, compiler, **kw):
+            return type(element).__name__.upper()
+
         res = super().do_connect(engine)
 
-        def normalize_name(name):
-            if name is None:
-                return None
-            elif not name:
-                return ""
-            elif name.lower() == name:
-                return sa.sql.quoted_name(name, quote=True)
-            else:
-                return name
+        self.con.dialect.normalize_name = _normalize_name
+        self._native_arrow = None
 
-        self.con.dialect.normalize_name = normalize_name
         return res
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
@@ -314,6 +333,8 @@ $$""".format(
         limit: int | str | None = None,
         **_: Any,
     ) -> pa.Table:
+        import pyarrow as pa
+
         self._run_pre_execute_hooks(expr)
 
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
@@ -335,6 +356,10 @@ $$""".format(
             return res
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+        import pyarrow as pa
+
+        from ibis.backends.snowflake.converter import SnowflakePandasData
+
         if (table := cursor.cursor.fetch_arrow_all()) is None:
             table = pa.Table.from_pylist([], schema=schema.to_pyarrow())
         df = table.to_pandas(timestamp_as_object=True)
@@ -349,6 +374,8 @@ $$""".format(
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
+        import pyarrow as pa
+
         self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
@@ -399,6 +426,10 @@ $$""".format(
         return result
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
+        from snowflake.connector.constants import FIELD_ID_TO_NAME
+
+        from ibis.backends.snowflake.datatypes import parse
+
         with self.begin() as con, con.connection.cursor() as cur:
             result = cur.describe(query)
 

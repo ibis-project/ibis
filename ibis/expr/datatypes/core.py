@@ -2,11 +2,8 @@ from __future__ import annotations
 
 import datetime as pydatetime
 import decimal as pydecimal
-import numbers
-import uuid as pyuuid
 from abc import abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
-from numbers import Integral, Real
 from typing import Any, Iterable, Literal, NamedTuple, Optional
 
 import toolz
@@ -115,6 +112,9 @@ class DataType(Concrete, Coercible):
 
     @classmethod
     def from_typehint(cls, typ, nullable=True) -> Self:
+        import uuid as pyuuid
+        from numbers import Integral, Real
+
         origin_type = get_origin(typ)
         if origin_type is None:
             if isinstance(typ, type):
@@ -669,6 +669,8 @@ class Decimal(Numeric, Parametric):
         scale: int | None = None,
         **kwargs: Any,
     ) -> None:
+        import numbers
+
         if precision is not None:
             if not isinstance(precision, numbers.Integral):
                 raise TypeError(

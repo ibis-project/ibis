@@ -5,7 +5,6 @@ import datetime
 import decimal
 import enum
 import ipaddress
-import uuid
 from typing import Any, Mapping, NamedTuple, Sequence
 
 import toolz
@@ -274,6 +273,8 @@ def normalize(typ, value):
             return out.scaleb(-dtype.scale)
         return out
     elif dtype.is_uuid():
+        import uuid
+
         return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
     elif dtype.is_array():
         return tuple(normalize(dtype.value_type, item) for item in value)

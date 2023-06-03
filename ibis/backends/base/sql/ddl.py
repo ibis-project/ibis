@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import re
 
-import sqlglot as sg
-
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.base.sql.compiler import DDL, DML
@@ -101,6 +99,8 @@ class _BaseQualifiedSQLStatement:
             return obj_name
         if _is_quoted(obj_name):
             obj_name = obj_name[1:-1]
+        import sqlglot as sg
+
         return sg.table(obj_name, db=database, quoted=True).sql(dialect="hive")
 
 
@@ -437,6 +437,8 @@ class RenameTable(AlterTable):
         new_database: str | None = None,
         dialect: str = "hive",
     ):
+        import sqlglot as sg
+
         self._old = sg.table(old_name, db=old_database, quoted=True).sql(
             dialect=dialect
         )

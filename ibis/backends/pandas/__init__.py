@@ -245,7 +245,8 @@ class Backend(BasePandasBackend):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        pa = self._import_pyarrow()
+        import pyarrow as pa
+
         output = self.execute(expr, params=params, limit=limit)
 
         if isinstance(output, pd.DataFrame):
@@ -264,7 +265,8 @@ class Backend(BasePandasBackend):
         chunk_size: int = 1000000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
-        pa = self._import_pyarrow()
+        import pyarrow as pa
+
         pa_table = self.to_pyarrow(expr, params=params, limit=limit)
         return pa.RecordBatchReader.from_batches(
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)

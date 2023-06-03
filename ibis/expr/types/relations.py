@@ -7,7 +7,7 @@ import itertools
 import operator
 import re
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Callable, Iterable, Literal, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Literal, Mapping, Sequence
 
 import toolz
 from public import public

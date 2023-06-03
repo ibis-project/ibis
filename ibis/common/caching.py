@@ -5,8 +5,6 @@ import weakref
 from collections import Counter, defaultdict
 from typing import TYPE_CHECKING, Any, Callable, MutableMapping
 
-from bidict import bidict
-
 from ibis.common.collections import FrozenDict
 from ibis.common.exceptions import IbisError
 
@@ -93,6 +91,8 @@ class RefCountedCache:
         generate_name: Callable[[], str],
         key: Callable[[Any], Any],
     ) -> None:
+        from bidict import bidict
+
         self.cache = bidict()
         self.refs = Counter()
         self.populate = populate

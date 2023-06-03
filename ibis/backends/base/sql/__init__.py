@@ -190,7 +190,7 @@ class BaseSQLBackend(BaseBackend):
         RecordBatchReader
             Collection of pyarrow `RecordBatch`s.
         """
-        pa = self._import_pyarrow()
+        import pyarrow as pa
 
         schema = expr.as_table().schema()
         array_type = schema.as_struct().to_pyarrow()

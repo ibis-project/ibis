@@ -8,12 +8,9 @@ import toolz
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+from ibis.backends.base.sql.alchemy import geospatial_supported
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
-
-if geospatial_supported:
-    import geoalchemy2 as ga
 
 
 class ArrayType(sat.UserDefinedType):
@@ -243,6 +240,8 @@ class AlchemyType(TypeMapper):
             )
         elif dtype.is_geospatial():
             if geospatial_supported:
+                import geoalchemy2 as ga
+
                 if dtype.geotype == 'geometry':
                     return ga.Geometry
                 elif dtype.geotype == 'geography':
@@ -297,11 +296,17 @@ class AlchemyType(TypeMapper):
         elif isinstance(typ, sa.DateTime):
             timezone = "UTC" if typ.timezone else None
             return dt.Timestamp(timezone, nullable=nullable)
-        elif geospatial_supported and isinstance(typ, ga.types._GISType):
-            name = typ.geometry_type.upper()
-            try:
-                return _GEOSPATIAL_TYPES[name](geotype=typ.name, nullable=nullable)
-            except KeyError:
-                raise ValueError(f"Unrecognized geometry type: {name}")
         else:
-            raise TypeError(f"Unable to convert type: {typ!r}")
+            try:
+                import geoalchemy2 as ga
+            except ImportError:
+                raise TypeError(f"Unable to convert type: {typ!r}")
+            else:
+                if isinstance(typ, ga.types._GISType):
+                    name = typ.geometry_type.upper()
+                    try:
+                        return _GEOSPATIAL_TYPES[name](
+                            geotype=typ.name, nullable=nullable
+                        )
+                    except KeyError:
+                        raise ValueError(f"Unrecognized geometry type: {name}")

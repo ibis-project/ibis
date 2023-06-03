@@ -5,7 +5,6 @@ from typing import Any
 
 import parsy
 import sqlalchemy.types as sat
-import trino.client
 from sqlalchemy.ext.compiler import compiles
 from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, TIMESTAMP
 from trino.sqlalchemy.datatype import ROW as _ROW
@@ -26,15 +25,17 @@ from ibis.common.parsing import (
 
 
 class ROW(_ROW):
-    _result_is_tuple = hasattr(trino.client, "NamedRowTuple")
-
     def result_processor(self, dialect, coltype: str) -> None:
         if not coltype.lower().startswith("row"):
             return None
 
+        import trino.client
+
+        result_is_tuple = hasattr(trino.client, "NamedRowTuple")
+
         def process(
             value,
-            result_is_tuple: bool = self._result_is_tuple,
+            result_is_tuple: bool = result_is_tuple,
             names: tuple[str, ...] = tuple(name for name, _ in self.attr_types),
         ) -> dict[str, Any] | None:
             if value is None or not result_is_tuple:

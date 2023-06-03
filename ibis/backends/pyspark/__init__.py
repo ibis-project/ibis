@@ -3,11 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
-import pyspark
 import sqlalchemy as sa
-import sqlglot as sg
-from pyspark import SparkConf
-from pyspark.sql import DataFrame, SparkSession
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -15,8 +11,6 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.df.scope import Scope
-from ibis.backends.base.df.timecontext import canonicalize_context, localize_context
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.compiler import Compiler, TableSetFormatter
 from ibis.backends.base.sql.ddl import (
@@ -26,14 +20,11 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.backends.pyspark import ddl
-from ibis.backends.pyspark.client import PySparkTable
-from ibis.backends.pyspark.compiler import PySparkExprTranslator
-from ibis.backends.pyspark.datatypes import PySparkType
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
+    from pyspark.sql import DataFrame, SparkSession
 
 
 def normalize_filenames(source_list):
@@ -119,6 +110,9 @@ class Backend(BaseSQLBackend):
 
     def _from_url(self, url: str, **kwargs) -> Backend:
         """Construct a PySpark backend from a URL `url`."""
+        from pyspark import SparkConf
+        from pyspark.sql import SparkSession
+
         url = sa.engine.make_url(url)
 
         conf = SparkConf().setAll(url.query.items())
@@ -165,6 +159,8 @@ class Backend(BaseSQLBackend):
 
     @property
     def version(self):
+        import pyspark
+
         return pyspark.__version__
 
     @property
@@ -184,6 +180,12 @@ class Backend(BaseSQLBackend):
 
     def compile(self, expr, timecontext=None, params=None, *args, **kwargs):
         """Compile an ibis expression to a PySpark DataFrame object."""
+        from ibis.backends.base.df.scope import Scope
+        from ibis.backends.base.df.timecontext import (
+            canonicalize_context,
+            localize_context,
+        )
+        from ibis.backends.pyspark.compiler import PySparkExprTranslator
 
         if timecontext is not None:
             session_timezone = self._session.conf.get('spark.sql.session.timeZone')
@@ -210,6 +212,8 @@ class Backend(BaseSQLBackend):
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
+        from ibis.formats.pandas import PandasData
+
         table_expr = expr.as_table()
         df = self.compile(table_expr, **kwargs).toPandas()
 
@@ -227,6 +231,8 @@ class Backend(BaseSQLBackend):
         if is_fully_qualified(name):
             return name
 
+        import sqlglot as sg
+
         return sg.table(name, db=database, quoted=True).sql(dialect="spark")
 
     def close(self):
@@ -242,11 +248,15 @@ class Backend(BaseSQLBackend):
         return _PySparkCursor(query)
 
     def _get_schema_using_query(self, query):
+        from ibis.backends.pyspark.datatypes import PySparkType
+
         cursor = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
         struct = PySparkType.to_ibis(cursor.query.schema)
         return sch.Schema(struct)
 
     def _get_jtable(self, name, database=None):
+        import pyspark
+
         get_table = self._catalog._jcatalog.getTable
         try:
             jtable = get_table(self._fully_qualified_name(name, database))
@@ -272,6 +282,8 @@ class Backend(BaseSQLBackend):
         Table
             Table named `name` from `database`
         """
+        from ibis.backends.pyspark.client import PySparkTable
+
         jtable = self._get_jtable(name, database)
         name, database = jtable.name(), jtable.database()
 
@@ -339,6 +351,8 @@ class Backend(BaseSQLBackend):
             raise com.UnsupportedArgumentError(
                 'Spark does not support the `database` argument for `get_schema`'
             )
+
+        from ibis.backends.pyspark.datatypes import PySparkType
 
         df = self._session.table(table_name)
         struct = PySparkType.to_ibis(df.schema)
@@ -569,6 +583,8 @@ class Backend(BaseSQLBackend):
         return self.raw_sql(f"ANALYZE TABLE {name} COMPUTE STATISTICS{maybe_noscan}")
 
     def has_operation(cls, operation: type[ops.Value]) -> bool:
+        from ibis.backends.pyspark.compiler import PySparkExprTranslator
+
         return operation in PySparkExprTranslator._registry
 
     def _load_into_cache(self, name, expr):

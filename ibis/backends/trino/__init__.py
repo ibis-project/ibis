@@ -9,14 +9,12 @@ from typing import Iterator
 
 import sqlalchemy as sa
 import toolz
-from trino.sqlalchemy.datatype import ROW as _ROW
 
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
-from ibis.backends.trino.datatypes import ROW, parse
 
 
 class Backend(BaseAlchemyBackend):
@@ -68,6 +66,10 @@ class Backend(BaseAlchemyBackend):
 
     @staticmethod
     def _new_sa_metadata():
+        from trino.sqlalchemy.datatype import ROW as _ROW
+
+        from ibis.backends.trino.datatypes import ROW
+
         meta = sa.MetaData()
 
         @sa.event.listens_for(meta, "column_reflect")
@@ -92,6 +94,8 @@ class Backend(BaseAlchemyBackend):
                 con.exec_driver_sql(f"DEALLOCATE PREPARE {name}")
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
+        from ibis.backends.trino.datatypes import parse
+
         with self._prepare_metadata(query) as mappings:
             yield from (
                 # trino types appear to be always nullable
