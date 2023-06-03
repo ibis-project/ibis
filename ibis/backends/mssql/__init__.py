@@ -7,7 +7,8 @@ from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 import sqlalchemy as sa
 import toolz
 
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base import CanCreateDatabase
+from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
 from ibis.backends.mssql.datatypes import _type_from_result_set_info
 
@@ -16,7 +17,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     name = "mssql"
     compiler = MsSqlCompiler
     supports_create_or_replace = False
@@ -100,3 +101,72 @@ class Backend(BaseAlchemyBackend):
             batch = cursor.fetchall()
 
         yield from toolz.partition_all(chunk_size, batch)
+
+    def create_database(self, name: str, force: bool = False) -> None:
+        name = self._quote(name)
+        create_stmt = (
+            f"""\
+IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = {name})
+BEGIN
+  CREATE DATABASE {name};
+END;
+GO"""
+            if force
+            else f"CREATE DATABASE {name}"
+        )
+        with self.con.connect().execution_options(isolation_level="AUTOCOMMIT") as con:
+            con.exec_driver_sql(create_stmt)
+
+    def drop_database(self, name: str, force: bool = False) -> None:
+        name = self._quote(name)
+        if_exists = "IF EXISTS " * force
+
+        with self.con.connect().execution_options(isolation_level="AUTOCOMMIT") as con:
+            con.exec_driver_sql(f"DROP DATABASE {if_exists}{name}")
+
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        current_database = self.current_database
+        should_switch_database = database is not None and database != current_database
+
+        name = self._quote(name)
+
+        create_stmt = (
+            f"""\
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = {name})
+BEGIN
+  CREATE SCHEMA {name};
+END;
+GO"""
+            if force
+            else f"CREATE SCHEMA {name}"
+        )
+
+        with self.begin() as con:
+            if should_switch_database:
+                con.exec_driver_sql(f"USE {self._quote(database)}")
+
+            con.exec_driver_sql(create_stmt)
+
+            if should_switch_database:
+                con.exec_driver_sql(f"USE {self._quote(current_database)}")
+
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        current_database = self.current_database
+        should_switch_database = database is not None and database != current_database
+
+        name = self._quote(name)
+
+        if_exists = "IF EXISTS " * force
+
+        with self.begin() as con:
+            if should_switch_database:
+                con.exec_driver_sql(f"USE {self._quote(database)}")
+
+            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
+
+            if should_switch_database:
+                con.exec_driver_sql(f"USE {self._quote(current_database)}")

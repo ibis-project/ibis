@@ -13,13 +13,13 @@ from trino.sqlalchemy.datatype import ROW as _ROW
 
 import ibis.expr.datatypes as dt
 from ibis import util
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
 from ibis.backends.trino.datatypes import ROW, parse
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
     name = "trino"
     compiler = TrinoSQLCompiler
     supports_create_or_replace = False
@@ -112,3 +112,19 @@ class Backend(BaseAlchemyBackend):
 
         with self.begin() as con:
             con.execute(view)
+
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = ".".join(map(self._quote, filter(None, [database, name])))
+        if_not_exists = "IF NOT EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = ".".join(map(self._quote, filter(None, [database, name])))
+        if_exists = "IF EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")

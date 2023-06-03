@@ -23,7 +23,7 @@ def test_version(backend):
 @pytest.mark.never(
     ["polars", "dask", "pandas"],
     reason="backends does not support databases",
-    raises=NotImplementedError,
+    raises=AttributeError,
 )
 @pytest.mark.notimpl(
     ["duckdb", "mssql", "trino", "druid", "oracle"],
@@ -32,6 +32,7 @@ def test_version(backend):
 @pytest.mark.notimpl(
     ["datafusion"],
     raises=NotImplementedError,
+    reason="CURRENT_DATABASE() isn't implemented",
 )
 def test_database_consistency(backend, con):
     # every backend has a different set of databases, not testing the

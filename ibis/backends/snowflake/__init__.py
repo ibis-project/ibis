@@ -25,7 +25,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base import CanCreateDatabase
 from ibis.backends.base.sql.alchemy import (
+    AlchemyCanCreateSchema,
     AlchemyCompiler,
     AlchemyExprTranslator,
     BaseAlchemyBackend,
@@ -91,7 +93,7 @@ return longest.map((_, i) => {
 }
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     name = "snowflake"
     compiler = SnowflakeCompiler
     supports_create_or_replace = True
@@ -496,6 +498,34 @@ $$""".format(
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+
+    def create_database(self, name: str, force: bool = False) -> None:
+        name = self._quote(name)
+        if_not_exists = "IF NOT EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"CREATE DATABASE {if_not_exists}{name}")
+
+    def drop_database(self, name: str, force: bool = False) -> None:
+        name = self._quote(name)
+        if_exists = "IF EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"DROP DATABASE {if_exists}{name}")
+
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = ".".join(map(self._quote, filter(None, [database, name])))
+        if_not_exists = "IF NOT EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = ".".join(map(self._quote, filter(None, [database, name])))
+        if_exists = "IF EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
 
 
 @compiles(sa.sql.Join, "snowflake")

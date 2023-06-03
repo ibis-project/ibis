@@ -28,7 +28,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType, parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
@@ -71,7 +71,7 @@ _UDF_INPUT_TYPE_MAPPING = {
 }
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
     name = "duckdb"
     compiler = DuckDBSQLCompiler
     supports_create_or_replace = True
@@ -119,7 +119,7 @@ class Backend(BaseAlchemyBackend):
                 engine = inspector.engine
                 colname = column_info["name"]
                 if (coltype := complex_type_info_cache.get(colname)) is None:
-                    quote = engine.dialect.identifier_preparer.quote_identifier
+                    quote = engine.dialect.identifier_preparer.quote
                     quoted_colname = quote(colname)
                     quoted_tablename = quote(table.name)
                     with engine.connect() as con:
@@ -223,6 +223,30 @@ class Backend(BaseAlchemyBackend):
             for extension in con.execute(query).scalars():
                 c.install_extension(extension)
                 c.load_extension(extension)
+
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        if database is not None:
+            raise exc.UnsupportedOperationError(
+                "DuckDB cannot create a schema in another database."
+            )
+        name = self._quote(name)
+        if_not_exists = "IF NOT EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        if database is not None:
+            raise exc.UnsupportedOperationError(
+                "DuckDB cannot drop a schema in another database."
+            )
+        name = self._quote(name)
+        if_exists = "IF EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
 
     def register(
         self,
@@ -1002,8 +1026,7 @@ class Backend(BaseAlchemyBackend):
         columns = list(df.columns)
         t = sa.table(table_name, *map(sa.column, columns))
 
-        quote = self.con.dialect.identifier_preparer.quote
-        table_name = quote(table_name)
+        table_name = self._quote(table_name)
 
         # the table name df here matters, and *must* match the input variable's
         # name because duckdb will look up this name in the outer scope of the

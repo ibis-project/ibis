@@ -18,8 +18,9 @@ from packaging.requirements import Requirement
 from packaging.version import parse as vparse
 
 import ibis
+import ibis.common.exceptions as com
 from ibis import util
-from ibis.backends.base import _get_backend_names
+from ibis.backends.base import CanCreateDatabase, CanCreateSchema, _get_backend_names
 from ibis.conftest import WINDOWS
 
 TEST_TABLES = {
@@ -453,13 +454,36 @@ def con(backend):
     return backend.connection
 
 
+@pytest.fixture(scope='session')
+def con_create_database(con):
+    if isinstance(con, CanCreateDatabase):
+        return con
+    else:
+        pytest.skip(f"{con.name} backend cannot create databases")
+
+
+@pytest.fixture(scope='session')
+def con_create_schema(con):
+    if isinstance(con, CanCreateSchema):
+        return con
+    else:
+        pytest.skip(f"{con.name} backend cannot create schemas")
+
+
+@pytest.fixture(scope='session')
+def con_create_database_schema(con):
+    if isinstance(con, CanCreateDatabase) and isinstance(con, CanCreateSchema):
+        return con
+    else:
+        pytest.skip(f"{con.name} backend cannot create both database and schemas")
+
+
 def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
     if (backend := request.param) == "duckdb" and WINDOWS:
         pytest.xfail(
             "windows prevents two connections to the same duckdb file "
             "even in the same process"
         )
-        return None
     else:
         cls = _get_backend_conf(backend)
         return cls.load_data(data_dir, tmp_path_factory, worker_id)
@@ -672,12 +696,6 @@ def temp_view(ddl_con) -> str:
         ddl_con.drop_view(name, force=True)
 
 
-@pytest.fixture(scope='session')
-def current_data_db(ddl_con) -> str:
-    """Return current database name."""
-    return ddl_con.current_database
-
-
 @pytest.fixture
 def alternate_current_database(ddl_con, ddl_backend) -> str:
     """Create a temporary database and yield its name. Drops the created
@@ -686,18 +704,20 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
     Parameters
     ----------
     ddl_con : ibis.backends.base.Client
-    current_data_db : str
+
     Yields
-    -------
+    ------
     str
     """
     name = util.gen_name('database')
     try:
         ddl_con.create_database(name)
-    except NotImplementedError:
-        pytest.skip(f"{ddl_backend.name()} doesn't have create_database method.")
+    except AttributeError:
+        pytest.skip(f"{ddl_backend.name()} doesn't have a `create_database` method.")
     yield name
-    ddl_con.drop_database(name, force=True)
+
+    with contextlib.suppress(com.UnsupportedOperationError):
+        ddl_con.drop_database(name, force=True)
 
 
 @pytest.fixture

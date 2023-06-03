@@ -5,12 +5,14 @@ from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
 
+import datafusion
 import pyarrow as pa
 
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-from ibis.backends.base import BaseBackend
+from ibis.backends.base import BaseBackend, CanCreateDatabase, CanCreateSchema
 from ibis.backends.datafusion.compiler import translate
 from ibis.util import gen_name, normalize_filename
 
@@ -19,13 +21,17 @@ try:
 except ImportError:
     from datafusion import SessionContext
 
+try:
+    from datafusion import SessionConfig
+except ImportError:
+    SessionConfig = None
+
 if TYPE_CHECKING:
-    import datafusion
     import pandas as pd
 
 
-class Backend(BaseBackend):
-    name = 'datafusion'
+class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
+    name = "datafusion"
     builder = None
     supports_in_memory_tables = False
 
@@ -36,8 +42,7 @@ class Backend(BaseBackend):
         return importlib.metadata.version("datafusion")
 
     def do_connect(
-        self,
-        config: Mapping[str, str | Path] | SessionContext | None = None,
+        self, config: Mapping[str, str | Path] | SessionContext | None = None
     ) -> None:
         """Create a Datafusion backend for use with Ibis.
 
@@ -55,18 +60,62 @@ class Backend(BaseBackend):
         if isinstance(config, SessionContext):
             self._context = config
         else:
-            self._context = SessionContext()
+            if SessionConfig is not None:
+                df_config = SessionConfig().with_information_schema(True)
+            else:
+                df_config = None
+            self._context = SessionContext(df_config)
 
-        config = config or {}
+        if not config:
+            config = {}
 
         for name, path in config.items():
             self.register(path, table_name=name)
 
+    @property
     def current_database(self) -> str:
         raise NotImplementedError()
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        raise NotImplementedError()
+        code = "SELECT DISTINCT table_catalog FROM information_schema.tables"
+        if like:
+            code += f" WHERE table_catalog LIKE {like!r}"
+        result = self._context.sql(code).to_pydict()
+        return result["table_catalog"]
+
+    def create_database(self, name: str, force: bool = False) -> None:
+        code = "CREATE DATABASE"
+        if force:
+            code += " IF NOT EXISTS"
+        code += f" {name}"
+        self._context.sql(code)
+
+    def drop_database(self, name: str, force: bool = False) -> None:
+        raise com.UnsupportedOperationError(
+            "DataFusion does not support dropping databases"
+        )
+
+    def list_schemas(self, like: str | None = None) -> list[str]:
+        """List the available schemas matching `like`."""
+        return self._filter_with_like(self._context.catalog().names(), like=like)
+
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        create_stmt = "CREATE SCHEMA"
+        if force:
+            create_stmt += " IF NOT EXISTS"
+
+        create_stmt += " "
+        create_stmt += ".".join(filter(None, [database, name]))
+        self._context.sql(create_stmt)
+
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        raise com.UnsupportedOperationError(
+            "DataFusion does not support dropping schemas"
+        )
 
     def list_tables(
         self,
@@ -96,7 +145,7 @@ class Backend(BaseBackend):
             A table expression
         """
         catalog = self._context.catalog()
-        database = catalog.database('public')
+        database = catalog.database()
         table = database.table(name)
         schema = sch.schema(table.schema)
         return ops.DatabaseTable(name, schema, self).to_expr()

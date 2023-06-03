@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Iterable, Literal
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
+from ibis.backends.base import CanCreateDatabase
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.mysql.datatypes import MySQLDateTime, _type_from_cursor_info
@@ -17,7 +18,7 @@ if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, CanCreateDatabase):
     name = 'mysql'
     compiler = MySQLCompiler
     supports_create_or_replace = False
@@ -155,3 +156,15 @@ class Backend(BaseAlchemyBackend):
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE VIEW {name} AS {definition}"
+
+    def create_database(self, name: str, force: bool = False) -> None:
+        name = self._quote(name)
+        if_exists = "IF NOT EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"CREATE DATABASE {if_exists}{name}")
+
+    def drop_database(self, name: str, force: bool = False) -> None:
+        name = self._quote(name)
+        if_exists = "IF EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"DROP DATABASE {if_exists}{name}")

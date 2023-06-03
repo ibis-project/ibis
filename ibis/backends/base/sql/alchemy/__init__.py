@@ -20,6 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.query_builder import AlchemyCompiler
@@ -92,6 +93,12 @@ def _create_table_as(element, compiler, **kw):
 
     name = compiler.preparer.quote(quoted_name(element.name, quote=element.quote))
     return stmt + f"TABLE {name} AS {compiler.process(element.query, **kw)}"
+
+
+class AlchemyCanCreateSchema(CanCreateSchema):
+    def list_schemas(self, like: str | None = None) -> list[str]:
+        """Return a list of all schemas matching `like`."""
+        return self._filter_with_like(self.inspector.get_schema_names(), like)
 
 
 class BaseAlchemyBackend(BaseSQLBackend):

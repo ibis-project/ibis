@@ -16,6 +16,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base import CanCreateDatabase
 from ibis.backends.base.df.scope import Scope
 from ibis.backends.base.df.timecontext import canonicalize_context, localize_context
 from ibis.backends.base.sql import BaseSQLBackend
@@ -101,7 +102,7 @@ class PySparkCompiler(Compiler):
     table_set_formatter_class = PySparkTableSetFormatter
 
 
-class Backend(BaseSQLBackend):
+class Backend(BaseSQLBackend, CanCreateDatabase):
     compiler = PySparkCompiler
     name = "pyspark"
     _sqlglot_dialect = "spark"
