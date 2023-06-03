@@ -119,6 +119,7 @@ services:
       - mysql
     volumes:
       - mysql:/data
+      - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
   postgres:
     user: postgres
     environment:

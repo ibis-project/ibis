@@ -21,10 +21,9 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import BaseBackend
+from ibis.backends.base import BaseBackend, CanCreateDatabase
 from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -58,7 +57,7 @@ class ClickhouseTable(ir.Table):
         return self._client.con.insert_df(self.name, obj, settings=settings, **kwargs)
 
 
-class Backend(BaseBackend):
+class Backend(BaseBackend, CanCreateDatabase):
     name = "clickhouse"
 
     # ClickHouse itself does, but the client driver does not
@@ -465,6 +464,8 @@ class Backend(BaseBackend):
 
     def fetch_from_cursor(self, cursor, schema):
         import pandas as pd
+
+        from ibis.formats.pandas import PandasData
 
         df = pd.DataFrame.from_records(iter(cursor), columns=schema.names)
         return PandasData.convert_table(df, schema)

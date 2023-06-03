@@ -17,7 +17,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import Database
+from ibis.backends.base import CanCreateSchema, Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
@@ -71,7 +71,7 @@ def _create_client_info_gapic(application_name):
     return ClientInfo(user_agent=_create_user_agent(application_name))
 
 
-class Backend(BaseSQLBackend):
+class Backend(BaseSQLBackend, CanCreateSchema):
     name = "bigquery"
     compiler = BigQueryCompiler
     supports_in_memory_tables = False
@@ -230,6 +230,45 @@ class Backend(BaseSQLBackend):
     @property
     def dataset_id(self):
         return self.dataset
+
+    def create_schema(
+        self,
+        name: str,
+        database: str | None = None,
+        force: bool = False,
+        collate: str | None = None,
+        **options: Any,
+    ) -> None:
+        create_stmt = "CREATE SCHEMA"
+        if force:
+            create_stmt += " IF NOT EXISTS"
+
+        create_stmt += " "
+        create_stmt += ".".join(filter(None, [database, name]))
+
+        if collate is not None:
+            create_stmt += f" DEFAULT COLLATION {collate}"
+
+        options_str = ", ".join(f"{name}={value!r}" for name, value in options.items())
+        if options_str:
+            create_stmt += f" OPTIONS({options_str})"
+        self.raw_sql(create_stmt)
+
+    def drop_schema(
+        self,
+        name: str,
+        database: str | None = None,
+        force: bool = False,
+        cascade: bool = False,
+    ) -> None:
+        drop_stmt = "DROP SCHEMA"
+        if force:
+            drop_stmt += " IF EXISTS"
+
+        drop_stmt += " "
+        drop_stmt += ".".join(filter(None, [database, name]))
+        drop_stmt += " CASCADE" if cascade else " RESTRICT"
+        self.raw_sql(drop_stmt)
 
     def table(self, name: str, database: str | None = None) -> ir.TableExpr:
         if database is None:
@@ -409,12 +448,18 @@ class Backend(BaseSQLBackend):
         table = self.client.get_table(table_ref)
         return schema_from_bigquery_table(table)
 
-    def list_databases(self, like=None):
+    def list_schemas(self, like=None):
         results = [
             dataset.dataset_id
             for dataset in self.client.list_datasets(project=self.data_project)
         ]
         return self._filter_with_like(results, like)
+
+    @ibis.util.deprecated(
+        instead="use `list_schemas()`", as_of="6.1.0", removed_in="8.0.0"
+    )
+    def list_databases(self, like=None):
+        return self.list_schemas(like=like)
 
     def list_tables(self, like=None, database=None):
         project, dataset = self._parse_project_and_dataset(database)

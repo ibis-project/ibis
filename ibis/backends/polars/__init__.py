@@ -53,9 +53,6 @@ class Backend(BaseBackend):
     def current_database(self):
         raise NotImplementedError('polars backend does not support databases')
 
-    def list_databases(self, like=None):
-        raise NotImplementedError('polars backend does not support databases')
-
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 

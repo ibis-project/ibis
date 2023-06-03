@@ -85,9 +85,6 @@ class BasePandasBackend(BaseBackend):
     def current_database(self):
         raise NotImplementedError('pandas backend does not support databases')
 
-    def list_databases(self, like=None):
-        raise NotImplementedError('pandas backend does not support databases')
-
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self.dictionary.keys()), like)
 

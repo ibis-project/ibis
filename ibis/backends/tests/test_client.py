@@ -312,8 +312,14 @@ def test_create_drop_view(ddl_con, temp_view):
     assert set(t_expr.schema().names) == set(v_expr.schema().names)
 
 
-@mark.notimpl(["postgres", "mysql", "datafusion", "polars"])
-def test_separate_database(ddl_con, alternate_current_database, current_data_db):
+@mark.notimpl(["postgres", "polars"])
+@mark.notimpl(
+    ["datafusion"],
+    raises=NotImplementedError,
+    reason="doesn't seem to have a stateful notion of 'current database'",
+)
+def test_separate_database(ddl_con, alternate_current_database):
+    current_data_db = ddl_con.current_database
     # using alternate_current_database switches "con" current
     #  database to a temporary one until a test is over
     tmp_db = ddl_con.database(alternate_current_database)
@@ -1315,3 +1321,37 @@ def test_overwrite(ddl_con):
             == expected_count
         )
         assert t2.count().execute() == expected_count
+
+
+@pytest.mark.notyet(["datafusion"], reason="cannot list or drop databases")
+def test_create_database(con_create_database):
+    database = gen_name("test_create_database")
+    con_create_database.create_database(database)
+    con_create_database.drop_database(database)
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=com.UnsupportedOperationError,
+    reason="datafusion doesn't support dropping schemas",
+)
+def test_create_schema(con_create_schema):
+    schema = gen_name("test_create_schema")
+    con_create_schema.create_schema(schema)
+    con_create_schema.drop_schema(schema)
+
+
+def test_list_schemas(con_create_schema):
+    assert con_create_schema.list_schemas()
+
+
+@pytest.mark.notyet(["datafusion"], reason="cannot list or drop databases")
+def test_create_database_schema(con_create_database_schema):
+    database = gen_name("test_create_database")
+    con_create_database_schema.create_database(database)
+    try:
+        schema = gen_name("test_create_database_schema")
+        con_create_database_schema.create_schema(schema, database=database)
+        con_create_database_schema.drop_schema(schema, database=database)
+    finally:
+        con_create_database_schema.drop_database(database)

@@ -519,6 +519,72 @@ class _FileIOHandler:
             write_deltalake(path, batch_reader, **kwargs)
 
 
+class CanCreateDatabase(abc.ABC):
+    @abc.abstractmethod
+    def create_database(self, name: str, force: bool = False) -> None:
+        """Create a new database.
+
+        Parameters
+        ----------
+        name
+            Name of the new database.
+        force
+            If `False`, an exception is raised if the database already exists.
+        """
+
+    @abc.abstractmethod
+    def drop_database(self, name: str, force: bool = False) -> None:
+        """Drop a database with name `name`."""
+
+    @abc.abstractmethod
+    def list_databases(self, like: str | None = None) -> list[str]:
+        """List existing databases in the current connection.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format to filter returned database
+            names.
+
+        Returns
+        -------
+        list[str]
+            The database names that exist in the current connection, that match
+            the `like` pattern if provided.
+        """
+
+
+class CanCreateSchema(abc.ABC):
+    @abc.abstractmethod
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        """Create a schema named `name` in `database`."""
+
+    @abc.abstractmethod
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        """Drop the schema with `name` in `database`."""
+
+    @abc.abstractmethod
+    def list_schemas(self, like: str | None = None) -> list[str]:
+        """List existing databases in the current connection.
+
+        Parameters
+        ----------
+        like
+            A pattern in Python's regex format to filter returned schema
+            names.
+
+        Returns
+        -------
+        list[str]
+            The schema names that exist in the current connection, that match
+            the `like` pattern if provided.
+        """
+
+
 class BaseBackend(abc.ABC, _FileIOHandler):
     """Base backend class.
 
@@ -647,23 +713,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         -------
         str | None
             Name of the current database.
-        """
-
-    @abc.abstractmethod
-    def list_databases(self, like: str | None = None) -> list[str]:
-        """List existing databases in the current connection.
-
-        Parameters
-        ----------
-        like
-            A pattern in Python's regex format to filter returned database
-            names.
-
-        Returns
-        -------
-        list[str]
-            The database names that exist in the current connection, that match
-            the `like` pattern if provided.
         """
 
     @staticmethod
@@ -836,22 +885,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             )
 
         return decorator
-
-    def create_database(self, name: str, force: bool = False) -> None:
-        """Create a new database.
-
-        Not all backends implement this method.
-
-        Parameters
-        ----------
-        name
-            Name of the new database.
-        force
-            If `False`, an exception is raised if the database already exists.
-        """
-        raise NotImplementedError(
-            f'Backend "{self.name}" does not implement "create_database"'
-        )
 
     @abc.abstractmethod
     def create_table(

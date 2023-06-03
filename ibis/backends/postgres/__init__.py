@@ -11,7 +11,7 @@ import sqlalchemy as sa
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.postgres.compiler import PostgreSQLCompiler
 from ibis.backends.postgres.datatypes import _get_type
 from ibis.common.exceptions import InvalidDecoratorError
@@ -26,7 +26,7 @@ def _verify_source_line(func_name: str, line: str):
     return line
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
     name = "postgres"
     compiler = PostgreSQLCompiler
     supports_create_or_replace = False
@@ -135,12 +135,10 @@ class Backend(BaseAlchemyBackend):
     def list_databases(self, like=None):
         with self.begin() as con:
             # http://dba.stackexchange.com/a/1304/58517
-            databases = [
-                row.datname
-                for row in con.exec_driver_sql(
-                    "SELECT datname FROM pg_database WHERE NOT datistemplate"
-                ).mappings()
-            ]
+            databases = con.exec_driver_sql(
+                "SELECT datname FROM pg_catalog.pg_database WHERE NOT datistemplate"
+            ).scalars()
+
         return self._filter_with_like(databases, like)
 
     def function(self, name: str, *, schema: str | None = None) -> Callable:
@@ -264,3 +262,27 @@ ORDER BY attnum"""
     ) -> str:
         yield f"DROP VIEW IF EXISTS {name}"
         yield f"CREATE TEMPORARY VIEW {name} AS {definition}"
+
+    def create_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        if database is not None and database != self.current_database:
+            raise exc.UnsupportedOperationError(
+                "Postgres does not support creating a schema in a different database"
+            )
+        if_not_exists = "IF NOT EXISTS " * force
+        name = self._quote(name)
+        with self.begin() as con:
+            con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+
+    def drop_schema(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        if database is not None and database != self.current_database:
+            raise exc.UnsupportedOperationError(
+                "Postgres does not support dropping a schema in a different database"
+            )
+        name = self._quote(name)
+        if_exists = "IF EXISTS " * force
+        with self.begin() as con:
+            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
