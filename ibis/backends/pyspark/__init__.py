@@ -33,13 +33,6 @@ from ibis.backends.pyspark.datatypes import dtype_from_pyspark
 if TYPE_CHECKING:
     import pandas as pd
 
-_read_csv_defaults = {
-    'header': True,
-    'multiLine': True,
-    'mode': 'FAILFAST',
-    'escape': '"',
-}
-
 
 def normalize_filenames(source_list):
     # Promote to list
