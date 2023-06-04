@@ -91,7 +91,7 @@ in
     runtimeInputs = [
       (
         mkPoetryEnv {
-          python = pkgs.python311;
+          python = pkgs.python3;
           groups = [ ];
           extras = [ ];
         }

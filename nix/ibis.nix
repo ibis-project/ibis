@@ -4,7 +4,6 @@
 , gitignoreSource
 , graphviz-nox
 , sqlite
-, rsync
 , ibisTestingData
 }:
 let
@@ -37,9 +36,7 @@ poetry2nix.mkPoetryApplication rec {
     HOME="$(mktemp -d)"
     export HOME
 
-    ${rsync}/bin/rsync \
-      --chmod=Du+rwx,Fu+rw --archive --delete \
-      "${ibisTestingData}/" $PWD/ci/ibis-testing-data
+    ln -s "${ibisTestingData}" $PWD/ci/ibis-testing-data
   '';
 
   checkPhase = ''
