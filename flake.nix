@@ -56,15 +56,13 @@
         mariadb-client
         # pyspark
         openjdk17_headless
-        # postgres
+        # postgres client
         postgresql
-        # sqlite
+        # sqlite with readline
         sqlite-interactive
       ];
       shellHook = ''
-        ${pkgs.rsync}/bin/rsync \
-          --chmod=Du+rwx,Fu+rw --archive --delete \
-          "${pkgs.ibisTestingData}/" "$PWD/ci/ibis-testing-data"
+        ln -sf "${pkgs.ibisTestingData}" "$PWD/ci/ibis-testing-data"
 
         # necessary for mkdocs
         export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
