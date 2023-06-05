@@ -121,6 +121,8 @@ FIlES_WITH_STRICT_EXCEPTION_CHECK = [
     'ibis/backends/tests/test_window.py',
 ]
 
+ALL_BACKENDS = set(_get_backend_names())
+
 
 @pytest.fixture(scope='session')
 def script_directory() -> Path:
@@ -279,7 +281,6 @@ def pytest_ignore_collect(path, config):
 
 
 def pytest_collection_modifyitems(session, config, items):
-    # add the backend marker to any tests are inside "ibis/backends"
     all_backends = _get_backend_names()
     additional_markers = []
 
@@ -288,7 +289,20 @@ def pytest_collection_modifyitems(session, config, items):
     except ImportError:
         pyspark = None
 
+    unrecognized_backends = set()
     for item in items:
+        # Yell loudly if unrecognized backend in notimpl, notyet or never
+        for name in ("notimpl", "notyet", "never"):
+            for mark in item.iter_markers(name=name):
+                if backend := set(util.promote_list(mark.args[0])).difference(
+                    ALL_BACKENDS
+                ):
+                    unrecognized_backends.add(
+                        f"""Unrecognize backend(s) {backend} passed to {name} marker in
+{item.path}::{item.originalname}"""
+                    )
+
+        # add the backend marker to any tests are inside "ibis/backends"
         parts = item.path.parts
         backend = _get_backend_from_parts(parts)
         if backend is not None and backend in all_backends:
@@ -305,6 +319,7 @@ def pytest_collection_modifyitems(session, config, items):
             if not any(item.iter_markers(name="benchmark")):
                 item.add_marker(pytest.mark.core)
 
+        # skip or xfail pyspark tests that run afoul of our non-ancient stack
         for _ in item.iter_markers(name="pyspark"):
             if not isinstance(item, pytest.DoctestItem):
                 additional_markers.append(
@@ -328,6 +343,9 @@ def pytest_collection_modifyitems(session, config, items):
                         ],
                     )
                 )
+
+    if unrecognized_backends:
+        raise pytest.PytestCollectionWarning("\n" + "\n".join(unrecognized_backends))
 
     for item, markers in additional_markers:
         for marker in markers:
