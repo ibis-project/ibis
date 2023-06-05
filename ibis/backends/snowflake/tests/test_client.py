@@ -1,13 +1,12 @@
 from __future__ import annotations
 
-import os
-
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
 
 import ibis
+from ibis.backends.snowflake.tests.conftest import _get_url
 from ibis.util import gen_name
 
 
@@ -37,9 +36,7 @@ def test_cross_db_access(con, temp_db, temp_schema):
 
 @pytest.fixture(scope="session")
 def simple_con():
-    if (url := os.environ.get("SNOWFLAKE_URL")) is None:
-        pytest.skip("no snowflake credentials")
-    return ibis.connect(url)
+    return ibis.connect(_get_url())
 
 
 @pytest.mark.parametrize(

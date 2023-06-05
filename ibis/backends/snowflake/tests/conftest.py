@@ -20,6 +20,29 @@ if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
 
 
+def _get_url():
+    if (url := os.environ.get("SNOWFLAKE_URL")) is not None:
+        return url
+    else:
+        try:
+            user, password, account, database, schema, warehouse = tuple(
+                os.environ[f"SNOWFLAKE_{part}"]
+                for part in [
+                    "USER",
+                    "PASSWORD",
+                    "ACCOUNT",
+                    "DATABASE",
+                    "SCHEMA",
+                    "WAREHOUSE",
+                ]
+            )
+        except KeyError as e:
+            pytest.skip(
+                f"missing URL part: {e} or SNOWFLAKE_URL environment variable is not defined"
+            )
+        return f"snowflake://{user}:{password}@{account}/{database}/{schema}?warehouse={warehouse}"
+
+
 def copy_into(con, data_dir: Path, table: str) -> None:
     stage = "ibis_testing"
     csv = f"{table}.csv"
@@ -56,8 +79,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
             pytest.importorskip("snowflake.connector")
             pytest.importorskip("snowflake.sqlalchemy")
 
-        if (snowflake_url := os.environ.get("SNOWFLAKE_URL")) is None:
-            pytest.skip("SNOWFLAKE_URL environment variable is not defined")
+        snowflake_url = _get_url()
 
         raw_url = sa.engine.make_url(snowflake_url)
         _, schema = raw_url.database.rsplit("/", 1)
@@ -130,9 +152,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @staticmethod
     @functools.lru_cache(maxsize=None)
     def connect(data_directory: Path) -> BaseBackend:
-        if snowflake_url := os.environ.get("SNOWFLAKE_URL"):
-            return ibis.connect(snowflake_url)  # type: ignore
-        pytest.skip("SNOWFLAKE_URL environment variable is not defined")
+        return ibis.connect(_get_url())
 
 
 @pytest.fixture(scope="session")
