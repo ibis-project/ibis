@@ -815,14 +815,20 @@ def timestamp_diff(op):
 @translate.register(ops.ArrayLength)
 def array_length(op):
     arg = translate(op.arg)
-    return arg.arr.lengths()
+    try:
+        return arg.arr.lengths()
+    except AttributeError:
+        return arg.list.lengths()
 
 
 @translate.register(ops.ArrayConcat)
 def array_concat(op):
     left = translate(op.left)
     right = translate(op.right)
-    return left.arr.concat(right)
+    try:
+        return left.arr.concat(right)
+    except AttributeError:
+        return left.list.concat(right)
 
 
 @translate.register(ops.ArrayColumn)
