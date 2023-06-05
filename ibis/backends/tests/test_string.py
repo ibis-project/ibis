@@ -1,5 +1,4 @@
 import contextlib
-import os
 
 import pytest
 import sqlalchemy as sa
@@ -178,6 +177,17 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
                     raises=sa.exc.OperationalError,
+                ),
+            ],
+        ),
+        param(
+            lambda t: t.string_col.rlike("|".join(map(str, range(10)))),
+            lambda t: t.string_col == t.string_col,
+            id="rlike",
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion", "mssql", "oracle"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -1005,29 +1015,3 @@ def test_multiple_subs(con):
     expr = ibis.literal("foo").substitute(m)
     result = con.execute(expr)
     assert result == "FOO"
-
-
-@pytest.mark.never(
-    ["dask", "datafusion", "pandas", "polars", "pyspark"],
-    raises=NotImplementedError,
-    reason="not a SQL backend",
-)
-@pytest.mark.notyet(
-    ["mssql"],
-    raises=OperationNotDefinedError,
-    reason="Doesn't support regular expressions",
-)
-@pytest.mark.notyet(
-    ["druid"],
-    raises=ValueError,
-    reason="sqlglot doesn't support a druid dialect",
-)
-@pytest.mark.notimpl(
-    ["oracle"],
-    raises=OperationNotDefinedError,
-)
-def test_rlike(backend, snapshot, alltypes):
-    if backend.name() == "snowflake" and not os.environ.get("CI"):  # pragma: no cover
-        pytest.skip("snowflake test database is segmented per-user and different in CI")
-    expr = alltypes[alltypes.string_col.rlike('0')]
-    snapshot.assert_match(str(ibis.to_sql(expr)), "out.sql")
