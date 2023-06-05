@@ -42,7 +42,7 @@ jobs:
             randomly-seed: false
 
           - name: snowflake
-            key: snowflake-pyarrow
+            key: snowflake_pyarrow
             title: Snowflake + PyArrow
             randomly-seed: false
             deps:
@@ -93,9 +93,22 @@ jobs:
 
       - name: setup snowflake credentials
         if: matrix.backend.name == 'snowflake'
-        run: echo "SNOWFLAKE_URL=${SNOWFLAKE_URL}" >> "$GITHUB_ENV"
+        run: |
+          {
+            echo "SNOWFLAKE_USER=${SNOWFLAKE_USER}"
+            echo "SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}"
+            echo "SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}"
+            echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}"
+            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}"
+            echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}"
+          } >> "$GITHUB_ENV"
         env:
-          SNOWFLAKE_URL: ${{ secrets.SNOWFLAKE_URL }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}_${{ matrix.backend.name || matrix.backend.key }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
 
       - name: "run parallel tests: ${{ matrix.backend.name }}; reset random seed"
         if: matrix.backend.randomly-seed
