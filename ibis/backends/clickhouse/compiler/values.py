@@ -298,7 +298,7 @@ def _string_find(op, **kw):
 def _regex_search(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return f"multiMatchAny({arg}, [{pattern}])"
+    return f"{arg} REGEXP {pattern}"
 
 
 @translate_val.register(ops.RegexExtract)
