@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pandas as pd
 import pytest
 import sqlglot as sg
@@ -238,7 +240,7 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     backend.assert_series_equal(foo2.x.execute(), expected2)
 
 
-_NO_SQLGLOT_DIALECT = {"pandas", "dask", "datafusion", "polars", "druid"}
+_NO_SQLGLOT_DIALECT = {"pandas", "dask", "datafusion", "druid"}
 no_sqlglot_dialect = sorted(
     param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
 )
@@ -253,6 +255,7 @@ no_sqlglot_dialect = sorted(
 )
 @pytest.mark.broken(["clickhouse"], raises=DatabaseError)
 @pytest.mark.notyet(["trino"], raises=NotImplementedError)
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @table_dot_sql_notimpl
 @dot_sql_notimpl
 @dot_sql_notyet
@@ -276,6 +279,7 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
         *no_sqlglot_dialect,
     ],
 )
+@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @pytest.mark.notyet(["druid"], raises=ValueError)
 @pytest.mark.notyet(["snowflake", "bigquery"])
 @pytest.mark.notyet(

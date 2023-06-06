@@ -35,7 +35,12 @@ if TYPE_CHECKING:
 __all__ = ('BaseBackend', 'Database', 'connect')
 
 
-_IBIS_TO_SQLGLOT_DIALECT = {"mssql": "tsql", "impala": "hive", "pyspark": "spark"}
+_IBIS_TO_SQLGLOT_DIALECT = {
+    "mssql": "tsql",
+    "impala": "hive",
+    "pyspark": "spark",
+    "polars": "postgres",
+}
 
 
 class Database:
