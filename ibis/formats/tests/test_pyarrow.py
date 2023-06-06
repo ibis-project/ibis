@@ -34,6 +34,7 @@ roundtripable_types = st.deferred(
         | past.duration_types
         | past.string_type
         | past.binary_type
+        | past.timestamp_types
         | st.builds(pa.list_, roundtripable_types)
         | past.struct_types(roundtripable_types)
         | past.map_types(roundtripable_types, roundtripable_types)
@@ -62,10 +63,6 @@ def test_roundtripable_types(arrow_type):
         (pa.time32("ms"), dt.Time(nullable=False), pa.time64("ns")),
         (pa.time64("us"), dt.Time(nullable=False), pa.time64("ns")),
         (pa.time64("ns"), dt.Time(nullable=False), pa.time64("ns")),
-        (pa.timestamp("s"), dt.Timestamp(nullable=False), pa.timestamp("ns")),
-        (pa.timestamp("ms"), dt.Timestamp(nullable=False), pa.timestamp("ns")),
-        (pa.timestamp("us"), dt.Timestamp(nullable=False), pa.timestamp("ns")),
-        (pa.timestamp("ns"), dt.Timestamp(nullable=False), pa.timestamp("ns")),
         (pa.large_binary(), dt.Binary(nullable=False), pa.binary()),
         (pa.large_string(), dt.String(nullable=False), pa.string()),
         (
@@ -82,6 +79,13 @@ def test_roundtripable_types(arrow_type):
 )
 def test_non_roundtripable_types(arrow_type, ibis_type, restored_type):
     assert_dtype_roundtrip(arrow_type, ibis_type, restored_type)
+
+
+@pytest.mark.parametrize("timezone", [None, "UTC"])
+@pytest.mark.parametrize("nullable", [True, False])
+def test_timestamp_no_scale(timezone, nullable):
+    dtype = dt.Timestamp(scale=None, timezone=timezone, nullable=nullable)
+    assert dtype.to_pyarrow() == pa.timestamp("us", tz=timezone)
 
 
 def test_month_day_nano_type_unsupported():

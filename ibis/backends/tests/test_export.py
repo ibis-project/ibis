@@ -7,7 +7,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis import selectors as s
 from ibis import util
 
 pa = pytest.importorskip("pyarrow")
@@ -16,6 +15,11 @@ try:
     from pyspark.sql.utils import ParseException
 except ImportError:
     ParseException = None
+
+try:
+    from deltalake import PyDeltaTableError
+except ImportError:
+    PyDeltaTableError = None
 
 limit = [
     param(
@@ -321,13 +325,11 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "impala",
         "mssql",
         "mysql",
         "oracle",
-        "pandas",
         "postgres",
         "pyspark",
         "snowflake",
@@ -337,6 +339,8 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     raises=AttributeError,
     reason="read_delta not yet implemented",
 )
+@pytest.mark.notyet(["pandas"], raises=PyDeltaTableError)
+@pytest.mark.notyet(["dask"], raises=NotImplementedError)
 @pytest.mark.notyet(
     ["druid"],
     raises=pa.lib.ArrowTypeError,
@@ -345,8 +349,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
     pytest.importorskip("deltalake")
 
-    # delta can't handle nanosecond timestamp columns it seems
-    t = alltypes.drop(s.c("__time", "timestamp_col")).head()
+    t = alltypes.head()
     expected = t.execute()
     path = tmp_path / "test.delta"
     t.to_delta(path)
