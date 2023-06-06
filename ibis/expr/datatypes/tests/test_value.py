@@ -271,7 +271,7 @@ def test_from_numpy_timedelta():
                     pd.Timestamp('2015-01-03 12:00:00'),
                 ]
             ),
-            (dt.Array(dt.Timestamp()), dt.Array(dt.Timestamp(scale=9))),
+            (dt.Array(dt.Timestamp()), dt.Array(dt.Timestamp(scale=6))),
         ),
         # Implied from object dtype
         (np.array([1, 2, 3], dtype=object), (dt.Array(dt.int64),)),
@@ -287,7 +287,7 @@ def test_from_numpy_timedelta():
                 ],
                 dtype=object,
             ),
-            (dt.Array(dt.Timestamp()), dt.Array(dt.Timestamp(scale=9))),
+            (dt.Array(dt.Timestamp()), dt.Array(dt.Timestamp(scale=6))),
         ),
     ],
 )

@@ -63,11 +63,7 @@ def dtype_from_pyarrow(typ: pa.DataType, nullable=True) -> dt.DataType:
     elif pa.types.is_decimal(typ):
         return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
     elif pa.types.is_timestamp(typ):
-        # TODO(kszucs): the following code provedes proper timestamp roundtrips
-        # between ibis and pyarrow but breaks the test suite at several
-        # places, we should revisit this later
-        # return dt.Timestamp.from_unit(typ.unit, typ.tz, nullable=nullable)
-        return dt.Timestamp(timezone=typ.tz, nullable=nullable)
+        return dt.Timestamp.from_unit(typ.unit, timezone=typ.tz, nullable=nullable)
     elif pa.types.is_time(typ):
         return dt.Time(nullable=nullable)
     elif pa.types.is_duration(typ):
@@ -110,11 +106,9 @@ def dtype_to_pyarrow(dtype: dt.DataType) -> pa.DataType:
         else:
             return pa.decimal128(precision, scale)
     elif dtype.is_timestamp():
-        # TODO(kszucs): the following code provedes proper timestamp roundtrips
-        # between ibis and pyarrow but breaks the test suite at several
-        # places, we should revisit this later
-        # return pa.timestamp(dtype.unit.short, tz=dtype.timezone)
-        return pa.timestamp('ns', tz=dtype.timezone)
+        return pa.timestamp(
+            dtype.unit.short if dtype.scale is not None else "us", tz=dtype.timezone
+        )
     elif dtype.is_interval():
         return pa.duration(dtype.unit.short)
     elif dtype.is_time():
