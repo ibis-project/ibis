@@ -210,8 +210,7 @@ class Backend(BaseBackend):
             The just-registered table
         """
         path = normalize_filename(path)
-        # Datafusion requires lowercase table names
-        table_name = table_name or gen_name("read_csv").lower()
+        table_name = table_name or gen_name("read_csv")
         # Our other backends support overwriting views / tables when reregistering
         self._context.deregister_table(table_name)
         self._context.register_csv(table_name, path, **kwargs)
@@ -238,8 +237,7 @@ class Backend(BaseBackend):
             The just-registered table
         """
         path = normalize_filename(path)
-        # Datafusion requires lowercase table names
-        table_name = table_name or gen_name("read_parquet").lower()
+        table_name = table_name or gen_name("read_parquet")
         # Our other backends support overwriting views / tables when reregistering
         self._context.deregister_table(table_name)
         self._context.register_parquet(table_name, path, **kwargs)

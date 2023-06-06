@@ -24,7 +24,6 @@ from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import dtype_to_duckdb, parse
-from ibis.backends.duckdb.datatypes import parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
 
 if TYPE_CHECKING:
