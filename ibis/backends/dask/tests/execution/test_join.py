@@ -386,6 +386,33 @@ def test_keyed_asof_join_with_tolerance(
     )
 
 
+@merge_asof_minversion
+def test_asof_join_overlapping_non_predicate(
+    time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
+):
+    # Add a junk column with a colliding name
+    time_keyed_left = time_keyed_left.mutate(
+        collide=time_keyed_left.key + time_keyed_left.value
+    )
+    time_keyed_right = time_keyed_right.mutate(
+        collide=time_keyed_right.key + time_keyed_right.other_value
+    )
+    time_keyed_df1.assign(collide=time_keyed_df1["key"] + time_keyed_df1["value"])
+    time_keyed_df2.assign(collide=time_keyed_df2["key"] + time_keyed_df2["other_value"])
+
+    expr = time_keyed_left.asof_join(
+        time_keyed_right, predicates=[("time", "time")], by=[("key", "key")]
+    )
+    result = expr.compile()
+    expected = dd.merge_asof(
+        time_keyed_df1, time_keyed_df2, on='time', by='key', suffixes=("", "_right")
+    )
+    tm.assert_frame_equal(
+        result[expected.columns].compute(scheduler='single-threaded'),
+        expected.compute(scheduler='single-threaded'),
+    )
+
+
 @pytest.mark.parametrize(
     "how",
     [

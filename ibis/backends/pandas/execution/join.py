@@ -127,10 +127,8 @@ def execute_join(op, left, right, predicates, **kwargs):
     tuple,
 )
 def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
-    overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
     left_on, right_on = _extract_predicate_names(predicates)
     left_by, right_by = _extract_predicate_names(by)
-    _validate_columns(overlapping_columns, left_on, right_on, left_by, right_by)
 
     return pd.merge_asof(
         left=left,
@@ -140,6 +138,7 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
         left_by=left_by or None,
         right_by=right_by or None,
         tolerance=tolerance,
+        suffixes=constants.JOIN_SUFFIXES,
     )
 
 
@@ -154,15 +153,3 @@ def _extract_predicate_names(predicates):
         lefts.append(left_name)
         rights.append(right_name)
     return lefts, rights
-
-
-def _validate_columns(orig_columns, *key_lists):
-    overlapping_columns = orig_columns.difference(
-        item for sublist in key_lists for item in sublist
-    )
-    if overlapping_columns:
-        raise ValueError(
-            'left and right DataFrame columns overlap on {} in a join. '
-            'Please specify the columns you want to select from the join, '
-            'e.g., join[left.column1, right.column2, ...]'.format(overlapping_columns)
-        )

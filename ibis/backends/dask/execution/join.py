@@ -10,7 +10,6 @@ from ibis.backends.dask.execution import constants
 from ibis.backends.pandas.execution.join import (
     _compute_join_column,
     _extract_predicate_names,
-    _validate_columns,
 )
 
 
@@ -23,10 +22,8 @@ from ibis.backends.pandas.execution.join import (
     tuple,
 )
 def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
-    overlapping_columns = frozenset(left.columns) & frozenset(right.columns)
     left_on, right_on = _extract_predicate_names(predicates)
     left_by, right_by = _extract_predicate_names(by)
-    _validate_columns(overlapping_columns, left_on, right_on, left_by, right_by)
 
     assert 0 <= len(left_on) <= 1, f"len(left_on) == {len(left_on)}"
     assert 0 <= len(right_on) <= 1, f"len(right_on) == {len(right_on)}"
@@ -45,6 +42,7 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
         left_by=left_by or None,
         right_by=right_by or None,
         tolerance=tolerance,
+        suffixes=constants.JOIN_SUFFIXES,
     )
 
 
