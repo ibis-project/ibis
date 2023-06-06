@@ -99,7 +99,7 @@ jobs:
             echo "SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}"
             echo "SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}"
             echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}"
-            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}"
+            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}_${{ matrix.backend.key || matrix.backend.name }}"
             echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}"
           } >> "$GITHUB_ENV"
         env:
@@ -107,7 +107,7 @@ jobs:
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
           SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}_${{ matrix.backend.name || matrix.backend.key }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
 
       - name: "run parallel tests: ${{ matrix.backend.name }}; reset random seed"
