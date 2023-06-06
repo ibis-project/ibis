@@ -25,6 +25,8 @@ class Backend(BaseBackend):
     name = "polars"
     builder = None
 
+    _sqlglot_dialect = "postgres"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._tables = dict()
@@ -133,7 +135,10 @@ class Backend(BaseBackend):
         del self._tables[name]
         self._context.unregister(name)
 
-    def sql(self, query: str, schema: sch.Schema | None = None) -> ir.Table:
+    def sql(
+        self, query: str, schema: sch.Schema | None = None, dialect: str | None = None
+    ) -> ir.Table:
+        query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
             schema = self._get_schema_using_query(query)
         name = ibis.util.gen_name("polars_dot_sql_table")
