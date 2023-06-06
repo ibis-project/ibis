@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import itertools
+
 import pandas as pd
 
 import ibis.expr.analysis as an
@@ -130,13 +132,39 @@ def execute_asof_join(op, left, right, by, tolerance, predicates, **kwargs):
     left_on, right_on = _extract_predicate_names(predicates)
     left_by, right_by = _extract_predicate_names(by)
 
+    # Add default join suffixes to predicates and groups and rename the
+    # corresponding columns before the `merge_asof`. If we don't do this and the
+    # predicates have the same column name, we lose the original RHS column
+    # values in the output. Instead, the RHS values are copies of the LHS values.
+    # xref https://github.com/ibis-project/ibis/issues/6080
+    left_on_suffixed = [x + constants.JOIN_SUFFIXES[0] for x in left_on]
+    right_on_suffixed = [x + constants.JOIN_SUFFIXES[1] for x in right_on]
+
+    left_by_suffixed = [x + constants.JOIN_SUFFIXES[0] for x in left_by]
+    right_by_suffixed = [x + constants.JOIN_SUFFIXES[1] for x in right_by]
+
+    left = left.rename(
+        columns=dict(
+            itertools.chain(
+                zip(left_on, left_on_suffixed), zip(left_by, left_by_suffixed)
+            )
+        )
+    )
+    right = right.rename(
+        columns=dict(
+            itertools.chain(
+                zip(right_on, right_on_suffixed), zip(right_by, right_by_suffixed)
+            )
+        )
+    )
+
     return pd.merge_asof(
         left=left,
         right=right,
-        left_on=left_on,
-        right_on=right_on,
-        left_by=left_by or None,
-        right_by=right_by or None,
+        left_on=left_on_suffixed,
+        right_on=right_on_suffixed,
+        left_by=left_by_suffixed or None,
+        right_by=right_by_suffixed or None,
         tolerance=tolerance,
         suffixes=constants.JOIN_SUFFIXES,
     )
