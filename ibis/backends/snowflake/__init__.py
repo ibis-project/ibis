@@ -4,6 +4,7 @@ import contextlib
 import functools
 import itertools
 import os
+import shutil
 import tempfile
 import warnings
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
@@ -346,12 +347,14 @@ $$ {defn["source"]} $$"""
                 stage = util.gen_name("stage")
                 con.exec_driver_sql(f"CREATE TEMP STAGE {stage}")
 
-                with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
-                    t = op.data.to_pyarrow(schema=op.schema)
-                    path = os.path.join(tmpdir, f"{raw_name}.parquet")
+                tmpdir = tempfile.TemporaryDirectory()
+                try:
+                    path = os.path.join(tmpdir.name, f"{raw_name}.parquet")
                     # optimize for bandwidth so use zstd which typically compresses
                     # better than the other options without much loss in speed
-                    pq.write_table(t, path, compression="zstd")
+                    pq.write_table(
+                        op.data.to_pyarrow(schema=op.schema), path, compression="zstd"
+                    )
 
                     # 2. copy the parquet file into the stage
                     #
@@ -367,6 +370,9 @@ $$ {defn["source"]} $$"""
                         AUTO_COMPRESS = FALSE
                         """
                     )
+                finally:
+                    with contextlib.suppress(Exception):
+                        shutil.rmtree(tmpdir.name)
 
                 # 3. create a temporary table
                 schema = ", ".join(
