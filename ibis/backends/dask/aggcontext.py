@@ -128,7 +128,7 @@ class Window(AggregationContext):
         grouped = grouped_frame[name]
 
         if callable(function):
-            # To compute the window_size, we need to contruct a
+            # To compute the window_size, we need to construct a
             # RollingGroupby and compute count using construct_window.
             # However, if the RollingGroupby is not numeric, e.g.,
             # we are calling window UDF on a timestamp column, we

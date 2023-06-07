@@ -34,7 +34,7 @@ Time context adjustment algorithm
     require extra data outside of the global time context that user defines.
     For example, in asof_join, we need to look back extra `tolerance` daays
     for the right table to get the data for joining. Similarly for window
-    operation with preceeding and following.
+    operation with preceding and following.
     Algorithm to calculate context adjustment are defined in this module
     and could be used by multiple backends.
 """

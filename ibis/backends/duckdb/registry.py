@@ -376,7 +376,7 @@ operation_registry.update(
         ops.TableColumn: _table_column,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.TimestampNow: fixed_arity(
-            # duckdb 0.6.0 changes now to be a tiemstamp with time zone force
+            # duckdb 0.6.0 changes now to be a timestamp with time zone force
             # it back to the original for backwards compatibility
             lambda *_: sa.cast(sa.func.now(), sa.TIMESTAMP),
             0,

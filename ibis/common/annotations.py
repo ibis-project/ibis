@@ -168,7 +168,7 @@ class Parameter(inspect.Parameter):
 class Signature(inspect.Signature):
     """Validatable signature.
 
-    Primarly used in the implementation of `ibis.common.grounds.Annotable`.
+    Primarily used in the implementation of `ibis.common.grounds.Annotable`.
     """
 
     __slots__ = ()
@@ -199,7 +199,7 @@ class Signature(inspect.Signature):
         for name, annot in annotations.items():
             params[name] = Parameter(name, annotation=annot)
 
-        # mandatory fields without default values must preceed the optional
+        # mandatory fields without default values must precede the optional
         # ones in the function signature, the partial ordering will be kept
         var_args, var_kwargs = [], []
         new_args, new_kwargs = [], []

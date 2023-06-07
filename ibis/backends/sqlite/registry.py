@@ -147,7 +147,7 @@ def _extract_week_of_year(t, op):
 
     The implementation gives the same results as `datetime.isocalendar()`.
 
-    The year's week that "wins" the day is the year with more alloted days.
+    The year's week that "wins" the day is the year with more allotted days.
 
     For example:
 
@@ -164,7 +164,7 @@ def _extract_week_of_year(t, op):
     ```
 
     Here the ISO week number is `52` since the day occurs in a week with more
-    days in the week occuring in the _previous_ week's year.
+    days in the week occurring in the _previous_ week's year.
 
     ```
     $ cal '2012-12-31'
@@ -179,7 +179,7 @@ def _extract_week_of_year(t, op):
     ```
 
     Here the ISO week of year is `1` since the day occurs in a week with more
-    days in the week occuring in the _next_ week's year.
+    days in the week occurring in the _next_ week's year.
     """
     date = sa.func.date(t.translate(op.arg), "-3 days", "weekday 4")
     return (sa.func.strftime("%j", date) - 1) / 7 + 1

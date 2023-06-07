@@ -50,7 +50,7 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.Series, dd.Series, object), map_get_series_series_scalar),
         ((dd.Series, dd.Series, dd.Series), map_get_series_series_series),
         # This never occurs but we need to register it so multipledispatch
-        # does not see below registrations as ambigious. See NOTE above.
+        # does not see below registrations as ambiguous. See NOTE above.
         (
             (Mapping, (dd.Series, pd.Series), (dd.Series, pd.Series)),
             map_get_dict_series_series,

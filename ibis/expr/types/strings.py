@@ -630,7 +630,7 @@ class StringValue(Value):
         start: int | ir.IntegerValue | None = None,
         end: int | ir.IntegerValue | None = None,
     ) -> ir.IntegerValue:
-        """Return the position of the first occurence of substring.
+        """Return the position of the first occurrence of substring.
 
         Parameters
         ----------
@@ -754,7 +754,7 @@ class StringValue(Value):
         return ops.RPad(self, length, pad).to_expr()
 
     def find_in_set(self, str_list: Sequence[str]) -> ir.IntegerValue:
-        """Find the first occurence of `str_list` within a list of strings.
+        """Find the first occurrence of `str_list` within a list of strings.
 
         No string in `str_list` can have a comma.
 

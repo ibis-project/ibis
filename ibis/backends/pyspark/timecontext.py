@@ -23,7 +23,7 @@ def filter_by_time_context(
     time_col = get_time_col()
     if time_col in df.columns:
         # For py3.8, underlying spark type converter calls utctimetuple()
-        # and will throw excpetion for Timestamp type if tz is set.
+        # and will throw exception for Timestamp type if tz is set.
         # See https://github.com/pandas-dev/pandas/issues/32174
         # Dropping tz will cause spark to interpret begin, end with session
         # timezone & os env TZ. We convert Timestamp to pydatetime to

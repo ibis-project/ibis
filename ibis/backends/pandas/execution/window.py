@@ -241,7 +241,7 @@ def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext 
 
     # Get columns to set for index
     if isinstance(data, pd.Series):
-        # if Series dosen't contain a name, reset_index will assign
+        # if Series doesn't contain a name, reset_index will assign
         # '0' as the column name for the column of value
         name = data.name if data.name else 0
         index_columns = list(subset.columns.difference([name]))

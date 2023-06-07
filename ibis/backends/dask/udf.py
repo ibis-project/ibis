@@ -102,8 +102,8 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
     # 1) an ungrouped window,
     # 2) an ungrouped Aggregate node, or
     # 3) an ungrouped custom aggregation context
-    # Ungrouped analytic/reduction functions recieve the entire Series at once
-    # This is generally not recommened.
+    # Ungrouped analytic/reduction functions receive the entire Series at once
+    # This is generally not recommended.
     @execute_node.register(type(op), *(itertools.repeat(dd.Series, nargs)))
     def execute_udaf_node_no_groupby(op, *args, aggcontext, **kwargs):
         # This function is in essence fully materializing the dd.Series and
@@ -145,12 +145,12 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # lazy_result is a dd.core.Scalar from an ungrouped reduction
             return_type = op.return_type
             if return_type.is_array() or return_type.is_struct():
-                # we're outputing a dt.Struct that will need to be destructured
+                # we're outputting a dt.Struct that will need to be destructured
                 # or an array of an unknown size.
                 # we compute so we can work with items inside downstream.
                 result = lazy_result.compute()
             else:
-                # manully construct a dd.core.Scalar out of the delayed result
+                # manually construct a dd.core.Scalar out of the delayed result
                 result = dd.from_delayed(
                     lazy_result,
                     meta=op.return_type.to_pandas(),
@@ -190,7 +190,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # that is a SeriesGroupBy.
             iters = create_gens_from_args_groupby(*args[1:])
 
-            # TODO: Unify calling convension here to be more like
+            # TODO: Unify calling convention here to be more like
             # window
             def aggregator(first, *rest):
                 # map(next, *rest) gets the inputs for the next group

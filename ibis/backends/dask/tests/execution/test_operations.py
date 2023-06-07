@@ -316,7 +316,7 @@ def test_grouped_reduction(t, df, where):
         "var_plain_int64",
         "nunique_plain_int64",
     ]
-    # guarentee ordering
+    # guarantee ordering
     result = result[expected.columns]
     # dask and pandas differ slightly in how they treat groups with no entry
     # we're not testing that so fillna here.
@@ -917,7 +917,7 @@ def test_union(client, df1, distinct):
     result = expr.compile()
     expected = df1 if distinct else dd.concat([df1, df1], axis=0, ignore_index=True)
 
-    # match indicies because of dask reset_index behavior
+    # match indices because of dask reset_index behavior
     result = result.compute().reset_index(drop=True)
     expected = expected.compute().reset_index(drop=True)
 

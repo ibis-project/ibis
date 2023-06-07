@@ -384,7 +384,7 @@ operation_registry.update(
             lambda arr, el: sa.func.array_contains(sa.func.to_variant(el), arr), 2
         ),
         ops.ArrayPosition: fixed_arity(
-            # snowflake is zero-based here, so we don't need to substract 1 from the result
+            # snowflake is zero-based here, so we don't need to subtract 1 from the result
             lambda lst, el: sa.func.coalesce(
                 sa.func.array_position(sa.func.to_variant(el), lst), -1
             ),

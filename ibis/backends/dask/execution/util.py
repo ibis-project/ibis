@@ -175,7 +175,7 @@ def safe_concat(dfs: list[dd.Series | dd.DataFrame]) -> dd.DataFrame:
     See https://github.com/dask/dask/blob/2c2e837674895cafdb0612be81250ef2657d947e/dask/dataframe/multi.py#L907.
 
     Note - Repeatedly joining dataframes is likely to be quite slow, but this
-    should be hit rarely in real usage. A situtation that triggeres this slow
+    should be hit rarely in real usage. A situation that triggers this slow
     path is aggregations where aggregations return different numbers of rows
     (see `test_aggregation_group_by` for a specific example).
     TODO - performance.
@@ -307,7 +307,7 @@ def add_globally_consecutive_column(
     - The global index that's added is consecutive in the same order that the rows currently are in.
     - IDs within each partition are already sorted
 
-    We also do not explicity deal with overflow in the bounds.
+    We also do not explicitly deal with overflow in the bounds.
 
     Parameters
     ----------

@@ -79,7 +79,7 @@ class BackendConversionError(IbisError):
 
 
 class BackendConfigurationNotRegistered(IbisError):
-    """A backend has options but isn't regsitered in ibis/config.py."""
+    """A backend has options but isn't registered in ibis/config.py."""
 
     def __init__(self, backend_name: str) -> None:
         super().__init__(backend_name)

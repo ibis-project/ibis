@@ -364,7 +364,7 @@ class Pattern(Slotted):
         """Recursively flatten the pattern to a join of selections.
 
         `Pattern(Add, (Pattern(Mul, ($x, 1)), $y))` is turned into a join of
-        selections by introducing auxilary variables where each selection gets
+        selections by introducing auxiliary variables where each selection gets
         executed as a dictionary lookup.
 
         In SQL terms this is equivalent to the following query:
@@ -375,7 +375,7 @@ class Pattern(Slotted):
         var : Variable
             The variable to assign to the flattened pattern.
         counter : Iterator[int]
-            The counter to generate unique variable names for auxilary variables
+            The counter to generate unique variable names for auxiliary variables
             connecting the selections.
 
         Yields
@@ -617,7 +617,7 @@ class EGraph:
             are either enodes or leaf values.
         patargs : tuple
             The arguments of the pattern. Since a pattern is a flat term (flattened
-            using auxilliary variables), the arguments are either variables or leaf
+            using auxiliary variables), the arguments are either variables or leaf
             values.
 
         Returns

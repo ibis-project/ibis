@@ -81,7 +81,7 @@ def test_window_with_timecontext(con, ibis_windows, spark_range):
 def test_cumulative_window(con, ibis_windows, spark_range):
     """Test context adjustment for cumulative window.
 
-    For cumulative window, by defination we should look back infinately.
+    For cumulative window, by definition we should look back infinitely.
     When data is trimmed by time context, we define the limit of looking
     back is the start time of given time context. Thus for a table of
     time       value
@@ -133,8 +133,8 @@ def test_multiple_trailing_window(con, ibis_windows, spark_range):
     """Test context adjustment for multiple trailing window.
 
     When there are multiple window ops, we need to verify contexts are
-    adjusted correctly for all windows. In this tests we are constucting
-    one trailing window for 1h and another trailng window for 2h
+    adjusted correctly for all windows. In this tests we are constructing
+    one trailing window for 1h and another trailing window for 2h
     """
     table = con.table('time_indexed_table')
     context = (
@@ -184,8 +184,8 @@ def test_chained_trailing_window(con, ibis_windows, spark_range):
     """Test context adjustment for chained windows.
 
     When there are chained window ops, we need to verify contexts are
-    adjusted correctly for all windows. In this tests we are constucting
-    one trailing window for 1h and trailng window on the new column for
+    adjusted correctly for all windows. In this tests we are constructing
+    one trailing window for 1h and trailing window on the new column for
     2h
     """
     table = con.table('time_indexed_table')

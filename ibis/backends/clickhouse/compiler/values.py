@@ -1203,7 +1203,7 @@ _map_interval_to_microseconds = {
 _map_interval_op_to_op = {
     # Literal Intervals have two args, i.e.
     # Literal(1, Interval(value_type=int8, unit='D', nullable=True))
-    # Parse both args and multipy 1 * _map_interval_to_microseconds['D']
+    # Parse both args and multiply 1 * _map_interval_to_microseconds['D']
     ops.Literal: mul,
     ops.IntervalMultiply: mul,
     ops.IntervalAdd: add,
