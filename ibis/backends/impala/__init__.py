@@ -49,7 +49,6 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.config import options
-from ibis.formats.pandas import convert_pandas_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -347,7 +346,7 @@ class Backend(BaseSQLBackend):
         names = [name for name, *_ in cursor.description]
         df = _column_batches_to_dataframe(names, batches)
         if schema:
-            return convert_pandas_dataframe(df, schema)
+            return self._pandas_converter.convert_frame(df, schema)
         return df
 
     @contextlib.contextmanager

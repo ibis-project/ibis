@@ -25,7 +25,6 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import dtype_to_duckdb, parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
-from ibis.formats.pandas import convert_pandas_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -846,7 +845,7 @@ class Backend(BaseAlchemyBackend):
                 for name, col in zip(table.column_names, table.columns)
             }
         )
-        return convert_pandas_dataframe(df, schema)
+        return self._pandas_converter.convert_frame(df, schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as con:

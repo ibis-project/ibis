@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import functools
 import itertools
 import os
 import tempfile
@@ -91,6 +92,12 @@ class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
     supports_create_or_replace = True
+
+    @functools.cached_property
+    def _pandas_converter(self):
+        from ibis.backends.snowflake.converter import SnowflakePandasConverter
+
+        return SnowflakePandasConverter
 
     @property
     def _current_schema(self) -> str:
@@ -245,7 +252,7 @@ $$ {defn["source"]} $$"""
         if (table := cursor.cursor.fetch_arrow_all()) is None:
             table = pa.Table.from_pylist([], schema=schema.to_pyarrow())
         df = table.to_pandas(timestamp_as_object=True)
-        return schema.apply_to(df)
+        return self._pandas_converter.convert_frame(df, schema)
 
     def to_pyarrow_batches(
         self,
@@ -268,6 +275,7 @@ $$ {defn["source"]} $$"""
                     t.rename_columns(target_columns)
                     .cast(target_schema)
                     .to_batches(max_chunksize=chunk_size)
+                    # yields pyarrow.Table objects, which are then converted to record batches
                     for t in cur.cursor.fetch_arrow_batches()
                 )
 

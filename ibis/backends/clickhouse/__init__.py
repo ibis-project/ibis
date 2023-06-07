@@ -24,7 +24,6 @@ from ibis import util
 from ibis.backends.base import BaseBackend
 from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
-from ibis.formats.pandas import convert_pandas_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -392,7 +391,7 @@ class Backend(BaseBackend):
         if df.empty:
             df = pd.DataFrame(columns=schema.names)
 
-        result = convert_pandas_dataframe(df, schema)
+        result = self._pandas_converter.convert_frame(df, schema)
         if isinstance(expr, ir.Scalar):
             return result.iat[0, 0]
         elif isinstance(expr, ir.Column):
@@ -474,7 +473,7 @@ class Backend(BaseBackend):
         import pandas as pd
 
         df = pd.DataFrame.from_records(iter(cursor), columns=schema.names)
-        return convert_pandas_dataframe(df, schema)
+        return self._pandas_converter.convert_frame(df, schema)
 
     def close(self) -> None:
         """Close ClickHouse connection."""
