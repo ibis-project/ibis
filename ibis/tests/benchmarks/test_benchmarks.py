@@ -2,6 +2,7 @@ import copy
 import functools
 import inspect
 import itertools
+import os
 import string
 import tempfile
 from pathlib import Path
@@ -724,3 +725,22 @@ def test_insert_duckdb(benchmark, overwrite):
         con = ibis.duckdb.connect(Path(d, "test_insert.ddb"))
         con.create_table(table_name, schema=schema)
         benchmark(con.insert, table_name, t, overwrite=overwrite)
+
+
+def test_snowflake_medium_sized_to_pandas(benchmark):
+    pytest.importorskip("snowflake.connector")
+    pytest.importorskip("snowflake.sqlalchemy")
+
+    if (url := os.environ.get("SNOWFLAKE_URL")) is None:
+        pytest.skip("SNOWFLAKE_URL environment variable not set")
+
+    con = ibis.connect(url)
+
+    # LINEITEM at scale factor 1 is around 6MM rows, but we limit to 1,000,000
+    # to make the benchmark fast enough for development, yet large enough to show a
+    # difference if there's a performance hit
+    lineitem = con.table("LINEITEM", schema="snowflake_sample_data.tpch_sf1").limit(
+        1_000_000
+    )
+
+    benchmark.pedantic(lineitem.to_pandas, rounds=5, iterations=1, warmup_rounds=1)
