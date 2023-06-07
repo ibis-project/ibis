@@ -76,12 +76,13 @@ jobs:
       - name: setup snowflake credentials
         if: matrix.backend.name == 'snowflake'
         run: |
+          pyversion="${{ matrix.python-version }}"
           {
             echo "SNOWFLAKE_USER=${SNOWFLAKE_USER}"
             echo "SNOWFLAKE_PASSWORD=${SNOWFLAKE_PASSWORD}"
             echo "SNOWFLAKE_ACCOUNT=${SNOWFLAKE_ACCOUNT}"
             echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}"
-            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}"
+            echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}_python${pyversion//./}"
             echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}"
           } >> "$GITHUB_ENV"
         env:
