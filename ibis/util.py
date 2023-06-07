@@ -1,6 +1,7 @@
 """Ibis utility functions."""
 from __future__ import annotations
 
+import base64
 import collections
 import functools
 import importlib.metadata
@@ -25,7 +26,6 @@ from typing import (
 )
 from uuid import uuid4
 
-import numpy as np
 import toolz
 
 if TYPE_CHECKING:
@@ -540,4 +540,5 @@ def normalize_filename(source: str | Path) -> str:
 
 def gen_name(namespace: str) -> str:
     """Create a case-insensitive uuid4 unique table name."""
-    return f"_ibis_{namespace}_{np.base_repr(uuid.uuid4().int, 36)}".lower()
+    uid = base64.b32encode(uuid.uuid4().bytes).decode().rstrip("=").lower()
+    return f"_ibis_{namespace}_{uid}"
