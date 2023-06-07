@@ -1,17 +1,13 @@
 from __future__ import annotations
 
-import json
 import warnings
-from uuid import UUID
 
 import numpy as np
 import pandas as pd
 import pandas.api.types as pdt
-from dateutil.parser import parse as date_parse
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis import util
 from ibis.formats.numpy import dtype_from_numpy, dtype_to_numpy
 from ibis.formats.pyarrow import dtype_from_pyarrow, infer_sequence_dtype
 
@@ -100,44 +96,71 @@ def schema_from_dask_dataframe(df, schema=None):
     )
 
 
-def convert_pandas_dataframe(df, schema):
-    if len(schema) != len(df.columns):
-        raise ValueError("schema column count does not match input data column count")
+class PandasConverter:
+    @classmethod
+    def convert_frame(cls, df, schema):
+        if len(schema) != len(df.columns):
+            raise ValueError(
+                "schema column count does not match input data column count"
+            )
 
-    for column, dtype in zip(df.columns, schema.types):
-        df[column] = convert_pandas_series(df[column], dtype)
+        for (name, series), dtype in zip(df.items(), schema.types):
+            df[name] = cls.convert_series(series, dtype)
 
-    # return data with the schema's columns which may be different than the input columns
-    df.columns = schema.names
-    return df
+        # return data with the schema's columns which may be different than the input columns
+        df.columns = schema.names
+        return df
 
+    @classmethod
+    def convert_series(cls, s, dtype):
+        pandas_type = dtype.to_pandas()
 
-def convert_pandas_series(s, dtype):
-    pandas_type = dtype.to_pandas()
+        if s.dtype == pandas_type and dtype.is_primitive():
+            return s
 
-    if s.dtype == pandas_type and dtype.is_primitive():
-        return s
+        converter = getattr(
+            cls, f"convert_{dtype.__class__.__name__}", cls.convert_default
+        )
+        return converter(s, dtype, pandas_type)
 
-    if dtype.is_boolean():
+    @staticmethod
+    def convert_default(s, dtype, pandas_type):
+        try:
+            return s.astype(pandas_type)
+        except Exception:  # noqa: BLE001
+            return s
+
+    @staticmethod
+    def convert_Boolean(s, dtype, pandas_type):
+        import pandas.api.types as pdt
+
         if s.empty:
             return s.astype(pandas_type)
         elif pdt.is_object_dtype(s.dtype):
             return s
         elif s.dtype != pandas_type:
-            return s.map(lambda value: pd.NA if pd.isna(value) else bool(value))
+            return s.map(bool, na_action="ignore")
         else:
             return s
-    elif dtype.is_timestamp():
+
+    @staticmethod
+    def convert_Timestamp(s, dtype, pandas_type):
+        import pandas.api.types as pdt
+
         if pdt.is_datetime64tz_dtype(s.dtype):
             return s.dt.tz_convert(dtype.timezone)
         elif pdt.is_datetime64_dtype(s.dtype):
             return s.dt.tz_localize(dtype.timezone)
         else:
+            import pandas as pd
+
             try:
                 return s.astype(pandas_type)
             except pd.errors.OutOfBoundsDatetime:  # uncovered
                 try:
-                    return s.map(date_parse)
+                    from dateutil.parser import parse as date_parse
+
+                    return s.map(date_parse, na_action="ignore")
                 except TypeError:
                     return s
             except TypeError:
@@ -145,45 +168,59 @@ def convert_pandas_series(s, dtype):
                     return pd.to_datetime(s).dt.tz_convert(dtype.timezone)
                 except TypeError:
                     return pd.to_datetime(s).dt.tz_localize(dtype.timezone)
-    elif dtype.is_date():
+
+    @staticmethod
+    def convert_Date(s, dtype, pandas_type):
+        import pandas.api.types as pdt
+
         if pdt.is_datetime64tz_dtype(s.dtype):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
         return s.astype(pandas_type, errors='ignore').dt.normalize()
-    elif dtype.is_interval():
+
+    @staticmethod
+    def convert_Interval(s, dtype, pandas_type):
         try:
             return s.values.astype(pandas_type)
         except ValueError:  # can happen when `column` is DateOffsets  # uncovered
             return s
-    elif dtype.is_string():
+
+    @staticmethod
+    def convert_String(s, dtype, pandas_type):
         return s.astype(pandas_type, errors='ignore')
-    elif dtype.is_uuid():
-        return s.map(lambda v: v if isinstance(v, UUID) else UUID(v))  # uncovered
-    elif dtype.is_struct():
 
-        def convert_element(values, names=dtype.names):
-            if values is None or isinstance(values, dict) or pd.isna(values):
-                return values
-            return dict(zip(names, values))  # uncovered
+    @staticmethod
+    def convert_UUID(s, dtype, pandas_type):
+        from uuid import UUID
 
-        return s.map(convert_element)
-    elif dtype.is_array():
-        return s.map(lambda x: list(x) if util.is_iterable(x) else x)
-    elif dtype.is_map():
-        return s.map(lambda x: dict(x) if util.is_iterable(x) else x)
-    elif dtype.is_json():
+        return s.map(
+            lambda v: v if isinstance(v, UUID) else UUID(v), na_action="ignore"
+        )
+
+    @staticmethod
+    def convert_Struct(s, dtype, pandas_type):
+        return s.map(
+            lambda values, names=dtype.names: (
+                values if isinstance(values, dict) else dict(zip(names, values))
+            ),
+            na_action="ignore",
+        )
+
+    @staticmethod
+    def convert_Array(s, dtype, pandas_type):
+        return s.map(list, na_action="ignore")
+
+    @staticmethod
+    def convert_Map(s, dtype, pandas_type):
+        return s.map(dict, na_action="ignore")
+
+    @staticmethod
+    def convert_JSON(s, dtype, pandas_type):
+        import json
 
         def try_json(x):
-            if x is None:
-                return x
             try:
                 return json.loads(x)
             except (TypeError, json.JSONDecodeError):
                 return x
 
-        return s.map(try_json).astype("object")
-    else:
-        # TODO(kszucs): the errors should be handled properly here
-        try:
-            return s.astype(pandas_type)
-        except Exception:  # noqa: BLE001
-            return s
+        return s.map(try_json, na_action="ignore").astype("object")

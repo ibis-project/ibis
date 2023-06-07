@@ -37,7 +37,6 @@ from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
 )
-from ibis.formats.pandas import convert_pandas_dataframe
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -201,7 +200,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             # artificially locked tables
             cursor.close()
             raise
-        df = convert_pandas_dataframe(df, schema)
+        df = self._pandas_converter.convert_frame(df, schema)
         if not df.empty and geospatial_supported:
             return self._to_geodataframe(df, schema)
         return df

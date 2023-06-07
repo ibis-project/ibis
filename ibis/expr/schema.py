@@ -206,12 +206,12 @@ class Schema(Concrete, Coercible, MapSet):
 
     @deprecated(
         as_of="6.0",
-        instead="use ibis.formats.pandas.convert_pandas_dataframe() instead",
+        instead="use ibis.formats.pandas.PandasConverter.convert_frame() instead",
     )
     def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:
-        from ibis.formats.pandas import convert_pandas_dataframe
+        from ibis.formats.pandas import PandasConverter
 
-        return convert_pandas_dataframe(df, self)
+        return PandasConverter.convert_frame(df, self)
 
 
 @lazy_singledispatch

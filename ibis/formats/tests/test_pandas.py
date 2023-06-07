@@ -12,7 +12,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats.pandas import (
-    convert_pandas_dataframe,
+    PandasConverter,
     dtype_from_pandas,
     dtype_to_pandas,
     schema_from_pandas,
@@ -432,5 +432,5 @@ def test_convert_dataframe_with_timezone():
         time=lambda df: df.time.dt.tz_localize("EST")
     )
     desired_schema = ibis.schema(dict(time='timestamp("EST")'))
-    result = convert_pandas_dataframe(df.copy(), desired_schema)
+    result = PandasConverter.convert_frame(df.copy(), desired_schema)
     tm.assert_frame_equal(expected, result)
