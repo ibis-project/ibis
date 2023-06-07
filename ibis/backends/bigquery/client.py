@@ -144,7 +144,7 @@ def rename_partitioned_column(table_expr, bq_table, partition_col):
     """Rename native partition column to user-defined name."""
     partition_info = bq_table._properties.get("timePartitioning", None)
 
-    # If we don't have any partiton information, the table isn't partitioned
+    # If we don't have any partition information, the table isn't partitioned
     if partition_info is None:
         return table_expr
 

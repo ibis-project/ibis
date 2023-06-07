@@ -330,7 +330,7 @@ def client(arg, **kwargs):
 
 
 # ---------------------------------------------------------------------
-# Ouput type functions
+# Output type functions
 
 
 @public

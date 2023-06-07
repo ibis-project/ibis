@@ -180,7 +180,7 @@ def _compute_predicates(
     for predicate in predicates:
         # Map each root table of the predicate to the data so that we compute
         # predicates on the result instead of any left or right tables if the
-        # Selection is on a Join. Project data to only inlude columns from
+        # Selection is on a Join. Project data to only include columns from
         # the root table.
         root_tables = an.find_immediate_parent_tables(predicate)
 

@@ -147,7 +147,7 @@ def pre_execute_analytic_and_reduction_udf(op, *clients, scope=None, **kwargs):
             # that is a SeriesGroupBy.
             iters = create_gens_from_args_groupby(*args[1:])
 
-            # TODO: Unify calling convension here to be more like
+            # TODO: Unify calling convention here to be more like
             # window
             def aggregator(first, *rest):
                 # map(next, *rest) gets the inputs for the next group

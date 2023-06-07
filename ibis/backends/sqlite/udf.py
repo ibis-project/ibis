@@ -77,7 +77,7 @@ def _ibis_sqlite_regex_search(string, regex):
 
 @udf
 def _ibis_sqlite_regex_replace(string, pattern, replacement):
-    """Replace occurences of `pattern` in `string` with `replacement`."""
+    """Replace occurrences of `pattern` in `string` with `replacement`."""
     return re.sub(pattern, replacement, string)
 
 
@@ -430,7 +430,7 @@ def register_all(dbapi_connection):
     for agg in _SQLITE_UDAF_REGISTRY:
         dbapi_connection.create_aggregate(
             agg.__name__,
-            # substract one to ignore the `self` argument of the step method
+            # subtract one to ignore the `self` argument of the step method
             _number_of_arguments(agg.step) - 1,
             agg,
         )

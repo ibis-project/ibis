@@ -157,7 +157,7 @@ class Backend(BaseBackend):
         password
             Password to authenticate with
         client_name
-            Name of client that wil appear in clickhouse server logs
+            Name of client that will appear in clickhouse server logs
         secure
             Whether or not to use an authenticated endpoint
         compression

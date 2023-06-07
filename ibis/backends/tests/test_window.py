@@ -326,7 +326,7 @@ def test_grouped_bounded_expanding_window(
             marks=[pytest.mark.notimpl(["dask"], raises=NotImplementedError)],
         ),
         param(
-            # Disabled on PySpark and Spark backends becuase in pyspark<3.0.0,
+            # Disabled on PySpark and Spark backends because in pyspark<3.0.0,
             # Pandas UDFs are only supported on unbounded windows
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda df: (df.double_col.expanding().mean()),

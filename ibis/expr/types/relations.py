@@ -2793,7 +2793,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …        │ …                  │     … │
         └──────────┴────────────────────┴───────┘
 
-        Simliarly for a different example dataset, we convert names to values
+        Similarly for a different example dataset, we convert names to values
         but using a different selector and the default `values_to` value.
 
         >>> world_bank_pop = ibis.examples.world_bank_pop_raw.fetch()

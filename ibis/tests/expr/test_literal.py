@@ -47,7 +47,7 @@ def test_literal_equality_interval():
 
     assert a != b
 
-    # Currently these does't equal, but perhaps should be?
+    # Currently these don't equal, but perhaps should?
     c = ibis.interval(seconds=60).op()
     d = ibis.interval(minutes=1).op()
 
@@ -145,7 +145,7 @@ def test_map_literal(value):
 @pytest.mark.parametrize(
     'value',
     [
-        dict(key1='value1', key2=6.25),  # heterogenous map values
+        dict(key1='value1', key2=6.25),  # heterogeneous map values
     ],
 )
 def test_map_literal_non_castable(value):

@@ -8,7 +8,7 @@ with it (if any).
 
 When there are no time contexts associate with the cached result, getting
 and setting values in Scope would be as simple as get and set in a normal
-dictonary. With time contexts, we need the following logic for getting
+dictionary. With time contexts, we need the following logic for getting
 and setting items in scope:
 
 Before setting the value op in scope we need to perform the following
@@ -133,7 +133,7 @@ class Scope:
         if timecontext is None:
             return self._items[op].value
         else:
-            # For op with timecontext, ther are some ops cannot use cached
+            # For op with timecontext, there are some ops cannot use cached
             # result with a different (larger) timecontext to get the
             # correct result.
             # For example, a groupby followed by count, if we use a larger or
@@ -142,7 +142,7 @@ class Scope:
             # depending on other rows in result Dataframe, cannot use cached
             # result with different time context to optimize calculation.
             # These are time context sensitive operations. Since these cases
-            # are rare in acutal use case, we just enable optimization for
+            # are rare in actual use case, we just enable optimization for
             # all nodes for now.
             cached_timecontext = self._items[op].timecontext
             if cached_timecontext:

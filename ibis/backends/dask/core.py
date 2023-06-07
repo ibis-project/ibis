@@ -106,7 +106,7 @@ And scope value is another key-value map:
 - timecontext: of type TimeContext, the time context associated with the data
 stored in value
 
-See ibis.common.scope for details about the implementaion.
+See ibis.common.scope for details about the implementation.
 """
 from __future__ import annotations
 
@@ -391,7 +391,7 @@ def main_execute(
     if cache is None:
         cache = {}
 
-    # TODO: make expresions hashable so that we can get rid of these .op()
+    # TODO: make expressions hashable so that we can get rid of these .op()
     # calls everywhere
     params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
     scope = scope.merge_scope(Scope(params, timecontext))

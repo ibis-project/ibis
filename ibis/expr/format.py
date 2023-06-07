@@ -224,7 +224,7 @@ def _fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
     top = f"{op.__class__.__name__}[{left}, {right}]"
 
     # format the join predicates
-    # if only one, put it directly after the join on thes same line
+    # if only one, put it directly after the join on the same line
     # if more than one put each on a separate line
     preds = op.predicates
     formatted_preds = [fmt_value(pred, aliases=aliases) for pred in preds]
@@ -582,7 +582,7 @@ def _fmt_value_value_op(op: ops.Value, *, aliases: Aliases) -> str:
     args = []
     # loop over argument names and original expression
     for argname, orig_expr in zip(op.argnames, op.args):
-        # promote argument to a list, so that we don't accidentially repr
+        # promote argument to a list, so that we don't accidentally repr
         # entire subtrees when all we want is the formatted argument value
         if exprs := [expr for expr in util.promote_list(orig_expr) if expr is not None]:
             # format the individual argument values

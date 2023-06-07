@@ -104,7 +104,7 @@ def _log_trace(func, start=None):
             level += 1
 
     # We can assume we have 'args' because we only call _log_trace inside
-    # trace or TraceDispatcher.resgister
+    # trace or TraceDispatcher.register
     current_op = current_frame.f_locals['args'][0]
 
     # If the first argument is a Expr, we print its op because it's more

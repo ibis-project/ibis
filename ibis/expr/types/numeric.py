@@ -661,13 +661,13 @@ class NumericValue(Value):
     add = radd = __radd__ = __add__
 
     def __sub__(self, other: NumericValue) -> NumericValue | NotImplemented:
-        """Substract `other` from `self`."""
+        """Subtract `other` from `self`."""
         return _binop(ops.Subtract, self, other)
 
     sub = __sub__
 
     def __rsub__(self, other: NumericValue) -> NumericValue | NotImplemented:
-        """Substract `self` from `other`."""
+        """Subtract `self` from `other`."""
         return _binop(ops.Subtract, other, self)
 
     rsub = __rsub__

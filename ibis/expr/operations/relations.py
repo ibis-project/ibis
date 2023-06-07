@@ -208,7 +208,7 @@ class Join(TableNode):
         import ibis.expr.analysis as an
         import ibis.expr.operations as ops
 
-        # TODO(kszucs): need to factor this out to appropiate join predicate
+        # TODO(kszucs): need to factor this out to appropriate join predicate
         # rules
         predicates = [
             pred.op() if isinstance(pred, ir.Expr) else pred

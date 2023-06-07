@@ -88,7 +88,7 @@ class Backend(BaseBackend):
         Parameters
         ----------
         name
-            The name of the table to retreive
+            The name of the table to retrieve
         schema
             An optional schema for the table
 

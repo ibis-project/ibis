@@ -45,7 +45,7 @@ def test_bad_timecontext(time_table, t):
         context = ('bad', 'context')
         expr.execute(timecontext=context)
 
-    # define context with unsupport type int
+    # define context with unsupported type int
     with pytest.raises(com.IbisError, match=r".*type pd.Timestamp.*"):
         context = (20091010, 20100101)
         expr.execute(timecontext=context)
@@ -143,7 +143,7 @@ def test_setting_timecontext_in_scope(time_table, time_df3):
     get table in context ('20170105', '20170101').
 
     Then in window execution table will be executed again with a larger
-    context adjusted by window preceeding days ('20170102', '20170111').
+    context adjusted by window preceding days ('20170102', '20170111').
     To get the correct result, the cached table result with a smaller
     context must be discard and updated to a larger time range.
     """

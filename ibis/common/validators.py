@@ -68,7 +68,7 @@ class Validator(Callable):
         Returns
         -------
         validator
-            A validator that can be used to validate objects, tipically function
+            A validator that can be used to validate objects, typically function
             arguments.
         """
         # TODO(kszucs): cache the result of this function
@@ -298,7 +298,7 @@ def any_of(inners: Iterable[Validator], arg: Any, **kwargs: Any) -> Any:
     Returns
     -------
     arg : Any
-        Value maybe coerced by inner validators to the appropiate types
+        Value maybe coerced by inner validators to the appropriate types
     """
     for inner in inners:
         with suppress(IbisTypeError, ValueError):
@@ -330,7 +330,7 @@ def all_of(inners: Iterable[Validator], arg: Any, **kwargs: Any) -> Any:
     Returns
     -------
     arg : Any
-      Value maybe coerced by inner validators to the appropiate types
+      Value maybe coerced by inner validators to the appropriate types
     """
     for inner in inners:
         arg = inner(arg, **kwargs)
@@ -612,7 +612,7 @@ def int_(arg: Any, min: int = 0, max: int = math.inf, **kwargs: Any) -> int:
     max
         Maximum value of the integer.
     kwargs
-        Omited keyword arguments.
+        Omitted keyword arguments.
 
     Returns
     -------

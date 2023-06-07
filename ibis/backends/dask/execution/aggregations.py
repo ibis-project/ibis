@@ -114,7 +114,7 @@ def execute_any_all_series(op, data, mask, aggcontext=None, **kwargs):
         result = aggcontext.agg(data, name)
     else:
         # Note this branch is not currently hit in the dask backend but is
-        # here for future scafolding.
+        # here for future scaffolding.
         result = aggcontext.agg(data, operator.methodcaller(name))
     return result
 
@@ -126,7 +126,7 @@ def execute_any_all_series_group_by(op, data, mask, aggcontext=None, **kwargs):
         result = aggcontext.agg(data, name)
     else:
         # Note this branch is not currently hit in the dask backend but is
-        # here for future scafolding.
+        # here for future scaffolding.
         result = aggcontext.agg(data, operator.methodcaller(name))
     return result
 
@@ -141,7 +141,7 @@ def execute_notany_series(op, data, mask, aggcontext=None, **kwargs):
         result = ~aggcontext.agg(data, name)
     else:
         # Note this branch is not currently hit in the dask backend but is
-        # here for future scafolding.
+        # here for future scaffolding.
         method = operator.methodcaller(name)
         result = aggcontext.agg(data, lambda data: ~method(data))
     return result
@@ -154,7 +154,7 @@ def execute_notany_series_group_by(op, data, mask, aggcontext=None, **kwargs):
         result = ~aggcontext.agg(data, name)
     else:
         # Note this branch is not currently hit in the dask backend but is
-        # here for future scafolding.
+        # here for future scaffolding.
         method = operator.methodcaller(name)
         result = aggcontext.agg(data, lambda data: ~method(data))
 

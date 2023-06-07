@@ -182,7 +182,7 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
                 col_in_selection_order.append(col)
         else:
             raise NotImplementedError(
-                f"Unrecoginized type in selections: {type(selection)}"
+                f"Unrecognized type in selections: {type(selection)}"
             )
     if col_in_selection_order:
         result_table = result_table[col_in_selection_order]
@@ -374,7 +374,7 @@ def compile_literal(t, op, *, raw=False, **kwargs):
     if isinstance(value, collections.abc.Set):
         # Don't wrap set with F.lit
         if isinstance(value, frozenset):
-            # Spark doens't like frozenset
+            # Spark doesn't like frozenset
             return set(value)
         else:
             return value
@@ -943,7 +943,7 @@ def compile_substring(t, op, raw: bool = False, **kwargs):
 
     if any_of((start, length), pyspark.sql.Column):
         raise NotImplementedError(
-            "Specifiying `start` or `length` with column expressions is not supported."
+            "Specifying `start` or `length` with column expressions is not supported."
         )
 
     if start < 0:

@@ -102,7 +102,7 @@ And scope value is another key-value map:
 - timecontext: of type TimeContext, the time context associated with the data
 stored in value
 
-See ibis.common.scope for details about the implementaion.
+See ibis.common.scope for details about the implementation.
 """
 
 from __future__ import annotations
