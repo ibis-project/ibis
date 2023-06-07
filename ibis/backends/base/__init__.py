@@ -504,8 +504,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     supports_temporary_tables = False
 
     def __init__(self, *args, **kwargs):
-        from ibis.formats.pandas import PandasConverter
-
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
         # expression cache
@@ -516,7 +514,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             generate_name=functools.partial(util.gen_name, "cache"),
             key=lambda expr: expr.op(),
         )
-        self._pandas_converter = PandasConverter
+
+    @functools.cached_property
+    def _pandas_converter(self):
+        from ibis.formats.pandas import PandasConverter
+
+        return PandasConverter
 
     def __getstate__(self):
         return dict(_con_args=self._con_args, _con_kwargs=self._con_kwargs)
