@@ -11,10 +11,7 @@ from trino.sqlalchemy.datatype import DOUBLE, JSON, MAP, TIMESTAMP
 from trino.sqlalchemy.datatype import ROW as _ROW
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import (
-    dtype_from_sqlalchemy,
-    dtype_to_sqlalchemy,
-)
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.common.parsing import (
     COMMA,
     FIELD,
@@ -145,45 +142,47 @@ _from_trino_types = {
 }
 
 
-def dtype_from_trino(typ, nullable=True):
-    if dtype := _from_trino_types.get(type(typ)):
-        return dtype(nullable=nullable)
-    elif isinstance(typ, sat.NUMERIC):
-        return dt.Decimal(typ.precision or 18, typ.scale or 3, nullable=nullable)
-    elif isinstance(typ, sat.ARRAY):
-        value_dtype = dtype_from_trino(typ.item_type)
-        return dt.Array(value_dtype, nullable=nullable)
-    elif isinstance(typ, ROW):
-        fields = ((k, dtype_from_trino(v)) for k, v in typ.attr_types)
-        return dt.Struct.from_tuples(fields, nullable=nullable)
-    elif isinstance(typ, MAP):
-        return dt.Map(
-            dtype_from_trino(typ.key_type),
-            dtype_from_trino(typ.value_type),
-            nullable=nullable,
-        )
-    elif isinstance(typ, TIMESTAMP):
-        return dt.Timestamp(
-            timezone="UTC" if typ.timezone else None,
-            scale=typ.precision,
-            nullable=nullable,
-        )
-    else:
-        return dtype_from_sqlalchemy(typ, converter=dtype_from_trino)
+class TrinoType(AlchemyType):
+    @classmethod
+    def to_ibis(cls, typ, nullable=True):
+        if dtype := _from_trino_types.get(type(typ)):
+            return dtype(nullable=nullable)
+        elif isinstance(typ, sat.NUMERIC):
+            return dt.Decimal(typ.precision or 18, typ.scale or 3, nullable=nullable)
+        elif isinstance(typ, sat.ARRAY):
+            value_dtype = cls.to_ibis(typ.item_type)
+            return dt.Array(value_dtype, nullable=nullable)
+        elif isinstance(typ, ROW):
+            fields = ((k, cls.to_ibis(v)) for k, v in typ.attr_types)
+            return dt.Struct.from_tuples(fields, nullable=nullable)
+        elif isinstance(typ, MAP):
+            return dt.Map(
+                cls.to_ibis(typ.key_type),
+                cls.to_ibis(typ.value_type),
+                nullable=nullable,
+            )
+        elif isinstance(typ, TIMESTAMP):
+            return dt.Timestamp(
+                timezone="UTC" if typ.timezone else None,
+                scale=typ.precision,
+                nullable=nullable,
+            )
+        else:
+            return super().to_ibis(typ, nullable=nullable)
 
-
-def dtype_to_trino(dtype):
-    if isinstance(dtype, dt.Float64):
-        return DOUBLE()
-    elif isinstance(dtype, dt.Float32):
-        return sat.REAL()
-    elif dtype.is_string():
-        return sat.VARCHAR()
-    elif dtype.is_struct():
-        return ROW((name, dtype_to_trino(typ)) for name, typ in dtype.fields.items())
-    elif dtype.is_map():
-        return MAP(dtype_to_trino(dtype.key_type), dtype_to_trino(dtype.value_type))
-    elif dtype.is_timestamp():
-        return TIMESTAMP(precision=dtype.scale, timezone=bool(dtype.timezone))
-    else:
-        return dtype_to_sqlalchemy(dtype, converter=dtype_to_trino)
+    @classmethod
+    def from_ibis(cls, dtype):
+        if isinstance(dtype, dt.Float64):
+            return DOUBLE()
+        elif isinstance(dtype, dt.Float32):
+            return sat.REAL()
+        elif dtype.is_string():
+            return sat.VARCHAR()
+        elif dtype.is_struct():
+            return ROW((name, cls.from_ibis(typ)) for name, typ in dtype.fields.items())
+        elif dtype.is_map():
+            return MAP(cls.from_ibis(dtype.key_type), cls.from_ibis(dtype.value_type))
+        elif dtype.is_timestamp():
+            return TIMESTAMP(precision=dtype.scale, timezone=bool(dtype.timezone))
+        else:
+            return super().from_ibis(dtype)

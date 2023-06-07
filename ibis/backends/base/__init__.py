@@ -516,12 +516,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             key=lambda expr: expr.op(),
         )
 
-    @functools.cached_property
-    def _pandas_converter(self):
-        from ibis.formats.pandas import PandasConverter
-
-        return PandasConverter
-
     def __getstate__(self):
         return dict(_con_args=self._con_args, _con_kwargs=self._con_kwargs)
 

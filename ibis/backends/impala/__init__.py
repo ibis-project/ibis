@@ -48,6 +48,7 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.config import options
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -347,7 +348,7 @@ class Backend(BaseSQLBackend):
         names = [name for name, *_ in cursor.description]
         df = _column_batches_to_dataframe(names, batches)
         if schema:
-            return self._pandas_converter.convert_frame(df, schema)
+            return PandasData.convert_table(df, schema)
         return df
 
     @contextlib.contextmanager

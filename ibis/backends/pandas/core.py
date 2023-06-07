@@ -491,15 +491,15 @@ def execute_and_reset(
 
 
 def _apply_schema(op: ops.Node, result: pd.DataFrame | pd.Series):
-    from ibis.formats.pandas import PandasConverter
+    from ibis.formats.pandas import PandasData
 
     assert isinstance(op, ops.Node), type(op)
     if isinstance(result, pd.DataFrame):
         df = result.reset_index().loc[:, list(op.schema.names)]
-        return PandasConverter.convert_frame(df, op.schema)
+        return PandasData.convert_table(df, op.schema)
     elif isinstance(result, pd.Series):
         schema = op.to_expr().as_table().schema()
-        df = PandasConverter.convert_frame(result.to_frame(), schema)
+        df = PandasData.convert_table(result.to_frame(), schema)
         return df.iloc[:, 0].reset_index(drop=True)
     else:
         return result

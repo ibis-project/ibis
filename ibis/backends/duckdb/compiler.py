@@ -5,7 +5,7 @@ from sqlalchemy.ext.compiler import compiles
 import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.duckdb.datatypes import dtype_from_duckdb, dtype_to_duckdb
+from ibis.backends.duckdb.datatypes import DuckDBType
 from ibis.backends.duckdb.registry import operation_registry
 
 
@@ -14,9 +14,7 @@ class DuckDBSQLExprTranslator(AlchemyExprTranslator):
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _has_reduction_filter_syntax = True
     _dialect_name = "duckdb"
-
-    get_sqla_type = staticmethod(dtype_to_duckdb)
-    get_ibis_type = staticmethod(dtype_from_duckdb)
+    type_mapper = DuckDBType
 
 
 @compiles(sat.UInt8, "duckdb")

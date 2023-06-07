@@ -12,10 +12,7 @@ from snowflake.sqlalchemy import (
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import (
-    dtype_from_sqlalchemy,
-    dtype_to_sqlalchemy,
-)
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 
 
 @compiles(sat.NullType, "snowflake")
@@ -46,50 +43,52 @@ def parse(text: str) -> dt.DataType:
     return _SNOWFLAKE_TYPES[text]
 
 
-def dtype_to_snowflake(dtype):
-    if dtype.is_array():
-        return ARRAY
-    elif dtype.is_map() or dtype.is_struct():
-        return OBJECT
-    elif dtype.is_json():
-        return VARIANT
-    elif dtype.is_timestamp():
-        if dtype.timezone is None:
-            return TIMESTAMP_NTZ
+class SnowflakeType(AlchemyType):
+    @classmethod
+    def from_ibis(cls, dtype):
+        if dtype.is_array():
+            return ARRAY
+        elif dtype.is_map() or dtype.is_struct():
+            return OBJECT
+        elif dtype.is_json():
+            return VARIANT
+        elif dtype.is_timestamp():
+            if dtype.timezone is None:
+                return TIMESTAMP_NTZ
+            else:
+                return TIMESTAMP_TZ
+        elif dtype.is_string():
+            # 16MB
+            return sat.VARCHAR(2**24)
+        elif dtype.is_binary():
+            # 8MB
+            return sat.VARBINARY(2**23)
         else:
-            return TIMESTAMP_TZ
-    elif dtype.is_string():
-        # 16MB
-        return sat.VARCHAR(2**24)
-    elif dtype.is_binary():
-        # 8MB
-        return sat.VARBINARY(2**23)
-    else:
-        return dtype_to_sqlalchemy(dtype, converter=dtype_to_snowflake)
+            return super().from_ibis(dtype)
 
-
-def dtype_from_snowflake(typ, nullable=True):
-    if isinstance(typ, (sat.REAL, sat.FLOAT, sat.Float)):
-        return dt.Float64(nullable=nullable)
-    elif isinstance(typ, TIMESTAMP_NTZ):
-        return dt.Timestamp(timezone=None, nullable=nullable)
-    elif isinstance(typ, (TIMESTAMP_LTZ, TIMESTAMP_TZ)):
-        return dt.Timestamp(timezone="UTC", nullable=nullable)
-    elif isinstance(typ, ARRAY):
-        return dt.Array(dt.json, nullable=nullable)
-    elif isinstance(typ, OBJECT):
-        return dt.Map(dt.string, dt.json, nullable=nullable)
-    elif isinstance(typ, VARIANT):
-        return dt.JSON(nullable=nullable)
-    elif isinstance(typ, sat.Numeric):
-        if (scale := typ.scale) == 0:
-            # kind of a lie, should be int128 because 38 digits
-            return dt.Int64(nullable=nullable)
+    @classmethod
+    def to_ibis(cls, typ, nullable=True):
+        if isinstance(typ, (sat.REAL, sat.FLOAT, sat.Float)):
+            return dt.Float64(nullable=nullable)
+        elif isinstance(typ, TIMESTAMP_NTZ):
+            return dt.Timestamp(timezone=None, nullable=nullable)
+        elif isinstance(typ, (TIMESTAMP_LTZ, TIMESTAMP_TZ)):
+            return dt.Timestamp(timezone="UTC", nullable=nullable)
+        elif isinstance(typ, ARRAY):
+            return dt.Array(dt.json, nullable=nullable)
+        elif isinstance(typ, OBJECT):
+            return dt.Map(dt.string, dt.json, nullable=nullable)
+        elif isinstance(typ, VARIANT):
+            return dt.JSON(nullable=nullable)
+        elif isinstance(typ, sat.Numeric):
+            if (scale := typ.scale) == 0:
+                # kind of a lie, should be int128 because 38 digits
+                return dt.Int64(nullable=nullable)
+            else:
+                return dt.Decimal(
+                    precision=typ.precision or 38,
+                    scale=scale or 0,
+                    nullable=nullable,
+                )
         else:
-            return dt.Decimal(
-                precision=typ.precision or 38,
-                scale=scale or 0,
-                nullable=nullable,
-            )
-    else:
-        return dtype_from_sqlalchemy(typ, nullable=nullable)
+            return super().to_ibis(typ, nullable=nullable)

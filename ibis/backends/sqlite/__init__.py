@@ -28,7 +28,7 @@ from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
-from ibis.backends.sqlite.datatypes import dtype_to_sqlite, parse
+from ibis.backends.sqlite.datatypes import SqliteType, parse
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -125,7 +125,7 @@ class Backend(BaseAlchemyBackend):
             # easier than subclassing the builtin SQLite dialect, and achieves
             # the same desired behavior.
             def _to_ischema_val(t):
-                sa_type = dtype_to_sqlite(dt.dtype(t))
+                sa_type = SqliteType.from_ibis(dt.dtype(t))
                 if isinstance(sa_type, sa.types.TypeEngine):
                     # SQLAlchemy expects a callable here, rather than an
                     # instance. Use a lambda to work around this.

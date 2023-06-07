@@ -9,10 +9,7 @@ from sqlalchemy.engine.default import DefaultDialect
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.datatypes import (
-    dtype_from_sqlalchemy,
-    dtype_to_sqlalchemy,
-)
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.backends.base.sql.alchemy.registry import (
     fixed_arity,
     sqlalchemy_operation_registry,
@@ -45,6 +42,7 @@ class AlchemyExprTranslator(ExprTranslator):
     _registry = sqlalchemy_operation_registry
     _rewrites = ExprTranslator._rewrites.copy()
 
+    type_mapper = AlchemyType
     context_class = AlchemyContext
 
     _bool_aggs_need_cast_to_int32 = True
@@ -74,8 +72,13 @@ class AlchemyExprTranslator(ExprTranslator):
 
     supports_unnest_in_select = True
 
-    get_sqla_type = staticmethod(dtype_to_sqlalchemy)
-    get_ibis_type = staticmethod(dtype_from_sqlalchemy)
+    @classmethod
+    def get_sqla_type(cls, ibis_type):
+        return cls.type_mapper.from_ibis(ibis_type)
+
+    @classmethod
+    def get_ibis_type(cls, sqla_type, nullable=True):
+        return cls.type_mapper.to_ibis(sqla_type, nullable=nullable)
 
     @functools.cached_property
     def dialect(self) -> sa.engine.interfaces.Dialect:

@@ -15,7 +15,7 @@ import ibis.expr.rules as rlz
 import ibis.udf.validate as v
 from ibis import IbisError
 from ibis.backends.postgres.compiler import PostgreSQLExprTranslator, PostgresUDFNode
-from ibis.backends.postgres.datatypes import dtype_to_postgres
+from ibis.backends.postgres.datatypes import PostgresType
 
 _udf_name_cache: MutableMapping[str, Any] = collections.defaultdict(itertools.count)
 
@@ -28,7 +28,7 @@ class PostgresUDFError(IbisError):
 
 def _ibis_to_postgres_str(ibis_type):
     """Map an ibis DataType to a Postgres-appropriate string."""
-    satype = dtype_to_postgres(ibis_type)
+    satype = PostgresType.from_ibis(ibis_type)
     if callable(satype):
         satype = satype()
     return satype.compile(dialect=_postgres_dialect)

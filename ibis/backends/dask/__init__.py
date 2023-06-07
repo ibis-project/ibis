@@ -17,7 +17,7 @@ import ibis.expr.types as ir
 from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
 from ibis.backends.pandas.core import _apply_schema
-from ibis.formats.pandas import schema_from_dask_dataframe
+from ibis.formats.pandas import DaskData
 
 # Make sure that the pandas backend options have been loaded
 ibis.pandas  # noqa: B018
@@ -113,7 +113,7 @@ class Backend(BasePandasBackend):
     def table(self, name: str, schema: sch.Schema = None):
         df = self.dictionary[name]
         schema = schema or self.schemas.get(name, None)
-        schema = schema_from_dask_dataframe(df, schema=schema)
+        schema = DaskData.infer_table(df, schema=schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     @classmethod

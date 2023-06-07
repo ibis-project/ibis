@@ -4,7 +4,7 @@ import sqlalchemy as sa
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.trino.datatypes import dtype_from_trino, dtype_to_trino
+from ibis.backends.trino.datatypes import TrinoType
 from ibis.backends.trino.registry import operation_registry
 
 
@@ -26,9 +26,7 @@ class TrinoSQLExprTranslator(AlchemyExprTranslator):
     )
     _dialect_name = "trino"
     supports_unnest_in_select = False
-
-    get_sqla_type = staticmethod(dtype_to_trino)
-    get_ibis_type = staticmethod(dtype_from_trino)
+    type_mapper = TrinoType
 
 
 rewrites = TrinoSQLExprTranslator.rewrites

@@ -5,6 +5,7 @@ import pyspark.sql.types as pt
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.registry import sql_type_names
+from ibis.formats import TypeMapper
 
 _sql_type_names = dict(sql_type_names, date='date')
 
@@ -45,61 +46,66 @@ _pyspark_interval_units = {
 }
 
 
-def dtype_from_pyspark(typ, nullable=True):
-    """Convert a pyspark type to an ibis type."""
-    if isinstance(typ, pt.DecimalType):
-        return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
-    elif isinstance(typ, pt.ArrayType):
-        return dt.Array(dtype_from_pyspark(typ.elementType), nullable=nullable)
-    elif isinstance(typ, pt.MapType):
-        return dt.Map(
-            dtype_from_pyspark(typ.keyType),
-            dtype_from_pyspark(typ.valueType),
-            nullable=nullable,
-        )
-    elif isinstance(typ, pt.StructType):
-        fields = {f.name: dtype_from_pyspark(f.dataType) for f in typ.fields}
+class PySparkType(TypeMapper):
+    @classmethod
+    def to_ibis(cls, typ, nullable=True):
+        """Convert a pyspark type to an ibis type."""
+        if isinstance(typ, pt.DecimalType):
+            return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
+        elif isinstance(typ, pt.ArrayType):
+            return dt.Array(cls.to_ibis(typ.elementType), nullable=nullable)
+        elif isinstance(typ, pt.MapType):
+            return dt.Map(
+                cls.to_ibis(typ.keyType),
+                cls.to_ibis(typ.valueType),
+                nullable=nullable,
+            )
+        elif isinstance(typ, pt.StructType):
+            fields = {f.name: cls.to_ibis(f.dataType) for f in typ.fields}
 
-        return dt.Struct(fields, nullable=nullable)
-    elif isinstance(typ, pt.DayTimeIntervalType):
-        if typ.startField == typ.endField and typ.startField in _pyspark_interval_units:
-            unit = _pyspark_interval_units[typ.startField]
-            return dt.Interval(unit, nullable=nullable)
+            return dt.Struct(fields, nullable=nullable)
+        elif isinstance(typ, pt.DayTimeIntervalType):
+            if (
+                typ.startField == typ.endField
+                and typ.startField in _pyspark_interval_units
+            ):
+                unit = _pyspark_interval_units[typ.startField]
+                return dt.Interval(unit, nullable=nullable)
+            else:
+                raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
+        elif isinstance(typ, pt.UserDefinedType):
+            return cls.to_ibis(typ.sqlType(), nullable=nullable)
         else:
-            raise com.IbisTypeError(f"{typ!r} couldn't be converted to Interval")
-    elif isinstance(typ, pt.UserDefinedType):
-        return dtype_from_pyspark(typ.sqlType(), nullable=nullable)
-    else:
-        try:
-            return _from_pyspark_dtypes[type(typ)](nullable=nullable)
-        except KeyError:
-            raise NotImplementedError(
-                f'Unable to convert type {typ} of type {type(typ)} to an ibis type.'
-            )
+            try:
+                return _from_pyspark_dtypes[type(typ)](nullable=nullable)
+            except KeyError:
+                raise NotImplementedError(
+                    f'Unable to convert type {typ} of type {type(typ)} to an ibis type.'
+                )
 
-
-def dtype_to_pyspark(dtype):
-    if dtype.is_decimal():
-        return pt.DecimalType(dtype.precision, dtype.scale)
-    elif dtype.is_array():
-        element_type = dtype_to_pyspark(dtype.value_type)
-        contains_null = dtype.value_type.nullable
-        return pt.ArrayType(element_type, contains_null)
-    elif dtype.is_map():
-        key_type = dtype_to_pyspark(dtype.key_type)
-        value_type = dtype_to_pyspark(dtype.value_type)
-        value_contains_null = dtype.value_type.nullable
-        return pt.MapType(key_type, value_type, value_contains_null)
-    elif dtype.is_struct():
-        fields = [
-            pt.StructField(n, dtype_to_pyspark(t), t.nullable)
-            for n, t in dtype.fields.items()
-        ]
-        return pt.StructType(fields)
-    else:
-        try:
-            return _to_pyspark_dtypes[type(dtype)]()
-        except KeyError:
-            raise com.IbisTypeError(
-                f"Unable to convert dtype {dtype!r} to pyspark type"
-            )
+    @classmethod
+    def from_ibis(cls, dtype):
+        if dtype.is_decimal():
+            return pt.DecimalType(dtype.precision, dtype.scale)
+        elif dtype.is_array():
+            element_type = cls.from_ibis(dtype.value_type)
+            contains_null = dtype.value_type.nullable
+            return pt.ArrayType(element_type, contains_null)
+        elif dtype.is_map():
+            key_type = cls.from_ibis(dtype.key_type)
+            value_type = cls.from_ibis(dtype.value_type)
+            value_contains_null = dtype.value_type.nullable
+            return pt.MapType(key_type, value_type, value_contains_null)
+        elif dtype.is_struct():
+            fields = [
+                pt.StructField(n, cls.from_ibis(t), t.nullable)
+                for n, t in dtype.fields.items()
+            ]
+            return pt.StructType(fields)
+        else:
+            try:
+                return _to_pyspark_dtypes[type(dtype)]()
+            except KeyError:
+                raise com.IbisTypeError(
+                    f"Unable to convert dtype {dtype!r} to pyspark type"
+                )

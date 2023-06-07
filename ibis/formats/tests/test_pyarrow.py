@@ -6,20 +6,15 @@ import pytest
 
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import IntegrityError
-from ibis.formats.pyarrow import (
-    dtype_from_pyarrow,
-    dtype_to_pyarrow,
-    schema_from_pyarrow,
-    schema_to_pyarrow,
-)
+from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
 
 
 def assert_dtype_roundtrip(arrow_type, ibis_type=None, restored_type=None):
-    dtype = dtype_from_pyarrow(arrow_type, nullable=False)
+    dtype = PyArrowType.to_ibis(arrow_type, nullable=False)
     if ibis_type is not None:
         assert dtype == ibis_type
 
-    patyp = dtype_to_pyarrow(dtype)
+    patyp = PyArrowType.from_ibis(dtype)
     if restored_type is None:
         restored_type = arrow_type
     assert patyp == restored_type
@@ -90,7 +85,7 @@ def test_timestamp_no_scale(timezone, nullable):
 
 def test_month_day_nano_type_unsupported():
     with pytest.raises(ValueError, match="Arrow interval type is not supported"):
-        dtype_from_pyarrow(pa.month_day_nano_interval())
+        PyArrowType.to_ibis(pa.month_day_nano_interval())
 
 
 @pytest.mark.parametrize('value_nullable', [True, False])
@@ -99,8 +94,8 @@ def test_dtype_from_nullable_map_type(value_nullable):
     pyarrow_type = pa.map_(
         pa.int64(), pa.field('value', pa.int64(), nullable=value_nullable)
     )
-    ibis_type = dtype_from_pyarrow(pyarrow_type)
-    restored_type = dtype_to_pyarrow(ibis_type)
+    ibis_type = PyArrowType.to_ibis(pyarrow_type)
+    restored_type = PyArrowType.from_ibis(ibis_type)
 
     assert ibis_type == dt.Map(
         dt.Int64(nullable=False), dt.Int64(nullable=value_nullable)
@@ -115,8 +110,8 @@ def test_dtype_from_nullable_map_type(value_nullable):
 @pytest.mark.parametrize('list_nullable', [True, False])
 def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
     pyarrow_type = pa.list_(pa.field('value', pa.int64(), nullable=value_nullable))
-    ibis_type = dtype_from_pyarrow(pyarrow_type, nullable=list_nullable)
-    restored_type = dtype_to_pyarrow(ibis_type)
+    ibis_type = PyArrowType.to_ibis(pyarrow_type, nullable=list_nullable)
+    restored_type = PyArrowType.from_ibis(ibis_type)
 
     assert ibis_type == dt.Array(
         dt.Int64(nullable=value_nullable), nullable=list_nullable
@@ -136,7 +131,7 @@ def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
     ],
 )
 def test_ibis_exclusive_types(ibis_type, arrow_type):
-    assert dtype_to_pyarrow(ibis_type) == arrow_type
+    assert PyArrowType.from_ibis(ibis_type) == arrow_type
 
 
 def test_schema_from_pyarrow_checks_duplicate_column_names():
@@ -147,7 +142,7 @@ def test_schema_from_pyarrow_checks_duplicate_column_names():
         ]
     )
     with pytest.raises(IntegrityError, match='Duplicate column name'):
-        schema_from_pyarrow(arrow_schema)
+        PyArrowSchema.to_ibis(arrow_schema)
 
 
 @h.given(past.schemas(roundtripable_types))
@@ -155,10 +150,10 @@ def test_schema_roundtrip(pyarrow_schema):
     unique_column_names = set(pyarrow_schema.names)
     h.assume(len(unique_column_names) == len(pyarrow_schema.names))
 
-    ibis_schema = schema_from_pyarrow(pyarrow_schema)
-    restored = schema_to_pyarrow(ibis_schema)
+    ibis_schema = PyArrowSchema.to_ibis(pyarrow_schema)
+    restored = PyArrowSchema.from_ibis(ibis_schema)
     assert pyarrow_schema.equals(restored)
 
 
 def test_unknown_dtype_gets_converted_to_string():
-    assert dtype_to_pyarrow(dt.unknown) == pa.string()
+    assert PyArrowType.from_ibis(dt.unknown) == pa.string()

@@ -4,10 +4,7 @@ from typing import Optional, TypedDict
 from sqlalchemy.dialects import mssql
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import (
-    dtype_from_sqlalchemy,
-    dtype_to_sqlalchemy,
-)
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 
 
 class _FieldDescription(TypedDict):
@@ -101,21 +98,6 @@ _to_mssql_types = {
     dt.String: mssql.NVARCHAR,
 }
 
-
-def dtype_to_mssql(dtype):
-    if typ := _to_mssql_types.get(type(dtype)):
-        return typ
-    elif dtype.is_timestamp():
-        if (precision := dtype.scale) is None:
-            precision = 7
-        if dtype.timezone is not None:
-            return mssql.DATETIMEOFFSET(precision=precision)
-        else:
-            return mssql.DATETIME2(precision=precision)
-    else:
-        return dtype_to_sqlalchemy(dtype, converter=dtype_to_mssql)
-
-
 _from_mssql_types = {
     mssql.TINYINT: dt.Int8,
     mssql.BIT: dt.Boolean,
@@ -133,16 +115,32 @@ _from_mssql_types = {
 }
 
 
-def dtype_from_mssql(typ, nullable=True):
-    if dtype := _from_mssql_types.get(type(typ)):
-        return dtype(nullable=nullable)
-    elif isinstance(typ, mssql.DATETIMEOFFSET):
-        if (prec := typ.precision) is None:
-            prec = 7
-        return dt.Timestamp(scale=prec, timezone="UTC", nullable=nullable)
-    elif isinstance(typ, mssql.DATETIME2):
-        if (prec := typ.precision) is None:
-            prec = 7
-        return dt.Timestamp(scale=prec, nullable=nullable)
-    else:
-        return dtype_from_sqlalchemy(typ, nullable=nullable, converter=dtype_from_mssql)
+class MSSQLType(AlchemyType):
+    @classmethod
+    def to_ibis(cls, typ, nullable=True):
+        if dtype := _from_mssql_types.get(type(typ)):
+            return dtype(nullable=nullable)
+        elif isinstance(typ, mssql.DATETIMEOFFSET):
+            if (prec := typ.precision) is None:
+                prec = 7
+            return dt.Timestamp(scale=prec, timezone="UTC", nullable=nullable)
+        elif isinstance(typ, mssql.DATETIME2):
+            if (prec := typ.precision) is None:
+                prec = 7
+            return dt.Timestamp(scale=prec, nullable=nullable)
+        else:
+            return super().to_ibis(typ, nullable=nullable)
+
+    @classmethod
+    def from_ibis(cls, dtype):
+        if typ := _to_mssql_types.get(type(dtype)):
+            return typ
+        elif dtype.is_timestamp():
+            if (precision := dtype.scale) is None:
+                precision = 7
+            if dtype.timezone is not None:
+                return mssql.DATETIMEOFFSET(precision=precision)
+            else:
+                return mssql.DATETIME2(precision=precision)
+        else:
+            return super().from_ibis(dtype)

@@ -11,14 +11,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.formats.pandas import (
-    PandasConverter,
-    dtype_from_pandas,
-    dtype_to_pandas,
-    schema_from_pandas,
-    schema_from_pandas_dataframe,
-    schema_to_pandas,
-)
+from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
 
 @pytest.mark.parametrize(
@@ -48,7 +41,7 @@ from ibis.formats.pandas import (
     ],
 )
 def test_dtype_to_pandas(pandas_type, ibis_type):
-    assert dtype_to_pandas(ibis_type) == pandas_type
+    assert PandasType.from_ibis(ibis_type) == pandas_type
 
 
 @pytest.mark.parametrize(
@@ -77,17 +70,17 @@ def test_dtype_to_pandas(pandas_type, ibis_type):
 )
 def test_dtype_from_pandas_arrow_dtype(pandas_type, ibis_type):
     series = pd.Series([], dtype=f"{pandas_type}[pyarrow]")
-    assert dtype_from_pandas(series.dtype) == ibis_type
+    assert PandasType.to_ibis(series.dtype) == ibis_type
 
 
 def test_dtype_from_pandas_arrow_string_dtype():
     series = pd.Series([], dtype="string[pyarrow]")
-    assert dtype_from_pandas(series.dtype) == dt.String()
+    assert PandasType.to_ibis(series.dtype) == dt.String()
 
 
 def test_dtype_from_pandas_arrow_list_dtype():
     series = pd.Series([], dtype=pd.ArrowDtype(pa.list_(pa.string())))
-    assert dtype_from_pandas(series.dtype) == dt.Array(dt.string)
+    assert PandasType.to_ibis(series.dtype) == dt.Array(dt.string)
 
 
 @pytest.mark.parametrize(
@@ -113,7 +106,7 @@ def test_dtype_from_pandas_arrow_list_dtype():
     ids=str,
 )
 def test_dtype_from_nullable_extension_dtypes(pandas_type, ibis_type):
-    assert dtype_from_pandas(pandas_type) == ibis_type
+    assert PandasType.to_ibis(pandas_type) == ibis_type
 
 
 def test_schema_to_pandas():
@@ -125,7 +118,7 @@ def test_schema_to_pandas():
             'd': dt.float64,
         }
     )
-    pandas_schema = schema_to_pandas(ibis_schema)
+    pandas_schema = PandasSchema.from_ibis(ibis_schema)
 
     assert pandas_schema == [
         ('a', np.dtype('int64')),
@@ -143,7 +136,7 @@ def test_schema_from_pandas():
         ('d', np.dtype('float64')),
     ]
 
-    ibis_schema = schema_from_pandas(pandas_schema)
+    ibis_schema = PandasSchema.to_ibis(pandas_schema)
     assert ibis_schema == sch.Schema(
         {
             'a': dt.int64,
@@ -291,7 +284,7 @@ def test_schema_from_dataframe():
         ]
     )
 
-    assert schema_from_pandas_dataframe(df) == expected
+    assert PandasData.infer_table(df) == expected
     assert sch.infer(df) == expected
 
 
@@ -325,7 +318,7 @@ def test_schema_from_dataframe_with_array_column():
         ]
     )
 
-    assert schema_from_pandas_dataframe(df) == expected
+    assert PandasData.infer_table(df) == expected
     assert sch.infer(df) == expected
 
 
@@ -421,7 +414,7 @@ def test_schema_from_dataframe_with_array_column():
 def test_schema_from_various_dataframes(col_data, schema_type):
     df = pd.DataFrame({'col': col_data})
 
-    inferred = schema_from_pandas_dataframe(df)
+    inferred = PandasData.infer_table(df)
     expected = sch.Schema({'col': schema_type})
     assert inferred == expected
 
@@ -432,5 +425,5 @@ def test_convert_dataframe_with_timezone():
         time=lambda df: df.time.dt.tz_localize("EST")
     )
     desired_schema = ibis.schema(dict(time='timestamp("EST")'))
-    result = PandasConverter.convert_frame(df.copy(), desired_schema)
+    result = PandasData.convert_table(df.copy(), desired_schema)
     tm.assert_frame_equal(expected, result)
