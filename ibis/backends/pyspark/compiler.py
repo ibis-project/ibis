@@ -20,7 +20,7 @@ import ibis.expr.types as ir
 from ibis import interval
 from ibis.backends.base.df.timecontext import adjust_context
 from ibis.backends.pandas.execution import execute
-from ibis.backends.pyspark.datatypes import dtype_to_pyspark
+from ibis.backends.pyspark.datatypes import PySparkType
 from ibis.backends.pyspark.timecontext import (
     combine_time_context,
     filter_by_time_context,
@@ -266,7 +266,7 @@ def compile_cast(t, op, **kwargs):
                 'in the PySpark backend. {} not allowed.'.format(type(op.arg))
             )
 
-    cast_type = dtype_to_pyspark(op.to)
+    cast_type = PySparkType.from_ibis(op.to)
 
     src_column = t.translate(op.arg, **kwargs)
     return src_column.cast(cast_type)
@@ -756,7 +756,7 @@ def compile_clip(t, op, **kwargs):
     def clip(column, lower_value, upper_value):
         return column_max(column_min(column, F.lit(lower_value)), F.lit(upper_value))
 
-    return clip(col, lower, upper).cast(dtype_to_pyspark(op.output_dtype))
+    return clip(col, lower, upper).cast(PySparkType.from_ibis(op.output_dtype))
 
 
 @compiles(ops.Round)
@@ -1614,7 +1614,7 @@ def compile_array_length(t, op, **kwargs):
 def compile_array_slice(t, op, **kwargs):
     start = op.start.value if op.start is not None else op.start
     stop = op.stop.value if op.stop is not None else op.stop
-    spark_type = dtype_to_pyspark(op.arg.output_dtype)
+    spark_type = PySparkType.from_ibis(op.arg.output_dtype)
 
     @F.udf(spark_type)
     def array_slice(array):
@@ -1751,7 +1751,7 @@ def compile_fillna_table(t, op, **kwargs):
 
 @compiles(ops.ElementWiseVectorizedUDF)
 def compile_elementwise_udf(t, op, **kwargs):
-    spark_output_type = dtype_to_pyspark(op.return_type)
+    spark_output_type = PySparkType.from_ibis(op.return_type)
     func = op.func
     spark_udf = pandas_udf(func, spark_output_type, PandasUDFType.SCALAR)
     func_args = (t.translate(arg, **kwargs) for arg in op.func_args)
@@ -1760,7 +1760,7 @@ def compile_elementwise_udf(t, op, **kwargs):
 
 @compiles(ops.ReductionVectorizedUDF)
 def compile_reduction_udf(t, op, *, aggcontext=None, **kwargs):
-    spark_output_type = dtype_to_pyspark(op.return_type)
+    spark_output_type = PySparkType.from_ibis(op.return_type)
     spark_udf = pandas_udf(op.func, spark_output_type, PandasUDFType.GROUPED_AGG)
     func_args = (t.translate(arg, **kwargs) for arg in op.func_args)
 
@@ -1895,7 +1895,7 @@ def compile_random(*args, **kwargs):
 @compiles(ops.InMemoryTable)
 def compile_in_memory_table(t, op, session, **kwargs):
     fields = [
-        pt.StructField(name, dtype_to_pyspark(dtype), dtype.nullable)
+        pt.StructField(name, PySparkType.from_ibis(dtype), dtype.nullable)
         for name, dtype in op.schema.items()
     ]
     schema = pt.StructType(fields)
@@ -1956,7 +1956,7 @@ def compile_dummy_table(t, op, session=None, **kwargs):
 def compile_scalar_parameter(t, op, timecontext=None, scope=None, **kwargs):
     assert scope is not None, "scope is None"
     raw_value = scope.get_value(op, timecontext)
-    return F.lit(raw_value).cast(dtype_to_pyspark(op.output_dtype))
+    return F.lit(raw_value).cast(PySparkType.from_ibis(op.output_dtype))
 
 
 @compiles(ops.E)

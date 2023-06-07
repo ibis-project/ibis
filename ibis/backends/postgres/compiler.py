@@ -3,7 +3,7 @@ from __future__ import annotations
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.postgres.datatypes import dtype_from_postgres, dtype_to_postgres
+from ibis.backends.postgres.datatypes import PostgresType
 from ibis.backends.postgres.registry import operation_registry
 
 
@@ -20,8 +20,7 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
     # it does support it, but we can't use it because of support for pivot
     supports_unnest_in_select = False
 
-    get_sqla_type = staticmethod(dtype_to_postgres)
-    get_ibis_type = staticmethod(dtype_from_postgres)
+    type_mapper = PostgresType
 
 
 rewrites = PostgreSQLExprTranslator.rewrites

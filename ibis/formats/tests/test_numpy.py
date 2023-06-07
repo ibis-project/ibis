@@ -7,12 +7,7 @@ from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as ibst
-from ibis.formats.numpy import (
-    dtype_from_numpy,
-    dtype_to_numpy,
-    schema_from_numpy,
-    schema_to_numpy,
-)
+from ibis.formats.numpy import NumpySchema, NumpyType
 
 roundtripable_types = st.deferred(
     lambda: (
@@ -37,11 +32,11 @@ def numpy_schema(draw, item_strategy=roundtripable_types, max_size=10):
 def assert_dtype_roundtrip(
     numpy_type, ibis_type=None, restored_type=None, nullable=True
 ):
-    dtype = dtype_from_numpy(numpy_type, nullable=nullable)
+    dtype = NumpyType.to_ibis(numpy_type, nullable=nullable)
     if ibis_type is not None:
         assert dtype == ibis_type
 
-    nptyp = dtype_to_numpy(dtype)
+    nptyp = NumpyType.from_ibis(dtype)
     if restored_type is None:
         restored_type = numpy_type
     assert nptyp == restored_type
@@ -77,35 +72,35 @@ def test_non_roundtripable_bytes_type(numpy_type):
     ibst.null_dtype | ibst.variadic_dtypes | ibst.decimal_dtype() | ibst.struct_dtypes()
 )
 def test_variadic_to_numpy(ibis_type):
-    assert dtype_to_numpy(ibis_type) == np.dtype("object")
+    assert NumpyType.from_ibis(ibis_type) == np.dtype("object")
 
 
 @h.given(ibst.date_dtype | ibst.timestamp_dtype)
 def test_date_to_numpy(ibis_type):
-    assert dtype_to_numpy(ibis_type) == np.dtype("datetime64[ns]")
+    assert NumpyType.from_ibis(ibis_type) == np.dtype("datetime64[ns]")
 
 
 @h.given(ibst.time_dtype)
 def test_time_to_numpy(ibis_type):
-    assert dtype_to_numpy(ibis_type) == np.dtype("timedelta64[ns]")
+    assert NumpyType.from_ibis(ibis_type) == np.dtype("timedelta64[ns]")
 
 
 @h.given(ibst.schema())
 def test_schema_to_numpy(ibis_schema):
-    numpy_schema = schema_to_numpy(ibis_schema)
+    numpy_schema = NumpySchema.from_ibis(ibis_schema)
     assert len(numpy_schema) == len(ibis_schema)
 
     for name, numpy_type in numpy_schema:
-        assert numpy_type == dtype_to_numpy(ibis_schema[name])
+        assert numpy_type == NumpyType.from_ibis(ibis_schema[name])
 
 
 @h.given(numpy_schema())
 def test_schema_from_numpy(numpy_schema):
-    ibis_schema = schema_from_numpy(numpy_schema)
+    ibis_schema = NumpySchema.to_ibis(numpy_schema)
     assert len(numpy_schema) == len(ibis_schema)
 
     for name, numpy_type in numpy_schema:
-        assert dtype_to_numpy(ibis_schema[name]) == numpy_type
+        assert NumpyType.from_ibis(ibis_schema[name]) == numpy_type
 
 
 @pytest.mark.parametrize(
@@ -129,11 +124,11 @@ def test_schema_from_numpy(numpy_schema):
     ],
 )
 def test_dtype_from_numpy(numpy_dtype, ibis_dtype):
-    assert dtype_from_numpy(np.dtype(numpy_dtype)) == ibis_dtype
+    assert NumpyType.to_ibis(np.dtype(numpy_dtype)) == ibis_dtype
 
 
 def test_dtype_from_numpy_dtype_timedelta():
     if vparse(pytest.importorskip("pyarrow").__version__) < vparse("9"):
         pytest.skip("pyarrow < 9 globally mutates the timedelta64 numpy dtype")
 
-    assert dtype_from_numpy(np.dtype(np.timedelta64)) == dt.interval
+    assert NumpyType.to_ibis(np.dtype(np.timedelta64)) == dt.interval

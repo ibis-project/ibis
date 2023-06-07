@@ -4,14 +4,12 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.formats.pandas import PandasConverter
+from ibis.formats.pandas import DaskData
 
 dd = pytest.importorskip("dask.dataframe")
 
 
 from dask.dataframe.utils import tm  # noqa: E402
-
-from ibis.formats.pandas import schema_from_dask_dataframe  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -50,7 +48,7 @@ from ibis.formats.pandas import schema_from_dask_dataframe  # noqa: E402
 )
 def test_schema_infer_dataframe(col_data, schema_type):
     df = dd.from_pandas(pd.DataFrame({'col': col_data}), npartitions=1)
-    inferred = schema_from_dask_dataframe(df)
+    inferred = DaskData.infer_table(df)
     expected = ibis.schema([('col', schema_type)])
     assert inferred == expected
 
@@ -196,7 +194,7 @@ def test_schema_infer_exhaustive_dataframe():
         ('year', dt.int64),
     ]
 
-    assert schema_from_dask_dataframe(df) == ibis.schema(expected)
+    assert DaskData.infer_table(df) == ibis.schema(expected)
 
 
 def test_convert_dataframe_with_timezone():
@@ -204,5 +202,5 @@ def test_convert_dataframe_with_timezone():
     df = dd.from_pandas(pd.DataFrame(data), npartitions=2)
     expected = df.assign(time=df.time.dt.tz_localize("EST"))
     desired_schema = ibis.schema([('time', 'timestamp("EST")')])
-    result = PandasConverter.convert_frame(df.copy(), desired_schema)
+    result = DaskData.convert_table(df.copy(), desired_schema)
     tm.assert_frame_equal(result.compute(), expected.compute())

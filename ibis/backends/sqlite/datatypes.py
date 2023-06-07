@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import sqlalchemy as sa
 import sqlalchemy.types as sat
 from sqlalchemy.dialects import sqlite
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import (
-    dtype_from_sqlalchemy,
-    dtype_to_sqlalchemy,
-)
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 
 
 def parse(text: str) -> dt.DataType:
@@ -46,17 +42,19 @@ def parse(text: str) -> dt.DataType:
     return dt.decimal
 
 
-def dtype_to_sqlite(dtype):
-    if dtype.is_floating():
-        return sa.REAL
-    else:
-        return dtype_to_sqlalchemy(dtype, converter=dtype_to_sqlite)
+class SqliteType(AlchemyType):
+    @classmethod
+    def from_ibis(cls, dtype: dt.DataType) -> sat.TypeEngine:
+        if dtype.is_floating():
+            return sat.REAL
+        else:
+            return super().from_ibis(dtype)
 
-
-def dtype_from_sqlite(typ, nullable=True):
-    if isinstance(typ, sat.REAL):
-        return dt.Float64(nullable=nullable)
-    elif isinstance(typ, sqlite.JSON):
-        return dt.JSON(nullable=nullable)
-    else:
-        return dtype_from_sqlalchemy(typ, converter=dtype_from_sqlite)
+    @classmethod
+    def to_ibis(cls, typ: sat.TypeEngine, nullable: bool = True) -> dt.DataType:
+        if isinstance(typ, sat.REAL):
+            return dt.Float64(nullable=nullable)
+        elif isinstance(typ, sqlite.JSON):
+            return dt.JSON(nullable=nullable)
+        else:
+            return super().to_ibis(typ, nullable=nullable)

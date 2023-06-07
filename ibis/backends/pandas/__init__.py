@@ -12,7 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
-from ibis.formats.pandas import schema_from_pandas_dataframe, schema_to_pandas
+from ibis.formats.pandas import PandasData, PandasSchema
 
 if TYPE_CHECKING:
     import pyarrow as pa
@@ -95,7 +95,7 @@ class BasePandasBackend(BaseBackend):
     def table(self, name: str, schema: sch.Schema = None):
         df = self.dictionary[name]
         schema = schema or self.schemas.get(name, None)
-        schema = schema_from_pandas_dataframe(df, schema=schema)
+        schema = PandasData.infer_table(df, schema=schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def get_schema(self, table_name, database=None):
@@ -103,9 +103,9 @@ class BasePandasBackend(BaseBackend):
         try:
             schema = schemas[table_name]
         except KeyError:
-            schemas[table_name] = schema = schema_from_pandas_dataframe(
-                self.dictionary[table_name]
-            )
+            df = self.dictionary[table_name]
+            schemas[table_name] = schema = PandasData.infer_table(df)
+
         return schema
 
     def compile(self, expr, *args, **kwargs):
@@ -143,7 +143,7 @@ class BasePandasBackend(BaseBackend):
                 )
             df = self._convert_object(obj)
         else:
-            dtypes = dict(schema_to_pandas(schema))
+            dtypes = dict(PandasSchema.from_ibis(schema))
             df = self._from_pandas(pd.DataFrame(columns=dtypes.keys()).astype(dtypes))
 
         if name in self.dictionary and not overwrite:

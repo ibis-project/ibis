@@ -166,23 +166,23 @@ class DataType(Concrete, Coercible):
     @classmethod
     def from_numpy(cls, numpy_type, nullable=True) -> Self:
         """Return the equivalent ibis datatype."""
-        from ibis.formats.numpy import dtype_from_numpy
+        from ibis.formats.numpy import NumpyType
 
-        return dtype_from_numpy(numpy_type, nullable=nullable)
+        return NumpyType.to_ibis(numpy_type, nullable=nullable)
 
     @classmethod
     def from_pandas(cls, pandas_type, nullable=True) -> Self:
         """Return the equivalent ibis datatype."""
-        from ibis.formats.pandas import dtype_from_pandas
+        from ibis.formats.pandas import PandasType
 
-        return dtype_from_pandas(pandas_type, nullable=nullable)
+        return PandasType.to_ibis(pandas_type, nullable=nullable)
 
     @classmethod
     def from_pyarrow(cls, arrow_type, nullable=True) -> Self:
         """Return the equivalent ibis datatype."""
-        from ibis.formats.pyarrow import dtype_to_pyarrow
+        from ibis.formats.pyarrow import PyArrowType
 
-        return dtype_to_pyarrow(arrow_type, nullable=nullable)
+        return PyArrowType.to_ibis(arrow_type, nullable=nullable)
 
     @classmethod
     def from_dask(cls, dask_type, nullable=True) -> Self:
@@ -191,21 +191,21 @@ class DataType(Concrete, Coercible):
 
     def to_numpy(self):
         """Return the equivalent numpy datatype."""
-        from ibis.formats.numpy import dtype_to_numpy
+        from ibis.formats.numpy import NumpyFormat
 
-        return dtype_to_numpy(self)
+        return NumpyFormat.from_dtype(self)
 
     def to_pandas(self):
         """Return the equivalent pandas datatype."""
-        from ibis.formats.pandas import dtype_to_pandas
+        from ibis.formats.pandas import PandasType
 
-        return dtype_to_pandas(self)
+        return PandasType.from_ibis(self)
 
     def to_pyarrow(self):
         """Return the equivalent pyarrow datatype."""
-        from ibis.formats.pyarrow import dtype_to_pyarrow
+        from ibis.formats.pyarrow import PyArrowType
 
-        return dtype_to_pyarrow(self)
+        return PyArrowType.from_ibis(self)
 
     def to_dask(self):
         """Return the equivalent dask datatype."""

@@ -28,7 +28,8 @@ from ibis.backends.base.sql.ddl import (
 from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable
 from ibis.backends.pyspark.compiler import PySparkExprTranslator
-from ibis.backends.pyspark.datatypes import dtype_from_pyspark
+from ibis.backends.pyspark.datatypes import PySparkType
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -211,7 +212,7 @@ class Backend(BaseSQLBackend):
         table_expr = expr.as_table()
         df = self.compile(table_expr, **kwargs).toPandas()
 
-        result = self._pandas_converter.convert_frame(df, table_expr.schema())
+        result = PandasData.convert_table(df, table_expr.schema())
         if isinstance(expr, ir.Table):
             return result
         elif isinstance(expr, ir.Column):
@@ -241,7 +242,7 @@ class Backend(BaseSQLBackend):
 
     def _get_schema_using_query(self, query):
         cursor = self.raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0")
-        struct = dtype_from_pyspark(cursor.query.schema)
+        struct = PySparkType.to_ibis(cursor.query.schema)
         return sch.Schema(struct)
 
     def _get_jtable(self, name, database=None):
@@ -339,7 +340,7 @@ class Backend(BaseSQLBackend):
             )
 
         df = self._session.table(table_name)
-        struct = dtype_from_pyspark(df.schema)
+        struct = PySparkType.to_ibis(df.schema)
         return sch.Schema(struct)
 
     def create_table(

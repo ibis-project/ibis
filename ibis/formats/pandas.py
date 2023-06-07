@@ -8,8 +8,9 @@ import pandas.api.types as pdt
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.formats.numpy import dtype_from_numpy, dtype_to_numpy
-from ibis.formats.pyarrow import dtype_from_pyarrow, infer_sequence_dtype
+from ibis.formats import DataMapper, SchemaMapper
+from ibis.formats.numpy import NumpyType
+from ibis.formats.pyarrow import PyArrowData, PyArrowType
 
 _has_arrow_dtype = hasattr(pd, "ArrowDtype")
 
@@ -20,108 +21,112 @@ if not _has_arrow_dtype:
     )
 
 
-def dtype_to_pandas(dtype: dt.DataType):
-    """Convert ibis dtype to the pandas / numpy alternative."""
-    assert isinstance(dtype, dt.DataType)
-
-    if dtype.is_timestamp() and dtype.timezone:
-        return pdt.DatetimeTZDtype('ns', dtype.timezone)
-    elif dtype.is_interval():
-        return np.dtype(f'timedelta64[{dtype.unit.short}]')
-    else:
-        return dtype_to_numpy(dtype)
-
-
-def dtype_from_pandas(typ, nullable=True):
-    if pdt.is_datetime64tz_dtype(typ):
-        return dt.Timestamp(timezone=str(typ.tz), nullable=nullable)
-    elif pdt.is_datetime64_dtype(typ):
-        return dt.Timestamp(nullable=nullable)
-    elif pdt.is_categorical_dtype(typ):
-        return dt.String(nullable=nullable)
-    elif pdt.is_extension_array_dtype(typ):
-        if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
-            return dtype_from_pyarrow(typ.pyarrow_dtype, nullable=nullable)
-        else:
-            name = typ.__class__.__name__.replace("Dtype", "")
-            klass = getattr(dt, name)
-            return klass(nullable=nullable)
-    else:
-        return dtype_from_numpy(typ, nullable=nullable)
-
-
-def schema_to_pandas(schema):
-    pandas_types = map(dtype_to_pandas, schema.types)
-    return list(zip(schema.names, pandas_types))
-
-
-def schema_from_pandas(schema):
-    ibis_types = {name: dtype_from_pandas(typ) for name, typ in schema}
-    return sch.schema(ibis_types)
-
-
-def schema_from_pandas_dataframe(
-    df: pd.DataFrame, schema=None, inference_function=infer_sequence_dtype
-):
-    schema = schema if schema is not None else {}
-
-    pairs = []
-    for column_name in df.dtypes.keys():
-        if not isinstance(column_name, str):
-            raise TypeError('Column names must be strings to use the pandas backend')
-
-        if column_name in schema:
-            ibis_dtype = schema[column_name]
-        else:
-            pandas_column = df[column_name]
-            pandas_dtype = pandas_column.dtype
-            if pandas_dtype == np.object_:
-                ibis_dtype = inference_function(pandas_column.values)
-            else:
-                ibis_dtype = dtype_from_pandas(pandas_dtype)
-
-        pairs.append((column_name, ibis_dtype))
-
-    return sch.schema(pairs)
-
-
-def schema_from_dask_dataframe(df, schema=None):
-    # TODO(kszucs): we should limit the computation to the first partition or
-    # even just the first row if we switch to `pa.infer_type()` in the inference
-    # function
-    return schema_from_pandas_dataframe(
-        df,
-        schema=schema,
-        inference_function=lambda s: infer_sequence_dtype(s.compute()),
-    )
-
-
-class PandasConverter:
+class PandasType(NumpyType):
     @classmethod
-    def convert_frame(cls, df, schema):
+    def to_ibis(cls, typ, nullable=True):
+        if pdt.is_datetime64tz_dtype(typ):
+            return dt.Timestamp(timezone=str(typ.tz), nullable=nullable)
+        elif pdt.is_datetime64_dtype(typ):
+            return dt.Timestamp(nullable=nullable)
+        elif pdt.is_categorical_dtype(typ):
+            return dt.String(nullable=nullable)
+        elif pdt.is_extension_array_dtype(typ):
+            if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
+                return PyArrowType.to_ibis(typ.pyarrow_dtype, nullable=nullable)
+            else:
+                name = typ.__class__.__name__.replace("Dtype", "")
+                klass = getattr(dt, name)
+                return klass(nullable=nullable)
+        else:
+            return super().to_ibis(typ, nullable=nullable)
+
+    @classmethod
+    def from_ibis(cls, dtype):
+        if dtype.is_timestamp() and dtype.timezone:
+            return pdt.DatetimeTZDtype('ns', dtype.timezone)
+        elif dtype.is_interval():
+            return np.dtype(f'timedelta64[{dtype.unit.short}]')
+        else:
+            return super().from_ibis(dtype)
+
+
+class PandasSchema(SchemaMapper):
+    @classmethod
+    def to_ibis(cls, pandas_schema):
+        if isinstance(pandas_schema, pd.Series):
+            pandas_schema = pandas_schema.to_list()
+
+        fields = {name: PandasType.to_ibis(t) for name, t in pandas_schema}
+
+        return sch.Schema(fields)
+
+    @classmethod
+    def from_ibis(cls, schema):
+        names = schema.names
+        types = [PandasType.from_ibis(t) for t in schema.types]
+        return list(zip(names, types))
+
+
+class PandasData(DataMapper):
+    @classmethod
+    def infer_scalar(cls, s):
+        return PyArrowData.infer_scalar(s)
+
+    @classmethod
+    def infer_column(cls, s):
+        return PyArrowData.infer_column(s)
+
+    @classmethod
+    def infer_table(cls, df, schema=None):
+        schema = schema if schema is not None else {}
+
+        pairs = []
+        for column_name in df.dtypes.keys():
+            if not isinstance(column_name, str):
+                raise TypeError(
+                    'Column names must be strings to use the pandas backend'
+                )
+
+            if column_name in schema:
+                ibis_dtype = schema[column_name]
+            else:
+                pandas_column = df[column_name]
+                pandas_dtype = pandas_column.dtype
+                if pandas_dtype == np.object_:
+                    ibis_dtype = cls.infer_column(pandas_column)
+                else:
+                    ibis_dtype = PandasType.to_ibis(pandas_dtype)
+
+            pairs.append((column_name, ibis_dtype))
+
+        return sch.Schema.from_tuples(pairs)
+
+    @classmethod
+    def convert_table(cls, df, schema):
         if len(schema) != len(df.columns):
             raise ValueError(
                 "schema column count does not match input data column count"
             )
 
         for (name, series), dtype in zip(df.items(), schema.types):
-            df[name] = cls.convert_series(series, dtype)
+            df[name] = cls.convert_column(series, dtype)
 
-        # return data with the schema's columns which may be different than the input columns
+        # return data with the schema's columns which may be different than the
+        # input columns
         df.columns = schema.names
         return df
 
     @classmethod
-    def convert_series(cls, s, dtype):
-        pandas_type = dtype.to_pandas()
+    def convert_column(cls, obj, dtype):
+        pandas_type = PandasType.from_ibis(dtype)
 
-        if s.dtype == pandas_type and dtype.is_primitive():
-            return s
+        if obj.dtype == pandas_type and dtype.is_primitive():
+            return obj
 
-        converter = getattr(
-            cls, f"convert_{dtype.__class__.__name__}", cls.convert_default
-        )
-        return converter(s, dtype, pandas_type)
+        method_name = f"convert_{dtype.__class__.__name__}"
+        convert_method = getattr(cls, method_name, cls.convert_default)
+
+        return convert_method(obj, dtype, pandas_type)
 
     @staticmethod
     def convert_default(s, dtype, pandas_type):
@@ -132,8 +137,6 @@ class PandasConverter:
 
     @staticmethod
     def convert_Boolean(s, dtype, pandas_type):
-        import pandas.api.types as pdt
-
         if s.empty:
             return s.astype(pandas_type)
         elif pdt.is_object_dtype(s.dtype):
@@ -224,3 +227,9 @@ class PandasConverter:
                 return x
 
         return s.map(try_json, na_action="ignore").astype("object")
+
+
+class DaskData(PandasData):
+    @classmethod
+    def infer_column(cls, s):
+        return PyArrowData.infer_column(s.compute())

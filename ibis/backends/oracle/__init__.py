@@ -33,8 +33,7 @@ from ibis.backends.base.sql.alchemy import (  # noqa: E402
     BaseAlchemyBackend,
 )
 from ibis.backends.oracle.datatypes import (  # noqa: E402
-    dtype_from_oracle,
-    dtype_to_oracle,
+    OracleType,
     parse,
 )
 from ibis.backends.oracle.registry import operation_registry  # noqa: E402
@@ -64,8 +63,7 @@ class OracleExprTranslator(AlchemyExprTranslator):
     _quote_column_names = True
     _quote_table_names = True
 
-    get_sqla_type = staticmethod(dtype_to_oracle)
-    get_ibis_type = staticmethod(dtype_from_oracle)
+    type_mapper = OracleType
 
 
 class OracleCompiler(AlchemyCompiler):

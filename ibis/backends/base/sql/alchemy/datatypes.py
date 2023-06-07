@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Mapping, Optional
+from typing import Mapping
 
 import sqlalchemy as sa
 import sqlalchemy.types as sat
@@ -10,6 +10,7 @@ from sqlalchemy.ext.compiler import compiles
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.common.collections import FrozenDict
+from ibis.formats import TypeMapper
 
 if geospatial_supported:
     import geoalchemy2 as ga
@@ -195,53 +196,6 @@ _to_sqlalchemy_types = {
     dt.UUID: UUID,
 }
 
-
-def dtype_to_sqlalchemy(
-    dtype: dt.DataType,
-    converter: Optional[Callable[[dt.DataType], sa.TypeEngine]] = None,
-):
-    """Convert an Ibis type to a SQLAlchemy type.
-
-    Parameters
-    ----------
-    dtype
-        Ibis type to convert.
-    converter
-        Converter function to use for nested types. If not provided, this function
-        will be used recursively. Should only be used when defining new converter for
-        dialects.
-
-    Returns
-    -------
-    sa.TypeEngine
-    """
-    convert = converter or dtype_to_sqlalchemy
-
-    if dtype.is_decimal():
-        return sat.NUMERIC(dtype.precision, dtype.scale)
-    elif dtype.is_timestamp():
-        return sat.TIMESTAMP(timezone=bool(dtype.timezone))
-    elif dtype.is_array():
-        return ArrayType(convert(dtype.value_type))
-    elif dtype.is_struct():
-        fields = {k: convert(v) for k, v in dtype.fields.items()}
-        return StructType(fields)
-    elif dtype.is_map():
-        return MapType(convert(dtype.key_type), convert(dtype.value_type))
-    elif dtype.is_geospatial():
-        if geospatial_supported:
-            if dtype.geotype == 'geometry':
-                return ga.Geometry
-            elif dtype.geotype == 'geography':
-                return ga.Geography
-            else:
-                return ga.types._GISType
-        else:
-            raise TypeError("geospatial types are not supported")
-    else:
-        return _to_sqlalchemy_types[type(dtype)]
-
-
 _FLOAT_PREC_TO_TYPE = {
     11: dt.Float16,
     24: dt.Float32,
@@ -260,54 +214,94 @@ _GEOSPATIAL_TYPES = {
 }
 
 
-def dtype_from_sqlalchemy(typ, nullable=True, converter=None):
-    """Convert a SQLAlchemy type to an Ibis type.
+class AlchemyType(TypeMapper):
+    @classmethod
+    def from_ibis(cls, dtype: dt.DataType) -> sat.TypeEngine:
+        """Convert an Ibis type to a SQLAlchemy type.
 
-    Parameters
-    ----------
-    typ
-        SQLAlchemy type to convert.
-    nullable : bool, optional
-        Whether the returned type should be nullable.
-    converter
-        Converter function to use for nested types. If not provided, this function
-        will be used recursively. Should only be used when defining new converter for
-        dialects.
+        Parameters
+        ----------
+        dtype
+            Ibis type to convert.
 
-    Returns
-    -------
-    dt.DataType
-    """
-    convert = converter or dtype_from_sqlalchemy
+        Returns
+        -------
+        SQLAlchemy type.
+        """
+        if dtype.is_decimal():
+            return sat.NUMERIC(dtype.precision, dtype.scale)
+        elif dtype.is_timestamp():
+            return sat.TIMESTAMP(timezone=bool(dtype.timezone))
+        elif dtype.is_array():
+            return ArrayType(cls.from_ibis(dtype.value_type))
+        elif dtype.is_struct():
+            fields = {k: cls.from_ibis(v) for k, v in dtype.fields.items()}
+            return StructType(fields)
+        elif dtype.is_map():
+            return MapType(
+                cls.from_ibis(dtype.key_type), cls.from_ibis(dtype.value_type)
+            )
+        elif dtype.is_geospatial():
+            if geospatial_supported:
+                if dtype.geotype == 'geometry':
+                    return ga.Geometry
+                elif dtype.geotype == 'geography':
+                    return ga.Geography
+                else:
+                    return ga.types._GISType
+            else:
+                raise TypeError("geospatial types are not supported")
+        else:
+            return _to_sqlalchemy_types[type(dtype)]
 
-    if dtype := _from_sqlalchemy_types.get(type(typ)):
-        return dtype(nullable=nullable)
-    elif isinstance(typ, sat.Float):
-        if (float_typ := _FLOAT_PREC_TO_TYPE.get(typ.precision)) is not None:
-            return float_typ(nullable=nullable)
-        return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
-    elif isinstance(typ, sat.Numeric):
-        return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
-    elif isinstance(typ, ArrayType):
-        return dt.Array(convert(typ.value_type), nullable=nullable)
-    elif isinstance(typ, sat.ARRAY):
-        ndim = typ.dimensions
-        if ndim is not None and ndim != 1:
-            raise NotImplementedError("Nested array types not yet supported")
-        return dt.Array(convert(typ.item_type), nullable=nullable)
-    elif isinstance(typ, StructType):
-        fields = {k: convert(v) for k, v in typ.fields.items()}
-        return dt.Struct(fields, nullable=nullable)
-    elif isinstance(typ, MapType):
-        return dt.Map(convert(typ.key_type), convert(typ.value_type), nullable=nullable)
-    elif isinstance(typ, sa.DateTime):
-        timezone = "UTC" if typ.timezone else None
-        return dt.Timestamp(timezone, nullable=nullable)
-    elif geospatial_supported and isinstance(typ, ga.types._GISType):
-        name = typ.geometry_type.upper()
-        try:
-            return _GEOSPATIAL_TYPES[name](geotype=typ.name, nullable=nullable)
-        except KeyError:
-            raise ValueError(f"Unrecognized geometry type: {name}")
-    else:
-        raise TypeError(f"Unable to convert type: {typ!r}")
+    @classmethod
+    def to_ibis(cls, typ: sat.TypeEngine, nullable: bool = True) -> dt.DataType:
+        """Convert a SQLAlchemy type to an Ibis type.
+
+        Parameters
+        ----------
+        typ
+            SQLAlchemy type to convert.
+        nullable : bool, optional
+            Whether the returned type should be nullable.
+
+        Returns
+        -------
+        Ibis type.
+        """
+
+        if dtype := _from_sqlalchemy_types.get(type(typ)):
+            return dtype(nullable=nullable)
+        elif isinstance(typ, sat.Float):
+            if (float_typ := _FLOAT_PREC_TO_TYPE.get(typ.precision)) is not None:
+                return float_typ(nullable=nullable)
+            return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
+        elif isinstance(typ, sat.Numeric):
+            return dt.Decimal(typ.precision, typ.scale, nullable=nullable)
+        elif isinstance(typ, ArrayType):
+            return dt.Array(cls.to_ibis(typ.value_type), nullable=nullable)
+        elif isinstance(typ, sat.ARRAY):
+            ndim = typ.dimensions
+            if ndim is not None and ndim != 1:
+                raise NotImplementedError("Nested array types not yet supported")
+            return dt.Array(cls.to_ibis(typ.item_type), nullable=nullable)
+        elif isinstance(typ, StructType):
+            fields = {k: cls.to_ibis(v) for k, v in typ.fields.items()}
+            return dt.Struct(fields, nullable=nullable)
+        elif isinstance(typ, MapType):
+            return dt.Map(
+                cls.to_ibis(typ.key_type),
+                cls.to_ibis(typ.value_type),
+                nullable=nullable,
+            )
+        elif isinstance(typ, sa.DateTime):
+            timezone = "UTC" if typ.timezone else None
+            return dt.Timestamp(timezone, nullable=nullable)
+        elif geospatial_supported and isinstance(typ, ga.types._GISType):
+            name = typ.geometry_type.upper()
+            try:
+                return _GEOSPATIAL_TYPES[name](geotype=typ.name, nullable=nullable)
+            except KeyError:
+                raise ValueError(f"Unrecognized geometry type: {name}")
+        else:
+            raise TypeError(f"Unable to convert type: {typ!r}")

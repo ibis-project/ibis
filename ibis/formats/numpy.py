@@ -3,6 +3,7 @@ import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis.formats import SchemaMapper, TypeMapper
 
 _from_numpy_types = toolz.keymap(
     np.dtype,
@@ -26,69 +27,73 @@ _from_numpy_types = toolz.keymap(
 _to_numpy_types = {v: k for k, v in _from_numpy_types.items()}
 
 
-def dtype_from_numpy(typ, nullable=True):
-    if np.issubdtype(typ, np.datetime64):
-        # TODO(kszucs): the following code provedes proper timestamp roundtrips
-        # between ibis and numpy/pandas but breaks the test suite at several
-        # places, we should revisit this later
-        # unit, _ = np.datetime_data(typ)
-        # if unit in {'generic', 'Y', 'M', 'D', 'h', 'm'}:
-        #     return dt.Timestamp(nullable=nullable)
-        # else:
-        #     return dt.Timestamp.from_unit(unit, nullable=nullable)
-        return dt.Timestamp(nullable=nullable)
-    elif np.issubdtype(typ, np.timedelta64):
-        unit, _ = np.datetime_data(typ)
-        if unit == 'generic':
-            unit = 's'
-        return dt.Interval(unit, nullable=nullable)
-    elif np.issubdtype(typ, np.str_):
-        return dt.String(nullable=nullable)
-    elif np.issubdtype(typ, np.bytes_):
-        return dt.Binary(nullable=nullable)
-    else:
-        try:
-            return _from_numpy_types[typ](nullable=nullable)
-        except KeyError:
-            raise TypeError(f"numpy dtype {typ!r} is not supported")
+class NumpyType(TypeMapper[np.dtype]):
+    @classmethod
+    def to_ibis(cls, typ: np.dtype, nullable: bool = True) -> dt.DataType:
+        if np.issubdtype(typ, np.datetime64):
+            # TODO(kszucs): the following code provedes proper timestamp roundtrips
+            # between ibis and numpy/pandas but breaks the test suite at several
+            # places, we should revisit this later
+            # unit, _ = np.datetime_data(typ)
+            # if unit in {'generic', 'Y', 'M', 'D', 'h', 'm'}:
+            #     return dt.Timestamp(nullable=nullable)
+            # else:
+            #     return dt.Timestamp.from_unit(unit, nullable=nullable)
+            return dt.Timestamp(nullable=nullable)
+        elif np.issubdtype(typ, np.timedelta64):
+            unit, _ = np.datetime_data(typ)
+            if unit == 'generic':
+                unit = 's'
+            return dt.Interval(unit, nullable=nullable)
+        elif np.issubdtype(typ, np.str_):
+            return dt.String(nullable=nullable)
+        elif np.issubdtype(typ, np.bytes_):
+            return dt.Binary(nullable=nullable)
+        else:
+            try:
+                return _from_numpy_types[typ](nullable=nullable)
+            except KeyError:
+                raise TypeError(f"numpy dtype {typ!r} is not supported")
+
+    @classmethod
+    def from_ibis(cls, dtype: dt.DataType) -> np.dtype:
+        if dtype.is_interval():
+            return np.dtype(f"timedelta64[{dtype.unit.short}]")
+        elif dtype.is_timestamp():
+            # TODO(kszucs): the following code provedes proper timestamp roundtrips
+            # between ibis and numpy/pandas but breaks the test suite at several
+            # places, we should revisit this later
+            # return np.dtype(f"datetime64[{dtype.unit.short}]")
+            return np.dtype("datetime64[ns]")
+        elif dtype.is_date():
+            # return np.dtype("datetime64[D]")
+            return np.dtype("datetime64[ns]")
+        elif dtype.is_time():
+            return np.dtype("timedelta64[ns]")
+        elif (
+            dtype.is_null()
+            or dtype.is_decimal()
+            or dtype.is_struct()
+            or dtype.is_variadic()
+            or dtype.is_unknown()
+            or dtype.is_uuid()
+            or dtype.is_geospatial()
+        ):
+            return np.dtype("object")
+        else:
+            try:
+                return _to_numpy_types[type(dtype)]
+            except KeyError:
+                raise TypeError(f"ibis dtype {dtype!r} is not supported")
 
 
-def dtype_to_numpy(dtype):
-    if dtype.is_interval():
-        return np.dtype(f"timedelta64[{dtype.unit.short}]")
-    elif dtype.is_timestamp():
-        # TODO(kszucs): the following code provedes proper timestamp roundtrips
-        # between ibis and numpy/pandas but breaks the test suite at several
-        # places, we should revisit this later
-        # return np.dtype(f"datetime64[{dtype.unit.short}]")
-        return np.dtype("datetime64[ns]")
-    elif dtype.is_date():
-        # return np.dtype("datetime64[D]")
-        return np.dtype("datetime64[ns]")
-    elif dtype.is_time():
-        return np.dtype("timedelta64[ns]")
-    elif (
-        dtype.is_null()
-        or dtype.is_decimal()
-        or dtype.is_struct()
-        or dtype.is_variadic()
-        or dtype.is_unknown()
-        or dtype.is_uuid()
-        or dtype.is_geospatial()
-    ):
-        return np.dtype("object")
-    else:
-        try:
-            return _to_numpy_types[type(dtype)]
-        except KeyError:
-            raise TypeError(f"ibis dtype {dtype!r} is not supported")
+class NumpySchema(SchemaMapper):
+    @classmethod
+    def from_ibis(cls, schema):
+        numpy_types = map(NumpyType.from_ibis, schema.types)
+        return list(zip(schema.names, numpy_types))
 
-
-def schema_to_numpy(schema):
-    numpy_types = map(dtype_to_numpy, schema.types)
-    return list(zip(schema.names, numpy_types))
-
-
-def schema_from_numpy(schema):
-    ibis_types = {name: dtype_from_numpy(typ) for name, typ in schema}
-    return sch.Schema(ibis_types)
+    @classmethod
+    def to_ibis(cls, schema):
+        ibis_types = {name: NumpyType.to_ibis(typ) for name, typ in schema}
+        return sch.Schema(ibis_types)

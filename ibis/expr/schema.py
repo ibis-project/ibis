@@ -132,23 +132,23 @@ class Schema(Concrete, Coercible, MapSet):
     @classmethod
     def from_numpy(cls, numpy_schema):
         """Return the equivalent ibis schema."""
-        from ibis.formats.numpy import schema_from_numpy
+        from ibis.formats.numpy import NumpySchema
 
-        return schema_from_numpy(numpy_schema)
+        return NumpySchema.to_ibis(numpy_schema)
 
     @classmethod
     def from_pandas(cls, pandas_schema):
         """Return the equivalent ibis schema."""
-        from ibis.formats.pandas import schema_from_pandas
+        from ibis.formats.pandas import PandasSchema
 
-        return schema_from_pandas(pandas_schema)
+        return PandasSchema.to_ibis(pandas_schema)
 
     @classmethod
     def from_pyarrow(cls, pyarrow_schema):
         """Return the equivalent ibis schema."""
-        from ibis.formats.pyarrow import schema_from_pyarrow
+        from ibis.formats.pyarrow import PyArrowSchema
 
-        return schema_from_pyarrow(pyarrow_schema)
+        return PyArrowSchema.to_ibis(pyarrow_schema)
 
     @classmethod
     def from_dask(cls, dask_schema):
@@ -157,21 +157,21 @@ class Schema(Concrete, Coercible, MapSet):
 
     def to_numpy(self):
         """Return the equivalent numpy dtypes."""
-        from ibis.formats.numpy import schema_to_numpy
+        from ibis.formats.numpy import NumpySchema
 
-        return schema_to_numpy(self)
+        return NumpySchema.from_ibis(self)
 
     def to_pandas(self):
         """Return the equivalent pandas datatypes."""
-        from ibis.formats.pandas import schema_to_pandas
+        from ibis.formats.pandas import PandasSchema
 
-        return schema_to_pandas(self)
+        return PandasSchema.from_ibis(self)
 
     def to_pyarrow(self):
         """Return the equivalent pyarrow schema."""
-        from ibis.formats.pyarrow import schema_to_pyarrow
+        from ibis.formats.pyarrow import PyArrowSchema
 
-        return schema_to_pyarrow(self)
+        return PyArrowSchema.from_ibis(self)
 
     def to_dask(self):
         """Return the equivalent dask dtypes."""
@@ -209,9 +209,9 @@ class Schema(Concrete, Coercible, MapSet):
         instead="use ibis.formats.pandas.PandasConverter.convert_frame() instead",
     )
     def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:
-        from ibis.formats.pandas import PandasConverter
+        from ibis.formats.pandas import PandasData
 
-        return PandasConverter.convert_frame(df, self)
+        return PandasData.convert_table(df, self)
 
 
 @lazy_singledispatch
@@ -248,32 +248,32 @@ def from_class(cls):
 
 @schema.register("pandas.Series")
 def from_pandas_series(s):
-    from ibis.formats.pandas import schema_from_pandas
+    from ibis.formats.pandas import PandasSchema
 
-    return schema_from_pandas(s)
+    return PandasSchema.to_ibis(s)
 
 
 @schema.register("pyarrow.Schema")
 def from_pyarrow_schema(schema):
-    from ibis.formats.pyarrow import schema_from_pyarrow
+    from ibis.formats.pyarrow import PyArrowSchema
 
-    return schema_from_pyarrow(schema)
+    return PyArrowSchema.to_ibis(schema)
 
 
 @infer.register("pandas.DataFrame")
 def infer_pandas_dataframe(df, schema=None):
-    from ibis.formats.pandas import schema_from_pandas_dataframe
+    from ibis.formats.pandas import PandasData
 
-    return schema_from_pandas_dataframe(df, schema)
+    return PandasData.infer_table(df, schema)
 
 
 # TODO(kszucs): do we really need the schema kwarg?
 @infer.register("pyarrow.Table")
 def infer_pyarrow_table(table, schema=None):
-    from ibis.formats.pyarrow import schema_from_pyarrow
+    from ibis.formats.pyarrow import PyArrowSchema
 
     schema = schema if schema is not None else table.schema
-    return schema_from_pyarrow(schema)
+    return PyArrowSchema.to_ibis(schema)
 
 
 # lock the dispatchers to avoid adding new implementations

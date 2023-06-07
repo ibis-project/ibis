@@ -27,7 +27,8 @@ from ibis.backends.bigquery.client import (
     schema_from_bigquery_table,
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
-from ibis.backends.bigquery.datatypes import schema_from_bigquery, schema_to_bigquery
+from ibis.backends.bigquery.datatypes import BigQuerySchema
+from ibis.formats.pandas import PandasData
 
 with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
@@ -251,7 +252,7 @@ class Backend(BaseSQLBackend):
     def _get_schema_using_query(self, query):
         job_config = bq.QueryJobConfig(dry_run=True, use_query_cache=False)
         job = self.client.query(query, job_config=job_config)
-        return schema_from_bigquery(job.schema)
+        return BigQuerySchema.to_ibis(job.schema)
 
     def _get_table_schema(self, qualified_name):
         dataset, table = qualified_name.rsplit(".", 1)
@@ -336,7 +337,7 @@ class Backend(BaseSQLBackend):
     def fetch_from_cursor(self, cursor, schema):
         arrow_t = self._cursor_to_arrow(cursor)
         df = arrow_t.to_pandas(timestamp_as_object=True)
-        return self._pandas_converter.convert_frame(df, schema)
+        return PandasData.convert_table(df, schema)
 
     def _cursor_to_arrow(
         self,
@@ -458,7 +459,7 @@ class Backend(BaseSQLBackend):
             )
         if schema is not None:
             table_id = self._fully_qualified_name(name, database)
-            table = bq.Table(table_id, schema=schema_to_bigquery(schema))
+            table = bq.Table(table_id, schema=BigQuerySchema.from_ibis(schema))
             self.client.create_table(table)
         else:
             project_id, dataset = self._parse_project_and_dataset(database)

@@ -12,7 +12,7 @@ import pyarrow.compute as pc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.formats.pyarrow import dtype_to_pyarrow
+from ibis.formats.pyarrow import PyArrowType
 
 
 @functools.singledispatch
@@ -43,7 +43,7 @@ def literal(op):
     else:
         value = op.value
 
-    arrow_type = dtype_to_pyarrow(op.dtype)
+    arrow_type = PyArrowType.from_ibis(op.dtype)
     arrow_scalar = pa.scalar(value, type=arrow_type)
 
     return df.literal(arrow_scalar)
@@ -52,7 +52,7 @@ def literal(op):
 @translate.register(ops.Cast)
 def cast(op):
     arg = translate(op.arg)
-    typ = dtype_to_pyarrow(op.to)
+    typ = PyArrowType.from_ibis(op.to)
     return arg.cast(to=typ)
 
 
@@ -458,8 +458,8 @@ def e(_):
 def elementwise_udf(op):
     udf = df.udf(
         op.func,
-        input_types=list(map(dtype_to_pyarrow, op.input_type)),
-        return_type=dtype_to_pyarrow(op.return_type),
+        input_types=list(map(PyArrowType.from_ibis, op.input_type)),
+        return_type=PyArrowType.from_ibis(op.return_type),
         volatility="volatile",
     )
     args = map(translate, op.func_args)
@@ -504,8 +504,8 @@ def regex_extract(op):
         )
     string_array_get = df.udf(
         lambda arr, index=index: pc.list_element(arr, index),
-        input_types=[dtype_to_pyarrow(dt.Array(dt.string))],
-        return_type=dtype_to_pyarrow(dt.string),
+        input_types=[PyArrowType.from_ibis(dt.Array(dt.string))],
+        return_type=PyArrowType.from_ibis(dt.string),
         volatility="immutable",
         name="string_array_get",
     )

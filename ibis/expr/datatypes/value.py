@@ -142,9 +142,9 @@ def infer_ipaddr(
 
 @infer.register("numpy.generic")
 def infer_numpy_scalar(value):
-    from ibis.formats.numpy import dtype_from_numpy
+    from ibis.formats.numpy import NumpyType
 
-    return dtype_from_numpy(value.dtype)
+    return NumpyType.to_ibis(value.dtype)
 
 
 @infer.register("pandas.Timestamp")
@@ -171,13 +171,13 @@ def infer_interval_pandas(value) -> dt.Interval:
 @infer.register("numpy.ndarray")
 @infer.register("pandas.Series")
 def infer_numpy_array(value):
-    from ibis.formats.numpy import dtype_from_numpy
-    from ibis.formats.pyarrow import infer_sequence_dtype
+    from ibis.formats.numpy import NumpyType
+    from ibis.formats.pyarrow import PyArrowData
 
     if value.dtype.kind == 'O':
-        value_dtype = infer_sequence_dtype(value)
+        value_dtype = PyArrowData.infer_column(value)
     else:
-        value_dtype = dtype_from_numpy(value.dtype)
+        value_dtype = NumpyType.to_ibis(value.dtype)
 
     return dt.Array(value_dtype)
 

@@ -23,8 +23,9 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
-from ibis.backends.duckdb.datatypes import dtype_to_duckdb, parse
+from ibis.backends.duckdb.datatypes import DuckDBType, parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -114,7 +115,7 @@ class Backend(BaseAlchemyBackend):
                         _, typ, *_ = con.connection.fetchone()
                     complex_type_info_cache[colname] = coltype = parse(typ)
 
-                column_info["type"] = dtype_to_duckdb(coltype)
+                column_info["type"] = DuckDBType.from_ibis(coltype)
 
         return meta
 
@@ -844,7 +845,7 @@ class Backend(BaseAlchemyBackend):
                 for name, col in zip(table.column_names, table.columns)
             }
         )
-        return self._pandas_converter.convert_frame(df, schema)
+        return PandasData.convert_table(df, schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         with self.begin() as con:

@@ -14,7 +14,7 @@ from __future__ import annotations
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.sqlite.datatypes import dtype_from_sqlite, dtype_to_sqlite
+from ibis.backends.sqlite.datatypes import SqliteType
 from ibis.backends.sqlite.registry import operation_registry
 
 
@@ -22,9 +22,7 @@ class SQLiteExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _dialect_name = "sqlite"
-
-    get_sqla_type = staticmethod(dtype_to_sqlite)
-    get_ibis_type = staticmethod(dtype_from_sqlite)
+    type_mapper = SqliteType
 
 
 rewrites = SQLiteExprTranslator.rewrites

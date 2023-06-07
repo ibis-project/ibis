@@ -3,7 +3,7 @@ from __future__ import annotations
 import sqlalchemy as sa
 
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
-from ibis.backends.mysql.datatypes import dtype_from_mysql, dtype_to_mysql
+from ibis.backends.mysql.datatypes import MySQLType
 from ibis.backends.mysql.registry import operation_registry
 
 
@@ -14,9 +14,7 @@ class MySQLExprTranslator(AlchemyExprTranslator):
     _integer_to_timestamp = sa.func.from_unixtime
     native_json_type = False
     _dialect_name = "mysql"
-
-    get_sqla_type = staticmethod(dtype_to_mysql)
-    get_ibis_type = staticmethod(dtype_from_mysql)
+    type_mapper = MySQLType
 
 
 rewrites = MySQLExprTranslator.rewrites

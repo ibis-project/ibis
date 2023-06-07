@@ -10,13 +10,13 @@ import pandas as pd
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.bigquery.datatypes import dtype_to_bigquery, schema_from_bigquery
+from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
 
 NATIVE_PARTITION_COL = "_PARTITIONTIME"
 
 
 def schema_from_bigquery_table(table):
-    schema = schema_from_bigquery(table.schema)
+    schema = BigQuerySchema.to_ibis(table.schema)
 
     # Check for partitioning information
     partition_info = table._properties.get("timePartitioning", None)
@@ -84,7 +84,7 @@ def bq_param_array(dtype: dt.Array, value, name):
     value_type = dtype.value_type
 
     try:
-        bigquery_type = dtype_to_bigquery(value_type)
+        bigquery_type = BigQueryType.from_ibis(value_type)
     except NotImplementedError:
         raise com.UnsupportedBackendType(dtype)
     else:

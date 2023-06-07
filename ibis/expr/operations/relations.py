@@ -135,9 +135,9 @@ class PandasDataFrameProxy(TableProxy):
     def to_pyarrow(self, schema: Schema) -> pa.Table:
         import pyarrow as pa
 
-        from ibis.formats.pyarrow import schema_to_pyarrow
+        from ibis.formats.pyarrow import PyArrowSchema
 
-        return pa.Table.from_pandas(self._data, schema=schema_to_pyarrow(schema))
+        return pa.Table.from_pandas(self._data, schema=PyArrowSchema.from_ibis(schema))
 
 
 @public

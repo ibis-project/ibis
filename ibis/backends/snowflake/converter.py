@@ -1,7 +1,7 @@
-from ibis.formats.pandas import PandasConverter
+from ibis.formats.pandas import PandasData
 
 
-class SnowflakePandasConverter(PandasConverter):
-    convert_Struct = staticmethod(PandasConverter.convert_JSON)
-    convert_Array = staticmethod(PandasConverter.convert_JSON)
-    convert_Map = staticmethod(PandasConverter.convert_JSON)
+class SnowflakePandasData(PandasData):
+    convert_Struct = staticmethod(PandasData.convert_JSON)
+    convert_Array = staticmethod(PandasData.convert_JSON)
+    convert_Map = staticmethod(PandasData.convert_JSON)

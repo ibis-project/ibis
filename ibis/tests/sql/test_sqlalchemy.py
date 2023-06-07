@@ -23,7 +23,7 @@ from sqlalchemy import types as sat
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, BaseAlchemyBackend
-from ibis.backends.base.sql.alchemy.datatypes import ArrayType, dtype_to_sqlalchemy
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType, ArrayType
 from ibis.tests.expr.mocks import MockAlchemyBackend
 from ibis.tests.util import assert_decompile_roundtrip, assert_equal
 
@@ -553,7 +553,7 @@ def test_tpc_h11(snapshot):
 
 
 def test_to_sqla_type_array_of_non_primitive():
-    result = dtype_to_sqlalchemy(dt.Array(dt.Struct(dict(a="int"))))
+    result = AlchemyType.from_ibis(dt.Array(dt.Struct(dict(a="int"))))
     [(result_name, result_type)] = result.value_type.fields.items()
     expected_name = "a"
     assert result_name == expected_name

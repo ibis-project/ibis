@@ -3,7 +3,7 @@ from pytest import param
 
 import ibis.expr.datatypes as dt
 from ibis.backends.bigquery.datatypes import (
-    dtype_to_bigquery,
+    BigQueryType,
     spread_type,
 )
 
@@ -67,13 +67,13 @@ from ibis.backends.bigquery.datatypes import (
     ],
 )
 def test_simple(datatype, expected):
-    assert dtype_to_bigquery(datatype) == expected
+    assert BigQueryType.from_ibis(datatype) == expected
 
 
 @pytest.mark.parametrize("datatype", [dt.uint64, dt.Decimal(8, 3)])
 def test_simple_failure_mode(datatype):
     with pytest.raises(TypeError):
-        dtype_to_bigquery(datatype)
+        BigQueryType.from_ibis(datatype)
 
 
 @pytest.mark.parametrize(

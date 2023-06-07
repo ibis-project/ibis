@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import contextlib
-import functools
 import itertools
 import os
 import shutil
@@ -23,11 +22,8 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
-from ibis.backends.snowflake.datatypes import (
-    dtype_from_snowflake,
-    dtype_to_snowflake,
-    parse,
-)
+from ibis.backends.snowflake.converter import SnowflakePandasData
+from ibis.backends.snowflake.datatypes import SnowflakeType, parse
 from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
@@ -50,9 +46,7 @@ class SnowflakeExprTranslator(AlchemyExprTranslator):
     _quote_column_names = True
     _quote_table_names = True
     supports_unnest_in_select = False
-
-    get_sqla_type = staticmethod(dtype_to_snowflake)
-    get_ibis_type = staticmethod(dtype_from_snowflake)
+    type_mapper = SnowflakeType
 
 
 class SnowflakeCompiler(AlchemyCompiler):
@@ -93,12 +87,6 @@ class Backend(BaseAlchemyBackend):
     name = "snowflake"
     compiler = SnowflakeCompiler
     supports_create_or_replace = True
-
-    @functools.cached_property
-    def _pandas_converter(self):
-        from ibis.backends.snowflake.converter import SnowflakePandasConverter
-
-        return SnowflakePandasConverter
 
     @property
     def _current_schema(self) -> str:
@@ -272,7 +260,7 @@ $$ {defn["source"]} $$"""
         if (table := cursor.cursor.fetch_arrow_all()) is None:
             table = pa.Table.from_pylist([], schema=schema.to_pyarrow())
         df = table.to_pandas(timestamp_as_object=True)
-        return self._pandas_converter.convert_frame(df, schema)
+        return SnowflakePandasData.convert_table(df, schema)
 
     def to_pyarrow_batches(
         self,

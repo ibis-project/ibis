@@ -6,10 +6,7 @@ import sqlalchemy.types as sat
 from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import (
-    dtype_from_sqlalchemy,
-    dtype_to_sqlalchemy,
-)
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 
 # binary character set
 # used to distinguish blob binary vs blob text
@@ -220,33 +217,35 @@ _from_mysql_types = {
 }
 
 
-def dtype_to_mysql(dtype):
-    try:
-        return _to_mysql_types[type(dtype)]
-    except KeyError:
-        return dtype_to_sqlalchemy(dtype, converter=dtype_to_mysql)
+class MySQLType(AlchemyType):
+    @classmethod
+    def from_ibis(cls, dtype):
+        try:
+            return _to_mysql_types[type(dtype)]
+        except KeyError:
+            return super().from_ibis(dtype)
 
-
-def dtype_from_mysql(typ, nullable=True):
-    if isinstance(typ, (sat.NUMERIC, mysql.NUMERIC, mysql.DECIMAL)):
-        # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
-        return dt.Decimal(typ.precision or 10, typ.scale or 0, nullable=nullable)
-    elif isinstance(typ, mysql.BIT):
-        if 1 <= (length := typ.length) <= 8:
-            return dt.Int8(nullable=nullable)
-        elif 9 <= length <= 16:
-            return dt.Int16(nullable=nullable)
-        elif 17 <= length <= 32:
-            return dt.Int32(nullable=nullable)
-        elif 33 <= length <= 64:
-            return dt.Int64(nullable=nullable)
+    @classmethod
+    def to_ibis(cls, typ, nullable=True):
+        if isinstance(typ, (sat.NUMERIC, mysql.NUMERIC, mysql.DECIMAL)):
+            # https://dev.mysql.com/doc/refman/8.0/en/fixed-point-types.html
+            return dt.Decimal(typ.precision or 10, typ.scale or 0, nullable=nullable)
+        elif isinstance(typ, mysql.BIT):
+            if 1 <= (length := typ.length) <= 8:
+                return dt.Int8(nullable=nullable)
+            elif 9 <= length <= 16:
+                return dt.Int16(nullable=nullable)
+            elif 17 <= length <= 32:
+                return dt.Int32(nullable=nullable)
+            elif 33 <= length <= 64:
+                return dt.Int64(nullable=nullable)
+            else:
+                raise ValueError(f"Invalid MySQL BIT length: {length:d}")
+        elif isinstance(typ, mysql.TIMESTAMP):
+            return dt.Timestamp(timezone="UTC", nullable=nullable)
+        elif isinstance(typ, mysql.SET):
+            return dt.Set(dt.string, nullable=nullable)
+        elif dtype := _from_mysql_types[type(typ)]:
+            return dtype(nullable=nullable)
         else:
-            raise ValueError(f"Invalid MySQL BIT length: {length:d}")
-    elif isinstance(typ, mysql.TIMESTAMP):
-        return dt.Timestamp(timezone="UTC", nullable=nullable)
-    elif isinstance(typ, mysql.SET):
-        return dt.Set(dt.string, nullable=nullable)
-    elif dtype := _from_mysql_types[type(typ)]:
-        return dtype(nullable=nullable)
-    else:
-        return dtype_from_sqlalchemy(dtype, converter=dtype_from_mysql)
+            return super().to_ibis(typ, nullable=nullable)

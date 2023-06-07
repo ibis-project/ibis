@@ -21,7 +21,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.base.sql.alchemy import AlchemyCompiler
-from ibis.backends.base.sql.alchemy.datatypes import dtype_to_sqlalchemy
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.expr.schema import Schema
 
 MOCK_TABLES = {
@@ -438,7 +438,7 @@ def table_from_schema(name, meta, schema, *, database: str | None = None):
     columns = []
 
     for colname, dtype in zip(schema.names, schema.types):
-        satype = dtype_to_sqlalchemy(dtype)
+        satype = AlchemyType.from_ibis(dtype)
         column = sa.Column(colname, satype, nullable=dtype.nullable)
         columns.append(column)
 

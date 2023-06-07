@@ -6,10 +6,7 @@ import sqlalchemy.dialects.postgresql as psql
 import toolz
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import (
-    dtype_from_sqlalchemy,
-    dtype_to_sqlalchemy,
-)
+from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.common.parsing import (
     COMMA,
     FIELD,
@@ -123,17 +120,17 @@ _to_duckdb_types = {
 }
 
 
-def dtype_from_duckdb(typ, nullable=True):
-    if dtype := _from_duckdb_types.get(type(typ)):
-        return dtype(nullable=nullable)
-    else:
-        return dtype_from_sqlalchemy(
-            typ, nullable=nullable, converter=dtype_from_duckdb
-        )
+class DuckDBType(AlchemyType):
+    @classmethod
+    def to_ibis(cls, typ, nullable=True):
+        if dtype := _from_duckdb_types.get(type(typ)):
+            return dtype(nullable=nullable)
+        else:
+            return super().to_ibis(typ, nullable=nullable)
 
-
-def dtype_to_duckdb(dtype):
-    if typ := _to_duckdb_types.get(type(dtype)):
-        return typ
-    else:
-        return dtype_to_sqlalchemy(dtype, converter=dtype_to_duckdb)
+    @classmethod
+    def from_ibis(cls, dtype):
+        if typ := _to_duckdb_types.get(type(dtype)):
+            return typ
+        else:
+            return super().from_ibis(dtype)

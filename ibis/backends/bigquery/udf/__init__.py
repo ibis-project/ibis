@@ -7,7 +7,7 @@ from typing import Callable, Iterable, Literal, Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.backends.bigquery.datatypes import dtype_to_bigquery, spread_type
+from ibis.backends.bigquery.datatypes import BigQueryType, spread_type
 from ibis.backends.bigquery.operations import BigQueryUDFNode
 from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.udf.validate import validate_output_type
@@ -286,11 +286,11 @@ return {f.__name__}({args});\
         bigquery_signature = ", ".join(
             "{name} {type}".format(
                 name=name,
-                type=dtype_to_bigquery(dt.dtype(type_)),
+                type=BigQueryType.from_ibis(dt.dtype(type_)),
             )
             for name, type_ in params.items()
         )
-        return_type = dtype_to_bigquery(dt.dtype(output_type))
+        return_type = BigQueryType.from_ibis(dt.dtype(output_type))
         libraries_opts = (
             f"\nOPTIONS (\n    library={list(libraries)!r}\n)" if libraries else ""
         )
@@ -369,7 +369,7 @@ RETURNS {return_type}
             for name, type_ in params.items()
         }
 
-        return_type = dtype_to_bigquery(dt.dtype(output_type))
+        return_type = BigQueryType.from_ibis(dt.dtype(output_type))
 
         udf_node_fields["output_dtype"] = output_type
         udf_node_fields["output_shape"] = rlz.shape_like("args")
@@ -389,7 +389,7 @@ RETURNS {return_type}
                 name=name,
                 type="ANY TYPE"
                 if type_ == "ANY TYPE"
-                else dtype_to_bigquery(dt.dtype(type_)),
+                else BigQueryType.from_ibis(dt.dtype(type_)),
             )
             for name, type_ in params.items()
         )
