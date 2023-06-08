@@ -106,7 +106,7 @@ ipython = ">=8.7.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 pre-commit = ">=3.1,<4"
 pydeps = ">=1.12.7,<2"
-ruff = "0.0.271"
+ruff = "0.0.272"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<24"
