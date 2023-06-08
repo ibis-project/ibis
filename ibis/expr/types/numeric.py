@@ -131,7 +131,7 @@ class NumericValue(Value):
         return ops.Round(self, digits).to_expr()
 
     def log(self, base: NumericValue | None = None) -> NumericValue:
-        """Return the logarithm using a specified base.
+        r"""Compute $\log_{\texttt{base}}\left(\texttt{self}\right)$.
 
         Parameters
         ----------

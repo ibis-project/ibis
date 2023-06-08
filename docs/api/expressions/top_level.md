@@ -2,29 +2,27 @@
 
 These methods and objects are available directly in the `ibis` module.
 
-## `NA`
-
-`NA` is the null scalar.
-
 ::: ibis.and_
 ::: ibis.array
 ::: ibis.asc
 ::: ibis.case
-::: ibis.coalesce
+::: ibis.expr.types.Value.coalesce
 ::: ibis.cumulative_window
 ::: ibis.date
 ::: ibis.deferred
 ::: ibis.desc
 ::: ibis.difference
 ::: ibis.get_backend
-::: ibis.greatest
+::: ibis.expr.types.Value.greatest
 ::: ibis.ifelse
 ::: ibis.intersect
 ::: ibis.interval
-::: ibis.least
+::: ibis.expr.types.Value.least
 ::: ibis.literal
 ::: ibis.map
-::: ibis.negate
+::: ibis.memtable
+::: ibis.expr.types.numeric.NumericValue.negate
+::: ibis.NA
 ::: ibis.now
 ::: ibis.null
 ::: ibis.or_
@@ -34,6 +32,8 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.random
 ::: ibis.range_window
 ::: ibis.read_csv
+::: ibis.read_delta
+::: ibis.read_json
 ::: ibis.read_parquet
 ::: ibis.row_number
 ::: ibis.schema
