@@ -97,6 +97,10 @@ trino = { version = ">=0.321,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
 black = ">=22.1.0,<24"
+codespell = { version = ">=2.2.4,<3", extras = [
+  "hard-encoding-detection",
+  "toml",
+] }
 google-cloud-storage = ">=2.7.0,<3"
 ipython = ">=8.7.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
@@ -362,6 +366,13 @@ show_dot = false
 no_dot = true
 show_deps = true
 
+[tool.codespell]
+# notebooks are skipped because there's no straightforward way to ignore base64
+# encoded strings
+skip = "*.lock,.direnv,.git,*.ipynb"
+ignore-regex = '\b(DOUB|i[if]f|I[IF]F)\b'
+builtin = "clear,rare,names"
+
 [tool.ruff]
 line-length = 88
 select = [
@@ -426,7 +437,7 @@ ignore = [
   "SIM108",  # convert everything to ternary operator
   "SIM114",  # combine `if` branches using logical `or` operator
   "SIM116",  # dictionary instead of `if` statements
-  "SIM117",  # nested withs
+  "SIM117",  # nested with statements
   "SIM118",  # remove .keys() calls from dictionaries
   "SIM300",  # yoda conditions
   "UP037",   # remove quotes from type annotation

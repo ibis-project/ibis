@@ -168,7 +168,7 @@ class FunctionContext {
   void Free(int64_t byte_size);
 
   /// Methods for maintaining state across UDF/UDA function calls. SetFunctionState() can
-  /// be used to store a pointer that can then be retreived via GetFunctionState(). If
+  /// be used to store a pointer that can then be retrieved via GetFunctionState(). If
   /// GetFunctionState() is called when no pointer is set, it will return
   /// NULL. SetFunctionState() does not take ownership of 'ptr'; it is up to the UDF/UDA
   /// to clean up any function state if necessary.
@@ -599,7 +599,7 @@ struct StringVal : public AnyVal {
 
 struct DecimalVal : public impala_udf::AnyVal {
   /// Decimal data is stored as an unscaled integer value. For example, the decimal 1.00
-  /// (precison 3, scale 2) is stored as 100. The byte size necessary to store the decimal
+  /// (precision 3, scale 2) is stored as 100. The byte size necessary to store the decimal
   /// depends on the precision, which determines which field of the union should be used to
   /// store and manipulate the unscaled value.
   //

@@ -343,8 +343,8 @@ def test_add_predicate_coalesce(table):
     assert_equal(result, expected)
 
     # 59, if we are not careful, we can obtain broken refs
-    interm = table[pred1]
-    result = interm.filter([interm['b'] > 0])
+    subset = table[pred1]
+    result = subset.filter([subset['b'] > 0])
     assert_equal(result, expected)
 
 

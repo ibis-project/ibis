@@ -1,7 +1,7 @@
 # How to `ffill` and `bfill` using Window Functions
 
 If you have gaps in your data and need to fill them in using a simple forward fill
-(given an order, null values are replaced by the value preceeding) or backward fill
+(given an order, null values are replaced by the value preceding) or backward fill
 (given an order, null values are replaced by the value following), then you can do this in Ibis:
 
 === "`ffill`"

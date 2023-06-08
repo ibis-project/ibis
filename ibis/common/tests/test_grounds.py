@@ -203,7 +203,7 @@ def test_immutable():
 
 
 def test_annotable():
-    class InBetween(BetweenSimple):
+    class Between(BetweenSimple):
         pass
 
     argnames = ('value', 'lower', 'upper')
@@ -221,12 +221,12 @@ def test_annotable():
     assert not hasattr(obj, "__dict__")
 
     # test that a child without additional arguments doesn't have __dict__
-    obj = InBetween(10, lower=2)
+    obj = Between(10, lower=2)
     assert obj.__slots__ == tuple()
     assert not hasattr(obj, "__dict__")
     assert obj == obj.copy()
     assert obj == copy.copy(obj)
-    obj2 = InBetween(10, lower=8)
+    obj2 = Between(10, lower=8)
     assert obj.copy(lower=8) == obj2
 
 

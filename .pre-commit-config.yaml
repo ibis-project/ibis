@@ -29,6 +29,12 @@ repos:
     hooks:
       - id: nbstripout
         exclude: .+/rendered/.+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.4
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
   - repo: local
     hooks:
       - id: ruff

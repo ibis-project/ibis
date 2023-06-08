@@ -770,10 +770,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        import sqlalchemy_views as sav
+        from sqlalchemy_views import CreateView
 
         source = self.compile(obj)
-        view = sav.CreateView(
+        view = CreateView(
             sa.Table(
                 name,
                 sa.MetaData(),
@@ -790,9 +790,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def drop_view(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
-        import sqlalchemy_views as sav
+        from sqlalchemy_views import DropView
 
-        view = sav.DropView(
+        view = DropView(
             sa.Table(
                 name,
                 sa.MetaData(),

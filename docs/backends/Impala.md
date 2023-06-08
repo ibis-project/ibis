@@ -262,7 +262,7 @@ below).
 ### Creating an empty table
 
 To create an empty table, you must declare an Ibis schema that will be
-translated to the appopriate Impala schema and data types.
+translated to the appropriate Impala schema and data types.
 
 As Ibis types are simplified compared with Impala types, this may expand
 in the future to include a more fine-grained schema declaration.
@@ -1338,7 +1338,7 @@ connection semantics are similar to the other access methods for working with
 secure clusters.
 
 Specifically, after authenticating yourself against Kerberos (e.g., by issuing
-the appropriate `kinit` commmand), simply pass `auth_mechanism='GSSAPI'` or
+the appropriate `kinit` command), simply pass `auth_mechanism='GSSAPI'` or
 `auth_mechanism='LDAP'` (and set `kerberos_service_name` if necessary along
 with `user` and `password` if necessary) to the
 `ibis.impala_connect(...)` method when instantiating an `ImpalaConnection`.
@@ -1355,7 +1355,7 @@ when connecting to a Kerberized cluster. Because some Ibis commands create HDFS
 directories as well as new Impala databases and/or tables, your user will
 require the necessary privileges.
 
-## Default Configuation Values for CDH Components
+## Default Configuration Values for CDH Components
 
 Cloudera CDH ships with HDFS, Impala, Hive and many other components.
 Sometimes it's not obvious what default configuration values these tools are
