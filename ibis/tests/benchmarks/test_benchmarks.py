@@ -4,8 +4,6 @@ import inspect
 import itertools
 import os
 import string
-import tempfile
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -712,7 +710,7 @@ def test_repr_join(benchmark, customers, orders, orders_items, products):
 
 
 @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no_overwrite"])
-def test_insert_duckdb(benchmark, overwrite):
+def test_insert_duckdb(benchmark, overwrite, tmp_path):
     pytest.importorskip("duckdb")
     pytest.importorskip("duckdb_engine")
 
@@ -721,10 +719,9 @@ def test_insert_duckdb(benchmark, overwrite):
     schema = ibis.schema(dict(a="int64", b="int64", c="int64"))
     t = ibis.memtable(dict.fromkeys(list("abc"), range(n_rows)), schema=schema)
 
-    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
-        con = ibis.duckdb.connect(Path(d, "test_insert.ddb"))
-        con.create_table(table_name, schema=schema)
-        benchmark(con.insert, table_name, t, overwrite=overwrite)
+    con = ibis.duckdb.connect(tmp_path / "test_insert.ddb")
+    con.create_table(table_name, schema=schema)
+    benchmark(con.insert, table_name, t, overwrite=overwrite)
 
 
 def test_snowflake_medium_sized_to_pandas(benchmark):
