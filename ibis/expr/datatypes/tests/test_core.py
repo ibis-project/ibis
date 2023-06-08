@@ -68,7 +68,6 @@ def test_dtype(spec, expected):
         (dt.Date, dt.date),
         (dt.Time, dt.time),
         (dt.Timestamp, dt.timestamp),
-        (dt.Interval, dt.interval),
         (dt.Decimal, dt.decimal),
     ],
 )
@@ -94,7 +93,6 @@ class FooStruct:
     o: dt.timestamp
     oa: dt.Timestamp('UTC')
     ob: dt.Timestamp('UTC', 6)
-    p: dt.interval
     pa: dt.Interval('s')
     q: dt.decimal
     qa: dt.Decimal(12, 2)
@@ -120,7 +118,6 @@ class BarStruct:
     o: dt.Timestamp
     oa: dt.Timestamp['UTC']  # noqa: F821
     ob: dt.Timestamp['UTC', 6]  # noqa: F821
-    p: dt.Interval
     pa: dt.Interval['s']
     q: dt.Decimal
     qa: dt.Decimal[12, 2]
@@ -147,7 +144,6 @@ baz_struct = dt.Struct(
         'o': dt.timestamp,
         'oa': dt.Timestamp('UTC'),
         'ob': dt.Timestamp('UTC', 6),
-        'p': dt.interval,
         'pa': dt.Interval('s'),
         'q': dt.decimal,
         'qa': dt.Decimal(12, 2),
@@ -233,7 +229,7 @@ py_struct = dt.Struct(
         'f': dt.date,
         'g': dt.time,
         'h': dt.timestamp,
-        'i': dt.interval,
+        'i': dt.Interval('us'),
         'j': dt.decimal,
         'k': dt.Array(dt.int64),
         'l': dt.Map(dt.string, dt.int64),
@@ -277,7 +273,6 @@ class FooDataClass:
 @pytest.mark.parametrize(
     ('hint', 'expected'),
     [
-        (dt.Interval, dt.Interval()),
         (dt.Array[dt.Null], dt.Array(dt.Null())),
         (dt.Map[dt.Null, dt.Null], dt.Map(dt.Null(), dt.Null())),
         (dt.Timestamp['UTC'], dt.Timestamp(timezone='UTC')),
@@ -545,6 +540,7 @@ def get_leaf_classes(op):
         dt.UnsignedInteger,
         dt.Variadic,
         dt.Parametric,
+        dt.Interval,
     },
 )
 def test_is_methods(dtype_class):

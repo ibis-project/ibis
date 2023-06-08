@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from abc import ABC, abstractmethod
 from contextlib import suppress
 from inspect import Parameter
 from typing import (
@@ -23,6 +22,7 @@ from typing_extensions import Annotated, get_args, get_origin
 from ibis.common.collections import FrozenDict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError
+from ibis.common.patterns import Coercible
 from ibis.util import flatten_iterable, is_function, is_iterable
 
 try:
@@ -33,22 +33,6 @@ except ImportError:
 K = TypeVar('K')
 V = TypeVar('V')
 T = TypeVar('T')
-
-
-class Coercible(ABC):
-    """Protocol for defining coercible types.
-
-    Coercible types define a special ``__coerce__`` method that accepts an object
-    with an instance of the type. Used in conjunction with the ``coerced_to`` validator
-    to coerce arguments to a specific type.
-    """
-
-    __slots__ = ()
-
-    @classmethod
-    @abstractmethod
-    def __coerce__(cls, obj):
-        ...
 
 
 class Validator(Callable):

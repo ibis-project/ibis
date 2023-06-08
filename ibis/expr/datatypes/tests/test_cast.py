@@ -37,7 +37,6 @@ def test_implicitly_castable_primitives(source, target):
         (dt.uint64, dt.uint16),
         (dt.Decimal(12, 2), dt.int32),
         (dt.timestamp, dt.boolean),
-        (dt.boolean, dt.interval),
         (dt.Interval('s'), dt.Interval('ns')),
     ],
 )

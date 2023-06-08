@@ -26,7 +26,6 @@ import ibis.expr.datatypes as dt
         ('date', dt.date),
         ('time', dt.time),
         ('timestamp', dt.timestamp),
-        ('interval', dt.interval),
         ('point', dt.point),
         ('linestring', dt.linestring),
         ('polygon', dt.polygon),

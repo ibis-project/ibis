@@ -15,7 +15,12 @@ import ibis.expr.datatypes as dt
 from ibis.common.collections import frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
-from ibis.common.temporal import normalize_datetime, normalize_timezone
+from ibis.common.temporal import (
+    IntervalUnit,
+    normalize_datetime,
+    normalize_timedelta,
+    normalize_timezone,
+)
 from ibis.expr.datatypes.cast import highest_precedence
 
 
@@ -79,12 +84,20 @@ def infer_timestamp(value: datetime.datetime) -> dt.Timestamp:
 @infer.register(datetime.timedelta)
 def infer_interval(value: datetime.timedelta) -> dt.Interval:
     # datetime.timedelta only stores days, seconds, and microseconds internally
-    unit_fields = ['days', 'seconds', 'microseconds']
-    time_units = [field for field in unit_fields if getattr(value, field) > 0]
-
-    # we can attempt a conversion in the simplest case, i.e. there is exactly
-    # one unit (e.g. datime.timedelta(days=2) vs. datetime.timedelta(days=2, seconds=3)
-    return dt.Interval(time_units[0]) if len(time_units) == 1 else dt.interval
+    if value.days:
+        if value.seconds or value.microseconds:
+            raise ValueError("Unable to infer interval type from mixed units")
+        else:
+            return dt.Interval(IntervalUnit.DAY)
+    elif value.seconds:
+        if value.microseconds:
+            return dt.Interval(IntervalUnit.MICROSECOND)
+        else:
+            return dt.Interval(IntervalUnit.SECOND)
+    elif value.microseconds:
+        return dt.Interval(IntervalUnit.MICROSECOND)
+    else:
+        raise ValueError("Unable to infer interval type from zero value")
 
 
 @infer.register(str)
@@ -158,14 +171,9 @@ def infer_pandas_timestamp(value):
 @infer.register("pandas.Timedelta")
 def infer_interval_pandas(value) -> dt.Interval:
     # pandas Timedelta has more granularity
-    unit_fields = value.components._fields
-    time_units = [
-        field for field in unit_fields if getattr(value.components, field) > 0
-    ]
-
-    # we can attempt a conversion in the simplest case, i.e. there is exactly
-    # one unit (e.g. pd.Timedelta('2 days') vs. pd.Timedelta('2 days 3 hours')
-    return dt.Interval(time_units[0]) if len(time_units) == 1 else dt.interval
+    units = {'D': 'd', 'H': 'h', 'T': 'm', 'S': 's', 'L': 'ms', 'U': 'us', 'N': 'ns'}
+    unit = units[value.resolution_string]
+    return dt.Interval(unit)
 
 
 @infer.register("numpy.ndarray")
@@ -281,6 +289,8 @@ def normalize(typ, value):
             return value.replace(tzinfo=tzinfo)
         else:
             return value.astimezone(tzinfo)
+    elif dtype.is_interval():
+        return normalize_timedelta(value, dtype.unit)
     else:
         return value
 
