@@ -141,7 +141,7 @@ class DataType(Concrete, Coercible):
                 elif issubclass(typ, pydatetime.time):
                     return Time(nullable=nullable)
                 elif issubclass(typ, pydatetime.timedelta):
-                    return Interval(nullable=nullable)
+                    return Interval(unit='us', nullable=nullable)
                 elif issubclass(typ, pyuuid.UUID):
                     return UUID(nullable=nullable)
                 elif annots := get_type_hints(typ):
@@ -715,7 +715,7 @@ class Decimal(Numeric, Parametric):
 class Interval(Parametric):
     """Interval values."""
 
-    unit: IntervalUnit = 's'
+    unit: IntervalUnit
     """The time unit of the interval."""
 
     scalar = "IntervalScalar"
@@ -947,7 +947,6 @@ binary = Binary()
 date = Date()
 time = Time()
 timestamp = Timestamp()
-interval = Interval()
 # geo spatial data type
 geometry = GeoSpatial(geotype="geometry")
 geography = GeoSpatial(geotype="geography")
@@ -989,7 +988,6 @@ public(
     time=time,
     timestamp=timestamp,
     dtype=dtype,
-    interval=interval,
     geometry=geometry,
     geography=geography,
     point=point,

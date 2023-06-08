@@ -93,7 +93,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
     )
 
     primitive = (
-        spaceless_string("interval").result(dt.Interval())
+        spaceless_string("interval").result(dt.Interval(unit='s'))
         | spaceless_string("bigint").result(dt.int64)
         | spaceless_string("boolean").result(dt.boolean)
         | spaceless_string("varbinary").result(dt.binary)

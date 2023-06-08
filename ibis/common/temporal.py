@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import numbers
 from abc import ABCMeta
@@ -9,7 +11,7 @@ import pytz
 from public import public
 
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.common.validators import Coercible
+from ibis.common.patterns import Coercible
 
 
 class ABCEnumMeta(EnumMeta, ABCMeta):
@@ -19,6 +21,9 @@ class ABCEnumMeta(EnumMeta, ABCMeta):
 class Unit(Coercible, Enum, metaclass=ABCEnumMeta):
     @classmethod
     def __coerce__(cls, value):
+        if isinstance(value, cls):
+            return value
+
         # first look for aliases
         value = cls.aliases().get(value, value)
 
@@ -112,6 +117,72 @@ class IntervalUnit(TemporalUnit):
     MILLISECOND = "ms"
     MICROSECOND = "us"
     NANOSECOND = "ns"
+
+
+def normalize_timedelta(
+    value: datetime.timedelta | numbers.Real, unit: IntervalUnit
+) -> datetime.timedelta:
+    """Normalize a timedelta value to the given unit.
+
+    Parameters
+    ----------
+    value
+        The value to normalize, either a timedelta or a number.
+    unit
+        The unit to normalize to.
+
+    Returns
+    -------
+    The normalized timedelta value.
+
+    Examples
+    --------
+    >>> from datetime import timedelta
+    >>> normalize_timedelta(1, IntervalUnit.SECOND)
+    1
+    >>> normalize_timedelta(1, IntervalUnit.DAY)
+    1
+    >>> normalize_timedelta(timedelta(days=14), IntervalUnit.WEEK)
+    2
+    >>> normalize_timedelta(timedelta(seconds=3), IntervalUnit.MILLISECOND)
+    3000
+    >>> normalize_timedelta(timedelta(seconds=3), IntervalUnit.MICROSECOND)
+    3000000
+    """
+    if isinstance(value, datetime.timedelta):
+        # datetime.timedelta only stores days, seconds, and microseconds internally
+        total_seconds = value.total_seconds()
+        if unit == IntervalUnit.NANOSECOND:
+            value = total_seconds * 1e9
+        elif unit == IntervalUnit.MICROSECOND:
+            value = total_seconds * 1e6
+        elif unit == IntervalUnit.MILLISECOND:
+            value = total_seconds * 1e3
+        elif unit == IntervalUnit.SECOND:
+            value = total_seconds
+        elif unit == IntervalUnit.MINUTE:
+            value = total_seconds / 60
+        elif unit == IntervalUnit.HOUR:
+            value = total_seconds / 3600
+        elif unit == IntervalUnit.DAY:
+            value = total_seconds / 86400
+        elif unit == IntervalUnit.WEEK:
+            value = total_seconds / 604800
+        elif unit == IntervalUnit.MONTH:
+            raise ValueError("Cannot normalize a timedelta to months")
+        elif unit == IntervalUnit.QUARTER:
+            raise ValueError("Cannot normalize a timedelta to quarters")
+        elif unit == IntervalUnit.YEAR:
+            raise ValueError("Cannot normalize a timedelta to years")
+        else:
+            raise ValueError(f"Unknown unit {unit}")
+    else:
+        value = float(value)
+
+    if not value.is_integer():
+        raise ValueError(f"Normalizing {value} to {unit} would lose precision")
+
+    return int(value)
 
 
 def normalize_timezone(tz):

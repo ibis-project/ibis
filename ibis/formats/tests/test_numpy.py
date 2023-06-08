@@ -131,4 +131,4 @@ def test_dtype_from_numpy_dtype_timedelta():
     if vparse(pytest.importorskip("pyarrow").__version__) < vparse("9"):
         pytest.skip("pyarrow < 9 globally mutates the timedelta64 numpy dtype")
 
-    assert NumpyType.to_ibis(np.dtype(np.timedelta64)) == dt.interval
+    assert NumpyType.to_ibis(np.dtype(np.timedelta64)) == dt.Interval("s")

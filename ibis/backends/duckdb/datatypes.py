@@ -25,7 +25,7 @@ from ibis.common.parsing import (
 def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
     """Parse a DuckDB type into an ibis data type."""
     primitive = (
-        spaceless_string("interval").result(dt.Interval())
+        spaceless_string("interval").result(dt.Interval('us'))
         | spaceless_string("bigint", "int8", "long").result(dt.int64)
         | spaceless_string("boolean", "bool", "logical").result(dt.boolean)
         | spaceless_string("blob", "bytea", "binary", "varbinary").result(dt.binary)

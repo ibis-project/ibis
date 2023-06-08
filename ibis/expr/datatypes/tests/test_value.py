@@ -122,6 +122,25 @@ def test_infer_timestamp_with_tz():
     assert dt.infer(now_utc).timezone == str(pytz.UTC)
 
 
+def test_infer_timedelta():
+    assert dt.infer(timedelta(days=3)) == dt.Interval(unit='D')
+    assert dt.infer(timedelta(hours=5)) == dt.Interval(unit='s')
+    assert dt.infer(timedelta(minutes=7)) == dt.Interval(unit='s')
+    assert dt.infer(timedelta(seconds=9)) == dt.Interval(unit='s')
+    assert dt.infer(timedelta(milliseconds=11)) == dt.Interval(unit='us')
+    assert dt.infer(timedelta(microseconds=13)) == dt.Interval(unit='us')
+
+    msg = "Unable to infer interval type from zero value"
+    with pytest.raises(ValueError, match=msg):
+        dt.infer(timedelta(days=0, seconds=0))
+
+    msg = "Unable to infer interval type from mixed units"
+    with pytest.raises(ValueError, match=msg):
+        dt.infer(timedelta(days=1, hours=2))
+    with pytest.raises(ValueError, match=msg):
+        dt.infer(timedelta(days=1, microseconds=2))
+
+
 # str, pd.Timestamp, datetime, np.datetime64, numbers.Real
 @pytest.mark.parametrize(
     ("value", "expected"),
@@ -176,6 +195,20 @@ def test_normalize_timestamp(value, expected):
 )
 def test_normalize_date(value, expected):
     normalized = dt.normalize(dt.date, value)
+    assert normalized == expected
+
+
+@pytest.mark.parametrize(
+    ("dtype", "value", "expected"),
+    [
+        (dt.Interval("s"), timedelta(seconds=1), 1),
+        (dt.Interval("ms"), timedelta(seconds=1), 1000),
+        (dt.Interval("us"), timedelta(seconds=1), 1000000),
+        (dt.Interval("ns"), timedelta(seconds=1), 1000000000),
+    ],
+)
+def test_normalize_interval(dtype, value, expected):
+    normalized = dt.normalize(dtype, value)
     assert normalized == expected
 
 
@@ -237,8 +270,8 @@ def test_from_numpy_timedelta():
         pytest.skip("pyarrow < 9 globally mutates the timedelta64 numpy dtype")
 
     numpy_dtype = np.dtype(np.timedelta64)
-    assert dt.DataType.from_numpy(numpy_dtype) == dt.interval
-    assert dt.dtype(numpy_dtype) == dt.interval
+    assert dt.DataType.from_numpy(numpy_dtype) == dt.Interval("s")
+    assert dt.dtype(numpy_dtype) == dt.Interval("s")
 
 
 @pytest.mark.parametrize(

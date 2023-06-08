@@ -5,8 +5,13 @@ import pandas as pd
 import pytest
 import pytz
 
-from ibis.common.temporal import IntervalUnit, normalize_datetime, normalize_timezone
-from ibis.common.validators import coerced_to
+from ibis.common.patterns import CoercedTo
+from ibis.common.temporal import (
+    IntervalUnit,
+    normalize_datetime,
+    normalize_timedelta,
+    normalize_timezone,
+)
 
 interval_units = pytest.mark.parametrize(
     ["singular", "plural", "short"],
@@ -37,10 +42,10 @@ def test_interval_units(singular, plural, short):
 @interval_units
 def test_interval_unit_coercions(singular, plural, short):
     u = IntervalUnit[singular.upper()]
-    v = coerced_to(IntervalUnit)
-    assert v(singular) == u
-    assert v(plural) == u
-    assert v(short) == u
+    v = CoercedTo(IntervalUnit)
+    assert v.match(singular, {}) == u
+    assert v.match(plural, {}) == u
+    assert v.match(short, {}) == u
 
 
 @pytest.mark.parametrize(
@@ -56,8 +61,51 @@ def test_interval_unit_coercions(singular, plural, short):
     ],
 )
 def test_interval_unit_aliases(alias, expected):
-    v = coerced_to(IntervalUnit)
-    assert v(alias) == IntervalUnit(expected)
+    v = CoercedTo(IntervalUnit)
+    assert v.match(alias, {}) == IntervalUnit(expected)
+
+
+@pytest.mark.parametrize(
+    ("value", "unit", "expected"),
+    [
+        (1, IntervalUnit.DAY, 1),
+        (1, IntervalUnit.HOUR, 1),
+        (1, IntervalUnit.MINUTE, 1),
+        (1, IntervalUnit.SECOND, 1),
+        (1, IntervalUnit.MILLISECOND, 1),
+        (1, IntervalUnit.MICROSECOND, 1),
+        (timedelta(days=1), IntervalUnit.DAY, 1),
+        (timedelta(hours=1), IntervalUnit.HOUR, 1),
+        (timedelta(minutes=1), IntervalUnit.MINUTE, 1),
+        (timedelta(seconds=1), IntervalUnit.SECOND, 1),
+        (timedelta(milliseconds=1), IntervalUnit.MILLISECOND, 1),
+        (timedelta(microseconds=1), IntervalUnit.MICROSECOND, 1),
+        (timedelta(days=1, milliseconds=100), IntervalUnit.MILLISECOND, 86400100),
+        (timedelta(days=1, milliseconds=21), IntervalUnit.MICROSECOND, 86400021000),
+    ],
+)
+def test_normalize_timedelta(value, unit, expected):
+    assert normalize_timedelta(value, unit) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "unit"),
+    [
+        (timedelta(days=1), IntervalUnit.YEAR),
+        (timedelta(days=1), IntervalUnit.QUARTER),
+        (timedelta(days=1), IntervalUnit.MONTH),
+        (timedelta(days=1), IntervalUnit.WEEK),
+        (timedelta(hours=1), IntervalUnit.DAY),
+        (timedelta(minutes=1), IntervalUnit.HOUR),
+        (timedelta(seconds=1), IntervalUnit.MINUTE),
+        (timedelta(milliseconds=1), IntervalUnit.SECOND),
+        (timedelta(microseconds=1), IntervalUnit.MILLISECOND),
+        (timedelta(days=1, microseconds=100), IntervalUnit.MILLISECOND),
+    ],
+)
+def test_normalize_timedelta_invalid(value, unit):
+    with pytest.raises(ValueError):
+        normalize_timedelta(value, unit)
 
 
 @pytest.mark.parametrize(

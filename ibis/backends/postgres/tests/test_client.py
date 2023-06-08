@@ -188,7 +188,7 @@ def test_create_and_drop_table(con, temp_table, params):
             ("time without time zone", dt.time),
             ("timestamp without time zone", dt.timestamp),
             ("timestamp with time zone", dt.Timestamp("UTC")),
-            ("interval", dt.interval),
+            ("interval", dt.Interval("s")),
             ("numeric", dt.decimal),
             ("numeric(3, 2)", dt.Decimal(3, 2)),
             ("uuid", dt.uuid),
