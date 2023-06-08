@@ -7,7 +7,7 @@ of different analytical execution engines, most of which (but not all) speak
 some dialect of SQL.
 
 Today, Ibis accomplishes this with a lot of help from `sqlalchemy` and `sqlglot`
-to handle differences in dialect, or we interact directly with avalable Python
+to handle differences in dialect, or we interact directly with available Python
 bindings (for instance with the `pandas`, `datafusion`, and `polars` backends).
 
 Ibis goes to <span class="underline">great</span> lengths to generate sane and consistent SQL for those

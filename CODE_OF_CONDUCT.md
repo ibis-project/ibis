@@ -46,5 +46,5 @@ members of the project's leadership.
 
 ## Attribution
 
-Parts of this CoC are adapated from the [Dask code of
+Parts of this CoC are adapted from the [Dask code of
 conduct](https://github.com/dask/governance/blob/main/code-of-conduct.md).

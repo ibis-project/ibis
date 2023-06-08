@@ -621,8 +621,8 @@ def test_delete_udf_db(name, inputs, snapshot):
     snapshot.assert_match(result, "out.sql")
 
 
-@pytest.mark.parametrize("ser", [True, False])
-def test_create_uda(name, inputs, output, ser, snapshot):
+@pytest.mark.parametrize("series", [True, False])
+def test_create_uda(name, inputs, output, series, snapshot):
     func = api.wrap_uda(
         '/foo/bar.so',
         inputs,
@@ -631,7 +631,7 @@ def test_create_uda(name, inputs, output, ser, snapshot):
         init_fn='Init',
         merge_fn='Merge',
         finalize_fn='Finalize',
-        serialize_fn='Serialize' if ser else None,
+        serialize_fn='Serialize' if series else None,
     )
     stmt = ddl.CreateUDA(func, name=name, database='bar')
     result = stmt.compile()

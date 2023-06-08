@@ -42,6 +42,6 @@ endfunction(COMPILE_TO_IR)
 add_library(udfsample SHARED udf-sample.cc)
 add_library(udasample SHARED uda-sample.cc)
 
-# Custom targest to cross compile UDA/UDF to ir
+# Custom targets to cross compile UDA/UDF to ir
 COMPILE_TO_IR(udf-sample.cc)
 COMPILE_TO_IR(uda-sample.cc)

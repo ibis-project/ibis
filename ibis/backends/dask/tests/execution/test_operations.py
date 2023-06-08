@@ -776,12 +776,12 @@ def test_where_series(t, df, left_f, right_f):
         col_expr > col_expr.mean(), left_f(col_expr), right_f(col_expr)
     ).execute()
 
-    ser = df['plain_int64'].compute()
-    cond = ser > ser.mean()
-    left = left_f(ser)
+    series = df['plain_int64'].compute()
+    cond = series > series.mean()
+    left = left_f(series)
     if not isinstance(left, pd.Series):
         left = pd.Series(np.repeat(left, len(cond)), name=cond.name)
-    expected = left.where(cond, right_f(ser)).astype(result.dtype)
+    expected = left.where(cond, right_f(series)).astype(result.dtype)
 
     tm.assert_series_equal(result, expected, check_index=False, check_names=False)
 
@@ -804,8 +804,8 @@ def test_where_long(batting, batting_df):
     col_expr = batting['AB']
     result = ibis.where(col_expr > col_expr.mean(), col_expr, 0.0).compile()
 
-    ser = batting_df['AB']
-    expected = ser.where(ser > ser.mean(), other=0.0)
+    series = batting_df['AB']
+    expected = series.where(series > series.mean(), other=0.0)
 
     tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)
 

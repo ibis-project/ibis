@@ -76,18 +76,18 @@ def test_dtype_to_pandas(pandas_type, ibis_type):
     ids=str,
 )
 def test_dtype_from_pandas_arrow_dtype(pandas_type, ibis_type):
-    ser = pd.Series([], dtype=f"{pandas_type}[pyarrow]")
-    assert dtype_from_pandas(ser.dtype) == ibis_type
+    series = pd.Series([], dtype=f"{pandas_type}[pyarrow]")
+    assert dtype_from_pandas(series.dtype) == ibis_type
 
 
 def test_dtype_from_pandas_arrow_string_dtype():
-    ser = pd.Series([], dtype="string[pyarrow]")
-    assert dtype_from_pandas(ser.dtype) == dt.String()
+    series = pd.Series([], dtype="string[pyarrow]")
+    assert dtype_from_pandas(series.dtype) == dt.String()
 
 
 def test_dtype_from_pandas_arrow_list_dtype():
-    ser = pd.Series([], dtype=pd.ArrowDtype(pa.list_(pa.string())))
-    assert dtype_from_pandas(ser.dtype) == dt.Array(dt.string)
+    series = pd.Series([], dtype=pd.ArrowDtype(pa.list_(pa.string())))
+    assert dtype_from_pandas(series.dtype) == dt.Array(dt.string)
 
 
 @pytest.mark.parametrize(

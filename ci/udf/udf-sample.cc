@@ -120,7 +120,7 @@ void ReturnConstantArgPrepare(
   }
 }
 
-// Retreives and returns the shared state set in the prepare function
+// Retrieves and returns the shared state set in the prepare function
 IntVal ReturnConstantArg(FunctionContext* context, const IntVal& const_val) {
   IntVal* state = reinterpret_cast<IntVal*>(
       context->GetFunctionState(FunctionContext::THREAD_LOCAL));
@@ -131,7 +131,7 @@ IntVal ReturnConstantArg(FunctionContext* context, const IntVal& const_val) {
 void ReturnConstantArgClose(
     FunctionContext* context, FunctionContext::FunctionStateScope scope) {
   if (scope == FunctionContext::THREAD_LOCAL) {
-    // Retreive and deallocate the shared state
+    // Retrieve and deallocate the shared state
     void* state = context->GetFunctionState(scope);
     context->Free(reinterpret_cast<uint8_t*>(state));
     context->SetFunctionState(scope, NULL);

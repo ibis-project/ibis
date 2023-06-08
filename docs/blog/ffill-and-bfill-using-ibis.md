@@ -5,7 +5,7 @@
 Suppose you have a table of data mapping events and dates to values, and that this data contains gaps in values.
 
 Suppose you want to forward fill these gaps such that, one-by-one,
-if a value is null, it is replaced by the non-null value preceeding.
+if a value is null, it is replaced by the non-null value preceding.
 
 For example, you might be measuring the total value of an account over time.
 Saving the same value until that value changes is an inefficient use of space,
