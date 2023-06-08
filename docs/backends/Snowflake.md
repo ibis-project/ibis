@@ -63,6 +63,34 @@ passing a properly formatted Snowflake connection URL to `ibis.connect`
 con = ibis.connect(f"snowflake://{user}:{password}@{account}/{database}")
 ```
 
+### Authenticating with SSO
+
+Ibis supports connecting to SSO-enabled Snowflake warehouses using the `authenticator` parameter.
+
+You can use it in the explicit-parameters-style or in the URL-style connection
+APIs. All values of `authenticator` are supported.
+
+#### Explicit
+
+```python
+con = ibis.snowflake.connect(
+    user="user",
+    account="safpqpq-sq55555",
+    database="my_database/my_schema",
+    warehouse="my_warehouse",
+    authenticator="externalbrowser",
+)
+```
+
+#### URL
+
+```python
+con = ibis.connect(
+    f"snowflake://{user}@{account}/{database}?warehouse={warehouse}",
+    authenticator="externalbrowser",
+)
+```
+
 ### Looking up your Snowflake organization ID and user ID
 
 A [Snowflake account
