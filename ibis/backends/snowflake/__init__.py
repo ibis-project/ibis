@@ -137,9 +137,10 @@ $$ {defn["source"]} $$"""
     def do_connect(
         self,
         user: str,
-        password: str,
         account: str,
         database: str,
+        password: str | None = None,
+        authenticator: str | None = None,
         connect_args: Mapping[str, Any] | None = None,
         **kwargs: Any,
     ):
@@ -149,8 +150,6 @@ $$ {defn["source"]} $$"""
         ----------
         user
             Username
-        password
-            Password
         account
             A Snowflake organization ID and a Snowflake user ID, separated by a hyphen.
             Note that a Snowflake user ID is a separate identifier from a username.
@@ -158,6 +157,17 @@ $$ {defn["source"]} $$"""
         database
             A Snowflake database and a Snowflake schema, separated by a `/`.
             See https://ibis-project.org/backends/Snowflake/ for details
+        password
+            Password. If empty or `None` then `authenticator` must be passed.
+        authenticator
+            String indicating authentication method. See
+            https://docs.snowflake.com/en/developer-guide/python-connector/python-connector-example#connecting-with-oauth
+            for details.
+
+            Note that the authentication flow **will not take place** until a
+            database connection is made. This means that
+            `ibis.snowflake.connect(...)` can succeed, while subsequent API
+            calls fail if the authentication fails for any reason.
         connect_args
             Additional arguments passed to the SQLAlchemy engine creation call.
         kwargs:
@@ -171,10 +181,16 @@ $$ {defn["source"]} $$"""
                 "Schema must be non-None. Pass the schema as part of the "
                 f"database e.g., {dbparams['database']}/my_schema"
             )
-        url = URL(account=account, user=user, password=password, **dbparams, **kwargs)
+
+        # snowflake-connector-python does not handle `None` for password, but
+        # accepts the empty string
+        url = URL(
+            account=account, user=user, password=password or "", **dbparams, **kwargs
+        )
         self.database_name = dbparams["database"]
         if connect_args is None:
             connect_args = {}
+
         connect_args.setdefault(
             "session_parameters",
             {
@@ -183,6 +199,9 @@ $$ {defn["source"]} $$"""
                 "STRICT_JSON_OUTPUT": "TRUE",
             },
         )
+        if authenticator is not None:
+            connect_args.setdefault("authenticator", authenticator)
+
         engine = sa.create_engine(
             url, connect_args=connect_args, poolclass=sa.pool.StaticPool
         )
