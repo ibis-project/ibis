@@ -168,6 +168,15 @@ infer_schema = sch.infer
 
 
 NA = null()
+"""The NULL scalar.
+
+Examples
+--------
+>>> import ibis
+>>> my_null = ibis.NA
+>>> my_null.isnull()
+True
+"""
 
 T = TypeVar("T")
 
@@ -236,6 +245,11 @@ def schema(
     types
         Field types. Mutually exclusive with `pairs`.
 
+    Returns
+    -------
+    Schema
+        An ibis schema
+
     Examples
     --------
     >>> from ibis import schema, Schema
@@ -246,11 +260,6 @@ def schema(
     ...             types=['string', 'int64', 'boolean'])
     >>> sc = schema(dict(foo="string"))
     >>> sc = schema(Schema(dict(foo="string")))  # no-op
-
-    Returns
-    -------
-    Schema
-        An ibis schema
     """
     if pairs is not None:
         return sch.schema(pairs)
@@ -329,7 +338,6 @@ def memtable(
 
         Do not depend on the underlying storage type (e.g., pyarrow.Table), it's subject
         to change across non-major releases.
-
     columns
         Optional [`Iterable`][typing.Iterable] of [`str`][str] column names.
     schema
@@ -824,7 +832,11 @@ def row_number() -> ir.IntegerColumn:
     return ops.RowNumber().to_expr()
 
 
-def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
+def read_csv(
+    sources: str | Path | Sequence[str | Path],
+    table_name: str | None = None,
+    **kwargs: Any,
+) -> ir.Table:
     """Lazily load a CSV or set of CSVs.
 
     This function delegates to the `read_csv` method on the current default
@@ -834,6 +846,8 @@ def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Ta
     ----------
     sources
         A filesystem path or URL or list of same.  Supports CSV and TSV files.
+    table_name
+        A name to refer to the table.  If not provided, a name will be generated.
     kwargs
         Backend-specific keyword arguments for the file type. For the DuckDB
         backend used by default, please refer to:
@@ -848,16 +862,20 @@ def read_csv(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Ta
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.read_csv("path/to/data.csv")  # doctest: +SKIP
+    >>> t = ibis.read_csv("path/to/data.csv", table_name="my_csv_table")  # doctest: +SKIP
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_csv(sources, **kwargs)
+    return con.read_csv(sources, table_name=table_name, **kwargs)
 
 
 @experimental
-def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
+def read_json(
+    sources: str | Path | Sequence[str | Path],
+    table_name: str | None = None,
+    **kwargs: Any,
+) -> ir.Table:
     """Lazily load newline-delimited JSON data.
 
     This function delegates to the `read_json` method on the current default
@@ -867,6 +885,8 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
     ----------
     sources
         A filesystem path or URL or list of same.
+    table_name
+        A name to refer to the table.  If not provided, a name will be generated.
     kwargs
         Backend-specific keyword arguments for the file type. See
         https://duckdb.org/docs/extensions/json.html for details.
@@ -902,10 +922,14 @@ def read_json(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.T
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_json(sources, **kwargs)
+    return con.read_json(sources, table_name=table_name, **kwargs)
 
 
-def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> ir.Table:
+def read_parquet(
+    sources: str | Path | Sequence[str | Path],
+    table_name: str | None = None,
+    **kwargs: Any,
+) -> ir.Table:
     """Lazily load a parquet file or set of parquet files.
 
     This function delegates to the `read_parquet` method on the current default
@@ -915,6 +939,8 @@ def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> i
     ----------
     sources
         A filesystem path or URL or list of same.
+    table_name
+        A name to refer to the table.  If not provided, a name will be generated.
     kwargs
         Backend-specific keyword arguments for the file type. For the DuckDB
         backend used by default, please refer to:
@@ -929,21 +955,25 @@ def read_parquet(sources: str | Path | Sequence[str | Path], **kwargs: Any) -> i
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.read_parquet("path/to/data.parquet")  # doctest: +SKIP
+    >>> t = ibis.read_parquet("path/to/data.parquet", table_name="my_parquet_table")  # doctest: +SKIP
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_parquet(sources, **kwargs)
+    return con.read_parquet(sources, table_name=table_name, **kwargs)
 
 
-def read_delta(source: str | Path, **kwargs: Any) -> ir.Table:
+def read_delta(
+    source: str | Path, table_name: str | None = None, **kwargs: Any
+) -> ir.Table:
     """Lazily load a Delta Lake table.
 
     Parameters
     ----------
     source
         A filesystem path or URL.
+    table_name
+        A name to refer to the table.  If not provided, a name will be generated.
     kwargs
         Backend-specific keyword arguments for the file type.
 
@@ -955,12 +985,12 @@ def read_delta(source: str | Path, **kwargs: Any) -> ir.Table:
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.read_delta("path/to/delta")  # doctest: +SKIP
+    >>> t = ibis.read_delta("path/to/delta", table_name="my_table")  # doctest: +SKIP
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_delta(source, **kwargs)
+    return con.read_delta(source, table_name=table_name, **kwargs)
 
 
 def set_backend(backend: str | BaseBackend) -> None:
@@ -1274,18 +1304,181 @@ def trailing_range_window(preceding, order_by, group_by=None):
     )
 
 
-@functools.wraps(ir.Table.union)
 def union(table: ir.Table, *rest: ir.Table, distinct: bool = False):
+    """Compute the set union of multiple table expressions.
+
+    The input tables must have identical schemas.
+
+    Parameters
+    ----------
+    table
+        A table expression
+    *rest
+        Additional table expressions
+    distinct
+        Only return distinct rows
+
+    Returns
+    -------
+    Table
+        A new table containing the union of all input tables.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t1 = ibis.memtable({"a": [1, 2]})
+    >>> t1
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     2 │
+    └───────┘
+    >>> t2 = ibis.memtable({"a": [2, 3]})
+    >>> t2
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     2 │
+    │     3 │
+    └───────┘
+    >>> ibis.union(t1, t2)  # union all by default
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     2 │
+    │     2 │
+    │     3 │
+    └───────┘
+    >>> ibis.union(t1, t2, distinct=True).order_by("a")
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     2 │
+    │     3 │
+    └───────┘
+    """
     return table.union(*rest, distinct=distinct) if rest else table
 
 
-@functools.wraps(ir.Table.intersect)
 def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True):
+    """Compute the set intersection of multiple table expressions.
+
+    The input tables must have identical schemas.
+
+    Parameters
+    ----------
+    table
+        A table expression
+    *rest
+        Additional table expressions
+    distinct
+        Only return distinct rows
+
+    Returns
+    -------
+    Table
+        A new table containing the intersection of all input tables.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t1 = ibis.memtable({"a": [1, 2]})
+    >>> t1
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     2 │
+    └───────┘
+    >>> t2 = ibis.memtable({"a": [2, 3]})
+    >>> t2
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     2 │
+    │     3 │
+    └───────┘
+    >>> ibis.intersect(t1, t2)
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     2 │
+    └───────┘
+    """
     return table.intersect(*rest, distinct=distinct) if rest else table
 
 
-@functools.wraps(ir.Table.difference)
 def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True):
+    """Compute the set difference of multiple table expressions.
+
+    The input tables must have identical schemas.
+
+    Parameters
+    ----------
+    table:
+        A table expression
+    *rest:
+        Additional table expressions
+    distinct
+        Only diff distinct rows not occurring in the calling table
+
+    Returns
+    -------
+    Table
+        The rows present in `self` that are not present in `tables`.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t1 = ibis.memtable({"a": [1, 2]})
+    >>> t1
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    │     2 │
+    └───────┘
+    >>> t2 = ibis.memtable({"a": [2, 3]})
+    >>> t2
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     2 │
+    │     3 │
+    └───────┘
+    >>> ibis.difference(t1, t2)
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     1 │
+    └───────┘
+    """
     return table.difference(*rest, distinct=distinct) if rest else table
 
 
@@ -1345,8 +1538,70 @@ geo_y = _deferred(ir.GeoSpatialValue.y)
 geo_y_max = _deferred(ir.GeoSpatialValue.y_max)
 geo_y_min = _deferred(ir.GeoSpatialValue.y_min)
 geo_unary_union = _deferred(ir.GeoSpatialColumn.unary_union)
+ifelse = _deferred(ir.BooleanValue.ifelse)
+"""Construct a ternary conditional expression.
 
-where = ifelse = _deferred(ir.BooleanValue.ifelse)
+Parameters
+----------
+true_expr : ir.Value
+    Expression to return if `self` evaluates to `True`
+false_expr : ir.Value
+    Expression to return if `self` evaluates to `False` or `NULL`
+
+Returns
+-------
+Value : ir.Value
+    The value of `true_expr` if `arg` is `True` else `false_expr`
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> t = ibis.memtable({"is_person": [True, False, True, None]})
+>>> ibis.ifelse(t.is_person, "yes", "no")
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Where(is_person, 'yes', 'no') ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ string                        │
+├───────────────────────────────┤
+│ yes                           │
+│ no                            │
+│ yes                           │
+│ no                            │
+└───────────────────────────────┘
+"""
+where = _deferred(ir.BooleanValue.ifelse)
+"""Construct a ternary conditional expression.
+
+Parameters
+----------
+true_expr : ir.Value
+    Expression to return if `self` evaluates to `True`
+false_expr : ir.Value
+    Expression to return if `self` evaluates to `False` or `NULL`
+
+Returns
+-------
+Value : ir.Value
+    The value of `true_expr` if `arg` is `True` else `false_expr`
+
+Examples
+--------
+>>> import ibis
+>>> ibis.options.interactive = True
+>>> t = ibis.memtable({"is_person": [True, False, True, None]})
+>>> ibis.where(t.is_person, "yes", "no")
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Where(is_person, 'yes', 'no') ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ string                        │
+├───────────────────────────────┤
+│ yes                           │
+│ no                            │
+│ yes                           │
+│ no                            │
+└───────────────────────────────┘
+"""
 coalesce = _deferred(ir.Value.coalesce)
 greatest = _deferred(ir.Value.greatest)
 least = _deferred(ir.Value.least)
