@@ -149,6 +149,21 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @staticmethod
     @functools.lru_cache(maxsize=None)
     def connect(data_directory: Path) -> BaseBackend:
+        if int(os.environ.get("IBIS_USE_SNOWPARK", "0")):
+            sp = pytest.importorskip("snowflake.snowpark")
+
+            return ibis.snowflake.from_snowpark(
+                sp.Session.builder.configs(
+                    dict(
+                        user=os.environ["SNOWFLAKE_USER"],
+                        account=os.environ["SNOWFLAKE_ACCOUNT"],
+                        password=os.environ["SNOWFLAKE_PASSWORD"],
+                        warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
+                        database=os.environ["SNOWFLAKE_DATABASE"],
+                        schema=os.environ["SNOWFLAKE_SCHEMA"],
+                    )
+                ).create()
+            )
         return ibis.connect(_get_url())
 
 

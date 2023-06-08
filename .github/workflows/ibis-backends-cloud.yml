@@ -39,6 +39,7 @@ jobs:
             backend:
               name: snowflake
               title: Snowflake + Snowpark
+              snowpark: 1
               deps:
                 - "snowflake-snowpark-python"
                 - "--optional"
@@ -48,6 +49,7 @@ jobs:
             backend:
               name: snowflake
               title: Snowflake
+              snowpark: 0
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -100,6 +102,7 @@ jobs:
             echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}"
             echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}_python${pyversion//./}"
             echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}"
+            echo "IBIS_USE_SNOWPARK=${{ matrix.backend.snowpark }}"
           } >> "$GITHUB_ENV"
         env:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
