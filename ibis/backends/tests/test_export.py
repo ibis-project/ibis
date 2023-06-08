@@ -396,3 +396,19 @@ def test_arrow_timestamp_with_time_zone(alltypes):
 
     (batch,) = t.to_pyarrow_batches()
     assert batch.schema.types == expected
+
+
+@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="attempted conversion from decimal to double",
+)
+@pytest.mark.notimpl(
+    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
+)
+def test_dataframe_protocol(alltypes):
+    pytest.importorskip("pyarrow", minversion="12")
+    output = alltypes.__dataframe__()
+    assert list(output.column_names()) == alltypes.columns
+    assert alltypes.count().execute() == output.num_rows()
