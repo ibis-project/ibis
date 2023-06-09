@@ -33,6 +33,7 @@ from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
     import pandas as pd
+    import snowflake.snowpark as sp
 
     import ibis.expr.schema as sch
 
@@ -269,7 +270,7 @@ $$ {defn["source"]} $$"""
         self._default_schema = dbparams["schema"]
 
     @classmethod
-    def from_snowpark(cls, session) -> Backend:
+    def from_snowpark(cls, session: sp.Session) -> Backend:
         """Create an Ibis Snowflake backend from a Snowpark session.
 
         Parameters
