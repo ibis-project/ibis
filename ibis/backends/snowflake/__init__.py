@@ -252,7 +252,7 @@ $$ {defn["source"]} $$"""
                         f"Unable to create map UDFs, some functionality will not work: {e}"
                     )
 
-        eng = super().do_connect(engine)
+        super().do_connect(engine)
 
         def normalize_name(name):
             if name is None:
@@ -267,7 +267,6 @@ $$ {defn["source"]} $$"""
         self.con.dialect.normalize_name = normalize_name
         self.database_name = self._default_database = dbparams["database"]
         self._default_schema = dbparams["schema"]
-        return eng
 
     @classmethod
     def from_snowpark(cls, session) -> Backend:
