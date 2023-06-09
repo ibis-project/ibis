@@ -325,7 +325,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     [
         "bigquery",
         "clickhouse",
-        "datafusion",
         "impala",
         "oracle",
         "postgres",

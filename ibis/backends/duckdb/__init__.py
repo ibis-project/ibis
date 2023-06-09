@@ -489,8 +489,7 @@ class Backend(BaseAlchemyBackend):
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        kwargs
-            Additional keyword arguments passed to DuckDB loading function.
+        **kwargs
             Additional keyword arguments passed to deltalake.DeltaTable.
 
         Returns
