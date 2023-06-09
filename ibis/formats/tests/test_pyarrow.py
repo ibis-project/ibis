@@ -1,7 +1,6 @@
 import hypothesis as h
 import hypothesis.strategies as st
 import pyarrow as pa
-import pyarrow.tests.strategies as past
 import pytest
 
 import ibis.expr.datatypes as dt
@@ -12,6 +11,8 @@ from ibis.formats.pyarrow import (
     schema_from_pyarrow,
     schema_to_pyarrow,
 )
+
+past = pytest.importorskip("pyarrow.tests.strategies")
 
 
 def assert_dtype_roundtrip(arrow_type, ibis_type=None, restored_type=None):
