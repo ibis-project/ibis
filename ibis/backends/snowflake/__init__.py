@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 import pyarrow as pa
 import sqlalchemy as sa
 from snowflake.connector.constants import FIELD_ID_TO_NAME
+from snowflake.connector.converter import SnowflakeConverter
 from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 
 import ibis.expr.datatypes as dt
@@ -87,6 +88,15 @@ return longest.map((_, i) => {
 })""",
     },
 }
+
+
+class IbisSnowflakeConverter(SnowflakeConverter):
+    # when using snowpark, con._paramstyle is set to qmark and is inconsistent
+    # with snowflake-sqlalchemy which uses pyformat this allows strings that
+    # are used in metadata queries to be used in qmark style queries which are
+    # supported by snowflake-sqlalchemy (just not the default)
+    def _quoted_name_to_snowflake_bindings(self, snowflake_type, value):
+        return self._str_to_snowflake_bindings(snowflake_type, value)
 
 
 class Backend(BaseAlchemyBackend):
@@ -192,7 +202,7 @@ $$ {defn["source"]} $$"""
             if authenticator is not None:
                 connect_args.setdefault("authenticator", authenticator)
 
-            # snowflake-connector-python does not handle `None` for password, but
+            # snowflake-connector-python does not handle `None` for passyword, but
             # accepts the empty string
             url = URL(
                 account=account,
@@ -207,7 +217,11 @@ $$ {defn["source"]} $$"""
         else:
             # we're connecting from a snowpark session most likely
             engine = sa.create_engine(
-                "snowflake://", creator=creator, poolclass=sa.pool.StaticPool
+                "snowflake://",
+                creator=creator,
+                connect_args=connect_args,
+                poolclass=sa.pool.StaticPool,
+                paramstyle="qmark",
             )
 
         @sa.event.listens_for(engine, "connect")
@@ -291,14 +305,12 @@ $$ {defn["source"]} $$"""
         └───────────┴───────┘
         """
         con = session._conn._conn
-        # workaround a misconfigured implementation of the DBAPI cursor
-        # when con._paramstyle is not set to "pyformat"
-        #
-        # when using snowpark, con._paramstyle is set to qmark
-        con._paramstyle = "pyformat"
-        return cls(
+        con.converter = IbisSnowflakeConverter()
+        backend = cls(
             database=f"{con.database}/{con.schema}", __creator__=lambda con=con: con
-        ).reconnect()
+        )
+        backend.reconnect()
+        return backend
 
     def to_pyarrow(
         self,
