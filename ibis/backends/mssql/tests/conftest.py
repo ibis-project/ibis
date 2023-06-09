@@ -26,7 +26,6 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     supports_structs = False
-    supports_arrays = False
     supports_json = False
 
     @classmethod

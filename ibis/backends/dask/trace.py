@@ -103,8 +103,11 @@ def _log_trace(func, start=None):
         current_op = current_op.op()
 
     _logger.debug(
-        f"{'  ' * level} {func.__name__} {type(current_op).__qualname__} "
-        f"{datetime.now() - start if start else ''}"
+        "%s %s %s %s",
+        '  ' * level,
+        func.__name__,
+        type(current_op).__qualname__,
+        f"{datetime.now() - start}" if start else "",
     )
 
 
