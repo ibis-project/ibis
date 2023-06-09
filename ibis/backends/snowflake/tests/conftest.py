@@ -147,23 +147,34 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return self.connection.table("WIN")
 
     @staticmethod
+    def snowpark_session():
+        sp = pytest.importorskip("snowflake.snowpark")
+        return sp.Session.builder.configs(
+            dict(
+                user=os.environ.get("SNOWSQL_USER", os.environ.get("SNOWFLAKE_USER")),
+                account=os.environ.get(
+                    "SNOWSQL_ACCOUNT", os.environ.get("SNOWFLAKE_ACCOUNT")
+                ),
+                password=os.environ.get(
+                    "SNOWSQL_PWD", os.environ.get("SNOWFLAKE_PASSWORD")
+                ),
+                warehouse=os.environ.get(
+                    "SNOWSQL_WAREHOUSE", os.environ.get("SNOWFLAKE_WAREHOUSE")
+                ),
+                database=os.environ.get(
+                    "SNOWSQL_DATABASE", os.environ.get("SNOWFLAKE_DATABASE")
+                ),
+                schema=os.environ.get(
+                    "SNOWSQL_SCHEMA", os.environ.get("SNOWFLAKE_SCHEMA")
+                ),
+            )
+        ).create()
+
+    @staticmethod
     @functools.lru_cache(maxsize=None)
     def connect(data_directory: Path) -> BaseBackend:
         if int(os.environ.get("IBIS_USE_SNOWPARK", "0")):
-            sp = pytest.importorskip("snowflake.snowpark")
-
-            return ibis.snowflake.from_snowpark(
-                sp.Session.builder.configs(
-                    dict(
-                        user=os.environ["SNOWFLAKE_USER"],
-                        account=os.environ["SNOWFLAKE_ACCOUNT"],
-                        password=os.environ["SNOWFLAKE_PASSWORD"],
-                        warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
-                        database=os.environ["SNOWFLAKE_DATABASE"],
-                        schema=os.environ["SNOWFLAKE_SCHEMA"],
-                    )
-                ).create()
-            )
+            return ibis.snowflake.from_snowpark(TestConf.snowpark_session())
         return ibis.connect(_get_url())
 
 
