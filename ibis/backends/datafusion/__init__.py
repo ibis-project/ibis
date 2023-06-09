@@ -243,6 +243,47 @@ class Backend(BaseBackend):
         self._context.register_parquet(table_name, path, **kwargs)
         return self.table(table_name)
 
+    def read_delta(
+        self, source_table: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a Delta Lake table as a table in the current database.
+
+        Parameters
+        ----------
+        source_table
+            The data source. Must be a directory
+            containing a Delta Lake table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to deltalake.DeltaTable.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source_table = normalize_filename(source_table)
+
+        table_name = table_name or gen_name("read_delta")
+
+        # Our other backends support overwriting views / tables when reregistering
+        self._context.deregister_table(table_name)
+
+        try:
+            from deltalake import DeltaTable
+        except ImportError:
+            raise ImportError(
+                "The deltalake extra is required to use the "
+                "read_delta method. You can install it using pip:\n\n"
+                "pip install ibis-framework[deltalake]\n"
+            )
+
+        delta_table = DeltaTable(source_table, **kwargs)
+
+        return self.register(delta_table.to_pyarrow_dataset(), table_name=table_name)
+
     def _get_frame(
         self,
         expr: ir.Expr,
