@@ -1670,7 +1670,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Returns
         -------
         Table
-            A relabeled table expressi
+            A relabeled table expression
 
         Examples
         --------
