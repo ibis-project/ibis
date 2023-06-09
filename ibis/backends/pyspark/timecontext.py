@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pyspark.sql.functions as F
-from pyspark.sql.dataframe import DataFrame
 
 import ibis.common.exceptions as com
 from ibis.backends.base.df.timecontext import TimeContext, get_time_col
+
+if TYPE_CHECKING:
+    from pyspark.sql.dataframe import DataFrame
 
 
 def filter_by_time_context(

@@ -3,10 +3,12 @@ from __future__ import annotations
 from collections.abc import Iterator
 from itertools import tee
 from types import MappingProxyType
-from typing import Any, Hashable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Any, Hashable, Mapping, TypeVar
 
 from public import public
-from typing_extensions import Self
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 K = TypeVar("K", bound=Hashable)
 V = TypeVar("V")

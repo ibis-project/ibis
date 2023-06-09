@@ -5,7 +5,6 @@ import os
 from typing import TYPE_CHECKING, Optional
 
 import ibis
-from ibis.backends.base import BaseBackend
 from ibis.common.grounds import Concrete
 
 try:
@@ -15,6 +14,7 @@ except ImportError:
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
+    from ibis.backends.base import BaseBackend
 
 _EXAMPLES = None
 

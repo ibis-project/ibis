@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import sqlalchemy as sa
@@ -10,6 +9,9 @@ import sqlalchemy as sa
 import ibis
 from ibis.backends.conftest import init_database
 from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 MSSQL_USER = os.environ.get('IBIS_TEST_MSSQL_USER', 'sa')
 MSSQL_PASS = os.environ.get('IBIS_TEST_MSSQL_PASSWORD', '1bis_Testing!')

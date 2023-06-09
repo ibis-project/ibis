@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import contextlib
 import itertools
+from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 import dask.delayed
-import numpy as np
 import pandas as pd
 
 import ibis.expr.operations as ops
@@ -20,6 +20,9 @@ from ibis.backends.dask.execution.util import (
     make_selected_obj,
 )
 from ibis.backends.pandas.udf import create_gens_from_args_groupby
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 def make_struct_op_meta(op: ir.Expr) -> list[tuple[str, np.dtype]]:

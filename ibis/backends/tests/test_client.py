@@ -7,6 +7,7 @@ import re
 import string
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -21,8 +22,10 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base import BaseBackend
 from ibis.util import gen_name, guid
+
+if TYPE_CHECKING:
+    from ibis.backends.base import BaseBackend
 
 
 @pytest.fixture

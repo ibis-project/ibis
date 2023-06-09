@@ -8,7 +8,6 @@ import keyword
 import re
 import sys
 import urllib.parse
-from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -29,6 +28,8 @@ from ibis import util
 from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
     import pyarrow as pa
 

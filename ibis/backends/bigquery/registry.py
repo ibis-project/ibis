@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import base64
 import datetime
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import numpy as np
 from multipledispatch import Dispatcher
@@ -13,7 +13,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sql import compiler
 from ibis.backends.base.sql.registry import (
     fixed_arity,
     literal,
@@ -23,6 +22,9 @@ from ibis.backends.base.sql.registry import (
 )
 from ibis.backends.bigquery.datatypes import dtype_to_bigquery
 from ibis.common.temporal import DateUnit, IntervalUnit, TimeUnit
+
+if TYPE_CHECKING:
+    from ibis.backends.base.sql import compiler
 
 
 def _extract_field(sql_attr):

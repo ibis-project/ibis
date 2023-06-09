@@ -3,12 +3,22 @@ from __future__ import annotations
 import collections
 import itertools
 import math
-from typing import Any, Hashable, Iterable, Iterator, Mapping, Set, TypeVar
-
-from typing_extensions import Self
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Hashable,
+    Iterable,
+    Iterator,
+    Mapping,
+    Set,
+    TypeVar,
+)
 
 from ibis.common.graph import Node
 from ibis.util import promote_list
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 K = TypeVar("K", bound=Hashable)
 

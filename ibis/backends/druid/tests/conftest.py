@@ -6,8 +6,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import chain, repeat
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from requests import Session
@@ -18,6 +17,9 @@ from ibis.backends.tests.base import (
     ServiceBackendTest,
     ServiceSpec,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 DRUID_URL = os.environ.get(
     "DRUID_URL", "druid://localhost:8082/druid/v2/sql?header=true"

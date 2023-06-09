@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 from pandas import Timedelta, Timestamp
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.df.scope import Scope
 from ibis.backends.base.df.timecontext import (
     TimeContext,
     TimeContextRelation,
@@ -16,7 +17,11 @@ from ibis.backends.base.df.timecontext import (
 from ibis.backends.pandas.execution import execute
 
 dd = pytest.importorskip("dask.dataframe")
+
 from dask.dataframe.utils import tm  # noqa: E402
+
+if TYPE_CHECKING:
+    from ibis.backends.base.df.scope import Scope
 
 
 class CustomAsOfJoin(ops.AsOfJoin):

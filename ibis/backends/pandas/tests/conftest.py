@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -9,6 +9,9 @@ import ibis.expr.operations as ops
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 from ibis.backends.tests.data import array_types, json_types, struct_types, win
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestConf(BackendTest, RoundHalfToEven):

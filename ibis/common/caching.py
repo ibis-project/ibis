@@ -3,13 +3,15 @@ from __future__ import annotations
 import functools
 import weakref
 from collections import Counter, defaultdict
-from collections.abc import Iterator
-from typing import Any, Callable, MutableMapping
+from typing import TYPE_CHECKING, Any, Callable, MutableMapping
 
 from bidict import bidict
 
 from ibis.common.collections import FrozenDict
 from ibis.common.exceptions import IbisError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 def memoize(func: Callable) -> Callable:

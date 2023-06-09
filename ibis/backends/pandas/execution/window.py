@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 import re
-from typing import Any, Callable, NoReturn
+from typing import TYPE_CHECKING, Any, Callable, NoReturn
 
 import numpy as np
 import pandas as pd
@@ -21,7 +21,6 @@ from ibis.backends.base.df.timecontext import (
     get_time_col,
 )
 from ibis.backends.pandas import aggcontext as agg_ctx
-from ibis.backends.pandas.aggcontext import AggregationContext
 from ibis.backends.pandas.core import (
     compute_time_context,
     date_types,
@@ -33,6 +32,9 @@ from ibis.backends.pandas.core import (
 )
 from ibis.backends.pandas.dispatch import execute_node, pre_execute
 from ibis.backends.pandas.execution import util
+
+if TYPE_CHECKING:
+    from ibis.backends.pandas.aggcontext import AggregationContext
 
 
 def _post_process_empty(

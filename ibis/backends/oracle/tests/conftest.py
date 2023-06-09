@@ -5,14 +5,16 @@ import contextlib
 import itertools
 import os
 import subprocess
-from pathlib import Path
-from typing import Any, TextIO
+from typing import TYPE_CHECKING, Any, TextIO
 
 import pytest
 import sqlalchemy as sa
 
 import ibis
 from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 ORACLE_USER = os.environ.get('IBIS_TEST_ORACLE_USER', 'ibis')
 ORACLE_PASS = os.environ.get('IBIS_TEST_ORACLE_PASSWORD', 'ibis')

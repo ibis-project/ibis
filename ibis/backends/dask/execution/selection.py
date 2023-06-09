@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import functools
 import operator
+from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
 import pandas as pd
@@ -12,7 +13,6 @@ from toolz import concatv
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 from ibis.backends.base.df.scope import Scope
-from ibis.backends.base.df.timecontext import TimeContext
 from ibis.backends.dask.core import execute
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import (
@@ -28,6 +28,9 @@ from ibis.backends.pandas.execution.selection import (
     remap_overlapping_column_names,
 )
 from ibis.backends.pandas.execution.util import get_join_suffix_for_op
+
+if TYPE_CHECKING:
+    from ibis.backends.base.df.timecontext import TimeContext
 
 
 # TODO(kszucs): deduplicate with pandas.compute_projection() since it is almost

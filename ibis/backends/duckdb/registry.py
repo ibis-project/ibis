@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import operator
 from functools import partial
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any, Mapping
 
 import duckdb
 import numpy as np
@@ -15,7 +15,6 @@ from toolz.curried import flip
 import ibis.expr.operations as ops
 from ibis.backends.base.sql import alchemy
 from ibis.backends.base.sql.alchemy import unary
-from ibis.backends.base.sql.alchemy.datatypes import StructType
 from ibis.backends.base.sql.alchemy.registry import (
     _table_column,
     array_filter,
@@ -33,6 +32,9 @@ from ibis.backends.postgres.registry import (
     operation_registry,
 )
 from ibis.common.exceptions import UnsupportedOperationError
+
+if TYPE_CHECKING:
+    from ibis.backends.base.sql.alchemy.datatypes import StructType
 
 operation_registry = {
     op: operation_registry[op]

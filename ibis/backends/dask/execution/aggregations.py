@@ -12,17 +12,20 @@ from __future__ import annotations
 
 import functools
 import operator
+from typing import TYPE_CHECKING
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
 
 import ibis.expr.operations as ops
 from ibis.backends.base.df.scope import Scope
-from ibis.backends.base.df.timecontext import TimeContext
 from ibis.backends.dask import aggcontext as agg_ctx
 from ibis.backends.dask.core import execute
 from ibis.backends.dask.dispatch import execute_node
 from ibis.backends.dask.execution.util import coerce_to_output, safe_concat
+
+if TYPE_CHECKING:
+    from ibis.backends.base.df.timecontext import TimeContext
 
 
 # TODO - aggregations - #2553

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import operator
 import re
-from typing import Any, Callable, NoReturn
+from typing import TYPE_CHECKING, Any, Callable, NoReturn
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
@@ -15,9 +15,6 @@ from multipledispatch import Dispatcher
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 from ibis.backends.base.df.scope import Scope
-from ibis.backends.base.df.timecontext import (
-    TimeContext,
-)
 from ibis.backends.dask import aggcontext as agg_ctx
 from ibis.backends.dask.core import compute_time_context, execute
 from ibis.backends.dask.dispatch import execute_node
@@ -28,7 +25,6 @@ from ibis.backends.dask.execution.util import (
     compute_sorted_frame,
     make_meta_series,
 )
-from ibis.backends.pandas.aggcontext import AggregationContext
 from ibis.backends.pandas.core import (
     date_types,
     integer_types,
@@ -37,6 +33,12 @@ from ibis.backends.pandas.core import (
     timestamp_types,
 )
 from ibis.backends.pandas.execution.window import _post_process_group_by_order_by
+
+if TYPE_CHECKING:
+    from ibis.backends.base.df.timecontext import (
+        TimeContext,
+    )
+    from ibis.backends.pandas.aggcontext import AggregationContext
 
 
 def _check_valid_window_frame(frame):

@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import TYPE_CHECKING, Literal
 
 import sqlalchemy as sa
 
-import ibis.expr.schema as sch
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
 from ibis.backends.mssql.datatypes import _type_from_result_set_info
+
+if TYPE_CHECKING:
+    import ibis.expr.schema as sch
 
 
 class Backend(BaseAlchemyBackend):

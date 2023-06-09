@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import os
-from pathlib import Path
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 import pytest
 
@@ -15,6 +14,9 @@ from ibis.backends.tests.base import (
     ServiceSpec,
     UnorderedComparator,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
 CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 8123))

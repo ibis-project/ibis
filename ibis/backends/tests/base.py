@@ -5,7 +5,7 @@ import concurrent.futures
 import inspect
 import subprocess
 from pathlib import Path
-from typing import Any, Iterable, Mapping, NamedTuple
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, NamedTuple
 
 import numpy as np
 import pandas as pd
@@ -13,7 +13,8 @@ import pandas.testing as tm
 import pytest
 from filelock import FileLock
 
-import ibis.expr.types as ir
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
 
 
 # TODO: Merge into BackendTest, #2564

@@ -220,9 +220,8 @@ import abc
 import functools
 import itertools
 import operator
-from typing import Any, Callable, Iterator
+from typing import TYPE_CHECKING, Any, Callable, Iterator
 
-import numpy as np
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
@@ -235,6 +234,9 @@ from ibis.backends.base.df.timecontext import (
     construct_time_context_aware_series,
     get_time_col,
 )
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 class AggregationContext(abc.ABC):

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 _from_pyarrow_types = {
     pa.int8(): dt.Int8,
