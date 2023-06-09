@@ -4,7 +4,6 @@ import concurrent.futures
 import functools
 import os
 from functools import partial
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -16,6 +15,8 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.util import consume
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
 

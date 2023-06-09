@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import dask
 import pandas as pd
@@ -11,6 +10,9 @@ import pytest
 import ibis
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
 from ibis.backends.tests.data import array_types, win
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 dd = pytest.importorskip("dask.dataframe")
 

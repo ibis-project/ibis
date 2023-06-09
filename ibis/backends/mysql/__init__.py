@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import re
 import warnings
-from typing import Iterable, Literal
+from typing import TYPE_CHECKING, Iterable, Literal
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
-import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.mysql.datatypes import MySQLDateTime, _type_from_cursor_info
+
+if TYPE_CHECKING:
+    import ibis.expr.datatypes as dt
 
 
 class Backend(BaseAlchemyBackend):

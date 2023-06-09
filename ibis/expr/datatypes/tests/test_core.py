@@ -1,16 +1,18 @@
 from __future__ import annotations
 
-import datetime
-import decimal
 import sys
-import uuid
 from dataclasses import dataclass
-from typing import Dict, List, NamedTuple, Tuple
+from typing import TYPE_CHECKING, Dict, List, NamedTuple, Tuple
 
 import pytest
 
 import ibis.expr.datatypes as dt
 from ibis.common.temporal import TimestampUnit
+
+if TYPE_CHECKING:
+    import datetime
+    import decimal
+    import uuid
 
 
 def test_validate_type():

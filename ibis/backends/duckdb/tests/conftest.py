@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -10,6 +9,8 @@ from ibis.backends.conftest import SANDBOXED, TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from ibis.backends.base import BaseBackend
 
 

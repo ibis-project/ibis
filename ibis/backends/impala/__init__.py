@@ -9,7 +9,6 @@ import os
 import re
 import weakref
 from functools import cached_property
-from pathlib import Path
 from posixpath import join as pjoin
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -51,6 +50,8 @@ from ibis.backends.impala.udf import (
 from ibis.config import options
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
 
 

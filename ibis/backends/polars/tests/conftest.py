@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 import ibis
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import array_types, struct_types, win
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 pl = pytest.importorskip("polars")
 

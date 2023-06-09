@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import sqlalchemy as sa
@@ -11,6 +10,9 @@ from packaging.version import parse as parse_version
 import ibis
 from ibis.backends.conftest import TEST_TABLES, init_database
 from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 MYSQL_USER = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
 MYSQL_PASS = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')

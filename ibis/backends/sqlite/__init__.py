@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import datetime
 import sqlite3
-from pathlib import Path
-from typing import Iterator
+from typing import TYPE_CHECKING, Iterator
 
 import sqlalchemy as sa
 import toolz
@@ -30,6 +29,9 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
 from ibis.backends.sqlite.datatypes import dtype_to_sqlite, parse
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def to_datetime(value: str | None) -> datetime.datetime | None:

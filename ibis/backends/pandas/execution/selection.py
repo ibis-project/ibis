@@ -5,7 +5,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import defaultdict
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
 import pandas as pd
 from toolz import concatv, first
@@ -14,11 +14,13 @@ import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.df.scope import Scope
-from ibis.backends.base.df.timecontext import TimeContext
 from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.dispatch import execute_node
 from ibis.backends.pandas.execution import constants, util
 from ibis.backends.pandas.execution.util import coerce_to_output
+
+if TYPE_CHECKING:
+    from ibis.backends.base.df.timecontext import TimeContext
 
 
 def compute_projection(

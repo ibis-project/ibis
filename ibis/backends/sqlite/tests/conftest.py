@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import csv
 import sqlite3
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import pytest
@@ -14,6 +13,8 @@ from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from ibis.backends.base import BaseBackend
 
 

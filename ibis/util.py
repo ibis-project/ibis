@@ -14,7 +14,6 @@ import textwrap
 import types
 import uuid
 import warnings
-from numbers import Real
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -29,6 +28,7 @@ from uuid import uuid4
 import toolz
 
 if TYPE_CHECKING:
+    from numbers import Real
     from pathlib import Path
 
     import ibis.expr.operations as ops

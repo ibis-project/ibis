@@ -5,8 +5,6 @@ import contextlib
 import functools
 import io
 import os
-import pathlib
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
 
 import google.api_core.exceptions as gexc
@@ -24,6 +22,9 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedCo
 from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
 
 if TYPE_CHECKING:
+    import pathlib
+    from pathlib import Path
+
     import ibis.expr.types as ir
 
 DATASET_ID = "ibis_gbq_testing"

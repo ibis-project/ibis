@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 pa = pytest.importorskip("pyarrow")
 
