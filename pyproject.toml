@@ -381,13 +381,17 @@ select = [
   "C4",  # comprehensions
   "D",   # pydocstyle
   "E",   # pycodestyle
+  "EXE", # flake8-executable
   "F",   # pyflakes
+  "FA",  # flake8-future-annotations
+  "G",   # flake8-logging-format
   "FLY", # flynt (format string conversion)
   "I",   # isort
   "ICN", # flake8-import-conventions
   "INP", # flake8-no-pep420 (implicit namespace packages)
   "ISC", # flake8-implicit-str-concat
   "PGH", # pygrep-hooks
+  "PIE", # flake8-pie
   "PL",  # pylint
   "RET", # flake8-return
   "RUF", # ruff-specific rules
@@ -398,7 +402,6 @@ select = [
   "UP",  # pyupgrade
   "W",   # pycodestyle
   "YTT", # flake8-2020
-
 ]
 respect-gitignore = true
 ignore = [
