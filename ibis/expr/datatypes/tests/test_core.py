@@ -1,18 +1,16 @@
 from __future__ import annotations
 
+import datetime  # noqa: TCH003
+import decimal  # noqa: TCH003
 import sys
+import uuid  # noqa: TCH003
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict, List, NamedTuple, Tuple
+from typing import Dict, List, NamedTuple, Tuple
 
 import pytest
 
 import ibis.expr.datatypes as dt
 from ibis.common.temporal import TimestampUnit
-
-if TYPE_CHECKING:
-    import datetime
-    import decimal
-    import uuid
 
 
 def test_validate_type():
@@ -210,7 +208,7 @@ class PyStruct:
     l: Dict[str, int]  # noqa: UP006, E741
     n: Tuple[str]  # noqa: UP006
     o: uuid.UUID
-    p: type(None)
+    p: None
     q: MyStruct
 
 

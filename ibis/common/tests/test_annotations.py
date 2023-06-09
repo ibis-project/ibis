@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING, Union
+from typing import Union
 
 import pytest
 from toolz import identity
+from typing_extensions import Annotated  # noqa: TCH002
 
 from ibis.common.annotations import Argument, Attribute, Parameter, Signature, annotated
 from ibis.common.validators import instance_of, option
-
-if TYPE_CHECKING:
-    from typing_extensions import Annotated
 
 is_int = instance_of(int)
 
