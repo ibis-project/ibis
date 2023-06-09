@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
@@ -81,3 +83,25 @@ def test_timestamp_tz_column(simple_con):
     ).mutate(ts=lambda t: t.ts.to_timestamp("YYYY-MM-DD HH24-MI-SS"))
     expr = t.ts
     assert expr.execute().empty
+
+
+@pytest.mark.skipif(
+    (use_snowpark := os.environ.get("IBIS_USE_SNOWPARK")) is None
+    or not int(use_snowpark),
+    reason="snowpark testing not enabled",
+)
+def test_snowpark_paramstyle():
+    from ibis.backends.snowflake.tests.conftest import TestConf
+
+    session = TestConf.snowpark_session()
+    con = ibis.snowflake.from_snowpark(session)
+    tables = con.list_tables()
+    assert "FUNCTIONAL_ALLTYPES" in tables
+    t = con.table("FUNCTIONAL_ALLTYPES")
+    ibis_count = (t.count() + 1).execute()
+    table_id = "ibis_testing.phillip.FUNCTIONAL_ALLTYPES"
+    [[snowpark_count]] = session.sql(
+        f'SELECT COUNT(*) + ? AS "n" FROM {table_id}', [1]
+    ).collect()
+    assert ibis_count == 7301
+    assert snowpark_count == ibis_count
