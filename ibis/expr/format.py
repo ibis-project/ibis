@@ -3,7 +3,8 @@ from __future__ import annotations
 import collections
 import functools
 import textwrap
-from typing import TYPE_CHECKING, Any, Callable, Deque, Iterable, Mapping, Tuple
+import types  # noqa: TCH003
+from typing import Any, Callable, Deque, Iterable, Mapping, Tuple
 
 import rich.pretty
 
@@ -14,9 +15,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common import graph
-
-if TYPE_CHECKING:
-    import types
 
 Aliases = Mapping[ops.TableNode, int]
 Deps = Deque[Tuple[int, ops.TableNode]]
