@@ -57,7 +57,7 @@ dask = { version = ">=2022.9.1", optional = true, extras = [
 ] }
 datafusion = { version = ">=0.6,<26", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
-deltalake = { version = ">=0.9.0,<0.10.0", optional = true }
+deltalake = { version = ">=0.9.0,<0.11.0", optional = true }
 duckdb = { version = ">=0.3.3,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
