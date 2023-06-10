@@ -24,15 +24,15 @@
     },
     {
       "matchPackagePatterns": ["clickhouse-connect"],
-      "labels": ["backends - clickhouse"]
+      "labels": ["clickhouse"]
     },
     {
       "matchPackagePatterns": ["dask"],
-      "labels": ["backends - dask"]
+      "labels": ["dask"]
     },
     {
       "matchPackagePatterns": ["datafusion"],
-      "labels": ["backends - datafusion"]
+      "labels": ["datafusion"]
     },
     {
       "matchPackagePatterns": [
@@ -41,54 +41,54 @@
         "google-cloud-bigquery-storage",
         "pydata-google-auth"
       ],
-      "labels": ["backends - bigquery"]
+      "labels": ["bigquery"]
     },
     {
       "matchPackagePatterns": ["duckdb", "duckdb-engine"],
-      "labels": ["backends - duckdb"]
+      "labels": ["duckdb"]
     },
     {
       "matchPackagePatterns": ["fsspec", "impyla"],
-      "labels": ["backends - impala"]
+      "labels": ["impala"]
     },
     {
       "matchPackagePatterns": ["oracledb"],
-      "labels": ["backends - oracle"]
+      "labels": ["oracle"]
     },
     {
       "matchPackagePatterns": ["polars"],
-      "labels": ["backends - polars"]
+      "labels": ["polars"]
     },
     {
       "matchPackagePatterns": ["psycopg2"],
-      "labels": ["backends - postgres"]
+      "labels": ["postgres"]
     },
     {
       "matchPackagePatterns": ["pydruid"],
-      "labels": ["backends - druid"]
+      "labels": ["druid"]
     },
     {
       "matchPackagePatterns": ["pymssql"],
-      "labels": ["backends - mssql"]
+      "labels": ["mssql"]
     },
     {
       "matchPackagePatterns": ["pymssql"],
-      "labels": ["backends - mssql"]
+      "labels": ["mssql"]
     },
     {
       "matchPackagePatterns": ["pyspark"],
-      "labels": ["backends - pyspark"]
+      "labels": ["pyspark"]
     },
     {
       "matchPackagePatterns": [
         "snowflake-connector-python",
         "snowflake-sqlalchemy"
       ],
-      "labels": ["backends - snowflake"]
+      "labels": ["snowflake"]
     },
     {
       "matchPackagePatterns": ["trino"],
-      "labels": ["backends - trino"]
+      "labels": ["trino"]
     },
     {
       "matchDepTypes": ["dev"],
