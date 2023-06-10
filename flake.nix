@@ -53,11 +53,11 @@
         # duckdb
         duckdb
         # mysql
-        mariadb-client
+        mycli
         # pyspark
         openjdk17_headless
         # postgres client
-        postgresql
+        pgcli
         # sqlite with readline
         sqlite-interactive
       ];
