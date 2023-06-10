@@ -109,7 +109,7 @@ services:
       retries: 30
       test:
         - CMD
-        - mysqladmin
+        - mariadb-admin
         - ping
       timeout: 5s
     image: mariadb:11.0.2
