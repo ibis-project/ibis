@@ -206,7 +206,7 @@ jobs:
       - name: build and push dev docs
         run: |
           nix develop --ignore-environment -c \
-            mkdocs gh-deploy --message 'docs: ibis@${{ github.sha }}'
+            mkdocs gh-deploy --message 'docs: ibis@${{ github.sha }}' --ignore-version
 
   simulate_release:
     runs-on: ubuntu-latest
