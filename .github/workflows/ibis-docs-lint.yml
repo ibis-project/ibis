@@ -196,6 +196,8 @@ jobs:
 
           git config user.name 'ibis-docs-bot[bot]'
           git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
+          git config http.postBuffer 157286400
+          git config http.version 'HTTP/1.1'
 
       - name: download benchmark data
         uses: actions/download-artifact@v3
