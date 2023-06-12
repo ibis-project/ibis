@@ -1,5 +1,6 @@
 import datetime
 import re
+import time
 from operator import floordiv, methodcaller, truediv
 
 import pandas as pd
@@ -260,10 +261,10 @@ def test_large_compile():
         table = table.mutate(dummy=ibis.literal(""))
         table = table.left_join(table, ["dummy"])[[table]]
 
-    start = datetime.datetime.now()
+    start = time.time()
     table.compile()
-    delta = datetime.datetime.now() - start
-    assert delta.total_seconds() < 10
+    delta = time.time() - start
+    assert delta < 10
 
 
 @pytest.mark.parametrize(

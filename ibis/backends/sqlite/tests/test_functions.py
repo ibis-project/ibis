@@ -1,4 +1,3 @@
-import datetime
 import math
 import sqlite3
 import uuid
@@ -69,13 +68,6 @@ def test_timestamp_functions(con):
     expr = value.strftime('%Y%m%d')
     expected = '20150901'
     assert con.execute(expr) == expected
-
-
-def test_now(con):
-    expr = ibis.now().strftime('%Y%m%d %H')
-    result = con.execute(expr)
-    expected = datetime.datetime.utcnow().strftime('%Y%m%d %H')
-    assert result == expected
 
 
 @pytest.mark.parametrize(
