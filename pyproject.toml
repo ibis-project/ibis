@@ -508,8 +508,9 @@ universal = false
 [tool.poetry-dynamic-versioning]
 enable = true
 dirty = true
-style = "semver"
+style = "pep440"
 pattern = '^(?P<base>\d+(\.\d+)*)'
+format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ base }}.dev{{ distance }}{% endif %}"
 
 [build-system]
 requires = ["poetry-core>=1.1.0", "poetry-dynamic-versioning"]
