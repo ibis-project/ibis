@@ -1,0 +1,60 @@
+name: PyPI Pre-Release
+
+on:
+  schedule:
+    # weekly on Sunday
+    - cron: "0 0 * * 0"
+
+  # as needed by clicking through the github actions UI
+  workflow_dispatch:
+
+# we do not want more than one pre-release workflow executing at the same time, ever
+concurrency:
+  group: pre-release
+  # cancelling in the middle of a release would create incomplete releases
+  # so cancel-in-progress is false
+  cancel-in-progress: false
+
+jobs:
+  pre-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: install python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry<1.4'
+
+      - name: compute whether we should create a pre-release
+        id: should_create
+        run: |
+          if  [[ "$(poetry version)" == *.dev* ]]; then
+            should_create=true
+          else
+            should_create=false
+          fi
+          echo "result=${should_create}" >> "$GITHUB_OUTPUT"
+
+      - name: run some poetry sanity checks
+        run: poetry check
+        if: fromJSON(steps.should_create.outputs.result)
+
+      - name: build wheel and source dist
+        run: poetry build
+        if: fromJSON(steps.should_create.outputs.result)
+
+      - name: add test pypi index
+        if: fromJSON(steps.should_create.outputs.result)
+        run: poetry config repositories.test-pypi https://test.pypi.org/legacy/
+
+      - name: publish pre-release wheel to test pypi index
+        if: fromJSON(steps.should_create.outputs.result)
+        run: poetry publish -r test-pypi
+        env:
+          POETRY_PYPI_TOKEN_TEST_PYPI: ${{ secrets.TEST_PYPI_TOKEN }}
