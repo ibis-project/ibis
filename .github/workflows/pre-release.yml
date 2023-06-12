@@ -55,3 +55,9 @@ jobs:
         run: poetry publish -r test-pypi
         env:
           POETRY_PYPI_TOKEN_TEST_PYPI: ${{ secrets.TEST_PYPI_TOKEN }}
+
+      - name: publish pre-release wheel to pypi
+        if: contains(steps.get_version.outputs.value, '.dev')
+        run: poetry publish
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
