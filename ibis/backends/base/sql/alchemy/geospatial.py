@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-try:
-    import geoalchemy2
-    import geoalchemy2.shape  # noqa: F401
-    import geopandas  # noqa: F401
-except ImportError:
-    geospatial_supported = False
-else:
-    geospatial_supported = True
+from importlib.util import find_spec as _find_spec
+
+geospatial_supported = (
+    _find_spec("geoalchemy2") is not None and _find_spec("geopandas") is not None
+)
+__all__ = ["geospatial_supported"]
