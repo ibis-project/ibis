@@ -1223,14 +1223,16 @@ def gen_test_name(con: BaseBackend) -> str:
 def test_overwrite(ddl_con):
     t0 = ibis.memtable({"a": [1, 2, 3]})
 
-    with gen_test_name(ddl_con) as x, gen_test_name(ddl_con) as y:
+    with gen_test_name(ddl_con) as x:
         t1 = ddl_con.create_table(x, t0)
-
         t2 = t1.filter(t1.a < 3)
         expected_count = 2
 
         assert t2.count().execute() == expected_count
-        assert ddl_con.create_table(y, t2).count().execute() == expected_count
+
+        with gen_test_name(ddl_con) as y:
+            assert ddl_con.create_table(y, t2).count().execute() == expected_count
+
         assert (
             ddl_con.create_table(x, t2, overwrite=True).count().execute()
             == expected_count
