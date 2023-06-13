@@ -293,7 +293,7 @@ class Backend(BaseAlchemyBackend):
             File or list of files
         table_name
             Optional table name
-        kwargs
+        **kwargs
             Additional keyword arguments passed to DuckDB's `read_json_auto` function
 
         Returns
@@ -336,7 +336,7 @@ class Backend(BaseAlchemyBackend):
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        kwargs
+        **kwargs
             Additional keyword arguments passed to DuckDB loading function.
             See https://duckdb.org/docs/data/csv for more information.
 
@@ -382,7 +382,7 @@ class Backend(BaseAlchemyBackend):
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        kwargs
+        **kwargs
             Additional keyword arguments passed to DuckDB loading function.
             See https://duckdb.org/docs/data/parquet for more information.
 
@@ -754,7 +754,7 @@ class Backend(BaseAlchemyBackend):
             The data source. A string or Path to the parquet file.
         params
             Mapping of scalar parameter expressions to value.
-        kwargs
+        **kwargs
             DuckDB Parquet writer arguments. See
             https://duckdb.org/docs/data/parquet#writing-to-parquet-files for
             details
@@ -808,7 +808,7 @@ class Backend(BaseAlchemyBackend):
             Mapping of scalar parameter expressions to value.
         header
             Whether to write the column names as the first line of the CSV file.
-        kwargs
+        **kwargs
             DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv.html#parameters
         """
         query = self._to_sql(expr, params=params)
