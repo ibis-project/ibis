@@ -34,9 +34,12 @@ def test_list_tables(con):
 
 
 def test_current_database(con, dataset_id):
-    assert con.current_database == dataset_id
-    assert con.current_database == con.dataset_id
-    assert con.list_tables(database=con.current_database) == con.list_tables()
+    db = con.current_database
+    assert db == dataset_id
+    assert db == con.dataset_id
+    assert con.list_tables(database=db, like="alltypes") == con.list_tables(
+        like="alltypes"
+    )
 
 
 def test_database(con):
