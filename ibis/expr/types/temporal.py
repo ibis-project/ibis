@@ -207,6 +207,17 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         return _binop(ops.TimeAdd, self, other)
 
     add = radd = __radd__ = __add__
+    """Add an interval to a time expression.
+
+    Parameters
+    ----------
+    other : datetime.timedelta | pd.Timedelta | IntervalValue
+        Interval to add to time expression
+
+    Returns
+    -------
+    Value : TimeValue | NotImplemented
+    """
 
     def __sub__(
         self,
@@ -225,6 +236,17 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         return _binop(op, self, other)
 
     sub = __sub__
+    """Subtract a time or an interval from a time expression.
+
+    Parameters
+    ----------
+    other : TimeValue | IntervalValue
+        Interval to subtract from time expression
+
+    Returns
+    -------
+    Value : IntervalValue | TimeValue | NotImplemented
+    """
 
     def __rsub__(
         self,
@@ -280,6 +302,17 @@ class DateValue(TemporalValue, _DateComponentMixin):
         return _binop(ops.DateAdd, self, other)
 
     add = radd = __radd__ = __add__
+    """Add an interval to a date.
+
+    Parameters
+    ----------
+    other : datetime.timedelta | pd.Timedelta | IntervalValue
+        Interval to add to DateValue
+
+    Returns
+    -------
+    Value : DateValue | NotImplemented
+    """
 
     def __sub__(
         self,
@@ -302,6 +335,17 @@ class DateValue(TemporalValue, _DateComponentMixin):
         return _binop(op, self, other)
 
     sub = __sub__
+    """Subtract a date or an interval from a date.
+
+    Parameters
+    ----------
+    other : datetime.date | DateValue | datetime.timedelta | pd.Timedelta | IntervalValue
+        Interval to subtract from DateValue
+
+    Returns
+    -------
+    Value : DateValue | NotImplemented
+    """
 
     def __rsub__(
         self,
@@ -374,6 +418,17 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         return _binop(ops.TimestampAdd, self, other)
 
     add = radd = __radd__ = __add__
+    """Add an interval to a timestamp.
+
+    Parameters
+    ----------
+    other : datetime.timedelta | pd.Timedelta | IntervalValue
+        Interval to subtract from timestamp
+
+    Returns
+    -------
+    Value : TimestampValue | NotImplemented
+    """
 
     def __sub__(
         self,
@@ -397,6 +452,17 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         return _binop(op, self, other)
 
     sub = __sub__
+    """Subtract a timestamp or an interval from a timestamp.
+
+    Parameters
+    ----------
+    other : datetime.datetime | pd.Timestamp | TimestampValue | datetime.timedelta | pd.Timedelta | IntervalValue
+        Timestamp or interval to subtract from timestamp
+
+    Returns
+    -------
+    Value : IntervalValue | TimestampValue | NotImplemented
+    """
 
     def __rsub__(
         self,
