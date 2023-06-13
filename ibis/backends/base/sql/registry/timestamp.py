@@ -93,7 +93,10 @@ def day_of_week_index(t, op):
 def strftime(t, op):
     import sqlglot as sg
 
-    reverse_hive_mapping = {v: k for k, v in sg.dialects.hive.Hive.time_mapping.items()}
+    hive_dialect = sg.dialects.hive.Hive
+    if (time_mapping := getattr(hive_dialect, "TIME_MAPPING", None)) is None:
+        time_mapping = hive_dialect.time_mapping
+    reverse_hive_mapping = {v: k for k, v in time_mapping.items()}
     format_str = sg.time.format_time(op.format_str.value, reverse_hive_mapping)
     targ = t.translate(ops.Cast(op.arg, to=dt.string))
     return f"from_unixtime(unix_timestamp({targ}), {format_str!r})"
