@@ -850,9 +850,9 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
             # annoying to detect so we let it through to enable the
             # uncorrelated use case (pandas-style `.isin`)
             subquery = translate(options.to_expr().as_table().op(), {})
-            right_arg = f"({subquery})"
+            right_arg = f"({_sql(subquery)})"
         else:
-            right_arg = translate_val(options, cache=cache, **kw)
+            right_arg = _sql(translate_val(options, cache=cache, **kw))
 
         # we explicitly do NOT parenthesize the right side because it doesn't
         # make sense to do so for Sequence operations
