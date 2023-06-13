@@ -3,8 +3,8 @@ backend_name: Datafusion
 backend_url: https://arrow.apache.org/datafusion/
 backend_module: datafusion
 version_added: "2.1"
-exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
-imports: ["CSV", "Parquet"]
+exports: ["PyArrow", "Parquet", "Delta Lake", "CSV", "Pandas"]
+imports: ["CSV", "Parquet", "Delta Lake"]
 ---
 
 {% include 'backends/badges.md' %}
@@ -63,6 +63,10 @@ con = ibis.datafusion.connect(
       heading_level: 4
       show_docstring_returns: false
 ::: ibis.backends.datafusion.Backend.read_parquet
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.datafusion.Backend.read_delta
     options:
       heading_level: 4
       show_docstring_returns: false

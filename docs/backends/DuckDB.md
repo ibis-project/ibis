@@ -2,8 +2,18 @@
 backend_name: DuckDB
 backend_url: https://duckdb.org/
 backend_module: duckdb
-exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
-imports: ["CSV", "Parquet", "JSON", "PyArrow", "Pandas", "SQLite", "Postgres"]
+exports: ["PyArrow", "Parquet", "Delta Lake", "CSV", "Pandas"]
+imports:
+  [
+    "CSV",
+    "Parquet",
+    "Delta Lake",
+    "JSON",
+    "PyArrow",
+    "Pandas",
+    "SQLite",
+    "Postgres",
+  ]
 ---
 
 {% include 'backends/badges.md' %}
@@ -86,6 +96,10 @@ con = ibis.connect("duckdb://") # (1)
       heading_level: 4
       show_docstring_returns: false
 ::: ibis.backends.duckdb.Backend.read_parquet
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.duckdb.Backend.read_delta
     options:
       heading_level: 4
       show_docstring_returns: false

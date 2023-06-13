@@ -4,8 +4,8 @@ backend_url: https://pola-rs.github.io/polars-book/user-guide/index.html
 backend_module: polars
 is_experimental: true
 version_added: "4.0"
-exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
-imports: ["CSV", "Parquet", "Pandas"]
+exports: ["PyArrow", "Parquet", "Delta Lake", "CSV", "Pandas"]
+imports: ["CSV", "Parquet", "Delta Lake", "Pandas"]
 ---
 
 {% include 'backends/badges.md' %}
@@ -61,6 +61,10 @@ con = ibis.polars.connect()
       heading_level: 4
       show_docstring_returns: false
 ::: ibis.backends.polars.Backend.read_parquet
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.polars.Backend.read_delta
     options:
       heading_level: 4
       show_docstring_returns: false
