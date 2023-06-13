@@ -52,7 +52,7 @@ doctest *args:
     #!/usr/bin/env bash
 
     # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
-    mapfile -t doctest_modules < <(
+    pytest --doctest-modules {{ args }} $(
       find \
         ibis \
         -wholename '*.py' \
@@ -61,7 +61,6 @@ doctest *args:
         -and -not -wholename '*gen_*.py' \
         -and -not -wholename '*ibis/expr/selectors.py'
     )
-    pytest --doctest-modules {{ args }} "${doctest_modules[@]}"
 
 # download testing data
 download-data owner="ibis-project" repo="testing-data" rev="master":
@@ -112,8 +111,7 @@ benchcmp *args:
 # check for invalid links in a locally built version of the docs
 checklinks *args:
     #!/usr/bin/env bash
-    mapfile -t files < <(find site -name '*.html')
-    lychee --base site "${files[@]}" {{ args }}
+    lychee --base site $(find site -name '*.html') {{ args }}
 
 # view the changelog for upcoming release (use --pretty to format with glow)
 view-changelog flags="":
