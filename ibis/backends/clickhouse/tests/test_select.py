@@ -390,3 +390,13 @@ def test_count_name(snapshot):
 
     ibis.show_sql(expr, dialect="clickhouse")
     snapshot.assert_match(str(ibis.to_sql(expr, dialect="clickhouse")), "out.sql")
+
+
+def test_array_join_in_subquery(snapshot):
+    node_view = ibis.table(dict(id="int64"), name="node_view")
+    way_view = ibis.table(dict(ids="array<!int64>"), name="way_view")
+
+    expr = node_view.id.isin(way_view.ids.unnest())
+
+    out = ibis.clickhouse.compile(expr)
+    snapshot.assert_match(out, "out.sql")
