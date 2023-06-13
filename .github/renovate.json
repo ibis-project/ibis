@@ -19,10 +19,6 @@
       "autoApprove": true
     },
     {
-      "matchPackagePatterns": ["ruff"],
-      "rangeStrategy": "pin"
-    },
-    {
       "matchPackagePatterns": ["clickhouse-connect"],
       "labels": ["clickhouse"]
     },
