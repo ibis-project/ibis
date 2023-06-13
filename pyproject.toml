@@ -510,7 +510,7 @@ enable = true
 dirty = true
 style = "pep440"
 pattern = '^(?P<base>\d+(\.\d+)*)'
-format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ base }}.dev{{ distance }}{% endif %}"
+format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ bump_version(base) }}.dev{{ distance }}{% endif %}"
 
 [build-system]
 requires = ["poetry-core>=1.1.0", "poetry-dynamic-versioning"]
