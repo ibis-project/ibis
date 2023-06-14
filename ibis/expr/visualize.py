@@ -15,7 +15,7 @@ from ibis.common.graph import Graph
 
 def get_type(node):
     with contextlib.suppress(AttributeError, NotImplementedError):
-        return str(node.output_dtype)
+        return escape(str(node.output_dtype))
 
     try:
         schema = node.schema
@@ -41,12 +41,9 @@ def get_type(node):
         ]
         schema = ibis.schema(pairs)
 
-    return (
-        ''.join(
-            f'<BR ALIGN="LEFT" /> <I>{escape(name)}</I>: {escape(str(type))}'
-            for name, type in zip(schema.names, schema.types)
-        )
-        + '<BR ALIGN="LEFT" />'
+    return '<BR ALIGN="LEFT" />' + '<BR ALIGN="LEFT" />'.join(
+        f'<I>{escape(name)}</I>: {escape(str(type))}'
+        for name, type in zip(schema.names, schema.types)
     )
 
 
@@ -56,22 +53,35 @@ def get_label(node):
     nodename = (
         node.name
         if isinstance(
-            node, (ops.Literal, ops.TableColumn, ops.Alias, ops.PhysicalTable)
+            node,
+            (
+                ops.Literal,
+                ops.TableColumn,
+                ops.Alias,
+                ops.PhysicalTable,
+                ops.window.RangeWindowFrame,
+            ),
         )
         else None
     )
     if nodename is not None:
-        if isinstance(node, ops.TableNode):
-            label_fmt = '<<I>{}</I>: <B>{}</B>{}>'
+        # [TODO] Don't show nodename because it's too long and ruins the image
+        if isinstance(node, ops.window.RangeWindowFrame):
+            label_fmt = '<<B>{}</B>>'
+            label = label_fmt.format(escape(name))
         else:
-            label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
-        label = label_fmt.format(escape(nodename), escape(name), escape(typename))
+            if isinstance(node, ops.TableNode):
+                label_fmt = '<<I>{}</I>: <B>{}</B>{}>'
+            else:
+                label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
+            # typename is already escaped
+            label = label_fmt.format(escape(nodename), escape(name), typename)
     else:
         if isinstance(node, ops.TableNode):
             label_fmt = '<<B>{}</B>{}>'
         else:
             label_fmt = '<<B>{}</B><BR ALIGN="LEFT" />:: {}>'
-        label = label_fmt.format(escape(name), escape(typename))
+        label = label_fmt.format(escape(name), typename)
     return label
 
 
@@ -175,5 +185,10 @@ if __name__ == '__main__':
         .group_by(_.c)
         .having(_.a.mean() > 0.0)
         .aggregate(a_mean=_.a.mean(), b_sum=_.b.sum())
+        .mutate(
+            arrays=ibis.array([1, 2, 3]),
+            maps=ibis.map({"a": 1, "b": 2}),
+            structs=ibis.struct({"a": [1, 2, 3], "b": {"c": 1, "d": 2}}),
+        )
     )
     expr.visualize(verbose=args.verbose > 0, label_edges=args.label_edges)
