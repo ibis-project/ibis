@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 import pyarrow as pa
 import sqlalchemy as sa
+import sqlalchemy.types as sat
 from snowflake.connector.constants import FIELD_ID_TO_NAME
 from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 
@@ -341,8 +342,6 @@ $$ {defn["source"]} $$"""
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 
-        from ibis.backends.snowflake.datatypes import dtype_to_snowflake
-
         dialect = self.con.dialect
         quote = dialect.preparer(dialect).quote_identifier
         raw_name = op.name
@@ -385,7 +384,7 @@ $$ {defn["source"]} $$"""
                 schema = ", ".join(
                     "{name} {typ}".format(
                         name=quote(col),
-                        typ=sa.types.to_instance(dtype_to_snowflake(typ)).compile(
+                        typ=sat.to_instance(SnowflakeType.from_ibis(typ)).compile(
                             dialect=dialect
                         ),
                     )
