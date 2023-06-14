@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 import numbers
 from abc import ABCMeta
+from decimal import Decimal
 from enum import Enum, EnumMeta
 
 import dateutil.parser
@@ -10,6 +11,7 @@ import dateutil.tz
 import pytz
 from public import public
 
+from ibis import util
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.patterns import Coercible
 
@@ -161,35 +163,16 @@ def normalize_timedelta(
     """
     if isinstance(value, datetime.timedelta):
         # datetime.timedelta only stores days, seconds, and microseconds internally
-        total_seconds = value.total_seconds()
-        if unit == IntervalUnit.NANOSECOND:
-            value = total_seconds * 1e9
-        elif unit == IntervalUnit.MICROSECOND:
-            value = total_seconds * 1e6
-        elif unit == IntervalUnit.MILLISECOND:
-            value = total_seconds * 1e3
-        elif unit == IntervalUnit.SECOND:
-            value = total_seconds
-        elif unit == IntervalUnit.MINUTE:
-            value = total_seconds / 60
-        elif unit == IntervalUnit.HOUR:
-            value = total_seconds / 3600
-        elif unit == IntervalUnit.DAY:
-            value = total_seconds / 86400
-        elif unit == IntervalUnit.WEEK:
-            value = total_seconds / 604800
-        elif unit == IntervalUnit.MONTH:
-            raise ValueError("Cannot normalize a timedelta to months")
-        elif unit == IntervalUnit.QUARTER:
-            raise ValueError("Cannot normalize a timedelta to quarters")
-        elif unit == IntervalUnit.YEAR:
-            raise ValueError("Cannot normalize a timedelta to years")
+        if value.days and not (value.seconds or value.microseconds):
+            value = util.convert_unit(value.days, 'D', unit.short, floor=False)
         else:
-            raise ValueError(f"Unknown unit {unit}")
+            total_seconds = Decimal(str(value.total_seconds()))
+            value = util.convert_unit(total_seconds, 's', unit.short, floor=False)
     else:
-        value = float(value)
+        value = Decimal(value)
 
-    if not value.is_integer():
+    # check that value is integral
+    if value % 1 != 0:
         raise ValueError(f"Normalizing {value} to {unit} would lose precision")
 
     return int(value)
