@@ -775,6 +775,79 @@ jobs:
         if: matrix.backend.services != null && failure()
         run: docker compose logs
 
+  test_flink:
+    name: Flink ${{ matrix.os }} python-${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    needs:
+      - gen_lockfile_backends
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.8"
+          - "3.11"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: install python
+        uses: actions/setup-python@v4
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: download poetry lockfile
+        uses: actions/download-artifact@v3
+        with:
+          name: backend-deps-${{ matrix.python-version }}
+          path: deps
+
+      - name: pull out lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mv -f deps/* .
+          rm -r deps
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
+
+      - name: install poetry
+        run: python -m pip install --upgrade pip 'poetry<1.4'
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: flink-${{ steps.install_python.outputs.python-version }}
+
+      - name: install ibis
+        run: poetry install --without dev --without docs --extras flink
+
+      - name: show installed deps
+        run: poetry run pip list
+
+      - name: "run parallel tests: flink"
+        run: poetry run pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml ibis/backends/flink/tests --numprocesses auto --dist=loadgroup
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          flags: backend,flink,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+
+      - name: publish test report
+        uses: actions/upload-artifact@v3
+        if: success() || failure()
+        with:
+          name: flink-${{ matrix.os }}-${{ matrix.python-version }}
+          path: junit.xml
+
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
@@ -783,5 +856,6 @@ jobs:
       - test_backends
       - test_backends_sqlalchemy2
       - test_pyspark
+      - test_flink
     steps:
       - run: exit 0

@@ -195,6 +195,7 @@ duckdb = [
   "sqlalchemy",
   "sqlalchemy-views",
 ]
+flink = []
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
