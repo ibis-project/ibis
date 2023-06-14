@@ -55,6 +55,11 @@ def bigquery_cast_integer_to_timestamp(compiled_arg, from_, to):
 
 @bigquery_cast.register(str, dt.Interval, dt.Integer)
 def bigquery_cast_interval_to_integer(compiled_arg, from_, to):
+    if from_.unit in {IntervalUnit.WEEK, IntervalUnit.QUARTER, IntervalUnit.NANOSECOND}:
+        raise com.UnsupportedOperationError(
+            f"BigQuery does not allow extracting date part `{from_.unit}` from intervals"
+        )
+
     return f"EXTRACT({from_.resolution.upper()} from {compiled_arg})"
 
 
@@ -346,22 +351,52 @@ def _truncate(kind, units):
     return truncator
 
 
-def _timestamp_op(func, units):
+# BigQuery doesn't support nanosecond intervals
+_date_truncate = _truncate("DATE", DateUnit)
+_time_truncate = _truncate("TIME", set(TimeUnit) - {TimeUnit.NANOSECOND})
+_timestamp_truncate = _truncate(
+    "TIMESTAMP", set(IntervalUnit) - {IntervalUnit.NANOSECOND}
+)
+
+
+def _date_binary(func):
     def _formatter(translator, op):
-        arg, offset = op.args
+        arg, offset = op.left, op.right
+
+        unit = offset.output_dtype.unit
+        if not unit.is_date():
+            raise com.UnsupportedOperationError(
+                f"BigQuery does not allow binary operation {func} with INTERVAL offset {unit}"
+            )
 
         formatted_arg = translator.translate(arg)
         formatted_offset = translator.translate(offset)
+        return f"{func}({formatted_arg}, {formatted_offset})"
+
+    return _formatter
+
+
+def _timestamp_binary(func):
+    def _formatter(translator, op):
+        arg, offset = op.left, op.right
 
         unit = offset.output_dtype.unit
-        if unit not in units:
+        if unit == IntervalUnit.NANOSECOND:
             raise com.UnsupportedOperationError(
-                "BigQuery does not allow binary operation "
-                f"{func} with INTERVAL offset {unit}"
+                f"BigQuery does not allow binary operation {func} with INTERVAL offset {unit}"
             )
 
-        result = f"{func}({formatted_arg}, {formatted_offset})"
-        return result
+        if unit.is_date():
+            try:
+                offset = offset.to_expr().to_unit('h').op()
+            except ValueError:
+                raise com.UnsupportedOperationError(
+                    f"BigQuery does not allow binary operation {func} with INTERVAL offset {unit}"
+                )
+
+        formatted_arg = translator.translate(arg)
+        formatted_offset = translator.translate(offset)
+        return f"{func}({formatted_arg}, {formatted_offset})"
 
     return _formatter
 
@@ -600,20 +635,6 @@ def _interval_multiply(t, op):
     return f"INTERVAL EXTRACT({unit} from {left}) * {right} {unit}"
 
 
-# BigQuery doesn't support nanosecond intervals
-_DATE_UNITS = frozenset(DateUnit)
-_TIME_UNITS = frozenset(TimeUnit) - {TimeUnit.NANOSECOND}
-_INTERVAL_UNITS = frozenset(IntervalUnit) - {IntervalUnit.NANOSECOND}
-_INTERVAL_DATE_UNITS = _INTERVAL_UNITS - {
-    IntervalUnit.HOUR,
-    IntervalUnit.MINUTE,
-    IntervalUnit.SECOND,
-    IntervalUnit.MILLISECOND,
-    IntervalUnit.MICROSECOND,
-}
-_INTERVAL_TIME_UNITS = _INTERVAL_UNITS - _INTERVAL_DATE_UNITS
-
-
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -643,9 +664,9 @@ OPERATION_REGISTRY = {
     # Temporal functions
     ops.Date: unary("DATE"),
     ops.DateFromYMD: fixed_arity("DATE", 3),
-    ops.DateAdd: _timestamp_op("DATE_ADD", _INTERVAL_DATE_UNITS),
-    ops.DateSub: _timestamp_op("DATE_SUB", _INTERVAL_DATE_UNITS),
-    ops.DateTruncate: _truncate("DATE", _DATE_UNITS | _INTERVAL_DATE_UNITS),
+    ops.DateAdd: _date_binary("DATE_ADD"),
+    ops.DateSub: _date_binary("DATE_SUB"),
+    ops.DateTruncate: _date_truncate,
     ops.DayOfWeekIndex: bigquery_day_of_week_index,
     ops.DayOfWeekName: bigquery_day_of_week_name,
     ops.ExtractEpochSeconds: _extract_field("epochseconds"),
@@ -663,16 +684,13 @@ OPERATION_REGISTRY = {
     ops.StringToTimestamp: compiles_string_to_timestamp,
     ops.Time: unary("TIME"),
     ops.TimeFromHMS: fixed_arity("TIME", 3),
-    ops.TimeTruncate: _truncate("TIME", _TIME_UNITS | _INTERVAL_TIME_UNITS),
-    ops.TimestampAdd: _timestamp_op("TIMESTAMP_ADD", _INTERVAL_TIME_UNITS),
+    ops.TimeTruncate: _time_truncate,
+    ops.TimestampAdd: _timestamp_binary("TIMESTAMP_ADD"),
     ops.TimestampFromUNIX: integer_to_timestamp,
     ops.TimestampFromYMDHMS: fixed_arity("DATETIME", 6),
     ops.TimestampNow: fixed_arity("CURRENT_TIMESTAMP", 0),
-    ops.TimestampSub: _timestamp_op("TIMESTAMP_SUB", _INTERVAL_TIME_UNITS),
-    ops.TimestampTruncate: _truncate(
-        "TIMESTAMP",
-        _DATE_UNITS | _TIME_UNITS | _INTERVAL_DATE_UNITS | _INTERVAL_TIME_UNITS,
-    ),
+    ops.TimestampSub: _timestamp_binary("TIMESTAMP_SUB"),
+    ops.TimestampTruncate: _timestamp_truncate,
     ops.IntervalMultiply: _interval_multiply,
     ops.Hash: _hash,
     ops.StringReplace: fixed_arity("REPLACE", 3),

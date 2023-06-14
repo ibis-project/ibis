@@ -282,7 +282,9 @@ def convert_unit(value, unit, to, floor: bool = True):
             i, j = monthly_units.index(unit), monthly_units.index(to)
             factors = monthly_factors
         except ValueError:
-            raise ValueError('Cannot convert to or from variable length interval')
+            raise ValueError(
+                f"Cannot convert interval value from unit {unit} to unit {to}"
+            )
 
     factor = functools.reduce(operator.mul, factors[min(i, j) : max(i, j)], 1)
     assert factor > 1

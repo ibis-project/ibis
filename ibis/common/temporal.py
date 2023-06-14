@@ -23,7 +23,11 @@ class Unit(Coercible, Enum, metaclass=ABCEnumMeta):
     def __coerce__(cls, value):
         if isinstance(value, cls):
             return value
+        else:
+            return cls.from_string(value)
 
+    @classmethod
+    def from_string(cls, value):
         # first look for aliases
         value = cls.aliases().get(value, value)
 
@@ -117,6 +121,12 @@ class IntervalUnit(TemporalUnit):
     MILLISECOND = "ms"
     MICROSECOND = "us"
     NANOSECOND = "ns"
+
+    def is_date(self) -> bool:
+        return self.name in DateUnit.__members__
+
+    def is_time(self) -> bool:
+        return self.name in TimeUnit.__members__
 
 
 def normalize_timedelta(
