@@ -5,8 +5,9 @@ import os
 import pytest
 
 import ibis
+import ibis.expr.datashape as ds
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 
 pytest.importorskip('graphviz')
@@ -47,8 +48,8 @@ def test_custom_expr():
         pass
 
     class MyExprNode(ops.Node):
-        foo = rlz.string
-        bar = rlz.numeric
+        foo: ops.Value[dt.String, ds.Any]
+        bar: ops.Value[dt.Numeric, ds.Any]
 
         def to_expr(self):
             return MyExpr(self)
@@ -68,8 +69,8 @@ def test_custom_expr_with_not_implemented_type():
             raise NotImplementedError
 
     class MyExprNode(ops.Node):
-        foo = rlz.string
-        bar = rlz.numeric
+        foo: ops.Value[dt.String, ds.Any]
+        bar: ops.Value[dt.Numeric, ds.Any]
 
         def to_expr(self):
             return MyExpr(self)

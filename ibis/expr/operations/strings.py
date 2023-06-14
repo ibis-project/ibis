@@ -1,16 +1,21 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from public import public
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Unary, Value
 
 
 @public
 class StringUnary(Unary):
-    arg = rlz.string
+    arg: Value[dt.String]
+
     output_dtype = dt.string
 
 
@@ -51,9 +56,9 @@ class Capitalize(StringUnary):
 
 @public
 class Substring(Value):
-    arg = rlz.string
-    start = rlz.integer
-    length = rlz.optional(rlz.integer)
+    arg: Value[dt.String]
+    start: Value[dt.Integer]
+    length: Optional[Value[dt.Integer]] = None
 
     output_dtype = dt.string
     output_shape = rlz.shape_like('arg')
@@ -61,26 +66,28 @@ class Substring(Value):
 
 @public
 class StrRight(Value):
-    arg = rlz.string
-    nchars = rlz.integer
+    arg: Value[dt.String]
+    nchars: Value[dt.Integer]
+
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
 
 
 @public
 class Repeat(Value):
-    arg = rlz.string
-    times = rlz.integer
+    arg: Value[dt.String]
+    times: Value[dt.Integer]
+
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
 
 
 @public
 class StringFind(Value):
-    arg = rlz.string
-    substr = rlz.string
-    start = rlz.optional(rlz.integer)
-    end = rlz.optional(rlz.integer)
+    arg: Value[dt.String]
+    substr: Value[dt.String]
+    start: Optional[Value[dt.Integer]] = None
+    end: Optional[Value[dt.Integer]] = None
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.int64
@@ -88,9 +95,9 @@ class StringFind(Value):
 
 @public
 class Translate(Value):
-    arg = rlz.string
-    from_str = rlz.string
-    to_str = rlz.string
+    arg: Value[dt.String]
+    from_str: Value[dt.String]
+    to_str: Value[dt.String]
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
@@ -98,9 +105,9 @@ class Translate(Value):
 
 @public
 class LPad(Value):
-    arg = rlz.string
-    length = rlz.integer
-    pad = rlz.optional(rlz.string)
+    arg: Value[dt.String]
+    length: Value[dt.Integer]
+    pad: Optional[Value[dt.String]] = None
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
@@ -108,9 +115,9 @@ class LPad(Value):
 
 @public
 class RPad(Value):
-    arg = rlz.string
-    length = rlz.integer
-    pad = rlz.optional(rlz.string)
+    arg: Value[dt.String]
+    length: Value[dt.Integer]
+    pad: Optional[Value[dt.String]] = None
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
@@ -118,8 +125,8 @@ class RPad(Value):
 
 @public
 class FindInSet(Value):
-    needle = rlz.string
-    values = rlz.tuple_of(rlz.string, min_length=1)
+    needle: Value[dt.String]
+    values: VarTuple[Value[dt.String]]
 
     output_shape = rlz.shape_like("needle")
     output_dtype = dt.int64
@@ -127,8 +134,8 @@ class FindInSet(Value):
 
 @public
 class StringJoin(Value):
-    sep = rlz.string
-    arg = rlz.tuple_of(rlz.string, min_length=1)
+    sep: Value[dt.String]
+    arg: VarTuple[Value[dt.String]]
 
     output_dtype = dt.string
 
@@ -139,8 +146,8 @@ class StringJoin(Value):
 
 @public
 class ArrayStringJoin(Value):
-    sep = rlz.string
-    arg = rlz.value(dt.Array(dt.string))
+    sep: Value[dt.String]
+    arg: Value[dt.Array[dt.String]]
 
     output_dtype = dt.string
     output_shape = rlz.shape_like("args")
@@ -148,33 +155,36 @@ class ArrayStringJoin(Value):
 
 @public
 class StartsWith(Value):
-    arg = rlz.string
-    start = rlz.scalar(rlz.string)
+    arg: Value[dt.String]
+    start: Value[dt.String, ds.Scalar]
+
     output_dtype = dt.boolean
     output_shape = rlz.shape_like("arg")
 
 
 @public
 class EndsWith(Value):
-    arg = rlz.string
-    end = rlz.scalar(rlz.string)
+    arg: Value[dt.String]
+    end: Value[dt.String, ds.Scalar]
+
     output_dtype = dt.boolean
     output_shape = rlz.shape_like("arg")
 
 
 @public
 class FuzzySearch(Value):
-    arg = rlz.string
-    pattern = rlz.string
+    arg: Value[dt.String]
+    pattern: Value[dt.String]
+
     output_dtype = dt.boolean
     output_shape = rlz.shape_like('arg')
 
 
 @public
 class StringSQLLike(FuzzySearch):
-    arg = rlz.string
-    pattern = rlz.string
-    escape = rlz.optional(rlz.instance_of(str))
+    arg: Value[dt.String]
+    pattern: Value[dt.String]
+    escape: Optional[str] = None
 
 
 @public
@@ -189,9 +199,9 @@ class RegexSearch(FuzzySearch):
 
 @public
 class RegexExtract(Value):
-    arg = rlz.string
-    pattern = rlz.string
-    index = rlz.integer
+    arg: Value[dt.String]
+    pattern: Value[dt.String]
+    index: Value[dt.Integer]
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
@@ -199,9 +209,9 @@ class RegexExtract(Value):
 
 @public
 class RegexReplace(Value):
-    arg = rlz.string
-    pattern = rlz.string
-    replacement = rlz.string
+    arg: Value[dt.String]
+    pattern: Value[dt.String]
+    replacement: Value[dt.String]
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
@@ -209,9 +219,9 @@ class RegexReplace(Value):
 
 @public
 class StringReplace(Value):
-    arg = rlz.string
-    pattern = rlz.string
-    replacement = rlz.string
+    arg: Value[dt.String]
+    pattern: Value[dt.String]
+    replacement: Value[dt.String]
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
@@ -219,8 +229,8 @@ class StringReplace(Value):
 
 @public
 class StringSplit(Value):
-    arg = rlz.string
-    delimiter = rlz.string
+    arg: Value[dt.String]
+    delimiter: Value[dt.String]
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.Array(dt.string)
@@ -228,14 +238,15 @@ class StringSplit(Value):
 
 @public
 class StringConcat(Value):
-    arg = rlz.tuple_of(rlz.string)
+    arg: VarTuple[Value[dt.String]]
+
     output_shape = rlz.shape_like('arg')
     output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class ExtractURLField(Value):
-    arg = rlz.string
+    arg: Value[dt.String]
 
     output_shape = rlz.shape_like("arg")
     output_dtype = dt.string
@@ -273,7 +284,7 @@ class ExtractPath(ExtractURLField):
 
 @public
 class ExtractQuery(ExtractURLField):
-    key = rlz.optional(rlz.string)
+    key: Optional[Value[dt.String]] = None
 
 
 @public
@@ -293,8 +304,8 @@ class StringAscii(StringUnary):
 
 @public
 class StringContains(Value):
-    haystack = rlz.string
-    needle = rlz.string
+    haystack: Value[dt.String]
+    needle: Value[dt.String]
 
     output_shape = rlz.shape_like("args")
     output_dtype = dt.bool

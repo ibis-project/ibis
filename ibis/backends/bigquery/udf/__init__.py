@@ -268,7 +268,10 @@ return {f.__name__}({args});\
         if libraries is None:
             libraries = []
 
-        udf_node_fields = {name: rlz.value(type_) for name, type_ in params.items()}
+        udf_node_fields = {
+            name: rlz.ValueOf(None if type_ == "ANY TYPE" else type_)
+            for name, type_ in params.items()
+        }
 
         udf_node_fields["output_dtype"] = output_type
         udf_node_fields["output_shape"] = rlz.shape_like("args")
@@ -362,10 +365,9 @@ RETURNS {return_type}
         """
         validate_output_type(output_type)
         udf_node_fields = {
-            name: rlz.any if type_ == "ANY TYPE" else rlz.value(type_)
+            name: rlz.ValueOf(None if type_ == "ANY TYPE" else type_)
             for name, type_ in params.items()
         }
-
         return_type = BigQueryType.from_ibis(dt.dtype(output_type))
 
         udf_node_fields["output_dtype"] = output_type

@@ -550,7 +550,7 @@ def test_elementwise_udf_named_destruct(udf_backend, udf_alltypes):
     add_one_struct_udf = create_add_one_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
     )
-    with pytest.raises(TypeError, match=r"Unable to infer datatype of"):
+    with pytest.raises(com.IbisTypeError, match=r"Unable to infer"):
         udf_alltypes.mutate(
             new_struct=add_one_struct_udf(udf_alltypes['double_col']).destructure()
         )

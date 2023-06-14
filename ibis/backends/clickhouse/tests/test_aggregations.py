@@ -6,7 +6,8 @@ import numpy as np
 import pandas.testing as tm
 import pytest
 
-from ibis import literal as L
+import ibis
+from ibis.common.patterns import ValidationError
 
 pytest.importorskip("clickhouse_connect")
 
@@ -33,9 +34,9 @@ def test_std_var_pop(con, alltypes, method, translate, snapshot):
 
 @pytest.mark.parametrize('reduction', ['sum', 'count', 'max', 'min'])
 def test_reduction_invalid_where(alltypes, reduction):
-    condbad_literal = L('T')
+    condbad_literal = ibis.literal('T')
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         fn = methodcaller(reduction, where=condbad_literal)
         fn(alltypes.double_col)
 

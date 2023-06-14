@@ -1,18 +1,22 @@
 from __future__ import annotations
 
+from typing import Literal, Optional
+
 from public import public
 
 import ibis.common.exceptions as exc
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.expr.operations.core import Value
+from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.generic import _Negatable
+from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
 @public
 class Reduction(Value):
-    output_shape = rlz.Shape.SCALAR
+    output_shape = ds.scalar
 
     @property
     def __window_op__(self):
@@ -20,27 +24,27 @@ class Reduction(Value):
 
 
 class Filterable(Value):
-    where = rlz.optional(rlz.boolean)
+    where: Optional[Value[dt.Boolean]] = None
 
 
 @public
 class Count(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
 
     output_dtype = dt.int64
 
 
 @public
 class CountStar(Filterable, Reduction):
-    arg = rlz.table
+    arg: Relation
 
     output_dtype = dt.int64
 
 
 @public
 class Arbitrary(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
-    how = rlz.isin({'first', 'last', 'heavy'})
+    arg: Column[dt.Any]
+    how: Literal["first", "last", "heavy"]
 
     output_dtype = rlz.dtype_like('arg')
 
@@ -49,7 +53,8 @@ class Arbitrary(Filterable, Reduction):
 class First(Filterable, Reduction):
     """Retrieve the first element."""
 
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
+
     output_dtype = rlz.dtype_like("arg")
 
     @property
@@ -67,7 +72,8 @@ class First(Filterable, Reduction):
 class Last(Filterable, Reduction):
     """Retrieve the last element."""
 
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
+
     output_dtype = rlz.dtype_like("arg")
 
     @property
@@ -95,7 +101,7 @@ class BitAnd(Filterable, Reduction):
     * MySQL [`BIT_AND`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and)
     """
 
-    arg = rlz.column(rlz.integer)
+    arg: Column[dt.Integer]
 
     output_dtype = rlz.dtype_like('arg')
 
@@ -113,7 +119,7 @@ class BitOr(Filterable, Reduction):
     * MySQL [`BIT_OR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or)
     """
 
-    arg = rlz.column(rlz.integer)
+    arg: Column[dt.Integer]
 
     output_dtype = rlz.dtype_like('arg')
 
@@ -131,14 +137,14 @@ class BitXor(Filterable, Reduction):
     * MySQL [`BIT_XOR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor)
     """
 
-    arg = rlz.column(rlz.integer)
+    arg: Column[dt.Integer]
 
     output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class Sum(Filterable, Reduction):
-    arg = rlz.column(rlz.numeric)
+    arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute.default
     def output_dtype(self):
@@ -150,7 +156,7 @@ class Sum(Filterable, Reduction):
 
 @public
 class Mean(Filterable, Reduction):
-    arg = rlz.column(rlz.numeric)
+    arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute.default
     def output_dtype(self):
@@ -162,7 +168,7 @@ class Mean(Filterable, Reduction):
 
 @public
 class Median(Filterable, Reduction):
-    arg = rlz.column(rlz.numeric)
+    arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute.default
     def output_dtype(self):
@@ -171,30 +177,30 @@ class Median(Filterable, Reduction):
 
 @public
 class Quantile(Filterable, Reduction):
-    arg = rlz.any
-    quantile = rlz.strict_numeric
-    interpolation = rlz.optional(
-        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'})
-    )
+    arg: Value
+    quantile: Value[dt.Numeric]
+    interpolation: Optional[
+        Literal['linear', 'lower', 'higher', 'midpoint', 'nearest']
+    ] = None
 
     output_dtype = dt.float64
 
 
 @public
 class MultiQuantile(Filterable, Reduction):
-    arg = rlz.any
-    quantile = rlz.value(dt.Array(dt.float64))
-    interpolation = rlz.optional(
-        rlz.isin({'linear', 'lower', 'higher', 'midpoint', 'nearest'})
-    )
+    arg: Value
+    quantile: Value[dt.Array[dt.Float64]]
+    interpolation: Optional[
+        Literal['linear', 'lower', 'higher', 'midpoint', 'nearest']
+    ] = None
 
     output_dtype = dt.Array(dt.float64)
 
 
 @public
 class VarianceBase(Filterable, Reduction):
-    arg = rlz.column(rlz.numeric)
-    how = rlz.isin({'sample', 'pop'})
+    arg: Column[dt.Numeric | dt.Boolean]
+    how: Literal["sample", "pop"]
 
     @attribute.default
     def output_dtype(self):
@@ -218,9 +224,9 @@ class Variance(VarianceBase):
 class Correlation(Filterable, Reduction):
     """Coefficient of correlation of a set of number pairs."""
 
-    left = rlz.column(rlz.numeric)
-    right = rlz.column(rlz.numeric)
-    how = rlz.optional(rlz.isin({'sample', 'pop'}), default='sample')
+    left: Column[dt.Numeric | dt.Boolean]
+    right: Column[dt.Numeric | dt.Boolean]
+    how: Literal['sample', 'pop'] = 'sample'
 
     output_dtype = dt.float64
 
@@ -229,46 +235,46 @@ class Correlation(Filterable, Reduction):
 class Covariance(Filterable, Reduction):
     """Covariance of a set of number pairs."""
 
-    left = rlz.column(rlz.numeric)
-    right = rlz.column(rlz.numeric)
-    how = rlz.isin({'sample', 'pop'})
+    left: Column[dt.Numeric | dt.Boolean]
+    right: Column[dt.Numeric | dt.Boolean]
+    how: Literal['sample', 'pop']
 
     output_dtype = dt.float64
 
 
 @public
 class Mode(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
+    arg: Column
 
     output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class Max(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
+    arg: Column
 
     output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class Min(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
+    arg: Column
 
     output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class ArgMax(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
-    key = rlz.column(rlz.any)
+    arg: Column
+    key: Column
 
     output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class ArgMin(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
-    key = rlz.column(rlz.any)
+    arg: Column
+    key: Column
 
     output_dtype = rlz.dtype_like("arg")
 
@@ -280,7 +286,7 @@ class ApproxCountDistinct(Filterable, Reduction):
     Impala offers the NDV built-in function for this.
     """
 
-    arg = rlz.column(rlz.any)
+    arg: Column
 
     # Impala 2.0 and higher returns a DOUBLE
     output_dtype = dt.int64
@@ -290,29 +296,29 @@ class ApproxCountDistinct(Filterable, Reduction):
 class ApproxMedian(Filterable, Reduction):
     """Compute the approximate median of a set of comparable values."""
 
-    arg = rlz.column(rlz.any)
+    arg: Column
 
     output_dtype = rlz.dtype_like('arg')
 
 
 @public
 class GroupConcat(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
-    sep = rlz.string
+    arg: Column
+    sep: Value[dt.String]
 
     output_dtype = dt.string
 
 
 @public
 class CountDistinct(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
+    arg: Column
 
     output_dtype = dt.int64
 
 
 @public
 class ArrayCollect(Filterable, Reduction):
-    arg = rlz.column(rlz.any)
+    arg: Column
 
     @attribute.default
     def output_dtype(self):
@@ -321,7 +327,7 @@ class ArrayCollect(Filterable, Reduction):
 
 @public
 class All(Filterable, Reduction, _Negatable):
-    arg = rlz.column(rlz.boolean)
+    arg: Column[dt.Boolean]
 
     output_dtype = dt.boolean
 
@@ -331,7 +337,7 @@ class All(Filterable, Reduction, _Negatable):
 
 @public
 class NotAll(Filterable, Reduction, _Negatable):
-    arg = rlz.column(rlz.boolean)
+    arg: Column[dt.Boolean]
 
     output_dtype = dt.boolean
 
@@ -341,7 +347,7 @@ class NotAll(Filterable, Reduction, _Negatable):
 
 @public
 class Any(Filterable, Reduction, _Negatable):
-    arg = rlz.column(rlz.boolean)
+    arg: Column[dt.Boolean]
 
     output_dtype = dt.boolean
 
@@ -351,7 +357,7 @@ class Any(Filterable, Reduction, _Negatable):
 
 @public
 class NotAny(Filterable, Reduction, _Negatable):
-    arg = rlz.column(rlz.boolean)
+    arg: Column[dt.Boolean]
 
     output_dtype = dt.boolean
 

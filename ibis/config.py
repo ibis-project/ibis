@@ -8,9 +8,9 @@ from typing_extensions import Annotated
 
 import ibis.common.exceptions as com
 from ibis.common.grounds import Annotable
-from ibis.common.validators import min_
+from ibis.common.patterns import Between
 
-PosInt = Annotated[int, min_(0)]
+PosInt = Annotated[int, Between(lower=0)]
 
 
 class Config(Annotable):

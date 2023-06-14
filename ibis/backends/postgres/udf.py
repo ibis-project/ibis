@@ -12,10 +12,10 @@ from sqlalchemy.dialects.postgresql import dialect
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-import ibis.legacy.udf.validate as v
 from ibis import IbisError
 from ibis.backends.postgres.compiler import PostgreSQLExprTranslator, PostgresUDFNode
 from ibis.backends.postgres.datatypes import PostgresType
+from ibis.legacy.udf.validate import validate_output_type
 
 _udf_name_cache: MutableMapping[str, Any] = collections.defaultdict(itertools.count)
 
@@ -70,10 +70,10 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
             ).format(len(input_types), len(parameters))
         )
 
-    v.validate_output_type(output_type)
+    validate_output_type(output_type)
 
     udf_node_fields = {
-        name: rlz.value(type_) for name, type_ in zip(parameters, input_types)
+        name: rlz.ValueOf(type_) for name, type_ in zip(parameters, input_types)
     }
     udf_node_fields['name'] = name
     udf_node_fields['output_dtype'] = output_type
