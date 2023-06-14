@@ -173,8 +173,8 @@ def test_lazy_instance_of():
     assert p.match("foo", context={}) is NoMatch
 
 
-T = TypeVar("T")
-S = TypeVar("S")
+T = TypeVar("T", covariant=True)
+S = TypeVar("S", covariant=True)
 
 
 @dataclass
@@ -184,7 +184,7 @@ class My(Generic[T, S]):
     c: str
 
 
-def test_generic_instance_of():
+def test_generic_instance_of_with_covariant_typevar():
     p = Pattern.from_typehint(My[int, AnyType])
     assert p.match(My(1, 2, "3"), context={}) == My(1, 2, "3")
 
@@ -426,7 +426,15 @@ def test_callable_with():
     assert p.match(func_with_kwargs, context={}) is NoMatch
 
     p = CallableWith([InstanceOf(int)] * 4, InstanceOf(int))
-    assert p.match(func_with_args, context={}) == func_with_args
+    wrapped = p.match(func_with_args, context={})
+    assert wrapped(1, 2, 3, 4) == 10
+
+    p = CallableWith([InstanceOf(int), InstanceOf(str)], InstanceOf(str))
+    wrapped = p.match(func, context={})
+    assert wrapped(1, "st") == "1st"
+
+    with pytest.raises(ValidationError, match="2 doesn't match InstanceOf"):
+        wrapped(1, 2)
 
 
 def test_pattern_list():
@@ -662,6 +670,7 @@ def test_pattern_decorator():
         (str, InstanceOf(str)),
         (bool, InstanceOf(bool)),
         (Optional[int], Option(InstanceOf(int))),
+        (Optional[Union[str, int]], Option(AnyOf(InstanceOf(str), InstanceOf(int)))),
         (Union[int, str], AnyOf(InstanceOf(int), InstanceOf(str))),
         (Annotated[int, Min(3)], AllOf(InstanceOf(int), Min(3))),
         (List[int], SequenceOf(InstanceOf(int), list)),

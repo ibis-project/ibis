@@ -7,6 +7,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis.common.patterns import ValidationError
 from ibis.expr import api
 
 
@@ -133,7 +134,7 @@ def test_invalid_precision_scale_combo(precision, scale):
     [(38.1, 3), (38, 3.1)],  # non integral precision  # non integral scale
 )
 def test_invalid_precision_scale_type(precision, scale):
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         dt.Decimal(precision, scale)
 
 

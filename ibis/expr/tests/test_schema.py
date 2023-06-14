@@ -10,10 +10,10 @@ import pyarrow as pa
 import pytest
 
 import ibis.expr.datatypes as dt
-import ibis.expr.rules as rlz
 import ibis.expr.schema as sch
 from ibis.common.exceptions import IntegrityError
 from ibis.common.grounds import Annotable
+from ibis.common.patterns import CoercedTo
 
 has_pandas = False
 with contextlib.suppress(ImportError):
@@ -338,7 +338,7 @@ class ObjectWithSchema(Annotable):
 
 def test_schema_is_coercible():
     s = sch.Schema({'a': dt.int64, 'b': dt.Array(dt.int64)})
-    assert rlz.coerced_to(sch.Schema, PreferenceA) == s
+    assert CoercedTo(sch.Schema).validate(PreferenceA, {}) == s
 
     o = ObjectWithSchema(schema=PreferenceA)
     assert o.schema == s

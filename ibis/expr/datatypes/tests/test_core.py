@@ -8,9 +8,11 @@ from dataclasses import dataclass
 from typing import Dict, List, NamedTuple, Tuple
 
 import pytest
+from typing_extensions import Annotated
 
 import ibis.expr.datatypes as dt
-from ibis.common.temporal import TimestampUnit
+from ibis.common.patterns import As, Attrs, NoMatch, Pattern, ValidationError
+from ibis.common.temporal import TimestampUnit, TimeUnit
 
 
 def test_validate_type():
@@ -67,8 +69,8 @@ def test_dtype(spec, expected):
         (dt.Boolean, dt.boolean),
         (dt.Date, dt.date),
         (dt.Time, dt.time),
-        (dt.Timestamp, dt.timestamp),
         (dt.Decimal, dt.decimal),
+        (dt.Timestamp, dt.timestamp),
     ],
 )
 def test_dtype_from_classes(klass, expected):
@@ -100,32 +102,7 @@ class FooStruct:
     s: dt.Map(dt.string, dt.int16)
 
 
-class BarStruct:
-    a: dt.Int16
-    b: dt.Int32
-    c: dt.Int64
-    d: dt.UInt8
-    e: dt.UInt16
-    f: dt.UInt32
-    g: dt.UInt64
-    h: dt.Float32
-    i: dt.Float64
-    j: dt.String
-    k: dt.Binary
-    l: dt.Boolean  # noqa: E741
-    m: dt.Date
-    n: dt.Time
-    o: dt.Timestamp
-    oa: dt.Timestamp['UTC']  # noqa: F821, UP037
-    ob: dt.Timestamp['UTC', 6]  # noqa: F821, UP037
-    pa: dt.Interval['s']  # noqa: F821, UP037
-    q: dt.Decimal
-    qa: dt.Decimal[12, 2]
-    r: dt.Array[dt.Int16]
-    s: dt.Map[dt.String, dt.Int16]
-
-
-baz_struct = dt.Struct(
+foo_struct = dt.Struct(
     {
         'a': dt.int16,
         'b': dt.int32,
@@ -147,6 +124,51 @@ baz_struct = dt.Struct(
         'pa': dt.Interval('s'),
         'q': dt.decimal,
         'qa': dt.Decimal(12, 2),
+        'r': dt.Array(dt.int16),
+        's': dt.Map(dt.string, dt.int16),
+    }
+)
+
+
+class BarStruct:
+    a: dt.Int16
+    b: dt.Int32
+    c: dt.Int64
+    d: dt.UInt8
+    e: dt.UInt16
+    f: dt.UInt32
+    g: dt.UInt64
+    h: dt.Float32
+    i: dt.Float64
+    j: dt.String
+    k: dt.Binary
+    l: dt.Boolean  # noqa: E741
+    m: dt.Date
+    n: dt.Time
+    o: dt.Timestamp
+    q: dt.Decimal
+    r: dt.Array[dt.Int16]
+    s: dt.Map[dt.String, dt.Int16]
+
+
+bar_struct = dt.Struct(
+    {
+        'a': dt.int16,
+        'b': dt.int32,
+        'c': dt.int64,
+        'd': dt.uint8,
+        'e': dt.uint16,
+        'f': dt.uint32,
+        'g': dt.uint64,
+        'h': dt.float32,
+        'i': dt.float64,
+        'j': dt.string,
+        'k': dt.binary,
+        'l': dt.boolean,
+        'm': dt.date,
+        'n': dt.time,
+        'o': dt.timestamp,
+        'q': dt.decimal,
         'r': dt.Array(dt.int16),
         's': dt.Map(dt.string, dt.int16),
     }
@@ -275,16 +297,8 @@ class FooDataClass:
     [
         (dt.Array[dt.Null], dt.Array(dt.Null())),
         (dt.Map[dt.Null, dt.Null], dt.Map(dt.Null(), dt.Null())),
-        (dt.Timestamp['UTC'], dt.Timestamp(timezone='UTC')),
-        (dt.Timestamp['UTC', 6], dt.Timestamp(timezone='UTC', scale=6)),
-        (dt.Interval['s'], dt.Interval('s')),
-        (dt.Decimal[12, 2], dt.Decimal(12, 2)),
-        (
-            dt.Struct['a' : dt.Int16, 'b' : dt.Int32],
-            dt.Struct({'a': dt.Int16(), 'b': dt.Int32()}),
-        ),
-        (FooStruct, baz_struct),
-        (BarStruct, baz_struct),
+        (FooStruct, foo_struct),
+        (BarStruct, bar_struct),
         (PyStruct, py_struct),
         (FooNamedTuple, dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})),
         (FooDataClass, dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})),
@@ -313,18 +327,6 @@ def test_dtype_from_invalid_python_type():
     msg = "Cannot construct an ibis datatype from python type `<class '.*Something'>`"
     with pytest.raises(TypeError, match=msg):
         dt.dtype(Something)
-
-
-def test_dtype_from_additional_struct_typehints():
-    class A:
-        nested: dt.Struct({'a': dt.Int16, 'b': dt.Int32})
-
-    class B:
-        nested: dt.Struct['a' : dt.Int16, 'b' : dt.Int32]  # noqa: F821, UP037
-
-    expected = dt.Struct({'nested': dt.Struct({'a': dt.Int16(), 'b': dt.Int32()})})
-    assert dt.dtype(A) == expected
-    assert dt.dtype(B) == expected
 
 
 def test_struct_subclass_from_tuples():
@@ -445,13 +447,13 @@ def test_array_type_equals():
 
 
 def test_interval_invalid_value_type():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         dt.Interval('m', dt.float32)
 
 
 @pytest.mark.parametrize('unit', ['H', 'unsupported'])
 def test_interval_invalid_unit(unit):
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         dt.Interval(dt.int32, unit)
 
 
@@ -612,3 +614,48 @@ def test_is_temporal():
 
 def test_set_is_an_alias_of_array():
     assert dt.Set is dt.Array
+
+
+def test_type_coercion():
+    p = Pattern.from_typehint(dt.DataType)
+    assert p.match(dt.int8, {}) == dt.int8
+    assert p.match('int8', {}) == dt.int8
+    assert p.match(dt.string, {}) == dt.string
+    assert p.match('string', {}) == dt.string
+    assert p.match(3, {}) is NoMatch
+
+    p = Pattern.from_typehint(dt.Primitive)
+    assert p.match(dt.int8, {}) == dt.int8
+    assert p.match('int8', {}) == dt.int8
+    assert p.match(dt.boolean, {}) == dt.boolean
+    assert p.match('boolean', {}) == dt.boolean
+    assert p.match(dt.Array(dt.int8), {}) is NoMatch
+    assert p.match('array<int8>', {}) is NoMatch
+
+    p = Pattern.from_typehint(dt.Integer)
+    assert p.match(dt.int8, {}) == dt.int8
+    assert p.match('int8', {}) == dt.int8
+    assert p.match(dt.uint8, {}) == dt.uint8
+    assert p.match('uint8', {}) == dt.uint8
+    assert p.match(dt.boolean, {}) is NoMatch
+    assert p.match('boolean', {}) is NoMatch
+
+    p = Pattern.from_typehint(dt.Array[dt.Integer])
+    assert p.match(dt.Array(dt.int8), {}) == dt.Array(dt.int8)
+    assert p.match('array<int8>', {}) == dt.Array(dt.int8)
+    assert p.match(dt.Array(dt.uint8), {}) == dt.Array(dt.uint8)
+    assert p.match('array<uint8>', {}) == dt.Array(dt.uint8)
+    assert p.match(dt.Array(dt.boolean), {}) is NoMatch
+    assert p.match('array<boolean>', {}) is NoMatch
+
+    p = Pattern.from_typehint(dt.Map[dt.String, dt.Integer])
+    assert p.match(dt.Map(dt.string, dt.int8), {}) == dt.Map(dt.string, dt.int8)
+    assert p.match('map<string, int8>', {}) == dt.Map(dt.string, dt.int8)
+    assert p.match(dt.Map(dt.string, dt.uint8), {}) == dt.Map(dt.string, dt.uint8)
+    assert p.match('map<string, uint8>', {}) == dt.Map(dt.string, dt.uint8)
+    assert p.match(dt.Map(dt.string, dt.boolean), {}) is NoMatch
+    assert p.match('map<string, boolean>', {}) is NoMatch
+
+    p = Pattern.from_typehint(Annotated[dt.Interval, Attrs(unit=As(TimeUnit))])
+    assert p.match(dt.Interval('s'), {}) == dt.Interval('s')
+    assert p.match(dt.Interval('ns'), {}) == dt.Interval('ns')

@@ -17,6 +17,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
+from ibis.common.patterns import ValidationError
 from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.util import assert_equal
 
@@ -66,22 +67,22 @@ def test_bucket(alltypes):
 def test_bucket_error_cases(alltypes):
     d = alltypes.double_col
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         d.bucket([])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         d.bucket([1, 2], closed="foo")
 
     # it works!
     d.bucket([10], include_under=True, include_over=True)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         d.bucket([10])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         d.bucket([10], include_under=True)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         d.bucket([10], include_over=True)
 
 
