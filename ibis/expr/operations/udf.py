@@ -13,6 +13,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis import util
+from ibis.common.annotations import Argument
 from ibis.common.collections import FrozenDict
 
 if TYPE_CHECKING:
@@ -125,10 +126,11 @@ class ScalarUDFBuilder:
             if (raw_dtype := annotations.get(name)) is None:
                 raise exc.MissingParameterAnnotationError(fn, name)
 
-            arg = rlz.value(dt.dtype(raw_dtype))
-            if (default := param.default) is not EMPTY:
-                arg = rlz.optional(arg, default=default)
-            fields[name] = arg
+            arg = rlz.ValueOf(dt.dtype(raw_dtype))
+            if (default := param.default) is EMPTY:
+                fields[name] = Argument.required(validator=arg)
+            else:
+                fields[name] = Argument.default(validator=arg, default=default)
 
         fields["output_dtype"] = dt.dtype(return_annotation)
 
@@ -137,6 +139,7 @@ class ScalarUDFBuilder:
         fields["__func__"] = property(fget=lambda _, fn=fn: fn)
         fields["__config__"] = FrozenDict(args=args, kwargs=FrozenDict(**kwargs))
         fields["__udf_namespace__"] = kwargs.get("schema")
+        fields["__module__"] = fn.__module__
 
         return type(fn.__name__, (ScalarUDF,), fields)
 

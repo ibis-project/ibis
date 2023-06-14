@@ -7,7 +7,7 @@ import uuid as pyuuid
 from abc import abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from numbers import Integral, Real
-from typing import Any, Iterable, Literal, NamedTuple, Optional
+from typing import Any, Generic, Iterable, Literal, NamedTuple, Optional, TypeVar
 
 import toolz
 from public import public
@@ -17,8 +17,8 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.grounds import Concrete, Singleton
+from ibis.common.patterns import Coercible, CoercionError
 from ibis.common.temporal import IntervalUnit, TimestampUnit
-from ibis.common.validators import Coercible
 
 
 @lazy_singledispatch
@@ -63,6 +63,16 @@ class DataType(Concrete, Coercible):
 
     nullable: bool = True
 
+    @property
+    @abstractmethod
+    def scalar(self):
+        ...
+
+    @property
+    @abstractmethod
+    def column(self):
+        ...
+
     # TODO(kszucs): remove it, prefer to use Annotable.__repr__ instead
     @property
     def _pretty_piece(self) -> str:
@@ -75,8 +85,13 @@ class DataType(Concrete, Coercible):
         return self.__class__.__name__
 
     @classmethod
-    def __coerce__(cls, value):
-        return dtype(value)
+    def __coerce__(cls, value, **kwargs):
+        if isinstance(value, cls):
+            return value
+        try:
+            return dtype(value)
+        except TypeError as e:
+            raise CoercionError("Unable to coerce to a DataType") from e
 
     def __call__(self, **kwargs):
         return self.copy(**kwargs)
@@ -116,6 +131,7 @@ class DataType(Concrete, Coercible):
     @classmethod
     def from_typehint(cls, typ, nullable=True) -> Self:
         origin_type = get_origin(typ)
+
         if origin_type is None:
             if isinstance(typ, type):
                 if issubclass(typ, DataType):
@@ -370,9 +386,6 @@ class Variadic(DataType):
 class Parametric(DataType):
     """Types that can be parameterized."""
 
-    def __class_getitem__(cls, params):
-        return cls(*params) if isinstance(params, tuple) else cls(params)
-
 
 @public
 class Null(Primitive):
@@ -404,6 +417,11 @@ class Bounds(NamedTuple):
 @public
 class Numeric(DataType):
     """Numeric types."""
+
+    @property
+    @abstractmethod
+    def largest(self) -> DataType:
+        """Return the largest type in this family."""
 
 
 @public
@@ -743,9 +761,6 @@ class Struct(Parametric, MapSet):
     scalar = "StructScalar"
     column = "StructColumn"
 
-    def __class_getitem__(cls, fields):
-        return cls({slice_.start: slice_.stop for slice_ in fields})
-
     @classmethod
     def from_tuples(
         cls, pairs: Iterable[tuple[str, str | DataType]], nullable: bool = True
@@ -794,11 +809,14 @@ class Struct(Parametric, MapSet):
         return f"<{pairs}>"
 
 
+T = TypeVar("T", bound=DataType, covariant=True)
+
+
 @public
-class Array(Variadic, Parametric):
+class Array(Variadic, Parametric, Generic[T]):
     """Array values."""
 
-    value_type: DataType
+    value_type: T
 
     scalar = "ArrayScalar"
     column = "ArrayColumn"
@@ -808,12 +826,16 @@ class Array(Variadic, Parametric):
         return f"<{self.value_type}>"
 
 
+K = TypeVar("K", bound=DataType, covariant=True)
+V = TypeVar("V", bound=DataType, covariant=True)
+
+
 @public
-class Map(Variadic, Parametric):
+class Map(Variadic, Parametric, Generic[K, V]):
     """Associative array values."""
 
-    key_type: DataType
-    value_type: DataType
+    key_type: K
+    value_type: V
 
     scalar = "MapScalar"
     column = "MapColumn"
@@ -972,6 +994,7 @@ Enum = String
 
 
 public(
+    Any=DataType,
     null=null,
     boolean=boolean,
     int8=int8,

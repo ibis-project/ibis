@@ -1,19 +1,23 @@
 from __future__ import annotations
 
+from typing import Callable, Optional
+
 from public import public
 
 import ibis.common.exceptions as com
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Argument, Unary, Value
 
 
 @public
 class ArrayColumn(Value):
-    cols = rlz.tuple_of(rlz.any, min_length=1)
+    cols: VarTuple[Value]
 
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar
 
     @attribute.default
     def output_dtype(self):
@@ -22,7 +26,7 @@ class ArrayColumn(Value):
 
 @public
 class ArrayLength(Unary):
-    arg = rlz.array
+    arg: Value[dt.Array]
 
     output_dtype = dt.int64
     output_shape = rlz.shape_like("args")
@@ -30,9 +34,9 @@ class ArrayLength(Unary):
 
 @public
 class ArraySlice(Value):
-    arg = rlz.array
-    start = rlz.integer
-    stop = rlz.optional(rlz.integer)
+    arg: Value[dt.Array]
+    start: Value[dt.Integer]
+    stop: Optional[Value[dt.Integer]] = None
 
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("arg")
@@ -40,8 +44,8 @@ class ArraySlice(Value):
 
 @public
 class ArrayIndex(Value):
-    arg = rlz.array
-    index = rlz.integer
+    arg: Value[dt.Array]
+    index: Value[dt.Integer]
 
     output_shape = rlz.shape_like("args")
 
@@ -52,8 +56,8 @@ class ArrayIndex(Value):
 
 @public
 class ArrayConcat(Value):
-    left = rlz.array
-    right = rlz.array
+    left: Value[dt.Array]
+    right: Value[dt.Array]
 
     output_dtype = rlz.dtype_like("left")
     output_shape = rlz.shape_like("args")
@@ -71,15 +75,15 @@ class ArrayConcat(Value):
 
 @public
 class ArrayRepeat(Value):
-    arg = rlz.array
-    times = rlz.integer
+    arg: Value[dt.Array]
+    times: Value[dt.Integer]
 
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("args")
 
 
 class ArrayApply(Value):
-    arg = rlz.array
+    arg: Value[dt.Array]
 
     @attribute.default
     def parameter(self):
@@ -102,7 +106,7 @@ class ArrayApply(Value):
 
 @public
 class ArrayMap(ArrayApply):
-    func = rlz.callable_with([rlz.expr_of(rlz.any)], rlz.any)
+    func: Callable[[Value], Value]
 
     @attribute.default
     def output_dtype(self) -> dt.DataType:
@@ -111,26 +115,26 @@ class ArrayMap(ArrayApply):
 
 @public
 class ArrayFilter(ArrayApply):
-    func = rlz.callable_with([rlz.expr_of(rlz.any)], rlz.boolean)
+    func: Callable[[Value], Value[dt.Boolean]]
 
     output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class Unnest(Value):
-    arg = rlz.array
+    arg: Value[dt.Array]
+
+    output_shape = ds.columnar
 
     @attribute.default
     def output_dtype(self):
         return self.arg.output_dtype.value_type
 
-    output_shape = rlz.Shape.COLUMNAR
-
 
 @public
 class ArrayContains(Value):
-    arg = rlz.array
-    other = rlz.any
+    arg: Value[dt.Array]
+    other: Value
 
     output_dtype = dt.boolean
     output_shape = rlz.shape_like("args")
@@ -138,8 +142,8 @@ class ArrayContains(Value):
 
 @public
 class ArrayPosition(Value):
-    arg = rlz.array
-    other = rlz.any
+    arg: Value[dt.Array]
+    other: Value
 
     output_dtype = dt.int64
     output_shape = rlz.shape_like("args")
@@ -147,8 +151,8 @@ class ArrayPosition(Value):
 
 @public
 class ArrayRemove(Value):
-    arg = rlz.array
-    other = rlz.any
+    arg: Value[dt.Array]
+    other: Value
 
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("args")
@@ -156,14 +160,15 @@ class ArrayRemove(Value):
 
 @public
 class ArrayDistinct(Value):
-    arg = rlz.array
+    arg: Value[dt.Array]
+
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("arg")
 
 
 @public
 class ArraySort(Value):
-    arg = rlz.array
+    arg: Value[dt.Array]
 
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("arg")
@@ -171,8 +176,8 @@ class ArraySort(Value):
 
 @public
 class ArrayUnion(Value):
-    left = rlz.array
-    right = rlz.array
+    left: Value[dt.Array]
+    right: Value[dt.Array]
 
     output_dtype = rlz.dtype_like("args")
     output_shape = rlz.shape_like("args")
@@ -180,7 +185,7 @@ class ArrayUnion(Value):
 
 @public
 class ArrayZip(Value):
-    arg = rlz.tuple_of(rlz.array, min_length=2)
+    arg: VarTuple[Value[dt.Array]]
 
     output_shape = rlz.shape_like("arg")
 

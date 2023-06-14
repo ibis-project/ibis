@@ -14,7 +14,9 @@ from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
 from ibis.util import experimental
+from ibis.common.patterns import ValidationError, Coercible, CoercionError
 from rich.jupyter import JupyterMixin
+from ibis.common.patterns import Coercible, CoercionError
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -37,13 +39,22 @@ class _FixedTextJupyterMixin(JupyterMixin):
 
 # TODO(kszucs): consider to subclass from Annotable with a single _arg field
 @public
-class Expr(Immutable):
+class Expr(Immutable, Coercible):
     """Base expression class."""
 
     __slots__ = ("_arg",)
 
     def __init__(self, arg: ops.Node) -> None:
         object.__setattr__(self, "_arg", arg)
+
+    @classmethod
+    def __coerce__(cls, value):
+        if isinstance(value, cls):
+            return value
+        elif isinstance(value, ops.Node):
+            return value.to_expr()
+        else:
+            raise CoercionError("Unable to coerce value to an expression")
 
     def __repr__(self) -> str:
         from ibis.expr.types.pretty import simple_console
@@ -558,13 +569,13 @@ def _binop(
     >>> import ibis.expr.operations as ops
     >>> expr = _binop(ops.TimeAdd, ibis.time("01:00"), ibis.interval(hours=1))
     >>> expr
-    TimeAdd('01:00', 1): '01:00' + 1 h
+    TimeAdd(datetime.time(1, 0), 1): datetime.time(1, 0) + 1 h
     >>> _binop(ops.TimeAdd, 1, ibis.interval(hours=1))
-    NotImplemented
+    TimeAdd(datetime.time(0, 0, 1), 1): datetime.time(0, 0, 1) + 1 h
     """
     try:
         node = op_class(left, right)
-    except (IbisTypeError, NotImplementedError):
+    except (ValidationError, NotImplementedError):
         return NotImplemented
     else:
         return node.to_expr()

@@ -20,6 +20,7 @@ import ibis.expr.schema as sch
 from ibis import util
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
+from ibis.expr.types.generic import literal
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -34,19 +35,20 @@ _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
 
 
 def _ensure_expr(table, expr):
-    import ibis.expr.rules as rlz
     from ibis.selectors import Selector
 
     # This is different than self._ensure_expr, since we don't want to
     # treat `str` or `int` values as column indices
-    if util.is_function(expr):
+    if isinstance(expr, Expr):
+        return expr
+    elif util.is_function(expr):
         return expr(table)
     elif isinstance(expr, Deferred):
         return expr.resolve(table)
     elif isinstance(expr, Selector):
         return expr.expand(table)
     else:
-        return rlz.any(expr).to_expr()
+        return literal(expr)
 
 
 def _regular_join_method(
@@ -3552,6 +3554,7 @@ def _resolve_predicates(
     import ibis.expr.analysis as an
     import ibis.expr.types as ir
 
+    # TODO(kszucs): clean this up, too much flattening and resolving happens here
     predicates = [
         pred.op()
         for preds in map(

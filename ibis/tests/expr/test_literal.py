@@ -160,7 +160,7 @@ def test_map_literal_non_castable(value):
 
 def test_literal_mixed_type_fails():
     data = [1, 'a']
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError, match="Cannot compute precedence"):
         ibis.literal(data)
 
 

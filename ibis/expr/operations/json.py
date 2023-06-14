@@ -9,8 +9,8 @@ from ibis.expr.operations import Value
 
 @public
 class JSONGetItem(Value):
-    arg = rlz.json
-    index = rlz.one_of((rlz.string, rlz.integer))
+    arg: Value[dt.JSON]
+    index: Value[dt.String | dt.Integer]
 
     output_dtype = dt.json
     output_shape = rlz.shape_like("args")
@@ -18,7 +18,7 @@ class JSONGetItem(Value):
 
 @public
 class ToJSONArray(Value):
-    arg = rlz.json
+    arg: Value[dt.JSON]
 
     output_dtype = dt.Array(dt.json)
     output_shape = rlz.shape_like("arg")
@@ -26,7 +26,7 @@ class ToJSONArray(Value):
 
 @public
 class ToJSONMap(Value):
-    arg = rlz.json
+    arg: Value[dt.JSON]
 
     output_dtype = dt.Map(dt.string, dt.json)
     output_shape = rlz.shape_like("arg")

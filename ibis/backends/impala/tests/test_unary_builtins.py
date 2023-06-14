@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+import ibis
 import ibis.expr.types as ir
-from ibis import literal as L
 from ibis.backends.impala.tests.conftest import translate
+from ibis.common.patterns import ValidationError
 
 
 @pytest.fixture(scope="module")
@@ -99,8 +100,8 @@ def test_reduction_where(table, expr_fn, snapshot):
 
 @pytest.mark.parametrize("method_name", ["sum", "count", "mean", "max", "min"])
 def test_reduction_invalid_where(table, method_name):
-    condbad_literal = L('T')
+    condbad_literal = ibis.literal('T')
     reduction = getattr(table.double_col, method_name)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         reduction(where=condbad_literal)

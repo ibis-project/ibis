@@ -18,7 +18,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
-from ibis import literal as L
+from ibis.common.patterns import ValidationError
 
 try:
     import duckdb
@@ -99,13 +99,13 @@ def test_boolean_literal(con, backend):
             id="na_fillna",
         ),
         param(
-            L(5).fillna(10),
+            ibis.literal(5).fillna(10),
             5,
             marks=pytest.mark.notimpl(["mssql", "druid", "oracle"]),
             id="non_na_fillna",
         ),
-        param(L(5).nullif(5), None, id="nullif_null"),
-        param(L(10).nullif(5), 10, id="nullif_not_null"),
+        param(ibis.literal(5).nullif(5), None, id="nullif_null"),
+        param(ibis.literal(10).nullif(5), 10, id="nullif_not_null"),
     ],
 )
 @pytest.mark.notimpl(["datafusion"])
@@ -477,7 +477,7 @@ def test_dropna_invalid(alltypes):
     ):
         alltypes.dropna(subset=['invalid_col'])
 
-    with pytest.raises(ValueError, match=r".*is not in.*"):
+    with pytest.raises(ValidationError, match=r"'invalid' doesn't match"):
         alltypes.dropna(how='invalid')
 
 
@@ -497,7 +497,6 @@ def test_dropna_table(backend, alltypes, how, subset):
     ).select("col_1", "col_2", "col_3")
 
     table_pandas = table.execute()
-
     result = table.dropna(subset, how).execute().reset_index(drop=True)
     expected = table_pandas.dropna(how=how, subset=subset).reset_index(drop=True)
 

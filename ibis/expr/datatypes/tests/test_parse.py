@@ -4,6 +4,7 @@ import parsy
 import pytest
 
 import ibis.expr.datatypes as dt
+from ibis.common.patterns import ValidationError
 
 
 @pytest.mark.parametrize(
@@ -227,7 +228,7 @@ def test_parse_interval(unit):
 @pytest.mark.parametrize('unit', ['X', 'unsupported'])
 def test_parse_interval_with_invalid_unit(unit):
     definition = f"interval('{unit}')"
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         dt.dtype(definition)
 
 

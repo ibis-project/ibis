@@ -1,11 +1,11 @@
 from ibis.common.grounds import Annotable
-from ibis.common.validators import instance_of
+from ibis.common.patterns import InstanceOf
 
-IsAny = instance_of(object)
-IsBool = instance_of(bool)
-IsFloat = instance_of(float)
-IsInt = instance_of(int)
-IsStr = instance_of(str)
+IsAny = InstanceOf(object)
+IsBool = InstanceOf(bool)
+IsFloat = InstanceOf(float)
+IsInt = InstanceOf(int)
+IsStr = InstanceOf(str)
 
 
 class Node(Annotable):
@@ -13,16 +13,16 @@ class Node(Annotable):
 
 
 class Literal(Node):
-    value = instance_of((int, float, bool, str))
-    dtype = instance_of(type)
+    value = InstanceOf((int, float, bool, str))
+    dtype = InstanceOf(type)
 
     def __add__(self, other):
         return Add(self, other)
 
 
 class BinaryOperation(Annotable):
-    left = instance_of(Node)
-    right = instance_of(Node)
+    left = InstanceOf(Node)
+    right = InstanceOf(Node)
 
 
 class Add(BinaryOperation):

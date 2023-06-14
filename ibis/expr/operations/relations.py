@@ -1,30 +1,32 @@
 from __future__ import annotations
 
 import abc
-import collections
 import itertools
 from abc import abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import Union as UnionType
 
 from public import public
 
 import ibis.common.exceptions as com
+import ibis.expr.datashape as ds
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
-import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
-from ibis.common.collections import frozendict
+from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.grounds import Immutable
+from ibis.common.patterns import Coercible, Pattern
+from ibis.common.typing import VarTuple
 from ibis.expr.deferred import Deferred
-from ibis.expr.operations.core import Named, Node, Value
-from ibis.expr.operations.generic import TableColumn
-from ibis.expr.operations.logical import Equals, ExistsSubquery, NotExistsSubquery
+from ibis.expr.operations.core import Column, Named, Node, Scalar, Value
+from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
 
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
+
 
 _table_names = (f'unbound_table_{i:d}' for i in itertools.count())
 
@@ -35,7 +37,21 @@ def genname():
 
 
 @public
-class TableNode(Node):
+class Relation(Node, Coercible):
+    @classmethod
+    def __coerce__(cls, value):
+        import pandas as pd
+
+        import ibis
+        import ibis.expr.types as ir
+
+        if isinstance(value, pd.DataFrame):
+            return ibis.memtable(value).op()
+        elif isinstance(value, ir.Expr):
+            return value.op()
+        else:
+            return value
+
     def order_by(self, sort_exprs):
         return Selection(self, [], sort_keys=sort_exprs)
 
@@ -50,8 +66,11 @@ class TableNode(Node):
         return ir.Table(self)
 
 
+TableNode = Relation
+
+
 @public
-class PhysicalTable(TableNode, Named):
+class PhysicalTable(Relation, Named):
     pass
 
 
@@ -59,25 +78,30 @@ class PhysicalTable(TableNode, Named):
 # should just extend TableNode
 @public
 class UnboundTable(PhysicalTable):
-    schema = rlz.coerced_to(Schema)
-    name = rlz.optional(rlz.instance_of(str), default=genname)
+    schema: Schema
+    name: Optional[str] = None
+
+    def __init__(self, schema, name) -> None:
+        if name is None:
+            name = genname()
+        super().__init__(schema=schema, name=name)
 
 
 @public
 class DatabaseTable(PhysicalTable):
-    name = rlz.instance_of(str)
-    schema = rlz.instance_of(Schema)
-    source = rlz.client
-    namespace = rlz.optional(rlz.instance_of(str))
+    name: str
+    schema: Schema
+    source: Any
+    namespace: Optional[str] = None
 
 
 @public
 class SQLQueryResult(TableNode):
     """A table sourced from the result set of a select query."""
 
-    query = rlz.instance_of(str)
-    schema = rlz.instance_of(Schema)
-    source = rlz.client
+    query: str
+    schema: Schema
+    source: Any
 
 
 # TODO(kszucs): Add a pseudohashable wrapper and use that from InMemoryTable
@@ -142,9 +166,9 @@ class PandasDataFrameProxy(TableProxy):
 
 @public
 class InMemoryTable(PhysicalTable):
-    name = rlz.instance_of(str)
-    schema = rlz.instance_of(Schema)
-    data = rlz.instance_of(TableProxy)
+    name: str
+    schema: Schema
+    data: TableProxy
 
 
 # TODO(kszucs): desperately need to clean this up, the majority of this
@@ -196,10 +220,10 @@ def _clean_join_predicates(left, right, predicates):
 
 
 @public
-class Join(TableNode):
-    left = rlz.table
-    right = rlz.table
-    predicates = rlz.optional(lambda x, this: x, default=())
+class Join(Relation):
+    left: Relation
+    right: Relation
+    predicates: Any = ()
 
     def __init__(self, left, right, predicates, **kwargs):
         # TODO(kszucs): predicates should be already a list of operations, need
@@ -207,6 +231,7 @@ class Join(TableNode):
         # currently
         import ibis.expr.analysis as an
         import ibis.expr.operations as ops
+        import ibis.expr.types as ir
 
         # TODO(kszucs): need to factor this out to appropriate join predicate
         # rules
@@ -298,8 +323,8 @@ class CrossJoin(Join):
 @public
 class AsOfJoin(Join):
     # TODO(kszucs): convert to proper predicate rules
-    by = rlz.optional(lambda x, this: x, default=())
-    tolerance = rlz.optional(rlz.interval)
+    by: Any = ()
+    tolerance: Optional[Value[dt.Interval]] = None
 
     def __init__(self, left, right, by, predicates, **kwargs):
         by = _clean_join_predicates(left, right, util.promote_list(by))
@@ -307,10 +332,10 @@ class AsOfJoin(Join):
 
 
 @public
-class SetOp(TableNode):
-    left = rlz.table
-    right = rlz.table
-    distinct = rlz.optional(rlz.instance_of(bool), default=False)
+class SetOp(Relation):
+    left: Relation
+    right: Relation
+    distinct: bool = False
 
     def __init__(self, left, right, **kwargs):
         if left.schema != right.schema:
@@ -343,10 +368,10 @@ class Difference(SetOp):
 
 
 @public
-class Limit(TableNode):
-    table = rlz.table
-    n = rlz.instance_of(int)
-    offset = rlz.instance_of(int)
+class Limit(Relation):
+    table: Relation
+    n: int
+    offset: int
 
     @property
     def schema(self):
@@ -354,8 +379,8 @@ class Limit(TableNode):
 
 
 @public
-class SelfReference(TableNode):
-    table = rlz.table
+class SelfReference(Relation):
+    table: Relation
 
     @property
     def name(self) -> str:
@@ -366,9 +391,9 @@ class SelfReference(TableNode):
         return self.table.schema
 
 
-class Projection(TableNode):
-    table = rlz.table
-    selections = rlz.tuple_of(rlz.one_of((rlz.table, rlz.any)))
+class Projection(Relation):
+    table: Relation
+    selections: VarTuple[Relation | Value]
 
     @attribute.default
     def schema(self):
@@ -399,10 +424,8 @@ def _add_alias(op: ops.Value | ops.TableNode):
 
 @public
 class Selection(Projection):
-    predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
-    sort_keys = rlz.optional(
-        rlz.tuple_of(rlz.sort_key_from(rlz.ref("table"))), default=()
-    )
+    predicates: VarTuple[Value[dt.Boolean]] = ()
+    sort_keys: VarTuple[SortKey] = ()
 
     def __init__(self, table, selections, predicates, sort_keys, **kwargs):
         from ibis.expr.analysis import shares_all_roots, shares_some_roots
@@ -431,7 +454,8 @@ class Selection(Projection):
     def order_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
 
-        keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
+        p = Pattern.from_typehint(VarTuple[SortKey])
+        keys = p.validate(sort_exprs, {})
 
         if not self.selections:
             if shares_all_roots(keys, table := self.table):
@@ -453,8 +477,9 @@ class Selection(Projection):
 
 
 @public
-class DummyTable(TableNode):
-    values = rlz.tuple_of(rlz.scalar(rlz.any), min_length=1)
+class DummyTable(Relation):
+    # TODO(kszucs): verify that it has at least one element: Length(at_least=1)
+    values: VarTuple[Value[dt.Any, ds.Scalar]]
 
     @property
     def schema(self):
@@ -462,15 +487,13 @@ class DummyTable(TableNode):
 
 
 @public
-class Aggregation(TableNode):
-    table = rlz.table
-    metrics = rlz.optional(rlz.tuple_of(rlz.scalar(rlz.any)), default=())
-    by = rlz.optional(rlz.tuple_of(rlz.column(rlz.any)), default=())
-    having = rlz.optional(rlz.tuple_of(rlz.scalar(rlz.boolean)), default=())
-    predicates = rlz.optional(rlz.tuple_of(rlz.boolean), default=())
-    sort_keys = rlz.optional(
-        rlz.tuple_of(rlz.sort_key_from(rlz.ref("table"))), default=()
-    )
+class Aggregation(Relation):
+    table: Relation
+    metrics: VarTuple[Scalar] = ()
+    by: VarTuple[Column] = ()
+    having: VarTuple[Scalar[dt.Boolean]] = ()
+    predicates: VarTuple[Value[dt.Boolean]] = ()
+    sort_keys: VarTuple[SortKey] = ()
 
     def __init__(self, table, metrics, by, having, predicates, sort_keys):
         from ibis.expr.analysis import shares_all_roots, shares_some_roots
@@ -509,7 +532,8 @@ class Aggregation(TableNode):
     def order_by(self, sort_exprs):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
 
-        keys = rlz.tuple_of(rlz.sort_key_from(rlz.just(self)), sort_exprs)
+        p = Pattern.from_typehint(VarTuple[SortKey])
+        keys = p.validate(sort_exprs, {})
 
         if shares_all_roots(keys, table := self.table):
             sort_keys = tuple(self.sort_keys) + tuple(
@@ -528,7 +552,7 @@ class Aggregation(TableNode):
 
 
 @public
-class Distinct(TableNode):
+class Distinct(Relation):
     """Distinct is a table-level unique-ing operation.
 
     In SQL, you might have:
@@ -540,36 +564,22 @@ class Distinct(TableNode):
     FROM table
     """
 
-    table = rlz.table
+    table: Relation
 
     @property
     def schema(self):
         return self.table.schema
 
 
+# TODO(kszucs): split it into two operations, one working with a single replacement
+# value and the other with a mapping
+# TODO(kszucs): the single value case was limited to numeric and string types
 @public
-class FillNa(TableNode):
+class FillNa(Relation):
     """Fill null values in the table."""
 
-    table = rlz.table
-    replacements = rlz.one_of(
-        (
-            rlz.numeric,
-            rlz.string,
-            rlz.instance_of(collections.abc.Mapping),
-        )
-    )
-
-    def __init__(self, table, replacements, **kwargs):
-        super().__init__(
-            table=table,
-            replacements=(
-                replacements
-                if not isinstance(replacements, collections.abc.Mapping)
-                else frozendict(replacements)
-            ),
-            **kwargs,
-        )
+    table: Relation
+    replacements: UnionType[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
 
     @property
     def schema(self):
@@ -577,12 +587,12 @@ class FillNa(TableNode):
 
 
 @public
-class DropNa(TableNode):
+class DropNa(Relation):
     """Drop null values in the table."""
 
-    table = rlz.table
-    how = rlz.isin({'any', 'all'})
-    subset = rlz.optional(rlz.tuple_of(rlz.column(rlz.any)))
+    table: Relation
+    how: Literal["any", "all"]
+    subset: Optional[VarTuple[Column[dt.Any]]] = None
 
     @property
     def schema(self):
@@ -593,8 +603,8 @@ class DropNa(TableNode):
 class View(PhysicalTable):
     """A view created from an expression."""
 
-    child = rlz.table
-    name = rlz.instance_of(str)
+    child: Relation
+    name: str
 
     @property
     def schema(self):
@@ -605,9 +615,9 @@ class View(PhysicalTable):
 class SQLStringView(PhysicalTable):
     """A view created from a SQL string."""
 
-    child = rlz.table
-    name = rlz.instance_of(str)
-    query = rlz.instance_of(str)
+    child: Relation
+    name: str
+    query: str
 
     @attribute.default
     def schema(self):
@@ -617,6 +627,9 @@ class SQLStringView(PhysicalTable):
 
 
 def _dedup_join_columns(expr, lname: str, rname: str):
+    from ibis.expr.operations.generic import TableColumn
+    from ibis.expr.operations.logical import Equals
+
     op = expr.op()
     left = op.left.to_expr()
     right = op.right.to_expr()
@@ -683,4 +696,4 @@ def _dedup_join_columns(expr, lname: str, rname: str):
     return expr.select(projections)
 
 
-public(ExistsSubquery=ExistsSubquery, NotExistsSubquery=NotExistsSubquery)
+public(TableNode=Relation)

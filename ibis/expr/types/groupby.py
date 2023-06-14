@@ -205,7 +205,6 @@ class GroupedTable:
         Table
             A table expression with window functions applied
         """
-
         exprs = self._selectables(*exprs, **kwexprs)
         return self.table.mutate(exprs)
 

@@ -2,16 +2,18 @@ from __future__ import annotations
 
 from public import public
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Value
 
 
 @public
 class StructField(Value):
-    arg = rlz.struct
-    field = rlz.instance_of(str)
+    arg: Value[dt.Struct]
+    field: str
 
     output_shape = rlz.shape_like("arg")
 
@@ -28,10 +30,10 @@ class StructField(Value):
 
 @public
 class StructColumn(Value):
-    names = rlz.tuple_of(rlz.instance_of(str), min_length=1)
-    values = rlz.tuple_of(rlz.any, min_length=1)
+    names: VarTuple[str]
+    values: VarTuple[Value]
 
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar
 
     @attribute.default
     def output_dtype(self) -> dt.DataType:

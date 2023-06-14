@@ -15,7 +15,6 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 from ibis.backends.base.sql.registry import helpers
 from ibis.backends.clickhouse.datatypes import serialize
 
@@ -837,10 +836,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
             left_arg = helpers.parenthesize(left_arg)
 
         # special case non-foreign isin/notin expressions
-        if (
-            not isinstance(options, tuple)
-            and options.output_shape is rlz.Shape.COLUMNAR
-        ):
+        if not isinstance(options, tuple) and options.output_shape.is_columnar():
             # this will fail to execute if there's a correlation, but it's too
             # annoying to detect so we let it through to enable the
             # uncorrelated use case (pandas-style `.isin`)

@@ -13,6 +13,7 @@ import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.exceptions import IbisTypeError, IntegrityError
+from ibis.common.patterns import ValidationError
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
@@ -204,7 +205,7 @@ def substitute(fn, node):
 
     try:
         return node.__class__(*new_args)
-    except TypeError:
+    except (TypeError, ValidationError):
         return node
 
 

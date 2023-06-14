@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import decimal
 import enum
+import json
 from collections import OrderedDict
 from datetime import date, datetime, timedelta
 
@@ -330,3 +331,14 @@ def test_infer_numpy_array(numpy_array, expected_dtypes):
     pandas_series = pd.Series(numpy_array)
     assert dt.infer(numpy_array) in expected_dtypes
     assert dt.infer(pandas_series) in expected_dtypes
+
+
+def test_normalize_json():
+    obj = ['foo', {'bar': ('baz', None, 1.0, 2)}]
+    expected = json.dumps(obj)
+
+    assert dt.normalize(dt.json, obj) == expected
+    assert dt.normalize(dt.json, expected) == expected
+
+    with pytest.raises(TypeError):
+        dt.normalize(dt.json, "invalid")

@@ -7,8 +7,49 @@ from pytest import param
 
 import ibis
 import ibis.expr.builders as bl
+import ibis.expr.datashape as ds
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisInputError, IbisTypeError
+from ibis.common.patterns import Pattern, ValidationError
+
+
+def test_window_boundary():
+    # the boundary value must be either numeric or interval
+    b = ops.WindowBoundary(5, preceding=False)
+    assert b.value == ops.Literal(5, dtype=dt.int8)
+
+    b = ops.WindowBoundary(3.12, preceding=True)
+    assert b.value == ops.Literal(3.12, dtype=dt.double)
+
+    oneday = ops.Literal(1, dtype=dt.Interval('D'))
+    b = ops.WindowBoundary(oneday, preceding=False)
+    assert b.value == oneday
+
+    with pytest.raises(ValidationError):
+        ops.WindowBoundary('foo', preceding=True)
+
+
+def test_window_boundary_typevars():
+    lit = ops.Literal(1, dtype=dt.Interval('D'))
+
+    p = Pattern.from_typehint(ops.WindowBoundary[dt.Integer, ds.Any])
+    b = ops.WindowBoundary(5, preceding=False)
+    assert p.validate(b, {}) == b
+    with pytest.raises(ValidationError):
+        p.validate(ops.WindowBoundary(5.0, preceding=False), {})
+    with pytest.raises(ValidationError):
+        p.validate(ops.WindowBoundary(lit, preceding=True), {})
+
+    p = Pattern.from_typehint(ops.WindowBoundary[dt.Interval, ds.Any])
+    b = ops.WindowBoundary(lit, preceding=True)
+    assert p.validate(b, {}) == b
+
+
+def test_window_boundary_coercions():
+    RowsWindowBoundary = ops.WindowBoundary[dt.Integer, ds.Any]
+    p = Pattern.from_typehint(RowsWindowBoundary)
+    assert p.validate(1, {}) == RowsWindowBoundary(ops.Literal(1, dtype=dt.int8), False)
 
 
 def test_window_builder_rows():
@@ -53,9 +94,9 @@ def test_window_builder_rows():
     assert w6.end is None
     assert w6.how == 'rows'
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         w0.rows(5, ibis.interval(days=1))
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         w0.rows(ibis.interval(days=1), 10)
 
 

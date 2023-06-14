@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+import itertools
+from datetime import date, datetime, time, timedelta, timezone
 
 import dateutil
 import pandas as pd
@@ -9,7 +10,9 @@ import pytz
 
 from ibis.common.patterns import CoercedTo
 from ibis.common.temporal import (
+    DateUnit,
     IntervalUnit,
+    TimeUnit,
     normalize_datetime,
     normalize_timedelta,
     normalize_timezone,
@@ -45,9 +48,9 @@ def test_interval_units(singular, plural, short):
 def test_interval_unit_coercions(singular, plural, short):
     u = IntervalUnit[singular.upper()]
     v = CoercedTo(IntervalUnit)
-    assert v.match(singular, {}) == u
-    assert v.match(plural, {}) == u
-    assert v.match(short, {}) == u
+    assert v.validate(singular, {}) == u
+    assert v.validate(plural, {}) == u
+    assert v.validate(short, {}) == u
 
 
 @pytest.mark.parametrize(
@@ -64,7 +67,7 @@ def test_interval_unit_coercions(singular, plural, short):
 )
 def test_interval_unit_aliases(alias, expected):
     v = CoercedTo(IntervalUnit)
-    assert v.match(alias, {}) == IntervalUnit(expected)
+    assert v.validate(alias, {}) == IntervalUnit(expected)
 
 
 @pytest.mark.parametrize(
@@ -108,6 +111,14 @@ def test_normalize_timedelta(value, unit, expected):
 def test_normalize_timedelta_invalid(value, unit):
     with pytest.raises(ValueError):
         normalize_timedelta(value, unit)
+
+
+def test_interval_unit_compatibility():
+    v = CoercedTo(IntervalUnit)
+    for unit in itertools.chain(DateUnit, TimeUnit):
+        interval = v.validate(unit, {})
+        assert isinstance(interval, IntervalUnit)
+        assert unit.value == interval.value
 
 
 @pytest.mark.parametrize(
@@ -175,6 +186,8 @@ def test_normalize_timezone(value, expected):
         (1000, datetime(1970, 1, 1, 0, 16, 40)),
         # floating point
         (1000.123, datetime(1970, 1, 1, 0, 16, 40, 123000)),
+        # time object
+        (time(0, 0, 0, 1), datetime.combine(date.today(), time(0, 0, 0, 1))),
     ],
 )
 def test_normalize_datetime(value, expected):
