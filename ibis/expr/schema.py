@@ -9,7 +9,7 @@ from ibis.common.collections import FrozenDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.validators import Coercible
+from ibis.common.patterns import Coercible
 from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
@@ -49,6 +49,8 @@ class Schema(Concrete, Coercible, MapSet):
 
     @classmethod
     def __coerce__(cls, value) -> Schema:
+        if isinstance(value, cls):
+            return value
         return schema(value)
 
     @attribute.default

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Iterable
-
+import functools
 from public import public
 
 import ibis.expr.operations as ops
@@ -392,7 +392,12 @@ class ArrayValue(Value):
         │ []                    │
         └───────────────────────┘
         """
-        return ops.ArrayMap(self, func=func).to_expr()
+
+        @functools.wraps(func)
+        def wrapped(x):
+            return func(x.to_expr())
+
+        return ops.ArrayMap(self, func=wrapped).to_expr()
 
     def filter(
         self, predicate: Callable[[ir.Value], bool | ir.BooleanValue]
@@ -435,7 +440,12 @@ class ArrayValue(Value):
         │ []                   │
         └──────────────────────┘
         """
-        return ops.ArrayFilter(self, func=predicate).to_expr()
+
+        @functools.wraps(predicate)
+        def wrapped(x):
+            return predicate(x.to_expr())
+
+        return ops.ArrayFilter(self, func=wrapped).to_expr()
 
     def contains(self, other: ir.Value) -> ir.BooleanValue:
         """Return whether the array contains `other`.

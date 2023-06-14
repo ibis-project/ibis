@@ -13,7 +13,7 @@ from public import public
 
 from ibis import util
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.common.patterns import Coercible
+from ibis.common.patterns import Coercible, CoercionError
 
 
 class ABCEnumMeta(EnumMeta, ABCMeta):
@@ -30,6 +30,12 @@ class Unit(Coercible, Enum, metaclass=ABCEnumMeta):
 
     @classmethod
     def from_string(cls, value):
+        # TODO(kszucs): perhaps this is not needed anymore
+        if isinstance(value, Unit):
+            value = value.value
+        elif not isinstance(value, str):
+            raise CoercionError(f"Unable to coerce {value} to {cls.__name__}")
+
         # first look for aliases
         value = cls.aliases().get(value, value)
 
@@ -45,7 +51,7 @@ class Unit(Coercible, Enum, metaclass=ABCEnumMeta):
         try:
             return cls[value.upper()]
         except KeyError:
-            raise ValueError(f"Unable to coerce {value} to {cls.__name__}")
+            raise CoercionError(f"Unable to coerce {value} to {cls.__name__}")
 
     @classmethod
     def aliases(cls):
@@ -217,6 +223,11 @@ def _from_str(value):
 @normalize_datetime.register(numbers.Number)
 def _from_number(value):
     return datetime.datetime.utcfromtimestamp(value)
+
+
+@normalize_datetime.register(datetime.time)
+def _from_time(value):
+    return datetime.datetime.combine(datetime.date.today(), value)
 
 
 @normalize_datetime.register(datetime.date)

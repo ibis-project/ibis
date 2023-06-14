@@ -3,10 +3,10 @@ from __future__ import annotations
 import pytest
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.common.patterns import ValidationError
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
 
     assert isinstance(udf.to_expr(), output_type)
 
-    with pytest.raises(com.IbisTypeError):
+    with pytest.raises(ValidationError):
         # wrong function type
         klass(
             func=1,
@@ -53,7 +53,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
             return_type=dt.int8(),
         )
 
-    with pytest.raises(com.IbisTypeError):
+    with pytest.raises(ValidationError):
         # scalar type instead of column type
         klass(
             func=lambda a, b, c: a,
@@ -62,7 +62,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
             return_type=dt.int8(),
         )
 
-    with pytest.raises(com.IbisTypeError):
+    with pytest.raises(ValidationError):
         # wrong input type
         klass(
             func=lambda a, b, c: a,
@@ -71,7 +71,7 @@ def test_vectorized_udf_operations(table, klass, output_type):
             return_type=dt.int8(),
         )
 
-    with pytest.raises(com.IbisTypeError):
+    with pytest.raises(ValidationError):
         # wrong return type
         klass(
             func=lambda a, b, c: a,

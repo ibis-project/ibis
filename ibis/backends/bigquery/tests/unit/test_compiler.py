@@ -13,6 +13,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
+from ibis.common.patterns import ValidationError
 
 to_sql = ibis.bigquery.compile
 
@@ -557,7 +558,7 @@ def test_cov(alltypes, how, snapshot):
 def test_cov_invalid_how(alltypes):
     d = alltypes.double_col
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValidationError):
         d.cov(d, how="error")
 
 

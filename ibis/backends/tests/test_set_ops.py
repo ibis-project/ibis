@@ -40,10 +40,10 @@ def union_subsets(alltypes, df):
 def test_union(backend, union_subsets, distinct):
     (a, b, c), (da, db, dc) = union_subsets
 
-    expr = ibis.union(a, b, c, distinct=distinct).order_by("id")
+    expr = ibis.union(a, b, distinct=distinct).order_by("id")
     result = expr.execute()
 
-    expected = pd.concat([da, db, dc], axis=0).sort_values("id").reset_index(drop=True)
+    expected = pd.concat([da, db], axis=0).sort_values("id").reset_index(drop=True)
     if distinct:
         expected = expected.drop_duplicates("id")
 

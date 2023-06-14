@@ -20,10 +20,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-import ibis.legacy.udf.validate as v
 from ibis import util
 from ibis.backends.base.sql.registry import fixed_arity, sql_type_names
 from ibis.backends.impala.compiler import ImpalaExprTranslator
+from ibis.legacy.udf.validate import validate_output_type
 
 __all__ = [
     'add_operation',
@@ -67,7 +67,7 @@ class Function(metaclass=abc.ABCMeta):
 
 class ScalarFunction(Function):
     def _create_operation_class(self):
-        fields = {f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)}
+        fields = {f'_{i}': rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
         fields['output_dtype'] = self.output
         fields['output_shape'] = rlz.shape_like('args')
         return type(f"UDF_{self.name}", (ops.Value,), fields)
@@ -75,7 +75,7 @@ class ScalarFunction(Function):
 
 class AggregateFunction(Function):
     def _create_operation_class(self):
-        fields = {f'_{i}': rlz.value(dtype) for i, dtype in enumerate(self.inputs)}
+        fields = {f'_{i}': rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
         fields['output_dtype'] = self.output
         return type(f"UDA_{self.name}", (ops.Reduction,), fields)
 
@@ -101,7 +101,7 @@ class ImpalaUDF(ScalarFunction, ImpalaFunction):
     """Feel free to customize my __doc__ or wrap in a nicer user API."""
 
     def __init__(self, inputs, output, so_symbol=None, lib_path=None, name=None):
-        v.validate_output_type(output)
+        validate_output_type(output)
         self.so_symbol = so_symbol
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
         ScalarFunction.__init__(self, inputs, output, name=self.name)
@@ -136,7 +136,7 @@ class ImpalaUDA(AggregateFunction, ImpalaFunction):
         self.finalize_fn = finalize_fn
         self.serialize_fn = serialize_fn
 
-        v.validate_output_type(output)
+        validate_output_type(output)
 
         ImpalaFunction.__init__(self, name=name, lib_path=lib_path)
         AggregateFunction.__init__(self, inputs, output, name=self.name)
@@ -268,10 +268,6 @@ def add_operation(op, func_name, db):
         database the relevant operator is registered to
     """
     full_name = f'{db}.{func_name}'
-    # TODO
-    # if op.input_type is rlz.listof:
-    #     translator = comp.varargs(full_name)
-    # else:
     arity = len(op.__signature__.parameters)
     translator = fixed_arity(full_name, arity)
 

@@ -12,7 +12,7 @@ from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
-    from ibis.expr import types as ir
+    import ibis.expr.types as ir
 
 
 @public

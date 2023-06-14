@@ -1,21 +1,24 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Union
 
 from public import public
+
+import ibis.expr.datashape as ds
+import ibis.expr.operations as ops
+from ibis.expr.types.core import _binop
+from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.common.annotations import annotated
+from ibis.common.patterns import Pattern
+import ibis.expr.datatypes as dt
+from ibis import util
+from ibis.common.temporal import IntervalUnit
 
 if TYPE_CHECKING:
     import pandas as pd
 
     import ibis.expr.types as ir
-
-import ibis.expr.operations as ops
-from ibis.expr.types.core import _binop
-from ibis.expr.types.generic import Column, Scalar, Value
-from ibis import util
-import ibis.expr.datatypes as dt
-from ibis.common.temporal import IntervalUnit
 
 
 @public
@@ -161,8 +164,6 @@ class _TimeComponentMixin:
             Whether `self` is between `lower` and `upper`, adjusting `timezone`
             as needed.
         """
-        import ibis.expr.datatypes as dt
-
         op = self.op()
         if isinstance(op, ops.Time):
             # Here we pull out the first argument to the underlying Time
@@ -226,14 +227,9 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
     Value : TimeValue | NotImplemented
     """
 
-    def __sub__(
-        self,
-        other: TimeValue | IntervalValue,
-    ) -> IntervalValue | TimeValue | NotImplemented:
+    @annotated
+    def __sub__(self, other: ops.Value[dt.Interval | dt.Time, ds.Any]):
         """Subtract a time or an interval from a time expression."""
-        import ibis.expr.rules as rlz
-
-        other = rlz.any(other)
 
         if other.output_dtype.is_time():
             op = ops.TimeDiff
@@ -255,14 +251,9 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
     Value : IntervalValue | TimeValue | NotImplemented
     """
 
-    def __rsub__(
-        self,
-        other: TimeValue | IntervalValue,
-    ) -> IntervalValue | TimeValue | NotImplemented:
+    @annotated
+    def __rsub__(self, other: ops.Value[dt.Interval | dt.Time, ds.Any]):
         """Subtract a time or an interval from a time expression."""
-        import ibis.expr.rules as rlz
-
-        other = rlz.any(other)
 
         if other.output_dtype.is_time():
             op = ops.TimeDiff
@@ -321,18 +312,9 @@ class DateValue(TemporalValue, _DateComponentMixin):
     Value : DateValue | NotImplemented
     """
 
-    def __sub__(
-        self,
-        other: datetime.date
-        | DateValue
-        | datetime.timedelta
-        | pd.Timedelta
-        | IntervalValue,
-    ) -> IntervalValue | DateValue | NotImplemented:
+    @annotated
+    def __sub__(self, other: ops.Value[dt.Date | dt.Interval, ds.Any]):
         """Subtract a date or an interval from a date."""
-        import ibis.expr.rules as rlz
-
-        other = rlz.one_of([rlz.date, rlz.interval], other)
 
         if other.output_dtype.is_date():
             op = ops.DateDiff
@@ -354,18 +336,9 @@ class DateValue(TemporalValue, _DateComponentMixin):
     Value : DateValue | NotImplemented
     """
 
-    def __rsub__(
-        self,
-        other: datetime.date
-        | DateValue
-        | datetime.timedelta
-        | pd.Timedelta
-        | IntervalValue,
-    ) -> IntervalValue | DateValue | NotImplemented:
+    @annotated
+    def __rsub__(self, other: ops.Value[dt.Date | dt.Interval, ds.Any]):
         """Subtract a date or an interval from a date."""
-        import ibis.expr.rules as rlz
-
-        other = rlz.one_of([rlz.date, rlz.interval], other)
 
         if other.output_dtype.is_date():
             op = ops.DateDiff
@@ -437,21 +410,11 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
     Value : TimestampValue | NotImplemented
     """
 
-    def __sub__(
-        self,
-        other: datetime.datetime
-        | pd.Timestamp
-        | TimestampValue
-        | datetime.timedelta
-        | pd.Timedelta
-        | IntervalValue,
-    ) -> IntervalValue | TimestampValue | NotImplemented:
+    @annotated
+    def __sub__(self, other: ops.Value[dt.Timestamp | dt.Interval, ds.Any]):
         """Subtract a timestamp or an interval from a timestamp."""
-        import ibis.expr.rules as rlz
 
-        right = rlz.any(other)
-
-        if right.output_dtype.is_timestamp():
+        if other.output_dtype.is_timestamp():
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate
@@ -471,21 +434,11 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
     Value : IntervalValue | TimestampValue | NotImplemented
     """
 
-    def __rsub__(
-        self,
-        other: datetime.datetime
-        | pd.Timestamp
-        | TimestampValue
-        | datetime.timedelta
-        | pd.Timedelta
-        | IntervalValue,
-    ) -> IntervalValue | TimestampValue | NotImplemented:
+    @annotated
+    def __rsub__(self, other: ops.Value[dt.Timestamp | dt.Interval, ds.Any]):
         """Subtract a timestamp or an interval from a timestamp."""
-        import ibis.expr.rules as rlz
 
-        right = rlz.any(other)
-
-        if right.output_dtype.is_timestamp():
+        if other.output_dtype.is_timestamp():
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate

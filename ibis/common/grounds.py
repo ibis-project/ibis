@@ -3,14 +3,30 @@ from __future__ import annotations
 import contextlib
 from abc import ABCMeta, abstractmethod
 from copy import copy
-from typing import Any
+from typing import (
+    Any,
+    ClassVar,
+    Mapping,
+    Tuple,
+    Union,
+    get_origin,
+)
 from weakref import WeakValueDictionary
 
-from ibis.common.annotations import EMPTY, Argument, Attribute, Signature, attribute
+from typing_extensions import Self, dataclass_transform
+
+from ibis.common.annotations import (
+    EMPTY,
+    Annotation,
+    Argument,
+    Attribute,
+    Signature,
+    attribute,
+)
 from ibis.common.caching import WeakCache
 from ibis.common.collections import FrozenDict
+from ibis.common.patterns import Validator
 from ibis.common.typing import evaluate_annotations
-from ibis.common.validators import Validator
 
 
 class BaseMeta(ABCMeta):
@@ -21,13 +37,13 @@ class BaseMeta(ABCMeta):
         dct.setdefault("__slots__", ())
         return super().__new__(metacls, clsname, bases, dct, **kwargs)
 
-    def __call__(cls, *args, **kwargs) -> Base:
+    def __call__(cls, *args, **kwargs):
         return cls.__create__(*args, **kwargs)
 
 
 class Base(metaclass=BaseMeta):
     __slots__ = ('__weakref__',)
-    __create__ = classmethod(type.__call__)
+    __create__ = classmethod(type.__call__)  # type: ignore
 
 
 class AnnotableMeta(BaseMeta):
@@ -45,10 +61,15 @@ class AnnotableMeta(BaseMeta):
                 signatures.append(parent.__signature__)
 
         # collection type annotations and convert them to validators
-        module_name = dct.get('__module__')
+        module = dct.get('__module__')
+        qualname = dct.get('__qualname__') or clsname
         annotations = dct.get('__annotations__', {})
-        typehints = evaluate_annotations(annotations, module_name)
+
+        # TODO(kszucs): pass dct as localns to evaluate_annotations
+        typehints = evaluate_annotations(annotations, module)
         for name, typehint in typehints.items():
+            if get_origin(typehint) is ClassVar:
+                continue
             validator = Validator.from_typehint(typehint)
             if name in dct:
                 dct[name] = Argument.default(dct[name], validator, typehint=typehint)
@@ -77,6 +98,8 @@ class AnnotableMeta(BaseMeta):
         argnames = tuple(signature.parameters.keys())
 
         namespace.update(
+            __module__=module,
+            __qualname__=qualname,
             __argnames__=argnames,
             __attributes__=attributes,
             __match_args__=argnames,
@@ -85,23 +108,33 @@ class AnnotableMeta(BaseMeta):
         )
         return super().__new__(metacls, clsname, bases, namespace, **kwargs)
 
+    def __or__(self, other):
+        # required to support `dt.Numeric | dt.Floating` annotation for python<3.10
+        return Union[self, other]
 
+
+@dataclass_transform()
 class Annotable(Base, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
+    __argnames__: ClassVar[Tuple[str, ...]]
+    __attributes__: ClassVar[FrozenDict[str, Annotation]]
+    __match_args__: ClassVar[Tuple[str, ...]]
+    __signature__: ClassVar[Signature]
+
     @classmethod
-    def __create__(cls, *args, **kwargs) -> Annotable:
+    def __create__(cls, *args: Any, **kwargs: Any) -> Self:
         # construct the instance by passing the validated keyword arguments
         kwargs = cls.__signature__.validate(*args, **kwargs)
         return super().__create__(**kwargs)
 
     @classmethod
-    def __recreate__(cls, kwargs) -> Annotable:
+    def __recreate__(cls, kwargs: Any) -> Self:
         # bypass signature binding by requiring keyword arguments only
         kwargs = cls.__signature__.validate_nobind(**kwargs)
         return super().__create__(**kwargs)
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         # set the already validated arguments
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
@@ -114,7 +147,7 @@ class Annotable(Base, metaclass=AnnotableMeta):
 
     def __setattr__(self, name, value) -> None:
         if field := self.__attributes__.get(name):
-            value = field.validate(value, this=self)
+            value = field.validate(value, self)
         super().__setattr__(name, value)
 
     def __repr__(self) -> str:
@@ -132,7 +165,7 @@ class Annotable(Base, metaclass=AnnotableMeta):
         )
 
     @property
-    def __args__(self):
+    def __args__(self) -> Tuple[Any, ...]:
         return tuple(getattr(self, name) for name in self.__argnames__)
 
     def copy(self, **overrides: Any) -> Annotable:
@@ -169,10 +202,10 @@ class Immutable(Base):
 
 
 class Singleton(Base):
-    __instances__ = WeakValueDictionary()
+    __instances__: Mapping[Any, Self] = WeakValueDictionary()
 
     @classmethod
-    def __create__(cls, *args, **kwargs) -> Singleton:
+    def __create__(cls, *args, **kwargs):
         key = (cls, args, FrozenDict(kwargs))
         try:
             return cls.__instances__[key]
@@ -180,6 +213,15 @@ class Singleton(Base):
             instance = super().__create__(*args, **kwargs)
             cls.__instances__[key] = instance
             return instance
+
+
+class Final(Base):
+    def __init_subclass__(cls, **kwargs):
+        cls.__init_subclass__ = cls.__prohibit_inheritance__
+
+    @classmethod
+    def __prohibit_inheritance__(cls, **kwargs):
+        raise TypeError(f"Cannot inherit from final class {cls}")
 
 
 class Comparable(Base):
@@ -226,7 +268,7 @@ class Concrete(Immutable, Comparable, Annotable):
         return tuple(getattr(self, name) for name in self.__argnames__)
 
     @attribute.default
-    def __precomputed_hash__(self):
+    def __precomputed_hash__(self) -> int:
         return hash((self.__class__, self.__args__))
 
     def __reduce__(self):
@@ -235,10 +277,10 @@ class Concrete(Immutable, Comparable, Annotable):
         state = dict(zip(self.__argnames__, self.__args__))
         return (self.__recreate__, (state,))
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return self.__precomputed_hash__
 
-    def __equals__(self, other):
+    def __equals__(self, other) -> bool:
         return self.__args__ == other.__args__
 
     @property
@@ -246,10 +288,10 @@ class Concrete(Immutable, Comparable, Annotable):
         return self.__args__
 
     @property
-    def argnames(self):
+    def argnames(self) -> Tuple[str, ...]:
         return self.__argnames__
 
-    def copy(self, **overrides):
+    def copy(self, **overrides) -> Self:
         kwargs = dict(zip(self.__argnames__, self.__args__))
         kwargs.update(overrides)
         return self.__recreate__(kwargs)

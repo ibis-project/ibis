@@ -2,9 +2,8 @@ from __future__ import annotations
 
 from public import public
 
-from ibis.expr import datatypes as dt
-from ibis.expr import rules as rlz
-from ibis.expr.operations.core import Binary, Unary
+import ibis.expr.datatypes as dt
+from ibis.expr.operations.core import Binary, Unary, Value
 from ibis.expr.operations.reductions import Reduction
 
 
@@ -12,15 +11,15 @@ from ibis.expr.operations.reductions import Reduction
 class GeoSpatialBinOp(Binary):
     """Geo Spatial base binary."""
 
-    left = rlz.geospatial
-    right = rlz.geospatial
+    left: Value[dt.GeoSpatial]
+    right: Value[dt.GeoSpatial]
 
 
 @public
 class GeoSpatialUnOp(Unary):
     """Geo Spatial base unary."""
 
-    arg = rlz.geospatial
+    arg: Value[dt.GeoSpatial]
 
 
 @public
@@ -83,7 +82,7 @@ class GeoEquals(GeoSpatialBinOp):
 class GeoGeometryN(GeoSpatialUnOp):
     """Returns the Nth Geometry of a Multi geometry."""
 
-    n = rlz.integer
+    n: Value[dt.Integer]
     output_dtype = dt.geometry
 
 
@@ -120,8 +119,8 @@ class GeoLineLocatePoint(GeoSpatialBinOp):
     fraction of the total 2d line length.
     """
 
-    left = rlz.linestring
-    right = rlz.point
+    left: Value[dt.LineString]
+    right: Value[dt.Point]
 
     output_dtype = dt.halffloat
 
@@ -149,9 +148,9 @@ class GeoLineSubstring(GeoSpatialUnOp):
     This only works with linestrings.
     """
 
-    arg = rlz.linestring
-    start = rlz.floating
-    end = rlz.floating
+    arg: Value[dt.LineString]
+    start: Value[dt.Floating]
+    end: Value[dt.Floating]
 
     output_dtype = dt.linestring
 
@@ -303,8 +302,8 @@ class GeoPoint(GeoSpatialBinOp):
     Constant coordinates result in construction of a POINT literal.
     """
 
-    left = rlz.numeric
-    right = rlz.numeric
+    left: Value[dt.Numeric]
+    right: Value[dt.Numeric]
 
     output_dtype = dt.point
 
@@ -318,7 +317,7 @@ class GeoPointN(GeoSpatialUnOp):
     no linestring in the geometry
     """
 
-    n = rlz.integer
+    n: Value[dt.Integer]
     output_dtype = dt.point
 
 
@@ -350,7 +349,7 @@ class GeoSRID(GeoSpatialUnOp):
 class GeoSetSRID(GeoSpatialUnOp):
     """Set the spatial reference identifier for the ST_Geometry."""
 
-    srid = rlz.integer
+    srid: Value[dt.Integer]
 
     output_dtype = dt.geometry
 
@@ -362,7 +361,7 @@ class GeoBuffer(GeoSpatialUnOp):
     Calculations are in the Spatial Reference System of this geometry.
     """
 
-    radius = rlz.floating
+    radius: Value[dt.Floating]
     output_dtype = dt.geometry
 
 
@@ -377,7 +376,7 @@ class GeoCentroid(GeoSpatialUnOp):
 class GeoDFullyWithin(GeoSpatialBinOp):
     """Check if the geometries are fully within `distance` of one another."""
 
-    distance = rlz.floating
+    distance: Value[dt.Floating]
 
     output_dtype = dt.boolean
 
@@ -386,7 +385,7 @@ class GeoDFullyWithin(GeoSpatialBinOp):
 class GeoDWithin(GeoSpatialBinOp):
     """Check if the geometries are within `distance` of one another."""
 
-    distance = rlz.floating
+    distance: Value[dt.Floating]
 
     output_dtype = dt.boolean
 
@@ -406,8 +405,8 @@ class GeoAzimuth(GeoSpatialBinOp):
     3=PI/2; 6=PI; 9=3PI/2.
     """
 
-    left = rlz.point
-    right = rlz.point
+    left: Value[dt.Point]
+    right: Value[dt.Point]
 
     output_dtype = dt.float64
 
@@ -437,8 +436,8 @@ class GeoDifference(GeoSpatialBinOp):
 class GeoSimplify(GeoSpatialUnOp):
     """Returns a simplified version of the given geometry."""
 
-    tolerance = rlz.floating
-    preserve_collapsed = rlz.boolean
+    tolerance: Value[dt.Floating]
+    preserve_collapsed: Value[dt.Boolean]
 
     output_dtype = dt.geometry
 
@@ -447,7 +446,7 @@ class GeoSimplify(GeoSpatialUnOp):
 class GeoTransform(GeoSpatialUnOp):
     """Returns a transformed version of the given geometry into a new SRID."""
 
-    srid = rlz.integer
+    srid: Value[dt.Integer]
 
     output_dtype = dt.geometry
 
