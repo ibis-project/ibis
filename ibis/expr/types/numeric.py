@@ -1108,50 +1108,36 @@ class IntegerValue(NumericValue):
 
     def __and__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise and `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.BitwiseAnd, self, other)
 
     __rand__ = __and__
 
     def __or__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise or `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.BitwiseOr, self, other)
 
     __ror__ = __or__
 
     def __xor__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise xor `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.BitwiseXor, self, other)
 
     __rxor__ = __xor__
 
     def __lshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise left shift `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.BitwiseLeftShift, self, other)
 
     def __rlshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise left shift `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.BitwiseLeftShift, other, self)
 
     def __rshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise right shift `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.BitwiseRightShift, self, other)
 
     def __rrshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
         """Bitwise right shift `self` with `other`."""
-        from ibis.expr import operations as ops
-
         return _binop(ops.BitwiseRightShift, other, self)
 
     def __invert__(self) -> IntegerValue:
@@ -1162,8 +1148,6 @@ class IntegerValue(NumericValue):
         IntegerValue
             Inverted bits of `self`.
         """
-        from ibis.expr import operations as ops
-
         try:
             node = ops.BitwiseNot(self)
         except (IbisTypeError, NotImplementedError):

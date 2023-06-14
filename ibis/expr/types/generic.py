@@ -1623,12 +1623,19 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64
     """
-    import ibis.expr.rules as rlz
-
     if isinstance(value, Expr):
-        value = value.op()
+        node = value.op()
+        if not isinstance(node, ops.Literal):
+            raise TypeError(f"Ibis expression {value!r} is not a Literal")
+        if type is None or node.output_dtype.castable(dt.dtype(type)):
+            return value
+        else:
+            raise TypeError(
+                f"Ibis literal {value!r} cannot be safely coerced to datatype {type}"
+            )
 
-    return rlz.literal(type, value).to_expr()
+    dtype = dt.infer(value) if type is None else dt.dtype(type)
+    return ops.Literal(value, dtype=dtype).to_expr()
 
 
 public(

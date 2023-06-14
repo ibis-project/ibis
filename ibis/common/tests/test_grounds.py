@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import pickle
 import weakref
-from typing import Mapping, Sequence, Tuple, TypeVar
+from typing import Callable, Generic, Mapping, Optional, Sequence, Tuple, TypeVar, Union
 
 import pytest
 
@@ -24,18 +24,28 @@ from ibis.common.grounds import (
     Base,
     Comparable,
     Concrete,
+    Final,
     Immutable,
     Singleton,
 )
-from ibis.common.validators import Coercible, Validator, instance_of, option, validator
+from ibis.common.patterns import (
+    Any,
+    CoercedTo,
+    Coercible,
+    InstanceOf,
+    Option,
+    Pattern,
+    TupleOf,
+    ValidationError,
+)
 from ibis.tests.util import assert_pickle_roundtrip
 
-is_any = instance_of(object)
-is_bool = instance_of(bool)
-is_float = instance_of(float)
-is_int = instance_of(int)
-is_str = instance_of(str)
-is_list = instance_of(list)
+is_any = InstanceOf(object)
+is_bool = InstanceOf(bool)
+is_float = InstanceOf(float)
+is_int = InstanceOf(int)
+is_str = InstanceOf(str)
+is_list = InstanceOf(list)
 
 
 class Op(Annotable):
@@ -43,11 +53,11 @@ class Op(Annotable):
 
 
 class Value(Op):
-    arg = instance_of(object)
+    arg = InstanceOf(object)
 
 
 class StringOp(Value):
-    arg = instance_of(str)
+    arg = InstanceOf(str)
 
 
 class BetweenSimple(Annotable):
@@ -86,14 +96,14 @@ class VariadicArgsAndKeywords(Concrete):
     kwargs = varkwargs(is_int)
 
 
-T = TypeVar('T')
-K = TypeVar('K')
-V = TypeVar('V')
+T = TypeVar('T', covariant=True)
+K = TypeVar('K', covariant=True)
+V = TypeVar('V', covariant=True)
 
 
 class List(Concrete, Sequence[T], Coercible):
     @classmethod
-    def __coerce__(self, values):
+    def __coerce__(self, values, T=None):
         values = tuple(values)
         if values:
             head, *rest = values
@@ -126,7 +136,7 @@ class ConsList(List[T]):
 
 class Map(Concrete, Mapping[K, V], Coercible):
     @classmethod
-    def __coerce__(self, pairs):
+    def __coerce__(self, pairs, K=None, V=None):
         pairs = dict(pairs)
         if pairs:
             head_key = next(iter(pairs))
@@ -184,6 +194,29 @@ class MyExpr(Concrete):
     c: Map[str, Integer]
 
 
+class MyInt(int, Coercible):
+    @classmethod
+    def __coerce__(cls, value):
+        return cls(value)
+
+
+class MyFloat(float, Coercible):
+    @classmethod
+    def __coerce__(cls, value):
+        return cls(value)
+
+
+J = TypeVar("J", bound=MyInt, covariant=True)
+F = TypeVar("F", bound=MyFloat, covariant=True)
+N = TypeVar("N", bound=Union[MyInt, MyFloat], covariant=True)
+
+
+class MyValue(Annotable, Generic[J, F]):
+    integer: J
+    floating: F
+    numeric: N
+
+
 def test_immutable():
     class Foo(Immutable):
         __slots__ = ("a", "b")
@@ -221,15 +254,29 @@ def test_annotable():
     assert obj.__argnames__ == argnames
     assert obj.__slots__ == ("value", "lower", "upper")
     assert not hasattr(obj, "__dict__")
+    assert obj.__module__ == __name__
+    assert type(obj).__qualname__ == "BetweenSimple"
 
     # test that a child without additional arguments doesn't have __dict__
     obj = Between(10, lower=2)
     assert obj.__slots__ == tuple()
     assert not hasattr(obj, "__dict__")
+    assert obj.__module__ == __name__
+    assert type(obj).__qualname__ == "test_annotable.<locals>.Between"
     assert obj == obj.copy()
     assert obj == copy.copy(obj)
     obj2 = Between(10, lower=8)
     assert obj.copy(lower=8) == obj2
+
+
+def test_annotable_with_bound_typevars_properly_coerce_values():
+    v = MyValue(1.1, 2.2, 3.3)
+    assert isinstance(v.integer, MyInt)
+    assert v.integer == 1
+    assert isinstance(v.floating, MyFloat)
+    assert v.floating == 2.2
+    assert isinstance(v.numeric, MyInt)
+    assert v.numeric == 3
 
 
 def test_annotable_with_additional_attributes():
@@ -265,28 +312,28 @@ def test_annotable_is_mutable_by_default():
     assert p.custom == 1
 
 
-def test_annotable_with_type_annotations():
+def test_annotable_with_type_annotations() -> None:
     # TODO(kszucs): bar: str = None  # should raise
-    class Op(Annotable):
+    class Op1(Annotable):
         foo: int
         bar: str = ""
 
-    p = Op(1)
+    p = Op1(1)
     assert p.foo == 1
     assert not p.bar
 
-    class Op(Annotable):
+    class Op2(Annotable):
         bar: str = None
 
-    with pytest.raises(TypeError):
-        Op()
+    with pytest.raises(ValidationError):
+        Op2()
 
 
 def test_annotable_with_recursive_generic_type_annotations():
     # testing cons list
-    validator = Validator.from_typehint(List[Integer])
+    pattern = Pattern.from_typehint(List[Integer])
     values = ["1", 2.0, 3]
-    result = validator(values)
+    result = pattern.validate(values, {})
     expected = ConsList(1, ConsList(2, ConsList(3, EmptyList())))
     assert result == expected
     assert result[0] == 1
@@ -297,9 +344,9 @@ def test_annotable_with_recursive_generic_type_annotations():
         result[3]
 
     # testing cons map
-    validator = Validator.from_typehint(Map[Integer, Float])
+    pattern = Pattern.from_typehint(Map[Integer, Float])
     values = {"1": 2, 3: "4.0", 5: 6.0}
-    result = validator(values)
+    result = pattern.validate(values, {})
     expected = ConsMap((1, 2.0), ConsMap((3, 4.0), ConsMap((5, 6.0), EmptyMap())))
     assert result == expected
     assert result[1] == 2.0
@@ -595,7 +642,7 @@ def test_dont_copy_default_argument():
     default = tuple()
 
     class Op(Annotable):
-        arg = optional(instance_of(tuple), default=default)
+        arg = optional(InstanceOf(tuple), default=default)
 
     op = Op()
     assert op.arg is default
@@ -603,8 +650,8 @@ def test_dont_copy_default_argument():
 
 def test_copy_mutable_with_default_attribute():
     class Test(Annotable):
-        a = attribute(instance_of(dict), default={})
-        b = argument(instance_of(str))
+        a = attribute(InstanceOf(dict), default={})
+        b = argument(InstanceOf(str))
 
         @attribute.default
         def c(self):
@@ -615,7 +662,7 @@ def test_copy_mutable_with_default_attribute():
     assert t.b == "t"
     assert t.c == "T"
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         t.a = 1
     t.a = {"map": "ping"}
     assert t.a == {"map": "ping"}
@@ -635,17 +682,17 @@ def test_copy_mutable_with_default_attribute():
 def test_slots_are_inherited_and_overridable():
     class Op(Annotable):
         __slots__ = ('_cache',)  # first definition
-        arg = validator(lambda x: x)
+        arg = Any()
 
     class StringOp(Op):
-        arg = validator(str)  # new overridden slot
+        arg = CoercedTo(str)  # new overridden slot
 
     class StringSplit(StringOp):
-        sep = validator(str)  # new slot
+        sep = CoercedTo(str)  # new slot
 
     class StringJoin(StringOp):
         __slots__ = ('_memoize',)  # new slot
-        sep = validator(str)  # new overridden slot
+        sep = CoercedTo(str)  # new overridden slot
 
     assert Op.__slots__ == ('_cache', 'arg')
     assert StringOp.__slots__ == ('arg',)
@@ -661,13 +708,13 @@ def test_multiple_inheritance():
         __slots__ = ('_hash',)
 
     class Value(Annotable):
-        arg = instance_of(object)
+        arg = InstanceOf(object)
 
     class Reduction(Value):
         pass
 
     class UDF(Value):
-        func = validator(lambda fn, this: fn)
+        func = InstanceOf(Callable)
 
     class UDAF(UDF, Reduction):
         arity = is_int
@@ -737,40 +784,57 @@ def test_multiple_inheritance_optional_argument_order():
     )
 
 
-class Value(Annotable):
+def test_immutability():
+    class Value(Annotable, Immutable):
+        a = is_int
+
+    op = Value(1)
+    with pytest.raises(AttributeError):
+        op.a = 3
+
+
+class BaseValue(Annotable):
     i = is_int
     j = attribute(is_int)
 
 
-class Value2(Value):
+class Value2(BaseValue):
     @attribute.default
     def k(self):
         return 3
 
 
-class Value3(Value):
+class Value3(BaseValue):
     k = attribute(is_int, default=3)
 
 
-class Value4(Value):
-    k = attribute(option(is_int), default=None)
+class Value4(BaseValue):
+    k = attribute(Option(is_int), default=None)
 
 
-# TODO(kszucs): add a test case with __dict__ added to __slots__
+def test_annotable_with_dict_slot():
+    class Flexible(Annotable):
+        __slots__ = ('__dict__',)
+
+    v = Flexible()
+    v.a = 1
+    v.b = 2
+    assert v.a == 1
+    assert v.b == 2
 
 
 def test_annotable_attribute():
     with pytest.raises(TypeError, match="too many positional arguments"):
-        Value(1, 2)
+        BaseValue(1, 2)
 
-    v = Value(1)
+    v = BaseValue(1)
     assert v.__slots__ == ('i', 'j')
     assert v.i == 1
     assert not hasattr(v, 'j')
     v.j = 2
     assert v.j == 2
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         v.j = 'foo'
 
 
@@ -792,14 +856,14 @@ def test_annotable_attribute_init():
 
 
 def test_annotable_mutability_and_serialization():
-    v_ = Value(1)
+    v_ = BaseValue(1)
     v_.j = 2
-    v = Value(1)
+    v = BaseValue(1)
     v.j = 2
     assert v_ == v
     assert v_.j == v.j == 2
 
-    assert repr(v) == "Value(i=1)"
+    assert repr(v) == "BaseValue(i=1)"
     w = pickle.loads(pickle.dumps(v))
     assert w.i == 1
     assert w.j == 2
@@ -809,7 +873,7 @@ def test_annotable_mutability_and_serialization():
     assert v_ != v
     w = pickle.loads(pickle.dumps(v))
     assert w == v
-    assert repr(w) == "Value(i=1)"
+    assert repr(w) == "BaseValue(i=1)"
 
 
 def test_initialized_attribute_basics():
@@ -1005,7 +1069,7 @@ def test_singleton_basics():
     assert OneAndOnly.__instances__[key] is one
 
 
-def test_singleton_lifetime():
+def test_singleton_lifetime() -> None:
     one = OneAndOnly()
     assert len(OneAndOnly.__instances__) == 1
 
@@ -1013,7 +1077,7 @@ def test_singleton_lifetime():
     assert len(OneAndOnly.__instances__) == 0
 
 
-def test_singleton_with_argument():
+def test_singleton_with_argument() -> None:
     dt1 = DataType(nullable=True)
     dt2 = DataType(nullable=False)
     dt3 = DataType(nullable=True)
@@ -1030,26 +1094,26 @@ def test_singleton_with_argument():
     assert len(DataType.__instances__) == 0
 
 
-def test_composition_of_annotable_and_singleton():
+def test_composition_of_annotable_and_singleton() -> None:
     class AnnSing(Annotable, Singleton):
-        value = validator(lambda x, this: int(x))
+        value = CoercedTo(int)
 
     class SingAnn(Singleton, Annotable):
         # this is the preferable method resolution order
-        value = validator(lambda x, this: int(x))
+        value = CoercedTo(int)
 
     # arguments looked up after validation
-    obj = AnnSing("3")
-    assert AnnSing("3") is obj
-    assert AnnSing(3) is obj
-    assert AnnSing(3.0) is obj
+    obj1 = AnnSing("3")
+    assert AnnSing("3") is obj1
+    assert AnnSing(3) is obj1
+    assert AnnSing(3.0) is obj1
 
     # arguments looked up before validation
-    obj = SingAnn("3")
-    assert SingAnn("3") is obj
-    obj2 = SingAnn(3)
-    assert obj2 is not obj
-    assert SingAnn(3) is obj2
+    obj2 = SingAnn("3")
+    assert SingAnn("3") is obj2
+    obj3 = SingAnn(3)
+    assert obj3 is not obj2
+    assert SingAnn(3) is obj3
 
 
 def test_concrete():
@@ -1098,10 +1162,10 @@ def test_concrete():
 
 def test_composition_of_concrete_and_singleton():
     class ConcSing(Concrete, Singleton):
-        value = validator(lambda x, this: int(x))
+        value = CoercedTo(int)
 
     class SingConc(Singleton, Concrete):
-        value = validator(lambda x, this: int(x))
+        value = CoercedTo(int)
 
     # arguments looked up after validation
     obj = ConcSing("3")
@@ -1127,3 +1191,47 @@ def test_init_subclass_keyword_arguments():
         pass
 
     assert Test2.kwargs == {"something": "value", "value": "something"}
+
+
+def test_argument_order_using_optional_annotations():
+    class Case1(Annotable):
+        results: Optional[Tuple[int]] = ()
+        default: Optional[int] = None
+
+    class SimpleCase1(Case1):
+        base: int
+        cases: Optional[Tuple[int]] = ()
+
+    class Case2(Annotable):
+        results = optional(TupleOf(is_int), default=())
+        default = optional(is_int)
+
+    class SimpleCase2(Case1):
+        base = is_int
+        cases = optional(TupleOf(is_int), default=())
+
+    assert (
+        SimpleCase1.__argnames__
+        == SimpleCase2.__argnames__
+        == ("base", "cases", "results", "default")
+    )
+
+
+def test_annotable_with_optional_coercible_typehint():
+    class Example(Annotable):
+        value: Optional[MyInt] = None
+
+    assert Example().value is None
+    assert Example(None).value is None
+    assert Example(1).value == 1
+    assert isinstance(Example(1).value, MyInt)
+
+
+def test_final():
+    class A(Final):
+        pass
+
+    with pytest.raises(TypeError, match="Cannot inherit from final class .*A.*"):
+
+        class B(A):
+            pass

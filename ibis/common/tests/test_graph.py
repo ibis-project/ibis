@@ -4,7 +4,7 @@ import pytest
 
 from ibis.common.graph import Graph, Node, bfs, dfs, toposort
 from ibis.common.grounds import Annotable, Concrete
-from ibis.common.validators import any_of, instance_of, tuple_of
+from ibis.common.patterns import InstanceOf, TupleOf
 
 
 class MyNode(Node):
@@ -111,21 +111,19 @@ def test_example():
             return hash((self.__class__, self.__args__))
 
     class Literal(Example):
-        value = instance_of(object)
+        value = InstanceOf(object)
 
     class BoolLiteral(Literal):
-        value = instance_of(bool)
+        value = InstanceOf(bool)
 
     class And(Example):
-        operands = tuple_of(instance_of(BoolLiteral))
+        operands = TupleOf(InstanceOf(BoolLiteral))
 
     class Or(Example):
-        operands = tuple_of(instance_of(BoolLiteral))
+        operands = TupleOf(InstanceOf(BoolLiteral))
 
     class Collect(Example):
-        arguments = tuple_of(
-            any_of([tuple_of(instance_of(Example)), instance_of(Example)])
-        )
+        arguments = TupleOf(TupleOf(InstanceOf(Example)) | InstanceOf(Example))
 
     a = BoolLiteral(True)
     b = BoolLiteral(False)
@@ -154,15 +152,15 @@ def test_concrete_with_traversable_children():
         pass
 
     class Value(Bool):
-        value = instance_of(bool)
+        value = InstanceOf(bool)
 
     class Either(Bool):
-        left = instance_of(Bool)
-        right = instance_of(Bool)
+        left = InstanceOf(Bool)
+        right = InstanceOf(Bool)
 
     class All(Bool):
-        arguments = tuple_of(instance_of(Bool))
-        strict = instance_of(bool)
+        arguments = TupleOf(InstanceOf(Bool))
+        strict = InstanceOf(bool)
 
     T, F = Value(True), Value(False)
 

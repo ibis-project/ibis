@@ -167,9 +167,12 @@ duckdb_0_4_0 = pytest.mark.xfail(
 builtin_array = toolz.compose(
     # these will almost certainly never be supported
     pytest.mark.never(
-        ["mysql", "sqlite"],
+        ["mysql"],
         reason="array types are unsupported",
         raises=com.OperationNotDefinedError,
+    ),
+    pytest.mark.never(
+        ["sqlite"], reason="array types are unsupported", raises=NotImplementedError
     ),
     # someone just needs to implement these
     pytest.mark.notimpl(["datafusion"], raises=Exception),
@@ -463,6 +466,7 @@ def test_array_slice(backend, start, stop):
     tm.assert_frame_equal(result, expected)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -472,7 +476,6 @@ def test_array_slice(backend, start, stop):
         "polars",
         "postgres",
         "snowflake",
-        "sqlite",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -480,11 +483,6 @@ def test_array_slice(backend, start, stop):
     ["dask", "pandas"],
     raises=com.OperationNotDefinedError,
     reason="Operation 'ArrayMap' is not implemented for this backend",
-)
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules: ...",
 )
 def test_array_map(backend, con):
     t = ibis.memtable(
@@ -496,6 +494,7 @@ def test_array_map(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -509,11 +508,6 @@ def test_array_map(backend, con):
         "snowflake",
     ],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules: ...",
 )
 def test_array_filter(backend, con):
     t = ibis.memtable(
@@ -525,6 +519,7 @@ def test_array_filter(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     ["bigquery", "datafusion", "mssql", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
@@ -532,11 +527,6 @@ def test_array_filter(backend, con):
 @pytest.mark.notimpl(["datafusion"], raises=Exception)
 @pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(["impala"], reason="array_types table isn't defined")
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
-)
 def test_array_contains(backend, con):
     t = backend.array_types
     expr = t.x.contains(1)
@@ -545,6 +535,7 @@ def test_array_contains(backend, con):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -557,11 +548,6 @@ def test_array_contains(backend, con):
         "postgres",
     ],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
 )
 def test_array_position(backend, con):
     t = ibis.memtable({"a": [[1], [], [42, 42], []]})
@@ -571,6 +557,7 @@ def test_array_position(backend, con):
     backend.assert_series_equal(result, expected, check_names=False, check_dtype=False)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -584,11 +571,6 @@ def test_array_position(backend, con):
         "snowflake",
     ],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
 )
 def test_array_remove(backend, con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 2], [2, 2], []]})
@@ -598,6 +580,7 @@ def test_array_remove(backend, con):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -611,11 +594,6 @@ def test_array_remove(backend, con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
-)
 def test_array_unique(backend, con):
     t = ibis.memtable({"a": [[1, 3, 3], [], [42, 42], []]})
     expr = t.a.unique()
@@ -624,6 +602,7 @@ def test_array_unique(backend, con):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -638,11 +617,6 @@ def test_array_unique(backend, con):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
-)
 def test_array_sort(backend, con):
     t = ibis.memtable({"a": [[3, 2], [], [42, 42], []]})
     expr = t.a.sort()
@@ -651,6 +625,7 @@ def test_array_sort(backend, con):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
+@builtin_array
 @pytest.mark.notimpl(
     [
         "bigquery",
@@ -669,11 +644,6 @@ def test_array_sort(backend, con):
     raises=AssertionError,
     reason="array_distinct([NULL]) seems to differ from other backends",
 )
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules:....",
-)
 def test_array_union(con):
     t = ibis.memtable({"a": [[3, 2], [], []], "b": [[1, 3], [None], [5]]})
     expr = t.a.union(t.b)
@@ -686,17 +656,13 @@ def test_array_union(con):
 
 
 @unnest
+@builtin_array
 @pytest.mark.notimpl(
     ["clickhouse"],
     raises=OperationalError,
     reason="ClickHouse won't accept dicts for struct type values",
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
-@pytest.mark.notimpl(
-    ["sqlite", "mysql"],
-    raises=com.IbisTypeError,
-    reason="argument passes none of the following rules: ...",
-)
 def test_unnest_struct(con):
     data = {"value": [[{'a': 1}, {'a': 2}], [{'a': 3}, {'a': 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
@@ -706,8 +672,9 @@ def test_unnest_struct(con):
     tm.assert_series_equal(result, expected)
 
 
+@builtin_array
 @pytest.mark.never(
-    ["impala", "mssql", "mysql", "sqlite"],
+    ["impala", "mssql"],
     raises=com.OperationNotDefinedError,
     reason="no array support",
 )

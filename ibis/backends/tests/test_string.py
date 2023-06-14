@@ -10,6 +10,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import OperationNotDefinedError
+from ibis.common.patterns import ValidationError
 
 try:
     from google.api_core.exceptions import BadRequest
@@ -881,7 +882,7 @@ def test_re_replace_global(con):
         "a context where a condition is expected, near 'THEN'.DB-Lib error message 20018, severity 15:\n"
     ),
 )
-@pytest.mark.notimpl(["druid"], raises=com.IbisTypeError)
+@pytest.mark.notimpl(["druid"], raises=ValidationError)
 @pytest.mark.broken(
     ["oracle"],
     raises=sa.exc.DatabaseError,

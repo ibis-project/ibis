@@ -14,7 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.impala import ddl
-from ibis.common.exceptions import IbisTypeError
+from ibis.common.patterns import ValidationError
 from ibis.expr import rules
 
 pytest.importorskip("impala")
@@ -223,7 +223,7 @@ def test_udf_invalid_typecasting(ty, valid_cast_indexer, all_cols):
     func = _register_udf([ty], 'int32', 'typecast')
 
     for expr in all_cols[valid_cast_indexer]:
-        with pytest.raises(IbisTypeError):
+        with pytest.raises(ValidationError):
             func(expr)
 
 

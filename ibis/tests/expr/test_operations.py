@@ -1,14 +1,17 @@
 from __future__ import annotations
 
+from typing import Optional, Tuple
+
 import numpy as np
 import pytest
 
 import ibis
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-from ibis.common.exceptions import IbisTypeError
+from ibis.common.patterns import ValidationError
 
 t = ibis.table([('a', 'int64')], name='t')
 
@@ -17,77 +20,74 @@ false = ir.literal(False)
 two = ir.literal(2)
 three = ir.literal(3)
 
-operations = [
-    ops.Cast(three, to='int64'),
-    ops.TypeOf(arg=2),
-    ops.Negate(4),
-    ops.Negate(4.0),
-    ops.NullIfZero(0),
-    ops.NullIfZero(1),
-    ops.IsNull(ir.null()),
-    ops.NotNull(ir.null()),
-    ops.ZeroIfNull(ir.null()),
-    ops.IfNull(1, ops.NullIfZero(0).to_expr()),
-    ops.NullIf(ir.null(), ops.NullIfZero(0).to_expr()),
-    ops.IsNan(np.nan),
-    ops.IsInf(np.inf),
-    ops.Ceil(4.5),
-    ops.Floor(4.5),
-    ops.Round(3.43456),
-    ops.Round(3.43456, 2),
-    ops.Round(3.43456, digits=1),
-    ops.Clip(123, lower=30),
-    ops.Clip(123, lower=30, upper=100),
-    ops.BaseConvert('EEE', from_base=16, to_base=10),
-    ops.Logarithm(100),
-    ops.Log(100),
-    ops.Log(100, base=2),
-    ops.Ln(100),
-    ops.Log2(100),
-    ops.Log10(100),
-    ops.Uppercase('asd'),
-    ops.Lowercase('asd'),
-    ops.Reverse('asd'),
-    ops.Strip('asd'),
-    ops.LStrip('asd'),
-    ops.RStrip('asd'),
-    ops.Capitalize('asd'),
-    ops.Substring('asd', start=1),
-    ops.Substring('asd', 1),
-    ops.Substring('asd', 1, length=2),
-    ops.StrRight('asd', nchars=2),
-    ops.Repeat('asd', times=4),
-    ops.StringFind('asd', 'sd', start=1),
-    ops.Translate('asd', from_str='bd', to_str='ce'),
-    ops.LPad('asd', length=2, pad='ss'),
-    ops.RPad('asd', length=2, pad='ss'),
-    ops.StringJoin(',', ['asd', 'bsdf']),
-    ops.FuzzySearch('asd', pattern='n'),
-    ops.StringSQLLike('asd', pattern='as', escape='asd'),
-    ops.RegexExtract('asd', pattern='as', index=1),
-    ops.RegexReplace('asd', 'as', 'a'),
-    ops.StringReplace('asd', 'as', 'a'),
-    ops.StringSplit('asd', 's'),
-    ops.StringConcat(('s', 'e')),
-    ops.StartsWith('asd', 'as'),
-    ops.EndsWith('asd', 'xyz'),
-    ops.Not(false),
-    ops.And(false, true),
-    ops.Or(false, true),
-    ops.GreaterEqual(three, two),
-    ops.Sum(t.a),
-    t.a.op(),
-]
 
-
-@pytest.fixture(scope='module', params=operations)
-def op(request):
-    with pytest.warns(FutureWarning):
-        # .op().op() deprecated, do not use for new code
-        r = request.param.op()
-        assert r is request.param
-
-    return request.param
+@pytest.fixture(scope='module')
+def operations(request):
+    true = ir.literal(True)
+    false = ir.literal(False)
+    two = ir.literal(2)
+    three = ir.literal(3)
+    return [
+        ops.Cast(three, to='int64'),
+        ops.TypeOf(arg=2),
+        ops.Negate(4),
+        ops.Negate(4.0),
+        ops.NullIfZero(0),
+        ops.NullIfZero(1),
+        ops.IsNull(ir.null()),
+        ops.NotNull(ir.null()),
+        ops.ZeroIfNull(ir.null()),
+        ops.IfNull(1, ops.NullIfZero(0).to_expr()),
+        ops.NullIf(ir.null(), ops.NullIfZero(0).to_expr()),
+        ops.IsNan(np.nan),
+        ops.IsInf(np.inf),
+        ops.Ceil(4.5),
+        ops.Floor(4.5),
+        ops.Round(3.43456),
+        ops.Round(3.43456, 2),
+        ops.Round(3.43456, digits=1),
+        ops.Clip(123, lower=30),
+        ops.Clip(123, lower=30, upper=100),
+        ops.BaseConvert('EEE', from_base=16, to_base=10),
+        ops.Logarithm(100),
+        ops.Log(100),
+        ops.Log(100, base=2),
+        ops.Ln(100),
+        ops.Log2(100),
+        ops.Log10(100),
+        ops.Uppercase('asd'),
+        ops.Lowercase('asd'),
+        ops.Reverse('asd'),
+        ops.Strip('asd'),
+        ops.LStrip('asd'),
+        ops.RStrip('asd'),
+        ops.Capitalize('asd'),
+        ops.Substring('asd', start=1),
+        ops.Substring('asd', 1),
+        ops.Substring('asd', 1, length=2),
+        ops.StrRight('asd', nchars=2),
+        ops.Repeat('asd', times=4),
+        ops.StringFind('asd', 'sd', start=1),
+        ops.Translate('asd', from_str='bd', to_str='ce'),
+        ops.LPad('asd', length=2, pad='ss'),
+        ops.RPad('asd', length=2, pad='ss'),
+        ops.StringJoin(',', ['asd', 'bsdf']),
+        ops.FuzzySearch('asd', pattern='n'),
+        ops.StringSQLLike('asd', pattern='as', escape='asd'),
+        ops.RegexExtract('asd', pattern='as', index=1),
+        ops.RegexReplace('asd', 'as', 'a'),
+        ops.StringReplace('asd', 'as', 'a'),
+        ops.StringSplit('asd', 's'),
+        ops.StringConcat(('s', 'e')),
+        ops.StartsWith('asd', 'as'),
+        ops.EndsWith('asd', 'xyz'),
+        ops.Not(false),
+        ops.And(false, true),
+        ops.Or(false, true),
+        ops.GreaterEqual(three, two),
+        ops.Sum(t.a),
+        t.a.op(),
+    ]
 
 
 class Expr:
@@ -110,7 +110,7 @@ class NamedValue(Base):
 
 
 class Values(Base):
-    lst = rlz.tuple_of(rlz.instance_of(ops.Node))
+    lst: Tuple[ops.Node, ...]
 
 
 one = NamedValue(value=1, name=Name("one"))
@@ -170,13 +170,44 @@ def test_node_subtitution():
     assert expected == new_values
 
 
+def test_value_annotations():
+    class Op1(ops.Value):
+        arg: ops.Value
+
+        output_dtype = dt.int64
+        output_shape = ds.scalar
+
+    class Op2(ops.Value):
+        arg: ops.Value[dt.Any, ds.Any]
+
+        output_dtype = dt.int64
+        output_shape = ds.scalar
+
+    class Op3(ops.Value):
+        arg: ops.Value[dt.Integer, ds.Any]
+
+        output_dtype = dt.int64
+        output_shape = ds.scalar
+
+    class Op4(ops.Value):
+        arg: ops.Value[dt.Integer, ds.Scalar]
+
+        output_dtype = dt.int64
+        output_shape = ds.scalar
+
+    assert Op1(1).arg.dtype == dt.int8
+    assert Op2(1).arg.dtype == dt.int8
+    assert Op3(1).arg.dtype == dt.int8
+    assert Op4(1).arg.dtype == dt.int8
+
+
 def test_operation():
     class Logarithm(ir.Expr):
         pass
 
     class Log(ops.Node):
-        arg = rlz.double()
-        base = rlz.optional(rlz.double())
+        arg: ops.Value[dt.Float64, ds.Any]
+        base: Optional[ops.Value[dt.Float64, ds.Any]] = None
 
         def to_expr(self):
             return Logarithm(self)
@@ -188,27 +219,28 @@ def test_operation():
     assert isinstance(Log(arg=100).to_expr(), Logarithm)
 
 
-def test_operation_nodes_are_slotted(op):
-    assert hasattr(op, "__slots__")
-    assert not hasattr(op, "__dict__")
+def test_operation_nodes_are_slotted(operations):
+    for op in operations:
+        assert hasattr(op, "__slots__")
+        assert not hasattr(op, "__dict__")
 
 
 def test_instance_of_operation():
     class MyOperation(ops.Node):
-        arg = rlz.instance_of(ir.IntegerValue)
+        arg: ir.IntegerValue
 
         def to_expr(self):
             return ir.IntegerScalar(self)
 
     MyOperation(ir.literal(5))
 
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(ValidationError):
         MyOperation(ir.literal('string'))
 
 
 def test_array_input():
     class MyOp(ops.Value):
-        value = rlz.value(dt.Array(dt.double))
+        value: ops.Value[dt.Array[dt.Float64], ds.Any]
         output_dtype = rlz.dtype_like('value')
         output_shape = rlz.shape_like('value')
 
@@ -236,7 +268,7 @@ def test_custom_table_expr():
 @pytest.fixture(scope='session')
 def dummy_op():
     class DummyOp(ops.Value):
-        arg = rlz.any
+        arg: ops.Value
 
     return DummyOp
 

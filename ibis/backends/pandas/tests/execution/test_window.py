@@ -10,7 +10,6 @@ import pytest
 from packaging.version import parse as vparse
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.df.scope import Scope
@@ -18,6 +17,7 @@ from ibis.backends.pandas import Backend
 from ibis.backends.pandas.dispatch import pre_execute
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
+from ibis.common.patterns import ValidationError
 from ibis.legacy.udf.vectorized import reduction
 
 
@@ -502,7 +502,7 @@ def test_window_with_mlb():
     tm.assert_frame_equal(result, expected)
 
     rows_with_mlb = ibis.rows_with_max_lookback(5, 10)
-    with pytest.raises(com.IbisTypeError):
+    with pytest.raises(ValidationError):
         t.mutate(
             sum=lambda df: df.a.sum().over(
                 ibis.trailing_window(rows_with_mlb, order_by='time')

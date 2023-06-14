@@ -6,13 +6,12 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Unary, Value
-from ibis.expr.types.generic import null
 
 
 @public
 class Map(Value):
-    keys = rlz.array
-    values = rlz.array
+    keys: Value[dt.Array]
+    values: Value[dt.Array]
 
     output_shape = rlz.shape_like("args")
 
@@ -26,15 +25,15 @@ class Map(Value):
 
 @public
 class MapLength(Unary):
-    arg = rlz.mapping
+    arg: Value[dt.Map]
     output_dtype = dt.int64
 
 
 @public
 class MapGet(Value):
-    arg = rlz.mapping
-    key = rlz.one_of([rlz.string, rlz.integer])
-    default = rlz.optional(rlz.any, default=null())
+    arg: Value[dt.Map]
+    key: Value[dt.String | dt.Integer]
+    default: Value = None
 
     output_shape = rlz.shape_like("args")
 
@@ -47,8 +46,8 @@ class MapGet(Value):
 
 @public
 class MapContains(Value):
-    arg = rlz.mapping
-    key = rlz.one_of([rlz.string, rlz.integer])
+    arg: Value[dt.Map]
+    key: Value[dt.String | dt.Integer]
 
     output_shape = rlz.shape_like("args")
     output_dtype = dt.bool
@@ -56,7 +55,7 @@ class MapContains(Value):
 
 @public
 class MapKeys(Unary):
-    arg = rlz.mapping
+    arg: Value[dt.Map]
 
     @attribute.default
     def output_dtype(self):
@@ -65,7 +64,7 @@ class MapKeys(Unary):
 
 @public
 class MapValues(Unary):
-    arg = rlz.mapping
+    arg: Value[dt.Map]
 
     @attribute.default
     def output_dtype(self):
@@ -74,8 +73,8 @@ class MapValues(Unary):
 
 @public
 class MapMerge(Value):
-    left = rlz.mapping
-    right = rlz.mapping
+    left: Value[dt.Map]
+    right: Value[dt.Map]
 
     output_shape = rlz.shape_like("args")
     output_dtype = rlz.dtype_like("args")

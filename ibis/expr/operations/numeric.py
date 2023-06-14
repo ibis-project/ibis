@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+from typing import Optional
 
 from public import public
 
@@ -10,11 +11,15 @@ from ibis import util
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Binary, Unary, Value
 
+Integer = Value[dt.Integer]
+SoftNumeric = Value[dt.Numeric | dt.Boolean]
+StrictNumeric = Value[dt.Numeric]
+
 
 @public
 class NumericBinary(Binary):
-    left = rlz.numeric
-    right = rlz.numeric
+    left: SoftNumeric
+    right: SoftNumeric
 
 
 @public
@@ -60,7 +65,7 @@ class Modulus(NumericBinary):
 
 @public
 class Negate(Unary):
-    arg = rlz.one_of((rlz.numeric, rlz.interval))
+    arg: Value[dt.Numeric | dt.Interval]
 
     output_dtype = rlz.dtype_like("arg")
 
@@ -84,19 +89,22 @@ class NullIfZero(Unary):
         The input if not zero otherwise `NULL`.
     """
 
-    arg = rlz.numeric
+    arg: SoftNumeric
+
     output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class IsNan(Unary):
-    arg = rlz.floating
+    arg: Value[dt.Floating]
+
     output_dtype = dt.boolean
 
 
 @public
 class IsInf(Unary):
-    arg = rlz.floating
+    arg: Value[dt.Floating]
+
     output_dtype = dt.boolean
 
 
@@ -104,7 +112,8 @@ class IsInf(Unary):
 class Abs(Unary):
     """Absolute value."""
 
-    arg = rlz.numeric
+    arg: SoftNumeric
+
     output_dtype = rlz.dtype_like("arg")
 
 
@@ -119,7 +128,7 @@ class Ceil(Unary):
         Other numeric values: yield integer (int32)
     """
 
-    arg = rlz.numeric
+    arg: SoftNumeric
 
     @property
     def output_dtype(self):
@@ -140,7 +149,7 @@ class Floor(Unary):
         Other numeric values: yield integer (int32)
     """
 
-    arg = rlz.numeric
+    arg: SoftNumeric
 
     @property
     def output_dtype(self):
@@ -152,9 +161,9 @@ class Floor(Unary):
 
 @public
 class Round(Value):
-    arg = rlz.numeric
+    arg: StrictNumeric
     # TODO(kszucs): the default should be 0 instead of being None
-    digits = rlz.optional(rlz.numeric)
+    digits: Optional[Integer] = None
 
     output_shape = rlz.shape_like("arg")
 
@@ -170,9 +179,9 @@ class Round(Value):
 
 @public
 class Clip(Value):
-    arg = rlz.strict_numeric
-    lower = rlz.optional(rlz.strict_numeric)
-    upper = rlz.optional(rlz.strict_numeric)
+    arg: StrictNumeric
+    lower: Optional[StrictNumeric] = None
+    upper: Optional[StrictNumeric] = None
 
     output_dtype = rlz.dtype_like("arg")
     output_shape = rlz.shape_like("arg")
@@ -180,9 +189,10 @@ class Clip(Value):
 
 @public
 class BaseConvert(Value):
-    arg = rlz.one_of([rlz.integer, rlz.string])
-    from_base = rlz.integer
-    to_base = rlz.integer
+    # TODO(kszucs): this should be Integer simply
+    arg: Value[dt.Integer | dt.String]
+    from_base: Integer
+    to_base: Integer
 
     output_dtype = dt.string
     output_shape = rlz.shape_like("args")
@@ -190,7 +200,7 @@ class BaseConvert(Value):
 
 @public
 class MathUnary(Unary):
-    arg = rlz.numeric
+    arg: SoftNumeric
 
     @attribute.default
     def output_dtype(self):
@@ -211,7 +221,8 @@ class Exp(ExpandingMathUnary):
 
 @public
 class Sign(Unary):
-    arg = rlz.numeric
+    arg: SoftNumeric
+
     output_dtype = rlz.dtype_like("arg")
 
 
@@ -222,13 +233,12 @@ class Sqrt(MathUnary):
 
 @public
 class Logarithm(MathUnary):
-    arg = rlz.strict_numeric
+    arg: StrictNumeric
 
 
 @public
 class Log(Logarithm):
-    arg = rlz.strict_numeric
-    base = rlz.optional(rlz.strict_numeric)
+    base: Optional[StrictNumeric] = None
 
 
 @public
@@ -268,8 +278,9 @@ class TrigonometricUnary(MathUnary):
 class TrigonometricBinary(Binary):
     """Trigonometric base binary."""
 
-    left = rlz.numeric
-    right = rlz.numeric
+    left: SoftNumeric
+    right: SoftNumeric
+
     output_dtype = dt.float64
 
 
@@ -315,14 +326,15 @@ class Tan(TrigonometricUnary):
 
 @public
 class BitwiseNot(Unary):
-    arg = rlz.integer
+    arg: Integer
+
     output_dtype = rlz.numeric_like("args", operator.invert)
 
 
 @public
 class BitwiseBinary(Binary):
-    left = rlz.integer
-    right = rlz.integer
+    left: Integer
+    right: Integer
 
 
 @public
