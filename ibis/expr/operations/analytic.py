@@ -1,16 +1,19 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from public import public
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.expr.operations.core import Value
+from ibis.expr.operations.core import Column, Scalar, Value
 
 
 @public
 class Analytic(Value):
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar
 
     @property
     def __window_op__(self):
@@ -19,10 +22,9 @@ class Analytic(Value):
 
 @public
 class ShiftBase(Analytic):
-    arg = rlz.column(rlz.any)
-
-    offset = rlz.optional(rlz.one_of((rlz.integer, rlz.interval)))
-    default = rlz.optional(rlz.any)
+    arg: Column[dt.Any]
+    offset: Optional[Value[dt.Integer | dt.Interval]] = None
+    default: Optional[Value] = None
 
     output_dtype = rlz.dtype_like("arg")
 
@@ -44,12 +46,12 @@ class RankBase(Analytic):
 
 @public
 class MinRank(RankBase):
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
 
 
 @public
 class DenseRank(RankBase):
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
 
 
 @public
@@ -74,18 +76,18 @@ class RowNumber(RankBase):
 
 
 @public
-class CumulativeOp(Analytic):
+class Cumulative(Analytic):
     pass
 
 
 @public
-class CumulativeSum(CumulativeOp):
+class CumulativeSum(Cumulative):
     """Cumulative sum.
 
     Requires an ordering window.
     """
 
-    arg = rlz.column(rlz.numeric)
+    arg: Column[dt.Numeric]
 
     @attribute.default
     def output_dtype(self):
@@ -93,13 +95,13 @@ class CumulativeSum(CumulativeOp):
 
 
 @public
-class CumulativeMean(CumulativeOp):
+class CumulativeMean(Cumulative):
     """Cumulative mean.
 
     Requires an order window.
     """
 
-    arg = rlz.column(rlz.numeric)
+    arg: Column[dt.Numeric]
 
     @attribute.default
     def output_dtype(self):
@@ -107,50 +109,56 @@ class CumulativeMean(CumulativeOp):
 
 
 @public
-class CumulativeMax(CumulativeOp):
-    arg = rlz.column(rlz.any)
+class CumulativeMax(Cumulative):
+    arg: Column[dt.Any]
+
     output_dtype = rlz.dtype_like("arg")
 
 
 @public
-class CumulativeMin(CumulativeOp):
+class CumulativeMin(Cumulative):
     """Cumulative min.
 
     Requires an order window.
     """
 
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
+
     output_dtype = rlz.dtype_like("arg")
 
 
 @public
-class CumulativeAny(CumulativeOp):
-    arg = rlz.column(rlz.boolean)
+class CumulativeAny(Cumulative):
+    arg: Column[dt.Boolean]
     output_dtype = rlz.dtype_like("arg")
 
 
 @public
-class CumulativeAll(CumulativeOp):
-    arg = rlz.column(rlz.boolean)
+class CumulativeAll(Cumulative):
+    arg: Column[dt.Boolean]
+
     output_dtype = rlz.dtype_like("arg")
 
 
 @public
 class PercentRank(Analytic):
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
+
     output_dtype = dt.double
 
 
 @public
 class CumeDist(Analytic):
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
+
     output_dtype = dt.double
 
 
 @public
 class NTile(Analytic):
-    arg = rlz.column(rlz.any)
-    buckets = rlz.scalar(rlz.integer)
+    arg: Column[dt.Any]
+    buckets: Scalar[dt.Integer]
+
     output_dtype = dt.int64
 
 
@@ -158,7 +166,8 @@ class NTile(Analytic):
 class FirstValue(Analytic):
     """Retrieve the first element."""
 
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
+
     output_dtype = rlz.dtype_like("arg")
 
 
@@ -166,7 +175,8 @@ class FirstValue(Analytic):
 class LastValue(Analytic):
     """Retrieve the last element."""
 
-    arg = rlz.column(rlz.any)
+    arg: Column[dt.Any]
+
     output_dtype = rlz.dtype_like("arg")
 
 
@@ -174,9 +184,10 @@ class LastValue(Analytic):
 class NthValue(Analytic):
     """Retrieve the Nth element."""
 
-    arg = rlz.column(rlz.any)
-    nth = rlz.integer
+    arg: Column[dt.Any]
+    nth: Value[dt.Integer]
+
     output_dtype = rlz.dtype_like("arg")
 
 
-public(AnalyticOp=Analytic)
+public(AnalyticOp=Analytic, CumulativeOp=Cumulative)

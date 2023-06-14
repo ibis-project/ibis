@@ -21,6 +21,7 @@ import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
 from ibis.common.exceptions import RelationError
+from ibis.common.patterns import ValidationError
 from ibis.expr import api
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend
@@ -468,10 +469,11 @@ def test_order_by(table):
     key3 = result3.op().sort_keys[0]
     key4 = result4.op().sort_keys[0]
 
-    assert key2.descending
-    assert key3.descending
-    assert key4.descending
-    assert_equal(result2, result3)
+    assert key2.descending is True
+    assert key3.descending is True
+    assert key4.descending is True
+    assert key2.expr.equals(key3.expr)
+    assert key2.expr.equals(key4.expr)
 
 
 def test_order_by_desc_deferred_sort_key(table):
@@ -678,7 +680,7 @@ def test_aggregate_post_predicate(table, case_fn):
     by = ['g']
     having = [case_fn(table)]
 
-    with pytest.raises(com.IbisTypeError):
+    with pytest.raises(ValidationError):
         table.aggregate(metrics, by=by, having=having)
 
 
@@ -1105,7 +1107,7 @@ def test_join_invalid_expr_type(con):
     invalid_right = left.foo_id
     join_key = ['bar_id']
 
-    with pytest.raises(com.IbisTypeError, match="Argument is not a table"):
+    with pytest.raises(ValidationError):
         left.inner_join(invalid_right, join_key)
 
 
@@ -1699,7 +1701,7 @@ def test_filter_with_literal(value, api):
 
     # ints are invalid predicates
     int_val = ibis.literal(int(value))
-    with pytest.raises((NotImplementedError, com.IbisTypeError)):
+    with pytest.raises((NotImplementedError, ValidationError, com.IbisTypeError)):
         api(t, int_val)
 
 
@@ -1819,7 +1821,7 @@ def test_pivot_wider():
 def test_invalid_deferred():
     t = ibis.table(dict(value="int", lagged_value="int"), name="t")
 
-    with pytest.raises(com.IbisTypeError, match="Deferred input is not allowed"):
+    with pytest.raises(ValidationError, match="doesn't match"):
         ibis.greatest(t.value, ibis._.lagged_value)
 
 

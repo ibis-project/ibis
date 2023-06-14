@@ -1,31 +1,33 @@
 from __future__ import annotations
 
 import abc
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    import ibis.expr.types as ir
+from typing import Union
 
 from public import public
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.expr.operations.core import Binary, Unary, Value
+from ibis.common.exceptions import IbisTypeError
+from ibis.common.patterns import ValidationError
+from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.expr.operations.core import Binary, Column, Unary, Value
 from ibis.expr.operations.generic import _Negatable
+from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
 @public
 class LogicalBinary(Binary):
-    left = rlz.boolean
-    right = rlz.boolean
+    left: Value[dt.Boolean]
+    right: Value[dt.Boolean]
 
     output_dtype = dt.boolean
 
 
 @public
 class Not(Unary):
-    arg = rlz.boolean
+    arg: Value[dt.Boolean]
 
     output_dtype = dt.boolean
 
@@ -47,8 +49,8 @@ class Xor(LogicalBinary):
 
 @public
 class Comparison(Binary):
-    left = rlz.any
-    right = rlz.any
+    left: Value
+    right: Value
 
     output_dtype = dt.boolean
 
@@ -62,7 +64,7 @@ class Comparison(Binary):
         Ibis to help the user avoid them?
         """
         if not rlz.comparable(left, right):
-            raise TypeError(
+            raise IbisTypeError(
                 f'Arguments {rlz._arg_type_error_format(left)} and '
                 f'{rlz._arg_type_error_format(right)} are not comparable'
             )
@@ -106,21 +108,21 @@ class IdenticalTo(Comparison):
 
 @public
 class Between(Value):
-    arg = rlz.any
-    lower_bound = rlz.any
-    upper_bound = rlz.any
+    arg: Value
+    lower_bound: Value
+    upper_bound: Value
 
     output_dtype = dt.boolean
     output_shape = rlz.shape_like("args")
 
     def __init__(self, arg, lower_bound, upper_bound):
         if not rlz.comparable(arg, lower_bound):
-            raise TypeError(
+            raise ValidationError(
                 f'Arguments {rlz._arg_type_error_format(arg)} and '
                 f'{rlz._arg_type_error_format(lower_bound)} are not comparable'
             )
         if not rlz.comparable(arg, upper_bound):
-            raise TypeError(
+            raise ValidationError(
                 f'Arguments {rlz._arg_type_error_format(arg)} and '
                 f'{rlz._arg_type_error_format(upper_bound)} are not comparable'
             )
@@ -130,14 +132,12 @@ class Between(Value):
 # TODO(kszucs): decompose it into at least two operations
 @public
 class Contains(Value):
-    value = rlz.any
-    options = rlz.one_of(
-        [
-            rlz.tuple_of(rlz.any),
-            rlz.column(rlz.any),
-            rlz.array,
-        ]
-    )
+    value: Value
+    options: Union[
+        VarTuple[Value],
+        Column[dt.Any],
+        Value[dt.Array],
+    ]
 
     output_dtype = dt.boolean
 
@@ -164,9 +164,9 @@ class Where(Value):
     Many backends implement this as a built-in function.
     """
 
-    bool_expr = rlz.boolean
-    true_expr = rlz.any
-    false_null_expr = rlz.any
+    bool_expr: Value[dt.Boolean]
+    true_expr: Value
+    false_null_expr: Value
 
     output_shape = rlz.shape_like("args")
 
@@ -177,11 +177,11 @@ class Where(Value):
 
 @public
 class ExistsSubquery(Value, _Negatable):
-    foreign_table = rlz.table
-    predicates = rlz.tuple_of(rlz.boolean)
+    foreign_table: Relation
+    predicates: VarTuple[Value[dt.Boolean]]
 
     output_dtype = dt.boolean
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar
 
     def negate(self) -> NotExistsSubquery:
         return NotExistsSubquery(*self.args)
@@ -189,11 +189,11 @@ class ExistsSubquery(Value, _Negatable):
 
 @public
 class NotExistsSubquery(Value, _Negatable):
-    foreign_table = rlz.table
-    predicates = rlz.tuple_of(rlz.boolean)
+    foreign_table: Relation
+    predicates: VarTuple[Value[dt.Boolean]]
 
     output_dtype = dt.boolean
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar
 
     def negate(self) -> ExistsSubquery:
         return ExistsSubquery(*self.args)
@@ -237,15 +237,15 @@ class _UnresolvedSubquery(Value, _Negatable):
     resolved against the outer leaf table when `Selection`s are constructed.
     """
 
-    tables = rlz.tuple_of(rlz.table)
-    predicates = rlz.tuple_of(rlz.boolean)
+    tables: VarTuple[Relation]
+    predicates: VarTuple[Value[dt.Boolean]]
 
     output_dtype = dt.boolean
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar
 
     @abc.abstractmethod
     def _resolve(
-        self, table: ir.Table
+        self, table
     ) -> type[ExistsSubquery] | type[NotExistsSubquery]:  # pragma: no cover
         ...
 
@@ -269,7 +269,7 @@ class UnresolvedNotExistsSubquery(_UnresolvedSubquery):
     def negate(self) -> UnresolvedExistsSubquery:
         return UnresolvedExistsSubquery(*self.args)
 
-    def _resolve(self, table: ir.Table) -> NotExistsSubquery:
+    def _resolve(self, table) -> NotExistsSubquery:
         from ibis.expr.operations.relations import TableNode
 
         assert isinstance(table, TableNode)

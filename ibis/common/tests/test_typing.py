@@ -1,8 +1,12 @@
 from __future__ import annotations
 
-from typing import Generic, Optional, TypeVar, Union
+from typing import Generic, Optional, Union
+
+from typing_extensions import TypeVar
 
 from ibis.common.typing import (
+    DefaultTypeVars,
+    Sentinel,
     evaluate_annotations,
     get_bound_typevars,
     get_type_hints,
@@ -95,5 +99,49 @@ def test_get_type_params() -> None:
 
 
 def test_get_bound_typevars() -> None:
-    assert get_bound_typevars(A[int, float, str]) == {'t': int, 's': float, 'u': str}
-    assert get_bound_typevars(B[int, bool]) == {'t': int, 's': bool, 'u': bytes}
+    expected = {
+        T: ('t', int),
+        S: ('s', float),
+        U: ('u', str),
+    }
+    assert get_bound_typevars(A[int, float, str]) == expected
+
+    expected = {
+        T: ('t', int),
+        S: ('s', bool),
+        U: ('u', bytes),
+    }
+    assert get_bound_typevars(B[int, bool]) == expected
+
+
+def test_default_type_vars():
+    T = TypeVar("T")
+    U = TypeVar("U", default=float)
+
+    class Test(DefaultTypeVars, Generic[T, U]):
+        pass
+
+    assert Test[int, float].__parameters__ == ()
+    assert Test[int, float].__args__ == (int, float)
+
+    assert Test[int].__parameters__ == ()
+    assert Test[int].__args__ == (int, float)
+
+
+def test_sentinel():
+    class missing(metaclass=Sentinel):
+        """marker for missing value"""
+
+    class missing1(metaclass=Sentinel):
+        """marker for missing value"""
+
+    assert type(missing) is Sentinel
+    expected = "<class 'ibis.common.tests.test_typing.test_sentinel.<locals>.missing'>"
+    assert repr(missing) == expected
+    assert missing.__name__ == "missing"
+    assert missing.__doc__ == "marker for missing value"
+
+    assert missing is missing
+    assert missing is not missing1
+    assert missing != missing1
+    assert missing != "missing"

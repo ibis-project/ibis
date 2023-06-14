@@ -17,13 +17,14 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import _, literal
 from ibis.common.collections import frozendict
 from ibis.common.exceptions import IbisTypeError
+from ibis.common.patterns import ValidationError
 from ibis.expr import api
 from ibis.tests.util import assert_equal
 
@@ -31,12 +32,6 @@ from ibis.tests.util import assert_equal
 def test_null():
     assert ibis.literal(None).equals(ibis.null())
     assert ibis.null().op() == ops.Literal(None, dtype=dt.null)
-
-
-def test_literal_mixed_type_fails():
-    data = [1, 'a']
-    with pytest.raises(TypeError):
-        ibis.literal(data)
 
 
 @pytest.mark.parametrize(
@@ -395,7 +390,7 @@ def test_log(table, log, column):
 def test_log_string(table):
     g = table.g
 
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(ValidationError):
         ops.Log(g, None).to_expr()
 
 
@@ -403,14 +398,14 @@ def test_log_string(table):
 def test_log_variants_string(table, klass):
     g = table.g
 
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(ValidationError):
         klass(g).to_expr()
 
 
 def test_log_boolean(table, log):
     # boolean not implemented for these
     h = table['h']
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(ValidationError):
         log(h)
 
 
@@ -623,18 +618,18 @@ def test_null_column_union():
 
 
 def test_string_compare_numeric_array(table):
-    with pytest.raises(TypeError):
+    with pytest.raises(com.IbisTypeError):
         table.g == table.f  # noqa: B015
 
-    with pytest.raises(TypeError):
+    with pytest.raises(com.IbisTypeError):
         table.g == table.c  # noqa: B015
 
 
 def test_string_compare_numeric_literal(table):
-    with pytest.raises(TypeError):
+    with pytest.raises(com.IbisTypeError):
         table.g == ibis.literal(1.5)  # noqa: B015
 
-    with pytest.raises(TypeError):
+    with pytest.raises(com.IbisTypeError):
         table.g == ibis.literal(5)  # noqa: B015
 
 
@@ -655,13 +650,13 @@ def test_between(table):
     assert isinstance(result, ir.BooleanScalar)
 
     # Cases where between should immediately fail, e.g. incomparables
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         table.f.between('0', '1')
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         table.f.between(0, '1')
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         table.f.between('0', 1)
 
 
@@ -679,7 +674,7 @@ def test_binop_string_type_error(table, operation, left, right):
     a = table[left]
     b = table[right]
 
-    with pytest.raises(TypeError):
+    with pytest.raises((TypeError, ValidationError)):
         operation(a, b)
 
 
@@ -1031,35 +1026,8 @@ def test_scalar_parameter_invalid_compare(left, right):
 )
 def test_between_time_failure_time(case, creator, left, right):
     value = creator(case)
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         value.between(left, right)
-
-
-def test_custom_type_binary_operations():
-    class Foo(ir.Expr):
-        def __add__(self, other):
-            op = self.op()
-            return type(op)(op.value + other).to_expr()
-
-        __radd__ = __add__
-
-    class FooNode(ops.Node):
-        value = rlz.integer
-
-        def to_expr(self):
-            return Foo(self)
-
-    left = ibis.literal(2)
-    right = FooNode(3).to_expr()
-    result = left + right
-    assert isinstance(result, Foo)
-    assert isinstance(result.op(), FooNode)
-
-    left = FooNode(3).to_expr()
-    right = ibis.literal(2)
-    result = left + right
-    assert isinstance(result, Foo)
-    assert isinstance(result.op(), FooNode)
 
 
 def test_empty_array_as_argument():
@@ -1067,17 +1035,14 @@ def test_empty_array_as_argument():
         pass
 
     class FooNode(ops.Node):
-        value = rlz.value(dt.Array(dt.int64))
+        value: ops.Value[dt.Array[dt.Int64], ds.Any]
 
         def to_expr(self):
             return Foo(self)
 
     node = FooNode([])
-    value = node.value
-    expected = literal([]).cast(dt.Array(dt.int64)).op()
-
-    assert value.output_dtype.equals(dt.Array(dt.null))
-    assert ops.Cast(value, dt.Array(dt.int64)).equals(expected)
+    assert node.value.value == ()
+    assert node.value.dtype == dt.Array(dt.Int64)
 
 
 def test_nullable_column_propagated():
@@ -1150,6 +1115,7 @@ def test_timestamp_timezone_type(tz):
 def test_map_get_broadcast():
     t = ibis.table([('a', 'string')], name='t')
     lookup_table = ibis.literal({'a': 1, 'b': 2})
+
     expr = lookup_table.get(t.a)
     assert isinstance(expr, ir.IntegerColumn)
 
@@ -1234,7 +1200,7 @@ def test_map_get_with_null_on_null_type_with_non_null():
 
 def test_map_get_with_incompatible_value():
     value = ibis.literal({'A': 1000, 'B': 2000})
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(TypeError):
         value.get('C', ['A'])
 
 
@@ -1538,6 +1504,10 @@ def double_float(x):
     return x * 2.0
 
 
+def is_negative(x):
+    return x < 0
+
+
 def test_array_map():
     arr = ibis.array([1, 2, 3])
 
@@ -1546,6 +1516,12 @@ def test_array_map():
 
     assert result_int.type() == dt.Array(dt.int16)
     assert result_float.type() == dt.Array(dt.float64)
+
+
+def test_array_filter():
+    arr = ibis.array([1, 2, 3])
+    result = arr.filter(is_negative)
+    assert result.type() == arr.type()
 
 
 @pytest.mark.parametrize(
@@ -1601,12 +1577,12 @@ def test_numpy_ufuncs_dont_cast_columns():
     [operator.lt, operator.gt, operator.ge, operator.le, operator.eq, operator.ne],
 )
 def test_logical_comparison_rlz_incompatible_error(table, operation):
-    with pytest.raises(TypeError, match=r"b:int16 and Literal\(foo\):string"):
+    with pytest.raises(com.IbisTypeError, match=r"b:int16 and Literal\(foo\):string"):
         operation(table.b, "foo")
 
 
 def test_case_rlz_incompatible_error(table):
-    with pytest.raises(TypeError, match=r"a:int8 and Literal\(foo\):string"):
+    with pytest.raises(com.IbisTypeError, match=r"a:int8 and Literal\(foo\):string"):
         table.a == 'foo'  # noqa: B015
 
 

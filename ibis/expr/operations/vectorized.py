@@ -1,22 +1,24 @@
 from __future__ import annotations
 
-from types import FunctionType, LambdaType
+from types import FunctionType, LambdaType  # noqa: TCH003
+from typing import Union
 
 from public import public
 
-from ibis.expr import rules as rlz
+import ibis.expr.datashape as ds
+import ibis.expr.datatypes as dt
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.analytic import Analytic
-from ibis.expr.operations.core import Value
+from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.reductions import Reduction
 
 
 class VectorizedUDF(Value):
-    func = rlz.instance_of((FunctionType, LambdaType))
-    func_args = rlz.tuple_of(rlz.column(rlz.any))
-    # TODO(kszucs): should rename these arguments to
-    # input_dtypes and return_dtype
-    input_type = rlz.tuple_of(rlz.datatype)
-    return_type = rlz.datatype
+    func: Union[FunctionType, LambdaType]
+    func_args: VarTuple[Column]
+    # TODO(kszucs): should rename these arguments to input_dtypes and return_dtype
+    input_type: VarTuple[dt.DataType]
+    return_type: dt.DataType
 
     @property
     def output_dtype(self):
@@ -27,14 +29,14 @@ class VectorizedUDF(Value):
 class ElementWiseVectorizedUDF(VectorizedUDF):
     """Node for element wise UDF."""
 
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar
 
 
 @public
 class ReductionVectorizedUDF(VectorizedUDF, Reduction):
     """Node for reduction UDF."""
 
-    output_shape = rlz.Shape.SCALAR
+    output_shape = ds.scalar
 
 
 # TODO(kszucs): revisit
@@ -42,4 +44,4 @@ class ReductionVectorizedUDF(VectorizedUDF, Reduction):
 class AnalyticVectorizedUDF(VectorizedUDF, Analytic):
     """Node for analytics UDF."""
 
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = ds.columnar

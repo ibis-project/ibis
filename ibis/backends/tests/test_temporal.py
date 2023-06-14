@@ -17,6 +17,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
+from ibis.common.patterns import ValidationError
 
 try:
     from duckdb import InvalidInputException as DuckDBInvalidInputException
@@ -711,7 +712,7 @@ def test_date_truncate(backend, alltypes, df, unit):
 )
 @pytest.mark.notimpl(
     ["druid"],
-    raises=com.IbisTypeError,
+    raises=ValidationError,
     reason="Given argument with datatype interval('h') is not implicitly castable to string",
 )
 def test_integer_to_interval_timestamp(
@@ -813,7 +814,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 ),
                 pytest.mark.notimpl(
                     ["druid"],
-                    raises=com.IbisTypeError,
+                    raises=ValidationError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
             ],
@@ -841,7 +842,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 ),
                 pytest.mark.notimpl(
                     ["druid"],
-                    raises=com.IbisTypeError,
+                    raises=ValidationError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
             ],
@@ -868,8 +869,8 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 ),
                 pytest.mark.notimpl(
                     ["druid"],
-                    raises=com.IbisTypeError,
-                    reason="Given argument with datatype interval(<IntervalUnit.HOUR: 'h'>) is not implicitly castable to string",
+                    raises=ValidationError,
+                    reason="alltypes.timestamp_col is represented as string",
                 ),
             ],
         ),
@@ -931,7 +932,7 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
                 ),
                 pytest.mark.notimpl(
                     ["druid"],
-                    raises=TypeError,
+                    raises=ValidationError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'TimestampScalar'",
                 ),
                 pytest.mark.xfail_version(
@@ -987,8 +988,13 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             marks=[
                 pytest.mark.broken(
                     ['druid'],
-                    raises=com.IbisTypeError,
-                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                    raises=AssertionError,
+                    reason="alltypes.timestamp_col is represented as string",
+                ),
+                pytest.mark.broken(
+                    ["clickhouse"],
+                    raises=AssertionError,
+                    reason="DateTime column overflows, should use DateTime64",
                 ),
                 pytest.mark.broken(
                     ["clickhouse"],
@@ -1003,8 +1009,8 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             marks=[
                 pytest.mark.broken(
                     ['druid'],
-                    raises=com.IbisTypeError,
-                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                    raises=AssertionError,
+                    reason="alltypes.timestamp_col is represented as string",
                 ),
             ],
         ),
@@ -1014,8 +1020,8 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             marks=[
                 pytest.mark.broken(
                     ['druid'],
-                    raises=com.IbisTypeError,
-                    reason="Given argument with datatype interval('D') is not implicitly castable to string",
+                    raises=AssertionError,
+                    reason="alltypes.timestamp_col is represented as string",
                 ),
             ],
         ),
@@ -1025,8 +1031,8 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             marks=[
                 pytest.mark.broken(
                     ['druid'],
-                    raises=com.IbisTypeError,
-                    reason="Given argument with datatype interval('h') is not implicitly castable to string",
+                    raises=AssertionError,
+                    reason="alltypes.timestamp_col is represented as string",
                 ),
             ],
         ),
@@ -1036,8 +1042,8 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             marks=[
                 pytest.mark.broken(
                     ['druid'],
-                    raises=com.IbisTypeError,
-                    reason="Given argument with datatype interval('m') is not implicitly castable to string",
+                    raises=AssertionError,
+                    reason="alltypes.timestamp_col is represented as string",
                 ),
             ],
         ),
@@ -1047,8 +1053,8 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             marks=[
                 pytest.mark.broken(
                     ['druid'],
-                    raises=com.IbisTypeError,
-                    reason="Given argument with datatype interval('s') is not implicitly castable to string",
+                    raises=AssertionError,
+                    reason="alltypes.timestamp_col is represented as string",
                 ),
             ],
         ),
@@ -1060,6 +1066,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+                pytest.mark.broken(
+                    ["clickhouse"],
+                    raises=AssertionError,
+                    reason="DateTime column overflows, should use DateTime64",
                 ),
                 pytest.mark.broken(
                     ["clickhouse"],

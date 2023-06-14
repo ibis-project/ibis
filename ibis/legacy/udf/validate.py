@@ -8,12 +8,10 @@ DO NOT USE DIRECTLY.
 from __future__ import annotations
 
 from inspect import Parameter, Signature, signature
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
 import ibis.common.exceptions as com
-
-if TYPE_CHECKING:
-    from ibis.expr.datatypes import DataType
+import ibis.expr.datatypes as dt
 
 
 def _parameter_count(funcsig: Signature) -> int:
@@ -37,7 +35,7 @@ def _parameter_count(funcsig: Signature) -> int:
     )
 
 
-def validate_input_type(input_type: list[DataType], func: Callable) -> Signature:
+def validate_input_type(input_type: list[dt.DataType], func: Callable) -> Signature:
     """Check that the declared number of inputs and signature of func are compatible.
 
     If the signature of `func` uses *args, then no check is done (since no

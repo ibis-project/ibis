@@ -2,11 +2,18 @@ from __future__ import annotations
 
 import functools
 import inspect
-from typing import Any
+from typing import Any as AnyType
 
 from ibis.common.collections import DotDict
+from ibis.common.patterns import (
+    Any,
+    FrozenDictOf,
+    Function,
+    Option,
+    TupleOf,
+    Validator,
+)
 from ibis.common.typing import get_type_hints
-from ibis.common.validators import Validator, any_, frozendict_of, option, tuple_of
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
@@ -34,6 +41,12 @@ class Annotation:
     __slots__ = ('_validator', '_default', '_typehint')
 
     def __init__(self, validator=None, default=EMPTY, typehint=EMPTY):
+        if validator is None or isinstance(validator, Validator):
+            pass
+        elif callable(validator):
+            validator = Function(validator)
+        else:
+            raise TypeError(f"Unsupported validator {validator!r}")
         self._default = default
         self._typehint = typehint
         self._validator = validator
@@ -52,10 +65,10 @@ class Annotation:
             f"default={self._default!r}, typehint={self._typehint!r})"
         )
 
-    def validate(self, arg, **kwargs):
+    def validate(self, arg, context=None):
         if self._validator is None:
             return arg
-        return self._validator(arg, **kwargs)
+        return self._validator.validate(arg, context)
 
 
 class Attribute(Annotation):
@@ -85,7 +98,7 @@ class Attribute(Annotation):
             value = self._default(this)
         else:
             value = self._default
-        return self.validate(value, this=this)
+        return self.validate(value, this)
 
 
 class Argument(Annotation):
@@ -109,7 +122,7 @@ class Argument(Annotation):
     def __init__(
         self,
         validator: Validator | None = None,
-        default: Any = EMPTY,
+        default: AnyType = EMPTY,
         typehint: type | None = None,
         kind: int = POSITIONAL_OR_KEYWORD,
     ):
@@ -130,20 +143,20 @@ class Argument(Annotation):
     def optional(cls, validator=None, default=None, **kwargs):
         """Annotation to allow and treat `None` values as missing arguments."""
         if validator is None:
-            validator = option(any_, default=default)
+            validator = Option(Any(), default=default)
         else:
-            validator = option(validator, default=default)
+            validator = Option(validator, default=default)
         return cls(validator, default=None, **kwargs)
 
     @classmethod
     def varargs(cls, validator=None, **kwargs):
         """Annotation to mark a variable length positional argument."""
-        validator = None if validator is None else tuple_of(validator)
+        validator = None if validator is None else TupleOf(validator)
         return cls(validator, kind=VAR_POSITIONAL, **kwargs)
 
     @classmethod
     def varkwargs(cls, validator=None, **kwargs):
-        validator = None if validator is None else frozendict_of(any_, validator)
+        validator = None if validator is None else FrozenDictOf(Any(), validator)
         return cls(validator, kind=VAR_KEYWORD, **kwargs)
 
 
@@ -295,7 +308,7 @@ class Signature(inspect.Signature):
 
         return cls(parameters, return_annotation=return_annotation)
 
-    def unbind(self, this: Any):
+    def unbind(self, this: AnyType):
         """Reverse bind of the parameters.
 
         Attempts to reconstructs the original arguments as keyword only arguments.
@@ -353,7 +366,8 @@ class Signature(inspect.Signature):
         for name, value in bound.arguments.items():
             param = self.parameters[name]
             # TODO(kszucs): provide more error context on failure
-            this[name] = param.annotation.validate(value, this=this)
+            this[name] = param.annotation.validate(value, this)
+
         return this
 
     def validate_nobind(self, **kwargs):
@@ -363,16 +377,18 @@ class Signature(inspect.Signature):
             value = kwargs.get(name, param.default)
             if value is EMPTY:
                 raise TypeError(f"missing required argument `{name!r}`")
-            this[name] = param.annotation.validate(value, this=kwargs)
+            this[name] = param.annotation.validate(value, kwargs)
         return this
 
-    def validate_return(self, value):
+    def validate_return(self, value, context):
         """Validate the return value of a function.
 
         Parameters
         ----------
         value : Any
             Return value of the function.
+        context : dict
+            Context dictionary.
 
         Returns
         -------
@@ -381,8 +397,7 @@ class Signature(inspect.Signature):
         """
         if self.return_annotation is EMPTY:
             return value
-        else:
-            return self.return_annotation(value)
+        return self.return_annotation.validate(value, context)
 
 
 # aliases for convenience
@@ -412,7 +427,7 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
 
     2. With argument validators passed as keyword arguments
 
-    >>> from ibis.common.validators import instance_of
+    >>> from ibis.common.patterns import InstanceOf as instance_of
     >>> @annotated(x=instance_of(int), y=instance_of(str))
     ... def foo(x, y):
     ...     return float(x) + float(y)
@@ -478,7 +493,7 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
         # 3. Call the function with the validated arguments
         result = func(*args, **kwargs)
         # 4. Validate the return value
-        return sig.validate_return(result)
+        return sig.validate_return(result, {})
 
     wrapped.__signature__ = sig
 

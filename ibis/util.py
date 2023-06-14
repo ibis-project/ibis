@@ -19,7 +19,6 @@ from typing import (
     Any,
     Callable,
     Iterator,
-    Mapping,
     Sequence,
     TypeVar,
 )
@@ -30,10 +29,6 @@ import toolz
 if TYPE_CHECKING:
     from numbers import Real
     from pathlib import Path
-
-    import ibis.expr.operations as ops
-
-    Graph = Mapping[ops.Node, Sequence[ops.Node]]
 
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", covariant=True)
