@@ -97,13 +97,13 @@ def test_interval_function_invalid():
         (api.interval(days=14), 'W', api.interval(weeks=2)),
         (api.interval(minutes=240), 'h', api.interval(hours=4)),
         (api.interval(seconds=360), 'm', api.interval(minutes=6)),
-        (api.interval(seconds=3 * 86400), 'D', api.interval(days=3)),
         (api.interval(milliseconds=5000), 's', api.interval(seconds=5)),
         (api.interval(microseconds=5000000), 's', api.interval(seconds=5)),
         (api.interval(nanoseconds=5000000000), 's', api.interval(seconds=5)),
+        (api.interval(seconds=3 * 86400), 'D', api.interval(days=3)),
     ],
 )
-def test_upconvert(interval, unit, expected):
+def test_upconvert_interval(interval, unit, expected):
     result = interval.to_unit(unit)
     assert result.equals(expected)
 
@@ -262,27 +262,48 @@ def test_downconvert_hours(case, expected):
 @pytest.mark.parametrize(
     ('case', 'expected'),
     [
+        (api.interval(minutes=2).to_unit('m'), api.interval(minutes=2)),
+        (api.interval(minutes=2).to_unit('s'), api.interval(seconds=2 * 60)),
+        (
+            api.interval(minutes=2).to_unit('ms'),
+            api.interval(milliseconds=2 * 60 * 1000),
+        ),
+        (
+            api.interval(minutes=2).to_unit('us'),
+            api.interval(microseconds=2 * 60 * 1000000),
+        ),
+        (
+            api.interval(minutes=2).to_unit('ns'),
+            api.interval(nanoseconds=2 * 60 * 1000000000),
+        ),
+        (api.interval(hours=2).to_unit('h'), api.interval(hours=2)),
+        (api.interval(hours=2).to_unit('m'), api.interval(minutes=2 * 60)),
+        (api.interval(hours=2).to_unit('s'), api.interval(seconds=2 * 3600)),
         (api.interval(weeks=2).to_unit('D'), api.interval(days=2 * 7)),
-        (api.interval(weeks=2).to_unit('h'), api.interval(hours=2 * 7 * 24)),
         (api.interval(days=2).to_unit('D'), api.interval(days=2)),
+        (api.interval(years=2).to_unit('Y'), api.interval(years=2)),
+        (api.interval(years=2).to_unit('M'), api.interval(months=24)),
+        (api.interval(years=2).to_unit('Q'), api.interval(quarters=8)),
+        (api.interval(months=2).to_unit('M'), api.interval(months=2)),
+        (api.interval(weeks=2).to_unit('h'), api.interval(hours=2 * 7 * 24)),
         (api.interval(days=2).to_unit('h'), api.interval(hours=2 * 24)),
-        (api.interval(days=2).to_unit('m'), api.interval(minutes=2 * 1440)),
-        (api.interval(days=2).to_unit('s'), api.interval(seconds=2 * 86400)),
+        (api.interval(days=2).to_unit('m'), api.interval(minutes=2 * 24 * 60)),
+        (api.interval(days=2).to_unit('s'), api.interval(seconds=2 * 24 * 60 * 60)),
         (
             api.interval(days=2).to_unit('ms'),
-            api.interval(milliseconds=2 * 86400000),
+            api.interval(milliseconds=2 * 24 * 60 * 60 * 1_000),
         ),
         (
             api.interval(days=2).to_unit('us'),
-            api.interval(microseconds=2 * 86400000000),
+            api.interval(microseconds=2 * 24 * 60 * 60 * 1_000_000),
         ),
         (
             api.interval(days=2).to_unit('ns'),
-            api.interval(nanoseconds=2 * 86400000000000),
+            api.interval(nanoseconds=2 * 24 * 60 * 60 * 1_000_000_000),
         ),
     ],
 )
-def test_downconvert_day(case, expected):
+def test_downconvert_interval(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
     assert case.type().unit == expected.type().unit
@@ -547,21 +568,20 @@ def test_invalid_date_arithmetics():
 
 
 @pytest.mark.parametrize(
-    ('prop', 'expected_unit'),
+    ('value', 'prop', 'expected_unit'),
     [
-        ('nanoseconds', 'ns'),
-        ('microseconds', 'us'),
-        ('milliseconds', 'ms'),
-        ('seconds', 's'),
-        ('minutes', 'm'),
-        ('hours', 'h'),
-        ('days', 'D'),
-        ('weeks', 'W'),
+        (api.interval(seconds=3600), 'nanoseconds', 'ns'),
+        (api.interval(seconds=3600), 'microseconds', 'us'),
+        (api.interval(seconds=3600), 'milliseconds', 'ms'),
+        (api.interval(seconds=3600), 'seconds', 's'),
+        (api.interval(seconds=3600), 'minutes', 'm'),
+        (api.interval(seconds=3600), 'hours', 'h'),
+        (api.interval(weeks=3), 'days', 'D'),
+        (api.interval(days=21), 'weeks', 'W'),
     ],
 )
-def test_interval_properties(prop, expected_unit):
-    i = api.interval(seconds=3600)
-    assert getattr(i, prop).type().unit == IntervalUnit(expected_unit)
+def test_interval_properties(value, prop, expected_unit):
+    assert getattr(value, prop).type().unit == IntervalUnit(expected_unit)
 
 
 @pytest.mark.parametrize(

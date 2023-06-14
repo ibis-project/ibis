@@ -80,8 +80,8 @@ def test_interval_unit_aliases(alias, expected):
         (timedelta(seconds=1), IntervalUnit.SECOND, 1),
         (timedelta(milliseconds=1), IntervalUnit.MILLISECOND, 1),
         (timedelta(microseconds=1), IntervalUnit.MICROSECOND, 1),
-        (timedelta(days=1, milliseconds=100), IntervalUnit.MILLISECOND, 86400100),
-        (timedelta(days=1, milliseconds=21), IntervalUnit.MICROSECOND, 86400021000),
+        (timedelta(seconds=1, milliseconds=100), IntervalUnit.MILLISECOND, 1100),
+        (timedelta(seconds=1, milliseconds=21), IntervalUnit.MICROSECOND, 1021000),
     ],
 )
 def test_normalize_timedelta(value, unit, expected):

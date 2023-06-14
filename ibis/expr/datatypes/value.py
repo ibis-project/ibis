@@ -86,7 +86,10 @@ def infer_interval(value: datetime.timedelta) -> dt.Interval:
     # datetime.timedelta only stores days, seconds, and microseconds internally
     if value.days:
         if value.seconds or value.microseconds:
-            raise ValueError("Unable to infer interval type from mixed units")
+            raise ValueError(
+                "Unable to infer interval type from mixed units, "
+                "use ibis.interval(timedelta) instead"
+            )
         else:
             return dt.Interval(IntervalUnit.DAY)
     elif value.seconds:

@@ -263,7 +263,7 @@ def convert_unit(value, unit, to, floor: bool = True):
     >>> x = convert_unit(one_second, 's', 'M')
     Traceback (most recent call last):
         ...
-    ValueError: Cannot convert to or from variable length interval
+    ValueError: Cannot convert to or from unit ... to unit ...
     """
     # Don't do anything if from and to units are equivalent
     if unit == to:
