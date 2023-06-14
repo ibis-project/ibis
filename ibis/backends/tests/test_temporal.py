@@ -584,7 +584,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 pytest.mark.notimpl(
                     ['bigquery'],
                     raises=com.UnsupportedOperationError,
-                    reason="BigQuery does not allow binary operation TIMESTAMP_ADD with INTERVAL offset W",
+                    reason="BigQuery does not allow extracting date part `IntervalUnit.WEEK` from intervals",
                 ),
                 pytest.mark.notimpl(
                     ['dask'],
@@ -602,13 +602,6 @@ def test_date_truncate(backend, alltypes, df, unit):
             'D',
             pd.offsets.DateOffset,
             marks=[
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason=(
-                        "BigQuery does not allow binary operation TIMESTAMP_ADD with INTERVAL offset D"
-                    ),
-                ),
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=com.UnsupportedOperationError,
@@ -782,10 +775,6 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             id='timestamp-add-interval',
             marks=[
                 pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                ),
-                pytest.mark.notimpl(
                     ["sqlite"],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -856,7 +845,6 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
             lambda t, _: t.timestamp_col - pd.Timedelta(days=17),
             id='timestamp-subtract-interval',
             marks=[
-                pytest.mark.notimpl(["bigquery"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=TypeError,
@@ -967,11 +955,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=com.IbisTypeError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason='BigQuery does not allow binary operation TIMESTAMP_ADD with INTERVAL offset D',
-                ),
                 pytest.mark.broken(
                     ["clickhouse"],
                     raises=AssertionError,
@@ -988,11 +971,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=com.IbisTypeError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason='BigQuery does not allow binary operation TIMESTAMP_ADD with INTERVAL offset D',
-                ),
             ],
         ),
         param(
@@ -1003,11 +981,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ['druid'],
                     raises=com.IbisTypeError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
-                ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason='BigQuery does not allow binary operation TIMESTAMP_ADD with INTERVAL offset D',
                 ),
             ],
         ),
@@ -1020,11 +993,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=com.IbisTypeError,
                     reason="Given argument with datatype interval('h') is not implicitly castable to string",
                 ),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason='400 Syntax error: Expected ")" but got integer literal "02" at [1:58]',
-                ),
             ],
         ),
         param(
@@ -1035,11 +1003,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ['druid'],
                     raises=com.IbisTypeError,
                     reason="Given argument with datatype interval('m') is not implicitly castable to string",
-                ),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason='400 Syntax error: Expected ")" but got integer literal "00" at [1:58]',
                 ),
             ],
         ),
@@ -1052,11 +1015,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=com.IbisTypeError,
                     reason="Given argument with datatype interval('s') is not implicitly castable to string",
                 ),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason='400 Syntax error: Expected ")" but got integer literal "00" at [1:58]',
-                ),
             ],
         ),
         param(
@@ -1067,11 +1025,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
-                ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason='BigQuery does not allow binary operation TIMESTAMP_SUB with INTERVAL offset D',
                 ),
                 pytest.mark.broken(
                     ["clickhouse"],
@@ -1089,11 +1042,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
                 ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason='BigQuery does not allow binary operation TIMESTAMP_SUB with INTERVAL offset D',
-                ),
             ],
         ),
         param(
@@ -1104,11 +1052,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
-                ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason='BigQuery does not allow binary operation TIMESTAMP_SUB with INTERVAL offset D',
                 ),
             ],
         ),
@@ -1121,11 +1064,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
                 ),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason='400 Syntax error: Expected ")" but got integer literal "02" at [1:58]',
-                ),
             ],
         ),
         param(
@@ -1137,11 +1075,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
                 ),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason='400 Syntax error: Expected ")" but got integer literal "00" at [1:58]',
-                ),
             ],
         ),
         param(
@@ -1152,11 +1085,6 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
-                ),
-                pytest.mark.broken(
-                    ["bigquery"],
-                    raises=GoogleBadRequest,
-                    reason='400 Syntax error: Expected ")" but got integer literal "00" at [1:58]',
                 ),
             ],
         ),

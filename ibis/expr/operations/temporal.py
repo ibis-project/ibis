@@ -6,7 +6,6 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis import util
 from ibis.common.annotations import attribute
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 from ibis.expr.operations.core import Binary, Unary, Value
@@ -267,27 +266,6 @@ class TimestampDiff(Binary):
     left = rlz.timestamp
     right = rlz.timestamp
     output_dtype = dt.Interval('s')
-
-
-@public
-class ToIntervalUnit(Value):
-    arg = rlz.interval
-    unit = rlz.coerced_to(IntervalUnit)
-
-    output_shape = rlz.shape_like("arg")
-
-    def __init__(self, arg, unit):
-        dtype = arg.output_dtype
-
-        # TODO(kszucs): remove the expression wrapping required for arithmetic
-        # overloads
-        if dtype.unit != unit:
-            arg = util.convert_unit(arg, dtype.unit.short, unit.short)
-        super().__init__(arg=arg, unit=unit)
-
-    @attribute.default
-    def output_dtype(self):
-        return self.arg.output_dtype.copy(unit=self.unit)
 
 
 @public

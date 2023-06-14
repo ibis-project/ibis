@@ -105,9 +105,7 @@ def test_interval_function_invalid():
 )
 def test_upconvert(interval, unit, expected):
     result = interval.to_unit(unit)
-
-    assert isinstance(result, ir.IntervalScalar)
-    assert result.type().unit == expected.type().unit
+    assert result.equals(expected)
 
 
 @pytest.mark.parametrize('target', ['Y', 'Q', 'M'])

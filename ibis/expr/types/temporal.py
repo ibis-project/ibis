@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis import util
+import ibis.expr.datatypes as dt
+from ibis.common.temporal import IntervalUnit
 
 
 @public
@@ -502,10 +505,22 @@ class TimestampColumn(TemporalColumn, TimestampValue):
 class IntervalValue(Value):
     def to_unit(self, target_unit: str) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
-
         # TODO(kszucs): should use a separate operation for unit conversion
         # which we can rewrite/simplify to integer multiplication/division
-        return ops.ToIntervalUnit(self, unit=target_unit).to_expr()
+        op = self.op()
+        current_unit = op.output_dtype.unit
+        target_unit = IntervalUnit.from_string(target_unit)
+
+        if current_unit == target_unit:
+            return self
+        elif isinstance(op, ops.Literal):
+            value = util.convert_unit(op.value, current_unit.short, target_unit.short)
+            return ops.Literal(value, dtype=dt.Interval(target_unit)).to_expr()
+        else:
+            value = util.convert_unit(
+                self.cast(dt.int64), current_unit.short, target_unit.short
+            )
+            return value.to_interval(target_unit)
 
     @property
     def years(self) -> ir.IntegerValue:

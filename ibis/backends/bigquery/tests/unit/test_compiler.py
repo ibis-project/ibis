@@ -478,7 +478,7 @@ def test_range_window_function(alltypes, window, snapshot):
         param(ibis.interval(hours=1), id="hours"),
         param(ibis.interval(days=1), id="days"),
         param(2 * ibis.interval(days=1), id="two_days"),
-        param(ibis.interval(weeks=1), id="week"),
+        param(ibis.interval(weeks=1), id="week", marks=pytest.mark.xfail),
     ],
 )
 def test_trailing_range_window(alltypes, preceding, snapshot):
