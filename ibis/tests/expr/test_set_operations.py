@@ -3,7 +3,6 @@ from __future__ import annotations
 import pytest
 
 import ibis
-import ibis.expr.operations as ops
 from ibis.common.exceptions import RelationError
 
 
@@ -62,5 +61,5 @@ def test_operation_supports_schemas_with_different_field_order(method):
     assert u2.schema == a.schema()
     assert u2.left == a.op()
 
-    columns = [ops.TableColumn(c, name) for name in 'abc']
-    assert u2.right == ops.Selection(c.op(), columns)
+    reprojected = c.select(['a', 'b', 'c'])
+    assert u2.right == reprojected.op()

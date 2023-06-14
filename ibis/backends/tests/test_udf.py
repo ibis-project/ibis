@@ -32,8 +32,11 @@ def test_udf(batting):
         return sum(map(s.lower().count, "aeiou" + ("y" * include_y)))
 
     batting = batting.limit(100)
+    nvowels = num_vowels(batting.playerID)
+    assert nvowels.op().__module__ == __name__
+    assert type(nvowels.op()).__qualname__ == "num_vowels"
 
-    expr = batting.group_by(id_len=num_vowels(batting.playerID)).agg(n=_.count())
+    expr = batting.group_by(id_len=nvowels).agg(n=_.count())
     result = expr.execute()
     assert not result.empty
 

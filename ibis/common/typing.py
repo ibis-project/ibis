@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import sys
+from itertools import zip_longest
 from typing import (
     Any,
     Dict,
     Generic,  # noqa: F401
     Optional,
+    Tuple,
     TypeVar,
     get_args,
     get_origin,
@@ -15,10 +17,17 @@ from typing_extensions import get_type_hints as _get_type_hints
 
 from ibis.common.caching import memoize
 
-Namespace = Dict[str, Any]
+try:
+    from types import UnionType
+except ImportError:
+    UnionType = object()
+
 
 T = TypeVar("T")
 U = TypeVar("U")
+
+Namespace = Dict[str, Any]
+VarTuple = Tuple[T, ...]
 
 
 @memoize
@@ -126,7 +135,7 @@ def get_bound_typevars(obj: Any) -> dict[str, Any]:
     ...    b: U
     ...
     >>> get_bound_typevars(MyStruct[int, str])
-    {'a': <class 'int'>, 'b': <class 'str'>}
+    {~T: ('a', <class 'int'>), ~U: ('b', <class 'str'>)}
     >>>
     >>> class MyStruct(Generic[T, U]):
     ...    a: T
@@ -136,7 +145,7 @@ def get_bound_typevars(obj: Any) -> dict[str, Any]:
     ...        ...
     ...
     >>> get_bound_typevars(MyStruct[float, bytes])
-    {'a': <class 'float'>, 'myprop': <class 'bytes'>}
+    {~T: ('a', <class 'float'>), ~U: ('myprop', <class 'bytes'>)}
     """
     origin = get_origin(obj) or obj
     hints = get_type_hints(origin, include_properties=True)
@@ -145,7 +154,7 @@ def get_bound_typevars(obj: Any) -> dict[str, Any]:
     result = {}
     for attr, typ in hints.items():
         if isinstance(typ, TypeVar):
-            result[attr] = params[typ.__name__]
+            result[typ] = (attr, params[typ.__name__])
     return result
 
 
@@ -181,3 +190,27 @@ def evaluate_annotations(
         k: eval(v, globalns, localns) if isinstance(v, str) else v  # noqa: PGH001
         for k, v in annots.items()
     }
+
+
+class DefaultTypeVars:
+    """Enable using default type variables in generic classes (PEP-0696)."""
+
+    __slots__ = ()
+
+    def __class_getitem__(cls, params):
+        params = params if isinstance(params, tuple) else (params,)
+        pairs = zip_longest(params, cls.__parameters__)
+        params = tuple(p.__default__ if t is None else t for t, p in pairs)
+        return super().__class_getitem__(params)
+
+
+class Sentinel(type):
+    """Create type-annotable unique objects."""
+
+    def __new__(cls, name, bases, namespace, **kwargs):
+        if bases:
+            raise TypeError("Sentinels cannot be subclassed")
+        return super().__new__(cls, name, bases, namespace, **kwargs)
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        raise TypeError("Sentinels are not constructible")

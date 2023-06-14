@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import enum
-import inspect
 import math
 import numbers
 from abc import ABC, abstractmethod
@@ -11,6 +9,7 @@ from inspect import Parameter
 from itertools import chain, zip_longest
 from typing import Any as AnyType
 from typing import (
+    ForwardRef,
     Generic,  # noqa: F401
     Literal,
     Optional,
@@ -19,11 +18,12 @@ from typing import (
     Union,
 )
 
-from typing_extensions import Annotated, Self, get_args, get_origin
+import toolz
+from typing_extensions import Annotated, GenericMeta, Self, get_args, get_origin
 
 from ibis.common.collections import RewindableIterator, frozendict
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.common.typing import get_bound_typevars, get_type_params
+from ibis.common.typing import Sentinel, get_bound_typevars, get_type_params
 from ibis.util import is_iterable, promote_tuple
 
 try:
@@ -32,10 +32,18 @@ except ImportError:
     UnionType = object()
 
 
-T = TypeVar("T")
+T_cov = TypeVar("T_cov", covariant=True)
 
 
 class CoercionError(Exception):
+    ...
+
+
+class ValidationError(Exception):
+    ...
+
+
+class MatchError(Exception):
     ...
 
 
@@ -55,39 +63,44 @@ class Coercible(ABC):
         ...
 
 
-class ValidationError(Exception):
-    ...
-
-
 class Validator(ABC):
     __slots__ = ()
 
-    @abstractmethod
-    def validate(self, value, context):
-        ...
+    @classmethod
+    def from_typevar(cls, var: TypeVar, bound: AnyType = None) -> Pattern:
+        """Construct a validator from a type variable.
 
+        This method is called from two places:
+        1. `Validator.from_typehint` without additional bound argument
+        2. `GenericInstanceOf` with a substituted type parameter given as bound
 
-class MatchError(Exception):
-    ...
+        This method also ensures that the type variable is covariant,
+        contravariant and invariant type variables are not supported yet.
 
+        Parameters
+        ----------
+        var
+            The type variable to construct the pattern from.
+        bound
+            An optional bound to use for the type variable. If not provided,
+            a no-op validator is returned.
 
-class NoMatchType(enum.Enum):
-    NoMatch = "NoMatch"
-
-
-NoMatch = NoMatchType.NoMatch  # Sentinel value for when a pattern doesn't match.
-
-
-# TODO(kszucs): have an As[int] or Coerced[int] type in ibis.common.typing which
-# would be used to annotate an argument as coercible to int or to a certain type
-# without needing for the type to inherit from Coercible
-# TODO(kszucs): enforce typevars to be invariant otherwise raise an error
-class Pattern(Validator, Hashable):
-    # TODO(kszucs): may need a flag to set preference for coercion over instance check
+        Returns
+        -------
+        pattern
+            A pattern that matches the given type variable.
+        """
+        if var.__covariant__:
+            if bound := bound or var.__bound__:
+                return cls.from_typehint(bound)
+            else:
+                return Any()
+        else:
+            raise NotImplementedError("Only covariant typevars are supported for now")
 
     @classmethod
     def from_typehint(cls, annot: type) -> Pattern:
-        """Construct a pattern from a python type annotation.
+        """Construct a validator from a python type annotation.
 
         Parameters
         ----------
@@ -101,44 +114,77 @@ class Pattern(Validator, Hashable):
             A pattern that matches the given type annotation.
         """
         # TODO(kszucs): cache the result of this function
+        # TODO(kszucs): explore issubclass(typ, SupportsInt) etc.
         origin, args = get_origin(annot), get_args(annot)
 
         if origin is None:
+            # the typehint is not generic
             if annot is Ellipsis or annot is AnyType:
+                # treat both `Any` and `...` as wildcard
                 return Any()
-            elif annot is None:
-                return Is(None)
-            elif isinstance(annot, TypeVar):
-                # TODO(kszucs): only use coerced_to if annot.__covariant__ is True
-                if annot.__bound__ is None:
-                    return Any()
+            elif isinstance(annot, type):
+                # the typehint is a concrete type (e.g. int, str, etc.)
+                if issubclass(annot, Coercible):
+                    # the type implements the Coercible protocol so we try to
+                    # coerce the value to the given type rather than checking
+                    return CoercedTo(annot)
                 else:
-                    return cls.from_typehint(annot.__bound__)
+                    return InstanceOf(annot)
+            elif isinstance(annot, TypeVar):
+                # if the typehint is a type variable we try to construct a
+                # validator from it only if it is covariant and has a bound
+                return cls.from_typevar(annot)
             elif isinstance(annot, Enum):
+                # for enums we check the value against the enum values
                 return EqualTo(annot)
-            elif issubclass(annot, Coercible):
-                return CoercedTo(annot)
+            elif isinstance(annot, (str, ForwardRef)):
+                # for strings and forward references we check in a lazy way
+                return LazyInstanceOf(annot)
             else:
-                return InstanceOf(annot)
+                raise TypeError(f"Cannot create validator from annotation {annot!r}")
         elif origin is Literal:
+            # for literal types we check the value against the literal values
             return IsIn(args)
         elif origin is UnionType or origin is Union:
-            if len(args) == 2 and args[1] is type(None):
-                return Option(cls.from_typehint(args[0]))
-            inners = map(cls.from_typehint, args)
-            return AnyOf(*inners)
+            # this is slightly more complicated because we need to handle
+            # Optional[T] which is Union[T, None] and Union[T1, T2, ...]
+            *rest, last = args
+            if last is type(None):
+                # the typehint is Optional[*rest] which is equivalent to
+                # Union[*rest, None], so we construct an Option pattern
+                if len(rest) == 1:
+                    inner = cls.from_typehint(rest[0])
+                else:
+                    inner = AnyOf(*map(cls.from_typehint, rest))
+                return Option(inner)
+            else:
+                # the typehint is Union[*args] so we construct an AnyOf pattern
+                return AnyOf(*map(cls.from_typehint, args))
         elif origin is Annotated:
+            # the Annotated typehint can be used to add extra validation logic
+            # to the typehint, e.g. Annotated[int, Positive], the first argument
+            # is used for isinstance checks, the rest are applied in conjunction
             annot, *extras = args
             return AllOf(cls.from_typehint(annot), *extras)
         elif origin is Callable:
+            # the Callable typehint is used to annotate functions, e.g. the
+            # following typehint annotates a function that takes two integers
+            # and returns a string: Callable[[int, int], str]
             if args:
+                # callable with args and return typehints construct a special
+                # CallableWith validator
                 arg_hints, return_hint = args
                 arg_patterns = tuple(map(cls.from_typehint, arg_hints))
                 return_pattern = cls.from_typehint(return_hint)
                 return CallableWith(arg_patterns, return_pattern)
             else:
+                # in case of Callable without args we check for the Callable
+                # protocol only
                 return InstanceOf(Callable)
         elif issubclass(origin, Tuple):
+            # construct validators for the tuple elements, but need to treat
+            # variadic tuples differently, e.g. tuple[int, ...] is a variadic
+            # tuple of integers, while tuple[int] is a tuple with a single int
             first, *rest = args
             # TODO(kszucs): consider to support the same SequenceOf path if args
             # has a single element, e.g. tuple[int] since annotation a single
@@ -150,20 +196,36 @@ class Pattern(Validator, Hashable):
                 inners = tuple(map(cls.from_typehint, args))
             return TupleOf(inners)
         elif issubclass(origin, Sequence):
+            # construct a validator for the sequence elements where all elements
+            # must be of the same type, e.g. Sequence[int] is a sequence of ints
             (value_inner,) = map(cls.from_typehint, args)
             return SequenceOf(value_inner, type=origin)
         elif issubclass(origin, Mapping):
+            # construct a validator for the mapping keys and values, e.g.
+            # Mapping[str, int] is a mapping with string keys and int values
             key_inner, value_inner = map(cls.from_typehint, args)
             return MappingOf(key_inner, value_inner, type=origin)
-        elif issubclass(origin, Coercible) and args:
-            return GenericCoercedTo(annot)
-        elif isinstance(origin, type) and args:
-            return GenericInstanceOf(annot)
+        elif isinstance(origin, GenericMeta):
+            # construct a validator for the generic type, see the specific
+            # Generic* validators for more details
+            if issubclass(origin, Coercible) and args:
+                return GenericCoercedTo(annot)
+            else:
+                return GenericInstanceOf(annot)
         else:
-            raise NotImplementedError(
-                f"Cannot create validator from annotation {annot} {origin}"
+            raise TypeError(
+                f"Cannot create validator from annotation {annot!r} {origin!r}"
             )
 
+
+class NoMatch(metaclass=Sentinel):
+    """Marker to indicate that a pattern didn't match."""
+
+
+# TODO(kszucs): have an As[int] or Coerced[int] type in ibis.common.typing which
+# would be used to annotate an argument as coercible to int or to a certain type
+# without needing for the type to inherit from Coercible
+class Pattern(Validator, Hashable):
     @abstractmethod
     def match(self, value: AnyType, context: dict[str, AnyType]) -> AnyType:
         """Match a value against the pattern.
@@ -477,10 +539,10 @@ class GenericInstanceOf(Matcher):
 
     Examples
     --------
-    >>> class MyNumber(Generic[T]):
-    ...    value: T
+    >>> class MyNumber(Generic[T_cov]):
+    ...    value: T_cov
     ...
-    ...    def __init__(self, value: T):
+    ...    def __init__(self, value: T_cov):
     ...        self.value = value
     ...
     ...    def __eq__(self, other):
@@ -499,8 +561,11 @@ class GenericInstanceOf(Matcher):
 
     def __init__(self, typ):
         origin = get_origin(typ)
-        fields = get_bound_typevars(typ)
-        field_inners = {k: Pattern.from_typehint(v) for k, v in fields.items()}
+        typevars = get_bound_typevars(typ)
+        field_inners = {
+            attr: Pattern.from_typevar(var, type_)
+            for var, (attr, type_) in typevars.items()
+        }
         super().__init__(origin, frozendict(field_inners))
 
     def match(self, value, context):
@@ -541,6 +606,7 @@ class LazyInstanceOf(Matcher):
             return NoMatch
 
 
+# TODO(kszucs): to support As[int] or CoercedTo[int] syntax
 class CoercedTo(Matcher):
     """Force a value to have a particular Python type.
 
@@ -577,6 +643,9 @@ class CoercedTo(Matcher):
         return f"CoercedTo({self.target.__name__!r})"
 
 
+As = CoercedTo
+
+
 class GenericCoercedTo(Matcher):
     """Force a value to have a particular generic Python type.
 
@@ -589,7 +658,7 @@ class GenericCoercedTo(Matcher):
     --------
     >>> from typing import Generic, TypeVar
     >>>
-    >>> T = TypeVar("T")
+    >>> T = TypeVar("T", covariant=True)
     >>>
     >>> class MyNumber(Coercible, Generic[T]):
     ...     def __init__(self, value):
@@ -780,6 +849,9 @@ class IsIn(Matcher):
             return NoMatch
 
 
+In = IsIn
+
+
 class SequenceOf(Matcher):
     """Pattern that matches if all of the items in a sequence match a given pattern.
 
@@ -901,6 +973,24 @@ class MappingOf(Matcher):
         return result
 
 
+class Attrs(Matcher):
+    __slots__ = ("patterns",)
+
+    def __init__(self, **patterns):
+        super().__init__(frozendict(toolz.valmap(pattern, patterns)))
+
+    def match(self, value, context):
+        for attr, pattern in self.patterns.items():
+            if not hasattr(value, attr):
+                return NoMatch
+
+            v = getattr(value, attr)
+            if match(pattern, v, context=context) is NoMatch:
+                return NoMatch
+
+        return value
+
+
 class Object(Matcher):
     """Pattern that matches if the object has the given attributes and they match the given patterns.
 
@@ -917,22 +1007,18 @@ class Object(Matcher):
         The keyword arguments to match against the attributes of the object.
     """
 
-    __slots__ = ("type", "field_patterns")
+    __slots__ = ("type", "attrs_pattern")
 
     def __init__(self, type, *args, **kwargs):
         kwargs.update(dict(zip(type.__match_args__, args)))
-        super().__init__(type, frozendict(kwargs))
+        super().__init__(type, Attrs(**kwargs))
 
     def match(self, value, context):
         if not isinstance(value, self.type):
             return NoMatch
 
-        for attr, pattern in self.field_patterns.items():
-            if not hasattr(value, attr):
-                return NoMatch
-
-            if match(pattern, getattr(value, attr), context=context) is NoMatch:
-                return NoMatch
+        if not self.attrs_pattern.match(value, context=context):
+            return NoMatch
 
         return value
 
@@ -944,19 +1030,16 @@ class CallableWith(Matcher):
         super().__init__(tuple(args), return_ or Any())
 
     def match(self, value, context):
+        from ibis.common.annotations import annotated
+
         if not callable(value):
             return NoMatch
 
-        fn = value
-        sig = inspect.signature(fn)
-        # TODO(kszucs): once the validators get replaced with matchers the
-        # following should be re-enabled
-        # from ibis.common.annotations import annotated
-        # fn = annotated(self.arg_patterns, self.return_pattern, value)
+        fn = annotated(self.arg_patterns, self.return_pattern, value)
 
         has_varargs = False
         positional, keyword_only = [], []
-        for p in sig.parameters.values():
+        for p in fn.__signature__.parameters.values():
             if p.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD):
                 positional.append(p)
             elif p.kind is Parameter.KEYWORD_ONLY:

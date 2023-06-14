@@ -5,6 +5,7 @@ import datetime
 import decimal
 import enum
 import ipaddress
+import json
 import uuid
 from typing import Any, Mapping, NamedTuple, Sequence
 
@@ -27,7 +28,9 @@ from ibis.expr.datatypes.cast import highest_precedence
 @lazy_singledispatch
 def infer(value: Any) -> dt.DataType:
     """Infer the corresponding ibis dtype for a python object."""
-    raise InputTypeError(f"Unable to infer datatype of {value!r}")
+    raise InputTypeError(
+        f"Unable to infer datatype of value {value!r} with type {type(value)}"
+    )
 
 
 # TODO(kszucs): support NamedTuples and dataclasses instead of OrderedDict
@@ -248,7 +251,10 @@ def normalize(typ, value):
         return None
 
     if dtype.is_boolean():
-        return bool(value)
+        try:
+            return bool(value)
+        except ValueError:
+            raise TypeError("Unable to normalize {value!r} to {dtype!r}")
     elif dtype.is_integer():
         try:
             value = int(value)
@@ -266,7 +272,19 @@ def normalize(typ, value):
             return float(value)
         except ValueError:
             raise TypeError("Unable to normalize {value!r} to {dtype!r}")
-    elif dtype.is_string() and not dtype.is_json():
+    elif dtype.is_json():
+        if isinstance(value, str):
+            try:
+                json.loads(value)
+            except json.JSONDecodeError:
+                raise TypeError(f"Invalid JSON string: {value!r}")
+            else:
+                return value
+        else:
+            return json.dumps(value)
+    elif dtype.is_binary():
+        return bytes(value)
+    elif dtype.is_string():
         return str(value)
     elif dtype.is_decimal():
         out = decimal.Decimal(value)
@@ -300,6 +318,8 @@ def normalize(typ, value):
         return _WellKnownText(value.wkt)
     elif dtype.is_date():
         return normalize_datetime(value).date()
+    elif dtype.is_time():
+        return normalize_datetime(value).time()
     elif dtype.is_timestamp():
         value = normalize_datetime(value)
         tzinfo = normalize_timezone(dtype.timezone)
@@ -312,7 +332,7 @@ def normalize(typ, value):
     elif dtype.is_interval():
         return normalize_timedelta(value, dtype.unit)
     else:
-        return value
+        raise TypeError(f"Unable to normalize {value!r} to {dtype!r}")
 
 
 public(infer=infer, normalize=normalize)

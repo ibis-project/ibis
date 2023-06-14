@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Optional, Union
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
@@ -11,7 +12,10 @@ from ibis import util
 from ibis.common.annotations import annotated
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
-from ibis.expr.deferred import Deferred
+from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.expr.deferred import Deferred  # noqa: TCH001
+from ibis.expr.operations.core import Value  # noqa: TCH001
+from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.types.relations import bind_expr
 
 if TYPE_CHECKING:
@@ -23,8 +27,8 @@ class Builder(Concrete):
 
 
 class CaseBuilder(Builder):
-    results = rlz.optional(rlz.tuple_of(rlz.any), default=[])
-    default = rlz.optional(rlz.any)
+    results: VarTuple[Value] = ()
+    default: Optional[ops.Value] = None
 
     def type(self):
         return rlz.highest_precedence_dtype(self.results)
@@ -61,15 +65,16 @@ class CaseBuilder(Builder):
 
 class SearchedCaseBuilder(CaseBuilder):
     __type__ = ops.SearchedCase
-    cases = rlz.optional(rlz.tuple_of(rlz.boolean), default=[])
+    cases: VarTuple[Value[dt.Boolean, ds.Any]] = ()
 
 
 class SimpleCaseBuilder(CaseBuilder):
     __type__ = ops.SimpleCase
-    base = rlz.any
-    cases = rlz.optional(rlz.tuple_of(rlz.any), default=[])
+    base: ops.Value
+    cases: VarTuple[Value] = ()
 
-    def when(self, case_expr, result_expr) -> Self:
+    @annotated
+    def when(self, case_expr: Value, result_expr: Value):
         """Add a new case-result pair.
 
         Parameters
@@ -80,13 +85,16 @@ class SimpleCaseBuilder(CaseBuilder):
         result_expr
             Value when the case predicate evaluates to true.
         """
-        case_expr = rlz.any(case_expr)
         if not rlz.comparable(self.base, case_expr):
             raise TypeError(
                 f'Base expression {rlz._arg_type_error_format(self.base)} and '
                 f'case {rlz._arg_type_error_format(case_expr)} are not comparable'
             )
         return super().when(case_expr, result_expr)
+
+
+RowsWindowBoundary = ops.WindowBoundary[dt.Integer]
+RangeWindowBoundary = ops.WindowBoundary[dt.Numeric | dt.Interval]
 
 
 class WindowBuilder(Builder):
@@ -101,24 +109,16 @@ class WindowBuilder(Builder):
     Use 0 for `CURRENT ROW`.
     """
 
-    how = rlz.optional(rlz.isin({'rows', 'range'}), default="rows")
-    start = end = rlz.optional(rlz.option(rlz.range_window_boundary))
-    groupings = rlz.optional(
-        rlz.tuple_of(
-            rlz.one_of([rlz.instance_of((str, Deferred)), rlz.column(rlz.any)])
-        ),
-        default=(),
-    )
-    orderings = rlz.optional(
-        rlz.tuple_of(rlz.one_of([rlz.instance_of((str, Deferred)), rlz.any])),
-        default=(),
-    )
-    max_lookback = rlz.optional(rlz.interval)
+    how: Literal["rows", "range"] = "rows"
+    start: Optional[RangeWindowBoundary] = None
+    end: Optional[RangeWindowBoundary] = None
+    groupings: VarTuple[Union[str, Deferred, Value]] = ()
+    orderings: VarTuple[Union[str, Deferred, Value]] = ()
+    max_lookback: Optional[Value[dt.Interval]] = None
 
     def _maybe_cast_boundary(self, boundary, dtype):
         if boundary.output_dtype == dtype:
             return boundary
-
         value = ops.Cast(boundary.value, dtype)
         return boundary.copy(value=value)
 
@@ -149,29 +149,26 @@ class WindowBuilder(Builder):
                 "Window frame's start point must be greater than its end point"
             )
 
-    @annotated(
-        start=rlz.option(rlz.row_window_boundary),
-        end=rlz.option(rlz.row_window_boundary),
-    )
-    def rows(self, start, end):
+    @annotated
+    def rows(
+        self, start: Optional[RowsWindowBoundary], end: Optional[RowsWindowBoundary]
+    ):
         self._validate_boundaries(start, end)
         start, end = self._maybe_cast_boundaries(start, end)
         return self.copy(how="rows", start=start, end=end)
 
-    @annotated(
-        start=rlz.option(rlz.range_window_boundary),
-        end=rlz.option(rlz.range_window_boundary),
-    )
-    def range(self, start, end):
+    @annotated
+    def range(
+        self, start: Optional[RangeWindowBoundary], end: Optional[RangeWindowBoundary]
+    ):
         self._validate_boundaries(start, end)
         start, end = self._maybe_cast_boundaries(start, end)
         return self.copy(how="range", start=start, end=end)
 
-    @annotated(
-        start=rlz.option(rlz.range_window_boundary),
-        end=rlz.option(rlz.range_window_boundary),
-    )
-    def between(self, start, end):
+    @annotated
+    def between(
+        self, start: Optional[RangeWindowBoundary], end: Optional[RangeWindowBoundary]
+    ):
         self._validate_boundaries(start, end)
         start, end = self._maybe_cast_boundaries(start, end)
         method = self._determine_how(start, end)
@@ -186,8 +183,8 @@ class WindowBuilder(Builder):
     def lookback(self, value) -> Self:
         return self.copy(max_lookback=value)
 
-    @annotated(table=rlz.table)
-    def bind(self, table):
+    @annotated
+    def bind(self, table: Relation):
         groupings = bind_expr(table.to_expr(), self.groupings)
         orderings = bind_expr(table.to_expr(), self.orderings)
         if self.how == "rows":
