@@ -70,6 +70,8 @@ plugins:
           import:
             - https://docs.python.org/3/objects.inv
             - https://docs.sqlalchemy.org/objects.inv
+            - https://arrow.apache.org/docs/objects.inv
+            - http://pandas.pydata.org/pandas-docs/stable/objects.inv
           options:
             docstring_style: numpy
             filters:
