@@ -49,11 +49,8 @@ in
 
   update-lock-files = pkgs.writeShellApplication {
     name = "update-lock-files";
-    runtimeInputs = [ pkgs.poetry ];
-    text = ''
-      poetry lock --no-update
-      poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
-    '';
+    runtimeInputs = with pkgs; [ just poetry ];
+    text = "just lock";
   };
 
   gen-examples = pkgs.writeShellApplication {
