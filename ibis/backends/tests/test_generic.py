@@ -949,6 +949,29 @@ def test_memtable_construct(backend, con, monkeypatch):
     backend.assert_frame_equal(t.execute(), pa_t.to_pandas())
 
 
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AssertionError,
+    reason="result contains empty strings instead of None",
+)
+def test_memtable_construct_rbr(backend, con, monkeypatch):
+    pa = pytest.importorskip("pyarrow")
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    pa_t = pa.Table.from_pydict(
+        {
+            "a": list("abc"),
+            "b": [1, 2, 3],
+            "c": [1.0, 2.0, 3.0],
+            "d": [None, "b", None],
+        }
+    )
+    pa_rbr = pa.RecordBatchReader.from_batches(pa_t.schema, pa_t.to_batches())
+    t = ibis.memtable(pa_rbr)
+    backend.assert_frame_equal(t.execute(), pa_pyarrow objects.invt.to_pandas())
+
+
 @pytest.mark.notimpl(
     ["dask", "datafusion", "pandas", "polars"],
     raises=NotImplementedError,

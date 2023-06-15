@@ -424,6 +424,26 @@ def _memtable_from_pyarrow_table(
     ).to_expr()
 
 
+@_memtable.register("pyarrow.RecordBatchReader")
+def _memtable_from_pyarrow_rbr(
+    data: pa.RecordBatchReader,
+    *,
+    name: str | None = None,
+    schema: SupportsSchema | None = None,
+    columns: Iterable[str] | None = None,
+):
+    from ibis.expr.operations.relations import PyArrowRBRProxy
+
+    if columns is not None:
+        assert schema is None, "if `columns` is not `None` then `schema` must be `None`"
+        schema = sch.Schema(dict(zip(columns, sch.infer(data).values())))
+    return ops.InMemoryTable(
+        name=name if name is not None else util.gen_name("pyarrow_memtable"),
+        schema=sch.infer(data) if schema is None else schema,
+        data=PyArrowRBRProxy(data),
+    ).to_expr()
+
+
 @_memtable.register(object)
 def _memtable_from_dataframe(
     data: pd.DataFrame | Any,

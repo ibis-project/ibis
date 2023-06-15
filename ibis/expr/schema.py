@@ -269,6 +269,7 @@ def infer_pandas_dataframe(df, schema=None):
 
 # TODO(kszucs): do we really need the schema kwarg?
 @infer.register("pyarrow.Table")
+@infer.register("pyarrow.RecordBatchReader")
 def infer_pyarrow_table(table, schema=None):
     from ibis.formats.pyarrow import PyArrowSchema
 

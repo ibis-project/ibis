@@ -126,6 +126,16 @@ class PyArrowTableProxy(TableProxy):
         return self._data
 
 
+class PyArrowRBRProxy(TableProxy):
+    __slots__ = ()
+
+    def to_frame(self):
+        return self._data.read_pandas()
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        return self._data.read_all()
+
+
 class PandasDataFrameProxy(TableProxy):
     __slots__ = ()
 
