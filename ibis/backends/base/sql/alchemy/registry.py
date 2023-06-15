@@ -553,7 +553,8 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     # string
     ops.Capitalize: unary(
         lambda arg: sa.func.concat(
-            sa.func.upper(sa.func.substr(arg, 1, 1)), sa.func.substr(arg, 2)
+            sa.func.upper(sa.func.substr(arg, 1, 1)),
+            sa.func.lower(sa.func.substr(arg, 2)),
         )
     ),
     ops.LPad: fixed_arity(sa.func.lpad, 3),

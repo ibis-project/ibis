@@ -675,7 +675,7 @@ def _string_ilike(op, **kw):
 @translate_val.register(ops.Capitalize)
 def _string_capitalize(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), SUBSTR({arg}, 2))"
+    return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), LOWER(SUBSTR({arg}, 2)))"
 
 
 @translate_val.register(ops.GroupConcat)
