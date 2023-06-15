@@ -120,7 +120,7 @@ class Value(Expr):
         │          18.7 │
         │          17.4 │
         │          18.0 │
-        │           nan │
+        │          NULL │
         │          19.3 │
         │          20.6 │
         │          17.8 │
@@ -335,7 +335,7 @@ class Value(Expr):
         │           39.1 │
         │           39.5 │
         │           40.3 │
-        │            nan │
+        │           NULL │
         │           36.7 │
         └────────────────┘
         >>> vals.typeof()
@@ -610,7 +610,7 @@ class Value(Expr):
         │          18.7 │
         │          17.4 │
         │          18.0 │
-        │           nan │
+        │          NULL │
         │          19.3 │
         └───────────────┘
         >>> t.bill_depth_mm.notin([18.7, 18.1])
@@ -770,7 +770,7 @@ class Value(Expr):
         │          18.7 │
         │          17.4 │
         │          18.0 │
-        │           nan │
+        │          NULL │
         │          19.3 │
         └───────────────┘
         >>> t.bill_depth_mm.isnull()
@@ -805,7 +805,7 @@ class Value(Expr):
         │          18.7 │
         │          17.4 │
         │          18.0 │
-        │           nan │
+        │          NULL │
         │          19.3 │
         └───────────────┘
         >>> t.bill_depth_mm.notnull()
@@ -1100,7 +1100,7 @@ class Value(Expr):
         │           39.1 │          18.7 │
         │           39.5 │          17.4 │
         │           40.3 │          18.0 │
-        │            nan │           nan │
+        │           NULL │          NULL │
         │           36.7 │          19.3 │
         └────────────────┴───────────────┘
         >>> t.bill_length_mm.group_concat()

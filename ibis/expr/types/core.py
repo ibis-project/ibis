@@ -88,7 +88,7 @@ class Expr(Immutable, Coercible):
                     self._repr(),
                 ]
                 return "\n".join(lines)
-        return capture.get()
+        return capture.get().rstrip()
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))

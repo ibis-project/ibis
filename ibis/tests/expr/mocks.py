@@ -54,23 +54,22 @@ class MockBackend(BaseSQLBackend):
         name = name.replace("`", "")
         return Schema.from_tuples(MOCK_TABLES[name])
 
-    def execute(self, expr, limit=None, params=None, **kwargs):
-        import pandas as pd
-
+    def to_pyarrow(self, expr, limit=None, params=None, **kwargs):
         ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         for query in ast.queries:
             self.executed_queries.append(query.compile())
-        try:
-            schema = expr.schema()
-        except AttributeError:
-            schema = expr.as_table().schema()
 
-        df = pd.DataFrame([], columns=schema.names)
         if isinstance(expr, ir.Scalar):
             return None
         elif isinstance(expr, ir.Column):
-            return df.iloc[:, 0]
-        return df
+            schema = expr.as_table().schema()
+            return schema.to_pyarrow().empty_table()[0]
+        else:
+            return expr.schema().to_pyarrow().empty_table()
+
+    def execute(self, expr, limit=None, params=None, **kwargs):
+        out = self.to_pyarrow(expr, limit=limit, params=params, **kwargs)
+        return None if out is None else out.to_pandas()
 
     def compile(
         self,
