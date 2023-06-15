@@ -236,6 +236,7 @@ WHERE catalog_name = :database"""
         with contextlib.suppress(duckdb.InvalidInputException):
             duckdb.execute("SELECT ?", (1,))
 
+        engine.dialect._backslash_escapes = False
         super().do_connect(engine)
 
     @staticmethod

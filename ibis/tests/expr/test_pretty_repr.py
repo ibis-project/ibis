@@ -146,9 +146,18 @@ def test_format_short_string_column():
     assert max_len == 4
 
 
-def test_format_nested_column():
+def test_format_struct_column():
     dtype = dt.Struct({"x": "int", "y": "float"})
     values = [{"x": 1, "y": 2.5}, None]
+    fmts, min_len, max_len = format_column(dtype, values)
+    assert str(fmts[1]) == null
+    assert min_len == 20
+    assert max_len is None
+
+
+def test_format_map_column():
+    dtype = dt.Map(dt.String(), dt.Int32())
+    values = [[("x", 1), ("y", 2.5)], None]
     fmts, min_len, max_len = format_column(dtype, values)
     assert str(fmts[1]) == null
     assert min_len == 20

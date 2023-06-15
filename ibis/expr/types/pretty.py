@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import json
 from functools import singledispatch
 from math import isfinite
 from urllib.parse import urlparse
@@ -8,7 +9,6 @@ from urllib.parse import urlparse
 import rich
 from rich.align import Align
 from rich.console import Console
-from rich.style import Style
 from rich.text import Text
 
 import ibis
@@ -18,8 +18,7 @@ import ibis.expr.datatypes as dt
 simple_console = Console(force_terminal=False)
 
 
-@singledispatch
-def format_values(dtype, values):
+def _format_nested(values):
     interactive = ibis.options.repr.interactive
     return [
         rich.pretty.Pretty(
@@ -30,6 +29,29 @@ def format_values(dtype, values):
         )
         for v in values
     ]
+
+
+@singledispatch
+def format_values(dtype, values):
+    return _format_nested(values)
+
+
+@format_values.register(dt.Map)
+def _(dtype, values):
+    return _format_nested([None if v is None else dict(v) for v in values])
+
+
+@format_values.register(dt.JSON)
+def _(dtype, values):
+    def try_json(v):
+        if v is None:
+            return None
+        try:
+            return json.loads(v)
+        except Exception:
+            return v
+
+    return _format_nested([try_json(v) for v in values])
 
 
 @format_values.register(dt.Boolean)
@@ -233,7 +255,7 @@ def to_rich_table(table, console_width=None):
 
     # Compute the data and return a pandas dataframe
     nrows = ibis.options.repr.interactive.max_rows
-    result = table.limit(nrows + 1).execute()
+    result = table.limit(nrows + 1).to_pyarrow()
 
     # Now format the columns in order, stopping if the console width would
     # be exceeded.
@@ -243,7 +265,7 @@ def to_rich_table(table, console_width=None):
     remaining = console_width - 1  # 1 char for left boundary
     for name, dtype in table.schema().items():
         formatted, min_width, max_width = format_column(
-            dtype, result[name].iloc[:nrows].to_list()
+            dtype, result[name].to_pylist()[:nrows]
         )
         dtype_str = format_dtype(dtype)
         if ibis.options.repr.interactive.show_types and not isinstance(

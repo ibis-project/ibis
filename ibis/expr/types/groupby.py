@@ -174,6 +174,7 @@ class GroupedTable:
         Examples
         --------
         >>> import ibis
+        >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t
@@ -185,7 +186,7 @@ class GroupedTable:
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
+        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
         │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
@@ -201,22 +202,23 @@ class GroupedTable:
         ...         centered_bill_len=ibis._.bill_length_mm
         ...         - ibis._.bill_length_mm.mean()
         ...     )
+        ...     .order_by(s.all())
         ... )
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
         ┃ species ┃ bill_length_mm ┃ centered_bill_len ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
         │ string  │ float64        │ float64           │
         ├─────────┼────────────────┼───────────────────┤
-        │ Adelie  │           40.9 │          2.108609 │
-        │ Adelie  │           42.7 │          3.908609 │
-        │ Adelie  │           39.8 │          1.008609 │
-        │ Adelie  │           36.5 │         -2.291391 │
-        │ Adelie  │           36.7 │         -2.091391 │
-        │ Adelie  │           39.3 │          0.508609 │
-        │ Adelie  │           38.9 │          0.108609 │
-        │ Adelie  │           39.2 │          0.408609 │
+        │ Adelie  │           32.1 │         -6.691391 │
+        │ Adelie  │           33.1 │         -5.691391 │
+        │ Adelie  │           33.5 │         -5.291391 │
+        │ Adelie  │           34.0 │         -4.791391 │
         │ Adelie  │           34.1 │         -4.691391 │
-        │ Adelie  │           42.0 │          3.208609 │
+        │ Adelie  │           34.4 │         -4.391391 │
+        │ Adelie  │           34.5 │         -4.291391 │
+        │ Adelie  │           34.6 │         -4.191391 │
+        │ Adelie  │           34.6 │         -4.191391 │
+        │ Adelie  │           35.0 │         -3.791391 │
         │ …       │              … │                 … │
         └─────────┴────────────────┴───────────────────┘
 
