@@ -577,7 +577,7 @@ def _array_slice(t, op):
 
 def _capitalize(t, op):
     arg = t.translate(op.arg)
-    return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), SUBSTR({arg}, 2))"
+    return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), LOWER(SUBSTR({arg}, 2)))"
 
 
 def _nth_value(t, op):

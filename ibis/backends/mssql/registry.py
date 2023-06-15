@@ -122,7 +122,7 @@ operation_registry.update(
         ops.Capitalize: unary(
             lambda arg: sa.func.concat(
                 sa.func.upper(sa.func.substring(arg, 1, 1)),
-                sa.func.substring(arg, 2, sa.func.datalength(arg) - 1),
+                sa.func.lower(sa.func.substring(arg, 2, sa.func.datalength(arg) - 1)),
             )
         ),
         ops.LStrip: unary(sa.func.ltrim),

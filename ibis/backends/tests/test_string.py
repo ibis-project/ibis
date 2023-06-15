@@ -974,7 +974,7 @@ def test_parse_url(con, result_func, expected):
 
 
 def test_capitalize(con):
-    s = ibis.literal("abc")
+    s = ibis.literal("aBc")
     expected = "Abc"
     expr = s.capitalize()
     assert con.execute(expr) == expected
