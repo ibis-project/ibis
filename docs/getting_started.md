@@ -66,11 +66,11 @@ AlchemyTable: penguins
 ```
 
 Ibis is lazily evaluated, so instead of seeing the data, we see the schema of
-the table, instead. To peek at the data, we can call `head` and then `execute`
+the table, instead. To peek at the data, we can call `head` and then `to_pandas`
 to get the first few rows of the table as a pandas DataFrame.
 
 ```python
->>> penguins.head().execute()
+>>> penguins.head().to_pandas()
   species     island  bill_length_mm  bill_depth_mm  flipper_length_mm  body_mass_g     sex  year
 0  Adelie  Torgersen            39.1           18.7              181.0       3750.0    male  2007
 1  Adelie  Torgersen            39.5           17.4              186.0       3800.0  female  2007
@@ -79,9 +79,9 @@ to get the first few rows of the table as a pandas DataFrame.
 4  Adelie  Torgersen            36.7           19.3              193.0       3450.0  female  2007
 ```
 
-`execute` takes the existing lazy table expression and evaluates it. If we
+`to_pandas` takes the existing lazy table expression and evaluates it. If we
 leave it off, you'll see the Ibis representation of the table expression that
-`execute` will evaluate (when you're ready!).
+`to_pandas` will evaluate (when you're ready!).
 
 ```python
 >>> penguins.head()
@@ -100,9 +100,9 @@ Limit[r0, n=5]
 
 !!! note "Results in pandas DataFrame"
 
-    Ibis returns results as a pandas DataFrame by default. It isn't using pandas to
+    Ibis returns results as a pandas DataFrame using `to_pandas`, but isn't using pandas to
     perform any of the computation. The query is executed by the backend (DuckDB in
-    this case). Only when the query is executed does Ibis then pull back the results
+    this case). Only when `to_pandas` is called does Ibis then pull back the results
     and convert them into a DataFrame.
 
 ## Interactive Mode
@@ -110,7 +110,7 @@ Limit[r0, n=5]
 For the rest of this intro, we'll turn on interactive mode, which partially
 executes queries to give users a preview of the results. There is a small
 difference in the way the output is formatted, but otherwise this is the same
-as calling `execute()` on the table expression with a limit of 10 result rows
+as calling `to_pandas` on the table expression with a limit of 10 result rows
 returned.
 
 ```python

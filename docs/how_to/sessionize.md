@@ -76,4 +76,4 @@ sessionized = (
 
 Calling `ibis.show_sql(sessionized)` displays the SQL query and can be used to confirm that this Ibis table expression does not rely on any join operations.
 
-Calling `sessionized.execute()` should complete in less than a minute, depending on the speed of the internet connection to download the data and the number of CPU cores available to parallelize the processing of this nested query.
+Calling `sessionized.to_pandas()` should complete in less than a minute, depending on the speed of the internet connection to download the data and the number of CPU cores available to parallelize the processing of this nested query.

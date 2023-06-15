@@ -104,7 +104,7 @@ distinct object within Ibis. To do this, use the `view` function:
 >>> results = (current.join(prior, ((current.region == prior.region) &
 ...                                 (current.year == (prior.year - 1))))
 ...            [current.region, current.year, yoy_change])
->>> df = results.execute()
+>>> df = results.to_pandas()
 ```
 
 ```python

@@ -35,7 +35,7 @@ def support_matrix_df():
                 short_operation=_.full_operation.split(".")[-1],
                 operation_category=_.full_operation.split(".")[-2],
             )
-            .execute()
+            .to_pandas()
         )
 
 
@@ -75,7 +75,7 @@ def get_all_backend_categories():
         backend_info_table.select(category=_.categories.unnest())
         .distinct()
         .order_by('category')['category']
-        .execute()
+        .to_pandas()
         .tolist()
     )
 
@@ -85,7 +85,7 @@ def get_all_operation_categories():
     return (
         support_matrix_table.select(_.operation_category)
         .distinct()['operation_category']
-        .execute()
+        .to_pandas()
         .tolist()
     )
 
@@ -96,7 +96,7 @@ def get_backend_names(categories: Optional[List[str]] = None):
     if categories:
         backend_expr = backend_expr.filter(_.category.isin(categories))
     return (
-        backend_expr.select(_.backend_name).distinct().backend_name.execute().tolist()
+        backend_expr.select(_.backend_name).distinct().backend_name.to_pandas().tolist()
     )
 
 
@@ -170,7 +170,7 @@ elif hide_supported_by_all_backends == 'Hide supported by all backends':
 table_expr = table_expr[current_backend_names + ["index"]]
 
 # Execute query
-df = table_expr.execute()
+df = table_expr.to_pandas()
 df = df.set_index('index')
 
 # Display result
