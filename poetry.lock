@@ -1672,18 +1672,6 @@ protobuf = ">=3.19.5,<3.20.0 || >3.20.0,<3.20.1 || >3.20.1,<4.21.1 || >4.21.1,<4
 grpc = ["grpcio (>=1.44.0,<2.0.0dev)"]
 
 [[package]]
-name = "gprof2dot"
-version = "2022.7.29"
-description = "Generate a dot graph from the output of several profilers."
-category = "dev"
-optional = false
-python-versions = ">=2.7"
-files = [
-    {file = "gprof2dot-2022.7.29-py2.py3-none-any.whl", hash = "sha256:f165b3851d3c52ee4915eb1bd6cca571e5759823c2cd0f71a79bda93c2dc85d6"},
-    {file = "gprof2dot-2022.7.29.tar.gz", hash = "sha256:45b4d298bd36608fccf9511c3fd88a773f7a1abc04d6cd39445b11ba43133ec5"},
-]
-
-[[package]]
 name = "graphviz"
 version = "0.20.1"
 description = "Simple Python interface for Graphviz"
@@ -3969,28 +3957,6 @@ pytest = ">=5.0"
 dev = ["pre-commit", "pytest-asyncio", "tox"]
 
 [[package]]
-name = "pytest-profiling"
-version = "1.7.0"
-description = "Profiling plugin for py.test"
-category = "dev"
-optional = false
-python-versions = "*"
-files = [
-    {file = "pytest-profiling-1.7.0.tar.gz", hash = "sha256:93938f147662225d2b8bd5af89587b979652426a8a6ffd7e73ec4a23e24b7f29"},
-    {file = "pytest_profiling-1.7.0-py2.7.egg", hash = "sha256:3b255f9db36cb2dd7536a8e7e294c612c0be7f7850a7d30754878e4315d56600"},
-    {file = "pytest_profiling-1.7.0-py2.py3-none-any.whl", hash = "sha256:999cc9ac94f2e528e3f5d43465da277429984a1c237ae9818f8cfd0b06acb019"},
-    {file = "pytest_profiling-1.7.0-py3.6.egg", hash = "sha256:6bce4e2edc04409d2f3158c16750fab8074f62d404cc38eeb075dff7fcbb996c"},
-]
-
-[package.dependencies]
-gprof2dot = "*"
-pytest = "*"
-six = "*"
-
-[package.extras]
-tests = ["pytest-virtualenv"]
-
-[[package]]
 name = "pytest-randomly"
 version = "3.12.0"
 description = "Pytest plugin to randomly order tests and control random.seed."
@@ -5385,4 +5351,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "31ede702597c1952f600129a8af54e43994948e10c59c49923594a8a9308de30"
+content-hash = "dc17284e4e35f225d413a1dea9a1ad15bd74428351abea809166a62161ea558d"
