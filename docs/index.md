@@ -35,7 +35,7 @@ ORDER BY t1.year DESC
 ```
 
 ```py title="Execute on multiple backends"
->>> con.execute(q)
+>>> con.to_pandas(q)
 
      year  mean(avg_rating)
 0    2021          2.586362

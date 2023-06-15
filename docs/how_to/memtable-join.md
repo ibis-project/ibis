@@ -89,7 +89,7 @@ and joining is the same as joining any two TableExpressions:
         ...: measures.join(
         ...:     mem_events,
         ...:     measures['event_id'] == mem_events['event_id']
-        ...: ).execute()
+        ...: ).to_pandas()
     Out[11]:
         event_id measured_on  measurement  event_name
     0          0  2021-06-01          NaN          e0
@@ -106,4 +106,4 @@ and joining is the same as joining any two TableExpressions:
     11         3  2021-07-12          NaN          e3
 ```
 
-Note that the return result of the `join` is a TableExpression and that `execute` returns a pandas DataFrame.
+Note that the return result of the `join` is a TableExpression and that `to_pandas` returns a pandas DataFrame.

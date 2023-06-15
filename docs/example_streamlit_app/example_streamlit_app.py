@@ -28,7 +28,7 @@ def query():
         .mutate(ner=_.ner.map(lambda n: n.lower()).unnest())
         .ner.topk(max(options))
         .relabel(dict(ner="ingredient"))
-        .execute()
+        .to_pandas()
         .assign(
             emoji=lambda df: df.ingredient.map(
                 lambda emoji: f"{emojis.get(emoji, '-')}"

@@ -192,7 +192,7 @@ table.drop()
 
 ## Expression execution
 
-Ibis expressions have an `execute` method with compiles and runs the
+Ibis expressions have execution methods like `to_pandas` that compile and run the
 expressions on Impala or whichever backend is being referenced.
 
 For example:
@@ -200,7 +200,7 @@ For example:
 ```python
 >>> fa = db.functional_alltypes
 >>> expr = fa.double_col.sum()
->>> expr.execute()
+>>> expr.to_pandas()
 331785.00000000006
 ```
 
@@ -235,7 +235,7 @@ If you pass an Ibis expression to `create_table`, Ibis issues a
 >>> db.create_table('string_freqs', expr, format='parquet')
 
 >>> freqs = db.table('string_freqs')
->>> freqs.execute()
+>>> freqs.to_pandas()
   string_col  count
 0          9    730
 1          3    730
@@ -387,7 +387,7 @@ an Ibis table expression:
 >>> target.insert(t[:3])
 >>> target.insert(t[:3])
 
->>> target.execute()
+>>> target.to_pandas()
      id  bool_col  tinyint_col  ...           timestamp_col  year  month
 0  5770      True            0  ... 2010-08-01 00:00:00.000  2010      8
 1  5771     False            1  ... 2010-08-01 00:01:00.000  2010      8
@@ -824,7 +824,7 @@ a major part of the Ibis roadmap).
 Ibis's Impala tools currently interoperate with pandas in these ways:
 
 - Ibis expressions return pandas objects (i.e. DataFrame or Series)
-  for non-scalar expressions when calling their `execute` method
+  for non-scalar expressions when calling their `to_pandas` method
 - The `create_table` and `insert` methods can accept pandas objects.
   This includes inserting into partitioned tables. It currently uses
   CSV as the ingest route.
@@ -838,7 +838,7 @@ For example:
 
 >>> db.create_table('pandas_table', data)
 >>> t = db.pandas_table
->>> t.execute()
+>>> t.to_pandas()
   bar  foo
 0   a    1
 1   b    2
@@ -851,7 +851,7 @@ For example:
 
 >>> to_insert = db.empty_for_insert
 >>> to_insert.insert(data)
->>> to_insert.execute()
+>>> to_insert.to_pandas()
   bar  foo
 0   a    1
 1   b    2
@@ -868,7 +868,7 @@ For example:
 
 >>> db.create_table('pandas_table', data)
 >>> t = db.pandas_table
->>> t.execute()
+>>> t.to_pandas()
    foo bar
 0    1   a
 1    2   b
@@ -879,7 +879,7 @@ For example:
 >>> db.create_table('empty_for_insert', schema=t.schema())
 >>> to_insert = db.empty_for_insert
 >>> to_insert.insert(data)
->>> to_insert.execute()
+>>> to_insert.to_pandas()
    foo bar
 0    1   a
 1    2   b
@@ -1215,7 +1215,7 @@ may significantly speed up queries on smaller datasets:
 ```
 
 ```bash
-$ time python -c "(t.double_col + rand()).sum().execute()"
+$ time python -c "(t.double_col + rand()).sum().to_pandas()"
 27.7 ms ± 996 µs per loop (mean ± std. dev. of 7 runs, 10 loops each)
 ```
 
@@ -1225,7 +1225,7 @@ con.disable_codegen(False)
 ```
 
 ```bash
-$ time python -c "(t.double_col + rand()).sum().execute()"
+$ time python -c "(t.double_col + rand()).sum().to_pandas()"
 27 ms ± 1.62 ms per loop (mean ± std. dev. of 7 runs, 10 loops each)
 ```
 
@@ -1303,7 +1303,7 @@ The object `fuzzy_equals` is callable and works with Ibis expressions:
 
 >>> expr = fuzzy_equals(t.float_col, t.double_col / 10)
 
->>> expr.execute()[:10]
+>>> expr.to_pandas()[:10]
 0     True
 1    False
 2    False
