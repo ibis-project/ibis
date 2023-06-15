@@ -114,16 +114,19 @@ def test_scalar_to_pyarrow_scalar(limit, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
+ARROW_STRING_TYPE = {
+    # duckdb changed to pa.large_string in 0.8.0 and then reverted that change
+    # back to pa.string in 0.8.1
+    ("duckdb", vparse("0.8.0")): pa.large_string()
+}
+
+
 @pytest.mark.notimpl(["dask", "impala", "pyspark", "druid"])
 def test_table_to_pyarrow_table_schema(con, awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
 
-    string = (
-        pa.large_string()
-        if con.name == "duckdb" and vparse(con.version) >= vparse("0.8.0")
-        else pa.string()
-    )
+    string = ARROW_STRING_TYPE.get((con.name, vparse(con.version)), pa.string())
     expected_schema = pa.schema(
         [
             pa.field("playerID", string),
@@ -357,3 +360,39 @@ def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
     result = dt.to_pandas()
 
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.xfail_version(
+    duckdb=["duckdb<0.8.1"], raises=AssertionError, reason="bug in duckdb"
+)
+@pytest.mark.notimpl(
+    ["pandas"],
+    raises=AssertionError,
+    reason="pandas returns nanosecond timestamp types",
+)
+@pytest.mark.notimpl(["dask"], raises=NotImplementedError)
+@pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(["mssql"], raises=pa.ArrowTypeError)
+@pytest.mark.notimpl(
+    ["pyspark"], raises=NotImplementedError, reason="fetchmany not implemented"
+)
+@pytest.mark.notimpl(
+    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
+)
+def test_arrow_timestamp_with_time_zone(alltypes):
+    from ibis import _
+
+    # TODO(cpcloud): see if this can be abstracted over in tests, e.g., pandas
+    # is ns, most others are us
+    unit = "us"
+
+    t = alltypes.select(
+        tz=_.timestamp_col.cast("timestamp('UTC')"),
+        no_tz=_.timestamp_col,
+    ).limit(1)
+
+    expected = [pa.timestamp(unit, tz="UTC"), pa.timestamp(unit)]
+    assert t.to_pyarrow().schema.types == expected
+
+    (batch,) = t.to_pyarrow_batches()
+    assert batch.schema.types == expected
