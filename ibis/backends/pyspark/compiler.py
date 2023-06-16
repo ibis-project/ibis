@@ -362,7 +362,7 @@ def compile_literal(t, op, *, raw=False, **kwargs):
     dtype = op.dtype
 
     if value is None:
-        return F.lit(value)
+        return F.lit(None)
 
     if raw:
         return value
@@ -1677,11 +1677,6 @@ def compile_array_map(t, op, **kwargs):
 
 
 # --------------------------- Null Operations -----------------------------
-
-
-@compiles(ops.NullLiteral)
-def compile_null_literal(t, op, **kwargs):
-    return F.lit(None)
 
 
 @compiles(ops.IfNull)

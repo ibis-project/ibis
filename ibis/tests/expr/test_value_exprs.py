@@ -25,18 +25,10 @@ from ibis.common.exceptions import IbisTypeError
 from ibis.expr import api
 from ibis.tests.util import assert_equal
 
-# def test_null():
-#     expr = ibis.literal(None)
-#     assert isinstance(expr, ir.NullScalar)
-#     assert isinstance(expr.op(), ops.NullLiteral)
-#     assert expr._arg.value is None
 
-#     expr2 = ibis.null()
-#     assert_equal(expr, expr2)
-
-#     assert expr is expr2
-#     assert expr.type().equals(dt.null)
-#     assert expr2.type().equals(dt.null)
+def test_null():
+    assert ibis.literal(None).equals(ibis.null())
+    assert ibis.null().op() == ops.Literal(None, dtype=dt.null)
 
 
 def test_literal_mixed_type_fails():

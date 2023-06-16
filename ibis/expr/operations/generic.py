@@ -223,15 +223,6 @@ class Literal(Value):
         return repr(self.value)
 
 
-# TODO(kszucs): remove
-@public
-class NullLiteral(Literal, Singleton):
-    """Typeless NULL literal."""
-
-    value = rlz.optional(type(None), default=None)
-    dtype = rlz.optional(rlz.instance_of(dt.Null), default=dt.null)
-
-
 @public
 class ScalarParameter(Value, Named):
     _counter = itertools.count()

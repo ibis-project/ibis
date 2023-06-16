@@ -95,7 +95,3 @@ def literal(translator, op):
         raise NotImplementedError(f'Unsupported type: {dtype!r}')
 
     return literal_formatters[typeclass](translator, op)
-
-
-def null_literal(translator, expr):
-    return 'NULL'

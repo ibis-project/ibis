@@ -777,11 +777,6 @@ def _repeat(op, **kw):
     return f"repeat({arg}, accurateCast({times}, 'UInt64'))"
 
 
-@translate_val.register(ops.NullLiteral)
-def _null_literal(_, **__):
-    return "Null"
-
-
 @translate_val.register(ops.NullIfZero)
 def _null_if_zero(op, **kw):
     arg = translate_val(op.arg, **kw)

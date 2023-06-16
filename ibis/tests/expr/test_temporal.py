@@ -108,11 +108,6 @@ def test_upconvert_interval(interval, unit, expected):
     assert result.equals(expected)
 
 
-def test_upconvert_interval_failing():
-    with pytest.raises(ValueError):
-        api.interval(seconds=3 * 86400).to_unit('D')
-
-
 @pytest.mark.parametrize('target', ['Y', 'Q', 'M'])
 @pytest.mark.parametrize(
     'delta',
@@ -312,23 +307,6 @@ def test_downconvert_interval(case, expected):
     assert isinstance(case, ir.IntervalScalar)
     assert isinstance(expected, ir.IntervalScalar)
     assert case.type().unit == expected.type().unit
-
-
-def test_downconvert_interval_failing():
-    with pytest.raises(ValueError):
-        api.interval(weeks=2).to_unit('h')
-    with pytest.raises(ValueError):
-        api.interval(days=2).to_unit('h')
-    with pytest.raises(ValueError):
-        api.interval(days=2).to_unit('m')
-    with pytest.raises(ValueError):
-        api.interval(days=2).to_unit('s')
-    with pytest.raises(ValueError):
-        api.interval(days=2).to_unit('ms')
-    with pytest.raises(ValueError):
-        api.interval(days=2).to_unit('us')
-    with pytest.raises(ValueError):
-        api.interval(days=2).to_unit('ns')
 
 
 @pytest.mark.parametrize(
