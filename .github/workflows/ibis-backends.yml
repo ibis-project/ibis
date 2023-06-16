@@ -67,7 +67,7 @@ jobs:
         run: poetry remove snowflake-sqlalchemy snowflake-connector-python
 
       - name: update deps originally constrained by snowflake
-        run: poetry update numpy pandas pyarrow
+        run: poetry update numpy pandas pyarrow datafusion
 
       - name: upload deps file
         uses: actions/upload-artifact@v3
