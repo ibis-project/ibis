@@ -80,6 +80,9 @@ def can_cast_to_differently_signed_integer_type(
     source: dt.Integer, target: dt.Integer, value: int | None = None, **kwargs
 ) -> bool:
     if value is not None:
+        # TODO(kszucs): we may not need to actually check the value since the
+        # literal construction now checks for bounds and doesn't use castable()
+        # anymore
         return target.bounds.lower <= value <= target.bounds.upper
     else:
         return (target.bounds.upper - target.bounds.lower) >= (

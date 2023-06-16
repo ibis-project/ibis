@@ -27,7 +27,7 @@ from ibis.expr.datatypes.cast import highest_precedence
 @lazy_singledispatch
 def infer(value: Any) -> dt.DataType:
     """Infer the corresponding ibis dtype for a python object."""
-    raise InputTypeError(value)
+    raise InputTypeError(f"Unable to infer datatype of {value!r}")
 
 
 # TODO(kszucs): support NamedTuples and dataclasses instead of OrderedDict
@@ -250,9 +250,22 @@ def normalize(typ, value):
     if dtype.is_boolean():
         return bool(value)
     elif dtype.is_integer():
-        return int(value)
+        try:
+            value = int(value)
+        except ValueError:
+            raise TypeError("Unable to normalize {value!r} to {dtype!r}")
+        if value not in dtype.bounds:
+            raise TypeError(
+                f"Value {value} is out of bounds for type {dtype!r} "
+                f"(bounds: {dtype.bounds})"
+            )
+        else:
+            return value
     elif dtype.is_floating():
-        return float(value)
+        try:
+            return float(value)
+        except ValueError:
+            raise TypeError("Unable to normalize {value!r} to {dtype!r}")
     elif dtype.is_string() and not dtype.is_json():
         return str(value)
     elif dtype.is_decimal():
@@ -267,9 +280,13 @@ def normalize(typ, value):
     elif dtype.is_map():
         return frozendict({k: normalize(dtype.value_type, v) for k, v in value.items()})
     elif dtype.is_struct():
-        return frozendict(
-            {k: normalize(dtype[k], v) for k, v in value.items() if k in dtype.fields}
-        )
+        if not isinstance(value, Mapping):
+            raise TypeError(f"Unable to normalize {dtype} from non-mapping {value!r}")
+        if missing_keys := (dtype.keys() - value.keys()):
+            raise TypeError(
+                f"Unable to normalize {value!r} to {dtype} because of missing keys {missing_keys!r}"
+            )
+        return frozendict({k: normalize(t, value[k]) for k, t in dtype.items()})
     elif dtype.is_geospatial():
         if isinstance(value, (tuple, list)):
             if dtype.is_point():

@@ -397,6 +397,9 @@ class Bounds(NamedTuple):
     lower: int
     upper: int
 
+    def __contains__(self, value: int) -> bool:
+        return self.lower <= value <= self.upper
+
 
 @public
 class Numeric(DataType):

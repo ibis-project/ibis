@@ -46,10 +46,10 @@ def test_invalid_datatype(value, expected):
         assert rlz.datatype(value)
 
 
-def test_invalid_literal():
-    msg = "Value 1 cannot be safely coerced to `string`"
-    with pytest.raises(TypeError, match=msg):
-        rlz.literal(dt.string, 1)
+def test_string_literal_from_intergerinvalid_literal():
+    lit = rlz.literal(dt.string, 1)
+    assert type(lit.value) is str
+    assert lit.value == "1"
 
 
 @pytest.mark.parametrize(
