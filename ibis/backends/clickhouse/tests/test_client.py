@@ -1,5 +1,6 @@
 import pandas as pd
 import pandas.testing as tm
+import pyarrow as pa
 import pytest
 from pytest import param
 
@@ -219,8 +220,9 @@ def test_create_table_no_data(con, temp, temp_table):
     [
         {"a": [1, 2, 3], "b": [None, "b", "c"]},
         pd.DataFrame({"a": [1, 2, 3], "b": [None, "b", "c"]}),
+        pa.Table.from_pydict({"a": [1, 2, 3], "b": [None, "b", "c"]}),
     ],
-    ids=["dict", "dataframe"],
+    ids=["dict", "dataframe", "pyarrow table"],
 )
 @pytest.mark.parametrize(
     "engine",

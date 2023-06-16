@@ -114,7 +114,7 @@ class BasePandasBackend(BaseBackend):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -189,10 +189,14 @@ class BasePandasBackend(BaseBackend):
 
     @classmethod
     def _convert_object(cls, obj: Any) -> Any:
+        import pyarrow as pa
+
         if isinstance(obj, ir.Table):
             # Support memtables
             assert isinstance(obj.op(), ops.InMemoryTable)
             return obj.op().data.to_frame()
+        elif isinstance(obj, pa.Table):
+            return obj.to_pandas()
         return cls.backend_table_type(obj)
 
     @classmethod
