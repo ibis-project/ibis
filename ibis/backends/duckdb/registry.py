@@ -178,12 +178,22 @@ def _json_get_item(left, path):
 
 
 def _strftime(t, op):
-    format_str = op.format_str
-    if not isinstance(format_str_op := format_str, ops.Literal):
+    if not isinstance(op.format_str, ops.Literal):
         raise UnsupportedOperationError(
-            f"DuckDB format_str must be a literal `str`; got {type(format_str)}"
+            f"DuckDB format_str must be a literal `str`; got {type(op.format_str)}"
         )
-    return sa.func.strftime(t.translate(op.arg), sa.text(repr(format_str_op.value)))
+    return sa.func.strftime(t.translate(op.arg), t.translate(op.format_str))
+
+
+def _strptime(t, op):
+    if not isinstance(op.format_str, ops.Literal):
+        raise UnsupportedOperationError(
+            f"DuckDB format_str must be a literal `str`; got {type(op.format_str)}"
+        )
+    return sa.cast(
+        sa.func.strptime(t.translate(op.arg), t.translate(op.format_str)),
+        t.get_sqla_type(op.output_dtype),
+    )
 
 
 def _arbitrary(t, op):
@@ -421,7 +431,7 @@ operation_registry.update(
         ops.BitwiseXor: fixed_arity(sa.func.xor, 2),
         ops.JSONGetItem: fixed_arity(_json_get_item, 2),
         ops.RowID: lambda *_: sa.literal_column('rowid'),
-        ops.StringToTimestamp: fixed_arity(sa.func.strptime, 2),
+        ops.StringToTimestamp: _strptime,
         ops.Quantile: reduction(sa.func.quantile_cont),
         ops.MultiQuantile: reduction(sa.func.quantile_cont),
         ops.TypeOf: unary(sa.func.typeof),
