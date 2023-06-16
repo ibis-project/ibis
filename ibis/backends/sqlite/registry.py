@@ -22,6 +22,7 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.base.sql.alchemy.registry import _gen_string_find
 from ibis.backends.base.sql.alchemy.registry import _literal as base_literal
+from ibis.backends.sqlite.datatypes import ISODATETIME
 from ibis.common.temporal import DateUnit, IntervalUnit
 
 operation_registry = sqlalchemy_operation_registry.copy()
@@ -349,7 +350,9 @@ operation_registry.update(
             1,
         ),
         ops.DayOfWeekName: fixed_arity(_day_of_the_week_name, 1),
-        ops.TimestampNow: fixed_arity(lambda: sa.func.datetime("now"), 0),
+        ops.TimestampNow: fixed_arity(
+            lambda: sa.func.datetime("now", type_=ISODATETIME()), 0
+        ),
         ops.RegexSearch: fixed_arity(sa.func._ibis_sqlite_regex_search, 2),
         ops.RegexReplace: fixed_arity(sa.func._ibis_sqlite_regex_replace, 3),
         ops.RegexExtract: fixed_arity(sa.func._ibis_sqlite_regex_extract, 3),

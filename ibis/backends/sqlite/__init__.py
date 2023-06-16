@@ -14,13 +14,12 @@
 
 from __future__ import annotations
 
-import datetime
 import sqlite3
 from typing import TYPE_CHECKING, Iterator
 
 import sqlalchemy as sa
 import toolz
-from sqlalchemy.dialects.sqlite import DATETIME, TIMESTAMP
+from sqlalchemy.dialects.sqlite import TIMESTAMP
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -28,43 +27,10 @@ from ibis import util
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
-from ibis.backends.sqlite.datatypes import SqliteType, parse
+from ibis.backends.sqlite.datatypes import ISODATETIME, SqliteType, parse
 
 if TYPE_CHECKING:
     from pathlib import Path
-
-
-def to_datetime(value: str | None) -> datetime.datetime | None:
-    """Convert a `str` to a `datetime` according to SQLite's rules.
-
-    This function ignores `None` values.
-    """
-    if value is None:
-        return None
-    if value.endswith("Z"):
-        # Parse and set the timezone as UTC
-        o = datetime.datetime.fromisoformat(value[:-1]).replace(
-            tzinfo=datetime.timezone.utc
-        )
-    else:
-        o = datetime.datetime.fromisoformat(value)
-        if o.tzinfo:
-            # Convert any aware datetime to UTC
-            return o.astimezone(datetime.timezone.utc)
-    return o
-
-
-class ISODATETIME(DATETIME):
-    """A thin `datetime` type to override sqlalchemy's datetime parsing.
-
-    This is to support a wider range of timestamp formats accepted by SQLite.
-
-    See https://sqlite.org/lang_datefunc.html#time_values for the full
-    list of datetime formats SQLite accepts.
-    """
-
-    def result_processor(self, *_):
-        return to_datetime
 
 
 class Backend(BaseAlchemyBackend):

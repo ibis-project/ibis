@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import datetime
+
 import sqlalchemy.types as sat
 from sqlalchemy.dialects import sqlite
 
@@ -58,3 +60,35 @@ class SqliteType(AlchemyType):
             return dt.JSON(nullable=nullable)
         else:
             return super().to_ibis(typ, nullable=nullable)
+
+
+class ISODATETIME(sqlite.DATETIME):
+    """A thin `datetime` type to override sqlalchemy's datetime parsing.
+
+    This is to support a wider range of timestamp formats accepted by SQLite.
+
+    See https://sqlite.org/lang_datefunc.html#time_values for the full
+    list of datetime formats SQLite accepts.
+    """
+
+    def result_processor(self, *_):
+        def process(value: str | None) -> datetime.datetime | None:
+            """Convert a `str` to a `datetime` according to SQLite's rules.
+
+            This function ignores `None` values.
+            """
+            if value is None:
+                return None
+            if value.endswith("Z"):
+                # Parse and set the timezone as UTC
+                o = datetime.datetime.fromisoformat(value[:-1]).replace(
+                    tzinfo=datetime.timezone.utc
+                )
+            else:
+                o = datetime.datetime.fromisoformat(value)
+                if o.tzinfo:
+                    # Convert any aware datetime to UTC
+                    return o.astimezone(datetime.timezone.utc)
+            return o
+
+        return process

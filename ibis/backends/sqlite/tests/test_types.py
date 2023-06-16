@@ -5,7 +5,6 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.sqlite import to_datetime
 
 # Test with formats 1-7 (with T, Z, and offset modifiers) from:
 # https://sqlite.org/lang_datefunc.html#time_values
@@ -65,9 +64,11 @@ def test_timestamps(db, table, data):
     t = con.table(table)
     assert t.ts.type() == dt.timestamp
     res = t.ts.execute()
+    stamps = pd.to_datetime(data, format="mixed", utc=True)
     # we're casting to timestamp without a timezone, so remove it in the
     # expected output
-    sol = pd.Series(to_datetime(s) for s in data).dt.tz_localize(None)
+    localized = stamps.tz_localize(None)
+    sol = pd.Series(localized)
     assert res.equals(sol)
 
 
