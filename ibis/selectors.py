@@ -399,22 +399,25 @@ class Across(Selector):
 
 @public
 def across(
-    selector: Selector,
+    selector: Selector | Iterable[str] | str,
     func: Deferred
     | Callable[[ir.Value], ir.Value]
     | Mapping[str | None, Deferred | Callable[[ir.Value], ir.Value]],
     names: str | Callable[[str, str | None], str] | None = None,
 ) -> Across:
-    """Applies the same data transformation function across multiple columns.
+    """Applies data transformations across multiple columns.
 
     Parameters
     ----------
     selector
-        An expression that selects columns on which the transformation function will be applied.
+        An expression that selects columns on which the transformation function
+        will be applied, an iterable of `str` column names or a single `str`
+        column name.
     func
         A function (or a dictionary of functions) to use to transform the data.
     names
-        A lambda function or a format string to name the columns created by the transformation function.
+        A lambda function or a format string to name the columns created by the
+        transformation function.
 
     Returns
     -------
@@ -455,6 +458,8 @@ def across(
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
     funcs = frozendict(func if isinstance(func, Mapping) else {None: func})
+    if not isinstance(selector, Selector):
+        selector = c(*util.promote_list(selector))
     return Across(selector=selector, funcs=funcs, names=names)
 
 
