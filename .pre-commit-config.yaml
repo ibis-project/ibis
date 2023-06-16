@@ -3,7 +3,7 @@ ci:
   autofix_prs: false
   autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"
   skip:
-    - actionlint
+    - actionlint-system
     - deadnix
     - just
     - nixpkgs-fmt
@@ -17,9 +17,9 @@ default_stages:
   - commit
 repos:
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.24
+    rev: v1.6.25
     hooks:
-      - id: actionlint
+      - id: actionlint-system
   - repo: https://github.com/psf/black
     rev: 23.3.0
     hooks:
@@ -30,7 +30,7 @@ repos:
       - id: nbstripout
         exclude: .+/rendered/.+
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.4
+    rev: v2.2.5
     hooks:
       - id: codespell
         additional_dependencies:
