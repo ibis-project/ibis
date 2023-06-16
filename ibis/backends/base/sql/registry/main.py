@@ -14,7 +14,7 @@ from ibis.backends.base.sql.registry import (
     timestamp,
     window,
 )
-from ibis.backends.base.sql.registry.literal import literal, null_literal
+from ibis.backends.base.sql.registry.literal import literal
 
 
 def alias(translator, op):
@@ -344,7 +344,6 @@ operation_registry = {
     ops.IntervalFromInteger: timestamp.interval_from_integer,
     # Other operations
     ops.Literal: literal,
-    ops.NullLiteral: null_literal,
     ops.Cast: cast,
     ops.Coalesce: varargs('coalesce'),
     ops.Greatest: varargs('greatest'),

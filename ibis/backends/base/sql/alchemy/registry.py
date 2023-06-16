@@ -540,7 +540,6 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Negate: _negate,
     ops.Round: _round,
     ops.Literal: _literal,
-    ops.NullLiteral: lambda *_: sa.null(),
     ops.SimpleCase: _simple_case,
     ops.SearchedCase: _searched_case,
     ops.TableColumn: _table_column,

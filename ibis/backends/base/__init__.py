@@ -778,15 +778,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         Operations are defined in `ibis.expr.operations`, and a translation
         function receives the translator object and an expression as
-        parameters, and returns a value depending on the backend. For example,
-        in SQL backends, a NullLiteral operation could be translated to the
-        string `"NULL"`.
-
-        Examples
-        --------
-        >>> @ibis.sqlite.add_operation(ibis.expr.operations.NullLiteral)
-        ... def _null_literal(translator, expression):
-        ...     return 'NULL'
+        parameters, and returns a value depending on the backend.
         """
         if not hasattr(self, 'compiler'):
             raise RuntimeError('Only SQL-based backends support `add_operation`')

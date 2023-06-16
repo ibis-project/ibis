@@ -1567,7 +1567,7 @@ class NullColumn(Column, NullValue):
 @public
 def null():
     """Create a NULL/NA scalar."""
-    return ops.NullLiteral().to_expr()
+    return literal(None)
 
 
 @public

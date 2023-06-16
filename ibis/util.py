@@ -269,33 +269,22 @@ def convert_unit(value, unit, to, floor: bool = True):
     if unit == to:
         return value
 
-    second_units = ('h', 'm', 's', 'ms', 'us', 'ns')
-    second_factors = (60, 60, 1000, 1000, 1000)
-
-    daily_units = ('W', 'D')
-    daily_factors = (7,)
+    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
+    factors = (7, 24, 60, 60, 1000, 1000, 1000)
 
     monthly_units = ('Y', 'Q', 'M')
     monthly_factors = (4, 3)
 
     try:
-        i, j = second_units.index(unit), second_units.index(to)
+        i, j = units.index(unit), units.index(to)
     except ValueError:
         try:
-            i, j = daily_units.index(unit), daily_units.index(to)
+            i, j = monthly_units.index(unit), monthly_units.index(to)
+            factors = monthly_factors
         except ValueError:
-            try:
-                i, j = monthly_units.index(unit), monthly_units.index(to)
-            except ValueError:
-                raise ValueError(
-                    f"Cannot convert interval value from unit {unit} to unit {to}"
-                )
-            else:
-                factors = monthly_factors
-        else:
-            factors = daily_factors
-    else:
-        factors = second_factors
+            raise ValueError(
+                f"Cannot convert interval value from unit {unit} to unit {to}"
+            )
 
     factor = functools.reduce(operator.mul, factors[min(i, j) : max(i, j)], 1)
     assert factor > 1
@@ -305,7 +294,6 @@ def convert_unit(value, unit, to, floor: bool = True):
     else:
         assert i > j
         op = operator.floordiv if floor else operator.truediv
-
     try:
         return op(value.to_expr(), factor).op()
     except AttributeError:
