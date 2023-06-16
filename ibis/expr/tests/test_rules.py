@@ -46,7 +46,7 @@ def test_invalid_datatype(value, expected):
         assert rlz.datatype(value)
 
 
-def test_string_literal_from_intergerinvalid_literal():
+def test_string_literal_from_integer():
     lit = rlz.literal(dt.string, 1)
     assert type(lit.value) is str
     assert lit.value == "1"
