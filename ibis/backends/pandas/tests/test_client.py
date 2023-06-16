@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
+import pyarrow as pa
 import pytest
 from pytest import param
 
@@ -38,7 +39,13 @@ def test_client_table(table):
     assert isinstance(table.op(), ops.DatabaseTable)
 
 
-def test_create_table(client, test_data):
+@pytest.mark.parametrize(
+    "lamduh",
+    [(lambda df: df), (lambda df: pa.Table.from_pandas(df))],
+    ids=["dataframe", "pyarrow table"],
+)
+def test_create_table(client, test_data, lamduh):
+    test_data = lamduh(test_data)
     client.create_table('testing', obj=test_data)
     assert 'testing' in client.list_tables()
     client.create_table('testingschema', schema=client.get_schema('testing'))

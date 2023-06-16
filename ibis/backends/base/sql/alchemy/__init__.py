@@ -41,6 +41,7 @@ from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 
 __all__ = (
@@ -218,7 +219,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -255,8 +256,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
             raise com.IbisError("The schema or obj parameter is required")
 
         import pandas as pd
+        import pyarrow as pa
 
-        if isinstance(obj, pd.DataFrame):
+        if isinstance(obj, (pd.DataFrame, pa.Table)):
             obj = ibis.memtable(obj)
 
         if database == self.current_database:

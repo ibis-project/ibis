@@ -818,7 +818,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,

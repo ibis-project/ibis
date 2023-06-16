@@ -371,7 +371,7 @@ show_deps = true
 # notebooks are skipped because there's no straightforward way to ignore base64
 # encoded strings
 skip = "*.lock,.direnv,.git,*.ipynb"
-ignore-regex = '\b(DOUB|i[if]f|I[IF]F)\b'
+ignore-regex = '\b(DOUB|i[if]f|I[IF]F|lamduh)\b'
 builtin = "clear,rare,names"
 
 [tool.ruff]
