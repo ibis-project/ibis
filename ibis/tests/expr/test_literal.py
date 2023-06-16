@@ -97,6 +97,7 @@ def test_normalized_underlying_value(userinput, literal_type, expected_type):
     'value',
     [
         dict(field1='value1', field2=3.14),
+        dict(field1='value1', field2='3.14'),  # coerceable type
         dict(field1='value1', field2=1),  # coerceable type
         dict(field2=2.72, field1='value1'),  # wrong field order
         dict(field1='value1', field2=3.14, field3='extra'),  # extra field
@@ -105,21 +106,22 @@ def test_normalized_underlying_value(userinput, literal_type, expected_type):
 def test_struct_literal(value):
     typestr = "struct<field1: string, field2: float64>"
     a = ibis.struct(value, type=typestr)
-    assert a.op().value == frozendict(field1=value['field1'], field2=value['field2'])
+    assert a.op().value == frozendict(
+        field1=str(value['field1']), field2=float(value['field2'])
+    )
     assert a.type() == dt.dtype(typestr)
 
 
 @pytest.mark.parametrize(
     'value',
     [
-        dict(field1='value1', field2='3.14'),  # non-coerceable type
         dict(field1='value1', field3=3.14),  # wrong field name
         dict(field1='value1'),  # missing field
     ],
 )
 def test_struct_literal_non_castable(value):
     typestr = "struct<field1: string, field2: float64>"
-    with pytest.raises((KeyError, TypeError, ibis.common.exceptions.IbisTypeError)):
+    with pytest.raises(TypeError, match="Unable to normalize"):
         ibis.struct(value, type=typestr)
 
 

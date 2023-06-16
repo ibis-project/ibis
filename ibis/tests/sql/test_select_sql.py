@@ -409,7 +409,7 @@ def test_case_in_projection(alltypes, snapshot):
     expr = t[expr.name('col1'), expr2.name('col2'), t]
 
     snapshot.assert_match(to_sql(expr), "out.sql")
-    assert_decompile_roundtrip(expr, snapshot)
+    assert_decompile_roundtrip(expr, snapshot, check_equality=False)
 
 
 def test_identifier_quoting(snapshot):

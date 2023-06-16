@@ -223,6 +223,7 @@ class Literal(Value):
         return repr(self.value)
 
 
+# TODO(kszucs): remove
 @public
 class NullLiteral(Literal, Singleton):
     """Typeless NULL literal."""
