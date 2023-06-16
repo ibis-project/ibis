@@ -160,7 +160,7 @@ $$ {defn["source"]} $$"""
         connect_args
             Additional arguments passed to the SQLAlchemy engine creation call.
         kwargs:
-            Additiional arguments passed to the SQLAlchemy URL constructor.
+            Additional arguments passed to the SQLAlchemy URL constructor.
             See https://docs.snowflake.com/en/developer-guide/python-connector/sqlalchemy#additional-connection-parameters
             for more details
         """
