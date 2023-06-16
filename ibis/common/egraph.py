@@ -4,7 +4,6 @@ import collections
 import itertools
 import math
 from typing import (
-    TYPE_CHECKING,
     Any,
     Hashable,
     Iterable,
@@ -16,9 +15,6 @@ from typing import (
 
 from ibis.common.graph import Node
 from ibis.util import promote_list
-
-if TYPE_CHECKING:
-    from typing_extensions import Self
 
 K = TypeVar("K", bound=Hashable)
 
@@ -108,7 +104,7 @@ class DisjointSet(Mapping[K, Set[K]]):
         """Get the number of ids in the disjoint set."""
         return len(self._parents)
 
-    def __eq__(self, other: Self[K]) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check if the disjoint set is equal to another disjoint set.
 
         Parameters
