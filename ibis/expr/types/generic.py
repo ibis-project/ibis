@@ -8,7 +8,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis import util
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 
@@ -505,6 +504,7 @@ class Value(Expr):
         import ibis.expr.analysis as an
         import ibis.expr.builders as bl
         import ibis.expr.deferred as de
+        from ibis import _
 
         if window is None:
             window = ibis.window(
@@ -527,7 +527,7 @@ class Value(Expr):
             if table := an.find_first_base_table(self.op()):
                 return bind(table)
             else:
-                return de.Deferred(bind)
+                return de.deferred_apply(bind, _)
         else:
             return ops.WindowFunction(self, window).to_expr()
 
