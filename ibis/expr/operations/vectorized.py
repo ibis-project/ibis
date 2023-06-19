@@ -21,7 +21,7 @@ class VectorizedUDF(Value):
     return_type: dt.DataType
 
     @property
-    def output_dtype(self):
+    def dtype(self):
         return self.return_type
 
 
@@ -29,14 +29,14 @@ class VectorizedUDF(Value):
 class ElementWiseVectorizedUDF(VectorizedUDF):
     """Node for element wise UDF."""
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
 
 @public
 class ReductionVectorizedUDF(VectorizedUDF, Reduction):
     """Node for reduction UDF."""
 
-    output_shape = ds.scalar
+    shape = ds.scalar
 
 
 # TODO(kszucs): revisit
@@ -44,4 +44,4 @@ class ReductionVectorizedUDF(VectorizedUDF, Reduction):
 class AnalyticVectorizedUDF(VectorizedUDF, Analytic):
     """Node for analytics UDF."""
 
-    output_shape = ds.columnar
+    shape = ds.columnar

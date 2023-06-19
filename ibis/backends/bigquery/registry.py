@@ -86,7 +86,7 @@ def bigquery_cast_generate_simple(compiled_arg, to):
 def _cast(translator, op):
     arg, target_type = op.args
     arg_formatted = translator.translate(arg)
-    input_dtype = arg.output_dtype
+    input_dtype = arg.dtype
     return bigquery_cast(arg_formatted, input_dtype, target_type)
 
 
@@ -247,7 +247,7 @@ def _log(translator, op):
 
 
 def _literal(translator, op):
-    dtype = op.output_dtype
+    dtype = op.dtype
     value = op.value
 
     if value is None:
@@ -342,7 +342,7 @@ def _truncate(kind, units):
         trans_arg = translator.translate(arg)
         if unit not in units:
             raise com.UnsupportedOperationError(
-                f"BigQuery does not support truncating {arg.output_dtype} values to unit {unit!r}"
+                f"BigQuery does not support truncating {arg.dtype} values to unit {unit!r}"
             )
         if unit.name == "WEEK":
             unit = "WEEK(MONDAY)"
@@ -365,7 +365,7 @@ def _date_binary(func):
     def _formatter(translator, op):
         arg, offset = op.left, op.right
 
-        unit = offset.output_dtype.unit
+        unit = offset.dtype.unit
         if not unit.is_date():
             raise com.UnsupportedOperationError(
                 f"BigQuery does not allow binary operation {func} with INTERVAL offset {unit}"
@@ -382,7 +382,7 @@ def _timestamp_binary(func):
     def _formatter(translator, op):
         arg, offset = op.left, op.right
 
-        unit = offset.output_dtype.unit
+        unit = offset.dtype.unit
         if unit == IntervalUnit.NANOSECOND:
             raise com.UnsupportedOperationError(
                 f"BigQuery does not allow binary operation {func} with INTERVAL offset {unit}"
@@ -452,7 +452,7 @@ def compiles_strftime(translator, op):
     """Timestamp formatting."""
     arg = op.arg
     format_str = op.format_str
-    arg_type = arg.output_dtype
+    arg_type = arg.dtype
     strftime_format_func_name = STRFTIME_FORMAT_FUNCTIONS[arg_type]
     fmt_string = translator.translate(format_str)
     arg_formatted = translator.translate(arg)
@@ -477,7 +477,7 @@ def compiles_string_to_timestamp(translator, op):
 
 
 def compiles_floor(t, op):
-    bigquery_type = BigQueryType.from_ibis(op.output_dtype)
+    bigquery_type = BigQueryType.from_ibis(op.dtype)
     arg = op.arg
     return f"CAST(FLOOR({t.translate(arg)}) AS {bigquery_type})"
 
@@ -502,10 +502,10 @@ def compiles_covar_corr(func):
             right = ops.Where(where, right, None)
 
         left = translator.translate(
-            ops.Cast(left, dt.int64) if left.output_dtype.is_boolean() else left
+            ops.Cast(left, dt.int64) if left.dtype.is_boolean() else left
         )
         right = translator.translate(
-            ops.Cast(right, dt.int64) if right.output_dtype.is_boolean() else right
+            ops.Cast(right, dt.int64) if right.dtype.is_boolean() else right
         )
         return f"{func}({left}, {right})"
 
@@ -533,7 +533,7 @@ def _identical_to(t, op):
 def _floor_divide(t, op):
     left = t.translate(op.left)
     right = t.translate(op.right)
-    return bigquery_cast(f"FLOOR(IEEE_DIVIDE({left}, {right}))", op.output_dtype)
+    return bigquery_cast(f"FLOOR(IEEE_DIVIDE({left}, {right}))", op.dtype)
 
 
 def _log2(t, op):
@@ -549,12 +549,12 @@ def _is_inf(t, op):
 
 
 def _nullifzero(t, op):
-    casted = bigquery_cast('0', op.output_dtype)
+    casted = bigquery_cast('0', op.dtype)
     return f"NULLIF({t.translate(op.arg)}, {casted})"
 
 
 def _zeroifnull(t, op):
-    casted = bigquery_cast('0', op.output_dtype)
+    casted = bigquery_cast('0', op.dtype)
     return f"COALESCE({t.translate(op.arg)}, {casted})"
 
 
@@ -623,11 +623,11 @@ def _nth_value(t, op):
 def _interval_multiply(t, op):
     if isinstance(op.left, ops.Literal) and isinstance(op.right, ops.Literal):
         value = op.left.value * op.right.value
-        literal = ops.Literal(value, op.left.output_dtype)
+        literal = ops.Literal(value, op.left.dtype)
         return t.translate(literal)
 
     left, right = t.translate(op.left), t.translate(op.right)
-    unit = op.left.output_dtype.resolution.upper()
+    unit = op.left.dtype.resolution.upper()
     return f"INTERVAL EXTRACT({unit} from {left}) * {right} {unit}"
 
 

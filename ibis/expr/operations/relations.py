@@ -408,7 +408,7 @@ class Projection(Relation):
         for projection in self.selections:
             if isinstance(projection, Value):
                 names.append(projection.name)
-                types.append(projection.output_dtype)
+                types.append(projection.dtype)
             elif isinstance(projection, TableNode):
                 schema = projection.schema
                 names.extend(schema.names)
@@ -441,7 +441,7 @@ class Selection(Projection):
 
         for predicate in predicates:
             if isinstance(predicate, ops.Literal):
-                if not (dtype := predicate.output_dtype).is_boolean():
+                if not (dtype := predicate.dtype).is_boolean():
                     raise com.IbisTypeError(f"Invalid predicate dtype: {dtype}")
             elif not shares_some_roots(predicate, table):
                 raise com.RelationError("Predicate doesn't share any roots with table")
@@ -486,7 +486,7 @@ class DummyTable(Relation):
 
     @property
     def schema(self):
-        return Schema({op.name: op.output_dtype for op in self.values})
+        return Schema({op.name: op.dtype for op in self.values})
 
 
 @public
@@ -529,7 +529,7 @@ class Aggregation(Relation):
         names, types = [], []
         for value in self.by + self.metrics:
             names.append(value.name)
-            types.append(value.output_dtype)
+            types.append(value.dtype)
         return Schema.from_tuples(zip(names, types))
 
     def order_by(self, sort_exprs):

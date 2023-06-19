@@ -20,7 +20,7 @@ class DruidExprTranslator(AlchemyExprTranslator):
         result = super().translate(op)
         with contextlib.suppress(AttributeError):
             result = result.scalar_subquery()
-        return sa.type_coerce(result, self.type_mapper.from_ibis(op.output_dtype))
+        return sa.type_coerce(result, self.type_mapper.from_ibis(op.dtype))
 
 
 rewrites = DruidExprTranslator.rewrites

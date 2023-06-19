@@ -47,7 +47,7 @@ def truncate(translator, op):
 def interval_from_integer(translator, op):
     # interval cannot be selected from impala
     arg = translator.translate(op.arg)
-    return f'INTERVAL {arg} {op.output_dtype.resolution.upper()}'
+    return f'INTERVAL {arg} {op.dtype.resolution.upper()}'
 
 
 def timestamp_op(func):
@@ -55,11 +55,11 @@ def timestamp_op(func):
         formatted_left = translator.translate(op.left)
         formatted_right = translator.translate(op.right)
 
-        left_dtype = op.left.output_dtype
+        left_dtype = op.left.dtype
         if left_dtype.is_timestamp() or left_dtype.is_date():
             formatted_left = f'cast({formatted_left} as timestamp)'
 
-        right_dtype = op.right.output_dtype
+        right_dtype = op.right.dtype
         if right_dtype.is_timestamp() or right_dtype.is_date():
             formatted_right = f'cast({formatted_right} as timestamp)'
 

@@ -199,7 +199,7 @@ class Moving(Window):
     __slots__ = ()
 
     def __init__(self, start, max_lookback, *args, **kwargs):
-        start = compute_window_spec(start.output_dtype, start.value)
+        start = compute_window_spec(start.dtype, start.value)
 
         super().__init__(
             'rolling',

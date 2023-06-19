@@ -44,7 +44,7 @@ def test_coerced_to_literal():
 
     one = ops.Literal(1, dt.int16)
     with pytest.raises(ValidationError):
-        p.validate(ops.Literal(1, dt.int16), {})
+        p.validate(one, {})
 
 
 def test_coerced_to_value():

@@ -722,7 +722,7 @@ def test_integer_to_interval_timestamp(
     expr = (alltypes.timestamp_col + interval).name('tmp')
 
     def convert_to_offset(offset, displacement_type=displacement_type):
-        resolution = f'{interval.op().output_dtype.resolution}s'
+        resolution = f'{interval.op().dtype.resolution}s'
         return displacement_type(**{resolution: offset})
 
     with warnings.catch_warnings():

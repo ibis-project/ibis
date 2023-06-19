@@ -67,7 +67,7 @@ def _generic_log(arg, base, *, type_):
 
 def _log(t, op):
     arg, base = op.args
-    sqla_type = t.get_sqla_type(op.output_dtype)
+    sqla_type = t.get_sqla_type(op.dtype)
     sa_arg = t.translate(arg)
     if base is not None:
         sa_base = t.translate(base)
@@ -111,7 +111,7 @@ def compiles_struct_pack(element, compiler, **kw):
 
 
 def _literal(t, op):
-    dtype = op.output_dtype
+    dtype = op.dtype
     value = op.value
 
     if value is None:
@@ -192,7 +192,7 @@ def _strptime(t, op):
         )
     return sa.cast(
         sa.func.strptime(t.translate(op.arg), t.translate(op.format_str)),
-        t.get_sqla_type(op.output_dtype),
+        t.get_sqla_type(op.dtype),
     )
 
 
@@ -218,7 +218,7 @@ def _string_agg(t, op):
 def _struct_column(t, op):
     return struct_pack(
         dict(zip(op.names, map(t.translate, op.values))),
-        type=t.get_sqla_type(op.output_dtype),
+        type=t.get_sqla_type(op.dtype),
     )
 
 
@@ -238,7 +238,7 @@ def _translate_case(t, op, *, value):
                 compile_kwargs=dict(literal_binds=True),
             )
         ),
-        type_=t.get_sqla_type(op.output_dtype),
+        type_=t.get_sqla_type(op.dtype),
     )
 
 
@@ -272,9 +272,7 @@ def _array_filter(t, op):
 
 def _map_keys(t, op):
     m = t.translate(op.arg)
-    return sa.cast(
-        sa.func.json_keys(sa.func.to_json(m)), t.get_sqla_type(op.output_dtype)
-    )
+    return sa.cast(sa.func.json_keys(sa.func.to_json(m)), t.get_sqla_type(op.dtype))
 
 
 def _is_map_literal(op):
@@ -293,7 +291,7 @@ def _map_values(t, op):
     m_json = sa.func.to_json(t.translate(arg))
     return sa.cast(
         sa.func.json_extract_string(m_json, sa.func.json_keys(m_json)),
-        t.get_sqla_type(op.output_dtype),
+        t.get_sqla_type(op.dtype),
     )
 
 
@@ -308,7 +306,7 @@ def _map_merge(t, op):
     keys = sa.func.json_keys(pairs)
     return sa.cast(
         sa.func.map(keys, sa.func.json_extract_string(pairs, keys)),
-        t.get_sqla_type(op.output_dtype),
+        t.get_sqla_type(op.dtype),
     )
 
 
@@ -316,7 +314,7 @@ def _array_zip(t, op):
     args = tuple(map(t.translate, op.arg))
 
     i = sa.literal_column("i", type_=sa.INTEGER)
-    dtype = op.output_dtype
+    dtype = op.dtype
     return array_map(
         sa.func.range(1, sa.func.greatest(*map(sa.func.array_length, args)) + 1),
         i,
@@ -349,7 +347,7 @@ operation_registry.update(
         ops.ArrayColumn: (
             lambda t, op: sa.cast(
                 sa.func.list_value(*map(t.translate, op.cols)),
-                t.get_sqla_type(op.output_dtype),
+                t.get_sqla_type(op.dtype),
             )
         ),
         ops.TryCast: _try_cast,
@@ -398,7 +396,7 @@ operation_registry.update(
             lambda t, op: sa.func.struct_extract(
                 t.translate(op.arg),
                 sa.text(repr(op.field)),
-                type_=t.get_sqla_type(op.output_dtype),
+                type_=t.get_sqla_type(op.dtype),
             )
         ),
         ops.TableColumn: _table_column,

@@ -31,8 +31,8 @@ class SortKey(Value):
     expr: Value
     ascending: bool = True
 
-    output_dtype = rlz.dtype_like("expr")
-    output_shape = rlz.shape_like("expr")
+    dtype = rlz.dtype_like("expr")
+    shape = rlz.shape_like("expr")
 
     @classmethod
     def __coerce__(cls, value, T=None, S=None):
