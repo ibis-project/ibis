@@ -1604,7 +1604,7 @@ def test_rowid_only_physical_tables():
         table.filter(table.x > 0).rowid()
 
 
-def test_where_output_shape():
+def test_where_shape():
     # GH-5191
     t = ibis.table(dict(a="int64", b="string"), name="t")
     expr = ibis.literal(True).ifelse(t.a, -t.a)
@@ -1622,4 +1622,4 @@ def test_quantile_shape():
     expr = t.select(projs)
     (b1,) = expr.op().selections
 
-    assert b1.output_shape.is_columnar()
+    assert b1.shape.is_columnar()

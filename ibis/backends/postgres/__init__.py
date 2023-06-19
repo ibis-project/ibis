@@ -214,10 +214,10 @@ WHERE p.proname = :name
             name=name,
             ident=ident,
             signature=", ".join(
-                f"{name} {self._compile_type(arg.output_dtype)}"
+                f"{name} {self._compile_type(arg.dtype)}"
                 for name, arg in zip(udf_node.argnames, udf_node.args)
             ),
-            return_type=self._compile_type(udf_node.output_dtype),
+            return_type=self._compile_type(udf_node.dtype),
             language=config.get("language", "plpython3u"),
             source="\n".join(
                 _verify_source_line(func_name, line)

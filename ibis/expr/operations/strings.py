@@ -16,7 +16,7 @@ from ibis.expr.operations.core import Unary, Value
 class StringUnary(Unary):
     arg: Value[dt.String]
 
-    output_dtype = dt.string
+    dtype = dt.string
 
 
 @public
@@ -60,8 +60,8 @@ class Substring(Value):
     start: Value[dt.Integer]
     length: Optional[Value[dt.Integer]] = None
 
-    output_dtype = dt.string
-    output_shape = rlz.shape_like('arg')
+    dtype = dt.string
+    shape = rlz.shape_like('arg')
 
 
 @public
@@ -69,8 +69,8 @@ class StrRight(Value):
     arg: Value[dt.String]
     nchars: Value[dt.Integer]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -78,8 +78,8 @@ class Repeat(Value):
     arg: Value[dt.String]
     times: Value[dt.Integer]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -89,8 +89,8 @@ class StringFind(Value):
     start: Optional[Value[dt.Integer]] = None
     end: Optional[Value[dt.Integer]] = None
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.int64
+    shape = rlz.shape_like("arg")
+    dtype = dt.int64
 
 
 @public
@@ -99,8 +99,8 @@ class Translate(Value):
     from_str: Value[dt.String]
     to_str: Value[dt.String]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -109,8 +109,8 @@ class LPad(Value):
     length: Value[dt.Integer]
     pad: Optional[Value[dt.String]] = None
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -119,8 +119,8 @@ class RPad(Value):
     length: Value[dt.Integer]
     pad: Optional[Value[dt.String]] = None
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -128,8 +128,8 @@ class FindInSet(Value):
     needle: Value[dt.String]
     values: VarTuple[Value[dt.String]]
 
-    output_shape = rlz.shape_like("needle")
-    output_dtype = dt.int64
+    shape = rlz.shape_like("needle")
+    dtype = dt.int64
 
 
 @public
@@ -137,10 +137,10 @@ class StringJoin(Value):
     sep: Value[dt.String]
     arg: VarTuple[Value[dt.String]]
 
-    output_dtype = dt.string
+    dtype = dt.string
 
     @attribute.default
-    def output_shape(self):
+    def shape(self):
         return rlz.highest_precedence_shape(self.arg)
 
 
@@ -149,8 +149,8 @@ class ArrayStringJoin(Value):
     sep: Value[dt.String]
     arg: Value[dt.Array[dt.String]]
 
-    output_dtype = dt.string
-    output_shape = rlz.shape_like("args")
+    dtype = dt.string
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -158,8 +158,8 @@ class StartsWith(Value):
     arg: Value[dt.String]
     start: Value[dt.String, ds.Scalar]
 
-    output_dtype = dt.boolean
-    output_shape = rlz.shape_like("arg")
+    dtype = dt.boolean
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -167,8 +167,8 @@ class EndsWith(Value):
     arg: Value[dt.String]
     end: Value[dt.String, ds.Scalar]
 
-    output_dtype = dt.boolean
-    output_shape = rlz.shape_like("arg")
+    dtype = dt.boolean
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -176,8 +176,8 @@ class FuzzySearch(Value):
     arg: Value[dt.String]
     pattern: Value[dt.String]
 
-    output_dtype = dt.boolean
-    output_shape = rlz.shape_like('arg')
+    dtype = dt.boolean
+    shape = rlz.shape_like('arg')
 
 
 @public
@@ -203,8 +203,8 @@ class RegexExtract(Value):
     pattern: Value[dt.String]
     index: Value[dt.Integer]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -213,8 +213,8 @@ class RegexReplace(Value):
     pattern: Value[dt.String]
     replacement: Value[dt.String]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -223,8 +223,8 @@ class StringReplace(Value):
     pattern: Value[dt.String]
     replacement: Value[dt.String]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -232,24 +232,24 @@ class StringSplit(Value):
     arg: Value[dt.String]
     delimiter: Value[dt.String]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.Array(dt.string)
+    shape = rlz.shape_like("arg")
+    dtype = dt.Array(dt.string)
 
 
 @public
 class StringConcat(Value):
     arg: VarTuple[Value[dt.String]]
 
-    output_shape = rlz.shape_like('arg')
-    output_dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
 class ExtractURLField(Value):
     arg: Value[dt.String]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -294,12 +294,12 @@ class ExtractFragment(ExtractURLField):
 
 @public
 class StringLength(StringUnary):
-    output_dtype = dt.int32
+    dtype = dt.int32
 
 
 @public
 class StringAscii(StringUnary):
-    output_dtype = dt.int32
+    dtype = dt.int32
 
 
 @public
@@ -307,8 +307,8 @@ class StringContains(Value):
     haystack: Value[dt.String]
     needle: Value[dt.String]
 
-    output_shape = rlz.shape_like("args")
-    output_dtype = dt.bool
+    shape = rlz.shape_like("args")
+    dtype = dt.bool
 
 
 @public
@@ -316,5 +316,5 @@ class Levenshtein(Value):
     left: Value[dt.String]
     right: Value[dt.String]
 
-    output_dtype = dt.int64
-    output_shape = rlz.shape_like("args")
+    dtype = dt.int64
+    shape = rlz.shape_like("args")

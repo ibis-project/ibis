@@ -53,7 +53,7 @@ def compute_projection(
         name = node.name
         assert name is not None, 'Value selection name is None'
 
-        if node.output_shape.is_scalar():
+        if node.shape.is_scalar():
             data_columns = frozenset(data.columns)
 
             if scope is None:

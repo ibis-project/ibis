@@ -230,7 +230,7 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
         name = func.__name__
 
         for argname, arg in zip(udf_node.argnames, udf_node.args):
-            dtype = arg.output_dtype
+            dtype = arg.dtype
             if not (
                 dtype.is_string()
                 or dtype.is_binary()

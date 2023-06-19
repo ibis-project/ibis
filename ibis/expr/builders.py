@@ -117,22 +117,22 @@ class WindowBuilder(Builder):
     max_lookback: Optional[Value[dt.Interval]] = None
 
     def _maybe_cast_boundary(self, boundary, dtype):
-        if boundary.output_dtype == dtype:
+        if boundary.dtype == dtype:
             return boundary
         value = ops.Cast(boundary.value, dtype)
         return boundary.copy(value=value)
 
     def _maybe_cast_boundaries(self, start, end):
         if start and end:
-            dtype = dt.higher_precedence(start.output_dtype, end.output_dtype)
+            dtype = dt.higher_precedence(start.dtype, end.dtype)
             start = self._maybe_cast_boundary(start, dtype)
             end = self._maybe_cast_boundary(end, dtype)
         return start, end
 
     def _determine_how(self, start, end):
-        if start and not start.output_dtype.is_integer():
+        if start and not start.dtype.is_integer():
             return self.range
-        elif end and not end.output_dtype.is_integer():
+        elif end and not end.dtype.is_integer():
             return self.range
         else:
             return self.rows

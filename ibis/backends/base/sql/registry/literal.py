@@ -41,7 +41,7 @@ def _number_literal_format(translator, op):
 
 
 def _interval_literal_format(translator, op):
-    return f'INTERVAL {op.value} {op.output_dtype.resolution.upper()}'
+    return f'INTERVAL {op.value} {op.dtype.resolution.upper()}'
 
 
 def _date_literal_format(translator, op):
@@ -74,7 +74,7 @@ literal_formatters = {
 def literal(translator, op):
     """Return the expression as its literal value."""
 
-    dtype = op.output_dtype
+    dtype = op.dtype
 
     if op.value is None:
         return "NULL"

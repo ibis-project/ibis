@@ -37,7 +37,7 @@ def _array(t, elements):
 
 def _literal(t, op):
     value = op.value
-    dtype = op.output_dtype
+    dtype = op.dtype
 
     if value is None:
         return sa.null()
@@ -64,7 +64,7 @@ def _arbitrary(t, op):
 def _json_get_item(t, op):
     arg = t.translate(op.arg)
     index = t.translate(op.index)
-    fmt = "%d" if op.index.output_dtype.is_integer() else '"%s"'
+    fmt = "%d" if op.index.dtype.is_integer() else '"%s"'
     return sa.func.json_extract(arg, sa.func.format(f"$[{fmt}]", index))
 
 
@@ -85,7 +85,7 @@ def _array_column(t, op):
         str(t.translate(arg).compile(compile_kwargs={"literal_binds": True}))
         for arg in op.cols
     )
-    return sa.literal_column(f"ARRAY[{args}]", type_=t.get_sqla_type(op.output_dtype))
+    return sa.literal_column(f"ARRAY[{args}]", type_=t.get_sqla_type(op.dtype))
 
 
 _truncate_precisions = {
@@ -131,7 +131,7 @@ def _timestamp_from_unix(t, op):
         res = sa.func.from_unixtime_nanos(arg - arg % 1_000_000_000)
     else:
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported")
-    return sa.cast(res, t.get_sqla_type(op.output_dtype))
+    return sa.cast(res, t.get_sqla_type(op.dtype))
 
 
 if_ = getattr(sa.func, "if")
@@ -181,7 +181,7 @@ def _round(t, op):
 def _unnest(t, op):
     arg = op.arg
     name = arg.name
-    row_type = op.arg.output_dtype.value_type
+    row_type = op.arg.dtype.value_type
     names = getattr(row_type, "names", (name,))
     rd = sa.func.unnest(t.translate(arg)).table_valued(*names).render_derived()
     # wrap in a row column so that we can return a single column from this rule
@@ -196,13 +196,13 @@ def _where(t, op):
         t.translate(op.bool_expr),
         t.translate(op.true_expr),
         t.translate(op.false_null_expr),
-        type_=t.get_sqla_type(op.output_dtype),
+        type_=t.get_sqla_type(op.dtype),
     )
 
 
 def _cot(t, op):
     arg = t.translate(op.arg)
-    return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.output_dtype))
+    return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.dtype))
 
 
 @compiles(array_map, "trino")
@@ -268,7 +268,7 @@ def _zip(t, op):
 
     all_n, chunk = reduce(combine_zipped, chunks)
 
-    dtype = op.output_dtype
+    dtype = op.dtype
 
     assert all_n == len(dtype.value_type)
 
@@ -407,7 +407,7 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.StructField: lambda t, op: t.translate(op.arg).op(".")(sa.text(op.field)),
         ops.StructColumn: lambda t, op: sa.cast(
-            sa.func.row(*map(t.translate, op.values)), t.get_sqla_type(op.output_dtype)
+            sa.func.row(*map(t.translate, op.values)), t.get_sqla_type(op.dtype)
         ),
         ops.Literal: _literal,
         ops.IfNull: fixed_arity(sa.func.coalesce, 2),

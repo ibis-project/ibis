@@ -248,7 +248,7 @@ class ExprTranslator:
 
     def _trans_param(self, op):
         raw_value = self.context.params[op]
-        dtype = op.output_dtype
+        dtype = op.dtype
         if dtype.is_struct():
             literal = ibis.struct(raw_value, type=dtype)
         elif dtype.is_map():
@@ -335,7 +335,7 @@ def _any_expand(op):
 
 @rewrites(ops.NotAny)
 def _notany_expand(op):
-    zero = ops.Literal(0, dtype=op.arg.output_dtype)
+    zero = ops.Literal(0, dtype=op.arg.dtype)
     return ops.Min(ops.Equals(op.arg, zero), where=op.where)
 
 
@@ -346,14 +346,14 @@ def _all_expand(op):
 
 @rewrites(ops.NotAll)
 def _notall_expand(op):
-    zero = ops.Literal(0, dtype=op.arg.output_dtype)
+    zero = ops.Literal(0, dtype=op.arg.dtype)
     return ops.Max(ops.Equals(op.arg, zero), where=op.where)
 
 
 @rewrites(ops.Cast)
 def _rewrite_cast(op):
     # TODO(kszucs): avoid the expression roundtrip
-    if op.to.is_interval() and op.arg.output_dtype.is_integer():
+    if op.to.is_interval() and op.arg.dtype.is_integer():
         return op.arg.to_expr().to_interval(unit=op.to.unit).op()
     return op
 
@@ -365,12 +365,12 @@ def _rewrite_string_contains(op):
 
 @rewrites(ops.Clip)
 def _rewrite_clip(op):
-    arg = ops.Cast(op.arg, op.output_dtype)
+    arg = ops.Cast(op.arg, op.dtype)
 
     if (upper := op.upper) is not None:
-        arg = ops.Least((arg, ops.Cast(upper, op.output_dtype)))
+        arg = ops.Least((arg, ops.Cast(upper, op.dtype)))
 
     if (lower := op.lower) is not None:
-        arg = ops.Greatest((arg, ops.Cast(lower, op.output_dtype)))
+        arg = ops.Greatest((arg, ops.Cast(lower, op.dtype)))
 
     return arg

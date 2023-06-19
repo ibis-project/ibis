@@ -13,7 +13,7 @@ from ibis.expr.operations.core import Column, Scalar, Value
 
 @public
 class Analytic(Value):
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     @property
     def __window_op__(self):
@@ -26,7 +26,7 @@ class ShiftBase(Analytic):
     offset: Optional[Value[dt.Integer | dt.Interval]] = None
     default: Optional[Value] = None
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -41,7 +41,7 @@ class Lead(ShiftBase):
 
 @public
 class RankBase(Analytic):
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
@@ -90,8 +90,8 @@ class CumulativeSum(Cumulative):
     arg: Column[dt.Numeric]
 
     @attribute.default
-    def output_dtype(self):
-        return dt.higher_precedence(self.arg.output_dtype.largest, dt.int64)
+    def dtype(self):
+        return dt.higher_precedence(self.arg.dtype.largest, dt.int64)
 
 
 @public
@@ -104,15 +104,15 @@ class CumulativeMean(Cumulative):
     arg: Column[dt.Numeric]
 
     @attribute.default
-    def output_dtype(self):
-        return dt.higher_precedence(self.arg.output_dtype.largest, dt.float64)
+    def dtype(self):
+        return dt.higher_precedence(self.arg.dtype.largest, dt.float64)
 
 
 @public
 class CumulativeMax(Cumulative):
     arg: Column[dt.Any]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -124,34 +124,34 @@ class CumulativeMin(Cumulative):
 
     arg: Column[dt.Any]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class CumulativeAny(Cumulative):
     arg: Column[dt.Boolean]
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class CumulativeAll(Cumulative):
     arg: Column[dt.Boolean]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class PercentRank(Analytic):
     arg: Column[dt.Any]
 
-    output_dtype = dt.double
+    dtype = dt.double
 
 
 @public
 class CumeDist(Analytic):
     arg: Column[dt.Any]
 
-    output_dtype = dt.double
+    dtype = dt.double
 
 
 @public
@@ -159,7 +159,7 @@ class NTile(Analytic):
     arg: Column[dt.Any]
     buckets: Scalar[dt.Integer]
 
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
@@ -168,7 +168,7 @@ class FirstValue(Analytic):
 
     arg: Column[dt.Any]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -177,7 +177,7 @@ class LastValue(Analytic):
 
     arg: Column[dt.Any]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -187,7 +187,7 @@ class NthValue(Analytic):
     arg: Column[dt.Any]
     nth: Value[dt.Integer]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 public(AnalyticOp=Analytic, CumulativeOp=Cumulative)

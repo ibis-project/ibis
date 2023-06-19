@@ -231,7 +231,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
     def __sub__(self, other: ops.Value[dt.Interval | dt.Time, ds.Any]):
         """Subtract a time or an interval from a time expression."""
 
-        if other.output_dtype.is_time():
+        if other.dtype.is_time():
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -255,7 +255,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
     def __rsub__(self, other: ops.Value[dt.Interval | dt.Time, ds.Any]):
         """Subtract a time or an interval from a time expression."""
 
-        if other.output_dtype.is_time():
+        if other.dtype.is_time():
             op = ops.TimeDiff
         else:
             op = ops.TimeSub  # let the operation validate
@@ -316,7 +316,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
     def __sub__(self, other: ops.Value[dt.Date | dt.Interval, ds.Any]):
         """Subtract a date or an interval from a date."""
 
-        if other.output_dtype.is_date():
+        if other.dtype.is_date():
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
@@ -340,7 +340,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
     def __rsub__(self, other: ops.Value[dt.Date | dt.Interval, ds.Any]):
         """Subtract a date or an interval from a date."""
 
-        if other.output_dtype.is_date():
+        if other.dtype.is_date():
             op = ops.DateDiff
         else:
             op = ops.DateSub  # let the operation validate
@@ -414,7 +414,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
     def __sub__(self, other: ops.Value[dt.Timestamp | dt.Interval, ds.Any]):
         """Subtract a timestamp or an interval from a timestamp."""
 
-        if other.output_dtype.is_timestamp():
+        if other.dtype.is_timestamp():
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate
@@ -438,7 +438,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
     def __rsub__(self, other: ops.Value[dt.Timestamp | dt.Interval, ds.Any]):
         """Subtract a timestamp or an interval from a timestamp."""
 
-        if other.output_dtype.is_timestamp():
+        if other.dtype.is_timestamp():
             op = ops.TimestampDiff
         else:
             op = ops.TimestampSub  # let the operation validate
@@ -465,7 +465,7 @@ class IntervalValue(Value):
         # TODO(kszucs): should use a separate operation for unit conversion
         # which we can rewrite/simplify to integer multiplication/division
         op = self.op()
-        current_unit = op.output_dtype.unit
+        current_unit = op.dtype.unit
         target_unit = IntervalUnit.from_string(target_unit)
 
         if current_unit == target_unit:

@@ -15,7 +15,7 @@ from ibis.common.graph import Graph
 
 def get_type(node):
     with contextlib.suppress(AttributeError, NotImplementedError):
-        return escape(str(node.output_dtype))
+        return escape(str(node.dtype))
 
     try:
         schema = node.schema
