@@ -22,10 +22,10 @@ class Bucket(Value):
     include_under: bool = False
     include_over: bool = False
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         return dt.infer(self.nbuckets)
 
     def __init__(self, buckets, include_under, include_over, **kwargs):

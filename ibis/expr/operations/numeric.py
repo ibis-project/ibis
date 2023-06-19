@@ -24,19 +24,19 @@ class NumericBinary(Binary):
 
 @public
 class Add(NumericBinary):
-    output_dtype = rlz.numeric_like("args", operator.add)
+    dtype = rlz.numeric_like("args", operator.add)
 
 
 @public
 class Multiply(NumericBinary):
-    output_dtype = rlz.numeric_like("args", operator.mul)
+    dtype = rlz.numeric_like("args", operator.mul)
 
 
 @public
 class Power(NumericBinary):
     @property
-    def output_dtype(self):
-        dtypes = (arg.output_dtype for arg in self.args)
+    def dtype(self):
+        dtypes = (arg.dtype for arg in self.args)
         if util.all_of(dtypes, dt.Integer):
             return dt.float64
         else:
@@ -45,29 +45,29 @@ class Power(NumericBinary):
 
 @public
 class Subtract(NumericBinary):
-    output_dtype = rlz.numeric_like("args", operator.sub)
+    dtype = rlz.numeric_like("args", operator.sub)
 
 
 @public
 class Divide(NumericBinary):
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class FloorDivide(Divide):
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
 class Modulus(NumericBinary):
-    output_dtype = rlz.numeric_like("args", operator.mod)
+    dtype = rlz.numeric_like("args", operator.mod)
 
 
 @public
 class Negate(Unary):
     arg: Value[dt.Numeric | dt.Interval]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -91,21 +91,21 @@ class NullIfZero(Unary):
 
     arg: SoftNumeric
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class IsNan(Unary):
     arg: Value[dt.Floating]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class IsInf(Unary):
     arg: Value[dt.Floating]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
@@ -114,7 +114,7 @@ class Abs(Unary):
 
     arg: SoftNumeric
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -131,9 +131,9 @@ class Ceil(Unary):
     arg: SoftNumeric
 
     @property
-    def output_dtype(self):
-        if self.arg.output_dtype.is_decimal():
-            return self.arg.output_dtype
+    def dtype(self):
+        if self.arg.dtype.is_decimal():
+            return self.arg.dtype
         else:
             return dt.int64
 
@@ -152,9 +152,9 @@ class Floor(Unary):
     arg: SoftNumeric
 
     @property
-    def output_dtype(self):
-        if self.arg.output_dtype.is_decimal():
-            return self.arg.output_dtype
+    def dtype(self):
+        if self.arg.dtype.is_decimal():
+            return self.arg.dtype
         else:
             return dt.int64
 
@@ -165,12 +165,12 @@ class Round(Value):
     # TODO(kszucs): the default should be 0 instead of being None
     digits: Optional[Integer] = None
 
-    output_shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("arg")
 
     @property
-    def output_dtype(self):
-        if self.arg.output_dtype.is_decimal():
-            return self.arg.output_dtype
+    def dtype(self):
+        if self.arg.dtype.is_decimal():
+            return self.arg.dtype
         elif self.digits is None:
             return dt.int64
         else:
@@ -183,8 +183,8 @@ class Clip(Value):
     lower: Optional[StrictNumeric] = None
     upper: Optional[StrictNumeric] = None
 
-    output_dtype = rlz.dtype_like("arg")
-    output_shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -194,8 +194,8 @@ class BaseConvert(Value):
     from_base: Integer
     to_base: Integer
 
-    output_dtype = dt.string
-    output_shape = rlz.shape_like("args")
+    dtype = dt.string
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -203,15 +203,15 @@ class MathUnary(Unary):
     arg: SoftNumeric
 
     @attribute.default
-    def output_dtype(self):
-        return dt.higher_precedence(self.arg.output_dtype, dt.double)
+    def dtype(self):
+        return dt.higher_precedence(self.arg.dtype, dt.double)
 
 
 @public
 class ExpandingMathUnary(MathUnary):
     @attribute.default
-    def output_dtype(self):
-        return dt.higher_precedence(self.arg.output_dtype.largest, dt.double)
+    def dtype(self):
+        return dt.higher_precedence(self.arg.dtype.largest, dt.double)
 
 
 @public
@@ -223,7 +223,7 @@ class Exp(ExpandingMathUnary):
 class Sign(Unary):
     arg: SoftNumeric
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -281,7 +281,7 @@ class TrigonometricBinary(Binary):
     left: SoftNumeric
     right: SoftNumeric
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
@@ -328,7 +328,7 @@ class Tan(TrigonometricUnary):
 class BitwiseNot(Unary):
     arg: Integer
 
-    output_dtype = rlz.numeric_like("args", operator.invert)
+    dtype = rlz.numeric_like("args", operator.invert)
 
 
 @public
@@ -339,26 +339,26 @@ class BitwiseBinary(Binary):
 
 @public
 class BitwiseAnd(BitwiseBinary):
-    output_dtype = rlz.numeric_like("args", operator.and_)
+    dtype = rlz.numeric_like("args", operator.and_)
 
 
 @public
 class BitwiseOr(BitwiseBinary):
-    output_dtype = rlz.numeric_like("args", operator.or_)
+    dtype = rlz.numeric_like("args", operator.or_)
 
 
 @public
 class BitwiseXor(BitwiseBinary):
-    output_dtype = rlz.numeric_like("args", operator.xor)
+    dtype = rlz.numeric_like("args", operator.xor)
 
 
 @public
 class BitwiseLeftShift(BitwiseBinary):
-    output_shape = rlz.shape_like("args")
-    output_dtype = dt.int64
+    shape = rlz.shape_like("args")
+    dtype = dt.int64
 
 
 @public
 class BitwiseRightShift(BitwiseBinary):
-    output_shape = rlz.shape_like("args")
-    output_dtype = dt.int64
+    shape = rlz.shape_like("args")
+    dtype = dt.int64

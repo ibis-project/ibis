@@ -45,16 +45,14 @@ def cumulative_to_window(translator, func, frame):
 def interval_boundary_to_integer(boundary):
     if boundary is None:
         return None
-    elif boundary.output_dtype.is_numeric():
+    elif boundary.dtype.is_numeric():
         return boundary
 
     value = boundary.value
     try:
-        multiplier = _map_interval_to_microseconds[value.output_dtype.unit.short]
+        multiplier = _map_interval_to_microseconds[value.dtype.unit.short]
     except KeyError:
-        raise com.IbisInputError(
-            f"Unsupported interval unit: {value.output_dtype.unit}"
-        )
+        raise com.IbisInputError(f"Unsupported interval unit: {value.dtype.unit}")
 
     if isinstance(value, ops.Literal):
         value = ops.Literal(value.value * multiplier, dt.int64)
@@ -143,7 +141,7 @@ def window(translator, op):
 
     # Time ranges need to be converted to microseconds.
     if isinstance(frame, ops.RangeWindowFrame):
-        if any(c.output_dtype.is_temporal() for c in frame.order_by):
+        if any(c.dtype.is_temporal() for c in frame.order_by):
             frame = time_range_to_range_window(frame)
     elif isinstance(frame, ops.RowsWindowFrame):
         if frame.max_lookback is not None:

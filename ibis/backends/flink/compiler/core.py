@@ -64,7 +64,7 @@ def translate_op(op: ops.TableNode) -> str:
 @translate_op.register(ops.Literal)
 def _literal(op: ops.Literal) -> str:
     value = op.value
-    dtype = op.output_dtype
+    dtype = op.dtype
 
     if dtype.is_boolean():
         # TODO(chloeh13q): Flink supports a third boolean called "UNKNOWN"

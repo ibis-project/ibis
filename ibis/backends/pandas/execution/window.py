@@ -162,7 +162,7 @@ def get_aggcontext_window(
     # expand or roll.
     #
     # otherwise we're transforming
-    output_type = operand.output_dtype
+    output_type = operand.dtype
 
     if not group_by and not order_by:
         aggcontext = agg_ctx.Summarize(parent=parent, output_type=output_type)
@@ -269,7 +269,7 @@ def execute_window_op(
     func, frame = op.func, op.frame
 
     if frame.how == "range" and any(
-        not col.output_dtype.is_temporal() for col in frame.order_by
+        not col.dtype.is_temporal() for col in frame.order_by
     ):
         raise NotImplementedError(
             "The pandas backend only implements range windows with temporal "

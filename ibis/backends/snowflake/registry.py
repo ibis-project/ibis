@@ -30,7 +30,7 @@ operation_registry = {
 
 def _literal(t, op):
     value = op.value
-    dtype = op.output_dtype
+    dtype = op.dtype
 
     if value is None:
         return sa.null()
@@ -75,9 +75,7 @@ def _table_column(t, op):
     sa_table = get_sqla_table(ctx, table)
     out_expr = get_col(sa_table, op)
 
-    if (dtype := op.output_dtype).is_timestamp() and (
-        timezone := dtype.timezone
-    ) is not None:
+    if (dtype := op.dtype).is_timestamp() and (timezone := dtype.timezone) is not None:
         out_expr = sa.func.convert_timezone(timezone, out_expr).label(op.name)
 
     # If the column does not originate from the table set in the current SELECT
@@ -198,7 +196,7 @@ def _unnest(t, op):
     )
     return sa.cast(
         sa.func.coalesce(sa.func.try_parse_json(col), sa.func.to_variant(col)),
-        type_=t.get_sqla_type(op.output_dtype),
+        type_=t.get_sqla_type(op.dtype),
     )
 
 
@@ -221,7 +219,7 @@ def _array_zip(t, op):
         sa.func.ibis_udfs.public.array_zip(
             sa.func.array_construct(*map(t.translate, op.arg))
         ),
-        t.get_sqla_type(op.output_dtype),
+        t.get_sqla_type(op.dtype),
     )
 
 
@@ -237,7 +235,7 @@ def _map_get(t, op):
     arg = op.arg
     key = op.key
     default = op.default
-    dtype = op.output_dtype
+    dtype = op.dtype
     sqla_type = t.get_sqla_type(dtype)
     expr = sa.func.coalesce(
         sa.func.get(t.translate(arg), t.translate(key)),
@@ -429,7 +427,7 @@ operation_registry.update(
             t.translate(op.arg), _TIMESTAMP_UNITS_TO_SCALE[op.unit.short]
         ),
         ops.StructField: lambda t, op: sa.cast(
-            sa.func.get(t.translate(op.arg), op.field), t.get_sqla_type(op.output_dtype)
+            sa.func.get(t.translate(op.arg), op.field), t.get_sqla_type(op.dtype)
         ),
         ops.NthValue: _nth_value,
         ops.Arbitrary: _arbitrary,
@@ -445,8 +443,8 @@ operation_registry.update(
         ops.Unnest: _unnest,
         ops.ArgMin: reduction(sa.func.min_by),
         ops.ArgMax: reduction(sa.func.max_by),
-        ops.ToJSONArray: lambda t, op: t.translate(ops.Cast(op.arg, op.output_dtype)),
-        ops.ToJSONMap: lambda t, op: t.translate(ops.Cast(op.arg, op.output_dtype)),
+        ops.ToJSONArray: lambda t, op: t.translate(ops.Cast(op.arg, op.dtype)),
+        ops.ToJSONMap: lambda t, op: t.translate(ops.Cast(op.arg, op.dtype)),
         ops.StartsWith: fixed_arity(sa.func.startswith, 2),
         ops.EndsWith: fixed_arity(sa.func.endswith, 2),
         ops.GroupConcat: _group_concat,

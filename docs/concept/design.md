@@ -82,9 +82,9 @@ class Log(Value):
    # Optional argument, defaults to None
    base = rlz.optional(rlz.double)
    # Output expression's datatype will correspond to arg's datatype
-   output_dtype = rlz.dtype_like('arg')
+   dtype = rlz.dtype_like('arg')
    # Output expression will be scalar if arg is scalar, column otherwise
-   output_shape = rlz.shape_like('arg')
+   shape = rlz.shape_like('arg')
 ```
 
 This class describes an operation called `Log` that takes one required

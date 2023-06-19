@@ -16,7 +16,7 @@ from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 @public
 class Reduction(Value):
-    output_shape = ds.scalar
+    shape = ds.scalar
 
     @property
     def __window_op__(self):
@@ -31,14 +31,14 @@ class Filterable(Value):
 class Count(Filterable, Reduction):
     arg: Column[dt.Any]
 
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
 class CountStar(Filterable, Reduction):
     arg: Relation
 
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
@@ -46,7 +46,7 @@ class Arbitrary(Filterable, Reduction):
     arg: Column[dt.Any]
     how: Literal["first", "last", "heavy"]
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -55,7 +55,7 @@ class First(Filterable, Reduction):
 
     arg: Column[dt.Any]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
     @property
     def __window_op__(self):
@@ -74,7 +74,7 @@ class Last(Filterable, Reduction):
 
     arg: Column[dt.Any]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
     @property
     def __window_op__(self):
@@ -103,7 +103,7 @@ class BitAnd(Filterable, Reduction):
 
     arg: Column[dt.Integer]
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -121,7 +121,7 @@ class BitOr(Filterable, Reduction):
 
     arg: Column[dt.Integer]
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -139,7 +139,7 @@ class BitXor(Filterable, Reduction):
 
     arg: Column[dt.Integer]
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -147,11 +147,11 @@ class Sum(Filterable, Reduction):
     arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute.default
-    def output_dtype(self):
-        if self.arg.output_dtype.is_boolean():
+    def dtype(self):
+        if self.arg.dtype.is_boolean():
             return dt.int64
         else:
-            return self.arg.output_dtype.largest
+            return self.arg.dtype.largest
 
 
 @public
@@ -159,8 +159,8 @@ class Mean(Filterable, Reduction):
     arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute.default
-    def output_dtype(self):
-        if (dtype := self.arg.output_dtype).is_boolean():
+    def dtype(self):
+        if (dtype := self.arg.dtype).is_boolean():
             return dt.float64
         else:
             return dt.higher_precedence(dtype, dt.float64)
@@ -171,8 +171,8 @@ class Median(Filterable, Reduction):
     arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute.default
-    def output_dtype(self):
-        return dt.higher_precedence(self.arg.output_dtype, dt.float64)
+    def dtype(self):
+        return dt.higher_precedence(self.arg.dtype, dt.float64)
 
 
 @public
@@ -183,7 +183,7 @@ class Quantile(Filterable, Reduction):
         Literal['linear', 'lower', 'higher', 'midpoint', 'nearest']
     ] = None
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
@@ -194,7 +194,7 @@ class MultiQuantile(Filterable, Reduction):
         Literal['linear', 'lower', 'higher', 'midpoint', 'nearest']
     ] = None
 
-    output_dtype = dt.Array(dt.float64)
+    dtype = dt.Array(dt.float64)
 
 
 @public
@@ -203,8 +203,8 @@ class VarianceBase(Filterable, Reduction):
     how: Literal["sample", "pop"]
 
     @attribute.default
-    def output_dtype(self):
-        if (dtype := self.arg.output_dtype).is_decimal():
+    def dtype(self):
+        if (dtype := self.arg.dtype).is_decimal():
             return dtype.largest
         else:
             return dt.float64
@@ -228,7 +228,7 @@ class Correlation(Filterable, Reduction):
     right: Column[dt.Numeric | dt.Boolean]
     how: Literal['sample', 'pop'] = 'sample'
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
@@ -239,28 +239,28 @@ class Covariance(Filterable, Reduction):
     right: Column[dt.Numeric | dt.Boolean]
     how: Literal['sample', 'pop']
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class Mode(Filterable, Reduction):
     arg: Column
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
 class Max(Filterable, Reduction):
     arg: Column
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
 class Min(Filterable, Reduction):
     arg: Column
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -268,7 +268,7 @@ class ArgMax(Filterable, Reduction):
     arg: Column
     key: Column
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -276,7 +276,7 @@ class ArgMin(Filterable, Reduction):
     arg: Column
     key: Column
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -289,7 +289,7 @@ class ApproxCountDistinct(Filterable, Reduction):
     arg: Column
 
     # Impala 2.0 and higher returns a DOUBLE
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
@@ -298,7 +298,7 @@ class ApproxMedian(Filterable, Reduction):
 
     arg: Column
 
-    output_dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
@@ -306,14 +306,14 @@ class GroupConcat(Filterable, Reduction):
     arg: Column
     sep: Value[dt.String]
 
-    output_dtype = dt.string
+    dtype = dt.string
 
 
 @public
 class CountDistinct(Filterable, Reduction):
     arg: Column
 
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
@@ -321,15 +321,15 @@ class ArrayCollect(Filterable, Reduction):
     arg: Column
 
     @attribute.default
-    def output_dtype(self):
-        return dt.Array(self.arg.output_dtype)
+    def dtype(self):
+        return dt.Array(self.arg.dtype)
 
 
 @public
 class All(Filterable, Reduction, _Negatable):
     arg: Column[dt.Boolean]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
     def negate(self):
         return NotAll(self.arg)
@@ -339,7 +339,7 @@ class All(Filterable, Reduction, _Negatable):
 class NotAll(Filterable, Reduction, _Negatable):
     arg: Column[dt.Boolean]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
     def negate(self) -> Any:
         return All(*self.args)
@@ -349,7 +349,7 @@ class NotAll(Filterable, Reduction, _Negatable):
 class Any(Filterable, Reduction, _Negatable):
     arg: Column[dt.Boolean]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
     def negate(self) -> NotAny:
         return NotAny(*self.args)
@@ -359,7 +359,7 @@ class Any(Filterable, Reduction, _Negatable):
 class NotAny(Filterable, Reduction, _Negatable):
     arg: Column[dt.Boolean]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
     def negate(self) -> Any:
         return Any(*self.args)

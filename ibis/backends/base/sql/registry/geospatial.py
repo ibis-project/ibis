@@ -126,7 +126,7 @@ def translate_multipolygon(value: list) -> str:
 
 def translate_literal(op: ops.Literal, inline_metadata: bool = False) -> str:
     value = op.value
-    dtype = op.output_dtype
+    dtype = op.dtype
 
     if isinstance(value, dt._WellKnownText):
         result = value.text

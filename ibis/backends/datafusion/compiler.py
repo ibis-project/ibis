@@ -370,7 +370,7 @@ def count_star(_, **__):
 @translate.register(ops.Sum)
 def sum(op, **kw):
     arg = translate(op.arg, **kw)
-    if op.arg.output_dtype.is_boolean():
+    if op.arg.dtype.is_boolean():
         arg = arg.cast(pa.int64())
     return df.functions.sum(arg)
 
@@ -519,8 +519,8 @@ def scalar_udf(op, **kw):
         )
     udf = df.udf(
         op.__func__,
-        input_types=[PyArrowType.from_ibis(arg.output_dtype) for arg in op.args],
-        return_type=PyArrowType.from_ibis(op.output_dtype),
+        input_types=[PyArrowType.from_ibis(arg.dtype) for arg in op.args],
+        return_type=PyArrowType.from_ibis(op.dtype),
         volatility="volatile",
     )
     args = map(partial(translate, **kw), op.args)

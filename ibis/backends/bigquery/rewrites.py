@@ -10,14 +10,14 @@ from ibis.backends.base.sql import compiler as sql_compiler
 
 
 def bq_sum(op):
-    if isinstance((arg := op.arg).output_dtype, dt.Boolean):
+    if isinstance((arg := op.arg).dtype, dt.Boolean):
         return ops.Sum(ops.Cast(arg, dt.int64), where=op.where)
     else:
         return op
 
 
 def bq_mean(op):
-    if isinstance((arg := op.arg).output_dtype, dt.Boolean):
+    if isinstance((arg := op.arg).dtype, dt.Boolean):
         return ops.Mean(ops.Cast(arg, dt.int64), where=op.where)
     else:
         return op

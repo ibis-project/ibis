@@ -66,7 +66,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
         if isinstance(op.options, tuple):
             values = [translator.translate(x) for x in op.options]
             right = helpers.parenthesize(', '.join(values))
-        elif op.options.output_shape.is_columnar():
+        elif op.options.shape.is_columnar():
             right = translator.translate(op.options)
             if not any(
                 ctx.is_foreign_expr(leaf)

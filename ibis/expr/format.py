@@ -463,7 +463,7 @@ def _fmt_selection_column_value_expr(
     # the additional 1 is for the colon
     aligned_name = f"{name:<{maxlen + 1}}"
     value = fmt_value(node, aliases=aliases)
-    dtype = type_info(node.output_dtype)
+    dtype = type_info(node.dtype)
     return f"{aligned_name} {value}{dtype}"
 
 
@@ -560,7 +560,7 @@ def _fmt_value_binary_op(op: ops.Binary, *, aliases: Aliases) -> str:
 
 @fmt_value.register
 def _fmt_value_negate(op: ops.Negate, *, aliases: Aliases) -> str:
-    op_name = "Not" if op.output_dtype.is_boolean() else "Negate"
+    op_name = "Not" if op.dtype.is_boolean() else "Negate"
     operand = fmt_value(op.arg, aliases=aliases)
     return f"{op_name}({operand})"
 
