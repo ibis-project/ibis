@@ -33,7 +33,7 @@ class InputType(enum.Enum):
 
 @public
 class ScalarUDF(ops.Value):
-    output_shape = rlz.shape_like("args")
+    shape = rlz.shape_like("args")
 
 
 def _wrap(
@@ -132,7 +132,7 @@ class ScalarUDFBuilder:
             else:
                 fields[name] = Argument.default(validator=arg, default=default)
 
-        fields["output_dtype"] = dt.dtype(return_annotation)
+        fields["dtype"] = dt.dtype(return_annotation)
 
         fields["__input_type__"] = input_type
         # can't be just `fn` otherwise `fn` is assumed to be a method

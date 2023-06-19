@@ -12,21 +12,21 @@ class JSONGetItem(Value):
     arg: Value[dt.JSON]
     index: Value[dt.String | dt.Integer]
 
-    output_dtype = dt.json
-    output_shape = rlz.shape_like("args")
+    dtype = dt.json
+    shape = rlz.shape_like("args")
 
 
 @public
 class ToJSONArray(Value):
     arg: Value[dt.JSON]
 
-    output_dtype = dt.Array(dt.json)
-    output_shape = rlz.shape_like("arg")
+    dtype = dt.Array(dt.json)
+    shape = rlz.shape_like("arg")
 
 
 @public
 class ToJSONMap(Value):
     arg: Value[dt.JSON]
 
-    output_dtype = dt.Map(dt.string, dt.json)
-    output_shape = rlz.shape_like("arg")
+    dtype = dt.Map(dt.string, dt.json)
+    shape = rlz.shape_like("arg")

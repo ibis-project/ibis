@@ -103,7 +103,7 @@ class AlchemyExprTranslator(ExprTranslator):
         if (
             self._bool_aggs_need_cast_to_int32
             and isinstance(op, (ops.Sum, ops.Mean, ops.Min, ops.Max))
-            and (dtype := arg.output_dtype).is_boolean()
+            and (dtype := arg.dtype).is_boolean()
         ):
             return ops.Cast(arg, dt.Int32(nullable=dtype.nullable))
         return arg
@@ -134,7 +134,7 @@ rewrites = AlchemyExprTranslator.rewrites
 @rewrites(ops.NullIfZero)
 def _nullifzero(op):
     arg = op.arg
-    condition = ops.Equals(arg, ops.Literal(0, dtype=op.arg.output_dtype))
+    condition = ops.Equals(arg, ops.Literal(0, dtype=op.arg.dtype))
     return ops.Where(condition, ibis.NA, arg)
 
 
@@ -143,7 +143,7 @@ def _nullifzero(op):
 # on that things fail if it's not defined here (and in the registry
 # `operator.truediv` is used.
 def _true_divide(t, op):
-    if all(arg.output_dtype.is_integer() for arg in op.args):
+    if all(arg.dtype.is_integer() for arg in op.args):
         # TODO(kszucs): this should be done in the rewrite phase
         right, left = op.right.to_expr(), op.left.to_expr()
         new_expr = left.div(right.cast(dt.double))

@@ -26,7 +26,7 @@ class TableColumn(Value, Named):
     table: Relation
     name: Union[str, int]
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     def __init__(self, table, name):
         if isinstance(name, int):
@@ -42,7 +42,7 @@ class TableColumn(Value, Named):
         super().__init__(table=table, name=name)
 
     @property
-    def output_dtype(self):
+    def dtype(self):
         return self.table.schema[self.name]
 
 
@@ -53,8 +53,8 @@ class RowID(Value, Named):
     name = "rowid"
     table: Relation
 
-    output_shape = ds.columnar
-    output_dtype = dt.int64
+    shape = ds.columnar
+    dtype = dt.int64
 
 
 @public
@@ -63,10 +63,10 @@ class TableArrayView(Value, Named):
 
     table: Relation
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     @property
-    def output_dtype(self):
+    def dtype(self):
         return self.table.schema[self.name]
 
     @property
@@ -81,14 +81,14 @@ class Cast(Value):
     arg: Value
     to: dt.DataType
 
-    output_shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("arg")
 
     @property
     def name(self):
         return f"{self.__class__.__name__}({self.arg.name}, {self.to})"
 
     @property
-    def output_dtype(self):
+    def dtype(self):
         return self.to
 
 
@@ -99,16 +99,16 @@ class TryCast(Value):
     arg: Value
     to: dt.DataType
 
-    output_shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("arg")
 
     @property
-    def output_dtype(self):
+    def dtype(self):
         return self.to
 
 
 @public
 class TypeOf(Unary):
-    output_dtype = dt.string
+    dtype = dt.string
 
 
 @public
@@ -121,7 +121,7 @@ class IsNull(Unary):
         Value expression indicating whether values are null
     """
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
@@ -134,12 +134,12 @@ class NotNull(Unary):
         Value expression indicating whether values are not null
     """
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class ZeroIfNull(Unary):
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -149,8 +149,8 @@ class IfNull(Value):
     arg: Value
     ifnull_expr: Value
 
-    output_dtype = rlz.dtype_like("args")
-    output_shape = rlz.shape_like("args")
+    dtype = rlz.dtype_like("args")
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -160,43 +160,43 @@ class NullIf(Value):
     arg: Value
     null_if_expr: Value
 
-    output_dtype = rlz.dtype_like("args")
-    output_shape = rlz.shape_like("args")
+    dtype = rlz.dtype_like("args")
+    shape = rlz.shape_like("args")
 
 
 @public
 class Coalesce(Value):
     arg: VarTuple[Value]
 
-    output_shape = rlz.shape_like('arg')
-    output_dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
 class Greatest(Value):
     arg: VarTuple[Value]
 
-    output_shape = rlz.shape_like('arg')
-    output_dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 @public
 class Least(Value):
     arg: VarTuple[Value]
 
-    output_shape = rlz.shape_like('arg')
-    output_dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like('arg')
+    dtype = rlz.dtype_like('arg')
 
 
 T = TypeVar("T", bound=dt.DataType, covariant=True)
 
 
 @public
-class Literal(Scalar):
+class Literal(Scalar[T]):
     value: Any
-    dtype: dt.DataType
+    dtype: T
 
-    output_shape = ds.scalar
+    shape = ds.scalar
 
     def __init__(self, value, dtype):
         # normalize ensures that the value is a valid value for the given dtype
@@ -207,10 +207,6 @@ class Literal(Scalar):
     def name(self):
         return repr(self.value)
 
-    @property
-    def output_dtype(self) -> T:
-        return self.dtype
-
 
 @public
 class ScalarParameter(Scalar, Named):
@@ -219,7 +215,7 @@ class ScalarParameter(Scalar, Named):
     dtype: dt.DataType
     counter: Optional[int] = None
 
-    output_shape = ds.scalar
+    shape = ds.scalar
 
     def __init__(self, dtype, counter):
         if counter is None:
@@ -230,42 +226,38 @@ class ScalarParameter(Scalar, Named):
     def name(self):
         return f'param_{self.counter:d}'
 
-    @property
-    def output_dtype(self):
-        return self.dtype
-
 
 @public
 class Constant(Scalar, Singleton):
-    output_shape = ds.scalar
+    shape = ds.scalar
 
 
 @public
 class TimestampNow(Constant):
-    output_dtype = dt.timestamp
+    dtype = dt.timestamp
 
 
 @public
 class RandomScalar(Constant):
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class E(Constant):
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class Pi(Constant):
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class Hash(Value):
     arg: Value
 
-    output_dtype = dt.int64
-    output_shape = rlz.shape_like("arg")
+    dtype = dt.int64
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -287,8 +279,8 @@ class HashBytes(Value):
         "sipHash128",
     ]
 
-    output_dtype = dt.binary
-    output_shape = rlz.shape_like("arg")
+    dtype = dt.binary
+    shape = rlz.shape_like("arg")
 
 
 # TODO(kszucs): we should merge the case operations by making the
@@ -301,14 +293,14 @@ class SimpleCase(Value):
     results: VarTuple[Value]
     default: Value
 
-    output_shape = rlz.shape_like("base")
+    shape = rlz.shape_like("base")
 
     def __init__(self, cases, results, **kwargs):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, **kwargs)
 
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         values = [*self.results, self.default]
         return rlz.highest_precedence_dtype(values)
 
@@ -324,12 +316,12 @@ class SearchedCase(Value):
         super().__init__(cases=cases, results=results, default=default)
 
     @attribute.default
-    def output_shape(self):
+    def shape(self):
         # TODO(kszucs): can be removed after making Sequence iterable
         return rlz.highest_precedence_shape(self.cases)
 
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)
 

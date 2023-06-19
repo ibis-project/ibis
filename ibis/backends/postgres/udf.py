@@ -76,7 +76,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
         name: rlz.ValueOf(type_) for name, type_ in zip(parameters, input_types)
     }
     udf_node_fields['name'] = name
-    udf_node_fields['output_dtype'] = output_type
+    udf_node_fields['dtype'] = output_type
 
     udf_node = _create_udf_node(name, udf_node_fields)
 

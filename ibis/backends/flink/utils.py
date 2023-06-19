@@ -248,20 +248,20 @@ def _translate_interval(value, dtype):
 
 def translate_literal(op: ops.Literal) -> str:
     value = op.value
-    dtype = op.output_dtype
+    dtype = op.dtype
 
     if value is None:
         return "NULL"
 
     if dtype.is_boolean():
         # TODO(chloeh13q): Flink supports a third boolean called "UNKNOWN"
-        return 'TRUE' if value else 'FALSE'
+        return "TRUE" if value else "FALSE"
     elif dtype.is_string():
         quoted = value.replace("'", "''").replace("\\", "\\\\")
         return f"'{quoted}'"
     elif dtype.is_date():
         if isinstance(value, datetime.date):
-            value = value.strftime('%Y-%m-%d')
+            value = value.strftime("%Y-%m-%d")
         return repr(value)
     elif dtype.is_numeric():
         if math.isnan(value):
@@ -272,16 +272,16 @@ def translate_literal(op: ops.Literal) -> str:
     elif dtype.is_timestamp():
         # TODO(chloeh13q): support timestamp with local timezone
         if isinstance(value, datetime.datetime):
-            fmt = '%Y-%m-%d %H:%M:%S'
+            fmt = "%Y-%m-%d %H:%M:%S"
             # datetime.datetime only supports resolution up to microseconds, even
             # though Flink supports fractional precision up to 9 digits. We will
             # need to use numpy or pandas datetime types for higher resolutions.
             if value.microsecond:
-                fmt += '.%f'
-            return 'TIMESTAMP ' + repr(value.strftime(fmt))
-        raise NotImplementedError(f'No translation rule for timestamp {value}')
+                fmt += ".%f"
+            return "TIMESTAMP " + repr(value.strftime(fmt))
+        raise NotImplementedError(f"No translation rule for timestamp {value}")
     elif dtype.is_time():
         return f"TIME '{value}'"
     elif dtype.is_interval():
         return f"INTERVAL {_translate_interval(value, dtype)}"
-    raise NotImplementedError(f'No translation rule for {dtype}')
+    raise NotImplementedError(f"No translation rule for {dtype}")

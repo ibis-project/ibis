@@ -80,12 +80,12 @@ def test_comparisons_string(alltypes):
     val = '2015-01-01 00:00:00'
     expr = alltypes.i > val
     op = expr.op()
-    assert op.right.output_dtype is dt.string
+    assert op.right.dtype is dt.string
 
     expr2 = val < alltypes.i
     op = expr2.op()
     assert isinstance(op, ops.Greater)
-    assert op.right.output_dtype is dt.string
+    assert op.right.dtype is dt.string
 
 
 def test_comparisons_pandas_timestamp(alltypes):
@@ -93,7 +93,7 @@ def test_comparisons_pandas_timestamp(alltypes):
     expr = alltypes.i > val
     op = expr.op()
     assert isinstance(op.right, ops.Literal)
-    assert isinstance(op.right.output_dtype, dt.Timestamp)
+    assert isinstance(op.right.dtype, dt.Timestamp)
 
 
 def test_greater_comparison_pandas_timestamp(alltypes):
@@ -102,7 +102,7 @@ def test_greater_comparison_pandas_timestamp(alltypes):
     op = expr2.op()
     assert isinstance(op, ops.Greater)
     assert isinstance(op.right, ops.Literal)
-    assert isinstance(op.right.output_dtype, dt.Timestamp)
+    assert isinstance(op.right.dtype, dt.Timestamp)
 
 
 def test_timestamp_precedence():

@@ -19,9 +19,9 @@ def _reduction(func, cast_type='int32'):
     def reduction_compiler(t, op):
         arg, where = op.args
 
-        if arg.output_dtype.is_boolean():
+        if arg.dtype.is_boolean():
             if isinstance(arg, ops.TableColumn):
-                nullable = arg.output_dtype.nullable
+                nullable = arg.dtype.nullable
                 arg = ops.Cast(arg, dt.dtype(cast_type)(nullable=nullable))
             else:
                 arg = ops.Where(arg, 1, 0)

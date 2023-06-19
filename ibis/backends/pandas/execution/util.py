@@ -32,7 +32,7 @@ def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):
 
 
 def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
-    if key.output_shape.is_columnar():
+    if key.shape.is_columnar():
         if key.name in data:
             return key.name, None
         else:

@@ -26,56 +26,56 @@ class GeoSpatialUnOp(Unary):
 class GeoDistance(GeoSpatialBinOp):
     """Returns minimum distance between two geospatial operands."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoContains(GeoSpatialBinOp):
     """Check if the first geo spatial data contains the second one."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoContainsProperly(GeoSpatialBinOp):
     """Check if the left value contains the right one, with no shared no boundary points."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoCovers(GeoSpatialBinOp):
     """Check if no point in the right operand is outside that of the left."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoCoveredBy(GeoSpatialBinOp):
     """Check if no point in the left operand is outside that of the right."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoCrosses(GeoSpatialBinOp):
     """Check if the inputs have some but not all interior points in common."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoDisjoint(GeoSpatialBinOp):
     """Check if the Geometries do not spatially intersect."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoEquals(GeoSpatialBinOp):
     """Returns True if the given geometries represent the same geometry."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
@@ -83,14 +83,14 @@ class GeoGeometryN(GeoSpatialUnOp):
     """Returns the Nth Geometry of a Multi geometry."""
 
     n: Value[dt.Integer]
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
 class GeoGeometryType(GeoSpatialUnOp):
     """Returns the type of the geometry."""
 
-    output_dtype = dt.string
+    dtype = dt.string
 
 
 @public
@@ -100,14 +100,14 @@ class GeoIntersects(GeoSpatialBinOp):
     - (share any portion of space) and False if they don`t (they are Disjoint).
     """
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoIsValid(GeoSpatialUnOp):
     """Returns true if the geometry is well-formed."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
@@ -122,7 +122,7 @@ class GeoLineLocatePoint(GeoSpatialBinOp):
     left: Value[dt.LineString]
     right: Value[dt.Point]
 
-    output_dtype = dt.halffloat
+    dtype = dt.halffloat
 
 
 @public
@@ -135,7 +135,7 @@ class GeoLineMerge(GeoSpatialUnOp):
     geometry collection.
     """
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
@@ -152,7 +152,7 @@ class GeoLineSubstring(GeoSpatialUnOp):
     start: Value[dt.Floating]
     end: Value[dt.Floating]
 
-    output_dtype = dt.linestring
+    dtype = dt.linestring
 
 
 @public
@@ -163,56 +163,56 @@ class GeoOrderingEquals(GeoSpatialBinOp):
     in the same order.
     """
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoOverlaps(GeoSpatialBinOp):
     """Check if the inputs are of the same dimension but are not completely contained by each other."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoTouches(GeoSpatialBinOp):
     """Check if the inputs have at least one point in common but their interiors do not intersect."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoUnaryUnion(Reduction, GeoSpatialUnOp):
     """Returns the pointwise union of the geometries in the column."""
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
 class GeoUnion(GeoSpatialBinOp):
     """Returns the pointwise union of the two geometries."""
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
 class GeoArea(GeoSpatialUnOp):
     """Area of the geo spatial data."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoPerimeter(GeoSpatialUnOp):
     """Perimeter of the geo spatial data."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoLength(GeoSpatialUnOp):
     """Length of geo spatial data."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
@@ -224,7 +224,7 @@ class GeoMaxDistance(GeoSpatialBinOp):
     geometry
     """
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
@@ -234,7 +234,7 @@ class GeoX(GeoSpatialUnOp):
     Input must be a point
     """
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
@@ -244,35 +244,35 @@ class GeoY(GeoSpatialUnOp):
     Input must be a point
     """
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoXMin(GeoSpatialUnOp):
     """Returns Y minima of a bounding box 2d or 3d or a geometry."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoXMax(GeoSpatialUnOp):
     """Returns X maxima of a bounding box 2d or 3d or a geometry."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoYMin(GeoSpatialUnOp):
     """Returns Y minima of a bounding box 2d or 3d or a geometry."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoYMax(GeoSpatialUnOp):
     """Returns Y maxima of a bounding box 2d or 3d or a geometry."""
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
@@ -282,7 +282,7 @@ class GeoStartPoint(GeoSpatialUnOp):
     Returns `NULL` if the input is not a LINESTRING.
     """
 
-    output_dtype = dt.point
+    dtype = dt.point
 
 
 @public
@@ -292,7 +292,7 @@ class GeoEndPoint(GeoSpatialUnOp):
     Returns `NULL` if the input is not a LINESTRING.
     """
 
-    output_dtype = dt.point
+    dtype = dt.point
 
 
 @public
@@ -305,7 +305,7 @@ class GeoPoint(GeoSpatialBinOp):
     left: Value[dt.Numeric]
     right: Value[dt.Numeric]
 
-    output_dtype = dt.point
+    dtype = dt.point
 
 
 @public
@@ -318,14 +318,14 @@ class GeoPointN(GeoSpatialUnOp):
     """
 
     n: Value[dt.Integer]
-    output_dtype = dt.point
+    dtype = dt.point
 
 
 @public
 class GeoNPoints(GeoSpatialUnOp):
     """Return the number of points in a geometry."""
 
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
@@ -335,14 +335,14 @@ class GeoNRings(GeoSpatialUnOp):
     Outer rings are counted.
     """
 
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
 class GeoSRID(GeoSpatialUnOp):
     """Returns the spatial reference identifier for the ST_Geometry."""
 
-    output_dtype = dt.int64
+    dtype = dt.int64
 
 
 @public
@@ -351,7 +351,7 @@ class GeoSetSRID(GeoSpatialUnOp):
 
     srid: Value[dt.Integer]
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
@@ -362,14 +362,14 @@ class GeoBuffer(GeoSpatialUnOp):
     """
 
     radius: Value[dt.Floating]
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
 class GeoCentroid(GeoSpatialUnOp):
     """Returns the geometric center of a geometry."""
 
-    output_dtype = dt.point
+    dtype = dt.point
 
 
 @public
@@ -378,7 +378,7 @@ class GeoDFullyWithin(GeoSpatialBinOp):
 
     distance: Value[dt.Floating]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
@@ -387,14 +387,14 @@ class GeoDWithin(GeoSpatialBinOp):
 
     distance: Value[dt.Floating]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoEnvelope(GeoSpatialUnOp):
     """The bounding box of the supplied geometry."""
 
-    output_dtype = dt.polygon
+    dtype = dt.polygon
 
 
 @public
@@ -408,28 +408,28 @@ class GeoAzimuth(GeoSpatialBinOp):
     left: Value[dt.Point]
     right: Value[dt.Point]
 
-    output_dtype = dt.float64
+    dtype = dt.float64
 
 
 @public
 class GeoWithin(GeoSpatialBinOp):
     """Returns True if the geometry A is completely inside geometry B."""
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class GeoIntersection(GeoSpatialBinOp):
     """Return a geometry that represents the point-set intersection of the inputs."""
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
 class GeoDifference(GeoSpatialBinOp):
     """Return a geometry that is the delta between the left and right inputs."""
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
@@ -439,7 +439,7 @@ class GeoSimplify(GeoSpatialUnOp):
     tolerance: Value[dt.Floating]
     preserve_collapsed: Value[dt.Boolean]
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
@@ -448,32 +448,32 @@ class GeoTransform(GeoSpatialUnOp):
 
     srid: Value[dt.Integer]
 
-    output_dtype = dt.geometry
+    dtype = dt.geometry
 
 
 @public
 class GeoAsBinary(GeoSpatialUnOp):
     """Return the Well-Known Binary (WKB) representation of the input, without SRID meta data."""
 
-    output_dtype = dt.binary
+    dtype = dt.binary
 
 
 @public
 class GeoAsEWKB(GeoSpatialUnOp):
     """Return the Well-Known Binary representation of the input, with SRID meta data."""
 
-    output_dtype = dt.binary
+    dtype = dt.binary
 
 
 @public
 class GeoAsEWKT(GeoSpatialUnOp):
     """Return the Well-Known Text representation of the input, with SRID meta data."""
 
-    output_dtype = dt.string
+    dtype = dt.string
 
 
 @public
 class GeoAsText(GeoSpatialUnOp):
     """Return the Well-Known Text (WKT) representation of the input, without SRID metadata."""
 
-    output_dtype = dt.string
+    dtype = dt.string

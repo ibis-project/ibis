@@ -33,7 +33,7 @@ def variance_reduction(func_name, suffix=None):
     def variance_compiler(t, op):
         arg = op.arg
 
-        if arg.output_dtype.is_boolean():
+        if arg.dtype.is_boolean():
             arg = ops.Cast(op.arg, to=dt.int32)
 
         func = getattr(sa.func, f'{func_name}{suffix[op.how]}')
@@ -167,7 +167,7 @@ def _exists_subquery(t, op):
 def _cast(t, op):
     arg = op.arg
     typ = op.to
-    arg_dtype = arg.output_dtype
+    arg_dtype = arg.dtype
 
     sa_arg = t.translate(arg)
 
@@ -196,7 +196,7 @@ def _contains(func):
         options = op.options
         if isinstance(options, tuple):
             right = [t.translate(x) for x in op.options]
-        elif options.output_shape.is_columnar():
+        elif options.shape.is_columnar():
             right = t.translate(ops.TableArrayView(options.to_expr().as_table()))
             if not isinstance(right, sa.sql.Selectable):
                 right = sa.select(right)
@@ -215,7 +215,7 @@ def _alias(t, op):
 
 
 def _literal(_, op):
-    dtype = op.output_dtype
+    dtype = op.dtype
     value = op.value
 
     if value is None:
@@ -273,7 +273,7 @@ def _translate_case(t, op, *, value):
 
 def _negate(t, op):
     arg = t.translate(op.arg)
-    return sa.not_(arg) if op.arg.output_dtype.is_boolean() else -arg
+    return sa.not_(arg) if op.arg.dtype.is_boolean() else -arg
 
 
 def unary(sa_func):
@@ -417,7 +417,7 @@ def reduction(sa_func):
 def _zero_if_null(t, op):
     sa_arg = t.translate(op.arg)
     return sa.case(
-        (sa_arg.is_(None), sa.cast(0, t.get_sqla_type(op.output_dtype))),
+        (sa_arg.is_(None), sa.cast(0, t.get_sqla_type(op.dtype))),
         else_=sa_arg,
     )
 
