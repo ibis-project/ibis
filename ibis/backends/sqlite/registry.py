@@ -194,7 +194,7 @@ def _string_join(t, op):
 
 
 def _literal(t, op):
-    dtype = op.output_dtype
+    dtype = op.dtype
     if dtype.is_array():
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
     if dtype.is_uuid():
@@ -220,7 +220,7 @@ def _timestamp_op(func, sign, units):
     def _formatter(translator, op):
         arg, offset = op.args
 
-        unit = offset.output_dtype.unit
+        unit = offset.dtype.unit
         if unit not in units:
             raise com.UnsupportedOperationError(
                 "SQLite does not allow binary operation "
@@ -244,7 +244,7 @@ def _date_diff(t, op):
 def _mode(t, op):
     sa_arg = op.arg
 
-    if sa_arg.output_dtype.is_boolean():
+    if sa_arg.dtype.is_boolean():
         sa_arg = ops.Cast(op.arg, to=dt.int32)
 
     if op.where is not None:
@@ -288,7 +288,7 @@ operation_registry.update(
         # instance of ops.Value
         ops.Cast: (
             lambda t, op: sqlite_cast(
-                t.translate(op.arg), op.arg.output_dtype, op.to, translator=t
+                t.translate(op.arg), op.arg.dtype, op.to, translator=t
             )
         ),
         ops.StrRight: fixed_arity(

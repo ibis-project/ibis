@@ -357,7 +357,7 @@ class Backend(BaseBackend):
             replacements = {}
             for p, v in params.items():
                 op = p.op() if isinstance(p, ir.Expr) else p
-                replacements[op] = ibis.literal(v, type=op.output_dtype).op()
+                replacements[op] = ibis.literal(v, type=op.dtype).op()
             node = node.replace(replacements)
             expr = node.to_expr()
 

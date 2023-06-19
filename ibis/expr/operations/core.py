@@ -91,7 +91,7 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
 
     @property
     @abstractmethod
-    def output_dtype(self) -> T:
+    def dtype(self) -> T:
         """Ibis datatype of the produced value expression.
 
         Returns
@@ -101,23 +101,33 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
 
     @property
     @abstractmethod
-    def output_shape(self) -> S:
+    def shape(self) -> S:
         """Shape of the produced value expression.
 
         Possible values are: "scalar" and "columnar"
 
         Returns
         -------
-        rlz.Shape
+        ds.Shape
         """
+
+    @property
+    @util.deprecated(as_of='7.0', instead='use .dtype property instead')
+    def output_dtype(self):
+        return self.dtype
+
+    @property
+    @util.deprecated(as_of='7.0', instead='use .shape property instead')
+    def output_shape(self):
+        return self.shape
 
     def to_expr(self):
         import ibis.expr.types as ir
 
-        if self.output_shape.is_columnar():
-            typename = self.output_dtype.column
+        if self.shape.is_columnar():
+            typename = self.dtype.column
         else:
-            typename = self.output_dtype.scalar
+            typename = self.dtype.scalar
 
         return getattr(ir, typename)(self)
 
@@ -132,8 +142,8 @@ class Alias(Value):
     arg: Value
     name: str
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -143,8 +153,8 @@ class Unary(Value):
     arg: Value
 
     @property
-    def output_shape(self) -> ds.DataShape:
-        return self.arg.output_shape
+    def shape(self) -> ds.DataShape:
+        return self.arg.shape
 
 
 @public
@@ -155,8 +165,8 @@ class Binary(Value):
     right: Value
 
     @property
-    def output_shape(self) -> ds.DataShape:
-        return max(self.left.output_shape, self.right.output_shape)
+    def shape(self) -> ds.DataShape:
+        return max(self.left.shape, self.right.shape)
 
 
 @public
@@ -164,14 +174,6 @@ class Argument(Value):
     name: str
     shape: ds.DataShape
     dtype: dt.DataType
-
-    @property
-    def output_dtype(self) -> dt.DataType:
-        return self.dtype
-
-    @property
-    def output_shape(self) -> ds.DataShape:
-        return self.shape
 
 
 public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)

@@ -8,7 +8,7 @@ from ibis.backends.postgres.registry import operation_registry
 
 
 class PostgresUDFNode(ops.Value):
-    output_shape = rlz.shape_like("args")
+    shape = rlz.shape_like("args")
 
 
 class PostgreSQLExprTranslator(AlchemyExprTranslator):

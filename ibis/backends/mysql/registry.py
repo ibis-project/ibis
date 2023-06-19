@@ -69,7 +69,7 @@ def _interval_from_integer(t, op):
         )
 
     sa_arg = t.translate(op.arg)
-    text_unit = op.output_dtype.resolution.upper()
+    text_unit = op.dtype.resolution.upper()
 
     # XXX: Is there a better way to handle this? I.e. can we somehow use
     # the existing bind parameter produced by translate and reuse its name in
@@ -80,16 +80,16 @@ def _interval_from_integer(t, op):
 
 
 def _literal(_, op):
-    if op.output_dtype.is_interval():
-        if op.output_dtype.unit.short in {'ms', 'ns'}:
+    if op.dtype.is_interval():
+        if op.dtype.unit.short in {'ms', 'ns'}:
             raise com.UnsupportedOperationError(
                 'MySQL does not allow operation '
-                f'with INTERVAL offset {op.output_dtype.unit}'
+                f'with INTERVAL offset {op.dtype.unit}'
             )
-        text_unit = op.output_dtype.resolution.upper()
+        text_unit = op.dtype.resolution.upper()
         sa_text = sa.text(f'INTERVAL :value {text_unit}')
         return sa_text.bindparams(value=op.value)
-    elif op.output_dtype.is_binary():
+    elif op.dtype.is_binary():
         # the cast to BINARY is necessary here, otherwise the data come back as
         # Python strings
         #
@@ -115,7 +115,7 @@ def _group_concat(t, op):
 def _json_get_item(t, op):
     arg = t.translate(op.arg)
     index = t.translate(op.index)
-    if op.index.output_dtype.is_integer():
+    if op.index.dtype.is_integer():
         path = "$[" + sa.cast(index, sa.TEXT) + "]"
     else:
         path = "$." + index

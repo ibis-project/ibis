@@ -977,8 +977,8 @@ class Backend(BaseAlchemyBackend):
     def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
         func = udf_node.__func__
         name = func.__name__
-        input_types = [DuckDBType.to_string(arg.output_dtype) for arg in udf_node.args]
-        output_type = DuckDBType.to_string(udf_node.output_dtype)
+        input_types = [DuckDBType.to_string(arg.dtype) for arg in udf_node.args]
+        output_type = DuckDBType.to_string(udf_node.dtype)
 
         def register_udf(con):
             return con.connection.create_function(

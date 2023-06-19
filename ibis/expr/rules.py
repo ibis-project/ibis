@@ -15,7 +15,7 @@ from ibis.common.temporal import IntervalUnit
 
 @public
 def highest_precedence_shape(nodes):
-    return max(node.output_shape for node in nodes)
+    return max(node.shape for node in nodes)
 
 
 @public
@@ -36,7 +36,7 @@ def highest_precedence_dtype(nodes):
     dtype: DataType
       The highest precedence datatype
     """
-    return dt.highest_precedence(node.output_dtype for node in nodes)
+    return dt.highest_precedence(node.dtype for node in nodes)
 
 
 @public
@@ -46,7 +46,7 @@ def castable(source, target):
     Based on the underlying datatypes and the value in case of Literals
     """
     value = getattr(source, 'value', None)
-    return dt.castable(source.output_dtype, target.output_dtype, value=value)
+    return dt.castable(source.dtype, target.dtype, value=value)
 
 
 @public
@@ -61,23 +61,23 @@ def comparable(left, right):
 @public
 def dtype_like(name):
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
         return highest_precedence_dtype(args)
 
-    return output_dtype
+    return dtype
 
 
 @public
 def shape_like(name):
     @attribute.default
-    def output_shape(self):
+    def shape(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
         return highest_precedence_shape(args)
 
-    return output_shape
+    return shape
 
 
 # TODO(kszucs): might just use bounds instead of actual literal values
@@ -90,11 +90,11 @@ def _promote_integral_binop(exprs, op):
 
     bounds, dtypes = [], []
     for arg in exprs:
-        dtypes.append(arg.output_dtype)
+        dtypes.append(arg.dtype)
         if isinstance(arg, ops.Literal):
             bounds.append([arg.value])
         else:
-            bounds.append(arg.output_dtype.bounds)
+            bounds.append(arg.dtype.bounds)
 
     all_unsigned = dtypes and util.all_of(dtypes, dt.UnsignedInteger)
     # In some cases, the bounding type might be int8, even though neither
@@ -111,8 +111,8 @@ def _promote_decimal_binop(args, op):
         return highest_precedence_dtype(args)
 
     # TODO: Add support for setting the maximum precision and maximum scale
-    left = args[0].output_dtype
-    right = args[1].output_dtype
+    left = args[0].dtype
+    right = args[1].dtype
 
     max_prec = 31 if left.precision <= 31 and right.precision <= 31 else 63
     max_scale = 31
@@ -142,9 +142,9 @@ def _promote_decimal_binop(args, op):
 @public
 def numeric_like(name, op):
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         args = getattr(self, name)
-        dtypes = [arg.output_dtype for arg in args]
+        dtypes = [arg.dtype for arg in args]
         if util.all_of(dtypes, dt.Integer):
             result = _promote_integral_binop(args, op)
         elif util.all_of(dtypes, dt.Decimal):
@@ -154,7 +154,7 @@ def numeric_like(name, op):
 
         return result
 
-    return output_dtype
+    return dtype
 
 
 def _promote_interval_resolution(units: list[IntervalUnit]) -> IntervalUnit:
@@ -169,9 +169,9 @@ def _arg_type_error_format(op):
     from ibis.expr.operations.generic import Literal
 
     if isinstance(op, Literal):
-        return f"Literal({op.value}):{op.output_dtype}"
+        return f"Literal({op.value}):{op.dtype}"
     else:
-        return f"{op.name}:{op.output_dtype}"
+        return f"{op.name}:{op.dtype}"
 
 
 class ValueOf(Matcher):
@@ -199,7 +199,7 @@ class ValueOf(Matcher):
         except CoercionError:
             return NoMatch
 
-        if self.dtype and not value.output_dtype.castable(self.dtype):
+        if self.dtype and not value.dtype.castable(self.dtype):
             return NoMatch
 
         return value

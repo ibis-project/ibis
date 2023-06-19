@@ -400,7 +400,7 @@ def _node_list(op, punct="()", **kw):
 
 
 def _interval_format(op):
-    dtype = op.output_dtype
+    dtype = op.dtype
     if dtype.unit.short in {"ms", "us", "ns"}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions"
@@ -411,7 +411,7 @@ def _interval_format(op):
 
 @translate_val.register(ops.IntervalFromInteger)
 def _interval_from_integer(op, **kw):
-    dtype = op.output_dtype
+    dtype = op.dtype
     if dtype.unit.short in {"ms", "us", "ns"}:
         raise com.UnsupportedOperationError(
             "Clickhouse doesn't support subsecond interval resolutions"
@@ -424,7 +424,7 @@ def _interval_from_integer(op, **kw):
 @translate_val.register(ops.Literal)
 def _literal(op, **kw):
     value = op.value
-    dtype = op.output_dtype
+    dtype = op.dtype
     if value is None and dtype.nullable:
         if dtype.is_null():
             return "Null"
@@ -611,7 +611,7 @@ def _timestamp_from_ymdhms(op, **kw):
         f"leftPad(toString({s}), 2, '0')"
         "))"
     )
-    if timezone := op.output_dtype.timezone:
+    if timezone := op.dtype.timezone:
         return f"toTimeZone({to_datetime}, {timezone})"
     return to_datetime
 
@@ -712,7 +712,7 @@ def _cotangent(op, **kw):
 def _bit_agg(func):
     def _translate(op, **kw):
         arg = translate_val(op.arg, **kw)
-        if not isinstance((type := op.arg.output_dtype), dt.UnsignedInteger):
+        if not isinstance((type := op.arg.dtype), dt.UnsignedInteger):
             nbits = type.nbytes * 8
             arg = f"reinterpretAsUInt{nbits}({arg})"
 
@@ -736,7 +736,7 @@ def _struct_column(op, **kw):
     # ClickHouse struct types cannot be nullable
     # (non-nested fields can be nullable)
     values = translate_val(op.values, **kw)
-    struct_type = serialize(op.output_dtype.copy(nullable=False))
+    struct_type = serialize(op.dtype.copy(nullable=False))
     return f"CAST({values} AS {struct_type})"
 
 
@@ -755,7 +755,7 @@ def _clip(op, **kw):
 @translate_val.register(ops.StructField)
 def _struct_field(op, render_aliases: bool = False, **kw):
     arg = op.arg
-    arg_dtype = arg.output_dtype
+    arg_dtype = arg.dtype
     arg = translate_val(op.arg, render_aliases=render_aliases, **kw)
     idx = arg_dtype.names.index(op.field)
     typ = arg_dtype.types[idx]
@@ -805,7 +805,7 @@ def _floor_divide(op, **kw):
 @translate_val.register(ops.ScalarParameter)
 def _scalar_param(op, params: Mapping[ops.Node, Any], **kw):
     raw_value = params[op]
-    dtype = op.output_dtype
+    dtype = op.dtype
     if isinstance(dtype, dt.Struct):
         literal = ibis.struct(raw_value, type=dtype)
     elif isinstance(dtype, dt.Map):
@@ -836,7 +836,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
             left_arg = helpers.parenthesize(left_arg)
 
         # special case non-foreign isin/notin expressions
-        if not isinstance(options, tuple) and options.output_shape.is_columnar():
+        if not isinstance(options, tuple) and options.shape.is_columnar():
             # this will fail to execute if there's a correlation, but it's too
             # annoying to detect so we let it through to enable the
             # uncorrelated use case (pandas-style `.isin`)
@@ -868,7 +868,7 @@ def day_of_week_name(op, **kw):
     #
     # We test against 20 in CI, so we implement day_of_week_name as follows
     arg = op.arg
-    nullable = arg.output_dtype.nullable
+    nullable = arg.dtype.nullable
     empty_string = ops.Literal("", dtype=dt.String(nullable=nullable))
     weekdays = range(7)
     return translate_val(
@@ -906,7 +906,7 @@ def _vararg_func(op, **kw):
 def _map(op, **kw):
     keys = translate_val(op.keys, **kw)
     values = translate_val(op.values, **kw)
-    typ = serialize(op.output_dtype)
+    typ = serialize(op.dtype)
     return f"CAST(({keys}, {values}) AS {typ})"
 
 
@@ -1097,10 +1097,10 @@ del _fmt, _name, _op
 @translate_val.register(ops.ExtractMicrosecond)
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
-    dtype = serialize(op.output_dtype)
+    dtype = serialize(op.dtype)
 
     datetime_type_args = ["6"]
-    if (tz := op.arg.output_dtype.timezone) is not None:
+    if (tz := op.arg.dtype.timezone) is not None:
         datetime_type_args.append(f"'{tz}'")
 
     datetime_type = f"DateTime64({', '.join(datetime_type_args)})"
@@ -1110,10 +1110,10 @@ def _extract_microsecond(op, **kw):
 @translate_val.register(ops.ExtractMillisecond)
 def _extract_millisecond(op, **kw):
     arg = translate_val(op.arg, **kw)
-    dtype = serialize(op.output_dtype)
+    dtype = serialize(op.dtype)
 
     datetime_type_args = ["3"]
-    if (tz := op.arg.output_dtype.timezone) is not None:
+    if (tz := op.arg.dtype.timezone) is not None:
         datetime_type_args.append(f"'{tz}'")
 
     datetime_type = f"DateTime64({', '.join(datetime_type_args)})"

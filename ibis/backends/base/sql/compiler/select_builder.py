@@ -87,9 +87,9 @@ class SelectBuilder:
             return node, toolz.identity
 
         elif isinstance(node, ops.Value):
-            if node.output_shape.is_scalar():
+            if node.shape.is_scalar():
                 result_handler = _get_scalar(node.name)
-            elif node.output_shape.is_columnar():
+            elif node.shape.is_columnar():
                 result_handler = _get_column(node.name)
             else:
                 raise com.TranslationError(f"Unexpected shape {node.output_shape}")

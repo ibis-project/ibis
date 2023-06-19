@@ -68,15 +68,15 @@ class Function(metaclass=abc.ABCMeta):
 class ScalarFunction(Function):
     def _create_operation_class(self):
         fields = {f'_{i}': rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
-        fields['output_dtype'] = self.output
-        fields['output_shape'] = rlz.shape_like('args')
+        fields['dtype'] = self.output
+        fields['shape'] = rlz.shape_like('args')
         return type(f"UDF_{self.name}", (ops.Value,), fields)
 
 
 class AggregateFunction(Function):
     def _create_operation_class(self):
         fields = {f'_{i}': rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
-        fields['output_dtype'] = self.output
+        fields['dtype'] = self.output
         return type(f"UDA_{self.name}", (ops.Reduction,), fields)
 
 

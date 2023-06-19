@@ -111,9 +111,9 @@ def execute_cast_series_group_by(op, data, type, **kwargs):
 def execute_cast_series_generic(op, data, type, **kwargs):
     out = data.astype(constants.IBIS_TYPE_TO_PANDAS_TYPE[type])
     if type.is_integer():
-        if op.arg.output_dtype.is_timestamp():
+        if op.arg.dtype.is_timestamp():
             return out.floordiv(int(1e9))
-        elif op.arg.output_dtype.is_date():
+        elif op.arg.dtype.is_date():
             return out.floordiv(int(24 * 60 * 60 * 1e9))
     return out
 
@@ -143,7 +143,7 @@ def execute_cast_series_array(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, pd.Series, dt.Timestamp)
 def execute_cast_series_timestamp(op, data, type, **kwargs):
     arg = op.arg
-    from_type = arg.output_dtype
+    from_type = arg.dtype
 
     if from_type.equals(type):  # noop cast
         return data
@@ -185,7 +185,7 @@ def _normalize(values, original_index, name, timezone=None):
 @execute_node.register(ops.Cast, pd.Series, dt.Date)
 def execute_cast_series_date(op, data, type, **kwargs):
     arg = op.args[0]
-    from_type = arg.output_dtype
+    from_type = arg.dtype
 
     if from_type.equals(type):
         return data
@@ -1533,7 +1533,7 @@ def execute_table_array_view(op, _, **kwargs):
 
 @execute_node.register(ops.ZeroIfNull, pd.Series)
 def execute_zero_if_null_series(op, data, **kwargs):
-    zero = op.arg.output_dtype.to_pandas().type(0)
+    zero = op.arg.dtype.to_pandas().type(0)
     return data.replace({np.nan: zero, None: zero, pd.NA: zero})
 
 
@@ -1548,5 +1548,5 @@ def execute_in_memory_table(op, **kwargs):
 )
 def execute_zero_if_null_scalar(op, data, **kwargs):
     if data is None or pd.isna(data) or math.isnan(data) or np.isnan(data):
-        return op.arg.output_dtype.to_pandas().type(0)
+        return op.arg.dtype.to_pandas().type(0)
     return data

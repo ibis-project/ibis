@@ -895,31 +895,31 @@ def test_initialized_attribute_mixed_with_classvar():
     class Value(Annotable):
         arg = is_int
 
-        output_shape = "like-arg"
-        output_dtype = "like-arg"
+        shape = "like-arg"
+        dtype = "like-arg"
 
     class Reduction(Value):
-        output_shape = "scalar"
+        shape = "scalar"
 
     class Variadic(Value):
         @attribute.default
-        def output_shape(self):
+        def shape(self):
             if self.arg > 10:
                 return "columnar"
             else:
                 return "scalar"
 
     r = Reduction(1)
-    assert r.output_shape == "scalar"
-    assert "output_shape" not in r.__slots__
+    assert r.shape == "scalar"
+    assert "shape" not in r.__slots__
 
     v = Variadic(1)
-    assert v.output_shape == "scalar"
-    assert "output_shape" in v.__slots__
+    assert v.shape == "scalar"
+    assert "shape" in v.__slots__
 
     v = Variadic(100)
-    assert v.output_shape == "columnar"
-    assert "output_shape" in v.__slots__
+    assert v.shape == "columnar"
+    assert "shape" in v.__slots__
 
 
 class Node(Comparable):

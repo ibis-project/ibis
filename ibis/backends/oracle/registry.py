@@ -26,7 +26,7 @@ operation_registry.update(sqlalchemy_window_functions_registry)
 
 def _cot(t, op):
     arg = t.translate(op.arg)
-    return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.output_dtype))
+    return 1.0 / sa.func.tan(arg, type_=t.get_sqla_type(op.arg.dtype))
 
 
 def _cov(t, op):
@@ -46,7 +46,7 @@ def _literal(t, op):
     if (
         # handle UUIDs in sqlalchemy < 2
         vparse(sa.__version__) < vparse("2")
-        and (dtype := op.output_dtype).is_uuid()
+        and (dtype := op.dtype).is_uuid()
         and (value := op.value) is not None
     ):
         return sa.literal(str(value), type_=t.get_sqla_type(dtype))

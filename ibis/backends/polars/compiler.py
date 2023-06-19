@@ -133,7 +133,7 @@ def try_cast(op, **kwargs):
 
 def _cast(op, strict=True, **kwargs):
     arg = translate(op.arg, **kwargs)
-    dtype = op.arg.output_dtype
+    dtype = op.arg.dtype
     to = op.to
 
     if to.is_interval():
@@ -450,7 +450,7 @@ _string_unary = {
 @translate.register(ops.StringLength)
 def string_length(op, **kw):
     arg = translate(op.arg, **kw)
-    typ = dtype_to_polars(op.output_dtype)
+    typ = dtype_to_polars(op.dtype)
     return arg.str.lengths().cast(typ)
 
 
@@ -587,7 +587,7 @@ def str_right(op, **kw):
 @translate.register(ops.Round)
 def round(op, **kw):
     arg = translate(op.arg, **kw)
-    typ = dtype_to_polars(op.output_dtype)
+    typ = dtype_to_polars(op.dtype)
     if op.digits is not None:
         _assert_literal(op.digits)
         digits = op.digits.value
@@ -643,7 +643,7 @@ def repeat(op, **kw):
 @translate.register(ops.Sign)
 def sign(op, **kw):
     arg = translate(op.arg, **kw)
-    typ = dtype_to_polars(op.output_dtype)
+    typ = dtype_to_polars(op.dtype)
     return arg.sign().cast(typ)
 
 
@@ -706,11 +706,11 @@ def mode(op, **kw):
 @translate.register(ops.Correlation)
 def correlation(op, **kw):
     x = op.left
-    if (x_type := x.output_dtype).is_boolean():
+    if (x_type := x.dtype).is_boolean():
         x = ops.Cast(x, dt.Int32(nullable=x_type.nullable))
 
     y = op.right
-    if (y_type := y.output_dtype).is_boolean():
+    if (y_type := y.dtype).is_boolean():
         y = ops.Cast(y, dt.Int32(nullable=y_type.nullable))
 
     if (where := op.where) is not None:
@@ -993,7 +993,7 @@ def comparison(op, **kw):
 def between(op, **kw):
     op_arg = op.arg
     arg = translate(op_arg, **kw)
-    dtype = op_arg.output_dtype
+    dtype = op_arg.dtype
     lower = translate(ops.Cast(op.lower_bound, dtype), **kw)
     upper = translate(ops.Cast(op.upper_bound, dtype), **kw)
     return arg.is_between(lower, upper, closed="both")
@@ -1023,7 +1023,7 @@ def bitwise_binops(op, **kw):
     else:
         result = pl.map([left, right], lambda cols: ufunc(cols[0], cols[1]))
 
-    return result.cast(dtype_to_polars(op.output_dtype))
+    return result.cast(dtype_to_polars(op.dtype))
 
 
 @translate.register(ops.BitwiseNot)
@@ -1077,7 +1077,7 @@ def execute_pi(op, **_):
 @translate.register(ops.Time)
 def execute_time(op, **kw):
     arg = translate(op.arg, **kw)
-    if op.arg.output_dtype.is_timestamp():
+    if op.arg.dtype.is_timestamp():
         return arg.dt.truncate("1us").cast(pl.Time)
     return arg
 

@@ -273,8 +273,8 @@ return {f.__name__}({args});\
             for name, type_ in params.items()
         }
 
-        udf_node_fields["output_dtype"] = output_type
-        udf_node_fields["output_shape"] = rlz.shape_like("args")
+        udf_node_fields["dtype"] = output_type
+        udf_node_fields["shape"] = rlz.shape_like("args")
         udf_node_fields["__slots__"] = ("sql",)
 
         udf_node = _create_udf_node(name, udf_node_fields)
@@ -373,8 +373,8 @@ RETURNS {return_type}
         }
         return_type = BigQueryType.from_ibis(dt.dtype(output_type))
 
-        udf_node_fields["output_dtype"] = output_type
-        udf_node_fields["output_shape"] = rlz.shape_like("args")
+        udf_node_fields["dtype"] = output_type
+        udf_node_fields["shape"] = rlz.shape_like("args")
         udf_node_fields["__slots__"] = ("sql",)
 
         udf_node = _create_udf_node(name, udf_node_fields)
