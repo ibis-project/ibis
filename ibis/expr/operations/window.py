@@ -34,12 +34,12 @@ class WindowBoundary(Value[T, S]):
         return not self.preceding
 
     @property
-    def output_shape(self) -> S:
-        return self.value.output_shape
+    def shape(self) -> S:
+        return self.value.shape
 
     @property
-    def output_dtype(self) -> T:
-        return self.value.output_dtype
+    def dtype(self) -> T:
+        return self.value.dtype
 
     @classmethod
     def __coerce__(cls, value, **kwargs):
@@ -66,16 +66,16 @@ class WindowFrame(Value):
     group_by: VarTuple[Column] = ()
     order_by: VarTuple[SortKey] = ()
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     def __init__(self, start, end, **kwargs):
-        if start and end and start.output_dtype != end.output_dtype:
+        if start and end and start.dtype != end.dtype:
             raise com.IbisTypeError(
                 "Window frame start and end boundaries must have the same datatype"
             )
         super().__init__(start=start, end=end, **kwargs)
 
-    def output_dtype(self) -> dt.DataType:
+    def dtype(self) -> dt.DataType:
         return dt.Array(dt.Struct.from_tuples(self.table.schema.items()))
 
     @property
@@ -104,7 +104,7 @@ class RowsWindowFrame(WindowFrame):
                 raise com.IbisTypeError(
                     "`max_lookback` window must be ordered by a single column"
                 )
-            if not order_by[0].output_dtype.is_timestamp():
+            if not order_by[0].dtype.is_timestamp():
                 raise com.IbisTypeError(
                     "`max_lookback` window must be ordered by a timestamp column"
                 )
@@ -123,8 +123,8 @@ class WindowFunction(Value):
     func: Value
     frame: WindowFrame
 
-    output_dtype = rlz.dtype_like("func")
-    output_shape = ds.columnar
+    dtype = rlz.dtype_like("func")
+    shape = ds.columnar
 
     def __init__(self, func, frame):
         from ibis.expr.analysis import (

@@ -675,7 +675,7 @@ def find_predicates(node, flatten=True):
     # flatten_predicates instead
     def predicate(node):
         assert isinstance(node, ops.Node), type(node)
-        if isinstance(node, ops.Value) and node.output_dtype.is_boolean():
+        if isinstance(node, ops.Value) and node.dtype.is_boolean():
             if flatten and isinstance(node, ops.And):
                 return g.proceed, None
             else:

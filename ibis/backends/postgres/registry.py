@@ -74,8 +74,8 @@ def _typeof(t, op):
     # select pg_typeof('thing') returns unknown so we have to check the child's
     # type for nullness
     return sa.case(
-        ((typ == 'unknown') & (op.arg.output_dtype != dt.null), 'text'),
-        ((typ == 'unknown') & (op.arg.output_dtype == dt.null), 'null'),
+        ((typ == 'unknown') & (op.arg.dtype != dt.null), 'text'),
+        ((typ == 'unknown') & (op.arg.dtype == dt.null), 'null'),
         else_=typ,
     )
 
@@ -256,7 +256,7 @@ def _log(t, op):
         sa_base = t.translate(base)
         return sa.cast(
             sa.func.log(sa.cast(sa_base, sa.NUMERIC), sa.cast(sa_arg, sa.NUMERIC)),
-            t.get_sqla_type(op.output_dtype),
+            t.get_sqla_type(op.dtype),
         )
     return sa.func.ln(sa_arg)
 
@@ -299,8 +299,8 @@ def _table_column(t, op):
     sa_table = get_sqla_table(ctx, table)
     out_expr = get_col(sa_table, op)
 
-    if op.output_dtype.is_timestamp():
-        timezone = op.output_dtype.timezone
+    if op.dtype.is_timestamp():
+        timezone = op.dtype.timezone
         if timezone is not None:
             out_expr = out_expr.op('AT TIME ZONE')(timezone).label(op.name)
 
@@ -323,7 +323,7 @@ def _round(t, op):
     # number of digits (though simple truncation on doubles is allowed) so
     # we cast to numeric and then cast back if necessary
     result = sa.func.round(sa.cast(sa_arg, sa.NUMERIC), t.translate(digits))
-    if digits is not None and arg.output_dtype.is_decimal():
+    if digits is not None and arg.dtype.is_decimal():
         return result
     result = sa.cast(result, pg.DOUBLE_PRECISION())
     return result
@@ -334,12 +334,12 @@ def _mod(t, op):
 
     # postgres doesn't allow modulus of double precision values, so upcast and
     # then downcast later if necessary
-    if not op.output_dtype.is_integer():
+    if not op.dtype.is_integer():
         left = sa.cast(left, sa.NUMERIC)
         right = sa.cast(right, sa.NUMERIC)
 
     result = left % right
-    if op.output_dtype.is_float64():
+    if op.dtype.is_float64():
         return sa.cast(result, pg.DOUBLE_PRECISION())
     else:
         return result
@@ -383,7 +383,7 @@ def _array_index(*, index_converter, func):
 
 
 def _literal(t, op):
-    dtype = op.output_dtype
+    dtype = op.dtype
     value = op.value
 
     if dtype.is_interval():
@@ -454,11 +454,11 @@ def _median(t, op):
 def _binary_variance_reduction(func):
     def variance_compiler(t, op):
         x = op.left
-        if (x_type := x.output_dtype).is_boolean():
+        if (x_type := x.dtype).is_boolean():
             x = ops.Cast(x, dt.Int32(nullable=x_type.nullable))
 
         y = op.right
-        if (y_type := y.output_dtype).is_boolean():
+        if (y_type := y.dtype).is_boolean():
             y = ops.Cast(y, dt.Int32(nullable=y_type.nullable))
 
         if t._has_reduction_filter_syntax:
@@ -513,15 +513,13 @@ def compile_struct_field_postgresql(element, compiler, **kw):
 
 def _struct_field(t, op):
     arg = op.arg
-    idx = arg.output_dtype.names.index(op.field) + 1
+    idx = arg.dtype.names.index(op.field) + 1
     field_name = sa.literal_column(f"f{idx:d}")
-    return struct_field(
-        t.translate(arg), field_name, type_=t.get_sqla_type(op.output_dtype)
-    )
+    return struct_field(t.translate(arg), field_name, type_=t.get_sqla_type(op.dtype))
 
 
 def _struct_column(t, op):
-    types = op.output_dtype.types
+    types = op.dtype.types
     return sa.func.row(
         # we have to cast here, otherwise postgres refuses to allow the statement
         *map(t.translate, map(ops.Cast, op.values, types)),
@@ -533,7 +531,7 @@ def _struct_column(t, op):
 
 def _unnest(t, op):
     arg = op.arg
-    row_type = arg.output_dtype.value_type
+    row_type = arg.dtype.value_type
 
     types = getattr(row_type, "types", (row_type,))
 
@@ -606,7 +604,7 @@ operation_registry.update(
         ops.TimestampTruncate: _timestamp_truncate,
         ops.IntervalFromInteger: (
             lambda t, op: t.translate(op.arg)
-            * sa.text(f"INTERVAL '1 {op.output_dtype.resolution}'")
+            * sa.text(f"INTERVAL '1 {op.dtype.resolution}'")
         ),
         ops.DateAdd: fixed_arity(operator.add, 2),
         ops.DateSub: fixed_arity(operator.sub, 2),
@@ -671,7 +669,7 @@ operation_registry.update(
         ops.Quantile: _quantile,
         ops.MultiQuantile: _quantile,
         ops.TimestampNow: lambda t, op: sa.literal_column(
-            "CURRENT_TIMESTAMP", type_=t.get_sqla_type(op.output_dtype)
+            "CURRENT_TIMESTAMP", type_=t.get_sqla_type(op.dtype)
         ),
         ops.MapGet: fixed_arity(
             lambda arg, key, default: sa.case(

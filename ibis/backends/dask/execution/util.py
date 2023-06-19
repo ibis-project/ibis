@@ -219,7 +219,7 @@ def compute_sort_key(
     `execute` the expression and sort by the new derived column.
     """
     name = ibis.util.guid()
-    if key.output_shape.is_columnar():
+    if key.shape.is_columnar():
         if key.name in data:
             return name, data[key.name]
         if isinstance(key, str):

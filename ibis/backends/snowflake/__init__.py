@@ -257,10 +257,10 @@ $$ {defn["source"]} $$"""
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__
         signature = ", ".join(
-            f"{name} {self._compile_type(arg.output_dtype)}"
+            f"{name} {self._compile_type(arg.dtype)}"
             for name, arg in zip(udf_node.argnames, udf_node.args)
         )
-        return_type = self._compile_type(udf_node.output_dtype)
+        return_type = self._compile_type(udf_node.dtype)
         source = textwrap.dedent(inspect.getsource(udf_node.__func__)).strip()
         source = "\n".join(
             line for line in source.splitlines() if not line.startswith("@udf")

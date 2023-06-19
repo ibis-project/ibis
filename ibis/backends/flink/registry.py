@@ -67,13 +67,13 @@ def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
 
 def _format_window_start(translator: ExprTranslator, boundary):
     if boundary is None:
-        return 'UNBOUNDED PRECEDING'
+        return "UNBOUNDED PRECEDING"
 
     if isinstance(boundary.value, ops.Literal) and boundary.value.value == 0:
         return "CURRENT ROW"
 
     value = translator.translate(boundary.value)
-    return f'{value} PRECEDING'
+    return f"{value} PRECEDING"
 
 
 def _format_window_end(translator: ExprTranslator, boundary):
@@ -98,15 +98,15 @@ def _format_window_frame(translator: ExprTranslator, func, frame):
     components = []
 
     if frame.group_by:
-        partition_args = ', '.join(map(translator.translate, frame.group_by))
-        components.append(f'PARTITION BY {partition_args}')
+        partition_args = ", ".join(map(translator.translate, frame.group_by))
+        components.append(f"PARTITION BY {partition_args}")
 
     (order_by,) = frame.order_by
     if order_by.descending is True:
         raise com.UnsupportedOperationError(
             "Flink only supports windows ordered in ASCENDING mode"
         )
-    components.append(f'ORDER BY {translator.translate(order_by)}')
+    components.append(f"ORDER BY {translator.translate(order_by)}")
 
     if frame.start is None and frame.end is None:
         # no-op, default is full sample
@@ -118,7 +118,7 @@ def _format_window_frame(translator: ExprTranslator, func, frame):
         # "RANGE BETWEEN [...] PRECEDING AND CURRENT ROW",
         # but `.over(rows=(-ibis.interval(...), 0)` is not allowed in Ibis
         if isinstance(frame, ops.RangeWindowFrame):
-            if not frame.start.value.output_dtype.is_interval():
+            if not frame.start.value.dtype.is_interval():
                 # [TODO] need to expand support for range-based interval windowing on expr
                 # side, for now only ibis intervals can be used
                 raise com.UnsupportedOperationError(
@@ -128,10 +128,10 @@ def _format_window_frame(translator: ExprTranslator, func, frame):
         start = _format_window_start(translator, frame.start)
         end = _format_window_end(translator, frame.end)
 
-        frame = f'{frame.how.upper()} BETWEEN {start} AND {end}'
+        frame = f"{frame.how.upper()} BETWEEN {start} AND {end}"
         components.append(frame)
 
-    return 'OVER ({})'.format(' '.join(components))
+    return "OVER ({})".format(" ".join(components))
 
 
 def _window(translator: ExprTranslator, op: ops.Node) -> str:
@@ -151,7 +151,7 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
 
     if isinstance(func, _unsupported_reductions):
         raise com.UnsupportedOperationError(
-            f'{type(func)} is not supported in window functions'
+            f"{type(func)} is not supported in window functions"
         )
 
     if isinstance(func, ops.CumulativeOp):
@@ -161,16 +161,16 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
     if isinstance(frame, ops.RowsWindowFrame):
         if frame.max_lookback is not None:
             raise NotImplementedError(
-                'Rows with max lookback is not implemented for SQL-based backends.'
+                "Rows with max lookback is not implemented for SQL-based backends."
             )
 
     window_formatted = _format_window_frame(translator, func, frame)
 
     arg_formatted = translator.translate(func.__window_op__)
-    result = f'{arg_formatted} {window_formatted}'
+    result = f"{arg_formatted} {window_formatted}"
 
     if isinstance(func, ops.RankBase):
-        return f'({result} - 1)'
+        return f"({result} - 1)"
     else:
         return result
 

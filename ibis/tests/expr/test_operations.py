@@ -174,26 +174,26 @@ def test_value_annotations():
     class Op1(ops.Value):
         arg: ops.Value
 
-        output_dtype = dt.int64
-        output_shape = ds.scalar
+        dtype = dt.int64
+        shape = ds.scalar
 
     class Op2(ops.Value):
         arg: ops.Value[dt.Any, ds.Any]
 
-        output_dtype = dt.int64
-        output_shape = ds.scalar
+        dtype = dt.int64
+        shape = ds.scalar
 
     class Op3(ops.Value):
         arg: ops.Value[dt.Integer, ds.Any]
 
-        output_dtype = dt.int64
-        output_shape = ds.scalar
+        dtype = dt.int64
+        shape = ds.scalar
 
     class Op4(ops.Value):
         arg: ops.Value[dt.Integer, ds.Scalar]
 
-        output_dtype = dt.int64
-        output_shape = ds.scalar
+        dtype = dt.int64
+        shape = ds.scalar
 
     assert Op1(1).arg.dtype == dt.int8
     assert Op2(1).arg.dtype == dt.int8
@@ -241,8 +241,8 @@ def test_instance_of_operation():
 def test_array_input():
     class MyOp(ops.Value):
         value: ops.Value[dt.Array[dt.Float64], ds.Any]
-        output_dtype = rlz.dtype_like('value')
-        output_shape = rlz.shape_like('value')
+        dtype = rlz.dtype_like('value')
+        shape = rlz.shape_like('value')
 
     raw_value = [1.0, 2.0, 3.0]
     op = MyOp(raw_value)
@@ -303,13 +303,13 @@ def test_expression_class_aliases():
 
 def test_sortkey_propagates_dtype_and_shape():
     k = ops.SortKey(ibis.literal(1), ascending=True)
-    assert k.output_dtype == dt.int8
-    assert k.output_shape.is_scalar()
+    assert k.dtype == dt.int8
+    assert k.shape.is_scalar()
 
     t = ibis.table([('a', 'int16')], name='t')
     k = ops.SortKey(t.a, ascending=True)
-    assert k.output_dtype == dt.int16
-    assert k.output_shape.is_columnar()
+    assert k.dtype == dt.int16
+    assert k.shape.is_columnar()
 
 
 def test_getitem_on_column_is_error():

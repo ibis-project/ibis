@@ -22,14 +22,14 @@ class LogicalBinary(Binary):
     left: Value[dt.Boolean]
     right: Value[dt.Boolean]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
 class Not(Unary):
     arg: Value[dt.Boolean]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
 
 @public
@@ -52,7 +52,7 @@ class Comparison(Binary):
     left: Value
     right: Value
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
     def __init__(self, left, right):
         """Construct a comparison operation between `left` and `right`.
@@ -112,8 +112,8 @@ class Between(Value):
     lower_bound: Value
     upper_bound: Value
 
-    output_dtype = dt.boolean
-    output_shape = rlz.shape_like("args")
+    dtype = dt.boolean
+    shape = rlz.shape_like("args")
 
     def __init__(self, arg, lower_bound, upper_bound):
         if not rlz.comparable(arg, lower_bound):
@@ -139,10 +139,10 @@ class Contains(Value):
         Value[dt.Array],
     ]
 
-    output_dtype = dt.boolean
+    dtype = dt.boolean
 
     @attribute.default
-    def output_shape(self):
+    def shape(self):
         if isinstance(self.options, tuple):
             args = [self.value, *self.options]
         else:
@@ -168,10 +168,10 @@ class Where(Value):
     true_expr: Value
     false_null_expr: Value
 
-    output_shape = rlz.shape_like("args")
+    shape = rlz.shape_like("args")
 
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         return rlz.highest_precedence_dtype([self.true_expr, self.false_null_expr])
 
 
@@ -180,8 +180,8 @@ class ExistsSubquery(Value, _Negatable):
     foreign_table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
-    output_dtype = dt.boolean
-    output_shape = ds.columnar
+    dtype = dt.boolean
+    shape = ds.columnar
 
     def negate(self) -> NotExistsSubquery:
         return NotExistsSubquery(*self.args)
@@ -192,8 +192,8 @@ class NotExistsSubquery(Value, _Negatable):
     foreign_table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
-    output_dtype = dt.boolean
-    output_shape = ds.columnar
+    dtype = dt.boolean
+    shape = ds.columnar
 
     def negate(self) -> ExistsSubquery:
         return ExistsSubquery(*self.args)
@@ -240,8 +240,8 @@ class _UnresolvedSubquery(Value, _Negatable):
     tables: VarTuple[Relation]
     predicates: VarTuple[Value[dt.Boolean]]
 
-    output_dtype = dt.boolean
-    output_shape = ds.columnar
+    dtype = dt.boolean
+    shape = ds.columnar
 
     @abc.abstractmethod
     def _resolve(

@@ -29,8 +29,8 @@ class TimestampTruncate(Value):
     arg: Value[dt.Timestamp]
     unit: IntervalUnit
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.timestamp
+    shape = rlz.shape_like("arg")
+    dtype = dt.timestamp
 
 
 @public
@@ -38,8 +38,8 @@ class DateTruncate(Value):
     arg: Value[dt.Date]
     unit: DateUnit
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.date
+    shape = rlz.shape_like("arg")
+    dtype = dt.date
 
 
 @public
@@ -47,8 +47,8 @@ class TimeTruncate(Value):
     arg: Value[dt.Time]
     unit: TimeUnit
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.time
+    shape = rlz.shape_like("arg")
+    dtype = dt.time
 
 
 @public
@@ -56,8 +56,8 @@ class Strftime(Value):
     arg: Value[dt.Temporal]
     format_str: Value[dt.String]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.string
+    shape = rlz.shape_like("arg")
+    dtype = dt.string
 
 
 @public
@@ -65,13 +65,13 @@ class StringToTimestamp(Value):
     arg: Value[dt.String]
     format_str: Value[dt.String]
 
-    output_shape = rlz.shape_like("arg")
-    output_dtype = dt.Timestamp(timezone='UTC')
+    shape = rlz.shape_like("arg")
+    dtype = dt.Timestamp(timezone='UTC')
 
 
 @public
 class ExtractTemporalField(TemporalUnary):
-    output_dtype = dt.int32
+    dtype = dt.int32
 
 
 @public
@@ -148,24 +148,24 @@ class ExtractMillisecond(ExtractTimeField):
 class DayOfWeekIndex(Unary):
     arg: Value[dt.Date | dt.Timestamp]
 
-    output_dtype = dt.int16
+    dtype = dt.int16
 
 
 @public
 class DayOfWeekName(Unary):
     arg: Value[dt.Date | dt.Timestamp]
 
-    output_dtype = dt.string
+    dtype = dt.string
 
 
 @public
 class Time(Unary):
-    output_dtype = dt.time
+    dtype = dt.time
 
 
 @public
 class Date(Unary):
-    output_dtype = dt.date
+    dtype = dt.date
 
 
 @public
@@ -174,8 +174,8 @@ class DateFromYMD(Value):
     month: Value[dt.Integer]
     day: Value[dt.Integer]
 
-    output_dtype = dt.date
-    output_shape = rlz.shape_like("args")
+    dtype = dt.date
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -184,8 +184,8 @@ class TimeFromHMS(Value):
     minutes: Value[dt.Integer]
     seconds: Value[dt.Integer]
 
-    output_dtype = dt.time
-    output_shape = rlz.shape_like("args")
+    dtype = dt.time
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -197,8 +197,8 @@ class TimestampFromYMDHMS(Value):
     minutes: Value[dt.Integer]
     seconds: Value[dt.Integer]
 
-    output_dtype = dt.timestamp
-    output_shape = rlz.shape_like("args")
+    dtype = dt.timestamp
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -206,8 +206,8 @@ class TimestampFromUNIX(Value):
     arg: Value
     unit: TimestampUnit
 
-    output_dtype = dt.timestamp
-    output_shape = rlz.shape_like('arg')
+    dtype = dt.timestamp
+    shape = rlz.shape_like('arg')
 
 
 TimeInterval = Annotated[dt.Interval, Attrs(unit=As(TimeUnit))]
@@ -219,7 +219,7 @@ class DateAdd(Binary):
     left: Value[dt.Date]
     right: Value[DateInterval]
 
-    output_dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like('left')
 
 
 @public
@@ -227,7 +227,7 @@ class DateSub(Binary):
     left: Value[dt.Date]
     right: Value[DateInterval]
 
-    output_dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like('left')
 
 
 @public
@@ -235,7 +235,7 @@ class DateDiff(Binary):
     left: Value[dt.Date]
     right: Value[dt.Date]
 
-    output_dtype = dt.Interval('D')
+    dtype = dt.Interval('D')
 
 
 @public
@@ -243,7 +243,7 @@ class TimeAdd(Binary):
     left: Value[dt.Time]
     right: Value[TimeInterval]
 
-    output_dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like('left')
 
 
 @public
@@ -251,7 +251,7 @@ class TimeSub(Binary):
     left: Value[dt.Time]
     right: Value[TimeInterval]
 
-    output_dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like('left')
 
 
 @public
@@ -259,7 +259,7 @@ class TimeDiff(Binary):
     left: Value[dt.Time]
     right: Value[dt.Time]
 
-    output_dtype = dt.Interval('s')
+    dtype = dt.Interval('s')
 
 
 @public
@@ -267,7 +267,7 @@ class TimestampAdd(Binary):
     left: Value[dt.Timestamp]
     right: Value[dt.Interval]
 
-    output_dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like('left')
 
 
 @public
@@ -275,7 +275,7 @@ class TimestampSub(Binary):
     left: Value[dt.Timestamp]
     right: Value[dt.Interval]
 
-    output_dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like('left')
 
 
 @public
@@ -283,21 +283,19 @@ class TimestampDiff(Binary):
     left: Value[dt.Timestamp]
     right: Value[dt.Timestamp]
 
-    output_dtype = dt.Interval('s')
+    dtype = dt.Interval('s')
 
 
 @public
 class IntervalBinary(Binary):
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         interval_unit_args = [
-            arg.output_dtype.unit
-            for arg in (self.left, self.right)
-            if arg.output_dtype.is_interval()
+            arg.dtype.unit for arg in (self.left, self.right) if arg.dtype.is_interval()
         ]
         unit = rlz._promote_interval_resolution(interval_unit_args)
 
-        return self.left.output_dtype.copy(unit=unit)
+        return self.left.dtype.copy(unit=unit)
 
 
 @public
@@ -333,15 +331,15 @@ class IntervalFromInteger(Value):
     arg: Value[dt.Integer]
     unit: IntervalUnit
 
-    output_shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("arg")
 
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         return dt.Interval(self.unit)
 
     @property
     def resolution(self):
-        return self.output_dtype.resolution
+        return self.dtype.resolution
 
 
 @public

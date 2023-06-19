@@ -16,10 +16,10 @@ from ibis.expr.operations.core import Argument, Unary, Value
 class ArrayColumn(Value):
     cols: VarTuple[Value]
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         return dt.Array(rlz.highest_precedence_dtype(self.cols))
 
 
@@ -27,8 +27,8 @@ class ArrayColumn(Value):
 class ArrayLength(Unary):
     arg: Value[dt.Array]
 
-    output_dtype = dt.int64
-    output_shape = rlz.shape_like("args")
+    dtype = dt.int64
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -37,8 +37,8 @@ class ArraySlice(Value):
     start: Value[dt.Integer]
     stop: Optional[Value[dt.Integer]] = None
 
-    output_dtype = rlz.dtype_like("arg")
-    output_shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -46,11 +46,11 @@ class ArrayIndex(Value):
     arg: Value[dt.Array]
     index: Value[dt.Integer]
 
-    output_shape = rlz.shape_like("args")
+    shape = rlz.shape_like("args")
 
     @attribute.default
-    def output_dtype(self):
-        return self.arg.output_dtype.value_type
+    def dtype(self):
+        return self.arg.dtype.value_type
 
 
 @public
@@ -58,13 +58,11 @@ class ArrayConcat(Value):
     arg: VarTuple[Value[dt.Array]]
 
     @attribute.default
-    def output_dtype(self):
-        return dt.Array(
-            dt.highest_precedence(arg.output_dtype.value_type for arg in self.arg)
-        )
+    def dtype(self):
+        return dt.Array(dt.highest_precedence(arg.dtype.value_type for arg in self.arg))
 
     @attribute.default
-    def output_shape(self):
+    def shape(self):
         return rlz.highest_precedence_shape(self.arg)
 
 
@@ -73,8 +71,8 @@ class ArrayRepeat(Value):
     arg: Value[dt.Array]
     times: Value[dt.Integer]
 
-    output_dtype = rlz.dtype_like("arg")
-    output_shape = rlz.shape_like("args")
+    dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("args")
 
 
 class ArrayApply(Value):
@@ -89,14 +87,14 @@ class ArrayApply(Value):
     def result(self):
         arg = Argument(
             name=self.parameter,
-            shape=self.arg.output_shape,
-            dtype=self.arg.output_dtype.value_type,
+            shape=self.arg.shape,
+            dtype=self.arg.dtype.value_type,
         )
         return self.func(arg)
 
     @attribute.default
-    def output_shape(self):
-        return self.arg.output_shape
+    def shape(self):
+        return self.arg.shape
 
 
 @public
@@ -104,26 +102,26 @@ class ArrayMap(ArrayApply):
     func: Callable[[Value], Value]
 
     @attribute.default
-    def output_dtype(self) -> dt.DataType:
-        return dt.Array(self.result.output_dtype)
+    def dtype(self) -> dt.DataType:
+        return dt.Array(self.result.dtype)
 
 
 @public
 class ArrayFilter(ArrayApply):
     func: Callable[[Value], Value[dt.Boolean]]
 
-    output_dtype = rlz.dtype_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class Unnest(Value):
     arg: Value[dt.Array]
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     @attribute.default
-    def output_dtype(self):
-        return self.arg.output_dtype.value_type
+    def dtype(self):
+        return self.arg.dtype.value_type
 
 
 @public
@@ -131,8 +129,8 @@ class ArrayContains(Value):
     arg: Value[dt.Array]
     other: Value
 
-    output_dtype = dt.boolean
-    output_shape = rlz.shape_like("args")
+    dtype = dt.boolean
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -140,8 +138,8 @@ class ArrayPosition(Value):
     arg: Value[dt.Array]
     other: Value
 
-    output_dtype = dt.int64
-    output_shape = rlz.shape_like("args")
+    dtype = dt.int64
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -149,24 +147,24 @@ class ArrayRemove(Value):
     arg: Value[dt.Array]
     other: Value
 
-    output_dtype = rlz.dtype_like("arg")
-    output_shape = rlz.shape_like("args")
+    dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("args")
 
 
 @public
 class ArrayDistinct(Value):
     arg: Value[dt.Array]
 
-    output_dtype = rlz.dtype_like("arg")
-    output_shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("arg")
 
 
 @public
 class ArraySort(Value):
     arg: Value[dt.Array]
 
-    output_dtype = rlz.dtype_like("arg")
-    output_shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -174,22 +172,22 @@ class ArrayUnion(Value):
     left: Value[dt.Array]
     right: Value[dt.Array]
 
-    output_dtype = rlz.dtype_like("args")
-    output_shape = rlz.shape_like("args")
+    dtype = rlz.dtype_like("args")
+    shape = rlz.shape_like("args")
 
 
 @public
 class ArrayZip(Value):
     arg: VarTuple[Value[dt.Array]]
 
-    output_shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("arg")
 
     @attribute.default
-    def output_dtype(self):
+    def dtype(self):
         return dt.Array(
             dt.Struct(
                 {
-                    f"f{i:d}": array.output_dtype.value_type
+                    f"f{i:d}": array.dtype.value_type
                     for i, array in enumerate(self.arg, start=1)
                 }
             )

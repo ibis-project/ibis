@@ -62,7 +62,7 @@ class Value(Expr):
     # TODO(kszucs): should rename to dtype
     def type(self) -> dt.DataType:
         """Return the [DataType] of this expression."""
-        return self.op().output_dtype
+        return self.op().dtype
 
     def hash(self) -> ir.IntegerValue:
         """Compute an integer hash value.
@@ -1657,7 +1657,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
         node = value.op()
         if not isinstance(node, ops.Literal):
             raise TypeError(f"Ibis expression {value!r} is not a Literal")
-        if type is None or node.output_dtype.castable(dt.dtype(type)):
+        if type is None or node.dtype.castable(dt.dtype(type)):
             return value
         else:
             raise TypeError(

@@ -210,9 +210,7 @@ def compile_nan_as_null(compile_func):
     @functools.wraps(compile_func)
     def wrapper(t, op, *args, **kwargs):
         compiled = compile_func(t, op, *args, **kwargs)
-        if options.pyspark.treat_nan_as_null and isinstance(
-            op.output_dtype, dt.Floating
-        ):
+        if options.pyspark.treat_nan_as_null and isinstance(op.dtype, dt.Floating):
             return F.nanvl(compiled, F.lit(None))
         else:
             return compiled
@@ -771,7 +769,7 @@ def compile_clip(t, op, **kwargs):
     def clip(column, lower_value, upper_value):
         return column_max(column_min(column, F.lit(lower_value)), F.lit(upper_value))
 
-    return clip(col, lower, upper).cast(PySparkType.from_ibis(op.output_dtype))
+    return clip(col, lower, upper).cast(PySparkType.from_ibis(op.dtype))
 
 
 @compiles(ops.Round)
@@ -857,7 +855,7 @@ def compile_modulus(t, op, **kwargs):
 @compiles(ops.Negate)
 def compile_negate(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
-    if op.output_dtype.is_boolean():
+    if op.dtype.is_boolean():
         return ~src_column
     return -src_column
 
@@ -893,7 +891,7 @@ def compile_power(t, op, **kwargs):
 @compiles(ops.IsNan)
 def compile_isnan(t, op, **kwargs):
     arg = op.arg
-    if arg.output_dtype.is_floating():
+    if arg.dtype.is_floating():
         src_column = t.translate(arg, **kwargs)
         return F.isnull(src_column) | F.isnan(src_column)
     return F.lit(False)
@@ -902,7 +900,7 @@ def compile_isnan(t, op, **kwargs):
 @compiles(ops.IsInf)
 def compile_isinf(t, op, **kwargs):
     arg = op.arg
-    if arg.output_dtype.is_floating():
+    if arg.dtype.is_floating():
         inf = float("inf")
         return t.translate(arg, **kwargs).isin([inf, -inf])
     return F.lit(False)
@@ -1171,7 +1169,7 @@ def _canonicalize_interval(t, interval, **kwargs):
 
 @compiles(ops.WindowBoundary)
 def compile_window_boundary(t, boundary, **kwargs):
-    if boundary.value.output_dtype.is_interval():
+    if boundary.value.dtype.is_interval():
         value = t.translate(boundary.value, **kwargs)
         # TODO(kszucs): the value can be a literal which is a bug
         value = value.value if isinstance(value, ops.Literal) else value
@@ -1192,7 +1190,7 @@ def compile_window_function(t, op, **kwargs):
 
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
-        F.col(sort.name).cast('long') if sort.output_dtype.is_timestamp() else sort.name
+        F.col(sort.name).cast('long') if sort.dtype.is_timestamp() else sort.name
         for sort in op.frame.order_by
     ]
     aggcontext = AggregationContext.WINDOW
@@ -1480,7 +1478,7 @@ def compiles_day_of_week_name(t, op, **kwargs):
 def _get_interval_col(t, op, allowed_units=None, **kwargs):
     import pandas as pd
 
-    dtype = op.output_dtype
+    dtype = op.dtype
     if not dtype.is_interval():
         raise com.UnsupportedArgumentError(
             f'{dtype} expression cannot be converted to interval column. '
@@ -1636,7 +1634,7 @@ def compile_array_length(t, op, **kwargs):
 def compile_array_slice(t, op, **kwargs):
     start = op.start.value if op.start is not None else op.start
     stop = op.stop.value if op.stop is not None else op.stop
-    spark_type = PySparkType.from_ibis(op.arg.output_dtype)
+    spark_type = PySparkType.from_ibis(op.arg.dtype)
 
     @F.udf(spark_type)
     def array_slice(array):
@@ -1705,7 +1703,7 @@ def compile_if_null(t, op, **kwargs):
     col = t.translate(arg, **kwargs)
     ifnull_col = t.translate(op.ifnull_expr, **kwargs)
     result = F.isnull(col)
-    if arg.output_dtype.is_floating():
+    if arg.dtype.is_floating():
         result |= F.isnan(col)
     return F.when(result, ifnull_col).otherwise(col)
 
@@ -1722,7 +1720,7 @@ def compile_is_null(t, op, **kwargs):
     arg = op.arg
     col = t.translate(arg, **kwargs)
     result = F.isnull(col)
-    if arg.output_dtype.is_floating():
+    if arg.dtype.is_floating():
         result |= F.isnan(col)
     return result
 
@@ -1732,7 +1730,7 @@ def compile_not_null(t, op, **kwargs):
     arg = op.arg
     col = t.translate(arg, **kwargs)
     result = ~F.isnull(col)
-    if arg.output_dtype.is_floating():
+    if arg.dtype.is_floating():
         result &= ~F.isnan(col)
     return result
 
@@ -1889,7 +1887,7 @@ def compile_zero_if_null(t, op, **kwargs):
     arg = op.arg
     col = t.translate(arg, **kwargs)
     result = F.isnull(col)
-    if arg.output_dtype.is_floating():
+    if arg.dtype.is_floating():
         result |= F.isnan(col)
     return F.when(result, F.lit(0)).otherwise(col)
 
@@ -1953,7 +1951,7 @@ def compile_bitwise_not(t, op, **kwargs):
 def compile_json_getitem(t, op, **kwargs):
     arg = t.translate(op.arg, **kwargs)
     index = t.translate(op.index, raw=True, **kwargs)
-    if op.index.output_dtype.is_integer():
+    if op.index.dtype.is_integer():
         path = f"$[{index}]"
     else:
         path = f"$.{index}"
@@ -1971,7 +1969,7 @@ def compile_dummy_table(t, op, session=None, **kwargs):
 def compile_scalar_parameter(t, op, timecontext=None, scope=None, **kwargs):
     assert scope is not None, "scope is None"
     raw_value = scope.get_value(op, timecontext)
-    return F.lit(raw_value).cast(PySparkType.from_ibis(op.output_dtype))
+    return F.lit(raw_value).cast(PySparkType.from_ibis(op.dtype))
 
 
 @compiles(ops.E)

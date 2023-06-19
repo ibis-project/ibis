@@ -265,7 +265,7 @@ def execute_until_in_scope(
                 node: execute_literal(
                     node,
                     node.value,
-                    node.output_dtype,
+                    node.dtype,
                     aggcontext=aggcontext,
                     **kwargs,
                 )

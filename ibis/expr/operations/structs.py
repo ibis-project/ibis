@@ -15,11 +15,11 @@ class StructField(Value):
     arg: Value[dt.Struct]
     field: str
 
-    output_shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("arg")
 
     @attribute.default
-    def output_dtype(self) -> dt.DataType:
-        struct_dtype = self.arg.output_dtype
+    def dtype(self) -> dt.DataType:
+        struct_dtype = self.arg.dtype
         value_dtype = struct_dtype[self.field]
         return value_dtype
 
@@ -33,9 +33,9 @@ class StructColumn(Value):
     names: VarTuple[str]
     values: VarTuple[Value]
 
-    output_shape = ds.columnar
+    shape = ds.columnar
 
     @attribute.default
-    def output_dtype(self) -> dt.DataType:
-        dtypes = (value.output_dtype for value in self.values)
+    def dtype(self) -> dt.DataType:
+        dtypes = (value.dtype for value in self.values)
         return dt.Struct.from_tuples(zip(self.names, dtypes))

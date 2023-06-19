@@ -255,10 +255,10 @@ def test_generic_coerced_to():
         def __coerce__(cls, value, T=..., S=...):
             return cls(value, Scalar())
 
-        def output_dtype(self) -> T:
+        def dtype(self) -> T:
             ...
 
-        def output_shape(self) -> S:
+        def shape(self) -> S:
             ...
 
     class Literal(Value[T, Scalar]):
@@ -266,10 +266,10 @@ def test_generic_coerced_to():
             self.value = value
             self.dtype = dtype
 
-        def output_dtype(self) -> T:
+        def dtype(self) -> T:
             return self.dtype
 
-        def output_shape(self) -> DataShape:
+        def shape(self) -> DataShape:
             return Scalar()
 
         def __eq__(self, other):

@@ -57,7 +57,7 @@ def not_(translator, op):
 def negate(translator, op):
     arg = op.args[0]
     formatted_arg = translator.translate(arg)
-    if op.output_dtype.is_boolean():
+    if op.dtype.is_boolean():
         return not_(translator, op)
     else:
         if helpers.needs_parens(arg):
@@ -77,7 +77,7 @@ def ifnull_workaround(translator, op):
 
 def sign(translator, op):
     translated_arg = translator.translate(op.arg)
-    dtype = op.output_dtype
+    dtype = op.dtype
     translated_type = helpers.type_to_sql_string(dtype)
     if not dtype.is_float32():
         return f'CAST(sign({translated_arg}) AS {translated_type})'
@@ -114,7 +114,7 @@ def log(translator, op):
 def cast(translator, op):
     arg_formatted = translator.translate(op.arg)
 
-    if op.arg.output_dtype.is_temporal() and op.to.is_int64():
+    if op.arg.dtype.is_temporal() and op.to.is_int64():
         return f'1000000 * unix_timestamp({arg_formatted})'
     else:
         sql_type = helpers.type_to_sql_string(op.to)

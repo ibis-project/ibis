@@ -679,7 +679,7 @@ class Moving(Window):
     def __init__(self, start, max_lookback, *args, **kwargs):
         from ibis.backends.pandas.core import timedelta_types
 
-        start = compute_window_spec(start.output_dtype, start.value)
+        start = compute_window_spec(start.dtype, start.value)
         if isinstance(start, timedelta_types + (pd.offsets.DateOffset,)):
             closed = 'both'
         else:
