@@ -481,9 +481,7 @@ def test_dropna_invalid(alltypes):
         alltypes.dropna(how='invalid')
 
 
-@pytest.mark.parametrize(
-    'how', ['any', pytest.param('all', marks=pytest.mark.notyet("polars"))]
-)
+@pytest.mark.parametrize('how', ['any', 'all'])
 @pytest.mark.parametrize(
     'subset', [None, [], 'col_1', ['col_1', 'col_2'], ['col_1', 'col_3']]
 )
@@ -898,7 +896,7 @@ def test_isin_uncorrelated_filter(
     "dtype",
     [
         "bool",
-        param("bytes", marks=pytest.mark.notyet(["polars"])),
+        "bytes",
         "str",
         "int",
         "float",
