@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, MutableMapping
 
 import polars as pl
 
@@ -94,10 +94,7 @@ class Backend(BaseBackend):
         if isinstance(source, (str, Path)):
             first = str(source)
         elif isinstance(source, (list, tuple)):
-            raise TypeError(
-                """Polars backend cannot register iterables of files.
-           For partitioned-parquet ingestion, use read_parquet"""
-            )
+            first = str(source[0])
         else:
             try:
                 return self.read_pandas(source, table_name=table_name, **kwargs)
@@ -178,59 +175,6 @@ class Backend(BaseBackend):
             self._add_table(table_name, pl.read_csv(path, **kwargs))
         return self.table(table_name)
 
-    def read_pandas(
-        self, source: pd.DataFrame, table_name: str | None = None, **kwargs: Any
-    ) -> ir.Table:
-        """Register a Pandas DataFrame or pyarrow Table a table in the current database.
-
-        Parameters
-        ----------
-        source
-            The data source.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        **kwargs
-            Additional keyword arguments passed to Polars loading function.
-            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.from_pandas.html
-            for more information.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-        """
-        table_name = table_name or gen_name("read_in_memory")
-        self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
-        return self.table(table_name)
-
-    def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
-    ) -> ir.Table:
-        """Register a parquet file as a table in the current database.
-
-        Parameters
-        ----------
-        path
-            The data source(s). May be a path to a file or directory of parquet files.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        **kwargs
-            Additional keyword arguments passed to Polars loading function.
-            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
-            for more information.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-        """
-        path = normalize_filename(path)
-        table_name = table_name or gen_name("read_parquet")
-        self._add_table(table_name, pl.scan_parquet(path, **kwargs))
-        return self.table(table_name)
-
     def read_delta(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
@@ -264,6 +208,79 @@ class Backend(BaseBackend):
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_delta")
         self._add_table(table_name, pl.scan_delta(path, **kwargs))
+        return self.table(table_name)
+
+    def read_pandas(
+        self, source: pd.DataFrame, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a Pandas DataFrame or pyarrow Table a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.from_pandas.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or gen_name("read_in_memory")
+        self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
+        return self.table(table_name)
+
+    def read_parquet(
+        self,
+        path: str | Path | Iterable[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source(s). May be a path to a file, an iterable of files,
+            or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
+            for more information (if loading a single file or glob; when loading
+            multiple files polars' `scan_pyarrow_dataset` method is used instead).
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or gen_name("read_parquet")
+        if not isinstance(path, (str, Path)) and len(path) == 1:
+            path = path[0]
+
+        if not isinstance(path, (str, Path)) and len(path) > 1:
+            self._import_pyarrow()
+            import pyarrow.dataset as ds
+
+            paths = [normalize_filename(p) for p in path]
+            obj = pl.scan_pyarrow_dataset(
+                source=ds.dataset(paths, format="parquet"),
+                **kwargs,
+            )
+            self._add_table(table_name, obj)
+        else:
+            path = normalize_filename(path)
+            self._add_table(table_name, pl.scan_parquet(path, **kwargs))
+
         return self.table(table_name)
 
     def database(self, name=None):
