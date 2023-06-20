@@ -33,9 +33,9 @@ class Backend(BaseBackend):
         self._context = pl.SQLContext()
 
     def do_connect(
-        self, tables: MutableMapping[str, pl.LazyFrame] | None = None
+        self, tables: MutableMapping[str, pl.LazyFrame | pl.DataFrame] | None = None
     ) -> None:
-        """Construct a client from a dictionary of `polars.LazyFrame`s.
+        """Construct a client from a dictionary of polars `LazyFrame`s and/or `DataFrame`s.
 
         Parameters
         ----------
@@ -128,6 +128,8 @@ class Backend(BaseBackend):
         )
 
     def _add_table(self, name: str, obj: pl.LazyFrame | pl.DataFrame) -> None:
+        if isinstance(obj, pl.DataFrame):
+            obj = obj.lazy()
         self._tables[name] = obj
         self._context.register(name, obj)
 
@@ -173,7 +175,7 @@ class Backend(BaseBackend):
             self._add_table(table_name, pl.scan_csv(path, **kwargs))
         except pl.exceptions.ComputeError:
             # handles compressed csvs
-            self._add_table(table_name, pl.read_csv(path, **kwargs).lazy())
+            self._add_table(table_name, pl.read_csv(path, **kwargs))
         return self.table(table_name)
 
     def read_pandas(
