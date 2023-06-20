@@ -205,9 +205,7 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "polars", "dask", "pyspark", "mssql", "druid"]
-)
+@pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark", "mssql", "druid"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by('id')
     df = sorted_df
@@ -1075,12 +1073,12 @@ def test_pivot_wider(backend):
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "polars"],
+    ["dask", "datafusion"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement window functions",
 )
 @pytest.mark.notimpl(
-    ["pandas"],
+    ["pandas", "polars"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
@@ -1135,12 +1133,12 @@ def test_distinct_on_keep(backend, on, keep):
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "polars"],
+    ["dask", "datafusion"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement window functions",
 )
 @pytest.mark.notimpl(
-    ["pandas"],
+    ["pandas", "polars"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
