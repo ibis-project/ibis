@@ -1,5 +1,3 @@
-import sys
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -12,7 +10,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
-from ibis.backends.conftest import WINDOWS
 from ibis.udf.vectorized import reduction
 
 try:
@@ -124,12 +121,6 @@ argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 def make_argidx_params(marks):
     marks = [
         pytest.mark.notyet(marks, raises=com.OperationNotDefinedError),
-        pytest.mark.broken(
-            ["sqlite"],
-            condition=WINDOWS and sys.version_info < (3, 11),
-            reason="JSON functions aren't available",
-            raises=sa.exc.OperationalError,
-        ),
     ]
     return [
         param(
@@ -465,12 +456,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["sqlite"],
-                    condition=WINDOWS and sys.version_info < (3, 11),
-                    reason="JSON functions aren't available",
-                    raises=sa.exc.OperationalError,
-                ),
             ],
         ),
         param(
@@ -488,12 +473,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "oracle",
                     ],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.broken(
-                    ["sqlite"],
-                    condition=WINDOWS and sys.version_info < (3, 11),
-                    reason="JSON functions aren't available",
-                    raises=sa.exc.OperationalError,
                 ),
             ],
         ),

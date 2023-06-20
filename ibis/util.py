@@ -511,13 +511,6 @@ def import_object(qualname: str) -> Any:
 
 
 def normalize_filename(source: str | Path) -> str:
-    def _removeprefix(text, prefix):
-        # TODO: remove when we drop Python 3.8
-        try:
-            return text.removeprefix(prefix)
-        except AttributeError:
-            return text[text.startswith(prefix) and len(prefix) :]
-
     source = str(source)
     for prefix in (
         "parquet",
@@ -529,7 +522,7 @@ def normalize_filename(source: str | Path) -> str:
         "tsv.gz",
         "file",
     ):
-        source = _removeprefix(source, f"{prefix}://")
+        source = source.removeprefix(f"{prefix}://")
 
     def _absolufy_paths(name):
         if not name.startswith(("http", "s3", "az", "abfs", "abfss", "adl", "gs")):
