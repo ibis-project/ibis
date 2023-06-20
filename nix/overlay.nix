@@ -25,12 +25,10 @@ in
     sha256 = "sha256-q1b5IcOl5oIFXP7/P5RufncjHEVrWp4NjoU2uo/BE9U=";
   };
 
-  ibis38 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python38; };
   ibis39 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python39; };
   ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
   ibis311 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python311; };
 
-  ibisDevEnv38 = mkPoetryDevEnv pkgs.python38;
   ibisDevEnv39 = mkPoetryDevEnv pkgs.python39;
   ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
   ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;

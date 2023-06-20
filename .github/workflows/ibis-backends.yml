@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - "3.8"
+          - "3.9"
           - "3.11"
     steps:
       - name: checkout
@@ -91,7 +91,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.8"
+          - "3.9"
           - "3.11"
         backend:
           - name: dask
@@ -407,7 +407,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.8"
+          - "3.9"
           - "3.11"
         backend:
           - name: dask
@@ -539,7 +539,7 @@ jobs:
               - snowflake-connector-python
         include:
           - os: ubuntu-latest
-            python-version: "3.8"
+            python-version: "3.9"
             pandas:
               version: "1.5.*"
           - os: ubuntu-latest
@@ -789,7 +789,7 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.8"
+          - "3.9"
           - "3.11"
     steps:
       - name: checkout
