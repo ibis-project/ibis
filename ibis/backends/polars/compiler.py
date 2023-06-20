@@ -328,6 +328,13 @@ def fillna(op, **kw):
     return table.select(columns)
 
 
+@translate.register(ops.IdenticalTo)
+def identical_to(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+    return left.eq_missing(right)
+
+
 @translate.register(ops.IfNull)
 def ifnull(op, **kw):
     arg = translate(op.arg, **kw)
