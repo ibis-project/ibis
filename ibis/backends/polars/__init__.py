@@ -382,7 +382,11 @@ class Backend(BaseBackend):
         if isinstance(expr, ir.Table):
             return df.to_pandas()
         elif isinstance(expr, ir.Column):
-            return df.to_pandas().iloc[:, 0]
+            if expr.type().is_temporal():
+                return df.to_pandas().iloc[:, 0]
+            else:
+                # note: skip frame-construction overhead
+                return df.to_series().to_pandas()
         elif isinstance(expr, ir.Scalar):
             return df.to_pandas().iat[0, 0]
         else:
