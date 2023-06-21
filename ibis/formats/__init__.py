@@ -45,6 +45,11 @@ class TypeMapper(ABC, Generic[T]):
         Ibis DataType.
         """
 
+    @classmethod
+    def to_string(cls, dtype: DataType) -> str:
+        """Convert `dtype` into a backend-specific string representation."""
+        return str(cls.from_ibis(dtype))
+
 
 class SchemaMapper(ABC, Generic[S]):
     # `S` is the format-specific schema object, e.g. pyarrow.Schema

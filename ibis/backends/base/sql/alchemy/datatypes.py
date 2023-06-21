@@ -216,6 +216,13 @@ _GEOSPATIAL_TYPES = {
 
 class AlchemyType(TypeMapper):
     @classmethod
+    def to_string(cls, dtype: dt.DataType):
+        dialect_class = sa.dialects.registry.load(cls.dialect)
+        return str(
+            sa.types.to_instance(cls.from_ibis(dtype)).compile(dialect=dialect_class())
+        )
+
+    @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sat.TypeEngine:
         """Convert an Ibis type to a SQLAlchemy type.
 

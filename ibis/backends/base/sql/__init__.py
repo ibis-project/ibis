@@ -204,11 +204,14 @@ class BaseSQLBackend(BaseBackend):
 
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)
 
-    def _compile_udfs(self, expr: ir.Expr) -> Iterable[str]:
+    def _register_udfs(self, expr: ir.Expr) -> None:
         """Return an iterator of DDL strings, once for each UDFs contained within `expr`."""
         if self.supports_python_udfs:
             raise NotImplementedError(self.name)
-        return []
+
+    def _define_udf_translation_rules(self, expr: ir.Expr) -> None:
+        if self.supports_python_udfs:
+            raise NotImplementedError(self.name)
 
     def execute(
         self,
@@ -311,7 +314,7 @@ class BaseSQLBackend(BaseBackend):
             The output of compilation. The type of this value depends on the
             backend.
         """
-        util.consume(self._compile_udfs(expr))
+        self._define_udf_translation_rules(expr)
         return self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:

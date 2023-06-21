@@ -121,6 +121,8 @@ _to_duckdb_types = {
 
 
 class DuckDBType(AlchemyType):
+    dialect = "duckdb"
+
     @classmethod
     def to_ibis(cls, typ, nullable=True):
         if dtype := _from_duckdb_types.get(type(typ)):

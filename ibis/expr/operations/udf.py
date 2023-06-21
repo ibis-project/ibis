@@ -133,7 +133,8 @@ class ScalarUDFBuilder:
         fields["output_dtype"] = dt.dtype(return_annotation)
 
         fields["__input_type__"] = input_type
-        fields["__func__"] = fn
+        # can't be just `fn` otherwise `fn` is assumed to be a method
+        fields["__func__"] = property(fget=lambda _, fn=fn: fn)
         fields["__config__"] = FrozenDict(args=args, kwargs=FrozenDict(**kwargs))
         fields["__udf_namespace__"] = kwargs.get("schema")
 

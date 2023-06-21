@@ -120,6 +120,8 @@ _postgres_interval_fields = {
 
 
 class PostgresType(AlchemyType):
+    dialect = "postgresql"
+
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sat.TypeEngine:
         if dtype.is_floating():
