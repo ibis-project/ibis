@@ -24,6 +24,7 @@ from ibis.expr import datatypes as dt
         (lambda v: v.hour(), lambda vt: vt.hour),
         (lambda v: v.minute(), lambda vt: vt.minute),
         (lambda v: v.second(), lambda vt: vt.second),
+        (lambda v: v.microsecond(), lambda vt: int(vt.microsecond)),
         (lambda v: v.millisecond(), lambda vt: int(vt.microsecond / 1e3)),
     ]
     + [

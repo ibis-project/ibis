@@ -253,6 +253,27 @@ def test_timestamp_extract_literal(con, func, expected):
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'microsecond'",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=com.UnsupportedOperationError,
+    reason='PySpark backend does not support extracting microseconds.',
+)
+
+@pytest.mark.broken(["sqlite"], raises=AssertionError)
+def test_timestamp_extract_microseconds(backend, alltypes, df):
+    expr = alltypes.timestamp_col.microsecond().name("microsecond")
+    result = expr.execute()
+    expected = backend.default_series_rename(
+        (df.timestamp_col.dt.microsecond).astype('int32')
+    ).rename("microsecond")
+    backend.assert_series_equal(result, expected)
+
+@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.broken(
+    ["druid"],
+    raises=AttributeError,
     reason="'StringColumn' object has no attribute 'millisecond'",
 )
 @pytest.mark.notyet(
@@ -260,6 +281,7 @@ def test_timestamp_extract_literal(con, func, expected):
     raises=com.UnsupportedOperationError,
     reason='PySpark backend does not support extracting milliseconds.',
 )
+
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")

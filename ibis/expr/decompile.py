@@ -20,6 +20,7 @@ _method_overrides = {
     ops.ExtractDayOfYear: "day_of_year",
     ops.ExtractEpochSeconds: "epoch_seconds",
     ops.ExtractHour: "hour",
+    ops.ExtractMicrosecond: "microsecond",
     ops.ExtractMillisecond: "millisecond",
     ops.ExtractMinute: "minute",
     ops.ExtractMinute: "minute",
