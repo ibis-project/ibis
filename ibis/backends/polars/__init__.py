@@ -204,7 +204,7 @@ class Backend(BaseBackend):
             raise ImportError(
                 "The deltalake extra is required to use the "
                 "read_delta method. You can install it using pip:\n\n"
-                "pip install ibis-framework[polars,deltalake]\n"
+                "pip install 'ibis-framework[polars,deltalake]'\n"
             )
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_delta")

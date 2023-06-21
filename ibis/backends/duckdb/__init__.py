@@ -508,7 +508,7 @@ class Backend(BaseAlchemyBackend):
             raise ImportError(
                 "The deltalake extra is required to use the "
                 "read_delta method. You can install it using pip:\n\n"
-                "pip install ibis-framework[deltalake]\n"
+                "pip install 'ibis-framework[deltalake]'\n"
             )
 
         delta_table = DeltaTable(source_table, **kwargs)
