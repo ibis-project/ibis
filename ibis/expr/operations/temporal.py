@@ -133,6 +133,11 @@ class ExtractSecond(ExtractTimeField):
 
 
 @public
+class ExtractMicrosecond(ExtractTimeField):
+    pass
+
+
+@public
 class ExtractMillisecond(ExtractTimeField):
     pass
 

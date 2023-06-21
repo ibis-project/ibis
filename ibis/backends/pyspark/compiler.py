@@ -1371,6 +1371,11 @@ def compile_extract_second(t, op, **kwargs):
     return _extract_component_from_datetime(t, op, extract_fn=F.second, **kwargs)
 
 
+@compiles(ops.ExtractMicrosecond)
+def compile_extract_microsecond(t, op, **kwargs):
+    return _extract_component_from_datetime(t, op, extract_fn=F.microsecond, **kwargs) 
+
+
 @compiles(ops.ExtractMillisecond)
 def compile_extract_millisecond(t, op, **kwargs):
     raise com.UnsupportedOperationError(

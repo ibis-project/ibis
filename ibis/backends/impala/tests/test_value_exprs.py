@@ -182,7 +182,7 @@ def test_negate(table, colname, snapshot):
 
 @pytest.mark.parametrize(
     "field",
-    ['year', 'month', 'day', 'hour', 'minute', 'second', 'millisecond'],
+    ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond', 'millisecond'],
 )
 def test_timestamp_extract_field(table, field, snapshot):
     expr = getattr(table.i, field)()

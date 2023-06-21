@@ -338,6 +338,7 @@ operation_registry = {
     ops.ExtractHour: timestamp.extract_field('hour'),
     ops.ExtractMinute: timestamp.extract_field('minute'),
     ops.ExtractSecond: timestamp.extract_field('second'),
+    ops.ExtractMicrosecond: timestamp.extract_field('microsecond'),
     ops.ExtractMillisecond: timestamp.extract_field('millisecond'),
     ops.TimestampTruncate: timestamp.truncate,
     ops.DateTruncate: timestamp.truncate,

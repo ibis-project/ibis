@@ -895,6 +895,7 @@ _date_methods = {
     ops.ExtractHour: "hour",
     ops.ExtractMinute: "minute",
     ops.ExtractSecond: "second",
+    ops.ExtractMicrosecond: "microsecond",
     ops.ExtractMillisecond: "millisecond",
 }
 

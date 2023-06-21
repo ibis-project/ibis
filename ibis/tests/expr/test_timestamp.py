@@ -35,6 +35,7 @@ def test_string_cast_to_timestamp(alltypes):
         ('hour', ops.ExtractHour, ir.IntegerColumn),
         ('minute', ops.ExtractMinute, ir.IntegerColumn),
         ('second', ops.ExtractSecond, ir.IntegerColumn),
+        ('microsecond', ops.ExtractMicrosecond, ir.IntegerColumn),
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
     ],
 )
@@ -131,6 +132,7 @@ def test_timestamp_field_access_on_date(
         ('hour', ops.ExtractHour, ir.IntegerColumn),
         ('minute', ops.ExtractMinute, ir.IntegerColumn),
         ('second', ops.ExtractSecond, ir.IntegerColumn),
+        ('microsecond', ops.ExtractMicrosecond, ir.IntegerColumn),
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
     ],
 )
@@ -148,6 +150,7 @@ def test_timestamp_field_access_on_date_failure(
         ('hour', ops.ExtractHour, ir.IntegerColumn),
         ('minute', ops.ExtractMinute, ir.IntegerColumn),
         ('second', ops.ExtractSecond, ir.IntegerColumn),
+        ('microsecond', ops.ExtractMicrosecond, ir.IntegerColumn),
         ('millisecond', ops.ExtractMillisecond, ir.IntegerColumn),
     ],
 )

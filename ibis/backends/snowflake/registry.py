@@ -410,6 +410,12 @@ operation_registry.update(
         ops.RegexExtract: _regex_extract,
         ops.RegexSearch: fixed_arity(sa.sql.operators.custom_op("REGEXP"), 2),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
+        ops.ExtractMicrosecond: fixed_arity(
+            lambda arg: sa.cast(
+                sa.extract("epoch_microsecond", arg) % 1000000, sa.SMALLINT
+            ),
+            1,
+        ),
         ops.ExtractMillisecond: fixed_arity(
             lambda arg: sa.cast(
                 sa.extract("epoch_millisecond", arg) % 1000, sa.SMALLINT

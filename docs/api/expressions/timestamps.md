@@ -141,6 +141,9 @@ All temporal operations are valid for both scalars and columns.
 ::: ibis.expr.types.temporal._TimeComponentMixin.hour
     options:
       heading_level: 4
+::: ibis.expr.types.temporal._TimeComponentMixin.microsecond
+    options:
+      heading_level: 4
 ::: ibis.expr.types.temporal._TimeComponentMixin.millisecond
     options:
       heading_level: 4

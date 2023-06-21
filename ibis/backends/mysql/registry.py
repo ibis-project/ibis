@@ -225,6 +225,9 @@ operation_registry.update(
         ops.ExtractDayOfYear: unary(sa.func.dayofyear),
         ops.ExtractEpochSeconds: unary(sa.func.UNIX_TIMESTAMP),
         ops.ExtractWeekOfYear: unary(sa.func.weekofyear),
+        ops.ExtractMicrosecond: fixed_arity(
+            lambda arg: sa.func.floor(sa.extract('microsecond', arg)), 1
+        ),
         ops.ExtractMillisecond: fixed_arity(
             lambda arg: sa.func.floor(sa.extract('microsecond', arg) / 1000), 1
         ),
