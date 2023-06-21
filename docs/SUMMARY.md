@@ -4,6 +4,7 @@
     * [Getting Started](getting_started.md)
     * [How To Guides](how_to/)
     * [Execution Backends](backends/)
+    * [Supported Python Versions](supported_python_versions.md)
     * [User Guide](user_guide/)
     * [Ibis for SQL Programmers](ibis-for-sql-programmers.ipynb)
     * [Ibis for pandas Users](ibis-for-pandas-users.ipynb)
