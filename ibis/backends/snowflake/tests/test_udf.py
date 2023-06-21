@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import sys
+
 import pandas.testing as tm
+import pytest
 
 import ibis.expr.datatypes as dt
 from ibis import _
@@ -23,6 +26,9 @@ def test_udf(con):
     assert not result.empty
 
 
+@pytest.mark.xfail(
+    sys.version_info[:2] < (3, 9), reason="builtins aren't annotated in < 3.9"
+)
 def test_map_udf(con):
     @udf.scalar.python
     def num_vowels_map(s: str, include_y: bool = False) -> dict[str, int]:
@@ -42,6 +48,9 @@ def test_map_udf(con):
     assert not df.empty
 
 
+@pytest.mark.xfail(
+    sys.version_info[:2] < (3, 9), reason="builtins aren't annotated in < 3.9"
+)
 def test_map_merge_udf(con):
     @udf.scalar.python
     def vowels_map(s: str) -> dict[str, int]:
