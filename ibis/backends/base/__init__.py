@@ -485,7 +485,7 @@ class _FileIOHandler:
             raise ImportError(
                 "The deltalake extra is required to use the "
                 "to_delta method. You can install it using pip:\n\n"
-                "pip install ibis-framework[deltalake]\n"
+                "pip install 'ibis-framework[deltalake]'\n"
             )
 
         batch_reader = expr.to_pyarrow_batches(params=params)

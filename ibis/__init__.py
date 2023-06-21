@@ -54,7 +54,7 @@ def __getattr__(name: str) -> BaseBackend:
         msg = f"module 'ibis' has no attribute '{name}'. "
         if name in _KNOWN_BACKENDS:
             msg += f"""If you are trying to access the '{name}' backend,
-                    try installing it first with `pip install ibis-{name}`"""
+                    try installing it first with `pip install 'ibis-framework[{name}]'`"""
         raise AttributeError(msg)
 
     if len(entry_points) > 1:
