@@ -143,6 +143,8 @@ _from_trino_types = {
 
 
 class TrinoType(AlchemyType):
+    dialect = "trino"
+
     @classmethod
     def to_ibis(cls, typ, nullable=True):
         if dtype := _from_trino_types.get(type(typ)):

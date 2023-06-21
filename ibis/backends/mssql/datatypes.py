@@ -116,6 +116,8 @@ _from_mssql_types = {
 
 
 class MSSQLType(AlchemyType):
+    dialect = "mssql"
+
     @classmethod
     def to_ibis(cls, typ, nullable=True):
         if dtype := _from_mssql_types.get(type(typ)):

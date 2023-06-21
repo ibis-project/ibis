@@ -8,7 +8,14 @@ import os
 import warnings
 from functools import partial
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Iterable,
+    Iterator,
+    Mapping,
+    MutableMapping,
+)
 
 import duckdb
 import pyarrow as pa
@@ -25,6 +32,7 @@ from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType, parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
+from ibis.expr.operations.udf import InputType
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
@@ -53,6 +61,12 @@ def _format_kwargs(kwargs: Mapping[str, Any]):
             pieces.append(f"{name} = {value!r}")
 
     return sa.text(", ".join(pieces)).bindparams(*bindparams)
+
+
+_UDF_INPUT_TYPE_MAPPING = {
+    InputType.PYARROW: duckdb.functional.ARROW,
+    InputType.PYTHON: duckdb.functional.NATIVE,
+}
 
 
 class Backend(BaseAlchemyBackend):
@@ -913,6 +927,45 @@ class Backend(BaseAlchemyBackend):
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        import ibis.expr.operations as ops
+
+        with self.begin() as con:
+            for udf_node in expr.op().find(ops.ScalarUDF):
+                compile_func = getattr(
+                    self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                )
+                with contextlib.suppress(duckdb.InvalidInputException):
+                    con.connection.driver_connection.remove_function(
+                        udf_node.__class__.__name__
+                    )
+
+                registration_func = compile_func(udf_node)
+                registration_func(con)
+
+    def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
+        func = udf_node.__func__
+        name = func.__name__
+        input_types = [DuckDBType.to_string(arg.output_dtype) for arg in udf_node.args]
+        output_type = DuckDBType.to_string(udf_node.output_dtype)
+
+        def register_udf(con):
+            return con.connection.driver_connection.create_function(
+                name,
+                func,
+                input_types,
+                output_type,
+                type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+            )
+
+        return register_udf
+
+    _compile_python_udf = _compile_udf
+    _compile_pyarrow_udf = _compile_udf
+
+    def _compile_pandas_udf(self, _: ops.ScalarUDF) -> None:
+        raise NotImplementedError("duckdb doesn't support pandas UDFs")
 
     def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
         # TODO: remove this once duckdb supports CTAS prepared statements
