@@ -12,8 +12,8 @@ hide:
 ---
 
 <div class="install-tutorial-button" markdown>
-[Getting Started](./getting_started.md){ .md-button .md-button--primary }
-[Install](./install.md){ .md-button }
+[Getting Started](/tutorial/getting_started/){ .md-button .md-button--primary }
+[Install](/install/){ .md-button }
 </div>
 
 ---
@@ -49,7 +49,7 @@ ORDER BY t1.year DESC
 
 ## Features
 
-- **Consistent syntax across backends**: Enjoy a uniform Python API, whether using [DuckDB](https://duckdb.org), [PostgreSQL](https://postgresql.org), [PySpark](https://spark.apache.org/docs/latest/api/python/index.html), [BigQuery](https://cloud.google.com/bigquery/), or [any other supported backend](./backends/index.md).
+- **Consistent syntax across backends**: Enjoy a uniform Python API, whether using [DuckDB](https://duckdb.org), [PostgreSQL](https://postgresql.org), [PySpark](https://spark.apache.org/docs/latest/api/python/index.html), [BigQuery](https://cloud.google.com/bigquery/), or [any other supported backend](/backends/).
 - **Performant**: Execute queries as fast as the database engine itself.
 - **Interactive**: Explore data in a notebook or REPL.
 - **Extensible**: Add new operations, optimizations, and custom APIs.

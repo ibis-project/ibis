@@ -1,4 +1,4 @@
-# How to Compute the Top K Records
+# Compute the top K records
 
 <!-- prettier-ignore-start -->
 Here we use the [`topk`][ibis.expr.types.Column.topk] method to compute the top

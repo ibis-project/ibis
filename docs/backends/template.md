@@ -15,7 +15,7 @@
 
 ## Install
 
-Install ibis and dependencies for the {{ backend_name }} backend:
+Install `ibis` and dependencies for the {{ backend_name }} backend:
 
 === "pip"
 
