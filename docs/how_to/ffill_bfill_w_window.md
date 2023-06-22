@@ -1,4 +1,4 @@
-# How to `ffill` and `bfill` using Window Functions
+# Forward and backward fill data using window functions
 
 If you have gaps in your data and need to fill them in using a simple forward fill
 (given an order, null values are replaced by the value preceding) or backward fill

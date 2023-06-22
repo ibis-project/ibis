@@ -1,10 +1,10 @@
-# How to Write a Streamlit App with Ibis
+# Write a Streamlit app with Ibis
 
 Streamlit + Ibis = :heart:
 
 Ibis supports the [streamlit `experimental_connection` interface](https://blog.streamlit.io/introducing-st-experimental_connection/), making it easier than ever to combine the powers of both tools!
 
-Check out the example application below that shows the top N ingredients from a corpus of recipes using [the ClickHouse backend](../backends/ClickHouse.md)!
+Check out the example application below that shows the top N ingredients from a corpus of recipes using [the ClickHouse backend](/backends/clickhouse/)!
 
 <div class="streamlit-app">
   <iframe class="streamlit-app-inner" src="https://ibis-example.streamlit.app/?embedded=true"></iframe>

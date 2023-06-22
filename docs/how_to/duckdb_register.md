@@ -1,4 +1,4 @@
-# How to Use `register` to load external data files with the DuckDB backend
+# Load external data files with the DuckDB backend
 
 <!-- prettier-ignore-start -->
 Here we use the `register` method to load external data files and join them.
