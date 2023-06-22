@@ -1373,8 +1373,9 @@ def compile_extract_second(t, op, **kwargs):
 
 @compiles(ops.ExtractMicrosecond)
 def compile_extract_microsecond(t, op, **kwargs):
-    arg = t.translate(op.arg, **kwargs)
-    return F.unix_micros(arg) % 1_000_000
+    raise com.UnsupportedOperationError(
+        'PySpark backend does not support extracting microseconds.'
+    )
 
 
 @compiles(ops.ExtractMillisecond)
