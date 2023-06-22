@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
 
 import sqlalchemy as sa
+import toolz
 
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mssql.compiler import MsSqlCompiler
@@ -12,6 +13,7 @@ from ibis.backends.mssql.datatypes import _type_from_result_set_info
 
 if TYPE_CHECKING:
     import ibis.expr.schema as sch
+    import ibis.expr.types as ir
 
 
 class Backend(BaseAlchemyBackend):
@@ -79,3 +81,22 @@ class Backend(BaseAlchemyBackend):
         return super()._table_from_schema(
             temp * "#" + name, schema=schema, database=database, temp=False
         )
+
+    def _cursor_batches(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+    ) -> Iterable[list]:
+        self._run_pre_execute_hooks(expr)
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        sql = query_ast.compile()
+
+        with self._safe_raw_sql(sql) as cursor:
+            # this is expensive for large result sets
+            #
+            # see https://github.com/ibis-project/ibis/pull/6513
+            batch = cursor.fetchall()
+
+        yield from toolz.partition_all(chunk_size, batch)
