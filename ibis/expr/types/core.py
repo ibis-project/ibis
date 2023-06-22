@@ -493,6 +493,34 @@ class Expr(Immutable):
         """
         self._find_backend(use_default=True).to_delta(self, path, **kwargs)
 
+    @experimental
+    def to_torch(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Execute an expression and return results as a dictionary of torch tensors.
+
+        Parameters
+        ----------
+        params
+            Parameters to substitute into the expression.
+        limit
+            An integer to effect a specific row limit. A value of `None` means no limit.
+        kwargs
+            Keyword arguments passed into the backend's `to_torch` implementation.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            A dictionary of torch tensors, keyed by column name.
+        """
+        return self._find_backend(use_default=True).to_torch(
+            self, params=params, limit=limit, **kwargs
+        )
+
     def unbind(self) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
         from ibis.expr.analysis import substitute_unbound

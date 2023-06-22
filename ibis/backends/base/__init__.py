@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import pyarrow as pa
+    import torch
 
 __all__ = ('BaseBackend', 'Database', 'connect')
 
@@ -333,6 +334,44 @@ class _FileIOHandler:
             RecordBatchReader
         """
         raise NotImplementedError
+
+    @util.experimental
+    def to_torch(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, torch.array]:
+        """Execute an expression and return results as a dictionary of torch tensors.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Parameters to substitute into the expression.
+        limit
+            An integer to effect a specific row limit. A value of `None` means no limit.
+        kwargs
+            Keyword arguments passed into the backend's `to_torch` implementation.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            A dictionary of torch tensors, keyed by column name.
+        """
+        import torch
+
+        t = self.to_pyarrow(expr, params=params, limit=limit, **kwargs)
+        # without .copy() the arrays are read-only and thus writing to them is
+        # undefined behavior; we can't ignore this warning from torch because
+        # we're going out of ibis and downstream code can do whatever it wants
+        # with the data
+        return {
+            name: torch.from_numpy(t[name].to_numpy().copy()) for name in t.schema.names
+        }
 
     def read_parquet(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
