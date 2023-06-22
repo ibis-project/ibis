@@ -59,6 +59,7 @@ def test_table_to_pyarrow_batches(limit, awards_players):
     if limit is not None:
         assert len(batch) == limit
     util.consume(batch_reader)
+    batch_reader.close()
 
 
 @pytest.mark.notyet(
@@ -73,6 +74,7 @@ def test_column_to_pyarrow_batches(limit, awards_players):
     if limit is not None:
         assert len(batch) == limit
     util.consume(batch_reader)
+    batch_reader.close()
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
@@ -161,6 +163,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) <= 2048
     util.consume(batch_reader)
+    batch_reader.close()
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
@@ -178,6 +181,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) <= 2048
     util.consume(batch_reader)
+    batch_reader.close()
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
@@ -195,6 +199,7 @@ def test_to_pyarrow_batches_borked_types(batting):
     assert isinstance(batch, pa.RecordBatch)
     assert len(batch) == 42
     util.consume(batch_reader)
+    batch_reader.close()
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pyspark"])
