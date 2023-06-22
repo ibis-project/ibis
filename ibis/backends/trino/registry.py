@@ -464,6 +464,12 @@ operation_registry.update(
         ops.Last: partial(_first_last, offset=-1),
         ops.ArrayZip: _zip,
         ops.TryCast: _try_cast,
+        ops.ExtractMicrosecond: fixed_arity(
+            # trino only seems to store milliseconds, but the result of
+            # formatting always pads the right with 000
+            lambda arg: sa.cast(sa.func.date_format(arg, "%f"), sa.INTEGER()),
+            1,
+        ),
     }
 )
 

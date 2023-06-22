@@ -1097,11 +1097,12 @@ for _op, _name in _simple_ops.items():
 
 del _fmt, _name, _op
 
+
 @translate_val.register(ops.ExtractMicrosecond)
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
     dtype = serialize(op.output_dtype)
-    return f"CAST(substring(formatDateTime({arg}, '%f'), 1, 3) AS {dtype})"    
+    return f"CAST(substring(formatDateTime({arg}, '%f'), 1, 3) AS {dtype})"
 
 
 @translate_val.register(ops.ExtractMillisecond)
