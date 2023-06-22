@@ -47,9 +47,14 @@ except ImportError:
     ClickhouseOperationalError = None
 
 try:
-    from impala.error import HiveServer2Error as ImpalaHiveServer2Error
+    from impala.error import (
+        HiveServer2Error as ImpalaHiveServer2Error,
+    )
+    from impala.error import (
+        OperationalError as ImpalaOperationalError,
+    )
 except ImportError:
-    ImpalaHiveServer2Error = None
+    ImpalaHiveServer2Error = ImpalaOperationalError = None
 
 
 @pytest.mark.parametrize('attr', ['year', 'month', 'day'])
@@ -260,7 +265,11 @@ def test_timestamp_extract_literal(con, func, expected):
     raises=com.UnsupportedOperationError,
     reason='PySpark backend does not support extracting microseconds.',
 )
-
+@pytest.mark.notyet(
+    ["impala"],
+    raises=ImpalaOperationalError,
+    reason='Impala backend does not support extracting microseconds.',
+)
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_microseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.microsecond().name("microsecond")
@@ -269,6 +278,7 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
         (df.timestamp_col.dt.microsecond).astype('int32')
     ).rename("microsecond")
     backend.assert_series_equal(result, expected)
+
 
 @pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
@@ -281,7 +291,6 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     raises=com.UnsupportedOperationError,
     reason='PySpark backend does not support extracting milliseconds.',
 )
-
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")

@@ -711,5 +711,8 @@ operation_registry.update(
         ops.StructField: _struct_field,
         ops.First: reduction(sa.func.first),
         ops.Last: reduction(sa.func.last),
+        ops.ExtractMicrosecond: fixed_arity(
+            lambda arg: sa.extract("microsecond", arg) % 1_000_000, 1
+        ),
     }
 )

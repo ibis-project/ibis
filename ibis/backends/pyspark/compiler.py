@@ -1373,7 +1373,8 @@ def compile_extract_second(t, op, **kwargs):
 
 @compiles(ops.ExtractMicrosecond)
 def compile_extract_microsecond(t, op, **kwargs):
-    return _extract_component_from_datetime(t, op, extract_fn=F.microsecond, **kwargs) 
+    arg = t.translate(op.arg, **kwargs)
+    return F.unix_micros(arg) % 1_000_000
 
 
 @compiles(ops.ExtractMillisecond)
