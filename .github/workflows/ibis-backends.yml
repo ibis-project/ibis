@@ -103,6 +103,8 @@ jobs:
             extras:
               - duckdb
               - deltalake
+            additional_deps:
+              - torch
           - name: pandas
             title: Pandas
             extras:
@@ -145,12 +147,12 @@ jobs:
             sys-deps:
               - libgeos-dev
           - name: postgres
-            title: PostgreSQL + PyArrow
+            title: PostgreSQL + Torch
             extras:
               - postgres
               - geospatial
             additional_deps:
-              - pyarrow
+              - torch
             services:
               - postgres
             sys-deps:
@@ -230,12 +232,12 @@ jobs:
           - os: windows-latest
             backend:
               name: postgres
-              title: PostgreSQL + PyArrow
+              title: PostgreSQL + Torch
               extras:
                 - postgres
                 - geospatial
               additional_deps:
-                - pyarrow
+                - torch
               services:
                 - postgres
               sys-deps:

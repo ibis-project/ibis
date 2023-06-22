@@ -37,6 +37,7 @@ from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
+    import torch
 
     import ibis.expr.operations as ops
 
@@ -643,9 +644,7 @@ class Backend(BaseAlchemyBackend):
         self._load_extensions(["sqlite"])
         with self.begin() as con:
             con.execute(sa.text(f"SET GLOBAL sqlite_all_varchar={all_varchar}"))
-            con.execute(
-                sa.text(f"CALL sqlite_attach('{path!s}', overwrite={overwrite})")
-            )
+            con.execute(sa.text(f"CALL sqlite_attach('{path}', overwrite={overwrite})"))
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         from ibis.expr.analysis import find_physical_tables
@@ -745,6 +744,37 @@ class Backend(BaseAlchemyBackend):
             return table.columns[0][0]
         else:
             raise ValueError
+
+    @util.experimental
+    def to_torch(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> dict[str, torch.array]:
+        """Execute an expression and return results as a dictionary of torch tensors.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Parameters to substitute into the expression.
+        limit
+            An integer to effect a specific row limit. A value of `None` means no limit.
+        kwargs
+            Keyword arguments passed into the backend's `to_torch` implementation.
+
+        Returns
+        -------
+        dict[str, torch.Tensor]
+            A dictionary of torch tensors, keyed by column name.
+        """
+        compiled = self.compile(expr, limit=limit, params=params, **kwargs)
+        with self._safe_raw_sql(compiled) as cur:
+            return cur.connection.connection.torch()
 
     @util.experimental
     def to_parquet(

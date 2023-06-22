@@ -417,3 +417,29 @@ def test_dataframe_protocol(alltypes):
     output = alltypes.__dataframe__()
     assert list(output.column_names()) == alltypes.columns
     assert alltypes.count().execute() == output.num_rows()
+
+
+@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(
+    ["mysql"],
+    raises=pa.ArrowInvalid,
+    reason="attempted conversion from decimal to double",
+)
+@pytest.mark.notimpl(
+    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
+)
+def test_to_torch(alltypes):
+    import ibis.selectors as s
+
+    torch = pytest.importorskip("torch")
+    selector = s.numeric() | s.of_type("bool")
+    numeric = alltypes.select(selector).limit(1)
+
+    results = numeric.to_torch()
+
+    assert all(isinstance(results[column], torch.Tensor) for column in numeric.columns)
+
+    # torch can't handle non-numeric types
+    non_numeric = alltypes.select(~selector).limit(1)
+    with pytest.raises(TypeError):
+        non_numeric.to_torch()
