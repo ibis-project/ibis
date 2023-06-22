@@ -1102,14 +1102,26 @@ del _fmt, _name, _op
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
     dtype = serialize(op.output_dtype)
-    return f"CAST(substring(formatDateTime({arg}, '%f'), 1, 3) AS {dtype})"
+
+    datetime_type_args = ["6"]
+    if (tz := op.arg.output_dtype.timezone) is not None:
+        datetime_type_args.append(f"'{tz}'")
+
+    datetime_type = f"DateTime64({', '.join(datetime_type_args)})"
+    return f"CAST(toUnixTimestamp64Micro(CAST({arg} AS {datetime_type})) % 1000000 AS {dtype})"
 
 
 @translate_val.register(ops.ExtractMillisecond)
 def _extract_millisecond(op, **kw):
     arg = translate_val(op.arg, **kw)
     dtype = serialize(op.output_dtype)
-    return f"CAST(substring(formatDateTime({arg}, '%f'), 1, 3) AS {dtype})"
+
+    datetime_type_args = ["3"]
+    if (tz := op.arg.output_dtype.timezone) is not None:
+        datetime_type_args.append(f"'{tz}'")
+
+    datetime_type = f"DateTime64({', '.join(datetime_type_args)})"
+    return f"CAST(toUnixTimestamp64Milli(CAST({arg} AS {datetime_type})) % 1000 AS {dtype})"
 
 
 @translate_val.register
