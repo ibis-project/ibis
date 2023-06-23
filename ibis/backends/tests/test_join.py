@@ -22,33 +22,6 @@ def _pandas_anti_join(left, right, on, **_):
     return inner[inner["_merge"] == "left_only"]
 
 
-def _merge(
-    left,
-    right,
-    on,
-    *,
-    how,
-    suffixes=("", "_y"),
-):
-    joined = pd.merge(
-        left,
-        right,
-        on=on,
-        how=how,
-        suffixes=suffixes,
-        indicator=True,
-    )
-    if how == "right":
-        filt_key = {"left_only"}
-    elif how == "left":
-        filt_key = {"right_only"}
-    else:
-        filt_key = set()
-
-    joined.loc[joined["_merge"].isin(filt_key), on] = np.nan
-    return joined.drop(["_merge"], axis=1)
-
-
 IMPLS = {
     "semi": _pandas_semi_join,
     "anti": _pandas_anti_join,
@@ -56,7 +29,7 @@ IMPLS = {
 
 
 def check_eq(left, right, how, **kwargs):
-    impl = IMPLS.get(how, _merge)
+    impl = IMPLS.get(how, pd.merge)
     return impl(left, right, how=how, **kwargs)
 
 
