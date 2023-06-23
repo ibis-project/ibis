@@ -328,7 +328,7 @@ class Backend(BaseSQLBackend):
         sql = query_ast.compile()
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
-        schema = self.ast_schema(query_ast, **kwargs)
+        schema = expr.as_table().schema()
         result = self.fetch_from_cursor(cursor, schema)
 
         if hasattr(getattr(query_ast, "dml", query_ast), "result_handler"):

@@ -254,7 +254,7 @@ class BaseSQLBackend(BaseBackend):
         sql = query_ast.compile()
         self._log(sql)
 
-        schema = self.ast_schema(query_ast, **kwargs)
+        schema = expr.as_table().schema()
 
         with self._safe_raw_sql(sql, **kwargs) as cursor:
             result = self.fetch_from_cursor(cursor, schema)
@@ -275,39 +275,6 @@ class BaseSQLBackend(BaseBackend):
     @abc.abstractmethod
     def fetch_from_cursor(self, cursor, schema):
         """Fetch data from cursor."""
-
-    def ast_schema(self, query_ast, **kwargs) -> sch.Schema:
-        """Return the schema of the expression.
-
-        Parameters
-        ----------
-        query_ast
-            The AST of the query
-        kwargs
-            Backend specific parameters
-
-        Returns
-        -------
-        Schema
-            An ibis schema
-
-        Raises
-        ------
-        ValueError
-            if `self.expr` doesn't have a schema.
-        """
-        dml = getattr(query_ast, 'dml', query_ast)
-        op = getattr(dml, 'parent_op', getattr(dml, 'table_set', None))
-
-        if isinstance(op, ops.TableNode):
-            return op.schema
-        elif isinstance(op, ops.Value):
-            return sch.schema({op.name: op.output_dtype})
-        else:
-            raise ValueError(
-                'Expression with type {} does not have a '
-                'schema'.format(type(self.expr))
-            )
 
     def _log(self, sql: str) -> None:
         """Log the SQL, usually to the standard output.
