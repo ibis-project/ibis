@@ -1,9 +1,9 @@
 from ibis.backends.flink.compiler.core import translate
 
 
-def test_join(batting, awards_players, snapshot):
-    left = batting
-    right = awards_players
+def test_mutating_join(batting, awards_players, snapshot):
+    left = batting[batting.yearID == 2015]
+    right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
 
     predicate = ['playerID']
 
