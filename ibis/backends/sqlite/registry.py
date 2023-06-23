@@ -340,6 +340,9 @@ operation_registry.update(
         ops.ExtractHour: _strftime_int('%H'),
         ops.ExtractMinute: _strftime_int('%M'),
         ops.ExtractSecond: _strftime_int('%S'),
+        ops.ExtractMicrosecond: fixed_arity(
+            lambda arg: (sa.func.strftime('%f', arg)) % 1000, 1
+        ),
         ops.ExtractMillisecond: fixed_arity(
             lambda arg: (sa.func.strftime('%f', arg) * 1000) % 1000, 1
         ),

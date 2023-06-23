@@ -268,6 +268,7 @@ class _FileIOHandler:
             A pyarrow table holding the results of the executed expression.
         """
         pa = self._import_pyarrow()
+        self._run_pre_execute_hooks(expr)
         try:
             # Can't construct an array from record batches
             # so construct at one column table (if applicable)
@@ -485,7 +486,7 @@ class _FileIOHandler:
             raise ImportError(
                 "The deltalake extra is required to use the "
                 "to_delta method. You can install it using pip:\n\n"
-                "pip install ibis-framework[deltalake]\n"
+                "pip install 'ibis-framework[deltalake]'\n"
             )
 
         batch_reader = expr.to_pyarrow_batches(params=params)
@@ -503,6 +504,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     name: ClassVar[str]
 
     supports_temporary_tables = False
+    supports_python_udfs = False
+    supports_in_memory_tables = True
 
     def __init__(self, *args, **kwargs):
         self._con_args: tuple[Any] = args
@@ -754,6 +757,20 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             except ValueError as e:
                 raise exc.BackendConfigurationNotRegistered(backend_name) from e
 
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        """Register UDFs contained in `expr` with the backend."""
+        if self.supports_python_udfs:
+            raise NotImplementedError(self.name)
+
+    def _register_in_memory_tables(self, expr: ir.Expr):
+        if self.supports_in_memory_tables:
+            raise NotImplementedError(self.name)
+
+    def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
+        """Backend-specific hooks to run before an expression is executed."""
+        self._register_udfs(expr)
+        self._register_in_memory_tables(expr)
+
     def compile(
         self,
         expr: ir.Expr,
@@ -810,7 +827,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,

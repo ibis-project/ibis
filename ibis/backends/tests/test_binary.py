@@ -25,7 +25,7 @@ pytestmark = pytest.mark.broken(["druid"], raises=AssertionError)
     raises=sqlalchemy.exc.StatementError,
 )
 @pytest.mark.broken(
-    ['clickhouse', 'impala', 'polars'],
+    ['clickhouse', 'impala'],
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )

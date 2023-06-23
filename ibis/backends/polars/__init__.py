@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, MutableMapping
 
 import polars as pl
 
@@ -19,6 +19,7 @@ from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 
 class Backend(BaseBackend):
@@ -33,9 +34,9 @@ class Backend(BaseBackend):
         self._context = pl.SQLContext()
 
     def do_connect(
-        self, tables: MutableMapping[str, pl.LazyFrame] | None = None
+        self, tables: MutableMapping[str, pl.LazyFrame | pl.DataFrame] | None = None
     ) -> None:
-        """Construct a client from a dictionary of `polars.LazyFrame`s.
+        """Construct a client from a dictionary of polars `LazyFrame`s and/or `DataFrame`s.
 
         Parameters
         ----------
@@ -94,10 +95,7 @@ class Backend(BaseBackend):
         if isinstance(source, (str, Path)):
             first = str(source)
         elif isinstance(source, (list, tuple)):
-            raise TypeError(
-                """Polars backend cannot register iterables of files.
-           For partitioned-parquet ingestion, use read_parquet"""
-            )
+            first = str(source[0])
         else:
             try:
                 return self.read_pandas(source, table_name=table_name, **kwargs)
@@ -128,6 +126,8 @@ class Backend(BaseBackend):
         )
 
     def _add_table(self, name: str, obj: pl.LazyFrame | pl.DataFrame) -> None:
+        if isinstance(obj, pl.DataFrame):
+            obj = obj.lazy()
         self._tables[name] = obj
         self._context.register(name, obj)
 
@@ -173,60 +173,7 @@ class Backend(BaseBackend):
             self._add_table(table_name, pl.scan_csv(path, **kwargs))
         except pl.exceptions.ComputeError:
             # handles compressed csvs
-            self._add_table(table_name, pl.read_csv(path, **kwargs).lazy())
-        return self.table(table_name)
-
-    def read_pandas(
-        self, source: pd.DataFrame, table_name: str | None = None, **kwargs: Any
-    ) -> ir.Table:
-        """Register a Pandas DataFrame or pyarrow Table a table in the current database.
-
-        Parameters
-        ----------
-        source
-            The data source.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        **kwargs
-            Additional keyword arguments passed to Polars loading function.
-            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.from_pandas.html
-            for more information.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-        """
-        table_name = table_name or gen_name("read_in_memory")
-        self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
-        return self.table(table_name)
-
-    def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
-    ) -> ir.Table:
-        """Register a parquet file as a table in the current database.
-
-        Parameters
-        ----------
-        path
-            The data source(s). May be a path to a file or directory of parquet files.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        **kwargs
-            Additional keyword arguments passed to Polars loading function.
-            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
-            for more information.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-        """
-        path = normalize_filename(path)
-        table_name = table_name or gen_name("read_parquet")
-        self._add_table(table_name, pl.scan_parquet(path, **kwargs))
+            self._add_table(table_name, pl.read_csv(path, **kwargs))
         return self.table(table_name)
 
     def read_delta(
@@ -257,11 +204,84 @@ class Backend(BaseBackend):
             raise ImportError(
                 "The deltalake extra is required to use the "
                 "read_delta method. You can install it using pip:\n\n"
-                "pip install ibis-framework[polars,deltalake]\n"
+                "pip install 'ibis-framework[polars,deltalake]'\n"
             )
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_delta")
         self._add_table(table_name, pl.scan_delta(path, **kwargs))
+        return self.table(table_name)
+
+    def read_pandas(
+        self, source: pd.DataFrame, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a Pandas DataFrame or pyarrow Table a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.from_pandas.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or gen_name("read_in_memory")
+        self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
+        return self.table(table_name)
+
+    def read_parquet(
+        self,
+        path: str | Path | Iterable[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source(s). May be a path to a file, an iterable of files,
+            or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
+            for more information (if loading a single file or glob; when loading
+            multiple files polars' `scan_pyarrow_dataset` method is used instead).
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        table_name = table_name or gen_name("read_parquet")
+        if not isinstance(path, (str, Path)) and len(path) == 1:
+            path = path[0]
+
+        if not isinstance(path, (str, Path)) and len(path) > 1:
+            self._import_pyarrow()
+            import pyarrow.dataset as ds
+
+            paths = [normalize_filename(p) for p in path]
+            obj = pl.scan_pyarrow_dataset(
+                source=ds.dataset(paths, format="parquet"),
+                **kwargs,
+            )
+            self._add_table(table_name, obj)
+        else:
+            path = normalize_filename(path)
+            self._add_table(table_name, pl.scan_parquet(path, **kwargs))
+
         return self.table(table_name)
 
     def database(self, name=None):
@@ -270,7 +290,7 @@ class Backend(BaseBackend):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
@@ -380,7 +400,11 @@ class Backend(BaseBackend):
         if isinstance(expr, ir.Table):
             return df.to_pandas()
         elif isinstance(expr, ir.Column):
-            return df.to_pandas().iloc[:, 0]
+            if expr.type().is_temporal():
+                return df.to_pandas().iloc[:, 0]
+            else:
+                # note: skip frame-construction overhead
+                return df.to_series().to_pandas()
         elif isinstance(expr, ir.Scalar):
             return df.to_pandas().iat[0, 0]
         else:

@@ -21,9 +21,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-__all__ = [
-    'BaseSQLBackend',
-]
+__all__ = ['BaseSQLBackend']
 
 
 class BaseSQLBackend(BaseBackend):
@@ -206,6 +204,12 @@ class BaseSQLBackend(BaseBackend):
 
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batches)
 
+    def _compile_udfs(self, expr: ir.Expr) -> Iterable[str]:
+        """Return an iterator of DDL strings, once for each UDFs contained within `expr`."""
+        if self.supports_python_udfs:
+            raise NotImplementedError(self.name)
+        return []
+
     def execute(
         self,
         expr: ir.Expr,
@@ -243,14 +247,14 @@ class BaseSQLBackend(BaseBackend):
         # `external_tables` in clickhouse, but better to deprecate that
         # feature than all this magic.
         # we don't want to pass `timecontext` to `raw_sql`
+        self._run_pre_execute_hooks(expr)
+
         kwargs.pop('timecontext', None)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         self._log(sql)
 
-        schema = self.ast_schema(query_ast, **kwargs)
-
-        self._run_pre_execute_hooks(expr)
+        schema = expr.as_table().schema()
 
         with self._safe_raw_sql(sql, **kwargs) as cursor:
             result = self.fetch_from_cursor(cursor, schema)
@@ -268,46 +272,9 @@ class BaseSQLBackend(BaseBackend):
             for memtable in an.find_memtables(expr.op()):
                 self._register_in_memory_table(memtable)
 
-    def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
-        """Backend-specific hooks to run before an expression is executed."""
-        self._register_in_memory_tables(expr)
-
     @abc.abstractmethod
     def fetch_from_cursor(self, cursor, schema):
         """Fetch data from cursor."""
-
-    def ast_schema(self, query_ast, **kwargs) -> sch.Schema:
-        """Return the schema of the expression.
-
-        Parameters
-        ----------
-        query_ast
-            The AST of the query
-        kwargs
-            Backend specific parameters
-
-        Returns
-        -------
-        Schema
-            An ibis schema
-
-        Raises
-        ------
-        ValueError
-            if `self.expr` doesn't have a schema.
-        """
-        dml = getattr(query_ast, 'dml', query_ast)
-        op = getattr(dml, 'parent_op', getattr(dml, 'table_set', None))
-
-        if isinstance(op, ops.TableNode):
-            return op.schema
-        elif isinstance(op, ops.Value):
-            return sch.schema({op.name: op.output_dtype})
-        else:
-            raise ValueError(
-                'Expression with type {} does not have a '
-                'schema'.format(type(self.expr))
-            )
 
     def _log(self, sql: str) -> None:
         """Log the SQL, usually to the standard output.
@@ -344,6 +311,7 @@ class BaseSQLBackend(BaseBackend):
             The output of compilation. The type of this value depends on the
             backend.
         """
+        util.consume(self._compile_udfs(expr))
         return self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:

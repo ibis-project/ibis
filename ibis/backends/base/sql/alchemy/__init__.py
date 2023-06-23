@@ -41,6 +41,7 @@ from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 
 __all__ = (
@@ -99,6 +100,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
     compiler = AlchemyCompiler
     supports_temporary_tables = True
     _temporary_prefix = "TEMPORARY"
+
+    def _compile_type(self, dtype) -> str:
+        dialect = self.con.dialect
+        return sa.types.to_instance(
+            self.compiler.translator_class.get_sqla_type(dtype)
+        ).compile(dialect=dialect)
 
     def _build_alchemy_url(self, url, host, port, user, password, database, driver):
         if url is not None:
@@ -218,7 +225,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -255,8 +262,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
             raise com.IbisError("The schema or obj parameter is required")
 
         import pandas as pd
+        import pyarrow as pa
 
-        if isinstance(obj, pd.DataFrame):
+        if isinstance(obj, (pd.DataFrame, pa.Table)):
             obj = ibis.memtable(obj)
 
         if database == self.current_database:
@@ -698,6 +706,53 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 "is not a pandas DataFrame or is not a ibis Table."
                 f"The given obj is of type {type(obj).__name__} ."
             )
+
+    def _compile_udfs(self, expr: ir.Expr) -> Iterable[str]:
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            udf_node_type = type(udf_node)
+
+            if udf_node_type not in self.compiler.translator_class._registry:
+
+                @self.add_operation(udf_node_type)
+                def _(t, op):
+                    generator = sa.func
+                    if (namespace := op.__udf_namespace__) is not None:
+                        generator = getattr(generator, namespace)
+                    func = getattr(generator, type(op).__name__)
+                    return func(*map(t.translate, op.args))
+
+            compile_func = getattr(
+                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            compiled = compile_func(udf_node)
+            if compiled is not None:
+                yield compiled
+
+    def _compile_opaque_udf(self, udf_node: ops.ScalarUDF) -> str:
+        return None
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
+        if self.supports_python_udfs:
+            raise NotImplementedError(
+                f"The {self.name} backend does not support Python scalar UDFs"
+            )
+
+    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        if self.supports_python_udfs:
+            raise NotImplementedError(
+                f"The {self.name} backend does not support Pandas-based vectorized scalar UDFs"
+            )
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> str:
+        if self.supports_python_udfs:
+            raise NotImplementedError(
+                f"The {self.name} backend does not support PyArrow-based vectorized scalar UDFs"
+            )
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        with self.begin() as con:
+            for sql in self._compile_udfs(expr):
+                con.exec_driver_sql(sql)
 
     def _quote(self, name: str) -> str:
         """Quote an identifier."""

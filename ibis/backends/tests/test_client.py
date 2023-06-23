@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
+import pyarrow as pa
 import pytest
 import rich.console
 import sqlalchemy as sa
@@ -51,7 +52,57 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     return temporary
 
 
-def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
+@pytest.mark.parametrize(
+    "lamduh",
+    [
+        (lambda df: df),
+        param(
+            lambda df: pa.Table.from_pandas(df), marks=pytest.mark.notimpl(["impala"])
+        ),
+    ],
+    ids=["dataframe", "pyarrow table"],
+)
+@pytest.mark.parametrize(
+    "sch",
+    [
+        ibis.schema(
+            [
+                ('first_name', 'string'),
+                ('last_name', 'string'),
+                ('department_name', 'string'),
+                ('salary', 'float64'),
+            ]
+        ),
+        None,
+    ],
+    ids=["schema", "no schema"],
+)
+@pytest.mark.notimpl(["dask", "datafusion", "druid"])
+def test_create_table(backend, con, temp_table, lamduh, sch):
+    df = pd.DataFrame(
+        {
+            'first_name': ['A', 'B', 'C'],
+            'last_name': ['D', 'E', 'F'],
+            'department_name': ['AA', 'BB', 'CC'],
+            'salary': [100.0, 200.0, 300.0],
+        }
+    )
+
+    obj = lamduh(df)
+    con.create_table(temp_table, obj, schema=sch)
+    result = (
+        con.table(temp_table).execute().sort_values("first_name").reset_index(drop=True)
+    )
+
+    backend.assert_frame_equal(df, result)
+
+
+@pytest.mark.parametrize(
+    "lamduh",
+    [(lambda df: df), (lambda df: pa.Table.from_pandas(df))],
+    ids=["dataframe", "pyarrow table"],
+)
+def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, lamduh):
     sch = ibis.schema(
         [
             ('first_name', 'string'),
@@ -69,7 +120,9 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table):
             'salary': [100.0, 200.0, 300.0],
         }
     )
-    alchemy_con.create_table(alchemy_temp_table, df, schema=sch, overwrite=True)
+
+    obj = lamduh(df)
+    alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
     result = (
         alchemy_con.table(alchemy_temp_table)
         .execute()

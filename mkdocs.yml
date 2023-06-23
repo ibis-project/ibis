@@ -77,7 +77,6 @@ plugins:
             filters:
               - "!^_"
               - "!^__"
-              - "!^ast_schema"
               - "!^backend_table_type"
               - "!^column$"
               - "!^compiler$"

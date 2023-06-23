@@ -128,6 +128,10 @@ class _TimeComponentMixin:
         """Extract the second component."""
         return ops.ExtractSecond(self).to_expr()
 
+    def microsecond(self) -> ir.IntegerValue:
+        """Extract the microsecond component."""
+        return ops.ExtractMicrosecond(self).to_expr()
+
     def millisecond(self) -> ir.IntegerValue:
         """Extract the millisecond component."""
         return ops.ExtractMillisecond(self).to_expr()

@@ -301,6 +301,18 @@ def test_across_group_by_agg_with_grouped_selectors(penguins, expr_func):
     assert expr.equals(expected)
 
 
+def test_across_list(penguins):
+    expr = penguins.agg(s.across(["species", "island"], lambda c: c.count()))
+    expected = penguins.agg(species=_.species.count(), island=_.island.count())
+    assert expr.equals(expected)
+
+
+def test_across_str(penguins):
+    expr = penguins.agg(s.across("species", lambda c: c.count()))
+    expected = penguins.agg(species=_.species.count())
+    assert expr.equals(expected)
+
+
 def test_if_all(penguins):
     expr = penguins.filter(s.if_all(s.numeric() & ~s.c("year"), _ > 5))
     expected = penguins.filter(

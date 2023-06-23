@@ -125,7 +125,7 @@ class Predicate(Selector):
 
 @public
 def where(predicate: Callable[[ir.Value], bool]) -> Predicate:
-    """Return columns that satisfy `predicate`.
+    """Select columns that satisfy `predicate`.
 
     Use this selector when one of the other selectors does not meet your needs.
 
@@ -399,22 +399,25 @@ class Across(Selector):
 
 @public
 def across(
-    selector: Selector,
+    selector: Selector | Iterable[str] | str,
     func: Deferred
     | Callable[[ir.Value], ir.Value]
     | Mapping[str | None, Deferred | Callable[[ir.Value], ir.Value]],
     names: str | Callable[[str, str | None], str] | None = None,
 ) -> Across:
-    """Applies the same data transformation function across multiple columns.
+    """Apply data transformations across multiple columns.
 
     Parameters
     ----------
     selector
-        An expression that selects columns on which the transformation function will be applied.
+        An expression that selects columns on which the transformation function
+        will be applied, an iterable of `str` column names or a single `str`
+        column name.
     func
-        A function (or a dictionary of functions) to use to transform the data.
+        A function (or dictionary of functions) to use to transform the data.
     names
-        A lambda function or a format string to name the columns created by the transformation function.
+        A lambda function or a format string to name the columns created by the
+        transformation function.
 
     Returns
     -------
@@ -455,6 +458,8 @@ def across(
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
     funcs = frozendict(func if isinstance(func, Mapping) else {None: func})
+    if not isinstance(selector, Selector):
+        selector = c(*util.promote_list(selector))
     return Across(selector=selector, funcs=funcs, names=names)
 
 
@@ -473,11 +478,95 @@ class IfAnyAll(Selector):
 
 @public
 def if_any(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
+    """Return the **disjunction** of `predicate` applied on all `selector` columns.
+
+    Parameters
+    ----------
+    selector
+        A column selector
+    predicate
+        A callable or deferred object defining a predicate to apply to each
+        column from `selector`.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from ibis import selectors as s, _
+    >>> ibis.options.interactive = True
+    >>> penguins = ibis.examples.penguins.fetch()
+    >>> cols = s.across(s.endswith("_mm"), (_ - _.mean()) / _.std())
+    >>> expr = penguins.mutate(cols).filter(s.if_any(s.endswith("_mm"), _.abs() > 2))
+    >>> expr_by_hand = penguins.mutate(cols).filter(
+    ...     (_.bill_length_mm.abs() > 2)
+    ...     | (_.bill_depth_mm.abs() > 2)
+    ...     | (_.flipper_length_mm.abs() > 2)
+    ... )
+    >>> expr.equals(expr_by_hand)
+    True
+    >>> expr
+    ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string │ float64        │ float64       │ float64           │ … │
+    ├─────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Biscoe │      -1.103002 │      0.733662 │         -2.056307 │ … │
+    │ Gentoo  │ Biscoe │       1.113285 │     -0.431017 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe │       2.871660 │     -0.076550 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe │       1.900890 │     -0.734846 │          2.139483 │ … │
+    │ Gentoo  │ Biscoe │       1.076652 │     -0.177826 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe │       0.856855 │     -0.582932 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe │       1.497929 │     -0.076550 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe │       1.388031 │     -0.431017 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe │       2.047422 │     -0.582932 │          2.068368 │ … │
+    │ Adelie  │ Dream  │      -2.165354 │     -0.836123 │         -0.918466 │ … │
+    │ …       │ …      │              … │             … │                 … │ … │
+    └─────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
+    """
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.or_)
 
 
 @public
 def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
+    """Return the **conjunction** of `predicate` applied on all `selector` columns.
+
+    Parameters
+    ----------
+    selector
+        A column selector
+    predicate
+        A callable or deferred object defining a predicate to apply to each
+        column from `selector`.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from ibis import selectors as s, _
+    >>> ibis.options.interactive = True
+    >>> penguins = ibis.examples.penguins.fetch()
+    >>> cols = s.across(s.endswith("_mm"), (_ - _.mean()) / _.std())
+    >>> expr = penguins.mutate(cols).filter(s.if_all(s.endswith("_mm"), _.abs() > 1))
+    >>> expr_by_hand = penguins.mutate(cols).filter(
+    ...     (_.bill_length_mm.abs() > 1)
+    ...     & (_.bill_depth_mm.abs() > 1)
+    ...     & (_.flipper_length_mm.abs() > 1)
+    ... )
+    >>> expr.equals(expr_by_hand)
+    True
+    >>> expr
+    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string    │ float64        │ float64       │ float64           │ … │
+    ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Dream     │      -1.157951 │      1.088129 │         -1.416272 │ … │
+    │ Adelie  │ Torgersen │      -1.231217 │      1.138768 │         -1.202926 │ … │
+    │ Gentoo  │ Biscoe    │       1.149917 │     -1.443781 │          1.214987 │ … │
+    │ Gentoo  │ Biscoe    │       1.040019 │     -1.089314 │          1.072757 │ … │
+    │ Gentoo  │ Biscoe    │       1.131601 │     -1.089314 │          1.712792 │ … │
+    │ Gentoo  │ Biscoe    │       1.241499 │     -1.089314 │          1.570562 │ … │
+    │ Gentoo  │ Biscoe    │       1.351398 │     -1.494420 │          1.214987 │ … │
+    └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+    """
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.and_)
 
 

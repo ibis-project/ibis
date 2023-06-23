@@ -194,6 +194,9 @@ operation_registry.update(
         ops.TimestampTruncate: _timestamp_truncate,
         ops.DateTruncate: _timestamp_truncate,
         ops.Hash: unary(sa.func.checksum),
+        ops.ExtractMicrosecond: fixed_arity(
+            lambda arg: sa.func.datepart(sa.literal_column("microsecond"), arg), 1
+        ),
     }
 )
 

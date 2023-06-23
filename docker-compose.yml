@@ -112,7 +112,7 @@ services:
         - mariadb-admin
         - ping
       timeout: 5s
-    image: mariadb:11.0.2
+    image: mariadb:10.11.4
     ports:
       - 3306:3306
     networks:
@@ -189,7 +189,7 @@ services:
         - CMD-SHELL
         - trino --execute 'SELECT 1 AS one'
       timeout: 30s
-    image: trinodb/trino:419
+    image: trinodb/trino:420
     ports:
       - 8080:8080
     networks:

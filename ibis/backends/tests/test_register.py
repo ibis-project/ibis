@@ -223,7 +223,6 @@ def test_register_parquet(
         "mssql",
         "mysql",
         "pandas",
-        "polars",  # polars supports parquet dirs, not lists of files
         "postgres",
         "pyspark",
         "snowflake",
@@ -249,7 +248,6 @@ def test_register_iterator_parquet(
         )
 
     assert any("ibis_read_parquet" in t for t in con.list_tables())
-
     assert table.count().execute()
 
 

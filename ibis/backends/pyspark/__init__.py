@@ -33,6 +33,7 @@ from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
 
 def normalize_filenames(source_list):
@@ -346,7 +347,7 @@ class Backend(BaseSQLBackend):
     def create_table(
         self,
         name: str,
-        obj: ir.Table | pd.DataFrame | None = None,
+        obj: ir.Table | pd.DataFrame | pa.Table | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -383,6 +384,7 @@ class Backend(BaseSQLBackend):
         >>> con.create_table('new_table_name', table_expr)  # doctest: +SKIP
         """
         import pandas as pd
+        import pyarrow as pa
 
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
@@ -391,6 +393,8 @@ class Backend(BaseSQLBackend):
                 "PySpark backend does not yet support temporary tables"
             )
         if obj is not None:
+            if isinstance(obj, pa.Table):
+                obj = obj.to_pandas()
             if isinstance(obj, pd.DataFrame):
                 spark_df = self._session.createDataFrame(obj)
                 mode = "overwrite" if overwrite else "error"

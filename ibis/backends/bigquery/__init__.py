@@ -74,6 +74,8 @@ def _create_client_info_gapic(application_name):
 class Backend(BaseSQLBackend):
     name = "bigquery"
     compiler = BigQueryCompiler
+    supports_in_memory_tables = False
+    supports_python_udfs = False
 
     def _from_url(self, url: str, **kwargs):
         result = urlparse(url)
@@ -326,7 +328,7 @@ class Backend(BaseSQLBackend):
         sql = query_ast.compile()
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
-        schema = self.ast_schema(query_ast, **kwargs)
+        schema = expr.as_table().schema()
         result = self.fetch_from_cursor(cursor, schema)
 
         if hasattr(getattr(query_ast, "dml", query_ast), "result_handler"):
@@ -440,7 +442,7 @@ class Backend(BaseSQLBackend):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | ir.Table | None = None,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
@@ -457,19 +459,29 @@ class Backend(BaseSQLBackend):
             raise NotImplementedError(
                 "BigQuery backend does not yet support overwriting tables"
             )
-        if schema is not None:
-            table_id = self._fully_qualified_name(name, database)
-            table = bq.Table(table_id, schema=BigQuerySchema.from_ibis(schema))
-            self.client.create_table(table)
-        else:
+
+        if isinstance(obj, ir.Table) and schema is not None:
+            if not schema.equals(obj.schema()):
+                raise com.IbisTypeError(
+                    """Provided schema and Ibis table schema are incompatible.
+Please align the two schemas, or provide only one of the two arguments."""
+                )
+
+        if obj is not None:
+            import pyarrow as pa
+
             project_id, dataset = self._parse_project_and_dataset(database)
-            if isinstance(obj, pd.DataFrame):
-                table = ibis.memtable(obj)
+            if isinstance(obj, (pd.DataFrame, pa.Table)):
+                table = ibis.memtable(obj, schema=schema)
             else:
                 table = obj
             sql_select = self.compile(table)
             table_ref = f"`{project_id}`.`{dataset}`.`{name}`"
             self.raw_sql(f'CREATE TABLE {table_ref} AS ({sql_select})')
+        elif schema is not None:
+            table_id = self._fully_qualified_name(name, database)
+            table = bq.Table(table_id, schema=BigQuerySchema.from_ibis(schema))
+            self.client.create_table(table)
         return self.table(name, database=database)
 
     def drop_table(

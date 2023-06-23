@@ -50,9 +50,19 @@ def execute_extract_millisecond_timestamp(op, data, **kwargs):
     return int(data.microsecond // 1_000)
 
 
+@execute_node.register(ops.ExtractMicrosecond, datetime.datetime)
+def execute_extract_microsecond_timestamp(op, data, **kwargs):
+    return int(data.microsecond)
+
+
 @execute_node.register(ops.ExtractMillisecond, pd.Series)
 def execute_extract_millisecond_series(op, data, **kwargs):
     return (data.dt.microsecond // 1_000).astype(np.int32)
+
+
+@execute_node.register(ops.ExtractMicrosecond, pd.Series)
+def execute_extract_microsecond_series(op, data, **kwargs):
+    return data.dt.microsecond.astype(np.int32)
 
 
 @execute_node.register(ops.ExtractEpochSeconds, (datetime.datetime, pd.Series))

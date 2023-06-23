@@ -95,7 +95,7 @@ def literal(op, **_):
     elif dtype.is_null():
         return pl.lit(value)
     elif dtype.is_binary():
-        raise NotImplementedError(f"Unsupported type: {dtype!r}")
+        return pl.lit(value)
     else:
         typ = dtype_to_polars(dtype)
         return pl.lit(op.value, dtype=typ)
@@ -197,7 +197,7 @@ def selection(op, **kw):
             selections.append(translate(arg, **kw))
         else:
             raise com.TranslationError(
-                "DataFusion backend is unable to compile selection with "
+                "Polars backend is unable to compile selection with "
                 f"operation type of {type(arg)}"
             )
 
@@ -217,9 +217,10 @@ def selection(op, **kw):
 
 @translate.register(ops.Limit)
 def limit(op, **kw):
+    lf = translate(op.table, **kw)
     if op.offset:
-        raise NotImplementedError("DataFusion does not support offset")
-    return translate(op.table, **kw).limit(op.n)
+        return lf.slice(op.offset, op.n)
+    return lf.limit(op.n)
 
 
 @translate.register(ops.Aggregation)
@@ -284,18 +285,20 @@ def join(op, **kw):
 
 @translate.register(ops.DropNa)
 def dropna(op, **kw):
-    if op.how != 'any':
-        raise com.UnsupportedArgumentError(
-            f"Polars does not support how={op.how} for dropna"
-        )
+    lf = translate(op.table, **kw)
+
     if op.subset is None:
         subset = None
     elif not len(op.subset):
-        return translate(op.table, **kw)
+        return lf.clear() if op.how == 'all' else lf
     else:
         subset = [arg.name for arg in op.subset]
 
-    return translate(op.table, **kw).drop_nulls(subset)
+    if op.how == 'all':
+        cols = pl.col(subset) if subset else pl.all()
+        return lf.filter(~pl.all(cols.is_null()))
+
+    return lf.drop_nulls(subset)
 
 
 @translate.register(ops.FillNa)
@@ -323,6 +326,13 @@ def fillna(op, **kw):
         columns.append(column)
 
     return table.select(columns)
+
+
+@translate.register(ops.IdenticalTo)
+def identical_to(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+    return left.eq_missing(right)
 
 
 @translate.register(ops.IfNull)
@@ -651,20 +661,20 @@ def struct_column(op, **kw):
 
 
 _reductions = {
+    ops.All: 'all',
+    ops.Any: 'any',
     ops.ApproxMedian: 'median',
     ops.Count: 'count',
+    ops.CountDistinct: 'n_unique',
+    ops.First: 'first',
+    ops.Last: 'last',
     ops.Max: 'max',
     ops.Mean: 'mean',
+    ops.Median: 'median',
     ops.Min: 'min',
     ops.StandardDev: 'std',
     ops.Sum: 'sum',
     ops.Variance: 'var',
-    ops.CountDistinct: 'n_unique',
-    ops.Median: 'median',
-    ops.First: 'first',
-    ops.Last: 'last',
-    ops.All: 'all',
-    ops.Any: 'any',
 }
 
 for reduction in _reductions.keys():
@@ -885,6 +895,7 @@ _date_methods = {
     ops.ExtractHour: "hour",
     ops.ExtractMinute: "minute",
     ops.ExtractSecond: "second",
+    ops.ExtractMicrosecond: "microsecond",
     ops.ExtractMillisecond: "millisecond",
 }
 

@@ -679,6 +679,7 @@ OPERATION_REGISTRY = {
     ops.ExtractHour: _extract_field("hour"),
     ops.ExtractMinute: _extract_field("minute"),
     ops.ExtractSecond: _extract_field("second"),
+    ops.ExtractMicrosecond: _extract_field("microsecond"),
     ops.ExtractMillisecond: _extract_field("millisecond"),
     ops.Strftime: compiles_strftime,
     ops.StringToTimestamp: compiles_string_to_timestamp,
