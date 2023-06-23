@@ -6,6 +6,7 @@ from pytest import mark, param
 import ibis
 import ibis.common.exceptions as exc
 from ibis import _
+from ibis.backends.conftest import _get_backends_to_test
 
 sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
@@ -158,8 +159,9 @@ def test_isin_bug(con, snapshot):
     raises=sg.ParseError,
     reason="https://github.com/tobymao/sqlglot/pull/1379 not in the installed version of sqlglot",
 )
-def test_union_aliasing(con_nodata, snapshot):
-    if con_nodata.name == "snowflake":
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+def test_union_aliasing(backend_name, snapshot):
+    if backend_name == "snowflake":
         pytest.skip(
             "pivot requires random names to make snowflake work properly and cannot be snapshotted"
         )
@@ -207,4 +209,4 @@ def test_union_aliasing(con_nodata, snapshot):
 
     result = top_ten.union(bottom_ten)
 
-    snapshot.assert_match(str(ibis.to_sql(result, dialect=con_nodata.name)), "out.sql")
+    snapshot.assert_match(str(ibis.to_sql(result, dialect=backend_name)), "out.sql")
