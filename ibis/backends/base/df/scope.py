@@ -54,7 +54,7 @@ ScopeItem = namedtuple('ScopeItem', ['timecontext', 'value'])
 class Scope:
     def __init__(
         self,
-        param: dict[Node, Any] = None,
+        param: dict[Node, Any] | None = None,
         timecontext: TimeContext | None = None,
     ):
         """Create a new scope.

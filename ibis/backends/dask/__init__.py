@@ -69,7 +69,7 @@ class Backend(BasePandasBackend):
     def execute(
         self,
         query: ir.Expr,
-        params: Mapping[ir.Expr, object] = None,
+        params: Mapping[ir.Expr, object] | None = None,
         limit: str = 'default',
         **kwargs,
     ):
@@ -94,7 +94,7 @@ class Backend(BasePandasBackend):
         return _apply_schema(query.op(), result)
 
     def compile(
-        self, query: ir.Expr, params: Mapping[ir.Expr, object] = None, **kwargs
+        self, query: ir.Expr, params: Mapping[ir.Expr, object] | None = None, **kwargs
     ):
         """Compile `expr`.
 
@@ -110,7 +110,7 @@ class Backend(BasePandasBackend):
 
         return execute_and_reset(query.op(), params=params, **kwargs)
 
-    def table(self, name: str, schema: sch.Schema = None):
+    def table(self, name: str, schema: sch.Schema | None = None):
         df = self.dictionary[name]
         schema = schema or self.schemas.get(name, None)
         schema = DaskData.infer_table(df, schema=schema)
