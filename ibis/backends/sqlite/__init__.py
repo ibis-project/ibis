@@ -14,6 +14,7 @@
 
 from __future__ import annotations
 
+import inspect
 import sqlite3
 from typing import TYPE_CHECKING, Iterator
 
@@ -21,6 +22,7 @@ import sqlalchemy as sa
 import toolz
 from sqlalchemy.dialects.sqlite import TIMESTAMP
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
@@ -32,11 +34,15 @@ from ibis.backends.sqlite.datatypes import ISODATETIME, SqliteType, parse
 if TYPE_CHECKING:
     from pathlib import Path
 
+    import ibis.expr.operations as ops
+    import ibis.expr.types as ir
+
 
 class Backend(BaseAlchemyBackend):
     name = 'sqlite'
     compiler = SQLiteCompiler
     supports_create_or_replace = False
+    supports_python_udfs = True
 
     def __getstate__(self) -> dict:
         r = super().__getstate__()
@@ -193,6 +199,42 @@ class Backend(BaseAlchemyBackend):
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         """Return an ibis Schema from a SQLite SQL string."""
         return sch.Schema.from_tuples(self._metadata(query))
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        import ibis.expr.operations as ops
+
+        with self.begin() as con:
+            for udf_node in expr.op().find(ops.ScalarUDF):
+                compile_func = getattr(
+                    self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                )
+
+                registration_func = compile_func(udf_node)
+                registration_func(con)
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        func = udf_node.__func__
+        name = func.__name__
+
+        for argname, arg in zip(udf_node.argnames, udf_node.args):
+            dtype = arg.output_dtype
+            if not (
+                dtype.is_string()
+                or dtype.is_binary()
+                or dtype.is_numeric()
+                or dtype.is_boolean()
+            ):
+                raise com.IbisTypeError(
+                    "SQLite only supports strings, bytes, booleans and numbers as UDF input and output, "
+                    f"got argument `{argname}` with unsupported type {dtype}"
+                )
+
+        def register_udf(con):
+            return con.connection.create_function(
+                name, len(inspect.signature(func).parameters), udf.ignore_nulls(func)
+            )
+
+        return register_udf
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
