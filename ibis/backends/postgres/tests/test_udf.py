@@ -180,4 +180,4 @@ def test_client_udf_decorator_fails(con_for_udf, test_schema):
         return a * b
 
     with pytest.raises(exc.InvalidDecoratorError, match="@udf"):
-        con_for_udf.compile(multiply(1, 2))
+        con_for_udf.execute(multiply(1, 2))
