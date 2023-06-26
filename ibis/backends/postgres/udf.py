@@ -12,7 +12,7 @@ from sqlalchemy.dialects.postgresql import dialect
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-import ibis.udf.validate as v
+import ibis.legacy.udf.validate as v
 from ibis import IbisError
 from ibis.backends.postgres.compiler import PostgreSQLExprTranslator, PostgresUDFNode
 from ibis.backends.postgres.datatypes import PostgresType

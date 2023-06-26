@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 import numpy as np
 
 import ibis.expr.datatypes as dt
-import ibis.udf.validate as v
+import ibis.legacy.udf.validate as v
 from ibis.expr.operations import (
     AnalyticVectorizedUDF,
     ElementWiseVectorizedUDF,
@@ -273,7 +273,7 @@ def analytic(input_type, output_type):
     --------
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
-    >>> from ibis.udf.vectorized import analytic
+    >>> from ibis.legacy.udf.vectorized import analytic
     >>> @analytic(input_type=[dt.double], output_type=dt.double)
     ... def zscore(series):  # note the use of aggregate functions
     ...     return (series - series.mean()) / series.std()
@@ -314,7 +314,7 @@ def elementwise(input_type, output_type):
     --------
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
-    >>> from ibis.udf.vectorized import elementwise
+    >>> from ibis.legacy.udf.vectorized import elementwise
     >>> @elementwise(input_type=[dt.string], output_type=dt.int64)
     ... def my_string_length(series):
     ...     return series.str.len() * 2
@@ -356,7 +356,7 @@ def reduction(input_type, output_type):
     --------
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
-    >>> from ibis.udf.vectorized import reduction
+    >>> from ibis.legacy.udf.vectorized import reduction
     >>> @reduction(input_type=[dt.string], output_type=dt.int64)
     ... def my_string_length_agg(series, **kwargs):
     ...     return (series.str.len() * 2).sum()

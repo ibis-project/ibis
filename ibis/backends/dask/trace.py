@@ -9,7 +9,7 @@ import pandas as pd
 import logging
 import ibis.expr.datatypes as dt
 import ibis.dask
-from ibis.udf.vectorized import elementwise
+from ibis.legacy.udf.vectorized import elementwise
 from ibis.backends.dask import trace
 logging.basicConfig()
 trace.enable()

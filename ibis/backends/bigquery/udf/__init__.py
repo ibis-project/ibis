@@ -10,7 +10,7 @@ import ibis.expr.rules as rlz
 from ibis.backends.bigquery.datatypes import BigQueryType, spread_type
 from ibis.backends.bigquery.operations import BigQueryUDFNode
 from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
-from ibis.udf.validate import validate_output_type
+from ibis.legacy.udf.validate import validate_output_type
 
 __all__ = ("udf",)
 

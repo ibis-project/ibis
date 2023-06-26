@@ -11,7 +11,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.udf.vectorized import analytic, reduction
+from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = pytest.mark.notimpl(
     ["druid"],

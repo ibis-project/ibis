@@ -8,7 +8,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.format
 import ibis.expr.operations as ops
-import ibis.udf.vectorized as udf
+import ibis.legacy.udf.vectorized as udf
 from ibis.expr.operations.relations import Projection
 
 

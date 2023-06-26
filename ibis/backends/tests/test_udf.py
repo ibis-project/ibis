@@ -3,8 +3,7 @@ from __future__ import annotations
 import pandas.testing as tm
 from pytest import mark, param
 
-from ibis import _
-from ibis.expr.operations import udf
+from ibis import _, udf
 
 no_python_udfs = mark.notimpl(
     [

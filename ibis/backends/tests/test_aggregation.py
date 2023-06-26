@@ -10,7 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis import literal as L
-from ibis.udf.vectorized import reduction
+from ibis.legacy.udf.vectorized import reduction
 
 try:
     from pyspark.sql.utils import AnalysisException as PysparkAnalysisException

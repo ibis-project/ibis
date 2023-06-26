@@ -6,7 +6,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.udf.vectorized import analytic, elementwise, reduction
+from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
 
 pytestmark = pytest.mark.notimpl(["druid", "oracle"])
 
