@@ -3,7 +3,7 @@ import pytest
 
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.udf.vectorized import elementwise, reduction
+from ibis.legacy.udf.vectorized import elementwise, reduction
 
 pytest.importorskip("datafusion")
 pc = pytest.importorskip("pyarrow.compute")

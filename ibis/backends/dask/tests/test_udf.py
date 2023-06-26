@@ -8,7 +8,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.udf.vectorized import analytic, elementwise, reduction
+from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
 
 dd = pytest.importorskip("dask.dataframe")
 

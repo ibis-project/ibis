@@ -8,7 +8,7 @@ import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
 
 import ibis.expr.operations as ops
-import ibis.udf.vectorized
+import ibis.legacy.udf.vectorized
 from ibis.backends.base import BaseBackend
 from ibis.backends.pandas.aggcontext import Transform
 from ibis.backends.pandas.dispatch import execute_node, pre_execute
@@ -36,19 +36,19 @@ def create_gens_from_args_groupby(*args: tuple[SeriesGroupBy, ...]):
 class udf:
     @staticmethod
     def elementwise(input_type, output_type):
-        """Alias for ibis.udf.vectorized.elementwise."""
+        """Alias for ibis.legacy.udf.vectorized.elementwise."""
 
-        return ibis.udf.vectorized.elementwise(input_type, output_type)
+        return ibis.legacy.udf.vectorized.elementwise(input_type, output_type)
 
     @staticmethod
     def reduction(input_type, output_type):
-        """Alias for ibis.udf.vectorized.reduction."""
-        return ibis.udf.vectorized.reduction(input_type, output_type)
+        """Alias for ibis.legacy.udf.vectorized.reduction."""
+        return ibis.legacy.udf.vectorized.reduction(input_type, output_type)
 
     @staticmethod
     def analytic(input_type, output_type):
-        """Alias for ibis.udf.vectorized.analytic."""
-        return ibis.udf.vectorized.analytic(input_type, output_type)
+        """Alias for ibis.legacy.udf.vectorized.analytic."""
+        return ibis.legacy.udf.vectorized.analytic(input_type, output_type)
 
 
 @pre_execute.register(ops.ElementWiseVectorizedUDF)
@@ -98,7 +98,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # the kwargs, and therefore, we do not need to pass
         # kwargs here. This is true for all udf execution in this
         # file.
-        # See ibis.udf.vectorized.UserDefinedFunction
+        # See ibis.legacy.udf.vectorized.UserDefinedFunction
 
         # prevent executing UDFs multiple times on different execution branches
         try:

@@ -10,11 +10,13 @@ from ibis.config import options
 from ibis.expr import api
 from ibis.expr import types as ir
 from ibis.expr.api import *  # noqa: F403
+from ibis.expr.operations import udf
 
 __all__ = [  # noqa: PLE0604
     'api',
     'examples',
     'ir',
+    'udf',
     'util',
     'BaseBackend',
     'IbisError',

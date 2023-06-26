@@ -13,7 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.dask import Backend
 from ibis.backends.dask.execution import execute
-from ibis.udf.vectorized import reduction
+from ibis.legacy.udf.vectorized import reduction
 
 
 @pytest.fixture(scope='session')

@@ -11,7 +11,7 @@ import logging
 
 import ibis.expr.datatypes as dt
 import ibis.backends.pandas
-from ibis.udf.vectorized import elementwise
+from ibis.legacy.udf.vectorized import elementwise
 from ibis.backends.pandas import trace
 
 logging.basicConfig()

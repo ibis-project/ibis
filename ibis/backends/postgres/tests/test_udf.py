@@ -10,7 +10,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.expr.operations import udf
+from ibis import udf
 from ibis.util import guid
 
 pytest.importorskip("psycopg2")

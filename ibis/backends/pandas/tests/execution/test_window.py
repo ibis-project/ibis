@@ -16,7 +16,7 @@ from ibis.backends.pandas import Backend
 from ibis.backends.pandas.dispatch import pre_execute
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
-from ibis.udf.vectorized import reduction
+from ibis.legacy.udf.vectorized import reduction
 
 
 @pytest.fixture(scope='session')

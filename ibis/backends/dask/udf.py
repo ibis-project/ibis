@@ -74,7 +74,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # the kwargs, and therefore, we do not need to pass
         # kwargs here. This is true for all udf execution in this
         # file.
-        # See ibis.udf.vectorized.UserDefinedFunction
+        # See ibis.legacy.udf.vectorized.UserDefinedFunction
         with contextlib.suppress(KeyError):
             return cache[(op, timecontext)]
 
