@@ -753,7 +753,7 @@ class Backend(BaseAlchemyBackend):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
-    ) -> dict[str, torch.array]:
+    ) -> dict[str, torch.Tensor]:
         """Execute an expression and return results as a dictionary of torch tensors.
 
         Parameters
