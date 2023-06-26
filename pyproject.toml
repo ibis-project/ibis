@@ -425,6 +425,7 @@ ignore = [
   "E501",
   "E731",
   "PGH003",
+  "PLR0124", # name compared with self, e.g., a == a
   "PLR0911", # too many return statements
   "PLR0912", # too many branches
   "PLR0913", # too many arguments
@@ -437,6 +438,7 @@ ignore = [
   "RET507",
   "RET508",
   "RUF005",  # splat instead of concat
+  "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
   "SIM102",  # nested ifs
   "SIM108",  # convert everything to ternary operator
   "SIM114",  # combine `if` branches using logical `or` operator
