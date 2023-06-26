@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pandas.testing as tm
+import sqlalchemy as sa
 from pytest import mark, param
 
 from ibis import _, udf
@@ -18,7 +19,6 @@ no_python_udfs = mark.notimpl(
         "pandas",
         "polars",
         "pyspark",
-        "sqlite",
         "trino",
     ]
 )
@@ -47,6 +47,11 @@ def test_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notyet(["datafusion"], raises=NotImplementedError)
+@mark.notyet(
+    ["sqlite"],
+    raises=sa.exc.OperationalError,
+    reason="sqlite doesn't support map types",
+)
 def test_map_udf(batting):
     @udf.scalar.python
     def num_vowels_map(s: str, include_y: bool = False) -> dict[str, int]:
@@ -69,6 +74,7 @@ def test_map_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notyet(["datafusion"], raises=NotImplementedError)
+@mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
 def test_map_merge_udf(batting):
     @udf.scalar.python
     def vowels_map(s: str) -> dict[str, int]:
@@ -134,7 +140,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pandas,
             marks=[
                 mark.notyet(
-                    ["duckdb", "datafusion"],
+                    ["duckdb", "datafusion", "sqlite"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pandas UDFs",
                 ),
@@ -144,7 +150,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pyarrow,
             marks=[
                 mark.notyet(
-                    ["snowflake"],
+                    ["snowflake", "sqlite"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pyarrow UDFs",
                 )

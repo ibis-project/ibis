@@ -17,6 +17,16 @@ _SQLITE_UDF_REGISTRY = set()
 _SQLITE_UDAF_REGISTRY = set()
 
 
+def ignore_nulls(f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):
+        if any(arg is None for arg in args):
+            return None
+        return f(*args, **kwargs)
+
+    return wrapper
+
+
 def udf(f):
     """Create a SQLite scalar UDF from `f`.
 
@@ -31,13 +41,7 @@ def udf(f):
         A callable object that returns ``None`` if any of its inputs are
         ``None``.
     """
-
-    @functools.wraps(f)
-    def wrapper(*args):
-        if any(arg is None for arg in args):
-            return None
-        return f(*args)
-
+    wrapper = ignore_nulls(f)
     _SQLITE_UDF_REGISTRY.add(wrapper)
     return wrapper
 
