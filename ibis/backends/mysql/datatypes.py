@@ -218,6 +218,8 @@ _from_mysql_types = {
 
 
 class MySQLType(AlchemyType):
+    dialect = "mysql"
+
     @classmethod
     def from_ibis(cls, dtype):
         try:

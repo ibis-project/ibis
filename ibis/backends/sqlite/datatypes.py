@@ -45,6 +45,8 @@ def parse(text: str) -> dt.DataType:
 
 
 class SqliteType(AlchemyType):
+    dialect = "sqlite"
+
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sat.TypeEngine:
         if dtype.is_floating():

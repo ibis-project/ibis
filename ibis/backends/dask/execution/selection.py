@@ -39,7 +39,7 @@ def compute_projection(
     node,
     parent,
     data,
-    scope: Scope = None,
+    scope: Scope | None = None,
     timecontext: TimeContext | None = None,
     **kwargs,
 ):

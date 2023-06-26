@@ -136,7 +136,7 @@ mkdocs-git-revision-date-localized-plugin = ">=1.1.0,<2"
 mkdocs-jupyter = ">=0.24.1,<1"
 mkdocs-literate-nav = ">=0.4.1,<1"
 mkdocs-macros-plugin = ">=0.6.3,<2"
-mkdocs-material = ">=8.2.1,<9.1.17"
+mkdocs-material = ">=8.2.1,<9.1.18"
 mkdocstrings = ">=0.19.1,<1"
 mkdocstrings-python = ">=0.8.3,<2"
 requests = ">=2,<3"
@@ -425,6 +425,7 @@ ignore = [
   "E501",
   "E731",
   "PGH003",
+  "PLR0124", # name compared with self, e.g., a == a
   "PLR0911", # too many return statements
   "PLR0912", # too many branches
   "PLR0913", # too many arguments
@@ -437,6 +438,7 @@ ignore = [
   "RET507",
   "RET508",
   "RUF005",  # splat instead of concat
+  "RUF012",  # Mutable class attributes should be annotated with `typing.ClassVar`
   "SIM102",  # nested ifs
   "SIM108",  # convert everything to ternary operator
   "SIM114",  # combine `if` branches using logical `or` operator

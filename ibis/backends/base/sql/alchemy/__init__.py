@@ -707,27 +707,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 f"The given obj is of type {type(obj).__name__} ."
             )
 
-    def _compile_udfs(self, expr: ir.Expr) -> Iterable[str]:
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            udf_node_type = type(udf_node)
-
-            if udf_node_type not in self.compiler.translator_class._registry:
-
-                @self.add_operation(udf_node_type)
-                def _(t, op):
-                    generator = sa.func
-                    if (namespace := op.__udf_namespace__) is not None:
-                        generator = getattr(generator, namespace)
-                    func = getattr(generator, type(op).__name__)
-                    return func(*map(t.translate, op.args))
-
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            compiled = compile_func(udf_node)
-            if compiled is not None:
-                yield compiled
-
     def _compile_opaque_udf(self, udf_node: ops.ScalarUDF) -> str:
         return None
 
@@ -749,10 +728,28 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 f"The {self.name} backend does not support PyArrow-based vectorized scalar UDFs"
             )
 
+    def _define_udf_translation_rules(self, expr):
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            udf_node_type = type(udf_node)
+
+            if udf_node_type not in self.compiler.translator_class._registry:
+
+                @self.add_operation(udf_node_type)
+                def _(t, op):
+                    generator = sa.func
+                    if (namespace := op.__udf_namespace__) is not None:
+                        generator = getattr(generator, namespace)
+                    func = getattr(generator, type(op).__name__)
+                    return func(*map(t.translate, op.args))
+
     def _register_udfs(self, expr: ir.Expr) -> None:
         with self.begin() as con:
-            for sql in self._compile_udfs(expr):
-                con.exec_driver_sql(sql)
+            for udf_node in expr.op().find(ops.ScalarUDF):
+                compile_func = getattr(
+                    self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                )
+                if sql := compile_func(udf_node):
+                    con.exec_driver_sql(sql)
 
     def _quote(self, name: str) -> str:
         """Quote an identifier."""

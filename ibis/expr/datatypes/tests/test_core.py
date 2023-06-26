@@ -118,7 +118,7 @@ class BarStruct:
     o: dt.Timestamp
     oa: dt.Timestamp['UTC']  # noqa: F821
     ob: dt.Timestamp['UTC', 6]  # noqa: F821
-    pa: dt.Interval['s']
+    pa: dt.Interval['s']  # noqa: F821
     q: dt.Decimal
     qa: dt.Decimal[12, 2]
     r: dt.Array[dt.Int16]

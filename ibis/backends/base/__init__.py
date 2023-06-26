@@ -625,7 +625,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
 
     @abc.abstractmethod
-    def list_databases(self, like: str = None) -> list[str]:
+    def list_databases(self, like: str | None = None) -> list[str]:
         """List existing databases in the current connection.
 
         Parameters
@@ -768,8 +768,13 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""
+        self._define_udf_translation_rules(expr)
         self._register_udfs(expr)
         self._register_in_memory_tables(expr)
+
+    def _define_udf_translation_rules(self, expr):
+        if self.supports_in_memory_tables:
+            raise NotImplementedError(self.name)
 
     def compile(
         self,

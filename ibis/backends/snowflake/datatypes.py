@@ -44,6 +44,8 @@ def parse(text: str) -> dt.DataType:
 
 
 class SnowflakeType(AlchemyType):
+    dialect = "snowflake"
+
     @classmethod
     def from_ibis(cls, dtype):
         if dtype.is_array():

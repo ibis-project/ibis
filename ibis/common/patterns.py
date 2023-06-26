@@ -1167,7 +1167,7 @@ def pattern(obj: AnyType) -> Pattern:
         return EqualTo(obj)
 
 
-def match(pat: Pattern, value: AnyType, context: dict[str, AnyType] = None):
+def match(pat: Pattern, value: AnyType, context: Optional[dict[str, AnyType]] = None):
     """Match a value against a pattern.
 
     Parameters

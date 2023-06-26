@@ -260,7 +260,7 @@ def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext 
 def execute_window_op(
     op,
     data,
-    scope: Scope = None,
+    scope: Scope | None = None,
     timecontext: TimeContext | None = None,
     aggcontext=None,
     clients=None,

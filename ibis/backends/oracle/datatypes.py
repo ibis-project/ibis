@@ -14,6 +14,8 @@ if TYPE_CHECKING:
 
 
 class OracleType(AlchemyType):
+    dialect = "oracle"
+
     @classmethod
     def to_ibis(cls, typ, nullable=True):
         if isinstance(typ, oracle.ROWID):
