@@ -39,6 +39,7 @@
     * [Supported Python versions](supported_python_versions.md)
     * [Release notes](release_notes.md)
 * Blog
+    * [Ibis on :fire:: Supercharge Your Workflow with DuckDB and PyTorch](blog/rendered/torch.ipynb)
     * [Campaign finance analysis with Ibis](blog/rendered/campaign-finance.ipynb)
     * [Ibis sneak peek: writing to files](blog/ibis-to-file.md)
     * [Ibis sneak peek: examples](blog/ibis-examples.md)
