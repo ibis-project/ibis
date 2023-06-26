@@ -12,6 +12,7 @@ import pyarrow.compute as pc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 
 
@@ -463,6 +464,23 @@ def elementwise_udf(op):
         volatility="volatile",
     )
     args = map(translate, op.func_args)
+
+    return udf(*args)
+
+
+@translate.register(ops.ScalarUDF)
+def scalar_udf(op):
+    if (input_type := op.__input_type__) != InputType.PYARROW:
+        raise NotImplementedError(
+            f"DataFusion only supports pyarrow UDFs: got a {input_type.name.lower()} UDF"
+        )
+    udf = df.udf(
+        op.__func__,
+        input_types=[PyArrowType.from_ibis(arg.output_dtype) for arg in op.args],
+        return_type=PyArrowType.from_ibis(op.output_dtype),
+        volatility="volatile",
+    )
+    args = map(translate, op.args)
 
     return udf(*args)
 

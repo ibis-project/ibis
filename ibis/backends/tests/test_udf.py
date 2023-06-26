@@ -13,7 +13,6 @@ no_python_udfs = mark.notimpl(
         "bigquery",
         "clickhouse",
         "dask",
-        "datafusion",
         "druid",
         "impala",
         "mssql",
@@ -29,6 +28,7 @@ no_python_udfs = mark.notimpl(
 
 
 @no_python_udfs
+@mark.notyet(["datafusion"], raises=NotImplementedError)
 def test_udf(batting):
     @udf.scalar.python
     def num_vowels(s: str, include_y: bool = False) -> int:
@@ -49,6 +49,7 @@ def test_udf(batting):
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
+@mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.xfail(
     sys.version_info[:2] < (3, 9), reason="annotations not supported with Python 3.8"
 )
@@ -73,6 +74,7 @@ def test_map_udf(batting):
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
+@mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.xfail(
     sys.version_info[:2] < (3, 9), reason="annotations not supported with Python 3.8"
 )
@@ -141,9 +143,9 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pandas,
             marks=[
                 mark.notyet(
-                    ["duckdb"],
+                    ["duckdb", "datafusion"],
                     raises=NotImplementedError,
-                    reason="duckdb doesn't support pandas UDFs",
+                    reason="backend doesn't support pandas UDFs",
                 ),
             ],
         ),
@@ -153,7 +155,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
                 mark.notyet(
                     ["snowflake"],
                     raises=NotImplementedError,
-                    reason="snowflake doesn't support pyarrow UDFs",
+                    reason="backend doesn't support pyarrow UDFs",
                 )
             ],
         ),
