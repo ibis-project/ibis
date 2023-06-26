@@ -625,7 +625,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
 
     @abc.abstractmethod
-    def list_databases(self, like: str = None) -> list[str]:
+    def list_databases(self, like: str | None = None) -> list[str]:
         """List existing databases in the current connection.
 
         Parameters

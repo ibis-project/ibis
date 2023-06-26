@@ -108,9 +108,9 @@ class Argument(Annotation):
 
     def __init__(
         self,
-        validator: Validator = None,
+        validator: Validator | None = None,
         default: Any = EMPTY,
-        typehint: type = None,
+        typehint: type | None = None,
         kind: int = POSITIONAL_OR_KEYWORD,
     ):
         super().__init__(validator, default, typehint)

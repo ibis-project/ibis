@@ -206,7 +206,7 @@ def compute_sort_key(
     key: str | SortKey,
     data: dd.DataFrame,
     timecontext: TimeContext,
-    scope: Scope = None,
+    scope: Scope | None = None,
     **kwargs,
 ):
     """Compute a sort key.
@@ -237,7 +237,7 @@ def compute_sort_key(
 def compute_sorted_frame(
     df: dd.DataFrame,
     order_by: list[str | SortKey],
-    group_by: list[str | SortKey] = None,
+    group_by: list[str | SortKey] | None = None,
     timecontext=None,
     **kwargs,
 ) -> dd.DataFrame:

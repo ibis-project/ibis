@@ -242,7 +242,7 @@ def execute_until_in_scope(
     node,
     scope: Scope,
     timecontext: TimeContext | None = None,
-    aggcontext: agg_ctx.AggregationContext = None,
+    aggcontext: agg_ctx.AggregationContext | None = None,
     clients: Iterable | None = None,
     post_execute_: Callable | None = None,
     **kwargs: Any,
@@ -372,7 +372,7 @@ def main_execute(
     params: Mapping[ops.Node, Any] | None = None,
     scope: Scope | None = None,
     timecontext: TimeContext | None = None,
-    aggcontext: agg_ctx.AggregationContext = None,
+    aggcontext: agg_ctx.AggregationContext | None = None,
     cache: Mapping[ops.Node, Any] | None = None,
     **kwargs: Any,
 ):

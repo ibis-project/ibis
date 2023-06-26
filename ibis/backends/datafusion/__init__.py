@@ -330,7 +330,7 @@ class Backend(BaseBackend):
     def execute(
         self,
         expr: ir.Expr,
-        params: Mapping[ir.Expr, object] = None,
+        params: Mapping[ir.Expr, object] | None = None,
         limit: int | str | None = "default",
         **kwargs: Any,
     ):
@@ -349,7 +349,7 @@ class Backend(BaseBackend):
     def compile(
         self,
         expr: ir.Expr,
-        params: Mapping[ir.Expr, object] = None,
+        params: Mapping[ir.Expr, object] | None = None,
         **kwargs: Any,
     ):
         return translate(expr.op())
