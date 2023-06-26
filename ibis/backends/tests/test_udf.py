@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import sys
-
 import pandas.testing as tm
 from pytest import mark, param
 
@@ -50,9 +48,6 @@ def test_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notyet(["datafusion"], raises=NotImplementedError)
-@mark.xfail(
-    sys.version_info[:2] < (3, 9), reason="annotations not supported with Python 3.8"
-)
 def test_map_udf(batting):
     @udf.scalar.python
     def num_vowels_map(s: str, include_y: bool = False) -> dict[str, int]:
@@ -75,9 +70,6 @@ def test_map_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notyet(["datafusion"], raises=NotImplementedError)
-@mark.xfail(
-    sys.version_info[:2] < (3, 9), reason="annotations not supported with Python 3.8"
-)
 def test_map_merge_udf(batting):
     @udf.scalar.python
     def vowels_map(s: str) -> dict[str, int]:
