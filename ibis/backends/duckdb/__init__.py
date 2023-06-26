@@ -971,9 +971,7 @@ class Backend(BaseAlchemyBackend):
                     self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
                 )
                 with contextlib.suppress(duckdb.InvalidInputException):
-                    con.connection.driver_connection.remove_function(
-                        udf_node.__class__.__name__
-                    )
+                    con.connection.remove_function(udf_node.__class__.__name__)
 
                 registration_func = compile_func(udf_node)
                 registration_func(con)
@@ -985,7 +983,7 @@ class Backend(BaseAlchemyBackend):
         output_type = DuckDBType.to_string(udf_node.output_dtype)
 
         def register_udf(con):
-            return con.connection.driver_connection.create_function(
+            return con.connection.create_function(
                 name,
                 func,
                 input_types,
