@@ -138,7 +138,7 @@ class Backend(BaseAlchemyBackend):
         self,
         database: str | Path = ":memory:",
         read_only: bool = False,
-        temp_directory: Path | str | None = None,
+        temp_directory: str | Path | None = None,
         **config: Any,
     ) -> None:
         """Create an Ibis client connected to a DuckDB database.
@@ -163,16 +163,20 @@ class Backend(BaseAlchemyBackend):
         >>> ibis.duckdb.connect("database.ddb", threads=4, memory_limit="1GB")
         <ibis.backends.duckdb.Backend object at ...>
         """
-        if database != ":memory:":
+        if (
+            not isinstance(database, Path)
+            and database != ":memory:"
+            and not database.startswith(("md:", "motherduck:"))
+        ):
             database = Path(database).absolute()
-        elif temp_directory is None:
+
+        if temp_directory is None:
             temp_directory = (
                 Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
                 / "ibis-duckdb"
                 / str(os.getpid())
             )
-
-        if temp_directory is not None:
+        else:
             Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
