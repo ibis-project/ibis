@@ -10,11 +10,12 @@ WITH t0 AS (
       ON t6.`o_custkey` = t5.`c_custkey`
 ),
 t1 AS (
-  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
+  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `CountStar()`
   FROM t0
   GROUP BY 1
 )
-SELECT t1.`year`, t1.`count` AS `pre_count`, t2.`count` AS `post_count`
+SELECT t1.`year`, t1.`CountStar()` AS `pre_count`,
+       t2.`CountStar()` AS `post_count`
 FROM t1
   INNER JOIN t1 t2
     ON t1.`year` = t2.`year`

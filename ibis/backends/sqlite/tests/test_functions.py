@@ -545,7 +545,7 @@ def test_subquery(alltypes, df):
         .groupby('string_col')
         .size()
         .reset_index()
-        .rename(columns={0: 'count'})
+        .rename(columns={0: 'CountStar()'})
     )
     tm.assert_frame_equal(result, expected)
 

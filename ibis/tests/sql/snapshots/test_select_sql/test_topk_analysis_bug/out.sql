@@ -15,7 +15,7 @@ t2 AS (
   FROM airlines t3
   WHERE t3.`dest` IN ('ORD', 'JFK', 'SFO')
 )
-SELECT `origin`, count(1) AS `count`
+SELECT `origin`, count(1) AS `CountStar()`
 FROM t2
   LEFT SEMI JOIN t1
     ON t2.`dest` = t1.`dest`

@@ -1258,7 +1258,7 @@ def test_topk_op(alltypes, df, result_fn, expected_fn):
     df = df.sort_values('string_col')
     result = result_fn(t).execute()
     expected = expected_fn(df)
-    assert all(result['count'].values == expected.values)
+    assert all(result.iloc[:, 1].values == expected.values)
 
 
 @pytest.mark.parametrize(

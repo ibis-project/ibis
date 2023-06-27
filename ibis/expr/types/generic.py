@@ -1228,7 +1228,7 @@ class Column(Value, _FixedTextJupyterMixin):
         arg_table = find_first_base_table(self.op()).to_expr()
 
         if by is None:
-            by = self.count().name("count")
+            by = self.count()
 
         if callable(by):
             by = by(arg_table)

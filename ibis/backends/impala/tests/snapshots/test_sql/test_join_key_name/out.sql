@@ -10,7 +10,7 @@ WITH t0 AS (
       ON t6.`o_custkey` = t5.`c_custkey`
 ),
 t1 AS (
-  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
+  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `CountStar()`
   FROM t0
   WHERE t0.`o_totalprice` > (
     SELECT avg(t3.`o_totalprice`) AS `mean`
@@ -20,12 +20,13 @@ t1 AS (
   GROUP BY 1
 ),
 t2 AS (
-  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `count`
+  SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `CountStar()`
   FROM t0
   GROUP BY 1
 )
-SELECT t2.`year`, t2.`count` AS `pre_count`, t1.`count` AS `post_count`,
-       t1.`count` / CAST(t2.`count` AS double) AS `fraction`
+SELECT t2.`year`, t2.`CountStar()` AS `pre_count`,
+       t1.`CountStar()` AS `post_count`,
+       t1.`CountStar()` / CAST(t2.`CountStar()` AS double) AS `fraction`
 FROM t2
   INNER JOIN t1
     ON t2.`year` = t1.`year`

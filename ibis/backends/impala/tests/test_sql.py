@@ -51,7 +51,7 @@ def test_limit_cte_extract(limit_cte_extract, snapshot):
 def test_nested_join_base(snapshot):
     t = ibis.table(dict(uuid='string', ts='timestamp'), name='t')
     counts = t.group_by('uuid').size()
-    max_counts = counts.group_by('uuid').aggregate(max_count=lambda x: x['count'].max())
+    max_counts = counts.group_by('uuid').aggregate(max_count=lambda x: x[1].max())
     result = max_counts.left_join(counts, 'uuid').select(counts)
     compiled_result = ImpalaCompiler.to_sql(result)
     snapshot.assert_match(compiled_result, "out.sql")
@@ -64,10 +64,10 @@ def test_nested_joins_single_cte(snapshot):
 
     last_visit = t.group_by('uuid').aggregate(last_visit=t.ts.max())
 
-    max_counts = counts.group_by('uuid').aggregate(max_count=counts['count'].max())
+    max_counts = counts.group_by('uuid').aggregate(max_count=counts[1].max())
 
     main_kw = max_counts.left_join(
-        counts, ['uuid', max_counts.max_count == counts['count']]
+        counts, ['uuid', max_counts.max_count == counts[1]]
     ).select(counts)
 
     result = main_kw.left_join(last_visit, 'uuid').select(
@@ -272,12 +272,12 @@ def test_join_key_name(tpch, snapshot):
     amount_filter = tpch.o_totalprice > conditional_avg
     post_sizes = tpch[amount_filter].group_by(year).size()
 
-    percent = (post_sizes['count'] / pre_sizes['count'].cast('double')).name('fraction')
+    percent = (post_sizes[1] / pre_sizes[1].cast('double')).name('fraction')
 
     expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)[
         pre_sizes.year,
-        pre_sizes['count'].name('pre_count'),
-        post_sizes['count'].name('post_count'),
+        pre_sizes[1].name('pre_count'),
+        post_sizes[1].name('post_count'),
         percent,
     ]
     result = ibis.impala.compile(expr)
@@ -292,8 +292,8 @@ def test_join_key_name2(tpch, snapshot):
 
     expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)[
         pre_sizes.year,
-        pre_sizes['count'].name('pre_count'),
-        post_sizes['count'].name('post_count'),
+        pre_sizes[1].name('pre_count'),
+        post_sizes[1].name('post_count'),
     ]
     result = ibis.impala.compile(expr)
     snapshot.assert_match(result, "out.sql")

@@ -299,20 +299,15 @@ class GroupedTable:
             window=window,
         )
 
-    def count(self, metric_name: str = 'count') -> ir.Table:
+    def count(self) -> ir.Table:
         """Computing the number of rows per group.
-
-        Parameters
-        ----------
-        metric_name
-            Name to use for the row count metric
 
         Returns
         -------
         Table
             The aggregated table
         """
-        metric = self.table.count().name(metric_name)
+        metric = self.table.count()
         return self.table.aggregate([metric], by=self.by, having=self._having)
 
     size = count

@@ -1,10 +1,10 @@
 WITH t0 AS (
-  SELECT t2.`uuid`, count(1) AS `count`
+  SELECT t2.`uuid`, count(1) AS `CountStar(t)`
   FROM `t` t2
   GROUP BY 1
 ),
 t1 AS (
-  SELECT t0.`uuid`, max(t0.`count`) AS `max_count`
+  SELECT t0.`uuid`, max(t0.`CountStar(t)`) AS `max_count`
   FROM t0
   GROUP BY 1
 )

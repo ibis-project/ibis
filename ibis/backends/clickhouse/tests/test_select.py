@@ -80,21 +80,21 @@ def test_limit_offset(alltypes):
 def test_subquery(alltypes, df):
     t = alltypes
 
-    expr = t.mutate(d=t.double_col).limit(1000).group_by('string_col').size()
+    expr = t.mutate(d=t.double_col).limit(100).group_by('string_col').size()
     result = expr.execute()
 
     result = result.sort_values('string_col').reset_index(drop=True)
     expected = (
         df.assign(d=df.double_col.fillna(0))
-        .head(1000)
+        .head(100)
         .groupby('string_col')
         .string_col.count()
-        .reset_index(name='count')
+        .rename("CountStar()")
+        .reset_index()
         .sort_values('string_col')
         .reset_index(drop=True)
     )
 
-    result['count'] = result['count'].astype('int64')
     tm.assert_frame_equal(result, expected)
 
 
