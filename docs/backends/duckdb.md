@@ -90,6 +90,36 @@ con = ibis.connect("duckdb://") # (1)
 
 1. ephemeral, in-memory database
 
+## MotherDuck
+
+The DuckDB backend supports [MotherDuck](https://motherduck.com). If you have an
+account, you can connect to MotherDuck by passing in the string `md:` or
+`motherduck:`. `ibis` will trigger the authentication prompt in-browser.
+
+```python
+>>> import ibis
+
+>>> con = ibis.duckdb.connect("md:")
+```
+
+<!-- prettier-ignore-start -->
+!!! info "Authentication to MotherDuck will trigger on the first call that requires retrieving information (in this case `list_tables`)"
+<!-- prettier-ignore-end -->
+
+```python
+>>> con.list_tables()
+Attempting to automatically open the SSO authorization page in your default browser.
+1. Please open this link to login into your account: https://auth.motherduck.com/activate
+2. Enter the following code: ZSRQ-GJQS
+
+
+Token successfully retrieved ✅
+You can store it as an environment variable to avoid having to log in again:
+  $ export motherduck_token='****************'
+
+['penguins']
+```
+
 ## File Support
 
 <!-- prettier-ignore-start -->
