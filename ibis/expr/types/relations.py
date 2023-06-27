@@ -1656,7 +1656,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         substitutions: Mapping[str, str]
         | Callable[[str], str | None]
         | str
-        | Literal["snake_case"],
+        | Literal["snake_case", "ALL_CAPS"],
     ) -> Table:
         """Rename columns in the table.
 
@@ -1667,8 +1667,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             names. If a column isn't in the mapping (or if the callable returns
             None) it is left with its original name. May also pass a format
             string to rename all columns, like ``"prefix_{name}"``. Also
-            accepts the literal string ``"snake_case"``, which will relabel all
-            columns to use a ``snake_case`` naming convention.
+            accepts the literal string ``"snake_case"`` or ``"ALL_CAPS"`` which
+            will relabel all columns to use a ``snake_case`` or ``"ALL_CAPS"``
+            naming convention.
 
         Returns
         -------
@@ -1723,6 +1724,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
         └────────────┴───────────────┴─────────────────────────────────────┘
 
+        Relabel column names using a ALL_CAPS convention
+
+        >>> t.relabel("ALL_CAPS").head(1)
+        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ STUDY_NAME ┃ SAMPLE_NUMBER ┃ SPECIES                             ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string     │ int64         │ string                              │
+        ├────────────┼───────────────┼─────────────────────────────────────┤
+        │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
+        └────────────┴───────────────┴─────────────────────────────────────┘
+
         Relabel columns using a format string
 
         >>> t.relabel("p_{name}").head(1)
@@ -1749,18 +1761,24 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         if isinstance(substitutions, Mapping):
             rename = substitutions.get
-        elif substitutions == "snake_case":
+        elif substitutions in {"snake_case", "ALL_CAPS"}:
 
             def rename(c):
                 c = c.strip()
                 if " " in c:
                     # Handle "space case possibly with-hyphens"
-                    return "_".join(c.lower().split()).replace("-", "_")
+                    if substitutions == "snake_case":
+                        return "_".join(c.lower().split()).replace("-", "_")
+                    elif substitutions == "ALL_CAPS":
+                        return "_".join(c.upper().split()).replace("-", "_")
                 # Handle PascalCase, camelCase, and kebab-case
                 c = re.sub(r"([A-Z]+)([A-Z][a-z])", r'\1_\2', c)
                 c = re.sub(r"([a-z\d])([A-Z])", r'\1_\2', c)
                 c = c.replace("-", "_")
-                return c.lower()
+                if substitutions == "snake_case":
+                    return c.lower()
+                elif substitutions == "ALL_CAPS":
+                    return c.upper()
 
         elif isinstance(substitutions, str):
 

@@ -420,6 +420,23 @@ def test_relabel_snake_case():
     assert_equal(res, sol)
 
 
+def test_relabel_all_caps():
+    cases = [
+        ("cola", "COLA"),
+        ("ColB", "COL_B"),
+        ("colC", "COL_C"),
+        ("col-d", "COL_D"),
+        ("col_e", "COL_E"),
+        (" Column F ", "COLUMN_F"),
+        ("Column G-with-hyphens", "COLUMN_G_WITH_HYPHENS"),
+        ("Col H notCamelCase", "COL_H_NOTCAMELCASE"),
+    ]
+    t = ibis.table({c: "int" for c, _ in cases})
+    res = t.relabel("ALL_CAPS")
+    sol = t.relabel(dict(cases))
+    assert_equal(res, sol)
+
+
 def test_limit(table):
     limited = table.limit(10, offset=5)
     assert limited.op().n == 10
