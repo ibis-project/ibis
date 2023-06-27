@@ -1,4 +1,4 @@
-"""Linear regiression model for predicting cab fares using PyTorch.
+"""Linear regression model for predicting cab fares using PyTorch.
 
 Adapted from https://gist.github.com/pdet/e8d38734232c08e6c15aba79b4eb8368#file-taxi_prediction_example-py.
 """
