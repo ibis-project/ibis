@@ -378,6 +378,10 @@ jobs:
           IBIS_TEST_WEBHDFS_USER: hdfs
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
+      - name: check that no untracked files were produced
+        shell: bash
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
+
       - name: upload code coverage
         if: success()
         uses: codecov/codecov-action@v3
@@ -504,6 +508,10 @@ jobs:
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
+      - name: check that no untracked files were produced
+        shell: bash
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
+
       - name: upload code coverage
         if: success()
         uses: codecov/codecov-action@v3
@@ -595,6 +603,10 @@ jobs:
 
       - name: run tests
         run: just ci-check -m pyspark
+
+      - name: check that no untracked files were produced
+        shell: bash
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
 
       - name: upload code coverage
         if: success()
@@ -760,6 +772,10 @@ jobs:
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
+      - name: check that no untracked files were produced
+        shell: bash
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
+
       - name: upload code coverage
         if: success()
         uses: codecov/codecov-action@v3
@@ -836,6 +852,10 @@ jobs:
 
       - name: "run parallel tests: flink"
         run: poetry run pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml ibis/backends/flink/tests --numprocesses auto --dist=loadgroup
+
+      - name: check that no untracked files were produced
+        shell: bash
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
 
       - name: upload code coverage
         if: success()

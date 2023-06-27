@@ -41,7 +41,8 @@ class Example(Concrete):
         key = self.key
         # lock to ensure we don't clobber the file if fetched in another
         # process
-        with filelock.FileLock(f"{key}.lock"):
+        _EXAMPLES.abspath.mkdir(parents=True, exist_ok=True)
+        with filelock.FileLock(_EXAMPLES.abspath / f"{key}.lock"):
             path = _EXAMPLES.fetch(key, progressbar=True)
 
         if backend is None:
