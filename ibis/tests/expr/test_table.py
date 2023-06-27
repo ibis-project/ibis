@@ -473,20 +473,20 @@ def test_order_by(table):
 
 
 def test_order_by_desc_deferred_sort_key(table):
-    result = table.group_by('g').size().order_by(ibis.desc('count'))
+    result = table.group_by('g').size().order_by(ibis._[1].desc())
 
     tmp = table.group_by('g').size()
-    expected = tmp.order_by(ibis.desc(tmp['count']))
+    expected = tmp.order_by(ibis.desc(tmp[1]))
 
     assert_equal(result, expected)
 
 
 def test_order_by_asc_deferred_sort_key(table):
-    result = table.group_by('g').size().order_by(ibis.asc('count'))
+    result = table.group_by('g').size().order_by(ibis._[1])
 
     tmp = table.group_by('g').size()
-    expected = tmp.order_by(tmp['count'])
-    expected2 = tmp.order_by(ibis.asc(tmp['count']))
+    expected = tmp.order_by(tmp[1])
+    expected2 = tmp.order_by(ibis.asc(tmp[1]))
 
     assert_equal(result, expected)
     assert_equal(result, expected2)
@@ -727,14 +727,10 @@ def test_group_by_count_size(table):
     result1 = table.group_by('g').size()
     result2 = table.group_by('g').count()
 
-    expected = table.group_by('g').aggregate([table.count().name('count')])
+    expected = table.group_by('g').aggregate(table.count())
 
     assert_equal(result1, expected)
     assert_equal(result2, expected)
-
-    result = table.group_by('g').count('foo')
-    expected = table.group_by('g').aggregate([table.count().name('foo')])
-    assert_equal(result, expected)
 
 
 def test_group_by_column_select_api(table):

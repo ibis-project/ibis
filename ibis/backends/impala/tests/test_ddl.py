@@ -26,7 +26,7 @@ def temp_view(con) -> str:
 def test_create_exists_view(con, temp_view):
     assert temp_view not in con.list_tables()
 
-    t1 = con.table('functional_alltypes').group_by('string_col').size()
+    t1 = con.table('functional_alltypes').limit(1)
     t2 = con.create_view(temp_view, t1)
 
     assert temp_view in con.list_tables()
