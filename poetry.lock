@@ -2665,19 +2665,15 @@ mkdocstrings = ">=0.20"
 
 [[package]]
 name = "multipledispatch"
-version = "0.6.0"
+version = "1.0.0"
 description = "Multiple dispatch"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "multipledispatch-0.6.0-py2-none-any.whl", hash = "sha256:407e6d8c5fa27075968ba07c4db3ef5f02bea4e871e959570eeb69ee39a6565b"},
-    {file = "multipledispatch-0.6.0-py3-none-any.whl", hash = "sha256:a55c512128fb3f7c2efd2533f2550accb93c35f1045242ef74645fc92a2c3cba"},
-    {file = "multipledispatch-0.6.0.tar.gz", hash = "sha256:a7ab1451fd0bf9b92cab3edbd7b205622fb767aeefb4fb536c2e3de9e0a38bea"},
+    {file = "multipledispatch-1.0.0-py3-none-any.whl", hash = "sha256:0c53cd8b077546da4e48869f49b13164bebafd0c2a5afceb6bb6a316e7fb46e4"},
+    {file = "multipledispatch-1.0.0.tar.gz", hash = "sha256:5c839915465c68206c3e9c473357908216c28383b425361e5d144594bf85a7e0"},
 ]
-
-[package.dependencies]
-six = "*"
 
 [[package]]
 name = "mypy-extensions"
@@ -5355,4 +5351,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "baaba98717d204af4c0613f070e640f9ddf5dc24148e1ee073f04e3f1c1e3ae5"
+content-hash = "47becf622f72a82bbe297bb0b99c2d5561c118fc05a0aedfe2d102b5e80e4d41"
