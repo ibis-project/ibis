@@ -59,9 +59,8 @@ def test_examples(example, tmp_path):
 
     # initiate an new connection for every test case for isolation
     con = ibis.duckdb.connect(extension_directory=str(tmp_path))
-    ibis.set_backend(con)
 
-    df = ex.fetch().limit(1).execute()
+    df = ex.fetch(backend=con).limit(1).execute()
     assert len(df) == 1
 
 
