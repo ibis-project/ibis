@@ -30,6 +30,7 @@ SANDBOXED = (
 LINUX = platform.system() == "Linux"
 MACOS = platform.system() == "Darwin"
 WINDOWS = platform.system() == "Windows"
+CI = os.environ.get("CI") is not None
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
