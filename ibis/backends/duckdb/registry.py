@@ -21,7 +21,6 @@ from ibis.backends.base.sql.alchemy.registry import (
     array_map,
     geospatial_functions,
     reduction,
-    try_cast,
 )
 from ibis.backends.base.sql.alchemy.registry import (
     _translate_case as _base_translate_case,
@@ -341,7 +340,7 @@ def compiles_try_cast(element, compiler, **kw):
 def _try_cast(t, op):
     arg = t.translate(op.arg)
     to = t.get_sqla_type(op.to)
-    return try_cast(arg, type_=to)
+    return sa.try_cast(arg, type_=to)
 
 
 operation_registry.update(
