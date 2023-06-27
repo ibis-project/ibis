@@ -329,14 +329,6 @@ def _array_zip(t, op):
     )
 
 
-@compiles(try_cast, "duckdb")
-def compiles_try_cast(element, compiler, **kw):
-    return "TRY_CAST({} AS {})".format(
-        compiler.process(element.clauses.clauses[0], **kw),
-        compiler.visit_typeclause(element),
-    )
-
-
 def _try_cast(t, op):
     arg = t.translate(op.arg)
     to = t.get_sqla_type(op.to)
