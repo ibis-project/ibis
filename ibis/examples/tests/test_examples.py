@@ -1,20 +1,20 @@
-import os
 import uuid
 
 import pytest
 
 import ibis.examples
 import ibis.util
-from ibis.backends.conftest import LINUX, SANDBOXED
+from ibis.backends.conftest import CI, LINUX, SANDBOXED
 
 pytestmark = pytest.mark.examples
 
 duckdb = pytest.importorskip("duckdb")
 pytest.importorskip("pooch")
 
-# large files
+# large files or files that are used elsewhere
 ignored = frozenset(
     (
+        # large
         "imdb_name_basics",
         "imdb_title_akas",
         "imdb_title_basics",
@@ -24,7 +24,21 @@ ignored = frozenset(
         "imdb_title_ratings",
         "wowah_data_raw",
     )
-    * (os.environ.get("CI") is None)
+    * (not CI)  # ignore locally, but not in CI
+    + (
+        # use in doctests, avoid possible simultaneous use of the downloaded file
+        "Aids2",
+        "billboard",
+        "fish_encounters",
+        "penguins",
+        "penguins_raw_raw",
+        "relig_income_raw",
+        "us_rent_income",
+        "warpbreaks",
+        "who",
+        "world_bank_pop_raw",
+    )
+    * CI  # ignore in CI, but not locally
 )
 
 xfail_linux_nix = pytest.mark.xfail(
