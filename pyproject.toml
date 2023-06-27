@@ -32,6 +32,7 @@ classifiers = [
 python = "^3.8"
 atpublic = ">=2.3,<5"
 bidict = ">=0.22.1,<1"
+filelock = ">=3.7.0,<4"
 importlib-resources = { version = ">=5,<6", python = "<3.9" }
 multipledispatch = ">=0.6,<1"
 numpy = ">=1,<2"
@@ -110,7 +111,6 @@ ruff = ">=0.0.271,<0.273"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<24"
-filelock = ">=3.7.0,<4"
 hypothesis = ">=6.58.0,<7"
 packaging = ">=21.3,<24"
 pytest = ">=7.0.0,<8"

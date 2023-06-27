@@ -4,6 +4,8 @@ import json
 import os
 from typing import TYPE_CHECKING, Optional
 
+import filelock
+
 import ibis
 from ibis.common.grounds import Concrete
 
@@ -36,7 +38,11 @@ class Example(Concrete):
         table_name: str | None = None,
         backend: BaseBackend | None = None,
     ) -> ir.Table:
-        path = _EXAMPLES.fetch(self.key, progressbar=True)
+        key = self.key
+        # lock to ensure we don't clobber the file if fetched in another
+        # process
+        with filelock.FileLock(f"{key}.lock"):
+            path = _EXAMPLES.fetch(key, progressbar=True)
 
         if backend is None:
             backend = ibis.get_backend()
