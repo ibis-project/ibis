@@ -225,6 +225,43 @@ class Table(Expr, _FixedTextJupyterMixin):
             ...
         ibis.common.exceptions.IbisError: Cast schema has fields that are not in the table: ['foo']
         """
+        return self._cast(schema, cast_method="cast")
+
+    def try_cast(self, schema: SupportsSchema) -> Table:
+        """Cast the columns of a table.
+
+        If the cast fails for a row, the value is returned
+        as `NULL` or `NaN` depending on backend behavior.
+
+        Parameters
+        ----------
+        schema
+            Mapping, schema or iterable of pairs to use for casting
+
+        Returns
+        -------
+        Table
+            Casted table
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": ["1", "2", "3"], "b": ["2.2", "3.3", "book"]})
+        >>> t.try_cast({"a": "int", "b": "float"})
+        ┏━━━━━━━┳━━━━━━━━━┓
+        ┃ a     ┃ b       ┃
+        ┡━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ float64 │
+        ├───────┼─────────┤
+        │     1 │     2.2 │
+        │     2 │     3.3 │
+        │     3 │     nan │
+        └───────┴─────────┘
+        """
+        return self._cast(schema, cast_method="try_cast")
+
+    def _cast(self, schema: SupportsSchema, cast_method: str = "cast") -> Table:
         schema = sch.schema(schema)
 
         cols = []
@@ -237,7 +274,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         for col in columns:
             if (new_type := schema.get(col)) is not None:
-                new_col = self[col].cast(new_type).name(col)
+                new_col = getattr(self[col], cast_method)(new_type).name(col)
             else:
                 new_col = col
             cols.append(new_col)

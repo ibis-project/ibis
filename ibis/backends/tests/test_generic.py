@@ -1253,6 +1253,33 @@ def test_try_cast_expected(con, from_val, to_type, expected):
         "sqlite",
     ]
 )
+def test_try_cast_table(con):
+    df = pd.DataFrame({"a": ["1", "2", None], "b": ["1.0", "2.2", "goodbye"]})
+
+    expected = pd.DataFrame({"a": [1.0, 2.0, None], "b": [1.0, 2.2, None]})
+
+    t = ibis.memtable(df)
+
+    tm.assert_frame_equal(con.execute(t.try_cast({"a": "int", "b": "float"})), expected)
+
+
+@pytest.mark.notimpl(
+    [
+        "pandas",
+        "dask",
+        "bigquery",
+        "datafusion",
+        "druid",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+    ]
+)
 @pytest.mark.parametrize(
     ("from_val", "to_type", "func"),
     [
