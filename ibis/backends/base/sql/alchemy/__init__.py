@@ -168,8 +168,10 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
-        with self.begin() as con:
-            yield con.execute(*args, **kwargs)
+        with self.begin() as con, contextlib.closing(
+            con.execute(*args, **kwargs)
+        ) as cur:
+            yield cur
 
     # TODO(kszucs): move to ibis.formats.pandas
     @staticmethod
