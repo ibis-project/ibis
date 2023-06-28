@@ -4,7 +4,7 @@ import abc
 import contextlib
 import os
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Iterator, Mapping
 
 import toolz
 
@@ -22,6 +22,13 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 __all__ = ['BaseSQLBackend']
+
+
+def _cursor_batches(con, sql, chunk_size: int = 1_000_000) -> Iterator[list[tuple]]:
+    with con.connect() as c:
+        with contextlib.closing(c.execute(sql)) as cursor:
+            while batch := cursor.fetchmany(chunk_size):
+                yield batch
 
 
 class BaseSQLBackend(BaseBackend):
@@ -143,21 +150,6 @@ class BaseSQLBackend(BaseBackend):
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
 
-    def _cursor_batches(
-        self,
-        expr: ir.Expr,
-        params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
-        chunk_size: int = 1_000_000,
-    ) -> Iterable[list]:
-        self._run_pre_execute_hooks(expr)
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
-
-        with self._safe_raw_sql(sql) as cursor:
-            while batch := cursor.fetchmany(chunk_size):
-                yield batch
-
     @util.experimental
     def to_pyarrow_batches(
         self,
@@ -192,13 +184,15 @@ class BaseSQLBackend(BaseBackend):
         """
         pa = self._import_pyarrow()
 
+        self._run_pre_execute_hooks(expr)
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        sql = query_ast.compile()
+
         schema = expr.as_table().schema()
         array_type = schema.as_struct().to_pyarrow()
         arrays = (
             pa.array(map(tuple, batch), type=array_type)
-            for batch in self._cursor_batches(
-                expr, params=params, limit=limit, chunk_size=chunk_size
-            )
+            for batch in _cursor_batches(self.con, sql, chunk_size=chunk_size)
         )
         batches = map(pa.RecordBatch.from_struct_array, arrays)
 
