@@ -19,9 +19,12 @@ from ibis.common.patterns import Call, Object
 p = Object.namespace(ops)
 c = Call.namespace(ops)
 
+
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
 # compilation later
+
+p = Object.namespace(ops)
 
 
 def sub_for(node: ops.Node, substitutions: Mapping[ops.node, ops.Node]) -> ops.Node:
@@ -59,18 +62,6 @@ def sub_immediate_parents(op: ops.Node, table: ops.TableNode) -> ops.Node:
     return sub_for(op, {base: table for base in find_immediate_parent_tables(op)})
 
 
-def find_physical_tables(node):
-    """Find every first occurrence of a `ir.PhysicalTable` object in `node`."""
-
-    def finder(node):
-        if isinstance(node, ops.PhysicalTable):
-            return g.halt, node
-        else:
-            return g.proceed, None
-
-    return list(toolz.unique(g.traverse(finder, node)))
-
-
 def find_immediate_parent_tables(input_node, keep_input=True):
     """Find every first occurrence of a `ir.Table` object in `input_node`.
 
@@ -102,6 +93,7 @@ def find_immediate_parent_tables(input_node, keep_input=True):
     True
     """
     assert all(isinstance(arg, ops.Node) for arg in util.promote_list(input_node))
+    # assert keep_input is True
 
     def finder(node):
         if isinstance(node, ops.TableNode):
@@ -109,7 +101,6 @@ def find_immediate_parent_tables(input_node, keep_input=True):
                 return g.halt, node
             else:
                 return g.proceed, None
-
         # HACK: special case ops.Contains to only consider the needle's base
         # table, since that's the only expression that matters for determining
         # cardinality
@@ -177,6 +168,7 @@ def substitute_parents(node):
     return substitute(fn, node)
 
 
+# Rule(Object(ops.DatabaseTable, name=x, schema=y), Apply(ops.UnboundTable, name=Reference("x"), schema=Reference("y")))))
 def substitute_unbound(node):
     """Rewrite `node` by replacing table expressions with an equivalent unbound table."""
     assert isinstance(node, ops.Node), type(node)
@@ -628,16 +620,6 @@ def flatten_predicate(node):
     return list(g.traverse(predicate, node))
 
 
-def is_analytic(node):
-    def predicate(node):
-        if isinstance(node, (ops.Reduction, ops.Analytic)):
-            return g.halt, True
-        else:
-            return g.proceed, None
-
-    return any(g.traverse(predicate, node))
-
-
 def is_reduction(node):
     """Check whether an expression contains a reduction or not.
 
@@ -795,15 +777,6 @@ def _rewrite_filter_value_list(op, **kwargs):
         return op
 
     return op.__class__(*visited)
-
-
-def find_memtables(node: ops.Node) -> Iterator[ops.InMemoryTable]:
-    """Find all in-memory tables in `node`."""
-
-    def finder(node):
-        return g.proceed, node if isinstance(node, ops.InMemoryTable) else None
-
-    return g.traverse(finder, node, filter=ops.Node)
 
 
 def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:

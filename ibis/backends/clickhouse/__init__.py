@@ -16,7 +16,6 @@ from clickhouse_connect.driver.external import ExternalData
 import ibis
 import ibis.common.exceptions as com
 import ibis.config
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -244,14 +243,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         return external_data
 
     def _collect_in_memory_tables(
-        self, expr: ir.TableExpr | None, *, external_tables: Mapping | None = None
+        self, expr: ir.TableExpr, *, external_tables: Mapping | None = None
     ):
         return toolz.merge(
-            (
-                {op.name: op for op in an.find_memtables(expr.op())}
-                if expr is not None
-                else {}
-            ),
+            {op.name: op for op in expr.op().find(ops.InMemoryTable)},
             external_tables or {},
         )
 
@@ -634,8 +629,9 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         if obj is not None:
             code += f" AS {self.compile(obj)}"
-
-        external_tables = self._collect_in_memory_tables(obj)
+            external_tables = self._collect_in_memory_tables(obj)
+        else:
+            external_tables = None
 
         # create the table
         self.con.raw_query(

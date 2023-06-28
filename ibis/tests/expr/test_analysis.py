@@ -6,6 +6,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
+from ibis.common.patterns import Call, Node, Object, Variable
 from ibis.tests.util import assert_equal
 
 # Place to collect esoteric expression analysis bugs and tests
@@ -302,3 +303,32 @@ def test_agg_selection_does_not_share_roots():
 
     with pytest.raises(com.RelationError, match="Selection expressions"):
         gb.aggregate(n=n)
+
+
+def test_prop_down_window():
+    t = ibis.table(name="t", schema={"g": "string", "f": "double"})
+
+    w = ibis.window(group_by=t.g, order_by=t.f)
+    col = (t.f - t.f.lag()).lag()
+
+    # propagate down here!
+    result = col.over(w)
+    expected = (t.f - t.f.lag().over(w)).lag().over(w)
+    expected_frame = result.op().frame
+    assert result.equals(expected)
+
+    # do the same propagation using pattern matching
+    func = Variable("func")
+    frame = Variable("frame")
+
+    p = Object.namespace(ops)
+    c = Call.namespace(ops)
+
+    pat = Node(
+        p.Value & ~p.WindowFunction,
+        each_arg=func @ p.Analytic >> c.WindowFunction(func, frame),
+    )
+    op = col.name("e").op()
+    result = op.replace(pat, context={frame: expected_frame})
+
+    assert result.to_expr().equals(expected.name("e"))

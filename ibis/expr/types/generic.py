@@ -885,7 +885,10 @@ class Value(Expr):
         >>> expr.equals(expected)
         True
         """
-        from ibis.expr.analysis import find_immediate_parent_tables
+        from ibis.expr.analysis import (
+            find_immediate_parent_tables,
+            find_first_base_table,
+        )
 
         roots = find_immediate_parent_tables(self.op())
         if len(roots) > 1:
@@ -895,6 +898,8 @@ class Value(Expr):
                 "to a projection"
             )
         table = roots[0].to_expr()
+        # table = find_first_base_table(self.op()).to_expr()
+
         return table.select(self)
 
     def to_pandas(self, **kwargs) -> pd.Series:

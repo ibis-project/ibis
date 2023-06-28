@@ -13,6 +13,7 @@ from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
 from ibis.util import experimental
 from ibis.common.annotations import ValidationError
+from ibis.common.patterns import Coercible, CoercionError
 from rich.jupyter import JupyterMixin
 from ibis.common.patterns import Coercible, CoercionError
 
@@ -229,6 +230,7 @@ class Expr(Immutable, Coercible):
         backends = set()
         has_unbound = False
         node_types = (ops.DatabaseTable, ops.SQLQueryResult, ops.UnboundTable)
+
         for table in self.op().find(node_types):
             if isinstance(table, ops.UnboundTable):
                 has_unbound = True

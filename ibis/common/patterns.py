@@ -635,6 +635,9 @@ class Function(Slotted, Pattern):
     def match(self, value, context):
         return self.func(value, context)
 
+    def __call__(self, *args, **kwargs):
+        return Call(self.func, *args, **kwargs)
+
 
 class Namespace:
     """Convenience class for creating patterns for various types from a module.
