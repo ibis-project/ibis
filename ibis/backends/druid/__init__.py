@@ -8,7 +8,6 @@ import warnings
 from typing import Any, Iterable
 
 import sqlalchemy as sa
-from pydruid.db.sqlalchemy import DruidDialect
 
 import ibis.backends.druid.datatypes as ddt
 import ibis.expr.datatypes as dt
@@ -50,14 +49,27 @@ class Backend(BaseAlchemyBackend):
         # workaround a broken pydruid `has_table` implementation
         engine.dialect.has_table = self._has_table
 
+    @staticmethod
+    def _new_sa_metadata():
+        meta = sa.MetaData()
+
+        @sa.event.listens_for(meta, "column_reflect")
+        def column_reflect(inspector, table, column_info):
+            if isinstance(typ := column_info["type"], sa.DateTime):
+                column_info["type"] = ddt.DruidDateTime()
+            elif isinstance(typ, (sa.LargeBinary, sa.BINARY, sa.VARBINARY)):
+                column_info["type"] = ddt.DruidBinary()
+            elif isinstance(typ, sa.String):
+                column_info["type"] = ddt.DruidString()
+
+        return meta
+
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, **kwargs):
-        if not isinstance(query, str):
-            query = str(
-                query.compile(
-                    dialect=DruidDialect(), compile_kwargs=dict(literal_binds=True)
-                )
-            )
+        query = query.compile(
+            dialect=self.con.dialect, compile_kwargs=dict(literal_binds=True)
+        )
+
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 "ignore",
@@ -65,7 +77,7 @@ class Backend(BaseAlchemyBackend):
                 category=sa.exc.SAWarning,
             )
             with self.begin() as con:
-                yield con.exec_driver_sql(query, *args, **kwargs)
+                yield con.execute(query, *args, **kwargs)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         query = f"EXPLAIN PLAN FOR {query}"
@@ -87,12 +99,12 @@ class Backend(BaseAlchemyBackend):
         raise NotImplementedError()
 
     def _has_table(self, connection, table_name: str, schema) -> bool:
-        query = sa.text(
-            """\
-SELECT COUNT(*) > 0 as c
-FROM INFORMATION_SCHEMA.TABLES
-WHERE TABLE_NAME = :table_name"""
-        ).bindparams(table_name=table_name)
+        t = sa.table(
+            "TABLES", sa.column("TABLE_NAME", sa.TEXT), schema="INFORMATION_SCHEMA"
+        )
+        query = sa.select(
+            sa.func.sum(sa.cast(t.c.TABLE_NAME == table_name, sa.INTEGER))
+        ).compile(dialect=self.con.dialect)
 
         return bool(connection.execute(query).scalar())
 
