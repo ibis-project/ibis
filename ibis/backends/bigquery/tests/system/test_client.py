@@ -329,7 +329,7 @@ def test_boolean_casting(alltypes):
     t = alltypes
     expr = t.group_by(k=t.string_col.nullif("1") == "9").count()
     result = expr.execute().set_index("k")
-    count = result["count"]
+    count = result.iloc[:, 0]
     assert count.at[False] == 5840
     assert count.at[True] == 730
 

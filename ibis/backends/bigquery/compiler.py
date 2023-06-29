@@ -63,7 +63,7 @@ def find_bigquery_udf(op):
     return lin.proceed, result
 
 
-_NAME_REGEX = re.compile(r"[_A-Za-z][A-Za-z_0-9]*")
+_NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 _EXACT_NAME_REGEX = re.compile(f"^{_NAME_REGEX.pattern}$")
 
 

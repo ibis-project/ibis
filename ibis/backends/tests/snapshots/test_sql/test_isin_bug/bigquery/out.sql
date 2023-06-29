@@ -9,5 +9,5 @@ SELECT
       WHERE
         t0.`x` > 2
     ) AS t1
-  ) AS `Contains_x_x`
+  ) AS `Contains_x_ x`
 FROM t AS t0
