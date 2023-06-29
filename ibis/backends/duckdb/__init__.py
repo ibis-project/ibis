@@ -736,14 +736,7 @@ class Backend(BaseAlchemyBackend):
             cursor = con.execute(sql)
             table = cursor.cursor.fetch_arrow_table()
 
-        if isinstance(expr, ir.Table):
-            return table
-        elif isinstance(expr, ir.Column):
-            return table[0]
-        elif isinstance(expr, ir.Scalar):
-            return table[0][0]
-        else:
-            raise ValueError
+        return expr.__pyarrow_result__(table)
 
     @util.experimental
     def to_torch(

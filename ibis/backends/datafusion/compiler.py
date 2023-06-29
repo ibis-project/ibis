@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import functools
 import math
 import operator
+from functools import partial, reduce, singledispatch
 
 import datafusion as df
 import datafusion.functions
@@ -16,29 +16,39 @@ from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 
 
-@functools.singledispatch
-def translate(expr):
+@singledispatch
+def translate(expr, **_):
     raise NotImplementedError(expr)
 
 
 @translate.register(ops.Node)
-def operation(op):
+def operation(op, **_):
     raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
 
 
 @translate.register(ops.DatabaseTable)
-def table(op):
-    return op.source._context.table(op.name)
+def table(op, ctx, **_):
+    return ctx.table(op.name)
+
+
+@translate.register(ops.DummyTable)
+def dummy_table(op, ctx, **kw):
+    return ctx.empty_table().select(
+        *(
+            translate(ops.Cast(value, to=dtype), ctx=ctx, **kw)
+            for value, dtype in zip(op.values, op.schema.types)
+        )
+    )
 
 
 @translate.register(ops.Alias)
-def alias(op):
-    arg = translate(op.arg)
+def alias(op, **kw):
+    arg = translate(op.arg, **kw)
     return arg.alias(op.name)
 
 
 @translate.register(ops.Literal)
-def literal(op):
+def literal(op, **_):
     if isinstance(op.value, (set, frozenset)):
         value = list(op.value)
     else:
@@ -51,31 +61,31 @@ def literal(op):
 
 
 @translate.register(ops.Cast)
-def cast(op):
-    arg = translate(op.arg)
+def cast(op, **kw):
+    arg = translate(op.arg, **kw)
     typ = PyArrowType.from_ibis(op.to)
     return arg.cast(to=typ)
 
 
 @translate.register(ops.TableColumn)
-def column(op):
+def column(op, **_):
     id_parts = [getattr(op.table, "name", None), op.name]
     return df.column(".".join(f'"{id}"' for id in id_parts if id))
 
 
 @translate.register(ops.SortKey)
-def sort_key(op):
-    arg = translate(op.expr)
+def sort_key(op, **kw):
+    arg = translate(op.expr, **kw)
     return arg.sort(ascending=op.ascending)
 
 
 @translate.register(ops.Selection)
-def selection(op):
-    plan = translate(op.table)
+def selection(op, **kw):
+    plan = translate(op.table, **kw)
 
     if op.predicates:
-        predicates = map(translate, op.predicates)
-        predicate = functools.reduce(operator.and_, predicates)
+        predicates = map(partial(translate, **kw), op.predicates)
+        predicate = reduce(operator.and_, predicates)
         plan = plan.filter(predicate)
 
     selections = []
@@ -88,10 +98,10 @@ def selection(op):
         if isinstance(arg, ops.TableNode):
             for name in arg.schema.names:
                 column = ops.TableColumn(table=arg, name=name)
-                field = translate(column)
+                field = translate(column, **kw)
                 selections.append(field)
         elif isinstance(arg, ops.Value):
-            field = translate(arg)
+            field = translate(arg, **kw)
             selections.append(field)
         else:
             raise com.TranslationError(
@@ -102,77 +112,73 @@ def selection(op):
     plan = plan.select(*selections)
 
     if op.sort_keys:
-        sort_keys = map(translate, op.sort_keys)
+        sort_keys = map(partial(translate, **kw), op.sort_keys)
         plan = plan.sort(*sort_keys)
 
     return plan
 
 
 @translate.register(ops.Limit)
-def limit(op):
+def limit(op, **kw):
     if op.offset:
         raise NotImplementedError("DataFusion does not support offset")
-    return translate(op.table).limit(op.n)
+    return translate(op.table, **kw).limit(op.n)
 
 
 @translate.register(ops.Aggregation)
-def aggregation(op):
-    table = translate(op.table)
-    group_by = [translate(arg) for arg in op.by]
-    metrics = [translate(arg) for arg in op.metrics]
+def aggregation(op, **kw):
+    table = translate(op.table, **kw)
+    group_by = [translate(arg, **kw) for arg in op.by]
+    metrics = [translate(arg, **kw) for arg in op.metrics]
 
     if op.predicates:
         table = table.filter(
-            functools.reduce(
-                operator.and_,
-                map(translate, op.predicates),
-            )
+            reduce(operator.and_, map(partial(translate, **kw), op.predicates))
         )
 
     return table.aggregate(group_by, metrics)
 
 
 @translate.register(ops.Not)
-def invert(op):
-    arg = translate(op.arg)
-    return ~arg
+def invert(op, **kw):
+    return ~translate(op.arg, **kw)
 
 
 @translate.register(ops.And)
-def and_(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def and_(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     return left & right
 
 
 @translate.register(ops.Or)
-def or_(op):
-    left = translate(op.left)
-    right = translate(op.right)
+def or_(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
     return left | right
 
 
 @translate.register(ops.Abs)
-def abs(op):
-    arg = translate(op.arg)
+def abs(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.abs(arg)
 
 
 @translate.register(ops.Ceil)
-def ceil(op):
-    arg = translate(op.arg)
+def ceil(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.ceil(arg).cast(pa.int64())
 
 
 @translate.register(ops.Floor)
-def floor(op):
-    arg = translate(op.arg)
+def floor(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.floor(arg).cast(pa.int64())
 
 
 @translate.register(ops.Round)
-def round(op):
-    arg = translate(op.arg)
+def round(op, **kw):
+    arg = translate(op.arg, **kw)
     if op.digits is not None:
         raise com.UnsupportedOperationError(
             'Rounding to specific digits is not supported in datafusion'
@@ -181,227 +187,227 @@ def round(op):
 
 
 @translate.register(ops.Ln)
-def ln(op):
-    arg = translate(op.arg)
+def ln(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.ln(arg)
 
 
 @translate.register(ops.Log2)
-def log2(op):
-    arg = translate(op.arg)
+def log2(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.log2(arg)
 
 
 @translate.register(ops.Log10)
-def log10(op):
-    arg = translate(op.arg)
+def log10(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.log10(arg)
 
 
 @translate.register(ops.Sqrt)
-def sqrt(op):
-    arg = translate(op.arg)
+def sqrt(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.sqrt(arg)
 
 
 @translate.register(ops.Strip)
-def strip(op):
-    arg = translate(op.arg)
+def strip(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.trim(arg)
 
 
 @translate.register(ops.LStrip)
-def lstrip(op):
-    arg = translate(op.arg)
+def lstrip(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.ltrim(arg)
 
 
 @translate.register(ops.RStrip)
-def rstrip(op):
-    arg = translate(op.arg)
+def rstrip(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.rtrim(arg)
 
 
 @translate.register(ops.Lowercase)
-def lower(op):
-    arg = translate(op.arg)
+def lower(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.lower(arg)
 
 
 @translate.register(ops.Uppercase)
-def upper(op):
-    arg = translate(op.arg)
+def upper(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.upper(arg)
 
 
 @translate.register(ops.Reverse)
-def reverse(op):
-    arg = translate(op.arg)
+def reverse(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.reverse(arg)
 
 
 @translate.register(ops.StringLength)
-def strlen(op):
-    arg = translate(op.arg)
+def strlen(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.character_length(arg)
 
 
 @translate.register(ops.Capitalize)
-def capitalize(op):
-    arg = translate(op.arg)
+def capitalize(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.initcap(arg)
 
 
 @translate.register(ops.Substring)
-def substring(op):
-    arg = translate(op.arg)
+def substring(op, **kw):
+    arg = translate(op.arg, **kw)
     start = translate(ops.Add(left=op.start, right=1))
     if op_length := op.length:
-        length = translate(op_length)
+        length = translate(op_length, **kw)
         return df.functions.substr(arg, start, length)
     else:
         return df.functions.substr(arg, start)
 
 
 @translate.register(ops.Repeat)
-def repeat(op):
-    arg = translate(op.arg)
-    times = translate(op.times)
+def repeat(op, **kw):
+    arg = translate(op.arg, **kw)
+    times = translate(op.times, **kw)
     return df.functions.repeat(arg, times)
 
 
 @translate.register(ops.LPad)
-def lpad(op):
-    arg = translate(op.arg)
-    length = translate(op.length)
-    pad = translate(op.pad)
+def lpad(op, **kw):
+    arg = translate(op.arg, **kw)
+    length = translate(op.length, **kw)
+    pad = translate(op.pad, **kw)
     return df.functions.lpad(arg, length, pad)
 
 
 @translate.register(ops.RPad)
-def rpad(op):
-    arg = translate(op.arg)
-    length = translate(op.length)
-    pad = translate(op.pad)
+def rpad(op, **kw):
+    arg = translate(op.arg, **kw)
+    length = translate(op.length, **kw)
+    pad = translate(op.pad, **kw)
     return df.functions.rpad(arg, length, pad)
 
 
 @translate.register(ops.GreaterEqual)
-def ge(op):
-    return translate(op.left) >= translate(op.right)
+def ge(op, **kw):
+    return translate(op.left, **kw) >= translate(op.right, **kw)
 
 
 @translate.register(ops.LessEqual)
-def le(op):
-    return translate(op.left) <= translate(op.right)
+def le(op, **kw):
+    return translate(op.left, **kw) <= translate(op.right, **kw)
 
 
 @translate.register(ops.Greater)
-def gt(op):
-    return translate(op.left) > translate(op.right)
+def gt(op, **kw):
+    return translate(op.left, **kw) > translate(op.right, **kw)
 
 
 @translate.register(ops.Less)
-def lt(op):
-    return translate(op.left) < translate(op.right)
+def lt(op, **kw):
+    return translate(op.left, **kw) < translate(op.right, **kw)
 
 
 @translate.register(ops.Equals)
-def eq(op):
-    return translate(op.left) == translate(op.right)
+def eq(op, **kw):
+    return translate(op.left, **kw) == translate(op.right, **kw)
 
 
 @translate.register(ops.NotEquals)
-def ne(op):
-    return translate(op.left) != translate(op.right)
+def ne(op, **kw):
+    return translate(op.left, **kw) != translate(op.right, **kw)
 
 
 @translate.register(ops.Add)
-def add(op):
-    return translate(op.left) + translate(op.right)
+def add(op, **kw):
+    return translate(op.left, **kw) + translate(op.right, **kw)
 
 
 @translate.register(ops.Subtract)
-def sub(op):
-    return translate(op.left) - translate(op.right)
+def sub(op, **kw):
+    return translate(op.left, **kw) - translate(op.right, **kw)
 
 
 @translate.register(ops.Multiply)
-def mul(op):
-    return translate(op.left) * translate(op.right)
+def mul(op, **kw):
+    return translate(op.left, **kw) * translate(op.right, **kw)
 
 
 @translate.register(ops.Divide)
-def div(op):
-    return translate(op.left) / translate(op.right)
+def div(op, **kw):
+    return translate(op.left, **kw) / translate(op.right, **kw)
 
 
 @translate.register(ops.FloorDivide)
-def floordiv(op):
-    return df.functions.floor(translate(op.left) / translate(op.right))
+def floordiv(op, **kw):
+    return df.functions.floor(translate(op.left, **kw) / translate(op.right, **kw))
 
 
 @translate.register(ops.Modulus)
-def mod(op):
-    return translate(op.left) % translate(op.right)
+def mod(op, **kw):
+    return translate(op.left, **kw) % translate(op.right, **kw)
 
 
 @translate.register(ops.Count)
-def count(op):
-    return df.functions.count(translate(op.arg))
+def count(op, **kw):
+    return df.functions.count(translate(op.arg, **kw))
 
 
 @translate.register(ops.CountDistinct)
-def count_distinct(op):
-    return df.functions.count(translate(op.arg), distinct=True)
+def count_distinct(op, **kw):
+    return df.functions.count(translate(op.arg, **kw), distinct=True)
 
 
 @translate.register(ops.CountStar)
-def count_star(_):
+def count_star(_, **__):
     return df.functions.count(df.literal(1))
 
 
 @translate.register(ops.Sum)
-def sum(op):
-    arg = translate(op.arg)
+def sum(op, **kw):
+    arg = translate(op.arg, **kw)
     if op.arg.output_dtype.is_boolean():
         arg = arg.cast(pa.int64())
     return df.functions.sum(arg)
 
 
 @translate.register(ops.Min)
-def min(op):
-    arg = translate(op.arg)
+def min(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.min(arg)
 
 
 @translate.register(ops.Max)
-def max(op):
-    arg = translate(op.arg)
+def max(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.max(arg)
 
 
 @translate.register(ops.Mean)
-def mean(op):
-    arg = translate(op.arg)
+def mean(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.avg(arg)
 
 
 @translate.register(ops.Median)
-def median(op):
-    arg = translate(op.arg)
+def median(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.median(arg)
 
 
 @translate.register(ops.ApproxMedian)
-def approx_median(op):
-    arg = translate(op.arg)
+def approx_median(op, **kw):
+    arg = translate(op.arg, **kw)
     return df.functions.approx_median(arg)
 
 
 @translate.register(ops.Variance)
-def variance(op):
-    arg = translate(op.arg)
+def variance(op, **kw):
+    arg = translate(op.arg, **kw)
 
     if op.how == "sample":
         return df.functions.var_samp(arg)
@@ -412,8 +418,8 @@ def variance(op):
 
 
 @translate.register(ops.StandardDev)
-def stddev(op):
-    arg = translate(op.arg)
+def stddev(op, **kw):
+    arg = translate(op.arg, **kw)
 
     if op.how == "sample":
         return df.functions.stddev_samp(arg)
@@ -424,22 +430,22 @@ def stddev(op):
 
 
 @translate.register(ops.Contains)
-def contains(op):
-    value = translate(op.value)
-    options = list(map(translate, op.options))
+def contains(op, **kw):
+    value = translate(op.value, **kw)
+    options = list(map(partial(translate, **kw), op.options))
     return df.functions.in_list(value, options, negated=False)
 
 
 @translate.register(ops.NotContains)
-def not_contains(op):
-    value = translate(op.value)
-    options = list(map(translate, op.options))
+def not_contains(op, **kw):
+    value = translate(op.value, **kw)
+    options = list(map(partial(translate, **kw), op.options))
     return df.functions.in_list(value, options, negated=True)
 
 
 @translate.register(ops.Negate)
-def negate(op):
-    return df.lit(-1) * translate(op.arg)
+def negate(op, **kw):
+    return df.lit(-1) * translate(op.arg, **kw)
 
 
 @translate.register(ops.Acos)
@@ -449,64 +455,64 @@ def negate(op):
 @translate.register(ops.Sin)
 @translate.register(ops.Tan)
 @translate.register(ops.Exp)
-def trig(op):
+def trig(op, **kw):
     func_name = op.__class__.__name__.lower()
     func = getattr(df.functions, func_name)
-    return func(translate(op.arg))
+    return func(translate(op.arg, **kw))
 
 
 @translate.register(ops.Atan2)
-def atan2(op):
-    y, x = map(translate, op.args)
+def atan2(op, **kw):
+    y, x = map(partial(translate, **kw), op.args)
     return df.functions.atan(y / x)
 
 
 @translate.register(ops.Cot)
-def cot(op):
-    x = translate(op.arg)
+def cot(op, **kw):
+    x = translate(op.arg, **kw)
     return df.lit(1.0) / df.functions.tan(x)
 
 
 @translate.register(ops.Radians)
-def radians(op):
-    return translate(op.arg) * df.lit(math.pi) / df.lit(180)
+def radians(op, **kw):
+    return translate(op.arg, **kw) * df.lit(math.pi) / df.lit(180)
 
 
 @translate.register(ops.Degrees)
-def degrees(op):
-    return translate(op.arg) * df.lit(180) / df.lit(math.pi)
+def degrees(op, **kw):
+    return translate(op.arg, **kw) * df.lit(180) / df.lit(math.pi)
 
 
 @translate.register(ops.RandomScalar)
-def random_scalar(_):
+def random_scalar(_, **__):
     return df.functions.random()
 
 
 @translate.register(ops.Pi)
-def pi(_):
+def pi(_, **__):
     return df.lit(math.pi)
 
 
 @translate.register(ops.E)
-def e(_):
+def e(_, **__):
     return df.lit(math.e)
 
 
 @translate.register(ops.ElementWiseVectorizedUDF)
-def elementwise_udf(op):
+def elementwise_udf(op, **kw):
     udf = df.udf(
         op.func,
         input_types=list(map(PyArrowType.from_ibis, op.input_type)),
         return_type=PyArrowType.from_ibis(op.return_type),
         volatility="volatile",
     )
-    args = map(translate, op.func_args)
+    args = map(partial(translate, **kw), op.func_args)
 
     return udf(*args)
 
 
 @translate.register(ops.ScalarUDF)
-def scalar_udf(op):
+def scalar_udf(op, **kw):
     if (input_type := op.__input_type__) != InputType.PYARROW:
         raise NotImplementedError(
             f"DataFusion only supports pyarrow UDFs: got a {input_type.name.lower()} UDF"
@@ -517,41 +523,41 @@ def scalar_udf(op):
         return_type=PyArrowType.from_ibis(op.output_dtype),
         volatility="volatile",
     )
-    args = map(translate, op.args)
+    args = map(partial(translate, **kw), op.args)
 
     return udf(*args)
 
 
 @translate.register(ops.StringConcat)
-def string_concat(op):
-    return df.functions.concat(*map(translate, op.arg))
+def string_concat(op, **kw):
+    return df.functions.concat(*map(partial(translate, **kw), op.arg))
 
 
 @translate.register(ops.Translate)
-def string_translate(op):
-    return df.functions.translate(*map(translate, op.args))
+def string_translate(op, **kw):
+    return df.functions.translate(*map(partial(translate, **kw), op.args))
 
 
 @translate.register(ops.StringAscii)
-def string_ascii(op):
-    return df.functions.ascii(translate(op.arg))
+def string_ascii(op, **kw):
+    return df.functions.ascii(translate(op.arg, **kw))
 
 
 @translate.register(ops.StartsWith)
-def string_starts_with(op):
-    return df.functions.starts_with(translate(op.arg), translate(op.start))
+def string_starts_with(op, **kw):
+    return df.functions.starts_with(translate(op.arg, **kw), translate(op.start, **kw))
 
 
 @translate.register(ops.StrRight)
-def string_right(op):
-    return df.functions.right(translate(op.arg), translate(op.nchars))
+def string_right(op, **kw):
+    return df.functions.right(translate(op.arg, **kw), translate(op.nchars, **kw))
 
 
 @translate.register(ops.RegexExtract)
-def regex_extract(op):
-    arg = translate(op.arg)
+def regex_extract(op, **kw):
+    arg = translate(op.arg, **kw)
     concat = ops.StringConcat(("(", op.pattern, ")"))
-    pattern = translate(concat)
+    pattern = translate(concat, **kw)
     if (index := getattr(op.index, "value", None)) is None:
         raise ValueError(
             "re_extract `index` expressions must be literals. "
@@ -568,34 +574,34 @@ def regex_extract(op):
 
 
 @translate.register(ops.StringReplace)
-def string_replace(op):
-    arg = translate(op.arg)
-    pattern = translate(op.pattern)
-    replacement = translate(op.replacement)
+def string_replace(op, **kw):
+    arg = translate(op.arg, **kw)
+    pattern = translate(op.pattern, **kw)
+    replacement = translate(op.replacement, **kw)
     return df.functions.replace(arg, pattern, replacement)
 
 
 @translate.register(ops.RegexReplace)
-def regex_replace(op):
-    arg = translate(op.arg)
-    pattern = translate(op.pattern)
-    replacement = translate(op.replacement)
+def regex_replace(op, **kw):
+    arg = translate(op.arg, **kw)
+    pattern = translate(op.pattern, **kw)
+    replacement = translate(op.replacement, **kw)
     return df.functions.regexp_replace(arg, pattern, replacement, df.lit("g"))
 
 
 @translate.register(ops.StringFind)
-def string_find(op):
+def string_find(op, **kw):
     if op.end is not None:
         raise NotImplementedError("`end` not yet implemented")
 
-    arg = translate(op.arg)
-    pattern = translate(op.substr)
+    arg = translate(op.arg, **kw)
+    pattern = translate(op.substr, **kw)
 
     if (op_start := op.start) is not None:
         sub_string = ops.Substring(op.arg, op_start)
-        arg = translate(sub_string)
+        arg = translate(sub_string, **kw)
         pos = df.functions.strpos(arg, pattern)
-        start = translate(op_start)
+        start = translate(op_start, **kw)
         return df.functions.coalesce(
             df.functions.nullif(pos + start, start), df.lit(0)
         ) - df.lit(1)
@@ -604,9 +610,9 @@ def string_find(op):
 
 
 @translate.register(ops.RegexSearch)
-def regex_search(op):
-    arg = translate(op.arg)
-    pattern = translate(op.pattern)
+def regex_search(op, **kw):
+    arg = translate(op.arg, **kw)
+    pattern = translate(op.pattern, **kw)
 
     def search(arr):
         default = pa.scalar(0, type=pa.int64())
@@ -625,19 +631,19 @@ def regex_search(op):
 
 
 @translate.register(ops.StringContains)
-def string_contains(op):
-    haystack = translate(op.haystack)
-    needle = translate(op.needle)
+def string_contains(op, **kw):
+    haystack = translate(op.haystack, **kw)
+    needle = translate(op.needle, **kw)
 
     return df.functions.strpos(haystack, needle) > df.lit(0)
 
 
 @translate.register(ops.StringJoin)
-def string_join(op):
+def string_join(op, **kw):
     if (sep := getattr(op.sep, "value", None)) is None:
         raise ValueError(
             "join `sep` expressions must be literals. "
             "Arbitrary expressions are not supported in the DataFusion backend"
         )
 
-    return df.functions.concat_ws(sep, *map(translate, op.arg))
+    return df.functions.concat_ws(sep, *(translate(arg, **kw) for arg in op.arg))

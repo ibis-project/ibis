@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import importlib
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Mapping, MutableMapping
+from typing import Any, Mapping, MutableMapping
 
 import pandas as pd
+import pyarrow as pa
 
 import ibis.common.exceptions as com
 import ibis.config
@@ -13,9 +14,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.formats.pandas import PandasData, PandasSchema
-
-if TYPE_CHECKING:
-    import pyarrow as pa
+from ibis.formats.pyarrow import PyArrowData
 
 
 class BasePandasBackend(BaseBackend):
@@ -245,15 +244,12 @@ class Backend(BasePandasBackend):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        pa = self._import_pyarrow()
-        output = self.execute(expr, params=params, limit=limit)
-
-        if isinstance(output, pd.DataFrame):
-            return pa.Table.from_pandas(output)
-        elif isinstance(output, pd.Series):
-            return pa.Array.from_pandas(output)
-        else:
-            return pa.scalar(output)
+        table_expr = expr.as_table()
+        output = pa.Table.from_pandas(
+            self.execute(table_expr, params=params, limit=limit, **kwargs)
+        )
+        table = PyArrowData.convert_table(output, table_expr.schema())
+        return expr.__pyarrow_result__(table)
 
     def to_pyarrow_batches(
         self,

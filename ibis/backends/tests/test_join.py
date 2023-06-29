@@ -141,6 +141,11 @@ def test_filtering_join(backend, batting, awards_players, how):
 
 
 @pytest.mark.notimpl(["datafusion"])
+@pytest.mark.broken(
+    ["polars"],
+    raises=ValueError,
+    reason="https://github.com/pola-rs/polars/issues/9335",
+)
 def test_join_then_filter_no_column_overlap(awards_players, batting):
     left = batting[batting.yearID == 2015]
     year = left.yearID.name("year")
@@ -154,6 +159,11 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
 
 
 @pytest.mark.notimpl(["datafusion"])
+@pytest.mark.broken(
+    ["polars"],
+    raises=ValueError,
+    reason="https://github.com/pola-rs/polars/issues/9335",
+)
 def test_mutate_then_join_no_column_overlap(batting, awards_players):
     left = batting.mutate(year=batting.yearID).filter(lambda t: t.year == 2015)
     left = left["year", "RBI"]
@@ -164,6 +174,11 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
 
 @pytest.mark.notimpl(["datafusion", "bigquery", "druid"])
 @pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
+@pytest.mark.broken(
+    ["polars"],
+    raises=ValueError,
+    reason="https://github.com/pola-rs/polars/issues/9335",
+)
 @pytest.mark.parametrize(
     "func",
     [

@@ -415,7 +415,6 @@ def test_unnest_no_nulls(backend):
 
 
 @unnest
-@pytest.mark.notimpl("polars", raises=AssertionError, reason="Series are different")
 @pytest.mark.notimpl("dask", raises=ValueError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types

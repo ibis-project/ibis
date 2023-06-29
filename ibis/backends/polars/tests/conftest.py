@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pytest
 
 import ibis
@@ -29,6 +30,16 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
         return ibis.polars.connect(**kw)
+
+    @classmethod
+    def assert_series_equal(cls, left, right, *args, **kwargs) -> None:
+        check_dtype = not (
+            issubclass(left.dtype.type, np.timedelta64)
+            and issubclass(right.dtype.type, np.timedelta64)
+        ) and kwargs.pop("check_dtype", True)
+        return super().assert_series_equal(
+            left, right, *args, **kwargs, check_dtype=check_dtype
+        )
 
 
 @pytest.fixture(scope='session')

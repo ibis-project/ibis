@@ -118,7 +118,11 @@ class PyArrowType(TypeMapper):
                 dtype.unit.short if dtype.scale is not None else "us", tz=dtype.timezone
             )
         elif dtype.is_interval():
-            return pa.duration(dtype.unit.short)
+            short = dtype.unit.short
+            if short in {"ns", "us", "ms", "s"}:
+                return pa.duration(short)
+            else:
+                return pa.month_day_nano_interval()
         elif dtype.is_time():
             return pa.time64("ns")
         elif dtype.is_date():
@@ -138,7 +142,9 @@ class PyArrowType(TypeMapper):
             return pa.struct(fields)
         elif dtype.is_map():
             key_field = pa.field(
-                'key', cls.from_ibis(dtype.key_type), nullable=dtype.key_type.nullable
+                'key',
+                cls.from_ibis(dtype.key_type),
+                nullable=False,  # pyarrow doesn't allow nullable keys
             )
             value_field = pa.field(
                 'value',
@@ -213,8 +219,16 @@ class PyArrowData(DataMapper):
     @classmethod
     def convert_scalar(cls, scalar: pa.Scalar, dtype: dt.DataType) -> pa.Scalar:
         desired_type = PyArrowType.from_ibis(dtype)
-        if scalar.type != desired_type:
-            return scalar.cast(desired_type)
+        scalar_type = scalar.type
+        if scalar_type != desired_type:
+            try:
+                return scalar.cast(desired_type)
+            except pa.ArrowNotImplementedError:
+                # pyarrow doesn't support some scalar casts that are supported
+                # when using arrays or tables
+                return pa.array([scalar.as_py()], type=scalar_type).cast(desired_type)[
+                    0
+                ]
         else:
             return scalar
 
@@ -229,7 +243,12 @@ class PyArrowData(DataMapper):
     @classmethod
     def convert_table(cls, table: pa.Table, schema: Schema) -> pa.Table:
         desired_schema = PyArrowSchema.from_ibis(schema)
-        if table.schema != desired_schema:
+        pa_schema = table.schema
+
+        if pa_schema.names != schema.names:
+            table = table.rename_columns(schema.names)
+
+        if pa_schema != desired_schema:
             return table.cast(desired_schema)
         else:
             return table

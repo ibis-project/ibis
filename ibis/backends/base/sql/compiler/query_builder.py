@@ -189,7 +189,6 @@ class Select(DML, Comparable):
         limit=None,
         distinct=False,
         indent=2,
-        result_handler=None,
         parent_op=None,
     ):
         self.translator_class = translator_class
@@ -213,8 +212,6 @@ class Select(DML, Comparable):
         self.subqueries = subqueries or []
 
         self.indent = indent
-
-        self.result_handler = result_handler
 
     def _translate(self, expr, named=False, permit_subquery=False):
         translator = self.translator_class(

@@ -185,10 +185,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
         geom_col = None
         for name, dtype in schema.items():
             if dtype.is_geospatial():
-                geom_col = geom_col or name
-                df[name] = df[name].map(
-                    lambda row: None if row is None else shape.to_shape(row)
-                )
+                if not geom_col:
+                    geom_col = name
+                df[name] = df[name].map(shape.to_shape, na_action="ignore")
         if geom_col:
             df[geom_col] = gpd.array.GeometryArray(df[geom_col].values)
             df = gpd.GeoDataFrame(df, geometry=geom_col)

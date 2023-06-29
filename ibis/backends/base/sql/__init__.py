@@ -262,10 +262,7 @@ class BaseSQLBackend(BaseBackend):
         with self._safe_raw_sql(sql, **kwargs) as cursor:
             result = self.fetch_from_cursor(cursor, schema)
 
-        if hasattr(getattr(query_ast, 'dml', query_ast), 'result_handler'):
-            result = query_ast.dml.result_handler(result)
-
-        return result
+        return expr.__pandas_result__(result)
 
     def _register_in_memory_table(self, _: ops.InMemoryTable) -> None:
         raise NotImplementedError(self.name)

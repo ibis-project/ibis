@@ -270,29 +270,23 @@ class _FileIOHandler:
         """
         pa = self._import_pyarrow()
         self._run_pre_execute_hooks(expr)
+        table_expr = expr.as_table()
+        arrow_schema = table_expr.schema().to_pyarrow()
         try:
-            # Can't construct an array from record batches
-            # so construct at one column table (if applicable)
-            # then return the column _from_ the table
             with self.to_pyarrow_batches(
-                expr, params=params, limit=limit, **kwargs
+                table_expr, params=params, limit=limit, **kwargs
             ) as reader:
-                table = pa.Table.from_batches(reader)
+                table = (
+                    pa.Table.from_batches(reader)
+                    .rename_columns(table_expr.columns)
+                    .cast(arrow_schema)
+                )
         except pa.lib.ArrowInvalid:
             raise
         except ValueError:
-            # The pyarrow batches iterator is empty so pass in an empty
-            # iterator and a pyarrow schema
-            table = expr.as_table().schema().to_pyarrow().empty_table()
+            table = arrow_schema.empty_table()
 
-        if isinstance(expr, ir.Table):
-            return table
-        elif isinstance(expr, ir.Column):
-            return table[0]
-        elif isinstance(expr, ir.Scalar):
-            return table[0][0]
-        else:
-            raise ValueError
+        return expr.__pyarrow_result__(table)
 
     @util.experimental
     def to_pyarrow_batches(

@@ -116,17 +116,17 @@ _TIMESTAMP_SCALE_TO_UNITS = {
 
 
 @translate.register(ops.Cast)
-def cast(op, **kwargs):
+def cast(op, **_):
     return _cast(op, strict=True)
 
 
 @translate.register(ops.TryCast)
-def try_cast(op, **kwargs):
+def try_cast(op, **_):
     return _cast(op, strict=False)
 
 
-def _cast(op, strict=True, **kwargs):
-    arg = translate(op.arg, **kwargs)
+def _cast(op, strict=True, **kw):
+    arg = translate(op.arg, **kw)
     dtype = op.arg.output_dtype
     to = op.to
 
@@ -405,7 +405,7 @@ def searched_case(op, **kw):
 
 @translate.register(ops.Coalesce)
 def coalesce(op, **kw):
-    arg = list(map(translate, op.arg))
+    arg = [translate(expr, **kw) for expr in op.arg]
     return pl.coalesce(arg)
 
 
@@ -842,22 +842,6 @@ def string_to_timestamp(op, **kw):
     return arg.str.strptime(pl.Datetime, op.format_str.value)
 
 
-@translate.register(ops.TimestampAdd)
-def timestamp_add(op, **kw):
-    left = translate(op.left, **kw)
-    right = translate(op.right, **kw)
-    return left + right
-
-
-@translate.register(ops.TimestampSub)
-@translate.register(ops.DateDiff)
-@translate.register(ops.IntervalSubtract)
-def timestamp_sub(op, **kw):
-    left = translate(op.left, **kw)
-    right = translate(op.right, **kw)
-    return left - right
-
-
 @translate.register(ops.TimestampDiff)
 def timestamp_diff(op, **kw):
     left = translate(op.left, **kw)
@@ -1046,6 +1030,10 @@ _binops = {
     ops.And: operator.and_,
     ops.DateAdd: operator.add,
     ops.DateSub: operator.sub,
+    ops.DateDiff: operator.sub,
+    ops.TimestampAdd: operator.add,
+    ops.TimestampSub: operator.sub,
+    ops.IntervalSubtract: operator.sub,
     ops.Divide: operator.truediv,
     ops.FloorDivide: operator.floordiv,
     ops.Multiply: operator.mul,
@@ -1122,7 +1110,7 @@ def execute_not_any(op, **kw):
     return translate(arg, **kw).any().is_not()
 
 
-def _arg_min_max(op, func, **kwargs):
+def _arg_min_max(op, func, **kw):
     key = op.key
     arg = op.arg
 
@@ -1130,8 +1118,8 @@ def _arg_min_max(op, func, **kwargs):
         key = ops.Where(op_where, key, None)
         arg = ops.Where(op_where, arg, None)
 
-    translate_arg = translate(arg)
-    translate_key = translate(key)
+    translate_arg = translate(arg, **kw)
+    translate_key = translate(key, **kw)
 
     not_null_mask = translate_arg.is_not_null() & translate_key.is_not_null()
     return translate_arg.filter(not_null_mask).take(
@@ -1140,13 +1128,13 @@ def _arg_min_max(op, func, **kwargs):
 
 
 @translate.register(ops.ArgMax)
-def execute_arg_max(op, **kwargs):
-    return _arg_min_max(op, pl.Expr.arg_max, **kwargs)
+def execute_arg_max(op, **kw):
+    return _arg_min_max(op, pl.Expr.arg_max, **kw)
 
 
 @translate.register(ops.ArgMin)
-def execute_arg_min(op, **kwargs):
-    return _arg_min_max(op, pl.Expr.arg_min, **kwargs)
+def execute_arg_min(op, **kw):
+    return _arg_min_max(op, pl.Expr.arg_min, **kw)
 
 
 @translate.register(ops.SQLStringView)

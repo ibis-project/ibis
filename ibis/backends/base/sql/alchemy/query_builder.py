@@ -121,6 +121,13 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             backend._create_temp_view(view=result, definition=definition)
         elif isinstance(ref_op, ops.InMemoryTable):
             result = self._format_in_memory_table(op, ref_op, translator)
+        elif isinstance(ref_op, ops.DummyTable):
+            result = sa.select(
+                *(
+                    translator.translate(value).label(name)
+                    for name, value in zip(ref_op.schema.names, ref_op.values)
+                )
+            )
         else:
             # A subquery
             if ctx.is_extracted(ref_op):
