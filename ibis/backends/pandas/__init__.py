@@ -265,7 +265,9 @@ class Backend(BasePandasBackend):
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
         pa = self._import_pyarrow()
-        pa_table = self.to_pyarrow(expr, params=params, limit=limit)
+        pa_table = self.to_pyarrow(
+            expr.as_table(), params=params, limit=limit, **kwargs
+        )
         return pa.RecordBatchReader.from_batches(
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )

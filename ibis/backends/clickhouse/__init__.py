@@ -275,14 +275,14 @@ class Backend(BaseBackend):
         #
         # the extra code to make this dance work without first converting to
         # record batches isn't worth it without some benchmarking
-        reader = self.to_pyarrow_batches(
+        with self.to_pyarrow_batches(
             expr=expr,
             params=params,
             limit=limit,
             external_tables=external_tables,
             **kwargs,
-        )
-        t = reader.read_all()
+        ) as reader:
+            t = reader.read_all()
 
         if isinstance(expr, ir.Scalar):
             return t[0][0]

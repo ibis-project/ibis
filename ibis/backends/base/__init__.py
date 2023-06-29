@@ -274,9 +274,10 @@ class _FileIOHandler:
             # Can't construct an array from record batches
             # so construct at one column table (if applicable)
             # then return the column _from_ the table
-            table = pa.Table.from_batches(
-                self.to_pyarrow_batches(expr, params=params, limit=limit, **kwargs)
-            )
+            with self.to_pyarrow_batches(
+                expr, params=params, limit=limit, **kwargs
+            ) as reader:
+                table = pa.Table.from_batches(reader)
         except pa.lib.ArrowInvalid:
             raise
         except ValueError:
@@ -451,11 +452,10 @@ class _FileIOHandler:
         self._import_pyarrow()
         import pyarrow.parquet as pq
 
-        batch_reader = expr.to_pyarrow_batches(params=params)
-
-        with pq.ParquetWriter(path, batch_reader.schema) as writer:
-            for batch in batch_reader:
-                writer.write_batch(batch)
+        with expr.to_pyarrow_batches(params=params) as batch_reader:
+            with pq.ParquetWriter(path, batch_reader.schema) as writer:
+                for batch in batch_reader:
+                    writer.write_batch(batch)
 
     @util.experimental
     def to_csv(
@@ -487,11 +487,10 @@ class _FileIOHandler:
         self._import_pyarrow()
         import pyarrow.csv as pcsv
 
-        batch_reader = expr.to_pyarrow_batches(params=params)
-
-        with pcsv.CSVWriter(path, batch_reader.schema) as writer:
-            for batch in batch_reader:
-                writer.write_batch(batch)
+        with expr.to_pyarrow_batches(params=params) as batch_reader:
+            with pcsv.CSVWriter(path, batch_reader.schema) as writer:
+                for batch in batch_reader:
+                    writer.write_batch(batch)
 
     @util.experimental
     def to_delta(
@@ -528,9 +527,8 @@ class _FileIOHandler:
                 "pip install 'ibis-framework[deltalake]'\n"
             )
 
-        batch_reader = expr.to_pyarrow_batches(params=params)
-
-        write_deltalake(path, batch_reader, **kwargs)
+        with expr.to_pyarrow_batches(params=params) as batch_reader:
+            write_deltalake(path, batch_reader, **kwargs)
 
 
 class BaseBackend(abc.ABC, _FileIOHandler):

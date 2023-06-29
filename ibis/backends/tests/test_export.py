@@ -52,14 +52,13 @@ limit_no_limit = limit + no_limit
 @pytest.mark.parametrize("limit", limit_no_limit)
 @pytest.mark.notimpl(["druid"])
 def test_table_to_pyarrow_batches(limit, awards_players):
-    batch_reader = awards_players.to_pyarrow_batches(limit=limit)
-    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
-    batch = batch_reader.read_next_batch()
-    assert isinstance(batch, pa.RecordBatch)
-    if limit is not None:
-        assert len(batch) == limit
-    util.consume(batch_reader)
-    batch_reader.close()
+    with awards_players.to_pyarrow_batches(limit=limit) as batch_reader:
+        assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
+        batch = batch_reader.read_next_batch()
+        assert isinstance(batch, pa.RecordBatch)
+        if limit is not None:
+            assert len(batch) == limit
+        util.consume(batch_reader)
 
 
 @pytest.mark.notyet(
@@ -67,14 +66,13 @@ def test_table_to_pyarrow_batches(limit, awards_players):
 )
 @pytest.mark.parametrize("limit", limit_no_limit)
 def test_column_to_pyarrow_batches(limit, awards_players):
-    batch_reader = awards_players.awardID.to_pyarrow_batches(limit=limit)
-    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
-    batch = batch_reader.read_next_batch()
-    assert isinstance(batch, pa.RecordBatch)
-    if limit is not None:
-        assert len(batch) == limit
-    util.consume(batch_reader)
-    batch_reader.close()
+    with awards_players.awardID.to_pyarrow_batches(limit=limit) as batch_reader:
+        assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
+        batch = batch_reader.read_next_batch()
+        assert isinstance(batch, pa.RecordBatch)
+        if limit is not None:
+            assert len(batch) == limit
+        util.consume(batch_reader)
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
@@ -157,13 +155,12 @@ def test_column_to_pyarrow_table_schema(awards_players):
     reason="clickhouse connect doesn't seem to respect `max_block_size` parameter",
 )
 def test_table_pyarrow_batch_chunk_size(awards_players):
-    batch_reader = awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048)
-    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
-    batch = batch_reader.read_next_batch()
-    assert isinstance(batch, pa.RecordBatch)
-    assert len(batch) <= 2048
-    util.consume(batch_reader)
-    batch_reader.close()
+    with awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048) as batch_reader:
+        assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
+        batch = batch_reader.read_next_batch()
+        assert isinstance(batch, pa.RecordBatch)
+        assert len(batch) <= 2048
+        util.consume(batch_reader)
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
@@ -173,15 +170,14 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
     reason="clickhouse connect doesn't seem to respect `max_block_size` parameter",
 )
 def test_column_pyarrow_batch_chunk_size(awards_players):
-    batch_reader = awards_players.awardID.to_pyarrow_batches(
+    with awards_players.awardID.to_pyarrow_batches(
         limit=2050, chunk_size=2048
-    )
-    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
-    batch = batch_reader.read_next_batch()
-    assert isinstance(batch, pa.RecordBatch)
-    assert len(batch) <= 2048
-    util.consume(batch_reader)
-    batch_reader.close()
+    ) as batch_reader:
+        assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
+        batch = batch_reader.read_next_batch()
+        assert isinstance(batch, pa.RecordBatch)
+        assert len(batch) <= 2048
+        util.consume(batch_reader)
 
 
 @pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
@@ -193,13 +189,12 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
 def test_to_pyarrow_batches_borked_types(batting):
     """This is a temporary test to expose an(other) issue with sqlite typing
     shenanigans."""
-    batch_reader = batting.to_pyarrow_batches(limit=42)
-    assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
-    batch = batch_reader.read_next_batch()
-    assert isinstance(batch, pa.RecordBatch)
-    assert len(batch) == 42
-    util.consume(batch_reader)
-    batch_reader.close()
+    with batting.to_pyarrow_batches(limit=42) as batch_reader:
+        assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
+        batch = batch_reader.read_next_batch()
+        assert isinstance(batch, pa.RecordBatch)
+        assert len(batch) == 42
+        util.consume(batch_reader)
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "impala", "pyspark"])
@@ -214,9 +209,10 @@ def test_to_pyarrow_memtable(con):
 def test_to_pyarrow_batches_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     n = 0
-    for batch in con.to_pyarrow_batches(expr):
-        assert isinstance(batch, pa.RecordBatch)
-        n += len(batch)
+    with con.to_pyarrow_batches(expr) as batch_reader:
+        for batch in batch_reader:
+            assert isinstance(batch, pa.RecordBatch)
+            n += len(batch)
     assert n == 3
 
 
@@ -399,7 +395,8 @@ def test_arrow_timestamp_with_time_zone(alltypes):
     expected = [pa.timestamp(unit, tz="UTC"), pa.timestamp(unit)]
     assert t.to_pyarrow().schema.types == expected
 
-    (batch,) = t.to_pyarrow_batches()
+    with t.to_pyarrow_batches() as reader:
+        (batch,) = reader
     assert batch.schema.types == expected
 
 
