@@ -15,11 +15,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import (
     fixed_arity,
+    helpers,
     literal,
     operation_registry,
     reduction,
     unary,
 )
+from ibis.backends.base.sql.registry.main import table_array_view
 from ibis.backends.bigquery.datatypes import BigQueryType
 from ibis.common.temporal import DateUnit, IntervalUnit, TimeUnit
 
@@ -635,6 +637,28 @@ def _interval_multiply(t, op):
     return f"INTERVAL EXTRACT({unit} from {left}) * {right} {unit}"
 
 
+def table_column(translator, op):
+    """Override column references to adjust names for BigQuery."""
+    quoted_name = translator._gen_valid_name(
+        helpers.quote_identifier(op.name, force=True)
+    )
+
+    ctx = translator.context
+
+    # If the column does not originate from the table set in the current SELECT
+    # context, we should format as a subquery
+    if translator.permit_subquery and ctx.is_foreign_expr(op.table):
+        # TODO(kszucs): avoid the expression roundtrip
+        proj_expr = op.table.to_expr().select([op.name]).to_array().op()
+        return table_array_view(translator, proj_expr)
+
+    alias = ctx.get_ref(op.table, search_parents=True)
+    if alias is not None:
+        quoted_name = f"{alias}.{quoted_name}"
+
+    return quoted_name
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -781,6 +805,7 @@ OPERATION_REGISTRY = {
     ops.ArrayStringJoin: lambda t, op: f"ARRAY_TO_STRING({t.translate(op.arg)}, {t.translate(op.sep)})",
     ops.StartsWith: fixed_arity("STARTS_WITH", 2),
     ops.EndsWith: fixed_arity("ENDS_WITH", 2),
+    ops.TableColumn: table_column,
 }
 
 _invalid_operations = {

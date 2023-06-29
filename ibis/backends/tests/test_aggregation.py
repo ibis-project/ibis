@@ -1234,30 +1234,21 @@ def test_group_concat(
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
-    [
-        param(
-            lambda t: t.string_col.topk(3),
-            lambda t: t.groupby('string_col')['string_col'].count().head(3),
-            id='string_col_top3',
-        )
-    ],
-)
 @mark.notimpl(
     ["dask"],
     raises=NotImplementedError,
     reason="sorting on aggregations not yet implemented",
 )
-def test_topk_op(alltypes, df, result_fn, expected_fn):
+def test_topk_op(alltypes, df):
     # TopK expression will order rows by "count" but each backend
     # can have different result for that.
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
     t = alltypes.order_by(alltypes.string_col)
     df = df.sort_values('string_col')
-    result = result_fn(t).execute()
-    expected = expected_fn(df)
+    expr = t.string_col.topk(3)
+    result = expr.execute()
+    expected = df.groupby('string_col')['string_col'].count().head(3)
     assert all(result.iloc[:, 1].values == expected.values)
 
 
@@ -1489,11 +1480,6 @@ def test_group_concat_over_window(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(
-    ["bigquery"],
-    reason="auto generated names are still invalid for outer query",
-    raises=GoogleBadRequest,
-)
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notyet(
     ["polars"],
