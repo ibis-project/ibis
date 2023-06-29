@@ -327,7 +327,6 @@ def test_table_to_csv(tmp_path, backend, awards_players):
             pa.Decimal256Type,
             id="decimal256",
             marks=[
-                pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(
                     ["druid", "duckdb", "snowflake", "trino"],
@@ -394,11 +393,6 @@ def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
 
 @pytest.mark.xfail_version(
     duckdb=["duckdb<0.8.1"], raises=AssertionError, reason="bug in duckdb"
-)
-@pytest.mark.notimpl(
-    ["pandas"],
-    raises=AssertionError,
-    reason="pandas returns nanosecond timestamp types",
 )
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
 @pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError)

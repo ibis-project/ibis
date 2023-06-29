@@ -282,14 +282,9 @@ class Backend(BaseBackend):
             external_tables=external_tables,
             **kwargs,
         ) as reader:
-            t = reader.read_all()
+            table = reader.read_all()
 
-        if isinstance(expr, ir.Scalar):
-            return t[0][0]
-        elif isinstance(expr, ir.Column):
-            return t[0]
-        else:
-            return t
+        return expr.__pyarrow_result__(table)
 
     def to_pyarrow_batches(
         self,
@@ -392,13 +387,11 @@ class Backend(BaseBackend):
         if df.empty:
             df = pd.DataFrame(columns=schema.names)
 
-        result = PandasData.convert_table(df, schema)
-        if isinstance(expr, ir.Scalar):
-            return result.iat[0, 0]
-        elif isinstance(expr, ir.Column):
-            return result.iloc[:, 0]
-        else:
-            return result
+        # TODO: remove the extra conversion
+        #
+        # the extra __pandas_result__ call is to work around slight differences
+        # in single column conversion and whole table conversion
+        return expr.__pandas_result__(table.__pandas_result__(df))
 
     def compile(self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any):
         table_expr = expr.as_table()

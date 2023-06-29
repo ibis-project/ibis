@@ -915,10 +915,8 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
         ),
         param(
             lambda t, _: t.timestamp_col - ibis.timestamp(timestamp_value),
-            lambda t, be: pd.Series(
-                t.timestamp_col.sub(timestamp_value).values.astype(
-                    f'timedelta64[{be.returned_timestamp_unit}]'
-                )
+            lambda t, _: pd.Series(
+                t.timestamp_col.sub(timestamp_value).values.astype("timedelta64[s]")
             ).dt.floor("s"),
             id='timestamp-subtract-timestamp',
             marks=[
@@ -945,7 +943,11 @@ timestamp_value = pd.Timestamp('2018-01-01 18:18:18')
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.date(date_value),
-            lambda t, _: t.timestamp_col.dt.floor('d') - date_value,
+            lambda t, _: pd.Series(
+                (t.timestamp_col.dt.floor('d') - date_value).values.astype(
+                    "timedelta64[D]"
+                )
+            ),
             id='date-subtract-date',
             marks=[
                 pytest.mark.notimpl(["bigquery"], raises=com.OperationNotDefinedError),
@@ -969,7 +971,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)
 
-    backend.assert_series_equal(result, expected.astype(result.dtype))
+    backend.assert_series_equal(result, expected)
 
 
 plus = lambda t, td: t.timestamp_col + pd.Timedelta(td)

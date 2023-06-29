@@ -4,9 +4,6 @@ import functools
 from collections.abc import Mapping
 from typing import NamedTuple
 
-import toolz
-
-import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -56,7 +53,7 @@ class SelectBuilder:
         self.context = context
         self.translator_class = translator_class
 
-        self.op, self.result_handler = self._adapt_operation(node)
+        self.op = node.to_expr().as_table().op()
         assert isinstance(self.op, ops.Node), type(self.op)
 
         self.table_set = None
@@ -74,38 +71,6 @@ class SelectBuilder:
         self.queries = [select_query]
 
         return select_query
-
-    @staticmethod
-    def _adapt_operation(node):
-        # Non-table expressions need to be adapted to some well-formed table
-        # expression, along with a way to adapt the results to the desired
-        # arity (whether array-like or scalar, for example)
-        #
-        # Canonical case is scalar values or arrays produced by some reductions
-        # (simple reductions, or distinct, say)
-        if isinstance(node, ops.TableNode):
-            return node, toolz.identity
-
-        elif isinstance(node, ops.Value):
-            if node.output_shape.is_scalar():
-                if an.is_scalar_reduction(node):
-                    table_expr = an.reduction_to_aggregation(node)
-                    return table_expr.op(), _get_scalar(node.name)
-                else:
-                    return node, _get_scalar(node.name)
-            elif node.output_shape.is_columnar():
-                if isinstance(node, ops.TableColumn):
-                    table_expr = node.table.to_expr()[[node.name]]
-                    result_handler = _get_column(node.name)
-                else:
-                    table_expr = node.to_expr().as_table()
-                    result_handler = _get_column(node.name)
-
-                return table_expr.op(), result_handler
-            else:
-                raise com.TranslationError(f"Unexpected shape {node.output_shape}")
-        else:
-            raise com.TranslationError(f'Do not know how to execute: {type(node)}')
 
     def _build_result_query(self):
         self._collect_elements()
@@ -125,7 +90,6 @@ class SelectBuilder:
             limit=self.limit,
             order_by=self.order_by,
             distinct=self.distinct,
-            result_handler=self.result_handler,
             parent_op=self.op,
         )
 
@@ -165,7 +129,6 @@ class SelectBuilder:
 
         if isinstance(self.op, ops.TableNode):
             self._collect(self.op, toplevel=True)
-            assert self.table_set is not None
         else:
             self.select_set = [self.op]
 
@@ -319,6 +282,11 @@ class SelectBuilder:
         if toplevel:
             self.select_set = [op]
             self.table_set = op
+
+    def _collect_DummyTable(self, op, toplevel=False):
+        if toplevel:
+            self.select_set = list(op.values)
+            self.table_set = None
 
     def _collect_SelfReference(self, op, toplevel=False):
         if toplevel:

@@ -399,18 +399,15 @@ class Backend(BaseBackend):
         else:
             df = lf.collect()
 
-        if isinstance(expr, ir.Table):
-            return df.to_pandas()
-        elif isinstance(expr, ir.Column):
+        if isinstance(expr, (ir.Table, ir.Scalar)):
+            return expr.__pandas_result__(df.to_pandas())
+        else:
+            assert isinstance(expr, ir.Column), type(expr)
             if expr.type().is_temporal():
                 return df.to_pandas().iloc[:, 0]
             else:
                 # note: skip frame-construction overhead
                 return df.to_series().to_pandas()
-        elif isinstance(expr, ir.Scalar):
-            return df.to_pandas().iat[0, 0]
-        else:
-            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
 
     def _to_pyarrow_table(
         self,
@@ -440,14 +437,7 @@ class Backend(BaseBackend):
         **kwargs: Any,
     ):
         result = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
-        if isinstance(expr, ir.Table):
-            return result
-        elif isinstance(expr, ir.Column):
-            return result[0]
-        elif isinstance(expr, ir.Scalar):
-            return result[0][0]
-        else:
-            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
+        return expr.__pyarrow_result__(result)
 
     def to_pyarrow_batches(
         self,

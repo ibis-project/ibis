@@ -126,7 +126,21 @@ class PandasData(DataMapper):
         method_name = f"convert_{dtype.__class__.__name__}"
         convert_method = getattr(cls, method_name, cls.convert_default)
 
-        return convert_method(obj, dtype, pandas_type)
+        result = convert_method(obj, dtype, pandas_type)
+        assert not isinstance(result, np.ndarray), f"{convert_method} -> {type(result)}"
+        return result
+
+    @staticmethod
+    def convert_GeoSpatial(s, dtype, pandas_type):
+        return s
+
+    convert_Point = (
+        convert_LineString
+    ) = (
+        convert_Polygon
+    ) = (
+        convert_MultiLineString
+    ) = convert_MultiPoint = convert_MultiPolygon = convert_GeoSpatial
 
     @staticmethod
     def convert_default(s, dtype, pandas_type):
@@ -182,10 +196,14 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_Interval(s, dtype, pandas_type):
+        values = s.values
         try:
-            return s.values.astype(pandas_type)
+            result = values.astype(pandas_type)
         except ValueError:  # can happen when `column` is DateOffsets  # uncovered
-            return s
+            result = s
+        else:
+            result = s.__class__(result, index=s.index, name=s.name)
+        return result
 
     @staticmethod
     def convert_String(s, dtype, pandas_type):

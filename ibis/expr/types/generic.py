@@ -11,8 +11,10 @@ import ibis.expr.operations as ops
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 
+
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
     import ibis.expr.types as ir
 
@@ -922,6 +924,14 @@ class Scalar(Value):
             return console.render(Text(self._repr()), options=options)
         return console.render(repr(self.execute()), options=options)
 
+    def __pyarrow_result__(self, table: pa.Table) -> pa.Scalar:
+        from ibis.formats.pyarrow import PyArrowData
+
+        return PyArrowData.convert_scalar(table[0][0], self.type())
+
+    def __pandas_result__(self, df: pd.DataFrame) -> Any:
+        return df.iat[0, 0]
+
     def as_table(self) -> ir.Table:
         """Promote the scalar expression to a table.
 
@@ -983,6 +993,28 @@ class Column(Value, _FixedTextJupyterMixin):
         named = self.name(self.op().name)
         projection = named.as_table()
         return console.render(projection, options=options)
+
+    def __pyarrow_result__(self, table: pa.Table) -> pa.Array | pa.ChunkedArray:
+        from ibis.formats.pyarrow import PyArrowData
+
+        return PyArrowData.convert_column(table[0], self.type())
+
+    def __pandas_result__(self, df: pd.DataFrame) -> pd.Series:
+        from ibis.formats.pandas import PandasData
+
+        assert (
+            len(df.columns) == 1
+        ), "more than one column when converting columnar result DataFrame to Series"
+        # in theory we could use df.iloc[:, 0], but there seems to be a bug in
+        # older geopandas where df.iloc[:, 0] doesn't return the same kind of
+        # object as df.loc[:, column_name] when df is a GeoDataFrame
+        #
+        # the bug is that iloc[:, 0] returns a bare series whereas
+        # df.loc[:, column_name] returns the special GeoSeries object.
+        #
+        # this bug is fixed in later versions of geopandas
+        (column,) = df.columns
+        return PandasData.convert_column(df.loc[:, column], self.type())
 
     def approx_nunique(
         self,

@@ -23,6 +23,7 @@ from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 
 if TYPE_CHECKING:
     import pandas as pd
+    import pyarrow as pa
 
     import ibis.selectors as s
     import ibis.expr.types as ir
@@ -111,6 +112,16 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def __dataframe__(self, *args: Any, **kwargs: Any):
         return self.to_pyarrow().__dataframe__(*args, **kwargs)
+
+    def __pyarrow_result__(self, table: pa.Table) -> pa.Table:
+        from ibis.formats.pyarrow import PyArrowData
+
+        return PyArrowData.convert_table(table, self.schema())
+
+    def __pandas_result__(self, df: pd.DataFrame) -> pd.DataFrame:
+        from ibis.formats.pandas import PandasData
+
+        return PandasData.convert_table(df, self.schema())
 
     def as_table(self) -> Table:
         """Promote the expression to a table.

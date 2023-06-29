@@ -340,12 +340,7 @@ $$""".format(
 
         res = res.rename_columns(target_schema.names).cast(target_schema)
 
-        if isinstance(expr, ir.Column):
-            return res[0]
-        elif isinstance(expr, ir.Scalar):
-            return res[0][0]
-        else:
-            return res
+        return expr.__pyarrow_result__(res)
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         if (table := cursor.cursor.fetch_arrow_all()) is None:

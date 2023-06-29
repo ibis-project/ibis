@@ -7,8 +7,6 @@ from typing import TYPE_CHECKING, Any, Mapping
 
 import pyarrow as pa
 
-import ibis.common.exceptions as com
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -21,9 +19,8 @@ try:
 except ImportError:
     from datafusion import SessionContext
 
-import datafusion
-
 if TYPE_CHECKING:
+    import datafusion
     import pandas as pd
 
 
@@ -292,27 +289,7 @@ class Backend(BaseBackend):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> datafusion.DataFrame:
-        if isinstance(expr, ir.Table):
-            return self.compile(expr, params, **kwargs)
-        elif isinstance(expr, ir.Column):
-            # expression must be named for the projection
-            expr = expr.as_table()
-            return self.compile(expr, params, **kwargs)
-        elif isinstance(expr, ir.Scalar):
-            if an.find_immediate_parent_tables(expr.op()):
-                # there are associated datafusion tables so convert the expr
-                # to a selection which we can directly convert to a datafusion
-                # plan
-                expr = expr.as_table()
-                frame = self.compile(expr, params, **kwargs)
-            else:
-                # doesn't have any tables associated so create a plan from a
-                # dummy datafusion table
-                compiled = self.compile(expr, params, **kwargs)
-                frame = self._context.empty_table().select(compiled)
-            return frame
-        else:
-            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
+        return self.compile(expr.as_table(), params, **kwargs)
 
     def to_pyarrow_batches(
         self,
@@ -334,17 +311,8 @@ class Backend(BaseBackend):
         limit: int | str | None = "default",
         **kwargs: Any,
     ):
-        output = self.to_pyarrow(expr, params=params, limit=limit, **kwargs)
-        if isinstance(expr, ir.Table):
-            return output.to_pandas()
-        elif isinstance(expr, ir.Column):
-            series = output.to_pandas()
-            series.name = expr.get_name()
-            return series
-        elif isinstance(expr, ir.Scalar):
-            return output.as_py()
-        else:
-            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
+        output = self.to_pyarrow(expr.as_table(), params=params, limit=limit, **kwargs)
+        return expr.__pandas_result__(output.to_pandas(timestamp_as_object=True))
 
     def compile(
         self,
@@ -352,7 +320,7 @@ class Backend(BaseBackend):
         params: Mapping[ir.Expr, object] | None = None,
         **kwargs: Any,
     ):
-        return translate(expr.op())
+        return translate(expr.op(), ctx=self._context)
 
     @classmethod
     @lru_cache

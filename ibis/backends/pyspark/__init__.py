@@ -30,7 +30,6 @@ from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable
 from ibis.backends.pyspark.compiler import PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import PySparkType
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -214,15 +213,8 @@ class Backend(BaseSQLBackend):
         table_expr = expr.as_table()
         df = self.compile(table_expr, **kwargs).toPandas()
 
-        result = PandasData.convert_table(df, table_expr.schema())
-        if isinstance(expr, ir.Table):
-            return result
-        elif isinstance(expr, ir.Column):
-            return result.iloc[:, 0]
-        elif isinstance(expr, ir.Scalar):
-            return result.iloc[0, 0]
-        else:
-            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
+        # TODO: remove the extra conversion
+        return expr.__pandas_result__(table_expr.__pandas_result__(df))
 
     def _fully_qualified_name(self, name, database):
         if is_fully_qualified(name):

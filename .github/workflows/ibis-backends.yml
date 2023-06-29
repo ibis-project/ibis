@@ -420,7 +420,7 @@ jobs:
               - "psycopg2@2.8.4"
               - "GeoAlchemy2@0.6.3"
               - "geopandas@0.6"
-              - "Shapely@1.6"
+              - "Shapely@2"
             services:
               - postgres
             extras:
@@ -435,7 +435,7 @@ jobs:
                 - "psycopg2@2.8.4"
                 - "GeoAlchemy2@0.6.3"
                 - "geopandas@0.6"
-                - "Shapely@1.6"
+                - "Shapely@2"
               services:
                 - postgres
               extras:
@@ -449,7 +449,7 @@ jobs:
                 - "psycopg2@2.8.4"
                 - "GeoAlchemy2@0.6.3"
                 - "geopandas@0.6"
-                - "Shapely@1.6"
+                - "Shapely@2"
               services:
                 - postgres
               extras:

@@ -328,13 +328,10 @@ class Backend(BaseSQLBackend):
         sql = query_ast.compile()
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
-        schema = expr.as_table().schema()
-        result = self.fetch_from_cursor(cursor, schema)
 
-        if hasattr(getattr(query_ast, "dml", query_ast), "result_handler"):
-            result = query_ast.dml.result_handler(result)
+        result = self.fetch_from_cursor(cursor, expr.as_table().schema())
 
-        return result
+        return expr.__pandas_result__(result)
 
     def fetch_from_cursor(self, cursor, schema):
         arrow_t = self._cursor_to_arrow(cursor)
@@ -379,14 +376,7 @@ class Backend(BaseSQLBackend):
         sql = query_ast.compile()
         cursor = self.raw_sql(sql, params=params, **kwargs)
         table = self._cursor_to_arrow(cursor)
-        if isinstance(expr, ir.Scalar):
-            assert len(table.columns) == 1, "len(table.columns) != 1"
-            return table[0][0]
-        elif isinstance(expr, ir.Column):
-            assert len(table.columns) == 1, "len(table.columns) != 1"
-            return table[0]
-        else:
-            return table
+        return expr.__pyarrow_result__(table)
 
     def to_pyarrow_batches(
         self,
