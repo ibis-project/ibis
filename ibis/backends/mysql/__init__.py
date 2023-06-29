@@ -122,6 +122,10 @@ class Backend(BaseAlchemyBackend):
         def column_reflect(inspector, table, column_info):
             if isinstance(column_info["type"], mysql.DATETIME):
                 column_info["type"] = MySQLDateTime()
+            if isinstance(column_info["type"], mysql.DOUBLE):
+                column_info["type"] = mysql.DOUBLE(asdecimal=False)
+            if isinstance(column_info["type"], mysql.FLOAT):
+                column_info["type"] = mysql.FLOAT(asdecimal=False)
 
         return meta
 

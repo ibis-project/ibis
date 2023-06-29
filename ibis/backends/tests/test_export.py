@@ -61,9 +61,6 @@ def test_table_to_pyarrow_batches(limit, awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notyet(
-    ["pandas"], reason="DataFrames have no option for outputting in batches"
-)
 @pytest.mark.parametrize("limit", limit_no_limit)
 def test_column_to_pyarrow_batches(limit, awards_players):
     with awards_players.awardID.to_pyarrow_batches(limit=limit) as batch_reader:
@@ -330,6 +327,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "bigquery",
         "clickhouse",
         "impala",
+        "mysql",
         "oracle",
         "postgres",
         "pyspark",
@@ -342,7 +340,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 )
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
 @pytest.mark.notyet(["dask"], raises=NotImplementedError)
-@pytest.mark.notyet(["mysql"], raises=pa.ArrowInvalid)
 @pytest.mark.notyet(
     ["druid"],
     raises=pa.lib.ArrowTypeError,
@@ -402,11 +399,6 @@ def test_arrow_timestamp_with_time_zone(alltypes):
 
 @pytest.mark.notimpl(["dask", "druid"])
 @pytest.mark.notimpl(
-    ["mysql"],
-    raises=pa.ArrowInvalid,
-    reason="attempted conversion from decimal to double",
-)
-@pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
 def test_dataframe_protocol(alltypes):
@@ -417,11 +409,6 @@ def test_dataframe_protocol(alltypes):
 
 
 @pytest.mark.notimpl(["dask", "druid"])
-@pytest.mark.notimpl(
-    ["mysql"],
-    raises=pa.ArrowInvalid,
-    reason="attempted conversion from decimal to double",
-)
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
