@@ -50,7 +50,6 @@ limit_no_limit = limit + no_limit
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
-@pytest.mark.notimpl(["druid"])
 def test_table_to_pyarrow_batches(limit, awards_players):
     with awards_players.to_pyarrow_batches(limit=limit) as batch_reader:
         assert isinstance(batch_reader, pa.ipc.RecordBatchReader)
@@ -73,7 +72,6 @@ def test_column_to_pyarrow_batches(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
-@pytest.mark.notimpl(["druid"])
 def test_table_to_pyarrow_table(limit, awards_players):
     table = awards_players.to_pyarrow(limit=limit)
     assert isinstance(table, pa.Table)
@@ -144,7 +142,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == pa.string() or array.type == pa.large_string()
 
 
-@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -176,7 +174,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "druid"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
 @pytest.mark.broken(
     ["sqlite"],
     raises=pa.ArrowException,
@@ -212,7 +210,7 @@ def test_to_pyarrow_batches_memtable(con):
     assert n == 3
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark", "druid"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark"])
 def test_table_to_parquet(tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet)
