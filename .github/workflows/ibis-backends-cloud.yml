@@ -101,10 +101,3 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ matrix.backend.name }}-${{ matrix.python-version }}
-          path: junit.xml

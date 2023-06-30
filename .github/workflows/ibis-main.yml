@@ -102,13 +102,6 @@ jobs:
         with:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: no-backends-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
   test_shapely_duckdb_import:
     name: Test shapely and duckdb import
     runs-on: ${{ matrix.os }}
@@ -209,10 +202,3 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           flags: core,doctests,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: doctest-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml

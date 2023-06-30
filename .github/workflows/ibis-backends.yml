@@ -388,13 +388,6 @@ jobs:
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ matrix.backend.name }}-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
       - name: Show docker compose logs on fail
         if: matrix.backend.services != null && failure()
         run: docker compose logs
@@ -518,13 +511,6 @@ jobs:
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ matrix.backend.name }}-min-version-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
       - name: Show docker compose logs on fail
         if: matrix.backend.services != null && failure()
         run: docker compose logs
@@ -613,13 +599,6 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           flags: backend,pyspark,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }},pandas-${{ matrix.pandas.version }}
-
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: pyspark-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
 
   gen_lockfile_sqlalchemy2:
     name: Generate Poetry Lockfile for SQLAlchemy 2
@@ -782,17 +761,6 @@ jobs:
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: ${{ matrix.backend.name }}-sqlalchemy2-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
-
-      - name: Show docker compose logs on fail
-        if: matrix.backend.services != null && failure()
-        run: docker compose logs
-
   test_flink:
     name: Flink ${{ matrix.os }} python-${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
@@ -862,13 +830,6 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           flags: backend,flink,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
-      - name: publish test report
-        uses: actions/upload-artifact@v3
-        if: success() || failure()
-        with:
-          name: flink-${{ matrix.os }}-${{ matrix.python-version }}
-          path: junit.xml
 
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
