@@ -317,22 +317,14 @@ def show_sql(
     print(to_sql(expr, dialect=dialect), file=file)
 
 
-class SQLString:
+class SQLString(str):
     """Object to hold a formatted SQL string.
 
     Syntax highlights in Jupyter notebooks.
     """
 
-    __slots__ = ("sql",)
-
-    def __init__(self, sql: str) -> None:
-        self.sql = sql
-
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(sql={self.sql!r})"
-
-    def __str__(self) -> str:
-        return self.sql
+        return f"{self.__class__.__name__}({str(self)!r})"
 
     def _repr_markdown_(self) -> str:
         return f"```sql\n{self!s}\n```"
