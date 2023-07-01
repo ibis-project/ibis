@@ -267,7 +267,7 @@ def test_timestamp_extract_literal(con, func, expected):
 )
 @pytest.mark.notyet(
     ["impala"],
-    raises=ImpalaOperationalError,
+    raises=(ImpalaHiveServer2Error, ImpalaOperationalError),
     reason='Impala backend does not support extracting microseconds.',
 )
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
