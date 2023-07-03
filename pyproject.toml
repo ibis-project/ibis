@@ -277,6 +277,8 @@ filterwarnings = [
   "ignore:Concatenating dataframes with unknown divisions:UserWarning",
   "ignore:Possible nested set at position:FutureWarning",
   'ignore:\s+You did not provide metadata:UserWarning',
+  # numpy by way of dask
+  'ignore:np\.find_common_type is deprecated:DeprecationWarning',
   # pandas
   "ignore:Boolean Series key will be reindexed:UserWarning",
   'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
