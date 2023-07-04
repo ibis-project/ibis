@@ -20,15 +20,15 @@
     },
     {
       "matchPackagePatterns": ["clickhouse-connect"],
-      "labels": ["clickhouse"]
+      "addLabels": ["clickhouse"]
     },
     {
       "matchPackagePatterns": ["dask"],
-      "labels": ["dask"]
+      "addLabels": ["dask"]
     },
     {
       "matchPackagePatterns": ["datafusion"],
-      "labels": ["datafusion"]
+      "addLabels": ["datafusion"]
     },
     {
       "matchPackagePatterns": [
@@ -37,66 +37,66 @@
         "google-cloud-bigquery-storage",
         "pydata-google-auth"
       ],
-      "labels": ["bigquery"]
+      "addLabels": ["bigquery"]
     },
     {
       "matchPackagePatterns": ["duckdb", "duckdb-engine"],
-      "labels": ["duckdb"]
+      "addLabels": ["duckdb"]
     },
     {
       "matchPackagePatterns": ["fsspec", "impyla"],
-      "labels": ["impala"]
+      "addLabels": ["impala"]
     },
     {
       "matchPackagePatterns": ["oracledb"],
-      "labels": ["oracle"]
+      "addLabels": ["oracle"]
     },
     {
       "matchPackagePatterns": ["polars"],
-      "labels": ["polars"]
+      "addLabels": ["polars"]
     },
     {
       "matchPackagePatterns": ["psycopg2"],
-      "labels": ["postgres"]
+      "addLabels": ["postgres"]
     },
     {
       "matchPackagePatterns": ["pydruid"],
-      "labels": ["druid"]
+      "addLabels": ["druid"]
     },
     {
       "matchPackagePatterns": ["pymssql"],
-      "labels": ["mssql"]
+      "addLabels": ["mssql"]
     },
     {
       "matchPackagePatterns": ["pymssql"],
-      "labels": ["mssql"]
+      "addLabels": ["mssql"]
     },
     {
       "matchPackagePatterns": ["pyspark"],
-      "labels": ["pyspark"]
+      "addLabels": ["pyspark"]
     },
     {
       "matchPackagePatterns": [
         "snowflake-connector-python",
         "snowflake-sqlalchemy"
       ],
-      "labels": ["snowflake"]
+      "addLabels": ["snowflake"]
     },
     {
       "matchPackagePatterns": ["trino"],
-      "labels": ["trino"]
+      "addLabels": ["trino"]
     },
     {
       "matchDepTypes": ["dev"],
-      "labels": ["developer-tools"]
+      "addLabels": ["developer-tools"]
     },
     {
       "matchDepTypes": ["test"],
-      "labels": ["tests"]
+      "addLabels": ["tests"]
     },
     {
       "matchDepTypes": ["docs"],
-      "labels": ["docs"]
+      "addLabels": ["docs"]
     }
   ]
 }
