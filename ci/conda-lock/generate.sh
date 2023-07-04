@@ -15,7 +15,6 @@ extras=(
   -e bigquery
   -e clickhouse
   -e dask
-  -e datafusion
   -e druid
   -e duckdb
   # this doesn't work on any platform yet (issues with resolving some google deps)
