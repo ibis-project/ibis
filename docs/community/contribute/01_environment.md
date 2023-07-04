@@ -17,13 +17,13 @@ hide:
 
     #### Support Matrix
 
-    |      Python Version :material-arrow-right: |                      Python 3.8                      |                      Python 3.9                  |                  Python 3.10                     |                  Python 3.11                     |
-    | -----------------------------------------: | :--------------------------------------------------: | :----------------------------------------------: | :----------------------------------------------: | :----------------------------------------------: |
-    | **Operating System** :material-arrow-down: |                                                      |                                                  |                                                  |                                                  |
-    |                                  **Linux** | {{ config.extra.support_levels.supported.icon }}[^1] | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
-    |                         **macOS (x86_64)** |   {{ config.extra.support_levels.supported.icon }}   | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
-    |                        **macOS (aarch64)** |   {{ config.extra.support_levels.supported.icon }}   | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
-    |                                **Windows** |   {{ config.extra.support_levels.supported.icon }}   | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+    |      Python Version :material-arrow-right: |                      Python 3.9                  |                  Python 3.10                     |                  Python 3.11                     |
+    | -----------------------------------------: | :----------------------------------------------: | :----------------------------------------------: | :----------------------------------------------: |
+    | **Operating System** :material-arrow-down: |                                                  |                                                  |                                                  |
+    |                                  **Linux** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+    |                         **macOS (x86_64)** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+    |                        **macOS (aarch64)** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+    |                                **Windows** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
 
     {% set managers = {"conda": {"name": "Miniconda", "url": "https://docs.conda.io/en/latest/miniconda.html"}, "mamba": {"name": "Mamba", "url": "https://github.com/mamba-org/mamba"}} %}
     {% for manager, params in managers.items() %}
@@ -113,13 +113,13 @@ hide:
 
     #### Support Matrix
 
-    |      Python Version :material-arrow-right: |                       Python 3.8                       |                     Python 3.9                     |                    Python 3.10                     |                    Python 3.11                     |
-    | -----------------------------------------: | :----------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
-    | **Operating System** :material-arrow-down: |                                                        |                                                    |                                                    |                                                    |
-    |                                  **Linux** |  {{ config.extra.support_levels.supported.icon }}[^1]  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
-    |                         **macOS (x86_64)** |    {{ config.extra.support_levels.supported.icon }}    |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
-    |                        **macOS (aarch64)** |   {{ config.extra.support_levels.unknown.icon }}[^2]   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |
-    |                                **Windows** | {{ config.extra.support_levels.unsupported.icon }}[^3] | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} |
+    |      Python Version :material-arrow-right: |                     Python 3.9                     |                    Python 3.10                     |                    Python 3.11                     |
+    | -----------------------------------------: | :------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
+    | **Operating System** :material-arrow-down: |                                                    |                                                    |                                                    |
+    |                                  **Linux** |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
+    |                         **macOS (x86_64)** |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
+    |                        **macOS (aarch64)** |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |
+    |                                **Windows** | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} |
 
     1. [Install `nix`](https://nixos.org/download.html)
     1. Install `gh`:
