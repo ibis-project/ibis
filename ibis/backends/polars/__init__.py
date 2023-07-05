@@ -439,15 +439,11 @@ class Backend(BaseBackend):
         limit: int | None = None,
         **kwargs: Any,
     ):
-        pa = self._import_pyarrow()
         result = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
         if isinstance(expr, ir.Table):
             return result
         elif isinstance(expr, ir.Column):
-            if len(column := result[0]):
-                return column.combine_chunks()
-            else:
-                return pa.array(column)
+            return result[0]
         elif isinstance(expr, ir.Scalar):
             return result[0][0]
         else:
