@@ -42,7 +42,23 @@ in
   changelog = pkgs.writeShellApplication {
     name = "changelog";
     runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
-    text = "conventional-changelog --config ./.conventionalcommits.js";
+    text = ''
+      conventional-changelog --config ./.conventionalcommits.js "$@"
+    '';
+  };
+
+  check-release-notes-spelling = pkgs.writeShellApplication {
+    name = "check-release-notes-spelling";
+    runtimeInputs = [ pkgs.changelog pkgs.coreutils pkgs.ibisSmallDevEnv ];
+    text = ''
+      tmp="$(mktemp)"
+      changelog --release-count 1 --output-unreleased --outfile "$tmp"
+      if ! codespell "$tmp"; then
+        # cat -n to output line numbers
+        cat -n "$tmp"
+        exit 1
+      fi
+    '';
   };
 
   update-lock-files = pkgs.writeShellApplication {
