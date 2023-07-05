@@ -16,7 +16,6 @@ pa = pytest.importorskip("pyarrow")
 
 class TestConf(BackendTest, RoundAwayFromZero):
     # check_names = False
-    # additional_skipped_operations = frozenset({ops.StringSQLLike})
     # supports_divide_by_zero = True
     # returned_timestamp_unit = 'ns'
     native_bool = False
