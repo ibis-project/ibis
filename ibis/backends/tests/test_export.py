@@ -90,7 +90,6 @@ def test_column_to_pyarrow_array(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", no_limit)
-@pytest.mark.xfail_version(datafusion=["datafusion>=21"])
 def test_empty_column_to_pyarrow(limit, awards_players):
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").awardID
     array = expr.to_pyarrow(limit=limit)

@@ -59,12 +59,8 @@ def cast(op):
 
 @translate.register(ops.TableColumn)
 def column(op):
-    table_op = op.table
-
-    if hasattr(table_op, "name"):
-        return df.column(f'{table_op.name}."{op.name}"')
-    else:
-        return df.column(op.name)
+    id_parts = [getattr(op.table, "name", None), op.name]
+    return df.column(".".join(f'"{id}"' for id in id_parts if id))
 
 
 @translate.register(ops.SortKey)
