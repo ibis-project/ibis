@@ -283,8 +283,7 @@ class _FileIOHandler:
         except ValueError:
             # The pyarrow batches iterator is empty so pass in an empty
             # iterator and a pyarrow schema
-            schema = expr.as_table().schema()
-            table = pa.Table.from_batches([], schema=schema.to_pyarrow())
+            table = expr.as_table().schema().to_pyarrow().empty_table()
 
         if isinstance(expr, ir.Table):
             return table

@@ -323,7 +323,7 @@ $$""".format(
 
         target_schema = expr.as_table().schema().to_pyarrow()
         if res is None:
-            res = pa.Table.from_pylist([], schema=target_schema)
+            res = target_schema.empty_table()
 
         res = res.rename_columns(target_schema.names).cast(target_schema)
 
@@ -336,7 +336,7 @@ $$""".format(
 
     def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         if (table := cursor.cursor.fetch_arrow_all()) is None:
-            table = pa.Table.from_pylist([], schema=schema.to_pyarrow())
+            table = schema.to_pyarrow().empty_table()
         df = table.to_pandas(timestamp_as_object=True)
         return SnowflakePandasData.convert_table(df, schema)
 
