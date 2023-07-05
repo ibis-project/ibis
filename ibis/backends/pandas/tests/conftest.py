@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING
 import pandas as pd
 
 import ibis
-import ibis.expr.operations as ops
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 from ibis.backends.tests.data import array_types, json_types, struct_types, win
@@ -16,7 +15,6 @@ if TYPE_CHECKING:
 
 class TestConf(BackendTest, RoundHalfToEven):
     check_names = False
-    additional_skipped_operations = frozenset({ops.StringSQLLike})
     supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {'ns'}
     supports_divide_by_zero = True
     returned_timestamp_unit = 'ns'

@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+import toolz
 from filelock import FileLock
 
 if TYPE_CHECKING:
@@ -70,7 +71,6 @@ class BackendTest(abc.ABC):
     supports_arrays = True
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True
-    additional_skipped_operations = frozenset()
     supports_divide_by_zero = False
     returned_timestamp_unit = 'us'
     supported_to_timestamp_units = {'s', 'ms', 'us'}
@@ -80,6 +80,7 @@ class BackendTest(abc.ABC):
     supports_json = True
     supports_map = False  # basically nothing does except trino and snowflake
     reduction_tolerance = 1e-7
+    default_identifier_case_fn = staticmethod(toolz.identity)
 
     @staticmethod
     def format_table(name: str) -> str:
@@ -157,40 +158,43 @@ class BackendTest(abc.ABC):
 
     @property
     def functional_alltypes(self) -> ir.Table:
-        t = self.connection.table('functional_alltypes')
+        t = self.connection.table(
+            self.default_identifier_case_fn('functional_alltypes')
+        )
         if not self.native_bool:
             return t.mutate(bool_col=t.bool_col == 1)
         return t
 
     @property
     def batting(self) -> ir.Table:
-        return self.connection.table('batting')
+        return self.connection.table(self.default_identifier_case_fn('batting'))
 
     @property
     def awards_players(self) -> ir.Table:
-        return self.connection.table('awards_players')
+        return self.connection.table(self.default_identifier_case_fn('awards_players'))
 
     @property
     def diamonds(self) -> ir.Table:
-        return self.connection.table('diamonds')
+        return self.connection.table(self.default_identifier_case_fn('diamonds'))
 
     @property
     def geo(self) -> ir.Table | None:
-        if 'geo' in self.connection.list_tables():
-            return self.connection.table('geo')
+        name = self.default_identifier_case_fn('geo')
+        if name in self.connection.list_tables():
+            return self.connection.table(name)
         return None
 
     @property
     def struct(self) -> ir.Table | None:
         if self.supports_structs:
-            return self.connection.table("struct")
+            return self.connection.table(self.default_identifier_case_fn("struct"))
         else:
             pytest.xfail(f"{self.name()} backend does not support struct types")
 
     @property
     def array_types(self) -> ir.Table | None:
         if self.supports_arrays:
-            return self.connection.table("array_types")
+            return self.connection.table(self.default_identifier_case_fn("array_types"))
         else:
             pytest.xfail(f"{self.name()} backend does not support array types")
 
@@ -199,20 +203,22 @@ class BackendTest(abc.ABC):
         from ibis import _
 
         if self.supports_json:
-            return self.connection.table("json_t").mutate(js=_.js.cast("json"))
+            return self.connection.table(
+                self.default_identifier_case_fn("json_t")
+            ).mutate(js=_.js.cast("json"))
         else:
             pytest.xfail(f"{self.name()} backend does not support json types")
 
     @property
     def map(self) -> ir.Table | None:
         if self.supports_map:
-            return self.connection.table("map")
+            return self.connection.table(self.default_identifier_case_fn("map"))
         else:
             pytest.xfail(f"{self.name()} backend does not support map types")
 
     @property
     def win(self) -> ir.Table | None:
-        return self.connection.table("win")
+        return self.connection.table(self.default_identifier_case_fn("win"))
 
     @property
     def api(self):

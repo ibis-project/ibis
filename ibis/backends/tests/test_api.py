@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import contextlib
-
 import pytest
 from pytest import param
 
@@ -60,14 +58,13 @@ def test_list_tables(con):
     assert all(isinstance(table, str) for table in tables)
 
 
-def test_tables_accessor_mapping(con):
+def test_tables_accessor_mapping(backend, con):
     if con.name == "snowflake":
         pytest.skip("snowflake sometimes counts more tables than are around")
 
-    with contextlib.suppress(KeyError):
-        assert isinstance(con.tables["functional_alltypes"], ir.Table) or isinstance(
-            con.tables["FUNCTIONAL_ALLTYPES"], ir.Table
-        )
+    name = backend.default_identifier_case_fn("functional_alltypes")
+
+    assert isinstance(con.tables[name], ir.Table)
 
     with pytest.raises(KeyError, match="doesnt_exist"):
         con.tables["doesnt_exist"]
@@ -78,15 +75,9 @@ def test_tables_accessor_mapping(con):
     assert TEST_TABLES.keys() <= set(map(str.lower, con.tables))
 
 
-def test_tables_accessor_getattr(con):
-    assert isinstance(
-        getattr(
-            con.tables,
-            "functional_alltypes",
-            getattr(con.tables, "FUNCTIONAL_ALLTYPES", None),
-        ),
-        ir.Table,
-    )
+def test_tables_accessor_getattr(backend, con):
+    name = backend.default_identifier_case_fn("functional_alltypes")
+    assert isinstance(getattr(con.tables, name), ir.Table)
 
     with pytest.raises(AttributeError, match="doesnt_exist"):
         con.tables.doesnt_exist  # noqa: B018
@@ -97,18 +88,20 @@ def test_tables_accessor_getattr(con):
         con.tables._private_attr  # noqa: B018
 
 
-def test_tables_accessor_tab_completion(con):
+def test_tables_accessor_tab_completion(backend, con):
+    name = backend.default_identifier_case_fn("functional_alltypes")
     attrs = dir(con.tables)
-    assert 'functional_alltypes' in attrs or "FUNCTIONAL_ALLTYPES" in attrs
+    assert name in attrs
     assert 'keys' in attrs  # type methods also present
 
     keys = con.tables._ipython_key_completions_()
-    assert 'functional_alltypes' in keys or "FUNCTIONAL_ALLTYPES" in keys
+    assert name in keys
 
 
-def test_tables_accessor_repr(con):
+def test_tables_accessor_repr(backend, con):
+    name = backend.default_identifier_case_fn("functional_alltypes")
     result = repr(con.tables)
-    assert '- functional_alltypes' in result or '- FUNCTIONAL_ALLTYPES' in result
+    assert f'- {name}' in result
 
 
 @pytest.mark.parametrize(
