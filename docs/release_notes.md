@@ -13,7 +13,7 @@ Release Notes
 * **snowflake/postgres:** Postgres UDFs now use the new `@udf.scalar.python` API. This should be a low-effort replacement for the existing API.
 * **ir:** `ops.NullLiteral` is removed
 * **datatypes:** `dt.Interval` has no longer a default unit, `dt.interval` is removed
-* **deps:** `snowflake-connector-python`'s lower bound was increased to 3.0.2, the minimum version needed to avoid a high-severity vulernability. Please upgrade `snowflake-connector-python` to at least version 3.0.2.
+* **deps:** `snowflake-connector-python`'s lower bound was increased to 3.0.2, the minimum version needed to avoid a high-severity vulnerability. Please upgrade `snowflake-connector-python` to at least version 3.0.2.
 * **api:** `Table.difference()`, `Table.intersection()`, and `Table.union()` now require at least one argument.
 * **postgres:** Ibis no longer automatically defines `first`/`last` reductions on connection to the postgres backend. Use DDL shown in https://wiki.postgresql.org/wiki/First/last_(aggregate) or one of the `pgxn` implementations instead.
 * **api:** `ibis.examples.<example-name>.fetch` no longer forwards arbitrary keyword arguments to `read_csv`/`read_parquet`.
