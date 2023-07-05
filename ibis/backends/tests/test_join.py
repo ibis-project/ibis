@@ -6,7 +6,6 @@ import pytest
 from packaging.version import parse as vparse
 from pytest import param
 
-import ibis.common.exceptions as exc
 import ibis.expr.schema as sch
 
 
@@ -161,11 +160,6 @@ def test_semi_join_topk(batting, awards_players):
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
-@pytest.mark.broken(
-    ["duckdb"],
-    raises=exc.IbisTypeError,
-    reason="DuckDB as of 0.7.1 occasionally segfaults when there are `null`-typed columns present",
-)
 def test_join_with_pandas(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
