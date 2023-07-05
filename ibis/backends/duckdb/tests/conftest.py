@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 import ibis
+from ibis import util
 from ibis.backends.conftest import SANDBOXED, TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
@@ -18,25 +19,30 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_map = True
 
     def __init__(self, data_directory: Path, **kwargs: Any) -> None:
-        self.connection = self.connect(data_directory, **kwargs)
+        self.connection = con = self.connect(data_directory, **kwargs)
 
         if not SANDBOXED:
-            self.connection._load_extensions(
-                ["httpfs", "postgres_scanner", "sqlite_scanner"]
-            )
+            con._load_extensions(["httpfs", "postgres_scanner", "sqlite_scanner"])
 
         script_dir = data_directory.parent
-        schema = script_dir.joinpath("schema", "duckdb.sql").read_text()
 
-        with self.connection.begin() as con:
-            for stmt in filter(None, map(str.strip, schema.split(";"))):
-                con.exec_driver_sql(stmt)
-
-            for table in TEST_TABLES:
-                src = data_directory / "csv" / f"{table}.csv"
-                con.exec_driver_sql(
-                    f"COPY {table} FROM {str(src)!r} (DELIMITER ',', HEADER)"
-                )
+        parquet_dir = data_directory / "parquet"
+        stmts = [
+            f"""
+            CREATE OR REPLACE TABLE {table} AS
+            SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
+            """
+            for table in TEST_TABLES
+        ]
+        stmts.extend(
+            stripped_stmt
+            for stmt in script_dir.joinpath("schema", "duckdb.sql")
+            .read_text()
+            .split(";")
+            if (stripped_stmt := stmt.strip())
+        )
+        with con.begin() as c:
+            util.consume(map(c.exec_driver_sql, stmts))
 
     @staticmethod
     def _load_data(data_dir, script_dir, **_: Any) -> None:
