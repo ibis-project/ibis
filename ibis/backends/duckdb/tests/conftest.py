@@ -61,6 +61,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return ibis.duckdb.connect(**kwargs)  # type: ignore
 
 
-@pytest.fixture
-def con(data_directory, tmp_path: Path):
-    return TestConf(data_directory, extension_directory=str(tmp_path)).connection
+@pytest.fixture(scope="session")
+def con(data_directory, tmp_path_factory, worker_id):
+    return TestConf(
+        data_directory, extension_directory=str(tmp_path_factory.mktemp(worker_id))
+    ).connection
