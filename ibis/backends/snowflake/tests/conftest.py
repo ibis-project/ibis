@@ -4,12 +4,15 @@ import concurrent.futures
 import os
 from typing import TYPE_CHECKING, Any
 
+import pyarrow.parquet as pq
 import pytest
 import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.formats.pyarrow import PyArrowSchema
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -42,12 +45,19 @@ def _get_url():
 
 def copy_into(con, data_dir: Path, table: str) -> None:
     stage = "ibis_testing"
-    csv = f"{table}.csv"
-    con.exec_driver_sql(
-        f"PUT file://{data_dir.joinpath('csv', csv).absolute()} @{stage}/{csv}"
+    file = data_dir.joinpath("parquet", f"{table}.parquet").absolute()
+    schema = PyArrowSchema.to_ibis(pq.read_metadata(file).schema.to_arrow_schema())
+    columns = ", ".join(
+        f"$1:{name}{'::VARCHAR' * typ.is_timestamp()}::{SnowflakeType.to_string(typ)}"
+        for name, typ in schema.items()
     )
+    con.exec_driver_sql(f"PUT {file.as_uri()} @{stage}/{file.name}")
     con.exec_driver_sql(
-        f"COPY INTO {table} FROM @{stage}/{csv} FILE_FORMAT = (FORMAT_NAME = ibis_testing)"
+        f"""
+        COPY INTO {table}
+        FROM (SELECT {columns} FROM @{stage}/{file.name})
+        FILE_FORMAT = (TYPE = PARQUET)
+        """
     )
 
 
@@ -76,6 +86,7 @@ CREATE DATABASE IF NOT EXISTS ibis_testing;
 USE DATABASE ibis_testing;
 CREATE SCHEMA IF NOT EXISTS {dbschema};
 USE SCHEMA {dbschema};
+CREATE TEMP STAGE ibis_testing;
 {self.script_dir.joinpath("snowflake.sql").read_text()}"""
             )
 
