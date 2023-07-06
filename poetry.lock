@@ -956,7 +956,6 @@ python-versions = ">=3.6"
 files = [
     {file = "datafusion-22.0.0-cp37-abi3-macosx_10_7_x86_64.whl", hash = "sha256:5314931ec5bda0e3c4b0060763ed3238f52e9759720ccd0382c60fee25b73989"},
     {file = "datafusion-22.0.0-cp37-abi3-macosx_11_0_arm64.whl", hash = "sha256:84c68e5d97ca6d9c90c1113d8dd46565bc7ab4f2e30b53efec064e98ca8a9e64"},
-    {file = "datafusion-22.0.0-cp37-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8a5af5f1785cb5c9da2232e1a2d3564a84c5dcfb2214165bccec734130ac4b48"},
     {file = "datafusion-22.0.0-cp37-abi3-manylinux_2_34_x86_64.whl", hash = "sha256:eeb789df88c398ca627983b660958f665d528dcfc06b8ed4887b25300bcfbebf"},
     {file = "datafusion-22.0.0-cp37-abi3-win_amd64.whl", hash = "sha256:05e50455ecb085291a2cd71ae2a2f2923af2c74e6058ceb16778fe130101f5bf"},
     {file = "datafusion-22.0.0.tar.gz", hash = "sha256:81b143b17211b7977a4aacc44781b557b44603a61fd993d5d7b79d3e1e0865ac"},
@@ -5401,4 +5400,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "3b12cf44c871b7e4290ca0d5ced90d0059898991586664b990e7405131ac4c9c"
+content-hash = "6c367d54dee09bfa728a9ecc2ef995185002accf739a38755c14b7f65622d017"
