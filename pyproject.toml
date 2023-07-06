@@ -139,6 +139,8 @@ mkdocs-material = ">=8.2.1,<9.1.19"
 mkdocstrings = ">=0.19.1,<1"
 mkdocstrings-python = ">=0.8.3,<2"
 requests = ">=2,<3"
+pillow = "^10.0.0"
+cairosvg = "^2.7.0"
 
 [tool.poetry.extras]
 # generate the `all` extra using nix run '.#gen-all-extras'
