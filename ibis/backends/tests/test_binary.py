@@ -16,8 +16,6 @@ BINARY_BACKEND_TYPES = {
     "postgres": "bytea",
 }
 
-pytestmark = pytest.mark.broken(["druid"], raises=AssertionError)
-
 
 @pytest.mark.broken(
     ['trino'],

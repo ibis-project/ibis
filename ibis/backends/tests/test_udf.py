@@ -31,6 +31,8 @@ def test_udf(batting):
     def num_vowels(s: str, include_y: bool = False) -> int:
         return sum(map(s.lower().count, "aeiou" + ("y" * include_y)))
 
+    batting = batting.limit(100)
+
     expr = batting.group_by(id_len=num_vowels(batting.playerID)).agg(n=_.count())
     result = expr.execute()
     assert not result.empty
@@ -58,6 +60,8 @@ def test_map_udf(batting):
                 counter[c] += 1
 
         return counter
+
+    batting = batting.limit(100)
 
     expr = batting.select(vowel_dist=num_vowels_map(batting.playerID))
     df = expr.execute()
@@ -99,6 +103,8 @@ def test_map_merge_udf(batting):
         z = x.copy()
         z.update(y)
         return z
+
+    batting = batting.limit(100)
 
     expr = batting.select(
         vowel_dist=map_merge(
@@ -153,6 +159,8 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
     ],
 )
 def test_vectorized_udf(batting, add_one):
+    batting = batting.limit(100)
+
     expr = (
         batting.select(year_id=lambda t: t.yearID)
         .mutate(next_year=lambda t: add_one(t.year_id))

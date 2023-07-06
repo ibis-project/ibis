@@ -6,7 +6,7 @@ import sqlalchemy.types as sat
 from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
+from ibis.backends.base.sql.alchemy.datatypes import UUID, AlchemyType
 
 # binary character set
 # used to distinguish blob binary vs blob text
@@ -214,6 +214,7 @@ _from_mysql_types = {
     mysql.TIME: dt.Time,
     mysql.YEAR: dt.Int8,
     MySQLDateTime: dt.Timestamp,
+    UUID: dt.String,
 }
 
 
@@ -247,7 +248,7 @@ class MySQLType(AlchemyType):
             return dt.Timestamp(timezone="UTC", nullable=nullable)
         elif isinstance(typ, mysql.SET):
             return dt.Set(dt.string, nullable=nullable)
-        elif dtype := _from_mysql_types[type(typ)]:
+        elif dtype := _from_mysql_types.get(type(typ)):
             return dtype(nullable=nullable)
         else:
             return super().to_ibis(typ, nullable=nullable)

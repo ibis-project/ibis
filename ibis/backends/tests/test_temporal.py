@@ -1939,6 +1939,11 @@ INTERVAL_BACKEND_TYPES = {
     raises=sa.exc.ProgrammingError,
 )
 @pytest.mark.broken(
+    ['druid'],
+    'No literal value renderer is available for literal value "1" with datatype DATETIME',
+    raises=sa.exc.CompileError,
+)
+@pytest.mark.broken(
     ['impala'],
     'AnalysisException: Syntax error in line 1: SELECT typeof(INTERVAL 1 SECOND) AS `TypeOf(1)` '
     'Encountered: ) Expected: +',
