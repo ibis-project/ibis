@@ -107,6 +107,7 @@ plugins:
       include_source: true
       allow_errors: false
   - literate-nav
+  - social
 markdown_extensions:
   - admonition
   - attr_list
