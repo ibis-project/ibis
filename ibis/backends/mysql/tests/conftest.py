@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import pytest
 import sqlalchemy as sa
@@ -9,7 +9,7 @@ from packaging.version import parse as parse_version
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES, init_database
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -24,38 +24,32 @@ IBIS_TEST_MYSQL_DB = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
 class TestConf(ServiceBackendTest, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
-    supports_window_operations = False
     returned_timestamp_unit = 's'
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     native_bool = False
     supports_structs = False
+    service_name = "mysql"
+    deps = "pymysql", "sqlalchemy"
 
-    @classmethod
-    def service_spec(cls, data_dir: Path) -> ServiceSpec:
-        return ServiceSpec(
-            name=cls.name(),
-            data_volume="/data",
-            files=data_dir.joinpath("csv").glob("*.csv"),
-        )
+    @property
+    def test_files(self) -> Iterable[Path]:
+        return self.data_dir.joinpath("csv").glob("*.csv")
 
-    def __init__(self, data_directory: Path) -> None:
-        super().__init__(data_directory)
+    @property
+    def supports_window_operations(self) -> bool:
         con = self.connection
         with con.begin() as c:
-            version = c.exec_driver_sql("SELECT VERSION()").scalar()
+            version = c.execute(sa.select(sa.func.version())).scalar()
 
         # mariadb supports window operations after version 10.2
         # mysql supports window operations after version 8
         min_version = "10.2" if "MariaDB" in version else "8.0"
-        self.__class__.supports_window_operations = parse_version(
-            con.version
-        ) >= parse_version(min_version)
+        return parse_version(con.version) >= parse_version(min_version)
 
-    @staticmethod
     def _load_data(
-        data_dir: Path,
-        script_dir: Path,
+        self,
+        *,
         user: str = MYSQL_USER,
         password: str = MYSQL_PASS,
         host: str = MYSQL_HOST,
@@ -72,37 +66,37 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
-        with open(script_dir / 'schema' / 'mysql.sql') as schema:
-            engine = init_database(
-                url=sa.engine.make_url(
-                    f"mysql+pymysql://{user}:{password}@{host}:{port:d}?local_infile=1",
-                ),
-                database=database,
-                schema=schema,
-                isolation_level="AUTOCOMMIT",
-                recreate=False,
-            )
-            with engine.begin() as con:
-                for table in TEST_TABLES:
-                    csv_path = data_dir / "csv" / f"{table}.csv"
-                    lines = [
-                        f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
-                        f"INTO TABLE {table}",
-                        "COLUMNS TERMINATED BY ','",
-                        """OPTIONALLY ENCLOSED BY '"'""",
-                        "LINES TERMINATED BY '\\n'",
-                        "IGNORE 1 LINES",
-                    ]
-                    con.exec_driver_sql("\n".join(lines))
+        engine = init_database(
+            url=sa.engine.make_url(
+                f"mysql+pymysql://{user}:{password}@{host}:{port:d}?local_infile=1",
+            ),
+            database=database,
+            schema=self.ddl_script,
+            isolation_level="AUTOCOMMIT",
+            recreate=False,
+        )
+        with engine.begin() as con:
+            for table in TEST_TABLES:
+                csv_path = self.data_dir / "csv" / f"{table}.csv"
+                lines = [
+                    f"LOAD DATA LOCAL INFILE {str(csv_path)!r}",
+                    f"INTO TABLE {table}",
+                    "COLUMNS TERMINATED BY ','",
+                    """OPTIONALLY ENCLOSED BY '"'""",
+                    "LINES TERMINATED BY '\\n'",
+                    "IGNORE 1 LINES",
+                ]
+                con.exec_driver_sql("\n".join(lines))
 
     @staticmethod
-    def connect(_: Path):
+    def connect(*, tmpdir, worker_id, **kw):
         return ibis.mysql.connect(
             host=MYSQL_HOST,
             user=MYSQL_USER,
             password=MYSQL_PASS,
             database=IBIS_TEST_MYSQL_DB,
             port=MYSQL_PORT,
+            **kw,
         )
 
 
@@ -121,14 +115,8 @@ def setup_privs():
 
 
 @pytest.fixture(scope='session')
-def con():
-    return ibis.mysql.connect(
-        host=MYSQL_HOST,
-        user=MYSQL_USER,
-        password=MYSQL_PASS,
-        database=IBIS_TEST_MYSQL_DB,
-        port=MYSQL_PORT,
-    )
+def con(tmp_path_factory, data_dir, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
 @pytest.fixture(scope='session')

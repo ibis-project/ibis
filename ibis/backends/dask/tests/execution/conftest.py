@@ -62,8 +62,8 @@ def df(npartitions):
 
 
 @pytest.fixture(scope='module')
-def batting_df(data_directory):
-    df = dd.read_parquet(data_directory / 'parquet' / 'batting.parquet')
+def batting_df(data_dir):
+    df = dd.read_parquet(data_dir / 'parquet' / 'batting.parquet')
     # Dask dataframe thinks the columns are of type int64,
     # but when computed they are all float64.
     non_float_cols = ['playerID', 'yearID', 'stint', 'teamID', 'lgID', 'G']
@@ -73,8 +73,8 @@ def batting_df(data_directory):
 
 
 @pytest.fixture(scope='module')
-def awards_players_df(data_directory):
-    return dd.read_parquet(data_directory / 'parquet' / 'awards_players.parquet')
+def awards_players_df(data_dir):
+    return dd.read_parquet(data_dir / 'parquet' / 'awards_players.parquet')
 
 
 @pytest.fixture(scope='module')

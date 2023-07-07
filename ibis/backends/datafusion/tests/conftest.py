@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any
 
 import pytest
 
 import ibis
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-pa = pytest.importorskip("pyarrow")
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -20,35 +16,28 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_structs = False
     supports_json = False
     supports_arrays = False
+    stateful = False
+    deps = ("datafusion",)
+
+    def _load_data(self, **_: Any) -> None:
+        con = self.connection
+        for table_name in TEST_TABLES:
+            path = self.data_dir / "parquet" / f"{table_name}.parquet"
+            con.register(path, table_name=table_name)
 
     @staticmethod
-    def connect(data_directory: Path):
-        client = ibis.datafusion.connect({})
-        client.register(
-            data_directory / "parquet" / 'functional_alltypes.parquet',
-            table_name='functional_alltypes',
-        )
-        client.register(
-            data_directory / "parquet" / 'batting.parquet', table_name='batting'
-        )
-        client.register(
-            data_directory / "parquet" / 'awards_players.parquet',
-            table_name='awards_players',
-        )
-        client.register(
-            data_directory / "parquet" / 'diamonds.parquet', table_name='diamonds'
-        )
-        return client
+    def connect(*, tmpdir, worker_id, **kw):
+        return ibis.datafusion.connect(**kw)
 
 
 @pytest.fixture(scope='session')
-def client(data_directory):
-    return TestConf.connect(data_directory)
+def con(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
 @pytest.fixture(scope='session')
-def alltypes(client):
-    return client.table("functional_alltypes")
+def alltypes(con):
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture(scope='session')

@@ -5,13 +5,13 @@ import contextlib
 import itertools
 import os
 import subprocess
-from typing import TYPE_CHECKING, Any, TextIO
+from typing import TYPE_CHECKING, Any, Iterable
 
 import pytest
 import sqlalchemy as sa
 
 import ibis
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -33,22 +33,20 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     native_bool = False
     supports_structs = False
     supports_json = False
+    data_volume = "/opt/oracle/data"
+    service_name = "oracle"
+    deps = "oracledb", "sqlalchemy"
 
-    @classmethod
-    def service_spec(cls, data_dir: Path) -> ServiceSpec:
-        return ServiceSpec(
-            name=cls.name(),
-            data_volume="/opt/oracle/data",
-            files=itertools.chain(
-                data_dir.joinpath("csv").glob("*.csv"),
-                data_dir.parent.joinpath("schema", "oracle").glob("*.ctl"),
-            ),
+    @property
+    def test_files(self) -> Iterable[Path]:
+        return itertools.chain(
+            self.data_dir.joinpath("csv").glob("*.csv"),
+            self.script_dir.joinpath("oracle").glob("*.ctl"),
         )
 
-    @staticmethod
     def _load_data(
-        data_dir: Path,
-        script_dir: Path,
+        self,
+        *,
         user: str = ORACLE_USER,
         password: str = ORACLE_PASS,
         host: str = ORACLE_HOST,
@@ -81,15 +79,14 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
                 ]
             )
 
-        with open(script_dir / 'schema' / 'oracle.sql') as schema:
-            init_oracle_database(
-                url=sa.engine.make_url(
-                    f"oracle://{user}:{password}@{host}:{port:d}/{database}",
-                ),
-                database=database,
-                schema=schema,
-                connect_args=dict(service_name=database),
-            )
+        init_oracle_database(
+            url=sa.engine.make_url(
+                f"oracle://{user}:{password}@{host}:{port:d}/{database}",
+            ),
+            database=database,
+            schema=self.ddl_script,
+            connect_args=dict(service_name=database),
+        )
 
         # then call sqlldr to ingest
         with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -107,18 +104,19 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
                     ],
                     stdout=subprocess.DEVNULL,
                 )
-                for ctl_file in script_dir.joinpath("schema", "oracle").glob("*.ctl")
+                for ctl_file in self.script_dir.joinpath("oracle").glob("*.ctl")
             ):
                 fut.result()
 
     @staticmethod
-    def connect(_: Path):
+    def connect(*, tmpdir, worker_id, **kw):
         return ibis.oracle.connect(
             host=ORACLE_HOST,
             user=ORACLE_USER,
             password=ORACLE_PASS,
             database="IBIS_TESTING",
             port=ORACLE_PORT,
+            **kw,
         )
 
     @staticmethod
@@ -127,20 +125,14 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
 
 
 @pytest.fixture(scope='session')
-def con():
-    return ibis.oracle.connect(
-        host=ORACLE_HOST,
-        user=ORACLE_USER,
-        password=ORACLE_PASS,
-        database="IBIS_TESTING",
-        port=ORACLE_PORT,
-    )
+def con(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
 def init_oracle_database(
     url: sa.engine.url.URL,
     database: str,
-    schema: TextIO | None = None,
+    schema: str | None = None,
     **kwargs: Any,
 ) -> sa.engine.Engine:
     """Initialise `database` at `url` with `schema`.
@@ -170,10 +162,7 @@ def init_oracle_database(
 
     if schema:
         with engine.begin() as conn:
-            for stmt in filter(
-                None,
-                map(str.strip, schema.read().split(';')),
-            ):
+            for stmt in schema:
                 # XXX: maybe should just remove the comments in the sql file
                 # so we don't end up writing an entire parser here.
                 if not stmt.startswith("--"):

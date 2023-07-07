@@ -55,26 +55,10 @@ def copy_into(con, data_dir: Path, table: str) -> None:
 class TestConf(BackendTest, RoundAwayFromZero):
     supports_map = True
     default_identifier_case_fn = staticmethod(str.upper)
+    deps = ("snowflake.connector", "snowflake.sqlalchemy")
 
-    def __init__(self, data_directory: Path) -> None:
-        self.connection = self.connect(data_directory)
-
-    @staticmethod
-    def _load_data(
-        data_dir, script_dir, database: str = "ibis_testing", **_: Any
-    ) -> None:
-        """Load test data into a Snowflake backend instance.
-
-        Parameters
-        ----------
-        data_dir
-            Location of test data
-        script_dir
-            Location of scripts defining schemas
-        """
-        pytest.importorskip("snowflake.connector")
-        pytest.importorskip("snowflake.sqlalchemy")
-
+    def _load_data(self, **_: Any) -> None:
+        """Load test data into a Snowflake backend instance."""
         snowflake_url = _get_url()
 
         raw_url = sa.engine.make_url(snowflake_url)
@@ -93,7 +77,7 @@ CREATE DATABASE IF NOT EXISTS ibis_testing;
 USE DATABASE ibis_testing;
 CREATE SCHEMA IF NOT EXISTS {dbschema};
 USE SCHEMA {dbschema};
-{script_dir.joinpath("schema", "snowflake.sql").read_text()}"""
+{self.script_dir.joinpath("snowflake.sql").read_text()}"""
             )
 
         with con.begin() as c:
@@ -101,17 +85,17 @@ USE SCHEMA {dbschema};
             # multiple threads seems to save about 2x
             with concurrent.futures.ThreadPoolExecutor() as exe:
                 for future in concurrent.futures.as_completed(
-                    exe.submit(copy_into, c, data_dir, table)
+                    exe.submit(copy_into, c, self.data_dir, table)
                     for table in TEST_TABLES.keys()
                 ):
                     future.result()
 
     @staticmethod
     @functools.lru_cache(maxsize=None)
-    def connect(data_directory: Path) -> BaseBackend:
-        return ibis.connect(_get_url())
+    def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
+        return ibis.connect(_get_url(), **kw)
 
 
 @pytest.fixture(scope="session")
-def con(data_directory):
-    return TestConf.connect(data_directory)
+def con(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

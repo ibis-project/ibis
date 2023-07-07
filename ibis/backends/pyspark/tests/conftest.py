@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -11,161 +12,7 @@ import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-from ibis.backends.tests.data import win
-
-pytest.importorskip("pyspark")
-
-import pyspark.sql.functions as F  # noqa: E402
-import pyspark.sql.types as pt  # noqa: E402
-from pyspark.sql import Row, SparkSession  # noqa: E402
-
-
-def get_common_spark_testing_client(data_directory, connect):
-    spark = (
-        SparkSession.builder.appName("ibis_testing")
-        .master("local[1]")
-        .config("spark.cores.max", 1)
-        .config("spark.executor.heartbeatInterval", "3600s")
-        .config("spark.executor.instances", 1)
-        .config("spark.network.timeout", "4200s")
-        .config("spark.sql.execution.arrow.pyspark.enabled", False)
-        .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
-        .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
-        .config("spark.ui.showConsoleProgress", False)
-        .config('spark.default.parallelism', 1)
-        .config('spark.dynamicAllocation.enabled', False)
-        .config('spark.rdd.compress', False)
-        .config('spark.serializer', 'org.apache.spark.serializer.KryoSerializer')
-        .config('spark.shuffle.compress', False)
-        .config('spark.shuffle.spill.compress', False)
-        .config('spark.sql.shuffle.partitions', 1)
-        .config('spark.ui.enabled', False)
-        .getOrCreate()
-    )
-    _spark_testing_client = connect(spark)
-    s: SparkSession = _spark_testing_client._session
-    num_partitions = 4
-
-    sort_cols = {"functional_alltypes": "id"}
-
-    for name in TEST_TABLES.keys():
-        path = str(data_directory / "parquet" / f"{name}.parquet")
-        t = s.read.parquet(path).repartition(num_partitions)
-        if (sort_col := sort_cols.get(name)) is not None:
-            t = t.sort(sort_col)
-        t.createOrReplaceTempView(name)
-
-    s.createDataFrame([(1, 'a')], ['foo', 'bar']).createOrReplaceTempView('simple')
-
-    s.createDataFrame(
-        [
-            Row(abc=Row(a=1.0, b='banana', c=2)),
-            Row(abc=Row(a=2.0, b='apple', c=3)),
-            Row(abc=Row(a=3.0, b='orange', c=4)),
-            Row(abc=Row(a=None, b='banana', c=2)),
-            Row(abc=Row(a=2.0, b=None, c=3)),
-            Row(abc=None),
-            Row(abc=Row(a=3.0, b='orange', c=None)),
-        ],
-    ).createOrReplaceTempView('struct')
-
-    s.createDataFrame(
-        [([1, 2], [[3, 4], [5, 6]], {'a': [[2, 4], [3, 5]]})],
-        [
-            'list_of_ints',
-            'list_of_list_of_ints',
-            'map_string_list_of_list_of_ints',
-        ],
-    ).createOrReplaceTempView('nested_types')
-    s.createDataFrame(
-        [
-            (
-                [1, 2, 3],
-                ['a', 'b', 'c'],
-                [1.0, 2.0, 3.0],
-                'a',
-                1.0,
-                [[], [1, 2, 3], None],
-            ),
-            ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0, []),
-            ([6, None], ['f', None], [6.0, None], 'a', 3.0, [None, [], None]),
-            (
-                [None, 1, None],
-                [None, 'a', None],
-                [],
-                'b',
-                4.0,
-                [[1], [2], [], [3, 4, 5]],
-            ),
-            ([2, None, 3], ['b', None, 'c'], None, 'b', 5.0, None),
-            (
-                [4, None, None, 5],
-                ['d', None, None, 'e'],
-                [4.0, None, None, 5.0],
-                'c',
-                6.0,
-                [[1, 2, 3]],
-            ),
-        ],
-        ["x", "y", "z", "grouper", "scalar_column", "multi_dim"],
-    ).createOrReplaceTempView("array_types")
-
-    s.createDataFrame(
-        [({(1, 3): [[2, 4], [3, 5]]},)], ['map_tuple_list_of_list_of_ints']
-    ).createOrReplaceTempView('complicated')
-
-    s.createDataFrame(
-        [('a', 1, 4.0, 'a'), ('b', 2, 5.0, 'a'), ('c', 3, 6.0, 'b')],
-        ['a', 'b', 'c', 'key'],
-    ).createOrReplaceTempView('udf')
-
-    s.createDataFrame(
-        pd.DataFrame(
-            {
-                'a': np.arange(10, dtype=float),
-                'b': [3.0, np.NaN] * 5,
-                'key': list('ddeefffggh'),
-            }
-        )
-    ).createOrReplaceTempView('udf_nan')
-
-    s.createDataFrame(
-        [(float(i), None if i % 2 else 3.0, 'ddeefffggh'[i]) for i in range(10)],
-        ['a', 'b', 'key'],
-    ).createOrReplaceTempView('udf_null')
-
-    s.createDataFrame(
-        pd.DataFrame(
-            {
-                'a': np.arange(4.0).tolist() + np.random.rand(3).tolist(),
-                'b': np.arange(4.0).tolist() + np.random.rand(3).tolist(),
-                'key': list('ddeefff'),
-            }
-        )
-    ).createOrReplaceTempView('udf_random')
-
-    s.createDataFrame(
-        pd.DataFrame(
-            {
-                "js": [
-                    '{"a": [1,2,3,4], "b": 1}',
-                    '{"a":null,"b":2}',
-                    '{"a":"foo", "c":null}',
-                    "null",
-                    "[42,47,55]",
-                    "[]",
-                ]
-            }
-        )
-    ).createOrReplaceTempView("json_t")
-
-    s.createDataFrame(win).createOrReplaceTempView("win")
-
-    return _spark_testing_client
-
-
-def get_pyspark_testing_client(data_directory):
-    return get_common_spark_testing_client(data_directory, ibis.pyspark.connect)
+from ibis.backends.tests.data import json_types, win
 
 
 def set_pyspark_database(con, database):
@@ -174,15 +21,150 @@ def set_pyspark_database(con, database):
 
 class TestConf(BackendTest, RoundAwayFromZero):
     supported_to_timestamp_units = {'s'}
+    deps = ("pyspark",)
+
+    def _load_data(self, **_: Any) -> None:
+        from pyspark.sql import Row
+
+        s = self.connection._session
+        num_partitions = 4
+
+        sort_cols = {"functional_alltypes": "id"}
+
+        for name in TEST_TABLES.keys():
+            path = str(self.data_dir / "parquet" / f"{name}.parquet")
+            t = s.read.parquet(path).repartition(num_partitions)
+            if (sort_col := sort_cols.get(name)) is not None:
+                t = t.sort(sort_col)
+            t.createOrReplaceTempView(name)
+
+        s.createDataFrame([(1, 'a')], ['foo', 'bar']).createOrReplaceTempView('simple')
+
+        s.createDataFrame(
+            [
+                Row(abc=Row(a=1.0, b='banana', c=2)),
+                Row(abc=Row(a=2.0, b='apple', c=3)),
+                Row(abc=Row(a=3.0, b='orange', c=4)),
+                Row(abc=Row(a=None, b='banana', c=2)),
+                Row(abc=Row(a=2.0, b=None, c=3)),
+                Row(abc=None),
+                Row(abc=Row(a=3.0, b='orange', c=None)),
+            ],
+        ).createOrReplaceTempView('struct')
+
+        s.createDataFrame(
+            [([1, 2], [[3, 4], [5, 6]], {'a': [[2, 4], [3, 5]]})],
+            [
+                'list_of_ints',
+                'list_of_list_of_ints',
+                'map_string_list_of_list_of_ints',
+            ],
+        ).createOrReplaceTempView('nested_types')
+        s.createDataFrame(
+            [
+                (
+                    [1, 2, 3],
+                    ['a', 'b', 'c'],
+                    [1.0, 2.0, 3.0],
+                    'a',
+                    1.0,
+                    [[], [1, 2, 3], None],
+                ),
+                ([4, 5], ['d', 'e'], [4.0, 5.0], 'a', 2.0, []),
+                ([6, None], ['f', None], [6.0, None], 'a', 3.0, [None, [], None]),
+                (
+                    [None, 1, None],
+                    [None, 'a', None],
+                    [],
+                    'b',
+                    4.0,
+                    [[1], [2], [], [3, 4, 5]],
+                ),
+                ([2, None, 3], ['b', None, 'c'], None, 'b', 5.0, None),
+                (
+                    [4, None, None, 5],
+                    ['d', None, None, 'e'],
+                    [4.0, None, None, 5.0],
+                    'c',
+                    6.0,
+                    [[1, 2, 3]],
+                ),
+            ],
+            ["x", "y", "z", "grouper", "scalar_column", "multi_dim"],
+        ).createOrReplaceTempView("array_types")
+
+        s.createDataFrame(
+            [({(1, 3): [[2, 4], [3, 5]]},)], ['map_tuple_list_of_list_of_ints']
+        ).createOrReplaceTempView('complicated')
+
+        s.createDataFrame(
+            [('a', 1, 4.0, 'a'), ('b', 2, 5.0, 'a'), ('c', 3, 6.0, 'b')],
+            ['a', 'b', 'c', 'key'],
+        ).createOrReplaceTempView('udf')
+
+        s.createDataFrame(
+            pd.DataFrame(
+                {
+                    'a': np.arange(10, dtype=float),
+                    'b': [3.0, np.NaN] * 5,
+                    'key': list('ddeefffggh'),
+                }
+            )
+        ).createOrReplaceTempView('udf_nan')
+
+        s.createDataFrame(
+            [(float(i), None if i % 2 else 3.0, 'ddeefffggh'[i]) for i in range(10)],
+            ['a', 'b', 'key'],
+        ).createOrReplaceTempView('udf_null')
+
+        s.createDataFrame(
+            pd.DataFrame(
+                {
+                    'a': np.arange(4.0).tolist() + np.random.rand(3).tolist(),
+                    'b': np.arange(4.0).tolist() + np.random.rand(3).tolist(),
+                    'key': list('ddeefff'),
+                }
+            )
+        ).createOrReplaceTempView('udf_random')
+
+        s.createDataFrame(json_types).createOrReplaceTempView("json_t")
+        s.createDataFrame(win).createOrReplaceTempView("win")
 
     @staticmethod
-    def connect(data_directory):
-        return get_pyspark_testing_client(data_directory)
+    def connect(*, tmpdir, worker_id, **kw):
+        from pyspark.sql import SparkSession
+
+        spark = (
+            SparkSession.builder.appName("ibis_testing")
+            .master("local[1]")
+            .config("spark.cores.max", 1)
+            .config("spark.executor.heartbeatInterval", "3600s")
+            .config("spark.executor.instances", 1)
+            .config("spark.network.timeout", "4200s")
+            .config("spark.sql.execution.arrow.pyspark.enabled", False)
+            .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
+            .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
+            .config("spark.ui.showConsoleProgress", False)
+            .config('spark.default.parallelism', 1)
+            .config('spark.dynamicAllocation.enabled', False)
+            .config('spark.rdd.compress', False)
+            .config('spark.serializer', 'org.apache.spark.serializer.KryoSerializer')
+            .config('spark.shuffle.compress', False)
+            .config('spark.shuffle.spill.compress', False)
+            .config('spark.sql.shuffle.partitions', 1)
+            .config('spark.ui.enabled', False)
+            .getOrCreate()
+        )
+        return ibis.pyspark.connect(spark, **kw)
 
 
 @pytest.fixture(scope='session')
-def con(data_directory):
-    con = TestConf.connect(data_directory)
+def con(data_dir, tmp_path_factory, worker_id):
+    import pyspark.sql.functions as F
+    import pyspark.sql.types as pt
+
+    backend_test = TestConf.load_data(data_dir, tmp_path_factory, worker_id)
+    con = backend_test.connection
 
     df = con._session.range(0, 10)
     df = df.withColumn("str_col", F.lit('value'))

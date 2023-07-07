@@ -5,7 +5,7 @@ import concurrent.futures
 import inspect
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, NamedTuple
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping
 
 import numpy as np
 import pandas as pd
@@ -81,14 +81,32 @@ class BackendTest(abc.ABC):
     supports_map = False  # basically nothing does except trino and snowflake
     reduction_tolerance = 1e-7
     default_identifier_case_fn = staticmethod(toolz.identity)
+    stateful = True
+    service_name = None
+
+    @property
+    @abc.abstractmethod
+    def deps(self) -> Iterable[str]:
+        """A list of dependencies that must be present to run tests."""
+
+    @property
+    def ddl_script(self) -> Iterator[str]:
+        return filter(
+            None,
+            map(
+                str.strip,
+                self.script_dir.joinpath(f"{self.name()}.sql").read_text().split(";"),
+            ),
+        )
 
     @staticmethod
     def format_table(name: str) -> str:
         return name
 
-    def __init__(self, data_directory: Path) -> None:
-        self.connection = self.connect(data_directory)
-        self.data_directory = data_directory
+    def __init__(self, *, data_dir: Path, tmpdir, worker_id, **kw) -> None:
+        self.connection = self.connect(tmpdir=tmpdir, worker_id=worker_id, **kw)
+        self.data_dir = data_dir
+        self.script_dir = data_dir.parent / "schema"
 
     def __str__(self):
         return f'<BackendTest {self.name()}>'
@@ -100,22 +118,27 @@ class BackendTest(abc.ABC):
 
     @staticmethod
     @abc.abstractmethod
-    def connect(data_directory: Path):
-        """Return a connection with data loaded from `data_directory`."""
+    def connect(*, tmpdir, worker_id, **kw: Any):
+        """Return a connection with data loaded from `data_dir`."""
 
-    @staticmethod  # noqa: B027
-    def _load_data(data_directory: Path, script_directory: Path, **kwargs: Any) -> None:
-        """Load test data into a backend.
+    def _load_data(self, **_: Any) -> None:
+        """Load test data into a backend."""
+        with self.connection.begin() as con:
+            for stmt in self.ddl_script:
+                con.exec_driver_sql(stmt)
 
-        Default implementation is a no-op.
-        """
+    def stateless_load(self, **kw):
+        self.preload()
+        self._load_data(**kw)
+
+    def stateful_load(self, fn, **kw):
+        if not fn.exists():
+            self.stateless_load(**kw)
+            fn.touch()
 
     @classmethod
-    def load_data(
-        cls, data_dir: Path, script_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
-    ) -> None:
-        """Load testdata from `data_directory` into the backend using scripts
-        in `script_directory`."""
+    def load_data(cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any) -> None:
+        """Load testdata from `data_dir`."""
         # handling for multi-processes pytest
 
         # get the temp directory shared by all workers
@@ -123,17 +146,29 @@ class BackendTest(abc.ABC):
         if worker_id != "master":
             root_tmp_dir = root_tmp_dir.parent
 
-        fn = root_tmp_dir / f"lockfile_{cls.name()}"
+        fn = root_tmp_dir / (getattr(cls, "service_name", None) or cls.name())
         with FileLock(f"{fn}.lock"):
-            if not fn.exists():
-                cls.preload(data_dir)
-                cls._load_data(data_dir, script_dir, **kw)
-                fn.touch()
-        return cls(data_dir)
+            cls.skip_if_missing_deps()
 
-    @classmethod  # noqa: B027
-    def preload(cls, data_dir: Path):
+            inst = cls(data_dir=data_dir, tmpdir=tmpdir, worker_id=worker_id, **kw)
+
+            if inst.stateful:
+                inst.stateful_load(fn, **kw)
+            else:
+                inst.stateless_load(**kw)
+            inst.postload(tmpdir=tmpdir, worker_id=worker_id, **kw)
+            return inst
+
+    @classmethod
+    def skip_if_missing_deps(cls) -> None:
+        for dep in cls.deps:
+            pytest.importorskip(dep)
+
+    def preload(self):  # noqa: B027
         """Code to execute before loading data."""
+
+    def postload(self, **_):  # noqa: B027
+        """Code to execute after loading data."""
 
     @classmethod
     def assert_series_equal(
@@ -228,23 +263,17 @@ class BackendTest(abc.ABC):
         return self.api.compiler.make_context(params=params)
 
 
-class ServiceSpec(NamedTuple):
-    name: str
-    data_volume: str
-    files: Iterable[Path]
-
-
 class ServiceBackendTest(BackendTest):
-    @classmethod
+    data_volume = "/data"
+
+    @property
     @abc.abstractmethod
-    def service_spec(data_dir: Path) -> ServiceSpec:
+    def test_files(self) -> Iterable[Path]:
         ...
 
-    @classmethod
-    def preload(cls, data_dir: Path):
-        spec = cls.service_spec(data_dir)
-        service = spec.name
-        data_volume = spec.data_volume
+    def preload(self):
+        service = self.service_name
+        data_volume = self.data_volume
         with concurrent.futures.ThreadPoolExecutor() as e:
             for fut in concurrent.futures.as_completed(
                 e.submit(
@@ -257,6 +286,6 @@ class ServiceBackendTest(BackendTest):
                         f"{service}:{data_volume}/{path.name}",
                     ],
                 )
-                for path in spec.files
+                for path in self.test_files
             ):
                 fut.result()
