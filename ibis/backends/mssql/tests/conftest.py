@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import pytest
 import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import init_database
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -29,19 +29,16 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     supports_arrays_outside_of_select = supports_arrays
     supports_structs = False
     supports_json = False
+    service_name = "mssql"
+    deps = "pymssql", "sqlalchemy"
 
-    @classmethod
-    def service_spec(cls, data_dir: Path) -> ServiceSpec:
-        return ServiceSpec(
-            name=cls.name(),
-            data_volume="/data",
-            files=data_dir.joinpath("csv").glob("*.csv"),
-        )
+    @property
+    def test_files(self) -> Iterable[Path]:
+        return self.data_dir.joinpath("csv").glob("*.csv")
 
-    @staticmethod
     def _load_data(
-        data_dir: Path,
-        script_dir: Path,
+        self,
+        *,
         user: str = MSSQL_USER,
         password: str = MSSQL_PASS,
         host: str = MSSQL_HOST,
@@ -58,34 +55,28 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
-        with open(script_dir / 'schema' / 'mssql.sql') as schema:
-            init_database(
-                url=sa.engine.make_url(
-                    f"mssql+pymssql://{user}:{password}@{host}:{port:d}/{database}"
-                ),
-                database=database,
-                schema=schema,
-                isolation_level="AUTOCOMMIT",
-                recreate=False,
-            )
+        init_database(
+            url=sa.engine.make_url(
+                f"mssql+pymssql://{user}:{password}@{host}:{port:d}/{database}"
+            ),
+            database=database,
+            schema=self.ddl_script,
+            isolation_level="AUTOCOMMIT",
+            recreate=False,
+        )
 
     @staticmethod
-    def connect(_: Path):
+    def connect(*, tmpdir, worker_id, **kw):
         return ibis.mssql.connect(
             host=MSSQL_HOST,
             user=MSSQL_USER,
             password=MSSQL_PASS,
             database=IBIS_TEST_MSSQL_DB,
             port=MSSQL_PORT,
+            **kw,
         )
 
 
 @pytest.fixture(scope='session')
-def con():
-    return ibis.mssql.connect(
-        host=MSSQL_HOST,
-        user=MSSQL_USER,
-        password=MSSQL_PASS,
-        database=IBIS_TEST_MSSQL_DB,
-        port=MSSQL_PORT,
-    )
+def con(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

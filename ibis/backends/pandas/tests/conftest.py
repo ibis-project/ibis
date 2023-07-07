@@ -1,16 +1,11 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-import pandas as pd
+from typing import Any
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundHalfToEven
 from ibis.backends.tests.data import array_types, json_types, struct_types, win
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 
 class TestConf(BackendTest, RoundHalfToEven):
@@ -18,20 +13,21 @@ class TestConf(BackendTest, RoundHalfToEven):
     supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {'ns'}
     supports_divide_by_zero = True
     returned_timestamp_unit = 'ns'
+    stateful = False
+    deps = ("pandas",)
+
+    def _load_data(self, **_: Any) -> None:
+        import pandas as pd
+
+        con = self.connection
+        for table_name in TEST_TABLES:
+            path = self.data_dir / "parquet" / f"{table_name}.parquet"
+            con.create_table(table_name, pd.read_parquet(path))
+        con.create_table("array_types", array_types, overwrite=True)
+        con.create_table("struct", struct_types, overwrite=True)
+        con.create_table("win", win, overwrite=True)
+        con.create_table("json_t", json_types, overwrite=True)
 
     @staticmethod
-    def connect(data_directory: Path):
-        return ibis.pandas.connect(
-            dictionary={
-                **{
-                    table: pd.read_parquet(
-                        data_directory / "parquet" / f"{table}.parquet"
-                    )
-                    for table in TEST_TABLES.keys()
-                },
-                'struct': struct_types,
-                'json_t': json_types,
-                'array_types': array_types,
-                'win': win,
-            }
-        )
+    def connect(*, tmpdir, worker_id, **kw):
+        return ibis.pandas.connect(**kw)

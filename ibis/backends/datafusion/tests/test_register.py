@@ -13,13 +13,13 @@ def conn():
     return ibis.datafusion.connect()
 
 
-def test_read_csv(conn, data_directory):
-    t = conn.read_csv(data_directory / "csv" / "functional_alltypes.csv")
+def test_read_csv(conn, data_dir):
+    t = conn.read_csv(data_dir / "csv" / "functional_alltypes.csv")
     assert t.count().execute()
 
 
-def test_read_parquet(conn, data_directory):
-    t = conn.read_parquet(data_directory / "parquet" / "functional_alltypes.parquet")
+def test_read_parquet(conn, data_dir):
+    t = conn.read_parquet(data_dir / "parquet" / "functional_alltypes.parquet")
     assert t.count().execute()
 
 

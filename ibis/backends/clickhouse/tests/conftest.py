@@ -2,16 +2,16 @@ from __future__ import annotations
 
 import contextlib
 import os
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Any, Callable, Iterable
 
 import pytest
 
 import ibis
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.tests.base import (
     RoundHalfToEven,
     ServiceBackendTest,
-    ServiceSpec,
     UnorderedComparator,
 )
 
@@ -32,28 +32,22 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
     supported_to_timestamp_units = {'s'}
     supports_floating_modulus = False
     supports_json = False
+    data_volume = "/var/lib/clickhouse/user_files/ibis"
+    service_name = "clickhouse"
+    deps = ("clickhouse_connect",)
 
     @property
     def native_bool(self) -> bool:
         [(value,)] = self.connection.con.query("SELECT true").result_set
         return isinstance(value, bool)
 
-    @classmethod
-    def service_spec(cls, data_dir: Path) -> ServiceSpec:
-        return ServiceSpec(
-            name=cls.name(),
-            data_volume="/var/lib/clickhouse/user_files/ibis",
-            files=data_dir.joinpath("parquet").glob("*.parquet"),
-        )
+    @property
+    def test_files(self) -> Iterable[Path]:
+        return self.data_dir.joinpath("parquet").glob("*.parquet")
 
-    @staticmethod
     def _load_data(
-        data_dir: Path,
-        script_dir: Path,
-        host: str = CLICKHOUSE_HOST,
-        port: int = CLICKHOUSE_PORT,
-        user: str = CLICKHOUSE_USER,
-        password: str = CLICKHOUSE_PASS,
+        self,
+        *,
         database: str = IBIS_TEST_CLICKHOUSE_DB,
         **_,
     ) -> None:
@@ -66,35 +60,28 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
-        cc = pytest.importorskip("clickhouse_connect")
+        import clickhouse_connect as cc
 
-        client = cc.get_client(
-            host=host,
-            port=port,
-            user=user,
-            password=password,
-            settings={
-                "allow_experimental_object_type": 1,
-                "output_format_json_named_tuples_as_objects": 1,
-            },
-        )
+        con = self.connection
+        client = con.con
 
         with contextlib.suppress(cc.driver.exceptions.DatabaseError):
             client.command(f"CREATE DATABASE {database} ENGINE = Atomic")
 
-        with open(script_dir / 'schema' / 'clickhouse.sql') as schema:
-            for stmt in filter(None, map(str.strip, schema.read().split(";"))):
-                client.command(stmt)
+        util.consume(map(client.command, self.ddl_script))
+
+    def postload(self, **kw: Any):
+        # reconnect to set the database to the test database
+        self.connection = self.connect(database=IBIS_TEST_CLICKHOUSE_DB, **kw)
 
     @staticmethod
-    def connect(data_directory: Path):
-        pytest.importorskip("clickhouse_connect")
+    def connect(*, tmpdir, worker_id, **kw: Any):
         return ibis.clickhouse.connect(
             host=CLICKHOUSE_HOST,
             port=CLICKHOUSE_PORT,
             password=CLICKHOUSE_PASS,
-            database=IBIS_TEST_CLICKHOUSE_DB,
             user=CLICKHOUSE_USER,
+            **kw,
         )
 
     @staticmethod
@@ -114,27 +101,22 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
         return f(*args)
 
 
-@pytest.fixture(scope='module')
-def con(tmp_path_factory, data_directory, script_directory, worker_id):
-    return TestConf.load_data(
-        data_directory,
-        script_directory,
-        tmp_path_factory,
-        worker_id,
-    ).connect(data_directory)
+@pytest.fixture(scope='session')
+def con(tmp_path_factory, data_dir, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def db(con):
     return con.database()
 
 
-@pytest.fixture(scope='module')
-def alltypes(db):
-    return db.functional_alltypes
+@pytest.fixture(scope='session')
+def alltypes(con):
+    return con.tables.functional_alltypes
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='session')
 def df(alltypes):
     return alltypes.execute()
 

@@ -14,14 +14,14 @@ from __future__ import annotations
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import pytest
 import sqlalchemy as sa
 
 import ibis
 from ibis.backends.conftest import init_database
-from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest, ServiceSpec
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -47,19 +47,16 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
 
     returned_timestamp_unit = 's'
     supports_structs = False
+    service_name = "postgres"
+    deps = "psycopg2", "sqlalchemy"
 
-    @classmethod
-    def service_spec(cls, data_dir: Path) -> ServiceSpec:
-        return ServiceSpec(
-            name=cls.name(),
-            data_volume="/data",
-            files=data_dir.joinpath("csv").glob("*.csv"),
-        )
+    @property
+    def test_files(self) -> Iterable[Path]:
+        return self.data_dir.joinpath("csv").glob("*.csv")
 
-    @staticmethod
     def _load_data(
-        data_dir: Path,
-        script_dir: Path,
+        self,
+        *,
         user: str = PG_USER,
         password: str = PG_PASS,
         host: str = PG_HOST,
@@ -76,36 +73,31 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
-        with open(script_dir / 'schema' / 'postgresql.sql') as schema:
-            init_database(
-                url=sa.engine.make_url(
-                    f"postgresql://{user}:{password}@{host}:{port:d}/{database}"
-                ),
-                database=database,
-                schema=schema,
-                isolation_level="AUTOCOMMIT",
-                recreate=False,
-            )
+        init_database(
+            url=sa.engine.make_url(
+                f"postgresql://{user}:{password}@{host}:{port:d}/{database}"
+            ),
+            database=database,
+            schema=self.ddl_script,
+            isolation_level="AUTOCOMMIT",
+            recreate=False,
+        )
 
     @staticmethod
-    def connect(data_directory: Path):
+    def connect(*, tmpdir, worker_id, port: int | None = None, **kw):
         return ibis.postgres.connect(
             host=PG_HOST,
-            port=PG_PORT,
+            port=port or PG_PORT,
             user=PG_USER,
             password=PG_PASS,
             database=IBIS_TEST_POSTGRES_DB,
+            **kw,
         )
 
 
 @pytest.fixture(scope='session')
-def con(tmp_path_factory, data_directory, script_directory, worker_id):
-    return TestConf.load_data(
-        data_directory,
-        script_directory,
-        tmp_path_factory,
-        worker_id,
-    ).connect(data_directory)
+def con(tmp_path_factory, data_dir, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
 @pytest.fixture(scope='module')

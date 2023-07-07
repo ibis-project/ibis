@@ -9,7 +9,7 @@ import platform
 import sys
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, TextIO
+from typing import Any, Iterable
 
 import _pytest
 import numpy as np
@@ -126,19 +126,7 @@ ALL_BACKENDS = set(_get_backend_names())
 
 
 @pytest.fixture(scope='session')
-def script_directory() -> Path:
-    """Return the test script directory.
-
-    Returns
-    -------
-    Path
-        Test script directory
-    """
-    return Path(__file__).absolute().parents[2] / "ci"
-
-
-@pytest.fixture(scope='session')
-def data_directory() -> Path:
+def data_dir() -> Path:
     """Return the test data directory.
 
     Returns
@@ -178,7 +166,7 @@ def recreate_database(
 def init_database(
     url: sa.engine.url.URL,
     database: str,
-    schema: TextIO | None = None,
+    schema: Iterable[str] | None = None,
     recreate: bool = True,
     isolation_level: str | None = "AUTOCOMMIT",
     **kwargs: Any,
@@ -220,11 +208,7 @@ def init_database(
 
     if schema:
         with engine.begin() as conn:
-            for stmt in filter(
-                None,
-                map(str.strip, schema.read().split(';')),
-            ):
-                conn.exec_driver_sql(stmt)
+            util.consume(map(conn.exec_driver_sql, schema))
 
     return engine
 
@@ -530,11 +514,11 @@ def pytest_runtest_call(item):
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope='session')
-def backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
+def backend(request, data_dir, tmp_path_factory, worker_id):
     """Return an instance of BackendTest, loaded with data."""
 
     cls = _get_backend_conf(request.param)
-    return cls.load_data(data_directory, script_directory, tmp_path_factory, worker_id)
+    return cls.load_data(data_dir, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope="session")
@@ -543,9 +527,7 @@ def con(backend):
     return backend.connection
 
 
-def _setup_backend(
-    request, data_directory, script_directory, tmp_path_factory, worker_id
-):
+def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
     if (backend := request.param) == "duckdb" and platform.system() == "Windows":
         pytest.xfail(
             "windows prevents two connections to the same duckdb file "
@@ -554,20 +536,16 @@ def _setup_backend(
         return None
     else:
         cls = _get_backend_conf(backend)
-        return cls.load_data(
-            data_directory, script_directory, tmp_path_factory, worker_id
-        )
+        return cls.load_data(data_dir, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(
     params=_get_backends_to_test(discard=("dask", "pandas")),
     scope='session',
 )
-def ddl_backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
+def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
     """Set up the backends that are SQL-based."""
-    return _setup_backend(
-        request, data_directory, script_directory, tmp_path_factory, worker_id
-    )
+    return _setup_backend(request, data_dir, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope='session')
@@ -591,13 +569,9 @@ def ddl_con(ddl_backend):
     ),
     scope='session',
 )
-def alchemy_backend(
-    request, data_directory, script_directory, tmp_path_factory, worker_id
-):
+def alchemy_backend(request, data_dir, tmp_path_factory, worker_id):
     """Set up the SQLAlchemy-based backends."""
-    return _setup_backend(
-        request, data_directory, script_directory, tmp_path_factory, worker_id
-    )
+    return _setup_backend(request, data_dir, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope='session')
@@ -610,10 +584,10 @@ def alchemy_con(alchemy_backend):
     params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
     scope='session',
 )
-def udf_backend(request, data_directory, script_directory, tmp_path_factory, worker_id):
+def udf_backend(request, data_dir, tmp_path_factory, worker_id):
     """Runs the UDF-supporting backends."""
     cls = _get_backend_conf(request.param)
-    return cls.load_data(data_directory, script_directory, tmp_path_factory, worker_id)
+    return cls.load_data(data_dir, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope='session')

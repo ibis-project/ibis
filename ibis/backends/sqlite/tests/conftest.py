@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import csv
 import sqlite3
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import pytest
 
@@ -11,11 +11,6 @@ import ibis
 import ibis.expr.types as ir
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-    from ibis.backends.base import BaseBackend
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -25,44 +20,27 @@ class TestConf(BackendTest, RoundAwayFromZero):
     check_dtype = False
     returned_timestamp_unit = 's'
     supports_structs = False
+    stateful = False
+    deps = ("sqlalchemy",)
 
-    def __init__(self, data_directory: Path) -> None:
-        self.connection = self.connect(data_directory)
+    @staticmethod
+    def connect(*, tmpdir, worker_id, **kw):
+        return ibis.sqlite.connect(**kw)
 
-        schema = data_directory.parent.joinpath('schema', 'sqlite.sql').read_text()
+    def _load_data(self, **kw: Any) -> None:
+        """Load test data into a SQLite backend instance."""
+        super()._load_data(**kw)
 
         with self.connection.begin() as con:
-            for stmt in filter(None, map(str.strip, schema.split(';'))):
-                con.exec_driver_sql(stmt)
-
             for table in TEST_TABLES:
                 basename = f"{table}.csv"
-                with data_directory.joinpath("csv", basename).open("r") as f:
+                with self.data_dir.joinpath("csv", basename).open("r") as f:
                     reader = csv.reader(f)
                     header = next(reader)
                     assert header, f"empty header for table: `{table}`"
                     spec = ", ".join("?" * len(header))
                     with contextlib.closing(con.connection.cursor()) as cur:
                         cur.executemany(f"INSERT INTO {table} VALUES ({spec})", reader)
-
-    @staticmethod
-    def _load_data(
-        data_dir: Path, script_dir: Path, database: str | None = None, **_: Any
-    ) -> None:
-        """Load test data into a SQLite backend instance.
-
-        Parameters
-        ----------
-        data_dir
-            Location of test data
-        script_dir
-            Location of scripts defining schemas
-        """
-        return TestConf(data_dir)
-
-    @staticmethod
-    def connect(data_directory: Path) -> BaseBackend:
-        return ibis.sqlite.connect()  # type: ignore
 
     @property
     def functional_alltypes(self) -> ir.Table:
@@ -80,8 +58,8 @@ def dbpath(tmp_path):
 
 
 @pytest.fixture(scope="session")
-def con(data_directory):
-    return TestConf(data_directory).connection
+def con(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
 @pytest.fixture(scope="session")

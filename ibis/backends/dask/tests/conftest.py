@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import dask
 import pandas as pd
@@ -8,13 +8,9 @@ import pandas.testing as tm
 import pytest
 
 import ibis
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.pandas.tests.conftest import TestConf as PandasTest
-from ibis.backends.tests.data import array_types, win
-
-if TYPE_CHECKING:
-    from pathlib import Path
-
-dd = pytest.importorskip("dask.dataframe")
+from ibis.backends.tests.data import array_types, json_types, win
 
 # FIXME Dask issue with non deterministic groupby results, relates to the
 # shuffle method on a local cluster. Manually setting the shuffle method
@@ -32,52 +28,35 @@ def npartitions():
 
 class TestConf(PandasTest):
     supports_structs = False
+    deps = ("dask.dataframe",)
 
     @staticmethod
-    def connect(data_directory: Path):
-        # Note - we use `dd.from_pandas(pd.read_csv(...))` instead of
-        # `dd.read_csv` due to https://github.com/dask/dask/issues/6970
+    def connect(*, tmpdir, worker_id, **kw):
+        return ibis.dask.connect(**kw)
 
-        return ibis.dask.connect(
-            {
-                "functional_alltypes": dd.from_pandas(
-                    pd.read_parquet(
-                        data_directory / "parquet" / "functional_alltypes.parquet"
-                    ),
-                    npartitions=NPARTITIONS,
-                ),
-                "batting": dd.from_pandas(
-                    pd.read_parquet(data_directory / "parquet" / "batting.parquet"),
-                    npartitions=NPARTITIONS,
-                ),
-                "awards_players": dd.from_pandas(
-                    pd.read_parquet(
-                        data_directory / "parquet" / "awards_players.parquet"
-                    ),
-                    npartitions=NPARTITIONS,
-                ),
-                'diamonds': dd.from_pandas(
-                    pd.read_parquet(data_directory / "parquet" / "diamonds.parquet"),
-                    npartitions=NPARTITIONS,
-                ),
-                'json_t': dd.from_pandas(
-                    pd.DataFrame(
-                        {
-                            "js": [
-                                '{"a": [1,2,3,4], "b": 1}',
-                                '{"a":null,"b":2}',
-                                '{"a":"foo", "c":null}',
-                                "null",
-                                "[42,47,55]",
-                                "[]",
-                            ]
-                        }
-                    ),
-                    npartitions=NPARTITIONS,
-                ),
-                "win": dd.from_pandas(win, npartitions=NPARTITIONS),
-                "array_types": dd.from_pandas(array_types, npartitions=NPARTITIONS),
-            }
+    def _load_data(self, **_: Any) -> None:
+        import dask.dataframe as dd
+
+        con = self.connection
+        for table_name in TEST_TABLES:
+            path = self.data_dir / "parquet" / f"{table_name}.parquet"
+            con.create_table(
+                table_name,
+                dd.from_pandas(pd.read_parquet(path), npartitions=NPARTITIONS),
+            )
+
+        con.create_table(
+            "array_types",
+            dd.from_pandas(array_types, npartitions=NPARTITIONS),
+            overwrite=True,
+        )
+        con.create_table(
+            "win", dd.from_pandas(win, npartitions=NPARTITIONS), overwrite=True
+        )
+        con.create_table(
+            "json_t",
+            dd.from_pandas(json_types, npartitions=NPARTITIONS),
+            overwrite=True,
         )
 
     @classmethod
@@ -93,6 +72,8 @@ class TestConf(PandasTest):
 
 @pytest.fixture
 def dataframe(npartitions):
+    dd = pytest.importorskip("dask.dataframe")
+
     return dd.from_pandas(
         pd.DataFrame(
             {

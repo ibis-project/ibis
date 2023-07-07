@@ -19,24 +19,18 @@ pytest.importorskip("impala")
 thrift = pytest.importorskip("thrift")
 
 
-@pytest.fixture
-def db(con, test_data_db):
-    return con.database(test_data_db)
-
-
 def test_hdfs_connect_function_is_public():
     assert hasattr(ibis.impala, "hdfs_connect")
 
 
-def test_raise_ibis_error_no_hdfs(con_no_hdfs):
+def test_raise_ibis_error_no_hdfs(env):
+    con = ibis.impala.connect(
+        host=env.impala_host, port=env.impala_port, auth_mechanism=env.auth_mechanism
+    )
+
     # GH299
     with pytest.raises(com.IbisError):
-        con_no_hdfs.hdfs  # noqa: B018
-
-
-def test_get_table_ref(db):
-    assert isinstance(db.functional_alltypes, ir.Table)
-    assert isinstance(db['functional_alltypes'], ir.Table)
+        con.hdfs  # noqa: B018
 
 
 def test_run_sql(con, test_data_db):
@@ -190,10 +184,6 @@ def test_sql_query_limits(con, test_data_db):
         assert len(table.execute(limit=10000)) == 25
         assert table.count().execute() == 25
         assert table.count().execute(limit=10) == 25
-
-
-def test_database_repr(db, test_data_db):
-    assert test_data_db in repr(db)
 
 
 def test_database_default_current_database(con):

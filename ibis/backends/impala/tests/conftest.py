@@ -31,9 +31,9 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     returned_timestamp_unit = 's'
     supports_structs = False
     supports_json = False
+    deps = "fsspec", "requests", "impala"
 
-    @staticmethod
-    def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:
+    def _load_data(self, **_: Any) -> None:
         """Load test data into an Impala backend instance.
 
         Parameters
@@ -43,10 +43,11 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         script_dir
             Location of scripts defining schemas
         """
-        fsspec = pytest.importorskip("fsspec")
+        import fsspec
+
         fs = fsspec.filesystem("file")
 
-        data_files = fs.find(data_dir / "impala")
+        data_files = fs.find(self.data_dir / "impala")
 
         # without setting the pool size
         # connections are dropped from the urllib3
@@ -56,19 +57,9 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
         env = IbisTestEnv()
         futures = []
-        with contextlib.closing(
-            ibis.impala.connect(
-                host=env.impala_host,
-                port=env.impala_port,
-                hdfs_client=fsspec.filesystem(
-                    env.hdfs_protocol,
-                    host=env.nn_host,
-                    port=env.hdfs_port,
-                    user=env.hdfs_user,
-                ),
-                pool_size=URLLIB_DEFAULT_POOL_SIZE,
-            )
-        ) as con, concurrent.futures.ThreadPoolExecutor(
+        con = self.connection
+        con.create_database(env.test_data_db, force=True)
+        with concurrent.futures.ThreadPoolExecutor(
             max_workers=int(
                 os.environ.get("IBIS_DATA_MAX_WORKERS", URLLIB_DEFAULT_POOL_SIZE)
             )
@@ -90,7 +81,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                         data_file,
                         os.path.join(
                             env.test_data_dir,
-                            os.path.relpath(data_file, data_dir),
+                            os.path.relpath(data_file, self.data_dir),
                         ),
                     )
                     for data_file in data_files
@@ -137,17 +128,16 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             for fut in concurrent.futures.as_completed(futures):
                 fut.result()
 
+    def postload(self, **kw):
+        env = IbisTestEnv()
+        self.connection = self.connect(database=env.test_data_db, **kw)
+
     @staticmethod
-    def connect(
-        data_directory: Path,
-        database: str
-        | None = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing"),  # noqa: B008
-        with_hdfs: bool = True,
-    ):
-        fsspec = pytest.importorskip("fsspec")
+    def connect(*, tmpdir, worker_id, **kw):
+        import fsspec
 
         env = IbisTestEnv()
-        return ibis.impala.connect(
+        con = ibis.impala.connect(
             host=env.impala_host,
             port=env.impala_port,
             auth_mechanism=env.auth_mechanism,
@@ -156,11 +146,10 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                 host=env.nn_host,
                 port=env.hdfs_port,
                 user=env.hdfs_user,
-            )
-            if with_hdfs
-            else None,
-            database=database,
+            ),
+            **kw,
         )
+        return con
 
     def _get_original_column_names(self, tablename: str) -> list[str]:
         return list(TEST_TABLES[tablename].names)
@@ -282,27 +271,13 @@ def hdfs(env, tmp_dir):
 
 
 @pytest.fixture(scope="session")
-def backend(tmp_path_factory, data_directory, script_directory, worker_id):
-    return TestConf.load_data(
-        data_directory,
-        script_directory,
-        tmp_path_factory,
-        worker_id,
-    )
+def backend(tmp_path_factory, data_dir, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope="module")
-def con_no_hdfs(env, data_directory, backend):
-    con = backend.connect(data_directory, with_hdfs=False)
-    con.disable_codegen(disabled=not env.use_codegen)
-    assert con.get_options()['DISABLE_CODEGEN'] == str(int(not env.use_codegen))
-    yield con
-    con.close()
-
-
-@pytest.fixture(scope="module")
-def con(env, data_directory, backend):
-    con = backend.connect(data_directory)
+def con(env, backend):
+    con = backend.connection
     con.disable_codegen(disabled=not env.use_codegen)
     assert con.get_options()['DISABLE_CODEGEN'] == str(int(not env.use_codegen))
     yield con
@@ -310,8 +285,8 @@ def con(env, data_directory, backend):
 
 
 @pytest.fixture
-def tmp_db(env, con, test_data_db):
-    impala = pytest.importorskip("impala")
+def tmp_db(env, con):
+    import impala
 
     tmp_db = env.tmp_db
 
@@ -329,16 +304,6 @@ def tmp_db(env, con, test_data_db):
 
 
 @pytest.fixture(scope="module")
-def con_no_db(env, data_directory, backend):
-    con = backend.connect(data_directory, database=None)
-    if not env.use_codegen:
-        con.disable_codegen()
-    assert con.get_options()['DISABLE_CODEGEN'] == '1'
-    yield con
-    con.close()
-
-
-@pytest.fixture(scope="module")
 def alltypes(con):
     return con.table("functional_alltypes")
 
@@ -349,7 +314,7 @@ def alltypes_df(alltypes):
 
 
 @pytest.fixture
-def temp_database(con, test_data_db):
+def temp_database(con):
     name = util.gen_name('database')
     con.create_database(name)
     yield name

@@ -6,17 +6,13 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import chain, repeat
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterable
 
 import pytest
 from requests import Session
 
 import ibis
-from ibis.backends.tests.base import (
-    RoundHalfToEven,
-    ServiceBackendTest,
-    ServiceSpec,
-)
+from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -102,17 +98,14 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     native_bool = True
     supports_structs = False
     supports_json = False  # it does, but we haven't implemented it
+    service_name = "druid-middlemanager"
+    deps = ("pydruid.db.sqlalchemy",)
 
-    @classmethod
-    def service_spec(cls, data_dir: Path) -> ServiceSpec:
-        return ServiceSpec(
-            name="druid-middlemanager",
-            data_volume="/data",
-            files=data_dir.joinpath("parquet").glob("*.parquet"),
-        )
+    @property
+    def test_files(self) -> Iterable[Path]:
+        return self.data_dir.joinpath("parquet").glob("*.parquet")
 
-    @staticmethod
-    def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:
+    def _load_data(self, **_: Any) -> None:
         """Load test data into a druid backend instance.
 
         Parameters
@@ -122,28 +115,19 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
-        # copy data into the volume mount
-        queries = filter(
-            None,
-            map(
-                str.strip,
-                (script_dir / "schema" / "druid.sql").read_text().split(";"),
-            ),
-        )
-
         # run queries concurrently using threads; lots of time is spent on IO
         # making requests to check whether data loading is complete
         with Session() as session, ThreadPoolExecutor() as executor:
             for fut in as_completed(
-                executor.submit(run_query, session, query) for query in queries
+                executor.submit(run_query, session, query) for query in self.ddl_script
             ):
                 fut.result()
 
     @staticmethod
-    def connect(_: Path):
-        return ibis.connect(DRUID_URL)
+    def connect(*, tmpdir, worker_id, **kw):
+        return ibis.connect(DRUID_URL, **kw)
 
 
 @pytest.fixture(scope='session')
-def con():
-    return ibis.connect(DRUID_URL)
+def con(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

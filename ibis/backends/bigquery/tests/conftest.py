@@ -22,9 +22,6 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero, UnorderedCo
 from ibis.backends.tests.data import json_types, non_null_array_types, struct_types, win
 
 if TYPE_CHECKING:
-    import pathlib
-    from pathlib import Path
-
     import ibis.expr.types as ir
 
 DATASET_ID = "ibis_gbq_testing"
@@ -83,13 +80,13 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_structs = True
     supports_json = True
     check_names = False
+    deps = ("google.cloud.bigquery",)
 
     @staticmethod
     def format_table(name: str) -> str:
         return f"{DATASET_ID}.{name}"
 
-    @staticmethod
-    def _load_data(data_dir: Path, script_dir: Path, **_: Any) -> None:
+    def _load_data(self, **_: Any) -> None:
         """Load test data into a BigQuery instance."""
 
         credentials, default_project_id = google.auth.default(
@@ -198,7 +195,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     make_job,
                     client.load_table_from_file,
                     io.BytesIO(
-                        data_dir.joinpath("avro", "struct_table.avro").read_bytes()
+                        self.data_dir.joinpath("avro", "struct_table.avro").read_bytes()
                     ),
                     bq.TableReference(testing_dataset, "struct_table"),
                     job_config=bq.LoadJobConfig(
@@ -267,7 +264,9 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     make_job,
                     client.load_table_from_file,
                     io.BytesIO(
-                        data_dir.joinpath("parquet", f"{table}.parquet").read_bytes()
+                        self.data_dir.joinpath(
+                            "parquet", f"{table}.parquet"
+                        ).read_bytes()
                     ),
                     bq.TableReference(testing_dataset, table),
                     job_config=bq.LoadJobConfig(
@@ -286,7 +285,9 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     make_job,
                     client.load_table_from_file,
                     io.BytesIO(
-                        data_dir.joinpath("parquet", f"{table}.parquet").read_bytes()
+                        self.data_dir.joinpath(
+                            "parquet", f"{table}.parquet"
+                        ).read_bytes()
                     ),
                     bq.TableReference(testing_dataset_tokyo, table),
                     job_config=bq.LoadJobConfig(
@@ -307,7 +308,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
         return t.select(~s.c("index", "Unnamed_0"))
 
     @staticmethod
-    def connect(data_directory: pathlib.Path) -> Backend:
+    def connect(*, tmpdir, worker_id, **kw) -> Backend:
         """Connect to the test project and dataset."""
         credentials, default_project_id = google.auth.default(
             scopes=EXTERNAL_DATA_SCOPES
@@ -317,7 +318,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             os.environ.get(PROJECT_ID_ENV_VAR, default_project_id) or DEFAULT_PROJECT_ID
         )
         con = ibis.bigquery.connect(
-            project_id=project_id, dataset_id=DATASET_ID, credentials=credentials
+            project_id=project_id, dataset_id=DATASET_ID, credentials=credentials, **kw
         )
         expr = ibis.literal(1)
         try:
