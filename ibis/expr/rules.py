@@ -236,7 +236,7 @@ def scalar(inner, arg, **kwargs):
     if arg.output_shape.is_scalar():
         return arg
     else:
-        raise com.IbisTypeError(f"{arg} it not a scalar")
+        raise com.IbisTypeError(f"{arg} is not a scalar")
 
 
 @rule
@@ -245,7 +245,7 @@ def column(inner, arg, **kwargs):
     if arg.output_shape.is_columnar():
         return arg
     else:
-        raise com.IbisTypeError(f"{arg} it not a column")
+        raise com.IbisTypeError(f"{arg} is not a column")
 
 
 any = value(None)
