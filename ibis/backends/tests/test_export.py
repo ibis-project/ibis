@@ -217,7 +217,7 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
 
     df = pd.read_parquet(outparquet)
 
-    backend.assert_frame_equal(awards_players.execute(), df)
+    backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
 @pytest.mark.notimpl(
@@ -256,7 +256,7 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     # avoid type comparison to appease duckdb: as of 0.8.0 it returns large_string
     assert reingest.schema().names == awards_players.schema().names
 
-    backend.assert_frame_equal(awards_players.execute(), awards_players.execute())
+    backend.assert_frame_equal(awards_players.to_pandas(), awards_players.to_pandas())
 
 
 @pytest.mark.notimpl(["dask", "impala", "pyspark"])
@@ -270,7 +270,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 
     df = pd.read_csv(outcsv, dtype=awards_players.schema().to_pandas())
 
-    backend.assert_frame_equal(awards_players.execute(), df)
+    backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
 @pytest.mark.parametrize(
@@ -327,7 +327,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "mysql",
         "oracle",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",
@@ -343,10 +342,13 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     reason="arrow type conversion fails in `to_delta` call",
 )
 def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
-    pytest.importorskip("deltalake")
+    if con.name == "pyspark":
+        pytest.importorskip("delta")
+    else:
+        pytest.importorskip("deltalake")
 
     t = alltypes.head()
-    expected = t.execute()
+    expected = t.to_pandas()
     path = tmp_path / "test.delta"
     t.to_delta(path)
 
@@ -402,7 +404,7 @@ def test_dataframe_protocol(alltypes):
     pytest.importorskip("pyarrow", minversion="12")
     output = alltypes.__dataframe__()
     assert list(output.column_names()) == alltypes.columns
-    assert alltypes.count().execute() == output.num_rows()
+    assert alltypes.count().to_pandas() == output.num_rows()
 
 
 @pytest.mark.notimpl(["dask", "druid"])
