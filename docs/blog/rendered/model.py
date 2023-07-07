@@ -2,6 +2,7 @@
 
 Adapted from https://gist.github.com/pdet/e8d38734232c08e6c15aba79b4eb8368#file-taxi_prediction_example-py.
 """
+from __future__ import annotations
 
 import pyarrow as pa
 import torch

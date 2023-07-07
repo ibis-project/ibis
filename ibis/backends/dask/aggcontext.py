@@ -1,8 +1,9 @@
+from __future__ import annotations
+
 import operator
-from typing import Any, Callable, Dict, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
 
 import dask.dataframe as dd
-from dask.dataframe.groupby import SeriesGroupBy
 
 import ibis
 from ibis.backends.pandas.aggcontext import (
@@ -14,6 +15,9 @@ from ibis.backends.pandas.aggcontext import (
     wrap_for_agg,
 )
 from ibis.backends.pandas.aggcontext import Transform as PandasTransform
+
+if TYPE_CHECKING:
+    from dask.dataframe.groupby import SeriesGroupBy
 
 # TODO Consolidate this logic with the pandas aggcontext.
 # This file is almost a direct port of the pandas aggcontext.

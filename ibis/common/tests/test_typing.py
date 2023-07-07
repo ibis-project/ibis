@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Generic, Optional, TypeVar, Union
 
 from ibis.common.typing import (

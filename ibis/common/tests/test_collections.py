@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 
 import pytest

@@ -1,8 +1,11 @@
-from abc import ABC, abstractmethod
-from typing import Generic, TypeVar
+from __future__ import annotations
 
-from ibis.expr.datatypes import DataType
-from ibis.expr.schema import Schema
+from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Generic, TypeVar
+
+if TYPE_CHECKING:
+    from ibis.expr.datatypes import DataType
+    from ibis.expr.schema import Schema
 
 C = TypeVar('C')
 T = TypeVar('T')

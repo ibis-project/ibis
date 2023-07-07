@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hypothesis as h
 import hypothesis.extra.numpy as npst
 import hypothesis.strategies as st

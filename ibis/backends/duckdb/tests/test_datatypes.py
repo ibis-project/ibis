@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import duckdb_engine
 import pytest
 import sqlalchemy as sa

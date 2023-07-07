@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import itertools
 from typing import Any, Tuple
 
@@ -146,12 +148,13 @@ def test_enode():
         node.args = (2, 3)
 
 
-def test_enode_roundtrip():
-    class MyNode(Concrete, Node):
-        a: int
-        b: int
-        c: str
+class MyNode(Concrete, Node):
+    a: int
+    b: int
+    c: str
 
+
+def test_enode_roundtrip():
     # create e-node from node
     node = MyNode(a=1, b=2, c="3")
     enode = ENode.from_node(node)
@@ -162,54 +165,61 @@ def test_enode_roundtrip():
     assert node_ == node
 
 
-def test_enode_roundtrip_with_variadic_arg():
-    class MyNode(Concrete, Node):
-        a: int
-        b: Tuple[int, ...]
+class MySecondNode(Concrete, Node):
+    a: int
+    b: Tuple[int, ...]
 
+
+def test_enode_roundtrip_with_variadic_arg():
     # create e-node from node
-    node = MyNode(a=1, b=(2, 3))
+    node = MySecondNode(a=1, b=(2, 3))
     enode = ENode.from_node(node)
-    assert enode == ENode(MyNode, (1, (2, 3)))
+    assert enode == ENode(MySecondNode, (1, (2, 3)))
 
     # reconstruct node from e-node
     node_ = enode.to_node()
     assert node_ == node
+
+
+class MyInt(Concrete, Node):
+    value: int
+
+
+class MyThirdNode(Concrete, Node):
+    a: int
+    b: Tuple[MyInt, ...]
 
 
 def test_enode_roundtrip_with_nested_arg():
-    class MyInt(Concrete, Node):
-        value: int
-
-    class MyNode(Concrete, Node):
-        a: int
-        b: Tuple[MyInt, ...]
-
     # create e-node from node
-    node = MyNode(a=1, b=(MyInt(value=2), MyInt(value=3)))
+    node = MyThirdNode(a=1, b=(MyInt(value=2), MyInt(value=3)))
     enode = ENode.from_node(node)
-    assert enode == ENode(MyNode, (1, (ENode(MyInt, (2,)), ENode(MyInt, (3,)))))
+    assert enode == ENode(MyThirdNode, (1, (ENode(MyInt, (2,)), ENode(MyInt, (3,)))))
 
     # reconstruct node from e-node
     node_ = enode.to_node()
     assert node_ == node
 
 
+class MyFourthNode(Concrete, Node):
+    pass
+
+
+class MyLit(MyFourthNode):
+    value: int
+
+
+class MyAdd(MyFourthNode):
+    a: MyFourthNode
+    b: MyFourthNode
+
+
+class MyMul(MyFourthNode):
+    a: MyFourthNode
+    b: MyFourthNode
+
+
 def test_disjoint_set_with_enode():
-    class MyNode(Concrete, Node):
-        pass
-
-    class MyLit(MyNode):
-        value: int
-
-    class MyAdd(MyNode):
-        a: MyNode
-        b: MyNode
-
-    class MyMul(MyNode):
-        a: MyNode
-        b: MyNode
-
     # number postfix highlights the depth of the node
     one = MyLit(value=1)
     two = MyLit(value=2)

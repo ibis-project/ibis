@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.bigquery.compiler import BigQueryExprTranslator

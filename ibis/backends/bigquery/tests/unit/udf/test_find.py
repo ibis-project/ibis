@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ast
 
 from ibis.backends.bigquery.udf.find import find_names

@@ -1,4 +1,6 @@
 """Tests for geo spatial data types."""
+from __future__ import annotations
+
 import numpy as np
 import pytest
 from numpy import testing

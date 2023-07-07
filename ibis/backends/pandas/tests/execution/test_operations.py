@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import operator
 from operator import methodcaller
 

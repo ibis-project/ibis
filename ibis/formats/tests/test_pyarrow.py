@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import hypothesis as h
 import hypothesis.strategies as st
 import pyarrow as pa

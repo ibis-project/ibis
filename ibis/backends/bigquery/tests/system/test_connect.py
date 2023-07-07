@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from unittest import mock
 
 import google.api_core.client_options

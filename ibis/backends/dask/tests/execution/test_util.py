@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from ibis.backends.dask.execution.util import assert_identical_grouping_keys

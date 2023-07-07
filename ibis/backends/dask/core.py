@@ -437,6 +437,7 @@ def execute_and_reset(
     kwargs : Dict[str, object]
         Additional arguments that can potentially be used by individual node
         execution
+
     Returns
     -------
     result : Union[
