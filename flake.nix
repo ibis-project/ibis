@@ -118,7 +118,7 @@
     in
     rec {
       packages = {
-        inherit (pkgs) ibis38 ibis39 ibis310 ibis311;
+        inherit (pkgs) ibis39 ibis310 ibis311;
 
         default = pkgs.ibis310;
 
@@ -126,7 +126,6 @@
       };
 
       devShells = rec {
-        ibis38 = mkDevShell pkgs.ibisDevEnv38;
         ibis39 = mkDevShell pkgs.ibisDevEnv39;
         ibis310 = mkDevShell pkgs.ibisDevEnv310;
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
