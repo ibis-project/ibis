@@ -116,9 +116,9 @@ class BarStruct:
     m: dt.Date
     n: dt.Time
     o: dt.Timestamp
-    oa: dt.Timestamp['UTC']  # noqa: F821
-    ob: dt.Timestamp['UTC', 6]  # noqa: F821
-    pa: dt.Interval['s']  # noqa: F821
+    oa: dt.Timestamp['UTC']  # noqa: F821, UP037
+    ob: dt.Timestamp['UTC', 6]  # noqa: F821, UP037
+    pa: dt.Interval['s']  # noqa: F821, UP037
     q: dt.Decimal
     qa: dt.Decimal[12, 2]
     r: dt.Array[dt.Int16]
@@ -200,9 +200,9 @@ class PyStruct:
     h: datetime.datetime
     i: datetime.timedelta
     j: decimal.Decimal
-    k: List[int]  # noqa: UP006
-    l: Dict[str, int]  # noqa: UP006, E741
-    n: Tuple[str]  # noqa: UP006
+    k: List[int]
+    l: Dict[str, int]  # noqa: E741
+    n: Tuple[str]
     o: uuid.UUID
     p: None
     q: MyStruct
@@ -320,7 +320,7 @@ def test_dtype_from_additional_struct_typehints():
         nested: dt.Struct({'a': dt.Int16, 'b': dt.Int32})
 
     class B:
-        nested: dt.Struct['a' : dt.Int16, 'b' : dt.Int32]  # noqa: F821
+        nested: dt.Struct['a' : dt.Int16, 'b' : dt.Int32]  # noqa: F821, UP037
 
     expected = dt.Struct({'nested': dt.Struct({'a': dt.Int16(), 'b': dt.Int32()})})
     assert dt.dtype(A) == expected

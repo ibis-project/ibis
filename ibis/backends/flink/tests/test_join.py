@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from ibis.backends.flink.compiler.core import translate

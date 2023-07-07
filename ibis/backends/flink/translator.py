@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from ibis.backends.base.sql.compiler import ExprTranslator
 from ibis.backends.flink.registry import operation_registry
 

@@ -1066,6 +1066,7 @@ def rows_with_max_lookback(
         Number of rows
     max_lookback
         Maximum lookback in time
+
     Returns
     -------
     RowsWithMaxLookback

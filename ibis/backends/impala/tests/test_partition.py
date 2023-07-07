@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from posixpath import join as pjoin
 

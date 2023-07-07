@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pandas.testing as tm
 import polars as pl
 import pytest

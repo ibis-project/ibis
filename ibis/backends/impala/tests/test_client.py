@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 from contextlib import closing
 from posixpath import join as pjoin

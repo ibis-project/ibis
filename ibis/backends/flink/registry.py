@@ -1,10 +1,16 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.compiler import ExprTranslator
 from ibis.backends.base.sql.registry import helpers
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
 from ibis.common.temporal import TimestampUnit
+
+if TYPE_CHECKING:
+    from ibis.backends.base.sql.compiler import ExprTranslator
 
 operation_registry = base_operation_registry.copy()
 

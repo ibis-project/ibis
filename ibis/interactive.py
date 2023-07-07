@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import ibis
 import ibis.examples as ex
 from ibis import deferred as _

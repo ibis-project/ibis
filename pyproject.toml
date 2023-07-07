@@ -449,8 +449,6 @@ ignore = [
   "SIM117",  # nested with statements
   "SIM118",  # remove .keys() calls from dictionaries
   "SIM300",  # yoda conditions
-  "UP037",   # remove quotes from type annotation
-  "UP007",   # Optional[str] -> str | None
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
 target-version = "py38"
@@ -462,6 +460,12 @@ unfixable = [
   "F841",   # unused variables
 ]
 
+[tool.ruff.pyupgrade]
+keep-runtime-typing = true
+
+[tool.ruff.isort]
+required-imports = ["from __future__ import annotations"]
+
 [tool.ruff.per-file-ignores]
 "*test*.py" = [
   "D", # ignore all docstring lints in tests
@@ -469,7 +473,6 @@ unfixable = [
 "ci/*.py" = ["INP001"]
 "docs/*.py" = ["INP001"]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
-"ibis/selectors.py" = ["UP007"]
 
 [tool.black]
 line_length = 88

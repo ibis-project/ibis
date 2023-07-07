@@ -235,12 +235,12 @@ class FooSchema:
     a: int
     b: str
     c: float
-    d: Tuple[str]  # noqa: UP006
-    e: List[int]  # noqa: UP006
-    f: Dict[str, int]  # noqa: UP006
+    d: Tuple[str]
+    e: List[int]
+    f: Dict[str, int]
     g: BarSchema
-    h: List[BarSchema]  # noqa: UP006
-    j: Dict[str, BarSchema]  # noqa: UP006
+    h: List[BarSchema]
+    j: Dict[str, BarSchema]
 
 
 foo_schema = sch.Schema(
@@ -271,12 +271,12 @@ class NamedFoo(NamedTuple):
     a: int
     b: str
     c: float
-    d: Tuple[str]  # noqa: UP006
-    e: List[int]  # noqa: UP006
-    f: Dict[str, int]  # noqa: UP006
+    d: Tuple[str]
+    e: List[int]
+    f: Dict[str, int]
     g: NamedBar
-    h: List[NamedBar]  # noqa: UP006
-    j: Dict[str, NamedBar]  # noqa: UP006
+    h: List[NamedBar]
+    j: Dict[str, NamedBar]
 
 
 def test_schema_from_namedtuple():
@@ -294,16 +294,16 @@ class DataFooBase:
     a: int
     b: str
     c: float
-    d: Tuple[str]  # noqa: UP006
+    d: Tuple[str]
 
 
 @dataclass
 class DataFoo(DataFooBase):
-    e: List[int]  # noqa: UP006
-    f: Dict[str, int]  # noqa: UP006
+    e: List[int]
+    f: Dict[str, int]
     g: DataBar
-    h: List[DataBar]  # noqa: UP006
-    j: Dict[str, DataBar]  # noqa: UP006
+    h: List[DataBar]
+    j: Dict[str, DataBar]
 
 
 def test_schema_from_dataclass():

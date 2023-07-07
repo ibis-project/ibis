@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from operator import methodcaller
 
 import numpy as np

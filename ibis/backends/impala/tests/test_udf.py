@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from decimal import Decimal
 from posixpath import join as pjoin
 
