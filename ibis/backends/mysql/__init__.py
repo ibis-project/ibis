@@ -31,7 +31,7 @@ class Backend(BaseAlchemyBackend):
         database: str | None = None,
         url: str | None = None,
         driver: Literal["pymysql"] = "pymysql",
-        **kwargs
+        **kwargs,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
 
@@ -52,6 +52,10 @@ class Backend(BaseAlchemyBackend):
             connection arguments are ignored.
         driver
             Python MySQL database driver
+        kwargs
+            Additional keyword arguments passed to `connect_args` in
+            `sqlalchemy.create_engine`. Use these to pass dialect specific
+            arguments.
 
         Examples
         --------
@@ -103,7 +107,9 @@ class Backend(BaseAlchemyBackend):
 
         self.database_name = alchemy_url.database
 
-        engine = sa.create_engine(alchemy_url, poolclass=sa.pool.StaticPool, connect_args=kwargs)
+        engine = sa.create_engine(
+            alchemy_url, poolclass=sa.pool.StaticPool, connect_args=kwargs
+        )
 
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
