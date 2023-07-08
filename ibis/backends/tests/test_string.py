@@ -192,6 +192,18 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
+            lambda t: ("a" + t.string_col + "a").re_search(r"\d+"),
+            lambda t: t.string_col.str.contains(r"\d+"),
+            id="re_search_substring",
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion", "mssql", "oracle"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(["impala"], raises=AssertionError),
+            ],
+        ),
+        param(
             lambda t: t.string_col.re_search(r'\d+'),
             lambda t: t.string_col.str.contains(r'\d+'),
             id='re_search',
