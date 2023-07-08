@@ -413,7 +413,7 @@ operation_registry.update(
         ops.RegexReplace: fixed_arity(
             lambda *args: sa.func.regexp_replace(*args, sa.text("'g'")), 3
         ),
-        ops.RegexSearch: fixed_arity(lambda x, y: x.op("SIMILAR TO")(y), 2),
+        ops.RegexSearch: fixed_arity(sa.func.regexp_matches, 2),
         ops.StringContains: fixed_arity(sa.func.contains, 2),
         ops.ApproxMedian: reduction(
             # without inline text, duckdb fails with
