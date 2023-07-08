@@ -408,7 +408,9 @@ operation_registry.update(
         ops.DateFromYMD: fixed_arity(sa.func.date_from_parts, 3),
         ops.StringToTimestamp: fixed_arity(sa.func.to_timestamp_tz, 2),
         ops.RegexExtract: _regex_extract,
-        ops.RegexSearch: fixed_arity(sa.sql.operators.custom_op("REGEXP"), 2),
+        ops.RegexSearch: fixed_arity(
+            lambda arg, pattern: sa.func.regexp_instr(arg, pattern) != 0, 2
+        ),
         ops.RegexReplace: fixed_arity(sa.func.regexp_replace, 3),
         ops.ExtractMicrosecond: fixed_arity(
             lambda arg: sa.cast(
