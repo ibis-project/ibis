@@ -10,6 +10,11 @@ from pytest import param
 
 import ibis.expr.schema as sch
 
+try:
+    from polars.exceptions import ColumnNotFoundError
+except ImportError:
+    ColumnNotFoundError = None
+
 
 def _pandas_semi_join(left, right, on, **_):
     assert len(on) == 1, str(on)
@@ -53,6 +58,11 @@ def check_eq(left, right, how, **kwargs):
     ],
 )
 @pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.xfail_version(
+    polars=["polars>=0.18.6,<0.18.8"],
+    reason="https://github.com/pola-rs/polars/issues/9955",
+    raises=ColumnNotFoundError,
+)
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
