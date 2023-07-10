@@ -11,7 +11,7 @@ from ibis.backends.base import _IBIS_TO_SQLGLOT_DIALECT, _get_backend_names
 from ibis.backends.tests.errors import PolarsComputeError
 
 table_dot_sql_notimpl = pytest.mark.notimpl(["bigquery", "impala", "druid"])
-dot_sql_notimpl = pytest.mark.notimpl(["datafusion", "exasol", "flink"])
+dot_sql_notimpl = pytest.mark.notimpl(["exasol", "flink"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake", "oracle"],
     reason="snowflake and oracle column names are case insensitive",
@@ -27,7 +27,7 @@ _NAMES = {
 }
 
 
-@dot_sql_notimpl
+@pytest.mark.notimpl(["flink"])
 @dot_sql_notyet
 @dot_sql_never
 @pytest.mark.parametrize(
@@ -238,13 +238,13 @@ no_sqlglot_dialect = sorted(
 @dot_sql_never
 def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
     name = "foo2"
-    foo = alltypes.select(x=_.int_col + 1).alias(name)
+    foo = alltypes.select(x=_.bigint_col + 1).alias(name)
     expr = sg.select("x").from_(sg.table(name, quoted=True))
     dialect = _IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     sqlstr = expr.sql(dialect=dialect, pretty=True)
     dot_sql_expr = foo.sql(sqlstr, dialect=dialect)
     result = dot_sql_expr.execute()
-    expected = df.int_col.add(1).rename("x")
+    expected = df.bigint_col.add(1).rename("x")
     backend.assert_series_equal(result.x, expected)
 
 
@@ -269,12 +269,12 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
 @dot_sql_never
 def test_con_dot_sql_transpile(backend, con, dialect, df):
     t = sg.table("functional_alltypes")
-    foo = sg.select(sg.alias(sg.column("int_col") + 1, "x")).from_(t)
+    foo = sg.select(sg.alias(sg.column("bigint_col") + 1, "x")).from_(t)
     dialect = _IBIS_TO_SQLGLOT_DIALECT.get(dialect, dialect)
     sqlstr = foo.sql(dialect=dialect, pretty=True)
     expr = con.sql(sqlstr, dialect=dialect)
     result = expr.execute()
-    expected = df.int_col.add(1).rename("x")
+    expected = df.bigint_col.add(1).rename("x")
     backend.assert_series_equal(result.x, expected)
 
 

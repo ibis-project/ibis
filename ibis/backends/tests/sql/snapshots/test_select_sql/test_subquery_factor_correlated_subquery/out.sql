@@ -1,19 +1,60 @@
-WITH t0 AS (
-  SELECT t3.*, t1.`r_name` AS `region`, t4.`o_totalprice` AS `amount`,
-         CAST(t4.`o_orderdate` AS timestamp) AS `odate`
-  FROM tpch_region t1
-    INNER JOIN tpch_nation t2
-      ON t1.`r_regionkey` = t2.`n_regionkey`
-    INNER JOIN tpch_customer t3
-      ON t3.`c_nationkey` = t2.`n_nationkey`
-    INNER JOIN tpch_orders t4
-      ON t4.`o_custkey` = t3.`c_custkey`
-)
-SELECT t0.*
-FROM t0
-WHERE t0.`amount` > (
-  SELECT avg(t1.`amount`) AS `Mean(amount)`
-  FROM t0 t1
-  WHERE t1.`region` = t0.`region`
-)
+SELECT
+  *
+FROM (
+  SELECT
+    t2.c_custkey AS c_custkey,
+    t2.c_name AS c_name,
+    t2.c_address AS c_address,
+    t2.c_nationkey AS c_nationkey,
+    t2.c_phone AS c_phone,
+    t2.c_acctbal AS c_acctbal,
+    t2.c_mktsegment AS c_mktsegment,
+    t2.c_comment AS c_comment,
+    t0.r_name AS region,
+    t3.o_totalprice AS amount,
+    CAST(t3.o_orderdate AS TIMESTAMP) AS odate
+  FROM tpch_region AS t0
+  INNER JOIN tpch_nation AS t1
+    ON t0.r_regionkey = t1.n_regionkey
+  INNER JOIN tpch_customer AS t2
+    ON t2.c_nationkey = t1.n_nationkey
+  INNER JOIN tpch_orders AS t3
+    ON t3.o_custkey = t2.c_custkey
+) AS t7
+WHERE
+  (
+    t7.amount > (
+      SELECT
+        AVG(t9.amount) AS "Mean(amount)"
+      FROM (
+        SELECT
+          *
+        FROM (
+          SELECT
+            t2.c_custkey AS c_custkey,
+            t2.c_name AS c_name,
+            t2.c_address AS c_address,
+            t2.c_nationkey AS c_nationkey,
+            t2.c_phone AS c_phone,
+            t2.c_acctbal AS c_acctbal,
+            t2.c_mktsegment AS c_mktsegment,
+            t2.c_comment AS c_comment,
+            t0.r_name AS region,
+            t3.o_totalprice AS amount,
+            CAST(t3.o_orderdate AS TIMESTAMP) AS odate
+          FROM tpch_region AS t0
+          INNER JOIN tpch_nation AS t1
+            ON t0.r_regionkey = t1.n_regionkey
+          INNER JOIN tpch_customer AS t2
+            ON t2.c_nationkey = t1.n_nationkey
+          INNER JOIN tpch_orders AS t3
+            ON t3.o_custkey = t2.c_custkey
+        ) AS t8
+        WHERE
+          (
+            t8.region = t7.region
+          )
+      ) AS t9
+    )
+  )
 LIMIT 10

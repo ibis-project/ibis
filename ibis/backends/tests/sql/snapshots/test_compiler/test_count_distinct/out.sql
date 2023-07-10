@@ -1,4 +1,14 @@
-SELECT t0.`string_col`, count(DISTINCT t0.`int_col`) AS `nunique`
-FROM functional_alltypes t0
-WHERE t0.`bigint_col` > 0
-GROUP BY 1
+SELECT
+  t1.string_col AS string_col,
+  COUNT(DISTINCT t1.int_col) AS nunique
+FROM (
+  SELECT
+    *
+  FROM functional_alltypes AS t0
+  WHERE
+    (
+      t0.bigint_col > CAST(0 AS TINYINT)
+    )
+) AS t1
+GROUP BY
+  1

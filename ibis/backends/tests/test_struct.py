@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -17,20 +18,32 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["dask", "snowflake"])
-@pytest.mark.parametrize("field", ["a", "b", "c"])
-def test_single_field(backend, struct, struct_df, field):
+@pytest.mark.notimpl(["dask"])
+@pytest.mark.parametrize(
+    ("field", "expected"),
+    [
+        param(
+            "a",
+            [1.0, 2.0, 3.0, np.nan, 2.0, np.nan, 3.0],
+            id="a",
+            marks=pytest.mark.notimpl(["snowflake"]),
+        ),
+        param(
+            "b", ["banana", "apple", "orange", "banana", None, None, "orange"], id="b"
+        ),
+        param(
+            "c",
+            [2, 3, 4, 2, 3, np.nan, np.nan],
+            id="c",
+            marks=pytest.mark.notimpl(["snowflake"]),
+        ),
+    ],
+)
+def test_single_field(struct, field, expected):
     expr = struct.abc[field]
-    result = expr.execute().sort_values().reset_index(drop=True)
-    expected = (
-        struct_df.abc.map(
-            lambda value: value[field] if isinstance(value, dict) else value
-        )
-        .rename(field)
-        .sort_values()
-        .reset_index(drop=True)
-    )
-    backend.assert_series_equal(result, expected)
+    result = expr.execute()
+    equal_nan = expr.type().is_numeric()
+    assert np.array_equal(result, expected, equal_nan=equal_nan)
 
 
 @pytest.mark.notimpl(["dask"])

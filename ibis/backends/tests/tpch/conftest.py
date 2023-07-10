@@ -11,6 +11,7 @@ import sqlglot as sg
 from dateutil.relativedelta import relativedelta
 
 import ibis
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -66,29 +67,28 @@ def tpch_test(test: Callable[..., ir.Table]):
 
         raw_sql = sql.sql(dialect="duckdb", pretty=True)
 
-        expected_expr = backend.connection.sql(
-            # in theory this should allow us to use one dialect for every backend
-            raw_sql,
-            dialect="duckdb",
-        )
+        expected_expr = backend.connection.sql(raw_sql, dialect="duckdb")
 
         result_expr = test(*args, **kwargs)
 
-        result = result_expr.execute()
+        ibis_sql = ibis.to_sql(result_expr, dialect=backend_name)
+
+        assert result_expr._find_backend(use_default=False) is backend.connection
+        result = backend.connection.execute(result_expr)
         assert not result.empty
 
         expected = expected_expr.execute()
-        assert not expected.empty
-
         assert list(map(str.lower, expected.columns)) == result.columns.tolist()
         expected.columns = result.columns
+
+        expected = PandasData.convert_table(expected, result_expr.schema())
+        assert not expected.empty
 
         assert len(expected) == len(result)
         backend.assert_frame_equal(result, expected, check_dtype=False)
 
-        # only produce sql if the execution passes
-        result_expr_sql = ibis.to_sql(result_expr, dialect=backend_name)
-        snapshot.assert_match(result_expr_sql, sql_path_name)
+        # only write sql if the execution passes
+        snapshot.assert_match(ibis_sql, sql_path_name)
 
     return wrapper
 
