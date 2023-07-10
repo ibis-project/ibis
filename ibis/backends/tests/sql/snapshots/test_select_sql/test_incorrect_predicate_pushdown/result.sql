@@ -1,6 +1,13 @@
-SELECT t0.*
+SELECT
+  t1.x + CAST(1 AS TINYINT) AS x
 FROM (
-  SELECT t1.`x` + 1 AS `x`
-  FROM t t1
-) t0
-WHERE t0.`x` > 1
+  SELECT
+    *
+  FROM t AS t0
+  WHERE
+    (
+      (
+        t0.x + CAST(1 AS TINYINT)
+      ) > CAST(1 AS TINYINT)
+    )
+) AS t1

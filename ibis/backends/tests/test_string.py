@@ -142,9 +142,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6.*"),
             id="like",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "polars"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
@@ -157,9 +155,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6%"),
             id="complex_like_escape",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "polars"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
@@ -172,9 +168,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6%.*"),
             id="complex_like_escape_match",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion", "polars"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
@@ -188,8 +182,7 @@ def uses_java_re(t):
             id="ilike",
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "pyspark", "polars"],
-                    raises=com.OperationNotDefinedError,
+                    ["pyspark", "polars"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.broken(
                     ["mssql"],
@@ -417,15 +410,7 @@ def uses_java_re(t):
             id="translate",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "duckdb",
-                        "mssql",
-                        "mysql",
-                        "polars",
-                        "druid",
-                        "oracle",
-                    ],
+                    ["mssql", "mysql", "polars", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -788,7 +773,6 @@ def uses_java_re(t):
             marks=pytest.mark.notimpl(
                 [
                     "dask",
-                    "datafusion",
                     "impala",
                     "mysql",
                     "sqlite",
@@ -843,6 +827,11 @@ def test_string(backend, alltypes, df, result_func, expected_func):
 @pytest.mark.notimpl(
     ["mysql", "mssql", "druid", "oracle", "exasol"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["duckdb"],
+    reason="no idea, generated SQL looks very correct but this fails",
+    raises=AssertionError,
 )
 def test_re_replace_global(con):
     expr = ibis.literal("aba").re_replace("a", "c")

@@ -311,17 +311,12 @@ def test_rename_table(con, temp_table, temp_table_orig):
     assert temp_table_orig not in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "polars", "druid"])
+@mark.notimpl(["polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
 )
-@mark.broken(["snowflake"], reason="snowflake shows not nullable column as nullable")
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=com.IbisError,
-    reason="`tbl_properties` is required when creating table with schema",
-)
+@mark.broken(["flink"], reason="shows not nullable column as nullable")
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [("foo", "int64"), ("bar", dt.int64(nullable=False)), ("baz", "boolean")]
@@ -904,10 +899,12 @@ def test_self_join_memory_table(backend, con, monkeypatch):
     t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
     t_view = t.view()
     expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
+
     result = con.execute(expr).sort_values("x").reset_index(drop=True)
     expected = pd.DataFrame(
         {"x": [1, 2], "y": [2, 1], "z": ["a", "b"], "z_right": ["b", "a"]}
     )
+
     backend.assert_frame_equal(result, expected)
 
 
@@ -997,10 +994,10 @@ def test_default_backend():
     for _ in range(2):
         assert expr.execute() == df.a.sum()
 
-    sql = str(ibis.to_sql(expr))
+    sql = ibis.to_sql(expr)
     rx = """\
 SELECT
-  SUM\\((\\w+)\\.a\\) AS ".+"
+  SUM\\((t\\d+)\\.a\\) AS ".+"
 FROM \\w+ AS \\1"""
     assert re.match(rx, sql) is not None
 
@@ -1150,9 +1147,9 @@ def test_has_operation_no_geo(con, op):
         for name, obj in sorted(inspect.getmembers(builtins), key=itemgetter(0))
         for backend in sorted(ALL_BACKENDS)
         # filter out builtins that are types, except for tuples on ClickHouse
-        # because tuples are used to represent lists of expressions
+        # and duckdb because tuples are used to represent lists of expressions
         if isinstance(obj, type)
-        if (obj != tuple or backend != "clickhouse")
+        if (obj != tuple or backend not in ("clickhouse", "duckdb"))
         if (backend != "pyspark" or vparse(pd.__version__) < vparse("2"))
     ],
 )
@@ -1421,7 +1418,7 @@ def gen_test_name(con: BaseBackend) -> str:
 
 
 @mark.notimpl(
-    ["datafusion", "polars"],
+    ["polars"],
     raises=NotImplementedError,
     reason="overwriting not implemented in ibis for this backend",
 )
