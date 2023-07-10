@@ -142,6 +142,7 @@ def test_isna(backend, alltypes, col, filt):
                     [
                         "bigquery",
                         "clickhouse",
+                        "datafusion",
                         "duckdb",
                         "impala",
                         "postgres",
@@ -195,9 +196,7 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "dask", "pyspark", "mssql", "druid", "exasol"]
-)
+@pytest.mark.notimpl(["clickhouse", "dask", "pyspark", "mssql", "druid", "exasol"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -623,7 +622,7 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     reason="dask doesn't support Series as isin/notin argument",
     raises=NotImplementedError,
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
@@ -641,11 +640,13 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             _.string_col.notin(_.string_col),
             lambda df: ~df.string_col.isin(df.string_col),
             id="notin_col",
+            marks=[pytest.mark.notimpl(["datafusion"])],
         ),
         param(
             (_.bigint_col + 1).notin(_.string_col.length() + 1),
             lambda df: ~(df.bigint_col.add(1)).isin(df.string_col.str.len().add(1)),
             id="notin_expr",
+            marks=[pytest.mark.notimpl(["datafusion"])],
         ),
     ],
 )
@@ -741,24 +742,28 @@ def test_ifelse_column(backend, alltypes, df):
 def test_select_filter(backend, alltypes, df):
     t = alltypes
 
-    expr = t.select("int_col").filter(t.string_col == "4")
+    # XXX: should we consider a builder pattern for select and filter too?
+    #      this would allow us to capture the context
+    # TODO(cpcloud): this now requires the additional string_col projection
+    expr = t.select("int_col", "string_col").filter(t.string_col == "4")
     result = expr.execute()
 
-    expected = df.loc[df.string_col == "4", ["int_col"]].reset_index(drop=True)
+    expected = df.loc[df.string_col == "4", ["int_col", "string_col"]].reset_index(
+        drop=True
+    )
     backend.assert_frame_equal(result, expected)
 
 
 def test_select_filter_select(backend, alltypes, df):
     t = alltypes
-    expr = t.select("int_col").filter(t.string_col == "4").int_col
+    expr = t.select("int_col", "string_col").filter(t.string_col == "4").int_col
     result = expr.execute().rename("int_col")
 
     expected = df.loc[df.string_col == "4", "int_col"].reset_index(drop=True)
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
+@pytest.mark.broken(["mssql"], raises=sa.exc.OperationalError)
 def test_between(backend, alltypes, df):
     expr = alltypes.double_col.between(5, 10)
     result = expr.execute().rename("double_col")
@@ -893,7 +898,7 @@ def test_isin_uncorrelated(
 
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["datafusion", "pyspark", "druid", "exasol"])
+@pytest.mark.notimpl(["pyspark", "druid", "exasol"])
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -1007,9 +1012,7 @@ def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns)
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars"],
-    raises=NotImplementedError,
-    reason="not a SQL backend",
+    ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
 @pytest.mark.notimpl(
     ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
@@ -1358,7 +1361,6 @@ def test_hexdigest(backend, alltypes):
         "pandas",
         "dask",
         "bigquery",
-        "datafusion",
         "druid",
         "impala",
         "mssql",
@@ -1367,9 +1369,9 @@ def test_hexdigest(backend, alltypes):
         "postgres",
         "risingwave",
         "pyspark",
-        "snowflake",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 @pytest.mark.parametrize(
@@ -1391,6 +1393,7 @@ def test_hexdigest(backend, alltypes):
                     reason="raises TrinoUserError",
                 ),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
             ],
         ),
     ],
@@ -1414,9 +1417,9 @@ def test_try_cast_expected(con, from_val, to_type, expected):
         "postgres",
         "risingwave",
         "pyspark",
-        "snowflake",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 @pytest.mark.parametrize(
@@ -1486,9 +1489,9 @@ def test_try_cast_table(backend, con):
         "postgres",
         "risingwave",
         "pyspark",
-        "snowflake",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 @pytest.mark.parametrize(
@@ -1673,8 +1676,13 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     ids=str,
 )
 @pytest.mark.notyet(
-    ["mysql", "snowflake", "trino"],
+    ["mysql", "trino"],
     raises=sa.exc.ProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(
@@ -1726,13 +1734,18 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 
 
 @pytest.mark.notyet(
-    ["mysql", "snowflake", "trino"],
+    ["mysql", "trino"],
     raises=sa.exc.ProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(
     ["exasol"],
     raises=sa.exc.CompileError,
+)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notyet(
     ["clickhouse"],
@@ -1757,11 +1770,6 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     raises=ImpalaHiveServer2Error,
 )
 @pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
-@pytest.mark.xfail_version(
-    duckdb=["duckdb<=0.8.1"],
-    raises=AssertionError,
-    reason="https://github.com/duckdb/duckdb/issues/8412",
-)
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 @pytest.mark.notimpl(
     ["risingwave"],

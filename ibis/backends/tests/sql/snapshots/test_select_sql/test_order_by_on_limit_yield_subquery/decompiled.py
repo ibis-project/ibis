@@ -19,8 +19,8 @@ functional_alltypes = ibis.table(
         "month": "int32",
     },
 )
-agg = functional_alltypes.group_by(functional_alltypes.string_col).aggregate(
-    functional_alltypes.count().name("nrows")
+agg = functional_alltypes.aggregate(
+    [functional_alltypes.count().name("nrows")], by=[functional_alltypes.string_col]
 )
 limit = agg.limit(5)
 

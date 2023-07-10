@@ -22,19 +22,27 @@ lit1 = ibis.literal("baz")
 lit2 = ibis.literal("bar")
 
 result = alltypes.select(
-    [
-        alltypes.g.case()
-        .when(lit, lit2)
-        .when(lit1, ibis.literal("qux"))
-        .else_(ibis.literal("default"))
-        .end()
-        .name("col1"),
-        ibis.case()
-        .when(alltypes.g == lit, lit2)
-        .when(alltypes.g == lit1, alltypes.g)
-        .else_(ibis.literal(None).cast("string"))
-        .end()
-        .name("col2"),
-        alltypes,
-    ]
+    alltypes.g.case()
+    .when(lit, lit2)
+    .when(lit1, ibis.literal("qux"))
+    .else_(ibis.literal("default"))
+    .end()
+    .name("col1"),
+    ibis.case()
+    .when(alltypes.g == lit, lit2)
+    .when(alltypes.g == lit1, alltypes.g)
+    .else_(ibis.literal(None).cast("string"))
+    .end()
+    .name("col2"),
+    alltypes.a,
+    alltypes.b,
+    alltypes.c,
+    alltypes.d,
+    alltypes.e,
+    alltypes.f,
+    alltypes.g,
+    alltypes.h,
+    alltypes.i,
+    alltypes.j,
+    alltypes.k,
 )

@@ -1,2 +1,3 @@
-SELECT t0.*
-FROM star1 t0
+SELECT
+  *
+FROM star1 AS star1_ref
