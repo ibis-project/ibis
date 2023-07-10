@@ -390,12 +390,12 @@ def compile_literal(t, op, *, raw=False, **kwargs):
     if value is None:
         return F.lit(None)
 
-    if raw:
-        return value
-
     if dtype.is_interval():
         # execute returns a Timedelta and value is nanoseconds
         return execute(op).value
+
+    if raw:
+        return value
 
     if isinstance(value, collections.abc.Set):
         # Don't wrap set with F.lit
@@ -1755,11 +1755,11 @@ def compile_dropna_table(t, op, **kwargs):
 @compiles(ops.FillNa)
 def compile_fillna_table(t, op, **kwargs):
     table = t.translate(op.table, **kwargs)
-    raw_replacements = op.replacements
+    repls = op.replacements
     replacements = (
-        dict(raw_replacements)
-        if isinstance(raw_replacements, frozendict)
-        else raw_replacements.value
+        {name: t.translate(value, raw=True, **kwargs) for name, value in repls.items()}
+        if isinstance(repls, frozendict)
+        else repls.value
     )
     return table.fillna(replacements)
 

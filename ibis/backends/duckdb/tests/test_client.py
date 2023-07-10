@@ -3,7 +3,6 @@ from __future__ import annotations
 import duckdb
 import pyarrow as pa
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -25,7 +24,7 @@ def ext_directory(tmpdir_factory):
 @pytest.mark.xfail(
     LINUX and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
-    raises=sa.exc.OperationalError,
+    raises=duckdb.IOException,
 )
 @pytest.mark.xdist_group(name="duckdb-extensions")
 def test_connect_extensions(ext_directory):
@@ -158,3 +157,41 @@ def test_config_options_bad_option(con):
 
     with pytest.raises(KeyError):
         con.settings["i_didnt_set_this"]
+
+
+def test_insert(con):
+    import pandas as pd
+
+    name = ibis.util.guid()
+
+    t = con.create_table(name, schema=ibis.schema({"a": "int64"}))
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}))
+    assert t.count().execute() == 2
+
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}))
+    assert t.count().execute() == 4
+
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}), overwrite=True)
+    assert t.count().execute() == 2
+
+    con.insert(name, t)
+    assert t.count().execute() == 4
+
+    con.insert(name, [{"a": 1}, {"a": 2}], overwrite=True)
+    assert t.count().execute() == 2
+
+    con.insert(name, [(1,), (2,)])
+    assert t.count().execute() == 4
+
+    con.insert(name, {"a": [1, 2]}, overwrite=True)
+    assert t.count().execute() == 2
+
+
+def test_to_other_sql(con, snapshot):
+    pytest.importorskip("snowflake.connector")
+    pytest.importorskip("snowflake.sqlalchemy")
+
+    t = con.table("functional_alltypes")
+
+    sql = ibis.to_sql(t, dialect="snowflake")
+    snapshot.assert_match(sql, "out.sql")

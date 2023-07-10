@@ -1,15 +1,13 @@
 from __future__ import annotations
 
-import duckdb_engine
 import pytest
-import sqlalchemy as sa
+import sqlglot as sg
 from packaging.version import parse as vparse
 from pytest import param
 
-import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.duckdb.datatypes import DuckDBType
+from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
 
 @pytest.mark.parametrize(
@@ -93,39 +91,3 @@ def test_parse_quoted_struct_field():
     assert DuckDBType.from_string('STRUCT("a" INTEGER, "a b c" INTEGER)') == dt.Struct(
         {"a": dt.int32, "a b c": dt.int32}
     )
-
-
-def test_generate_quoted_struct():
-    typ = sat.StructType(
-        {"in come": sa.VARCHAR(), "my count": sa.BIGINT(), "thing": sa.INTEGER()}
-    )
-    result = typ.compile(dialect=duckdb_engine.Dialect())
-    expected = 'STRUCT("in come" VARCHAR, "my count" BIGINT, thing INTEGER)'
-    assert result == expected
-
-
-@pytest.mark.xfail(
-    condition=vparse(duckdb_engine.__version__) < vparse("0.9.2"),
-    raises=AssertionError,
-    reason="mapping from UINTEGER query metadata fixed in 0.9.2",
-)
-def test_read_uint8_from_parquet(tmp_path):
-    import numpy as np
-
-    import ibis
-
-    con = ibis.duckdb.connect()
-
-    # There is an incorrect mapping in duckdb-engine from UInteger -> UInt8
-    # In order to get something that reads as a UInt8, we cast to UInt32 (UInteger)
-    t = ibis.memtable({"a": np.array([1, 2, 3, 4], dtype="uint32")})
-    assert t.a.type() == dt.uint32
-
-    parqpath = tmp_path / "uint.parquet"
-
-    con.to_parquet(t, parqpath)
-
-    # If this doesn't fail, then things are working
-    t2 = con.read_parquet(parqpath)
-
-    assert t2.schema() == t.schema()

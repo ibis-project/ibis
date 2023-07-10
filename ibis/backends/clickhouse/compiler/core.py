@@ -1,25 +1,8 @@
-"""ClickHouse ibis expression to sqlglot compiler.
-
-The compiler is built with a few `singledispatch` functions:
-
-    1. `translate_rel` for compiling `ops.TableNode`s
-    1. `translate_val` for compiling `ops.Value`s
-
-## `translate`
-
-### Node Implementation
-
-There's a single `ops.Node` implementation for `ops.TableNode`s instances.
-
-This function compiles each node in topological order. The topological sorting,
-result caching, and iteration are all handled by
-`ibis.expr.operations.core.Node.map`.
-"""
+"""ClickHouse ibis expression to sqlglot compiler."""
 
 from __future__ import annotations
 
-import itertools
-from typing import TYPE_CHECKING, Any
+import functools
 
 import sqlglot as sg
 

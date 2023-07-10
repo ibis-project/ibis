@@ -277,11 +277,17 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_Decimal(cls, dtype: dt.Decimal) -> sge.DataType:
+        if (precision := dtype.precision) is None:
+            precision = cls.default_decimal_precision
+
+        if (scale := dtype.scale) is None:
+            scale = cls.default_decimal_scale
+
         return sge.DataType(
             this=typecode.DECIMAL,
             expressions=[
-                sge.DataTypeParam(this=sge.Literal.number(dtype.precision)),
-                sge.DataTypeParam(this=sge.Literal.number(dtype.scale)),
+                sge.DataTypeParam(this=sge.Literal.number(precision)),
+                sge.DataTypeParam(this=sge.Literal.number(scale)),
             ],
         )
 

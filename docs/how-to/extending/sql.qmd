@@ -177,7 +177,7 @@ with closing(con.raw_sql("CREATE TEMP TABLE my_table AS SELECT * FROM RANGE(10)"
 
 Here's an example:
 
-```{python}
+```python
 cur = con.raw_sql("CREATE TEMP TABLE t AS SELECT * FROM RANGE(10)")
 cur.close()  # <1>
 ```

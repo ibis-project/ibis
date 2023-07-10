@@ -1,15 +1,34 @@
 SELECT
-  SUM(t0.l_extendedprice) / CAST(7.0 AS REAL(53)) AS avg_yearly
-FROM main.lineitem AS t0
-JOIN main.part AS t1
-  ON t1.p_partkey = t0.l_partkey
+  (
+    SUM(t2.l_extendedprice) / CAST(7.0 AS DOUBLE)
+  ) AS avg_yearly
+FROM (
+  SELECT
+    t0.*,
+    t1.*
+  FROM "lineitem" AS t0
+  INNER JOIN "part" AS t1
+    ON (
+      t1.p_partkey = t0.l_partkey
+    )
+) AS t2
 WHERE
-  t1.p_brand = 'Brand#23'
-  AND t1.p_container = 'MED BOX'
-  AND t0.l_quantity < (
-    SELECT
-      AVG(t0.l_quantity) AS "Mean(l_quantity)"
-    FROM main.lineitem AS t0
-    WHERE
-      t0.l_partkey = t1.p_partkey
-  ) * CAST(0.2 AS REAL(53))
+  (
+    t2.p_brand = 'Brand#23'
+  )
+  AND (
+    t2.p_container = 'MED BOX'
+  )
+  AND (
+    t2.l_quantity < (
+      (
+        SELECT
+          AVG(t0.l_quantity) AS "Mean(l_quantity)"
+        FROM "lineitem" AS t0
+        WHERE
+          (
+            t0.l_partkey = t2.p_partkey
+          )
+      ) * CAST(0.2 AS DOUBLE)
+    )
+  )

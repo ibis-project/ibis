@@ -92,6 +92,6 @@ def make_cast(
     converter: SqlglotType,
 ) -> Callable[[sg.exp.Expression, dt.DataType], sg.exp.Cast]:
     def cast(arg: sg.exp.Expression, to: dt.DataType) -> sg.exp.Cast:
-        return sg.cast(arg, to=converter.from_ibis(to))
+        return sg.cast(_to_sqlglot(arg), to=converter.from_ibis(to))
 
     return cast

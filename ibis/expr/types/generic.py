@@ -1128,9 +1128,13 @@ class Value(Expr):
         return super().__hash__()
 
     def __eq__(self, other: Value) -> ir.BooleanValue:
+        if other is None:
+            return _binop(ops.IdenticalTo, self, other)
         return _binop(ops.Equals, self, other)
 
     def __ne__(self, other: Value) -> ir.BooleanValue:
+        if other is None:
+            return ~self.__eq__(other)
         return _binop(ops.NotEquals, self, other)
 
     def __ge__(self, other: Value) -> ir.BooleanValue:

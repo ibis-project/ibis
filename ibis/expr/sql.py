@@ -336,12 +336,12 @@ def show_sql(
     >>> expr = t.select(c=_.a * 2)
     >>> ibis.show_sql(expr)  # duckdb dialect by default
     SELECT
-      t0.a * CAST(2 AS TINYINT) AS c
-    FROM t AS t0
-    >>> ibis.show_sql(expr, dialect="mysql")
-    SELECT
-      t0.a * 2 AS c
-    FROM t AS t0
+      (
+        t0.a
+      ) * (
+        CAST(2 AS TINYINT)
+      ) AS c
+    FROM "t" AS t0
     """
     print(to_sql(expr, dialect=dialect), file=file)
 
@@ -417,6 +417,6 @@ def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
         else:
             read = write = getattr(backend, "_sqlglot_dialect", dialect)
 
-    sql = backend._to_sql(expr, **kwargs)
+    sql = backend._to_sql(expr.unbind(), **kwargs)
     (pretty,) = sg.transpile(sql, read=read, write=write, pretty=True)
     return SQLString(pretty)

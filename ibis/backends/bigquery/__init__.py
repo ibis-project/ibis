@@ -716,6 +716,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
         arrow_t = self._cursor_to_arrow(cursor)
         df = arrow_t.to_pandas(timestamp_as_object=True)
+        df.columns = list(schema.names)
         return PandasData.convert_table(df, schema)
 
     def _cursor_to_arrow(

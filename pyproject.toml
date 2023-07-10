@@ -67,7 +67,6 @@ datafusion = { version = ">=0.6,<34", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
 duckdb = { version = ">=0.8.1,<1", optional = true }
-duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
 geoalchemy2 = { version = ">=0.6.3,<1", optional = true }
 geopandas = { version = ">=0.6,<1", optional = true }
@@ -158,7 +157,6 @@ all = [
   "datafusion",
   "db-dtypes",
   "duckdb",
-  "duckdb-engine",
   "deltalake",
   "fsspec",
   "geoalchemy2",
@@ -196,7 +194,7 @@ clickhouse = ["clickhouse-connect", "sqlalchemy"]
 dask = ["dask", "regex"]
 datafusion = ["datafusion"]
 druid = ["pydruid", "sqlalchemy"]
-duckdb = ["duckdb", "duckdb-engine", "sqlalchemy", "sqlalchemy-views"]
+duckdb = ["duckdb", "packaging", "sqlalchemy"]
 exasol = ["sqlalchemy", "sqlalchemy-exasol", "sqlalchemy-views"]
 flink = []
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
@@ -300,9 +298,6 @@ filterwarnings = [
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
   # numpy, coming from a pandas call
   'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
-  # duckdb-engine
-  'ignore:Dialect .+ does \*not\* support Decimal:',
-  "ignore:duckdb-engine doesn't yet support reflection on indices:",
   # druid
   'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
   # ibis

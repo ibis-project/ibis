@@ -373,6 +373,8 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         if df.empty:
             df = pd.DataFrame(columns=schema.names)
+        else:
+            df.columns = list(schema.names)
 
         # TODO: remove the extra conversion
         #

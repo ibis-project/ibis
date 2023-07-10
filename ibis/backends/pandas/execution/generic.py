@@ -1286,7 +1286,8 @@ def execute_node_fillna_dataframe_scalar(op, df, replacements, **kwargs):
 
 @execute_node.register(ops.FillNa, pd.DataFrame)
 def execute_node_fillna_dataframe_dict(op, df, **kwargs):
-    return df.fillna(dict(op.replacements))
+    replmap = {col: execute(repl, **kwargs) for col, repl in op.replacements.items()}
+    return df.fillna(replmap)
 
 
 @execute_node.register(ops.NullIf, simple_types, simple_types)

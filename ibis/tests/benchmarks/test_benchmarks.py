@@ -715,7 +715,6 @@ def test_repr_join(benchmark, customers, orders, orders_items, products):
 @pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no_overwrite"])
 def test_insert_duckdb(benchmark, overwrite, tmp_path):
     pytest.importorskip("duckdb")
-    pytest.importorskip("duckdb_engine")
 
     n_rows = int(1e4)
     table_name = "t"
@@ -747,7 +746,9 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
 
 
 def test_parse_many_duckdb_types(benchmark):
-    parse = pytest.importorskip("ibis.backends.duckdb.datatypes").DuckDBType.from_string
+    parse = pytest.importorskip(
+        "ibis.backends.base.sqlglot.datatypes"
+    ).DuckDBType.from_string
 
     def parse_many(types):
         list(map(parse, types))
@@ -804,7 +805,6 @@ def test_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
 
 def test_ibis_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
     pytest.importorskip("duckdb")
-    pytest.importorskip("duckdb_engine")
 
     con = ibis.duckdb.connect(ddb, read_only=True)
 
@@ -874,7 +874,6 @@ def test_big_join_expr(benchmark, src, diff):
 
 def test_big_join_execute(benchmark, nrels):
     pytest.importorskip("duckdb")
-    pytest.importorskip("duckdb_engine")
 
     con = ibis.duckdb.connect()
 

@@ -31,6 +31,7 @@ from ibis.backends.pyspark import ddl
 from ibis.backends.pyspark.client import PySparkTable
 from ibis.backends.pyspark.compiler import PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import PySparkType
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -233,7 +234,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
 
     def fetch_from_cursor(self, cursor, schema):
         df = cursor.query.toPandas()  # blocks until finished
-        return schema.apply_to(df)
+        return PandasData.convert_table(df, schema)
 
     def raw_sql(self, query: str) -> _PySparkCursor:
         query = self._session.sql(query)

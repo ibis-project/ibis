@@ -109,12 +109,9 @@ class PandasData(DataMapper):
                 "schema column count does not match input data column count"
             )
 
-        for (name, series), dtype in zip(df.items(), schema.types):
-            df[name] = cls.convert_column(series, dtype)
+        for name, dtype in schema.items():
+            df[name] = cls.convert_column(df[name], dtype)
 
-        # return data with the schema's columns which may be different than the
-        # input columns
-        df.columns = schema.names
         return df
 
     @classmethod
