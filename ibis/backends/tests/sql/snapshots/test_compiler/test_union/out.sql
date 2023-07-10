@@ -1,18 +1,25 @@
-SELECT t0.`key`, t0.`value`
+SELECT
+  t1.string_col AS key,
+  CAST(t1.float_col AS DOUBLE) AS value
 FROM (
-  WITH t1 AS (
-    SELECT t3.`string_col` AS `key`, t3.`double_col` AS `value`
-    FROM functional_alltypes t3
-    WHERE t3.`int_col` <= 0
-  ),
-  t2 AS (
-    SELECT t3.`string_col` AS `key`, CAST(t3.`float_col` AS double) AS `value`
-    FROM functional_alltypes t3
-    WHERE t3.`int_col` > 0
-  )
-  SELECT *
-  FROM t2
-  UNION
-  SELECT *
-  FROM t1
-) t0
+  SELECT
+    *
+  FROM functional_alltypes AS t0
+  WHERE
+    (
+      t0.int_col > CAST(0 AS TINYINT)
+    )
+) AS t1
+UNION
+SELECT
+  t2.string_col AS key,
+  t2.double_col AS value
+FROM (
+  SELECT
+    *
+  FROM functional_alltypes AS t0
+  WHERE
+    (
+      t0.int_col <= CAST(0 AS TINYINT)
+    )
+) AS t2

@@ -1,7 +1,19 @@
-SELECT t0.*
-FROM star1 t0
-WHERE t0.`f` > (
-  SELECT avg(t0.`f`) AS `Mean(f)`
-  FROM star1 t0
-  WHERE t0.`foo_id` = 'foo'
-)
+SELECT
+  *
+FROM star1 AS t0
+WHERE
+  (
+    t0.f > (
+      SELECT
+        AVG(t1.f) AS "Mean(f)"
+      FROM (
+        SELECT
+          *
+        FROM star1 AS t0
+        WHERE
+          (
+            t0.foo_id = 'foo'
+          )
+      ) AS t1
+    )
+  )

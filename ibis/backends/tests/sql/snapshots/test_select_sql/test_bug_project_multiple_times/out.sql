@@ -1,24 +1,55 @@
-WITH t0 AS (
-  SELECT t3.*, t4.`n_name`, t5.`r_name`
-  FROM tpch_customer t3
-    INNER JOIN tpch_nation t4
-      ON t3.`c_nationkey` = t4.`n_nationkey`
-    INNER JOIN tpch_region t5
-      ON t4.`n_regionkey` = t5.`r_regionkey`
-),
-t1 AS (
-  SELECT t0.`n_name`,
-         sum(CAST(t0.`c_acctbal` AS double)) AS `Sum(Cast(c_acctbal, float64))`
-  FROM t0
-  GROUP BY 1
-),
-t2 AS (
-  SELECT t1.*
-  FROM t1
-  ORDER BY t1.`Sum(Cast(c_acctbal, float64))` DESC
+SELECT
+  t5.c_name AS c_name,
+  t5.r_name AS r_name,
+  t5.n_name AS n_name
+FROM (
+  SELECT
+    t0.c_custkey AS c_custkey,
+    t0.c_name AS c_name,
+    t0.c_address AS c_address,
+    t0.c_nationkey AS c_nationkey,
+    t0.c_phone AS c_phone,
+    t0.c_acctbal AS c_acctbal,
+    t0.c_mktsegment AS c_mktsegment,
+    t0.c_comment AS c_comment,
+    t1.n_name AS n_name,
+    t2.r_name AS r_name
+  FROM tpch_customer AS t0
+  INNER JOIN tpch_nation AS t1
+    ON t0.c_nationkey = t1.n_nationkey
+  INNER JOIN tpch_region AS t2
+    ON t1.n_regionkey = t2.r_regionkey
+) AS t5
+SEMI JOIN (
+  SELECT
+    *
+  FROM (
+    SELECT
+      t5.n_name AS n_name,
+      SUM(CAST(t5.c_acctbal AS DOUBLE)) AS "Sum(Cast(c_acctbal, float64))"
+    FROM (
+      SELECT
+        t0.c_custkey AS c_custkey,
+        t0.c_name AS c_name,
+        t0.c_address AS c_address,
+        t0.c_nationkey AS c_nationkey,
+        t0.c_phone AS c_phone,
+        t0.c_acctbal AS c_acctbal,
+        t0.c_mktsegment AS c_mktsegment,
+        t0.c_comment AS c_comment,
+        t1.n_name AS n_name,
+        t2.r_name AS r_name
+      FROM tpch_customer AS t0
+      INNER JOIN tpch_nation AS t1
+        ON t0.c_nationkey = t1.n_nationkey
+      INNER JOIN tpch_region AS t2
+        ON t1.n_regionkey = t2.r_regionkey
+    ) AS t5
+    GROUP BY
+      1
+  ) AS t6
+  ORDER BY
+    t6."Sum(Cast(c_acctbal, float64))" DESC
   LIMIT 10
-)
-SELECT t0.`c_name`, t0.`r_name`, t0.`n_name`
-FROM t0
-  LEFT SEMI JOIN t2
-    ON t0.`n_name` = t2.`n_name`
+) AS t8
+  ON t5.n_name = t8.n_name

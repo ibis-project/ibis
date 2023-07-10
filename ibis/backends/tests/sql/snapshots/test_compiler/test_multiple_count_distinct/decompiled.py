@@ -20,9 +20,10 @@ functional_alltypes = ibis.table(
     },
 )
 
-result = functional_alltypes.group_by(functional_alltypes.string_col).aggregate(
+result = functional_alltypes.aggregate(
     [
         functional_alltypes.int_col.nunique().name("int_card"),
         functional_alltypes.smallint_col.nunique().name("smallint_card"),
-    ]
+    ],
+    by=[functional_alltypes.string_col],
 )
