@@ -30,7 +30,7 @@ def test_tpc_h01(lineitem):
         avg_qty=t.l_quantity.mean(),
         avg_price=t.l_extendedprice.mean(),
         avg_disc=t.l_discount.mean(),
-        count_order=t.count(),
+        count_order=lambda t: t.count(),
     )
     q = q.order_by(["l_returnflag", "l_linestatus"])
     return q

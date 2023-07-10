@@ -20,18 +20,11 @@ functional_alltypes = ibis.table(
     },
 )
 lit = ibis.literal(0)
-alias = functional_alltypes.string_col.name("key")
-difference = (
-    functional_alltypes.select(
-        [alias, functional_alltypes.float_col.cast("float64").name("value")]
-    )
-    .filter(functional_alltypes.int_col > lit)
-    .difference(
-        functional_alltypes.select(
-            [alias, functional_alltypes.double_col.name("value")]
-        ).filter(functional_alltypes.int_col <= lit),
-        distinct=True,
-    )
-)
+f = functional_alltypes.filter(functional_alltypes.int_col > lit)
+f1 = functional_alltypes.filter(functional_alltypes.int_col <= lit)
 
-result = difference.select([difference.key, difference.value])
+result = f.select(
+    f.string_col.name("key"), f.float_col.cast("float64").name("value")
+).difference(
+    f1.select(f1.string_col.name("key"), f1.double_col.name("value")), distinct=True
+)

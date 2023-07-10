@@ -1,8 +1,13 @@
-SELECT t0.*
+SELECT
+  *
 FROM (
-  SELECT t1.`dest`, avg(t1.`arrdelay`) AS `Mean(arrdelay)`
-  FROM airlines t1
-  GROUP BY 1
-) t0
-ORDER BY t0.`Mean(arrdelay)` DESC
+  SELECT
+    t0.dest AS dest,
+    AVG(t0.arrdelay) AS "Mean(arrdelay)"
+  FROM airlines AS t0
+  GROUP BY
+    1
+) AS t1
+ORDER BY
+  t1."Mean(arrdelay)" DESC
 LIMIT 10
