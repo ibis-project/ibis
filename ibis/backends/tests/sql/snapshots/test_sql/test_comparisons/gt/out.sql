@@ -1,0 +1,1 @@
+t0.double_col > CAST(5 AS TINYINT) AS tmp

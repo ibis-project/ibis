@@ -1,11 +1,16 @@
-WITH t0 AS (
-  SELECT t2.*
-  FROM t t2
-  ORDER BY t2.`b` ASC
-)
-SELECT t1.`b`, count(1) AS `b_count`
+SELECT
+  t2.b AS b,
+  COUNT(*) AS b_count
 FROM (
-  SELECT t0.`b`
-  FROM t0
-) t1
-GROUP BY 1
+  SELECT
+    t1.b AS b
+  FROM (
+    SELECT
+      *
+    FROM t AS t0
+    ORDER BY
+      t0.b ASC
+  ) AS t1
+) AS t2
+GROUP BY
+  1

@@ -5,10 +5,8 @@ from pytest import param
 
 import ibis
 from ibis import _
-
-# from ibis.backends.base.sql.compiler import Compiler
-from ibis.backends.tests.sql.conftest import get_query, to_sql
-from ibis.tests.util import assert_decompile_roundtrip, schemas_eq
+from ibis.backends.tests.sql.conftest import to_sql
+from ibis.tests.util import assert_decompile_roundtrip
 
 pytestmark = pytest.mark.duckdb
 
@@ -429,14 +427,15 @@ def test_scalar_subquery_different_table(foo, bar, snapshot):
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
-def test_exists_subquery_repr(t1, t2):
-    # GH #660
+# TODO(kszucs): should do snapshot testing instead
+# def test_exists_subquery_repr(t1, t2):
+#     # GH #660
 
-    cond = t1.key1 == t2.key1
-    expr = t1[cond.any()]
-    stmt = get_query(expr)
+#     cond = t1.key1 == t2.key1
+#     expr = t1[cond.any()]
+#     stmt = get_query(expr)
 
-    repr(stmt.where[0])
+#     repr(stmt.where[0])
 
 
 def test_filter_inside_exists(snapshot):
@@ -491,9 +490,6 @@ def test_multiple_limits(functional_alltypes, snapshot):
     t = functional_alltypes
 
     expr = t.limit(20).limit(10)
-    stmt = get_query(expr)
-
-    assert stmt.limit.n == 10
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
 
@@ -860,3 +856,13 @@ def test_chain_limit_doesnt_collapse(snapshot):
     )
     expr = t.city.topk(10)[-5:]
     snapshot.assert_match(to_sql(expr), "result.sql")
+
+
+def test_join_with_conditional_aggregate(snapshot):
+    left = ibis.table({"on": "int", "by": "string"}, name="left")
+    right = ibis.table({"on": "int", "by": "string", "val": "float"}, name="right")
+    stat = right[(right.by == left.by) & (right.on <= left.on)]["on"].max()
+    merged = left.join(right, how="left", predicates=left.by == right.by)[
+        right.on == stat
+    ]
+    snapshot.assert_match(to_sql(merged), "result.sql")

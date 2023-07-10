@@ -1,16 +1,24 @@
-WITH t0 AS (
-  SELECT t2.*
-  FROM bar t2
-  WHERE t2.`id` < 3
-),
-t1 AS (
-  SELECT t2.*
-  FROM foo t2
-  WHERE t2.`id` < 2
-)
-SELECT t1.`id` AS `left_id`, t1.`desc` AS `left_desc`, t0.`id` AS `right_id`,
-       t0.`desc` AS `right_desc`
-FROM t1
-  LEFT OUTER JOIN t0
-    ON (t1.`id` = t0.`id`) AND
-       (t1.`desc` = t0.`desc`)
+SELECT
+  t2.id AS left_id,
+  t2.desc AS left_desc,
+  t3.id AS right_id,
+  t3.desc AS right_desc
+FROM (
+  SELECT
+    *
+  FROM foo AS t0
+  WHERE
+    (
+      t0.id < CAST(2 AS TINYINT)
+    )
+) AS t2
+LEFT OUTER JOIN (
+  SELECT
+    *
+  FROM bar AS t1
+  WHERE
+    (
+      t1.id < CAST(3 AS TINYINT)
+    )
+) AS t3
+  ON t2.id = t3.id AND t2.desc = t3.desc

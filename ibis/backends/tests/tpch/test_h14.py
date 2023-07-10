@@ -8,13 +8,7 @@ from .conftest import add_date, tpch_test
 
 
 @tpch_test
-@pytest.mark.notimpl(
-    ["snowflake"],
-    raises=AssertionError,
-    reason="ibis doesn't preserve decimal types in aggregations",
-)
 @pytest.mark.xfail_version(
-    duckdb=["sqlalchemy>=2"],
     trino=["sqlalchemy>=2"],
     reason="slightly different code is generated for sqlalchemy 2 for aggregations",
 )
