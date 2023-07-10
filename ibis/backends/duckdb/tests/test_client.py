@@ -3,7 +3,6 @@ from __future__ import annotations
 import duckdb
 import pyarrow as pa
 import pytest
-import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -25,7 +24,7 @@ def ext_directory(tmpdir_factory):
 @pytest.mark.xfail(
     LINUX and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
-    raises=sa.exc.OperationalError,
+    raises=duckdb.IOException,
 )
 @pytest.mark.xdist_group(name="duckdb-extensions")
 def test_connect_extensions(ext_directory):
@@ -76,11 +75,11 @@ def test_cross_db(tmpdir):
 
     con2.attach(path1, name="test1", read_only=True)
 
-    t1_from_con2 = con2.table("t1", schema="test1.main")
+    t1_from_con2 = con2.table("t1", schema="main", database="test1")
     assert t1_from_con2.schema() == t2.schema()
     assert t1_from_con2.execute().equals(t2.execute())
 
-    foo_t1_from_con2 = con2.table("t1", schema="test1.foo")
+    foo_t1_from_con2 = con2.table("t1", schema="foo", database="test1")
     assert foo_t1_from_con2.schema() == t2.schema()
     assert foo_t1_from_con2.execute().equals(t2.execute())
 
@@ -115,24 +114,26 @@ def test_attach_detach(tmpdir):
     con2.detach(name)
     assert name not in con2.list_databases()
 
-    with pytest.raises(sa.exc.ProgrammingError):
+    with pytest.raises(duckdb.BinderException):
         con2.detach(name)
 
 
 @pytest.mark.parametrize(
-    "scale",
+    ("scale", "expected_scale"),
     [
-        None,
-        param(0, id="seconds"),
-        param(3, id="millis"),
-        param(6, id="micros"),
-        param(9, id="nanos"),
+        param(None, 6, id="default"),
+        param(0, 0, id="seconds"),
+        param(3, 3, id="millis"),
+        param(6, 6, id="micros"),
+        param(9, 9, id="nanos"),
     ],
 )
-def test_create_table_with_timestamp_scales(con, scale):
+def test_create_table_with_timestamp_scales(con, scale, expected_scale):
     schema = ibis.schema(dict(ts=dt.Timestamp(scale=scale)))
-    t = con.create_table(gen_name("duckdb_timestamp_scale"), schema=schema, temp=True)
-    assert t.schema() == schema
+    expected = ibis.schema(dict(ts=dt.Timestamp(scale=expected_scale)))
+    name = gen_name("duckdb_timestamp_scale")
+    t = con.create_table(name, schema=schema, temp=True)
+    assert t.schema() == expected
 
 
 def test_config_options(con):
@@ -153,8 +154,45 @@ def test_config_options(con):
 
 
 def test_config_options_bad_option(con):
-    with pytest.raises(sa.exc.ProgrammingError):
+    with pytest.raises(duckdb.CatalogException):
         con.settings["not_a_valid_option"] = "oopsie"
 
     with pytest.raises(KeyError):
         con.settings["i_didnt_set_this"]
+
+
+def test_insert(con):
+    import pandas as pd
+
+    name = ibis.util.guid()
+
+    t = con.create_table(name, schema=ibis.schema({"a": "int64"}))
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}))
+    assert t.count().execute() == 2
+
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}))
+    assert t.count().execute() == 4
+
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}), overwrite=True)
+    assert t.count().execute() == 2
+
+    con.insert(name, t)
+    assert t.count().execute() == 4
+
+    con.insert(name, [{"a": 1}, {"a": 2}], overwrite=True)
+    assert t.count().execute() == 2
+
+    con.insert(name, [(1,), (2,)])
+    assert t.count().execute() == 4
+
+    con.insert(name, {"a": [1, 2]}, overwrite=True)
+    assert t.count().execute() == 2
+
+
+def test_to_other_sql(con, snapshot):
+    pytest.importorskip("snowflake.connector")
+
+    t = con.table("functional_alltypes")
+
+    sql = ibis.to_sql(t, dialect="snowflake")
+    snapshot.assert_match(sql, "out.sql")

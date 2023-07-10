@@ -1,3 +1,3 @@
 SELECT
-  t0.id
+  t0.id AS id
 FROM functional_alltypes AS t0

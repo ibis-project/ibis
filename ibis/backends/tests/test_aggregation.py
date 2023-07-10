@@ -48,6 +48,11 @@ try:
 except ImportError:
     PolarsInvalidOperationError = None
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
 
 @reduction(input_type=[dt.double], output_type=dt.double)
 def mean_udf(s):
@@ -759,16 +764,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="collect",
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "impala",
-                        "mysql",
-                        "sqlite",
-                        "datafusion",
-                        "mssql",
-                        "druid",
-                        "oracle",
-                        "exasol",
-                    ],
+                    ["impala", "mysql", "sqlite", "mssql", "druid", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(
@@ -851,7 +847,7 @@ def test_reduction_ops(
             id="cond",
             marks=[
                 pytest.mark.notyet(
-                    ["snowflake", "mysql"],
+                    ["mysql"],
                     raises=com.UnsupportedOperationError,
                     reason="backend does not support filtered count distinct with more than one column",
                 ),
@@ -1012,7 +1008,7 @@ def test_quantile(
             id="covar_pop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "polars", "druid"],
+                    ["dask", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1027,7 +1023,7 @@ def test_quantile(
             id="covar_samp",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "polars", "druid"],
+                    ["dask", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1042,7 +1038,7 @@ def test_quantile(
             id="corr_pop",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "druid"],
+                    ["dask", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1067,11 +1063,16 @@ def test_quantile(
             id="corr_samp",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "druid"],
+                    ["dask", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql", "sqlite", "flink"],
+                    ["duckdb", "snowflake"],
+                    raises=com.UnsupportedOperationError,
+                    reason="backend only implements population correlation coefficient",
+                ),
+                pytest.mark.notyet(
+                    ["impala", "mysql", "sqlite"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1080,7 +1081,7 @@ def test_quantile(
                     reason="Correlation with how='sample' is not supported.",
                 ),
                 pytest.mark.notyet(
-                    ["trino", "postgres", "duckdb", "snowflake", "oracle"],
+                    ["trino", "postgres", "oracle"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),
@@ -1096,7 +1097,7 @@ def test_quantile(
             id="covar_pop_bool",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "polars", "druid"],
+                    ["dask", "polars", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1115,7 +1116,7 @@ def test_quantile(
             id="corr_pop_bool",
             marks=[
                 pytest.mark.notimpl(
-                    ["dask", "pandas", "druid"],
+                    ["dask", "druid"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -1343,10 +1344,7 @@ def test_date_quantile(alltypes, func):
             "::",
             id="expr",
             marks=[
-                pytest.mark.notyet(
-                    ["duckdb", "trino"],
-                    raises=com.UnsupportedOperationError,
-                ),
+                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(
                     ["bigquery"],
                     raises=GoogleBadRequest,
@@ -1589,8 +1587,8 @@ def test_binds_are_cast(alltypes):
 
 def test_agg_sort(alltypes):
     query = alltypes.aggregate(count=alltypes.count())
-    query = query.order_by(alltypes.year)
-    query.execute()
+    with pytest.raises(com.IntegrityError):
+        query.order_by(alltypes.year)
 
 
 @pytest.mark.xfail_version(
@@ -1641,16 +1639,17 @@ def test_grouped_case(backend, con):
     ["datafusion", "mssql", "polars", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
-    ["dask", "pandas"],
+    ["dask"],
     reason="Dask and Pandas do not windowize this operation correctly",
     raises=AssertionError,
 )
 @pytest.mark.notyet(["impala", "flink"], raises=com.UnsupportedOperationError)
 @pytest.mark.notyet(["clickhouse"], raises=ClickhouseDatabaseError)
-@pytest.mark.notyet(["druid", "trino", "snowflake"], raises=sa.exc.ProgrammingError)
-@pytest.mark.notyet(["mysql"], raises=sa.exc.NotSupportedError)
-@pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
-@pytest.mark.notyet(["pyspark"], raises=PysparkAnalysisException)
+@pytest.mark.notyet(["druid", "trino"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
+@pytest.mark.notyet("mysql", raises=sa.exc.NotSupportedError)
+@pytest.mark.notyet("oracle", raises=sa.exc.DatabaseError)
+@pytest.mark.notyet("pyspark", raises=PysparkAnalysisException)
 def test_group_concat_over_window(backend, con):
     input_df = pd.DataFrame(
         {
