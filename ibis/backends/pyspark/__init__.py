@@ -588,6 +588,37 @@ class Backend(BaseSQLBackend):
         t.unpersist()
         assert not t.is_cached
 
+    def read_delta(
+        self,
+        source: str | Path,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a Delta Lake table as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The path to the Delta Lake table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.load.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source = util.normalize_filename(source)
+        spark_df = self._session.read.format("delta").load(source, **kwargs)
+        table_name = table_name or util.gen_name("read_delta")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
     def read_parquet(
         self,
         source: str | Path,
@@ -723,7 +754,7 @@ class Backend(BaseSQLBackend):
         Parameters
         ----------
         expr
-            The ibis expression to execute and persist to CSV.
+            The ibis expression to execute and persist to parquet.
         path
             The data source. A string or Path to the  file.
         **kwargs
@@ -752,3 +783,25 @@ class Backend(BaseSQLBackend):
             PySpark CSV write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.csv.html
         """
         expr.compile().write.csv(os.fspath(path), **kwargs)
+
+    @util.experimental
+    def to_delta(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a Delta Lake table.
+
+        This method is eager and will execute the associated expression immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to a Delta Lake table.
+        path
+            The data source. A string or Path to the Delta Lake table.
+        **kwargs
+            PySpark Delta Lake table write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.save.html
+        """
+        expr.compile().write.format("delta").save(os.fspath(path), **kwargs)
