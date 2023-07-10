@@ -296,7 +296,10 @@ def dropna(op, **kw):
 
     if op.how == 'all':
         cols = pl.col(subset) if subset else pl.all()
-        return lf.filter(~pl.all(cols.is_null()))
+        try:
+            return lf.filter(~pl.all_horizontal(cols.is_null()))
+        except AttributeError:
+            return lf.filter(~pl.all(cols.is_null()))
 
     return lf.drop_nulls(subset)
 
@@ -399,13 +402,19 @@ def coalesce(op, **kw):
 @translate.register(ops.Least)
 def least(op, **kw):
     arg = [translate(arg, **kw) for arg in op.arg]
-    return pl.min(arg)
+    try:
+        return pl.min_horizontal(arg)
+    except AttributeError:
+        return pl.min(arg)
 
 
 @translate.register(ops.Greatest)
 def greatest(op, **kw):
     arg = [translate(arg, **kw) for arg in op.arg]
-    return pl.max(arg)
+    try:
+        return pl.max_horizontal(arg)
+    except AttributeError:
+        return pl.max(arg)
 
 
 @translate.register(ops.Contains)
@@ -414,7 +423,10 @@ def contains(op, **kw):
 
     if isinstance(op.options, tuple):
         options = list(map(translate, op.options))
-        return pl.any([value == option for option in options])
+        try:
+            return pl.any_horizontal([value == option for option in options])
+        except AttributeError:
+            return pl.any([value == option for option in options])
     else:
         options = translate(op.options, **kw)
         return value.is_in(options)
@@ -426,7 +438,10 @@ def not_contains(op, **kw):
 
     if isinstance(op.options, tuple):
         options = list(map(translate, op.options))
-        return ~pl.any([value == option for option in options])
+        try:
+            return ~pl.any_horizontal([value == option for option in options])
+        except AttributeError:
+            return ~pl.any([value == option for option in options])
     else:
         options = translate(op.options, **kw)
         return ~value.is_in(options)

@@ -1615,14 +1615,7 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
             lambda s: day_name(s.dt).str.len().sum(),
             id="day_of_week_full_name",
-            marks=[
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="Polars is broken for cased group by keys as of at least 0.16.12",
-                ),
-            ],
+            marks=[pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)],
         ),
     ],
 )
