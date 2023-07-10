@@ -210,7 +210,7 @@ def test_to_pyarrow_batches_memtable(con):
     assert n == 3
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala"])
 def test_table_to_parquet(tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet)
@@ -237,12 +237,14 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     ],
     reason="no partitioning support",
 )
-@pytest.mark.notimpl(
-    ["dask", "impala", "pyspark", "druid"], reason="No to_parquet support"
-)
+@pytest.mark.notimpl(["dask", "impala", "druid"], reason="No to_parquet support")
 def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     outparquet = tmp_path / "outhive.parquet"
-    awards_players.to_parquet(outparquet, partition_by="yearID")
+
+    if con.name == "pyspark":
+        awards_players.to_parquet(outparquet, partitionBy="yearID")
+    else:
+        awards_players.to_parquet(outparquet, partition_by="yearID")
 
     assert outparquet.is_dir()
 
@@ -259,7 +261,7 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     backend.assert_frame_equal(awards_players.execute(), awards_players.execute())
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 

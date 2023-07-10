@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -707,3 +708,47 @@ class Backend(BaseSQLBackend):
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
         raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
+
+    @util.experimental
+    def to_parquet(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to parquet files.
+
+        This method is eager and will execute the associated expression immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to CSV.
+        path
+            The data source. A string or Path to the  file.
+        **kwargs
+            PySpark Parquet write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.parquet.html
+        """
+        expr.compile().write.parquet(os.fspath(path), **kwargs)
+
+    @util.experimental
+    def to_csv(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a CSV file.
+
+        This method is eager and will execute the associated expression immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to CSV.
+        path
+            The data source. A string or Path to the CSV.
+        **kwargs
+            PySpark CSV write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.csv.html
+        """
+        expr.compile().write.csv(os.fspath(path), **kwargs)
