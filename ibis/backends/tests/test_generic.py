@@ -979,9 +979,7 @@ def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns)
     raises=com.IntegrityError, reason="inner join convenience not implemented"
 )
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars"],
-    raises=NotImplementedError,
-    reason="not a SQL backend",
+    ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
 )
 @pytest.mark.notimpl(
     ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
@@ -1234,6 +1232,7 @@ def test_hash_consistent(backend, alltypes):
         "snowflake",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 @pytest.mark.parametrize(
@@ -1301,6 +1300,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.broken(["datafusion"], reason="casts to 1672531200000000"),
             ],
         ),
     ],
@@ -1323,6 +1323,7 @@ def test_try_cast_null(con, from_val, to_type):
         "snowflake",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 def test_try_cast_table(backend, con):
@@ -1349,6 +1350,7 @@ def test_try_cast_table(backend, con):
         "snowflake",
         "sqlite",
         "exasol",
+        "snowflake",
     ]
 )
 @pytest.mark.notimpl(["druid"], strict=False)
@@ -1541,6 +1543,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",
 )
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
 @pytest.mark.notimpl(
     ["mssql"],
     raises=sa.exc.CompileError,
@@ -1600,6 +1607,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(["exasol"], raises=sa.exc.CompileError)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,

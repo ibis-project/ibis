@@ -1520,7 +1520,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit us. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["duckdb", "mssql", "clickhouse"],
+                    ["mssql", "clickhouse", "duckdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
@@ -1537,12 +1537,12 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=com.UnsupportedArgumentError,
-                    reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
+                    reason="PySpark backend does not support timestamp from unix time with unit ns. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
                     ["duckdb", "mssql", "clickhouse"],
                     raises=com.UnsupportedOperationError,
-                    reason="`ms` unit is not supported!",
+                    reason="`ns` unit is not supported!",
                 ),
                 pytest.mark.notimpl(
                     ["flink"],
@@ -1965,7 +1965,7 @@ def test_time_literal(con, backend):
 @pytest.mark.parametrize(
     "microsecond",
     [
-        0,
+        param(0, id="second"),
         param(
             561021,
             marks=[
@@ -1988,9 +1988,9 @@ def test_time_literal(con, backend):
                     ),
                 ),
             ],
+            id="subsecond",
         ),
     ],
-    ids=["second", "subsecond"],
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_extract_time_from_timestamp(con, microsecond):

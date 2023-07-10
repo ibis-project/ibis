@@ -139,7 +139,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == pa.string() or array.type == pa.large_string()
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
+@pytest.mark.notimpl(["dask", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -154,7 +154,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
+@pytest.mark.notimpl(["dask", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -386,7 +386,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "mysql",
         "oracle",
         "postgres",
-        "snowflake",
         "sqlite",
         "bigquery",
         "dask",
@@ -399,6 +398,11 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=Exception,
+    reason="deltalake doesn't support nanosecond timestamps",
+)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":

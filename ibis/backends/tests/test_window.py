@@ -38,6 +38,12 @@ pytestmark = [
 ]
 
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
+
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
 def pandas_ntile(x, bucket: int):
     """Divide values into a number of buckets.
@@ -592,6 +598,7 @@ def test_grouped_unbounded_window(
     # 1) Grouped
     # 2) Ordered if `ordered` is True
     df = df.sort_values("id") if ordered else df
+
     expected = df.assign(val=expected_fn(df.groupby("string_col")))
     expected = expected.set_index("id").sort_index()
 

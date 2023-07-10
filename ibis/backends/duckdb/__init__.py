@@ -924,7 +924,10 @@ class Backend(SQLGlotBackend, CanCreateSchema):
         >>> con.list_tables(schema="my_schema")
         []
         >>> with con.begin() as c:
-        ...     c.exec_driver_sql("CREATE TABLE my_schema.baz (a INTEGER)")  # doctest: +ELLIPSIS
+        ...     c.exec_driver_sql(
+        ...         "CREATE TABLE my_schema.baz (a INTEGER)"
+        ...     )  # doctest: +ELLIPSIS
+        ...
         <...>
         >>> con.list_tables(schema="my_schema")
         ['baz']

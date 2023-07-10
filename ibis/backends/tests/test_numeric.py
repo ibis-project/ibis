@@ -34,6 +34,11 @@ from ibis.backends.tests.errors import (
 from ibis.expr import datatypes as dt
 from ibis.tests.util import assert_equal
 
+try:
+    from snowflake.connector.errors import ProgrammingError as SnowflakeProgrammingError
+except ImportError:
+    SnowflakeProgrammingError = None
+
 
 @pytest.mark.parametrize(
     ("expr", "expected_types"),
@@ -371,6 +376,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "The precision can be up to 38 in Flink",
                     raises=ValueError,
                 ),
+                pytest.mark.broken(
+                    ["snowflake"],
+                    "Invalid number precision: 76. Must be between 0 and 38.",
+                    raises=SnowflakeProgrammingError,
+                ),
             ],
             id="decimal-big",
         ),
@@ -566,14 +576,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     'Check messages from the SQL Server\n")'
                     "[SQL: SELECT %(param_1)s AS [Decimal('NaN')]]",
                     raises=(sa.exc.ProgrammingError, KeyError),
-                ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
-                    "(org.apache.calcite.tools.ValidationException): "
-                    "org.apache.calcite.runtime.CalciteContextException: From line 1, column 8 to line 1, column 10: Column 'NaN' not found in any table"
-                    "[SQL: SELECT NaN AS \"Decimal('NaN')\"]",
-                    raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.broken(
                     ["druid"],
@@ -1444,7 +1446,8 @@ def test_random(con):
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
-    expected = pandas_func(df.int_col).astype(result.dtype)
+    raw_expected = pandas_func(df.int_col)
+    expected = raw_expected.astype(result.dtype)
     # Names won't match in the PySpark backend since PySpark
     # gives 'tmp' name when executing a Column
     backend.assert_series_equal(result, expected, check_names=False)

@@ -1,5 +1,5 @@
 SELECT
-  t0.x IN (
+  t0.x IN ((
     SELECT
       t0.x
     FROM t AS t0

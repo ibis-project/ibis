@@ -138,7 +138,7 @@ def test_isin_bug(con, snapshot):
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
 )
 @pytest.mark.notimpl(
-    ["oracle", "flink"],
+    ["oracle", "flink", "datafusion"],
     reason="unnest not yet implemented",
     raises=exc.OperationNotDefinedError,
 )
