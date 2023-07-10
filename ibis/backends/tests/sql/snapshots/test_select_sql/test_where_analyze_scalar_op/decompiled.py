@@ -21,9 +21,7 @@ functional_alltypes = ibis.table(
 )
 
 result = functional_alltypes.filter(
-    [
-        functional_alltypes.timestamp_col
-        < (ibis.timestamp("2010-01-01 00:00:00") + ibis.interval(3)),
-        functional_alltypes.timestamp_col < (ibis.now() + ibis.interval(10)),
-    ]
+    functional_alltypes.timestamp_col
+    < (ibis.timestamp("2010-01-01 00:00:00") + ibis.interval(3)),
+    functional_alltypes.timestamp_col < (ibis.now() + ibis.interval(10)),
 ).count()

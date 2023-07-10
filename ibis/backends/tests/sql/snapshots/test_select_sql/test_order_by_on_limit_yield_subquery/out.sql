@@ -1,8 +1,13 @@
-SELECT t0.*
+SELECT
+  *
 FROM (
-  SELECT t1.`string_col`, count(1) AS `nrows`
-  FROM functional_alltypes t1
-  GROUP BY 1
+  SELECT
+    t0.string_col AS string_col,
+    COUNT(*) AS nrows
+  FROM functional_alltypes AS t0
+  GROUP BY
+    1
   LIMIT 5
-) t0
-ORDER BY t0.`string_col` ASC
+) AS t2
+ORDER BY
+  t2.string_col ASC

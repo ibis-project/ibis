@@ -1,22 +1,40 @@
-WITH t0 AS (
-  SELECT
-    t4.key AS key
-  FROM leaf AS t4
-  WHERE
-    CAST(TRUE AS BOOLEAN)
-), t1 AS (
-  SELECT
-    t0.key AS key
-  FROM t0
-), t2 AS (
-  SELECT
-    t0.key AS key
-  FROM t0
-  JOIN t1
-    ON t0.key = t1.key
-)
 SELECT
-  t2.key
-FROM t2
-JOIN t2 AS t3
-  ON t2.key = t3.key
+  t1.key AS key,
+  t2.key AS key_right,
+  t5.key_right AS key_right_right
+FROM (
+  SELECT
+    t0.key AS key
+  FROM leaf AS t0
+  WHERE
+    TRUE
+) AS t1
+INNER JOIN (
+  SELECT
+    t0.key AS key
+  FROM leaf AS t0
+  WHERE
+    TRUE
+) AS t2
+  ON t1.key = t2.key
+INNER JOIN (
+  SELECT
+    t1.key AS key,
+    t2.key AS key_right
+  FROM (
+    SELECT
+      t0.key AS key
+    FROM leaf AS t0
+    WHERE
+      TRUE
+  ) AS t1
+  INNER JOIN (
+    SELECT
+      t0.key AS key
+    FROM leaf AS t0
+    WHERE
+      TRUE
+  ) AS t2
+    ON t1.key = t2.key
+) AS t5
+  ON t1.key = t5.key

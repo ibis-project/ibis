@@ -1,16 +1,9 @@
 from __future__ import annotations
 
-import pytest
-
 from .conftest import tpch_test
 
 
 @tpch_test
-@pytest.mark.broken(
-    ["snowflake"],
-    reason="ibis generates incorrect code for the right-hand-side of the exists statement",
-    raises=AssertionError,
-)
 def test_tpc_h22(customer, orders):
     """Global Sales Opportunity Query (Q22)
 
