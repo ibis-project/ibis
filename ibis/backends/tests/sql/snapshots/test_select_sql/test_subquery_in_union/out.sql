@@ -1,32 +1,51 @@
-WITH t0 AS (
-  SELECT t3.`a`, t3.`g`, sum(t3.`f`) AS `metric`
-  FROM alltypes t3
-  GROUP BY 1, 2
-),
-t1 AS (
-  SELECT t0.*
-  FROM t0
-    INNER JOIN t0 t3
-      ON t0.`g` = t3.`g`
-)
-SELECT t2.`a`, t2.`g`, t2.`metric`
+SELECT
+  t1.a AS a,
+  t1.g AS g,
+  t1.metric AS metric
 FROM (
-  WITH t0 AS (
-    SELECT t3.`a`, t3.`g`, sum(t3.`f`) AS `metric`
-    FROM alltypes t3
-    GROUP BY 1, 2
-  ),
-  t1 AS (
-    SELECT t0.*
-    FROM t0
-      INNER JOIN t0 t3
-        ON t0.`g` = t3.`g`
-  )
-  SELECT *
-  FROM t1
-  UNION ALL
-  SELECT t0.*
-  FROM t0
-    INNER JOIN t0 t3
-      ON t0.`g` = t3.`g`
-) t2
+  SELECT
+    t0.a AS a,
+    t0.g AS g,
+    SUM(t0.f) AS metric
+  FROM alltypes AS t0
+  GROUP BY
+    1,
+    2
+) AS t1
+INNER JOIN (
+  SELECT
+    t0.a AS a,
+    t0.g AS g,
+    SUM(t0.f) AS metric
+  FROM alltypes AS t0
+  GROUP BY
+    1,
+    2
+) AS t2
+  ON t1.g = t2.g
+UNION ALL
+SELECT
+  t1.a AS a,
+  t1.g AS g,
+  t1.metric AS metric
+FROM (
+  SELECT
+    t0.a AS a,
+    t0.g AS g,
+    SUM(t0.f) AS metric
+  FROM alltypes AS t0
+  GROUP BY
+    1,
+    2
+) AS t1
+INNER JOIN (
+  SELECT
+    t0.a AS a,
+    t0.g AS g,
+    SUM(t0.f) AS metric
+  FROM alltypes AS t0
+  GROUP BY
+    1,
+    2
+) AS t2
+  ON t1.g = t2.g

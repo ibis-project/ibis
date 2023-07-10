@@ -1,5 +1,5 @@
 SELECT
-  t0.a,
+  t0.a AS a,
   COALESCE(countIf(NOT (
     t0.b
   )), 0) AS A,
