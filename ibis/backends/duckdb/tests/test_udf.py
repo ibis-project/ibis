@@ -51,9 +51,7 @@ def test_builtin_scalar(con, func):
     a, b = "duck", "luck"
     expr = func(a, b)
 
-    with con.begin() as c:
-        expected = c.exec_driver_sql(f"SELECT {func.__name__}({a!r}, {b!r})").scalar()
-
+    expected = con.raw_sql(f"SELECT {func.__name__}({a!r}, {b!r})").df().squeeze()
     assert con.execute(expr) == expected
 
 
@@ -80,10 +78,11 @@ def test_builtin_agg(con, func):
     data = ibis.memtable({"a": raw_data})
     expr = func(data.a)
 
-    with con.begin() as c:
-        expected = c.exec_driver_sql(
-            f"SELECT {func.__name__}(a) FROM UNNEST({raw_data!r}) _ (a)"
-        ).scalar()
+    expected = (
+        con.raw_sql(f"SELECT {func.__name__}(a) FROM UNNEST({raw_data!r}) _ (a)")
+        .df()
+        .squeeze()
+    )
 
     assert con.execute(expr) == expected
 

@@ -1,21 +1,29 @@
-SELECT t0.`key`
+SELECT
+  t5.key AS key
 FROM (
-  SELECT t1.`key`, t1.`value`
+  SELECT
+    t1.string_col AS key,
+    CAST(t1.float_col AS DOUBLE) AS value
   FROM (
-    WITH t2 AS (
-      SELECT t4.`string_col` AS `key`, t4.`double_col` AS `value`
-      FROM functional_alltypes t4
-      WHERE t4.`int_col` <= 0
-    ),
-    t3 AS (
-      SELECT t4.`string_col` AS `key`, CAST(t4.`float_col` AS double) AS `value`
-      FROM functional_alltypes t4
-      WHERE t4.`int_col` > 0
-    )
-    SELECT *
-    FROM t3
-    INTERSECT
-    SELECT *
-    FROM t2
-  ) t1
-) t0
+    SELECT
+      *
+    FROM functional_alltypes AS t0
+    WHERE
+      (
+        t0.int_col > CAST(0 AS TINYINT)
+      )
+  ) AS t1
+  INTERSECT
+  SELECT
+    t2.string_col AS key,
+    t2.double_col AS value
+  FROM (
+    SELECT
+      *
+    FROM functional_alltypes AS t0
+    WHERE
+      (
+        t0.int_col <= CAST(0 AS TINYINT)
+      )
+  ) AS t2
+) AS t5

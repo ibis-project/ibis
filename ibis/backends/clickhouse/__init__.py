@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import ast
 import atexit
+import contextlib
 import glob
-from contextlib import closing, suppress
+from contextlib import closing
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -12,6 +13,7 @@ import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlalchemy as sa
 import sqlglot as sg
+import sqlglot.expressions as sge
 import toolz
 from clickhouse_connect.driver.external import ExternalData
 
@@ -23,8 +25,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, CanCreateDatabase
-from ibis.backends.base.sqlglot import STAR, C, F
-from ibis.backends.clickhouse.compiler import translate
+from ibis.backends.base.sqlglot import SQLGlotBackend
+from ibis.backends.base.sqlglot.compiler import C, F
+from ibis.backends.clickhouse.compiler import ClickHouseCompiler
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 
 if TYPE_CHECKING:
@@ -33,15 +36,14 @@ if TYPE_CHECKING:
 
     import pandas as pd
 
-    from ibis.common.typing import SupportsSchema
-
 
 def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
 
 
-class Backend(BaseBackend, CanCreateDatabase):
+class Backend(SQLGlotBackend, CanCreateDatabase):
     name = "clickhouse"
+    compiler = ClickHouseCompiler()
 
     # ClickHouse itself does, but the client driver does not
     supports_temporary_tables = False
@@ -56,25 +58,6 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
 
         bool_type: Literal["Bool", "UInt8", "Int8"] = "Bool"
-
-    def _log(self, sql: str) -> None:
-        """Log `sql`.
-
-        This method can be implemented by subclasses. Logging occurs when
-        `ibis.options.verbose` is `True`.
-        """
-        util.log(sql)
-
-    def sql(
-        self,
-        query: str,
-        schema: SupportsSchema | None = None,
-        dialect: str | None = None,
-    ) -> ir.Table:
-        query = self._transpile_sql(query, dialect=dialect)
-        if schema is None:
-            schema = self._get_schema_using_query(query)
-        return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
@@ -109,7 +92,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         return self.connect(**kwargs)
 
     def _convert_kwargs(self, kwargs):
-        with suppress(KeyError):
+        with contextlib.suppress(KeyError):
             kwargs["secure"] = bool(ast.literal_eval(kwargs["secure"]))
 
     def do_connect(
@@ -182,15 +165,20 @@ class Backend(BaseBackend, CanCreateDatabase):
     def version(self) -> str:
         return self.con.server_version
 
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, *args, **kwargs):
+        with contextlib.closing(self.raw_sql(*args, **kwargs)) as result:
+            yield result
+
     @property
     def current_database(self) -> str:
-        with closing(self.raw_sql(sg.select(F.currentDatabase()))) as result:
+        with self._safe_raw_sql(sg.select(F.currentDatabase())) as result:
             [(db,)] = result.result_rows
         return db
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        with closing(
-            self.raw_sql(sg.select(C.name).from_(sg.table("databases", db="system")))
+        with self._safe_raw_sql(
+            sg.select(C.name).from_(sg.table("databases", db="system"))
         ) as result:
             results = result.result_columns
 
@@ -208,11 +196,11 @@ class Backend(BaseBackend, CanCreateDatabase):
         if database is None:
             database = F.currentDatabase()
         else:
-            database = sg.exp.convert(database)
+            database = sge.convert(database)
 
         query = query.where(C.database.eq(database).or_(C.is_temporary))
 
-        with closing(self.raw_sql(query)) as result:
+        with self._safe_raw_sql(query) as result:
             results = result.result_columns
 
         if results:
@@ -380,70 +368,14 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         if df.empty:
             df = pd.DataFrame(columns=schema.names)
+        else:
+            df.columns = list(schema.names)
 
         # TODO: remove the extra conversion
         #
         # the extra __pandas_result__ call is to work around slight differences
         # in single column conversion and whole table conversion
         return expr.__pandas_result__(table.__pandas_result__(df))
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            table_expr = table_expr.limit(limit)
-
-        if params is None:
-            params = {}
-
-        sql = translate(table_expr.op(), params=params)
-        assert not isinstance(sql, sg.exp.Subquery)
-
-        if isinstance(sql, sg.exp.Table):
-            sql = sg.select(STAR).from_(sql)
-
-        assert not isinstance(sql, sg.exp.Subquery)
-        return sql
-
-    def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
-    ):
-        """Compile an Ibis expression to a ClickHouse SQL string."""
-        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
-            dialect=self.name, pretty=True
-        )
-
-    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        return self.compile(expr, **kwargs)
-
-    def table(self, name: str, database: str | None = None) -> ir.Table:
-        """Construct a table expression.
-
-        Parameters
-        ----------
-        name
-            Table name
-        database
-            Database name
-
-        Returns
-        -------
-        Table
-            Table expression
-        """
-        schema = self.get_schema(name, database=database)
-        op = ops.DatabaseTable(
-            name=name,
-            schema=schema,
-            source=self,
-            namespace=ops.Namespace(database=database),
-        )
-        return op.to_expr()
 
     def insert(
         self,
@@ -468,7 +400,7 @@ class Backend(BaseBackend, CanCreateDatabase):
 
     def raw_sql(
         self,
-        query: str | sg.exp.Expression,
+        query: str | sge.Expression,
         external_tables: Mapping[str, pd.DataFrame] | None = None,
         **kwargs,
     ) -> Any:
@@ -491,7 +423,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         external_tables = toolz.valmap(_to_memtable, external_tables or {})
         external_data = self._normalize_external_tables(external_tables)
-        with suppress(AttributeError):
+        with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name, pretty=True)
         self._log(query)
         return self.con.query(query, external_data=external_data, **kwargs)
@@ -500,7 +432,9 @@ class Backend(BaseBackend, CanCreateDatabase):
         """Close ClickHouse connection."""
         self.con.close()
 
-    def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
+    def get_schema(
+        self, table_name: str, database: str | None = None, schema: str | None = None
+    ) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
 
         Parameters
@@ -510,19 +444,25 @@ class Backend(BaseBackend, CanCreateDatabase):
             qualify the identifier.
         database
             Database name
+        schema
+            Schema name, not supported by ClickHouse
 
         Returns
         -------
         sch.Schema
             Ibis schema
         """
-        query = sg.exp.Describe(this=sg.table(table_name, db=database))
-        with closing(self.raw_sql(query)) as results:
+        if schema is not None:
+            raise com.UnsupportedBackendFeatureError(
+                "`schema` namespaces are not supported by clickhouse"
+            )
+        query = sge.Describe(this=sg.table(table_name, db=database))
+        with self._safe_raw_sql(query) as results:
             names, types, *_ = results.result_columns
         return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
 
-    def _get_schema_using_query(self, query: str) -> sch.Schema:
-        name = util.gen_name("get_schema_using_query")
+    def _metadata(self, query: str) -> sch.Schema:
+        name = util.gen_name("clickhouse_metadata")
         with closing(self.raw_sql(f"CREATE VIEW {name} AS {query}")):
             pass
         try:
@@ -531,43 +471,30 @@ class Backend(BaseBackend, CanCreateDatabase):
         finally:
             with closing(self.raw_sql(f"DROP VIEW {name}")):
                 pass
-        return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
-
-    @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
-        from ibis.backends.clickhouse.compiler.values import translate_val
-
-        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
+        return zip(names, map(ClickhouseType.from_string, types))
 
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"
     ) -> None:
-        src = sg.exp.Create(
+        src = sge.Create(
             this=sg.to_identifier(name),
             kind="DATABASE",
             exists=force,
-            properties=sg.exp.Properties(
-                expressions=[sg.exp.EngineProperty(this=sg.to_identifier(engine))]
+            properties=sge.Properties(
+                expressions=[sge.EngineProperty(this=sg.to_identifier(engine))]
             ),
         )
-        with closing(self.raw_sql(src)):
+        with self._safe_raw_sql(src):
             pass
 
     def drop_database(self, name: str, *, force: bool = False) -> None:
-        src = sg.exp.Drop(this=sg.to_identifier(name), kind="DATABASE", exists=force)
-        with closing(self.raw_sql(src)):
+        src = sge.Drop(this=sg.to_identifier(name), kind="DATABASE", exists=force)
+        with self._safe_raw_sql(src):
             pass
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
         ident = sg.table(name, db=database).sql(self.name)
-        with closing(self.raw_sql(f"TRUNCATE TABLE {ident}")):
-            pass
-
-    def drop_table(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        src = sg.exp.Drop(this=sg.table(name, db=database), kind="TABLE", exists=force)
-        with closing(self.raw_sql(src)):
+        with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
 
     def read_parquet(
@@ -686,10 +613,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         if schema is None:
             schema = obj.schema()
 
-        this = sg.exp.Schema(
+        this = sge.Schema(
             this=sg.table(name, db=database),
             expressions=[
-                sg.exp.ColumnDef(
+                sge.ColumnDef(
                     this=sg.to_identifier(name), kind=ClickhouseType.from_ibis(typ)
                 )
                 for name, typ in schema.items()
@@ -698,20 +625,20 @@ class Backend(BaseBackend, CanCreateDatabase):
         properties = [
             # the engine cannot be quoted, since clickhouse won't allow e.g.,
             # "File(Native)"
-            sg.exp.EngineProperty(this=sg.to_identifier(engine, quoted=False))
+            sge.EngineProperty(this=sg.to_identifier(engine, quoted=False))
         ]
 
         if temp:
-            properties.append(sg.exp.TemporaryProperty())
+            properties.append(sge.TemporaryProperty())
 
         if order_by is not None or engine == "MergeTree":
             # engine == "MergeTree" requires an order by clause, which is the
             # empty tuple if order_by is False-y
             properties.append(
-                sg.exp.Order(
+                sge.Order(
                     expressions=[
-                        sg.exp.Ordered(
-                            this=sg.exp.Tuple(
+                        sge.Ordered(
+                            this=sge.Tuple(
                                 expressions=list(map(sg.column, order_by or ()))
                             )
                         )
@@ -721,8 +648,8 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         if partition_by is not None:
             properties.append(
-                sg.exp.PartitionedByProperty(
-                    this=sg.exp.Schema(
+                sge.PartitionedByProperty(
+                    this=sge.Schema(
                         expressions=list(map(sg.to_identifier, partition_by))
                     )
                 )
@@ -730,19 +657,19 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         if sample_by is not None:
             properties.append(
-                sg.exp.SampleProperty(
-                    this=sg.exp.Tuple(expressions=list(map(sg.column, sample_by)))
+                sge.SampleProperty(
+                    this=sge.Tuple(expressions=list(map(sg.column, sample_by)))
                 )
             )
 
         if settings:
             properties.append(
-                sg.exp.SettingsProperty(
+                sge.SettingsProperty(
                     expressions=[
-                        sg.exp.SetItem(
-                            this=sg.exp.EQ(
+                        sge.SetItem(
+                            this=sge.EQ(
                                 this=sg.to_identifier(name),
-                                expression=sg.exp.convert(value),
+                                expression=sge.convert(value),
                             )
                         )
                         for name, value in settings.items()
@@ -754,15 +681,15 @@ class Backend(BaseBackend, CanCreateDatabase):
         expression = None
 
         if obj is not None:
-            expression = self._to_sqlglot(obj)
+            (expression,) = self._to_sqlglot(obj)
             external_tables.update(self._collect_in_memory_tables(obj))
 
-        code = sg.exp.Create(
+        code = sge.Create(
             this=this,
             kind="TABLE",
             replace=overwrite,
             expression=expression,
-            properties=sg.exp.Properties(expressions=properties),
+            properties=sge.Properties(expressions=properties),
         )
 
         external_data = self._normalize_external_tables(external_tables)
@@ -781,46 +708,30 @@ class Backend(BaseBackend, CanCreateDatabase):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        src = sg.exp.Create(
+        (expression,) = self._to_sqlglot(obj)
+        src = sge.Create(
             this=sg.table(name, db=database),
             kind="VIEW",
             replace=overwrite,
-            expression=self._to_sqlglot(obj),
+            expression=expression,
         )
         external_tables = self._collect_in_memory_tables(obj)
-        with closing(self.raw_sql(src, external_tables=external_tables)):
+        with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
 
-    def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
-    ) -> None:
-        src = sg.exp.Drop(this=sg.table(name, db=database), kind="VIEW", exists=force)
-        with closing(self.raw_sql(src)):
-            pass
-
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr, schema=expr.schema(), temp=True)
-
-    def _clean_up_cached_table(self, op):
-        self.drop_table(op.name)
-
-    def _create_temp_view(self, table_name, source):
-        if table_name not in self._temp_views and table_name in self.list_tables():
-            raise ValueError(
-                f"{table_name} already exists as a non-temporary table or view"
-            )
-        src = sg.exp.Create(
-            this=sg.table(table_name), kind="VIEW", replace=True, expression=source
+    def _get_temp_view_definition(self, name: str, definition: str) -> str:
+        return sge.Create(
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            kind="VIEW",
+            expression=definition,
+            replace=True,
         )
-        self.raw_sql(src)
-        self._temp_views.add(table_name)
-        self._register_temp_view_cleanup(table_name)
 
     def _register_temp_view_cleanup(self, name: str) -> None:
         def drop(self, name: str, query: str):
             self.raw_sql(query)
             self._temp_views.discard(name)
 
-        query = sg.exp.Drop(this=sg.table(name), kind="VIEW", exists=True)
+        query = sge.Drop(this=sg.table(name), kind="VIEW", exists=True)
         atexit.register(drop, self, name=name, query=query)

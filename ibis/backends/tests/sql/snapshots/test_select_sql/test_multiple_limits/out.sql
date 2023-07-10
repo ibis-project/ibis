@@ -1,7 +1,9 @@
-SELECT t0.*
+SELECT
+  *
 FROM (
-  SELECT t1.*
-  FROM functional_alltypes t1
+  SELECT
+    *
+  FROM functional_alltypes AS t0
   LIMIT 20
-) t0
+) AS t1
 LIMIT 10

@@ -403,3 +403,12 @@ def test_array_join_in_subquery(snapshot):
 
     out = ibis.clickhouse.compile(expr)
     snapshot.assert_match(out, "out.sql")
+
+
+def test_complex_join(snapshot):
+    t1 = ibis.table({"a": "int", "b": "int"}, name="s")
+    t2 = ibis.table({"c": "int", "d": "int"}, name="t")
+    t3 = t1.join(t2, t1.a == t2.c)
+    q = t3.mutate(e=t3.c / (t3.a - t3.b))
+    out = ibis.clickhouse.compile(q)
+    snapshot.assert_match(out, "out.sql")

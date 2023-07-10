@@ -138,16 +138,15 @@ def test_temp_directory(tmp_path):
 
     # 1. in-memory + no temp_directory specified
     con = ibis.duckdb.connect()
-    with con.begin() as c:
-        value = c.exec_driver_sql(query).scalar()
-        assert value  # we don't care what the specific value is
+
+    value = con.raw_sql(query).fetchone()[0]
+    assert value  # we don't care what the specific value is
 
     temp_directory = Path(tempfile.gettempdir()) / "duckdb"
 
     # 2. in-memory + temp_directory specified
     con = ibis.duckdb.connect(temp_directory=temp_directory)
-    with con.begin() as c:
-        value = c.exec_driver_sql(query).scalar()
+    value = con.raw_sql(query).fetchone()[0]
     assert value == str(temp_directory)
 
     # 3. on-disk + no temp_directory specified
@@ -156,8 +155,7 @@ def test_temp_directory(tmp_path):
 
     # 4. on-disk + temp_directory specified
     con = ibis.duckdb.connect(tmp_path / "test2.ddb", temp_directory=temp_directory)
-    with con.begin() as c:
-        value = c.exec_driver_sql(query).scalar()
+    value = con.raw_sql(query).fetchone()[0]
     assert value == str(temp_directory)
 
 

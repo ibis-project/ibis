@@ -19,4 +19,4 @@ alltypes = ibis.table(
 )
 lit = ibis.literal(0)
 
-result = alltypes.filter([alltypes.a > lit, alltypes.f.between(lit, ibis.literal(1))])
+result = alltypes.filter(alltypes.a > lit, alltypes.f.between(lit, ibis.literal(1)))

@@ -289,7 +289,7 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     reason="polars doesn't support join predicates",
 )
 @pytest.mark.notimpl(
-    ["dask", "pandas"],
+    ["dask"],
     raises=TypeError,
     reason="dask and pandas don't support join predicates",
 )
@@ -397,3 +397,13 @@ def test_outer_join_nullability(backend, how, nrows, gen_right, keys):
 
     result = expr.to_pyarrow()
     assert len(result) == nrows
+
+
+def test_complex_join_agg(snapshot):
+    t1 = ibis.table(dict(value1="float", key1="string", key2="string"), name="table1")
+    t2 = ibis.table(dict(value2="float", key1="string", key4="string"), name="table2")
+
+    avg_diff = (t1.value1 - t2.value2).mean()
+    expr = t1.left_join(t2, "key1").group_by(t1.key1).aggregate(avg_diff=avg_diff)
+
+    snapshot.assert_match(str(ibis.to_sql(expr, dialect="duckdb")), "out.sql")
