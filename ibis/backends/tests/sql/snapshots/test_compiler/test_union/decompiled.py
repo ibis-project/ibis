@@ -20,18 +20,11 @@ functional_alltypes = ibis.table(
     },
 )
 lit = ibis.literal(0)
-alias = functional_alltypes.string_col.name("key")
-union = (
-    functional_alltypes.select(
-        [alias, functional_alltypes.float_col.cast("float64").name("value")]
-    )
-    .filter(functional_alltypes.int_col > lit)
-    .union(
-        functional_alltypes.select(
-            [alias, functional_alltypes.double_col.name("value")]
-        ).filter(functional_alltypes.int_col <= lit),
-        distinct=True,
-    )
-)
+f = functional_alltypes.filter(functional_alltypes.int_col > lit)
+f1 = functional_alltypes.filter(functional_alltypes.int_col <= lit)
 
-result = union.select([union.key, union.value])
+result = f.select(
+    f.string_col.name("key"), f.float_col.cast("float64").name("value")
+).union(
+    f1.select(f1.string_col.name("key"), f1.double_col.name("value")), distinct=True
+)

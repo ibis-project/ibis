@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Literal, Optional
 
 from public import public
@@ -119,6 +120,9 @@ def merge_select_select(_):
     )
 
 
+DEBUG = os.environ.get("IBIS_SQL_DEBUG", False)
+
+
 def sqlize(node):
     """Lower the ibis expression graph to a SQL-like relational algebra."""
     step1 = node.replace(
@@ -127,5 +131,11 @@ def sqlize(node):
         | filter_to_select
         | sort_to_select
     )
+    if DEBUG:
+        print("--------- STEP 1 ---------")
+        print(step1.to_expr())
     step2 = step1.replace(merge_select_select)
+    if DEBUG:
+        print("--------- STEP 2 ---------")
+        print(step2.to_expr())
     return step2
