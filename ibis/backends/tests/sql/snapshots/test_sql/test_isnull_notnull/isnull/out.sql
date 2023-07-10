@@ -1,0 +1,1 @@
+t0.double_col IS NULL AS tmp

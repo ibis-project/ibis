@@ -1,19 +1,11 @@
 from __future__ import annotations
 
-import pytest
-import sqlalchemy as sa
-
 import ibis
 
 from .conftest import tpch_test
 
 
 @tpch_test
-@pytest.mark.broken(
-    ["snowflake"],
-    reason="ibis generates overlapping aliases",
-    raises=sa.exc.CompileError,
-)
 def test_tpc_h21(supplier, lineitem, orders, nation):
     """Suppliers Who Kept Orders Waiting Query (Q21)
 

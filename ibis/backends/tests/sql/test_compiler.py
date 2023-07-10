@@ -6,7 +6,6 @@ import pytest
 
 import ibis
 
-# from ibis.backends.base.sql.compiler import Compiler
 from ibis.backends.tests.sql.conftest import to_sql
 from ibis.tests.util import assert_decompile_roundtrip, schemas_eq
 
