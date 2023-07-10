@@ -11,6 +11,7 @@ from ibis.conftest import SANDBOXED
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from typing import Any
 
     from ibis.backends.base import BaseBackend
 
@@ -36,7 +37,7 @@ TEST_TABLES_GEO = {
 
 class TestConf(BackendTest):
     supports_map = True
-    deps = "duckdb", "duckdb_engine"
+    deps = ("duckdb",)
     stateful = False
     supports_tpch = True
 
@@ -87,8 +88,12 @@ class TestConf(BackendTest):
         return ibis.duckdb.connect(extension_directory=extension_directory, **kw)
 
     def load_tpch(self) -> None:
-        with self.connection.begin() as con:
-            con.exec_driver_sql("CALL dbgen(sf=0.1)")
+        self.connection.raw_sql("CALL dbgen(sf=0.1)")
+
+    def _load_data(self, **_: Any) -> None:
+        """Load test data into a backend."""
+        for stmt in self.ddl_script:
+            self.connection.raw_sql(stmt)
 
 
 @pytest.fixture(scope="session")

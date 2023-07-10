@@ -1,5 +1,18 @@
-SELECT t0.*
-FROM functional_alltypes t0
-WHERE (t0.`double_col` > 3.14) AND
-      (locate('foo', t0.`string_col`) - 1 >= 0) AND
-      (((t0.`int_col` - 1) = 0) OR (t0.`float_col` <= 1.34))
+SELECT
+  *
+FROM functional_alltypes AS t0
+WHERE
+  (
+    t0.double_col > CAST(3.14 AS DOUBLE)
+  )
+  AND CONTAINS(t0.string_col, 'foo')
+  AND (
+    (
+      (
+        t0.int_col - CAST(1 AS TINYINT)
+      ) = CAST(0 AS TINYINT)
+    )
+    OR (
+      t0.float_col <= CAST(1.34 AS DOUBLE)
+    )
+  )

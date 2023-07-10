@@ -37,7 +37,7 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     ("start_string", "end_string"),
     [("2009-03-01", "2010-07-03"), ("2014-12-01", "2017-01-05")],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "trino", "druid"])
+@pytest.mark.notimpl(["mssql", "trino", "druid"])
 @pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -65,7 +65,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(["impala", "pyspark", "druid", "oracle", "exasol"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "druid", "oracle", "exasol"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )

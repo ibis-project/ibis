@@ -15,7 +15,7 @@ pytest.importorskip("pins")
     (LINUX or MACOS) and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
 )
-@pytest.mark.notimpl(["dask", "datafusion", "exasol", "pyspark"])
+@pytest.mark.notimpl(["dask", "pyspark", "flink", "exasol"])
 @pytest.mark.notyet(["clickhouse", "druid", "impala", "mssql", "trino", "risingwave"])
 @pytest.mark.parametrize(
     ("example", "columns"),

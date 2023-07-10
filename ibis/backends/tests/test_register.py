@@ -388,12 +388,14 @@ def test_register_garbage(con, monkeypatch):
     monkeypatch.setattr(con, "_load_extensions", lambda x: True)
 
     sa = pytest.importorskip("sqlalchemy")
+    duckdb = pytest.importorskip("duckdb")
     with pytest.raises(
-        sa.exc.OperationalError, match="No files found that match the pattern"
+        (sa.exc.OperationalError, duckdb.IOException),
+        match="No files found that match the pattern",
     ):
         con.read_csv("garbage_notafile")
 
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises((FileNotFoundError, duckdb.IOException)):
         con.read_parquet("garbage_notafile")
 
 
