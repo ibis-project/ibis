@@ -1,22 +1,53 @@
-WITH t0 AS (
-  SELECT t3.`r_name` AS `region`, t4.`n_name` AS `nation`,
-         t6.`o_totalprice` AS `amount`,
-         CAST(t6.`o_orderdate` AS timestamp) AS `odate`
-  FROM tpch_region t3
-    INNER JOIN tpch_nation t4
-      ON t3.`r_regionkey` = t4.`n_regionkey`
-    INNER JOIN tpch_customer t5
-      ON t5.`c_nationkey` = t4.`n_nationkey`
-    INNER JOIN tpch_orders t6
-      ON t6.`o_custkey` = t5.`c_custkey`
-),
-t1 AS (
-  SELECT t0.`region`, extract(t0.`odate`, 'year') AS `year`,
-         CAST(sum(t0.`amount`) AS double) AS `total`
-  FROM t0
-  GROUP BY 1, 2
-)
-SELECT t1.`region`, t1.`year`, t1.`total` - t2.`total` AS `yoy_change`
-FROM t1
-  INNER JOIN t1 t2
-    ON t1.`year` = (t2.`year` - 1)
+SELECT
+  t8.region AS region,
+  t8.year AS year,
+  t8.total - t9.total AS yoy_change
+FROM (
+  SELECT
+    t7.region AS region,
+    EXTRACT('year' FROM t7.odate) AS year,
+    CAST(SUM(t7.amount) AS DOUBLE) AS total
+  FROM (
+    SELECT
+      t0.r_name AS region,
+      t1.n_name AS nation,
+      t3.o_totalprice AS amount,
+      CAST(t3.o_orderdate AS TIMESTAMP) AS odate
+    FROM tpch_region AS t0
+    INNER JOIN tpch_nation AS t1
+      ON t0.r_regionkey = t1.n_regionkey
+    INNER JOIN tpch_customer AS t2
+      ON t2.c_nationkey = t1.n_nationkey
+    INNER JOIN tpch_orders AS t3
+      ON t3.o_custkey = t2.c_custkey
+  ) AS t7
+  GROUP BY
+    1,
+    2
+) AS t8
+INNER JOIN (
+  SELECT
+    t7.region AS region,
+    EXTRACT('year' FROM t7.odate) AS year,
+    CAST(SUM(t7.amount) AS DOUBLE) AS total
+  FROM (
+    SELECT
+      t0.r_name AS region,
+      t1.n_name AS nation,
+      t3.o_totalprice AS amount,
+      CAST(t3.o_orderdate AS TIMESTAMP) AS odate
+    FROM tpch_region AS t0
+    INNER JOIN tpch_nation AS t1
+      ON t0.r_regionkey = t1.n_regionkey
+    INNER JOIN tpch_customer AS t2
+      ON t2.c_nationkey = t1.n_nationkey
+    INNER JOIN tpch_orders AS t3
+      ON t3.o_custkey = t2.c_custkey
+  ) AS t7
+  GROUP BY
+    1,
+    2
+) AS t9
+  ON t8.year = (
+    t9.year - CAST(1 AS TINYINT)
+  )

@@ -20,19 +20,12 @@ functional_alltypes = ibis.table(
     },
 )
 lit = ibis.literal(0)
-alias = functional_alltypes.string_col.name("key")
-intersection = (
-    functional_alltypes.select(
-        [alias, functional_alltypes.float_col.cast("float64").name("value")]
-    )
-    .filter(functional_alltypes.int_col > lit)
-    .intersect(
-        functional_alltypes.select(
-            [alias, functional_alltypes.double_col.name("value")]
-        ).filter(functional_alltypes.int_col <= lit),
-        distinct=True,
-    )
+f = functional_alltypes.filter(functional_alltypes.int_col > lit)
+f1 = functional_alltypes.filter(functional_alltypes.int_col <= lit)
+intersection = f.select(
+    f.string_col.name("key"), f.float_col.cast("float64").name("value")
+).intersect(
+    f1.select(f1.string_col.name("key"), f1.double_col.name("value")), distinct=True
 )
-proj = intersection.select([intersection.key, intersection.value])
 
-result = proj.select(proj.key)
+result = intersection.select(intersection.key)

@@ -1,15 +1,23 @@
-WITH t0 AS (
-  SELECT t2.`city`, avg(t2.`v2`) AS `Mean(v2)`
-  FROM tbl t2
-  GROUP BY 1
-),
-t1 AS (
-  SELECT t0.*
-  FROM t0
-  ORDER BY t0.`Mean(v2)` DESC
+SELECT
+  t0.foo AS foo,
+  t0.bar AS bar,
+  t0.city AS city,
+  t0.v1 AS v1,
+  t0.v2 AS v2
+FROM tbl AS t0
+SEMI JOIN (
+  SELECT
+    *
+  FROM (
+    SELECT
+      t0.city AS city,
+      AVG(t0.v2) AS "Mean(v2)"
+    FROM tbl AS t0
+    GROUP BY
+      1
+  ) AS t1
+  ORDER BY
+    t1."Mean(v2)" DESC
   LIMIT 10
-)
-SELECT *
-FROM tbl t2
-  LEFT SEMI JOIN t1
-    ON t2.`city` = t1.`city`
+) AS t3
+  ON t0.city = t3.city
