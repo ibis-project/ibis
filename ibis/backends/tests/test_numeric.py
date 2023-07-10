@@ -386,8 +386,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.broken(
                     ["duckdb"],
-                    "(duckdb.ParserException) Parser Error: Width must be between 1 and 38!",
-                    raises=sa.exc.ProgrammingError,
+                    "Unsupported precision.",
+                    raises=NotImplementedError,
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.notyet(
@@ -427,8 +427,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.broken(
                     ["duckdb"],
-                    "duckdb.ConversionException: Conversion Error: Could not cast value inf to DECIMAL(18,3)",
-                    raises=DuckDBConversionException,
+                    "Unsupported precision. Supported values: [1 : 38]. Current value: None",
+                    raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
                     ["trino"],
@@ -507,8 +507,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.broken(
                     ["duckdb"],
-                    "duckdb.ConversionException: Conversion Error: Could not cast value -inf to DECIMAL(18,3)",
-                    raises=DuckDBConversionException,
+                    "Unsupported precision. Supported values: [1 : 38]. Current value: None",
+                    raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
                     ["trino"],
@@ -587,11 +587,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.broken(
                     ["duckdb"],
-                    "(duckdb.InvalidInputException) Invalid Input Error: Attempting "
-                    "to execute an unsuccessful or closed pending query result"
-                    "Error: Invalid Input Error: Type DOUBLE with value nan can't be "
-                    "cast because the value is out of range for the destination type INT64",
-                    raises=sa.exc.ProgrammingError,
+                    "Unsupported precision. Supported values: [1 : 38]. Current value: None",
                 ),
                 pytest.mark.broken(
                     ["trino"],
@@ -1286,7 +1282,6 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
                 "mysql": 10,
                 "snowflake": 38,
                 "trino": 18,
-                "duckdb": None,
                 "sqlite": None,
                 "mssql": None,
                 "oracle": 38,
@@ -1296,7 +1291,6 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
                 "mysql": 0,
                 "snowflake": 0,
                 "trino": 3,
-                "duckdb": None,
                 "sqlite": None,
                 "mssql": None,
                 "oracle": 0,
@@ -1310,6 +1304,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "clickhouse",
         "dask",
         "datafusion",
+        "duckdb",
         "impala",
         "pandas",
         "pyspark",

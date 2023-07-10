@@ -933,11 +933,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=ValidationError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'TimestampScalar'",
                 ),
-                pytest.mark.xfail_version(
-                    duckdb=["duckdb>=0.8.0"],
-                    raises=AssertionError,
-                    reason="duckdb 0.8.0 returns DateOffset columns",
-                ),
             ],
         ),
         param(
@@ -1446,7 +1441,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit us. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["duckdb", "mssql", "clickhouse"],
+                    ["mssql", "clickhouse"],
                     raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
@@ -1458,12 +1453,12 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=com.UnsupportedArgumentError,
-                    reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
+                    reason="PySpark backend does not support timestamp from unix time with unit ns. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
                     ["duckdb", "mssql", "clickhouse"],
                     raises=com.UnsupportedOperationError,
-                    reason="`ms` unit is not supported!",
+                    reason="`ns` unit is not supported!",
                 ),
             ],
         ),
@@ -1988,11 +1983,6 @@ INTERVAL_BACKEND_TYPES = {
     ["clickhouse"],
     reason="Driver doesn't know how to handle intervals",
     raises=ClickhouseOperationalError,
-)
-@pytest.mark.xfail_version(
-    duckdb=["duckdb>=0.8.0"],
-    raises=AssertionError,
-    reason="duckdb 0.8.0 returns DateOffset columns",
 )
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")

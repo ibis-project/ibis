@@ -50,6 +50,11 @@ class TestConf(BackendTest, RoundAwayFromZero):
         with self.connection.begin() as con:
             con.exec_driver_sql("CALL dbgen(sf=0.1)")
 
+    def _load_data(self, **_: Any) -> None:
+        """Load test data into a backend."""
+        for stmt in self.ddl_script:
+            self.connection.raw_sql(stmt)
+
 
 @pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):

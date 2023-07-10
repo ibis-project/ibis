@@ -7,17 +7,15 @@ import contextlib
 import os
 import warnings
 from pathlib import Path
-from typing import (
-    TYPE_CHECKING,
-    Any,
-)
+from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
 import duckdb
 import pyarrow as pa
-import sqlalchemy as sa
+import sqlglot as sg
 import toolz
 from packaging.version import parse as vparse
 
+import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -25,16 +23,17 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
-from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
-from ibis.backends.duckdb.datatypes import DuckDBType
+from ibis.backends.base.sql import BaseBackend
+from ibis.backends.duckdb.compiler import translate
+from ibis.backends.duckdb.datatypes import parse, serialize, DuckDBType
 from ibis.expr.operations.relations import PandasDataFrameProxy
 from ibis.expr.operations.udf import InputType
+from ibis.formats.pyarrow import PyArrowData
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
-
+    import ibis.expr.operations as ops
     import pandas as pd
     import torch
 
@@ -68,46 +67,208 @@ _UDF_INPUT_TYPE_MAPPING = {
 }
 
 
-class Backend(BaseAlchemyBackend, CanCreateSchema):
+class DuckDBTable(ir.Table):
+    """References a physical table in DuckDB."""
+
+    @property
+    def _client(self):
+        return self.op().source
+
+    @property
+    def name(self):
+        return self.op().name
+
+
+class Backend(BaseBackend, CanCreateSchema):
     name = "duckdb"
-    compiler = DuckDBSQLCompiler
     supports_create_or_replace = True
+
+    def _define_udf_translation_rules(self, expr):
+        # TODO:
+        ...
+
+    def _register_udfs(self, expr):
+        # TODO:
+        ...
 
     @property
     def current_database(self) -> str:
-        return self._scalar_query(sa.select(sa.func.current_database()))
-
-    def list_databases(self, like: str | None = None) -> list[str]:
-        s = sa.table(
-            "schemata",
-            sa.column("catalog_name", sa.TEXT()),
-            schema="information_schema",
-        )
-
-        query = sa.select(sa.distinct(s.c.catalog_name))
-        with self.begin() as con:
-            results = list(con.execute(query).scalars())
-        return self._filter_with_like(results, like=like)
-
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
-    ) -> list[str]:
-        # override duckdb because all databases are always visible
-        text = """\
-SELECT schema_name
-FROM information_schema.schemata
-WHERE catalog_name = :database"""
-        query = sa.text(text).bindparams(
-            database=database if database is not None else self.current_database
-        )
-
-        with self.begin() as con:
-            schemas = list(con.execute(query).scalars())
-        return self._filter_with_like(schemas, like=like)
+        return "main"
 
     @property
     def current_schema(self) -> str:
-        return self._scalar_query(sa.select(sa.func.current_schema()))
+        return self.raw_sql("SELECT current_schema()")
+
+    def raw_sql(self, query: str, **kwargs: Any) -> Any:
+        return self.con.execute(query, **kwargs)
+
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        *,
+        schema: ibis.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+    ):
+        tmp = "TEMP " * temp
+        replace = "OR REPLACE" * overwrite
+
+        if temp and overwrite:
+            raise exc.IbisInputError("Cannot specify both temp and overwrite")
+
+        if not temp:
+            table = self._fully_qualified_name(name, database)
+        else:
+            table = name
+            database = None
+        code = f"CREATE {replace}{tmp}TABLE {table}"
+
+        if obj is None and schema is None:
+            raise exc.IbisError("The schema or obj parameter is required")
+
+        if obj is not None and not isinstance(obj, ir.Expr):
+            obj = ibis.memtable(obj, schema=schema)
+            self._register_in_memory_table(obj.op())
+            code += f" AS {self.compile(obj)}"
+        else:
+            # If both `obj` and `schema` are specified, `obj` overrides `schema`
+            # DuckDB doesn't support `create table (schema) AS select * ...`
+            if obj is not None:
+                code += f" AS {self.compile(obj)}"
+            else:
+                serialized_schema = ", ".join(
+                    f"{name} {serialize(typ)}" for name, typ in schema.items()
+                )
+
+                code += f" ({serialized_schema})"
+
+        # create the table
+        self.raw_sql(code)
+
+        return self.table(name, database=database)
+
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        qualname = self._fully_qualified_name(name, database)
+        replace = "OR REPLACE " * overwrite
+        query = self.compile(obj)
+        code = f"CREATE {replace}VIEW {qualname} AS {query}"
+        self.raw_sql(code)
+
+        return self.table(name, database=database)
+
+    def drop_table(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        ident = self._fully_qualified_name(name, database)
+        self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")
+
+    def drop_view(
+        self, name: str, *, database: str | None = None, force: bool = False
+    ) -> None:
+        name = self._fully_qualified_name(name, database)
+        if_exists = "IF EXISTS " * force
+        self.raw_sql(f"DROP VIEW {if_exists}{name}")
+
+    def _load_into_cache(self, name, expr):
+        self.create_table(name, expr, schema=expr.schema(), temp=True)
+
+    def _clean_up_cached_table(self, op):
+        self.drop_table(op.name)
+
+    def list_schemas(self):
+        ...
+
+    def table(self, name: str, database: str | None = None) -> ir.Table:
+        """Construct a table expression.
+
+        Parameters
+        ----------
+        name
+            Table name
+        database
+            Database name
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        schema = self.get_schema(name, database=database)
+        qname = self._fully_qualified_name(name, database)
+        return DuckDBTable(ops.DatabaseTable(qname, schema, self))
+
+    def _fully_qualified_name(self, name: str, database: str | None) -> str:
+        return name
+        # TODO: make this less bad
+        # calls to here from `drop_table` already have `main` prepended to the table name
+        # so what's the more robust way to deduplicate that identifier?
+        db = database or self.current_database
+        if name.startswith(db):
+            # This is a hack to get around nested quoting of table name
+            # e.g. '"main._ibis_temp_table_2"'
+            return name
+        return sg.table(name, db=db).sql(dialect="duckdb")
+
+    def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
+        """Return a Schema object for the indicated table and database.
+
+        Parameters
+        ----------
+        table_name
+            May **not** be fully qualified. Use `database` if you want to
+            qualify the identifier.
+        database
+            Database name
+
+        Returns
+        -------
+        sch.Schema
+            Ibis schema
+        """
+        qualified_name = self._fully_qualified_name(table_name, database)
+        query = f"DESCRIBE {qualified_name}"
+        results = self.raw_sql(query)
+        names, types, *_ = results.fetch_arrow_table()
+        names = names.to_pylist()
+        types = types.to_pylist()
+        return sch.Schema(dict(zip(names, map(parse, types))))
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        result = self.raw_sql("PRAGMA database_list;")
+        results = result.fetch_arrow_table()
+
+        if results:
+            _, databases, *_ = results
+            databases = databases.to_pylist()
+        else:
+            databases = []
+        return self._filter_with_like(databases, like)
+
+    def list_tables(self, like: str | None = None) -> list[str]:
+        result = self.raw_sql("PRAGMA show_tables;")
+        results = result.fetch_arrow_table()
+
+        if results:
+            tables, *_ = results
+            tables = tables.to_pylist()
+        else:
+            tables = []
+        return self._filter_with_like(tables, like)
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        from ibis.backends.duckdb.compiler.values import translate_val
+
+        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
@@ -125,47 +286,6 @@ WHERE catalog_name = :database"""
         import importlib.metadata
 
         return importlib.metadata.version("duckdb")
-
-    @staticmethod
-    def _new_sa_metadata():
-        meta = sa.MetaData()
-
-        # _new_sa_metadata is invoked whenever `_get_sqla_table` is called, so
-        # it's safe to store columns as keys, that is, columns from different
-        # tables with the same name won't collide
-        complex_type_info_cache = {}
-
-        @sa.event.listens_for(meta, "column_reflect")
-        def column_reflect(inspector, table, column_info):
-            import duckdb_engine.datatypes as ddt
-
-            # duckdb_engine as of 0.7.2 doesn't expose the inner types of any
-            # complex types so we have to extract it from duckdb directly
-            ddt_struct_type = getattr(ddt, "Struct", sa.types.NullType)
-            ddt_map_type = getattr(ddt, "Map", sa.types.NullType)
-            if isinstance(
-                column_info["type"], (sa.ARRAY, ddt_struct_type, ddt_map_type)
-            ):
-                engine = inspector.engine
-                colname = column_info["name"]
-                if (coltype := complex_type_info_cache.get(colname)) is None:
-                    quote = engine.dialect.identifier_preparer.quote
-                    quoted_colname = quote(colname)
-                    quoted_tablename = quote(table.name)
-                    with engine.connect() as con:
-                        # The .connection property is used to avoid creating a
-                        # nested transaction
-                        con.connection.execute(
-                            f"DESCRIBE SELECT {quoted_colname} FROM {quoted_tablename}"
-                        )
-                        _, typ, *_ = con.connection.fetchone()
-                    complex_type_info_cache[colname] = coltype = DuckDBType.from_string(
-                        typ
-                    )
-
-                column_info["type"] = DuckDBType.from_ibis(coltype)
-
-        return meta
 
     def do_connect(
         self,
@@ -216,51 +336,111 @@ WHERE catalog_name = :database"""
             Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
-        engine = sa.create_engine(
-            f"duckdb:///{database}",
-            connect_args=dict(read_only=read_only, config=config),
-            poolclass=sa.pool.StaticPool,
-        )
+        import duckdb
 
-        @sa.event.listens_for(engine, "connect")
-        def configure_connection(dbapi_connection, connection_record):
-            if extensions is not None:
-                self._sa_load_extensions(dbapi_connection, extensions)
-            dbapi_connection.execute("SET TimeZone = 'UTC'")
-            # the progress bar in duckdb <0.8.0 causes kernel crashes in
-            # jupyterlab, fixed in https://github.com/duckdb/duckdb/pull/6831
-            if vparse(duckdb.__version__) < vparse("0.8.0"):
-                dbapi_connection.execute("SET enable_progress_bar = false")
+        self.con = duckdb.connect(str(database))
+
+        # TODO: disable progress bar for < 0.8.0
+        # TODO: set timezone to UTC
 
         self._record_batch_readers_consumed = {}
 
-        # TODO(cpcloud): remove this when duckdb is >0.8.1
-        # this is here to workaround https://github.com/duckdb/duckdb/issues/8735
-        with contextlib.suppress(duckdb.InvalidInputException):
-            duckdb.execute("SELECT ?", (1,))
+    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+        """Connect to a backend using a URL `url`.
 
-        super().do_connect(engine)
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments
 
-    @staticmethod
-    def _sa_load_extensions(dbapi_con, extensions):
-        query = """
-        WITH exts AS (
-          SELECT extension_name AS name, aliases FROM duckdb_extensions()
-          WHERE installed AND loaded
-        )
-        SELECT name FROM exts
-        UNION (SELECT UNNEST(aliases) AS name FROM exts)
+        Returns
+        -------
+        BaseBackend
+            A backend instance
         """
-        installed = (name for (name,) in dbapi_con.sql(query).fetchall())
-        # Install and load all other extensions
-        todo = set(extensions).difference(installed)
-        for extension in todo:
-            dbapi_con.install_extension(extension)
-            dbapi_con.load_extension(extension)
+        import sqlalchemy as sa
 
-    def _load_extensions(self, extensions):
-        with self.begin() as con:
-            self._sa_load_extensions(con.connection, extensions)
+        url = sa.engine.make_url(url)
+
+        kwargs = toolz.merge(
+            {
+                name: value
+                for name in ("database", "read_only", "temp_directory")
+                if (value := getattr(url, name, None))
+            },
+            kwargs,
+        )
+
+        kwargs.update(url.query)
+        self._convert_kwargs(kwargs)
+        return self.connect(**kwargs)
+
+    def compile(self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any):
+        table_expr = expr.as_table()
+
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            table_expr = table_expr.limit(limit)
+
+        if params is None:
+            params = {}
+
+        sql = translate(table_expr.op(), params=params)
+        assert not isinstance(sql, sg.exp.Subquery)
+
+        if isinstance(sql, sg.exp.Table):
+            sql = sg.select("*").from_(sql)
+
+        assert not isinstance(sql, sg.exp.Subquery)
+        return sql.sql(dialect="duckdb", pretty=True)
+
+    def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
+        return str(self.compile(expr, **kwargs))
+
+    def _log(self, sql: str) -> None:
+        """Log `sql`.
+
+        This method can be implemented by subclasses. Logging occurs when
+        `ibis.options.verbose` is `True`.
+        """
+        util.log(sql)
+
+    def execute(
+        self,
+        expr: ir.Expr,
+        limit: str | None = "default",
+        external_tables: Mapping[str, pd.DataFrame] | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Execute an expression."""
+
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, limit=limit, **kwargs)
+
+        schema = table.schema()
+        self._log(sql)
+
+        try:
+            result = self.con.execute(sql)
+        except duckdb.CatalogException as e:
+            raise exc.IbisError(e)
+
+        # TODO: should we do this in arrow?
+        # also wth is pandas doing with dates?
+        pandas_df = result.fetch_df()
+        result = PandasData.convert_table(pandas_df, schema)
+        if isinstance(expr, ir.Table):
+            return result
+        elif isinstance(expr, ir.Column):
+            return result.iloc[:, 0]
+        elif isinstance(expr, ir.Scalar):
+            return result.iat[0, 0]
+        else:
+            raise ValueError
 
     def load_extension(self, extension: str) -> None:
         """Install and load a duckdb extension by name or path.
@@ -272,6 +452,22 @@ WHERE catalog_name = :database"""
         """
         self._load_extensions([extension])
 
+    def _load_extensions(self, extensions):
+        query = """
+        WITH exts AS (
+          SELECT extension_name AS name, aliases FROM duckdb_extensions()
+          WHERE installed AND loaded
+        )
+        SELECT name FROM exts
+        UNION (SELECT UNNEST(aliases) AS name FROM exts)
+        """
+        installed = (name for (name,) in self.con.sql(query).fetchall())
+        # Install and load all other extensions
+        todo = set(extensions).difference(installed)
+        for extension in extensions:
+            self.con.install_extension(extension)
+            self.con.load_extension(extension)
+
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
@@ -279,7 +475,7 @@ WHERE catalog_name = :database"""
             raise exc.UnsupportedOperationError(
                 "DuckDB cannot create a schema in another database."
             )
-        name = self._quote(name)
+        # name = self._quote(name)
         if_not_exists = "IF NOT EXISTS " * force
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
@@ -291,10 +487,25 @@ WHERE catalog_name = :database"""
             raise exc.UnsupportedOperationError(
                 "DuckDB cannot drop a schema in another database."
             )
-        name = self._quote(name)
+        # name = self._quote(name)
         if_exists = "IF EXISTS " * force
         with self.begin() as con:
             con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
+
+    def sql(
+        self,
+        query: str,
+        schema: SupportsSchema | None = None,
+        dialect: str | None = None,
+    ) -> ir.Table:
+        query = self._transpile_sql(query, dialect=dialect)
+        if schema is None:
+            schema = self._get_schema_using_query(query)
+        return ops.SQLQueryResult(query, ibis.schema(schema), self).to_expr()
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        """Return an ibis Schema from a backend-specific SQL string."""
+        return sch.Schema.from_tuples(self._metadata(query))
 
     def register(
         self,
@@ -454,93 +665,12 @@ WHERE catalog_name = :database"""
 
         kwargs.setdefault("header", True)
         kwargs["auto_detect"] = kwargs.pop("auto_detect", "columns" not in kwargs)
-        source = sa.select(sa.literal_column("*")).select_from(
-            sa.func.read_csv(sa.func.list_value(*source_list), _format_kwargs(kwargs))
-        )
+        options = ", " + ",".join([f"{key}={val}" for key, val in kwargs.items()])
 
-        view = self._compile_temp_view(table_name, source)
-        with self.begin() as con:
-            con.exec_driver_sql(view)
+        sql = f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_csv({source_list}{options})"
+
+        self.raw_sql(sql)
         return self.table(table_name)
-
-    def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        database: str | None = None,
-        **_: Any,
-    ) -> sa.Table:
-        if schema is None:
-            schema = self.current_schema
-        *db, schema = schema.split(".")
-        db = "".join(db) or database
-        ident = ".".join(
-            map(
-                self._quote,
-                filter(None, (db if db != self.current_database else None, schema)),
-            )
-        )
-
-        s = sa.table(
-            "columns",
-            sa.column("table_catalog", sa.TEXT()),
-            sa.column("table_schema", sa.TEXT()),
-            sa.column("table_name", sa.TEXT()),
-            sa.column("column_name", sa.TEXT()),
-            sa.column("data_type", sa.TEXT()),
-            sa.column("is_nullable", sa.TEXT()),
-            sa.column("ordinal_position", sa.INTEGER()),
-            schema="information_schema",
-        )
-
-        where = s.c.table_name == name
-
-        if db:
-            where &= s.c.table_catalog == db
-
-        if schema:
-            where &= s.c.table_schema == schema
-
-        query = (
-            sa.select(
-                s.c.column_name,
-                s.c.data_type,
-                (s.c.is_nullable == "YES").label("nullable"),
-            )
-            .where(where)
-            .order_by(sa.asc(s.c.ordinal_position))
-        )
-
-        with self.begin() as con:
-            # fetch metadata with pyarrow, it's much faster for wide tables
-            meta = con.execute(query).cursor.fetch_arrow_table()
-
-        if not meta:
-            raise sa.exc.NoSuchTableError(name)
-
-        names = meta["column_name"].to_pylist()
-        types = meta["data_type"].to_pylist()
-        nullables = meta["nullable"].to_pylist()
-
-        ibis_schema = sch.Schema(
-            {
-                name: DuckDBType.from_string(typ, nullable=nullable)
-                for name, typ, nullable in zip(names, types, nullables)
-            }
-        )
-        columns = self._columns_from_schema(name, ibis_schema)
-        return sa.table(name, *columns, schema=ident)
-
-    def drop_table(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        name = self._quote(name)
-        # TODO: handle database quoting
-        if database is not None:
-            name = f"{database}.{name}"
-        drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
-        with self.begin() as con:
-            con.exec_driver_sql(drop_stmt)
 
     def read_parquet(
         self,
@@ -574,13 +704,12 @@ WHERE catalog_name = :database"""
         # Default to using the native duckdb parquet reader
         # If that fails because of auth issues, fall back to ingesting via
         # pyarrow dataset
-        try:
-            self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
-        except sa.exc.OperationalError as e:
-            if isinstance(e.orig, duckdb.IOException):
-                self._read_parquet_pyarrow_dataset(source_list, table_name, **kwargs)
-            else:
-                raise e
+        self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
+        # except sa.exc.OperationalError as e:
+        #     if isinstance(e.orig, duckdb.IOException):
+        #         self._read_parquet_pyarrow_dataset(source_list, table_name, **kwargs)
+        #     else:
+        #         raise e
 
         return self.table(table_name)
 
@@ -593,14 +722,13 @@ WHERE catalog_name = :database"""
         ):
             self._load_extensions(["httpfs"])
 
-        source = sa.select(sa.literal_column("*")).select_from(
-            sa.func.read_parquet(
-                sa.func.list_value(*source_list), _format_kwargs(kwargs)
-            )
-        )
-        view = self._compile_temp_view(table_name, source)
-        with self.begin() as con:
-            con.exec_driver_sql(view)
+        options = ""
+        if kw := kwargs:
+            options = ", " + ",".join([f"{key}={val}" for key, val in kw.items()])
+
+        sql = f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet({source_list}{options})"
+
+        self.raw_sql(sql)
 
     def _read_parquet_pyarrow_dataset(
         self, source_list: str | Iterable[str], table_name: str, **kwargs: Any
@@ -692,15 +820,6 @@ WHERE catalog_name = :database"""
         return self.read_in_memory(
             delta_table.to_pyarrow_dataset(), table_name=table_name
         )
-
-    def list_tables(self, like=None, database=None):
-        tables = self.inspector.get_table_names(schema=database)
-        views = self.inspector.get_view_names(schema=database)
-        # workaround for GH5503
-        temp_views = self.inspector.get_view_names(
-            schema="temp" if database is None else database
-        )
-        return self._filter_with_like(tables + views + temp_views, like)
 
     def read_postgres(
         self, uri: str, table_name: str | None = None, schema: str = "public"
@@ -871,8 +990,8 @@ WHERE catalog_name = :database"""
             :::
         """
         self._run_pre_execute_hooks(expr)
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
+        table = expr.as_table()
+        sql = self.compile(table, limit=limit, params=params)
 
         # handle the argument name change in duckdb 0.8.0
         fetch_record_batch = (
@@ -881,15 +1000,17 @@ WHERE catalog_name = :database"""
             else (lambda cur: cur.fetch_record_batch(chunk_size=chunk_size))
         )
 
-        def batch_producer(con):
-            with con.begin() as c, contextlib.closing(c.execute(sql)) as cur:
-                yield from fetch_record_batch(cur.cursor)
+        def batch_producer(table):
+            yield from fetch_record_batch(table)
 
+        # TODO: check that this is still handled correctly
         # batch_producer keeps the `self.con` member alive long enough to
         # exhaust the record batch reader, even if the backend or connection
         # have gone out of scope in the caller
+        table = self.raw_sql(sql)
+
         return pa.RecordBatchReader.from_batches(
-            expr.as_table().schema().to_pyarrow(), batch_producer(self.con)
+            expr.as_table().schema().to_pyarrow(), batch_producer(table)
         )
 
     def to_pyarrow(
@@ -901,20 +1022,10 @@ WHERE catalog_name = :database"""
         **_: Any,
     ) -> pa.Table:
         self._run_pre_execute_hooks(expr)
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        table = expr.as_table()
+        sql = self.compile(table, limit=limit, params=params)
 
-        # We use `.sql` instead of `.execute` below for performance - in
-        # certain cases duckdb query -> arrow table can be significantly faster
-        # in this configuration. Currently `.sql` doesn't support parametrized
-        # queries, so we need to compile with literal_binds for now.
-        sql = str(
-            query_ast.compile().compile(
-                dialect=self.con.dialect, compile_kwargs={"literal_binds": True}
-            )
-        )
-
-        with self.begin() as con:
-            table = con.connection.sql(sql).to_arrow_table()
+        table = self.raw_sql(sql).fetch_arrow_table()
 
         return expr.__pyarrow_result__(table)
 
@@ -946,8 +1057,7 @@ WHERE catalog_name = :database"""
             A dictionary of torch tensors, keyed by column name.
         """
         compiled = self.compile(expr, limit=limit, params=params, **kwargs)
-        with self._safe_raw_sql(compiled) as cur:
-            return cur.connection.connection.torch()
+        return self.raw_sql(compiled).torch()
 
     @util.experimental
     def to_parquet(
@@ -1005,8 +1115,7 @@ WHERE catalog_name = :database"""
         query = self._to_sql(expr, params=params)
         args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
-        with self.begin() as con:
-            con.exec_driver_sql(copy_cmd)
+        self.raw_sql(copy_cmd)
 
     @util.experimental
     def to_csv(
@@ -1044,8 +1153,7 @@ WHERE catalog_name = :database"""
             *(f"{k.upper()} {v!r}" for k, v in kwargs.items()),
         ]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
-        with self.begin() as con:
-            con.exec_driver_sql(copy_cmd)
+        self.raw_sql(copy_cmd)
 
     def fetch_from_cursor(
         self, cursor: duckdb.DuckDBPyConnection, schema: sch.Schema
@@ -1074,15 +1182,21 @@ WHERE catalog_name = :database"""
         return PandasData.convert_table(df, schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        with self.begin() as con:
-            rows = con.exec_driver_sql(f"DESCRIBE {query}")
+        rows = self.raw_sql(f"DESCRIBE {query}").fetch_arrow_table()
 
-            for name, type, null in toolz.pluck(
-                ["column_name", "column_type", "null"], rows.mappings()
-            ):
-                nullable = null.lower() == "yes"
-                ibis_type = DuckDBType.from_string(type, nullable=nullable)
-                yield name, ibis_type
+        as_py = lambda val: val.as_py()
+        for name, type, null in zip(
+            map(as_py, rows["column_name"]),
+            map(as_py, rows["column_type"]),
+            map(as_py, rows["null"]),
+        ):
+            ibis_type = parse(type)
+            # ibis_type = DuckDBType.from_string(type, nullable=nullable)
+            yield name, ibis_type.copy(nullable=null.lower() == "yes")
+
+    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
+        for memtable in expr.op().find(ops.InMemoryTable):
+            self._register_in_memory_table(memtable)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # in theory we could use pandas dataframes, but when using dataframes
@@ -1117,8 +1231,7 @@ WHERE catalog_name = :database"""
             # register creates a transaction, and we can't nest transactions so
             # we create a function to encapsulate the whole shebang
             def _register(name, table):
-                with self.begin() as con:
-                    con.connection.register(name, table)
+                self.con.register(name, table)
 
             try:
                 _register(name, table)
@@ -1131,36 +1244,37 @@ WHERE catalog_name = :database"""
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
     def _register_udfs(self, expr: ir.Expr) -> None:
-        import ibis.expr.operations as ops
+        ...
+        # import ibis.expr.operations as ops
 
-        with self.begin() as con:
-            for udf_node in expr.op().find(ops.ScalarUDF):
-                compile_func = getattr(
-                    self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-                )
-                with contextlib.suppress(duckdb.InvalidInputException):
-                    con.connection.remove_function(udf_node.__class__.__name__)
+        # with self.begin() as con:
+        #     for udf_node in expr.op().find(ops.ScalarUDF):
+        #         compile_func = getattr(
+        #             self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+        #         )
+        #         with contextlib.suppress(duckdb.InvalidInputException):
+        #             con.connection.remove_function(udf_node.__class__.__name__)
 
-                registration_func = compile_func(udf_node)
-                if registration_func is not None:
-                    registration_func(con)
+        #         registration_func = compile_func(udf_node)
+        #         registration_func(con)
 
     def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
-        func = udf_node.__func__
-        name = func.__name__
-        input_types = [DuckDBType.to_string(arg.dtype) for arg in udf_node.args]
-        output_type = DuckDBType.to_string(udf_node.dtype)
+        ...
+        # func = udf_node.__func__
+        # name = func.__name__
+        # input_types = [DuckDBType.to_string(arg.dtype) for arg in udf_node.args]
+        # output_type = DuckDBType.to_string(udf_node.dtype)
 
-        def register_udf(con):
-            return con.connection.create_function(
-                name,
-                func,
-                input_types,
-                output_type,
-                type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
-            )
+        # def register_udf(con):
+        #     return con.connection.create_function(
+        #         name,
+        #         func,
+        #         input_types,
+        #         output_type,
+        #         type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+        #     )
 
-        return register_udf
+        # return register_udf
 
     _compile_python_udf = _compile_udf
     _compile_pyarrow_udf = _compile_udf
@@ -1177,17 +1291,19 @@ WHERE catalog_name = :database"""
     def _insert_dataframe(
         self, table_name: str, df: pd.DataFrame, overwrite: bool
     ) -> None:
-        columns = list(df.columns)
-        t = sa.table(table_name, *map(sa.column, columns))
+        # TODO: reimplement
+        ...
+        # columns = list(df.columns)
+        # t = sa.table(table_name, *map(sa.column, columns))
 
-        table_name = self._quote(table_name)
+        # table_name = self._quote(table_name)
 
-        # the table name df here matters, and *must* match the input variable's
-        # name because duckdb will look up this name in the outer scope of the
-        # insert call and pull in that variable's data to scan
-        source = sa.table("df", *map(sa.column, columns))
+        # # the table name df here matters, and *must* match the input variable's
+        # # name because duckdb will look up this name in the outer scope of the
+        # # insert call and pull in that variable's data to scan
+        # source = sa.table("df", *map(sa.column, columns))
 
-        with self.begin() as con:
-            if overwrite:
-                con.execute(t.delete())
-            con.execute(t.insert().from_select(columns, sa.select(source)))
+        # with self.begin() as con:
+        #     if overwrite:
+        #         con.execute(t.delete())
+        #     con.execute(t.insert().from_select(columns, sa.select(source)))
