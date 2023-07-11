@@ -12,8 +12,6 @@ from ibis.common.patterns import (
     ValidationError,
 )
 
-# TODO(kszucs): actually we should only allow datatype classes not instances
-
 
 @pytest.mark.parametrize(
     ("value", "dtype"),
