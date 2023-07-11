@@ -1179,13 +1179,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def order_by(
         self,
-        by: str
-        | ir.Column
-        | tuple[str | ir.Column, bool]
-        | Sequence[str]
-        | Sequence[ir.Column]
-        | Sequence[tuple[str | ir.Column, bool]]
-        | None,
+        by: str | ir.Column | Sequence[str] | Sequence[ir.Column] | None,
     ) -> Table:
         """Sort a table by one or more expressions.
 
@@ -1235,11 +1229,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     1 │ c      │     4 │
         └───────┴────────┴───────┘
         """
-        used_tuple_syntax = False
-        if isinstance(by, tuple):
-            by = [by]
-            used_tuple_syntax = True
-
         sort_keys = []
         for item in util.promote_list(by):
             if isinstance(item, tuple):
@@ -1252,14 +1241,6 @@ class Table(Expr, _FixedTextJupyterMixin):
             else:
                 item = bind_expr(self, item)
             sort_keys.append(item)
-
-        if used_tuple_syntax:
-            util.warn_deprecated(
-                "table.order_by((key, True)) and table.order_by((key, False)) syntax",
-                as_of="6.0",
-                removed_in="7.0",
-                instead="Use ibis.desc(key) or ibis.asc(key) instead",
-            )
 
         return self.op().order_by(sort_keys).to_expr()
 
