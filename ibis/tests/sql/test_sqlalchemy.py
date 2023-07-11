@@ -230,17 +230,6 @@ def test_order_by(star1, key, snapshot):
 
 
 @pytest.mark.parametrize(
-    "key",
-    [("f", 0), ["c", ("f", 0)]],
-    ids=["ascending", "mixed"],
-)
-def test_order_by_deprecated(star1, key, snapshot):
-    with pytest.warns(FutureWarning):
-        expr = star1.order_by(key)
-    snapshot.assert_match(to_sql(expr), "out.sql")
-
-
-@pytest.mark.parametrize(
     "expr_fn", [methodcaller("limit", 10), methodcaller("limit", 10, offset=5)]
 )
 def test_limit(star1, expr_fn, snapshot):
