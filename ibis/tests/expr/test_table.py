@@ -458,22 +458,8 @@ def test_order_by(table):
     result2 = table.order_by('f').op()
     assert_equal(result, result2)
 
-    with pytest.warns(FutureWarning):
-        result2 = table.order_by([('f', False)])
-    with pytest.warns(FutureWarning):
-        result3 = table.order_by([('f', 'descending')])
-    with pytest.warns(FutureWarning):
-        result4 = table.order_by([('f', 0)])
-
-    key2 = result2.op().sort_keys[0]
-    key3 = result3.op().sort_keys[0]
-    key4 = result4.op().sort_keys[0]
-
-    assert key2.descending is True
-    assert key3.descending is True
-    assert key4.descending is True
-    assert key2.expr.equals(key3.expr)
-    assert key2.expr.equals(key4.expr)
+    key2 = result2.sort_keys[0]
+    assert key2.descending is False
 
 
 def test_order_by_desc_deferred_sort_key(table):
