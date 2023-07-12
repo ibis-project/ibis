@@ -950,6 +950,11 @@ def test_substr_with_null_values(backend, alltypes, df):
             lambda d: d.file(),
             "/docs/books/tutorial/index.html?name=networking",
             id="file",
+            marks=[
+                pytest.mark.notimpl(
+                    ["pandas", "dask"], raises=com.OperationNotDefinedError
+                ),
+            ],
         ),
         param(lambda d: d.path(), "/docs/books/tutorial/index.html", id="path"),
         param(lambda d: d.query(), "name=networking", id="query"),
@@ -965,12 +970,10 @@ def test_substr_with_null_values(backend, alltypes, df):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "dask",
         "datafusion",
         "duckdb",
         "mssql",
         "mysql",
-        "pandas",
         "polars",
         "postgres",
         "pyspark",

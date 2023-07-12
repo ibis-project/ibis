@@ -4,6 +4,7 @@ import itertools
 import json
 import operator
 from functools import partial, reduce
+from urllib.parse import parse_qs, urlsplit
 
 import numpy as np
 import pandas as pd
@@ -481,3 +482,79 @@ def execute_json_getitem_series_str_int(_, data, key, **kwargs):
 @execute_node.register(ops.JSONGetItem, pd.Series, pd.Series)
 def execute_json_getitem_series_series(_, data, key, **kwargs):
     return pd.Series(map(try_getitem, data, key), dtype="object")
+
+
+def _extract_url_field(data, field_name):
+    if isinstance(data, str):
+        return getattr(urlsplit(data), field_name, "")
+
+    return pd.Series(
+        [getattr(urlsplit(string), field_name, "") for string in data],
+        dtype=data.dtype,
+        name=data.name,
+    )
+
+
+@execute_node.register(ops.ExtractProtocol, (pd.Series, str))
+def execute_extract_protocol(op, data, **kwargs):
+    return _extract_url_field(data, "scheme")
+
+
+@execute_node.register(ops.ExtractAuthority, (pd.Series, str))
+def execute_extract_authority(op, data, **kwargs):
+    return _extract_url_field(data, "netloc")
+
+
+@execute_node.register(ops.ExtractPath, (pd.Series, str))
+def execute_extract_path(op, data, **kwargs):
+    return _extract_url_field(data, "path")
+
+
+@execute_node.register(ops.ExtractFragment, (pd.Series, str))
+def execute_extract_fragment(op, data, **kwargs):
+    return _extract_url_field(data, "fragment")
+
+
+@execute_node.register(ops.ExtractHost, (pd.Series, str))
+def execute_extract_host(op, data, **kwargs):
+    return _extract_url_field(data, "hostname")
+
+
+@execute_node.register(ops.ExtractQuery, (pd.Series, str), (str, type(None)))
+def execute_extract_query(op, data, key, **kwargs):
+    def extract_query_param(url, param_name):
+        query = urlsplit(url).query
+        if param_name is not None:
+            value = parse_qs(query)[param_name]
+            return value if len(value) > 1 else value[0]
+        else:
+            return query
+
+    if isinstance(data, str):
+        return extract_query_param(data, key)
+
+    return pd.Series(
+        [extract_query_param(url, key) for url in data],
+        dtype=data.dtype,
+        name=data.name,
+    )
+
+
+@execute_node.register(ops.ExtractUserInfo, (pd.Series, str))
+def execute_extract_user_info(op, data, **kwargs):
+    def extract_user_info(url):
+        url_parts = urlsplit(url)
+
+        username = url_parts.username or ""
+        password = url_parts.password or ""
+
+        return f"{username}:{password}"
+
+    if isinstance(data, str):
+        return extract_user_info(data)
+
+    return pd.Series(
+        [extract_user_info(string) for string in data],
+        dtype=data.dtype,
+        name=data.name,
+    )
