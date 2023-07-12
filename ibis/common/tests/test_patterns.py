@@ -40,6 +40,7 @@ from ibis.common.patterns import (
     EqualTo,
     FrozenDictOf,
     Function,
+    GenericInstanceOf,
     Innermost,
     InstanceOf,
     IsIn,
@@ -192,6 +193,21 @@ def test_generic_instance_of_with_covariant_typevar():
     assert match(My[int, int], My(1, 2, "3"), context={}) == {}
     assert match(My[int, float], My(1, 2, "3"), context={}) is NoMatch
     assert match(My[int, float], My(1, 2.0, "3"), context={}) == {}
+
+
+def test_generic_instance_of_disallow_nested_coercion():
+    class MyString(str, Coercible):
+        @classmethod
+        def __coerce__(cls, other):
+            return cls(str(other))
+
+    class Box(Generic[T]):
+        value: T
+
+    p = Pattern.from_typehint(Box[MyString])
+    assert isinstance(p, GenericInstanceOf)
+    assert p.origin == Box
+    assert p.field_patterns == {"value": InstanceOf(MyString)}
 
 
 def test_coerced_to():
@@ -702,6 +718,19 @@ def test_pattern_from_typehint_uniontype():
     # Union[type1, type2]
     validator = Pattern.from_typehint(str | int | float)
     assert validator == AnyOf(InstanceOf(str), InstanceOf(int), InstanceOf(float))
+
+
+def test_pattern_from_typehint_disable_coercion():
+    class MyFloat(float, Coercible):
+        @classmethod
+        def __coerce__(cls, obj):
+            return cls(float(obj))
+
+    p = Pattern.from_typehint(MyFloat, allow_coercion=True)
+    assert isinstance(p, CoercedTo)
+
+    p = Pattern.from_typehint(MyFloat, allow_coercion=False)
+    assert isinstance(p, InstanceOf)
 
 
 class PlusOne(Coercible):
