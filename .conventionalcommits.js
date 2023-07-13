@@ -5,7 +5,7 @@ const releaseConfig = require("./.releaserc.js");
 function extractConventionalCommitsConfig(config) {
   return config.plugins
     .filter(
-      ([plugin, _]) => plugin == "@semantic-release/release-notes-generator"
+      ([plugin, _]) => plugin == "@semantic-release/release-notes-generator",
     )
     .map(([_, config]) => config)[0].presetConfig.types;
 }
