@@ -76,7 +76,7 @@ jobs:
           app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
-      - uses: cpcloud/compare-commits-action@v5.0.33
+      - uses: cpcloud/compare-commits-action@v5.0.34
         if: fromJSON(steps.needs_pr.outputs.did_change)
         id: compare_commits
         with:
