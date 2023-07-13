@@ -1223,7 +1223,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> url = ibis.literal("https://user:pass@example.com:80/docs/books")
-        >>> result = url.authority()  # user:pass
+        >>> result = url.userinfo()  # user:pass
 
         Returns
         -------
@@ -1239,7 +1239,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> url = ibis.literal("https://user:pass@example.com:80/docs/books")
-        >>> result = url.authority()  # example.com
+        >>> result = url.host()  # example.com
 
         Returns
         -------
@@ -1255,7 +1255,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
-        >>> result = url.authority()  # docs/books/tutorial/index.html?name=networking
+        >>> result = url.file()  # docs/books/tutorial/index.html?name=networking
 
         Returns
         -------
@@ -1271,7 +1271,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
-        >>> result = url.authority()  # docs/books/tutorial/index.html
+        >>> result = url.path()  # docs/books/tutorial/index.html
 
         Returns
         -------
