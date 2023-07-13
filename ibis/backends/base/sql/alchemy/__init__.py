@@ -471,6 +471,9 @@ class BaseAlchemyBackend(BaseSQLBackend):
             warnings.filterwarnings(
                 "ignore", message="Did not recognize type", category=sa.exc.SAWarning
             )
+            warnings.filterwarnings(
+                "ignore", message="index key", category=sa.exc.SAWarning
+            )
             table = sa.Table(
                 name,
                 meta,
