@@ -255,21 +255,22 @@ def main(args):
     # generate data from R
     subprocess.check_call(["Rscript", str(EXAMPLES_DIRECTORY / "gen_examples.R")])
 
-    # rsync data and descriptions with the bucket
-    subprocess.check_call(
-        ["gsutil", "-m", "rsync", "-r", "-d", data_path, f"gs://{bucket}/data"]
-    )
+    if not args.dry_run:
+        # rsync data and descriptions with the bucket
+        subprocess.check_call(
+            ["gsutil", "-m", "rsync", "-r", "-d", data_path, f"gs://{bucket}/data"]
+        )
 
-    # get bucket data and produce registry
-    make_registry(blobs=client.list_blobs(bucket), bucket=bucket, prefix="data")
+        # get bucket data and produce registry
+        make_registry(blobs=client.list_blobs(bucket), bucket=bucket, prefix="data")
 
-    data = make_metadata(
-        descriptions=descriptions_path, registry=EXAMPLES_DIRECTORY / "registry.txt"
-    )
+        data = make_metadata(
+            descriptions=descriptions_path, registry=EXAMPLES_DIRECTORY / "registry.txt"
+        )
 
-    with EXAMPLES_DIRECTORY.joinpath("metadata.json").open(mode="w") as f:
-        json.dump(data, f, indent=2, sort_keys=True)
-        f.write("\n")
+        with EXAMPLES_DIRECTORY.joinpath("metadata.json").open(mode="w") as f:
+            json.dump(data, f, indent=2, sort_keys=True)
+            f.write("\n")
 
 
 if __name__ == "__main__":
@@ -297,6 +298,12 @@ if __name__ == "__main__":
         help="Directory containing imdb source data",
         default=None,
         type=str,
+    )
+    p.add_argument(
+        "-d",
+        "--dry-run",
+        action="store_true",
+        help="Avoid executing any code that writes to the example data bucket",
     )
 
     main(p.parse_args())
