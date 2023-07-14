@@ -20,10 +20,6 @@
   "AllstarFull_raw": {
     "key": "AllstarFull_raw.csv.gz"
   },
-  "Animals": {
-    "description": "Brain and Body Weights for 28 Species",
-    "key": "Animals.csv.gz"
-  },
   "Appearances": {
     "description": "Appearances table",
     "key": "Appearances.csv.gz"
@@ -331,23 +327,12 @@
   "Meat_raw": {
     "key": "Meat_raw.csv.gz"
   },
-  "Melanoma": {
-    "description": "Survival from Malignant Melanoma",
-    "key": "Melanoma.csv.gz"
-  },
   "Milk": {
     "description": "Protein content of cows' milk",
     "key": "Milk.csv.gz"
   },
   "Milk_raw": {
     "key": "Milk_raw.csv.gz"
-  },
-  "Muscle": {
-    "description": "Contraction of heart muscle sections",
-    "key": "Muscle.csv.gz"
-  },
-  "Muscle_raw": {
-    "key": "Muscle_raw.csv.gz"
   },
   "Nitrendipene": {
     "description": "Assay of nitrendipene",
@@ -362,13 +347,6 @@
   },
   "OME_raw": {
     "key": "OME_raw.csv.gz"
-  },
-  "Oats": {
-    "description": "Split-plot Experiment on Varieties of Oats",
-    "key": "Oats.csv.gz"
-  },
-  "Oats_raw": {
-    "key": "Oats_raw.csv.gz"
   },
   "Orange": {
     "description": "Growth of Orange Trees",
@@ -932,6 +910,14 @@
     "description": "Number of Flaws in Cloth",
     "key": "cloth.csv.gz"
   },
+  "cms_patient_care": {
+    "description": "Data from the Centers for Medicare & Medicaid Services",
+    "key": "cms_patient_care.csv.gz"
+  },
+  "cms_patient_experience": {
+    "description": "Data from the Centers for Medicare & Medicaid Services",
+    "key": "cms_patient_experience.csv.gz"
+  },
   "co_transfer": {
     "description": "Carbon Monoxide Transfer",
     "key": "co_transfer.csv.gz"
@@ -1152,6 +1138,10 @@
   "hirose": {
     "description": "Failure Time of PET Film",
     "key": "hirose.csv.gz"
+  },
+  "household": {
+    "description": "Household data",
+    "key": "household.csv.gz"
   },
   "housing": {
     "description": "Frequency Table from a Copenhagen Housing Conditions Survey",
@@ -1690,6 +1680,10 @@
   "who": {
     "description": "World Health Organization TB data",
     "key": "who.csv.gz"
+  },
+  "who2": {
+    "description": "World Health Organization TB data",
+    "key": "who2.csv.gz"
   },
   "women": {
     "description": "Average Heights and Weights for American Women",
