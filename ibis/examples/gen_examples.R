@@ -4,7 +4,7 @@ library(palmerpenguins)
 library(janitor)
 
 lookup <- list("penguins_raw (penguins)" = "penguins_raw")
-ignored <- c("sim1", "sim2", "sim3", "sim4", "table1", "table2", "table3", "table4a", "table4b", "table5")
+ignored <- c("sim1", "sim2", "sim3", "sim4", "table1", "table2", "table3", "table4a", "table4b", "table5", "Animals", "Oats", "Muscle", "Melanoma")
 
 results <- as.data.frame(data(package = .packages(all.available = TRUE))$results)
 for (i in 1:nrow(results)) {
