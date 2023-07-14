@@ -333,3 +333,11 @@ def test_register_recordbatchreader_warns(con):
     t = con.read_in_memory(reader, table_name=t.get_name())
     res = t.execute()
     tm.assert_frame_equal(res, sol)
+
+
+def test_csv_with_slash_n_null(con, tmp_path):
+    data_path = tmp_path / "data.csv"
+    data_path.write_text("a\n1\n3\n\\N\n")
+    t = con.read_csv(data_path, nullstr="\\N")
+    col = t.a.execute()
+    assert pd.isna(col.iat[-1])
