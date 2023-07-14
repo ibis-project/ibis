@@ -910,14 +910,6 @@
     "description": "Number of Flaws in Cloth",
     "key": "cloth.csv.gz"
   },
-  "cms_patient_care": {
-    "description": "Data from the Centers for Medicare & Medicaid Services",
-    "key": "cms_patient_care.csv.gz"
-  },
-  "cms_patient_experience": {
-    "description": "Data from the Centers for Medicare & Medicaid Services",
-    "key": "cms_patient_experience.csv.gz"
-  },
   "co_transfer": {
     "description": "Carbon Monoxide Transfer",
     "key": "co_transfer.csv.gz"
@@ -1138,10 +1130,6 @@
   "hirose": {
     "description": "Failure Time of PET Film",
     "key": "hirose.csv.gz"
-  },
-  "household": {
-    "description": "Household data",
-    "key": "household.csv.gz"
   },
   "housing": {
     "description": "Frequency Table from a Copenhagen Housing Conditions Survey",
@@ -1680,10 +1668,6 @@
   "who": {
     "description": "World Health Organization TB data",
     "key": "who.csv.gz"
-  },
-  "who2": {
-    "description": "World Health Organization TB data",
-    "key": "who2.csv.gz"
   },
   "women": {
     "description": "Average Heights and Weights for American Women",

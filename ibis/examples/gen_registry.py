@@ -9,7 +9,7 @@ import shutil
 import subprocess
 import tempfile
 import zipfile
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -224,7 +224,9 @@ Contains the IMDb rating and votes information for titles
             convert_to_parquet(con, path, description=meta[path.name])
 
 
-def main(args):
+def main(parser):
+    args = parser.parse_args()
+
     bucket = args.bucket
     clean = args.clean
 
@@ -255,6 +257,8 @@ def main(args):
     # generate data from R
     subprocess.check_call(["Rscript", str(EXAMPLES_DIRECTORY / "gen_examples.R")])
 
+    verify_case(parser, data_path)
+
     if not args.dry_run:
         # rsync data and descriptions with the bucket
         subprocess.check_call(
@@ -273,37 +277,48 @@ def main(args):
             f.write("\n")
 
 
+def verify_case(parser: argparse.ArgumentParser, data_path: Path) -> None:
+    keys = (p.name[: -sum(map(len, p.suffixes))] for p in data_path.glob("*"))
+    counter = Counter(map(str.lower, keys))
+
+    invalid_keys = [key for key, count in counter.items() if count > 1]
+    if invalid_keys:
+        parser.error(
+            f"keys {invalid_keys} are incompatible with case-insensitive file systems"
+        )
+
+
 if __name__ == "__main__":
     import argparse
 
-    p = argparse.ArgumentParser(
+    parser = argparse.ArgumentParser(
         description="Set up the pooch registry from a GCS bucket.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument(
+    parser.add_argument(
         "-b",
         "--bucket",
         default="ibis-examples",
         help="GCS bucket to rsync example data to",
     )
-    p.add_argument(
+    parser.add_argument(
         "-C",
         "--clean",
         action="store_true",
         help="Remove data and descriptions directories before generating examples",
     )
-    p.add_argument(
+    parser.add_argument(
         "-I",
         "--imdb-source-dir",
         help="Directory containing imdb source data",
         default=None,
         type=str,
     )
-    p.add_argument(
+    parser.add_argument(
         "-d",
         "--dry-run",
         action="store_true",
         help="Avoid executing any code that writes to the example data bucket",
     )
 
-    main(p.parse_args())
+    main(parser)
