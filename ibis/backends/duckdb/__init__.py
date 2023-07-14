@@ -53,9 +53,10 @@ def _format_kwargs(kwargs: Mapping[str, Any]):
     bindparams, pieces = [], []
     for name, value in kwargs.items():
         bindparam = sa.bindparam(name, value)
-        if not isinstance(
-            bindparam.type, sa.sql.sqltypes.NullType
-        ):  # the parameter type is not null
+        if isinstance(paramtype := bindparam.type, sa.String):
+            # special case strings to avoid double escaping backslashes
+            pieces.append(f"{name} = '{value!s}'")
+        elif not isinstance(paramtype, sa.types.NullType):
             bindparams.append(bindparam)
             pieces.append(f"{name} = :{name}")
         else:  # fallback to string strategy
