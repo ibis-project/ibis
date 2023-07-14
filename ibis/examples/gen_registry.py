@@ -111,7 +111,7 @@ def add_movielens_example(data_path: Path):
 
     # convert to parquet
     with tempfile.TemporaryDirectory() as d:
-        con = ibis.duckdb.connect(Path(d, "movielens.ddb"), experimental_parallel_csv=1)
+        con = ibis.duckdb.connect(Path(d, "movielens.ddb"))
         d = Path(d)
         all_data = d / filename
         all_data.write_bytes(raw_bytes)
@@ -219,14 +219,9 @@ Contains the IMDb rating and votes information for titles
                 ):
                     fut.result()
 
-        con = ibis.duckdb.connect(source_dir / "imdb.ddb", experimental_parallel_csv=1)
-
-        with concurrent.futures.ThreadPoolExecutor() as e:
-            for fut in concurrent.futures.as_completed(
-                e.submit(convert_to_parquet, con, path, description=meta[path.name])
-                for path in source_dir.glob("*.tsv.gz")
-            ):
-                fut.result()
+        con = ibis.duckdb.connect(source_dir / "imdb.ddb")
+        for path in source_dir.glob("*.tsv.gz"):
+            convert_to_parquet(con, path, description=meta[path.name])
 
 
 def main(args):
