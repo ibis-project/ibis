@@ -6,12 +6,12 @@ import pytest
 
 import ibis.examples
 import ibis.util
-from ibis.conftest import CI, LINUX, SANDBOXED
+from ibis.conftest import CI, LINUX, MACOS, SANDBOXED
 
 pytestmark = pytest.mark.examples
 
 duckdb = pytest.importorskip("duckdb")
-pytest.importorskip("pooch")
+pytest.importorskip("pins")
 
 # large files or files that are used elsewhere
 ignored = frozenset(
@@ -43,26 +43,29 @@ ignored = frozenset(
     * CI  # ignore in CI, but not locally
 )
 
-xfail_linux_nix = pytest.mark.xfail(
-    LINUX and SANDBOXED,
+skip_linux_nix = pytest.mark.skipif(
+    (LINUX or MACOS) and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
-    raises=OSError,
 )
+
+
+@pytest.fixture(scope="session")
+def example_con(tmp_path_factory, worker_id):
+    return ibis.duckdb.connect(
+        extension_directory=str(tmp_path_factory.mktemp(worker_id))
+    )
 
 
 @pytest.mark.parametrize("example", sorted(frozenset(dir(ibis.examples)) - ignored))
 @pytest.mark.duckdb
 @pytest.mark.backend
-@xfail_linux_nix
-def test_examples(example, tmp_path):
+@skip_linux_nix
+def test_examples(example, example_con):
     ex = getattr(ibis.examples, example)
 
     assert example in repr(ex)
 
-    # initiate an new connection for every test case for isolation
-    con = ibis.duckdb.connect(extension_directory=str(tmp_path))
-
-    df = ex.fetch(backend=con).limit(1).execute()
+    df = ex.fetch(backend=example_con).limit(1).execute()
     assert len(df) == 1
 
 
@@ -74,7 +77,7 @@ def test_non_example():
 
 @pytest.mark.duckdb
 @pytest.mark.backend
-@xfail_linux_nix
+@skip_linux_nix
 def test_backend_arg():
     con = ibis.duckdb.connect()
     t = ibis.examples.penguins.fetch(backend=con)
@@ -83,7 +86,7 @@ def test_backend_arg():
 
 @pytest.mark.duckdb
 @pytest.mark.backend
-@xfail_linux_nix
+@skip_linux_nix
 def test_table_name_arg():
     con = ibis.duckdb.connect()
     name = f"penguins-{uuid.uuid4().hex}"
@@ -94,7 +97,7 @@ def test_table_name_arg():
 @pytest.mark.pandas
 @pytest.mark.duckdb
 @pytest.mark.backend
-@xfail_linux_nix
+@skip_linux_nix
 @pytest.mark.parametrize(
     ("example", "columns"),
     [

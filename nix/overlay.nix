@@ -79,7 +79,7 @@ in
   gen-examples = pkgs.writeShellApplication {
     name = "gen-examples";
     runtimeInputs = [
-      pkgs.ibisDevEnv311
+      pkgs.ibisDevEnv310
       (pkgs.rWrapper.override {
         packages = with pkgs.rPackages; [
           Lahman
