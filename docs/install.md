@@ -7,26 +7,17 @@ hide:
 
 # Install Ibis
 
-=== "pip"
+## Using `pip`
 
-    ```sh
-    pip install 'ibis-framework[duckdb]' # (1) (2)
-    ```
+We suggest starting with the DuckDB backend. It's performant and fully
+featured.
 
-    1. We suggest starting with the DuckDB backend.  It's performant and fully featured.  If you would like to use a different backend, all of the available options are listed below.
+```sh
+pip install 'ibis-framework[duckdb]'
+```
 
-    2. Note that the `ibis-framework` package is *not* the same as the `ibis` package in PyPI.  These two libraries cannot coexist in the same Python environment, as they are both imported with the `ibis` module name.
-
-{% for mgr in ["conda", "mamba"] %}
-=== "{{ mgr }}"
-
-    ```sh
-    {{ mgr }} install -c conda-forge ibis-framework
-    ```
-
-{% endfor %}
-
-## Install backend dependencies
+If you would like to use a different backend, all of the available options are
+listed below.
 
 {% for backend in sorted(ibis.backends.base._get_backend_names()) %}
 {% if backend != "spark" %}
@@ -38,6 +29,42 @@ hide:
 
 {% endif %}
 {% endfor %}
+
+Note that the `ibis-framework` package is _not_ the same as the `ibis` package
+in PyPI. These two libraries cannot coexist in the same Python environment, as
+they are both imported with the `ibis` module name.
+
+## Using `conda` or `mamba`
+
+<!-- prettier-ignore-start -->
+
+{% for mgr in ["conda", "mamba"] %}
+=== "{{ mgr }}"
+
+    The base `ibis-framework` package includes support for the `duckdb`
+    backend. This is our recommended backend for local execution.
+
+    ```sh
+    {{ mgr }} install -c conda-forge ibis-framework
+    ```
+
+    If you would like to use a different backend, all of the available options
+    are listed below.
+
+{% for backend in sorted(ibis.backends.base._get_backend_names()) %}
+{% if backend != "spark" %}
+    === "{{ backend }}"
+
+        ```sh
+        {{ mgr }} install -c conda-forge ibis-{{ backend }}
+        ```
+
+{% endif %}
+{% endfor %}
+
+{% endfor %}
+
+<!-- prettier-ignore-end -->
 
 ---
 
