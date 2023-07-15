@@ -210,6 +210,11 @@ def tmpcon(alchemy_con):
     return alchemy_con._from_url(alchemy_con.con.url)
 
 
+@mark.broken(
+    ["oracle"],
+    reason="oracle temp tables aren't cleaned up on reconnect -- they need to "
+    "be switched from using atexit to weakref.finalize",
+)
 @mark.notimpl(["trino", "druid"], reason="doesn't implement temporary tables")
 @mark.notyet(
     ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
