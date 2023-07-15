@@ -1,10 +1,8 @@
 from __future__ import annotations
 
+import functools
 import json
-import os
 from typing import TYPE_CHECKING, Optional
-
-import filelock
 
 import ibis
 from ibis.common.grounds import Concrete
@@ -18,10 +16,6 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
 
-_EXAMPLES = None
-
-_METADATA = json.loads(resources.files(__name__).joinpath("metadata.json").read_text())
-
 # These backends load the data directly using `read_csv`/`read_parquet`. All
 # other backends load the data using pyarrow, then passing it off to
 # `create_table`.
@@ -29,8 +23,8 @@ _DIRECT_BACKENDS = frozenset({"duckdb", "polars"})
 
 
 class Example(Concrete):
-    descr: Optional[str]
-    key: str
+    name: str
+    help: Optional[str]
 
     def fetch(
         self,
@@ -38,18 +32,17 @@ class Example(Concrete):
         table_name: str | None = None,
         backend: BaseBackend | None = None,
     ) -> ir.Table:
-        key = self.key
-        # lock to ensure we don't clobber the file if fetched in another
-        # process
-        _EXAMPLES.abspath.mkdir(parents=True, exist_ok=True)
-        with filelock.FileLock(_EXAMPLES.abspath / f"{key}.lock"):
-            path = _EXAMPLES.fetch(key, progressbar=True)
-
         if backend is None:
             backend = ibis.get_backend()
 
+        name = self.name
+
         if table_name is None:
-            table_name = ibis.util.gen_name(f"examples_{type(self).__name__}")
+            table_name = ibis.util.gen_name(f"examples_{name}")
+
+        board = _get_board()
+
+        (path,) = board.pin_download(name)
 
         if backend.name in _DIRECT_BACKENDS:
             # Read directly into these backends. This helps reduce memory
@@ -111,40 +104,40 @@ Examples
 >>> t = ibis.examples.{name}.fetch()
 """
 
+_BUCKET = "ibis-pins"
 
+
+@functools.cache
+def _get_metadata():
+    return json.loads(resources.files(__name__).joinpath("metadata.json").read_text())
+
+
+@functools.cache
+def _get_board():
+    import pins
+
+    return pins.board_gcs(_BUCKET)
+
+
+@functools.cache
 def __dir__() -> list[str]:
-    return sorted(_METADATA.keys())
+    return sorted(_get_metadata().keys())
 
 
 def __getattr__(name: str) -> Example:
-    global _EXAMPLES  # noqa: PLW0603
+    try:
+        meta = _get_metadata()
 
-    if _EXAMPLES is None:
-        import pooch
+        description = meta[name].get("description")
 
-        _EXAMPLES = pooch.create(
-            path=pooch.os_cache("ibis-framework"),
-            # the trailing slash matters here
-            base_url="https://storage.googleapis.com/ibis-examples/data/",
-            version=ibis.__version__,
-            env="IBIS_EXAMPLES_DATA",
-        )
-        with resources.files(__name__).joinpath("registry.txt").open(mode="r") as _f:
-            _EXAMPLES.load_registry(_f)
+        fields = {"__doc__": description} if description is not None else {}
 
-    spec = _METADATA.get(name, {})
+        example_class = type(name, (Example,), fields)
+        example_class.fetch.__doc__ = _FETCH_DOCSTRING_TEMPLATE.format(name=name)
 
-    if (key := spec.get("key")) is None:
-        raise AttributeError(name)
-
-    description = spec.get("description")
-
-    _, ext = key.split(os.extsep, maxsplit=1)
-
-    fields = {"__doc__": description} if description is not None else {}
-
-    example_class = type(name, (Example,), fields)
-    example_class.fetch.__doc__ = _FETCH_DOCSTRING_TEMPLATE.format(name=name)
-    example = example_class(descr=description, key=key)
-    setattr(ibis.examples, name, example)
-    return example
+        example = example_class(name=name, help=description)
+        setattr(ibis.examples, name, example)
+    except Exception as e:  # noqa: BLE001
+        raise AttributeError(name) from e
+    else:
+        return example

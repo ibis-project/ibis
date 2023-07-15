@@ -2,62 +2,41 @@
 from __future__ import annotations
 
 import concurrent.futures
-import io
+import functools
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 import zipfile
-from collections import Counter, defaultdict
+from collections import Counter
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
-import pooch
+import pins
 import requests
+import tqdm
 from google.cloud import storage
 
 import ibis
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterator, Mapping
 
 EXAMPLES_DIRECTORY = Path(__file__).parent
 
-
-def make_registry(*, blobs: Iterable[storage.Blob], bucket: str, prefix: str) -> None:
-    # Names of the data files
-    path_prefix = f"{prefix}/"
-    prefix_len = len(path_prefix)
-
-    base_url = "https://storage.googleapis.com"
-
-    with tempfile.TemporaryDirectory() as directory:
-        with concurrent.futures.ThreadPoolExecutor() as e:
-            for fut in concurrent.futures.as_completed(
-                e.submit(
-                    pooch.retrieve,
-                    url=f"{base_url}/{bucket}/{prefix}/{name[prefix_len:]}",
-                    known_hash=None,
-                    fname=name[prefix_len:],
-                    path=directory,
-                )
-                for blob in blobs
-                if (name := blob.name).startswith(path_prefix)
-            ):
-                fut.result()
-
-        # Create the registry file from the downloaded data files
-        pooch.make_registry(directory, EXAMPLES_DIRECTORY / "registry.txt")
+pins.config.pins_options.quiet = True
 
 
-def make_descriptions(descriptions_dir: Path) -> None:
+Metadata = dict[str, dict[str, str] | None]
+
+
+def make_descriptions(descriptions_dir: Path) -> Iterator[tuple[str, str]]:
     return (
         (file.name, file.read_text().strip()) for file in descriptions_dir.glob("*")
     )
 
 
-def make_keys(registry: Path) -> dict:
+def make_keys(registry: Path) -> dict[str, str]:
     return (
         (key.split(os.extsep, maxsplit=1)[0], key)
         for key, _ in (
@@ -67,21 +46,7 @@ def make_keys(registry: Path) -> dict:
     )
 
 
-def make_metadata(
-    *, descriptions: Path, registry: Path
-) -> Mapping[str, dict[str, str]]:
-    data = defaultdict(dict)
-
-    for key, value in make_descriptions(descriptions):
-        data[key]["description"] = value
-
-    for key, value in make_keys(registry):
-        data[key]["key"] = value
-
-    return data
-
-
-def add_wowah_example(client: storage.Client, *, data_path: Path):
+def add_wowah_example(data_path, *, client: storage.Client, metadata: Metadata) -> None:
     bucket = client.get_bucket("ibis-tutorial-data")
 
     args = []
@@ -93,6 +58,7 @@ def add_wowah_example(client: storage.Client, *, data_path: Path):
                 f"wowah_{tail}" if not tail.startswith("wowah") else tail
             )
             args.append((path, blob))
+            metadata[path.with_suffix("").name] = {}
 
     with concurrent.futures.ThreadPoolExecutor() as e:
         for fut in concurrent.futures.as_completed(
@@ -106,15 +72,23 @@ def add_wowah_example(client: storage.Client, *, data_path: Path):
             fut.result()
 
 
-def add_movielens_example(data_path: Path):
+def add_movielens_example(
+    data_path: Path, *, metadata: Metadata, source_zip: Path | None = None
+):
     filename = "ml-latest-small.zip"
-    resp = requests.get(f"https://files.grouplens.org/datasets/movielens/{filename}")
-    resp.raise_for_status()
-    raw_bytes = resp.content
+
+    if source_zip is not None and source_zip.exists():
+        raw_bytes = source_zip.read_bytes()
+    else:
+        resp = requests.get(
+            f"https://files.grouplens.org/datasets/movielens/{filename}"
+        )
+        resp.raise_for_status()
+        raw_bytes = resp.content
 
     # convert to parquet
     with tempfile.TemporaryDirectory() as d:
-        con = ibis.duckdb.connect(Path(d, "movielens.ddb"))
+        con = ibis.duckdb.connect()
         d = Path(d)
         all_data = d / filename
         all_data.write_bytes(raw_bytes)
@@ -129,31 +103,35 @@ def add_movielens_example(data_path: Path):
             parquet_path = data_path.joinpath(
                 member.replace("ml-latest-small/", "ml_latest_small_")
             ).with_suffix(".parquet")
+            metadata[parquet_path.with_suffix("").name] = {}
             con.read_csv(csv_path).to_parquet(parquet_path, codec="zstd")
 
 
-def add_imdb_example(*, source_dir: Path | None, data_path: Path) -> None:
-    def convert_to_parquet(con, tsv_file: Path, description: str) -> None:
+def add_imdb_example(data_path: Path) -> None:
+    def convert_to_parquet(
+        base: Path,
+        *,
+        con: ibis.backends.duckdb.Base,
+        description: str,
+        bar: tqdm.tqdm,
+    ) -> None:
         dest = data_path.joinpath(
             "imdb_"
-            + tsv_file.with_suffix("").with_suffix(".parquet").name.replace(".", "_", 1)
+            + Path(base)
+            .with_suffix("")
+            .with_suffix(".parquet")
+            .name.replace(".", "_", 1)
         )
-        con.read_csv(tsv_file, nullstr=r"\N", header=1, quote="").to_parquet(
-            dest, compression="zstd"
+        con.read_csv(
+            f"https://datasets.imdbws.com/{base}",
+            nullstr=r"\N",
+            header=1,
+            quote="",
+        ).to_parquet(dest, compression="zstd")
+        dest.parents[1].joinpath("descriptions", dest.with_suffix("").name).write_text(
+            description
         )
-        dest.parent.parent.joinpath(
-            "descriptions", dest.with_suffix("").name
-        ).write_text(description)
-        print(f"converted {tsv_file.name} to parquet")  # noqa: T201
-
-    def download_file(base: str, outdir: Path) -> None:
-        resp = requests.get(f"https://datasets.imdbws.com/{base}", stream=True)
-        resp.raise_for_status()
-
-        with outdir.joinpath(base).open(mode="wb") as f:
-            for chunk in resp.iter_content(chunk_size=io.DEFAULT_BUFFER_SIZE):
-                f.write(chunk)
-        print(f"downloaded {base}")  # noqa: T201
+        bar.update()
 
     meta = {
         "name.basics.tsv.gz": """\
@@ -211,78 +189,100 @@ Contains the IMDb rating and votes information for titles
 * numVotes - number of votes the title has received""",
     }
 
-    with tempfile.TemporaryDirectory() as d:
-        if source_dir is None:
-            source_dir = Path(d)
-
-            with concurrent.futures.ThreadPoolExecutor() as e:
-                for fut in concurrent.futures.as_completed(
-                    e.submit(download_file, base=base, outdir=source_dir)
-                    for base in meta.keys()
-                ):
-                    fut.result()
-
-        con = ibis.duckdb.connect(source_dir / "imdb.ddb")
-        for path in source_dir.glob("*.tsv.gz"):
-            convert_to_parquet(con, path, description=meta[path.name])
+    bar = tqdm.tqdm(total=len(meta))
+    with concurrent.futures.ThreadPoolExecutor() as e:
+        for fut in concurrent.futures.as_completed(
+            e.submit(
+                convert_to_parquet,
+                base,
+                con=ibis.duckdb.connect(),
+                description=description,
+                bar=bar,
+            )
+            for base, description in meta.items()
+        ):
+            fut.result()
 
 
 def main(parser):
     args = parser.parse_args()
 
-    bucket = args.bucket
-    clean = args.clean
-
     data_path = EXAMPLES_DIRECTORY / "data"
     descriptions_path = EXAMPLES_DIRECTORY / "descriptions"
-
-    if clean:
-        shutil.rmtree(data_path, ignore_errors=True)
-        shutil.rmtree(descriptions_path, ignore_errors=True)
 
     data_path.mkdir(parents=True, exist_ok=True)
     descriptions_path.mkdir(parents=True, exist_ok=True)
 
-    add_movielens_example(data_path)
+    metadata = {}
 
-    add_imdb_example(
-        source_dir=(
-            source_dir
-            if (source_dir := args.imdb_source_dir) is None
-            else Path(source_dir)
+    add_movielens_example(
+        data_path,
+        metadata=metadata,
+        source_zip=(
+            Path(ml_source_zip)
+            if (ml_source_zip := args.movielens_source_zip) is not None
+            else None
         ),
-        data_path=data_path,
     )
 
-    client = storage.Client()
-    add_wowah_example(client=client, data_path=data_path)
+    add_imdb_example(data_path)
+
+    add_wowah_example(data_path, client=storage.Client(), metadata=metadata)
 
     # generate data from R
     subprocess.check_call(["Rscript", str(EXAMPLES_DIRECTORY / "gen_examples.R")])
 
-    verify_case(parser, data_path)
+    verify_case(parser, metadata)
 
     if not args.dry_run:
-        # rsync data and descriptions with the bucket
-        subprocess.check_call(
-            ["gsutil", "-m", "rsync", "-r", "-d", data_path, f"gs://{bucket}/data"]
+        board = pins.board_gcs(args.bucket)
+
+        def write_pin(
+            path: Path,
+            *,
+            board: pins.Board,
+            metadata: Metadata,
+            bar: tqdm.tqdm,
+        ) -> None:
+            pathname = path.name
+            suffixes = path.suffixes
+            name = pathname[: -sum(map(len, suffixes))]
+            description = metadata.get(name, {}).get("description")
+            board.pin_upload(
+                paths=[str(path)],
+                name=name,
+                title=f"`{pathname}` dataset",
+                description=description,
+            )
+            bar.update()
+
+        data_paths = list(data_path.glob("*"))
+
+        write_pin = functools.partial(
+            write_pin,
+            board=board,
+            metadata=metadata,
+            bar=tqdm.tqdm(total=len(data_paths)),
         )
 
-        # get bucket data and produce registry
-        make_registry(blobs=client.list_blobs(bucket), bucket=bucket, prefix="data")
+        with concurrent.futures.ThreadPoolExecutor() as e:
+            for fut in concurrent.futures.as_completed(
+                e.submit(write_pin, path) for path in data_paths
+            ):
+                fut.result()
 
-        data = make_metadata(
-            descriptions=descriptions_path, registry=EXAMPLES_DIRECTORY / "registry.txt"
+        metadata.update(
+            (key, {"description": value})
+            for key, value in make_descriptions(descriptions_path)
         )
 
         with EXAMPLES_DIRECTORY.joinpath("metadata.json").open(mode="w") as f:
-            json.dump(data, f, indent=2, sort_keys=True)
+            json.dump(metadata, f, indent=2, sort_keys=True)
             f.write("\n")
 
 
-def verify_case(parser: argparse.ArgumentParser, data_path: Path) -> None:
-    keys = (p.name[: -sum(map(len, p.suffixes))] for p in data_path.glob("*"))
-    counter = Counter(map(str.lower, keys))
+def verify_case(parser: argparse.ArgumentParser, data: Mapping[str, Any]) -> None:
+    counter = Counter(map(str.lower, data.keys()))
 
     invalid_keys = [key for key, count in counter.items() if count > 1]
     if invalid_keys:
@@ -295,25 +295,26 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Set up the pooch registry from a GCS bucket.",
+        description="Set up the pin board from a GCS bucket.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument(
         "-b",
         "--bucket",
-        default="ibis-examples",
-        help="GCS bucket to rsync example data to",
-    )
-    parser.add_argument(
-        "-C",
-        "--clean",
-        action="store_true",
-        help="Remove data and descriptions directories before generating examples",
+        default=ibis.examples._BUCKET,
+        help="GCS bucket in which to store data",
     )
     parser.add_argument(
         "-I",
         "--imdb-source-dir",
         help="Directory containing imdb source data",
+        default=None,
+        type=str,
+    )
+    parser.add_argument(
+        "-M",
+        "--movielens-source-zip",
+        help="MovieLens data zip file",
         default=None,
         type=str,
     )

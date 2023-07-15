@@ -3,15 +3,14 @@ from __future__ import annotations
 import pytest
 
 import ibis
-from ibis.conftest import LINUX, SANDBOXED
+from ibis.conftest import LINUX, MACOS, SANDBOXED
 
 pytestmark = pytest.mark.examples
 
 
-@pytest.mark.xfail(
-    LINUX and SANDBOXED,
+@pytest.mark.skipif(
+    (LINUX or MACOS) and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
-    raises=OSError,
 )
 @pytest.mark.notimpl(["dask", "datafusion", "pyspark"])
 @pytest.mark.notyet(["bigquery", "clickhouse", "druid", "impala", "mssql", "trino"])

@@ -2,12 +2,13 @@
 name = "ibis-framework"
 version = "6.1.0"
 packages = [{ include = "ibis" }]
-include = [
-  "ibis/examples/*.json",
-  "ibis/examples/*.txt",
-  "ibis/examples/CITATIONS.md",
+include = ["ibis/examples/metadata.json", "ibis/examples/CITATIONS.md"]
+exclude = [
+  "ibis/examples/gen_examples.R",
+  "ibis/examples/gen_registry.py",
+  "ibis/examples/data",
+  "ibis/examples/descriptions",
 ]
-exclude = ["ibis/examples/gen_examples.R", "ibis/examples/gen_registry.py"]
 homepage = "https://ibis-project.org"
 repository = "https://github.com/ibis-project/ibis"
 documentation = "https://ibis-project.org"
@@ -37,7 +38,7 @@ multipledispatch = ">=0.6,<2"
 numpy = ">=1,<2"
 pandas = ">=1.2.5,<3"
 parsy = ">=2,<3"
-pooch = { version = ">=1.6.0,<2", extras = ["progress", "xxhash"] }
+pins = { version = ">=0.8.2,<1", extras = ["gcs"] }
 pyarrow = ">=2,<13"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
@@ -108,6 +109,7 @@ pre-commit = ">=3.1,<4"
 pydeps = ">=1.12.7,<2"
 pyinstrument = ">=4.5.1,<5"
 ruff = ">=0.0.271"
+tqdm = ">=4.66.1,<5"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<24"
@@ -385,7 +387,7 @@ show_deps = true
 # notebooks are skipped because there's no straightforward way to ignore base64
 # encoded strings
 skip = "*.lock,.direnv,.git,*.ipynb"
-ignore-regex = '\b(DOUB|i[if]f|I[IF]F|lamduh)\b'
+ignore-regex = '\b(DOUB|i[if]f|I[IF]F|lamduh|AFE)\b'
 builtin = "clear,rare,names"
 
 [tool.ruff]

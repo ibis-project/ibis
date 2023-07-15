@@ -3029,11 +3029,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━┩
         │ string  │ string      │ float64      │ float64      │ float64      │ … │
         ├─────────┼─────────────┼──────────────┼──────────────┼──────────────┼───┤
-        │ ABW     │ SP.URB.TOTL │ 4.244400e+04 │ 4.304800e+04 │ 4.367000e+04 │ … │
-        │ ABW     │ SP.URB.GROW │ 1.182632e+00 │ 1.413021e+00 │ 1.434560e+00 │ … │
-        │ ABW     │ SP.POP.TOTL │ 9.085300e+04 │ 9.289800e+04 │ 9.499200e+04 │ … │
-        │ ABW     │ SP.POP.GROW │ 2.055027e+00 │ 2.225930e+00 │ 2.229056e+00 │ … │
-        │ AFG     │ SP.URB.TOTL │ 4.436299e+06 │ 4.648055e+06 │ 4.892951e+06 │ … │
+        │ ABW     │ SP.URB.TOTL │ 4.162500e+04 │ 4.202500e+04 │ 4.219400e+04 │ … │
+        │ ABW     │ SP.URB.GROW │ 1.664222e+00 │ 9.563731e-01 │ 4.013352e-01 │ … │
+        │ ABW     │ SP.POP.TOTL │ 8.910100e+04 │ 9.069100e+04 │ 9.178100e+04 │ … │
+        │ ABW     │ SP.POP.GROW │ 2.539234e+00 │ 1.768757e+00 │ 1.194718e+00 │ … │
+        │ AFE     │ SP.URB.TOTL │ 1.155517e+08 │ 1.197755e+08 │ 1.242275e+08 │ … │
         └─────────┴─────────────┴──────────────┴──────────────┴──────────────┴───┘
         >>> world_bank_pop.pivot_longer(s.matches(r"\\d{4}"), names_to="year").head()
         ┏━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
@@ -3041,11 +3041,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
         │ string  │ string      │ string │ float64 │
         ├─────────┼─────────────┼────────┼─────────┤
-        │ ABW     │ SP.URB.TOTL │ 2000   │ 42444.0 │
-        │ ABW     │ SP.URB.TOTL │ 2001   │ 43048.0 │
-        │ ABW     │ SP.URB.TOTL │ 2002   │ 43670.0 │
-        │ ABW     │ SP.URB.TOTL │ 2003   │ 44246.0 │
-        │ ABW     │ SP.URB.TOTL │ 2004   │ 44669.0 │
+        │ ABW     │ SP.URB.TOTL │ 2000   │ 41625.0 │
+        │ ABW     │ SP.URB.TOTL │ 2001   │ 42025.0 │
+        │ ABW     │ SP.URB.TOTL │ 2002   │ 42194.0 │
+        │ ABW     │ SP.URB.TOTL │ 2003   │ 42277.0 │
+        │ ABW     │ SP.URB.TOTL │ 2004   │ 42317.0 │
         └─────────┴─────────────┴────────┴─────────┘
 
         `pivot_longer` has some preprocessing capabiltiies like stripping a prefix and applying
