@@ -304,6 +304,8 @@ class AlchemyType(TypeMapper):
         elif isinstance(typ, sa.DateTime):
             timezone = "UTC" if typ.timezone else None
             return dt.Timestamp(timezone, nullable=nullable)
+        elif isinstance(typ, sat.String):
+            return dt.String(nullable=nullable)
         elif geospatial_supported and isinstance(typ, ga.types._GISType):
             name = typ.geometry_type.upper()
             try:
