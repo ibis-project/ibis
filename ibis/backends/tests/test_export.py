@@ -261,6 +261,35 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), awards_players.to_pandas())
 
 
+@pytest.mark.notimpl(
+    ["dask", "druid", "impala", "pyspark"], reason="No support for exporting files"
+)
+@pytest.mark.notimpl(
+    ["datafusion"],
+    reason="No memtable support",
+)
+@pytest.mark.parametrize("ftype", ["csv", "parquet"])
+def test_memtable_to_file(tmp_path, con, ftype):
+    """
+    Tests against a regression spotted in #6091 where a `memtable` that is
+    created and then immediately exported to `parquet` (or csv) will error
+    because we weren't registering the in-memory table before trying to export
+    it.
+    """
+    outfile = tmp_path / f"memtable.{ftype}"
+    assert not outfile.is_file()
+
+    ibis.set_backend(con)
+
+    memtable = ibis.memtable({"col": [1, 2, 3, 4]})
+
+    getattr(con, f"to_{ftype}")(memtable, outfile)
+
+    assert outfile.is_file()
+
+    ibis.options.default_backend = None
+
+
 @pytest.mark.notimpl(["dask", "impala", "pyspark"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
