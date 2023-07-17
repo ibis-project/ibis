@@ -882,20 +882,21 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     >>> ibis.array([1.0, 2.0, 3.0])
     [1.0, 2.0, 3.0]
 
-    Mixing scalar and column expressions is not allowed
+    Mixing scalar and column expressions is allowed
 
-    >>> ibis.array([t.a, 1.0])
-    Traceback (most recent call last):
-        ...
-    ibis.common.exceptions.IbisTypeError: To create an array column using `array`, all input values must be column expressions.
+    >>> ibis.array([t.a, 42])
+    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ ArrayColumn()        ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<int64>         │
+    ├──────────────────────┤
+    │ [1, 42]              │
+    │ [2, 42]              │
+    │ [3, 42]              │
+    └──────────────────────┘
     """
-    if all(isinstance(value, Column) for value in values):
+    if any(isinstance(value, Column) for value in values):
         return ops.ArrayColumn(values).to_expr()
-    elif any(isinstance(value, Column) for value in values):
-        raise com.IbisTypeError(
-            'To create an array column using `array`, all input values must '
-            'be column expressions.'
-        )
     else:
         try:
             return literal(list(values), type=type)
