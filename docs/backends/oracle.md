@@ -71,3 +71,21 @@ passing a properly formatted Oracle connection URL to `ibis.connect`
 ```python
 con = ibis.connect(f"oracle://{user}:{password}@{host}:{port}/{database}")
 ```
+
+## Connecting to older Oracle databases
+
+`ibis` uses the `python-oracledb` "thin client" to connect to Oracle databases.
+Because early versions of Oracle did not perform case-sensitive checks in
+passwords, some DBAs disable case sensitivity to avoid requiring users to update
+their passwords. If case-sensitive passwords are disabled, then Ibis will not be
+able to connect to the database.
+
+To check if case-sensitivity is enforced you can run
+
+```sql
+show parameter sec_case_sensitive_logon;
+```
+
+If the returned value is `FALSE` then Ibis will _not_ connect.
+
+For more information, see this [issue](https://github.com/oracle/python-oracledb/issues/26).
