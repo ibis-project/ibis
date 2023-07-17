@@ -821,6 +821,7 @@ class Backend(BaseAlchemyBackend):
         >>> # partition on multiple columns
         >>> con.to_parquet(penguins, "penguins_hive_dir", partition_by=("year", "island"))  # doctest: +SKIP
         """
+        self._run_pre_execute_hooks(expr)
         query = self._to_sql(expr, params=params)
         args = ["FORMAT 'parquet'", *(f"{k.upper()} {v!r}" for k, v in kwargs.items())]
         copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
@@ -855,6 +856,7 @@ class Backend(BaseAlchemyBackend):
         **kwargs
             DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv.html#parameters
         """
+        self._run_pre_execute_hooks(expr)
         query = self._to_sql(expr, params=params)
         args = [
             "FORMAT 'csv'",
