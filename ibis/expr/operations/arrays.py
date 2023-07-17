@@ -11,23 +11,13 @@ from ibis.expr.operations.core import Argument, Unary, Value
 
 @public
 class ArrayColumn(Value):
-    cols = rlz.tuple_of(rlz.column(rlz.any), min_length=1)
+    cols = rlz.tuple_of(rlz.any, min_length=1)
 
     output_shape = rlz.Shape.COLUMNAR
 
-    def __init__(self, cols):
-        unique_dtypes = {col.output_dtype for col in cols}
-        if len(unique_dtypes) > 1:
-            raise com.IbisTypeError(
-                f'The types of all input columns must match exactly in a '
-                f'{type(self).__name__} operation.'
-            )
-        super().__init__(cols=cols)
-
     @attribute.default
     def output_dtype(self):
-        first_dtype = self.cols[0].output_dtype
-        return dt.Array(first_dtype)
+        return dt.Array(rlz.highest_precedence_dtype(self.cols))
 
 
 @public
