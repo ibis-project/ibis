@@ -430,7 +430,9 @@ class ArrayValue(Value):
         """
         return ops.ArrayMap(self, func=func).to_expr()
 
-    def filter(self, predicate: Callable[[ir.Value], ir.BooleanValue]) -> ir.ArrayValue:
+    def filter(
+        self, predicate: Callable[[ir.Value], bool | ir.BooleanValue]
+    ) -> ir.ArrayValue:
         """Filter array elements using `predicate`.
 
         Parameters
