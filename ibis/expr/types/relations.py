@@ -109,8 +109,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
-    def __dataframe__(self):
-        return self.to_pyarrow().__dataframe__()
+    def __dataframe__(self, *args: Any, **kwargs: Any):
+        return self.to_pyarrow().__dataframe__(*args, **kwargs)
 
     def as_table(self) -> Table:
         """Promote the expression to a table.
