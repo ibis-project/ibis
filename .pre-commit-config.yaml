@@ -21,7 +21,7 @@ repos:
     hooks:
       - id: actionlint-system
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 23.7.0
     hooks:
       - id: black
   - repo: https://github.com/kynan/nbstripout
