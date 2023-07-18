@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import concurrent.futures
-import functools
 import os
 from typing import TYPE_CHECKING, Any
 
@@ -91,7 +90,6 @@ USE SCHEMA {dbschema};
                     future.result()
 
     @staticmethod
-    @functools.lru_cache(maxsize=None)
     def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
         return ibis.connect(_get_url(), **kw)
 
