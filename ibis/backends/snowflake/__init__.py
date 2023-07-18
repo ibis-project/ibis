@@ -5,6 +5,7 @@ import inspect
 import itertools
 import os
 import platform
+import re
 import shutil
 import sys
 import tempfile
@@ -17,6 +18,7 @@ import sqlalchemy as sa
 import sqlalchemy.types as sat
 from snowflake.connector.constants import FIELD_ID_TO_NAME
 from snowflake.sqlalchemy import ARRAY, OBJECT, URL
+from sqlalchemy.ext.compiler import compiles
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -499,3 +501,14 @@ $$""".format(
         self, name: str, definition: sa.sql.compiler.Compiled
     ) -> str:
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
+
+
+@compiles(sa.sql.Join, "snowflake")
+def compile_join(element, compiler, **kw):
+    result = compiler.visit_join(element, **kw)
+
+    # snowflake doesn't support lateral joins with ON clauses as of
+    # https://docs.snowflake.com/en/release-notes/bcr-bundles/2023_04/bcr-1057
+    if element.right._is_lateral:
+        return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE)
+    return result
