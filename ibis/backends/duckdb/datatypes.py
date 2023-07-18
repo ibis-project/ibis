@@ -101,9 +101,17 @@ _from_duckdb_types = {
     ducktypes.SmallInteger: dt.Int16,
     ducktypes.Integer: dt.Int32,
     ducktypes.BigInteger: dt.Int64,
+    ducktypes.HugeInteger: dt.Int64,
+    # The following dtypes are present in duckdb_engine and will show up
+    # in _some_ tables, but it isn't clear _why_.
+    # Please don't remove them.
+    ducktypes.UInt8: dt.UInt8,
     ducktypes.UTinyInteger: dt.UInt8,
+    ducktypes.UInt16: dt.UInt16,
     ducktypes.USmallInteger: dt.UInt16,
+    ducktypes.UInt32: dt.UInt32,
     ducktypes.UInteger: dt.UInt32,
+    ducktypes.UInt64: dt.UInt64,
     ducktypes.UBigInteger: dt.UInt64,
 }
 
