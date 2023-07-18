@@ -495,7 +495,7 @@ def pytest_runtest_call(item):
             )
 
     for marker in item.iter_markers(name="xfail_version"):
-        kwargs = marker.kwargs
+        kwargs = marker.kwargs.copy()
         if backend not in kwargs:
             continue
 
