@@ -133,3 +133,23 @@ def test_generate_quoted_struct():
     result = typ.compile(dialect=duckdb_engine.Dialect())
     expected = 'STRUCT("in come" TEXT, "my count" BIGINT, thing INTEGER)'
     assert result == expected
+
+
+def test_read_uint8_from_parquet(tmp_path):
+    import ibis
+
+    con = ibis.connect("duckdb://:memory:")
+
+    t = ibis.memtable({"a": [1, 2, 3, 4]})
+    # There is an incorrect mapping in duckdb-engine from UInteger -> UInt8
+    # In order to get something that reads as a UInt8, we cast to UInt32 (UInteger)
+    t = t.mutate(a=t.a.cast("uint32"))
+
+    parqpath = tmp_path / "uint.parquet"
+
+    t.to_parquet(parqpath)
+
+    # If this doesn't fail, then things are working
+    t2 = con.read_parquet(parqpath)
+
+    assert t2.a.type() == dt.uint8
