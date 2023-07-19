@@ -93,7 +93,6 @@ def test_con_dot_sql(backend, con, schema):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
-@pytest.mark.notimpl(["trino"])
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql(backend, con):
     alltypes = con.table("functional_alltypes")
@@ -132,7 +131,6 @@ def test_table_dot_sql(backend, con):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
-@pytest.mark.notimpl(["trino"])
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql_with_join(backend, con):
     alltypes = con.table("functional_alltypes")
@@ -181,7 +179,6 @@ def test_table_dot_sql_with_join(backend, con):
 @dot_sql_notimpl
 @dot_sql_notyet
 @dot_sql_never
-@pytest.mark.notimpl(["trino"])
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_table_dot_sql_repr(con):
     alltypes = con.table("functional_alltypes")
@@ -218,7 +215,7 @@ def test_table_dot_sql_does_not_clobber_existing_tables(con, temp_table):
 @table_dot_sql_notimpl
 @dot_sql_notimpl
 @dot_sql_never
-@pytest.mark.notimpl(["trino", "oracle"])
+@pytest.mark.notimpl(["oracle"])
 def test_dot_sql_alias_with_params(backend, alltypes, df):
     t = alltypes
     x = t.select(x=t.string_col + " abc").alias("foo")
@@ -230,7 +227,7 @@ def test_dot_sql_alias_with_params(backend, alltypes, df):
 @table_dot_sql_notimpl
 @dot_sql_notimpl
 @dot_sql_never
-@pytest.mark.notimpl(["trino", "oracle"])
+@pytest.mark.notimpl(["oracle"])
 def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     foo1 = alltypes.select(x=alltypes.string_col).alias("foo")
     foo2 = alltypes.select(x=alltypes.bigint_col).alias("foo")
@@ -254,7 +251,6 @@ no_sqlglot_dialect = sorted(
     ],
 )
 @pytest.mark.broken(["clickhouse"], raises=DatabaseError)
-@pytest.mark.notyet(["trino"], raises=NotImplementedError)
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @table_dot_sql_notimpl
 @dot_sql_notimpl

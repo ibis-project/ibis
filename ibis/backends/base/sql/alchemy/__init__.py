@@ -797,12 +797,15 @@ class BaseAlchemyBackend(BaseSQLBackend):
         if raw_name not in self._temp_views and raw_name in self.list_tables():
             raise ValueError(f"{raw_name} already exists as a table or view")
         name = self._quote(raw_name)
+        self._execute_view_creation(name, definition)
+        self._temp_views.add(raw_name)
+        self._register_temp_view_cleanup(name, raw_name)
+
+    def _execute_view_creation(self, name, definition):
         lines, params = self._get_compiled_statement(definition, name)
         with self.begin() as con:
             for line in lines:
                 con.exec_driver_sql(line, parameters=params or ())
-        self._temp_views.add(raw_name)
-        self._register_temp_view_cleanup(name, raw_name)
 
     @abc.abstractmethod
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
