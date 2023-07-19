@@ -98,3 +98,17 @@ class Backend(BaseAlchemyBackend):
                 (name, parse(trino_type).copy(nullable=True))
                 for name, trino_type in toolz.pluck(["Column Name", "Type"], mappings)
             )
+
+    def _execute_view_creation(self, name, definition):
+        from sqlalchemy_views import CreateView
+
+        # NB: trino doesn't support temporary views so we use the less
+        # desirable method of cleaning up when the Python process exits using
+        # an atexit hook
+        #
+        # the method that defines the atexit hook is defined in the parent
+        # class
+        view = CreateView(sa.table(name), definition, or_replace=True)
+
+        with self.begin() as con:
+            con.execute(view)
