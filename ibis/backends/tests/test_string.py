@@ -952,7 +952,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             id="file",
             marks=[
                 pytest.mark.notimpl(
-                    ["pandas", "dask"], raises=com.OperationNotDefinedError
+                    ["pandas", "dask", "sqlite"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -977,7 +977,6 @@ def test_substr_with_null_values(backend, alltypes, df):
         "polars",
         "postgres",
         "pyspark",
-        "sqlite",
         "druid",
         "oracle",
     ],

@@ -7,6 +7,7 @@ import math
 import operator
 from collections import defaultdict
 from typing import Callable
+from urllib.parse import parse_qs, urlsplit
 
 try:
     import regex as re
@@ -285,6 +286,60 @@ def _ibis_sqlite_pi():
 @udf
 def _ibis_sqlite_e():
     return math.e
+
+
+@udf
+def _ibis_extract_fragment(url):
+    return _extract_url_field(url, "fragment")
+
+
+@udf
+def _ibis_extract_protocol(url):
+    return _extract_url_field(url, "scheme")
+
+
+@udf
+def _ibis_extract_authority(url):
+    return _extract_url_field(url, "netloc")
+
+
+@udf
+def _ibis_extract_path(url):
+    return _extract_url_field(url, "path")
+
+
+@udf
+def _ibis_extract_host(url):
+    return _extract_url_field(url, "hostname")
+
+
+def _extract_url_field(data, field_name):
+    return getattr(urlsplit(data), field_name, "")
+
+
+@udf
+def _ibis_extract_query(url, param_name):
+    query = urlsplit(url).query
+    if param_name is not None:
+        value = parse_qs(query)[param_name]
+        return value if len(value) > 1 else value[0]
+    else:
+        return query
+
+
+@udf
+def _ibis_extract_query_no_param(url):
+    query = urlsplit(url).query
+    return query
+
+
+@udf
+def _ibis_extract_user_info(url):
+    url_parts = urlsplit(url)
+    username = url_parts.username or ""
+    password = url_parts.password or ""
+
+    return f"{username}:{password}"
 
 
 class _ibis_sqlite_var:
