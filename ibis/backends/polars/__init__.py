@@ -8,7 +8,6 @@ import polars as pl
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -362,22 +361,8 @@ class Backend(BaseBackend):
             node = node.replace(replacements)
             expr = node.to_expr()
 
-        if isinstance(expr, ir.Table):
-            return translate(node, ctx=ctx)
-        elif isinstance(expr, ir.Column):
-            # expression must be named for the projection
-            node = expr.as_table().op()
-            return translate(node, ctx=ctx)
-        elif isinstance(expr, ir.Scalar):
-            if an.is_scalar_reduction(node):
-                node = an.reduction_to_aggregation(node).op()
-                return translate(node, ctx=ctx)
-            else:
-                # doesn't have any _tables associated so create projection
-                # based off of an empty table
-                return pl.DataFrame().lazy().select(translate(node, ctx=ctx))
-        else:
-            raise com.IbisError(f"Cannot compile expression of type: {type(expr)}")
+        node = expr.as_table().op()
+        return translate(node, ctx=ctx)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         return schema_from_polars(

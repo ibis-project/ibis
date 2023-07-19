@@ -88,22 +88,12 @@ class SelectBuilder:
 
         elif isinstance(node, ops.Value):
             if node.output_shape.is_scalar():
-                if an.is_scalar_reduction(node):
-                    table_expr = an.reduction_to_aggregation(node)
-                    return table_expr.op(), _get_scalar(node.name)
-                else:
-                    return node, _get_scalar(node.name)
+                result_handler = _get_scalar(node.name)
             elif node.output_shape.is_columnar():
-                if isinstance(node, ops.TableColumn):
-                    table_expr = node.table.to_expr()[[node.name]]
-                    result_handler = _get_column(node.name)
-                else:
-                    table_expr = node.to_expr().as_table()
-                    result_handler = _get_column(node.name)
-
-                return table_expr.op(), result_handler
+                result_handler = _get_column(node.name)
             else:
                 raise com.TranslationError(f"Unexpected shape {node.output_shape}")
+            return node.to_expr().as_table().op(), result_handler
         else:
             raise com.TranslationError(f'Do not know how to execute: {type(node)}')
 
@@ -163,7 +153,9 @@ class SelectBuilder:
         # expression that is being translated only depends on a single table
         # expression.
 
-        if isinstance(self.op, ops.TableNode):
+        if isinstance(self.op, ops.DummyTable):
+            self.select_set = list(self.op.values)
+        elif isinstance(self.op, ops.TableNode):
             self._collect(self.op, toplevel=True)
             assert self.table_set is not None
         else:
