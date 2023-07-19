@@ -282,6 +282,14 @@ def _day_of_the_week_name(arg):
     )
 
 
+def _extract_query(t, op):
+    arg = t.translate(op.arg)
+    if op.key is not None:
+        return sa.func._ibis_extract_query(arg, t.translate(op.key))
+    else:
+        return sa.func._ibis_extract_query_no_param(arg)
+
+
 operation_registry.update(
     {
         # TODO(kszucs): don't dispatch on op.arg since that should be always an
@@ -430,5 +438,12 @@ operation_registry.update(
         ops.Last: lambda t, op: t.translate(
             ops.Arbitrary(op.arg, where=op.where, how="last")
         ),
+        ops.ExtractFragment: fixed_arity(sa.func._ibis_extract_fragment, 1),
+        ops.ExtractProtocol: fixed_arity(sa.func._ibis_extract_protocol, 1),
+        ops.ExtractAuthority: fixed_arity(sa.func._ibis_extract_authority, 1),
+        ops.ExtractPath: fixed_arity(sa.func._ibis_extract_path, 1),
+        ops.ExtractHost: fixed_arity(sa.func._ibis_extract_host, 1),
+        ops.ExtractQuery: _extract_query,
+        ops.ExtractUserInfo: fixed_arity(sa.func._ibis_extract_user_info, 1),
     }
 )
