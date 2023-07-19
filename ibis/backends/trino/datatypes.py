@@ -15,11 +15,12 @@ from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.common.parsing import (
     COMMA,
     FIELD,
+    LENGTH,
     LPAREN,
     PRECISION,
     RPAREN,
     SCALE,
-    SINGLE_DIGIT,
+    TEMPORAL_SCALE,
     spaceless,
     spaceless_string,
 )
@@ -83,38 +84,66 @@ def _floating(element, compiler, **kw):
     return type(element).__name__.upper()
 
 
-def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
+def parse(
+    text: str,
+    default_decimal_parameters: tuple[int, int] = (18, 3),
+    default_temporal_scale: int = 3,  # trino defaults to millisecond scale
+) -> dt.DataType:
     """Parse a Trino type into an ibis data type."""
 
-    timestamp = spaceless_string("timestamp").then(
-        parsy.seq(
-            scale=LPAREN.then(SINGLE_DIGIT.map(int)).skip(RPAREN).optional()
-        ).combine_dict(partial(dt.Timestamp, timezone="UTC"))
+    timestamp = (
+        spaceless_string("timestamp")
+        .then(
+            parsy.seq(
+                scale=LPAREN.then(TEMPORAL_SCALE)
+                .skip(RPAREN)
+                .optional(default_temporal_scale),
+                timezone=spaceless_string("with time zone").result("UTC").optional(),
+            ).optional(dict(scale=default_temporal_scale, timezone=None))
+        )
+        .combine_dict(partial(dt.Timestamp))
     )
 
     primitive = (
-        spaceless_string("interval").result(dt.Interval(unit='s'))
+        spaceless_string("interval year to month").result(dt.Interval(unit="M"))
+        | spaceless_string("interval day to second").result(dt.Interval(unit="ms"))
         | spaceless_string("bigint").result(dt.int64)
         | spaceless_string("boolean").result(dt.boolean)
         | spaceless_string("varbinary").result(dt.binary)
         | spaceless_string("double").result(dt.float64)
         | spaceless_string("real").result(dt.float32)
         | spaceless_string("smallint").result(dt.int16)
-        | timestamp
         | spaceless_string("date").result(dt.date)
-        | spaceless_string("time").result(dt.time)
         | spaceless_string("tinyint").result(dt.int8)
         | spaceless_string("integer").result(dt.int32)
         | spaceless_string("uuid").result(dt.uuid)
-        | spaceless_string("varchar", "char").result(dt.string)
         | spaceless_string("json").result(dt.json)
         | spaceless_string("ipaddress").result(dt.inet)
+    )
+
+    varchar = (
+        spaceless_string("varchar", "char")
+        .then(LPAREN.then(LENGTH).skip(RPAREN).optional())
+        .result(dt.string)
     )
 
     decimal = spaceless_string("decimal", "numeric").then(
         parsy.seq(LPAREN.then(PRECISION).skip(COMMA), SCALE.skip(RPAREN))
         .optional(default_decimal_parameters)
         .combine(dt.Decimal)
+    )
+
+    time = (
+        spaceless_string("time").then(
+            parsy.seq(
+                scale=LPAREN.then(TEMPORAL_SCALE)
+                .skip(RPAREN)
+                .optional(default_temporal_scale),
+                timezone=spaceless_string("with time zone").result("UTC").optional(),
+            ).optional(dict(scale=default_temporal_scale, timezone=None))
+        )
+        # TODO: support time with precision
+        .result(dt.time)
     )
 
     ty = parsy.forward_declaration()
@@ -131,7 +160,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
         .skip(RPAREN)
     )
 
-    ty.become(primitive | decimal | array | map | struct)
+    ty.become(primitive | timestamp | time | varchar | decimal | array | map | struct)
     return ty.parse(text)
 
 

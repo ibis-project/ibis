@@ -22,9 +22,10 @@ def spaceless_string(*strings: str):
     )
 
 
-RAW_NUMBER = parsy.decimal_digit.at_least(1).concat()
 SINGLE_DIGIT = parsy.decimal_digit
-PRECISION = SCALE = NUMBER = RAW_NUMBER.map(int)
+RAW_NUMBER = SINGLE_DIGIT.at_least(1).concat()
+PRECISION = SCALE = NUMBER = LENGTH = RAW_NUMBER.map(int)
+TEMPORAL_SCALE = SINGLE_DIGIT.map(int)
 
 LPAREN = spaceless_string("(")
 RPAREN = spaceless_string(")")
