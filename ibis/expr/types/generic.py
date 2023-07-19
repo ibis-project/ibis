@@ -948,22 +948,14 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        from ibis.expr.analysis import (
-            find_first_base_table,
-            is_scalar_reduction,
-            reduction_to_aggregation,
-        )
+        from ibis.expr.analysis import find_first_base_table
 
         op = self.op()
-        if is_scalar_reduction(op):
-            return reduction_to_aggregation(op)
-
         table = find_first_base_table(op)
         if table is not None:
-            agg = ops.Aggregation(table=table, metrics=(op,))
+            return table.to_expr().aggregate([self])
         else:
-            agg = ops.DummyTable(values=(op,))
-        return agg.to_expr()
+            return ops.DummyTable(values=(op,)).to_expr()
 
     def _repr_html_(self) -> str | None:
         return None
