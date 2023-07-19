@@ -42,6 +42,12 @@ def table(op, **_):
     return op.source._tables[op.name]
 
 
+@translate.register(ops.DummyTable)
+def dummy_table(op, **kw):
+    selections = [translate(arg, **kw) for arg in op.values]
+    return pl.DataFrame().lazy().select(selections)
+
+
 @translate.register(ops.InMemoryTable)
 def pandas_in_memory_table(op, **_):
     lf = pl.from_pandas(op.data.to_frame()).lazy()
