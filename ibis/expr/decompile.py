@@ -86,10 +86,6 @@ def translate(op, *args, **kwargs):
     raise NotImplementedError(op)
 
 
-# TODO(kszucs): we do rewrites on construction, so we need to handle specific
-# cases like when reduction_to_aggregation is called
-
-
 @translate.register(ops.Value)
 @translate.register(ops.TableNode)
 def value(op, *args, **kwargs):

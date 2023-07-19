@@ -14,20 +14,6 @@ class _LimitSpec(NamedTuple):
     offset: int
 
 
-def _get_scalar(field):
-    def scalar_handler(results):
-        return results[field][0]
-
-    return scalar_handler
-
-
-def _get_column(name):
-    def column_handler(results):
-        return results[name]
-
-    return column_handler
-
-
 class SelectBuilder:
     """Transforms expression IR to a query pipeline.
 
@@ -127,7 +113,9 @@ class SelectBuilder:
         # expression that is being translated only depends on a single table
         # expression.
 
-        if isinstance(self.op, ops.TableNode):
+        if isinstance(self.op, ops.DummyTable):
+            self.select_set = list(self.op.values)
+        elif isinstance(self.op, ops.TableNode):
             self._collect(self.op, toplevel=True)
         else:
             self.select_set = [self.op]

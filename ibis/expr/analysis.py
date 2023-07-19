@@ -55,70 +55,6 @@ def sub_immediate_parents(op: ops.Node, table: ops.TableNode) -> ops.Node:
     return sub_for(op, {base: table for base in find_immediate_parent_tables(op)})
 
 
-class ScalarAggregate:
-    def __init__(self, expr):
-        assert isinstance(expr, ir.Expr)
-        self.expr = expr
-        self.tables = []
-
-    def get_result(self):
-        expr = self.expr
-        subbed_expr = self._visit(expr)
-
-        table = self.tables[0]
-        for other in self.tables[1:]:
-            table = table.cross_join(other)
-
-        return table.select(subbed_expr)
-
-    def _visit(self, expr):
-        assert isinstance(expr, ir.Expr), type(expr)
-
-        if is_scalar_reduction(expr.op()) and not has_multiple_bases(expr.op()):
-            # An aggregation unit
-            if not expr.has_name():
-                expr = expr.name('tmp')
-            agg_expr = reduction_to_aggregation(expr.op())
-            self.tables.append(agg_expr)
-            return agg_expr[expr.get_name()]
-        elif not isinstance(expr, ir.Expr):
-            return expr
-
-        node = expr.op()
-        # TODO(kszucs): use the substitute() utility instead
-        new_args = (
-            self._visit(arg.to_expr()) if isinstance(arg, ops.Node) else arg
-            for arg in node.args
-        )
-        new_node = node.__class__(*new_args)
-        new_expr = new_node.to_expr()
-
-        if expr.has_name():
-            new_expr = new_expr.name(name=expr.get_name())
-
-        return new_expr
-
-
-def has_multiple_bases(node):
-    assert isinstance(node, ops.Node), type(node)
-    return len(find_immediate_parent_tables(node)) > 1
-
-
-def reduction_to_aggregation(node):
-    tables = find_immediate_parent_tables(node)
-
-    # TODO(kszucs): avoid the expression roundtrip
-    node = ops.Alias(node, node.name)
-    expr = node.to_expr()
-    if len(tables) == 1:
-        (table,) = tables
-        agg = table.to_expr().aggregate([expr])
-    else:
-        agg = ScalarAggregate(expr).get_result()
-
-    return agg
-
-
 def find_physical_tables(node):
     """Find every first occurrence of a `ir.PhysicalTable` object in `node`."""
 
@@ -728,11 +664,6 @@ def is_reduction(node):
     return any(g.traverse(predicate, node))
 
 
-def is_scalar_reduction(node):
-    assert isinstance(node, ops.Node), type(node)
-    return node.output_shape.is_scalar() and is_reduction(node)
-
-
 _ANY_OP_MAPPING = {
     ops.Any: ops.UnresolvedExistsSubquery,
     ops.NotAny: ops.UnresolvedNotExistsSubquery,
@@ -805,11 +736,11 @@ def _rewrite_filter_reduction(op, name: str | None = None, **kwargs):
     # TODO: what about reductions that reference a join that isn't visible at
     # this level? Means we probably have the wrong design, but will have to
     # revisit when it becomes a problem.
-
     if name is not None:
         op = ops.Alias(op, name=name)
-    aggregation = reduction_to_aggregation(op)
-    return ops.TableArrayView(aggregation)
+
+    agg = op.to_expr().as_table()
+    return ops.TableArrayView(agg)
 
 
 @_rewrite_filter.register(ops.Any)
