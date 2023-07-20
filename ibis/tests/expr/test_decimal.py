@@ -146,7 +146,5 @@ def test_decimal_str(lineitem):
 def test_decimal_repr(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
-    expected = 'Decimal(precision={:d}, scale={:d}, nullable=True)'.format(
-        t.precision, t.scale
-    )
+    expected = f'Decimal(precision={t.precision:d}, scale={t.scale:d}, nullable=True)'
     assert repr(t) == expected

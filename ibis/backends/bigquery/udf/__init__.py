@@ -284,10 +284,7 @@ return {f.__name__}({args});\
             return f"{udf_node.__name__}({args})"
 
         bigquery_signature = ", ".join(
-            "{name} {type}".format(
-                name=name,
-                type=BigQueryType.from_ibis(dt.dtype(type_)),
-            )
+            f"{name} {BigQueryType.from_ibis(dt.dtype(type_))}"
             for name, type_ in params.items()
         )
         return_type = BigQueryType.from_ibis(dt.dtype(output_type))

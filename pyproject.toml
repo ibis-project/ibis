@@ -428,6 +428,7 @@ ignore = [
   "E501",
   "E731",
   "PGH003",
+  "PLC0105", # covariant type parameters should have a _co suffix
   "PLR0124", # name compared with self, e.g., a == a
   "PLR0911", # too many return statements
   "PLR0912", # too many branches

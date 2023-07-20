@@ -12,16 +12,12 @@ def substring(translator, op):
     # Impala is 1-indexed
     if length is None or isinstance(length, ops.Literal):
         if lvalue := getattr(length, "value", None):
-            return 'substr({}, {} + 1, {})'.format(
-                arg_formatted, start_formatted, lvalue
-            )
+            return f'substr({arg_formatted}, {start_formatted} + 1, {lvalue})'
         else:
             return f'substr({arg_formatted}, {start_formatted} + 1)'
     else:
         length_formatted = translator.translate(length)
-        return 'substr({}, {} + 1, {})'.format(
-            arg_formatted, start_formatted, length_formatted
-        )
+        return f'substr({arg_formatted}, {start_formatted} + 1, {length_formatted})'
 
 
 def string_find(translator, op):
@@ -31,13 +27,9 @@ def string_find(translator, op):
     if (start := op.start) is not None:
         if not isinstance(start, ops.Literal):
             start_fmt = translator.translate(start)
-            return 'locate({}, {}, {} + 1) - 1'.format(
-                substr_formatted, arg_formatted, start_fmt
-            )
+            return f'locate({substr_formatted}, {arg_formatted}, {start_fmt} + 1) - 1'
         elif sval := start.value:
-            return 'locate({}, {}, {}) - 1'.format(
-                substr_formatted, arg_formatted, sval + 1
-            )
+            return f'locate({substr_formatted}, {arg_formatted}, {sval + 1}) - 1'
         else:
             raise ValueError(f"invalid `start` value: {sval}")
     else:

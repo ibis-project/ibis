@@ -457,11 +457,7 @@ def compiles_strftime(translator, op):
     fmt_string = translator.translate(format_str)
     arg_formatted = translator.translate(arg)
     if isinstance(arg_type, dt.Timestamp) and arg_type.timezone is None:
-        return "FORMAT_{}({}, {})".format(
-            strftime_format_func_name,
-            fmt_string,
-            arg_formatted,
-        )
+        return f"FORMAT_{strftime_format_func_name}({fmt_string}, {arg_formatted})"
     elif isinstance(arg_type, dt.Timestamp):
         return "FORMAT_{}({}, {}, {!r})".format(
             strftime_format_func_name,
@@ -470,9 +466,7 @@ def compiles_strftime(translator, op):
             arg_type.timezone,
         )
     else:
-        return "FORMAT_{}({}, {})".format(
-            strftime_format_func_name, fmt_string, arg_formatted
-        )
+        return f"FORMAT_{strftime_format_func_name}({fmt_string}, {arg_formatted})"
 
 
 def compiles_string_to_timestamp(translator, op):
