@@ -571,7 +571,17 @@ def test_simple_ungrouped_unbound_following_window(
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.broken(["pandas", "dask"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["pandas", "dask"],
+    raises=NotImplementedError,
+    reason="support scalar sorting keys are not yet implemented",
+)
+@pytest.mark.broken(
+    ["pyspark"], raises=AnalysisException, reason="pyspark tries to locate None column"
+)
+@pytest.mark.never(
+    ["impala", "mssql"], raises=Exception, reason="order by constant is not supported"
+)
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
     t = alltypes[alltypes.double_col < 50].order_by('id')
