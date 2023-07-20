@@ -154,9 +154,20 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
 
 @pytest.mark.notimpl(["datafusion", "bigquery", "druid"])
 @pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
-def test_semi_join_topk(batting, awards_players):
+@pytest.mark.parametrize(
+    "func",
+    [
+        param(lambda left, right: left.semi_join(right, "year"), id="method"),
+        param(
+            lambda left, right: left.join(right, "year", how="left_semi"),
+            id="how_left_semi",
+        ),
+        param(lambda left, right: left.join(right, "year", how="semi"), id="how_semi"),
+    ],
+)
+def test_semi_join_topk(batting, awards_players, func):
     batting = batting.mutate(year=batting.yearID)
-    left = batting.semi_join(batting.year.topk(5), "year").select("year", "RBI")
+    left = func(batting, batting.year.topk(5)).select("year", "RBI")
     expr = left.join(awards_players, left.year == awards_players.yearID)
     assert not expr.limit(5).execute().empty
 
