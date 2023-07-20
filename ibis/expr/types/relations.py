@@ -2442,7 +2442,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         # semi/anti join only give access to the left table's fields, so
         # there's never overlap
-        if how in ("semi", "anti"):
+        if how in ("left_semi", "semi", "anti"):
             return expr
 
         return ops.relations._dedup_join_columns(expr, lname=lname, rname=rname)
