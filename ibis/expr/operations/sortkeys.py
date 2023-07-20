@@ -16,7 +16,7 @@ class SortKey(Value):
     ascending = rlz.optional(rlz.bool_, default=True)
 
     output_dtype = rlz.dtype_like("expr")
-    output_shape = rlz.Shape.COLUMNAR
+    output_shape = rlz.shape_like("expr")
 
     @property
     def name(self) -> str:

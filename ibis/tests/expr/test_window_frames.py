@@ -188,6 +188,28 @@ def test_window_api_supports_value_expressions(alltypes):
     )
 
 
+def test_window_api_supports_scalar_order_by(alltypes):
+    t = alltypes
+
+    w = ibis.window(order_by=ibis.NA)
+    assert w.bind(t) == ops.RowsWindowFrame(
+        table=t,
+        start=None,
+        end=None,
+        group_by=(),
+        order_by=(ibis.NA.op(),),
+    )
+
+    w = ibis.window(order_by=ibis.random())
+    assert w.bind(t) == ops.RowsWindowFrame(
+        table=t,
+        start=None,
+        end=None,
+        group_by=(),
+        order_by=(ibis.random().op(),),
+    )
+
+
 def test_window_api_properly_determines_how():
     assert ibis.window(between=(None, 5)).how == 'rows'
     assert ibis.window(between=(1, 3)).how == 'rows'
