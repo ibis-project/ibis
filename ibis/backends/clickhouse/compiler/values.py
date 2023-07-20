@@ -254,7 +254,9 @@ def _xor(op, **kw):
     left = _parenthesize(op.left, raw_left)
     raw_right = translate_val(op.right, **kw)
     right = _parenthesize(op.right, raw_right)
-    return f"xor({left}, {right})"
+    # clickhouse has xor but sqlglot's compilation of this function is broken
+    # in 17.6.0
+    return f"(({left} or {right}) and not ({left} and {right}))"
 
 
 @translate_val.register(ops.Arbitrary)
