@@ -12,13 +12,9 @@ def assert_equal(left, right):
     """Assert that two ibis objects are equal."""
 
     if util.all_of([left, right], ibis.Schema):
-        assert left.equals(right), 'Comparing schemas: \n{!r} !=\n{!r}'.format(
-            left, right
-        )
+        assert left.equals(right), f'Comparing schemas: \n{left!r} !=\n{right!r}'
     else:
-        assert left.equals(right), 'Objects unequal: \n{}\nvs\n{}'.format(
-            repr(left), repr(right)
-        )
+        assert left.equals(right), f'Objects unequal: \n{left!r}\nvs\n{right!r}'
 
 
 def assert_pickle_roundtrip(obj):

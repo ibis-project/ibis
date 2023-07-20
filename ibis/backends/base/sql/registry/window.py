@@ -176,9 +176,7 @@ def shift_like(name):
 
             default_formatted = translator.translate(default)
 
-            return '{}({}, {}, {})'.format(
-                name, arg_formatted, offset_formatted, default_formatted
-            )
+            return f'{name}({arg_formatted}, {offset_formatted}, {default_formatted})'
         elif offset is not None:
             offset_formatted = translator.translate(offset)
             return f'{name}({arg_formatted}, {offset_formatted})'

@@ -279,9 +279,7 @@ class CreateUDF(CreateFunction):
     def compile(self):
         create_decl = 'CREATE FUNCTION'
         impala_sig = self._impala_signature()
-        param_line = "location '{}' symbol='{}'".format(
-            self.func.lib_path, self.func.so_symbol
-        )
+        param_line = f"location '{self.func.lib_path}' symbol='{self.func.so_symbol}'"
         return f'{create_decl} {impala_sig} {param_line}'
 
 

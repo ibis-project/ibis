@@ -124,9 +124,7 @@ class CreateView(CTAS):
 
     @property
     def _prefix(self):
-        return 'CREATE {}{}VIEW'.format(
-            self._or_replace_clause(), self._temporary_clause()
-        )
+        return f'CREATE {self._or_replace_clause()}{self._temporary_clause()}VIEW'
 
     def _or_replace_clause(self):
         return 'OR REPLACE ' if self.can_exist else ''
@@ -146,10 +144,7 @@ def format_schema(schema):
 
 
 def _format_schema_element(name, t):
-    return '{} {}'.format(
-        quote_identifier(name, force=True),
-        type_to_sql_string(t),
-    )
+    return f'{quote_identifier(name, force=True)} {type_to_sql_string(t)}'
 
 
 class DropDatabase(DropObject):

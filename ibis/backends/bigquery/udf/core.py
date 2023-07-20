@@ -321,11 +321,7 @@ class PythonToJavaScriptTranslator:
         return f"{self.visit(node.value)}.{node.attr}"
 
     def visit_For(self, node):
-        lines = [
-            "for (let {} of {}) {{".format(
-                self.visit(node.target), self.visit(node.iter)
-            )
-        ]
+        lines = [f"for (let {self.visit(node.target)} of {self.visit(node.iter)}) {{"]
         with self.local_scope():
             lines.append(indent(map(self.visit, node.body)))
         lines.append("}")

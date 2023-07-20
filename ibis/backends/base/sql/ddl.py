@@ -42,10 +42,7 @@ def format_schema(schema):
 
 
 def _format_schema_element(name, t):
-    return '{} {}'.format(
-        quote_identifier(name, force=True),
-        type_to_sql_string(t),
-    )
+    return f'{quote_identifier(name, force=True)} {type_to_sql_string(t)}'
 
 
 def _format_partition_kv(k, v, type):
