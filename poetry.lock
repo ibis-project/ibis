@@ -1321,22 +1321,19 @@ tqdm = ["tqdm"]
 
 [[package]]
 name = "geoalchemy2"
-version = "0.14.0"
+version = "0.13.3"
 description = "Using SQLAlchemy with Spatial Databases"
 category = "main"
 optional = true
 python-versions = ">=3.7"
 files = [
-    {file = "GeoAlchemy2-0.14.0-py3-none-any.whl", hash = "sha256:7d2a521502e1f9198f119e61a62e93f2141a336402fb193de28a70e3aaf691eb"},
-    {file = "GeoAlchemy2-0.14.0.tar.gz", hash = "sha256:8ec034309183df66319cba146ff284e682f24993731079772e045b2b1fe6ce7d"},
+    {file = "GeoAlchemy2-0.13.3-py3-none-any.whl", hash = "sha256:a29f98cbe2527284d2374a0aa6f7bf31fb7babb61bc56b7e557afdb21610827a"},
+    {file = "GeoAlchemy2-0.13.3.tar.gz", hash = "sha256:d85a7deaa9a230901733f7419d6bff5674b8730651de1a07f2b6423aa4925d09"},
 ]
 
 [package.dependencies]
 packaging = "*"
 SQLAlchemy = ">=1.4"
-
-[package.extras]
-shapely = ["Shapely (>=1.7)"]
 
 [[package]]
 name = "geopandas"
@@ -5504,4 +5501,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "352d3ae686147bc8f7307f45ed9d801528fda7ebb6a1a9defd7d6ec16e67a1c2"
+content-hash = "b994a1395f025aa335bbd9d0f12e233054763342443e5dd970afdfe209356c72"
