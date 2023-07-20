@@ -219,19 +219,25 @@ def compute_sort_key(
     `execute` the expression and sort by the new derived column.
     """
     name = ibis.util.guid()
-    if key.name in data:
-        return name, data[key.name]
-    if isinstance(key, str):
-        return key, None
+    if key.output_shape.is_columnar():
+        if key.name in data:
+            return name, data[key.name]
+        if isinstance(key, str):
+            return key, None
+        else:
+            if scope is None:
+                scope = Scope()
+            scope = scope.merge_scopes(
+                Scope({t: data}, timecontext)
+                for t in an.find_immediate_parent_tables(key)
+            )
+            new_column = execute(key, scope=scope, **kwargs)
+            new_column.name = name
+            return name, new_column
     else:
-        if scope is None:
-            scope = Scope()
-        scope = scope.merge_scopes(
-            Scope({t: data}, timecontext) for t in an.find_immediate_parent_tables(key)
+        raise NotImplementedError(
+            "Scalar sort keys are not yet supported in the dask backend"
         )
-        new_column = execute(key, scope=scope, **kwargs)
-        new_column.name = name
-        return name, new_column
 
 
 def compute_sorted_frame(

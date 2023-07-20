@@ -32,20 +32,24 @@ def get_join_suffix_for_op(op: ops.TableColumn, join_op: ops.Join):
 
 
 def compute_sort_key(key, data, timecontext, scope=None, **kwargs):
-    if isinstance(key, str):
-        return key, None
-    elif key.name in data:
-        return key.name, None
+    if key.output_shape.is_columnar():
+        if key.name in data:
+            return key.name, None
+        else:
+            if scope is None:
+                scope = Scope()
+            scope = scope.merge_scopes(
+                Scope({t: data}, timecontext)
+                for t in an.find_immediate_parent_tables(key)
+            )
+            new_column = execute(key, scope=scope, **kwargs)
+            name = ibis.util.guid()
+            new_column.name = name
+            return name, new_column
     else:
-        if scope is None:
-            scope = Scope()
-        scope = scope.merge_scopes(
-            Scope({t: data}, timecontext) for t in an.find_immediate_parent_tables(key)
+        raise NotImplementedError(
+            "Scalar sort keys are not yet supported in the pandas backend"
         )
-        new_column = execute(key, scope=scope, **kwargs)
-        name = ibis.util.guid()
-        new_column.name = name
-        return name, new_column
 
 
 def compute_sorted_frame(df, order_by, group_by=(), timecontext=None, **kwargs):

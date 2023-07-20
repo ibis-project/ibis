@@ -267,3 +267,14 @@ def test_expression_class_aliases():
     assert ir.AnyValue is ir.Value
     assert ir.AnyScalar is ir.Scalar
     assert ir.AnyColumn is ir.Column
+
+
+def test_sortkey_propagates_dtype_and_shape():
+    k = ops.SortKey(ibis.literal(1), ascending=True)
+    assert k.output_dtype == dt.int8
+    assert k.output_shape == rlz.Shape.SCALAR
+
+    t = ibis.table([('a', 'int16')], name='t')
+    k = ops.SortKey(t.a, ascending=True)
+    assert k.output_dtype == dt.int16
+    assert k.output_shape == rlz.Shape.COLUMNAR

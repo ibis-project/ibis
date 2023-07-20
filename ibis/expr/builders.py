@@ -99,10 +99,14 @@ class WindowBuilder(Builder):
 
     how = rlz.optional(rlz.isin({'rows', 'range'}), default="rows")
     start = end = rlz.optional(rlz.option(rlz.range_window_boundary))
-    groupings = orderings = rlz.optional(
+    groupings = rlz.optional(
         rlz.tuple_of(
-            rlz.one_of([rlz.column(rlz.any), rlz.instance_of((str, Deferred))])
+            rlz.one_of([rlz.instance_of((str, Deferred)), rlz.column(rlz.any)])
         ),
+        default=(),
+    )
+    orderings = rlz.optional(
+        rlz.tuple_of(rlz.one_of([rlz.instance_of((str, Deferred)), rlz.any])),
         default=(),
     )
     max_lookback = rlz.optional(rlz.interval)
