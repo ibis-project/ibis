@@ -188,11 +188,18 @@ def selection(op, **kw):
         lf = lf.filter(predicate)
 
     selections = []
+    unnests = []
     for arg in op.selections:
         if isinstance(arg, ops.TableNode):
             for name in arg.schema.names:
                 column = ops.TableColumn(table=arg, name=name)
                 selections.append(translate(column, **kw))
+        elif (
+            isinstance(arg, ops.Alias) and isinstance(unnest := arg.arg, ops.Unnest)
+        ) or isinstance(unnest := arg, ops.Unnest):
+            name = arg.name
+            unnests.append(name)
+            selections.append(translate(unnest.arg, **kw).alias(name))
         elif isinstance(arg, ops.Value):
             selections.append(translate(arg, **kw))
         else:
@@ -203,6 +210,9 @@ def selection(op, **kw):
 
     if selections:
         lf = lf.select(selections)
+
+        if unnests:
+            lf = lf.explode(*unnests)
 
     if op.sort_keys:
         by = [key.name for key in op.sort_keys]
@@ -698,10 +708,12 @@ for reduction in _reductions.keys():
     def reduction(op, **kw):
         arg = translate(op.arg, **kw)
         agg = _reductions[type(op)]
+        filt = arg.is_not_null()
         if (where := op.where) is not None:
-            arg = arg.filter(translate(where, **kw))
+            filt &= translate(where, **kw)
+        arg = arg.filter(filt)
         method = getattr(arg, agg)
-        return method()
+        return method().cast(dtype_to_polars(op.output_dtype))
 
 
 @translate.register(ops.Mode)
@@ -739,10 +751,10 @@ def distinct(op, **kw):
 def count_star(op, **kw):
     if (where := op.where) is not None:
         condition = translate(where, **kw)
-        # TODO: clean up the casts and use schema.apply_to in the backend's
-        # execute method
-        return condition.filter(condition).count().cast(pl.Int64)
-    return pl.count().cast(pl.Int64)
+        result = condition.sum()
+    else:
+        result = pl.count()
+    return result.cast(dtype_to_polars(op.output_dtype))
 
 
 @translate.register(ops.TimestampNow)
@@ -889,15 +901,6 @@ def array_collect(op, **kw):
         return arg.implode()
     except AttributeError:  # pragma: no cover
         return arg.list()  # pragma: no cover
-
-
-@translate.register(ops.Unnest)
-def unnest(op, **kw):
-    arg = translate(op.arg, **kw)
-    try:
-        return arg.arr.explode()
-    except AttributeError:
-        return arg.explode()
 
 
 _date_methods = {

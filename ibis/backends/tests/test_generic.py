@@ -970,7 +970,6 @@ def test_many_subqueries(con, snapshot):
 
 
 @pytest.mark.notimpl(["dask", "pandas", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(["polars"], reason="polars doesn't expand > 1 explode")
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
     ["bigquery"],
