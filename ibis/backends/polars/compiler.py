@@ -888,7 +888,7 @@ def array_concat(op, **kw):
 
 @translate.register(ops.ArrayColumn)
 def array_column(op, **kw):
-    cols = list(map(translate, op.cols))
+    cols = [translate(col, **kw) for col in op.cols]
     return pl.concat_list(cols)
 
 
@@ -897,10 +897,7 @@ def array_collect(op, **kw):
     arg = translate(op.arg, **kw)
     if (where := op.where) is not None:
         arg = arg.filter(translate(where, **kw))
-    try:
-        return arg.implode()
-    except AttributeError:  # pragma: no cover
-        return arg.list()  # pragma: no cover
+    return arg
 
 
 _date_methods = {
