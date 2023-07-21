@@ -333,7 +333,6 @@ def test_unnest_simple(backend):
 
 
 @unnest
-@pytest.mark.notimpl("polars", raises=PolarsComputeError, reason="Series shape: (6,)")
 @pytest.mark.notimpl("dask", raises=com.OperationNotDefinedError)
 def test_unnest_complex(backend):
     array_types = backend.array_types
@@ -370,7 +369,9 @@ def test_unnest_complex(backend):
     reason="clickhouse throws away nulls in groupArray",
     raises=AssertionError,
 )
-@pytest.mark.notimpl("polars", raises=PolarsComputeError, reason="Series shape: (6,)")
+@pytest.mark.notyet(
+    "polars", raises=AssertionError, reason="polars implode returns the wrong shape"
+)
 @pytest.mark.notimpl(["dask"], raises=ValueError)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
@@ -391,8 +392,10 @@ def test_unnest_idempotent(backend):
 
 
 @unnest
-@pytest.mark.notimpl("polars", raises=PolarsComputeError, reason="Series shape: (6,)")
-@pytest.mark.notimpl(["dask"], raises=ValueError)
+@pytest.mark.notimpl(
+    "polars", raises=TypeError, reason="polars implode returns the wrong shape"
+)
+@pytest.mark.notimpl("dask", raises=ValueError)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()
