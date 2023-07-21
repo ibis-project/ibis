@@ -81,7 +81,7 @@ class Backend(BaseAlchemyBackend):
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
-        read_only = kwargs.pop("read_only", "False").capitalize()
+        read_only = str(kwargs.pop("read_only", "False")).capitalize()
         try:
             kwargs["read_only"] = ast.literal_eval(read_only)
         except ValueError as e:
