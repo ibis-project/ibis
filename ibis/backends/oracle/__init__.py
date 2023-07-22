@@ -71,6 +71,7 @@ class OracleCompiler(AlchemyCompiler):
     translator_class = OracleExprTranslator
     support_values_syntax_in_select = False
     supports_indexed_grouping_keys = False
+    null_limit = None
 
 
 class Backend(BaseAlchemyBackend):

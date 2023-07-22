@@ -28,3 +28,4 @@ rewrites = DruidExprTranslator.rewrites
 
 class DruidCompiler(AlchemyCompiler):
     translator_class = DruidExprTranslator
+    null_limit = sa.literal_column("ALL")

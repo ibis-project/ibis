@@ -10,8 +10,8 @@ import ibis.expr.operations as ops
 
 
 class _LimitSpec(NamedTuple):
-    n: int
-    offset: int
+    n: ops.Value | int | None
+    offset: ops.Value | int = 0
 
 
 class SelectBuilder:
@@ -182,21 +182,15 @@ class SelectBuilder:
             self._collect(new_op, toplevel=toplevel)
 
     def _collect_Limit(self, op, toplevel=False):
-        if not toplevel:
-            return
+        if toplevel:
+            if isinstance(table := op.table, ops.Limit):
+                self.table_set = table
+                self.select_set = [table]
+            else:
+                self._collect(table, toplevel=toplevel)
 
-        n = op.n
-        offset = op.offset or 0
-
-        if self.limit is None:
-            self.limit = _LimitSpec(n, offset)
-        else:
-            self.limit = _LimitSpec(
-                min(n, self.limit.n),
-                offset + self.limit.offset,
-            )
-
-        self._collect(op.table, toplevel=toplevel)
+            assert self.limit is None
+            self.limit = _LimitSpec(op.n, op.offset)
 
     def _collect_Union(self, op, toplevel=False):
         if toplevel:

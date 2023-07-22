@@ -233,10 +233,14 @@ def selection(op, **kw):
 
 @translate.register(ops.Limit)
 def limit(op, **kw):
+    if (n := op.n) is not None and not isinstance(n, int):
+        raise NotImplementedError("Dynamic limit not supported")
+
+    if not isinstance(offset := op.offset, int):
+        raise NotImplementedError("Dynamic offset not supported")
+
     lf = translate(op.table, **kw)
-    if op.offset:
-        return lf.slice(op.offset, op.n)
-    return lf.limit(op.n)
+    return lf.slice(offset, n)
 
 
 @translate.register(ops.Aggregation)

@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from numbers import Real
     from pathlib import Path
 
+    import ibis.expr.types as ir
+
 T = TypeVar("T", covariant=True)
 U = TypeVar("U", covariant=True)
 K = TypeVar("K")
@@ -529,3 +531,87 @@ def gen_name(namespace: str) -> str:
     """Create a case-insensitive uuid4 unique table name."""
     uid = base64.b32encode(uuid.uuid4().bytes).decode().rstrip("=").lower()
     return f"_ibis_{namespace}_{uid}"
+
+
+def slice_to_limit_offset(
+    what: slice, count: ir.IntegerScalar
+) -> tuple[int | ir.IntegerScalar, int | ir.IntegerScalar]:
+    """Convert a Python [`slice`][slice] to a `limit`, `offset` pair.
+
+    Parameters
+    ----------
+    what
+        The slice to convert
+    count
+        The total number of rows in the table as an expression
+
+    Returns
+    -------
+    tuple[int | ir.IntegerScalar, int | ir.IntegerScalar]
+        The offset and limit to use in a `Table.limit` call
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table(dict(a="int", b="string"), name="t")
+
+    First 10 rows
+    >>> count = t.count()
+    >>> what = slice(0, 10)
+    >>> limit, offset = slice_to_limit_offset(what, count)
+    >>> limit
+    10
+    >>> offset
+    0
+
+    Last 10 rows
+    >>> what = slice(-10, None)
+    >>> limit, offset = slice_to_limit_offset(what, count)
+    >>> limit
+    10
+    >>> offset
+    r0 := UnboundTable: t
+      a int64
+      b string
+    <BLANKLINE>
+    Add(CountStar(t), -10): CountStar(r0) + -10
+
+    From 5th row to 10th row
+    >>> what = slice(5, 10)
+    >>> limit, offset = slice_to_limit_offset(what, count)
+    >>> limit, offset
+    (5, 5)
+    """
+    if (step := what.step) is not None and step != 1:
+        raise ValueError("Slice step can only be 1")
+
+    import ibis
+
+    start = what.start
+    stop = what.stop
+
+    if start is None or start >= 0:
+        offset = start or 0
+
+        if stop is None:
+            limit = None
+        elif stop == 0:
+            limit = 0
+        elif stop < 0:
+            limit = count + (stop - offset)
+        else:  # stop > 0
+            limit = max(stop - offset, 0)
+    else:  # start < 0
+        offset = count + start
+
+        if stop is None:
+            limit = -start
+        elif stop == 0:
+            limit = offset = 0
+        elif stop < 0:
+            limit = max(stop - start, 0)
+            if limit == 0:
+                offset = 0
+        else:  # stop > 0
+            limit = ibis.greatest((stop - start) - count, 0)
+    return limit, offset

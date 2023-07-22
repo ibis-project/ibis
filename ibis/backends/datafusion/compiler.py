@@ -143,9 +143,17 @@ def selection(op, **kw):
 
 @translate.register(ops.Limit)
 def limit(op, **kw):
-    if op.offset:
-        raise NotImplementedError("DataFusion does not support offset")
-    return translate(op.table, **kw).limit(op.n)
+    if (n := op.n) is not None and not isinstance(n, int):
+        raise NotImplementedError("Dynamic limit not supported")
+
+    if not isinstance(offset := op.offset, int) or (offset != 0 and n != 0):
+        raise NotImplementedError("Dynamic offset not supported")
+
+    t = translate(op.table, **kw)
+
+    if n is not None:
+        return t.limit(n)
+    return t
 
 
 @translate.register(ops.Aggregation)

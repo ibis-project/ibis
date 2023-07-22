@@ -11,7 +11,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql.compiler.base import DML, QueryAST, SetOp
-from ibis.backends.base.sql.compiler.select_builder import SelectBuilder, _LimitSpec
+from ibis.backends.base.sql.compiler.select_builder import SelectBuilder
 from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryContext
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.common.grounds import Comparable
@@ -422,14 +422,27 @@ class Select(DML, Comparable):
         return buf.getvalue()
 
     def format_limit(self):
-        if not self.limit:
+        if self.limit is None:
             return None
 
         buf = StringIO()
 
         n = self.limit.n
-        buf.write(f"LIMIT {n}")
-        if offset := self.limit.offset:
+
+        if n is None:
+            n = self.context.compiler.null_limit
+        elif not isinstance(n, int):
+            n = f"(SELECT {self._translate(n)} {self.format_table_set()})"
+
+        if n is not None:
+            buf.write(f"LIMIT {n}")
+
+        offset = self.limit.offset
+
+        if not isinstance(offset, int):
+            offset = f"(SELECT {self._translate(offset)} {self.format_table_set()})"
+
+        if offset != 0 and n != 0:
             buf.write(f" OFFSET {offset}")
 
         return buf.getvalue()
@@ -501,6 +514,7 @@ class Compiler:
 
     cheap_in_memory_tables = False
     support_values_syntax_in_select = True
+    null_limit = None
 
     @classmethod
     def make_context(cls, params=None):
@@ -555,27 +569,17 @@ class Compiler:
     @classmethod
     def to_ast_ensure_limit(cls, expr, limit=None, params=None):
         context = cls.make_context(params=params)
-        query_ast = cls.to_ast(expr, context)
+        table = expr.as_table()
 
-        # note: limit can still be None at this point, if the global
-        # default_limit is None
-        for query in reversed(query_ast.queries):
-            if (
-                isinstance(query, Select)
-                and not isinstance(expr, ir.Scalar)
-                and query.table_set is not None
-            ):
-                if query.limit is None:
-                    if limit == "default":
-                        query_limit = options.sql.default_limit
-                    else:
-                        query_limit = limit
-                    if query_limit:
-                        query.limit = _LimitSpec(query_limit, offset=0)
-                elif limit is not None and limit != "default":
-                    query.limit = _LimitSpec(limit, query.limit.offset)
+        if limit == "default":
+            query_limit = options.sql.default_limit
+        else:
+            query_limit = limit
 
-        return query_ast
+        if query_limit is not None:
+            table = table.limit(query_limit)
+
+        return cls.to_ast(table, context)
 
     @classmethod
     def to_sql(cls, node, context=None, params=None):

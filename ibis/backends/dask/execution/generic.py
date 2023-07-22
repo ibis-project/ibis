@@ -348,9 +348,21 @@ def execute_cast_series_date(op, data, type, **kwargs):
 def execute_limit_frame(op, data, nrows, offset, **kwargs):
     # NOTE: Dask Dataframes do not support iloc row based indexing
     # Need to add a globally consecutive index in order to select nrows number of rows
+    if nrows == 0:
+        return dd.from_pandas(
+            pd.DataFrame(columns=data.columns).astype(data.dtypes), npartitions=1
+        )
     unique_col_name = ibis.util.guid()
     df = add_globally_consecutive_column(data, col_name=unique_col_name)
     ret = df.loc[offset : (offset + nrows) - 1]
+    return rename_index(ret, None)
+
+
+@execute_node.register(ops.Limit, dd.DataFrame, type(None), integer_types)
+def execute_limit_frame_no_limit(op, data, nrows, offset, **kwargs):
+    unique_col_name = ibis.util.guid()
+    df = add_globally_consecutive_column(data, col_name=unique_col_name)
+    ret = df.loc[offset : (offset + len(df)) - 1]
     return rename_index(ret, None)
 
 

@@ -842,3 +842,18 @@ def test_complex_union(snapshot):
 
     u = ibis.union(t1, t2)
     snapshot.assert_match(to_sql(u), "result.sql")
+
+
+def test_chain_limit_doesnt_collapse(snapshot):
+    t = ibis.table(
+        [
+            ("foo", "string"),
+            ("bar", "string"),
+            ("city", "string"),
+            ("v1", "double"),
+            ("v2", "double"),
+        ],
+        "tbl",
+    )
+    expr = t.city.topk(10)[-5:]
+    snapshot.assert_match(to_sql(expr), "result.sql")
