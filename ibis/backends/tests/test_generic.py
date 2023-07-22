@@ -37,9 +37,21 @@ except ImportError:
 try:
     import clickhouse_connect as cc
 
-    ClickhouseDriverOperationalError = cc.driver.ProgrammingError
+    ClickhouseDriverDatabaseError = cc.driver.exceptions.DatabaseError
 except ImportError:
-    ClickhouseDriverOperationalError = None
+    ClickhouseDriverDatabaseError = None
+
+
+try:
+    from google.api_core.exceptions import BadRequest
+except ImportError:
+    BadRequest = None
+
+
+try:
+    from impala.error import HiveServer2Error
+except ImportError:
+    HiveServer2Error = None
 
 
 NULL_BACKEND_TYPES = {
@@ -1285,3 +1297,219 @@ def test_try_cast_table(con):
 )
 def test_try_cast_func(con, from_val, to_type, func):
     assert func(con.execute(ibis.literal(from_val).try_cast(to_type)))
+
+
+@pytest.mark.parametrize(
+    ("slc", "expected_count_fn"),
+    [
+        ###################
+        ### NONE/ZERO start
+        # no stop
+        param(slice(None, 0), lambda _: 0, id="[:0]"),
+        param(slice(None, None), lambda t: t.count().to_pandas(), id="[:]"),
+        param(slice(0, 0), lambda _: 0, id="[0:0]"),
+        param(slice(0, None), lambda t: t.count().to_pandas(), id="[0:]"),
+        # positive stop
+        param(slice(None, 2), lambda _: 2, id="[:2]"),
+        param(slice(0, 2), lambda _: 2, id="[0:2]"),
+        ##################
+        ### NEGATIVE start
+        # zero stop
+        param(slice(-3, 0), lambda _: 0, id="[-3:0]"),
+        # negative stop
+        param(slice(-3, -3), lambda _: 0, id="[-3:-3]"),
+        param(slice(-3, -4), lambda _: 0, id="[-3:-4]"),
+        param(slice(-3, -5), lambda _: 0, id="[-3:-5]"),
+        ##################
+        ### POSITIVE start
+        # no stop
+        param(slice(3, 0), lambda _: 0, id="[3:0]"),
+        param(
+            slice(3, None),
+            lambda t: t.count().to_pandas() - 3,
+            id="[3:]",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=BadRequest,
+                    reason="bigquery doesn't support OFFSET without LIMIT",
+                ),
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=NotImplementedError,
+                    reason="no support for offset yet",
+                ),
+                pytest.mark.notyet(
+                    ["mssql"],
+                    raises=sa.exc.CompileError,
+                    reason="mssql doesn't support OFFSET without LIMIT",
+                ),
+                pytest.mark.never(
+                    ["impala"],
+                    raises=HiveServer2Error,
+                    reason="impala doesn't support OFFSET without ORDER BY",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="pyspark doesn't support non-zero offset until version 3.4",
+                ),
+            ],
+        ),
+        # positive stop
+        param(slice(3, 2), lambda _: 0, id="[3:2]"),
+        param(
+            slice(3, 4),
+            lambda _: 1,
+            id="[3:4]",
+            marks=[
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=NotImplementedError,
+                    reason="no support for offset yet",
+                ),
+                pytest.mark.notyet(
+                    ["mssql"],
+                    raises=sa.exc.CompileError,
+                    reason="mssql doesn't support OFFSET without LIMIT",
+                ),
+                pytest.mark.notyet(
+                    ["impala"],
+                    raises=HiveServer2Error,
+                    reason="impala doesn't support OFFSET without ORDER BY",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="pyspark doesn't support non-zero offset until version 3.4",
+                ),
+            ],
+        ),
+    ],
+)
+def test_static_table_slice(backend, slc, expected_count_fn):
+    t = backend.functional_alltypes
+
+    rows = t[slc]
+    count = rows.count().to_pandas()
+
+    expected_count = expected_count_fn(t)
+    assert count == expected_count
+
+
+@pytest.mark.parametrize(
+    ("slc", "expected_count_fn"),
+    [
+        ### NONE/ZERO start
+        # negative stop
+        param(slice(None, -2), lambda t: t.count().to_pandas() - 2, id="[:-2]"),
+        param(slice(0, -2), lambda t: t.count().to_pandas() - 2, id="[0:-2]"),
+        # no stop
+        param(slice(-3, None), lambda _: 3, id="[-3:]"),
+        ##################
+        ### NEGATIVE start
+        # negative stop
+        param(slice(-3, -2), lambda _: 1, id="[-3:-2]"),
+        # positive stop
+        param(slice(-4000, 7000), lambda _: 3700, id="[-4000:7000]"),
+        param(slice(-3, 2), lambda _: 0, id="[-3:2]"),
+        ##################
+        ### POSITIVE start
+        # negative stop
+        param(slice(3, -2), lambda t: t.count().to_pandas() - 5, id="[3:-2]"),
+        param(slice(3, -4), lambda t: t.count().to_pandas() - 7, id="[3:-4]"),
+    ],
+    ids=str,
+)
+@pytest.mark.notyet(
+    ["mysql", "snowflake", "trino"],
+    raises=sa.exc.ProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notimpl(
+    ["mssql"],
+    raises=sa.exc.CompileError,
+    reason="mssql doesn't support dynamic limit/offset without an ORDER BY",
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickhouseDriverDatabaseError,
+    reason="clickhouse doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
+@pytest.mark.notyet(["polars"], reason="polars doesn't support dynamic limit/offset")
+@pytest.mark.notyet(
+    ["bigquery"],
+    reason="bigquery doesn't support dynamic limit/offset",
+    raises=BadRequest,
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="datafusion doesn't support dynamic limit/offset",
+    raises=NotImplementedError,
+)
+@pytest.mark.never(
+    ["impala"],
+    reason="impala doesn't support dynamic limit/offset",
+    raises=HiveServer2Error,
+)
+@pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+def test_dynamic_table_slice(backend, slc, expected_count_fn):
+    t = backend.functional_alltypes
+
+    rows = t[slc]
+    count = rows.count().to_pandas()
+
+    expected_count = expected_count_fn(t)
+    assert count == expected_count
+
+
+@pytest.mark.notyet(
+    ["mysql", "snowflake", "trino"],
+    raises=sa.exc.ProgrammingError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickhouseDriverDatabaseError,
+    reason="clickhouse doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
+@pytest.mark.notyet(["polars"], reason="polars doesn't support dynamic limit/offset")
+@pytest.mark.notyet(
+    ["bigquery"],
+    reason="bigquery doesn't support dynamic limit/offset",
+    raises=BadRequest,
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="datafusion doesn't support dynamic limit/offset",
+    raises=NotImplementedError,
+)
+@pytest.mark.never(
+    ["impala"],
+    reason="impala doesn't support dynamic limit/offset",
+    raises=HiveServer2Error,
+)
+@pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+@pytest.mark.xfail_version(
+    duckdb=["duckdb<=0.8.1"],
+    raises=AssertionError,
+    reason="https://github.com/duckdb/duckdb/issues/8412",
+)
+def test_dynamic_table_slice_with_computed_offset(backend):
+    t = backend.functional_alltypes
+
+    col = "id"
+    df = t[[col]].to_pandas()
+
+    assert len(df) == df[col].nunique()
+
+    n = 10
+
+    expr = t[[col]].order_by(col)[-n:]
+
+    expected = df.sort_values([col]).iloc[-n:].reset_index(drop=True)
+    result = expr.to_pandas()
+
+    backend.assert_frame_equal(result, expected)

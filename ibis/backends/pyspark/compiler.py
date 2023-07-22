@@ -272,13 +272,25 @@ def compile_cast(t, op, **kwargs):
 
 @compiles(ops.Limit)
 def compile_limit(t, op, **kwargs):
-    if op.offset != 0:
+    if (n := op.n) is not None and not isinstance(n, int):
         raise com.UnsupportedArgumentError(
-            "PySpark backend does not support non-zero offset is for "
-            f"limit operation. Got offset {op.offset}."
+            "Dynamic LIMIT is not implemented upstream in PySpark"
+        )
+    if not isinstance(offset := op.offset, int):
+        raise com.UnsupportedArgumentError(
+            "Dynamic OFFSET is not implemented upstream in PySpark"
+        )
+    if n != 0 and offset != 0:
+        raise com.UnsupportedArgumentError(
+            "PySpark backend does not support non-zero offset values for "
+            f"the limit operation. Got offset {offset:d}."
         )
     df = t.translate(op.table, **kwargs)
-    return df.limit(op.n)
+
+    if n is not None:
+        return df.limit(n)
+    else:
+        return df
 
 
 @compiles(ops.And)

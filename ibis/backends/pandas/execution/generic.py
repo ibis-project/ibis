@@ -97,8 +97,13 @@ def execute_interval_literal(op, value, dtype, **kwargs):
 
 
 @execute_node.register(ops.Limit, pd.DataFrame, integer_types, integer_types)
-def execute_limit_frame(op, data, nrows, offset, **kwargs):
+def execute_limit_frame(op, data, nrows: int, offset: int, **kwargs):
     return data.iloc[offset : offset + nrows]
+
+
+@execute_node.register(ops.Limit, pd.DataFrame, type(None), integer_types)
+def execute_limit_frame_no_limit(op, data, nrows: None, offset: int, **kwargs):
+    return data.iloc[offset:]
 
 
 @execute_node.register(ops.Cast, SeriesGroupBy, dt.DataType)

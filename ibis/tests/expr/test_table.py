@@ -525,27 +525,25 @@ def test_order_by_nonexistent_column_errors(table, expr_func, key, exc_type):
 
 
 def test_slice(table):
-    expr = table[:5]
+    expr1 = table[:5]
     expr2 = table[:5:1]
-    assert_equal(expr, table.limit(5))
-    assert_equal(expr, expr2)
+    expr3 = table[5:]
+    assert_equal(expr1, table.limit(5))
+    assert_equal(expr1, expr2)
+    assert_equal(expr3, table.limit(None, offset=5))
 
-    expr = table[2:7]
+    expr1 = table[2:7]
     expr2 = table[2:7:1]
-    assert_equal(expr, table.limit(5, offset=2))
-    assert_equal(expr, expr2)
+    expr3 = table[2::1]
+    assert_equal(expr1, table.limit(5, offset=2))
+    assert_equal(expr1, expr2)
+    assert_equal(expr3, table.limit(None, offset=2))
 
-    with pytest.raises(ValueError):
-        table[2:15:2]
 
+@pytest.mark.parametrize("step", [-1, 0, 2])
+def test_invalid_slice(table, step):
     with pytest.raises(ValueError):
-        table[5:]
-
-    with pytest.raises(ValueError):
-        table[:-5]
-
-    with pytest.raises(ValueError):
-        table[-10:-5]
+        table[:5:step]
 
 
 def test_table_count(table):

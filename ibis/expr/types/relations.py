@@ -434,6 +434,48 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
 
+        Some backends support negative slice indexing
+
+        >>> t[-5:]  # last 5 rows
+        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species   ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string    │ string │ float64        │ float64       │ int64             │ … │
+        ├───────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Chinstrap │ Dream  │           55.8 │          19.8 │               207 │ … │
+        │ Chinstrap │ Dream  │           43.5 │          18.1 │               202 │ … │
+        │ Chinstrap │ Dream  │           49.6 │          18.2 │               193 │ … │
+        │ Chinstrap │ Dream  │           50.8 │          19.0 │               210 │ … │
+        │ Chinstrap │ Dream  │           50.2 │          18.7 │               198 │ … │
+        └───────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t[-5:-3]  # last 5th to 3rd rows
+        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species   ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string    │ string │ float64        │ float64       │ int64             │ … │
+        ├───────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Chinstrap │ Dream  │           55.8 │          19.8 │               207 │ … │
+        │ Chinstrap │ Dream  │           43.5 │          18.1 │               202 │ … │
+        └───────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t[2:-2]  # chop off the first two and last two rows
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ Adelie  │ Torgersen │           37.8 │          17.1 │               186 │ … │
+        │ Adelie  │ Torgersen │           37.8 │          17.3 │               180 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
         Select columns
 
         >>> t[["island", "bill_length_mm"]].head()
@@ -522,19 +564,8 @@ class Table(Expr, _FixedTextJupyterMixin):
             return ops.TableColumn(self, what).to_expr()
 
         if isinstance(what, slice):
-            step = what.step
-            if step is not None and step != 1:
-                raise ValueError("Slice step can only be 1")
-            start = what.start or 0
-            stop = what.stop
-
-            if stop is None or stop < 0:
-                raise ValueError("End index must be a positive number")
-
-            if start < 0:
-                raise ValueError("Start index must be a positive number")
-
-            return self.limit(stop - start, offset=start)
+            limit, offset = util.slice_to_limit_offset(what, self.count())
+            return self.limit(limit, offset=offset)
 
         what = bind_expr(self, what)
 
@@ -1089,7 +1120,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             return res.select(self.columns)
         return res
 
-    def limit(self, n: int, offset: int = 0) -> Table:
+    def limit(self, n: int | None, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
 
         !!! note "The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by]."
@@ -1097,7 +1128,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         Parameters
         ----------
         n
-            Number of rows to include
+            Number of rows to include. If `None`, the entire table is selected
+            starting from `offset`.
         offset
             Number of rows to skip first
 
@@ -1131,11 +1163,23 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     1 │ a      │
         └───────┴────────┘
 
+        You can use `None` with `offset` to slice starting from a particular row
+
+        >>> t.limit(None, offset=1)
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ a      │
+        │     2 │ a      │
+        └───────┴────────┘
+
         See Also
         --------
         [`Table.order_by`][ibis.expr.types.relations.Table.order_by]
         """
-        return ops.Limit(self, n, offset=offset).to_expr()
+        return ops.Limit(self, n, offset).to_expr()
 
     def head(self, n: int = 5) -> Table:
         """Select the first `n` rows of a table.

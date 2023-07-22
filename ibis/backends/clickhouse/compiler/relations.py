@@ -179,12 +179,20 @@ def _set_op(op: ops.SetOp, *, left, right, **_):
 
 @translate_rel.register
 def _limit(op: ops.Limit, *, table, **kw):
-    n = op.n
-    limited = sg.select("*").from_(table).limit(n)
+    result = sg.select("*").from_(table)
 
-    if offset := op.offset:
-        limited = limited.offset(offset)
-    return limited
+    if (limit := op.n) is not None:
+        if not isinstance(limit, int):
+            limit = f"(SELECT {translate_val(limit, **kw)} FROM {table})"
+        result = result.limit(limit)
+
+    if not isinstance(offset := op.offset, int):
+        offset = f"(SELECT {translate_val(offset, **kw)} FROM {table})"
+
+    if offset != 0:
+        return result.offset(offset)
+    else:
+        return result
 
 
 @translate_rel.register

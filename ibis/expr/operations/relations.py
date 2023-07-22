@@ -377,8 +377,8 @@ class Difference(SetOp):
 @public
 class Limit(Relation):
     table: Relation
-    n: int
-    offset: int
+    n: UnionType[int, Scalar[dt.Integer], None] = None
+    offset: UnionType[int, Scalar[dt.Integer]] = 0
 
     @property
     def schema(self):

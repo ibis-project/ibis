@@ -31,3 +31,4 @@ rewrites = SQLiteExprTranslator.rewrites
 class SQLiteCompiler(AlchemyCompiler):
     translator_class = SQLiteExprTranslator
     support_values_syntax_in_select = False
+    null_limit = None

@@ -340,8 +340,32 @@ class AlchemySelect(Select):
         if self.limit is None:
             return fragment
 
-        fragment = fragment.limit(self.limit.n)
-        if offset := self.limit.offset:
+        frag = fragment
+
+        n = self.limit.n
+
+        if n is None:
+            n = self.context.compiler.null_limit
+        elif not isinstance(n, int):
+            n = (
+                sa.select(self._translate(n))
+                .select_from(frag.subquery())
+                .scalar_subquery()
+            )
+
+        if n is not None:
+            fragment = fragment.limit(n)
+
+        offset = self.limit.offset
+
+        if not isinstance(offset, int):
+            offset = (
+                sa.select(self._translate(offset))
+                .select_from(frag.subquery())
+                .scalar_subquery()
+            )
+
+        if offset != 0 and n != 0:
             fragment = fragment.offset(offset)
         return fragment
 
@@ -392,6 +416,17 @@ class AlchemyCompiler(Compiler):
     difference_class = AlchemyDifference
 
     supports_indexed_grouping_keys = True
+
+    # Value to use when the user specified `n` from the `limit` API is
+    # `None`.
+    #
+    # For some backends this is:
+    #   * the identifier ALL (sa.literal_column('ALL'))
+    #   * a NULL literal (sa.null())
+    #
+    # and some don't accept an unbounded limit at all: the `LIMIT`
+    # keyword must simply be left out of the query
+    null_limit = sa.null()
 
     @classmethod
     def to_sql(cls, expr, context=None, params=None, exists=False):

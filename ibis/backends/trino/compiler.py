@@ -50,3 +50,4 @@ def _rewrite_string_contains(op):
 class TrinoSQLCompiler(AlchemyCompiler):
     cheap_in_memory_tables = False
     translator_class = TrinoSQLExprTranslator
+    null_limit = sa.literal_column("ALL")
