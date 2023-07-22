@@ -13,7 +13,7 @@ import ibis.expr.operations as ops
 
 
 class _LimitSpec(NamedTuple):
-    n: int
+    n: int | None
     offset: int
 
 
@@ -240,10 +240,12 @@ class SelectBuilder:
         if self.limit is None:
             self.limit = _LimitSpec(n, offset)
         else:
-            self.limit = _LimitSpec(
-                min(n, self.limit.n),
-                offset + self.limit.offset,
-            )
+            if self.limit.n is not None:
+                n = min(n or self.limit.n, self.limit.n)
+            # else:
+            #     both are None or n is not None and self.limit.n is None
+
+            self.limit = _LimitSpec(n, offset + self.limit.offset)
 
         self._collect(op.table, toplevel=toplevel)
 

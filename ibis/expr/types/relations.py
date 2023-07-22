@@ -518,13 +518,14 @@ class Table(Expr, _FixedTextJupyterMixin):
             start = what.start or 0
             stop = what.stop
 
-            if stop is None or stop < 0:
+            if stop is not None and stop < 0:
                 raise ValueError('End index must be a positive number')
 
             if start < 0:
                 raise ValueError('Start index must be a positive number')
 
-            return self.limit(stop - start, offset=start)
+            limit = stop - start if stop is not None else None
+            return self.limit(limit, offset=start)
 
         what = bind_expr(self, what)
 
@@ -1080,7 +1081,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             return res.select(self.columns)
         return res
 
-    def limit(self, n: int, offset: int = 0) -> Table:
+    def limit(self, n: int | None, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
 
         !!! note "The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by]."
@@ -1088,7 +1089,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         Parameters
         ----------
         n
-            Number of rows to include
+            Number of rows to include. If `None`, the entire table is selected
+            starting from `offset`.
         offset
             Number of rows to skip first
 
@@ -1122,11 +1124,23 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     1 │ a      │
         └───────┴────────┘
 
+        You can use `None` with `offset` to slice starting from a particular row
+
+        >>> t.limit(None, offset=1)
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ a      │
+        │     2 │ a      │
+        └───────┴────────┘
+
         See Also
         --------
         [`Table.order_by`][ibis.expr.types.relations.Table.order_by]
         """
-        return ops.Limit(self, n, offset=offset).to_expr()
+        return ops.Limit(self, n, offset).to_expr()
 
     def head(self, n: int = 5) -> Table:
         """Select the first `n` rows of a table.

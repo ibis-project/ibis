@@ -345,7 +345,9 @@ class Difference(SetOp):
 @public
 class Limit(TableNode):
     table = rlz.table
-    n = rlz.instance_of(int)
+    # optional isn't used here because `None` isn't a default value for `n`,
+    # it's just another _possible_ value
+    n = rlz.instance_of((int, type(None)))
     offset = rlz.instance_of(int)
 
     @property
