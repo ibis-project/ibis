@@ -351,6 +351,11 @@ def count(op):
     return df.functions.count(translate(op.arg))
 
 
+@translate.register(ops.CountDistinct)
+def count_distinct(op):
+    return df.functions.count(translate(op.arg), distinct=True)
+
+
 @translate.register(ops.CountStar)
 def count_star(_):
     return df.functions.count(df.literal(1))
@@ -380,6 +385,42 @@ def max(op):
 def mean(op):
     arg = translate(op.arg)
     return df.functions.avg(arg)
+
+
+@translate.register(ops.Median)
+def median(op):
+    arg = translate(op.arg)
+    return df.functions.median(arg)
+
+
+@translate.register(ops.ApproxMedian)
+def approx_median(op):
+    arg = translate(op.arg)
+    return df.functions.approx_median(arg)
+
+
+@translate.register(ops.Variance)
+def variance(op):
+    arg = translate(op.arg)
+
+    if op.how == "sample":
+        return df.functions.var_samp(arg)
+    elif op.how == "pop":
+        return df.functions.var_pop(arg)
+    else:
+        raise ValueError(f"Unrecognized how value: {op.how}")
+
+
+@translate.register(ops.StandardDev)
+def stddev(op):
+    arg = translate(op.arg)
+
+    if op.how == "sample":
+        return df.functions.stddev_samp(arg)
+    elif op.how == "pop":
+        return df.functions.stddev_pop(arg)
+    else:
+        raise ValueError(f"Unrecognized how value: {op.how}")
 
 
 @translate.register(ops.Contains)

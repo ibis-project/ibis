@@ -261,9 +261,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.bool_col.nunique(where=where),
             lambda t, where: t.bool_col[where].dropna().nunique(),
             id='nunique',
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(
             lambda t, where: t.bool_col.any(where=where),
@@ -484,10 +481,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='std',
             marks=[
                 mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                mark.notimpl(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
                     reason="No match found for function signature stddev_samp(<NUMERIC>)",
@@ -499,10 +492,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].var(ddof=1),
             id='var',
             marks=[
-                mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 mark.notimpl(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
@@ -516,10 +505,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id='std_pop',
             marks=[
                 mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                mark.notimpl(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
                     reason="No match found for function signature stddev_pop(<NUMERIC>)",
@@ -531,10 +516,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].var(ddof=0),
             id='var_pop',
             marks=[
-                mark.notimpl(
-                    ["datafusion"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 mark.notimpl(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
@@ -1080,7 +1061,7 @@ def test_corr_cov(
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mysql", "sqlite", "mssql", "druid"],
+    ["mysql", "sqlite", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1095,7 +1076,7 @@ def test_approx_median(alltypes):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "datafusion", "druid", "sqlite"], raises=com.OperationNotDefinedError
+    ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
     ["impala", "mysql", "mssql", "druid", "pyspark", "trino"],
