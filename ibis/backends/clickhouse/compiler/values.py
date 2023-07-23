@@ -388,7 +388,7 @@ def _log(op, **kw):
 
     # base is translated at this point
     if has_base:
-        if base != "2" and base != "10":
+        if base not in ("2", "10"):
             raise ValueError(f"Base {base} for logarithm not supported!")
         else:
             func += base
