@@ -135,21 +135,28 @@ def test_generate_quoted_struct():
     assert result == expected
 
 
+@pytest.mark.xfail(
+    condition=vparse(duckdb_engine.__version__) < vparse("0.9.2"),
+    raises=AssertionError,
+    reason="mapping from UINTEGER query metadata fixed in 0.9.2",
+)
 def test_read_uint8_from_parquet(tmp_path):
+    import numpy as np
+
     import ibis
 
-    con = ibis.connect("duckdb://:memory:")
+    con = ibis.duckdb.connect()
 
-    t = ibis.memtable({"a": [1, 2, 3, 4]})
     # There is an incorrect mapping in duckdb-engine from UInteger -> UInt8
     # In order to get something that reads as a UInt8, we cast to UInt32 (UInteger)
-    t = t.mutate(a=t.a.cast("uint32"))
+    t = ibis.memtable({"a": np.array([1, 2, 3, 4], dtype="uint32")})
+    assert t.a.type() == dt.uint32
 
     parqpath = tmp_path / "uint.parquet"
 
-    t.to_parquet(parqpath)
+    con.to_parquet(t, parqpath)
 
     # If this doesn't fail, then things are working
     t2 = con.read_parquet(parqpath)
 
-    assert t2.a.type() == dt.uint8
+    assert t2.schema() == t.schema()
