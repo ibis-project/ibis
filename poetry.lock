@@ -4874,14 +4874,14 @@ sqlalchemy = ">=1.0.0"
 
 [[package]]
 name = "sqlglot"
-version = "17.6.0"
+version = "17.7.0"
 description = "An easily customizable SQL parser and transpiler"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sqlglot-17.6.0-py3-none-any.whl", hash = "sha256:0d4a88c69576f53d8cb47bfc42b9e25bd935cb797308c3b40e41ee5bbd494dd8"},
-    {file = "sqlglot-17.6.0.tar.gz", hash = "sha256:b03189744635013d4a8f673c7558edb6c480221cd1a47b8d7d00a10ed0c5713a"},
+    {file = "sqlglot-17.7.0-py3-none-any.whl", hash = "sha256:bc31bcaf880bdf235909866f435d28648bef75eea36bc683bd38d2810b4160f1"},
+    {file = "sqlglot-17.7.0.tar.gz", hash = "sha256:ce401ea84c49ab4dc0bd5bb7f77ffe226ddbe7a2da92efb6811c2b277c092540"},
 ]
 
 [package.extras]
