@@ -725,7 +725,7 @@ def test_connect_sqlite(url, ext, tmp_path):
 def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_path):
     getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
     con = ibis.connect(tmp_path / f"out.{extension}")
-    t = list(con.tables.values())[0]
+    t = next(iter(con.tables.values()))
     assert not t.head().execute().empty
 
 

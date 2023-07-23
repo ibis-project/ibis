@@ -41,7 +41,7 @@ def compute_projection(
             return data
 
         assert isinstance(parent.table, ops.Join)
-        assert node == parent.table.left or node == parent.table.right
+        assert node in (parent.table.left, parent.table.right)
 
         mapping = remap_overlapping_column_names(
             parent.table,

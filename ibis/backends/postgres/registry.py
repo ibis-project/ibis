@@ -189,7 +189,7 @@ def _reduce_tokens(tokens, arg):
                 value = sa.extract('dow', arg)  # 0 based day of week
             elif token == '%U':
                 value = sa.cast(sa.func.to_char(arg, 'WW'), sa.SMALLINT) - 1
-            elif token == '%c' or token == '%x' or token == '%X':
+            elif token in ('%c', '%x', '%X'):
                 # re scan and tokenize this pattern
                 try:
                     new_pattern = _strftime_to_postgresql_rules[token]

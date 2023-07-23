@@ -138,7 +138,7 @@ def can_cast_intervals(source: dt.Interval, target: dt.Interval, **kwargs) -> bo
 def can_cast_integer_to_boolean(
     source: dt.Integer, target: dt.Boolean, value: int | None = None, **kwargs
 ) -> bool:
-    return value is not None and (value == 0 or value == 1)
+    return value is not None and 0 <= value <= 1
 
 
 @castable.register(dt.Integer, dt.Interval)
