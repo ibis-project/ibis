@@ -80,6 +80,8 @@ from ibis.backends.duckdb.datatypes import parse
             ("TIMESTAMP_US", dt.Timestamp("UTC", scale=6)),
             ("TIMESTAMP_NS", dt.Timestamp("UTC", scale=9)),
             ("JSON", dt.json),
+            ("HUGEINT", dt.Decimal(38, 0)),
+            ("INT128", dt.Decimal(38, 0)),
         ]
     ],
 )

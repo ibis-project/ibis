@@ -26,6 +26,7 @@ def parse(text: str, default_decimal_parameters=(18, 3)) -> dt.DataType:
     """Parse a DuckDB type into an ibis data type."""
     primitive = (
         spaceless_string("interval").result(dt.Interval('us'))
+        | spaceless_string("hugeint", "int128").result(dt.Decimal(38, 0))
         | spaceless_string("bigint", "int8", "long").result(dt.int64)
         | spaceless_string("boolean", "bool", "logical").result(dt.boolean)
         | spaceless_string("blob", "bytea", "binary", "varbinary").result(dt.binary)
@@ -101,10 +102,7 @@ _from_duckdb_types = {
     ducktypes.SmallInteger: dt.Int16,
     ducktypes.Integer: dt.Int32,
     ducktypes.BigInteger: dt.Int64,
-    ducktypes.HugeInteger: dt.Int64,
-    # The following dtypes are present in duckdb_engine and will show up
-    # in _some_ tables, but it isn't clear _why_.
-    # Please don't remove them.
+    ducktypes.HugeInteger: dt.Decimal(38, 0),
     ducktypes.UInt8: dt.UInt8,
     ducktypes.UTinyInteger: dt.UInt8,
     ducktypes.UInt16: dt.UInt16,
