@@ -601,3 +601,43 @@ def string_find(op):
         ) - df.lit(1)
 
     return df.functions.strpos(arg, pattern) - df.lit(1)
+
+
+@translate.register(ops.RegexSearch)
+def regex_search(op):
+    arg = translate(op.arg)
+    pattern = translate(op.pattern)
+
+    def search(arr):
+        default = pa.scalar(0, type=pa.int64())
+        lengths = pc.list_value_length(arr).fill_null(default)
+        return pc.greater(lengths, default)
+
+    string_regex_search = df.udf(
+        search,
+        input_types=[PyArrowType.from_ibis(dt.Array(dt.string))],
+        return_type=PyArrowType.from_ibis(dt.bool),
+        volatility="immutable",
+        name="string_regex_search",
+    )
+
+    return string_regex_search(df.functions.regexp_match(arg, pattern))
+
+
+@translate.register(ops.StringContains)
+def string_contains(op):
+    haystack = translate(op.haystack)
+    needle = translate(op.needle)
+
+    return df.functions.strpos(haystack, needle) > df.lit(0)
+
+
+@translate.register(ops.StringJoin)
+def string_join(op):
+    if (sep := getattr(op.sep, "value", None)) is None:
+        raise ValueError(
+            "join `sep` expressions must be literals. "
+            "Arbitrary expressions are not supported in the DataFusion backend"
+        )
+
+    return df.functions.concat_ws(sep, *map(translate, op.arg))

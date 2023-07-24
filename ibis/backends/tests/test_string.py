@@ -104,9 +104,6 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: t.string_col.str.contains('6'),
             id='contains',
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
                 pytest.mark.broken(
                     ["mssql"],
                     raises=sa.exc.ProgrammingError,
@@ -188,7 +185,7 @@ def test_string_col_is_unicode(alltypes, df):
             id="rlike",
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql", "oracle"],
+                    ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -199,7 +196,7 @@ def test_string_col_is_unicode(alltypes, df):
             id="re_search_substring",
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql", "oracle"],
+                    ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=AssertionError),
@@ -211,7 +208,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql", "oracle"],
+                    ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=AssertionError),
@@ -223,7 +220,7 @@ def test_string_col_is_unicode(alltypes, df):
             id='re_search_posix',
             marks=[
                 pytest.mark.notimpl(
-                    ["datafusion", "mssql", "oracle"],
+                    ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.broken(["pyspark"], raises=AssertionError),
@@ -826,11 +823,6 @@ def test_string_col_is_unicode(alltypes, df):
             lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
             lambda t: 'a-' + t.string_col + '-c',
             id='join',
-            marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-            ],
         ),
         param(
             lambda t: t.string_col + t.date_string_col,
