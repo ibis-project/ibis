@@ -61,7 +61,7 @@ deltalake = { version = ">=0.9.0,<1", optional = true }
 duckdb = { version = ">=0.3.3,<1", optional = true }
 duckdb-engine = { version = ">=0.1.8,<1", optional = true }
 fsspec = { version = ">=2022.1.0", optional = true }
-GeoAlchemy2 = { version = ">=0.6.3,<1,!=0.13.0,!=0.14.0", optional = true }
+GeoAlchemy2 = { version = ">=0.6.3,<1,!=0.13.0,!=0.14.0,!=0.14.1", optional = true }
 geopandas = { version = ">=0.6,<1", optional = true }
 google-cloud-bigquery = { version = ">=3,<4", optional = true }
 google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
@@ -106,7 +106,7 @@ ipython = ">=8.7.0,<9"
 poetry-dynamic-versioning = ">=0.18.0,<1"
 pre-commit = ">=3.1,<4"
 pydeps = ">=1.12.7,<2"
-ruff = ">=0.0.271,<0.273"
+ruff = ">=0.0.271"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<24"
