@@ -41,6 +41,28 @@ def dummy_table(op, ctx, **kw):
     )
 
 
+@translate.register(ops.InMemoryTable)
+def in_memory_table(op, ctx, **kw):
+    schema = op.schema
+
+    if data := op.data:
+        return ctx.from_arrow_table(data.to_pyarrow(schema), name=op.name)
+
+    # datafusion panics when given an empty table
+    return (
+        ctx.empty_table()
+        .select(
+            *(
+                translate(
+                    ops.Alias(ops.Literal(None, dtype=dtype), name), ctx=ctx, **kw
+                )
+                for name, dtype in schema.items()
+            )
+        )
+        .limit(0)
+    )
+
+
 @translate.register(ops.Alias)
 def alias(op, **kw):
     arg = translate(op.arg, **kw)

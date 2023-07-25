@@ -10,7 +10,6 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
-from ibis.common.exceptions import OperationNotDefinedError
 
 pa = pytest.importorskip("pyarrow")
 
@@ -194,7 +193,7 @@ def test_to_pyarrow_batches_borked_types(batting):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark"])
 def test_to_pyarrow_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     table = con.to_pyarrow(expr)
@@ -202,7 +201,7 @@ def test_to_pyarrow_memtable(con):
     assert len(table) == 3
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark"])
 def test_to_pyarrow_batches_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     n = 0
@@ -268,10 +267,6 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
 
 @pytest.mark.notimpl(
     ["dask", "impala", "pyspark"], reason="No support for exporting files"
-)
-@pytest.mark.notimpl(
-    ["datafusion"],
-    reason="No memtable support",
 )
 @pytest.mark.parametrize("ftype", ["csv", "parquet"])
 def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
@@ -456,11 +451,6 @@ def test_to_torch(alltypes):
         non_numeric.to_torch()
 
 
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=OperationNotDefinedError,
-    reason="InMemoryTable not yet implemented for the datafusion backend",
-)
 def test_empty_memtable(backend, con):
     expected = pd.DataFrame({"a": []})
     table = ibis.memtable(expected)
