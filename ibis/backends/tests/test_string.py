@@ -725,7 +725,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["pyspark"],
                     raises=NotImplementedError,
                     reason=(
-                        "Specifiying `start` or `length` with column expressions is not supported."
+                        "Specifying `start` or `length` with column expressions is not supported."
                     ),
                 ),
                 pytest.mark.notimpl(
@@ -753,7 +753,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["pyspark"],
                     raises=NotImplementedError,
                     reason=(
-                        "Specifiying `start` or `length` with column expressions is not supported."
+                        "Specifying `start` or `length` with column expressions is not supported."
                     ),
                 ),
                 pytest.mark.notimpl(
