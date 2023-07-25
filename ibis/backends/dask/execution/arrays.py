@@ -39,7 +39,7 @@ def execute_array_column(op, cols, **kwargs):
     cols = [execute(arg, **kwargs) for arg in cols]
     df = dd.concat(cols, axis=1)
     return df.apply(
-        lambda row: np.array(row, dtype=object), axis=1, meta=(None, 'object')
+        lambda row: np.array(row, dtype=object), axis=1, meta=(None, "object")
     )
 
 

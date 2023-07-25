@@ -21,22 +21,22 @@ class Foo(enum.Enum):
 
 
 @pytest.mark.parametrize(
-    ('value', 'expected_dtype'),
+    ("value", "expected_dtype"),
     [
         (None, dt.null),
         (False, dt.boolean),
         (True, dt.boolean),
-        ('foo', dt.string),
-        (b'fooblob', dt.binary),
+        ("foo", dt.string),
+        (b"fooblob", dt.binary),
         (date.today(), dt.date),
         (datetime.now(), dt.timestamp),
-        (timedelta(days=3), dt.Interval(unit='D')),
-        (pd.Timedelta('5 hours'), dt.Interval(unit='h')),
-        (pd.Timedelta('7 minutes'), dt.Interval(unit='m')),
-        (timedelta(seconds=9), dt.Interval(unit='s')),
-        (pd.Timedelta('11 milliseconds'), dt.Interval(unit='ms')),
-        (timedelta(microseconds=15), dt.Interval(unit='us')),
-        (pd.Timedelta('17 nanoseconds'), dt.Interval(unit='ns')),
+        (timedelta(days=3), dt.Interval(unit="D")),
+        (pd.Timedelta("5 hours"), dt.Interval(unit="h")),
+        (pd.Timedelta("7 minutes"), dt.Interval(unit="m")),
+        (timedelta(seconds=9), dt.Interval(unit="s")),
+        (pd.Timedelta("11 milliseconds"), dt.Interval(unit="ms")),
+        (timedelta(microseconds=15), dt.Interval(unit="us")),
+        (pd.Timedelta("17 nanoseconds"), dt.Interval(unit="ns")),
         # numeric types
         (5, dt.int8),
         (5, dt.int8),
@@ -54,35 +54,35 @@ class Foo(enum.Enum):
         (1.5, dt.double),
         (decimal.Decimal(1.5), dt.decimal),
         # parametric types
-        (list('abc'), dt.Array(dt.string)),
-        (set('abc'), dt.Array(dt.string)),
+        (list("abc"), dt.Array(dt.string)),
+        (set("abc"), dt.Array(dt.string)),
         ({1, 5, 6}, dt.Array(dt.int8)),
-        (frozenset(list('abc')), dt.Array(dt.string)),
+        (frozenset(list("abc")), dt.Array(dt.string)),
         ([1, 2, 3], dt.Array(dt.int8)),
         ([1, 128], dt.Array(dt.int16)),
         ([1, 128, 32768], dt.Array(dt.int32)),
         ([1, 128, 32768, 2147483648], dt.Array(dt.int64)),
-        ({'a': 1, 'b': 2, 'c': 3}, dt.Map(dt.string, dt.int8)),
+        ({"a": 1, "b": 2, "c": 3}, dt.Map(dt.string, dt.int8)),
         ({1: 2, 3: 4, 5: 6}, dt.Map(dt.int8, dt.int8)),
         (
-            {'a': [1.0, 2.0], 'b': [], 'c': [3.0]},
+            {"a": [1.0, 2.0], "b": [], "c": [3.0]},
             dt.Map(dt.string, dt.Array(dt.double)),
         ),
         (
             OrderedDict(
                 [
-                    ('a', 1),
-                    ('b', list('abc')),
-                    ('c', OrderedDict([('foo', [1.0, 2.0])])),
+                    ("a", 1),
+                    ("b", list("abc")),
+                    ("c", OrderedDict([("foo", [1.0, 2.0])])),
                 ]
             ),
             dt.Struct.from_tuples(
                 [
-                    ('a', dt.int8),
-                    ('b', dt.Array(dt.string)),
+                    ("a", dt.int8),
+                    ("b", dt.Array(dt.string)),
                     (
-                        'c',
-                        dt.Struct.from_tuples([('foo', dt.Array(dt.double))]),
+                        "c",
+                        dt.Struct.from_tuples([("foo", dt.Array(dt.double))]),
                     ),
                 ]
             ),
@@ -103,8 +103,8 @@ class Foo(enum.Enum):
         (np.bool_(False), dt.boolean),
         # pandas types
         (
-            pd.Timestamp('2015-01-01 12:00:00', tz='US/Eastern'),
-            dt.Timestamp('US/Eastern'),
+            pd.Timestamp("2015-01-01 12:00:00", tz="US/Eastern"),
+            dt.Timestamp("US/Eastern"),
         ),
     ],
 )
@@ -113,7 +113,7 @@ def test_infer_dtype(value, expected_dtype):
 
 
 def test_infer_mixed_type_fails():
-    data = [1, 'a']
+    data = [1, "a"]
     with pytest.raises(TypeError):
         dt.infer(data)
 
@@ -126,12 +126,12 @@ def test_infer_timestamp_with_tz():
 
 
 def test_infer_timedelta():
-    assert dt.infer(timedelta(days=3)) == dt.Interval(unit='D')
-    assert dt.infer(timedelta(hours=5)) == dt.Interval(unit='s')
-    assert dt.infer(timedelta(minutes=7)) == dt.Interval(unit='s')
-    assert dt.infer(timedelta(seconds=9)) == dt.Interval(unit='s')
-    assert dt.infer(timedelta(milliseconds=11)) == dt.Interval(unit='us')
-    assert dt.infer(timedelta(microseconds=13)) == dt.Interval(unit='us')
+    assert dt.infer(timedelta(days=3)) == dt.Interval(unit="D")
+    assert dt.infer(timedelta(hours=5)) == dt.Interval(unit="s")
+    assert dt.infer(timedelta(minutes=7)) == dt.Interval(unit="s")
+    assert dt.infer(timedelta(seconds=9)) == dt.Interval(unit="s")
+    assert dt.infer(timedelta(milliseconds=11)) == dt.Interval(unit="us")
+    assert dt.infer(timedelta(microseconds=13)) == dt.Interval(unit="us")
 
     msg = "Unable to infer interval type from zero value"
     with pytest.raises(ValueError, match=msg):
@@ -216,7 +216,7 @@ def test_normalize_interval(dtype, value, expected):
 
 
 @pytest.mark.parametrize(
-    ('value', 'expected_dtype'),
+    ("value", "expected_dtype"),
     [
         # numpy types
         (np.int8(5), dt.int8),
@@ -233,8 +233,8 @@ def test_normalize_interval(dtype, value, expected):
         (np.bool_(False), dt.boolean),
         # pandas types
         (
-            pd.Timestamp('2015-01-01 12:00:00', tz='US/Eastern'),
-            dt.Timestamp('US/Eastern'),
+            pd.Timestamp("2015-01-01 12:00:00", tz="US/Eastern"),
+            dt.Timestamp("US/Eastern"),
         ),
     ],
 )
@@ -243,7 +243,7 @@ def test_infer_numpy_scalar(value, expected_dtype):
 
 
 @pytest.mark.parametrize(
-    ('numpy_dtype', 'ibis_dtype'),
+    ("numpy_dtype", "ibis_dtype"),
     [
         (np.bool_, dt.boolean),
         (np.int8, dt.int8),
@@ -278,33 +278,33 @@ def test_from_numpy_timedelta():
 
 
 @pytest.mark.parametrize(
-    ('numpy_array', 'expected_dtypes'),
+    ("numpy_array", "expected_dtypes"),
     [
         # Explicitly-defined dtype
-        (np.array([1, 2, 3], dtype='int8'), (dt.Array(dt.int8),)),
-        (np.array([1, 2, 3], dtype='int16'), (dt.Array(dt.int16),)),
-        (np.array([1, 2, 3], dtype='int32'), (dt.Array(dt.int32),)),
-        (np.array([1, 2, 3], dtype='int64'), (dt.Array(dt.int64),)),
-        (np.array([1, 2, 3], dtype='uint8'), (dt.Array(dt.uint8),)),
-        (np.array([1, 2, 3], dtype='uint16'), (dt.Array(dt.uint16),)),
-        (np.array([1, 2, 3], dtype='uint32'), (dt.Array(dt.uint32),)),
-        (np.array([1, 2, 3], dtype='uint64'), (dt.Array(dt.uint64),)),
-        (np.array([1.0, 2.0, 3.0], dtype='float32'), (dt.Array(dt.float32),)),
-        (np.array([1.0, 2.0, 3.0], dtype='float64'), (dt.Array(dt.float64),)),
-        (np.array([True, False, True], dtype='bool'), (dt.Array(dt.boolean),)),
+        (np.array([1, 2, 3], dtype="int8"), (dt.Array(dt.int8),)),
+        (np.array([1, 2, 3], dtype="int16"), (dt.Array(dt.int16),)),
+        (np.array([1, 2, 3], dtype="int32"), (dt.Array(dt.int32),)),
+        (np.array([1, 2, 3], dtype="int64"), (dt.Array(dt.int64),)),
+        (np.array([1, 2, 3], dtype="uint8"), (dt.Array(dt.uint8),)),
+        (np.array([1, 2, 3], dtype="uint16"), (dt.Array(dt.uint16),)),
+        (np.array([1, 2, 3], dtype="uint32"), (dt.Array(dt.uint32),)),
+        (np.array([1, 2, 3], dtype="uint64"), (dt.Array(dt.uint64),)),
+        (np.array([1.0, 2.0, 3.0], dtype="float32"), (dt.Array(dt.float32),)),
+        (np.array([1.0, 2.0, 3.0], dtype="float64"), (dt.Array(dt.float64),)),
+        (np.array([True, False, True], dtype="bool"), (dt.Array(dt.boolean),)),
         # Implicit dtype
         # Integer array could be inferred to int64 or int32 depending on system
         (np.array([1, 2, 3]), (dt.Array(dt.int64), dt.Array(dt.int32))),
         (np.array([1.0, 2.0, 3.0]), (dt.Array(dt.float64),)),
         (np.array([np.nan, np.nan, np.nan]), (dt.Array(dt.float64),)),
         (np.array([True, False, True]), (dt.Array(dt.boolean),)),
-        (np.array(['1', '2', '3']), (dt.Array(dt.string),)),
+        (np.array(["1", "2", "3"]), (dt.Array(dt.string),)),
         (
             np.array(
                 [
-                    pd.Timestamp('2015-01-01 12:00:00'),
-                    pd.Timestamp('2015-01-02 12:00:00'),
-                    pd.Timestamp('2015-01-03 12:00:00'),
+                    pd.Timestamp("2015-01-01 12:00:00"),
+                    pd.Timestamp("2015-01-02 12:00:00"),
+                    pd.Timestamp("2015-01-03 12:00:00"),
                 ]
             ),
             (dt.Array(dt.Timestamp()), dt.Array(dt.Timestamp(scale=6))),
@@ -313,13 +313,13 @@ def test_from_numpy_timedelta():
         (np.array([1, 2, 3], dtype=object), (dt.Array(dt.int64),)),
         (np.array([1.0, 2.0, 3.0], dtype=object), (dt.Array(dt.float64),)),
         (np.array([True, False, True], dtype=object), (dt.Array(dt.boolean),)),
-        (np.array(['1', '2', '3'], dtype=object), (dt.Array(dt.string),)),
+        (np.array(["1", "2", "3"], dtype=object), (dt.Array(dt.string),)),
         (
             np.array(
                 [
-                    pd.Timestamp('2015-01-01 12:00:00'),
-                    pd.Timestamp('2015-01-02 12:00:00'),
-                    pd.Timestamp('2015-01-03 12:00:00'),
+                    pd.Timestamp("2015-01-01 12:00:00"),
+                    pd.Timestamp("2015-01-02 12:00:00"),
+                    pd.Timestamp("2015-01-03 12:00:00"),
                 ],
                 dtype=object,
             ),
@@ -334,7 +334,7 @@ def test_infer_numpy_array(numpy_array, expected_dtypes):
 
 
 def test_normalize_json():
-    obj = ['foo', {'bar': ('baz', None, 1.0, 2)}]
+    obj = ["foo", {"bar": ("baz", None, 1.0, 2)}]
     expected = json.dumps(obj)
 
     assert dt.normalize(dt.json, obj) == expected

@@ -227,7 +227,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         for name, obj in (external_tables or {}).items():
             n += 1
             if not (schema := obj.schema):
-                raise TypeError(f'Schema is empty for external table {name}')
+                raise TypeError(f"Schema is empty for external table {name}")
 
             structure = [
                 f"{name} {serialize(typ.copy(nullable=not typ.is_nested()))}"
@@ -364,7 +364,7 @@ class Backend(BaseBackend, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
-        limit: str | None = 'default',
+        limit: str | None = "default",
         external_tables: Mapping[str, pd.DataFrame] | None = None,
         **kwargs: Any,
     ) -> Any:

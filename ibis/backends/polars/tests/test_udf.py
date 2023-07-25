@@ -12,10 +12,10 @@ pytest.importorskip("polars")
 pc = pytest.importorskip("pyarrow.compute")
 
 
-@elementwise(input_type=['string'], output_type='int64')
+@elementwise(input_type=["string"], output_type="int64")
 def my_string_length(arr, **kwargs):
     return pl.from_arrow(
-        pc.cast(pc.multiply(pc.utf8_length(arr.to_arrow()), 2), target_type='int64')
+        pc.cast(pc.multiply(pc.utf8_length(arr.to_arrow()), 2), target_type="int64")
     )
 
 
@@ -41,10 +41,10 @@ def test_udf(alltypes):
 
 
 def test_multiple_argument_udf(alltypes):
-    expr = my_add(alltypes.smallint_col, alltypes.int_col).name('tmp')
+    expr = my_add(alltypes.smallint_col, alltypes.int_col).name("tmp")
     result = expr.execute()
 
-    df = alltypes[['smallint_col', 'int_col']].execute()
-    expected = (df.smallint_col + df.int_col).astype('int32')
+    df = alltypes[["smallint_col", "int_col"]].execute()
+    expected = (df.smallint_col + df.int_col).astype("int32")
 
-    tm.assert_series_equal(result, expected.rename('tmp'))
+    tm.assert_series_equal(result, expected.rename("tmp"))

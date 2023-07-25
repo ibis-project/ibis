@@ -73,12 +73,12 @@ def check_eq(left, right, how, **kwargs):
 )
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
-    right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
+    right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
 
     left_df = left.execute()
     right_df = right.execute()
-    predicate = ['playerID']
-    result_order = ['playerID', 'yearID', 'lgID', 'stint']
+    predicate = ["playerID"]
+    result_order = ["playerID", "yearID", "lgID", "stint"]
 
     expr = left.join(right, predicate, how=how)
     if how == "inner":
@@ -98,7 +98,7 @@ def test_mutating_join(backend, batting, awards_players, how):
                     df.playerID_right,
                 )
             )
-            .drop(['playerID_right'], axis=1)[left.columns]
+            .drop(["playerID_right"], axis=1)[left.columns]
             .sort_values(result_order)
             .reset_index(drop=True)
         )
@@ -122,12 +122,12 @@ def test_mutating_join(backend, batting, awards_players, how):
 @pytest.mark.notimpl(["bigquery", "dask", "datafusion", "druid"])
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
-    right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
+    right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
 
     left_df = left.execute()
     right_df = right.execute()
-    predicate = ['playerID']
-    result_order = ['playerID', 'yearID', 'lgID', 'stint']
+    predicate = ["playerID"]
+    result_order = ["playerID", "yearID", "lgID", "stint"]
 
     expr = left.join(right, predicate, how=how)
     result = (
@@ -158,7 +158,7 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     left = batting[batting.yearID == 2015]
     year = left.yearID.name("year")
     left = left[year, "RBI"]
-    right = awards_players[awards_players.lgID == 'NL']
+    right = awards_players[awards_players.lgID == "NL"]
 
     expr = left.join(right, left.year == right.yearID)
     filters = [expr.RBI == 9]

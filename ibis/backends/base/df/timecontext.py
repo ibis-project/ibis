@@ -115,22 +115,22 @@ def canonicalize_context(
 
     SUPPORTS_TIMESTAMP_TYPE = pd.Timestamp
     if not isinstance(timecontext, tuple) or len(timecontext) != 2:
-        raise com.IbisError(f'Timecontext {timecontext} should specify (begin, end)')
+        raise com.IbisError(f"Timecontext {timecontext} should specify (begin, end)")
 
     begin, end = timecontext
 
     if not isinstance(begin, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
-            f'begin time value {begin} of type {type(begin)} is not'
-            ' of type pd.Timestamp'
+            f"begin time value {begin} of type {type(begin)} is not"
+            " of type pd.Timestamp"
         )
     if not isinstance(end, SUPPORTS_TIMESTAMP_TYPE):
         raise com.IbisError(
-            f'end time value {end} of type {type(begin)} is not of type pd.Timestamp'
+            f"end time value {end} of type {type(begin)} is not of type pd.Timestamp"
         )
     if begin > end:
         raise com.IbisError(
-            f'begin time {begin} must be before or equal to end time {end}'
+            f"begin time {begin} must be before or equal to end time {end}"
         )
     return begin, end
 
@@ -246,7 +246,7 @@ def adjust_context(op: Any, scope: Scope, timecontext: TimeContext) -> TimeConte
         For `op` that is not of type Node, raise an error to avoid failing
         silently since the default behavior is to return `timecontext`.
     """
-    raise com.IbisError(f'Unsupported input type for adjust context for {op}')
+    raise com.IbisError(f"Unsupported input type for adjust context for {op}")
 
 
 @adjust_context.register(ops.Node)

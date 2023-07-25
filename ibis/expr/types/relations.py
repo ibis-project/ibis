@@ -529,15 +529,15 @@ class Table(Expr, _FixedTextJupyterMixin):
         if isinstance(what, slice):
             step = what.step
             if step is not None and step != 1:
-                raise ValueError('Slice step can only be 1')
+                raise ValueError("Slice step can only be 1")
             start = what.start or 0
             stop = what.stop
 
             if stop is None or stop < 0:
-                raise ValueError('End index must be a positive number')
+                raise ValueError("End index must be a positive number")
 
             if start < 0:
-                raise ValueError('Start index must be a positive number')
+                raise ValueError("Start index must be a positive number")
 
             return self.limit(stop - start, offset=start)
 
@@ -554,12 +554,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             return self.select(what)
         else:
             raise NotImplementedError(
-                'Selection rows or columns with {} objects is not '
-                'supported'.format(type(what).__name__)
+                "Selection rows or columns with {} objects is not "
+                "supported".format(type(what).__name__)
             )
 
     def __len__(self):
-        raise com.ExpressionError('Use .count() instead')
+        raise com.ExpressionError("Use .count() instead")
 
     def __getattr__(self, key: str) -> ir.Column:
         """Return the column name of a table.
@@ -1403,7 +1403,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         schema = self.schema()
         if len(schema) != 1:
             raise com.ExpressionError(
-                'Table must have exactly one column when viewed as array'
+                "Table must have exactly one column when viewed as array"
             )
 
         return ops.TableArrayView(self).to_expr()
@@ -1805,8 +1805,8 @@ class Table(Expr, _FixedTextJupyterMixin):
                     elif substitutions == "ALL_CAPS":
                         return "_".join(c.upper().split()).replace("-", "_")
                 # Handle PascalCase, camelCase, and kebab-case
-                c = re.sub(r"([A-Z]+)([A-Z][a-z])", r'\1_\2', c)
-                c = re.sub(r"([a-z\d])([A-Z])", r'\1_\2', c)
+                c = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", c)
+                c = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", c)
                 c = c.replace("-", "_")
                 if substitutions == "snake_case":
                     return c.lower()
@@ -2195,7 +2195,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         if isinstance(replacements, collections.abc.Mapping):
             for col, val in replacements.items():
                 if col not in schema:
-                    columns_formatted = ', '.join(map(repr, schema.names))
+                    columns_formatted = ", ".join(map(repr, schema.names))
                     raise com.IbisTypeError(
                         f"Column {col!r} is not found in table. "
                         f"Existing columns: {columns_formatted}."
@@ -2343,16 +2343,16 @@ class Table(Expr, _FixedTextJupyterMixin):
             str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanColumn
         ] = (),
         how: Literal[
-            'inner',
-            'left',
-            'outer',
-            'right',
-            'semi',
-            'anti',
-            'any_inner',
-            'any_left',
-            'left_semi',
-        ] = 'inner',
+            "inner",
+            "left",
+            "outer",
+            "right",
+            "semi",
+            "anti",
+            "any_inner",
+            "any_left",
+            "left_semi",
+        ] = "inner",
         *,
         lname: str = "",
         rname: str = "{name}_right",
@@ -2456,16 +2456,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
 
         _join_classes = {
-            'inner': ops.InnerJoin,
-            'left': ops.LeftJoin,
-            'any_inner': ops.AnyInnerJoin,
-            'any_left': ops.AnyLeftJoin,
-            'outer': ops.OuterJoin,
-            'right': ops.RightJoin,
-            'left_semi': ops.LeftSemiJoin,
-            'semi': ops.LeftSemiJoin,
-            'anti': ops.LeftAntiJoin,
-            'cross': ops.CrossJoin,
+            "inner": ops.InnerJoin,
+            "left": ops.LeftJoin,
+            "any_inner": ops.AnyInnerJoin,
+            "any_left": ops.AnyLeftJoin,
+            "outer": ops.OuterJoin,
+            "right": ops.RightJoin,
+            "left_semi": ops.LeftSemiJoin,
+            "semi": ops.LeftSemiJoin,
+            "anti": ops.LeftAntiJoin,
+            "cross": ops.CrossJoin,
         }
 
         klass = _join_classes[how.lower()]

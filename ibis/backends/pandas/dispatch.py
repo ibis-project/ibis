@@ -12,10 +12,10 @@ from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
 
 # Individual operation execution
 execute_node = TraceTwoLevelDispatcher(
-    'execute_node',
+    "execute_node",
     doc=(
-        'Execute an individual operation given the operation and its computed '
-        'arguments'
+        "Execute an individual operation given the operation and its computed "
+        "arguments"
     ),
 )
 
@@ -33,15 +33,15 @@ def raise_unknown_op(node, *args, **kwargs):
 def raise_unknown_table_node(node, **kwargs):
     raise com.UnboundExpressionError(
         (
-            'Node of type {!r} has no data bound to it. '
-            'You probably tried to execute an expression without a data '
-            'source.'
+            "Node of type {!r} has no data bound to it. "
+            "You probably tried to execute an expression without a data "
+            "source."
         ).format(type(node).__name__)
     )
 
 
 pre_execute = Dispatcher(
-    'pre_execute',
+    "pre_execute",
     doc="""\
 Given a node, compute a (possibly partial) scope prior to standard execution.
 
@@ -71,7 +71,7 @@ def pre_execute_multiple_clients(node, *clients, scope=None, **kwargs):
 
 
 execute_literal = Dispatcher(
-    'execute_literal',
+    "execute_literal",
     doc="""\
 Special case literal execution to avoid the dispatching overhead of
 ``execute_node``.
@@ -90,7 +90,7 @@ datatype : ibis.expr.datatypes.DataType
 
 
 post_execute = Dispatcher(
-    'post_execute',
+    "post_execute",
     doc="""\
 Execute code on the result of a computation.
 

@@ -46,20 +46,20 @@ if TYPE_CHECKING:
 
 
 __all__ = (
-    'BaseAlchemyBackend',
-    'AlchemyExprTranslator',
-    'AlchemyContext',
-    'AlchemyCompiler',
-    'sqlalchemy_operation_registry',
-    'sqlalchemy_window_functions_registry',
-    'reduction',
-    'variance_reduction',
-    'fixed_arity',
-    'unary',
-    'infix_op',
-    'get_sqla_table',
-    'schema_from_table',
-    'varargs',
+    "BaseAlchemyBackend",
+    "AlchemyExprTranslator",
+    "AlchemyContext",
+    "AlchemyCompiler",
+    "sqlalchemy_operation_registry",
+    "sqlalchemy_window_functions_registry",
+    "reduction",
+    "variance_reduction",
+    "fixed_arity",
+    "unary",
+    "infix_op",
+    "get_sqla_table",
+    "schema_from_table",
+    "varargs",
 )
 
 
@@ -146,7 +146,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def version(self):
         if self._inspector is None:
             self._inspector = sa.inspect(self.con)
-        return '.'.join(map(str, self.con.dialect.server_version_info))
+        return ".".join(map(str, self.con.dialect.server_version_info))
 
     def list_tables(self, like=None, database=None):
         tables = self.inspector.get_table_names(schema=database)
@@ -289,8 +289,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
         if obj is not None and schema is not None:
             if not obj.schema().equals(ibis.schema(schema)):
                 raise com.IbisTypeError(
-                    'Expression schema is not equal to passed schema. '
-                    'Try passing the expression without the schema'
+                    "Expression schema is not equal to passed schema. "
+                    "Try passing the expression without the schema"
                 )
         if schema is None:
             schema = obj.schema()
@@ -668,8 +668,8 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         if database is not None:
             raise NotImplementedError(
-                'Inserting data to a table from a different database is not '
-                'yet implemented'
+                "Inserting data to a table from a different database is not "
+                "yet implemented"
             )
 
         # If we've been passed a `memtable`, pull out the underlying dataframe

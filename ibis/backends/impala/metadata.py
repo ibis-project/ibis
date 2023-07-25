@@ -46,7 +46,7 @@ def _try_timestamp(x):
     import pandas as pd
 
     try:
-        ts = pd.Timestamp(x, tz='UTC')
+        ts = pd.Timestamp(x, tz="UTC")
         return ts.to_pydatetime().replace(tzinfo=None)
     except (ValueError, TypeError):
         return x
@@ -70,9 +70,9 @@ def _try_unix_timestamp(x):
 def _try_boolean(x):
     try:
         x = x.lower()
-        if x in ('true', 'yes'):
+        if x in ("true", "yes"):
             return True
-        elif x in ('false', 'no'):
+        elif x in ("false", "no"):
             return False
         return x
     except (ValueError, TypeError):
@@ -120,7 +120,7 @@ class MetadataParser:
         self.schema = self._parse_schema()
 
         next_section = self._next_tuple()
-        if 'partition' in next_section[0].lower():
+        if "partition" in next_section[0].lower():
             self._parse_partitions()
         else:
             self._parse_info()
@@ -129,17 +129,17 @@ class MetadataParser:
         self.partitions = self._parse_schema()
 
         next_section = self._next_tuple()
-        if 'table information' not in next_section[0].lower():
-            raise ValueError('Table information not present')
+        if "table information" not in next_section[0].lower():
+            raise ValueError("Table information not present")
 
         self._parse_info()
 
     def _parse_schema(self):
         tup = self._next_tuple()
-        if 'col_name' not in tup[0]:
+        if "col_name" not in tup[0]:
             raise ValueError(
-                'DESCRIBE FORMATTED did not return '
-                'the expected results: {}'.format(tup)
+                "DESCRIBE FORMATTED did not return "
+                "the expected results: {}".format(tup)
             )
         self._next_tuple()
 
@@ -157,14 +157,14 @@ class MetadataParser:
         self.info = {}
         while True:
             tup = self._next_tuple()
-            orig_key = tup[0].strip(':')
+            orig_key = tup[0].strip(":")
             key = _clean_param_name(tup[0])
 
-            if not key or key.startswith('#'):
+            if not key or key.startswith("#"):
                 # section is done
                 break
 
-            if key == 'table parameters':
+            if key == "table parameters":
                 self._parse_table_parameters()
             elif key in self._info_cleaners:
                 result = self._info_cleaners[key](tup)
@@ -172,34 +172,34 @@ class MetadataParser:
             else:
                 self.info[orig_key] = tup[1]
 
-        if 'storage information' not in key:
-            raise ValueError('Storage information not present')
+        if "storage information" not in key:
+            raise ValueError("Storage information not present")
 
         self._parse_storage_info()
 
     _info_cleaners = {
-        'database': _get_type(),
-        'owner': _get_type(),
-        'createtime': _get_type(_try_timestamp),
-        'lastaccesstime': _get_type(_try_timestamp),
-        'protect mode': _get_type(),
-        'retention': _get_type(_try_int),
-        'location': _get_type(),
-        'table type': _get_type(),
+        "database": _get_type(),
+        "owner": _get_type(),
+        "createtime": _get_type(_try_timestamp),
+        "lastaccesstime": _get_type(_try_timestamp),
+        "protect mode": _get_type(),
+        "retention": _get_type(_try_int),
+        "location": _get_type(),
+        "table type": _get_type(),
     }
 
     def _parse_table_parameters(self):
         params = self._parse_nested_params(self._table_param_cleaners)
-        self.info['Table Parameters'] = params
+        self.info["Table Parameters"] = params
 
     _table_param_cleaners = {
-        'external': _try_boolean,
-        'column_stats_accurate': _try_boolean,
-        'numfiles': _try_int,
-        'totalsize': _try_int,
-        'stats_generated_via_stats_task': _try_boolean,
-        'numrows': _try_int,
-        'transient_lastddltime': _try_unix_timestamp,
+        "external": _try_boolean,
+        "column_stats_accurate": _try_boolean,
+        "numfiles": _try_int,
+        "totalsize": _try_int,
+        "stats_generated_via_stats_task": _try_boolean,
+        "numrows": _try_int,
+        "transient_lastddltime": _try_unix_timestamp,
     }
 
     def _parse_storage_info(self):
@@ -211,14 +211,14 @@ class MetadataParser:
             except StopIteration:
                 break
 
-            orig_key = tup[0].strip(':')
+            orig_key = tup[0].strip(":")
             key = _clean_param_name(tup[0])
 
-            if not key or key.startswith('#'):
+            if not key or key.startswith("#"):
                 # section is done
                 break
 
-            if key == 'storage desc params':
+            if key == "storage desc params":
                 self._parse_storage_desc_params()
             elif key in self._storage_cleaners:
                 result = self._storage_cleaners[key](tup)
@@ -227,13 +227,13 @@ class MetadataParser:
                 self.storage[orig_key] = tup[1]
 
     _storage_cleaners = {
-        'compressed': _get_type(_try_boolean),
-        'num buckets': _get_type(_try_int),
+        "compressed": _get_type(_try_boolean),
+        "num buckets": _get_type(_try_int),
     }
 
     def _parse_storage_desc_params(self):
         params = self._parse_nested_params(self._storage_param_cleaners)
-        self.storage['Desc Params'] = params
+        self.storage["Desc Params"] = params
 
     _storage_param_cleaners = {}
 
@@ -260,7 +260,7 @@ class MetadataParser:
 
 
 def _clean_param_name(x):
-    return x.strip().strip(':').lower()
+    return x.strip().strip(":").lower()
 
 
 def _get_meta(attr, key):
@@ -295,15 +295,15 @@ class TableMetadata:
         # Quick and dirty for now
         buf = StringIO()
         buf.write(str(type(self)))
-        buf.write('\n')
+        buf.write("\n")
 
         data = {
-            'schema': self.schema,
-            'info': self.info,
-            'storage info': self.storage,
+            "schema": self.schema,
+            "info": self.info,
+            "storage info": self.storage,
         }
         if self.partitions is not None:
-            data['partition schema'] = self.partitions
+            data["partition schema"] = self.partitions
 
         pprint.pprint(data, stream=buf)  # noqa: T203
 
@@ -313,14 +313,14 @@ class TableMetadata:
     def is_partitioned(self):
         return self.partitions is not None
 
-    create_time = _get_meta('info', 'CreateTime')
-    location = _get_meta('info', 'Location')
-    owner = _get_meta('info', 'Owner')
-    num_rows = _get_meta('info', ['Table Parameters', 'numRows'])
-    hive_format = _get_meta('storage', 'InputFormat')
+    create_time = _get_meta("info", "CreateTime")
+    location = _get_meta("info", "Location")
+    owner = _get_meta("info", "Owner")
+    num_rows = _get_meta("info", ["Table Parameters", "numRows"])
+    hive_format = _get_meta("storage", "InputFormat")
 
-    tbl_properties = _get_meta('info', 'Table Parameters')
-    serde_properties = _get_meta('storage', 'Desc Params')
+    tbl_properties = _get_meta("info", "Table Parameters")
+    serde_properties = _get_meta("storage", "Desc Params")
 
 
 class TableInfo:

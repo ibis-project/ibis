@@ -38,7 +38,7 @@ from ibis.backends.duckdb.datatypes import parse
             ("INT4", dt.int32),
             ("INT", dt.int32),
             ("SIGNED", dt.int32),
-            ("INTERVAL", dt.Interval('us')),
+            ("INTERVAL", dt.Interval("us")),
             ("REAL", dt.float32),
             ("FLOAT4", dt.float32),
             ("FLOAT", dt.float32),

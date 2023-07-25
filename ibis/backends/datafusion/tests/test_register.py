@@ -24,13 +24,13 @@ def test_read_parquet(conn, data_dir):
 
 
 def test_register_table(conn):
-    tab = pa.table({'x': [1, 2, 3]})
+    tab = pa.table({"x": [1, 2, 3]})
     conn.register(tab, "my_table")
     assert conn.table("my_table").x.sum().execute() == 6
 
 
 def test_register_pandas(conn):
-    df = pd.DataFrame({'x': [1, 2, 3]})
+    df = pd.DataFrame({"x": [1, 2, 3]})
     conn.register(df, "my_table")
     assert conn.table("my_table").x.sum().execute() == 6
 
@@ -42,7 +42,7 @@ def test_register_batches(conn):
 
 
 def test_register_dataset(conn):
-    tab = pa.table({'x': [1, 2, 3]})
+    tab = pa.table({"x": [1, 2, 3]})
     dataset = ds.InMemoryDataset(tab)
     conn.register(dataset, "my_table")
     assert conn.table("my_table").x.sum().execute() == 6

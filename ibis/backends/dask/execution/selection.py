@@ -63,7 +63,7 @@ def compute_projection(
         return map_new_column_names_to_data(mapping, data)
     elif isinstance(node, ops.Value):
         name = node.name
-        assert name is not None, 'Value selection name is None'
+        assert name is not None, "Value selection name is None"
 
         if node.shape.is_scalar():
             data_columns = frozenset(data.columns)
@@ -201,14 +201,14 @@ def execute_selection_dataframe(
             timecontext=timecontext,
             **kwargs,
         )
-        result = add_globally_consecutive_column(result, col_name='_ibis_sort_index')
+        result = add_globally_consecutive_column(result, col_name="_ibis_sort_index")
 
         return result
     else:
         grouping_keys = ordering_keys = ()
 
     # return early if we do not have any temporary grouping or ordering columns
-    assert not grouping_keys, 'group by should never show up in Selection'
+    assert not grouping_keys, "group by should never show up in Selection"
     if not ordering_keys:
         return result
 

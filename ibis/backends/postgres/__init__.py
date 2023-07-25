@@ -103,8 +103,8 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
             year : int32
             month : int32
         """
-        if driver != 'psycopg2':
-            raise NotImplementedError('psycopg2 is currently the only supported driver')
+        if driver != "psycopg2":
+            raise NotImplementedError("psycopg2 is currently the only supported driver")
 
         alchemy_url = self._build_alchemy_url(
             url=url,
@@ -113,7 +113,7 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
             user=user,
             password=password,
             database=database,
-            driver=f'postgresql+{driver}',
+            driver=f"postgresql+{driver}",
         )
 
         connect_args = {}

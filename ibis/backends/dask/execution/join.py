@@ -67,7 +67,7 @@ def execute_cross_join(op, left, right, predicates, **kwargs):
     result = dd.merge(
         new_left,
         new_right,
-        how='inner',
+        how="inner",
         on=key,
         suffixes=constants.JOIN_SUFFIXES,
     )
@@ -86,12 +86,12 @@ def execute_join(op, left, right, predicates, **kwargs):
     try:
         how = constants.JOIN_TYPES[op_type]
     except KeyError:
-        raise NotImplementedError(f'{op_type.__name__} not supported')
+        raise NotImplementedError(f"{op_type.__name__} not supported")
 
     on = {op.left: [], op.right: []}
     for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
-            raise TypeError('Only equality join predicates supported with dask')
+            raise TypeError("Only equality join predicates supported with dask")
         new_left_column, left_pred_root = _compute_join_column(predicate.left, **kwargs)
         on[left_pred_root].append(new_left_column)
 

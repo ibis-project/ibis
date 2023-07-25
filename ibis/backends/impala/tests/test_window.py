@@ -24,19 +24,19 @@ def assert_sql_equal(expr, snapshot, out="out.sql"):
 
 def test_aggregate_in_projection(alltypes, snapshot):
     t = alltypes
-    proj = t[t, (t.f / t.f.sum()).name('normed_f')]
+    proj = t[t, (t.f / t.f.sum()).name("normed_f")]
     assert_sql_equal(proj, snapshot)
 
 
 def test_add_default_order_by(alltypes, snapshot):
     t = alltypes
 
-    first = t.f.first().name('first')
-    last = t.f.last().name('last')
-    lag = t.f.lag().name('lag')
-    diff = (t.f.lead() - t.f).name('fwd_diff')
-    lag2 = t.f.lag().over(window(order_by=t.d)).name('lag2')
-    grouped = t.group_by('g')
+    first = t.f.first().name("first")
+    last = t.f.last().name("last")
+    lag = t.f.lag().name("lag")
+    diff = (t.f.lead() - t.f).name("fwd_diff")
+    lag2 = t.f.lag().over(window(order_by=t.d)).name("lag2")
+    grouped = t.group_by("g")
     proj = grouped.mutate([lag, diff, first, last, lag2])
     assert_sql_equal(proj, snapshot)
 
@@ -96,7 +96,7 @@ def test_nested_analytic_function(alltypes, snapshot):
     t = alltypes
 
     w = window(order_by=t.f)
-    expr = (t.f - t.f.lag()).lag().over(w).name('foo')
+    expr = (t.f - t.f.lag()).lag().over(w).name("foo")
     result = t.select(expr)
     assert_sql_equal(result, snapshot)
 
@@ -104,7 +104,7 @@ def test_nested_analytic_function(alltypes, snapshot):
 def test_rank_functions(alltypes, snapshot):
     t = alltypes
 
-    proj = t[t.g, t.f.rank().name('minr'), t.f.dense_rank().name('denser')]
+    proj = t[t.g, t.f.rank().name("minr"), t.f.dense_rank().name("denser")]
     assert_sql_equal(proj, snapshot)
 
 
@@ -124,20 +124,20 @@ def test_order_by_desc(alltypes, snapshot):
 
     w = window(order_by=ibis.desc(t.f))
 
-    proj = t[t.f, ibis.row_number().over(w).name('revrank')]
+    proj = t[t.f, ibis.row_number().over(w).name("revrank")]
     assert_sql_equal(proj, snapshot, "out1.sql")
 
-    expr = t.group_by('g').order_by(ibis.desc(t.f))[t.d.lag().name('foo'), t.a.max()]
+    expr = t.group_by("g").order_by(ibis.desc(t.f))[t.d.lag().name("foo"), t.a.max()]
     assert_sql_equal(expr, snapshot, "out2.sql")
 
 
 def test_row_number_does_not_require_order_by(alltypes, snapshot):
     t = alltypes
 
-    expr = t.group_by(t.g).mutate(ibis.row_number().name('foo'))
+    expr = t.group_by(t.g).mutate(ibis.row_number().name("foo"))
     assert_sql_equal(expr, snapshot, "out1.sql")
 
-    expr = t.group_by(t.g).order_by(t.f).mutate(ibis.row_number().name('foo'))
+    expr = t.group_by(t.g).order_by(t.f).mutate(ibis.row_number().name("foo"))
     assert_sql_equal(expr, snapshot, "out2.sql")
 
 
@@ -149,8 +149,8 @@ def test_row_number_properly_composes_with_arithmetic(alltypes, snapshot):
 
 
 @pytest.mark.parametrize(
-    ['column', 'op'],
-    [('f', 'approx_nunique'), ('f', 'approx_median'), ('g', 'group_concat')],
+    ["column", "op"],
+    [("f", "approx_nunique"), ("f", "approx_median"), ("g", "group_concat")],
 )
 def test_unsupported_aggregate_functions(alltypes, column, op):
     t = alltypes
@@ -174,5 +174,5 @@ def test_propagate_nested_windows(alltypes, snapshot):
     ex_expr = (t.f - t.f.lag().over(w)).lag().over(w)
     assert_equal(result, ex_expr)
 
-    expr = t.select(col.over(w).name('foo'))
+    expr = t.select(col.over(w).name("foo"))
     assert_sql_equal(expr, snapshot)

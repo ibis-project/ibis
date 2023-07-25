@@ -185,7 +185,7 @@ def evaluate_annotations(
     {'a': typing.Dict[str, float], 'b': <class 'int'>}
     """
     module = sys.modules.get(module_name, None)
-    globalns = getattr(module, '__dict__', None)
+    globalns = getattr(module, "__dict__", None)
     return {
         k: eval(v, globalns, localns) if isinstance(v, str) else v  # noqa: PGH001
         for k, v in annots.items()

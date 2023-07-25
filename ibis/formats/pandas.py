@@ -43,9 +43,9 @@ class PandasType(NumpyType):
     @classmethod
     def from_ibis(cls, dtype):
         if dtype.is_timestamp() and dtype.timezone:
-            return pdt.DatetimeTZDtype('ns', dtype.timezone)
+            return pdt.DatetimeTZDtype("ns", dtype.timezone)
         elif dtype.is_interval():
-            return np.dtype(f'timedelta64[{dtype.unit.short}]')
+            return np.dtype(f"timedelta64[{dtype.unit.short}]")
         else:
             return super().from_ibis(dtype)
 
@@ -84,7 +84,7 @@ class PandasData(DataMapper):
         for column_name in df.dtypes.keys():
             if not isinstance(column_name, str):
                 raise TypeError(
-                    'Column names must be strings to use the pandas backend'
+                    "Column names must be strings to use the pandas backend"
                 )
 
             if column_name in schema:
@@ -192,7 +192,7 @@ class PandasData(DataMapper):
 
         if pdt.is_datetime64tz_dtype(s.dtype):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
-        return s.astype(pandas_type, errors='ignore').dt.normalize()
+        return s.astype(pandas_type, errors="ignore").dt.normalize()
 
     @staticmethod
     def convert_Interval(s, dtype, pandas_type):
@@ -207,7 +207,7 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_String(s, dtype, pandas_type):
-        return s.astype(pandas_type, errors='ignore')
+        return s.astype(pandas_type, errors="ignore")
 
     @staticmethod
     def convert_UUID(s, dtype, pandas_type):

@@ -164,7 +164,7 @@ def parse(text: str) -> dt.DataType:
     )
 
     enum = (
-        spaceless_string('enum')
+        spaceless_string("enum")
         .then(RAW_NUMBER)
         .then(LPAREN)
         .then(enum_value.sep_by(COMMA))

@@ -25,16 +25,16 @@ from ibis.tests.util import assert_equal
 def sql_table():
     return ibis.table(
         [
-            ('v1', 'decimal(12, 2)'),
-            ('v2', 'decimal(10, 4)'),
-            ('v3', 'int32'),
-            ('v4', 'int64'),
-            ('v5', 'float32'),
-            ('v6', 'double'),
-            ('v7', 'string'),
-            ('v8', 'boolean'),
+            ("v1", "decimal(12, 2)"),
+            ("v2", "decimal(10, 4)"),
+            ("v3", "int32"),
+            ("v4", "int64"),
+            ("v5", "float32"),
+            ("v6", "double"),
+            ("v7", "string"),
+            ("v8", "boolean"),
         ],
-        'testing',
+        "testing",
     )
 
 
@@ -44,18 +44,18 @@ def function(request):
 
 
 @pytest.mark.parametrize(
-    'colname',
+    "colname",
     [
-        'tinyint_col',
-        'smallint_col',
-        'int_col',
-        'bigint_col',
-        'float_col',
-        'double_col',
+        "tinyint_col",
+        "smallint_col",
+        "int_col",
+        "bigint_col",
+        "float_col",
+        "double_col",
     ],
 )
 def test_abs(functional_alltypes, lineitem, colname):
-    fname = 'abs'
+    fname = "abs"
     op = ops.Abs
 
     expr = functional_alltypes[colname]
@@ -71,12 +71,12 @@ def test_group_concat(functional_alltypes):
     expr = col.group_concat()
     assert isinstance(expr.op(), ops.GroupConcat)
     op = expr.op()
-    assert op.sep == ibis.literal(',').op()
+    assert op.sep == ibis.literal(",").op()
     assert op.where is None
 
-    expr = col.group_concat('|')
+    expr = col.group_concat("|")
     op = expr.op()
-    assert op.sep == ibis.literal('|').op()
+    assert op.sep == ibis.literal("|").op()
     assert op.where is None
 
 
@@ -174,11 +174,11 @@ def _check_unary_op(expr, fname, ex_op, ex_type):
 
 def test_coalesce_instance_method(sql_table):
     v7 = sql_table.v7
-    v5 = sql_table.v5.cast('string')
-    v8 = sql_table.v8.cast('string')
+    v5 = sql_table.v5.cast("string")
+    v8 = sql_table.v8.cast("string")
 
-    result = v7.coalesce(v5, v8, 'foo')
-    expected = ibis.coalesce(v7, v5, v8, 'foo')
+    result = v7.coalesce(v5, v8, "foo")
+    expected = ibis.coalesce(v7, v5, v8, "foo")
     assert_equal(result, expected)
 
 

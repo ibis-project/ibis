@@ -21,7 +21,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-__all__ = ['BaseSQLBackend']
+__all__ = ["BaseSQLBackend"]
 
 
 class BaseSQLBackend(BaseBackend):
@@ -217,7 +217,7 @@ class BaseSQLBackend(BaseBackend):
         self,
         expr: ir.Expr,
         params: Mapping[ir.Scalar, Any] | None = None,
-        limit: str = 'default',
+        limit: str = "default",
         **kwargs: Any,
     ):
         """Compile and execute an Ibis expression.
@@ -252,7 +252,7 @@ class BaseSQLBackend(BaseBackend):
         # we don't want to pass `timecontext` to `raw_sql`
         self._run_pre_execute_hooks(expr)
 
-        kwargs.pop('timecontext', None)
+        kwargs.pop("timecontext", None)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
         self._log(sql)
@@ -336,18 +336,18 @@ class BaseSQLBackend(BaseBackend):
             context = self.compiler.make_context(params=params)
             query_ast = self.compiler.to_ast(expr, context)
             if len(query_ast.queries) > 1:
-                raise Exception('Multi-query expression')
+                raise Exception("Multi-query expression")
 
             query = query_ast.queries[0].compile()
         else:
             query = expr
 
-        statement = f'EXPLAIN {query}'
+        statement = f"EXPLAIN {query}"
 
         with self._safe_raw_sql(statement) as cur:
             result = self._get_list(cur)
 
-        return '\n'.join(['Query:', util.indent(query, 2), '', *result])
+        return "\n".join(["Query:", util.indent(query, 2), "", *result])
 
     @classmethod
     @lru_cache

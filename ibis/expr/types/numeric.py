@@ -866,7 +866,7 @@ class NumericColumn(Column, NumericValue):
         self,
         right: NumericColumn,
         where: ir.BooleanValue | None = None,
-        how: Literal['sample', 'pop'] = 'sample',
+        how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
         """Return the correlation of two numeric columns.
 
@@ -890,7 +890,7 @@ class NumericColumn(Column, NumericValue):
         self,
         right: NumericColumn,
         where: ir.BooleanValue | None = None,
-        how: Literal['sample', 'pop'] = 'sample',
+        how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
         """Return the covariance of two numeric columns.
 

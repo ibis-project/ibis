@@ -101,22 +101,22 @@ TEST_TABLES = {
 # by improving all tests file by file. All files that have already been improved are
 # added to this list to prevent regression.
 FIlES_WITH_STRICT_EXCEPTION_CHECK = [
-    'ibis/backends/tests/test_api.py',
-    'ibis/backends/tests/test_array.py',
-    'ibis/backends/tests/test_aggregation.py',
-    'ibis/backends/tests/test_binary.py',
-    'ibis/backends/tests/test_numeric.py',
-    'ibis/backends/tests/test_column.py',
-    'ibis/backends/tests/test_string.py',
-    'ibis/backends/tests/test_temporal.py',
-    'ibis/backends/tests/test_uuid.py',
-    'ibis/backends/tests/test_window.py',
+    "ibis/backends/tests/test_api.py",
+    "ibis/backends/tests/test_array.py",
+    "ibis/backends/tests/test_aggregation.py",
+    "ibis/backends/tests/test_binary.py",
+    "ibis/backends/tests/test_numeric.py",
+    "ibis/backends/tests/test_column.py",
+    "ibis/backends/tests/test_string.py",
+    "ibis/backends/tests/test_temporal.py",
+    "ibis/backends/tests/test_uuid.py",
+    "ibis/backends/tests/test_window.py",
 ]
 
 ALL_BACKENDS = set(_get_backend_names())
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def data_dir() -> Path:
     """Return the test data directory.
 
@@ -440,7 +440,7 @@ def pytest_runtest_call(item):
             item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
 
-@pytest.fixture(params=_get_backends_to_test(), scope='session')
+@pytest.fixture(params=_get_backends_to_test(), scope="session")
 def backend(request, data_dir, tmp_path_factory, worker_id):
     """Return an instance of BackendTest, loaded with data."""
 
@@ -454,7 +454,7 @@ def con(backend):
     return backend.connection
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con_create_database(con):
     if isinstance(con, CanCreateDatabase):
         return con
@@ -462,7 +462,7 @@ def con_create_database(con):
         pytest.skip(f"{con.name} backend cannot create databases")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con_create_schema(con):
     if isinstance(con, CanCreateSchema):
         return con
@@ -470,7 +470,7 @@ def con_create_schema(con):
         pytest.skip(f"{con.name} backend cannot create schemas")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con_create_database_schema(con):
     if isinstance(con, CanCreateDatabase) and isinstance(con, CanCreateSchema):
         return con
@@ -491,14 +491,14 @@ def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
 
 @pytest.fixture(
     params=_get_backends_to_test(discard=("dask", "pandas")),
-    scope='session',
+    scope="session",
 )
 def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
     """Set up the backends that are SQL-based."""
     return _setup_backend(request, data_dir, tmp_path_factory, worker_id)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def ddl_con(ddl_backend):
     """Instance of Client, already connected to the db (if applies)."""
     return ddl_backend.connection
@@ -517,14 +517,14 @@ def ddl_con(ddl_backend):
             "trino",
         )
     ),
-    scope='session',
+    scope="session",
 )
 def alchemy_backend(request, data_dir, tmp_path_factory, worker_id):
     """Set up the SQLAlchemy-based backends."""
     return _setup_backend(request, data_dir, tmp_path_factory, worker_id)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def alchemy_con(alchemy_backend):
     """Instance of Client, already connected to the db (if applies)."""
     return alchemy_backend.connection
@@ -532,7 +532,7 @@ def alchemy_con(alchemy_backend):
 
 @pytest.fixture(
     params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
-    scope='session',
+    scope="session",
 )
 def udf_backend(request, data_dir, tmp_path_factory, worker_id):
     """Runs the UDF-supporting backends."""
@@ -540,13 +540,13 @@ def udf_backend(request, data_dir, tmp_path_factory, worker_id):
     return cls.load_data(data_dir, tmp_path_factory, worker_id)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def udf_con(udf_backend):
     """Instance of Client, already connected to the db (if applies)."""
     return udf_backend.connection
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def alltypes(backend):
     return backend.functional_alltypes
 
@@ -556,27 +556,27 @@ def json_t(backend):
     return backend.json_t
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def struct(backend):
     return backend.struct
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def sorted_alltypes(alltypes):
-    return alltypes.order_by('id')
+    return alltypes.order_by("id")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def udf_alltypes(udf_backend):
     return udf_backend.functional_alltypes
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def batting(backend):
     return backend.batting
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def awards_players(backend):
     return backend.awards_players
 
@@ -586,37 +586,37 @@ def analytic_alltypes(alltypes):
     return alltypes
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def df(alltypes):
     return alltypes.execute()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def struct_df(struct):
     return struct.execute()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def udf_df(udf_alltypes):
     return udf_alltypes.execute()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def sorted_df(df):
-    return df.sort_values('id').reset_index(drop=True)
+    return df.sort_values("id").reset_index(drop=True)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def batting_df(batting):
     return batting.execute(limit=None)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def awards_players_df(awards_players):
     return awards_players.execute(limit=None)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def geo_df(geo):
     if geo is not None:
         return geo.execute(limit=None)
@@ -636,7 +636,7 @@ def alchemy_temp_table(alchemy_con) -> str:
     name : string
         Random table name for a temporary usage.
     """
-    name = util.gen_name('alchemy_table')
+    name = util.gen_name("alchemy_table")
     yield name
     with contextlib.suppress(NotImplementedError):
         alchemy_con.drop_table(name, force=True)
@@ -655,7 +655,7 @@ def temp_table(con) -> str:
     name : string
         Random table name for a temporary usage.
     """
-    name = util.gen_name('temp_table')
+    name = util.gen_name("temp_table")
     yield name
     with contextlib.suppress(NotImplementedError):
         con.drop_table(name, force=True)
@@ -663,7 +663,7 @@ def temp_table(con) -> str:
 
 @pytest.fixture
 def temp_table2(con) -> str:
-    name = util.gen_name('temp_table2')
+    name = util.gen_name("temp_table2")
     yield name
     with contextlib.suppress(NotImplementedError):
         con.drop_table(name, force=True)
@@ -690,7 +690,7 @@ def temp_view(ddl_con) -> str:
     name : string
         Random view name for a temporary usage.
     """
-    name = util.gen_name('view')
+    name = util.gen_name("view")
     yield name
     with contextlib.suppress(NotImplementedError):
         ddl_con.drop_view(name, force=True)
@@ -709,7 +709,7 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
     ------
     str
     """
-    name = util.gen_name('database')
+    name = util.gen_name("database")
     try:
         ddl_con.create_database(name)
     except AttributeError:
@@ -724,10 +724,10 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
 def test_employee_schema() -> ibis.schema:
     sch = ibis.schema(
         [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
+            ("first_name", "string"),
+            ("last_name", "string"),
+            ("department_name", "string"),
+            ("salary", "float64"),
         ]
     )
 
@@ -738,10 +738,10 @@ def test_employee_schema() -> ibis.schema:
 def test_employee_data_1():
     df = pd.DataFrame(
         {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
+            "first_name": ["A", "B", "C"],
+            "last_name": ["D", "E", "F"],
+            "department_name": ["AA", "BB", "CC"],
+            "salary": [100.0, 200.0, 300.0],
         }
     )
 
@@ -752,10 +752,10 @@ def test_employee_data_1():
 def test_employee_data_2():
     df2 = pd.DataFrame(
         {
-            'first_name': ['X', 'Y', 'Z'],
-            'last_name': ['A', 'B', 'C'],
-            'department_name': ['XX', 'YY', 'ZZ'],
-            'salary': [400.0, 500.0, 600.0],
+            "first_name": ["X", "Y", "Z"],
+            "last_name": ["A", "B", "C"],
+            "department_name": ["XX", "YY", "ZZ"],
+            "salary": [400.0, 500.0, 600.0],
         }
     )
 

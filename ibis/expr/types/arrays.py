@@ -118,7 +118,7 @@ class ArrayValue(Value):
             step = index.step
 
             if step is not None and step != 1:
-                raise NotImplementedError('step can only be 1')
+                raise NotImplementedError("step can only be 1")
 
             op = ops.ArraySlice(self, start if start is not None else 0, stop)
         else:
@@ -920,7 +920,7 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
             return literal(list(values), type=type)
         except com.IbisTypeError as e:
             raise com.IbisTypeError(
-                'Could not create an array scalar from the values provided '
-                'to `array`. Ensure that all input values have the same '
-                'Python type, or can be casted to a single Python type.'
+                "Could not create an array scalar from the values provided "
+                "to `array`. Ensure that all input values have the same "
+                "Python type, or can be casted to a single Python type."
             ) from e

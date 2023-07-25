@@ -61,7 +61,7 @@ class Substring(Value):
     length: Optional[Value[dt.Integer]] = None
 
     dtype = dt.string
-    shape = rlz.shape_like('arg')
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -177,7 +177,7 @@ class FuzzySearch(Value):
     pattern: Value[dt.String]
 
     dtype = dt.boolean
-    shape = rlz.shape_like('arg')
+    shape = rlz.shape_like("arg")
 
 
 @public
@@ -240,8 +240,8 @@ class StringSplit(Value):
 class StringConcat(Value):
     arg: VarTuple[Value[dt.String]]
 
-    shape = rlz.shape_like('arg')
-    dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public

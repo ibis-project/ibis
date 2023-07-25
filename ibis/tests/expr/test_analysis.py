@@ -15,23 +15,23 @@ def test_rewrite_join_projection_without_other_ops(con):
     # See #790, predicate pushdown in joins not supported
 
     # Star schema with fact table
-    table = con.table('star1')
-    table2 = con.table('star2')
-    table3 = con.table('star3')
+    table = con.table("star1")
+    table2 = con.table("star2")
+    table3 = con.table("star3")
 
-    filtered = table[table['f'] > 0]
+    filtered = table[table["f"] > 0]
 
-    pred1 = table['foo_id'] == table2['foo_id']
-    pred2 = filtered['bar_id'] == table3['bar_id']
+    pred1 = table["foo_id"] == table2["foo_id"]
+    pred2 = filtered["bar_id"] == table3["bar_id"]
 
     j1 = filtered.left_join(table2, [pred1])
     j2 = j1.inner_join(table3, [pred2])
 
     # Project out the desired fields
-    view = j2[[filtered, table2['value1'], table3['value2']]]
+    view = j2[[filtered, table2["value1"], table3["value2"]]]
 
     # Construct the thing we expect to obtain
-    ex_pred2 = table['bar_id'] == table3['bar_id']
+    ex_pred2 = table["bar_id"] == table3["bar_id"]
     ex_expr = table.left_join(table2, [pred1]).inner_join(table3, [ex_pred2])
 
     rewritten_proj = an.substitute_parents(view.op())
@@ -42,12 +42,12 @@ def test_rewrite_join_projection_without_other_ops(con):
 def test_multiple_join_deeper_reference():
     # Join predicates down the chain might reference one or more root
     # tables in the hierarchy.
-    table1 = ibis.table({'key1': 'string', 'key2': 'string', 'value1': 'double'})
-    table2 = ibis.table({'key3': 'string', 'value2': 'double'})
-    table3 = ibis.table({'key4': 'string', 'value3': 'double'})
+    table1 = ibis.table({"key1": "string", "key2": "string", "value1": "double"})
+    table2 = ibis.table({"key3": "string", "value2": "double"})
+    table3 = ibis.table({"key4": "string", "value3": "double"})
 
-    joined = table1.inner_join(table2, [table1['key1'] == table2['key3']])
-    joined2 = joined.inner_join(table3, [table1['key2'] == table3['key4']])
+    joined = table1.inner_join(table2, [table1["key1"] == table2["key3"]])
+    joined2 = joined.inner_join(table3, [table1["key2"] == table3["key4"]])
 
     # it works, what more should we test here?
     repr(joined2)
@@ -56,16 +56,16 @@ def test_multiple_join_deeper_reference():
 def test_filter_on_projected_field(con):
     # See #173. Impala and other SQL engines do not allow filtering on a
     # just-created alias in a projection
-    region = con.table('tpch_region')
-    nation = con.table('tpch_nation')
-    customer = con.table('tpch_customer')
-    orders = con.table('tpch_orders')
+    region = con.table("tpch_region")
+    nation = con.table("tpch_nation")
+    customer = con.table("tpch_customer")
+    orders = con.table("tpch_orders")
 
     fields_of_interest = [
         customer,
-        region.r_name.name('region'),
-        orders.o_totalprice.name('amount'),
-        orders.o_orderdate.cast('timestamp').name('odate'),
+        region.r_name.name("region"),
+        orders.o_totalprice.name("amount"),
+        orders.o_orderdate.cast("timestamp").name("odate"),
     ]
 
     all_join = (
@@ -95,50 +95,50 @@ def test_join_predicate_from_derived_raises():
     # Join predicate references a derived table, but we can salvage and
     # rewrite it to get the join semantics out
     # see ibis #74
-    table = ibis.table([('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table')
+    table = ibis.table([("c", "int32"), ("f", "double"), ("g", "string")], "foo_table")
 
-    table2 = ibis.table([('key', 'string'), ('value', 'double')], 'bar_table')
+    table2 = ibis.table([("key", "string"), ("value", "double")], "bar_table")
 
-    filter_pred = table['f'] > 0
+    filter_pred = table["f"] > 0
     table3 = table[filter_pred]
 
     with pytest.raises(com.ExpressionError):
-        table.inner_join(table2, [table3['g'] == table2['key']])
+        table.inner_join(table2, [table3["g"] == table2["key"]])
 
 
 def test_bad_join_predicate_raises():
-    table = ibis.table([('c', 'int32'), ('f', 'double'), ('g', 'string')], 'foo_table')
+    table = ibis.table([("c", "int32"), ("f", "double"), ("g", "string")], "foo_table")
 
-    table2 = ibis.table([('key', 'string'), ('value', 'double')], 'bar_table')
+    table2 = ibis.table([("key", "string"), ("value", "double")], "bar_table")
 
-    table3 = ibis.table([('key', 'string'), ('value', 'double')], 'baz_table')
+    table3 = ibis.table([("key", "string"), ("value", "double")], "baz_table")
 
     with pytest.raises(com.ExpressionError):
-        table.inner_join(table2, [table['g'] == table3['key']])
+        table.inner_join(table2, [table["g"] == table3["key"]])
 
 
 def test_filter_self_join():
     # GH #667
     purchases = ibis.table(
         [
-            ('region', 'string'),
-            ('kind', 'string'),
-            ('user', 'int64'),
-            ('amount', 'double'),
+            ("region", "string"),
+            ("kind", "string"),
+            ("user", "int64"),
+            ("amount", "double"),
         ],
-        'purchases',
+        "purchases",
     )
 
-    metric = purchases.amount.sum().name('total')
-    agged = purchases.group_by(['region', 'kind']).aggregate(metric)
+    metric = purchases.amount.sum().name("total")
+    agged = purchases.group_by(["region", "kind"]).aggregate(metric)
 
-    left = agged[agged.kind == 'foo']
-    right = agged[agged.kind == 'bar']
+    left = agged[agged.kind == "foo"]
+    right = agged[agged.kind == "bar"]
 
     cond = left.region == right.region
     joined = left.join(right, cond)
 
-    metric = (left.total - right.total).name('diff')
+    metric = (left.total - right.total).name("diff")
     what = [left.region, metric]
     projected = joined.select(what)
 
@@ -150,9 +150,9 @@ def test_filter_self_join():
 
 
 def test_no_rewrite(con):
-    table = con.table('test1')
-    table4 = table[['c', (table['c'] * 2).name('foo')]]
-    expr = table4['c'] == table4['foo']
+    table = con.table("test1")
+    table4 = table[["c", (table["c"] * 2).name("foo")]]
+    expr = table4["c"] == table4["foo"]
     result = an.substitute_parents(expr.op()).to_expr()
     expected = expr
     assert result.equals(expected)
@@ -160,7 +160,7 @@ def test_no_rewrite(con):
 
 def test_join_table_choice():
     # GH807
-    x = ibis.table(ibis.schema([('n', 'int64')]), 'x')
+    x = ibis.table(ibis.schema([("n", "int64")]), "x")
     t = x.aggregate(cnt=x.n.count())
     predicate = t.cnt > 0
 
@@ -169,12 +169,12 @@ def test_join_table_choice():
 
 
 def test_is_ancestor_analytic():
-    x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
-    with_filter_col = x[x.columns + [ibis.null().name('filter')]]
-    filtered = with_filter_col[with_filter_col['filter'].isnull()]
+    x = ibis.table(ibis.schema([("col", "int32")]), "x")
+    with_filter_col = x[x.columns + [ibis.null().name("filter")]]
+    filtered = with_filter_col[with_filter_col["filter"].isnull()]
     subquery = filtered[filtered.columns]
 
-    with_analytic = subquery[subquery.columns + [subquery.count().name('analytic')]]
+    with_analytic = subquery[subquery.columns + [subquery.count().name("analytic")]]
 
     assert not subquery.op().equals(with_analytic.op())
 
@@ -183,71 +183,71 @@ def test_is_ancestor_analytic():
 def test_mutation_fusion_no_overwrite():
     """Test fusion with chained mutation that doesn't overwrite existing
     columns."""
-    t = ibis.table(ibis.schema([('col', 'int32')]), 't')
+    t = ibis.table(ibis.schema([("col", "int32")]), "t")
 
     result = t
-    result = result.mutate(col1=t['col'] + 1)
-    result = result.mutate(col2=t['col'] + 2)
-    result = result.mutate(col3=t['col'] + 3)
+    result = result.mutate(col1=t["col"] + 1)
+    result = result.mutate(col2=t["col"] + 2)
+    result = result.mutate(col3=t["col"] + 3)
     result = result.op()
 
     first_selection = result
 
     assert len(result.selections) == 4
 
-    col1 = (t['col'] + 1).name('col1')
+    col1 = (t["col"] + 1).name("col1")
     assert first_selection.selections[1] == col1.op()
 
-    col2 = (t['col'] + 2).name('col2')
+    col2 = (t["col"] + 2).name("col2")
     assert first_selection.selections[2] == col2.op()
 
-    col3 = (t['col'] + 3).name('col3')
+    col3 = (t["col"] + 3).name("col3")
     assert first_selection.selections[3] == col3.op()
 
 
 # Pr 2635
 def test_mutation_fusion_overwrite():
     """Test fusion with chained mutation that overwrites existing columns."""
-    t = ibis.table(ibis.schema([('col', 'int32')]), 't')
+    t = ibis.table(ibis.schema([("col", "int32")]), "t")
 
     result = t
 
-    result = result.mutate(col1=t['col'] + 1)
-    result = result.mutate(col2=t['col'] + 2)
-    result = result.mutate(col3=t['col'] + 3)
-    result = result.mutate(col=t['col'] - 1)
-    result = result.mutate(col4=t['col'] + 4)
+    result = result.mutate(col1=t["col"] + 1)
+    result = result.mutate(col2=t["col"] + 2)
+    result = result.mutate(col3=t["col"] + 3)
+    result = result.mutate(col=t["col"] - 1)
+    result = result.mutate(col4=t["col"] + 4)
 
     second_selection = result.op()
     first_selection = second_selection.table
 
     assert len(first_selection.selections) == 4
-    col1 = (t['col'] + 1).name('col1').op()
+    col1 = (t["col"] + 1).name("col1").op()
     assert first_selection.selections[1] == col1
 
-    col2 = (t['col'] + 2).name('col2').op()
+    col2 = (t["col"] + 2).name("col2").op()
     assert first_selection.selections[2] == col2
 
-    col3 = (t['col'] + 3).name('col3').op()
+    col3 = (t["col"] + 3).name("col3").op()
     assert first_selection.selections[3] == col3
 
     # Since the second selection overwrites existing columns, it will
     # not have the Table as the first selection
     assert len(second_selection.selections) == 5
 
-    col = (t['col'] - 1).name('col').op()
+    col = (t["col"] - 1).name("col").op()
     assert second_selection.selections[0] == col
 
-    col1 = first_selection.to_expr()['col1'].op()
+    col1 = first_selection.to_expr()["col1"].op()
     assert second_selection.selections[1] == col1
 
-    col2 = first_selection.to_expr()['col2'].op()
+    col2 = first_selection.to_expr()["col2"].op()
     assert second_selection.selections[2] == col2
 
-    col3 = first_selection.to_expr()['col3'].op()
+    col3 = first_selection.to_expr()["col3"].op()
     assert second_selection.selections[3] == col3
 
-    col4 = (t['col'] + 4).name('col4').op()
+    col4 = (t["col"] + 4).name("col4").op()
     assert second_selection.selections[4] == col4
 
 
@@ -255,17 +255,17 @@ def test_mutation_fusion_overwrite():
 def test_select_filter_mutate_fusion():
     """Test fusion with filter followed by mutation on the same input."""
 
-    t = ibis.table(ibis.schema([('col', 'float32')]), 't')
+    t = ibis.table(ibis.schema([("col", "float32")]), "t")
 
-    result = t[['col']]
-    result = result[result['col'].isnan()]
-    result = result.mutate(col=result['col'].cast('int32'))
+    result = t[["col"]]
+    result = result[result["col"].isnan()]
+    result = result.mutate(col=result["col"].cast("int32"))
 
     second_selection = result.op()
     first_selection = second_selection.table
     assert len(second_selection.selections) == 1
 
-    col = first_selection.to_expr()['col'].cast('int32').name('col').op()
+    col = first_selection.to_expr()["col"].cast("int32").name("col").op()
     assert second_selection.selections[0] == col
 
     # we don't look past the projection when a filter is encountered, so the

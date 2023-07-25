@@ -45,7 +45,7 @@ def test_roundtripable_types(arrow_type):
 
 
 @pytest.mark.parametrize(
-    ('arrow_type', 'ibis_type', 'restored_type'),
+    ("arrow_type", "ibis_type", "restored_type"),
     [
         (pa.decimal128(1, 1), dt.Decimal(1, 1, nullable=False), pa.decimal128(1, 1)),
         (pa.decimal128(10, 3), dt.Decimal(10, 3, nullable=False), pa.decimal128(10, 3)),
@@ -90,11 +90,11 @@ def test_month_day_nano_type_unsupported():
         PyArrowType.to_ibis(pa.month_day_nano_interval())
 
 
-@pytest.mark.parametrize('value_nullable', [True, False])
+@pytest.mark.parametrize("value_nullable", [True, False])
 def test_dtype_from_nullable_map_type(value_nullable):
     # the key field cannot be nullable
     pyarrow_type = pa.map_(
-        pa.int64(), pa.field('value', pa.int64(), nullable=value_nullable)
+        pa.int64(), pa.field("value", pa.int64(), nullable=value_nullable)
     )
     ibis_type = PyArrowType.to_ibis(pyarrow_type)
     restored_type = PyArrowType.from_ibis(ibis_type)
@@ -108,10 +108,10 @@ def test_dtype_from_nullable_map_type(value_nullable):
     assert restored_type.item_field.nullable is value_nullable
 
 
-@pytest.mark.parametrize('value_nullable', [True, False])
-@pytest.mark.parametrize('list_nullable', [True, False])
+@pytest.mark.parametrize("value_nullable", [True, False])
+@pytest.mark.parametrize("list_nullable", [True, False])
 def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
-    pyarrow_type = pa.list_(pa.field('value', pa.int64(), nullable=value_nullable))
+    pyarrow_type = pa.list_(pa.field("value", pa.int64(), nullable=value_nullable))
     ibis_type = PyArrowType.to_ibis(pyarrow_type, nullable=list_nullable)
     restored_type = PyArrowType.from_ibis(ibis_type)
 
@@ -123,7 +123,7 @@ def test_dtype_from_nullable_list_type(value_nullable, list_nullable):
 
 
 @pytest.mark.parametrize(
-    ('ibis_type', 'arrow_type'),
+    ("ibis_type", "arrow_type"),
     [
         (dt.Set(dt.String(nullable=True)), pa.list_(pa.string())),
         (
@@ -139,11 +139,11 @@ def test_ibis_exclusive_types(ibis_type, arrow_type):
 def test_schema_from_pyarrow_checks_duplicate_column_names():
     arrow_schema = pa.schema(
         [
-            pa.field('a', pa.int64()),
-            pa.field('a', pa.int64()),
+            pa.field("a", pa.int64()),
+            pa.field("a", pa.int64()),
         ]
     )
-    with pytest.raises(IntegrityError, match='Duplicate column name'):
+    with pytest.raises(IntegrityError, match="Duplicate column name"):
         PyArrowSchema.to_ibis(arrow_schema)
 
 

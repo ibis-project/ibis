@@ -25,7 +25,7 @@ class FlinkSelect(Select):
         lines = []
         if len(self.group_by) > 0:
             group_keys = map(self._translate, self.group_by)
-            clause = 'GROUP BY {}'.format(', '.join(list(group_keys)))
+            clause = "GROUP BY {}".format(", ".join(list(group_keys)))
             lines.append(clause)
 
         if len(self.having) > 0:
@@ -33,9 +33,9 @@ class FlinkSelect(Select):
             for expr in self.having:
                 translated = self._translate(expr)
                 trans_exprs.append(translated)
-            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
+            lines.append("HAVING {}".format(" AND ".join(trans_exprs)))
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 class FlinkCompiler(Compiler):
@@ -51,7 +51,7 @@ def translate(op: ops.TableNode) -> str:
 
 @functools.singledispatch
 def translate_op(op: ops.TableNode) -> str:
-    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+    raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
 @translate_op.register(ops.Literal)

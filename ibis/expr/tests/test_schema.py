@@ -30,14 +30,14 @@ with contextlib.suppress(ImportError):
 
 def test_whole_schema():
     schema = {
-        'cid': 'int64',
-        'mktsegment': 'string',
-        'address': '''struct<city: string,
+        "cid": "int64",
+        "mktsegment": "string",
+        "address": """struct<city: string,
                              street: string,
                              street_number: int32,
-                             zip: int16>''',
-        'phone_numbers': 'array<string>',
-        'orders': '''array<struct<oid: int64,
+                             zip: int16>""",
+        "phone_numbers": "array<string>",
+        "orders": """array<struct<oid: int64,
                                   status: string,
                                   totalprice: decimal(12, 2),
                                   order_date: string,
@@ -46,69 +46,69 @@ def test_whole_schema():
                                                       price: decimal(12, 2),
                                                       discount_perc: decimal(12, 2),
                                                       shipdate: string>>>>
-                                                      ''',
-        'web_visits': '''map<string, struct<user_agent: string,
+                                                      """,
+        "web_visits": """map<string, struct<user_agent: string,
                                             client_ip: string,
                                             visit_date: string,
-                                            duration_ms: int32>>''',
-        'support_calls': '''array<struct<agent_id: int64,
+                                            duration_ms: int32>>""",
+        "support_calls": """array<struct<agent_id: int64,
                                          call_date: string,
                                          duration_ms: int64,
                                          issue_resolved: boolean,
-                                         agent_comment: string>>''',
+                                         agent_comment: string>>""",
     }
     expected = {
-        'cid': dt.int64,
-        'mktsegment': dt.string,
-        'address': dt.Struct(
+        "cid": dt.int64,
+        "mktsegment": dt.string,
+        "address": dt.Struct(
             {
-                'city': dt.string,
-                'street': dt.string,
-                'street_number': dt.int32,
-                'zip': dt.int16,
+                "city": dt.string,
+                "street": dt.string,
+                "street_number": dt.int32,
+                "zip": dt.int16,
             }
         ),
-        'phone_numbers': dt.Array(dt.string),
-        'orders': dt.Array(
+        "phone_numbers": dt.Array(dt.string),
+        "orders": dt.Array(
             dt.Struct(
                 {
-                    'oid': dt.int64,
-                    'status': dt.string,
-                    'totalprice': dt.Decimal(12, 2),
-                    'order_date': dt.string,
-                    'items': dt.Array(
+                    "oid": dt.int64,
+                    "status": dt.string,
+                    "totalprice": dt.Decimal(12, 2),
+                    "order_date": dt.string,
+                    "items": dt.Array(
                         dt.Struct(
                             {
-                                'iid': dt.int64,
-                                'name': dt.string,
-                                'price': dt.Decimal(12, 2),
-                                'discount_perc': dt.Decimal(12, 2),
-                                'shipdate': dt.string,
+                                "iid": dt.int64,
+                                "name": dt.string,
+                                "price": dt.Decimal(12, 2),
+                                "discount_perc": dt.Decimal(12, 2),
+                                "shipdate": dt.string,
                             }
                         )
                     ),
                 }
             )
         ),
-        'web_visits': dt.Map(
+        "web_visits": dt.Map(
             dt.string,
             dt.Struct(
                 {
-                    'user_agent': dt.string,
-                    'client_ip': dt.string,
-                    'visit_date': dt.string,
-                    'duration_ms': dt.int32,
+                    "user_agent": dt.string,
+                    "client_ip": dt.string,
+                    "visit_date": dt.string,
+                    "duration_ms": dt.int32,
                 }
             ),
         ),
-        'support_calls': dt.Array(
+        "support_calls": dt.Array(
             dt.Struct(
                 {
-                    'agent_id': dt.int64,
-                    'call_date': dt.string,
-                    'duration_ms': dt.int64,
-                    'issue_resolved': dt.boolean,
-                    'agent_comment': dt.string,
+                    "agent_id": dt.int64,
+                    "call_date": dt.string,
+                    "duration_ms": dt.int64,
+                    "issue_resolved": dt.boolean,
+                    "agent_comment": dt.string,
                 }
             )
         ),
@@ -119,26 +119,26 @@ def test_whole_schema():
 def test_schema_from_tuples():
     schema = sch.Schema.from_tuples(
         [
-            ('a', 'int64'),
-            ('b', 'string'),
-            ('c', 'double'),
-            ('d', 'boolean'),
+            ("a", "int64"),
+            ("b", "string"),
+            ("c", "double"),
+            ("d", "boolean"),
         ]
     )
     expected = sch.Schema(
-        {'a': dt.int64, 'b': dt.string, 'c': dt.double, 'd': dt.boolean}
+        {"a": dt.int64, "b": dt.string, "c": dt.double, "d": dt.boolean}
     )
 
     assert schema == expected
 
     # test that duplicate field names are prohibited
     with pytest.raises(IntegrityError):
-        sch.Schema.from_tuples([('a', 'int64'), ('a', 'string')])
+        sch.Schema.from_tuples([("a", "int64"), ("a", "string")])
 
 
 def test_schema_subset():
-    s1 = sch.schema([('a', dt.int64), ('b', dt.int32), ('c', dt.string)])
-    s2 = sch.schema([('a', dt.int64), ('c', dt.string)])
+    s1 = sch.schema([("a", dt.int64), ("b", dt.int32), ("c", dt.string)])
+    s2 = sch.schema([("a", dt.int64), ("c", dt.string)])
 
     assert s1 > s2
     assert s2 < s1
@@ -161,18 +161,18 @@ def test_empty_schema():
 def test_nullable_output():
     s = sch.schema(
         [
-            ('foo', 'int64'),
-            ('bar', dt.int64(nullable=False)),
-            ('baz', 'boolean'),
+            ("foo", "int64"),
+            ("bar", dt.int64(nullable=False)),
+            ("baz", "boolean"),
         ]
     )
 
     sch_str = str(s)
-    assert 'foo  int64' in sch_str
-    assert 'foo  !int64' not in sch_str
-    assert 'bar  !int64' in sch_str
-    assert 'baz  boolean' in sch_str
-    assert 'baz  !boolean' not in sch_str
+    assert "foo  int64" in sch_str
+    assert "foo  !int64" not in sch_str
+    assert "bar  !int64" in sch_str
+    assert "baz  boolean" in sch_str
+    assert "baz  !boolean" not in sch_str
 
 
 @pytest.fixture
@@ -205,20 +205,20 @@ def test_api_accepts_schema_objects():
 def test_schema_mapping_api():
     s = sch.Schema(
         {
-            'a': 'map<double, string>',
-            'b': 'array<map<string, array<int32>>>',
-            'c': 'array<string>',
-            'd': 'int8',
+            "a": "map<double, string>",
+            "b": "array<map<string, array<int32>>>",
+            "c": "array<string>",
+            "d": "int8",
         }
     )
 
-    assert s['a'] == dt.Map(dt.double, dt.string)
-    assert s['b'] == dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))
-    assert s['c'] == dt.Array(dt.string)
-    assert s['d'] == dt.int8
+    assert s["a"] == dt.Map(dt.double, dt.string)
+    assert s["b"] == dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))
+    assert s["c"] == dt.Array(dt.string)
+    assert s["d"] == dt.int8
 
-    assert 'a' in s
-    assert 'e' not in s
+    assert "a" in s
+    assert "e" not in s
     assert len(s) == 4
     assert tuple(s) == s.names
     assert tuple(s.keys()) == s.names
@@ -245,15 +245,15 @@ class FooSchema:
 
 foo_schema = sch.Schema(
     {
-        'a': 'int64',
-        'b': 'string',
-        'c': 'float64',
-        'd': 'array<string>',
-        'e': 'array<int64>',
-        'f': 'map<string, int64>',
-        'g': 'struct<a: int64, b: string>',
-        'h': 'array<struct<a: int64, b: string>>',
-        'j': 'map<string, struct<a: int64, b: string>>',
+        "a": "int64",
+        "b": "string",
+        "c": "float64",
+        "d": "array<string>",
+        "e": "array<int64>",
+        "f": "map<string, int64>",
+        "g": "struct<a: int64, b: string>",
+        "h": "array<struct<a: int64, b: string>>",
+        "j": "map<string, struct<a: int64, b: string>>",
     }
 )
 
@@ -337,7 +337,7 @@ class ObjectWithSchema(Annotable):
 
 
 def test_schema_is_coercible():
-    s = sch.Schema({'a': dt.int64, 'b': dt.Array(dt.int64)})
+    s = sch.Schema({"a": dt.int64, "b": dt.Array(dt.int64)})
     assert CoercedTo(sch.Schema).validate(PreferenceA, {}) == s
 
     o = ObjectWithSchema(schema=PreferenceA)
@@ -345,18 +345,18 @@ def test_schema_is_coercible():
 
 
 def test_schema_set_operations():
-    a = sch.Schema({'a': dt.string, 'b': dt.int64, 'c': dt.float64})
-    b = sch.Schema({'a': dt.string, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date})
-    c = sch.Schema({'i': dt.int64, 'j': dt.float64, 'k': dt.string})
-    d = sch.Schema({'i': dt.int64, 'j': dt.float64, 'k': dt.string, 'l': dt.boolean})
+    a = sch.Schema({"a": dt.string, "b": dt.int64, "c": dt.float64})
+    b = sch.Schema({"a": dt.string, "c": dt.float64, "d": dt.boolean, "e": dt.date})
+    c = sch.Schema({"i": dt.int64, "j": dt.float64, "k": dt.string})
+    d = sch.Schema({"i": dt.int64, "j": dt.float64, "k": dt.string, "l": dt.boolean})
 
-    assert a & b == sch.Schema({'a': dt.string, 'c': dt.float64})
+    assert a & b == sch.Schema({"a": dt.string, "c": dt.float64})
     assert a | b == sch.Schema(
-        {'a': dt.string, 'b': dt.int64, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date}
+        {"a": dt.string, "b": dt.int64, "c": dt.float64, "d": dt.boolean, "e": dt.date}
     )
-    assert a - b == sch.Schema({'b': dt.int64})
-    assert b - a == sch.Schema({'d': dt.boolean, 'e': dt.date})
-    assert a ^ b == sch.Schema({'b': dt.int64, 'd': dt.boolean, 'e': dt.date})
+    assert a - b == sch.Schema({"b": dt.int64})
+    assert b - a == sch.Schema({"d": dt.boolean, "e": dt.date})
+    assert a ^ b == sch.Schema({"b": dt.int64, "d": dt.boolean, "e": dt.date})
 
     assert not a.isdisjoint(b)
     assert a.isdisjoint(c)
@@ -379,70 +379,70 @@ def test_schema_infer_pyarrow_table():
     table = pa.Table.from_arrays(
         [
             pa.array([1, 2, 3]),
-            pa.array(['a', 'b', 'c']),
+            pa.array(["a", "b", "c"]),
             pa.array([True, False, True]),
         ],
-        ['a', 'b', 'c'],
+        ["a", "b", "c"],
     )
     s = sch.infer(table)
-    assert s == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+    assert s == sch.Schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
 
 
 def test_schema_from_to_pyarrow_schema():
     pyarrow_schema = pa.schema(
         [
-            pa.field('a', pa.int64()),
-            pa.field('b', pa.string()),
-            pa.field('c', pa.bool_()),
+            pa.field("a", pa.int64()),
+            pa.field("b", pa.string()),
+            pa.field("c", pa.bool_()),
         ]
     )
     ibis_schema = sch.schema(pyarrow_schema)
     restored_schema = ibis_schema.to_pyarrow()
 
-    assert ibis_schema == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+    assert ibis_schema == sch.Schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
     assert restored_schema == pyarrow_schema
 
 
 def test_schema_from_to_numpy_dtypes():
     numpy_dtypes = [
-        ('a', np.dtype('int64')),
-        ('b', np.dtype('str')),
-        ('c', np.dtype('bool')),
+        ("a", np.dtype("int64")),
+        ("b", np.dtype("str")),
+        ("c", np.dtype("bool")),
     ]
     ibis_schema = sch.Schema.from_numpy(numpy_dtypes)
-    assert ibis_schema == sch.Schema({'a': dt.int64, 'b': dt.string, 'c': dt.boolean})
+    assert ibis_schema == sch.Schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
 
     restored_dtypes = ibis_schema.to_numpy()
     expected_dtypes = [
-        ('a', np.dtype('int64')),
-        ('b', np.dtype('object')),
-        ('c', np.dtype('bool')),
+        ("a", np.dtype("int64")),
+        ("b", np.dtype("object")),
+        ("c", np.dtype("bool")),
     ]
     assert restored_dtypes == expected_dtypes
 
 
 @pytest.mark.parametrize(
-    ('from_method', 'to_method'),
+    ("from_method", "to_method"),
     [
         pytest.param(
-            'from_dask',
-            'to_dask',
-            marks=pytest.mark.skipif(not has_dask, reason='dask not installed'),
+            "from_dask",
+            "to_dask",
+            marks=pytest.mark.skipif(not has_dask, reason="dask not installed"),
         ),
         pytest.param(
-            'from_pandas',
-            'to_pandas',
-            marks=pytest.mark.skipif(not has_pandas, reason='pandas not installed'),
+            "from_pandas",
+            "to_pandas",
+            marks=pytest.mark.skipif(not has_pandas, reason="pandas not installed"),
         ),
     ],
 )
 def test_schema_from_to_pandas_dask_dtypes(from_method, to_method):
     pandas_schema = pd.Series(
         [
-            ('a', np.dtype('int64')),
-            ('b', np.dtype('str')),
-            ('c', pd.CategoricalDtype(['a', 'b', 'c'])),
-            ('d', pd.DatetimeTZDtype(tz='US/Eastern', unit='ns')),
+            ("a", np.dtype("int64")),
+            ("b", np.dtype("str")),
+            ("c", pd.CategoricalDtype(["a", "b", "c"])),
+            ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit="ns")),
         ]
     )
     ibis_schema = getattr(sch.Schema, from_method)(pandas_schema)
@@ -450,19 +450,19 @@ def test_schema_from_to_pandas_dask_dtypes(from_method, to_method):
 
     expected = sch.Schema(
         {
-            'a': dt.int64,
-            'b': dt.string,
-            'c': dt.string,
-            'd': dt.Timestamp(timezone='US/Eastern'),
+            "a": dt.int64,
+            "b": dt.string,
+            "c": dt.string,
+            "d": dt.Timestamp(timezone="US/Eastern"),
         }
     )
     assert ibis_schema == expected
 
     restored_dtypes = getattr(ibis_schema, to_method)()
     expected_dtypes = [
-        ('a', np.dtype('int64')),
-        ('b', np.dtype('object')),
-        ('c', np.dtype('object')),
-        ('d', pd.DatetimeTZDtype(tz='US/Eastern', unit='ns')),
+        ("a", np.dtype("int64")),
+        ("b", np.dtype("object")),
+        ("c", np.dtype("object")),
+        ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit="ns")),
     ]
     assert restored_dtypes == expected_dtypes

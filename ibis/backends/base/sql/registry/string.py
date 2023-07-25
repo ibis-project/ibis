@@ -12,12 +12,12 @@ def substring(translator, op):
     # Impala is 1-indexed
     if length is None or isinstance(length, ops.Literal):
         if lvalue := getattr(length, "value", None):
-            return f'substr({arg_formatted}, {start_formatted} + 1, {lvalue})'
+            return f"substr({arg_formatted}, {start_formatted} + 1, {lvalue})"
         else:
-            return f'substr({arg_formatted}, {start_formatted} + 1)'
+            return f"substr({arg_formatted}, {start_formatted} + 1)"
     else:
         length_formatted = translator.translate(length)
-        return f'substr({arg_formatted}, {start_formatted} + 1, {length_formatted})'
+        return f"substr({arg_formatted}, {start_formatted} + 1, {length_formatted})"
 
 
 def string_find(translator, op):
@@ -27,40 +27,40 @@ def string_find(translator, op):
     if (start := op.start) is not None:
         if not isinstance(start, ops.Literal):
             start_fmt = translator.translate(start)
-            return f'locate({substr_formatted}, {arg_formatted}, {start_fmt} + 1) - 1'
+            return f"locate({substr_formatted}, {arg_formatted}, {start_fmt} + 1) - 1"
         elif sval := start.value:
-            return f'locate({substr_formatted}, {arg_formatted}, {sval + 1}) - 1'
+            return f"locate({substr_formatted}, {arg_formatted}, {sval + 1}) - 1"
         else:
             raise ValueError(f"invalid `start` value: {sval}")
     else:
-        return f'locate({substr_formatted}, {arg_formatted}) - 1'
+        return f"locate({substr_formatted}, {arg_formatted}) - 1"
 
 
 def find_in_set(translator, op):
     arg_formatted = translator.translate(op.needle)
-    str_formatted = ','.join([x.value for x in op.values])
+    str_formatted = ",".join([x.value for x in op.values])
     return f"find_in_set({arg_formatted}, '{str_formatted}') - 1"
 
 
 def string_join(translator, op):
     arg, strings = op.args
-    return helpers.format_call(translator, 'concat_ws', arg, *strings)
+    return helpers.format_call(translator, "concat_ws", arg, *strings)
 
 
 def string_like(translator, op):
     arg = translator.translate(op.arg)
     pattern = translator.translate(op.pattern)
-    return f'{arg} LIKE {pattern}'
+    return f"{arg} LIKE {pattern}"
 
 
 def string_ilike(translator, op):
     arg = translator.translate(op.arg)
     pattern = translator.translate(op.pattern)
-    return f'upper({arg}) LIKE upper({pattern})'
+    return f"upper({arg}) LIKE upper({pattern})"
 
 
 def extract_url_field(extract):
-    if extract == 'QUERY':
+    if extract == "QUERY":
 
         def _op(translator, op):
             arg, key = op.args

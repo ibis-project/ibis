@@ -19,9 +19,9 @@ def test_type_metadata(lineitem):
 
 
 def test_cast_scalar_to_decimal():
-    val = api.literal('1.2345')
+    val = api.literal("1.2345")
 
-    casted = val.cast('decimal(15,5)')
+    casted = val.cast("decimal(15,5)")
     assert isinstance(casted, ir.DecimalScalar)
     assert casted.type() == dt.Decimal(15, 5)
 
@@ -81,7 +81,7 @@ def test_decimal_sum_type_precision(precision, scale, expected):
     assert result.type() == dt.Decimal(*expected)
 
 
-@pytest.mark.parametrize('func', ['mean', 'max', 'min'])
+@pytest.mark.parametrize("func", ["mean", "max", "min"])
 def test_decimal_aggregate_function_type(lineitem, func):
     col = lineitem.l_extendedprice
     method = operator.methodcaller(func)
@@ -116,7 +116,7 @@ def test_fillna(lineitem):
 
 
 @pytest.mark.parametrize(
-    ('precision', 'scale'),
+    ("precision", "scale"),
     [
         (-1, 3),  # negative precision
         (0, 1),  # zero precision
@@ -130,7 +130,7 @@ def test_invalid_precision_scale_combo(precision, scale):
 
 
 @pytest.mark.parametrize(
-    ('precision', 'scale'),
+    ("precision", "scale"),
     [(38.1, 3), (38, 3.1)],  # non integral precision  # non integral scale
 )
 def test_invalid_precision_scale_type(precision, scale):
@@ -141,11 +141,11 @@ def test_invalid_precision_scale_type(precision, scale):
 def test_decimal_str(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
-    assert str(t) == f'decimal({t.precision:d}, {t.scale:d})'
+    assert str(t) == f"decimal({t.precision:d}, {t.scale:d})"
 
 
 def test_decimal_repr(lineitem):
     col = lineitem.l_extendedprice
     t = col.type()
-    expected = f'Decimal(precision={t.precision:d}, scale={t.scale:d}, nullable=True)'
+    expected = f"Decimal(precision={t.precision:d}, scale={t.scale:d}, nullable=True)"
     assert repr(t) == expected

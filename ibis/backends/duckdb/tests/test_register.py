@@ -28,12 +28,12 @@ def test_read_csv_with_columns(data_dir):
         data_dir / "csv" / "awards_players.csv",
         header=True,
         columns={
-            'playerID': 'VARCHAR',
-            'awardID': 'VARCHAR',
-            'yearID': 'DATE',
-            'lgID': 'VARCHAR',
-            'tie': 'VARCHAR',
-            'notes': 'VARCHAR',
+            "playerID": "VARCHAR",
+            "awardID": "VARCHAR",
+            "yearID": "DATE",
+            "lgID": "VARCHAR",
+            "tie": "VARCHAR",
+            "notes": "VARCHAR",
         },
         dateformat="%Y",
     )

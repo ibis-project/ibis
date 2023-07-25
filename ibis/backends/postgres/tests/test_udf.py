@@ -17,9 +17,9 @@ pytest.importorskip("psycopg2")
 sa = pytest.importorskip("sqlalchemy")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def test_schema(con):
-    schema_name = f'udf_test_{guid()}'
+    schema_name = f"udf_test_{guid()}"
     with con.begin() as c:
         c.exec_driver_sql(f"CREATE SCHEMA IF NOT EXISTS {schema_name}")
     yield schema_name
@@ -27,12 +27,12 @@ def test_schema(con):
         c.exec_driver_sql(f"DROP SCHEMA IF EXISTS {schema_name} CASCADE")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def table_name():
-    return 'udf_test_users'
+    return "udf_test_users"
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def sql_table_setup(test_schema, table_name):
     return f"""\
 DROP TABLE IF EXISTS {test_schema}.{table_name};
@@ -47,7 +47,7 @@ INSERT INTO {test_schema}.{table_name} VALUES
 (3, 'Jonathan', 8)"""
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def sql_define_py_udf(test_schema):
     return f"""\
 CREATE OR REPLACE FUNCTION {test_schema}.pylen(x varchar)
@@ -59,7 +59,7 @@ return len(x)
 $$"""
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def sql_define_udf(test_schema):
     return f"""\
 CREATE OR REPLACE FUNCTION {test_schema}.custom_len(x varchar)
@@ -71,7 +71,7 @@ SELECT length(x);
 $$"""
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 @pytest.mark.usefixtures("test_schema")
 def con_for_udf(con, sql_table_setup, sql_define_udf, sql_define_py_udf):
     with con.begin() as c:
@@ -89,18 +89,18 @@ def table(con_for_udf, table_name, test_schema):
 def test_existing_sql_udf(con_for_udf, test_schema, table):
     """Test creating ibis UDF object based on existing UDF in the database."""
     # Create ibis UDF objects referring to UDFs already created in the database
-    custom_length_udf = con_for_udf.function('custom_len', schema=test_schema)
-    result_obj = table[table, custom_length_udf(table['user_name']).name('custom_len')]
+    custom_length_udf = con_for_udf.function("custom_len", schema=test_schema)
+    result_obj = table[table, custom_length_udf(table["user_name"]).name("custom_len")]
     result = result_obj.execute()
-    assert result['custom_len'].sum() == result['name_length'].sum()
+    assert result["custom_len"].sum() == result["name_length"].sum()
 
 
 def test_existing_plpython_udf(con_for_udf, test_schema, table):
     # Create ibis UDF objects referring to UDFs already created in the database
-    py_length_udf = con_for_udf.function('pylen', schema=test_schema)
-    result_obj = table[table, py_length_udf(table['user_name']).name('custom_len')]
+    py_length_udf = con_for_udf.function("pylen", schema=test_schema)
+    result_obj = table[table, py_length_udf(table["user_name"]).name("custom_len")]
     result = result_obj.execute()
-    assert result['custom_len'].sum() == result['name_length'].sum()
+    assert result["custom_len"].sum() == result["name_length"].sum()
 
 
 def test_udf(test_schema, table):
@@ -111,12 +111,12 @@ def test_udf(test_schema, table):
     def mult_a_b(a: int, b: int) -> int:
         return a * b
 
-    table_filt = table.filter(table['user_id'] == 2)
+    table_filt = table.filter(table["user_id"] == 2)
     expr = table_filt.select(
-        mult_result=mult_a_b(table_filt['user_id'], table_filt['name_length'])
+        mult_result=mult_a_b(table_filt["user_id"], table_filt["name_length"])
     )
     result = expr.execute()
-    assert result['mult_result'].iat[0] == 8
+    assert result["mult_result"].iat[0] == 8
 
 
 @pytest.mark.xfail(
@@ -137,8 +137,8 @@ def test_array_type(test_schema, table):
     def pysplit(text: str, split: str) -> list[str]:
         return text.split(split)
 
-    splitter = ibis.literal(' ', dt.string)
-    result = pysplit(table['user_name'], splitter)
+    splitter = ibis.literal(" ", dt.string)
+    result = pysplit(table["user_name"], splitter)
     result.execute()
 
 
@@ -150,12 +150,12 @@ def test_client_udf_api(test_schema, table):
     def multiply(a: int, b: int) -> int:
         return a * b
 
-    table_filt = table.filter(table['user_id'] == 2)
+    table_filt = table.filter(table["user_id"] == 2)
     expr = table_filt.select(
-        mult_result=multiply(table_filt['user_id'], table_filt['name_length'])
+        mult_result=multiply(table_filt["user_id"], table_filt["name_length"])
     )
     result = expr.execute()
-    assert result['mult_result'].iat[0] == 8
+    assert result["mult_result"].iat[0] == 8
 
 
 def test_client_udf_decorator_fails(con_for_udf, test_schema):

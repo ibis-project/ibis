@@ -57,7 +57,7 @@ class BigQueryType(TypeMapper):
         elif dtype.is_timestamp():
             if dtype.timezone is None:
                 return "DATETIME"
-            elif dtype.timezone == 'UTC':
+            elif dtype.timezone == "UTC":
                 return "TIMESTAMP"
             else:
                 raise TypeError(
@@ -65,7 +65,7 @@ class BigQueryType(TypeMapper):
                 )
         elif dtype.is_decimal():
             if (dtype.precision, dtype.scale) == (76, 38):
-                return 'BIGNUMERIC'
+                return "BIGNUMERIC"
             if (dtype.precision, dtype.scale) in [(38, 9), (None, None)]:
                 return "NUMERIC"
             raise TypeError(

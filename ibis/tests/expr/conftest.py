@@ -29,41 +29,41 @@ if sys.version_info < (3, 10):
 @pytest.fixture
 def schema():
     return [
-        ('a', 'int8'),
-        ('b', 'int16'),
-        ('c', 'int32'),
-        ('d', 'int64'),
-        ('e', 'float32'),
-        ('f', 'float64'),
-        ('g', 'string'),
-        ('h', 'boolean'),
-        ('i', 'timestamp'),
-        ('j', 'date'),
-        ('k', 'time'),
+        ("a", "int8"),
+        ("b", "int16"),
+        ("c", "int32"),
+        ("d", "int64"),
+        ("e", "float32"),
+        ("f", "float64"),
+        ("g", "string"),
+        ("h", "boolean"),
+        ("i", "timestamp"),
+        ("j", "date"),
+        ("k", "time"),
     ]
 
 
 @pytest.fixture
 def table(schema):
-    return ibis.table(schema, name='table')
+    return ibis.table(schema, name="table")
 
 
-@pytest.fixture(params=list('abcdh'))
+@pytest.fixture(params=list("abcdh"))
 def int_col(request):
     return request.param
 
 
-@pytest.fixture(params=list('ef'))
+@pytest.fixture(params=list("ef"))
 def float_col(request):
     return request.param
 
 
-@pytest.fixture(params=list('abcdefh'))
+@pytest.fixture(params=list("abcdefh"))
 def numeric_col(request):
     return request.param
 
 
-@pytest.fixture(params=list('g'))
+@pytest.fixture(params=list("g"))
 def string_col(request):
     return request.param
 
@@ -75,17 +75,17 @@ def con():
 
 @pytest.fixture
 def alltypes(con):
-    return con.table('alltypes')
+    return con.table("alltypes")
 
 
 @pytest.fixture
 def functional_alltypes(con):
-    return con.table('functional_alltypes')
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture
 def lineitem(con):
-    return con.table('tpch_lineitem')
+    return con.table("tpch_lineitem")
 
 
 @pytest.hookimpl(hookwrapper=True)

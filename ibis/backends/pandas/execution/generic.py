@@ -124,8 +124,8 @@ def execute_cast_series_array(op, data, type, **kwargs):
     numpy_type = constants.IBIS_TYPE_TO_PANDAS_TYPE.get(value_type, None)
     if numpy_type is None:
         raise ValueError(
-            'Array value type must be a primitive type '
-            '(e.g., number, string, or timestamp)'
+            "Array value type must be a primitive type "
+            "(e.g., number, string, or timestamp)"
         )
 
     def cast_to_array(array, numpy_type=numpy_type):
@@ -205,7 +205,7 @@ def execute_cast_series_date(op, data, type, **kwargs):
 
     if from_type.is_integer():
         return pd.Series(
-            pd.to_datetime(data.values, unit='D').values,
+            pd.to_datetime(data.values, unit="D").values,
             index=data.index,
             name=data.name,
         )
@@ -222,7 +222,7 @@ def call_numpy_ufunc(func, op, data, **kwargs):
     if getattr(data, "dtype", None) == np.dtype(np.object_):
         return data.apply(functools.partial(execute_node, op, **kwargs))
     if func is None:
-        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
     return func(data)
 
 
@@ -355,7 +355,7 @@ def execute_series_clip(op, data, lower, upper, **kwargs):
 def execute_series_quantile(op, data, quantile, _, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
         data if mask is None else data.loc[mask],
-        'quantile',
+        "quantile",
         q=quantile,
         interpolation=op.interpolation or "linear",
     )
@@ -366,7 +366,7 @@ def execute_series_quantile(op, data, quantile, _, mask, aggcontext=None, **kwar
 )
 def execute_series_quantile_default(op, data, quantile, _, aggcontext=None, **kwargs):
     return aggcontext.agg(
-        data, 'quantile', q=quantile, interpolation=op.interpolation or "linear"
+        data, "quantile", q=quantile, interpolation=op.interpolation or "linear"
     )
 
 
@@ -466,9 +466,9 @@ def execute_cast_timestamp_to_integer(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, (np.bool_, bool), dt.Timestamp)
 def execute_cast_bool_to_timestamp(op, data, type, **kwargs):
     raise TypeError(
-        'Casting boolean values to timestamps does not make sense. If you '
-        'really want to cast boolean values to timestamps please cast to '
-        'int64 first then to timestamp: '
+        "Casting boolean values to timestamps does not make sense. If you "
+        "really want to cast boolean values to timestamps please cast to "
+        "int64 first then to timestamp: "
         "value.cast('int64').cast('timestamp')"
     )
 
@@ -476,9 +476,9 @@ def execute_cast_bool_to_timestamp(op, data, type, **kwargs):
 @execute_node.register(ops.Cast, (np.bool_, bool), dt.Interval)
 def execute_cast_bool_to_interval(op, data, type, **kwargs):
     raise TypeError(
-        'Casting boolean values to intervals does not make sense. If you '
-        'really want to cast boolean values to intervals please cast to '
-        'int64 first then to interval: '
+        "Casting boolean values to intervals does not make sense. If you "
+        "really want to cast boolean values to intervals please cast to "
+        "int64 first then to interval: "
         "value.cast('int64').cast(ibis.expr.datatypes.Interval(...))"
     )
 
@@ -541,7 +541,7 @@ def execute_round_series(op, data, places, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return vectorize_object(op, data, places, **kwargs)
     result = data.round(places or 0)
-    return result if places else result.astype('int64')
+    return result if places else result.astype("int64")
 
 
 @execute_node.register(ops.TableColumn, (pd.DataFrame, DataFrameGroupBy))
@@ -557,10 +557,10 @@ def execute_aggregation_dataframe(
     timecontext: TimeContext | None = None,
     **kwargs,
 ):
-    assert op.metrics, 'no metrics found during aggregation execution'
+    assert op.metrics, "no metrics found during aggregation execution"
 
     if op.sort_keys:
-        raise NotImplementedError('sorting on aggregations not yet implemented')
+        raise NotImplementedError("sorting on aggregations not yet implemented")
 
     if op.predicates:
         predicate = functools.reduce(
@@ -610,8 +610,8 @@ def execute_aggregation_dataframe(
         # raise
         if not op.by:
             raise ValueError(
-                'Filtering out aggregation values is not allowed without at '
-                'least one grouping key'
+                "Filtering out aggregation values is not allowed without at "
+                "least one grouping key"
             )
 
         # TODO(phillipc): Don't recompute identical subexpressions
@@ -624,7 +624,7 @@ def execute_aggregation_dataframe(
         )
         assert len(predicate) == len(
             result
-        ), 'length of predicate does not match length of DataFrame'
+        ), "length of predicate does not match length of DataFrame"
         result = result.loc[predicate.values]
     return result
 
@@ -644,17 +644,17 @@ def execute_last_series_groupby(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(data, lambda x: getattr(x, "iat", x)[-1])
 
 
-variance_ddof = {'pop': 0, 'sample': 1}
+variance_ddof = {"pop": 0, "sample": 1}
 
 
 @execute_node.register(ops.Variance, SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_var(op, data, _, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'var', ddof=variance_ddof[op.how])
+    return aggcontext.agg(data, "var", ddof=variance_ddof[op.how])
 
 
 @execute_node.register(ops.StandardDev, SeriesGroupBy, type(None))
 def execute_reduction_series_groupby_std(op, data, _, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'std', ddof=variance_ddof[op.how])
+    return aggcontext.agg(data, "std", ddof=variance_ddof[op.how])
 
 
 @execute_node.register(
@@ -663,17 +663,17 @@ def execute_reduction_series_groupby_std(op, data, _, aggcontext=None, **kwargs)
     type(None),
 )
 def execute_count_distinct_series_groupby(op, data, _, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'nunique')
+    return aggcontext.agg(data, "nunique")
 
 
 @execute_node.register(ops.Arbitrary, SeriesGroupBy, type(None))
 def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
     how = op.how
     if how is None:
-        how = 'first'
+        how = "first"
 
-    if how not in {'first', 'last'}:
-        raise com.OperationNotDefinedError(f'Arbitrary {how!r} is not supported')
+    if how not in {"first", "last"}:
+        raise com.OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
     return aggcontext.agg(data, how)
 
 
@@ -796,17 +796,17 @@ def execute_last_series_mask(op, data, mask, aggcontext=None, **kwargs):
     (pd.Series, type(None)),
 )
 def execute_count_distinct_series_mask(op, data, mask, aggcontext=None, **kwargs):
-    return aggcontext.agg(data[mask] if mask is not None else data, 'nunique')
+    return aggcontext.agg(data[mask] if mask is not None else data, "nunique")
 
 
 @execute_node.register(ops.Arbitrary, pd.Series, (pd.Series, type(None)))
 def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
-    if op.how == 'first':
+    if op.how == "first":
         index = 0
-    elif op.how == 'last':
+    elif op.how == "last":
         index = -1
     else:
-        raise com.OperationNotDefinedError(f'Arbitrary {op.how!r} is not supported')
+        raise com.OperationNotDefinedError(f"Arbitrary {op.how!r} is not supported")
 
     data = data[mask] if mask is not None else data
     return data.iloc[index]
@@ -816,7 +816,7 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
 def execute_standard_dev_series(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
         data[mask] if mask is not None else data,
-        'std',
+        "std",
         ddof=variance_ddof[op.how],
     )
 
@@ -825,7 +825,7 @@ def execute_standard_dev_series(op, data, mask, aggcontext=None, **kwargs):
 def execute_variance_series(op, data, mask, aggcontext=None, **kwargs):
     return aggcontext.agg(
         data[mask] if mask is not None else data,
-        'var',
+        "var",
         ddof=variance_ddof[op.how],
     )
 
@@ -998,7 +998,7 @@ def _execute_binary_op_impl(op, left, right, **_):
         operation = constants.BINARY_OPERATIONS[op_type]
     except KeyError:
         raise com.OperationNotDefinedError(
-            f'Binary operation {op_type.__name__} not implemented'
+            f"Binary operation {op_type.__name__} not implemented"
         )
     else:
         return operation(left, right)
@@ -1047,8 +1047,8 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
     right_groupings = get_grouping(right.grouper.groupings)
     if left_groupings != right_groupings:
         raise ValueError(
-            'Cannot perform {} operation on two series with '
-            'different groupings'.format(type(op).__name__)
+            "Cannot perform {} operation on two series with "
+            "different groupings".format(type(op).__name__)
         )
     result = execute_binary_op(op, left.obj, right.obj, **kwargs)
     return result.groupby(left_groupings, group_keys=False)
@@ -1314,8 +1314,8 @@ def execute_database_table_client(
         time_col = get_time_col()
         if time_col not in df:
             raise com.IbisError(
-                f'Table {op.name} must have a time column named {time_col}'
-                ' to execute with time context.'
+                f"Table {op.name} must have a time column named {time_col}"
+                " to execute with time context."
             )
         # filter with time context
         mask = df[time_col].between(begin, end)

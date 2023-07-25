@@ -118,7 +118,7 @@ def _struct_field(translator, op):
 
 def _struct_column(translator, op):
     cols = (
-        f'{translator.translate(value)} AS {name}'
+        f"{translator.translate(value)} AS {name}"
         for name, value, in zip(op.names, op.values)
     )
     return "STRUCT({})".format(", ".join(cols))
@@ -260,11 +260,11 @@ def _regex_extract(translator, op):
     index = translator.translate(op.index)
     matches = f"REGEXP_CONTAINS({arg}, {regex})"
     # non-greedily match the regex's prefix so the regex can match as much as possible
-    nonzero_index_replace = fr"REGEXP_REPLACE({arg}, CONCAT('.*?', {regex}, '.*'), CONCAT('\\', CAST({index} AS STRING)))"
+    nonzero_index_replace = rf"REGEXP_REPLACE({arg}, CONCAT('.*?', {regex}, '.*'), CONCAT('\\', CAST({index} AS STRING)))"
     # zero index replacement means capture everything matched by the regex, so
     # we wrap the regex in an outer group
     zero_index_replace = (
-        fr"REGEXP_REPLACE({arg}, CONCAT('.*?', CONCAT('(', {regex}, ')'), '.*'), '\\1')"
+        rf"REGEXP_REPLACE({arg}, CONCAT('.*?', CONCAT('(', {regex}, ')'), '.*'), '\\1')"
     )
     extract = f"IF({index} = 0, {zero_index_replace}, {nonzero_index_replace})"
     return f"IF({matches}, {extract}, NULL)"
@@ -376,7 +376,7 @@ def _literal(translator, op):
             )
         elif dtype.is_struct():
             cols = (
-                f'{translator.translate(ops.Literal(value[name], dtype=type_))} AS {name}'
+                f"{translator.translate(ops.Literal(value[name], dtype=type_))} AS {name}"
                 for name, type_ in zip(dtype.names, dtype.types)
             )
             return "STRUCT({})".format(", ".join(cols))
@@ -386,7 +386,7 @@ def _literal(translator, op):
     except NotImplementedError:
         if isinstance(dtype, dt.Array):
             return _array_literal_format(op)
-        raise NotImplementedError(f'Unsupported type: {dtype!r}')
+        raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
 
 def _arbitrary(translator, op):
@@ -479,7 +479,7 @@ def _timestamp_binary(func):
 
         if unit.is_date():
             try:
-                offset = offset.to_expr().to_unit('h').op()
+                offset = offset.to_expr().to_unit("h").op()
             except ValueError:
                 raise com.UnsupportedOperationError(
                     f"BigQuery does not allow binary operation {func} with INTERVAL offset {unit}"
@@ -638,12 +638,12 @@ def _is_inf(t, op):
 
 
 def _nullifzero(t, op):
-    casted = bigquery_cast('0', op.dtype)
+    casted = bigquery_cast("0", op.dtype)
     return f"NULLIF({t.translate(op.arg)}, {casted})"
 
 
 def _zeroifnull(t, op):
-    casted = bigquery_cast('0', op.dtype)
+    casted = bigquery_cast("0", op.dtype)
     return f"COALESCE({t.translate(op.arg)}, {casted})"
 
 
@@ -706,7 +706,7 @@ def _nth_value(t, op):
     if not isinstance(nth_op := op.nth, ops.Literal):
         raise TypeError(f"Bigquery nth must be a literal; got {type(op.nth)}")
 
-    return f'NTH_VALUE({arg}, {nth_op.value + 1})'
+    return f"NTH_VALUE({arg}, {nth_op.value + 1})"
 
 
 def _interval_multiply(t, op):

@@ -108,14 +108,14 @@ def not_exists(foo_t, bar_t):
 
 @pytest.fixture(scope="module")
 def union(con):
-    table = con.table('functional_alltypes')
+    table = con.table("functional_alltypes")
 
     t1 = table[table.int_col > 0][
-        table.string_col.name('key'),
-        table.float_col.cast('double').name('value'),
+        table.string_col.name("key"),
+        table.float_col.cast("double").name("value"),
     ]
     t2 = table[table.int_col <= 0][
-        table.string_col.name('key'), table.double_col.name('value')
+        table.string_col.name("key"), table.double_col.name("value")
     ]
 
     return t1.union(t2, distinct=True)
@@ -123,14 +123,14 @@ def union(con):
 
 @pytest.fixture(scope="module")
 def union_all(con):
-    table = con.table('functional_alltypes')
+    table = con.table("functional_alltypes")
 
     t1 = table[table.int_col > 0][
-        table.string_col.name('key'),
-        table.float_col.cast('double').name('value'),
+        table.string_col.name("key"),
+        table.float_col.cast("double").name("value"),
     ]
     t2 = table[table.int_col <= 0][
-        table.string_col.name('key'), table.double_col.name('value')
+        table.string_col.name("key"), table.double_col.name("value")
     ]
 
     return t1.union(t2, distinct=False)
@@ -138,14 +138,14 @@ def union_all(con):
 
 @pytest.fixture(scope="module")
 def intersect(con):
-    table = con.table('functional_alltypes')
+    table = con.table("functional_alltypes")
 
     t1 = table[table.int_col > 0][
-        table.string_col.name('key'),
-        table.float_col.cast('double').name('value'),
+        table.string_col.name("key"),
+        table.float_col.cast("double").name("value"),
     ]
     t2 = table[table.int_col <= 0][
-        table.string_col.name('key'), table.double_col.name('value')
+        table.string_col.name("key"), table.double_col.name("value")
     ]
 
     return t1.intersect(t2)
@@ -153,14 +153,14 @@ def intersect(con):
 
 @pytest.fixture(scope="module")
 def difference(con):
-    table = con.table('functional_alltypes')
+    table = con.table("functional_alltypes")
 
     t1 = table[table.int_col > 0][
-        table.string_col.name('key'),
-        table.float_col.cast('double').name('value'),
+        table.string_col.name("key"),
+        table.float_col.cast("double").name("value"),
     ]
     t2 = table[table.int_col <= 0][
-        table.string_col.name('key'), table.double_col.name('value')
+        table.string_col.name("key"), table.double_col.name("value")
     ]
 
     return t1.difference(t2)
@@ -168,13 +168,13 @@ def difference(con):
 
 @pytest.fixture(scope="module")
 def simple_case(con):
-    t = con.table('alltypes')
-    return t.g.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
+    t = con.table("alltypes")
+    return t.g.case().when("foo", "bar").when("baz", "qux").else_("default").end()
 
 
 @pytest.fixture(scope="module")
 def search_case(con):
-    t = con.table('alltypes')
+    t = con.table("alltypes")
     return ibis.case().when(t.f > 0, t.d * 2).when(t.c < 0, t.a * 2).end()
 
 
@@ -188,19 +188,19 @@ def projection_fuse_filter():
 
     t = ibis.table(
         [
-            ('a', 'int8'),
-            ('b', 'int16'),
-            ('c', 'int32'),
-            ('d', 'int64'),
-            ('e', 'float32'),
-            ('f', 'float64'),
-            ('g', 'string'),
-            ('h', 'boolean'),
+            ("a", "int8"),
+            ("b", "int16"),
+            ("c", "int32"),
+            ("d", "int64"),
+            ("e", "float32"),
+            ("f", "float64"),
+            ("g", "string"),
+            ("h", "boolean"),
         ],
-        'foo',
+        "foo",
     )
 
-    proj = t['a', 'b', 'c']
+    proj = t["a", "b", "c"]
 
     # Rewrite a little more aggressively here
     expr1 = proj[t.a > 0]
@@ -209,7 +209,7 @@ def projection_fuse_filter():
     filtered = t[t.a > 0]
 
     expr2 = filtered[t.a, t.b, t.c]
-    expr3 = filtered.select(['a', 'b', 'c'])
+    expr3 = filtered.select(["a", "b", "c"])
 
     return expr1, expr2, expr3
 
@@ -217,10 +217,10 @@ def projection_fuse_filter():
 @pytest.fixture(scope="module")
 def startswith(star1):
     t1 = star1
-    return t1.foo_id.startswith('foo')
+    return t1.foo_id.startswith("foo")
 
 
 @pytest.fixture(scope="module")
 def endswith(star1):
     t1 = star1
-    return t1.foo_id.endswith('foo')
+    return t1.foo_id.endswith("foo")

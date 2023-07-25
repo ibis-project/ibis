@@ -125,15 +125,15 @@ def safe_method(mapping, method, *args, **kwargs):
 
 
 def safe_get(mapping, key, default=None):
-    return safe_method(mapping, 'get', key, default)
+    return safe_method(mapping, "get", key, default)
 
 
 def safe_contains(mapping, key):
-    return safe_method(mapping, '__contains__', key)
+    return safe_method(mapping, "__contains__", key)
 
 
 def safe_keys(mapping):
-    result = safe_method(mapping, 'keys')
+    result = safe_method(mapping, "keys")
     if result is None:
         return None
     # list(...) to unpack iterable
@@ -141,11 +141,11 @@ def safe_keys(mapping):
 
 
 def safe_values(mapping):
-    result = safe_method(mapping, 'values')
+    result = safe_method(mapping, "values")
     if result is None:
         return None
     # list(...) to unpack iterable
-    return np.array(list(result), dtype='object')
+    return np.array(list(result), dtype="object")
 
 
 @execute_node.register(ops.MapKeys, pd.Series)

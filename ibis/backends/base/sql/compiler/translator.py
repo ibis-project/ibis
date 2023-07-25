@@ -49,7 +49,7 @@ class QueryContext:
         query
             A single query string
         """
-        return '\n\n'.join(queries)
+        return "\n\n".join(queries)
 
     @property
     def top_context(self):
@@ -189,7 +189,7 @@ class ExprTranslator:
         self.node = node
         self.permit_subquery = permit_subquery
 
-        assert context is not None, f'context is None in {type(self).__name__}'
+        assert context is not None, f"context is None in {type(self).__name__}"
         self.context = context
 
         # For now, governing whether the result will have a name
@@ -206,7 +206,7 @@ class ExprTranslator:
         return bool(op.name)
 
     def name(self, translated, name, force=True):
-        return f'{translated} AS {quote_identifier(name, force=force)}'
+        return f"{translated} AS {quote_identifier(name, force=force)}"
 
     def get_result(self):
         """Compile SQL expression into a string."""
@@ -239,12 +239,12 @@ class ExprTranslator:
             return self._trans_param(op)
         elif isinstance(op, ops.TableNode):
             # HACK/TODO: revisit for more complex cases
-            return '*'
+            return "*"
         elif type(op) in self._registry:
             formatter = self._registry[type(op)]
             return formatter(self, op)
         else:
-            raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+            raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
     def _trans_param(self, op):
         raw_value = self.context.params[op]
@@ -276,7 +276,7 @@ def _bucket(op):
     expr = op.arg.to_expr()
     stmt = ibis.case()
 
-    if op.closed == 'left':
+    if op.closed == "left":
         l_cmp = ops.LessEqual
         r_cmp = ops.Less
     else:
@@ -290,14 +290,14 @@ def _bucket(op):
         if user_num_buckets > 0:
             cmp = ops.Less if op.close_extreme else r_cmp
         else:
-            cmp = ops.LessEqual if op.closed == 'right' else ops.Less
+            cmp = ops.LessEqual if op.closed == "right" else ops.Less
         stmt = stmt.when(cmp(op.arg, op.buckets[0]).to_expr(), bucket_id)
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
         if op.close_extreme and (
-            (op.closed == 'right' and j == 0)
-            or (op.closed == 'left' and j == (user_num_buckets - 1))
+            (op.closed == "right" and j == 0)
+            or (op.closed == "left" and j == (user_num_buckets - 1))
         ):
             stmt = stmt.when(
                 ops.And(
@@ -316,7 +316,7 @@ def _bucket(op):
         if user_num_buckets > 0:
             cmp = ops.Less if op.close_extreme else l_cmp
         else:
-            cmp = ops.Less if op.closed == 'right' else ops.LessEqual
+            cmp = ops.Less if op.closed == "right" else ops.LessEqual
 
         stmt = stmt.when(cmp(op.buckets[-1], op.arg).to_expr(), bucket_id)
         bucket_id += 1
