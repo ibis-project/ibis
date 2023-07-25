@@ -133,11 +133,7 @@ class Between(Value):
 @public
 class Contains(Value):
     value: Value
-    options: Union[
-        VarTuple[Value],
-        Column[dt.Any],
-        Value[dt.Array],
-    ]
+    options: Union[VarTuple[Value], Column[dt.Any]]
 
     dtype = dt.boolean
 
