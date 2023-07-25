@@ -18,4 +18,4 @@ cd31389542561a94d9d0207e09c9c906c3831fe9 # refactor(ir): rename ops.AnalyticOp -
 2673ac391c89b73fb97bb646eeef898b4d48fe30 # refactor(ir): rename ops.UnaryOp -> ops.Unary
 4803894dcff2afced4a1fc651d40b235c862791a # refactor(ir): rename ops.ValueOp -> ops.Value
 d36af084837d4d469efce060268295eec43139fb # style: format to the black default line length
-0415268cf5ea7a5b4db49d4f23dda8db52fee048 # style: don't skip string normalization using Black
+45b07de8e1989cdd0983bd2a06da4506427cdbd1 # style: don't skip string normalization using Black
