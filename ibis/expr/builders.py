@@ -14,7 +14,7 @@ from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.deferred import Deferred  # noqa: TCH001
-from ibis.expr.operations.core import Column, Value  # noqa: TCH001
+from ibis.expr.operations.core import Value  # noqa: TCH001
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.types.relations import bind_expr
 
