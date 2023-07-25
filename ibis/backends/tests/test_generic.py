@@ -917,15 +917,13 @@ def test_literal_na(con, dtype):
     assert pd.isna(result)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-def test_memtable_bool_column(backend, con, monkeypatch):
-    monkeypatch.setattr(ibis.options, "default_backend", con)
-
+def test_memtable_bool_column(backend, con):
     t = ibis.memtable({"a": [True, False, True]})
-    backend.assert_series_equal(t.a.execute(), pd.Series([True, False, True], name="a"))
+    backend.assert_series_equal(
+        con.execute(t.a), pd.Series([True, False, True], name="a")
+    )
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AssertionError,
