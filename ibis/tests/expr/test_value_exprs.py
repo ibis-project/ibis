@@ -1144,11 +1144,28 @@ def test_scalar_isin_map_keys():
     assert isinstance(expr, ir.BooleanScalar)
 
 
+def test_column_isin_array():
+    # scalar case
+    t = ibis.table([("a", "string")], name="t")
+    expr = t.a.isin(ibis.array(["a", "b"]))
+    assert isinstance(expr, ir.BooleanColumn)
+    assert isinstance(expr.op(), ops.ArrayContains)
+    assert expr.op().shape.is_columnar()
+
+    # columnar case
+    t = ibis.table([("a", "string"), ("b", "array<string>")], name="t")
+    expr = t.a.isin(t.b)
+    assert isinstance(expr, ir.BooleanColumn)
+    assert isinstance(expr.op(), ops.ArrayContains)
+    assert expr.op().shape.is_columnar()
+
+
 def test_column_isin_map_keys():
     t = ibis.table([("a", "string")], name="t")
     mapping = ibis.literal({"a": 1, "b": 2})
     expr = t.a.isin(mapping.keys())
     assert isinstance(expr, ir.BooleanColumn)
+    assert isinstance(expr.op(), ops.ArrayContains)
 
 
 def test_map_get_with_compatible_value_smaller():
