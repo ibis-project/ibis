@@ -250,9 +250,9 @@ class AlchemyType(TypeMapper):
             )
         elif dtype.is_geospatial():
             if geospatial_supported:
-                if dtype.geotype == 'geometry':
+                if dtype.geotype == "geometry":
                     return ga.Geometry
-                elif dtype.geotype == 'geography':
+                elif dtype.geotype == "geography":
                     return ga.Geography
                 else:
                     return ga.types._GISType

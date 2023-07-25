@@ -71,7 +71,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
 
         groupers = [
             grouper
-            for grouper in (getattr(arg, 'grouper', None) for arg in args)
+            for grouper in (getattr(arg, "grouper", None) for arg in args)
             if grouper is not None
         ]
 
@@ -81,7 +81,7 @@ def pre_execute_elementwise_udf(op, *clients, scope=None, **kwargs):
         # we're performing a scalar operation on grouped column, so
         # perform the operation directly on the underlying Series
         # and regroup after it's finished
-        args = [getattr(arg, 'obj', arg) for arg in args]
+        args = [getattr(arg, "obj", arg) for arg in args]
         groupings = get_grouping(groupers[0].groupings)
         return func(*args).groupby(groupings, group_keys=False)
 

@@ -7,7 +7,7 @@ pytest.importorskip("pyspark")
 
 
 def test_isnull(con):
-    table = con.table('null_table')
+    table = con.table("null_table")
     table_pandas = table.compile().toPandas()
 
     for col, _ in table_pandas.items():
@@ -17,7 +17,7 @@ def test_isnull(con):
 
 
 def test_notnull(con):
-    table = con.table('null_table')
+    table = con.table("null_table")
     table_pandas = table.compile().toPandas()
 
     for col, _ in table_pandas.items():

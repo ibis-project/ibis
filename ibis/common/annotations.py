@@ -38,7 +38,7 @@ class Annotation:
         Type of the field, not used for validation.
     """
 
-    __slots__ = ('_validator', '_default', '_typehint')
+    __slots__ = ("_validator", "_default", "_typehint")
 
     def __init__(self, validator=None, default=EMPTY, typehint=EMPTY):
         if validator is None or isinstance(validator, Validator):
@@ -117,7 +117,7 @@ class Argument(Annotation):
         Defaults to positional or keyword.
     """
 
-    __slots__ = ('_kind',)
+    __slots__ = ("_kind",)
 
     def __init__(
         self,
@@ -168,7 +168,7 @@ class Parameter(inspect.Parameter):
     def __init__(self, name, annotation):
         if not isinstance(annotation, Argument):
             raise TypeError(
-                f'annotation must be an instance of Argument, got {annotation}'
+                f"annotation must be an instance of Argument, got {annotation}"
             )
         super().__init__(
             name,
@@ -221,11 +221,11 @@ class Signature(inspect.Signature):
         for name, param in params.items():
             if param.kind == VAR_POSITIONAL:
                 if var_args:
-                    raise TypeError('only one variadic *args parameter is allowed')
+                    raise TypeError("only one variadic *args parameter is allowed")
                 var_args.append(param)
             elif param.kind == VAR_KEYWORD:
                 if var_kwargs:
-                    raise TypeError('only one variadic **kwargs parameter is allowed')
+                    raise TypeError("only one variadic **kwargs parameter is allowed")
                 var_kwargs.append(param)
             elif name in inherited:
                 if param.default is EMPTY:
@@ -269,7 +269,7 @@ class Signature(inspect.Signature):
             validators = dict(zip(sig.parameters.keys(), validators))
         elif not isinstance(validators, dict):
             raise TypeError(
-                f'validators must be a list or dict, got {type(validators)}'
+                f"validators must be a list or dict, got {type(validators)}"
             )
 
         parameters = []

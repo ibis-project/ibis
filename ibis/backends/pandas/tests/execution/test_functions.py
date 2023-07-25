@@ -20,7 +20,7 @@ from ibis.common.patterns import ValidationError
 
 
 @pytest.mark.parametrize(
-    'op',
+    "op",
     [
         # comparison
         operator.eq,
@@ -38,7 +38,7 @@ def test_binary_operations(t, df, op):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize('op', [operator.and_, operator.or_, operator.xor])
+@pytest.mark.parametrize("op", [operator.and_, operator.or_, operator.xor])
 def test_binary_boolean_operations(t, df, op):
     expr = op(t.plain_int64 == 1, t.plain_int64 == 2)
     result = expr.execute()
@@ -52,48 +52,48 @@ def operate(func):
         try:
             return func(*args, **kwargs)
         except decimal.InvalidOperation:
-            return decimal.Decimal('NaN')
+            return decimal.Decimal("NaN")
 
     return wrapper
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'pandas_func'),
+    ("ibis_func", "pandas_func"),
     [
-        param(methodcaller('round'), round, id="round"),
+        param(methodcaller("round"), round, id="round"),
         param(
-            methodcaller('round', 2),
-            lambda x: x.quantize(decimal.Decimal('.00')),
+            methodcaller("round", 2),
+            lambda x: x.quantize(decimal.Decimal(".00")),
             id="round_2",
         ),
         param(
-            methodcaller('round', 0),
-            lambda x: x.quantize(decimal.Decimal('0.')),
+            methodcaller("round", 0),
+            lambda x: x.quantize(decimal.Decimal("0.")),
             id="round_0",
         ),
-        param(methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x)), id="ceil"),
+        param(methodcaller("ceil"), lambda x: decimal.Decimal(math.ceil(x)), id="ceil"),
         param(
-            methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x)), id="floor"
+            methodcaller("floor"), lambda x: decimal.Decimal(math.floor(x)), id="floor"
         ),
-        param(methodcaller('exp'), methodcaller('exp'), id="exp"),
+        param(methodcaller("exp"), methodcaller("exp"), id="exp"),
         param(
-            methodcaller('sign'),
+            methodcaller("sign"),
             lambda x: x if not x else decimal.Decimal(1).copy_sign(x),
             id="sign",
         ),
-        param(methodcaller('sqrt'), operate(lambda x: x.sqrt()), id="sqrt"),
+        param(methodcaller("sqrt"), operate(lambda x: x.sqrt()), id="sqrt"),
         param(
-            methodcaller('log', 2),
+            methodcaller("log", 2),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
             id="log_2",
         ),
-        param(methodcaller('ln'), operate(lambda x: x.ln()), id="ln"),
+        param(methodcaller("ln"), operate(lambda x: x.ln()), id="ln"),
         param(
-            methodcaller('log2'),
+            methodcaller("log2"),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
             id="log2",
         ),
-        param(methodcaller('log10'), operate(lambda x: x.log10()), id="log10"),
+        param(methodcaller("log10"), operate(lambda x: x.log10()), id="log10"),
     ],
 )
 def test_math_functions_decimal(t, df, ibis_func, pandas_func):
@@ -119,20 +119,20 @@ def test_round_decimal_with_negative_places(t):
     expr = t.float64_as_strings.cast(type).round(-1)
     result = expr.execute()
     expected = pd.Series(
-        list(map(decimal.Decimal, ['1.0E+2', '2.3E+2', '-1.00E+3'])),
-        name='float64_as_strings',
+        list(map(decimal.Decimal, ["1.0E+2", "2.3E+2", "-1.00E+3"])),
+        name="float64_as_strings",
     )
     tm.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'pandas_func'),
+    ("ibis_func", "pandas_func"),
     [
         (lambda x: x.quantile(0), lambda x: x.quantile(0)),
         (lambda x: x.quantile(1), lambda x: x.quantile(1)),
         (
-            lambda x: x.quantile(0.5, interpolation='linear'),
-            lambda x: x.quantile(0.5, interpolation='linear'),
+            lambda x: x.quantile(0.5, interpolation="linear"),
+            lambda x: x.quantile(0.5, interpolation="linear"),
         ),
     ],
 )
@@ -149,7 +149,7 @@ def test_quantile(t, df, ibis_func, pandas_func):
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'pandas_func'),
+    ("ibis_func", "pandas_func"),
     [
         (
             lambda x: x.quantile([0.25, 0.75]),
@@ -157,7 +157,7 @@ def test_quantile(t, df, ibis_func, pandas_func):
         )
     ],
 )
-@pytest.mark.parametrize('column', ['float64_with_zeros', 'int64_with_zeros'])
+@pytest.mark.parametrize("column", ["float64_with_zeros", "int64_with_zeros"])
 def test_quantile_multi(t, df, ibis_func, pandas_func, column):
     expr = ibis_func(t[column])
     result = expr.execute()
@@ -166,14 +166,14 @@ def test_quantile_multi(t, df, ibis_func, pandas_func, column):
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'exc'),
+    ("ibis_func", "exc"),
     [
         # no lower/upper specified
         (lambda x: x.clip(), ValueError),
         # out of range on quantile
         (lambda x: x.quantile(5.0), ValueError),
         # invalid interpolation arg
-        (lambda x: x.quantile(0.5, interpolation='foo'), ValidationError),
+        (lambda x: x.quantile(0.5, interpolation="foo"), ValidationError),
     ],
 )
 def test_arraylike_functions_transform_errors(t, ibis_func, exc):
@@ -191,12 +191,12 @@ def test_quantile_multi_array_access(client, t, df):
 
 @pytest.mark.parametrize(
     (
-        'left',
-        'right',
-        'expected_value',
-        'expected_type',
-        'left_dtype',
-        'right_dtype',
+        "left",
+        "right",
+        "expected_value",
+        "expected_type",
+        "left_dtype",
+        "right_dtype",
     ),
     [
         (True, 1, True, bool, dt.boolean, dt.int64),
@@ -249,14 +249,14 @@ def test_ifelse_returning_bool():
 
 
 @pytest.mark.parametrize(
-    ('dtype', 'value'),
+    ("dtype", "value"),
     [
-        pytest.param(dt.float64, 1, id='float_int'),
-        pytest.param(dt.float64, True, id='float_bool'),
-        pytest.param(dt.int64, 1.0, id='int_float'),
-        pytest.param(dt.int64, True, id='int_bool'),
-        pytest.param(dt.boolean, 1.0, id='bool_float'),
-        pytest.param(dt.boolean, 1, id='bool_int'),
+        pytest.param(dt.float64, 1, id="float_int"),
+        pytest.param(dt.float64, True, id="float_bool"),
+        pytest.param(dt.int64, 1.0, id="int_float"),
+        pytest.param(dt.int64, True, id="int_bool"),
+        pytest.param(dt.boolean, 1.0, id="bool_float"),
+        pytest.param(dt.boolean, 1, id="bool_int"),
     ],
 )
 def test_signature_does_not_match_input_type(dtype, value):
@@ -276,7 +276,7 @@ def test_signature_does_not_match_input_type(dtype, value):
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'pandas_func'),
+    ("ibis_func", "pandas_func"),
     [
         (
             lambda x: x.approx_median(),
@@ -284,7 +284,7 @@ def test_signature_does_not_match_input_type(dtype, value):
         )
     ],
 )
-@pytest.mark.parametrize('column', ['float64_with_zeros', 'int64_with_zeros'])
+@pytest.mark.parametrize("column", ["float64_with_zeros", "int64_with_zeros"])
 def test_approx_median(t, df, ibis_func, pandas_func, column):
     expr = ibis_func(t[column])
     result = expr.execute()

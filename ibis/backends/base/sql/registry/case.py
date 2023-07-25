@@ -19,34 +19,34 @@ class _CaseFormatter:
     def get_result(self):
         self.buf.seek(0)
 
-        self.buf.write('CASE')
+        self.buf.write("CASE")
         if self.base is not None:
             base_str = self.translator.translate(self.base)
-            self.buf.write(f' {base_str}')
+            self.buf.write(f" {base_str}")
 
         for case, result in zip(self.cases, self.results):
             self._next_case()
             case_str = self.translator.translate(case)
             result_str = self.translator.translate(result)
-            self.buf.write(f'WHEN {case_str} THEN {result_str}')
+            self.buf.write(f"WHEN {case_str} THEN {result_str}")
 
         if self.default is not None:
             self._next_case()
             default_str = self.translator.translate(self.default)
-            self.buf.write(f'ELSE {default_str}')
+            self.buf.write(f"ELSE {default_str}")
 
         if self.multiline:
-            self.buf.write('\nEND')
+            self.buf.write("\nEND")
         else:
-            self.buf.write(' END')
+            self.buf.write(" END")
 
         return self.buf.getvalue()
 
     def _next_case(self):
         if self.multiline:
-            self.buf.write('\n{}'.format(' ' * self.indent))
+            self.buf.write("\n{}".format(" " * self.indent))
         else:
-            self.buf.write(' ')
+            self.buf.write(" ")
 
 
 def simple_case(translator, op):

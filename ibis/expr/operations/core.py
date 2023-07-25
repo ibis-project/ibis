@@ -25,7 +25,7 @@ class Node(Concrete, Traversable):
             )
         return self.__cached_equals__(other)
 
-    @util.deprecated(as_of='4.0', instead='remove intermediate .op() calls')
+    @util.deprecated(as_of="4.0", instead="remove intermediate .op() calls")
     def op(self) -> Self:
         """Make `Node` backwards compatible with code that uses `Expr.op()`."""
         return self
@@ -112,12 +112,12 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
         """
 
     @property
-    @util.deprecated(as_of='7.0', instead='use .dtype property instead')
+    @util.deprecated(as_of="7.0", instead="use .dtype property instead")
     def output_dtype(self):
         return self.dtype
 
     @property
-    @util.deprecated(as_of='7.0', instead='use .shape property instead')
+    @util.deprecated(as_of="7.0", instead="use .shape property instead")
     def output_shape(self):
         return self.shape
 

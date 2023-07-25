@@ -32,13 +32,13 @@ if geospatial_supported:
     operation_registry.update(geospatial_functions)
 
 _truncate_formats = {
-    's': '%Y-%m-%d %H:%i:%s',
-    'm': '%Y-%m-%d %H:%i:00',
-    'h': '%Y-%m-%d %H:00:00',
-    'D': '%Y-%m-%d',
+    "s": "%Y-%m-%d %H:%i:%s",
+    "m": "%Y-%m-%d %H:%i:00",
+    "h": "%Y-%m-%d %H:00:00",
+    "D": "%Y-%m-%d",
     # 'W': 'week',
-    'M': '%Y-%m-01',
-    'Y': '%Y-01-01',
+    "M": "%Y-%m-01",
+    "Y": "%Y-01-01",
 }
 
 
@@ -47,7 +47,7 @@ def _truncate(t, op):
     try:
         fmt = _truncate_formats[op.unit.short]
     except KeyError:
-        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit}')
+        raise com.UnsupportedOperationError(f"Unsupported truncate unit {op.unit}")
     return sa.func.date_format(sa_arg, fmt)
 
 
@@ -63,9 +63,9 @@ def _round(t, op):
 
 
 def _interval_from_integer(t, op):
-    if op.unit.short in {'ms', 'ns'}:
+    if op.unit.short in {"ms", "ns"}:
         raise com.UnsupportedOperationError(
-            f'MySQL does not allow operation with INTERVAL offset {op.unit}'
+            f"MySQL does not allow operation with INTERVAL offset {op.unit}"
         )
 
     sa_arg = t.translate(op.arg)
@@ -75,19 +75,19 @@ def _interval_from_integer(t, op):
     # the existing bind parameter produced by translate and reuse its name in
     # the string passed to sa.text?
     if isinstance(sa_arg, sa.sql.elements.BindParameter):
-        return sa.text(f'INTERVAL :arg {text_unit}').bindparams(arg=sa_arg.value)
-    return sa.text(f'INTERVAL {sa_arg} {text_unit}')
+        return sa.text(f"INTERVAL :arg {text_unit}").bindparams(arg=sa_arg.value)
+    return sa.text(f"INTERVAL {sa_arg} {text_unit}")
 
 
 def _literal(_, op):
     if op.dtype.is_interval():
-        if op.dtype.unit.short in {'ms', 'ns'}:
+        if op.dtype.unit.short in {"ms", "ns"}:
             raise com.UnsupportedOperationError(
-                'MySQL does not allow operation '
-                f'with INTERVAL offset {op.dtype.unit}'
+                "MySQL does not allow operation "
+                f"with INTERVAL offset {op.dtype.unit}"
             )
         text_unit = op.dtype.resolution.upper()
-        sa_text = sa.text(f'INTERVAL :value {text_unit}')
+        sa_text = sa.text(f"INTERVAL :value {text_unit}")
         return sa_text.bindparams(value=op.value)
     elif op.dtype.is_binary():
         # the cast to BINARY is necessary here, otherwise the data come back as
@@ -109,7 +109,7 @@ def _group_concat(t, op):
     else:
         arg = t.translate(op.arg)
     sep = t.translate(op.sep)
-    return sa.func.group_concat(arg.op('SEPARATOR')(sep))
+    return sa.func.group_concat(arg.op("SEPARATOR")(sep))
 
 
 def _json_get_item(t, op):
@@ -124,12 +124,12 @@ def _json_get_item(t, op):
 
 def _regex_extract(arg, pattern, index):
     return sa.func.IF(
-        arg.op('REGEXP')(pattern),
+        arg.op("REGEXP")(pattern),
         sa.func.IF(
             index == 0,
             sa.func.REGEXP_SUBSTR(arg, pattern),
             sa.func.REGEXP_REPLACE(
-                sa.func.REGEXP_SUBSTR(arg, pattern), pattern, fr"\{index.value}"
+                sa.func.REGEXP_SUBSTR(arg, pattern), pattern, rf"\{index.value}"
             ),
         ),
         None,
@@ -172,7 +172,7 @@ operation_registry.update(
         ops.Literal: _literal,
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         # static checks are not happy with using "if" as a property
-        ops.Where: fixed_arity(getattr(sa.func, 'if'), 3),
+        ops.Where: fixed_arity(getattr(sa.func, "if"), 3),
         # strings
         ops.StringFind: _string_find,
         ops.FindInSet: (
@@ -198,7 +198,7 @@ operation_registry.update(
             2,
         ),
         ops.RegexSearch: fixed_arity(
-            lambda x, y: sa.type_coerce(x.op('REGEXP')(y), sa.BOOLEAN()), 2
+            lambda x, y: sa.type_coerce(x.op("REGEXP")(y), sa.BOOLEAN()), 2
         ),
         ops.RegexExtract: fixed_arity(_regex_extract, 3),
         # math
@@ -213,7 +213,7 @@ operation_registry.update(
         ops.TimestampAdd: fixed_arity(operator.add, 2),
         ops.TimestampSub: fixed_arity(operator.sub, 2),
         ops.TimestampDiff: fixed_arity(
-            lambda left, right: sa.func.timestampdiff(sa.text('SECOND'), right, left), 2
+            lambda left, right: sa.func.timestampdiff(sa.text("SECOND"), right, left), 2
         ),
         ops.StringToTimestamp: fixed_arity(
             lambda arg, format_str: sa.func.str_to_date(arg, format_str), 2
@@ -226,10 +226,10 @@ operation_registry.update(
         ops.ExtractEpochSeconds: unary(sa.func.UNIX_TIMESTAMP),
         ops.ExtractWeekOfYear: unary(sa.func.weekofyear),
         ops.ExtractMicrosecond: fixed_arity(
-            lambda arg: sa.func.floor(sa.extract('microsecond', arg)), 1
+            lambda arg: sa.func.floor(sa.extract("microsecond", arg)), 1
         ),
         ops.ExtractMillisecond: fixed_arity(
-            lambda arg: sa.func.floor(sa.extract('microsecond', arg) / 1000), 1
+            lambda arg: sa.func.floor(sa.extract("microsecond", arg) / 1000), 1
         ),
         ops.TimestampNow: fixed_arity(sa.func.now, 0),
         # others

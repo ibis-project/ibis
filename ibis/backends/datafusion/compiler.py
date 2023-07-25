@@ -24,7 +24,7 @@ def translate(expr, **_):
 
 @translate.register(ops.Node)
 def operation(op, **_):
-    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+    raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
 @translate.register(ops.DatabaseTable)
@@ -204,7 +204,7 @@ def round(op, **kw):
     arg = translate(op.arg, **kw)
     if op.digits is not None:
         raise com.UnsupportedOperationError(
-            'Rounding to specific digits is not supported in datafusion'
+            "Rounding to specific digits is not supported in datafusion"
         )
     return df.functions.round(arg).cast(pa.int64())
 

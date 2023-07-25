@@ -25,24 +25,24 @@ def get_type(node):
             # As a last resort try get the name of the output_type class
             return node.output_type.__name__
         except (AttributeError, NotImplementedError):
-            return '\u2205'  # empty set character
+            return "\u2205"  # empty set character
     except com.IbisError:
         assert isinstance(node, ops.Join)
-        left_table_name = getattr(node.left, 'name', None) or ops.genname()
+        left_table_name = getattr(node.left, "name", None) or ops.genname()
         left_schema = node.left.schema
-        right_table_name = getattr(node.right, 'name', None) or ops.genname()
+        right_table_name = getattr(node.right, "name", None) or ops.genname()
         right_schema = node.right.schema
         pairs = [
-            (f'{left_table_name}.{left_column}', type)
+            (f"{left_table_name}.{left_column}", type)
             for left_column, type in left_schema.items()
         ] + [
-            (f'{right_table_name}.{right_column}', type)
+            (f"{right_table_name}.{right_column}", type)
             for right_column, type in right_schema.items()
         ]
         schema = ibis.schema(pairs)
 
     return '<BR ALIGN="LEFT" />' + '<BR ALIGN="LEFT" />'.join(
-        f'<I>{escape(name)}</I>: {escape(str(type))}'
+        f"<I>{escape(name)}</I>: {escape(str(type))}"
         for name, type in zip(schema.names, schema.types)
     )
 
@@ -67,26 +67,26 @@ def get_label(node):
     if nodename is not None:
         # [TODO] Don't show nodename because it's too long and ruins the image
         if isinstance(node, ops.window.RangeWindowFrame):
-            label_fmt = '<<B>{}</B>>'
+            label_fmt = "<<B>{}</B>>"
             label = label_fmt.format(escape(name))
         else:
             if isinstance(node, ops.TableNode):
-                label_fmt = '<<I>{}</I>: <B>{}</B>{}>'
+                label_fmt = "<<I>{}</I>: <B>{}</B>{}>"
             else:
                 label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
             # typename is already escaped
             label = label_fmt.format(escape(nodename), escape(name), typename)
     else:
         if isinstance(node, ops.TableNode):
-            label_fmt = '<<B>{}</B>{}>'
+            label_fmt = "<<B>{}</B>{}>"
         else:
             label_fmt = '<<B>{}</B><BR ALIGN="LEFT" />:: {}>'
         label = label_fmt.format(escape(name), typename)
     return label
 
 
-DEFAULT_NODE_ATTRS = {'shape': 'box', 'fontname': 'Deja Vu Sans Mono'}
-DEFAULT_EDGE_ATTRS = {'fontname': 'Deja Vu Sans Mono'}
+DEFAULT_NODE_ATTRS = {"shape": "box", "fontname": "Deja Vu Sans Mono"}
+DEFAULT_EDGE_ATTRS = {"fontname": "Deja Vu Sans Mono"}
 
 
 def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
@@ -97,7 +97,7 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
         edge_attr=edge_attr or DEFAULT_EDGE_ATTRS,
     )
 
-    g.attr(rankdir='BT')
+    g.attr(rankdir="BT")
 
     seen = set()
     edges = set()
@@ -133,7 +133,7 @@ def to_graph(expr, node_attr=None, edge_attr=None, label_edges: bool = False):
     return g
 
 
-def draw(graph, path=None, format='png', verbose: bool = False):
+def draw(graph, path=None, format="png", verbose: bool = False):
     if verbose:
         print(graph.source, file=sys.stderr)  # noqa: T201
 
@@ -141,17 +141,17 @@ def draw(graph, path=None, format='png', verbose: bool = False):
 
     if path is None:
         with tempfile.NamedTemporaryFile(
-            delete=False, suffix=f'.{format}', mode='wb'
+            delete=False, suffix=f".{format}", mode="wb"
         ) as f:
             f.write(piped_source)
         return f.name
     else:
-        with open(path, mode='wb') as f:
+        with open(path, mode="wb") as f:
             f.write(piped_source)
         return path
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     from argparse import ArgumentParser
 
     from ibis import _

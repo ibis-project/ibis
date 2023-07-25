@@ -26,7 +26,7 @@ except ImportError:
 limit = [
     param(
         42,
-        id='limit',
+        id="limit",
         marks=[
             pytest.mark.notimpl(
                 [
@@ -44,7 +44,7 @@ limit = [
 
 no_limit = [
     param(
-        None, id='nolimit', marks=[pytest.mark.notimpl(["dask", "impala", "pyspark"])]
+        None, id="nolimit", marks=[pytest.mark.notimpl(["dask", "impala", "pyspark"])]
     )
 ]
 

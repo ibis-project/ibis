@@ -15,7 +15,7 @@ def table(mockcon):
 
 @pytest.fixture
 def simple_case(table):
-    return table.g.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
+    return table.g.case().when("foo", "bar").when("baz", "qux").else_("default").end()
 
 
 @pytest.fixture
@@ -26,7 +26,7 @@ def search_case(table):
 
 @pytest.fixture
 def tpch_lineitem(mockcon):
-    return mockcon.table('tpch_lineitem')
+    return mockcon.table("tpch_lineitem")
 
 
 def test_isnull_1_0(table, snapshot):
@@ -93,13 +93,13 @@ def test_decimal_fillna_cast_arg(tpch_lineitem, expr_fn, snapshot):
 
 
 def test_identical_to(mockcon, snapshot):
-    t = mockcon.table('functional_alltypes')
-    expr = t.tinyint_col.identical_to(t.double_col).name('tmp')
+    t = mockcon.table("functional_alltypes")
+    expr = t.tinyint_col.identical_to(t.double_col).name("tmp")
     result = ImpalaCompiler.to_sql(expr)
     snapshot.assert_match(result, "out.sql")
 
 
 def test_identical_to_special_case(snapshot):
-    expr = ibis.NA.cast('int64').identical_to(ibis.NA.cast('int64')).name('tmp')
+    expr = ibis.NA.cast("int64").identical_to(ibis.NA.cast("int64")).name("tmp")
     result = ImpalaCompiler.to_sql(expr)
     snapshot.assert_match(result, "out.sql")

@@ -10,23 +10,23 @@ from ibis.backends.conftest import TEST_TABLES
 @pytest.fixture
 def simple_schema():
     return [
-        ('a', 'int8'),
-        ('b', 'int16'),
-        ('c', 'int32'),
-        ('d', 'int64'),
-        ('e', 'float32'),
-        ('f', 'float64'),
-        ('g', 'string'),
-        ('h', 'boolean'),
-        ('i', 'timestamp'),
-        ('j', 'date'),
-        ('k', 'time'),
+        ("a", "int8"),
+        ("b", "int16"),
+        ("c", "int32"),
+        ("d", "int64"),
+        ("e", "float32"),
+        ("f", "float64"),
+        ("g", "string"),
+        ("h", "boolean"),
+        ("i", "timestamp"),
+        ("j", "date"),
+        ("k", "time"),
     ]
 
 
 @pytest.fixture
 def simple_table(simple_schema):
-    return ibis.table(simple_schema, name='table')
+    return ibis.table(simple_schema, name="table")
 
 
 @pytest.fixture

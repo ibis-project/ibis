@@ -12,15 +12,15 @@ import ibis.expr.operations as ops
 import ibis.util
 
 JOIN_TYPES = {
-    ops.LeftJoin: 'left',
-    ops.RightJoin: 'right',
-    ops.InnerJoin: 'inner',
-    ops.OuterJoin: 'outer',
+    ops.LeftJoin: "left",
+    ops.RightJoin: "right",
+    ops.InnerJoin: "inner",
+    ops.OuterJoin: "outer",
 }
 
 
-LEFT_JOIN_SUFFIX = f'_ibis_left_{ibis.util.guid()}'
-RIGHT_JOIN_SUFFIX = f'_ibis_right_{ibis.util.guid()}'
+LEFT_JOIN_SUFFIX = f"_ibis_left_{ibis.util.guid()}"
+RIGHT_JOIN_SUFFIX = f"_ibis_right_{ibis.util.guid()}"
 JOIN_SUFFIXES = LEFT_JOIN_SUFFIX, RIGHT_JOIN_SUFFIX
 ALTERNATE_SUFFIXES = {
     LEFT_JOIN_SUFFIX: RIGHT_JOIN_SUFFIX,
@@ -39,7 +39,7 @@ IBIS_TYPE_TO_PANDAS_TYPE: dict[dt.DataType, type | str] = {
     dt.int32: np.int32,
     dt.int64: np.int64,
     dt.string: str,
-    dt.timestamp: 'datetime64[ns]',
+    dt.timestamp: "datetime64[ns]",
     dt.boolean: np.bool_,
     dt.json: str,
 }

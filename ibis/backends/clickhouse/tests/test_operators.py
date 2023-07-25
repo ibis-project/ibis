@@ -17,24 +17,24 @@ pytest.importorskip("clickhouse_connect")
 
 
 @pytest.mark.parametrize(
-    ('left', 'right', 'type'),
+    ("left", "right", "type"),
     [
-        (L('2017-04-01'), date(2017, 4, 2), dt.date),
-        (date(2017, 4, 2), L('2017-04-01'), dt.date),
+        (L("2017-04-01"), date(2017, 4, 2), dt.date),
+        (date(2017, 4, 2), L("2017-04-01"), dt.date),
         (
-            L('2017-04-01 01:02:33'),
+            L("2017-04-01 01:02:33"),
             datetime(2017, 4, 1, 1, 3, 34),
             dt.timestamp,
         ),
         (
             datetime(2017, 4, 1, 1, 3, 34),
-            L('2017-04-01 01:02:33'),
+            L("2017-04-01 01:02:33"),
             dt.timestamp,
         ),
     ],
 )
 @pytest.mark.parametrize(
-    'op',
+    "op",
     [
         operator.eq,
         operator.ne,
@@ -54,19 +54,19 @@ def test_string_temporal_compare(con, op, left, right, type):
 
 
 @pytest.mark.parametrize(
-    ('op', 'expected'),
+    ("op", "expected"),
     [
-        (lambda a, b: a + b, 'int_col + tinyint_col'),
-        (lambda a, b: a - b, 'int_col - tinyint_col'),
-        (lambda a, b: a * b, 'int_col * tinyint_col'),
-        (lambda a, b: a / b, 'int_col / tinyint_col'),
-        (lambda a, b: a**b, 'pow(int_col, tinyint_col)'),
-        (lambda a, b: a < b, 'int_col < tinyint_col'),
-        (lambda a, b: a <= b, 'int_col <= tinyint_col'),
-        (lambda a, b: a > b, 'int_col > tinyint_col'),
-        (lambda a, b: a >= b, 'int_col >= tinyint_col'),
-        (lambda a, b: a == b, 'int_col = tinyint_col'),
-        (lambda a, b: a != b, 'int_col != tinyint_col'),
+        (lambda a, b: a + b, "int_col + tinyint_col"),
+        (lambda a, b: a - b, "int_col - tinyint_col"),
+        (lambda a, b: a * b, "int_col * tinyint_col"),
+        (lambda a, b: a / b, "int_col / tinyint_col"),
+        (lambda a, b: a**b, "pow(int_col, tinyint_col)"),
+        (lambda a, b: a < b, "int_col < tinyint_col"),
+        (lambda a, b: a <= b, "int_col <= tinyint_col"),
+        (lambda a, b: a > b, "int_col > tinyint_col"),
+        (lambda a, b: a >= b, "int_col >= tinyint_col"),
+        (lambda a, b: a == b, "int_col = tinyint_col"),
+        (lambda a, b: a != b, "int_col != tinyint_col"),
     ],
 )
 def test_binary_infix_operators(con, alltypes, translate, op, expected):
@@ -83,16 +83,16 @@ def test_binary_infix_operators(con, alltypes, translate, op, expected):
 
 
 @pytest.mark.parametrize(
-    ('op', 'expected'),
+    ("op", "expected"),
     [
         (
             lambda a, b, c: (a + b) + c,
-            '(int_col + tinyint_col) + double_col',
+            "(int_col + tinyint_col) + double_col",
         ),
-        (lambda a, _, c: a.log() + c, 'log(int_col) + double_col'),
+        (lambda a, _, c: a.log() + c, "log(int_col) + double_col"),
         (
             lambda a, b, c: (b + (-(a + c))),
-            'tinyint_col + (-(int_col + double_col))',
+            "tinyint_col + (-(int_col + double_col))",
         ),
     ],
 )
@@ -108,45 +108,45 @@ def test_binary_infix_parenthesization(con, alltypes, translate, op, expected):
 
 def test_between(con, alltypes, translate):
     expr = alltypes.int_col.between(0, 10)
-    assert translate(expr.op()) == 'int_col BETWEEN 0 AND 10'
+    assert translate(expr.op()) == "int_col BETWEEN 0 AND 10"
     assert len(con.execute(expr))
 
 
 @pytest.mark.parametrize(
-    ('left', 'right'),
+    ("left", "right"),
     [
-        (L('2017-03-31').cast(dt.date), date(2017, 4, 2)),
-        (date(2017, 3, 31), L('2017-04-02').cast(dt.date)),
+        (L("2017-03-31").cast(dt.date), date(2017, 4, 2)),
+        (date(2017, 3, 31), L("2017-04-02").cast(dt.date)),
     ],
 )
 def test_string_temporal_compare_between_dates(con, left, right):
-    expr = ibis.timestamp('2017-04-01').cast(dt.date).between(left, right)
+    expr = ibis.timestamp("2017-04-01").cast(dt.date).between(left, right)
     result = con.execute(expr)
     assert result
 
 
 @pytest.mark.parametrize(
-    ('left', 'right'),
+    ("left", "right"),
     [
         (
-            L('2017-03-31 00:02:33').cast(dt.timestamp),
+            L("2017-03-31 00:02:33").cast(dt.timestamp),
             datetime(2017, 4, 1, 1, 3, 34),
         ),
         (
             datetime(2017, 3, 31, 0, 2, 33),
-            L('2017-04-01 01:03:34').cast(dt.timestamp),
+            L("2017-04-01 01:03:34").cast(dt.timestamp),
         ),
     ],
 )
 def test_string_temporal_compare_between_datetimes(con, left, right):
-    expr = ibis.timestamp('2017-04-01 00:02:34').between(left, right)
+    expr = ibis.timestamp("2017-04-01 00:02:34").between(left, right)
     result = con.execute(expr)
     assert result
 
 
-@pytest.mark.parametrize('container', [list, tuple, set])
+@pytest.mark.parametrize("container", [list, tuple, set])
 def test_field_in_literals(con, alltypes, translate, container):
-    values = {'foo', 'bar', 'baz'}
+    values = {"foo", "bar", "baz"}
     foobar = container(values)
     expected = tuple(values)
 
@@ -174,16 +174,16 @@ def test_negate(con, alltypes, translate, column, operator):
 
 
 @pytest.mark.parametrize(
-    'field',
+    "field",
     [
-        'tinyint_col',
-        'smallint_col',
-        'int_col',
-        'bigint_col',
-        'float_col',
-        'double_col',
-        'year',
-        'month',
+        "tinyint_col",
+        "smallint_col",
+        "int_col",
+        "bigint_col",
+        "float_col",
+        "double_col",
+        "year",
+        "month",
     ],
 )
 def test_negate_non_boolean(alltypes, field, df):
@@ -200,16 +200,16 @@ def test_negate_literal(con):
 
 
 @pytest.mark.parametrize(
-    ('op', 'pandas_op'),
+    ("op", "pandas_op"),
     [
         (
             lambda t: (t.double_col > 20).ifelse(10, -20),
-            lambda df: pd.Series(np.where(df.double_col > 20, 10, -20), dtype='int8'),
+            lambda df: pd.Series(np.where(df.double_col > 20, 10, -20), dtype="int8"),
         ),
         (
             lambda t: (t.double_col > 20).ifelse(10, -20).abs(),
             lambda df: (
-                pd.Series(np.where(df.double_col > 20, 10, -20)).abs().astype('int8')
+                pd.Series(np.where(df.double_col > 20, 10, -20)).abs().astype("int8")
             ),
         ),
     ],
@@ -226,7 +226,7 @@ def test_ifelse(alltypes, df, op, pandas_op, translate):
 def test_simple_case(con, alltypes, translate):
     t = alltypes
     expr = (
-        t.string_col.case().when('foo', 'bar').when('baz', 'qux').else_('default').end()
+        t.string_col.case().when("foo", "bar").when("baz", "qux").else_("default").end()
     )
 
     expected = """CASE string_col WHEN 'foo' THEN 'bar' WHEN 'baz' THEN 'qux' ELSE 'default' END"""
@@ -250,16 +250,16 @@ def test_search_case(con, alltypes, translate):
 
 
 @pytest.mark.parametrize(
-    'arr',
+    "arr",
     [
         [1, 2, 3],
-        ['qw', 'wq', '1'],
+        ["qw", "wq", "1"],
         [1.2, 0.3, 0.4],
         [[1], [1, 2], [1, 2, 3]],
     ],
 )
 @pytest.mark.parametrize(
-    'ids',
+    "ids",
     [
         lambda arr: range(len(arr)),
         lambda arr: range(-len(arr), 0),
@@ -274,7 +274,7 @@ def test_array_index(con, arr, ids):
 
 
 @pytest.mark.parametrize(
-    'arrays',
+    "arrays",
     [
         ([1], [2]),
         ([1], [1, 2]),
@@ -293,7 +293,7 @@ def test_array_concat(con, arrays):
 
 
 @pytest.mark.parametrize(
-    ('arr', 'times'),
+    ("arr", "times"),
     [([1], 1), ([1], 2), ([1], 3), ([1, 2], 1), ([1, 2], 2), ([1, 2], 3)],
 )
 def test_array_repeat(con, arr, times):
@@ -302,9 +302,9 @@ def test_array_repeat(con, arr, times):
     assert con.execute(expr) == expected
 
 
-@pytest.mark.parametrize('arr', [[], [1], [1, 2, 3, 4, 5, 6]])
-@pytest.mark.parametrize('start', [None, 0, 1, 2, -1, -3])
-@pytest.mark.parametrize('stop', [None, 0, 1, 3, -2, -4])
+@pytest.mark.parametrize("arr", [[], [1], [1, 2, 3, 4, 5, 6]])
+@pytest.mark.parametrize("start", [None, 0, 1, 2, -1, -3])
+@pytest.mark.parametrize("stop", [None, 0, 1, 3, -2, -4])
 def test_array_slice(con, arr, start, stop):
     expr = L(arr, type="array<int8>")
     assert con.execute(expr[start:stop]) == arr[start:stop]

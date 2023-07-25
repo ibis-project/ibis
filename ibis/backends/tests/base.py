@@ -72,8 +72,8 @@ class BackendTest(abc.ABC):
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True
     supports_divide_by_zero = False
-    returned_timestamp_unit = 'us'
-    supported_to_timestamp_units = {'s', 'ms', 'us'}
+    returned_timestamp_unit = "us"
+    supported_to_timestamp_units = {"s", "ms", "us"}
     supports_floating_modulus = True
     native_bool = True
     supports_structs = True
@@ -109,7 +109,7 @@ class BackendTest(abc.ABC):
         self.script_dir = data_dir.parent / "schema"
 
     def __str__(self):
-        return f'<BackendTest {self.name()}>'
+        return f"<BackendTest {self.name()}>"
 
     @classmethod
     def name(cls) -> str:
@@ -174,8 +174,8 @@ class BackendTest(abc.ABC):
     def assert_series_equal(
         cls, left: pd.Series, right: pd.Series, *args: Any, **kwargs: Any
     ) -> None:
-        kwargs.setdefault('check_dtype', cls.check_dtype)
-        kwargs.setdefault('check_names', cls.check_names)
+        kwargs.setdefault("check_dtype", cls.check_dtype)
+        kwargs.setdefault("check_names", cls.check_names)
         tm.assert_series_equal(left, right, *args, **kwargs)
 
     @classmethod
@@ -184,17 +184,17 @@ class BackendTest(abc.ABC):
     ) -> None:
         left = left.reset_index(drop=True)
         right = right.reset_index(drop=True)
-        kwargs.setdefault('check_dtype', cls.check_dtype)
+        kwargs.setdefault("check_dtype", cls.check_dtype)
         tm.assert_frame_equal(left, right, *args, **kwargs)
 
     @staticmethod
-    def default_series_rename(series: pd.Series, name: str = 'tmp') -> pd.Series:
+    def default_series_rename(series: pd.Series, name: str = "tmp") -> pd.Series:
         return series.rename(name)
 
     @property
     def functional_alltypes(self) -> ir.Table:
         t = self.connection.table(
-            self.default_identifier_case_fn('functional_alltypes')
+            self.default_identifier_case_fn("functional_alltypes")
         )
         if not self.native_bool:
             return t.mutate(bool_col=t.bool_col == 1)
@@ -202,19 +202,19 @@ class BackendTest(abc.ABC):
 
     @property
     def batting(self) -> ir.Table:
-        return self.connection.table(self.default_identifier_case_fn('batting'))
+        return self.connection.table(self.default_identifier_case_fn("batting"))
 
     @property
     def awards_players(self) -> ir.Table:
-        return self.connection.table(self.default_identifier_case_fn('awards_players'))
+        return self.connection.table(self.default_identifier_case_fn("awards_players"))
 
     @property
     def diamonds(self) -> ir.Table:
-        return self.connection.table(self.default_identifier_case_fn('diamonds'))
+        return self.connection.table(self.default_identifier_case_fn("diamonds"))
 
     @property
     def geo(self) -> ir.Table | None:
-        name = self.default_identifier_case_fn('geo')
+        name = self.default_identifier_case_fn("geo")
         if name in self.connection.list_tables():
             return self.connection.table(name)
         return None

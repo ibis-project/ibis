@@ -100,7 +100,7 @@ def _post_process_order_by(
     if len(reordered_levels) > 1:
         series = series.reorder_levels(reordered_levels)
 
-    series = series.iloc[index.argsort(kind='mergesort')]
+    series = series.iloc[index.argsort(kind="mergesort")]
     return series
 
 
@@ -126,7 +126,7 @@ def _post_process_group_by_order_by(
     return series
 
 
-get_aggcontext = Dispatcher('get_aggcontext')
+get_aggcontext = Dispatcher("get_aggcontext")
 
 
 @get_aggcontext.register(object)
@@ -227,7 +227,7 @@ def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext 
         return data
     assert isinstance(
         data, (pd.Series, pd.DataFrame)
-    ), 'window computed columns is not a pd.Series nor a pd.DataFrame'
+    ), "window computed columns is not a pd.Series nor a pd.DataFrame"
 
     # reset multiindex, convert Series into a DataFrame
     df = data.reset_index()
@@ -395,7 +395,7 @@ def execute_window_op(
     )
     assert len(data) == len(
         result
-    ), 'input data source and computed column do not have the same length'
+    ), "input data source and computed column do not have the same length"
 
     # trim data to original time context
     result = trim_window_result(result, timecontext)
@@ -426,17 +426,17 @@ def execute_series_cumulative_mean(op, data, **kwargs):
 def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
     assert aggcontext is not None, f"aggcontext is none in {type(op)} operation"
     typename = type(op).__name__
-    match = re.match(r'^Cumulative([A-Za-z_][A-Za-z0-9_]*)$', typename)
+    match = re.match(r"^Cumulative([A-Za-z_][A-Za-z0-9_]*)$", typename)
     if match is None:
-        raise ValueError(f'Unknown operation {typename}')
+        raise ValueError(f"Unknown operation {typename}")
 
     try:
         (operation_name,) = match.groups()
     except ValueError:
-        raise ValueError(f'More than one operation name found in {typename} class')
+        raise ValueError(f"More than one operation name found in {typename} class")
 
     dtype = op.to_expr().type().to_pandas()
-    assert isinstance(aggcontext, agg_ctx.Cumulative), f'Got {type()}'
+    assert isinstance(aggcontext, agg_ctx.Cumulative), f"Got {type()}"
     result = aggcontext.agg(data, operation_name.lower())
 
     # all expanding window operations are required to be int64 or float64, so
@@ -485,7 +485,7 @@ def execute_series_lead_lag_timedelta(
 
     # get the DataFrame from the parent object, handling the DataFrameGroupBy
     # case
-    parent_df = getattr(parent, 'obj', parent)
+    parent_df = getattr(parent, "obj", parent)
 
     # index our parent df by grouping and ordering keys
     indexed_original_df = parent_df.set_index(group_by + order_by)
@@ -499,7 +499,7 @@ def execute_series_lead_lag_timedelta(
     adjusted_indexed_parent = adjusted_parent_df.set_index(group_by + order_by)
 
     # get the column we care about
-    result = adjusted_indexed_parent[getattr(data, 'obj', data).name]
+    result = adjusted_indexed_parent[getattr(data, "obj", data).name]
 
     # reindex the shifted data by the original frame's index
     result = result.reindex(indexed_original_df.index)
@@ -535,13 +535,13 @@ def execute_series_group_by_last_value(op, data, aggcontext=None, **kwargs):
 @execute_node.register(ops.MinRank, (pd.Series, SeriesGroupBy))
 def execute_series_min_rank(op, data, **kwargs):
     # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='min', ascending=True).astype('int64') - 1
+    return data.rank(method="min", ascending=True).astype("int64") - 1
 
 
 @execute_node.register(ops.DenseRank, (pd.Series, SeriesGroupBy))
 def execute_series_dense_rank(op, data, **kwargs):
     # TODO(phillipc): Handle ORDER BY
-    return data.rank(method='dense', ascending=True).astype('int64') - 1
+    return data.rank(method="dense", ascending=True).astype("int64") - 1
 
 
 @execute_node.register(ops.PercentRank, SeriesGroupBy)
@@ -561,4 +561,4 @@ def execute_series_percent_rank(op, data, **kwargs):
 
 @execute_node.register(ops.CumeDist, (pd.Series, SeriesGroupBy))
 def execute_series_group_by_cume_dist(op, data, **kwargs):
-    return data.rank(method='min', ascending=True, pct=True)
+    return data.rank(method="min", ascending=True, pct=True)

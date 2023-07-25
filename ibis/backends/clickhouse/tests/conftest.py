@@ -18,18 +18,18 @@ from ibis.backends.tests.base import (
 if TYPE_CHECKING:
     from pathlib import Path
 
-CLICKHOUSE_HOST = os.environ.get('IBIS_TEST_CLICKHOUSE_HOST', 'localhost')
-CLICKHOUSE_PORT = int(os.environ.get('IBIS_TEST_CLICKHOUSE_PORT', 8123))
-CLICKHOUSE_USER = os.environ.get('IBIS_TEST_CLICKHOUSE_USER', 'default')
-CLICKHOUSE_PASS = os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')
-IBIS_TEST_CLICKHOUSE_DB = os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+CLICKHOUSE_HOST = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
+CLICKHOUSE_PORT = int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123))
+CLICKHOUSE_USER = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")
+CLICKHOUSE_PASS = os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")
+IBIS_TEST_CLICKHOUSE_DB = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing")
 
 
 class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
     check_dtype = False
     supports_window_operations = False
-    returned_timestamp_unit = 's'
-    supported_to_timestamp_units = {'s'}
+    returned_timestamp_unit = "s"
+    supported_to_timestamp_units = {"s"}
     supports_floating_modulus = False
     supports_json = False
     data_volume = "/var/lib/clickhouse/user_files/ibis"
@@ -88,7 +88,7 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
     def greatest(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
         if len(args) > 2:
             raise NotImplementedError(
-                'Clickhouse does not support more than 2 arguments to greatest'
+                "Clickhouse does not support more than 2 arguments to greatest"
             )
         return f(*args)
 
@@ -96,27 +96,27 @@ class TestConf(UnorderedComparator, ServiceBackendTest, RoundHalfToEven):
     def least(f: Callable[..., ir.Value], *args: ir.Value) -> ir.Value:
         if len(args) > 2:
             raise NotImplementedError(
-                'Clickhouse does not support more than 2 arguments to least'
+                "Clickhouse does not support more than 2 arguments to least"
             )
         return f(*args)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def db(con):
     return con.database()
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def alltypes(con):
     return con.tables.functional_alltypes
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def df(alltypes):
     return alltypes.execute()
 

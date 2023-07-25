@@ -44,7 +44,7 @@ class ImpalaDatabase(Database):
 class ImpalaConnection:
     """Database connection wrapper."""
 
-    def __init__(self, pool_size=8, database='default', **params):
+    def __init__(self, pool_size=8, database="default", **params):
         self.params = params
         self.database = database
         self.options = {}
@@ -85,7 +85,7 @@ class ImpalaConnection:
             cursor.execute(query)
         except Exception:
             cursor.close()
-            util.log(f'Exception caused by {query}: {traceback.format_exc()}')
+            util.log(f"Exception caused by {query}: {traceback.format_exc()}")
             raise
 
         return cursor
@@ -103,7 +103,7 @@ class ImpalaConnection:
         con = impyla.connect(database=self.database, **params)
 
         # make sure the connection works
-        cursor = con.cursor(user=params.get('user'), convert_types=True)
+        cursor = con.cursor(user=params.get("user"), convert_types=True)
         cursor.ping()
 
         wrapper = ImpalaCursor(cursor, con, self.database, self.options.copy())
@@ -131,8 +131,8 @@ class ImpalaCursor:
         except HS2Error as e:
             # connection was closed elsewhere
             already_closed_messages = [
-                'invalid query handle',
-                'invalid session',
+                "invalid query handle",
+                "invalid session",
             ]
             for message in already_closed_messages:
                 if message in e.args[0].lower():
@@ -142,7 +142,7 @@ class ImpalaCursor:
 
     def set_options(self):
         for k, v in self.options.items():
-            query = f'SET {k} = {v!r}'
+            query = f"SET {k} = {v!r}"
             self._cursor.execute(query)
 
     @property
@@ -161,7 +161,7 @@ class ImpalaCursor:
         try:
             self._cursor._wait_to_finish()
         except KeyboardInterrupt:
-            util.log('Canceling query')
+            util.log("Canceling query")
             self.cancel()
             raise
 
@@ -419,7 +419,7 @@ class ImpalaTable(ir.Table):
 
     def set_external(self, is_external=True):
         """Toggle the `EXTERNAL` table property."""
-        self.alter(tbl_properties={'EXTERNAL': is_external})
+        self.alter(tbl_properties={"EXTERNAL": is_external})
 
     def alter_partition(
         self,
@@ -521,10 +521,10 @@ class AggregateFunction:
 
 def _validate_compatible(from_schema, to_schema):
     if set(from_schema.names) != set(to_schema.names):
-        raise com.IbisInputError('Schemas have different names')
+        raise com.IbisInputError("Schemas have different names")
 
     for name in from_schema:
         lt = from_schema[name]
         rt = to_schema[name]
         if not lt.castable(rt):
-            raise com.IbisInputError(f'Cannot safely cast {lt!r} to {rt!r}')
+            raise com.IbisInputError(f"Cannot safely cast {lt!r} to {rt!r}")

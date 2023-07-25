@@ -38,9 +38,9 @@ class OracleType(AlchemyType):
     @classmethod
     def from_ibis(cls, dtype):
         if isinstance(dtype, dt.Float64):
-            return sat.Float(precision=53).with_variant(oracle.FLOAT(14), 'oracle')
+            return sat.Float(precision=53).with_variant(oracle.FLOAT(14), "oracle")
         elif isinstance(dtype, dt.Float32):
-            return sat.Float(precision=23).with_variant(oracle.FLOAT(7), 'oracle')
+            return sat.Float(precision=23).with_variant(oracle.FLOAT(7), "oracle")
         else:
             return super().from_ibis(dtype)
 

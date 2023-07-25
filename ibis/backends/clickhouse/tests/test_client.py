@@ -17,10 +17,10 @@ cc = pytest.importorskip("clickhouse_connect")
 
 
 def test_run_sql(con):
-    query = 'SELECT * FROM ibis_testing.functional_alltypes'
+    query = "SELECT * FROM ibis_testing.functional_alltypes"
     table = con.sql(query)
 
-    fa = con.table('functional_alltypes')
+    fa = con.table("functional_alltypes")
     assert isinstance(table, ir.Table)
     assert table.schema() == fa.schema()
 
@@ -30,8 +30,8 @@ def test_run_sql(con):
 
 
 def test_get_schema(con):
-    t = con.table('functional_alltypes')
-    schema = con.get_schema('functional_alltypes')
+    t = con.table("functional_alltypes")
+    schema = con.get_schema("functional_alltypes")
     assert t.schema() == schema
 
 
@@ -57,7 +57,7 @@ def test_limit_overrides_expr(con, alltypes):
 
 
 def test_limit_equals_none_no_limit(alltypes):
-    with config.option_context('sql.default_limit', 10):
+    with config.option_context("sql.default_limit", 10):
         result = alltypes.execute(limit=None)
         assert len(result) > 10
 
@@ -68,11 +68,11 @@ def test_verbose_log_queries(con):
     def logger(x):
         queries.append(x)
 
-    with config.option_context('verbose', True):
-        with config.option_context('verbose_log', logger):
-            con.table('functional_alltypes')
+    with config.option_context("verbose", True):
+        with config.option_context("verbose_log", logger):
+            con.table("functional_alltypes")
 
-    expected = 'DESCRIBE ibis_testing.functional_alltypes'
+    expected = "DESCRIBE ibis_testing.functional_alltypes"
 
     assert len(queries) == 1
     assert queries[0] == expected
@@ -80,7 +80,7 @@ def test_verbose_log_queries(con):
 
 def test_sql_query_limits(alltypes):
     table = alltypes
-    with config.option_context('sql.default_limit', 100000):
+    with config.option_context("sql.default_limit", 100000):
         # table has 25 rows
         assert len(table.execute()) == 7300
         # comply with limit arg for Table
@@ -91,7 +91,7 @@ def test_sql_query_limits(alltypes):
         assert table.count().execute() == 7300
         # non-Table doesn't observe limit arg
         assert table.count().execute(limit=10) == 7300
-    with config.option_context('sql.default_limit', 20):
+    with config.option_context("sql.default_limit", 20):
         # Table observes default limit setting
         assert len(table.execute()) == 20
         # explicit limit= overrides default
@@ -102,7 +102,7 @@ def test_sql_query_limits(alltypes):
         # non-Table doesn't observe limit arg
         assert table.count().execute(limit=10) == 7300
     # eliminating default_limit doesn't break anything
-    with config.option_context('sql.default_limit', None):
+    with config.option_context("sql.default_limit", None):
         assert len(table.execute()) == 7300
         assert len(table.execute(limit=15)) == 15
         assert len(table.execute(limit=10000)) == 7300
@@ -113,7 +113,7 @@ def test_sql_query_limits(alltypes):
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
-    expr = t[[(t.double_col * 2).name('double(fun)')]]['double(fun)'].sum()
+    expr = t[[(t.double_col * 2).name("double(fun)")]]["double(fun)"].sum()
     expr.execute()
 
 
@@ -137,8 +137,8 @@ def test_insert(temporary_alltypes, df):
 
 def test_insert_with_less_columns(temporary_alltypes, df):
     temporary = temporary_alltypes
-    records = df.loc[:10, ['string_col']].copy()
-    records['date_col'] = None
+    records = df.loc[:10, ["string_col"]].copy()
+    records["date_col"] = None
 
     with pytest.raises(cc.driver.exceptions.ProgrammingError):
         temporary.insert(records)
@@ -147,7 +147,7 @@ def test_insert_with_less_columns(temporary_alltypes, df):
 def test_insert_with_more_columns(temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df[:10].copy()
-    records['non_existing_column'] = 'raise on me'
+    records["non_existing_column"] = "raise on me"
 
     with pytest.raises(cc.driver.exceptions.ProgrammingError):
         temporary.insert(records)

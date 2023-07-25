@@ -14,7 +14,7 @@ def table(mockcon):
 
 @pytest.mark.parametrize("method_name", ["isin", "notin"])
 def test_field_in_literals(table, method_name, snapshot):
-    values = ['foo', 'bar', 'baz']
+    values = ["foo", "bar", "baz"]
     method = getattr(table.g, method_name)
     expr = method(values)
     result = translate(expr)
@@ -32,7 +32,7 @@ def test_literal_in_fields(table, method_name, snapshot):
 
 @pytest.mark.parametrize("method_name", ["isin", "notin"])
 def test_isin_notin_in_select(table, method_name, snapshot):
-    values = ['foo', 'bar']
+    values = ["foo", "bar"]
     method = getattr(table.g, method_name)
     filtered = table[method(values)]
     result = ImpalaCompiler.to_sql(filtered)

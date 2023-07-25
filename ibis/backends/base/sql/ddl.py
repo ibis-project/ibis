@@ -10,7 +10,7 @@ from ibis.backends.base.sql.compiler import DDL, DML
 from ibis.backends.base.sql.registry import quote_identifier, type_to_sql_string
 
 fully_qualified_re = re.compile(r"(.*)\.(?:`(.*)`|(.*))")
-_format_aliases = {'TEXT': 'TEXTFILE'}
+_format_aliases = {"TEXT": "TEXTFILE"}
 
 
 def _sanitize_format(format):
@@ -18,8 +18,8 @@ def _sanitize_format(format):
         return None
     format = format.upper()
     format = _format_aliases.get(format, format)
-    if format not in ('PARQUET', 'AVRO', 'TEXTFILE'):
-        raise ValueError(f'Invalid format: {format!r}')
+    if format not in ("PARQUET", "AVRO", "TEXTFILE"):
+        raise ValueError(f"Invalid format: {format!r}")
 
     return format
 
@@ -38,11 +38,11 @@ def format_schema(schema):
     elements = [
         _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
     ]
-    return '({})'.format(',\n '.join(elements))
+    return "({})".format(",\n ".join(elements))
 
 
 def _format_schema_element(name, t):
-    return f'{quote_identifier(name, force=True)} {type_to_sql_string(t)}'
+    return f"{quote_identifier(name, force=True)} {type_to_sql_string(t)}"
 
 
 def _format_partition_kv(k, v, type):
@@ -51,7 +51,7 @@ def _format_partition_kv(k, v, type):
     else:
         value_formatted = str(v)
 
-    return f'{k}={value_formatted}'
+    return f"{k}={value_formatted}"
 
 
 def format_partition(partition, partition_schema):
@@ -71,7 +71,7 @@ def format_partition(partition, partition_schema):
             tok = _format_partition_kv(name, value, partition_schema[name])
             tokens.append(tok)
 
-    return 'PARTITION ({})'.format(', '.join(tokens))
+    return "PARTITION ({})".format(", ".join(tokens))
 
 
 def _format_properties(props):
@@ -79,17 +79,17 @@ def _format_properties(props):
     for k, v in sorted(props.items()):
         tokens.append(f"  '{k}'='{v}'")
 
-    return '(\n{}\n)'.format(',\n'.join(tokens))
+    return "(\n{}\n)".format(",\n".join(tokens))
 
 
 def format_tblproperties(props):
     formatted_props = _format_properties(props)
-    return f'TBLPROPERTIES {formatted_props}'
+    return f"TBLPROPERTIES {formatted_props}"
 
 
 def _serdeproperties(props):
     formatted_props = _format_properties(props)
-    return f'SERDEPROPERTIES {formatted_props}'
+    return f"SERDEPROPERTIES {formatted_props}"
 
 
 class _BaseQualifiedSQLStatement:
@@ -111,7 +111,7 @@ class _BaseDML(DML, _BaseQualifiedSQLStatement):
 
 class _CreateDDL(BaseDDL):
     def _if_exists(self):
-        return 'IF NOT EXISTS ' if self.can_exist else ''
+        return "IF NOT EXISTS " if self.can_exist else ""
 
 
 class CreateTable(_CreateDDL):
@@ -120,7 +120,7 @@ class CreateTable(_CreateDDL):
         table_name,
         database=None,
         external=False,
-        format='parquet',
+        format="parquet",
         can_exist=False,
         partition=None,
         path=None,
@@ -138,20 +138,20 @@ class CreateTable(_CreateDDL):
     @property
     def _prefix(self):
         if self.external:
-            return 'CREATE EXTERNAL TABLE'
+            return "CREATE EXTERNAL TABLE"
         else:
-            return 'CREATE TABLE'
+            return "CREATE TABLE"
 
     def _create_line(self):
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return f'{self._prefix} {self._if_exists()}{scoped_name}'
+        return f"{self._prefix} {self._if_exists()}{scoped_name}"
 
     def _location(self):
         return f"LOCATION '{self.path}'" if self.path else None
 
     def _storage(self):
         # By the time we're here, we have a valid format
-        return f'STORED AS {self.format}'
+        return f"STORED AS {self.format}"
 
     @property
     def pieces(self):
@@ -159,7 +159,7 @@ class CreateTable(_CreateDDL):
         yield from filter(None, self._pieces)
 
     def compile(self):
-        return '\n'.join(self.pieces)
+        return "\n".join(self.pieces)
 
 
 class CTAS(CreateTable):
@@ -171,7 +171,7 @@ class CTAS(CreateTable):
         select,
         database=None,
         external=False,
-        format='parquet',
+        format="parquet",
         can_exist=False,
         path=None,
         partition=None,
@@ -192,13 +192,13 @@ class CTAS(CreateTable):
         yield self._partitioned_by()
         yield self._storage()
         yield self._location()
-        yield 'AS'
+        yield "AS"
         yield self.select.compile()
 
     def _partitioned_by(self):
         if self.partition is not None:
-            return 'PARTITIONED BY ({})'.format(
-                ', '.join(quote_identifier(expr.get_name()) for expr in self.partition)
+            return "PARTITIONED BY ({})".format(
+                ", ".join(quote_identifier(expr.get_name()) for expr in self.partition)
             )
         return None
 
@@ -211,12 +211,12 @@ class CreateView(CTAS):
 
     @property
     def _pieces(self):
-        yield 'AS'
+        yield "AS"
         yield self.select.compile()
 
     @property
     def _prefix(self):
-        return 'CREATE VIEW'
+        return "CREATE VIEW"
 
 
 class CreateTableWithSchema(CreateTable):
@@ -243,12 +243,12 @@ class CreateTableWithSchema(CreateTable):
             main_schema = sch.Schema(fields)
 
             yield format_schema(main_schema)
-            yield f'PARTITIONED BY {format_schema(part_schema)}'
+            yield f"PARTITIONED BY {format_schema(part_schema)}"
         else:
             yield format_schema(self.schema)
 
         if self.table_format is not None:
-            yield '\n'.join(self.table_format.to_ddl())
+            yield "\n".join(self.table_format.to_ddl())
         else:
             yield self._storage()
 
@@ -264,8 +264,8 @@ class CreateDatabase(_CreateDDL):
     def compile(self):
         name = quote_identifier(self.name)
 
-        create_decl = 'CREATE DATABASE'
-        create_line = f'{create_decl} {self._if_exists()}{name}'
+        create_decl = "CREATE DATABASE"
+        create_line = f"{create_decl} {self._if_exists()}{name}"
         if self.path is not None:
             create_line += f"\nLOCATION '{self.path}'"
 
@@ -277,13 +277,13 @@ class DropObject(BaseDDL):
         self.must_exist = must_exist
 
     def compile(self):
-        if_exists = '' if self.must_exist else 'IF EXISTS '
+        if_exists = "" if self.must_exist else "IF EXISTS "
         object_name = self._object_name()
-        return f'DROP {self._object_type} {if_exists}{object_name}'
+        return f"DROP {self._object_type} {if_exists}{object_name}"
 
 
 class DropDatabase(DropObject):
-    _object_type = 'DATABASE'
+    _object_type = "DATABASE"
 
     def __init__(self, name, must_exist=True):
         super().__init__(must_exist=must_exist)
@@ -294,7 +294,7 @@ class DropDatabase(DropObject):
 
 
 class DropTable(DropObject):
-    _object_type = 'TABLE'
+    _object_type = "TABLE"
 
     def __init__(self, table_name, database=None, must_exist=True):
         super().__init__(must_exist=must_exist)
@@ -306,11 +306,11 @@ class DropTable(DropObject):
 
 
 class DropView(DropTable):
-    _object_type = 'VIEW'
+    _object_type = "VIEW"
 
 
 class TruncateTable(BaseDDL):
-    _object_type = 'TABLE'
+    _object_type = "TABLE"
 
     def __init__(self, table_name, database=None):
         self.table_name = table_name
@@ -318,7 +318,7 @@ class TruncateTable(BaseDDL):
 
     def compile(self):
         name = self._get_scoped_name(self.table_name, self.database)
-        return f'TRUNCATE TABLE {name}'
+        return f"TRUNCATE TABLE {name}"
 
 
 class InsertSelect(_BaseDML):
@@ -342,19 +342,19 @@ class InsertSelect(_BaseDML):
 
     def compile(self):
         if self.overwrite:
-            cmd = 'INSERT OVERWRITE'
+            cmd = "INSERT OVERWRITE"
         else:
-            cmd = 'INSERT INTO'
+            cmd = "INSERT INTO"
 
         if self.partition is not None:
             part = format_partition(self.partition, self.partition_schema)
-            partition = f' {part} '
+            partition = f" {part} "
         else:
-            partition = ''
+            partition = ""
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return f'{cmd} {scoped_name}{partition}\n{select_query}'
+        return f"{cmd} {scoped_name}{partition}\n{select_query}"
 
 
 class AlterTable(BaseDDL):
@@ -373,9 +373,9 @@ class AlterTable(BaseDDL):
         self.serde_properties = serde_properties
 
     def _wrap_command(self, cmd):
-        return f'ALTER TABLE {cmd}'
+        return f"ALTER TABLE {cmd}"
 
-    def _format_properties(self, prefix=''):
+    def _format_properties(self, prefix=""):
         tokens = []
 
         if self.location is not None:
@@ -391,13 +391,13 @@ class AlterTable(BaseDDL):
             tokens.append(_serdeproperties(self.serde_properties))
 
         if len(tokens) > 0:
-            return '\n{}{}'.format(prefix, '\n'.join(tokens))
+            return "\n{}{}".format(prefix, "\n".join(tokens))
         else:
-            return ''
+            return ""
 
     def compile(self):
         props = self._format_properties()
-        action = f'{self.table} SET {props}'
+        action = f"{self.table} SET {props}"
         return self._wrap_command(action)
 
 
@@ -414,15 +414,15 @@ class DropFunction(DropObject):
         return self.name
 
     def compile(self):
-        tokens = ['DROP']
+        tokens = ["DROP"]
         if self.aggregate:
-            tokens.append('AGGREGATE')
-        tokens.append('FUNCTION')
+            tokens.append("AGGREGATE")
+        tokens.append("FUNCTION")
         if not self.must_exist:
-            tokens.append('IF EXISTS')
+            tokens.append("IF EXISTS")
 
         tokens.append(self._impala_signature())
-        return ' '.join(tokens)
+        return " ".join(tokens)
 
 
 class RenameTable(AlterTable):
@@ -446,24 +446,24 @@ class RenameTable(AlterTable):
 
 
 __all__ = (
-    'fully_qualified_re',
-    'is_fully_qualified',
-    'format_schema',
-    'format_partition',
-    'format_tblproperties',
-    'BaseDDL',
-    'CreateTable',
-    'CTAS',
-    'CreateView',
-    'CreateTableWithSchema',
-    'CreateDatabase',
-    'DropObject',
-    'DropDatabase',
-    'DropTable',
-    'DropView',
-    'TruncateTable',
-    'InsertSelect',
-    'AlterTable',
-    'DropFunction',
-    'RenameTable',
+    "fully_qualified_re",
+    "is_fully_qualified",
+    "format_schema",
+    "format_partition",
+    "format_tblproperties",
+    "BaseDDL",
+    "CreateTable",
+    "CTAS",
+    "CreateView",
+    "CreateTableWithSchema",
+    "CreateDatabase",
+    "DropObject",
+    "DropDatabase",
+    "DropTable",
+    "DropView",
+    "TruncateTable",
+    "InsertSelect",
+    "AlterTable",
+    "DropFunction",
+    "RenameTable",
 )

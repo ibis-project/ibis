@@ -76,7 +76,7 @@ from ibis.backends.pandas.dispatcher import TwoLevelDispatcher
 from ibis.config import options
 from ibis.expr import types as ir
 
-_logger = logging.getLogger('ibis.backends.pandas.trace')
+_logger = logging.getLogger("ibis.backends.pandas.trace")
 
 # A list of funcs that is traced
 _trace_funcs = set()
@@ -88,7 +88,7 @@ def enable():
         # pandas options haven't been registered yet - force module __getattr__
         ibis.pandas  # noqa: B018
     options.pandas.enable_trace = True
-    logging.getLogger('ibis.backends.pandas.trace').setLevel(logging.DEBUG)
+    logging.getLogger("ibis.backends.pandas.trace").setLevel(logging.DEBUG)
 
 
 def _log_trace(func, start=None):
@@ -105,7 +105,7 @@ def _log_trace(func, start=None):
 
     # We can assume we have 'args' because we only call _log_trace inside
     # trace or TraceDispatcher.register
-    current_op = current_frame.f_locals['args'][0]
+    current_op = current_frame.f_locals["args"][0]
 
     # If the first argument is a Expr, we print its op because it's more
     # informative.
@@ -114,7 +114,7 @@ def _log_trace(func, start=None):
 
     _logger.debug(
         "%s %s %s %s",
-        '  ' * level,
+        "  " * level,
         func.__name__,
         type(current_op).__qualname__,
         f"{datetime.now() - start}" if start else "",

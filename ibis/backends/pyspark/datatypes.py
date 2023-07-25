@@ -7,12 +7,12 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.registry import sql_type_names
 from ibis.formats import TypeMapper
 
-_sql_type_names = dict(sql_type_names, date='date')
+_sql_type_names = dict(sql_type_names, date="date")
 
 
 def type_to_sql_string(tval):
     if tval.is_decimal():
-        return f'decimal({tval.precision}, {tval.scale})'
+        return f"decimal({tval.precision}, {tval.scale})"
     name = tval.name.lower()
     try:
         return _sql_type_names[name]
@@ -39,10 +39,10 @@ _to_pyspark_dtypes = {v: k for k, v in _from_pyspark_dtypes.items()}
 _to_pyspark_dtypes[dt.JSON] = pt.StringType
 
 _pyspark_interval_units = {
-    pt.DayTimeIntervalType.SECOND: 's',
-    pt.DayTimeIntervalType.MINUTE: 'm',
-    pt.DayTimeIntervalType.HOUR: 'h',
-    pt.DayTimeIntervalType.DAY: 'D',
+    pt.DayTimeIntervalType.SECOND: "s",
+    pt.DayTimeIntervalType.MINUTE: "m",
+    pt.DayTimeIntervalType.HOUR: "h",
+    pt.DayTimeIntervalType.DAY: "D",
 }
 
 
@@ -80,7 +80,7 @@ class PySparkType(TypeMapper):
                 return _from_pyspark_dtypes[type(typ)](nullable=nullable)
             except KeyError:
                 raise NotImplementedError(
-                    f'Unable to convert type {typ} of type {type(typ)} to an ibis type.'
+                    f"Unable to convert type {typ} of type {type(typ)} to an ibis type."
                 )
 
     @classmethod

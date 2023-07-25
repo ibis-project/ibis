@@ -14,17 +14,17 @@ from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 if TYPE_CHECKING:
     from pathlib import Path
 
-MYSQL_USER = os.environ.get('IBIS_TEST_MYSQL_USER', 'ibis')
-MYSQL_PASS = os.environ.get('IBIS_TEST_MYSQL_PASSWORD', 'ibis')
-MYSQL_HOST = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
-MYSQL_PORT = int(os.environ.get('IBIS_TEST_MYSQL_PORT', 3306))
-IBIS_TEST_MYSQL_DB = os.environ.get('IBIS_TEST_MYSQL_DATABASE', 'ibis_testing')
+MYSQL_USER = os.environ.get("IBIS_TEST_MYSQL_USER", "ibis")
+MYSQL_PASS = os.environ.get("IBIS_TEST_MYSQL_PASSWORD", "ibis")
+MYSQL_HOST = os.environ.get("IBIS_TEST_MYSQL_HOST", "localhost")
+MYSQL_PORT = int(os.environ.get("IBIS_TEST_MYSQL_PORT", 3306))
+IBIS_TEST_MYSQL_DB = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
 
 
 class TestConf(ServiceBackendTest, RoundHalfToEven):
     # mysql has the same rounding behavior as postgres
     check_dtype = False
-    returned_timestamp_unit = 's'
+    returned_timestamp_unit = "s"
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     native_bool = False
@@ -100,7 +100,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def setup_privs():
     engine = sa.create_engine(f"mysql+pymysql://root:@{MYSQL_HOST}:{MYSQL_PORT:d}")
     with engine.begin() as con:
@@ -114,12 +114,12 @@ def setup_privs():
         con.exec_driver_sql("DROP SCHEMA IF EXISTS `test_schema`")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con_nodb():
     return ibis.mysql.connect(
         host=MYSQL_HOST, user=MYSQL_USER, password=MYSQL_PASS, port=MYSQL_PORT

@@ -10,13 +10,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
-pytest.importorskip('graphviz')
+pytest.importorskip("graphviz")
 
 import ibis.expr.visualize as viz  # noqa: E402
 from ibis.expr import api  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
-    int(os.environ.get('CONDA_BUILD', 0)) == 1, reason='CONDA_BUILD defined'
+    int(os.environ.get("CONDA_BUILD", 0)) == 1, reason="CONDA_BUILD defined"
 )
 
 
@@ -25,14 +25,14 @@ def key(node):
 
 
 @pytest.mark.parametrize(
-    'expr_func',
+    "expr_func",
     [
         lambda t: t.a,
         lambda t: t.a + t.b,
         lambda t: t.a + t.b > 3**t.a,
         lambda t: t[(t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5)],
         lambda t: t[(t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5)]
-        .group_by('c')
+        .group_by("c")
         .aggregate(amean=lambda f: f.a.mean(), bsum=lambda f: f.b.sum()),
     ],
 )
@@ -54,7 +54,7 @@ def test_custom_expr():
         def to_expr(self):
             return MyExpr(self)
 
-    op = MyExprNode('Hello!', 42.3)
+    op = MyExprNode("Hello!", 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
     assert key(expr.op()) in graph.source
@@ -75,16 +75,16 @@ def test_custom_expr_with_not_implemented_type():
         def to_expr(self):
             return MyExpr(self)
 
-    op = MyExprNode('Hello!', 42.3)
+    op = MyExprNode("Hello!", 42.3)
     expr = op.to_expr()
     graph = viz.to_graph(expr)
     assert key(expr.op()) in graph.source
 
 
-@pytest.mark.parametrize('how', ['inner', 'left', 'right', 'outer'])
+@pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
 def test_join(how):
-    left = ibis.table([('a', 'int64'), ('b', 'string')])
-    right = ibis.table([('b', 'string'), ('c', 'int64')])
+    left = ibis.table([("a", "int64"), ("b", "string")])
+    right = ibis.table([("b", "string"), ("c", "int64")])
     joined = left.join(right, left.b == right.b, how=how)
     result = joined[left.a, right.c]
     graph = viz.to_graph(result)
@@ -92,17 +92,17 @@ def test_join(how):
 
 
 def test_order_by():
-    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
-    expr = t.group_by(t.b).aggregate(sum_a=t.a.sum().cast('double')).order_by('b')
+    t = ibis.table([("a", "int64"), ("b", "string"), ("c", "int32")])
+    expr = t.group_by(t.b).aggregate(sum_a=t.a.sum().cast("double")).order_by("b")
     graph = viz.to_graph(expr)
     assert key(expr.op()) in graph.source
 
 
 def test_optional_graphviz_repr(monkeypatch, graphviz):
-    monkeypatch.setattr(ibis.options, 'graphviz_repr', True)
+    monkeypatch.setattr(ibis.options, "graphviz_repr", True)
 
-    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
-    expr = t.group_by(t.b).aggregate(sum_a=t.a.sum().cast('double')).order_by('b')
+    t = ibis.table([("a", "int64"), ("b", "string"), ("c", "int32")])
+    expr = t.group_by(t.b).aggregate(sum_a=t.a.sum().cast("double")).order_by("b")
 
     # default behavior
     assert expr._repr_png_() is not None
@@ -117,7 +117,7 @@ def test_optional_graphviz_repr(monkeypatch, graphviz):
 
 
 def test_between():
-    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
+    t = ibis.table([("a", "int64"), ("b", "string"), ("c", "int32")])
     expr = t.a.between(1, 1)
     lower_bound, upper_bound = expr.op().args[1:]
     graph = viz.to_graph(expr)
@@ -129,11 +129,11 @@ def test_between():
 
 
 def test_asof_join():
-    left = ibis.table([('time', 'int32'), ('value', 'double')])
-    right = ibis.table([('time', 'int32'), ('value2', 'double')])
+    left = ibis.table([("time", "int32"), ("value", "double")])
+    right = ibis.table([("time", "int32"), ("value2", "double")])
     right = right.mutate(foo=1)
 
-    joined = api.asof_join(left, right, 'time')
+    joined = api.asof_join(left, right, "time")
     result = joined[left, right.foo]
     graph = viz.to_graph(result)
     assert key(result.op()) in graph.source
@@ -141,7 +141,7 @@ def test_asof_join():
 
 def test_filter():
     # Smoketest that NodeList nodes are handled properly
-    t = ibis.table([('a', 'int64'), ('b', 'string'), ('c', 'int32')])
+    t = ibis.table([("a", "int64"), ("b", "string"), ("c", "int32")])
     expr = t.filter((t.a == 1) & (t.b == "x"))
     graph = viz.to_graph(expr, label_edges=True)
     assert "predicates[0]" in graph.source
@@ -149,10 +149,10 @@ def test_filter():
 
 
 def test_html_escape(monkeypatch, graphviz):
-    monkeypatch.setattr(ibis.options, 'graphviz_repr', True)
+    monkeypatch.setattr(ibis.options, "graphviz_repr", True)
     # Check that we correctly escape HTML <> characters in the graphviz
     # representation. If an error is thrown, _repr_png_ returns None.
-    expr = ibis.table([('<a & b>', ibis.expr.datatypes.Array('string'))])
+    expr = ibis.table([("<a & b>", ibis.expr.datatypes.Array("string"))])
     assert expr._repr_png_() is not None
 
     expr = ibis.array([1, 2, 3])

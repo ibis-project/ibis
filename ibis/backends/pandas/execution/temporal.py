@@ -33,14 +33,14 @@ def execute_strftime_series_str(op, data, format_string, **kwargs):
 
 @execute_node.register(ops.ExtractTemporalField, datetime.datetime)
 def execute_extract_timestamp_field_timestamp(op, data, **kwargs):
-    field_name = type(op).__name__.lower().replace('extract', '')
+    field_name = type(op).__name__.lower().replace("extract", "")
     return getattr(data, field_name)
 
 
 @execute_node.register(ops.ExtractTemporalField, pd.Series)
 def execute_extract_timestamp_field_series(op, data, **kwargs):
-    field_name = type(op).__name__.lower().replace('extract', '')
-    if field_name == 'weekofyear':
+    field_name = type(op).__name__.lower().replace("extract", "")
+    if field_name == "weekofyear":
         return data.dt.isocalendar().week.astype(np.int32)
     return getattr(data.dt, field_name).astype(np.int32)
 
@@ -92,7 +92,7 @@ def execute_between_time(op, data, lower, upper, **kwargs):
 
 @execute_node.register(ops.Date, pd.Series)
 def execute_timestamp_date(op, data, **kwargs):
-    return data.dt.floor('d')
+    return data.dt.floor("d")
 
 
 PANDAS_UNITS = {

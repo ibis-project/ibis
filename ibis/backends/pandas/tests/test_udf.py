@@ -19,10 +19,10 @@ from ibis.backends.pandas.udf import udf
 def df():
     return pd.DataFrame(
         {
-            'a': list('abc'),
-            'b': [1, 2, 3],
-            'c': [4.0, 5.0, 6.0],
-            'key': list('aab'),
+            "a": list("abc"),
+            "b": [1, 2, 3],
+            "c": [4.0, 5.0, 6.0],
+            "key": list("aab"),
         }
     )
 
@@ -31,30 +31,30 @@ def df():
 def df2():
     return pd.DataFrame(
         {
-            'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            'c': np.arange(7, dtype=int).tolist(),
-            'key': list('ddeefff'),
+            "a": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            "b": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            "c": np.arange(7, dtype=int).tolist(),
+            "key": list("ddeefff"),
         }
     )
 
 
 @pytest.fixture
 def con(df, df2):
-    return Backend().connect({'df': df, 'df2': df2})
+    return Backend().connect({"df": df, "df2": df2})
 
 
 @pytest.fixture
 def t(con):
-    return con.table('df')
+    return con.table("df")
 
 
 @pytest.fixture
 def t2(con):
-    return con.table('df2')
+    return con.table("df2")
 
 
-@udf.elementwise(input_type=['string'], output_type='int64')
+@udf.elementwise(input_type=["string"], output_type="int64")
 def my_string_length(series, **kwargs):
     return series.str.len() * 2
 
@@ -64,7 +64,7 @@ def my_add(series1, series2, **kwargs):
     return series1 + series2
 
 
-@udf.reduction(['double'], 'double')
+@udf.reduction(["double"], "double")
 def my_mean(series):
     return series.mean()
 
@@ -89,7 +89,7 @@ def times_two(x):
     return x * 2.0
 
 
-@udf.analytic(input_type=['double'], output_type='double')
+@udf.analytic(input_type=["double"], output_type="double")
 def zscore(series):
     return (series - series.mean()) / series.std()
 
@@ -134,7 +134,7 @@ def test_multiple_argument_udf_group_by(con, t, df):
 
     result = expr.execute()
     expected = pd.DataFrame(
-        {'key': list('ab'), 'my_add': [sum([1.0 + 4.0, 2.0 + 5.0]), 3.0 + 6.0]}
+        {"key": list("ab"), "my_add": [sum([1.0 + 4.0, 2.0 + 5.0]), 3.0 + 6.0]}
     )
     tm.assert_frame_equal(result, expected)
 
@@ -173,7 +173,7 @@ def test_udaf_analytic_groupby(con, t, df):
     def f(s):
         return s.sub(s.mean()).div(s.std())
 
-    expected = df.groupby('key').c.transform(f)
+    expected = df.groupby("key").c.transform(f)
     expected.name = None
     tm.assert_series_equal(result, expected)
 
@@ -181,31 +181,31 @@ def test_udaf_analytic_groupby(con, t, df):
 def test_udaf_groupby():
     df = pd.DataFrame(
         {
-            'a': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            'key': list('ddeefff'),
+            "a": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            "b": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            "key": list("ddeefff"),
         }
     )
-    con = Backend().connect({'df': df})
-    t = con.table('df')
+    con = Backend().connect({"df": df})
+    t = con.table("df")
 
     expr = t.group_by(t.key).aggregate(my_corr=my_corr(t.a, t.b))
 
     assert isinstance(expr, ir.Table)
 
-    result = expr.execute().sort_values('key')
+    result = expr.execute().sort_values("key")
 
-    dfi = df.set_index('key')
+    dfi = df.set_index("key")
     expected = pd.DataFrame(
         {
-            'key': list('def'),
-            'my_corr': [
-                dfi.loc[value, 'a'].corr(dfi.loc[value, 'b']) for value in 'def'
+            "key": list("def"),
+            "my_corr": [
+                dfi.loc[value, "a"].corr(dfi.loc[value, "b"]) for value in "def"
             ],
         }
     )
 
-    columns = ['key', 'my_corr']
+    columns = ["key", "my_corr"]
     tm.assert_frame_equal(result[columns], expected[columns])
 
 
@@ -228,7 +228,7 @@ def test_udf_parameter_mismatch():
 def test_udf_error(t):
     @udf.elementwise(input_type=[dt.double], output_type=dt.double)
     def error_udf(s):
-        raise ValueError('xxx')
+        raise ValueError("xxx")
 
     with pytest.raises(ValueError):
         error_udf(t.c).execute()
@@ -257,11 +257,11 @@ def test_compose_udfs(t2, df2):
 
 
 def test_udaf_window(t2, df2):
-    window = ibis.trailing_window(2, order_by='a', group_by='key')
+    window = ibis.trailing_window(2, order_by="a", group_by="key")
     expr = t2.mutate(rolled=my_mean(t2.b).over(window))
-    result = expr.execute().sort_values(['key', 'a'])
-    expected = df2.sort_values(['key', 'a']).assign(
-        rolled=lambda df: df.groupby('key')
+    result = expr.execute().sort_values(["key", "a"])
+    expected = df2.sort_values(["key", "a"]).assign(
+        rolled=lambda df: df.groupby("key")
         .b.rolling(3, min_periods=1)
         .mean()
         .reset_index(level=0, drop=True)
@@ -280,7 +280,7 @@ def test_udaf_window_interval():
             [
                 (
                     "time",
-                    pd.date_range(start='20190105', end='20190101', freq='-1D'),
+                    pd.date_range(start="20190105", end="20190101", freq="-1D"),
                 ),
                 ("key", [1, 2, 1, 2, 1]),
                 ("value", np.arange(5)),
@@ -288,21 +288,21 @@ def test_udaf_window_interval():
         )
     )
 
-    con = Backend().connect({'df': df})
-    t = con.table('df')
+    con = Backend().connect({"df": df})
+    t = con.table("df")
     window = ibis.trailing_range_window(
-        ibis.interval(days=2), order_by='time', group_by='key'
+        ibis.interval(days=2), order_by="time", group_by="key"
     )
 
     expr = t.mutate(rolled=my_mean(t.value).over(window))
 
-    result = expr.execute().sort_values(['time', 'key']).reset_index(drop=True)
+    result = expr.execute().sort_values(["time", "key"]).reset_index(drop=True)
     expected = (
-        df.sort_values(['time', 'key'])
-        .set_index('time')
+        df.sort_values(["time", "key"])
+        .set_index("time")
         .assign(
-            rolled=lambda df: df.groupby('key')
-            .value.rolling('2D', closed='both')
+            rolled=lambda df: df.groupby("key")
+            .value.rolling("2D", closed="both")
             .mean()
             .reset_index(level=0, drop=True)
         )
@@ -314,52 +314,52 @@ def test_udaf_window_interval():
 def test_multiple_argument_udaf_window():
     # PR 2035
 
-    @udf.reduction(['double', 'double'], 'double')
+    @udf.reduction(["double", "double"], "double")
     def my_wm(v, w):
         return np.average(v, weights=w)
 
     df = pd.DataFrame(
         {
-            'a': np.arange(4, 0, dtype=float, step=-1).tolist()
+            "a": np.arange(4, 0, dtype=float, step=-1).tolist()
             + np.random.rand(3).tolist(),
-            'b': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            'c': np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
-            'd': np.repeat(1, 7),
-            'key': list('deefefd'),
+            "b": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            "c": np.arange(4, dtype=float).tolist() + np.random.rand(3).tolist(),
+            "d": np.repeat(1, 7),
+            "key": list("deefefd"),
         }
     )
-    con = Backend().connect({'df': df})
-    t = con.table('df')
-    window = ibis.trailing_window(2, order_by='a', group_by='key')
-    window2 = ibis.trailing_window(1, order_by='b', group_by='key')
+    con = Backend().connect({"df": df})
+    t = con.table("df")
+    window = ibis.trailing_window(2, order_by="a", group_by="key")
+    window2 = ibis.trailing_window(1, order_by="b", group_by="key")
     expr = t.mutate(
         wm_b=my_wm(t.b, t.d).over(window),
         wm_c=my_wm(t.c, t.d).over(window),
         wm_c2=my_wm(t.c, t.d).over(window2),
     )
-    result = expr.execute().sort_values(['key', 'a'])
+    result = expr.execute().sort_values(["key", "a"])
     expected = (
-        df.sort_values(['key', 'a'])
+        df.sort_values(["key", "a"])
         .assign(
-            wm_b=lambda df: df.groupby('key')
+            wm_b=lambda df: df.groupby("key")
             .b.rolling(3, min_periods=1)
             .mean()
             .reset_index(level=0, drop=True)
         )
         .assign(
-            wm_c=lambda df: df.groupby('key')
+            wm_c=lambda df: df.groupby("key")
             .c.rolling(3, min_periods=1)
             .mean()
             .reset_index(level=0, drop=True)
         )
     )
-    expected = expected.sort_values(['key', 'b']).assign(
-        wm_c2=lambda df: df.groupby('key')
+    expected = expected.sort_values(["key", "b"]).assign(
+        wm_c2=lambda df: df.groupby("key")
         .c.rolling(2, min_periods=1)
         .mean()
         .reset_index(level=0, drop=True)
     )
-    expected = expected.sort_values(['key', 'a'])
+    expected = expected.sort_values(["key", "a"])
 
     tm.assert_frame_equal(result, expected)
 
@@ -367,18 +367,18 @@ def test_multiple_argument_udaf_window():
 def test_udaf_window_nan():
     df = pd.DataFrame(
         {
-            'a': np.arange(10, dtype=float),
-            'b': [3.0, np.NaN] * 5,
-            'key': list('ddeefffggh'),
+            "a": np.arange(10, dtype=float),
+            "b": [3.0, np.NaN] * 5,
+            "key": list("ddeefffggh"),
         }
     )
-    con = Backend().connect({'df': df})
-    t = con.table('df')
-    window = ibis.trailing_window(2, order_by='a', group_by='key')
+    con = Backend().connect({"df": df})
+    t = con.table("df")
+    window = ibis.trailing_window(2, order_by="a", group_by="key")
     expr = t.mutate(rolled=my_mean(t.b).over(window))
-    result = expr.execute().sort_values(['key', 'a'])
-    expected = df.sort_values(['key', 'a']).assign(
-        rolled=lambda d: d.groupby('key')
+    result = expr.execute().sort_values(["key", "a"])
+    expected = df.sort_values(["key", "a"]).assign(
+        rolled=lambda d: d.groupby("key")
         .b.rolling(3, min_periods=1)
         .apply(lambda x: x.mean(), raw=True)
         .reset_index(level=0, drop=True)
@@ -419,7 +419,7 @@ def test_array_return_type_reduction_group_by(con, t, df, qs):
     result = expr.execute()
 
     expected_col = df.groupby(df.key).b.agg(lambda s: s.quantile(qs).tolist())
-    expected = pd.DataFrame({'quantiles_col': expected_col}).reset_index()
+    expected = pd.DataFrame({"quantiles_col": expected_col}).reset_index()
 
     tm.assert_frame_equal(result, expected)
 

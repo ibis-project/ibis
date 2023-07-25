@@ -67,7 +67,7 @@ _type_mapping = {
     "geometry": dt.geometry,
     "inet": dt.inet,
     "integer": dt.int32,
-    "interval": dt.Interval('s'),
+    "interval": dt.Interval("s"),
     "json": dt.json,
     "jsonb": dt.json,
     "line": dt.linestring,

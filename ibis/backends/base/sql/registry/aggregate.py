@@ -10,9 +10,9 @@ def _reduction_format(translator, func_name, where, arg, *args):
     if where is not None:
         arg = ops.Where(where, arg, ibis.NA)
 
-    return '{}({})'.format(
+    return "{}({})".format(
         func_name,
-        ', '.join(map(translator.translate, itertools.chain([arg], args))),
+        ", ".join(map(translator.translate, itertools.chain([arg], args))),
     )
 
 
@@ -26,8 +26,8 @@ def reduction(func_name):
 
 def variance_like(func_name):
     func_names = {
-        'sample': f'{func_name}_samp',
-        'pop': f'{func_name}_pop',
+        "sample": f"{func_name}_samp",
+        "pop": f"{func_name}_pop",
     }
 
     def formatter(translator, op):
@@ -41,4 +41,4 @@ def count_distinct(translator, op):
         arg_formatted = translator.translate(ops.Where(op.where, op.arg, None))
     else:
         arg_formatted = translator.translate(op.arg)
-    return f'count(DISTINCT {arg_formatted})'
+    return f"count(DISTINCT {arg_formatted})"

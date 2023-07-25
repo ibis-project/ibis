@@ -28,7 +28,7 @@ from ibis.backends.base.sql.alchemy.datatypes import AlchemyType, ArrayType
 from ibis.tests.expr.mocks import MockAlchemyBackend
 from ibis.tests.util import assert_decompile_roundtrip, assert_equal
 
-sa = pytest.importorskip('sqlalchemy')
+sa = pytest.importorskip("sqlalchemy")
 
 
 L = sa.literal
@@ -52,29 +52,29 @@ def star1(con):
 
 @pytest.fixture(scope="module")
 def functional_alltypes(con):
-    return con.table('functional_alltypes')
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture(scope="module")
 def alltypes(con):
-    return con.table('alltypes')
+    return con.table("alltypes")
 
 
 def test_sqla_schema_conversion():
     typespec = [
         # name, type, nullable
-        ('smallint', sat.SMALLINT, False, dt.int16),
-        ('smallint_', sat.SmallInteger, False, dt.int16),
-        ('int', sat.INTEGER, True, dt.int32),
-        ('integer', sat.INTEGER, True, dt.int32),
-        ('integer_', sat.Integer, True, dt.int32),
-        ('bigint', sat.BIGINT, False, dt.int64),
-        ('bigint_', sat.BigInteger, False, dt.int64),
-        ('real', sat.REAL, True, dt.float32),
-        ('bool', sat.BOOLEAN, True, dt.bool),
-        ('bool_', sat.Boolean, True, dt.bool),
-        ('timestamp', sat.DATETIME, True, dt.timestamp),
-        ('timestamp_', sat.DateTime, True, dt.timestamp),
+        ("smallint", sat.SMALLINT, False, dt.int16),
+        ("smallint_", sat.SmallInteger, False, dt.int16),
+        ("int", sat.INTEGER, True, dt.int32),
+        ("integer", sat.INTEGER, True, dt.int32),
+        ("integer_", sat.Integer, True, dt.int32),
+        ("bigint", sat.BIGINT, False, dt.int64),
+        ("bigint_", sat.BigInteger, False, dt.int64),
+        ("real", sat.REAL, True, dt.float32),
+        ("bool", sat.BOOLEAN, True, dt.bool),
+        ("bool_", sat.Boolean, True, dt.bool),
+        ("timestamp", sat.DATETIME, True, dt.timestamp),
+        ("timestamp_", sat.DateTime, True, dt.timestamp),
     ]
 
     sqla_types = []
@@ -83,7 +83,7 @@ def test_sqla_schema_conversion():
         sqla_types.append(sa.Column(name, t, nullable=nullable))
         ibis_types.append((name, ibis_type(nullable=nullable)))
 
-    table = sa.Table('tname', sa.MetaData(), *sqla_types)
+    table = sa.Table("tname", sa.MetaData(), *sqla_types)
 
     schema = BaseAlchemyBackend._schema_from_sqla_table(table)
     expected = ibis.schema(ibis_types)
@@ -106,7 +106,7 @@ def test_comparisons(functional_alltypes, opname, snapshot):
     ],
 )
 def test_boolean_conjunction(functional_alltypes, expr_fn, snapshot):
-    expr = expr_fn(functional_alltypes.double_col).name('tmp')
+    expr = expr_fn(functional_alltypes.double_col).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -135,7 +135,7 @@ def test_coalesce(functional_alltypes, snapshot):
 
 
 def test_named_expr(functional_alltypes, snapshot):
-    expr = functional_alltypes[(functional_alltypes.double_col * 2).name('foo')]
+    expr = functional_alltypes[(functional_alltypes.double_col * 2).name("foo")]
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -152,8 +152,8 @@ def test_named_expr(functional_alltypes, snapshot):
     ids=["inner", "left", "outer", "inner_select", "left_select", "outer_select"],
 )
 def test_joins(con, expr_fn, snapshot):
-    region = con.table('tpch_region')
-    nation = con.table('tpch_nation')
+    region = con.table("tpch_region")
+    nation = con.table("tpch_nation")
 
     expr = expr_fn(region, nation)
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -173,14 +173,14 @@ def test_join_just_materialized(nation, region, customer, snapshot):
 def test_full_outer_join(con):
     """Testing full outer join separately due to previous issue with outer join
     resulting in left outer join (issue #1773)"""
-    region = con.table('tpch_region')
-    nation = con.table('tpch_nation')
+    region = con.table("tpch_region")
+    nation = con.table("tpch_nation")
 
     predicate = region.r_regionkey == nation.n_regionkey
     joined = region.outer_join(nation, predicate)
     joined_sql_str = str(joined.compile())
-    assert 'full' in joined_sql_str.lower()
-    assert 'left' not in joined_sql_str.lower()
+    assert "full" in joined_sql_str.lower()
+    assert "left" not in joined_sql_str.lower()
 
 
 def test_simple_case(simple_case, snapshot):
@@ -203,8 +203,8 @@ def test_where_simple_comparisons(star1, snapshot):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        lambda t: t.agg([t['f'].sum().name('total')], [t['foo_id']]),
-        lambda t: t.agg([t['f'].sum().name('total')], ['foo_id', 'bar_id']),
+        lambda t: t.agg([t["f"].sum().name("total")], [t["foo_id"]]),
+        lambda t: t.agg([t["f"].sum().name("total")], ["foo_id", "bar_id"]),
         lambda t: t.agg(
             [t.f.sum().name("total")], by=["foo_id"], having=[t.f.sum() > 10]
         ),
@@ -248,11 +248,11 @@ def test_limit_subquery(star1, snapshot):
 
 
 def test_cte_factor_distinct_but_equal(con, snapshot):
-    t = con.table('alltypes')
-    tt = con.table('alltypes')
+    t = con.table("alltypes")
+    tt = con.table("alltypes")
 
-    expr1 = t.group_by('g').aggregate(t.f.sum().name('metric'))
-    expr2 = tt.group_by('g').aggregate(tt.f.sum().name('metric')).view()
+    expr1 = t.group_by("g").aggregate(t.f.sum().name("metric"))
+    expr2 = tt.group_by("g").aggregate(tt.f.sum().name("metric")).view()
 
     expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
 
@@ -268,7 +268,7 @@ def test_self_reference_join(star1, snapshot):
 
 
 def test_self_reference_in_not_exists(con, snapshot):
-    t = con.table('functional_alltypes')
+    t = con.table("functional_alltypes")
     t2 = t.view()
 
     cond = (t.string_col == t2.string_col).any()
@@ -300,7 +300,7 @@ def test_subquery_aliased(star1, star2, snapshot):
     t1 = star1
     t2 = star2
 
-    agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
+    agged = t1.aggregate([t1.f.sum().name("total")], by=["foo_id"])
     expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
 
     snapshot.assert_match(to_sql(expr), "out.sql")
@@ -310,10 +310,10 @@ def test_lower_projection_sort_key(star1, star2, snapshot):
     t1 = star1
     t2 = star2
 
-    agged = t1.aggregate([t1.f.sum().name('total')], by=['foo_id'])
+    agged = t1.aggregate([t1.f.sum().name("total")], by=["foo_id"])
     expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
 
-    expr2 = expr[expr.total > 100].order_by(ibis.desc('total'))
+    expr2 = expr[expr.total > 100].order_by(ibis.desc("total"))
     snapshot.assert_match(to_sql(expr2), "out.sql")
     assert_decompile_roundtrip(expr2, snapshot)
 
@@ -326,7 +326,7 @@ def test_exists(con, foo_t, bar_t, snapshot):
 
     snapshot.assert_match(to_sql(e1), "e1.sql")
 
-    cond2 = ((t1.key1 == t2.key1) & (t2.key2 == 'foo')).any()
+    cond2 = ((t1.key1 == t2.key1) & (t2.key2 == "foo")).any()
     e2 = t1[cond2]
 
     snapshot.assert_match(to_sql(e2), "e2.sql")
@@ -341,15 +341,15 @@ def test_not_exists(not_exists, snapshot):
     [
         param(lambda t: t.distinct(), id="table_distinct"),
         param(
-            lambda t: t['string_col', 'int_col'].distinct(), id="projection_distinct"
+            lambda t: t["string_col", "int_col"].distinct(), id="projection_distinct"
         ),
         param(
             lambda t: t[t.string_col].distinct(), id="single_column_projection_distinct"
         ),
-        param(lambda t: t.int_col.nunique().name('nunique'), id="count_distinct"),
+        param(lambda t: t.int_col.nunique().name("nunique"), id="count_distinct"),
         param(
-            lambda t: t.group_by('string_col').aggregate(
-                t.int_col.nunique().name('nunique')
+            lambda t: t.group_by("string_col").aggregate(
+                t.int_col.nunique().name("nunique")
             ),
             id="group_by_count_distinct",
         ),
@@ -366,8 +366,8 @@ def test_sort_aggregation_translation_failure(functional_alltypes, snapshot):
     # inline view.
     t = functional_alltypes
 
-    agg = t.group_by('string_col').aggregate(t.double_col.max().name('foo'))
-    expr = agg.order_by(ibis.desc('foo'))
+    agg = t.group_by("string_col").aggregate(t.double_col.max().name("foo"))
+    expr = agg.order_by(ibis.desc("foo"))
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -402,8 +402,8 @@ def test_where_correlated_subquery_with_join(snapshot):
 
 def test_mutate_filter_join_no_cross_join(snapshot):
     person = ibis.table(
-        [('person_id', 'int64'), ('birth_datetime', 'timestamp')],
-        name='person',
+        [("person_id", "int64"), ("birth_datetime", "timestamp")],
+        name="person",
     )
     mutated = person.mutate(age=400)
     expr = mutated.filter(mutated.age <= 40)[mutated.person_id]
@@ -475,7 +475,7 @@ def test_gh_1045(test1, test2, test3, snapshot):
     t2 = test2
     t3 = test3
 
-    t3 = t3[[c for c in t3.columns if c != "id3"]].mutate(id3=t3.id3.cast('int64'))
+    t3 = t3[[c for c in t3.columns if c != "id3"]].mutate(id3=t3.id3.cast("int64"))
 
     t3 = t3[[c for c in t3.columns if c != "val2"]].mutate(t3_val2=t3.id3)
     t4 = t3.join(t2, t2.id2b == t3.id3)
@@ -564,8 +564,8 @@ def test_no_cart_join(snapshot):
     )
 
     products = products.mutate(
-        product_level_name=lambda t: ibis.literal('-')
-        .lpad(((t.ancestor_level_number - 1) * 7), '-')
+        product_level_name=lambda t: ibis.literal("-")
+        .lpad(((t.ancestor_level_number - 1) * 7), "-")
         .concat(t.ancestor_level_name)
     )
 

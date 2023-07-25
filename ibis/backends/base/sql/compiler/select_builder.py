@@ -121,7 +121,7 @@ class SelectBuilder:
             self.select_set = [self.op]
 
     def _collect(self, op, toplevel=False):
-        method = f'_collect_{type(op).__name__}'
+        method = f"_collect_{type(op).__name__}"
 
         if hasattr(self, method):
             f = getattr(self, method)

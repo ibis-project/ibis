@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-_table_names = (f'unbound_table_{i:d}' for i in itertools.count())
+_table_names = (f"unbound_table_{i:d}" for i in itertools.count())
 
 
 @public
@@ -109,7 +109,7 @@ class SQLQueryResult(TableNode):
 
 
 class TableProxy(Immutable):
-    __slots__ = ('_data', '_hash')
+    __slots__ = ("_data", "_hash")
 
     def __init__(self, data) -> None:
         object.__setattr__(self, "_data", data)
@@ -186,7 +186,7 @@ def _clean_join_predicates(left, right, predicates):
     for pred in predicates:
         if isinstance(pred, tuple):
             if len(pred) != 2:
-                raise com.ExpressionError('Join key tuple must be length 2')
+                raise com.ExpressionError("Join key tuple must be length 2")
             lk, rk = pred
             lk = left.to_expr()._ensure_expr(lk)
             rk = right.to_expr()._ensure_expr(rk)
@@ -202,7 +202,7 @@ def _clean_join_predicates(left, right, predicates):
             raise NotImplementedError
 
         if not isinstance(pred, ir.BooleanColumn):
-            raise com.ExpressionError('Join predicate must be comparison')
+            raise com.ExpressionError("Join predicate must be comparison")
 
         preds = an.flatten_predicate(pred.op())
         result.extend(preds)
@@ -212,9 +212,9 @@ def _clean_join_predicates(left, right, predicates):
     for predicate in result:
         if not shares_all_roots(predicate, [left, right]):
             raise com.RelationError(
-                'The expression {!r} does not fully '
-                'originate from dependencies of the table '
-                'expression.'.format(predicate)
+                "The expression {!r} does not fully "
+                "originate from dependencies of the table "
+                "expression.".format(predicate)
             )
 
     assert all(isinstance(pred, ops.Node) for pred in result)
@@ -270,7 +270,7 @@ class Join(Relation):
         # pandas backend
         left, right = self.left.schema, self.right.schema
         if duplicates := left.keys() & right.keys():
-            raise com.IntegrityError(f'Duplicate column name(s): {duplicates}')
+            raise com.IntegrityError(f"Duplicate column name(s): {duplicates}")
         return Schema({**left, **right})
 
 
@@ -342,7 +342,7 @@ class SetOp(Relation):
 
     def __init__(self, left, right, **kwargs):
         if left.schema != right.schema:
-            raise com.RelationError('Table schemas must be equal for set operations')
+            raise com.RelationError("Table schemas must be equal for set operations")
         elif left.schema.names != right.schema.names:
             # rewrite so that both sides have the columns in the same order making it
             # easier for the backends to implement set operations

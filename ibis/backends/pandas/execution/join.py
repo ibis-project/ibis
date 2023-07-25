@@ -35,7 +35,7 @@ def execute_cross_join(op, left, right, predicates, **kwargs):
     return pd.merge(
         left,
         right,
-        how='cross',
+        how="cross",
         copy=False,
         suffixes=constants.JOIN_SUFFIXES,
     )
@@ -87,7 +87,7 @@ def _construct_join_predicate_columns(op, predicates, **kwargs):
 
     for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
-            raise TypeError('Only equality join predicates supported with pandas')
+            raise TypeError("Only equality join predicates supported with pandas")
         new_left_column, left_pred_root = _compute_join_column(predicate.left, **kwargs)
         on[left_pred_root].append(new_left_column)
 
@@ -105,7 +105,7 @@ def execute_join(op, left, right, predicates, **kwargs):
     try:
         how = constants.JOIN_TYPES[op_type]
     except KeyError:
-        raise UnsupportedOperationError(f'{op_type.__name__} not supported')
+        raise UnsupportedOperationError(f"{op_type.__name__} not supported")
 
     left_on, right_on = _construct_join_predicate_columns(op, predicates, **kwargs)
 
@@ -175,7 +175,7 @@ def _extract_predicate_names(predicates):
     rights = []
     for predicate in predicates:
         if not isinstance(predicate, ops.Equals):
-            raise TypeError('Only equality join predicates supported with pandas')
+            raise TypeError("Only equality join predicates supported with pandas")
         left_name = predicate.left.name
         right_name = predicate.right.name
         lefts.append(left_name)

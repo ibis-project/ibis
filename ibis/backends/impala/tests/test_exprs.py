@@ -17,12 +17,12 @@ from ibis.expr import api
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
-    expr = t[[(t.double_col * 2).name('double(fun)')]]['double(fun)'].sum()
+    expr = t[[(t.double_col * 2).name("double(fun)")]]["double(fun)"].sum()
     expr.execute()
 
 
 def test_decimal_metadata(con):
-    table = con.table('lineitem')
+    table = con.table("lineitem")
 
     expr = table.l_quantity
     assert expr.type().precision == 12
@@ -55,13 +55,13 @@ def test_builtins(con, alltypes):
         i1.zeroifnull(),
         i4.zeroifnull(),
         i8.zeroifnull(),
-        i4.to_timestamp('s'),
-        i4.to_timestamp('ms'),
-        i4.to_timestamp('us'),
+        i4.to_timestamp("s"),
+        i4.to_timestamp("ms"),
+        i4.to_timestamp("us"),
         i8.to_timestamp(),
         d.abs(),
-        d.cast('decimal(12, 2)'),
-        d.cast('int32'),
+        d.cast("decimal(12, 2)"),
+        d.cast("int32"),
         d.ceil(),
         d.exp(),
         d.isnull(),
@@ -106,18 +106,18 @@ def test_builtins(con, alltypes):
             table.int_col, api.null(), table.smallint_col, table.bigint_col, 5
         ),
         api.greatest(table.float_col, table.double_col, 5),
-        api.least(table.string_col, 'foo'),
+        api.least(table.string_col, "foo"),
         # string stuff
-        s.contains('6'),
-        s.like('6%'),
-        s.re_search(r'[\d]+'),
-        s.re_extract(r'[\d]+', 0),
-        s.re_replace(r'[\d]+', 'a'),
+        s.contains("6"),
+        s.like("6%"),
+        s.re_search(r"[\d]+"),
+        s.re_extract(r"[\d]+", 0),
+        s.re_replace(r"[\d]+", "a"),
         s.repeat(2),
         s.translate("a", "b"),
         s.find("a"),
-        s.lpad(10, 'a'),
-        s.rpad(10, 'a'),
+        s.lpad(10, "a"),
+        s.rpad(10, "a"),
         s.find_in_set(["a"]),
         s.lower(),
         s.upper(),
@@ -134,7 +134,7 @@ def test_builtins(con, alltypes):
         s.repeat(i1),
     ]
 
-    proj_exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
 
     projection = table[proj_exprs]
     projection.limit(10).execute()
@@ -152,11 +152,11 @@ def _check_impala_output_types_match(con, table):
     ):
         assert (
             left_ty == right_ty
-        ), f'Value for {n} had left type {left_ty} and right type {right_ty}\nquery:\n{query}'
+        ), f"Value for {n} had left type {left_ty} and right type {right_ty}\nquery:\n{query}"
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         # mod cases
         (L(50) % 5, 0),
@@ -191,38 +191,38 @@ def test_column_types(alltypes_df, col, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
-        (L(50000).to_timestamp('s'), pd.to_datetime(50000, unit='s')),
-        (L(50000).to_timestamp('ms'), pd.to_datetime(50000, unit='ms')),
-        (L(5 * 10**8).to_timestamp(), pd.to_datetime(5 * 10**8, unit='s')),
+        (L(50000).to_timestamp("s"), pd.to_datetime(50000, unit="s")),
+        (L(50000).to_timestamp("ms"), pd.to_datetime(50000, unit="ms")),
+        (L(5 * 10**8).to_timestamp(), pd.to_datetime(5 * 10**8, unit="s")),
         (
-            ibis.timestamp('2009-05-17 12:34:56').truncate('y'),
-            pd.Timestamp('2009-01-01'),
+            ibis.timestamp("2009-05-17 12:34:56").truncate("y"),
+            pd.Timestamp("2009-01-01"),
         ),
         (
-            ibis.timestamp('2009-05-17 12:34:56').truncate('M'),
-            pd.Timestamp('2009-05-01'),
+            ibis.timestamp("2009-05-17 12:34:56").truncate("M"),
+            pd.Timestamp("2009-05-01"),
         ),
         (
-            ibis.timestamp('2009-05-17 12:34:56').truncate('month'),
-            pd.Timestamp('2009-05-01'),
+            ibis.timestamp("2009-05-17 12:34:56").truncate("month"),
+            pd.Timestamp("2009-05-01"),
         ),
         (
-            ibis.timestamp('2009-05-17 12:34:56').truncate('d'),
-            pd.Timestamp('2009-05-17'),
+            ibis.timestamp("2009-05-17 12:34:56").truncate("d"),
+            pd.Timestamp("2009-05-17"),
         ),
         (
-            ibis.timestamp('2009-05-17 12:34:56').truncate('h'),
-            pd.Timestamp('2009-05-17 12:00'),
+            ibis.timestamp("2009-05-17 12:34:56").truncate("h"),
+            pd.Timestamp("2009-05-17 12:00"),
         ),
         (
-            ibis.timestamp('2009-05-17 12:34:56').truncate('m'),
-            pd.Timestamp('2009-05-17 12:34'),
+            ibis.timestamp("2009-05-17 12:34:56").truncate("m"),
+            pd.Timestamp("2009-05-17 12:34"),
         ),
         (
-            ibis.timestamp('2009-05-17 12:34:56').truncate('minute'),
-            pd.Timestamp('2009-05-17 12:34'),
+            ibis.timestamp("2009-05-17 12:34:56").truncate("minute"),
+            pd.Timestamp("2009-05-17 12:34"),
         ),
     ],
 )
@@ -232,16 +232,16 @@ def test_timestamp_builtins(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         (L(-5).abs(), 5),
-        (L(5.245).cast('int32'), 5),
+        (L(5.245).cast("int32"), 5),
         (L(5.245).ceil(), 6),
         (L(5.245).isnull(), False),
         (L(5.245).floor(), 5),
         (L(5.245).notnull(), True),
         (L(5.245).round(), 5),
-        (L(5.245).round(2), Decimal('5.25')),
+        (L(5.245).round(2), Decimal("5.25")),
         (L(5.245).sign(), 1),
     ],
 )
@@ -255,59 +255,59 @@ def approx_equal(a, b, eps):
 
 
 @pytest.mark.parametrize(
-    ('func', 'expected'),
+    ("func", "expected"),
     [
-        pytest.param(lambda dc: dc, '5.245', id='id'),
-        pytest.param(lambda dc: dc % 5, '0.245', id='mod'),
-        pytest.param(lambda dc: dc.fillna(0), '5.245', id='fillna'),
-        pytest.param(lambda dc: dc.exp(), '189.6158', id='exp'),
-        pytest.param(lambda dc: dc.log(), '1.65728', id='log'),
-        pytest.param(lambda dc: dc.log2(), '2.39094', id='log2'),
-        pytest.param(lambda dc: dc.log10(), '0.71975', id='log10'),
-        pytest.param(lambda dc: dc.sqrt(), '2.29019', id='sqrt'),
-        pytest.param(lambda dc: dc.zeroifnull(), '5.245', id='zeroifnull'),
-        pytest.param(lambda dc: -dc, '-5.245', id='neg'),
+        pytest.param(lambda dc: dc, "5.245", id="id"),
+        pytest.param(lambda dc: dc % 5, "0.245", id="mod"),
+        pytest.param(lambda dc: dc.fillna(0), "5.245", id="fillna"),
+        pytest.param(lambda dc: dc.exp(), "189.6158", id="exp"),
+        pytest.param(lambda dc: dc.log(), "1.65728", id="log"),
+        pytest.param(lambda dc: dc.log2(), "2.39094", id="log2"),
+        pytest.param(lambda dc: dc.log10(), "0.71975", id="log10"),
+        pytest.param(lambda dc: dc.sqrt(), "2.29019", id="sqrt"),
+        pytest.param(lambda dc: dc.zeroifnull(), "5.245", id="zeroifnull"),
+        pytest.param(lambda dc: -dc, "-5.245", id="neg"),
     ],
 )
 def test_decimal_builtins_2(con, func, expected):
-    dc = L('5.245').cast('decimal(12, 5)')
+    dc = L("5.245").cast("decimal(12, 5)")
     expr = func(dc)
     result = con.execute(expr)
-    tol = Decimal('0.0001')
+    tol = Decimal("0.0001")
     approx_equal(Decimal(result), Decimal(expected), tol)
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
-        (L('abcd').length(), 4),
-        (L('ABCD').lower(), 'abcd'),
-        (L('abcd').upper(), 'ABCD'),
-        (L('abcd').reverse(), 'dcba'),
-        (L('abcd').ascii_str(), 97),
-        (L('   a   ').strip(), 'a'),
-        (L('   a   ').lstrip(), 'a   '),
-        (L('   a   ').rstrip(), '   a'),
-        (L('abcd').capitalize(), 'Abcd'),
-        (L('abcd').substr(0, 2), 'ab'),
-        (L('abcd').left(2), 'ab'),
-        (L('abcd').right(2), 'cd'),
-        (L('abcd').repeat(2), 'abcdabcd'),
+        (L("abcd").length(), 4),
+        (L("ABCD").lower(), "abcd"),
+        (L("abcd").upper(), "ABCD"),
+        (L("abcd").reverse(), "dcba"),
+        (L("abcd").ascii_str(), 97),
+        (L("   a   ").strip(), "a"),
+        (L("   a   ").lstrip(), "a   "),
+        (L("   a   ").rstrip(), "   a"),
+        (L("abcd").capitalize(), "Abcd"),
+        (L("abcd").substr(0, 2), "ab"),
+        (L("abcd").left(2), "ab"),
+        (L("abcd").right(2), "cd"),
+        (L("abcd").repeat(2), "abcdabcd"),
         # global replace not available in Impala yet
         # (L('aabbaabbaa').replace('bb', 'B'), 'aaBaaBaa'),
-        (L('0123').translate('012', 'abc'), 'abc3'),
-        (L('abcd').find('a'), 0),
-        (L('baaaab').find('b', 2), 5),
-        (L('abcd').lpad(1, '-'), 'a'),
-        (L('abcd').lpad(5), ' abcd'),
-        (L('abcd').rpad(1, '-'), 'a'),
-        (L('abcd').rpad(5), 'abcd '),
-        (L('abcd').find_in_set(['a', 'b', 'abcd']), 2),
-        (L(', ').join(['a', 'b']), 'a, b'),
-        (L('abcd').like('a%'), True),
-        (L('abcd').re_search('[a-z]'), True),
-        (L('abcd').re_extract('[a-z]', 0), 'a'),
-        (L('abcd').re_replace('(b)', '2'), 'a2cd'),
+        (L("0123").translate("012", "abc"), "abc3"),
+        (L("abcd").find("a"), 0),
+        (L("baaaab").find("b", 2), 5),
+        (L("abcd").lpad(1, "-"), "a"),
+        (L("abcd").lpad(5), " abcd"),
+        (L("abcd").rpad(1, "-"), "a"),
+        (L("abcd").rpad(5), "abcd "),
+        (L("abcd").find_in_set(["a", "b", "abcd"]), 2),
+        (L(", ").join(["a", "b"]), "a, b"),
+        (L("abcd").like("a%"), True),
+        (L("abcd").re_search("[a-z]"), True),
+        (L("abcd").re_extract("[a-z]", 0), "a"),
+        (L("abcd").re_replace("(b)", "2"), "a2cd"),
     ],
 )
 def test_string_functions(con, expr, expected):
@@ -316,12 +316,12 @@ def test_string_functions(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         (L("https://www.cloudera.com").host(), "www.cloudera.com"),
         (
-            L('https://www.youtube.com/watch?v=kEuEcWfewf8&t=10').query('v'),
-            'kEuEcWfewf8',
+            L("https://www.youtube.com/watch?v=kEuEcWfewf8&t=10").query("v"),
+            "kEuEcWfewf8",
         ),
     ],
 )
@@ -331,7 +331,7 @@ def test_parse_url(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         (L(7) / 2, 3.5),
         (L(7) // 2, 3),
@@ -345,12 +345,12 @@ def test_div_floordiv(con, expr, expected):
 
 
 def test_filter_predicates(con):
-    t = con.table('nation')
+    t = con.table("nation")
 
     predicates = [
-        lambda x: x.n_name.lower().like('%ge%'),
-        lambda x: x.n_name.lower().contains('ge'),
-        lambda x: x.n_name.lower().rlike('.*ge.*'),
+        lambda x: x.n_name.lower().like("%ge%"),
+        lambda x: x.n_name.lower().contains("ge"),
+        lambda x: x.n_name.lower().rlike(".*ge.*"),
     ]
 
     expr = t
@@ -369,15 +369,15 @@ def test_histogram_value_counts(alltypes):
 def test_casted_expr_impala_bug(alltypes):
     # Per GH #396. Prior to Impala 2.3.0, there was a bug in the query
     # planner that caused this expression to fail
-    expr = alltypes.string_col.cast('double').value_counts()
+    expr = alltypes.string_col.cast("double").value_counts()
     expr.execute()
 
 
 def test_decimal_timestamp_builtins(con):
-    table = con.table('lineitem')
+    table = con.table("lineitem")
 
     dc = table.l_quantity
-    ts = table.l_receiptdate.cast('timestamp')
+    ts = table.l_receiptdate.cast("timestamp")
 
     exprs = [
         dc % 10,
@@ -386,32 +386,32 @@ def test_decimal_timestamp_builtins(con):
         dc / 2,
         dc * 2,
         dc**2,
-        dc.cast('double'),
+        dc.cast("double"),
         api.where(table.l_discount > 0, dc * table.l_discount, api.NA),
         dc.fillna(0),
         ts < (ibis.now() + ibis.interval(months=3)),
-        ts < (ibis.timestamp('2005-01-01') + ibis.interval(months=3)),
+        ts < (ibis.timestamp("2005-01-01") + ibis.interval(months=3)),
         # hashing
         dc.hash(),
         ts.hash(),
         # truncate
-        ts.truncate('y'),
-        ts.truncate('q'),
-        ts.truncate('month'),
-        ts.truncate('d'),
-        ts.truncate('w'),
-        ts.truncate('h'),
-        ts.truncate('minute'),
+        ts.truncate("y"),
+        ts.truncate("q"),
+        ts.truncate("month"),
+        ts.truncate("d"),
+        ts.truncate("w"),
+        ts.truncate("h"),
+        ts.truncate("minute"),
     ]
 
     timestamp_fields = [
-        'years',
-        'months',
-        'days',
-        'hours',
-        'minutes',
-        'seconds',
-        'weeks',
+        "years",
+        "months",
+        "days",
+        "hours",
+        "minutes",
+        "seconds",
+        "weeks",
     ]
     for field in timestamp_fields:
         if hasattr(ts, field):
@@ -421,7 +421,7 @@ def test_decimal_timestamp_builtins(con):
         exprs.append(ts + offset)
         exprs.append(ts - offset)
 
-    proj_exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
 
     projection = table[proj_exprs].limit(10)
     projection.execute()
@@ -434,7 +434,7 @@ def test_timestamp_scalar_in_filter(alltypes):
     expr = table.filter(
         [
             table.timestamp_col
-            < (ibis.timestamp('2010-01-01') + ibis.interval(months=3)),
+            < (ibis.timestamp("2010-01-01") + ibis.interval(months=3)),
             table.timestamp_col < (ibis.now() + ibis.interval(days=10)),
         ]
     ).count()
@@ -447,7 +447,7 @@ def test_aggregations(alltypes):
     d = table.double_col
     s = table.string_col
 
-    cond = table.string_col.isin(['1', '7'])
+    cond = table.string_col.isin(["1", "7"])
 
     exprs = [
         table.bool_col.count(),
@@ -459,9 +459,9 @@ def test_aggregations(alltypes):
         d.approx_median(),
         s.group_concat(),
         d.std(),
-        d.std(how='pop'),
+        d.std(how="pop"),
         d.var(),
-        d.var(how='pop'),
+        d.var(how="pop"),
         table.bool_col.any(),
         table.bool_col.notany(),
         -table.bool_col.any(),
@@ -477,7 +477,7 @@ def test_aggregations(alltypes):
         d.var(where=cond),
     ]
 
-    metrics = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+    metrics = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
 
     agged_table = table.aggregate(metrics)
     agged_table.execute()
@@ -486,7 +486,7 @@ def test_aggregations(alltypes):
 def test_analytic_functions(alltypes):
     t = alltypes.limit(1000)
 
-    g = t.group_by('string_col').order_by('double_col')
+    g = t.group_by("string_col").order_by("double_col")
     f = t.float_col
 
     exprs = [
@@ -514,7 +514,7 @@ def test_analytic_functions(alltypes):
         f.max(),
     ]
 
-    proj_exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
 
     proj_table = g.mutate(proj_exprs)
     proj_table.execute()
@@ -528,16 +528,16 @@ def test_anti_join_self_reference_works(con, alltypes):
 
 
 def test_tpch_self_join_failure(con):
-    region = con.table('region')
-    nation = con.table('nation')
-    customer = con.table('customer')
-    orders = con.table('orders')
+    region = con.table("region")
+    nation = con.table("nation")
+    customer = con.table("customer")
+    orders = con.table("orders")
 
     fields_of_interest = [
-        region.r_name.name('region'),
-        nation.n_name.name('nation'),
-        orders.o_totalprice.name('amount'),
-        orders.o_orderdate.cast('timestamp').name('odate'),
+        region.r_name.name("region"),
+        nation.n_name.name("nation"),
+        orders.o_totalprice.name("amount"),
+        orders.o_orderdate.cast("timestamp").name("odate"),
     ]
 
     joined_all = (
@@ -546,14 +546,14 @@ def test_tpch_self_join_failure(con):
         .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
     )
 
-    year = joined_all.odate.year().name('year')
-    total = joined_all.amount.sum().cast('double').name('total')
-    annual_amounts = joined_all.group_by(['region', year]).aggregate(total)
+    year = joined_all.odate.year().name("year")
+    total = joined_all.amount.sum().cast("double").name("total")
+    annual_amounts = joined_all.group_by(["region", year]).aggregate(total)
 
     current = annual_amounts
     prior = annual_amounts.view()
 
-    yoy_change = (current.total - prior.total).name('yoy_change')
+    yoy_change = (current.total - prior.total).name("yoy_change")
     yoy = current.join(
         prior,
         ((current.region == prior.region) & (current.year == (prior.year - 1))),
@@ -565,16 +565,16 @@ def test_tpch_self_join_failure(con):
 
 def test_tpch_correlated_subquery_failure(con):
     # #183 and other issues
-    region = con.table('region')
-    nation = con.table('nation')
-    customer = con.table('customer')
-    orders = con.table('orders')
+    region = con.table("region")
+    nation = con.table("nation")
+    customer = con.table("customer")
+    orders = con.table("orders")
 
     fields_of_interest = [
         customer,
-        region.r_name.name('region'),
-        orders.o_totalprice.name('amount'),
-        orders.o_orderdate.cast('timestamp').name('odate'),
+        region.r_name.name("region"),
+        orders.o_totalprice.name("amount"),
+        orders.o_orderdate.cast("timestamp").name("odate"),
     ]
 
     tpch = (
@@ -592,7 +592,7 @@ def test_tpch_correlated_subquery_failure(con):
 
 
 def test_non_equijoin(con):
-    t = con.table('functional_alltypes').limit(100)
+    t = con.table("functional_alltypes").limit(100)
     t2 = t.view()
 
     expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
@@ -616,8 +616,8 @@ FROM functional_alltypes"""
 def test_unions_with_ctes(con, alltypes):
     t = alltypes
 
-    expr1 = t.group_by(['tinyint_col', 'string_col']).aggregate(
-        t.double_col.sum().name('metric')
+    expr1 = t.group_by(["tinyint_col", "string_col"]).aggregate(
+        t.double_col.sum().name("metric")
     )
     expr2 = expr1.view()
 
@@ -629,19 +629,19 @@ def test_unions_with_ctes(con, alltypes):
 
 
 def test_head(con):
-    t = con.table('functional_alltypes')
+    t = con.table("functional_alltypes")
     result = t.head().execute()
     expected = t.limit(5).execute()
     tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('left', 'right', 'expected'),
+    ("left", "right", "expected"),
     [
-        (ibis.NA.cast('int64'), ibis.NA.cast('int64'), True),
+        (ibis.NA.cast("int64"), ibis.NA.cast("int64"), True),
         (L(1), L(1), True),
-        (ibis.NA.cast('int64'), L(1), False),
-        (L(1), ibis.NA.cast('int64'), False),
+        (ibis.NA.cast("int64"), L(1), False),
+        (L(1), ibis.NA.cast("int64"), False),
         (L(0), L(1), False),
         (L(1), L(0), False),
     ],
@@ -662,27 +662,27 @@ def test_not(alltypes):
 
 def test_where_with_timestamp(snapshot):
     t = ibis.table(
-        [('uuid', 'string'), ('ts', 'timestamp'), ('search_level', 'int64')],
-        name='t',
+        [("uuid", "string"), ("ts", "timestamp"), ("search_level", "int64")],
+        name="t",
     )
     expr = t.group_by(t.uuid).aggregate(min_date=t.ts.min(where=t.search_level == 1))
     snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
 
 
 def test_filter_with_analytic(snapshot):
-    x = ibis.table(ibis.schema([('col', 'int32')]), 'x')
-    with_filter_col = x[x.columns + [ibis.null().name('filter')]]
-    filtered = with_filter_col[with_filter_col['filter'].isnull()]
+    x = ibis.table(ibis.schema([("col", "int32")]), "x")
+    with_filter_col = x[x.columns + [ibis.null().name("filter")]]
+    filtered = with_filter_col[with_filter_col["filter"].isnull()]
     subquery = filtered[filtered.columns]
 
-    with_analytic = subquery[['col', subquery.count().name('analytic')]]
+    with_analytic = subquery[["col", subquery.count().name("analytic")]]
     expr = with_analytic[with_analytic.columns]
 
     snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
 
 
 def test_named_from_filter_group_by(snapshot):
-    t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
+    t = ibis.table([("key", "string"), ("value", "double")], name="t0")
     gb = t.filter(t.value == 42).group_by(t.key)
     sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()
     expr = gb.aggregate(abc=sum_expr)
@@ -693,6 +693,6 @@ def test_named_from_filter_group_by(snapshot):
 
 
 def test_nunique_where(snapshot):
-    t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
+    t = ibis.table([("key", "string"), ("value", "double")], name="t0")
     expr = t.key.nunique(where=t.value >= 1.0)
     snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
