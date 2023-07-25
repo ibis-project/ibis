@@ -74,18 +74,18 @@ class TemporalUnit(Unit):
     @classmethod
     def aliases(cls):
         return {
-            'd': 'D',
-            'H': 'h',
-            'HH24': 'h',
-            'J': 'D',
-            'MI': 'm',
-            'q': 'Q',
-            'SYYYY': 'Y',
-            'w': 'W',
-            'y': 'Y',
-            'YY': 'Y',
-            'YYY': 'Y',
-            'YYYY': 'Y',
+            "d": "D",
+            "H": "h",
+            "HH24": "h",
+            "J": "D",
+            "MI": "m",
+            "q": "Q",
+            "SYYYY": "Y",
+            "w": "W",
+            "y": "Y",
+            "YY": "Y",
+            "YYY": "Y",
+            "YYYY": "Y",
         }
 
 
@@ -170,10 +170,10 @@ def normalize_timedelta(
     if isinstance(value, datetime.timedelta):
         # datetime.timedelta only stores days, seconds, and microseconds internally
         if value.days and not (value.seconds or value.microseconds):
-            value = util.convert_unit(value.days, 'D', unit.short, floor=False)
+            value = util.convert_unit(value.days, "D", unit.short, floor=False)
         else:
             total_seconds = Decimal(str(value.total_seconds()))
-            value = util.convert_unit(total_seconds, 's', unit.short, floor=False)
+            value = util.convert_unit(total_seconds, "s", unit.short, floor=False)
     else:
         value = Decimal(value)
 
@@ -240,14 +240,14 @@ def _from_datetime(value):
     return value.replace(tzinfo=normalize_timezone(value.tzinfo))
 
 
-@normalize_datetime.register('pandas.Timestamp')
+@normalize_datetime.register("pandas.Timestamp")
 def _from_pandas_timestamp(value):
     # TODO(kszucs): it would make sense to preserve nanoseconds precision by
     # keeping the pandas.Timestamp object
     return value.to_pydatetime()
 
 
-@normalize_datetime.register('numpy.datetime64')
+@normalize_datetime.register("numpy.datetime64")
 def _from_numpy_datetime64(value):
     try:
         import pandas as pd

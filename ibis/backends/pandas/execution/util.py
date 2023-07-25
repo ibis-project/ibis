@@ -76,7 +76,7 @@ def compute_sorted_frame(df, order_by, group_by=(), timecontext=None, **kwargs):
 
     result = df.assign(**new_columns)
     result = result.sort_values(
-        computed_sort_keys, ascending=ascending, kind='mergesort'
+        computed_sort_keys, ascending=ascending, kind="mergesort"
     )
     # TODO: we'll eventually need to return this frame with the temporary
     # columns and drop them in the caller (maybe using post_execute?)

@@ -71,7 +71,7 @@ register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
 
 @execute_node.register(ops.MapLength, dd.Series)
 def map_length_series(op, data, **kwargs):
-    return data.map(len, na_action='ignore')
+    return data.map(len, na_action="ignore")
 
 
 def none_filled_dask_series(n):

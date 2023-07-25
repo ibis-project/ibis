@@ -9,7 +9,7 @@ from public import public
 import ibis.expr.datatypes.core as dt
 from ibis.common.exceptions import IbisTypeError
 
-castable = Dispatcher('castable')
+castable = Dispatcher("castable")
 
 
 @public
@@ -19,7 +19,7 @@ def cast(source: str | dt.DataType, target: str | dt.DataType, **kwargs) -> dt.D
 
     if not castable(source, target, **kwargs):
         raise IbisTypeError(
-            f'Datatype {source} cannot be implicitly casted to {target}'
+            f"Datatype {source} cannot be implicitly casted to {target}"
         )
     return target
 
@@ -33,7 +33,7 @@ def higher_precedence(left: dt.DataType, right: dt.DataType) -> dt.DataType:
     elif castable(right, left, upcast=True):
         return left.copy(nullable=nullable)
 
-    raise IbisTypeError(f'Cannot compute precedence for `{left}` and `{right}` types')
+    raise IbisTypeError(f"Cannot compute precedence for `{left}` and `{right}` types")
 
 
 @public

@@ -27,14 +27,14 @@ def test_reduction_where(alltypes, translate, reduction, snapshot):
 def test_std_var_pop(con, alltypes, method, translate, snapshot):
     cond = alltypes.bigint_col < 70
     col = alltypes.double_col
-    expr = getattr(col, method)(where=cond, how='pop')
+    expr = getattr(col, method)(where=cond, how="pop")
     snapshot.assert_match(translate(expr.op()), "out.sql")
     assert isinstance(con.execute(expr), float)
 
 
-@pytest.mark.parametrize('reduction', ['sum', 'count', 'max', 'min'])
+@pytest.mark.parametrize("reduction", ["sum", "count", "max", "min"])
 def test_reduction_invalid_where(alltypes, reduction):
-    condbad_literal = ibis.literal('T')
+    condbad_literal = ibis.literal("T")
 
     with pytest.raises(ValidationError):
         fn = methodcaller(reduction, where=condbad_literal)
@@ -42,7 +42,7 @@ def test_reduction_invalid_where(alltypes, reduction):
 
 
 @pytest.mark.parametrize(
-    ('func', 'pandas_func'),
+    ("func", "pandas_func"),
     [
         (
             lambda t, cond: t.bool_col.count(),
@@ -81,11 +81,11 @@ def test_reduction_invalid_where(alltypes, reduction):
             lambda df, cond: df.double_col.std(),
         ),
         (
-            lambda t, cond: t.double_col.var(how='sample'),
+            lambda t, cond: t.double_col.var(how="sample"),
             lambda df, cond: df.double_col.var(ddof=1),
         ),
         (
-            lambda t, cond: t.double_col.std(how='pop'),
+            lambda t, cond: t.double_col.std(how="pop"),
             lambda df, cond: df.double_col.std(ddof=0),
         ),
         (
@@ -121,11 +121,11 @@ def test_reduction_invalid_where(alltypes, reduction):
             lambda df, cond: df.double_col[cond].std(),
         ),
         (
-            lambda t, cond: t.double_col.var(where=cond, how='sample'),
+            lambda t, cond: t.double_col.var(where=cond, how="sample"),
             lambda df, cond: df.double_col[cond].var(),
         ),
         (
-            lambda t, cond: t.double_col.std(where=cond, how='pop'),
+            lambda t, cond: t.double_col.std(where=cond, how="pop"),
             lambda df, cond: df.double_col[cond].std(ddof=0),
         ),
     ],
@@ -135,8 +135,8 @@ def test_aggregations(alltypes, df, func, pandas_func, translate):
     count = table.count().execute()
     df = df.head(int(count))
 
-    cond = table.string_col.isin(['1', '7'])
-    mask = cond.execute().astype('bool')
+    cond = table.string_col.isin(["1", "7"])
+    mask = cond.execute().astype("bool")
     expr = func(table, cond)
 
     result = expr.execute()
@@ -146,14 +146,14 @@ def test_aggregations(alltypes, df, func, pandas_func, translate):
 
 
 @pytest.mark.parametrize(
-    'op',
+    "op",
     [
-        methodcaller('sum'),
-        methodcaller('mean'),
-        methodcaller('min'),
-        methodcaller('max'),
-        methodcaller('std'),
-        methodcaller('var'),
+        methodcaller("sum"),
+        methodcaller("mean"),
+        methodcaller("min"),
+        methodcaller("max"),
+        methodcaller("std"),
+        methodcaller("var"),
     ],
 )
 def test_boolean_reduction(alltypes, op, df):
@@ -164,6 +164,6 @@ def test_boolean_reduction(alltypes, op, df):
 def test_anonymous_aggregate(alltypes, df):
     t = alltypes
     expr = t[t.double_col > t.double_col.mean()]
-    result = expr.execute().set_index('id')
-    expected = df[df.double_col > df.double_col.mean()].set_index('id')
+    result = expr.execute().set_index("id")
+    expected = df[df.double_col > df.double_col.mean()].set_index("id")
     tm.assert_frame_equal(result, expected, check_like=True)

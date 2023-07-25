@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
 
 class Backend(BaseAlchemyBackend, CanListDatabases):
-    name = 'sqlite'
+    name = "sqlite"
     compiler = SQLiteCompiler
     supports_create_or_replace = False
     supports_python_udfs = True
@@ -167,7 +167,7 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
     ) -> sa.Table:
         prefixes = []
         if temp:
-            prefixes.append('TEMPORARY')
+            prefixes.append("TEMPORARY")
         columns = self._columns_from_schema(name, schema)
         return sa.Table(
             name, sa.MetaData(), *columns, schema=database, prefixes=prefixes

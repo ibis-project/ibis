@@ -25,7 +25,7 @@ from ibis.backends.pandas.execution.util import get_grouping
 
 @execute_node.register(ops.StringLength, pd.Series)
 def execute_string_length_series(op, data, **kwargs):
-    return data.str.len().astype('int32')
+    return data.str.len().astype("int32")
 
 
 @execute_node.register(
@@ -88,14 +88,14 @@ def execute_string_rstrip(op, data, **kwargs):
     ops.LPad, pd.Series, (pd.Series,) + integer_types, (pd.Series, str)
 )
 def execute_string_lpad(op, data, length, pad, **kwargs):
-    return data.str.pad(length, side='left', fillchar=pad)
+    return data.str.pad(length, side="left", fillchar=pad)
 
 
 @execute_node.register(
     ops.RPad, pd.Series, (pd.Series,) + integer_types, (pd.Series, str)
 )
 def execute_string_rpad(op, data, length, pad, **kwargs):
-    return data.str.pad(length, side='right', fillchar=pad)
+    return data.str.pad(length, side="right", fillchar=pad)
 
 
 @execute_node.register(ops.Reverse, pd.Series)
@@ -154,10 +154,10 @@ def _sql_like_to_regex(pattern, escape):
         if nxt is not None and escape is not None and cur == escape:
             yield nxt
             skip = 2
-        elif cur == '%':
-            yield '.*'
-        elif cur == '_':
-            yield '.'
+        elif cur == "%":
+            yield ".*"
+        elif cur == "_":
+            yield "."
         else:
             yield cur
 
@@ -242,7 +242,7 @@ def execute_group_concat_series_gb_mask(op, data, sep, mask, aggcontext=None, **
 
 @execute_node.register(ops.StringAscii, pd.Series)
 def execute_string_ascii(op, data, **kwargs):
-    return data.map(ord).astype('int32')
+    return data.map(ord).astype("int32")
 
 
 @execute_node.register(ops.StringAscii, SeriesGroupBy)
@@ -261,7 +261,7 @@ def execute_series_regex_search(op, data, pattern, **kwargs):
 @execute_node.register(ops.RegexSearch, SeriesGroupBy, str)
 def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     return execute_series_regex_search(
-        op, data, getattr(pattern, 'obj', pattern), **kwargs
+        op, data, getattr(pattern, "obj", pattern), **kwargs
     ).groupby(get_grouping(data.grouper.groupings), group_keys=False)
 
 
@@ -380,12 +380,12 @@ def execute_series_join_scalar_sep(op, sep, args, **kwargs):
 def haystack_to_series_of_lists(haystack, index=None):
     if index is None:
         index = toolz.first(
-            piece.index for piece in haystack if hasattr(piece, 'index')
+            piece.index for piece in haystack if hasattr(piece, "index")
         )
     pieces = reduce(
         operator.add,
         (
-            pd.Series(getattr(piece, 'values', piece), index=index).map(
+            pd.Series(getattr(piece, "values", piece), index=index).map(
                 ibis.util.promote_list
             )
             for piece in haystack
@@ -408,7 +408,7 @@ def execute_series_find_in_set(op, needle, haystack, **kwargs):
 
 @execute_node.register(ops.FindInSet, SeriesGroupBy, list)
 def execute_series_group_by_find_in_set(op, needle, haystack, **kwargs):
-    pieces = [getattr(piece, 'obj', piece) for piece in haystack]
+    pieces = [getattr(piece, "obj", piece) for piece in haystack]
     return execute_series_find_in_set(op, needle.obj, pieces, **kwargs).groupby(
         get_grouping(needle.grouper.groupings), group_keys=False
     )
@@ -430,10 +430,10 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
     try:
         (collection_type,) = frozenset(map(type, series_in_haystack))
     except ValueError:
-        raise ValueError('Mixing Series and SeriesGroupBy is not allowed')
+        raise ValueError("Mixing Series and SeriesGroupBy is not allowed")
 
     pieces = haystack_to_series_of_lists(
-        [getattr(piece, 'obj', piece) for piece in haystack]
+        [getattr(piece, "obj", piece) for piece in haystack]
     )
 
     result = pieces.map(toolz.flip(ibis.util.safe_index)(needle))
@@ -447,7 +447,7 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
             toolz.first(
                 piece.grouper.groupings
                 for piece in haystack
-                if hasattr(piece, 'grouper')
+                if hasattr(piece, "grouper")
             )
         ),
         group_keys=False,

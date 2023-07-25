@@ -249,9 +249,9 @@ def execute_until_in_scope(
 ) -> Scope:
     """Execute until our op is in `scope`."""
     # these should never be None
-    assert aggcontext is not None, 'aggcontext is None'
-    assert clients is not None, 'clients is None'
-    assert post_execute_ is not None, 'post_execute_ is None'
+    assert aggcontext is not None, "aggcontext is None"
+    assert clients is not None, "clients is None"
+    assert post_execute_ is not None, "post_execute_ is None"
 
     # base case: our op has been computed (or is a leaf data node), so
     # return the corresponding value
@@ -315,8 +315,8 @@ def execute_until_in_scope(
     # further execution
     if len(arg_timecontexts) != len(computable_args):
         raise com.IbisError(
-            'arg_timecontexts differ with computable_arg in length '
-            f'for type:\n{type(node).__name__}.'
+            "arg_timecontexts differ with computable_arg in length "
+            f"for type:\n{type(node).__name__}."
         )
 
     scopes = [
@@ -336,7 +336,7 @@ def execute_until_in_scope(
 
     # if we're unable to find data then raise an exception
     if not scopes and computable_args:
-        raise com.UnboundExpressionError(f'Unable to find data for node:\n{node!r}')
+        raise com.UnboundExpressionError(f"Unable to find data for node:\n{node!r}")
 
     # there should be exactly one dictionary per computable argument
     assert len(computable_args) == len(scopes)
@@ -362,7 +362,7 @@ def execute_until_in_scope(
     return Scope({node: computed}, timecontext)
 
 
-execute = Dispatcher('execute')
+execute = Dispatcher("execute")
 
 
 @execute.register(ops.Node)
@@ -506,7 +506,7 @@ def _apply_schema(op: ops.Node, result: pd.DataFrame | pd.Series):
 
 
 compute_time_context = Dispatcher(
-    'compute_time_context',
+    "compute_time_context",
     doc="""Compute the time context for a node in execution.
 
 Notes
@@ -553,7 +553,7 @@ def compute_time_context_default(
     return [timecontext for arg in get_node_arguments(node) if is_computable_input(arg)]
 
 
-get_node_arguments = Dispatcher('get_node_arguments')
+get_node_arguments = Dispatcher("get_node_arguments")
 
 
 @get_node_arguments.register(ops.Node)

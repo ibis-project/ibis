@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 @pytest.fixture
 def new_schema():
-    return ibis.schema([('a', 'string'), ('b', 'bool'), ('c', 'int32')])
+    return ibis.schema([("a", "string"), ("b", "bool"), ("c", "int32")])
 
 
 def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
@@ -72,10 +72,10 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
     [
         ibis.schema(
             [
-                ('first_name', 'string'),
-                ('last_name', 'string'),
-                ('department_name', 'string'),
-                ('salary', 'float64'),
+                ("first_name", "string"),
+                ("last_name", "string"),
+                ("department_name", "string"),
+                ("salary", "float64"),
             ]
         ),
         None,
@@ -86,10 +86,10 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 def test_create_table(backend, con, temp_table, lamduh, sch):
     df = pd.DataFrame(
         {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
+            "first_name": ["A", "B", "C"],
+            "last_name": ["D", "E", "F"],
+            "department_name": ["AA", "BB", "CC"],
+            "salary": [100.0, 200.0, 300.0],
         }
     )
 
@@ -110,19 +110,19 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
 def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, lamduh):
     sch = ibis.schema(
         [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
+            ("first_name", "string"),
+            ("last_name", "string"),
+            ("department_name", "string"),
+            ("salary", "float64"),
         ]
     )
 
     df = pd.DataFrame(
         {
-            'first_name': ['A', 'B', 'C'],
-            'last_name': ['D', 'E', 'F'],
-            'department_name': ['AA', 'BB', 'CC'],
-            'salary': [100.0, 200.0, 300.0],
+            "first_name": ["A", "B", "C"],
+            "last_name": ["D", "E", "F"],
+            "department_name": ["AA", "BB", "CC"],
+            "salary": [100.0, 200.0, 300.0],
         }
     )
 
@@ -139,12 +139,12 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
 
 
 @mark.parametrize(
-    ('expr_fn', 'expected'),
+    ("expr_fn", "expected"),
     [
-        param(lambda t: t.string_col, [('string_col', dt.String)], id="column"),
+        param(lambda t: t.string_col, [("string_col", dt.String)], id="column"),
         param(
             lambda t: t[t.string_col, t.bigint_col],
-            [('string_col', dt.String), ('bigint_col', dt.Int64)],
+            [("string_col", dt.String), ("bigint_col", dt.Int64)],
             id="table",
         ),
     ],
@@ -280,7 +280,7 @@ def test_rename_table(con, temp_table, temp_table_orig, new_schema):
 )
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
-        [('foo', 'int64'), ('bar', dt.int64(nullable=False)), ('baz', 'boolean')]
+        [("foo", "int64"), ("bar", dt.int64(nullable=False)), ("baz", "boolean")]
     )
     t = con.create_table(temp_table, schema=sch)
 
@@ -292,7 +292,7 @@ def test_nullable_input_output(con, temp_table):
 @mark.notimpl(["datafusion", "druid", "polars"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
-    table_name = 'functional_alltypes'
+    table_name = "functional_alltypes"
     try:
         expr = ddl_con.table(table_name)
     except (KeyError, sa.exc.NoSuchTableError):
@@ -480,9 +480,9 @@ def test_insert_overwrite_from_list(
     alchemy_con.insert(
         employee_data_1_temp_table,
         [
-            _emp('Adam', 'Smith', 'Accounting', 50000.0),
-            _emp('Mohammed', 'Ali', 'Boxing', 150000),
-            _emp('María', 'Gonzalez', 'Engineering', 100000.0),
+            _emp("Adam", "Smith", "Accounting", 50000.0),
+            _emp("Mohammed", "Ali", "Boxing", 150000),
+            _emp("María", "Gonzalez", "Engineering", 100000.0),
         ],
         overwrite=True,
     )
@@ -888,7 +888,7 @@ ibis.read_parquet("foo.parquet")"""
 def test_default_backend():
     pytest.importorskip("duckdb")
 
-    df = pd.DataFrame({'a': [1, 2, 3]})
+    df = pd.DataFrame({"a": [1, 2, 3]})
     t = ibis.memtable(df)
     expr = t.a.sum()
     # run this twice to ensure that we hit the optimizations in

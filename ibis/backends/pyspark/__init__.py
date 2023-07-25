@@ -162,7 +162,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         # that is brought in without a specified time zone is converted as
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-        self._session.conf.set('spark.sql.session.timeZone', 'UTC')
+        self._session.conf.set("spark.sql.session.timeZone", "UTC")
 
     @property
     def version(self):
@@ -187,7 +187,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         """Compile an ibis expression to a PySpark DataFrame object."""
 
         if timecontext is not None:
-            session_timezone = self._session.conf.get('spark.sql.session.timeZone')
+            session_timezone = self._session.conf.get("spark.sql.session.timeZone")
             # Since spark use session timezone for tz-naive timestamps
             # we localize tz-naive context here to match that behavior
             timecontext = localize_context(
@@ -331,7 +331,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         """
         if database is not None:
             raise com.UnsupportedArgumentError(
-                'Spark does not support the `database` argument for `get_schema`'
+                "Spark does not support the `database` argument for `get_schema`"
             )
 
         df = self._session.table(table_name)

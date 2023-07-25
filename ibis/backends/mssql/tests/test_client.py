@@ -9,45 +9,45 @@ from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 DB_TYPES = [
     # Exact numbers
-    ('BIGINT', dt.int64),
-    ('BIT', dt.boolean),
-    ('DECIMAL', dt.Decimal(precision=18, scale=0)),
-    ('DECIMAL(5, 2)', dt.Decimal(precision=5, scale=2)),
-    ('INT', dt.int32),
-    ('MONEY', dt.int64),
-    ('NUMERIC', dt.Decimal(18, 0)),
-    ('NUMERIC(10,5)', dt.Decimal(10, 5)),
-    ('NUMERIC(14,3)', dt.Decimal(14, 3)),
-    ('SMALLINT', dt.int16),
-    ('SMALLMONEY', dt.int32),
-    ('TINYINT', dt.int8),
+    ("BIGINT", dt.int64),
+    ("BIT", dt.boolean),
+    ("DECIMAL", dt.Decimal(precision=18, scale=0)),
+    ("DECIMAL(5, 2)", dt.Decimal(precision=5, scale=2)),
+    ("INT", dt.int32),
+    ("MONEY", dt.int64),
+    ("NUMERIC", dt.Decimal(18, 0)),
+    ("NUMERIC(10,5)", dt.Decimal(10, 5)),
+    ("NUMERIC(14,3)", dt.Decimal(14, 3)),
+    ("SMALLINT", dt.int16),
+    ("SMALLMONEY", dt.int32),
+    ("TINYINT", dt.int8),
     # Approximate numerics
-    ('REAL', dt.float32),
-    ('FLOAT', dt.float64),
-    ('FLOAT(3)', dt.float32),
-    ('FLOAT(25)', dt.float64),
+    ("REAL", dt.float32),
+    ("FLOAT", dt.float64),
+    ("FLOAT(3)", dt.float32),
+    ("FLOAT(25)", dt.float64),
     # Date and time
-    ('DATE', dt.date),
-    ('TIME', dt.time),
-    ('DATETIME2', dt.timestamp(scale=7)),
-    ('DATETIMEOFFSET', dt.timestamp(scale=7, timezone="UTC")),
-    ('SMALLDATETIME', dt.timestamp),
-    ('DATETIME', dt.timestamp),
+    ("DATE", dt.date),
+    ("TIME", dt.time),
+    ("DATETIME2", dt.timestamp(scale=7)),
+    ("DATETIMEOFFSET", dt.timestamp(scale=7, timezone="UTC")),
+    ("SMALLDATETIME", dt.timestamp),
+    ("DATETIME", dt.timestamp),
     # Characters strings
-    ('CHAR', dt.string),
-    ('TEXT', dt.string),
-    ('VARCHAR', dt.string),
+    ("CHAR", dt.string),
+    ("TEXT", dt.string),
+    ("VARCHAR", dt.string),
     # Unicode character strings
-    ('NCHAR', dt.string),
-    ('NTEXT', dt.string),
-    ('NVARCHAR', dt.string),
+    ("NCHAR", dt.string),
+    ("NTEXT", dt.string),
+    ("NVARCHAR", dt.string),
     # Binary strings
-    ('BINARY', dt.binary),
-    ('VARBINARY', dt.binary),
-    ('IMAGE', dt.binary),
+    ("BINARY", dt.binary),
+    ("VARBINARY", dt.binary),
+    ("IMAGE", dt.binary),
     # Other data types
-    ('UNIQUEIDENTIFIER', dt.uuid),
-    ('TIMESTAMP', dt.binary(nullable=False)),
+    ("UNIQUEIDENTIFIER", dt.uuid),
+    ("TIMESTAMP", dt.binary(nullable=False)),
 ]
 
 
@@ -69,10 +69,10 @@ broken_sqlalchemy_autoload = pytest.mark.xfail(
     ]
     + [
         param(
-            'DATETIME2(4)', dt.timestamp(scale=4), marks=[broken_sqlalchemy_autoload]
+            "DATETIME2(4)", dt.timestamp(scale=4), marks=[broken_sqlalchemy_autoload]
         ),
         param(
-            'DATETIMEOFFSET(5)',
+            "DATETIMEOFFSET(5)",
             dt.timestamp(scale=5, timezone="UTC"),
             marks=[broken_sqlalchemy_autoload],
         ),

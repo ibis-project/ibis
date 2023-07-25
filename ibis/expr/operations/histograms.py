@@ -17,7 +17,7 @@ from ibis.expr.operations.core import Column, Value
 class Bucket(Value):
     arg: Column[dt.Numeric | dt.Boolean]
     buckets: VarTuple[numbers.Real]
-    closed: Literal['left', 'right'] = 'left'
+    closed: Literal["left", "right"] = "left"
     close_extreme: bool = True
     include_under: bool = False
     include_over: bool = False
@@ -30,12 +30,12 @@ class Bucket(Value):
 
     def __init__(self, buckets, include_under, include_over, **kwargs):
         if not buckets:
-            raise ValidationError('Must be at least one bucket edge')
+            raise ValidationError("Must be at least one bucket edge")
         elif len(buckets) == 1:
             if not include_under or not include_over:
                 raise ValidationError(
-                    'If one bucket edge provided, must have '
-                    'include_under=True and include_over=True'
+                    "If one bucket edge provided, must have "
+                    "include_under=True and include_over=True"
                 )
         super().__init__(
             buckets=buckets,

@@ -55,18 +55,18 @@ def test_struct_field_literal(value):
         [("fruit", dt.string), ("weight", dt.int8)]
     )
 
-    expr = struct['fruit']
+    expr = struct["fruit"]
     result = execute(expr.op())
     assert result == "pear"
 
-    expr = struct['weight']
+    expr = struct["weight"]
     result = execute(expr.op())
     assert result == 0
 
 
 def test_struct_field_series(struct_table):
     t = struct_table
-    expr = t.s['fruit']
+    expr = t.s["fruit"]
     result = expr.compile()
     expected = dd.from_pandas(
         pd.Series(["apple", "pear", "pear"], name="fruit"),
@@ -77,7 +77,7 @@ def test_struct_field_series(struct_table):
 
 def test_struct_field_series_group_by_key(struct_table):
     t = struct_table
-    expr = t.group_by(t.s['fruit']).aggregate(total=t.value.sum())
+    expr = t.group_by(t.s["fruit"]).aggregate(total=t.value.sum())
     result = expr.compile()
     expected = dd.from_pandas(
         pd.DataFrame([("apple", 1), ("pear", 5)], columns=["fruit", "total"]),
@@ -91,7 +91,7 @@ def test_struct_field_series_group_by_key(struct_table):
 
 def test_struct_field_series_group_by_value(struct_table):
     t = struct_table
-    expr = t.group_by(t.key).aggregate(total=t.s['weight'].sum())
+    expr = t.group_by(t.key).aggregate(total=t.s["weight"].sum())
     result = expr.compile()
     # these are floats because we have a NULL value in the input data
     expected = dd.from_pandas(

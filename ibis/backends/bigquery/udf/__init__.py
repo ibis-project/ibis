@@ -295,9 +295,9 @@ return {f.__name__}({args});\
             f"\nOPTIONS (\n    library={list(libraries)!r}\n)" if libraries else ""
         )
         determinism_formatted = {
-            True: 'DETERMINISTIC\n',
-            False: 'NOT DETERMINISTIC\n',
-            None: '',
+            True: "DETERMINISTIC\n",
+            False: "NOT DETERMINISTIC\n",
+            None: "",
         }.get(determinism)
         sql_code = f'''\
 CREATE TEMPORARY FUNCTION {udf_node.__name__}({bigquery_signature})
@@ -392,10 +392,10 @@ RETURNS {return_type}
             )
             for name, type_ in params.items()
         )
-        sql_code = f'''\
+        sql_code = f"""\
 CREATE TEMPORARY FUNCTION {udf_node.__name__}({bigquery_signature})
 RETURNS {return_type}
-AS ({sql_expression});'''
+AS ({sql_expression});"""
 
         def wrapper(*args, **kwargs):
             node = udf_node(*args, **kwargs)

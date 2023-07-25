@@ -264,10 +264,10 @@ def convert_unit(value, unit, to, floor: bool = True):
     if unit == to:
         return value
 
-    units = ('W', 'D', 'h', 'm', 's', 'ms', 'us', 'ns')
+    units = ("W", "D", "h", "m", "s", "ms", "us", "ns")
     factors = (7, 24, 60, 60, 1000, 1000, 1000)
 
-    monthly_units = ('Y', 'Q', 'M')
+    monthly_units = ("Y", "Q", "M")
     monthly_factors = (4, 3)
 
     try:
@@ -323,17 +323,17 @@ def get_logger(
 
     if format is None:
         format = (
-            '%(relativeCreated)6d '
-            '%(name)-20s '
-            '%(levelname)-8s '
-            '%(threadName)-25s '
-            '%(message)s'
+            "%(relativeCreated)6d "
+            "%(name)-20s "
+            "%(levelname)-8s "
+            "%(threadName)-25s "
+            "%(message)s"
         )
     handler.setFormatter(logging.Formatter(fmt=format))
     logger = logging.getLogger(name)
     logger.propagate = propagate
     logger.setLevel(
-        level or getattr(logging, os.environ.get('LOGLEVEL', 'WARNING').upper())
+        level or getattr(logging, os.environ.get("LOGLEVEL", "WARNING").upper())
     )
     logger.addHandler(handler)
     return logger
@@ -386,7 +386,7 @@ def deprecated_msg(name, *, instead, as_of="", removed_in=""):
 
     if msgs:
         msg += f" {', '.join(msgs)}"
-    msg += f'; {instead}'
+    msg += f"; {instead}"
     return msg
 
 

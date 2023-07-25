@@ -53,7 +53,7 @@ class Arbitrary(Filterable, Reduction):
     arg: Column[dt.Any]
     how: Literal["first", "last", "heavy"]
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -110,7 +110,7 @@ class BitAnd(Filterable, Reduction):
 
     arg: Column[dt.Integer]
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -128,7 +128,7 @@ class BitOr(Filterable, Reduction):
 
     arg: Column[dt.Integer]
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -146,7 +146,7 @@ class BitXor(Filterable, Reduction):
 
     arg: Column[dt.Integer]
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -187,7 +187,7 @@ class Quantile(Filterable, Reduction):
     arg: Value
     quantile: Value[dt.Numeric]
     interpolation: Optional[
-        Literal['linear', 'lower', 'higher', 'midpoint', 'nearest']
+        Literal["linear", "lower", "higher", "midpoint", "nearest"]
     ] = None
 
     dtype = dt.float64
@@ -198,7 +198,7 @@ class MultiQuantile(Filterable, Reduction):
     arg: Value
     quantile: Value[dt.Array[dt.Float64]]
     interpolation: Optional[
-        Literal['linear', 'lower', 'higher', 'midpoint', 'nearest']
+        Literal["linear", "lower", "higher", "midpoint", "nearest"]
     ] = None
 
     dtype = dt.Array(dt.float64)
@@ -233,7 +233,7 @@ class Correlation(Filterable, Reduction):
 
     left: Column[dt.Numeric | dt.Boolean]
     right: Column[dt.Numeric | dt.Boolean]
-    how: Literal['sample', 'pop'] = 'sample'
+    how: Literal["sample", "pop"] = "sample"
 
     dtype = dt.float64
 
@@ -244,7 +244,7 @@ class Covariance(Filterable, Reduction):
 
     left: Column[dt.Numeric | dt.Boolean]
     right: Column[dt.Numeric | dt.Boolean]
-    how: Literal['sample', 'pop']
+    how: Literal["sample", "pop"]
 
     dtype = dt.float64
 
@@ -253,21 +253,21 @@ class Covariance(Filterable, Reduction):
 class Mode(Filterable, Reduction):
     arg: Column
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class Max(Filterable, Reduction):
     arg: Column
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class Min(Filterable, Reduction):
     arg: Column
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public
@@ -305,7 +305,7 @@ class ApproxMedian(Filterable, Reduction):
 
     arg: Column
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
 
 
 @public

@@ -113,9 +113,9 @@ def convert_sort(sort, catalog):
 
 
 _join_types = {
-    '': 'inner',
-    'LEFT': 'left',
-    'RIGHT': 'right',
+    "": "inner",
+    "LEFT": "left",
+    "RIGHT": "right",
 }
 
 
@@ -127,10 +127,10 @@ def convert_join(join, catalog):
     for right_name, desc in join.joins.items():
         left_table = catalog[left_name]
         right_table = catalog[right_name]
-        join_kind = _join_types[desc['side']]
+        join_kind = _join_types[desc["side"]]
 
         predicate = None
-        for left_key, right_key in zip(desc['source_key'], desc['join_key']):
+        for left_key, right_key in zip(desc["source_key"], desc["join_key"]):
             left_key = convert(left_key, catalog=catalog)
             right_key = convert(right_key, catalog=catalog)
             if predicate is None:
@@ -190,7 +190,7 @@ def convert_column(column, catalog):
 @convert.register(sge.Ordered)
 def convert_ordered(ordered, catalog):
     this = convert(ordered.this, catalog=catalog)
-    desc = ordered.args['desc']  # not exposed as an attribute
+    desc = ordered.args["desc"]  # not exposed as an attribute
     return ibis.desc(this) if desc else ibis.asc(this)
 
 
@@ -239,12 +239,12 @@ def convert_binary(binary, catalog):
 
 
 _reduction_methods = {
-    sge.Max: 'max',
-    sge.Min: 'min',
-    sge.Quantile: 'quantile',
-    sge.Sum: 'sum',
-    sge.Avg: 'mean',
-    sge.Count: 'count',
+    sge.Max: "max",
+    sge.Min: "min",
+    sge.Quantile: "quantile",
+    sge.Sum: "sum",
+    sge.Avg: "mean",
+    sge.Count: "count",
 }
 
 

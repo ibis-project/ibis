@@ -38,7 +38,7 @@ def _unixepoch(arg, from_, to, **_):
 
 @sqlite_cast.register(object, dt.String, dt.Timestamp)
 def _string_to_timestamp(arg, from_, to, **_):
-    return sa.func.strftime('%Y-%m-%d %H:%M:%f', arg)
+    return sa.func.strftime("%Y-%m-%d %H:%M:%f", arg)
 
 
 @sqlite_cast.register(object, dt.Integer, dt.Date)
@@ -55,9 +55,9 @@ def _string_or_timestamp_to_date(arg, from_, to, **_):
 def _timestamp_to_timestamp(arg, from_, to, **_):
     if from_ == to:
         return arg
-    if from_.timezone is None and to.timezone == 'UTC':
+    if from_.timezone is None and to.timezone == "UTC":
         return arg
-    raise com.UnsupportedOperationError(f'Cannot cast from {from_} to {to}')
+    raise com.UnsupportedOperationError(f"Cannot cast from {from_} to {to}")
 
 
 @sqlite_cast.register(object, dt.DataType, (dt.Date, dt.Timestamp))
@@ -92,14 +92,14 @@ def _extract_quarter(t, op):
 
 
 _truncate_modifiers = {
-    DateUnit.DAY: 'start of day',
-    DateUnit.WEEK: 'weekday 1',
-    DateUnit.MONTH: 'start of month',
-    DateUnit.YEAR: 'start of year',
-    IntervalUnit.DAY: 'start of day',
-    IntervalUnit.WEEK: 'weekday 1',
-    IntervalUnit.MONTH: 'start of month',
-    IntervalUnit.YEAR: 'start of year',
+    DateUnit.DAY: "start of day",
+    DateUnit.WEEK: "weekday 1",
+    DateUnit.MONTH: "start of month",
+    DateUnit.YEAR: "start of year",
+    IntervalUnit.DAY: "start of day",
+    IntervalUnit.WEEK: "weekday 1",
+    IntervalUnit.MONTH: "start of month",
+    IntervalUnit.YEAR: "start of year",
 }
 
 
@@ -110,7 +110,7 @@ def _truncate(func):
             modifier = _truncate_modifiers[op.unit]
         except KeyError:
             raise com.UnsupportedOperationError(
-                f'Unsupported truncate unit {op.unit!r}'
+                f"Unsupported truncate unit {op.unit!r}"
             )
         return func(sa_arg, modifier)
 
@@ -131,8 +131,8 @@ def _generic_pad(arg, length, pad):
     number_of_zero_bytes = ((length - arg_length - 1 + pad_length) / pad_length + 1) / 2
     return f.substr(
         f.replace(
-            f.replace(f.substr(f.quote(f.zeroblob(number_of_zero_bytes)), 3), "'", ''),
-            '0',
+            f.replace(f.substr(f.quote(f.zeroblob(number_of_zero_bytes)), 3), "'", ""),
+            "0",
             pad,
         ),
         1,
@@ -265,20 +265,20 @@ def _arg_min_max(agg_func):
 
         agg = agg_func(key).filter(sa.and_(*conditions))
 
-        return sa.func.json_extract(sa.func.json_array(arg, agg), '$[0]')
+        return sa.func.json_extract(sa.func.json_array(arg, agg), "$[0]")
 
     return translate
 
 
 def _day_of_the_week_name(arg):
     return sa.case(
-        (sa.func.strftime('%w', arg) == '0', 'Sunday'),
-        (sa.func.strftime('%w', arg) == '1', 'Monday'),
-        (sa.func.strftime('%w', arg) == '2', 'Tuesday'),
-        (sa.func.strftime('%w', arg) == '3', 'Wednesday'),
-        (sa.func.strftime('%w', arg) == '4', 'Thursday'),
-        (sa.func.strftime('%w', arg) == '5', 'Friday'),
-        (sa.func.strftime('%w', arg) == '6', 'Saturday'),
+        (sa.func.strftime("%w", arg) == "0", "Sunday"),
+        (sa.func.strftime("%w", arg) == "1", "Monday"),
+        (sa.func.strftime("%w", arg) == "2", "Tuesday"),
+        (sa.func.strftime("%w", arg) == "3", "Wednesday"),
+        (sa.func.strftime("%w", arg) == "4", "Thursday"),
+        (sa.func.strftime("%w", arg) == "5", "Friday"),
+        (sa.func.strftime("%w", arg) == "6", "Saturday"),
     )
 
 
@@ -311,14 +311,14 @@ operation_registry.update(
         ops.Greatest: varargs(sa.func.max),
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         ops.DateFromYMD: fixed_arity(
-            lambda y, m, d: sa.func.date(sa.func.printf('%04d-%02d-%02d', y, m, d)), 3
+            lambda y, m, d: sa.func.date(sa.func.printf("%04d-%02d-%02d", y, m, d)), 3
         ),
         ops.TimeFromHMS: fixed_arity(
-            lambda h, m, s: sa.func.time(sa.func.printf('%02d:%02d:%02d', h, m, s)), 3
+            lambda h, m, s: sa.func.time(sa.func.printf("%02d:%02d:%02d", h, m, s)), 3
         ),
         ops.TimestampFromYMDHMS: fixed_arity(
             lambda y, mo, d, h, m, s: sa.func.datetime(
-                sa.func.printf('%04d-%02d-%02d %02d:%02d:%02d%s', y, mo, d, h, m, s)
+                sa.func.printf("%04d-%02d-%02d %02d:%02d:%02d%s", y, mo, d, h, m, s)
             ),
             6,
         ),
@@ -332,11 +332,11 @@ operation_registry.update(
         ops.Strftime: fixed_arity(
             lambda arg, format_str: sa.func.strftime(format_str, arg), 2
         ),
-        ops.ExtractYear: _strftime_int('%Y'),
-        ops.ExtractMonth: _strftime_int('%m'),
-        ops.ExtractDay: _strftime_int('%d'),
+        ops.ExtractYear: _strftime_int("%Y"),
+        ops.ExtractMonth: _strftime_int("%m"),
+        ops.ExtractDay: _strftime_int("%d"),
         ops.ExtractWeekOfYear: _extract_week_of_year,
-        ops.ExtractDayOfYear: _strftime_int('%j'),
+        ops.ExtractDayOfYear: _strftime_int("%j"),
         ops.ExtractQuarter: _extract_quarter,
         # example: (julianday('now') - 2440587.5) * 86400.0
         ops.ExtractEpochSeconds: fixed_arity(
@@ -345,18 +345,18 @@ operation_registry.update(
             ),
             1,
         ),
-        ops.ExtractHour: _strftime_int('%H'),
-        ops.ExtractMinute: _strftime_int('%M'),
-        ops.ExtractSecond: _strftime_int('%S'),
+        ops.ExtractHour: _strftime_int("%H"),
+        ops.ExtractMinute: _strftime_int("%M"),
+        ops.ExtractSecond: _strftime_int("%S"),
         ops.ExtractMicrosecond: fixed_arity(
-            lambda arg: (sa.func.strftime('%f', arg)) % 1000, 1
+            lambda arg: (sa.func.strftime("%f", arg)) % 1000, 1
         ),
         ops.ExtractMillisecond: fixed_arity(
-            lambda arg: (sa.func.strftime('%f', arg) * 1000) % 1000, 1
+            lambda arg: (sa.func.strftime("%f", arg) * 1000) % 1000, 1
         ),
         ops.DayOfWeekIndex: fixed_arity(
             lambda arg: sa.cast(
-                sa.cast(sa.func.strftime('%w', arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
+                sa.cast(sa.func.strftime("%w", arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
             ),
             1,
         ),
@@ -378,7 +378,7 @@ operation_registry.update(
                 sa.func.substr(
                     sa.func.quote(sa.func.zeroblob((times + 1) / 2)), 3, times
                 ),
-                '0',
+                "0",
                 arg,
             ),
             2,
@@ -399,11 +399,11 @@ operation_registry.update(
         ops.Sign: unary(sa.func._ibis_sqlite_sign),
         ops.FloorDivide: fixed_arity(sa.func._ibis_sqlite_floordiv, 2),
         ops.Modulus: fixed_arity(sa.func._ibis_sqlite_mod, 2),
-        ops.Variance: variance_reduction('_ibis_sqlite_var'),
+        ops.Variance: variance_reduction("_ibis_sqlite_var"),
         ops.StandardDev: toolz.compose(
-            sa.func._ibis_sqlite_sqrt, variance_reduction('_ibis_sqlite_var')
+            sa.func._ibis_sqlite_sqrt, variance_reduction("_ibis_sqlite_var")
         ),
-        ops.RowID: lambda *_: sa.literal_column('rowid'),
+        ops.RowID: lambda *_: sa.literal_column("rowid"),
         ops.Cot: unary(sa.func._ibis_sqlite_cot),
         ops.Cos: unary(sa.func._ibis_sqlite_cos),
         ops.Sin: unary(sa.func._ibis_sqlite_sin),

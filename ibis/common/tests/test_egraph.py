@@ -109,8 +109,8 @@ seven = six + 1
 seven_ = seven * 1
 eleven = seven_ + 4
 
-a, b, c = Variable('a'), Variable('b'), Variable('c')
-x, y, z = Variable('x'), Variable('y'), Variable('z')
+a, b, c = Variable("a"), Variable("b"), Variable("c")
+x, y, z = Variable("x"), Variable("y"), Variable("z")
 
 
 class Base(Concrete, Node):
@@ -311,8 +311,8 @@ def test_egraph_match_simple():
 
     enode = ENode.from_node(seven_.op())
     matches = res[enode]
-    assert matches['a'] == ENode.from_node(seven.op())
-    assert matches['lit'] == ENode.from_node(one.op())
+    assert matches["a"] == ENode.from_node(seven.op())
+    assert matches["lit"] == ENode.from_node(one.op())
 
 
 def test_egraph_match_wrong_argnum():
@@ -336,8 +336,8 @@ def test_egraph_match_wrong_argnum():
             0: ENode.from_node(four.op()),
             1: ENode.from_node(two.op()),
             2: ENode.from_node(one.op()),
-            'a': ENode.from_node(two.op()),
-            'b': ENode.from_node(one.op()),
+            "a": ENode.from_node(two.op()),
+            "b": ENode.from_node(one.op()),
         }
     }
     assert res == expected
@@ -357,8 +357,8 @@ def test_egraph_match_nested():
         matched: {
             0: matched,
             1: ENode.from_node(one.op()),
-            'a': ENode.from_node(seven.op()),
-            'b': dt.int8,
+            "a": ENode.from_node(seven.op()),
+            "b": dt.int8,
         }
     }
     assert result == expected
@@ -470,7 +470,7 @@ def test_egraph_rewrite_commutative():
 
 
 @pytest.mark.parametrize(
-    ('node', 'expected'),
+    ("node", "expected"),
     [(Mul(Lit(0), Lit(42)), Lit(0)), (Add(Lit(0), Mul(Lit(1), Lit(2))), Lit(2))],
 )
 def test_egraph_rewrite(node, expected):

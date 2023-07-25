@@ -124,7 +124,7 @@ def _fmt_root_sort_key(op: ops.SortKey, *, aliases: Aliases, **_: Any) -> str:
 
 @functools.singledispatch
 def fmt_table_op(op: ops.TableNode, **_: Any) -> str:
-    raise AssertionError(f'`fmt_table_op` not implemented for operation: {type(op)}')
+    raise AssertionError(f"`fmt_table_op` not implemented for operation: {type(op)}")
 
 
 @fmt_table_op.register
@@ -213,7 +213,7 @@ def _fmt_table_op_sql_view(
 
 @functools.singledispatch
 def fmt_join(op: ops.Join, *, aliases: Aliases) -> tuple[str, str]:
-    raise AssertionError(f'join type {type(op)} not implemented')
+    raise AssertionError(f"join type {type(op)} not implemented")
 
 
 @fmt_join.register(ops.Join)
@@ -441,7 +441,7 @@ def _fmt_table_op_dummy_table(op: ops.DummyTable, **_: Any) -> str:
 @functools.singledispatch
 def fmt_selection_column(value_expr: object, **_: Any) -> str:
     raise AssertionError(
-        f'expression type not implemented for fmt_selection_column: {type(value_expr)}'
+        f"expression type not implemented for fmt_selection_column: {type(value_expr)}"
     )
 
 
@@ -529,7 +529,7 @@ def _fmt_value_function_type(func: types.FunctionType, **_: Any) -> str:
 
 @fmt_value.register
 def _fmt_value_node(op: ops.Node, **_: Any) -> str:
-    raise AssertionError(f'`fmt_value` not implemented for operation: {type(op)}')
+    raise AssertionError(f"`fmt_value` not implemented for operation: {type(op)}")
 
 
 @fmt_value.register

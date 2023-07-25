@@ -13,15 +13,15 @@ from ibis.backends.base.sql.compiler.query_builder import (
 from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryContext
 
 __all__ = (
-    'Compiler',
-    'Select',
-    'SelectBuilder',
-    'Union',
-    'Intersection',
-    'Difference',
-    'TableSetFormatter',
-    'ExprTranslator',
-    'QueryContext',
-    'DML',
-    'DDL',
+    "Compiler",
+    "Select",
+    "SelectBuilder",
+    "Union",
+    "Intersection",
+    "Difference",
+    "TableSetFormatter",
+    "ExprTranslator",
+    "QueryContext",
+    "DML",
+    "DDL",
 )

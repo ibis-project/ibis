@@ -8,9 +8,9 @@ from ibis.backends.flink.compiler.core import translate
 @pytest.mark.parametrize("how", ["inner", "left", "right", "outer"])
 def test_mutating_join(batting, awards_players, how, snapshot):
     left = batting[batting.yearID == 2015]
-    right = awards_players[awards_players.lgID == 'NL'].drop('yearID', 'lgID')
+    right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
 
-    predicate = ['playerID']
+    predicate = ["playerID"]
 
     expr = left.join(right, predicate, how=how)
     result = translate(expr.as_table().op())
@@ -21,7 +21,7 @@ def test_join_then_filter_no_column_overlap(awards_players, batting, snapshot):
     left = batting[batting.yearID == 2015]
     year = left.yearID.name("year")
     left = left[year, "RBI"]
-    right = awards_players[awards_players.lgID == 'NL']
+    right = awards_players[awards_players.lgID == "NL"]
 
     expr = left.join(right, left.year == right.yearID)
     filters = [expr.RBI == 9]

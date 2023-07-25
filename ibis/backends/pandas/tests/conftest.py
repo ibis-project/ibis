@@ -10,9 +10,9 @@ from ibis.backends.tests.data import array_types, json_types, struct_types, win
 
 class TestConf(BackendTest, RoundHalfToEven):
     check_names = False
-    supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {'ns'}
+    supported_to_timestamp_units = BackendTest.supported_to_timestamp_units | {"ns"}
     supports_divide_by_zero = True
-    returned_timestamp_unit = 'ns'
+    returned_timestamp_unit = "ns"
     stateful = False
     deps = ("pandas",)
 

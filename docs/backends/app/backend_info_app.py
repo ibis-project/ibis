@@ -15,7 +15,7 @@ from ibis import _
 
 ONE_HOUR_IN_SECONDS = datetime.timedelta(hours=1).total_seconds()
 
-st.set_page_config(layout='wide')
+st.set_page_config(layout="wide")
 
 # Track all queries. We display them at the bottom of the page.
 ibis.options.verbose = True
@@ -32,7 +32,7 @@ def support_matrix_df():
         f.write(resp.content)
         return (
             ibis.read_csv(f.name)
-            .relabel({'FullOperation': 'full_operation'})
+            .relabel({"FullOperation": "full_operation"})
             .mutate(
                 short_operation=_.full_operation.split(".")[-1],
                 operation_category=_.full_operation.split(".")[-2],
@@ -63,7 +63,7 @@ def backends_info_df():
             "sqlite": ["sqlalchemy", "sql"],
             "trino": ["sqlalchemy", "sql"],
         }.items(),
-        columns=['backend_name', 'categories'],
+        columns=["backend_name", "categories"],
     )
 
 
@@ -76,7 +76,7 @@ def get_all_backend_categories():
     return (
         backend_info_table.select(category=_.categories.unnest())
         .distinct()
-        .order_by('category')['category']
+        .order_by("category")["category"]
         .to_pandas()
         .tolist()
     )
@@ -86,7 +86,7 @@ def get_all_backend_categories():
 def get_all_operation_categories():
     return (
         support_matrix_table.select(_.operation_category)
-        .distinct()['operation_category']
+        .distinct()["operation_category"]
         .to_pandas()
         .tolist()
     )
@@ -105,7 +105,7 @@ def get_backend_names(categories: Optional[List[str]] = None):
 def get_selected_backend_name():
     backend_categories = get_all_backend_categories()
     selected_categories_names = st.sidebar.multiselect(
-        'Backend category',
+        "Backend category",
         options=backend_categories,
         default=backend_categories,
     )
@@ -113,35 +113,35 @@ def get_selected_backend_name():
 
 
 def get_backend_subset(subset):
-    return st.sidebar.multiselect('Backend name', options=subset, default=subset)
+    return st.sidebar.multiselect("Backend name", options=subset, default=subset)
 
 
 def get_selected_operation_categories():
     all_ops_categories = get_all_operation_categories()
 
     selected_ops_categories = st.sidebar.multiselect(
-        'Operation category',
+        "Operation category",
         options=sorted(all_ops_categories),
         default=None,
     )
     if not selected_ops_categories:
         selected_ops_categories = all_ops_categories
-    show_geospatial = st.sidebar.checkbox('Include Geospatial ops', value=True)
-    if not show_geospatial and 'geospatial' in selected_ops_categories:
+    show_geospatial = st.sidebar.checkbox("Include Geospatial ops", value=True)
+    if not show_geospatial and "geospatial" in selected_ops_categories:
         selected_ops_categories.remove("geospatial")
     return selected_ops_categories
 
 
 current_backend_names = get_backend_subset(get_selected_backend_name())
-sort_by_coverage = st.sidebar.checkbox('Sort by API Coverage', value=False)
+sort_by_coverage = st.sidebar.checkbox("Sort by API Coverage", value=False)
 current_ops_categories = get_selected_operation_categories()
 
 hide_supported_by_all_backends = st.sidebar.selectbox(
-    'Operation compatibility',
-    ['Show all', 'Show supported by all backends', 'Hide supported by all backends'],
+    "Operation compatibility",
+    ["Show all", "Show supported by all backends", "Hide supported by all backends"],
     0,
 )
-show_full_ops_name = st.sidebar.checkbox('Show full operation name', False)
+show_full_ops_name = st.sidebar.checkbox("Show full operation name", False)
 
 # Start ibis expression
 table_expr = support_matrix_table
@@ -161,11 +161,11 @@ supported_backend_count = sum(
     getattr(table_expr, backend_name).ifelse(1, 0)
     for backend_name in current_backend_names
 )
-if hide_supported_by_all_backends == 'Show supported by all backends':
+if hide_supported_by_all_backends == "Show supported by all backends":
     table_expr = table_expr.filter(
         supported_backend_count == len(current_backend_names)
     )
-elif hide_supported_by_all_backends == 'Hide supported by all backends':
+elif hide_supported_by_all_backends == "Hide supported by all backends":
     table_expr = table_expr.filter(
         supported_backend_count != len(current_backend_names)
     )
@@ -175,7 +175,7 @@ table_expr = table_expr[current_backend_names + ["index"]]
 
 # Execute query
 df = table_expr.to_pandas()
-df = df.set_index('index')
+df = df.set_index("index")
 
 # Display result
 all_visible_ops_count = len(df.index)
@@ -199,9 +199,9 @@ else:
 with st.expander("SQL queries"):
     for sql_query in sql_queries:
         pretty_sql_query = sqlglot.transpile(
-            sql_query, read='duckdb', write='duckdb', pretty=True
+            sql_query, read="duckdb", write="duckdb", pretty=True
         )[0]
-        st.code(pretty_sql_query, language='sql')
+        st.code(pretty_sql_query, language="sql")
 
 with st.expander("Source code"):
     st.code(Path(__file__).read_text())

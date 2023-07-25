@@ -65,8 +65,8 @@ class Comparison(Binary):
         """
         if not rlz.comparable(left, right):
             raise IbisTypeError(
-                f'Arguments {rlz._arg_type_error_format(left)} and '
-                f'{rlz._arg_type_error_format(right)} are not comparable'
+                f"Arguments {rlz._arg_type_error_format(left)} and "
+                f"{rlz._arg_type_error_format(right)} are not comparable"
             )
         super().__init__(left=left, right=right)
 
@@ -118,13 +118,13 @@ class Between(Value):
     def __init__(self, arg, lower_bound, upper_bound):
         if not rlz.comparable(arg, lower_bound):
             raise ValidationError(
-                f'Arguments {rlz._arg_type_error_format(arg)} and '
-                f'{rlz._arg_type_error_format(lower_bound)} are not comparable'
+                f"Arguments {rlz._arg_type_error_format(arg)} and "
+                f"{rlz._arg_type_error_format(lower_bound)} are not comparable"
             )
         if not rlz.comparable(arg, upper_bound):
             raise ValidationError(
-                f'Arguments {rlz._arg_type_error_format(arg)} and '
-                f'{rlz._arg_type_error_format(upper_bound)} are not comparable'
+                f"Arguments {rlz._arg_type_error_format(arg)} and "
+                f"{rlz._arg_type_error_format(upper_bound)} are not comparable"
             )
         super().__init__(arg=arg, lower_bound=lower_bound, upper_bound=upper_bound)
 

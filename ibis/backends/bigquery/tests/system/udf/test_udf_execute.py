@@ -163,7 +163,7 @@ def test_udf_with_len(con):
 def test_udf_sql(con, argument_type):
     format_t = udf.sql(
         "format_t",
-        params={'input': argument_type},
+        params={"input": argument_type},
         output_type=dt.string,
         sql_expression="FORMAT('%T', input)",
     )

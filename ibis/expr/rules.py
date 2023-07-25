@@ -45,7 +45,7 @@ def castable(source, target):
 
     Based on the underlying datatypes and the value in case of Literals
     """
-    value = getattr(source, 'value', None)
+    value = getattr(source, "value", None)
     return dt.castable(source.dtype, target.dtype, value=value)
 
 
@@ -162,7 +162,7 @@ def _promote_interval_resolution(units: list[IntervalUnit]) -> IntervalUnit:
     for unit in reversed(IntervalUnit):
         if unit in units:
             return unit
-    raise AssertionError('unreachable')
+    raise AssertionError("unreachable")
 
 
 def _arg_type_error_format(op):
@@ -187,7 +187,7 @@ class ValueOf(Matcher):
         The datatype the constructed Value instance should conform to.
     """
 
-    __slots__ = ('dtype',)
+    __slots__ = ("dtype",)
 
     def __init__(self, dtype=None):
         dtype = None if dtype is None else dt.dtype(dtype)

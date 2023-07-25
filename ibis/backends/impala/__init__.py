@@ -65,30 +65,30 @@ __all__ = (
 )
 
 _HS2_TTypeId_to_dtype = {
-    'BOOLEAN': 'bool',
-    'TINYINT': 'int8',
-    'SMALLINT': 'int16',
-    'INT': 'int32',
-    'BIGINT': 'int64',
-    'TIMESTAMP': 'datetime64[ns]',
-    'FLOAT': 'float32',
-    'DOUBLE': 'float64',
-    'STRING': 'object',
-    'DECIMAL': 'object',
-    'BINARY': 'object',
-    'VARCHAR': 'object',
-    'CHAR': 'object',
-    'DATE': 'datetime64[ns]',
-    'VOID': None,
+    "BOOLEAN": "bool",
+    "TINYINT": "int8",
+    "SMALLINT": "int16",
+    "INT": "int32",
+    "BIGINT": "int64",
+    "TIMESTAMP": "datetime64[ns]",
+    "FLOAT": "float32",
+    "DOUBLE": "float64",
+    "STRING": "object",
+    "DECIMAL": "object",
+    "BINARY": "object",
+    "VARCHAR": "object",
+    "CHAR": "object",
+    "DATE": "datetime64[ns]",
+    "VOID": None,
 }
 
 
 def _split_signature(x):
-    name, rest = x.split('(', 1)
+    name, rest = x.split("(", 1)
     return name, rest[:-1]
 
 
-_arg_type = re.compile(r'(.*)\.\.\.|([^\.]*)')
+_arg_type = re.compile(r"(.*)\.\.\.|([^\.]*)")
 
 
 class _type_parser:
@@ -111,13 +111,13 @@ class _type_parser:
 
     def _step(self, c):
         if self.state == self.NORMAL:
-            if c == '(':
+            if c == "(":
                 self.state = self.IN_PAREN
-            elif c == ',':
+            elif c == ",":
                 self._push()
                 return
         elif self.state == self.IN_PAREN:
-            if c == ')':
+            if c == ")":
                 self.state = self.NORMAL
         self.buf.write(c)
 
@@ -143,7 +143,7 @@ def _chunks_to_pandas_array(chunks):
         for c in chunks:
             nulls = c.nulls.copy()
             nulls.bytereverse()
-            bits = np.frombuffer(nulls.tobytes(), dtype='u1')
+            bits = np.frombuffer(nulls.tobytes(), dtype="u1")
             mask = np.unpackbits(bits).view(np.bool_)
 
             k = len(c)
@@ -155,11 +155,11 @@ def _chunks_to_pandas_array(chunks):
             pos += k
 
     if have_nulls:
-        if numpy_type in ('bool', 'datetime64[ns]'):
-            target = np.empty(total_length, dtype='O')
+        if numpy_type in ("bool", "datetime64[ns]"):
+            target = np.empty(total_length, dtype="O")
             na_rep = np.nan
-        elif numpy_type.startswith('int'):
-            target = np.empty(total_length, dtype='f8')
+        elif numpy_type.startswith("int"):
+            target = np.empty(total_length, dtype="f8")
             na_rep = np.nan
         else:
             target = np.empty(total_length, dtype=numpy_type)
@@ -183,7 +183,7 @@ def _column_batches_to_dataframe(names, batches):
 
 
 class Backend(BaseSQLBackend):
-    name = 'impala'
+    name = "impala"
     compiler = ImpalaCompiler
 
     _sqlglot_dialect = "hive"  # not 100% accurate, but very close
@@ -303,11 +303,11 @@ class Backend(BaseSQLBackend):
 
     @cached_property
     def version(self):
-        with self._safe_raw_sql('select version()') as cursor:
+        with self._safe_raw_sql("select version()") as cursor:
             (result,) = cursor.fetchone()
         return result
 
-    @util.deprecated(instead='use equivalent methods in the backend')
+    @util.deprecated(instead="use equivalent methods in the backend")
     def database(self, name: str | None = None):
         """Return a `Database` object for the `name` database.
 
@@ -324,14 +324,14 @@ class Backend(BaseSQLBackend):
         return ImpalaDatabase(name=name or self.current_database, client=self)
 
     def list_databases(self, like=None):
-        with self._safe_raw_sql('SHOW DATABASES') as cur:
+        with self._safe_raw_sql("SHOW DATABASES") as cur:
             databases = self._get_list(cur)
         return self._filter_with_like(databases, like)
 
     def list_tables(self, like=None, database=None):
-        statement = 'SHOW TABLES'
+        statement = "SHOW TABLES"
         if database is not None:
-            statement += f' IN {database}'
+            statement += f" IN {database}"
         if like:
             if match := fully_qualified_re.match(like):
                 database, quoted, unquoted = match.groups()
@@ -366,9 +366,9 @@ class Backend(BaseSQLBackend):
     def hdfs(self):
         if self._hdfs is None:
             raise com.IbisError(
-                'No HDFS connection; must pass connection '
-                'using the hdfs_client argument to '
-                'ibis.impala.connect'
+                "No HDFS connection; must pass connection "
+                "using the hdfs_client argument to "
+                "ibis.impala.connect"
             )
         return self._hdfs
 
@@ -461,10 +461,10 @@ class Backend(BaseSQLBackend):
             udas = []
         if force:
             for table in tables:
-                util.log(f'Dropping {name}.{table}')
+                util.log(f"Dropping {name}.{table}")
                 self.drop_table_or_view(table, database=name)
             for func in udfs:
-                util.log(f'Dropping function {func.name}({func.inputs})')
+                util.log(f"Dropping function {func.name}({func.inputs})")
                 self.drop_udf(
                     func.name,
                     input_types=func.inputs,
@@ -472,7 +472,7 @@ class Backend(BaseSQLBackend):
                     force=True,
                 )
             for func in udas:
-                util.log(f'Dropping aggregate function {func.name}({func.inputs})')
+                util.log(f"Dropping aggregate function {func.name}({func.inputs})")
                 self.drop_uda(
                     func.name,
                     input_types=func.inputs,
@@ -530,14 +530,14 @@ class Backend(BaseSQLBackend):
 
     def set_compression_codec(self, codec):
         if codec is None:
-            codec = 'none'
+            codec = "none"
         else:
             codec = codec.lower()
 
-        if codec not in ('none', 'gzip', 'snappy'):
-            raise ValueError(f'Unknown codec: {codec}')
+        if codec not in ("none", "gzip", "snappy"):
+            raise ValueError(f"Unknown codec: {codec}")
 
-        self.set_options({'COMPRESSION_CODEC': codec})
+        self.set_options({"COMPRESSION_CODEC": codec})
 
     def create_view(
         self,
@@ -582,7 +582,7 @@ class Backend(BaseSQLBackend):
         overwrite: bool = False,
         external: bool = False,
         # HDFS options
-        format='parquet',
+        format="parquet",
         location=None,
         partition=None,
         like_parquet=None,
@@ -709,7 +709,7 @@ class Backend(BaseSQLBackend):
         schema,
         name=None,
         database=None,
-        delimiter=',',
+        delimiter=",",
         na_rep=None,
         escapechar=None,
         lineterminator=None,
@@ -857,7 +857,7 @@ class Backend(BaseSQLBackend):
     ) -> tuple[str, str]:
         if not persist:
             if name is None:
-                name = f'__ibis_tmp_{util.guid()}'
+                name = f"__ibis_tmp_{util.guid()}"
 
             if database is None:
                 self._ensure_temp_db_exists()
@@ -865,7 +865,7 @@ class Backend(BaseSQLBackend):
             return name, database
         else:
             if name is None:
-                raise com.IbisError('Must pass table name if persist=True')
+                raise com.IbisError("Must pass table name if persist=True")
             return name, database
 
     def _ensure_temp_db_exists(self):
@@ -901,7 +901,7 @@ class Backend(BaseSQLBackend):
 
         return t
 
-    def text_file(self, hdfs_path, column_name='value'):
+    def text_file(self, hdfs_path, column_name="value"):
         """Interpret text data as a table with a single string column."""
 
     def insert(
@@ -983,7 +983,7 @@ class Backend(BaseSQLBackend):
             except Exception:  # noqa: BLE001
                 raise e
 
-    def cache_table(self, table_name, *, database=None, pool='default'):
+    def cache_table(self, table_name, *, database=None, pool="default"):
         """Caches a table in cluster memory in the given pool.
 
         Parameters
@@ -1206,8 +1206,8 @@ class Backend(BaseSQLBackend):
         incremental
             If True, issue COMPUTE INCREMENTAL STATS
         """
-        maybe_inc = 'INCREMENTAL ' if incremental else ''
-        cmd = f'COMPUTE {maybe_inc}STATS'
+        maybe_inc = "INCREMENTAL " if incremental else ""
+        cmd = f"COMPUTE {maybe_inc}STATS"
 
         stmt = self._table_command(cmd, name, database=database)
         self._safe_exec_sql(stmt)
@@ -1228,7 +1228,7 @@ class Backend(BaseSQLBackend):
         database
             Database name
         """
-        stmt = 'INVALIDATE METADATA'
+        stmt = "INVALIDATE METADATA"
         if name is not None:
             stmt = self._table_command(stmt, name, database=database)
         self._safe_exec_sql(stmt)
@@ -1249,7 +1249,7 @@ class Backend(BaseSQLBackend):
             Database name
         """
         # TODO(wesm): can this statement be cancelled?
-        stmt = self._table_command('REFRESH', name, database=database)
+        stmt = self._table_command("REFRESH", name, database=database)
         self._safe_exec_sql(stmt)
 
     def describe_formatted(
@@ -1270,7 +1270,7 @@ class Backend(BaseSQLBackend):
         """
         from ibis.backends.impala.metadata import parse_metadata
 
-        stmt = self._table_command('DESCRIBE FORMATTED', name, database=database)
+        stmt = self._table_command("DESCRIBE FORMATTED", name, database=database)
         result = self._exec_statement(stmt)
 
         # Leave formatting to pandas
@@ -1295,21 +1295,21 @@ class Backend(BaseSQLBackend):
         database
             Database name
         """
-        stmt = self._table_command('SHOW FILES IN', name, database=database)
+        stmt = self._table_command("SHOW FILES IN", name, database=database)
         return self._exec_statement(stmt)
 
     def list_partitions(self, name, database=None):
-        stmt = self._table_command('SHOW PARTITIONS', name, database=database)
+        stmt = self._table_command("SHOW PARTITIONS", name, database=database)
         return self._exec_statement(stmt)
 
     def table_stats(self, name, database=None):
         """Return results of `SHOW TABLE STATS` for the table `name`."""
-        stmt = self._table_command('SHOW TABLE STATS', name, database=database)
+        stmt = self._table_command("SHOW TABLE STATS", name, database=database)
         return self._exec_statement(stmt)
 
     def column_stats(self, name, database=None):
         """Return results of `SHOW COLUMN STATS` for the table `name`."""
-        stmt = self._table_command('SHOW COLUMN STATS', name, database=database)
+        stmt = self._table_command("SHOW COLUMN STATS", name, database=database)
         return self._exec_statement(stmt)
 
     def _exec_statement(self, stmt):
@@ -1318,7 +1318,7 @@ class Backend(BaseSQLBackend):
 
     def _table_command(self, cmd, name, database=None):
         qualified_name = self._fully_qualified_name(name, database)
-        return f'{cmd} {qualified_name}'
+        return f"{cmd} {qualified_name}"
 
     def _adapt_types(self, descr):
         names = []
@@ -1328,7 +1328,7 @@ class Backend(BaseSQLBackend):
             impala_typename = col[1]
             typename = udf._impala_to_ibis_type[impala_typename.lower()]
 
-            if typename == 'decimal':
+            if typename == "decimal":
                 precision, scale = col[4:6]
                 adapted_types.append(dt.Decimal(precision, scale))
             else:
@@ -1339,7 +1339,7 @@ class Backend(BaseSQLBackend):
         self,
         df: pd.DataFrame,
         path: str,
-        format: Literal['csv'] = 'csv',
+        format: Literal["csv"] = "csv",
     ) -> Any:
         """Write a pandas DataFrame to indicated file path.
 

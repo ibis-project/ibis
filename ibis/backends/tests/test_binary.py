@@ -9,23 +9,23 @@ import ibis
 import ibis.common.exceptions as com
 
 BINARY_BACKEND_TYPES = {
-    'bigquery': "BYTES",
-    'clickhouse': 'String',
-    'duckdb': 'BLOB',
-    'snowflake': "BINARY",
-    'sqlite': "blob",
-    'trino': 'STRING',
+    "bigquery": "BYTES",
+    "clickhouse": "String",
+    "duckdb": "BLOB",
+    "snowflake": "BINARY",
+    "sqlite": "blob",
+    "trino": "STRING",
     "postgres": "bytea",
 }
 
 
 @pytest.mark.broken(
-    ['trino'],
+    ["trino"],
     "(builtins.AttributeError) 'bytes' object has no attribute 'encode'",
     raises=sqlalchemy.exc.StatementError,
 )
 @pytest.mark.broken(
-    ['clickhouse', 'impala'],
+    ["clickhouse", "impala"],
     "Unsupported type: Binary(nullable=True)",
     raises=NotImplementedError,
 )

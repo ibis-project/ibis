@@ -7,9 +7,9 @@ if TYPE_CHECKING:
     from ibis.expr.datatypes import DataType
     from ibis.expr.schema import Schema
 
-C = TypeVar('C')
-T = TypeVar('T')
-S = TypeVar('S')
+C = TypeVar("C")
+T = TypeVar("T")
+S = TypeVar("S")
 
 
 class TypeMapper(ABC, Generic[T]):

@@ -20,13 +20,13 @@ def test_validate_type():
 
 
 @pytest.mark.parametrize(
-    ('spec', 'expected'),
+    ("spec", "expected"),
     [
-        ('ARRAY<DOUBLE>', dt.Array(dt.double)),
-        ('array<array<string>>', dt.Array(dt.Array(dt.string))),
-        ('map<string, double>', dt.Map(dt.string, dt.double)),
+        ("ARRAY<DOUBLE>", dt.Array(dt.double)),
+        ("array<array<string>>", dt.Array(dt.Array(dt.string))),
+        ("map<string, double>", dt.Map(dt.string, dt.double)),
         (
-            'map<int64, array<map<string, int8>>>',
+            "map<int64, array<map<string, int8>>>",
             dt.Map(dt.int64, dt.Array(dt.Map(dt.string, dt.int8))),
         ),
     ]
@@ -53,7 +53,7 @@ def test_dtype(spec, expected):
 
 
 @pytest.mark.parametrize(
-    ('klass', 'expected'),
+    ("klass", "expected"),
     [
         (dt.Int16, dt.int16),
         (dt.Int32, dt.int32),
@@ -93,9 +93,9 @@ class FooStruct:
     m: dt.date
     n: dt.time
     o: dt.timestamp
-    oa: dt.Timestamp('UTC')
-    ob: dt.Timestamp('UTC', 6)
-    pa: dt.Interval('s')
+    oa: dt.Timestamp("UTC")
+    ob: dt.Timestamp("UTC", 6)
+    pa: dt.Interval("s")
     q: dt.decimal
     qa: dt.Decimal(12, 2)
     r: dt.Array(dt.int16)
@@ -104,28 +104,28 @@ class FooStruct:
 
 foo_struct = dt.Struct(
     {
-        'a': dt.int16,
-        'b': dt.int32,
-        'c': dt.int64,
-        'd': dt.uint8,
-        'e': dt.uint16,
-        'f': dt.uint32,
-        'g': dt.uint64,
-        'h': dt.float32,
-        'i': dt.float64,
-        'j': dt.string,
-        'k': dt.binary,
-        'l': dt.boolean,
-        'm': dt.date,
-        'n': dt.time,
-        'o': dt.timestamp,
-        'oa': dt.Timestamp('UTC'),
-        'ob': dt.Timestamp('UTC', 6),
-        'pa': dt.Interval('s'),
-        'q': dt.decimal,
-        'qa': dt.Decimal(12, 2),
-        'r': dt.Array(dt.int16),
-        's': dt.Map(dt.string, dt.int16),
+        "a": dt.int16,
+        "b": dt.int32,
+        "c": dt.int64,
+        "d": dt.uint8,
+        "e": dt.uint16,
+        "f": dt.uint32,
+        "g": dt.uint64,
+        "h": dt.float32,
+        "i": dt.float64,
+        "j": dt.string,
+        "k": dt.binary,
+        "l": dt.boolean,
+        "m": dt.date,
+        "n": dt.time,
+        "o": dt.timestamp,
+        "oa": dt.Timestamp("UTC"),
+        "ob": dt.Timestamp("UTC", 6),
+        "pa": dt.Interval("s"),
+        "q": dt.decimal,
+        "qa": dt.Decimal(12, 2),
+        "r": dt.Array(dt.int16),
+        "s": dt.Map(dt.string, dt.int16),
     }
 )
 
@@ -153,24 +153,24 @@ class BarStruct:
 
 bar_struct = dt.Struct(
     {
-        'a': dt.int16,
-        'b': dt.int32,
-        'c': dt.int64,
-        'd': dt.uint8,
-        'e': dt.uint16,
-        'f': dt.uint32,
-        'g': dt.uint64,
-        'h': dt.float32,
-        'i': dt.float64,
-        'j': dt.string,
-        'k': dt.binary,
-        'l': dt.boolean,
-        'm': dt.date,
-        'n': dt.time,
-        'o': dt.timestamp,
-        'q': dt.decimal,
-        'r': dt.Array(dt.int16),
-        's': dt.Map(dt.string, dt.int16),
+        "a": dt.int16,
+        "b": dt.int32,
+        "c": dt.int64,
+        "d": dt.uint8,
+        "e": dt.uint16,
+        "f": dt.uint32,
+        "g": dt.uint64,
+        "h": dt.float32,
+        "i": dt.float64,
+        "j": dt.string,
+        "k": dt.binary,
+        "l": dt.boolean,
+        "m": dt.date,
+        "n": dt.time,
+        "o": dt.timestamp,
+        "q": dt.decimal,
+        "r": dt.Array(dt.int16),
+        "s": dt.Map(dt.string, dt.int16),
     }
 )
 
@@ -241,40 +241,40 @@ class PyStruct2:
 
 py_struct = dt.Struct(
     {
-        'a': dt.int64,
-        'b': dt.float64,
-        'c': dt.string,
-        'ca': dt.string,
-        'd': dt.binary,
-        'da': dt.binary,
-        'e': dt.boolean,
-        'f': dt.date,
-        'g': dt.time,
-        'h': dt.timestamp,
-        'i': dt.Interval('us'),
-        'j': dt.decimal,
-        'k': dt.Array(dt.int64),
-        'l': dt.Map(dt.string, dt.int64),
-        'n': dt.Array(dt.string),
-        'o': dt.UUID,
-        'p': dt.null,
-        'q': dt.Struct(
+        "a": dt.int64,
+        "b": dt.float64,
+        "c": dt.string,
+        "ca": dt.string,
+        "d": dt.binary,
+        "da": dt.binary,
+        "e": dt.boolean,
+        "f": dt.date,
+        "g": dt.time,
+        "h": dt.timestamp,
+        "i": dt.Interval("us"),
+        "j": dt.decimal,
+        "k": dt.Array(dt.int64),
+        "l": dt.Map(dt.string, dt.int64),
+        "n": dt.Array(dt.string),
+        "o": dt.UUID,
+        "p": dt.null,
+        "q": dt.Struct(
             {
-                'a': dt.string,
-                'b': dt.int64,
-                'c': dt.float64,
+                "a": dt.string,
+                "b": dt.int64,
+                "c": dt.float64,
             }
         ),
     }
 )
 py_struct_2 = dt.Struct(
     {
-        'ka': dt.Array(dt.int64),
-        'kb': dt.Array(dt.int64),
-        'la': dt.Map(dt.string, dt.int64),
-        'lb': dt.Map(dt.string, dt.int64),
-        'na': dt.Array(dt.string),
-        'nb': dt.Array(dt.string),
+        "ka": dt.Array(dt.int64),
+        "kb": dt.Array(dt.int64),
+        "la": dt.Map(dt.string, dt.int64),
+        "lb": dt.Map(dt.string, dt.int64),
+        "na": dt.Array(dt.string),
+        "nb": dt.Array(dt.string),
     }
 )
 
@@ -293,22 +293,22 @@ class FooDataClass:
 
 
 @pytest.mark.parametrize(
-    ('hint', 'expected'),
+    ("hint", "expected"),
     [
         (dt.Array[dt.Null], dt.Array(dt.Null())),
         (dt.Map[dt.Null, dt.Null], dt.Map(dt.Null(), dt.Null())),
         (FooStruct, foo_struct),
         (BarStruct, bar_struct),
         (PyStruct, py_struct),
-        (FooNamedTuple, dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})),
-        (FooDataClass, dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})),
+        (FooNamedTuple, dt.Struct({"a": dt.string, "b": dt.int64, "c": dt.float64})),
+        (FooDataClass, dt.Struct({"a": dt.string, "b": dt.int64, "c": dt.float64})),
     ],
 )
 def test_dtype_from_typehints(hint, expected):
     assert dt.dtype(hint) == expected
 
 
-@pytest.mark.parametrize(('hint', 'expected'), [(PyStruct2, py_struct_2)])
+@pytest.mark.parametrize(("hint", "expected"), [(PyStruct2, py_struct_2)])
 @pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_dtype_from_newer_typehints(hint, expected):
     assert dt.dtype(hint) == expected
@@ -333,27 +333,27 @@ def test_struct_subclass_from_tuples():
     class MyStruct(dt.Struct):
         pass
 
-    dtype = MyStruct.from_tuples([('a', 'int64')])
+    dtype = MyStruct.from_tuples([("a", "int64")])
     assert isinstance(dtype, MyStruct)
 
 
 def test_struct_mapping_api():
     s = dt.Struct(
         {
-            'a': dt.Map(dt.float64, dt.string),
-            'b': dt.Array(dt.Map(dt.string, dt.Array(dt.int32))),
-            'c': dt.Array(dt.string),
-            'd': dt.int8,
+            "a": dt.Map(dt.float64, dt.string),
+            "b": dt.Array(dt.Map(dt.string, dt.Array(dt.int32))),
+            "c": dt.Array(dt.string),
+            "d": dt.int8,
         }
     )
 
-    assert s['a'] == dt.Map(dt.double, dt.string)
-    assert s['b'] == dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))
-    assert s['c'] == dt.Array(dt.string)
-    assert s['d'] == dt.int8
+    assert s["a"] == dt.Map(dt.double, dt.string)
+    assert s["b"] == dt.Array(dt.Map(dt.string, dt.Array(dt.int32)))
+    assert s["c"] == dt.Array(dt.string)
+    assert s["d"] == dt.int8
 
-    assert 'a' in s
-    assert 'e' not in s
+    assert "a" in s
+    assert "e" not in s
     assert len(s) == 4
     assert tuple(s) == s.names
     assert tuple(s.keys()) == s.names
@@ -363,9 +363,9 @@ def test_struct_mapping_api():
     s1 = s.copy()
     s2 = dt.Struct(
         {
-            'a': dt.Map(dt.float64, dt.string),
-            'b': dt.Array(dt.Map(dt.string, dt.Array(dt.int32))),
-            'c': dt.Array(dt.string),
+            "a": dt.Map(dt.float64, dt.string),
+            "b": dt.Array(dt.Map(dt.string, dt.Array(dt.int32))),
+            "c": dt.Array(dt.string),
         }
     )
     assert s == s1
@@ -373,22 +373,22 @@ def test_struct_mapping_api():
 
     # doesn't support item assignment
     with pytest.raises(TypeError):
-        s['e'] = dt.int8
+        s["e"] = dt.int8
 
 
 def test_struct_set_operations():
-    a = dt.Struct({'a': dt.string, 'b': dt.int64, 'c': dt.float64})
-    b = dt.Struct({'a': dt.string, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date})
-    c = dt.Struct({'i': dt.int64, 'j': dt.float64, 'k': dt.string})
-    d = dt.Struct({'i': dt.int64, 'j': dt.float64, 'k': dt.string, 'l': dt.boolean})
+    a = dt.Struct({"a": dt.string, "b": dt.int64, "c": dt.float64})
+    b = dt.Struct({"a": dt.string, "c": dt.float64, "d": dt.boolean, "e": dt.date})
+    c = dt.Struct({"i": dt.int64, "j": dt.float64, "k": dt.string})
+    d = dt.Struct({"i": dt.int64, "j": dt.float64, "k": dt.string, "l": dt.boolean})
 
-    assert a & b == dt.Struct({'a': dt.string, 'c': dt.float64})
+    assert a & b == dt.Struct({"a": dt.string, "c": dt.float64})
     assert a | b == dt.Struct(
-        {'a': dt.string, 'b': dt.int64, 'c': dt.float64, 'd': dt.boolean, 'e': dt.date}
+        {"a": dt.string, "b": dt.int64, "c": dt.float64, "d": dt.boolean, "e": dt.date}
     )
-    assert a - b == dt.Struct({'b': dt.int64})
-    assert b - a == dt.Struct({'d': dt.boolean, 'e': dt.date})
-    assert a ^ b == dt.Struct({'b': dt.int64, 'd': dt.boolean, 'e': dt.date})
+    assert a - b == dt.Struct({"b": dt.int64})
+    assert b - a == dt.Struct({"d": dt.boolean, "e": dt.date})
+    assert a ^ b == dt.Struct({"b": dt.int64, "d": dt.boolean, "e": dt.date})
 
     assert not a.isdisjoint(b)
     assert a.isdisjoint(c)
@@ -448,27 +448,27 @@ def test_array_type_equals():
 
 def test_interval_invalid_value_type():
     with pytest.raises(ValidationError):
-        dt.Interval('m', dt.float32)
+        dt.Interval("m", dt.float32)
 
 
-@pytest.mark.parametrize('unit', ['H', 'unsupported'])
+@pytest.mark.parametrize("unit", ["H", "unsupported"])
 def test_interval_invalid_unit(unit):
     with pytest.raises(ValidationError):
         dt.Interval(dt.int32, unit)
 
 
 def test_timestamp_with_invalid_timezone():
-    ts = dt.Timestamp('Foo/Bar&234')
+    ts = dt.Timestamp("Foo/Bar&234")
     assert str(ts) == "timestamp('Foo/Bar&234')"
 
 
 def test_timestamp_with_timezone_repr():
-    ts = dt.Timestamp('UTC')
+    ts = dt.Timestamp("UTC")
     assert repr(ts) == "Timestamp(timezone='UTC', scale=None, nullable=True)"
 
 
 def test_timestamp_with_timezone_str():
-    ts = dt.Timestamp('UTC')
+    ts = dt.Timestamp("UTC")
     assert str(ts) == "timestamp('UTC')"
 
 
@@ -505,15 +505,15 @@ def test_timestamp_unit():
 
 
 def test_timestamp_from_unit():
-    assert dt.Timestamp.from_unit('s') == dt.Timestamp(scale=0)
-    assert dt.Timestamp.from_unit('ms', timezone='UTC') == dt.Timestamp(
-        scale=3, timezone='UTC'
+    assert dt.Timestamp.from_unit("s") == dt.Timestamp(scale=0)
+    assert dt.Timestamp.from_unit("ms", timezone="UTC") == dt.Timestamp(
+        scale=3, timezone="UTC"
     )
-    assert dt.Timestamp.from_unit('us', nullable=True) == dt.Timestamp(
+    assert dt.Timestamp.from_unit("us", nullable=True) == dt.Timestamp(
         scale=6, nullable=True
     )
-    assert dt.Timestamp.from_unit('ns', timezone='UTC', nullable=False) == dt.Timestamp(
-        scale=9, timezone='UTC', nullable=False
+    assert dt.Timestamp.from_unit("ns", timezone="UTC", nullable=False) == dt.Timestamp(
+        scale=9, timezone="UTC", nullable=False
     )
 
 
@@ -619,43 +619,43 @@ def test_set_is_an_alias_of_array():
 def test_type_coercion():
     p = Pattern.from_typehint(dt.DataType)
     assert p.match(dt.int8, {}) == dt.int8
-    assert p.match('int8', {}) == dt.int8
+    assert p.match("int8", {}) == dt.int8
     assert p.match(dt.string, {}) == dt.string
-    assert p.match('string', {}) == dt.string
+    assert p.match("string", {}) == dt.string
     assert p.match(3, {}) is NoMatch
 
     p = Pattern.from_typehint(dt.Primitive)
     assert p.match(dt.int8, {}) == dt.int8
-    assert p.match('int8', {}) == dt.int8
+    assert p.match("int8", {}) == dt.int8
     assert p.match(dt.boolean, {}) == dt.boolean
-    assert p.match('boolean', {}) == dt.boolean
+    assert p.match("boolean", {}) == dt.boolean
     assert p.match(dt.Array(dt.int8), {}) is NoMatch
-    assert p.match('array<int8>', {}) is NoMatch
+    assert p.match("array<int8>", {}) is NoMatch
 
     p = Pattern.from_typehint(dt.Integer)
     assert p.match(dt.int8, {}) == dt.int8
-    assert p.match('int8', {}) == dt.int8
+    assert p.match("int8", {}) == dt.int8
     assert p.match(dt.uint8, {}) == dt.uint8
-    assert p.match('uint8', {}) == dt.uint8
+    assert p.match("uint8", {}) == dt.uint8
     assert p.match(dt.boolean, {}) is NoMatch
-    assert p.match('boolean', {}) is NoMatch
+    assert p.match("boolean", {}) is NoMatch
 
     p = Pattern.from_typehint(dt.Array[dt.Integer])
     assert p.match(dt.Array(dt.int8), {}) == dt.Array(dt.int8)
-    assert p.match('array<int8>', {}) == dt.Array(dt.int8)
+    assert p.match("array<int8>", {}) == dt.Array(dt.int8)
     assert p.match(dt.Array(dt.uint8), {}) == dt.Array(dt.uint8)
-    assert p.match('array<uint8>', {}) == dt.Array(dt.uint8)
+    assert p.match("array<uint8>", {}) == dt.Array(dt.uint8)
     assert p.match(dt.Array(dt.boolean), {}) is NoMatch
-    assert p.match('array<boolean>', {}) is NoMatch
+    assert p.match("array<boolean>", {}) is NoMatch
 
     p = Pattern.from_typehint(dt.Map[dt.String, dt.Integer])
     assert p.match(dt.Map(dt.string, dt.int8), {}) == dt.Map(dt.string, dt.int8)
-    assert p.match('map<string, int8>', {}) == dt.Map(dt.string, dt.int8)
+    assert p.match("map<string, int8>", {}) == dt.Map(dt.string, dt.int8)
     assert p.match(dt.Map(dt.string, dt.uint8), {}) == dt.Map(dt.string, dt.uint8)
-    assert p.match('map<string, uint8>', {}) == dt.Map(dt.string, dt.uint8)
+    assert p.match("map<string, uint8>", {}) == dt.Map(dt.string, dt.uint8)
     assert p.match(dt.Map(dt.string, dt.boolean), {}) is NoMatch
-    assert p.match('map<string, boolean>', {}) is NoMatch
+    assert p.match("map<string, boolean>", {}) is NoMatch
 
     p = Pattern.from_typehint(Annotated[dt.Interval, Attrs(unit=As(TimeUnit))])
-    assert p.match(dt.Interval('s'), {}) == dt.Interval('s')
-    assert p.match(dt.Interval('ns'), {}) == dt.Interval('ns')
+    assert p.match(dt.Interval("s"), {}) == dt.Interval("s")
+    assert p.match(dt.Interval("ns"), {}) == dt.Interval("ns")

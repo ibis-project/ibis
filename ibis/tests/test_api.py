@@ -42,12 +42,12 @@ def test_multiple_backends(mocker):
     entrypoints = [
         EntryPoint(
             name="foo",
-            value='ibis.backends.backend1',
+            value="ibis.backends.backend1",
             group="ibis.backends",
         ),
         EntryPoint(
             name="foo",
-            value='ibis.backends.backend2',
+            value="ibis.backends.backend2",
             group="ibis.backends",
         ),
     ]

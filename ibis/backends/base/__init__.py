@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
     import torch
 
-__all__ = ('BaseBackend', 'Database', 'connect')
+__all__ = ("BaseBackend", "Database", "connect")
 
 
 _IBIS_TO_SQLGLOT_DIALECT = {
@@ -54,7 +54,7 @@ class Database:
 
     def __repr__(self) -> str:
         """Return type name and the name of the database."""
-        return f'{type(self).__name__}({self.name!r})'
+        return f"{type(self).__name__}({self.name!r})"
 
     def __dir__(self) -> list[str]:
         """Return the attributes and tables of the database.
@@ -681,8 +681,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
         parts = [self.__class__]
         parts.extend(self._con_args)
-        parts.extend(f'{k}={v}' for k, v in self._con_kwargs.items())
-        return '_'.join(map(str, parts))
+        parts.extend(f"{k}={v}" for k, v in self._con_kwargs.items())
+        return "_".join(map(str, parts))
 
     def connect(self, *args, **kwargs) -> BaseBackend:
         """Connect to the database.
@@ -728,7 +728,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def do_connect(self, *args, **kwargs) -> None:
         """Connect to database specified by `args` and `kwargs`."""
 
-    @util.deprecated(instead='use equivalent methods in the backend')
+    @util.deprecated(instead="use equivalent methods in the backend")
     def database(self, name: str | None = None) -> Database:
         """Return a `Database` object for the `name` database.
 
@@ -905,8 +905,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         function receives the translator object and an expression as
         parameters, and returns a value depending on the backend.
         """
-        if not hasattr(self, 'compiler'):
-            raise RuntimeError('Only SQL-based backends support `add_operation`')
+        if not hasattr(self, "compiler"):
+            raise RuntimeError("Only SQL-based backends support `add_operation`")
 
         def decorator(translation_function: Callable) -> None:
             self.compiler.translator_class.add_operation(

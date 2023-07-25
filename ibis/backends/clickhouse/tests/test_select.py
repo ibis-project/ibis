@@ -10,40 +10,40 @@ import ibis
 cc = pytest.importorskip("clickhouse_connect")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def diamonds(con):
-    return con.table('diamonds')
+    return con.table("diamonds")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def batting(con):
-    return con.table('batting')
+    return con.table("batting")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def awards_players(con):
-    return con.table('awards_players')
+    return con.table("awards_players")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def time_left(con):
-    return con.table('time_df1')
+    return con.table("time_df1")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def time_right(con):
-    return con.table('time_df2')
+    return con.table("time_df2")
 
 
 def test_timestamp_extract_field(alltypes, snapshot):
     t = alltypes.timestamp_col
     expr = alltypes[
-        t.year().name('year'),
-        t.month().name('month'),
-        t.day().name('day'),
-        t.hour().name('hour'),
-        t.minute().name('minute'),
-        t.second().name('second'),
+        t.year().name("year"),
+        t.month().name("month"),
+        t.day().name("day"),
+        t.hour().name("hour"),
+        t.minute().name("minute"),
+        t.second().name("second"),
     ]
 
     result = ibis.clickhouse.compile(expr)
@@ -52,7 +52,7 @@ def test_timestamp_extract_field(alltypes, snapshot):
 
 
 def test_isin_notin_in_select(alltypes, snapshot):
-    values = ['foo', 'bar']
+    values = ["foo", "bar"]
     filtered = alltypes[alltypes.string_col.isin(values)]
     result = ibis.clickhouse.compile(filtered)
     snapshot.assert_match(result, "out1.sql")
@@ -82,18 +82,18 @@ def test_limit_offset(alltypes):
 def test_subquery(alltypes, df):
     t = alltypes
 
-    expr = t.mutate(d=t.double_col).limit(100).group_by('string_col').size()
+    expr = t.mutate(d=t.double_col).limit(100).group_by("string_col").size()
     result = expr.execute()
 
-    result = result.sort_values('string_col').reset_index(drop=True)
+    result = result.sort_values("string_col").reset_index(drop=True)
     expected = (
         df.assign(d=df.double_col.fillna(0))
         .head(100)
-        .groupby('string_col')
+        .groupby("string_col")
         .string_col.count()
         .rename("CountStar()")
         .reset_index()
-        .sort_values('string_col')
+        .sort_values("string_col")
         .reset_index(drop=True)
     )
 
@@ -157,8 +157,8 @@ def test_simple_scalar_aggregates(alltypes, snapshot):
 
 
 def test_table_column_unbox(alltypes, snapshot):
-    m = alltypes.float_col.sum().name('total')
-    agged = alltypes[alltypes.int_col > 0].group_by('string_col').aggregate([m])
+    m = alltypes.float_col.sum().name("total")
+    agged = alltypes[alltypes.int_col > 0].group_by("string_col").aggregate([m])
     expr = agged.string_col
 
     result = ibis.clickhouse.compile(expr)
@@ -168,8 +168,8 @@ def test_table_column_unbox(alltypes, snapshot):
 def test_complex_array_expr_projection(alltypes, snapshot):
     # May require finding the base table and forming a projection.
     expr = (
-        alltypes.group_by('string_col')
-        .aggregate([alltypes.count().name('count')])
+        alltypes.group_by("string_col")
+        .aggregate([alltypes.count().name("count")])
         .string_col.cast("double")
     )
 
@@ -243,7 +243,7 @@ def test_self_reference_simple(con, alltypes, snapshot):
 def test_join_self_reference(con, alltypes, snapshot):
     t1 = alltypes
     t2 = t1.view()
-    expr = t1.inner_join(t2, ['id'])[[t1]]
+    expr = t1.inner_join(t2, ["id"])[[t1]]
 
     result = ibis.clickhouse.compile(expr)
     snapshot.assert_match(result, "out.sql")
@@ -278,9 +278,9 @@ def test_where_use_if(con, alltypes, translate, snapshot):
 
 def test_filter_predicates(diamonds):
     predicates = [
-        lambda x: x.color.lower().like('%de%'),
+        lambda x: x.color.lower().like("%de%"),
         # lambda x: x.color.lower().contains('de'),
-        lambda x: x.color.lower().rlike('.*ge.*'),
+        lambda x: x.color.lower().rlike(".*ge.*"),
     ]
 
     expr = diamonds
@@ -292,8 +292,8 @@ def test_filter_predicates(diamonds):
 
 def test_where_with_timestamp(snapshot):
     t = ibis.table(
-        [('uuid', 'string'), ('ts', 'timestamp'), ('search_level', 'int64')],
-        name='t',
+        [("uuid", "string"), ("ts", "timestamp"), ("search_level", "int64")],
+        name="t",
     )
     expr = t.group_by(t.uuid).aggregate(min_date=t.ts.min(where=t.search_level == 1))
     result = ibis.clickhouse.compile(expr)
@@ -306,7 +306,7 @@ def test_timestamp_scalar_in_filter(alltypes):
     expr = table.filter(
         [
             table.timestamp_col
-            < (ibis.timestamp('2010-01-01') + ibis.interval(weeks=3)),
+            < (ibis.timestamp("2010-01-01") + ibis.interval(weeks=3)),
             table.timestamp_col < (ibis.now() + ibis.interval(days=10)),
         ]
     ).count()
@@ -314,7 +314,7 @@ def test_timestamp_scalar_in_filter(alltypes):
 
 
 def test_named_from_filter_groupby(snapshot):
-    t = ibis.table([('key', 'string'), ('value', 'double')], name='t0')
+    t = ibis.table([("key", "string"), ("value", "double")], name="t0")
     gb = t.filter(t.value == 42).group_by(t.key)
     sum_expr = lambda t: (t.value + 1 + 2 + 3).sum()
     expr = gb.aggregate(abc=sum_expr)
@@ -328,11 +328,11 @@ def test_named_from_filter_groupby(snapshot):
 
 def test_join_with_external_table_errors(alltypes):
     external_table = ibis.table(
-        [('a', 'string'), ('b', 'int64'), ('c', 'string')], name='external'
+        [("a", "string"), ("b", "int64"), ("c", "string")], name="external"
     )
 
     alltypes = alltypes.mutate(b=alltypes.tinyint_col)
-    expr = alltypes.inner_join(external_table, ['b'])[
+    expr = alltypes.inner_join(external_table, ["b"])[
         external_table.a, external_table.c, alltypes.id
     ]
 
@@ -340,30 +340,30 @@ def test_join_with_external_table_errors(alltypes):
         expr.execute()
 
     with pytest.raises(TypeError):
-        expr.execute(external_tables={'external': []})
+        expr.execute(external_tables={"external": []})
 
 
 def test_join_with_external_table(alltypes, df):
     external_df = pd.DataFrame(
-        [('alpha', 1, 'first'), ('beta', 2, 'second'), ('gamma', 3, 'third')],
-        columns=['a', 'b', 'c'],
+        [("alpha", 1, "first"), ("beta", 2, "second"), ("gamma", 3, "third")],
+        columns=["a", "b", "c"],
     )
-    external_df['b'] = external_df['b'].astype('int8')
+    external_df["b"] = external_df["b"].astype("int8")
 
     external_table = ibis.table(
-        [('a', 'string'), ('b', 'int64'), ('c', 'string')], name='external'
+        [("a", "string"), ("b", "int64"), ("c", "string")], name="external"
     )
 
     alltypes = alltypes.mutate(b=alltypes.tinyint_col)
-    expr = alltypes.inner_join(external_table, ['b'])[
+    expr = alltypes.inner_join(external_table, ["b"])[
         external_table.a, external_table.c, alltypes.id
     ]
 
-    result = expr.execute(external_tables={'external': external_df})
-    expected = df.assign(b=df.tinyint_col).merge(external_df, on='b')[['a', 'c', 'id']]
+    result = expr.execute(external_tables={"external": external_df})
+    expected = df.assign(b=df.tinyint_col).merge(external_df, on="b")[["a", "c", "id"]]
 
-    result = result.sort_values('id').reset_index(drop=True)
-    expected = expected.sort_values('id').reset_index(drop=True)
+    result = result.sort_values("id").reset_index(drop=True)
+    expected = expected.sort_values("id").reset_index(drop=True)
 
     tm.assert_frame_equal(result, expected, check_column_type=False)
 
@@ -372,13 +372,13 @@ def test_asof_join(time_left, time_right):
     expr = time_left.asof_join(
         time_right,
         predicates=[
-            time_left['key'] == time_right['key'],
-            time_left['time'] >= time_right['time'],
+            time_left["key"] == time_right["key"],
+            time_left["time"] >= time_right["time"],
         ],
     ).drop("time_right")
     result = expr.execute()
     expected = pd.merge_asof(
-        time_left.execute(), time_right.execute(), on='time', suffixes=("", "_right")
+        time_left.execute(), time_right.execute(), on="time", suffixes=("", "_right")
     )
     tm.assert_frame_equal(result[expected.columns], expected)
 

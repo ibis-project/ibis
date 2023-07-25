@@ -59,13 +59,13 @@ BUCKETS = [0, 10, 25, 50]
         # necessary
         pytest.param(
             lambda f: f.bucket([10], include_over=True, include_under=True).cast(
-                'int32'
+                "int32"
             ),
             id="include_over_include_under",
         ),
         pytest.param(
             lambda f: f.bucket([10], include_over=True, include_under=True).cast(
-                'double'
+                "double"
             ),
             id="include_over_include_under",
         ),
@@ -81,10 +81,10 @@ def test_bucket_assign_labels(table, snapshot):
     buckets = [0, 10, 25, 50]
     bucket = table.f.bucket(buckets, include_under=True)
 
-    size = table.group_by(bucket.name('tier')).size()
+    size = table.group_by(bucket.name("tier")).size()
     labelled = size.tier.label(
-        ['Under 0', '0 to 10', '10 to 25', '25 to 50'], nulls='error'
-    ).name('tier2')
+        ["Under 0", "0 to 10", "10 to 25", "25 to 50"], nulls="error"
+    ).name("tier2")
     expr = size[labelled, size[1]]
 
     snapshot.assert_match(ImpalaCompiler.to_sql(expr), "out.sql")

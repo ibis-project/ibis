@@ -135,7 +135,7 @@ class Expr(Immutable, Coercible):
             # Something may go wrong, and we can't error in the notebook
             # so fallback to the default text representation.
             with contextlib.suppress(Exception):
-                return viz.to_graph(self).pipe(format='png')
+                return viz.to_graph(self).pipe(format="png")
 
     def visualize(
         self,
@@ -168,7 +168,7 @@ class Expr(Immutable, Coercible):
             format=format,
             verbose=verbose,
         )
-        webbrowser.open(f'file://{os.path.abspath(path)}')
+        webbrowser.open(f"file://{os.path.abspath(path)}")
 
     def pipe(self, f, *args: Any, **kwargs: Any) -> Expr:
         """Compose `f` with `self`.
@@ -266,18 +266,18 @@ class Expr(Immutable, Coercible):
             default = _default_backend() if use_default else None
             if default is None:
                 raise IbisError(
-                    'Expression depends on no backends, and found no default'
+                    "Expression depends on no backends, and found no default"
                 )
             return default
 
         if len(backends) > 1:
-            raise IbisError('Multiple backends found for this expression')
+            raise IbisError("Multiple backends found for this expression")
 
         return backends[0]
 
     def execute(
         self,
-        limit: int | str | None = 'default',
+        limit: int | str | None = "default",
         timecontext: TimeContext | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         **kwargs: Any,
