@@ -8,10 +8,12 @@ from functools import partial
 import toolz
 
 import ibis.common.graph as lin
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base.sql import compiler as sql_compiler
 from ibis.backends.bigquery import operations, registry, rewrites
+from ibis.backends.bigquery.datatypes import BigQueryType
 
 
 class BigQueryUDFDefinition(sql_compiler.DDL):
@@ -126,6 +128,23 @@ class BigQueryTableSetFormatter(sql_compiler.TableSetFormatter):
         if _EXACT_NAME_REGEX.match(name) is not None:
             return name
         return f"`{name}`"
+
+    def _format_in_memory_table(self, op):
+        schema = op.schema
+        names = schema.names
+        types = schema.types
+
+        raw_rows = []
+        for row in op.data.to_frame().itertuples(index=False):
+            raw_row = ", ".join(
+                f"{self._translate(lit)} AS {name}"
+                for lit, name in zip(
+                    map(ops.Literal, row, types), map(self._quote_identifier, names)
+                )
+            )
+            raw_rows.append(f"STRUCT({raw_row})")
+        array_type = BigQueryType.from_ibis(dt.Array(op.schema.as_struct()))
+        return f"UNNEST({array_type}[{', '.join(raw_rows)}])"
 
 
 class BigQueryCompiler(sql_compiler.Compiler):

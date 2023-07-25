@@ -115,6 +115,9 @@ class TableProxy(Immutable):
             writer.write(data)
         return out.getvalue()
 
+    def __len__(self) -> int:
+        return len(self._data)
+
 
 class PyArrowTableProxy(TableProxy):
     __slots__ = ()

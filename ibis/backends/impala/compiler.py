@@ -15,6 +15,19 @@ class ImpalaTableSetFormatter(TableSetFormatter):
 
         return jname
 
+    def _format_in_memory_table(self, op):
+        if op.data:
+            return super()._format_in_memory_table(op)
+
+        schema = op.schema
+        names = schema.names
+        types = schema.types
+        rows = [
+            f"{self._translate(ops.Cast(ops.Literal(None, dtype=dtype), to=dtype))} AS {name}"
+            for name, dtype in zip(map(self._quote_identifier, names), types)
+        ]
+        return f"(SELECT * FROM (SELECT {', '.join(rows)}) AS _ LIMIT 0)"
+
 
 class ImpalaExprTranslator(ExprTranslator):
     _registry = {**operation_registry, **binary_infix_ops, ops.Hash: unary("fnv_hash")}
