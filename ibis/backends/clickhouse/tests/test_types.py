@@ -11,13 +11,13 @@ pytest.importorskip("clickhouse_connect")
 
 def test_column_types(alltypes):
     df = alltypes.limit(1).execute()
-    assert df.tinyint_col.dtype.name == 'int8'
-    assert df.smallint_col.dtype.name == 'int16'
-    assert df.int_col.dtype.name == 'int32'
-    assert df.bigint_col.dtype.name == 'int64'
-    assert df.float_col.dtype.name == 'float32'
-    assert df.double_col.dtype.name == 'float64'
-    assert df.timestamp_col.dtype.name == 'datetime64[ns]'
+    assert df.tinyint_col.dtype.name == "int8"
+    assert df.smallint_col.dtype.name == "int16"
+    assert df.int_col.dtype.name == "int32"
+    assert df.bigint_col.dtype.name == "int64"
+    assert df.float_col.dtype.name == "float32"
+    assert df.double_col.dtype.name == "float64"
+    assert df.timestamp_col.dtype.name == "datetime64[ns]"
 
 
 def test_columns_types_with_additional_argument(con):
@@ -27,105 +27,105 @@ def test_columns_types_with_additional_argument(con):
         "toDateTime64('2018-07-02 00:00:00', 9, 'UTC') AS datetime_ns_col",
     ]
     df = con.sql(f"SELECT {', '.join(sql_types)}").execute()
-    assert df.fixedstring_col.dtype.name == 'object'
-    assert df.datetime_col.dtype.name == 'datetime64[s, UTC]'
-    assert df.datetime_ns_col.dtype.name == 'datetime64[ns, UTC]'
+    assert df.fixedstring_col.dtype.name == "object"
+    assert df.datetime_col.dtype.name == "datetime64[s, UTC]"
+    assert df.datetime_ns_col.dtype.name == "datetime64[ns, UTC]"
 
 
 @pytest.mark.parametrize(
-    ('ch_type', 'ibis_type'),
+    ("ch_type", "ibis_type"),
     [
         param(
             "Enum8('' = 0, 'CDMA' = 1, 'GSM' = 2, 'LTE' = 3, 'NR' = 4)",
             dt.String(nullable=False),
             id="enum",
         ),
-        param('IPv4', dt.inet(nullable=False), id="ipv4"),
-        param('IPv6', dt.inet(nullable=False), id="ipv6"),
-        param('JSON', dt.json(nullable=False), id="json"),
+        param("IPv4", dt.inet(nullable=False), id="ipv4"),
+        param("IPv6", dt.inet(nullable=False), id="ipv6"),
+        param("JSON", dt.json(nullable=False), id="json"),
         param("Object('json')", dt.json(nullable=False), id="object_json"),
         param(
-            'LowCardinality(String)', dt.String(nullable=False), id="low_card_string"
+            "LowCardinality(String)", dt.String(nullable=False), id="low_card_string"
         ),
         param(
-            'Array(Int8)',
+            "Array(Int8)",
             dt.Array(dt.Int8(nullable=False), nullable=False),
             id="array_int8",
         ),
         param(
-            'Array(Int16)',
+            "Array(Int16)",
             dt.Array(dt.Int16(nullable=False), nullable=False),
             id="array_int16",
         ),
         param(
-            'Array(Int32)',
+            "Array(Int32)",
             dt.Array(dt.Int32(nullable=False), nullable=False),
             id="array_int32",
         ),
         param(
-            'Array(Int64)',
+            "Array(Int64)",
             dt.Array(dt.Int64(nullable=False), nullable=False),
             id="array_int64",
         ),
         param(
-            'Array(UInt8)',
+            "Array(UInt8)",
             dt.Array(dt.UInt8(nullable=False), nullable=False),
             id="array_uint8",
         ),
         param(
-            'Array(UInt16)',
+            "Array(UInt16)",
             dt.Array(dt.UInt16(nullable=False), nullable=False),
             id="array_uint16",
         ),
         param(
-            'Array(UInt32)',
+            "Array(UInt32)",
             dt.Array(dt.UInt32(nullable=False), nullable=False),
             id="array_uint32",
         ),
         param(
-            'Array(UInt64)',
+            "Array(UInt64)",
             dt.Array(dt.UInt64(nullable=False), nullable=False),
             id="array_uint64",
         ),
         param(
-            'Array(Float32)',
+            "Array(Float32)",
             dt.Array(dt.Float32(nullable=False), nullable=False),
             id="array_float32",
         ),
         param(
-            'Array(Float64)',
+            "Array(Float64)",
             dt.Array(dt.Float64(nullable=False), nullable=False),
             id="array_float64",
         ),
         param(
-            'Array(String)',
+            "Array(String)",
             dt.Array(dt.String(nullable=False), nullable=False),
             id="array_string",
         ),
         param(
-            'Array(FixedString(32))',
+            "Array(FixedString(32))",
             dt.Array(dt.String(nullable=False), nullable=False),
             id="array_fixed_string",
         ),
         param(
-            'Array(Date)',
+            "Array(Date)",
             dt.Array(dt.Date(nullable=False), nullable=False),
             id="array_date",
         ),
         param(
-            'Array(DateTime)',
+            "Array(DateTime)",
             dt.Array(dt.Timestamp(nullable=False), nullable=False),
             id="array_datetime",
         ),
         param(
-            'Array(DateTime64)',
+            "Array(DateTime64)",
             dt.Array(dt.Timestamp(nullable=False), nullable=False),
             id="array_datetime64",
         ),
-        param('Array(Nothing)', dt.Array(dt.null, nullable=False), id="array_nothing"),
-        param('Array(Null)', dt.Array(dt.null, nullable=False), id="array_null"),
+        param("Array(Nothing)", dt.Array(dt.null, nullable=False), id="array_nothing"),
+        param("Array(Null)", dt.Array(dt.null, nullable=False), id="array_null"),
         param(
-            'Array(Array(Int8))',
+            "Array(Array(Int8))",
             dt.Array(
                 dt.Array(dt.Int8(nullable=False), nullable=False),
                 nullable=False,
@@ -133,7 +133,7 @@ def test_columns_types_with_additional_argument(con):
             id="double_array",
         ),
         param(
-            'Array(Array(Array(Int8)))',
+            "Array(Array(Array(Int8)))",
             dt.Array(
                 dt.Array(
                     dt.Array(dt.Int8(nullable=False), nullable=False),
@@ -144,7 +144,7 @@ def test_columns_types_with_additional_argument(con):
             id="triple_array",
         ),
         param(
-            'Array(Array(Array(Array(Int8))))',
+            "Array(Array(Array(Array(Int8))))",
             dt.Array(
                 dt.Array(
                     dt.Array(

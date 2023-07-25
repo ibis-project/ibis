@@ -24,7 +24,7 @@ ibis.pandas  # noqa: B018
 
 
 class Backend(BasePandasBackend):
-    name = 'dask'
+    name = "dask"
     backend_table_type = dd.DataFrame
 
     def do_connect(
@@ -70,13 +70,13 @@ class Backend(BasePandasBackend):
         self,
         query: ir.Expr,
         params: Mapping[ir.Expr, object] | None = None,
-        limit: str = 'default',
+        limit: str = "default",
         **kwargs,
     ):
-        if limit != 'default' and limit is not None:
+        if limit != "default" and limit is not None:
             raise ValueError(
-                'limit parameter to execute is not yet implemented in the '
-                'dask backend'
+                "limit parameter to execute is not yet implemented in the "
+                "dask backend"
             )
 
         if not isinstance(query, ir.Expr):

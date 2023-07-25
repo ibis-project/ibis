@@ -14,7 +14,7 @@ from ibis.backends.clickhouse.compiler.values import translate_val
 @functools.singledispatch
 def translate_rel(op: ops.TableNode, **_):
     """Translate a table node into sqlglot."""
-    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+    raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
 @translate_rel.register(ops.DummyTable)

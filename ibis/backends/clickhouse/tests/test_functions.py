@@ -17,7 +17,7 @@ from ibis import literal as L
 pytest.importorskip("clickhouse_connect")
 
 
-@pytest.mark.parametrize('to_type', ['int8', 'int16', 'float32', 'float', '!float64'])
+@pytest.mark.parametrize("to_type", ["int8", "int16", "float32", "float", "!float64"])
 def test_cast_double_col(alltypes, translate, to_type, snapshot):
     expr = alltypes.double_col.cast(to_type)
     result = translate(expr.op())
@@ -25,15 +25,15 @@ def test_cast_double_col(alltypes, translate, to_type, snapshot):
 
 
 @pytest.mark.parametrize(
-    'to_type',
+    "to_type",
     [
-        'int8',
-        'int16',
-        '!string',
-        'timestamp',
-        'date',
-        '!map<string, int64>',
-        '!struct<a: string, b: int64>',
+        "int8",
+        "int16",
+        "!string",
+        "timestamp",
+        "date",
+        "!map<string, int64>",
+        "!struct<a: string, b: int64>",
     ],
 )
 def test_cast_string_col(alltypes, translate, to_type, snapshot):
@@ -42,21 +42,21 @@ def test_cast_string_col(alltypes, translate, to_type, snapshot):
 
 
 @pytest.mark.parametrize(
-    'column',
+    "column",
     [
-        'id',
-        'bool_col',
-        'tinyint_col',
-        'smallint_col',
-        'int_col',
-        'bigint_col',
-        'float_col',
-        'double_col',
-        'date_string_col',
-        'string_col',
-        'timestamp_col',
-        'year',
-        'month',
+        "id",
+        "bool_col",
+        "tinyint_col",
+        "smallint_col",
+        "int_col",
+        "bigint_col",
+        "float_col",
+        "double_col",
+        "date_string_col",
+        "string_col",
+        "timestamp_col",
+        "year",
+        "month",
     ],
 )
 def test_noop_cast(alltypes, translate, column, snapshot):
@@ -80,17 +80,17 @@ def test_timestamp_cast(alltypes, translate, snapshot):
 
 def test_timestamp_now(translate):
     expr = ibis.now()
-    assert translate(expr.op()) == 'now()'
+    assert translate(expr.op()) == "now()"
 
 
-@pytest.mark.parametrize('unit', ['y', 'm', 'd', 'w', 'h', 'minute'])
+@pytest.mark.parametrize("unit", ["y", "m", "d", "w", "h", "minute"])
 def test_timestamp_truncate(con, unit, snapshot):
-    stamp = ibis.timestamp('2009-05-17 12:34:56')
+    stamp = ibis.timestamp("2009-05-17 12:34:56")
     expr = stamp.truncate(unit)
     snapshot.assert_match(con.compile(expr), "out.sql")
 
 
-@pytest.mark.parametrize(('value', 'expected'), [(0, None), (5.5, 5.5)])
+@pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
 def test_nullifzero(con, value, expected):
     result = con.execute(L(value).nullifzero())
     if expected is None:
@@ -100,7 +100,7 @@ def test_nullifzero(con, value, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         (L(None).isnull(), True),
         (L(1).isnull(), False),
@@ -113,7 +113,7 @@ def test_isnull_notnull(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         (ibis.coalesce(5, None, 4), 5),
         (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
@@ -125,7 +125,7 @@ def test_coalesce(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         (ibis.NA.fillna(5), 5),
         (L(5).fillna(10), 5),
@@ -142,21 +142,21 @@ def test_fillna_nullif(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('value', 'expected'),
+    ("value", "expected"),
     [
-        (L('foo_bar'), 'String'),
-        (L(5), 'UInt8'),
-        (L(1.2345), 'Float64'),
-        (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), 'DateTime'),
-        (L(date(2015, 9, 1)), 'Date'),
+        (L("foo_bar"), "String"),
+        (L(5), "UInt8"),
+        (L(1.2345), "Float64"),
+        (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), "DateTime"),
+        (L(date(2015, 9, 1)), "Date"),
         param(
             ibis.NA,
-            'Null',
+            "Null",
             marks=pytest.mark.xfail(
                 raises=AssertionError,
                 reason=(
-                    'Client/server version mismatch not handled in the '
-                    'clickhouse driver'
+                    "Client/server version mismatch not handled in the "
+                    "clickhouse driver"
                 ),
             ),
         ),
@@ -166,21 +166,21 @@ def test_typeof(con, value, expected):
     assert con.execute(value.typeof()) == expected
 
 
-@pytest.mark.parametrize(('value', 'expected'), [('foo_bar', 7), ('', 0)])
+@pytest.mark.parametrize(("value", "expected"), [("foo_bar", 7), ("", 0)])
 def test_string_length(con, value, expected):
     assert con.execute(L(value).length()) == expected
 
 
 @pytest.mark.parametrize(
-    ('op', 'expected'),
+    ("op", "expected"),
     [
-        (methodcaller('substr', 0, 3), 'foo'),
-        (methodcaller('substr', 4, 3), 'bar'),
-        (methodcaller('substr', 1), 'oo_bar'),
+        (methodcaller("substr", 0, 3), "foo"),
+        (methodcaller("substr", 4, 3), "bar"),
+        (methodcaller("substr", 1), "oo_bar"),
     ],
 )
 def test_string_substring(con, op, expected):
-    value = L('foo_bar')
+    value = L("foo_bar")
     assert con.execute(op(value)) == expected
 
 
@@ -195,29 +195,29 @@ def test_string_column_substring(con, alltypes, translate, snapshot):
 
 
 def test_string_reverse(con):
-    assert con.execute(L('foo').reverse()) == 'oof'
+    assert con.execute(L("foo").reverse()) == "oof"
 
 
 def test_string_upper(con):
-    assert con.execute(L('foo').upper()) == 'FOO'
+    assert con.execute(L("foo").upper()) == "FOO"
 
 
 def test_string_lower(con):
-    assert con.execute(L('FOO').lower()) == 'foo'
+    assert con.execute(L("FOO").lower()) == "foo"
 
 
 def test_string_lenght(con):
-    assert con.execute(L('FOO').length()) == 3
+    assert con.execute(L("FOO").length()) == 3
 
 
 @pytest.mark.parametrize(
-    ('value', 'op', 'expected'),
+    ("value", "op", "expected"),
     [
-        (L('foobar'), methodcaller('contains', 'bar'), True),
-        (L('foobar'), methodcaller('contains', 'foo'), True),
-        (L('foobar'), methodcaller('contains', 'baz'), False),
-        (L('100%'), methodcaller('contains', '%'), True),
-        (L('a_b_c'), methodcaller('contains', '_'), True),
+        (L("foobar"), methodcaller("contains", "bar"), True),
+        (L("foobar"), methodcaller("contains", "foo"), True),
+        (L("foobar"), methodcaller("contains", "baz"), False),
+        (L("100%"), methodcaller("contains", "%"), True),
+        (L("a_b_c"), methodcaller("contains", "_"), True),
     ],
 )
 def test_string_contains(con, op, value, expected):
@@ -225,26 +225,26 @@ def test_string_contains(con, op, value, expected):
 
 
 def test_re_replace(con):
-    expr1 = L('Hello, World!').re_replace('.', '\\0\\0')
-    expr2 = L('Hello, World!').re_replace('^', 'here: ')
+    expr1 = L("Hello, World!").re_replace(".", "\\0\\0")
+    expr2 = L("Hello, World!").re_replace("^", "here: ")
 
-    assert con.execute(expr1) == 'HHeelllloo,,  WWoorrlldd!!'
-    assert con.execute(expr2) == 'here: Hello, World!'
+    assert con.execute(expr1) == "HHeelllloo,,  WWoorrlldd!!"
+    assert con.execute(expr2) == "here: Hello, World!"
 
 
 @pytest.mark.parametrize(
-    ('value', 'expected'),
-    [(L('a'), 0), (L('b'), 1), (L('d'), -1)],  # TODO: what's the expected?
+    ("value", "expected"),
+    [(L("a"), 0), (L("b"), 1), (L("d"), -1)],  # TODO: what's the expected?
 )
 def test_find_in_set(con, value, expected):
-    vals = list('abc')
+    vals = list("abc")
     expr = value.find_in_set(vals)
     assert con.execute(expr) == expected
 
 
 def test_string_column_find_in_set(con, alltypes, translate, snapshot):
     s = alltypes.string_col
-    vals = list('abc')
+    vals = list("abc")
 
     expr = s.find_in_set(vals)
     snapshot.assert_match(translate(expr.op()), "out.sql")
@@ -252,18 +252,18 @@ def test_string_column_find_in_set(con, alltypes, translate, snapshot):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
-        (L('foobar').find('bar'), 3),
-        (L('foobar').find('baz'), -1),
-        (L('foobar').like('%bar'), True),
-        (L('foobar').like('foo%'), True),
-        (L('foobar').like('%baz%'), False),
-        (L('foobar').like(['%bar']), True),
-        (L('foobar').like(['foo%']), True),
-        (L('foobar').like(['%baz%']), False),
-        (L('foobar').like(['%bar', 'foo%']), True),
-        (L('foobarfoo').replace('foo', 'H'), 'HbarH'),
+        (L("foobar").find("bar"), 3),
+        (L("foobar").find("baz"), -1),
+        (L("foobar").like("%bar"), True),
+        (L("foobar").like("foo%"), True),
+        (L("foobar").like("%baz%"), False),
+        (L("foobar").like(["%bar"]), True),
+        (L("foobar").like(["foo%"]), True),
+        (L("foobar").like(["%baz%"]), False),
+        (L("foobar").like(["%bar", "foo%"]), True),
+        (L("foobarfoo").replace("foo", "H"), "HbarH"),
     ],
 )
 def test_string_find_like(con, expr, expected):
@@ -271,11 +271,11 @@ def test_string_find_like(con, expr, expected):
 
 
 def test_string_column_like(con, alltypes, translate, snapshot):
-    expr = alltypes.string_col.like('foo%')
+    expr = alltypes.string_col.like("foo%")
     snapshot.assert_match(translate(expr.op()), "out1.sql")
     assert len(con.execute(expr))
 
-    expr = alltypes.string_col.like(['foo%', '%bar'])
+    expr = alltypes.string_col.like(["foo%", "%bar"])
     snapshot.assert_match(translate(expr.op()), "out2.sql")
     assert len(con.execute(expr))
 
@@ -283,7 +283,7 @@ def test_string_column_like(con, alltypes, translate, snapshot):
 def test_string_column_find(con, alltypes, translate, snapshot):
     s = alltypes.string_col
 
-    expr = s.find('a')
+    expr = s.find("a")
     snapshot.assert_match(translate(expr.op()), "out1.sql")
     assert len(con.execute(expr))
 
@@ -293,19 +293,19 @@ def test_string_column_find(con, alltypes, translate, snapshot):
 
 
 @pytest.mark.parametrize(
-    'call',
+    "call",
     [
-        param(methodcaller('log'), id="log"),
-        param(methodcaller('log2'), id="log2"),
-        param(methodcaller('log10'), id="log10"),
-        param(methodcaller('round'), id="round"),
-        param(methodcaller('round', 0), id="round_0"),
-        param(methodcaller('round', 2), id="round_2"),
-        param(methodcaller('exp'), id="exp"),
-        param(methodcaller('abs'), id="abs"),
-        param(methodcaller('ceil'), id="ceil"),
-        param(methodcaller('sqrt'), id="sqrt"),
-        param(methodcaller('sign'), id="sign"),
+        param(methodcaller("log"), id="log"),
+        param(methodcaller("log2"), id="log2"),
+        param(methodcaller("log10"), id="log10"),
+        param(methodcaller("round"), id="round"),
+        param(methodcaller("round", 0), id="round_0"),
+        param(methodcaller("round", 2), id="round_2"),
+        param(methodcaller("exp"), id="exp"),
+        param(methodcaller("abs"), id="abs"),
+        param(methodcaller("ceil"), id="ceil"),
+        param(methodcaller("sqrt"), id="sqrt"),
+        param(methodcaller("sign"), id="sign"),
     ],
 )
 def test_translate_math_functions(con, alltypes, translate, call, snapshot):
@@ -315,7 +315,7 @@ def test_translate_math_functions(con, alltypes, translate, call, snapshot):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         pytest.param(L(-5).abs(), 5, id="abs_neg"),
         pytest.param(L(5).abs(), 5, id="abs"),
@@ -370,11 +370,11 @@ def test_greatest_least(con, alltypes, translate, snapshot):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
-        (L('abcd').re_search('[a-z]'), True),
-        (L('abcd').re_search(r'[\d]+'), False),
-        (L('1222').re_search(r'[\d]+'), True),
+        (L("abcd").re_search("[a-z]"), True),
+        (L("abcd").re_search(r"[\d]+"), False),
+        (L("1222").re_search(r"[\d]+"), True),
     ],
 )
 def test_regexp(con, expr, expected):
@@ -382,14 +382,14 @@ def test_regexp(con, expr, expected):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
-        param(L('abcd').re_extract('([a-z]+)', 0), 'abcd', id="simple"),
+        param(L("abcd").re_extract("([a-z]+)", 0), "abcd", id="simple"),
         # (L('abcd').re_extract('(ab)(cd)', 1), 'cd'),
         # valid group number but no match => None
-        param(L('abcd').re_extract(r'(\\d)', 0), None, id="valid_group_no_match"),
+        param(L("abcd").re_extract(r"(\\d)", 0), None, id="valid_group_no_match"),
         # match but not a valid group number => NULL
-        param(L('abcd').re_extract('abcd', 3), None, id="invalid_group_match"),
+        param(L("abcd").re_extract("abcd", 3), None, id="invalid_group_match"),
     ],
 )
 def test_regexp_extract(con, expr, expected):
@@ -397,13 +397,13 @@ def test_regexp_extract(con, expr, expected):
 
 
 def test_column_regexp_extract(con, alltypes, translate, snapshot):
-    expr = alltypes.string_col.re_extract(r'[\d]+', 3)
+    expr = alltypes.string_col.re_extract(r"[\d]+", 3)
     snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
 
 
 def test_column_regexp_replace(con, alltypes, translate, snapshot):
-    expr = alltypes.string_col.re_replace(r'[\d]+', 'aaa')
+    expr = alltypes.string_col.re_replace(r"[\d]+", "aaa")
     snapshot.assert_match(translate(expr.op()), "out.sql")
     assert len(con.execute(expr))
 
@@ -420,7 +420,7 @@ def test_null_column(alltypes):
     nrows = t.count().execute()
     expr = t.mutate(na_column=ibis.NA).na_column
     result = expr.execute()
-    expected = pd.Series([None] * nrows, name='na_column')
+    expected = pd.Series([None] * nrows, name="na_column")
     tm.assert_series_equal(result, expected)
 
 
@@ -429,10 +429,10 @@ def test_literal_none_to_nullable_column(alltypes):
     t = alltypes
     nrows = t.count().execute()
     expr = t.mutate(
-        ibis.literal(None, dt.String(nullable=True)).name('nullable_string_column')
+        ibis.literal(None, dt.String(nullable=True)).name("nullable_string_column")
     )
-    result = expr['nullable_string_column'].execute()
-    expected = pd.Series([None] * nrows, name='nullable_string_column')
+    result = expr["nullable_string_column"].execute()
+    expected = pd.Series([None] * nrows, name="nullable_string_column")
     tm.assert_series_equal(result, expected)
 
 
@@ -444,19 +444,19 @@ def test_timestamp_from_integer(con, alltypes, translate, snapshot):
 
 
 def test_count_distinct_with_filter(alltypes):
-    expr = alltypes.string_col.nunique(where=alltypes.string_col.cast('int64') > 1)
+    expr = alltypes.string_col.nunique(where=alltypes.string_col.cast("int64") > 1)
     result = expr.execute()
     expected = alltypes.string_col.execute()
-    expected = expected[expected.astype('int64') > 1].nunique()
+    expected = expected[expected.astype("int64") > 1].nunique()
     assert result == expected
 
 
 @pytest.mark.parametrize(
-    ('sep', 'where_case'),
+    ("sep", "where_case"),
     [
-        param(',', None, id="comma_none"),
-        param('-', None, id="minus_none"),
-        param(',', 0, id="comma_zero"),
+        param(",", None, id="comma_none"),
+        param("-", None, id="minus_none"),
+        param(",", 0, id="comma_zero"),
     ],
 )
 def test_group_concat(alltypes, sep, where_case, translate, snapshot):

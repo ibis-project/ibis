@@ -247,7 +247,7 @@ class Slotted:
     hash value for quicker dictionary lookups.
     """
 
-    __slots__ = ('__precomputed_hash__',)
+    __slots__ = ("__precomputed_hash__",)
 
     def __init__(self, *args):
         for name, value in itertools.zip_longest(self.__slots__, args):

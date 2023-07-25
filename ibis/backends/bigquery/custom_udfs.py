@@ -9,7 +9,7 @@ from ibis.backends.bigquery.udf import udf
 # https://github.com/GoogleCloudPlatform/bigquery-utils/blob/45e1ac51367ab6209f68e04b1660d5b00258c131/udfs/community/typeof.sqlx#L1
 typeof_ = udf.sql(
     name="typeof",
-    params={"input": 'ANY TYPE'},
+    params={"input": "ANY TYPE"},
     output_type=dt.str,
     sql_expression=r"""
     (

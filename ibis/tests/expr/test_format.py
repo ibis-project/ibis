@@ -15,31 +15,31 @@ from ibis.expr.operations.relations import Projection
 def test_format_table_column(table):
     # GH #507
     result = repr(table.f)
-    assert 'float64' in result
+    assert "float64" in result
 
 
 def test_format_projection(table):
     # This should produce a ref to the projection
-    proj = table[['c', 'a', 'f']]
-    repr(proj['a'])
+    proj = table[["c", "a", "f"]]
+    repr(proj["a"])
 
 
 def test_table_type_output():
     foo = ibis.table(
         [
-            ('job', 'string'),
-            ('dept_id', 'string'),
-            ('year', 'int32'),
-            ('y', 'double'),
+            ("job", "string"),
+            ("dept_id", "string"),
+            ("year", "int32"),
+            ("y", "double"),
         ],
-        name='foo',
+        name="foo",
     )
 
     expr = foo.dept_id == foo.view().dept_id
     result = repr(expr)
 
-    assert 'SelfReference[r0]' in result
-    assert 'UnboundTable: foo' in result
+    assert "SelfReference[r0]" in result
+    assert "UnboundTable: foo" in result
 
 
 def test_aggregate_arg_names(table):
@@ -47,155 +47,155 @@ def test_aggregate_arg_names(table):
 
     t = table
 
-    by_exprs = [t.g.name('key1'), t.f.round().name('key2')]
-    metrics = [t.c.sum().name('c'), t.d.mean().name('d')]
+    by_exprs = [t.g.name("key1"), t.f.round().name("key2")]
+    metrics = [t.c.sum().name("c"), t.d.mean().name("d")]
 
     expr = t.group_by(by_exprs).aggregate(metrics)
     result = repr(expr)
-    assert 'metrics' in result
-    assert 'by' in result
+    assert "metrics" in result
+    assert "by" in result
 
 
 def test_format_multiple_join_with_projection():
     # Star schema with fact table
     table = ibis.table(
         [
-            ('c', 'int32'),
-            ('f', 'double'),
-            ('foo_id', 'string'),
-            ('bar_id', 'string'),
+            ("c", "int32"),
+            ("f", "double"),
+            ("foo_id", "string"),
+            ("bar_id", "string"),
         ],
-        'one',
+        "one",
     )
 
-    table2 = ibis.table([('foo_id', 'string'), ('value1', 'double')], 'two')
+    table2 = ibis.table([("foo_id", "string"), ("value1", "double")], "two")
 
-    table3 = ibis.table([('bar_id', 'string'), ('value2', 'double')], 'three')
+    table3 = ibis.table([("bar_id", "string"), ("value2", "double")], "three")
 
-    filtered = table[table['f'] > 0]
+    filtered = table[table["f"] > 0]
 
-    pred1 = filtered['foo_id'] == table2['foo_id']
-    pred2 = filtered['bar_id'] == table3['bar_id']
+    pred1 = filtered["foo_id"] == table2["foo_id"]
+    pred2 = filtered["bar_id"] == table3["bar_id"]
 
     j1 = filtered.left_join(table2, [pred1])
     j2 = j1.inner_join(table3, [pred2])
 
     # Project out the desired fields
-    view = j2[[filtered, table2['value1'], table3['value2']]]
+    view = j2[[filtered, table2["value1"], table3["value2"]]]
 
     # it works!
     repr(view)
 
 
 def test_memoize_database_table(con):
-    table = con.table('test1')
-    table2 = con.table('test2')
+    table = con.table("test1")
+    table2 = con.table("test2")
 
-    filter_pred = table['f'] > 0
+    filter_pred = table["f"] > 0
     table3 = table[filter_pred]
-    join_pred = table3['g'] == table2['key']
+    join_pred = table3["g"] == table2["key"]
 
     joined = table2.inner_join(table3, [join_pred])
 
-    met1 = (table3['f'] - table2['value']).mean().name('foo')
+    met1 = (table3["f"] - table2["value"]).mean().name("foo")
     result = joined.aggregate(
-        [met1, table3['f'].sum().name('bar')], by=[table3['g'], table2['key']]
+        [met1, table3["f"].sum().name("bar")], by=[table3["g"], table2["key"]]
     )
 
     formatted = repr(result)
-    assert formatted.count('test1') == 1
-    assert formatted.count('test2') == 1
+    assert formatted.count("test1") == 1
+    assert formatted.count("test2") == 1
 
 
 def test_memoize_filtered_table():
     airlines = ibis.table(
-        [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
-        'airlines',
+        [("dest", "string"), ("origin", "string"), ("arrdelay", "int32")],
+        "airlines",
     )
 
-    dests = ['ORD', 'JFK', 'SFO']
+    dests = ["ORD", "JFK", "SFO"]
     t = airlines[airlines.dest.isin(dests)]
     delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
 
     result = repr(delay_filter)
-    assert result.count('Selection') == 1
+    assert result.count("Selection") == 1
 
 
 def test_memoize_insert_sort_key(con):
-    table = con.table('airlines')
+    table = con.table("airlines")
 
-    t = table['arrdelay', 'dest']
-    expr = t.group_by('dest').mutate(
+    t = table["arrdelay", "dest"]
+    expr = t.group_by("dest").mutate(
         dest_avg=t.arrdelay.mean(), dev=t.arrdelay - t.arrdelay.mean()
     )
 
-    worst = expr[expr.dev.notnull()].order_by(ibis.desc('dev')).limit(10)
+    worst = expr[expr.dev.notnull()].order_by(ibis.desc("dev")).limit(10)
 
     result = repr(worst)
 
-    assert result.count('airlines') == 1
+    assert result.count("airlines") == 1
 
 
 def test_named_value_expr_show_name(table):
     expr = table.f * 2
-    expr2 = expr.name('baz')
+    expr2 = expr.name("baz")
 
     # it works!
     repr(expr)
 
     result2 = repr(expr2)
 
-    assert 'baz' in result2
+    assert "baz" in result2
 
 
 def test_memoize_filtered_tables_in_join():
     # related: GH #667
     purchases = ibis.table(
         [
-            ('region', 'string'),
-            ('kind', 'string'),
-            ('user', 'int64'),
-            ('amount', 'double'),
+            ("region", "string"),
+            ("kind", "string"),
+            ("user", "int64"),
+            ("amount", "double"),
         ],
-        'purchases',
+        "purchases",
     )
 
-    metric = purchases.amount.sum().name('total')
-    agged = purchases.group_by(['region', 'kind']).aggregate(metric)
+    metric = purchases.amount.sum().name("total")
+    agged = purchases.group_by(["region", "kind"]).aggregate(metric)
 
-    left = agged[agged.kind == 'foo']
-    right = agged[agged.kind == 'bar']
+    left = agged[agged.kind == "foo"]
+    right = agged[agged.kind == "bar"]
 
     cond = left.region == right.region
-    joined = left.join(right, cond)[left, right.total.name('right_total')]
+    joined = left.join(right, cond)[left, right.total.name("right_total")]
 
     result = repr(joined)
 
     # one for each aggregation
     # joins are shown without the word `predicates` above them
     # since joins only have predicates as arguments
-    assert result.count('predicates') == 2
+    assert result.count("predicates") == 2
 
 
 def test_argument_repr_shows_name():
-    t = ibis.table([('fakecolname1', 'int64')], name='fakename2')
+    t = ibis.table([("fakecolname1", "int64")], name="fakename2")
     expr = t.fakecolname1.nullif(2)
     result = repr(expr)
-    assert 'fakecolname1' in result
-    assert 'fakename2' in result
+    assert "fakecolname1" in result
+    assert "fakename2" in result
 
 
 def test_scalar_parameter_formatting():
-    value = ibis.param('array<date>')
+    value = ibis.param("array<date>")
     assert re.match(r"^param_\d+: \$\(array<date>\)$", str(value)) is not None
 
-    value = ibis.param('int64').name('my_param')
-    assert str(value) == 'my_param: $(int64)'
+    value = ibis.param("int64").name("my_param")
+    assert str(value) == "my_param: $(int64)"
 
 
 def test_same_column_multiple_aliases():
-    table = ibis.table([('col', 'int64')], name='t')
-    expr = table[table.col.name('fakealias1'), table.col.name('fakealias2')]
+    table = ibis.table([("col", "int64")], name="t")
+    expr = table[table.col.name("fakealias1"), table.col.name("fakealias2")]
     result = repr(expr)
 
     assert "UnboundTable: t" in result
@@ -205,7 +205,7 @@ def test_same_column_multiple_aliases():
 
 
 def test_scalar_parameter_repr():
-    value = ibis.param(dt.timestamp).name('value')
+    value = ibis.param(dt.timestamp).name("value")
     assert repr(value) == "value: $(timestamp)"
 
 
@@ -314,8 +314,8 @@ def test_fillna():
 
 
 def test_asof_join():
-    left = ibis.table([("time1", 'int32'), ('value', 'double')])
-    right = ibis.table([("time2", 'int32'), ('value2', 'double')])
+    left = ibis.table([("time1", "int32"), ("value", "double")])
+    right = ibis.table([("time2", "int32"), ("value2", "double")])
     joined = left.asof_join(right, [("time1", "time2")]).inner_join(
         right, left.value == right.value2
     )
@@ -325,8 +325,8 @@ def test_asof_join():
 
 
 def test_two_inner_joins():
-    left = ibis.table([("time1", 'int32'), ('value', 'double'), ('a', 'string')])
-    right = ibis.table([("time2", 'int32'), ('value2', 'double'), ('b', 'string')])
+    left = ibis.table([("time1", "int32"), ("value", "double"), ("a", "string")])
+    right = ibis.table([("time2", "int32"), ("value2", "double"), ("b", "string")])
     joined = left.inner_join(right, left.a == right.b).inner_join(
         right, left.value == right.value2
     )
@@ -335,16 +335,16 @@ def test_two_inner_joins():
 
 
 def test_destruct_selection():
-    table = ibis.table([('col', 'int64')], name='t')
+    table = ibis.table([("col", "int64")], name="t")
 
     @udf.reduction(
-        input_type=['int64'],
-        output_type=dt.Struct({'sum': 'int64', 'mean': 'float64'}),
+        input_type=["int64"],
+        output_type=dt.Struct({"sum": "int64", "mean": "float64"}),
     )
     def multi_output_udf(v):
         return v.sum(), v.mean()
 
-    expr = table.aggregate(multi_output_udf(table['col']).destructure())
+    expr = table.aggregate(multi_output_udf(table["col"]).destructure())
     result = repr(expr)
 
     assert "sum:  StructField(ReductionVectorizedUDF" in result
@@ -353,7 +353,7 @@ def test_destruct_selection():
 
 @pytest.mark.parametrize(
     "literal, typ, output",
-    [(42, None, '42'), ('42', None, "'42'"), (42, "double", '42.0')],
+    [(42, None, "42"), ("42", None, "'42'"), (42, "double", "42.0")],
 )
 def test_format_literal(literal, typ, output):
     assert repr(ibis.literal(literal, type=typ)) == output

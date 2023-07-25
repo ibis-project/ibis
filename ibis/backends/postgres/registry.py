@@ -45,16 +45,16 @@ if geospatial_supported:
 
 
 _truncate_precisions = {
-    'us': 'microseconds',
-    'ms': 'milliseconds',
-    's': 'second',
-    'm': 'minute',
-    'h': 'hour',
-    'D': 'day',
-    'W': 'week',
-    'M': 'month',
-    'Q': 'quarter',
-    'Y': 'year',
+    "us": "microseconds",
+    "ms": "milliseconds",
+    "s": "second",
+    "m": "minute",
+    "h": "hour",
+    "D": "day",
+    "W": "week",
+    "M": "month",
+    "Q": "quarter",
+    "Y": "year",
 }
 
 
@@ -63,7 +63,7 @@ def _timestamp_truncate(t, op):
     try:
         precision = _truncate_precisions[op.unit.short]
     except KeyError:
-        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
+        raise com.UnsupportedOperationError(f"Unsupported truncate unit {op.unit!r}")
     return sa.func.date_trunc(precision, sa_arg)
 
 
@@ -74,48 +74,48 @@ def _typeof(t, op):
     # select pg_typeof('thing') returns unknown so we have to check the child's
     # type for nullness
     return sa.case(
-        ((typ == 'unknown') & (op.arg.dtype != dt.null), 'text'),
-        ((typ == 'unknown') & (op.arg.dtype == dt.null), 'null'),
+        ((typ == "unknown") & (op.arg.dtype != dt.null), "text"),
+        ((typ == "unknown") & (op.arg.dtype == dt.null), "null"),
         else_=typ,
     )
 
 
 _strftime_to_postgresql_rules = {
-    '%a': 'TMDy',  # TM does it in a locale dependent way
-    '%A': 'TMDay',
-    '%w': 'D',  # 1-based day of week, see below for how we make this 0-based
-    '%d': 'DD',  # day of month
-    '%-d': 'FMDD',  # - is no leading zero for Python same for FM in postgres
-    '%b': 'TMMon',  # Sep
-    '%B': 'TMMonth',  # September
-    '%m': 'MM',  # 01
-    '%-m': 'FMMM',  # 1
-    '%y': 'YY',  # 15
-    '%Y': 'YYYY',  # 2015
-    '%H': 'HH24',  # 09
-    '%-H': 'FMHH24',  # 9
-    '%I': 'HH12',  # 09
-    '%-I': 'FMHH12',  # 9
-    '%p': 'AM',  # AM or PM
-    '%M': 'MI',  # zero padded minute
-    '%-M': 'FMMI',  # Minute
-    '%S': 'SS',  # zero padded second
-    '%-S': 'FMSS',  # Second
-    '%f': 'US',  # zero padded microsecond
-    '%z': 'OF',  # utf offset
-    '%Z': 'TZ',  # uppercase timezone name
-    '%j': 'DDD',  # zero padded day of year
-    '%-j': 'FMDDD',  # day of year
-    '%U': 'WW',  # 1-based week of year
+    "%a": "TMDy",  # TM does it in a locale dependent way
+    "%A": "TMDay",
+    "%w": "D",  # 1-based day of week, see below for how we make this 0-based
+    "%d": "DD",  # day of month
+    "%-d": "FMDD",  # - is no leading zero for Python same for FM in postgres
+    "%b": "TMMon",  # Sep
+    "%B": "TMMonth",  # September
+    "%m": "MM",  # 01
+    "%-m": "FMMM",  # 1
+    "%y": "YY",  # 15
+    "%Y": "YYYY",  # 2015
+    "%H": "HH24",  # 09
+    "%-H": "FMHH24",  # 9
+    "%I": "HH12",  # 09
+    "%-I": "FMHH12",  # 9
+    "%p": "AM",  # AM or PM
+    "%M": "MI",  # zero padded minute
+    "%-M": "FMMI",  # Minute
+    "%S": "SS",  # zero padded second
+    "%-S": "FMSS",  # Second
+    "%f": "US",  # zero padded microsecond
+    "%z": "OF",  # utf offset
+    "%Z": "TZ",  # uppercase timezone name
+    "%j": "DDD",  # zero padded day of year
+    "%-j": "FMDDD",  # day of year
+    "%U": "WW",  # 1-based week of year
     # 'W': ?,  # meh
 }
 
 try:
     _strftime_to_postgresql_rules.update(
         {
-            '%c': locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
-            '%x': locale.nl_langinfo(locale.D_FMT),  # locale date
-            '%X': locale.nl_langinfo(locale.T_FMT),  # locale time
+            "%c": locale.nl_langinfo(locale.D_T_FMT),  # locale date and time
+            "%x": locale.nl_langinfo(locale.D_FMT),  # locale date
+            "%X": locale.nl_langinfo(locale.T_FMT),  # locale time
         }
     )
 except AttributeError:
@@ -127,12 +127,12 @@ else:
 # translate strftime spec into mostly equivalent PostgreSQL spec
 _scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
     # double quotes need to be escaped
-    [('"', lambda *_: r'\"')]
+    [('"', lambda *_: r"\"")]
     + [
         (
-            '|'.join(
+            "|".join(
                 map(
-                    '(?:{})'.format,
+                    "(?:{})".format,
                     itertools.chain(
                         _strftime_to_postgresql_rules.keys(),
                         [
@@ -140,10 +140,10 @@ _scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
                             # generates this if your spec contains "%c" but we
                             # don't officially support it as a specifier so we
                             # need to special case it in the scanner
-                            '%e',
-                            r'\s+',
-                            fr'[{re.escape(string.punctuation)}]',
-                            fr'[^{re.escape(string.punctuation)}\s]+',
+                            "%e",
+                            r"\s+",
+                            rf"[{re.escape(string.punctuation)}]",
+                            rf"[^{re.escape(string.punctuation)}\s]+",
                         ],
                     ),
                 )
@@ -156,8 +156,8 @@ _scanner = re.Scanner(  # type: ignore # re does have a Scanner attribute
 
 _lexicon_values = frozenset(_strftime_to_postgresql_rules.values())
 
-_locale_specific_formats = frozenset(['%c', '%x', '%X'])
-_strftime_blacklist = frozenset(['%w', '%U', '%e']) | _locale_specific_formats
+_locale_specific_formats = frozenset(["%c", "%x", "%X"])
+_strftime_blacklist = frozenset(["%w", "%U", "%e"]) | _locale_specific_formats
 
 
 def _reduce_tokens(tokens, arg):
@@ -186,18 +186,18 @@ def _reduce_tokens(tokens, arg):
 
         # we have a token that needs special treatment
         elif token in _strftime_blacklist:
-            if token == '%w':
-                value = sa.extract('dow', arg)  # 0 based day of week
-            elif token == '%U':
-                value = sa.cast(sa.func.to_char(arg, 'WW'), sa.SMALLINT) - 1
-            elif token in ('%c', '%x', '%X'):
+            if token == "%w":
+                value = sa.extract("dow", arg)  # 0 based day of week
+            elif token == "%U":
+                value = sa.cast(sa.func.to_char(arg, "WW"), sa.SMALLINT) - 1
+            elif token in ("%c", "%x", "%X"):
                 # re scan and tokenize this pattern
                 try:
                     new_pattern = _strftime_to_postgresql_rules[token]
                 except KeyError:
                     raise ValueError(
-                        'locale specific date formats (%%c, %%x, %%X) are '
-                        'not yet implemented for %s' % platform.system()
+                        "locale specific date formats (%%c, %%x, %%X) are "
+                        "not yet implemented for %s" % platform.system()
                     )
 
                 new_tokens, _ = _scanner.scan(new_pattern)
@@ -205,12 +205,12 @@ def _reduce_tokens(tokens, arg):
                     sa.sql.ColumnElement.concat,
                     _reduce_tokens(new_tokens, arg),
                 )
-            elif token == '%e':
+            elif token == "%e":
                 # pad with spaces instead of zeros
-                value = sa.func.replace(sa.func.to_char(arg, 'DD'), '0', ' ')
+                value = sa.func.replace(sa.func.to_char(arg, "DD"), "0", " ")
 
             reduced += [
-                sa.func.to_char(arg, ''.join(curtokens)),
+                sa.func.to_char(arg, "".join(curtokens)),
                 sa.cast(value, sa.TEXT),
             ]
 
@@ -223,7 +223,7 @@ def _reduce_tokens(tokens, arg):
     # append result to r if we had more tokens or if we have no
     # blacklisted tokens
     if curtokens:
-        reduced.append(sa.func.to_char(arg, ''.join(curtokens)))
+        reduced.append(sa.func.to_char(arg, "".join(curtokens)))
     return reduced
 
 
@@ -302,7 +302,7 @@ def _table_column(t, op):
     if op.dtype.is_timestamp():
         timezone = op.dtype.timezone
         if timezone is not None:
-            out_expr = out_expr.op('AT TIME ZONE')(timezone).label(op.name)
+            out_expr = out_expr.op("AT TIME ZONE")(timezone).label(op.name)
 
     # If the column does not originate from the table set in the current SELECT
     # context, we should format as a subquery
@@ -607,9 +607,9 @@ operation_registry.update(
         # types
         ops.TypeOf: _typeof,
         # Floating
-        ops.IsNan: fixed_arity(lambda arg: arg == float('nan'), 1),
+        ops.IsNan: fixed_arity(lambda arg: arg == float("nan"), 1),
         ops.IsInf: fixed_arity(
-            lambda arg: sa.or_(arg == float('inf'), arg == float('-inf')), 1
+            lambda arg: sa.or_(arg == float("inf"), arg == float("-inf")), 1
         ),
         # null handling
         ops.IfNull: fixed_arity(sa.func.coalesce, 2),
@@ -625,7 +625,7 @@ operation_registry.update(
         # postgres defaults to replacing only the first occurrence
         ops.RegexReplace: fixed_arity(
             lambda string, pattern, replacement: sa.func.regexp_replace(
-                string, pattern, replacement, 'g'
+                string, pattern, replacement, "g"
             ),
             3,
         ),
@@ -660,33 +660,33 @@ operation_registry.update(
         ops.TimestampDiff: fixed_arity(operator.sub, 2),
         ops.Strftime: fixed_arity(_strftime, 2),
         ops.ExtractEpochSeconds: fixed_arity(
-            lambda arg: sa.cast(sa.extract('epoch', arg), sa.INTEGER), 1
+            lambda arg: sa.cast(sa.extract("epoch", arg), sa.INTEGER), 1
         ),
-        ops.ExtractDayOfYear: _extract('doy'),
-        ops.ExtractWeekOfYear: _extract('week'),
+        ops.ExtractDayOfYear: _extract("doy"),
+        ops.ExtractWeekOfYear: _extract("week"),
         # extracting the second gives us the fractional part as well, so smash that
         # with a cast to SMALLINT
         ops.ExtractSecond: fixed_arity(
-            lambda arg: sa.cast(sa.func.floor(sa.extract('second', arg)), sa.SMALLINT),
+            lambda arg: sa.cast(sa.func.floor(sa.extract("second", arg)), sa.SMALLINT),
             1,
         ),
         # we get total number of milliseconds including seconds with extract so we
         # mod 1000
         ops.ExtractMillisecond: fixed_arity(
             lambda arg: sa.cast(
-                sa.func.floor(sa.extract('millisecond', arg)) % 1000,
+                sa.func.floor(sa.extract("millisecond", arg)) % 1000,
                 sa.SMALLINT,
             ),
             1,
         ),
         ops.DayOfWeekIndex: fixed_arity(
             lambda arg: sa.cast(
-                sa.cast(sa.extract('dow', arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
+                sa.cast(sa.extract("dow", arg) + 6, sa.SMALLINT) % 7, sa.SMALLINT
             ),
             1,
         ),
         ops.DayOfWeekName: fixed_arity(
-            lambda arg: sa.func.trim(sa.func.to_char(arg, 'Day')), 1
+            lambda arg: sa.func.trim(sa.func.to_char(arg, "Day")), 1
         ),
         ops.TimeFromHMS: fixed_arity(sa.func.make_time, 3),
         ops.CumulativeAll: unary(sa.func.bool_and),

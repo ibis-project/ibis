@@ -96,29 +96,29 @@ def test_normalized_underlying_value(userinput, literal_type, expected_type):
 
 
 @pytest.mark.parametrize(
-    'value',
+    "value",
     [
-        dict(field1='value1', field2=3.14),
-        dict(field1='value1', field2='3.14'),  # coerceable type
-        dict(field1='value1', field2=1),  # coerceable type
-        dict(field2=2.72, field1='value1'),  # wrong field order
-        dict(field1='value1', field2=3.14, field3='extra'),  # extra field
+        dict(field1="value1", field2=3.14),
+        dict(field1="value1", field2="3.14"),  # coerceable type
+        dict(field1="value1", field2=1),  # coerceable type
+        dict(field2=2.72, field1="value1"),  # wrong field order
+        dict(field1="value1", field2=3.14, field3="extra"),  # extra field
     ],
 )
 def test_struct_literal(value):
     typestr = "struct<field1: string, field2: float64>"
     a = ibis.struct(value, type=typestr)
     assert a.op().value == frozendict(
-        field1=str(value['field1']), field2=float(value['field2'])
+        field1=str(value["field1"]), field2=float(value["field2"])
     )
     assert a.type() == dt.dtype(typestr)
 
 
 @pytest.mark.parametrize(
-    'value',
+    "value",
     [
-        dict(field1='value1', field3=3.14),  # wrong field name
-        dict(field1='value1'),  # missing field
+        dict(field1="value1", field3=3.14),  # wrong field name
+        dict(field1="value1"),  # missing field
     ],
 )
 def test_struct_literal_non_castable(value):
@@ -133,9 +133,9 @@ def test_struct_cast_to_empty_struct():
 
 
 @pytest.mark.parametrize(
-    'value',
+    "value",
     [
-        dict(key1='value1', key2='value2'),
+        dict(key1="value1", key2="value2"),
     ],
 )
 def test_map_literal(value):
@@ -147,9 +147,9 @@ def test_map_literal(value):
 
 
 @pytest.mark.parametrize(
-    'value',
+    "value",
     [
-        dict(key1='value1', key2=6.25),  # heterogeneous map values
+        dict(key1="value1", key2=6.25),  # heterogeneous map values
     ],
 )
 def test_map_literal_non_castable(value):
@@ -159,7 +159,7 @@ def test_map_literal_non_castable(value):
 
 
 def test_literal_mixed_type_fails():
-    data = [1, 'a']
+    data = [1, "a"]
     with pytest.raises(TypeError, match="Cannot compute precedence"):
         ibis.literal(data)
 

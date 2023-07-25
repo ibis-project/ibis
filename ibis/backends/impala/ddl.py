@@ -42,7 +42,7 @@ class CreateTableParquet(CreateTable):
         super().__init__(
             table_name,
             external=external,
-            format='parquet',
+            format="parquet",
             path=path,
             **kwargs,
         )
@@ -81,7 +81,7 @@ class DelimitedFormat:
         self.na_rep = na_rep
 
     def to_ddl(self):
-        yield 'ROW FORMAT DELIMITED'
+        yield "ROW FORMAT DELIMITED"
 
         if self.delimiter is not None:
             yield f"FIELDS TERMINATED BY '{self.delimiter}'"
@@ -92,11 +92,11 @@ class DelimitedFormat:
         if self.lineterminator is not None:
             yield f"LINES TERMINATED BY '{self.lineterminator}'"
 
-        yield 'STORED AS TEXTFILE'
+        yield "STORED AS TEXTFILE"
         yield f"LOCATION '{self.path}'"
 
         if self.na_rep is not None:
-            props = {'serialization.null.format': self.na_rep}
+            props = {"serialization.null.format": self.na_rep}
             yield format_tblproperties(props)
 
 
@@ -106,13 +106,13 @@ class AvroFormat:
         self.avro_schema = avro_schema
 
     def to_ddl(self):
-        yield 'STORED AS AVRO'
+        yield "STORED AS AVRO"
         yield f"LOCATION '{self.path}'"
 
         schema = json.dumps(self.avro_schema, indent=2, sort_keys=True)
-        schema = '\n'.join(x.rstrip() for x in schema.splitlines())
+        schema = "\n".join(x.rstrip() for x in schema.splitlines())
 
-        props = {'avro.schema.literal': schema}
+        props = {"avro.schema.literal": schema}
         yield format_tblproperties(props)
 
 
@@ -121,7 +121,7 @@ class ParquetFormat:
         self.path = path
 
     def to_ddl(self):
-        yield 'STORED AS PARQUET'
+        yield "STORED AS PARQUET"
         yield f"LOCATION '{self.path}'"
 
 
@@ -155,7 +155,7 @@ class CreateTableAvro(CreateTable):
 
     @property
     def _pieces(self):
-        yield '\n'.join(self.table_format.to_ddl())
+        yield "\n".join(self.table_format.to_ddl())
 
 
 class LoadData(BaseDDL):
@@ -183,12 +183,12 @@ class LoadData(BaseDDL):
         self.overwrite = overwrite
 
     def compile(self):
-        overwrite = 'OVERWRITE ' if self.overwrite else ''
+        overwrite = "OVERWRITE " if self.overwrite else ""
 
         if self.partition is not None:
-            partition = '\n' + format_partition(self.partition, self.partition_schema)
+            partition = "\n" + format_partition(self.partition, self.partition_schema)
         else:
-            partition = ''
+            partition = ""
 
         scoped_name = self._get_scoped_name(self.table_name, self.database)
         return "LOAD DATA INPATH '{}' {}INTO TABLE {}{}".format(
@@ -217,13 +217,13 @@ class PartitionProperties(AlterTable):
         self.partition = partition
         self.partition_schema = partition_schema
 
-    def _compile(self, cmd, property_prefix=''):
+    def _compile(self, cmd, property_prefix=""):
         part = format_partition(self.partition, self.partition_schema)
         if cmd:
-            part = f'{cmd} {part}'
+            part = f"{cmd} {part}"
 
         props = self._format_properties(property_prefix)
-        action = f'{self.table} {part}{props}'
+        action = f"{self.table} {part}{props}"
         return self._wrap_command(action)
 
 
@@ -232,12 +232,12 @@ class AddPartition(PartitionProperties):
         super().__init__(table, partition, partition_schema, location=location)
 
     def compile(self):
-        return self._compile('ADD')
+        return self._compile("ADD")
 
 
 class AlterPartition(PartitionProperties):
     def compile(self):
-        return self._compile('', 'SET ')
+        return self._compile("", "SET ")
 
 
 class DropPartition(PartitionProperties):
@@ -245,11 +245,11 @@ class DropPartition(PartitionProperties):
         super().__init__(table, partition, partition_schema)
 
     def compile(self):
-        return self._compile('DROP')
+        return self._compile("DROP")
 
 
 class CacheTable(BaseDDL):
-    def __init__(self, table_name, database=None, pool='default'):
+    def __init__(self, table_name, database=None, pool="default"):
         self.table_name = table_name
         self.database = database
         self.pool = pool
@@ -260,7 +260,7 @@ class CacheTable(BaseDDL):
 
 
 class CreateFunction(BaseDDL):
-    _object_type = 'FUNCTION'
+    _object_type = "FUNCTION"
 
     def __init__(self, func, name=None, database=None):
         self.func = func
@@ -272,29 +272,29 @@ class CreateFunction(BaseDDL):
         input_sig = _impala_input_signature(self.func.inputs)
         output_sig = type_to_sql_string(self.func.output)
 
-        return f'{scoped_name}({input_sig}) returns {output_sig}'
+        return f"{scoped_name}({input_sig}) returns {output_sig}"
 
 
 class CreateUDF(CreateFunction):
     def compile(self):
-        create_decl = 'CREATE FUNCTION'
+        create_decl = "CREATE FUNCTION"
         impala_sig = self._impala_signature()
         param_line = f"location '{self.func.lib_path}' symbol='{self.func.so_symbol}'"
-        return f'{create_decl} {impala_sig} {param_line}'
+        return f"{create_decl} {impala_sig} {param_line}"
 
 
 class CreateUDA(CreateFunction):
     def compile(self):
-        create_decl = 'CREATE AGGREGATE FUNCTION'
+        create_decl = "CREATE AGGREGATE FUNCTION"
         impala_sig = self._impala_signature()
         tokens = [f"location '{self.func.lib_path}'"]
 
         fn_names = (
-            'init_fn',
-            'update_fn',
-            'merge_fn',
-            'serialize_fn',
-            'finalize_fn',
+            "init_fn",
+            "update_fn",
+            "merge_fn",
+            "serialize_fn",
+            "finalize_fn",
         )
 
         for fn in fn_names:
@@ -302,7 +302,7 @@ class CreateUDA(CreateFunction):
             if value is not None:
                 tokens.append(f"{fn}='{value}'")
 
-        joined_tokens = '\n'.join(tokens)
+        joined_tokens = "\n".join(tokens)
         return f"{create_decl} {impala_sig} {joined_tokens}"
 
 
@@ -310,7 +310,7 @@ class DropFunction(DropFunction):
     def _impala_signature(self):
         full_name = self._get_scoped_name(self.name, self.database)
         input_sig = _impala_input_signature(self.inputs)
-        return f'{full_name}({input_sig})'
+        return f"{full_name}({input_sig})"
 
 
 class ListFunction(BaseDDL):
@@ -320,10 +320,10 @@ class ListFunction(BaseDDL):
         self.aggregate = aggregate
 
     def compile(self):
-        statement = 'SHOW '
+        statement = "SHOW "
         if self.aggregate:
-            statement += 'AGGREGATE '
-        statement += f'FUNCTIONS IN {self.database}'
+            statement += "AGGREGATE "
+        statement += f"FUNCTIONS IN {self.database}"
         if self.like:
             statement += f" LIKE '{self.like}'"
         return statement
@@ -331,4 +331,4 @@ class ListFunction(BaseDDL):
 
 def _impala_input_signature(inputs):
     # TODO: varargs '{}...'.format(val)
-    return ', '.join(map(type_to_sql_string, inputs))
+    return ", ".join(map(type_to_sql_string, inputs))

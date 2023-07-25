@@ -66,7 +66,7 @@ class StringToTimestamp(Value):
     format_str: Value[dt.String]
 
     shape = rlz.shape_like("arg")
-    dtype = dt.Timestamp(timezone='UTC')
+    dtype = dt.Timestamp(timezone="UTC")
 
 
 @public
@@ -207,7 +207,7 @@ class TimestampFromUNIX(Value):
     unit: TimestampUnit
 
     dtype = dt.timestamp
-    shape = rlz.shape_like('arg')
+    shape = rlz.shape_like("arg")
 
 
 TimeInterval = Annotated[dt.Interval, Attrs(unit=As(TimeUnit))]
@@ -219,7 +219,7 @@ class DateAdd(Binary):
     left: Value[dt.Date]
     right: Value[DateInterval]
 
-    dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like("left")
 
 
 @public
@@ -227,7 +227,7 @@ class DateSub(Binary):
     left: Value[dt.Date]
     right: Value[DateInterval]
 
-    dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like("left")
 
 
 @public
@@ -235,7 +235,7 @@ class DateDiff(Binary):
     left: Value[dt.Date]
     right: Value[dt.Date]
 
-    dtype = dt.Interval('D')
+    dtype = dt.Interval("D")
 
 
 @public
@@ -243,7 +243,7 @@ class TimeAdd(Binary):
     left: Value[dt.Time]
     right: Value[TimeInterval]
 
-    dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like("left")
 
 
 @public
@@ -251,7 +251,7 @@ class TimeSub(Binary):
     left: Value[dt.Time]
     right: Value[TimeInterval]
 
-    dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like("left")
 
 
 @public
@@ -259,7 +259,7 @@ class TimeDiff(Binary):
     left: Value[dt.Time]
     right: Value[dt.Time]
 
-    dtype = dt.Interval('s')
+    dtype = dt.Interval("s")
 
 
 @public
@@ -267,7 +267,7 @@ class TimestampAdd(Binary):
     left: Value[dt.Timestamp]
     right: Value[dt.Interval]
 
-    dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like("left")
 
 
 @public
@@ -275,7 +275,7 @@ class TimestampSub(Binary):
     left: Value[dt.Timestamp]
     right: Value[dt.Interval]
 
-    dtype = rlz.dtype_like('left')
+    dtype = rlz.dtype_like("left")
 
 
 @public
@@ -283,7 +283,7 @@ class TimestampDiff(Binary):
     left: Value[dt.Timestamp]
     right: Value[dt.Timestamp]
 
-    dtype = dt.Interval('s')
+    dtype = dt.Interval("s")
 
 
 @public

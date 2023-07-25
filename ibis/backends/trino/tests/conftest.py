@@ -16,18 +16,18 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 TRINO_USER = os.environ.get(
-    'IBIS_TEST_TRINO_USER', os.environ.get('TRINO_USER', 'user')
+    "IBIS_TEST_TRINO_USER", os.environ.get("TRINO_USER", "user")
 )
 TRINO_PASS = os.environ.get(
-    'IBIS_TEST_TRINO_PASSWORD', os.environ.get('TRINO_PASSWORD', '')
+    "IBIS_TEST_TRINO_PASSWORD", os.environ.get("TRINO_PASSWORD", "")
 )
 TRINO_HOST = os.environ.get(
-    'IBIS_TEST_TRINO_HOST', os.environ.get('TRINO_HOST', 'localhost')
+    "IBIS_TEST_TRINO_HOST", os.environ.get("TRINO_HOST", "localhost")
 )
-TRINO_PORT = os.environ.get('IBIS_TEST_TRINO_PORT', os.environ.get('TRINO_PORT', 8080))
+TRINO_PORT = os.environ.get("IBIS_TEST_TRINO_PORT", os.environ.get("TRINO_PORT", 8080))
 IBIS_TEST_TRINO_DB = os.environ.get(
-    'IBIS_TEST_TRINO_DATABASE',
-    os.environ.get('TRINO_DATABASE', 'memory'),
+    "IBIS_TEST_TRINO_DATABASE",
+    os.environ.get("TRINO_DATABASE", "memory"),
 )
 
 
@@ -48,7 +48,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     # trino rounds half to even for double precision and half away from zero
     # for numeric and decimal
 
-    returned_timestamp_unit = 's'
+    returned_timestamp_unit = "s"
     supports_structs = True
     supports_map = True
     service_name = "trino"
@@ -122,37 +122,37 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return self._remap_column_names("awards_players")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def db(con):
     return con.database()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def alltypes(db):
     return db.functional_alltypes
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def geotable(con):
-    return con.table('geo')
+    return con.table("geo")
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def df(alltypes):
     return alltypes.execute()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def gdf(geotable):
     return geotable.execute()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def intervals(con):
     return con.table("intervals")
 

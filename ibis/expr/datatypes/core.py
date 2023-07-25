@@ -157,7 +157,7 @@ class DataType(Concrete, Coercible):
         try:
             return parse(value)
         except SyntaxError:
-            raise TypeError(f'{value!r} cannot be parsed as a datatype')
+            raise TypeError(f"{value!r} cannot be parsed as a datatype")
 
     @classmethod
     def from_typehint(cls, typ, nullable=True) -> Self:
@@ -188,7 +188,7 @@ class DataType(Concrete, Coercible):
                 elif issubclass(typ, pydatetime.time):
                     return Time(nullable=nullable)
                 elif issubclass(typ, pydatetime.timedelta):
-                    return Interval(unit='us', nullable=nullable)
+                    return Interval(unit="us", nullable=nullable)
                 elif issubclass(typ, pyuuid.UUID):
                     return UUID(nullable=nullable)
                 elif annots := get_type_hints(typ):
@@ -208,7 +208,7 @@ class DataType(Concrete, Coercible):
             key_type, value_type = map(dtype, get_args(typ))
             return Map(key_type, value_type)
         else:
-            raise TypeError(f'Value {typ!r} is not a valid datatype')
+            raise TypeError(f"Value {typ!r} is not a valid datatype")
 
     @classmethod
     def from_numpy(cls, numpy_type, nullable=True) -> Self:
@@ -770,18 +770,18 @@ class Decimal(Numeric, Parametric):
                     f"got {type(precision)}"
                 )
             if precision < 0:
-                raise ValueError('Decimal type precision cannot be negative')
+                raise ValueError("Decimal type precision cannot be negative")
             if not precision:
-                raise ValueError('Decimal type precision cannot be zero')
+                raise ValueError("Decimal type precision cannot be zero")
         if scale is not None:
             if not isinstance(scale, numbers.Integral):
-                raise TypeError('Decimal type scale must be an integer')
+                raise TypeError("Decimal type scale must be an integer")
             if scale < 0:
-                raise ValueError('Decimal type scale cannot be negative')
+                raise ValueError("Decimal type scale cannot be negative")
             if precision is not None and precision < scale:
                 raise ValueError(
-                    'Decimal type precision must be greater than or equal to '
-                    'scale. Got precision={:d} and scale={:d}'.format(precision, scale)
+                    "Decimal type precision must be greater than or equal to "
+                    "scale. Got precision={:d} and scale={:d}".format(precision, scale)
                 )
         super().__init__(precision=precision, scale=scale, **kwargs)
 

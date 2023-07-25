@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
 
-ScopeItem = namedtuple('ScopeItem', ['timecontext', 'value'])
+ScopeItem = namedtuple("ScopeItem", ["timecontext", "value"])
 
 
 class Scope:

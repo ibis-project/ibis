@@ -34,7 +34,7 @@ def translate(expr, *, ctx):
 
 @translate.register(ops.Node)
 def operation(op, **_):
-    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+    raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
 @translate.register(ops.DatabaseTable)
@@ -265,12 +265,12 @@ def aggregation(op, **kw):
 
 
 _join_types = {
-    ops.InnerJoin: 'inner',
-    ops.LeftJoin: 'left',
-    ops.RightJoin: 'right',
-    ops.OuterJoin: 'outer',
-    ops.LeftAntiJoin: 'anti',
-    ops.LeftSemiJoin: 'semi',
+    ops.InnerJoin: "inner",
+    ops.LeftJoin: "left",
+    ops.RightJoin: "right",
+    ops.OuterJoin: "outer",
+    ops.LeftAntiJoin: "anti",
+    ops.LeftSemiJoin: "semi",
 }
 
 
@@ -280,7 +280,7 @@ def join(op, **kw):
     right = translate(op.right, **kw)
 
     if isinstance(op, ops.RightJoin):
-        how = 'left'
+        how = "left"
         left, right = right, left
     else:
         how = _join_types[type(op)]
@@ -306,11 +306,11 @@ def dropna(op, **kw):
     if op.subset is None:
         subset = None
     elif not len(op.subset):
-        return lf.clear() if op.how == 'all' else lf
+        return lf.clear() if op.how == "all" else lf
     else:
         subset = [arg.name for arg in op.subset]
 
-    if op.how == 'all':
+    if op.how == "all":
         cols = pl.col(subset) if subset else pl.all()
         try:
             return lf.filter(~pl.all_horizontal(cols.is_null()))
@@ -464,11 +464,11 @@ def not_contains(op, **kw):
 
 
 _string_unary = {
-    ops.Strip: 'strip',
-    ops.LStrip: 'lstrip',
-    ops.RStrip: 'rstrip',
-    ops.Lowercase: 'to_lowercase',
-    ops.Uppercase: 'to_uppercase',
+    ops.Strip: "strip",
+    ops.LStrip: "lstrip",
+    ops.RStrip: "rstrip",
+    ops.Lowercase: "to_lowercase",
+    ops.Uppercase: "to_uppercase",
 }
 
 
@@ -484,7 +484,7 @@ def string_unary(op, **kw):
     arg = translate(op.arg, **kw)
     func = _string_unary.get(type(op))
     if func is None:
-        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
 
     method = getattr(arg.str, func)
     return method()
@@ -692,20 +692,20 @@ def struct_column(op, **kw):
 
 
 _reductions = {
-    ops.All: 'all',
-    ops.Any: 'any',
-    ops.ApproxMedian: 'median',
-    ops.Count: 'count',
-    ops.CountDistinct: 'n_unique',
-    ops.First: 'first',
-    ops.Last: 'last',
-    ops.Max: 'max',
-    ops.Mean: 'mean',
-    ops.Median: 'median',
-    ops.Min: 'min',
-    ops.StandardDev: 'std',
-    ops.Sum: 'sum',
-    ops.Variance: 'var',
+    ops.All: "all",
+    ops.Any: "any",
+    ops.ApproxMedian: "median",
+    ops.Count: "count",
+    ops.CountDistinct: "n_unique",
+    ops.First: "first",
+    ops.Last: "last",
+    ops.Max: "max",
+    ops.Mean: "mean",
+    ops.Median: "median",
+    ops.Min: "min",
+    ops.StandardDev: "std",
+    ops.Sum: "sum",
+    ops.Variance: "var",
 }
 
 for reduction in _reductions.keys():
@@ -918,7 +918,7 @@ def extract_date_field(op, **kw):
 @translate.register(ops.ExtractEpochSeconds)
 def extract_epoch_seconds(op, **kw):
     arg = translate(op.arg, **kw)
-    return arg.dt.epoch('s').cast(pl.Int32)
+    return arg.dt.epoch("s").cast(pl.Int32)
 
 
 _day_of_week_offset = vparse(pl.__version__) >= vparse("0.15.1")
@@ -926,30 +926,30 @@ _day_of_week_offset = vparse(pl.__version__) >= vparse("0.15.1")
 
 _unary = {
     # TODO(kszucs): factor out the lambdas
-    ops.Abs: operator.methodcaller('abs'),
-    ops.Acos: operator.methodcaller('arccos'),
-    ops.Asin: operator.methodcaller('arcsin'),
-    ops.Atan: operator.methodcaller('arctan'),
+    ops.Abs: operator.methodcaller("abs"),
+    ops.Acos: operator.methodcaller("arccos"),
+    ops.Asin: operator.methodcaller("arcsin"),
+    ops.Atan: operator.methodcaller("arctan"),
     ops.Ceil: lambda arg: arg.ceil().cast(pl.Int64),
-    ops.Cos: operator.methodcaller('cos'),
+    ops.Cos: operator.methodcaller("cos"),
     ops.Cot: lambda arg: 1.0 / arg.tan(),
     ops.DayOfWeekIndex: (
         lambda arg: arg.dt.weekday().cast(pl.Int16) - _day_of_week_offset
     ),
-    ops.Exp: operator.methodcaller('exp'),
+    ops.Exp: operator.methodcaller("exp"),
     ops.Floor: lambda arg: arg.floor().cast(pl.Int64),
-    ops.IsInf: operator.methodcaller('is_infinite'),
-    ops.IsNan: operator.methodcaller('is_nan'),
-    ops.IsNull: operator.methodcaller('is_null'),
-    ops.Ln: operator.methodcaller('log'),
-    ops.Log10: operator.methodcaller('log10'),
+    ops.IsInf: operator.methodcaller("is_infinite"),
+    ops.IsNan: operator.methodcaller("is_nan"),
+    ops.IsNull: operator.methodcaller("is_null"),
+    ops.Ln: operator.methodcaller("log"),
+    ops.Log10: operator.methodcaller("log10"),
     ops.Log2: lambda arg: arg.log(2),
     ops.Negate: operator.neg,
-    ops.Not: operator.methodcaller('is_not'),
-    ops.NotNull: operator.methodcaller('is_not_null'),
-    ops.Sin: operator.methodcaller('sin'),
-    ops.Sqrt: operator.methodcaller('sqrt'),
-    ops.Tan: operator.methodcaller('tan'),
+    ops.Not: operator.methodcaller("is_not"),
+    ops.NotNull: operator.methodcaller("is_not_null"),
+    ops.Sin: operator.methodcaller("sin"),
+    ops.Sqrt: operator.methodcaller("sqrt"),
+    ops.Tan: operator.methodcaller("tan"),
 }
 
 
@@ -967,7 +967,7 @@ def unary(op, **kw):
     arg = translate(op.arg, **kw)
     func = _unary.get(type(op))
     if func is None:
-        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
     return func(arg)
 
 
@@ -987,7 +987,7 @@ def comparison(op, **kw):
     right = translate(op.right, **kw)
     func = _comparisons.get(type(op))
     if func is None:
-        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
     return func(left, right)
 
 
@@ -1014,7 +1014,7 @@ _bitwise_binops = {
 def bitwise_binops(op, **kw):
     ufunc = _bitwise_binops.get(type(op))
     if ufunc is None:
-        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
 
@@ -1058,7 +1058,7 @@ def binop(op, **kw):
     right = translate(op.right, **kw)
     func = _binops.get(type(op))
     if func is None:
-        raise com.OperationNotDefinedError(f'{type(op).__name__} not supported')
+        raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
     return func(left, right)
 
 

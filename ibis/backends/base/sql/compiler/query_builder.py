@@ -20,13 +20,13 @@ from ibis.config import options
 
 class TableSetFormatter:
     _join_names = {
-        ops.InnerJoin: 'INNER JOIN',
-        ops.LeftJoin: 'LEFT OUTER JOIN',
-        ops.RightJoin: 'RIGHT OUTER JOIN',
-        ops.OuterJoin: 'FULL OUTER JOIN',
-        ops.LeftAntiJoin: 'LEFT ANTI JOIN',
-        ops.LeftSemiJoin: 'LEFT SEMI JOIN',
-        ops.CrossJoin: 'CROSS JOIN',
+        ops.InnerJoin: "INNER JOIN",
+        ops.LeftJoin: "LEFT OUTER JOIN",
+        ops.RightJoin: "RIGHT OUTER JOIN",
+        ops.OuterJoin: "FULL OUTER JOIN",
+        ops.LeftAntiJoin: "LEFT ANTI JOIN",
+        ops.LeftSemiJoin: "LEFT SEMI JOIN",
+        ops.CrossJoin: "CROSS JOIN",
     }
 
     def __init__(self, parent, node, indent=2):
@@ -46,7 +46,7 @@ class TableSetFormatter:
     # TODO(kszucs): could use lin.traverse here
     def _walk_join_tree(self, op):
         if util.all_of([op.left, op.right], ops.Join):
-            raise NotImplementedError('Do not support joins between joins yet')
+            raise NotImplementedError("Do not support joins between joins yet")
 
         jname = self._get_join_type(op)
 
@@ -106,7 +106,7 @@ class TableSetFormatter:
             # PhyisicalTable instead of the child classes, this should prevent
             # this error scenario
             if (name := ref_op.name) is None:
-                raise com.RelationError(f'Table did not have a name: {op!r}')
+                raise com.RelationError(f"Table did not have a name: {op!r}")
 
             result = sg.table(
                 name,
@@ -122,14 +122,14 @@ class TableSetFormatter:
 
                 # HACK: self-references have to be treated more carefully here
                 if isinstance(op, ops.SelfReference):
-                    return f'{ctx.get_ref(ref_op)} {alias}'
+                    return f"{ctx.get_ref(ref_op)} {alias}"
                 else:
                     return alias
 
             subquery = ctx.get_compiled_expr(op)
-            result = f'(\n{util.indent(subquery, self.indent)}\n)'
+            result = f"(\n{util.indent(subquery, self.indent)}\n)"
 
-        result += f' {ctx.get_ref(op)}'
+        result += f" {ctx.get_ref(op)}"
 
         return result
 
@@ -150,22 +150,22 @@ class TableSetFormatter:
         for jtype, table, preds in zip(
             self.join_types, self.join_tables[1:], self.join_predicates
         ):
-            buf.write('\n')
-            buf.write(util.indent(f'{jtype} {table}', self.indent))
+            buf.write("\n")
+            buf.write(util.indent(f"{jtype} {table}", self.indent))
 
             fmt_preds = []
             npreds = len(preds)
             for pred in preds:
                 new_pred = self._translate(pred)
                 if npreds > 1:
-                    new_pred = f'({new_pred})'
+                    new_pred = f"({new_pred})"
                 fmt_preds.append(new_pred)
 
             if len(fmt_preds):
-                buf.write('\n')
+                buf.write("\n")
 
-                conj = ' AND\n{}'.format(' ' * 3)
-                fmt_preds = util.indent('ON ' + conj.join(fmt_preds), self.indent * 2)
+                conj = " AND\n{}".format(" " * 3)
+                fmt_preds = util.indent("ON " + conj.join(fmt_preds), self.indent * 2)
                 buf.write(fmt_preds)
 
         return buf.getvalue()
@@ -268,7 +268,7 @@ class Select(DML, Comparable):
         limit_frag = self.format_limit()
 
         # Glue together the query fragments and return
-        query = '\n'.join(
+        query = "\n".join(
             filter(
                 None,
                 [
@@ -295,9 +295,9 @@ class Select(DML, Comparable):
         for expr in self.subqueries:
             formatted = util.indent(context.get_compiled_expr(expr), 2)
             alias = context.get_ref(expr)
-            buf.append(f'{alias} AS (\n{formatted}\n)')
+            buf.append(f"{alias} AS (\n{formatted}\n)")
 
-        return 'WITH {}'.format(',\n'.join(buf))
+        return "WITH {}".format(",\n".join(buf))
 
     def format_select_set(self):
         # TODO:
@@ -308,7 +308,7 @@ class Select(DML, Comparable):
                 expr_str = self._translate(node, named=True, permit_subquery=True)
             elif isinstance(node, ops.TableNode):
                 alias = context.get_ref(node)
-                expr_str = f'{alias}.*' if alias else '*'
+                expr_str = f"{alias}.*" if alias else "*"
             else:
                 raise TypeError(node)
             formatted.append(expr_str)
@@ -319,43 +319,43 @@ class Select(DML, Comparable):
         tokens = 0
         for i, val in enumerate(formatted):
             # always line-break for multi-line expressions
-            if val.count('\n'):
+            if val.count("\n"):
                 if i:
-                    buf.write(',')
-                buf.write('\n')
+                    buf.write(",")
+                buf.write("\n")
                 indented = util.indent(val, self.indent)
                 buf.write(indented)
 
                 # set length of last line
-                line_length = len(indented.split('\n')[-1])
+                line_length = len(indented.split("\n")[-1])
                 tokens = 1
             elif tokens > 0 and line_length and len(val) + line_length > max_length:
                 # There is an expr, and adding this new one will make the line
                 # too long
-                buf.write(',\n       ') if i else buf.write('\n')
+                buf.write(",\n       ") if i else buf.write("\n")
                 buf.write(val)
                 line_length = len(val) + 7
                 tokens = 1
             else:
                 if i:
-                    buf.write(',')
-                buf.write(' ')
+                    buf.write(",")
+                buf.write(" ")
                 buf.write(val)
                 tokens += 1
                 line_length += len(val) + 2
 
         if self.distinct:
-            select_key = 'SELECT DISTINCT'
+            select_key = "SELECT DISTINCT"
         else:
-            select_key = 'SELECT'
+            select_key = "SELECT"
 
-        return f'{select_key}{buf.getvalue()}'
+        return f"{select_key}{buf.getvalue()}"
 
     def format_table_set(self):
         if self.table_set is None:
             return None
 
-        fragment = 'FROM '
+        fragment = "FROM "
 
         helper = self.table_set_formatter_class(self, self.table_set)
         fragment += helper.get_result()
@@ -369,8 +369,8 @@ class Select(DML, Comparable):
 
         lines = []
         if len(self.group_by) > 0:
-            clause = 'GROUP BY {}'.format(
-                ', '.join([str(x + 1) for x in self.group_by])
+            clause = "GROUP BY {}".format(
+                ", ".join([str(x + 1) for x in self.group_by])
             )
             lines.append(clause)
 
@@ -379,25 +379,25 @@ class Select(DML, Comparable):
             for expr in self.having:
                 translated = self._translate(expr)
                 trans_exprs.append(translated)
-            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
+            lines.append("HAVING {}".format(" AND ".join(trans_exprs)))
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     def format_where(self):
         if not self.where:
             return None
 
         buf = StringIO()
-        buf.write('WHERE ')
+        buf.write("WHERE ")
         fmt_preds = []
         npreds = len(self.where)
         for pred in self.where:
             new_pred = self._translate(pred, permit_subquery=True)
             if npreds > 1:
-                new_pred = f'({new_pred})'
+                new_pred = f"({new_pred})"
             fmt_preds.append(new_pred)
 
-        conj = ' AND\n{}'.format(' ' * 6)
+        conj = " AND\n{}".format(" " * 6)
         buf.write(conj.join(fmt_preds))
         return buf.getvalue()
 
@@ -406,16 +406,16 @@ class Select(DML, Comparable):
             return None
 
         buf = StringIO()
-        buf.write('ORDER BY ')
+        buf.write("ORDER BY ")
 
         formatted = []
         for key in self.order_by:
             translated = self._translate(key.expr)
-            suffix = 'ASC' if key.ascending else 'DESC'
-            translated += f' {suffix}'
+            suffix = "ASC" if key.ascending else "DESC"
+            translated += f" {suffix}"
             formatted.append(translated)
 
-        buf.write(', '.join(formatted))
+        buf.write(", ".join(formatted))
         return buf.getvalue()
 
     def format_limit(self):
@@ -425,9 +425,9 @@ class Select(DML, Comparable):
         buf = StringIO()
 
         n = self.limit.n
-        buf.write(f'LIMIT {n}')
+        buf.write(f"LIMIT {n}")
         if offset := self.limit.offset:
-            buf.write(f' OFFSET {offset}')
+            buf.write(f" OFFSET {offset}")
 
         return buf.getvalue()
 
@@ -563,13 +563,13 @@ class Compiler:
                 and query.table_set is not None
             ):
                 if query.limit is None:
-                    if limit == 'default':
+                    if limit == "default":
                         query_limit = options.sql.default_limit
                     else:
                         query_limit = limit
                     if query_limit:
                         query.limit = _LimitSpec(query_limit, offset=0)
-                elif limit is not None and limit != 'default':
+                elif limit is not None and limit != "default":
                     query.limit = _LimitSpec(limit, query.limit.offset)
 
         return query_ast
@@ -605,7 +605,7 @@ class Compiler:
         # total number of elements is at least 3 + (2 * number of unions - 1)
         # and is therefore an odd number
         npieces = len(set_op_info)
-        assert npieces >= 3 and npieces % 2 != 0, 'Invalid set operation expression'
+        assert npieces >= 3 and npieces % 2 != 0, "Invalid set operation expression"
 
         # 1. every other object starting from 0 is a Table instance
         # 2. every other object starting from 1 is a bool indicating the type

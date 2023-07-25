@@ -247,9 +247,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                 e.submit(
                     make_job,
                     client.load_table_from_file,
-                    io.StringIO(
-                        "\n".join(f"{{\"js\": {row}}}" for row in json_types.js)
-                    ),
+                    io.StringIO("\n".join(f'{{"js": {row}}}' for row in json_types.js)),
                     bq.TableReference(testing_dataset, "json_t"),
                     job_config=bq.LoadJobConfig(
                         write_disposition=write_disposition,

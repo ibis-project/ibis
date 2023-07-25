@@ -13,18 +13,18 @@ from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 if TYPE_CHECKING:
     from pathlib import Path
 
-MSSQL_USER = os.environ.get('IBIS_TEST_MSSQL_USER', 'sa')
-MSSQL_PASS = os.environ.get('IBIS_TEST_MSSQL_PASSWORD', '1bis_Testing!')
-MSSQL_HOST = os.environ.get('IBIS_TEST_MSSQL_HOST', 'localhost')
-MSSQL_PORT = int(os.environ.get('IBIS_TEST_MSSQL_PORT', 1433))
-IBIS_TEST_MSSQL_DB = os.environ.get('IBIS_TEST_MSSQL_DATABASE', 'ibis_testing')
+MSSQL_USER = os.environ.get("IBIS_TEST_MSSQL_USER", "sa")
+MSSQL_PASS = os.environ.get("IBIS_TEST_MSSQL_PASSWORD", "1bis_Testing!")
+MSSQL_HOST = os.environ.get("IBIS_TEST_MSSQL_HOST", "localhost")
+MSSQL_PORT = int(os.environ.get("IBIS_TEST_MSSQL_PORT", 1433))
+IBIS_TEST_MSSQL_DB = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis_testing")
 
 
 class TestConf(ServiceBackendTest, RoundHalfToEven):
     # MSSQL has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
-    returned_timestamp_unit = 's'
+    returned_timestamp_unit = "s"
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     supports_structs = False
@@ -77,6 +77,6 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

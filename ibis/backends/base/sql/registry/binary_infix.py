@@ -18,14 +18,14 @@ def binary_infix_op(infix_sym):
         if helpers.needs_parens(right):
             right_arg = helpers.parenthesize(right_arg)
 
-        return f'{left_arg} {infix_sym} {right_arg}'
+        return f"{left_arg} {infix_sym} {right_arg}"
 
     return formatter
 
 
 def identical_to(translator, op):
     if op.args[0].equals(op.args[1]):
-        return 'TRUE'
+        return "TRUE"
 
     left = translator.translate(op.left)
     right = translator.translate(op.right)
@@ -34,7 +34,7 @@ def identical_to(translator, op):
         left = helpers.parenthesize(left)
     if helpers.needs_parens(op.right):
         right = helpers.parenthesize(right)
-    return f'{left} IS NOT DISTINCT FROM {right}'
+    return f"{left} IS NOT DISTINCT FROM {right}"
 
 
 def xor(translator, op):
@@ -47,7 +47,7 @@ def xor(translator, op):
     if helpers.needs_parens(op.right):
         right_arg = helpers.parenthesize(right_arg)
 
-    return '({0} OR {1}) AND NOT ({0} AND {1})'.format(left_arg, right_arg)
+    return "({0} OR {1}) AND NOT ({0} AND {1})".format(left_arg, right_arg)
 
 
 def contains(op_string: Literal["IN", "NOT IN"]) -> str:
@@ -65,7 +65,7 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
 
         if isinstance(op.options, tuple):
             values = [translator.translate(x) for x in op.options]
-            right = helpers.parenthesize(', '.join(values))
+            right = helpers.parenthesize(", ".join(values))
         elif op.options.shape.is_columnar():
             right = translator.translate(op.options)
             if not any(

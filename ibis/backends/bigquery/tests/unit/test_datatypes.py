@@ -48,7 +48,7 @@ from ibis.backends.bigquery.datatypes import (
             id="timestamp_with_other_tz",
         ),
         param(
-            dt.Array(dt.Struct({'a': dt.string})),
+            dt.Array(dt.Struct({"a": dt.string})),
             "ARRAY<STRUCT<a STRING>>",
             id="array<struct>",
         ),
@@ -94,7 +94,7 @@ def test_simple_failure_mode(datatype):
             [
                 dt.int64,
                 dt.Array(value_type=dt.int64),
-                dt.Struct.from_tuples([('a', dt.Array(value_type=dt.int64))]),
+                dt.Struct.from_tuples([("a", dt.Array(value_type=dt.int64))]),
             ],
         ),
     ],

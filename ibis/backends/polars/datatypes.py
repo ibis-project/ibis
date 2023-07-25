@@ -51,7 +51,7 @@ def from_ibis_timestamp(dtype):
 
 @dtype_to_polars.register(dt.Interval)
 def from_ibis_interval(dtype):
-    if dtype.unit.short in {'us', 'ns', 'ms'}:
+    if dtype.unit.short in {"us", "ns", "ms"}:
         return pl.Duration(dtype.unit.short)
     else:
         raise ValueError(f"Unsupported polars duration unit: {dtype.unit}")

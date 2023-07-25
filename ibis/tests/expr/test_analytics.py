@@ -29,21 +29,21 @@ def con():
 
 @pytest.fixture
 def alltypes(con):
-    return con.table('functional_alltypes')
+    return con.table("functional_alltypes")
 
 
 @pytest.fixture
 def airlines():
     return ibis.table(
-        [('dest', 'string'), ('origin', 'string'), ('arrdelay', 'int32')],
-        'airlines',
+        [("dest", "string"), ("origin", "string"), ("arrdelay", "int32")],
+        "airlines",
     )
 
 
 def test_category_project(alltypes):
     t = alltypes
 
-    tier = t.double_col.bucket([0, 50, 100]).name('tier')
+    tier = t.double_col.bucket([0, 50, 100]).name("tier")
     expr = t[tier, t]
 
     assert isinstance(expr.tier, ir.IntegerColumn)
@@ -98,7 +98,7 @@ def test_histogram(alltypes):
 
 def test_topk_analysis_bug(airlines):
     # GH #398
-    dests = ['ORD', 'JFK', 'SFO']
+    dests = ["ORD", "JFK", "SFO"]
     t = airlines[airlines.dest.isin(dests)]
     filtered = t.semi_join(t.origin.topk(10, by=t.arrdelay.mean()), "origin")
     assert filtered is not None

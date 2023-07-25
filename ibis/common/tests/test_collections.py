@@ -13,7 +13,7 @@ class MySchema(MapSet):
         self._fields = dict(dct or kwargs)
 
     def __repr__(self):
-        return f'{self.__class__.__name__}({self._fields})'
+        return f"{self.__class__.__name__}({self._fields})"
 
     def __getitem__(self, key):
         return self._fields[key]
@@ -43,22 +43,22 @@ def test_myschema_identical():
 
 def test_mapset_mapping_api():
     ms = MySchema(a=1, b=2)
-    assert ms['a'] == 1
-    assert ms['b'] == 2
+    assert ms["a"] == 1
+    assert ms["b"] == 2
     assert len(ms) == 2
     assert isinstance(iter(ms), Iterator)
-    assert list(ms) == ['a', 'b']
+    assert list(ms) == ["a", "b"]
     assert isinstance(ms.keys(), KeysView)
-    assert list(ms.keys()) == ['a', 'b']
+    assert list(ms.keys()) == ["a", "b"]
     assert isinstance(ms.values(), ValuesView)
     assert list(ms.values()) == [1, 2]
     assert isinstance(ms.items(), ItemsView)
-    assert list(ms.items()) == [('a', 1), ('b', 2)]
-    assert ms.get('a') == 1
-    assert ms.get('c') is None
-    assert ms.get('c', 3) == 3
-    assert 'a' in ms
-    assert 'c' not in ms
+    assert list(ms.items()) == [("a", 1), ("b", 2)]
+    assert ms.get("a") == 1
+    assert ms.get("c") is None
+    assert ms.get("c", 3) == 3
+    assert "a" in ms
+    assert "c" not in ms
     assert ms == ms
     assert ms != MySchema(a=1, b=2, c=3)
 
@@ -195,7 +195,7 @@ def test_dotdict():
     assert repr(d) == "DotDict({'a': 1, 'b': 3})"
 
     with pytest.raises(KeyError):
-        assert d['x']
+        assert d["x"]
     with pytest.raises(AttributeError):
         assert d.x
 

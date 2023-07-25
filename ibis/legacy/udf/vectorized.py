@@ -232,7 +232,7 @@ class UserDefinedFunction:
         @functools.wraps(self.func)
         def func(*args):
             # If cols are pd.Series, then we save and restore the index.
-            saved_index = getattr(args[0], 'index', None)
+            saved_index = getattr(args[0], "index", None)
             result = self.func(*args, **kwargs)
             if self.coercion_fn:
                 # coercion function signature must take result, output type,

@@ -50,21 +50,21 @@ pytestmark = [
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_column(backend, alltypes, df):
-    expr = ibis.array([alltypes['double_col'], alltypes['double_col']])
+    expr = ibis.array([alltypes["double_col"], alltypes["double_col"]])
     assert isinstance(expr, ir.ArrayColumn)
 
     result = expr.execute()
     expected = df.apply(
-        lambda row: [row['double_col'], row['double_col']],
+        lambda row: [row["double_col"], row["double_col"]],
         axis=1,
     )
     backend.assert_series_equal(result, expected, check_names=False)
 
 
 ARRAY_BACKEND_TYPES = {
-    'clickhouse': "Array(Float64)",
-    'snowflake': "ARRAY",
-    'trino': 'array(double)',
+    "clickhouse": "Array(Float64)",
+    "snowflake": "ARRAY",
+    "trino": "array(double)",
     "bigquery": "ARRAY",
     "duckdb": "DOUBLE[]",
     "postgres": "numeric[]",
@@ -483,7 +483,7 @@ def test_array_slice(backend, start, stop):
     expr = array_types.select(sliced=array_types.y[start:stop])
     result = expr.execute()
     expected = pd.DataFrame(
-        {'sliced': array_types.y.execute().map(lambda x: x[start:stop])}
+        {"sliced": array_types.y.execute().map(lambda x: x[start:stop])}
     )
     tm.assert_frame_equal(result, expected)
 
@@ -708,7 +708,7 @@ def test_array_intersect(con):
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
 def test_unnest_struct(con):
-    data = {"value": [[{'a': 1}, {'a': 2}], [{'a': 3}, {'a': 4}]]}
+    data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
     expr = t.value.unnest()
     result = con.execute(expr)

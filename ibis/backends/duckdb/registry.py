@@ -447,7 +447,7 @@ operation_registry.update(
         ops.ArgMax: reduction(sa.func.max_by),
         ops.BitwiseXor: fixed_arity(sa.func.xor, 2),
         ops.JSONGetItem: fixed_arity(_json_get_item, 2),
-        ops.RowID: lambda *_: sa.literal_column('rowid'),
+        ops.RowID: lambda *_: sa.literal_column("rowid"),
         ops.StringToTimestamp: _strptime,
         ops.Quantile: reduction(sa.func.quantile_cont),
         ops.MultiQuantile: reduction(sa.func.quantile_cont),

@@ -37,8 +37,8 @@ def test_default_argument():
 
 
 @pytest.mark.parametrize(
-    ('default', 'expected'),
-    [(None, None), (0, 0), ('default', 'default')],
+    ("default", "expected"),
+    [(None, None), (0, 0), ("default", "default")],
 )
 def test_optional_argument(default, expected):
     annotation = Argument.optional(default=default)
@@ -46,15 +46,15 @@ def test_optional_argument(default, expected):
 
 
 @pytest.mark.parametrize(
-    ('argument', 'value', 'expected'),
+    ("argument", "value", "expected"),
     [
         (Argument.optional(Any(), default=None), None, None),
-        (Argument.optional(Any(), default=None), 'three', 'three'),
+        (Argument.optional(Any(), default=None), "three", "three"),
         (Argument.optional(Any(), default=1), None, 1),
         (Argument.optional(CoercedTo(int), default=11), None, 11),
         (Argument.optional(CoercedTo(int), default=None), None, None),
         (Argument.optional(CoercedTo(int), default=None), 18, 18),
-        (Argument.optional(CoercedTo(str), default=None), 'caracal', 'caracal'),
+        (Argument.optional(CoercedTo(str), default=None), "caracal", "caracal"),
     ],
 )
 def test_valid_optional(argument, value, expected):
@@ -62,10 +62,10 @@ def test_valid_optional(argument, value, expected):
 
 
 @pytest.mark.parametrize(
-    ('arg', 'value', 'expected'),
+    ("arg", "value", "expected"),
     [
-        (Argument.optional(is_int, default=''), None, TypeError),
-        (Argument.optional(is_int), 'lynx', TypeError),
+        (Argument.optional(is_int, default=""), None, TypeError),
+        (Argument.optional(is_int), "lynx", TypeError),
     ],
 )
 def test_invalid_optional_argument(arg, value, expected):
@@ -84,28 +84,28 @@ def test_initialized():
 
     field2 = Attribute(validator=lambda x, this: str(x), default=lambda self: self.a)
     assert field != field2
-    assert field2.initialize(Foo) == '10'
+    assert field2.initialize(Foo) == "10"
 
 
 def test_parameter():
     def fn(x, this):
-        return int(x) + this['other']
+        return int(x) + this["other"]
 
     annot = Argument.required(fn)
-    p = Parameter('test', annotation=annot)
+    p = Parameter("test", annotation=annot)
 
     assert p.annotation is annot
     assert p.default is inspect.Parameter.empty
-    assert p.annotation.validate('2', {'other': 1}) == 3
+    assert p.annotation.validate("2", {"other": 1}) == 3
 
     with pytest.raises(TypeError):
         p.annotation.validate({}, valid=inspect.Parameter.empty)
 
     ofn = Argument.optional(fn)
-    op = Parameter('test', annotation=ofn)
+    op = Parameter("test", annotation=ofn)
     assert op.annotation._validator == Option(fn, default=None)
     assert op.default is None
-    assert op.annotation.validate(None, {'other': 1}) is None
+    assert op.annotation.validate(None, {"other": 1}) is None
 
     with pytest.raises(TypeError, match="annotation must be an instance of Argument"):
         Parameter("wrong", annotation=Attribute(lambda x, context: x))
@@ -116,15 +116,15 @@ def test_signature():
         return int(x)
 
     def add_other(x, this):
-        return int(x) + this['other']
+        return int(x) + this["other"]
 
-    other = Parameter('other', annotation=Argument.required(to_int))
-    this = Parameter('this', annotation=Argument.required(add_other))
+    other = Parameter("other", annotation=Argument.required(to_int))
+    this = Parameter("this", annotation=Argument.required(add_other))
 
     sig = Signature(parameters=[other, this])
-    assert sig.validate(1, 2) == {'other': 1, 'this': 3}
-    assert sig.validate(other=1, this=2) == {'other': 1, 'this': 3}
-    assert sig.validate(this=2, other=1) == {'other': 1, 'this': 3}
+    assert sig.validate(1, 2) == {"other": 1, "this": 3}
+    assert sig.validate(other=1, this=2) == {"other": 1, "this": 3}
+    assert sig.validate(this=2, other=1) == {"other": 1, "this": 3}
 
 
 def test_signature_from_callable():
@@ -132,7 +132,7 @@ def test_signature_from_callable():
         ...
 
     sig = Signature.from_callable(test)
-    assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'c': 1}
+    assert sig.validate(2, 3) == {"a": 2, "b": 3, "c": 1}
 
     with pytest.raises(ValidationError):
         sig.validate(2, 3, "4")
@@ -147,12 +147,12 @@ def test_signature_from_callable_with_varargs():
         ...
 
     sig = Signature.from_callable(test)
-    assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'args': ()}
-    assert sig.validate(2, 3, 4) == {'a': 2, 'b': 3, 'args': (4,)}
-    assert sig.validate(2, 3, 4, 5) == {'a': 2, 'b': 3, 'args': (4, 5)}
-    assert sig.parameters['a'].annotation._typehint is int
-    assert sig.parameters['b'].annotation._typehint is int
-    assert sig.parameters['args'].annotation._typehint is int
+    assert sig.validate(2, 3) == {"a": 2, "b": 3, "args": ()}
+    assert sig.validate(2, 3, 4) == {"a": 2, "b": 3, "args": (4,)}
+    assert sig.validate(2, 3, 4, 5) == {"a": 2, "b": 3, "args": (4, 5)}
+    assert sig.parameters["a"].annotation._typehint is int
+    assert sig.parameters["b"].annotation._typehint is int
+    assert sig.parameters["args"].annotation._typehint is int
 
     with pytest.raises(ValidationError):
         sig.validate(2, 3, 4, "5")
@@ -167,9 +167,9 @@ def test_signature_from_callable_with_positional_only_arguments():
         ...
 
     sig = Signature.from_callable(test)
-    assert sig.validate(2, 3) == {'a': 2, 'b': 3, 'c': 1}
-    assert sig.validate(2, 3, 4) == {'a': 2, 'b': 3, 'c': 4}
-    assert sig.validate(2, 3, c=4) == {'a': 2, 'b': 3, 'c': 4}
+    assert sig.validate(2, 3) == {"a": 2, "b": 3, "c": 1}
+    assert sig.validate(2, 3, 4) == {"a": 2, "b": 3, "c": 4}
+    assert sig.validate(2, 3, c=4) == {"a": 2, "b": 3, "c": 4}
 
     msg = "'b' parameter is positional only, but was passed as a keyword"
     with pytest.raises(TypeError, match=msg):
@@ -185,8 +185,8 @@ def test_signature_from_callable_with_keyword_only_arguments():
         ...
 
     sig = Signature.from_callable(test)
-    assert sig.validate(2, 3, c=4.0) == {'a': 2, 'b': 3, 'c': 4.0, 'd': 0.0}
-    assert sig.validate(2, 3, c=4.0, d=5.0) == {'a': 2, 'b': 3, 'c': 4.0, 'd': 5.0}
+    assert sig.validate(2, 3, c=4.0) == {"a": 2, "b": 3, "c": 4.0, "d": 0.0}
+    assert sig.validate(2, 3, c=4.0, d=5.0) == {"a": 2, "b": 3, "c": 4.0, "d": 5.0}
 
     with pytest.raises(TypeError, match="missing a required argument: 'c'"):
         sig.validate(2, 3)
@@ -195,7 +195,7 @@ def test_signature_from_callable_with_keyword_only_arguments():
 
     args, kwargs = sig.unbind(sig.validate(2, 3, c=4.0))
     assert args == (2, 3)
-    assert kwargs == {'c': 4.0, 'd': 0.0}
+    assert kwargs == {"c": 4.0, "d": 0.0}
 
 
 def test_signature_unbind():
@@ -203,10 +203,10 @@ def test_signature_unbind():
         return int(x)
 
     def add_other(x, this):
-        return int(x) + this['other']
+        return int(x) + this["other"]
 
-    other = Parameter('other', annotation=Argument.required(to_int))
-    this = Parameter('this', annotation=Argument.required(add_other))
+    other = Parameter("other", annotation=Argument.required(to_int))
+    this = Parameter("this", annotation=Argument.required(add_other))
 
     sig = Signature(parameters=[other, this])
     params = sig.validate(1, this=2)
@@ -216,21 +216,21 @@ def test_signature_unbind():
     assert kwargs == {}
 
 
-a = Parameter('a', annotation=Argument.required(CoercedTo(float)))
-b = Parameter('b', annotation=Argument.required(CoercedTo(float)))
-c = Parameter('c', annotation=Argument.default(default=0, validator=CoercedTo(float)))
+a = Parameter("a", annotation=Argument.required(CoercedTo(float)))
+b = Parameter("b", annotation=Argument.required(CoercedTo(float)))
+c = Parameter("c", annotation=Argument.default(default=0, validator=CoercedTo(float)))
 d = Parameter(
-    'd',
+    "d",
     annotation=Argument.default(default=tuple(), validator=TupleOf(CoercedTo(float))),
 )
-e = Parameter('e', annotation=Argument.optional(validator=CoercedTo(float)))
+e = Parameter("e", annotation=Argument.optional(validator=CoercedTo(float)))
 sig = Signature(parameters=[a, b, c, d, e])
 
 
-@pytest.mark.parametrize('d', [(), (5, 6, 7)])
+@pytest.mark.parametrize("d", [(), (5, 6, 7)])
 def test_signature_unbind_with_empty_variadic(d):
     params = sig.validate(1, 2, 3, d, e=4)
-    assert params == {'a': 1.0, 'b': 2.0, 'c': 3.0, 'd': d, 'e': 4.0}
+    assert params == {"a": 1.0, "b": 2.0, "c": 3.0, "d": d, "e": 4.0}
 
     args, kwargs = sig.unbind(params)
     assert args == (1.0, 2.0, 3.0, tuple(map(float, d)), 4.0)
@@ -251,7 +251,7 @@ def test_annotated_function():
     assert test(a=2, b=3, c=4) == 9
 
     with pytest.raises(ValidationError):
-        test(2, 3, c='4')
+        test(2, 3, c="4")
 
     @annotated(a=InstanceOf(int))
     def test(a, b, c=1):
@@ -335,7 +335,7 @@ def short_str(x, this):
 
 @pattern
 def endswith_d(x, this):
-    if x.endswith('d'):
+    if x.endswith("d"):
         return x
     else:
         return NoMatch
@@ -363,7 +363,7 @@ def test_annotated_function_without_annotations():
         return a, b, c
 
     assert test(1, 2, 3) == (1, 2, 3)
-    assert test.__signature__.parameters.keys() == {'a', 'b', 'c'}
+    assert test.__signature__.parameters.keys() == {"a", "b", "c"}
 
 
 def test_annotated_function_without_decoration():

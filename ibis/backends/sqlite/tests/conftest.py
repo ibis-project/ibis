@@ -18,7 +18,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_arrays_outside_of_select = supports_arrays
     supports_window_operations = True
     check_dtype = False
-    returned_timestamp_unit = 's'
+    returned_timestamp_unit = "s"
     supports_structs = False
     stateful = False
     deps = ("sqlalchemy",)
@@ -45,7 +45,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     @property
     def functional_alltypes(self) -> ir.Table:
         t = super().functional_alltypes
-        return t.mutate(timestamp_col=t.timestamp_col.cast('timestamp'))
+        return t.mutate(timestamp_col=t.timestamp_col.cast("timestamp"))
 
 
 @pytest.fixture
@@ -77,14 +77,14 @@ def translate(dialect):
     return lambda expr: str(
         Backend.compiler.translator_class(expr, context)
         .get_result()
-        .compile(dialect=dialect, compile_kwargs={'literal_binds': True})
+        .compile(dialect=dialect, compile_kwargs={"literal_binds": True})
     )
 
 
 @pytest.fixture(scope="session")
 def sqla_compile(dialect):
     return lambda expr: str(
-        expr.compile(dialect=dialect, compile_kwargs={'literal_binds': True})
+        expr.compile(dialect=dialect, compile_kwargs={"literal_binds": True})
     )
 
 

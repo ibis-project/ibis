@@ -55,7 +55,7 @@ class WindowBoundary(Value[T, S]):
         elif isinstance(arg, Value):
             return cls(arg, preceding=False)
         else:
-            raise CoercionError(f'Invalid window boundary type: {type(arg)}')
+            raise CoercionError(f"Invalid window boundary type: {type(arg)}")
 
 
 @public

@@ -18,7 +18,7 @@ def execute_decimal_natural_log(op, data, **kwargs):
     try:
         return data.ln()
     except decimal.InvalidOperation:
-        return decimal.Decimal('NaN')
+        return decimal.Decimal("NaN")
 
 
 @execute_node.register(ops.Log, decimal.Decimal, decimal.Decimal)
@@ -26,7 +26,7 @@ def execute_decimal_log_with_decimal_base(op, data, base, **kwargs):
     try:
         return data.ln() / base.ln()
     except decimal.InvalidOperation:
-        return decimal.Decimal('NaN')
+        return decimal.Decimal("NaN")
 
 
 @execute_node.register(ops.Log, decimal.Decimal, type(None))
@@ -49,7 +49,7 @@ def execute_decimal_log2(op, data, **kwargs):
     try:
         return data.ln() / decimal.Decimal(2).ln()
     except decimal.InvalidOperation:
-        return decimal.Decimal('NaN')
+        return decimal.Decimal("NaN")
 
 
 # While ops.Negate is a subclass of ops.Unary, multipledispatch will be
@@ -67,12 +67,12 @@ def execute_decimal_unary(op, data, **kwargs):
     if function is None:
         math_function = getattr(math, operation_name, None)
         if math_function is None:
-            raise OperationNotDefinedError(f'{op_type.__name__} not supported')
+            raise OperationNotDefinedError(f"{op_type.__name__} not supported")
         function = lambda x: decimal.Decimal(math_function(x))
     try:
         return function(data)
     except decimal.InvalidOperation:
-        return decimal.Decimal('NaN')
+        return decimal.Decimal("NaN")
 
 
 @execute_node.register(ops.Sign, decimal.Decimal)
@@ -94,12 +94,12 @@ def execute_round_decimal(op, data, places, **kwargs):
     integer_part_length = precision + min(tuple_value.exponent, 0)
 
     if places < 0:
-        decimal_format_string = '0.{}E+{:d}'.format(
-            '0' * (integer_part_length - 1 + places),
+        decimal_format_string = "0.{}E+{:d}".format(
+            "0" * (integer_part_length - 1 + places),
             max(integer_part_length + places, abs(places)),
         )
     else:
-        decimal_format_string = '{}.{}'.format('0' * integer_part_length, '0' * places)
+        decimal_format_string = "{}.{}".format("0" * integer_part_length, "0" * places)
 
     places = decimal.Decimal(decimal_format_string)
     return data.quantize(places)
@@ -116,7 +116,7 @@ def execute_cast_series_to_decimal(op, data, type, **kwargs):
     scale = type.scale
     context = decimal.Context(prec=precision)
     places = context.create_decimal(
-        '{}.{}'.format('0' * (precision - scale), '0' * scale)
+        "{}.{}".format("0" * (precision - scale), "0" * scale)
     )
     return data.apply(
         lambda x, context=context, places=places: (

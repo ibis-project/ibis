@@ -43,7 +43,7 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
             user=user,
             password=password,
             database=database,
-            driver=f'mssql+{driver}',
+            driver=f"mssql+{driver}",
         )
 
         engine = sa.create_engine(alchemy_url, poolclass=sa.pool.StaticPool)

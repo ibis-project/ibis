@@ -39,7 +39,7 @@ def infer(value: Any) -> dt.DataType:
 def infer_struct(value: Mapping[str, Any]) -> dt.Struct:
     """Infer the [`Struct`][ibis.expr.datatypes.Struct] type of `value`."""
     if not value:
-        raise TypeError('Empty struct type not supported')
+        raise TypeError("Empty struct type not supported")
     fields = {name: infer(val) for name, val in value.items()}
     return dt.Struct(fields)
 
@@ -177,7 +177,7 @@ def infer_pandas_timestamp(value):
 @infer.register("pandas.Timedelta")
 def infer_interval_pandas(value) -> dt.Interval:
     # pandas Timedelta has more granularity
-    units = {'D': 'd', 'H': 'h', 'T': 'm', 'S': 's', 'L': 'ms', 'U': 'us', 'N': 'ns'}
+    units = {"D": "d", "H": "h", "T": "m", "S": "s", "L": "ms", "U": "us", "N": "ns"}
     unit = units[value.resolution_string]
     return dt.Interval(unit)
 
@@ -188,7 +188,7 @@ def infer_numpy_array(value):
     from ibis.formats.numpy import NumpyType
     from ibis.formats.pyarrow import PyArrowData
 
-    if value.dtype.kind == 'O':
+    if value.dtype.kind == "O":
         value_dtype = PyArrowData.infer_column(value)
     else:
         value_dtype = NumpyType.to_ibis(value.dtype)

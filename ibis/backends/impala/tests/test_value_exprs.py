@@ -18,8 +18,8 @@ def table(mockcon):
 @pytest.mark.parametrize(
     "value",
     [
-        param('simple', id="simple"),
-        param('I can\'t', id="embedded_single_quote"),
+        param("simple", id="simple"),
+        param("I can't", id="embedded_single_quote"),
         param('An "escape"', id="embedded_double_quote"),
         param(5, id="int"),
         param(1.5, id="float"),
@@ -36,38 +36,38 @@ def test_literals(value, snapshot):
 def test_column_ref_table_aliases(snapshot):
     context = ImpalaCompiler.make_context()
 
-    table1 = ibis.table([('key1', 'string'), ('value1', 'double')])
+    table1 = ibis.table([("key1", "string"), ("value1", "double")])
 
-    table2 = ibis.table([('key2', 'string'), ('value and2', 'double')])
+    table2 = ibis.table([("key2", "string"), ("value and2", "double")])
 
-    context.set_ref(table1.op(), 't0')
-    context.set_ref(table2.op(), 't1')
+    context.set_ref(table1.op(), "t0")
+    context.set_ref(table2.op(), "t1")
 
-    expr = table1['value1'] - table2['value and2']
+    expr = table1["value1"] - table2["value and2"]
 
     result = translate(expr, context=context)
     snapshot.assert_match(result, "out.sql")
 
 
 def test_column_ref_quoting():
-    schema = [('has a space', 'double')]
+    schema = [("has a space", "double")]
     table = ibis.table(schema)
-    translate(table['has a space'], named='`has a space`')
+    translate(table["has a space"], named="`has a space`")
 
 
 def test_identifier_quoting():
-    schema = [('date', 'double'), ('table', 'string')]
+    schema = [("date", "double"), ("table", "string")]
     table = ibis.table(schema)
-    translate(table['date'], named='`date`')
-    translate(table['table'], named='`table`')
+    translate(table["date"], named="`date`")
+    translate(table["table"], named="`table`")
 
 
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        lambda t: t.g.cast('double').name('g_dub'),
-        lambda t: t.g.name('has a space'),
-        lambda t: ((t.a - t.b) * t.a).name('expr'),
+        lambda t: t.g.cast("double").name("g_dub"),
+        lambda t: t.g.name("has a space"),
+        lambda t: ((t.a - t.b) * t.a).name("expr"),
     ],
     ids=["cast", "spaces", "compound_expr"],
 )
@@ -126,9 +126,9 @@ def test_between(table, snapshot):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        lambda t: t['g'].isnull(),
-        lambda t: t['a'].notnull(),
-        lambda t: (t['a'] + t['b']).isnull(),
+        lambda t: t["g"].isnull(),
+        lambda t: t["a"].notnull(),
+        lambda t: (t["a"] + t["b"]).isnull(),
     ],
     ids=["isnull", "notnull", "compound_isnull"],
 )
@@ -165,8 +165,8 @@ def test_misc_conditionals(table, snapshot):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        lambda _: L('9.9999999').cast('decimal(38, 5)'),
-        lambda t: t.f.cast('decimal(12, 2)'),
+        lambda _: L("9.9999999").cast("decimal(38, 5)"),
+        lambda t: t.f.cast("decimal(12, 2)"),
     ],
     ids=["literal", "column"],
 )
@@ -184,7 +184,7 @@ def test_negate(table, colname, snapshot):
 
 @pytest.mark.parametrize(
     "field",
-    ['year', 'month', 'day', 'hour', 'minute', 'second', 'microsecond', 'millisecond'],
+    ["year", "month", "day", "hour", "minute", "second", "microsecond", "millisecond"],
 )
 def test_timestamp_extract_field(table, field, snapshot):
     expr = getattr(table.i, field)()
@@ -195,9 +195,9 @@ def test_timestamp_extract_field(table, field, snapshot):
 def test_sql_extract(table, snapshot):
     # integration with SQL translation
     expr = table[
-        table.i.year().name('year'),
-        table.i.month().name('month'),
-        table.i.day().name('day'),
+        table.i.year().name("year"),
+        table.i.month().name("month"),
+        table.i.day().name("day"),
     ]
 
     result = ImpalaCompiler.to_sql(expr)
@@ -212,7 +212,7 @@ def test_timestamp_now(snapshot):
 
 @pytest.mark.parametrize(
     "unit",
-    ['years', 'months', 'weeks', 'days', 'hours', 'minutes', 'seconds'],
+    ["years", "months", "weeks", "days", "hours", "minutes", "seconds"],
 )
 def test_timestamp_deltas(table, unit, snapshot):
     K = 5
@@ -238,14 +238,14 @@ def test_timestamp_deltas(table, unit, snapshot):
     ids=["pd_timestamp", "pydatetime", "timestamp_function"],
 )
 def test_timestamp_literals(expr_fn, snapshot):
-    expr = expr_fn('2015-01-01 12:34:56')
+    expr = expr_fn("2015-01-01 12:34:56")
     result = translate(expr)
     snapshot.assert_match(result, "out.sql")
 
 
 @pytest.mark.parametrize("method_name", ["index", "full_name"])
 def test_timestamp_day_of_week(method_name, snapshot):
-    ts = ibis.timestamp('2015-09-01T01:00:23')
+    ts = ibis.timestamp("2015-09-01T01:00:23")
     expr = getattr(ts.day_of_week, method_name)()
     result = translate(expr)
     snapshot.assert_match(result, "out.sql")
@@ -255,8 +255,8 @@ def test_timestamp_day_of_week(method_name, snapshot):
     "expr_fn",
     [
         lambda col: col.to_timestamp(),
-        lambda col: col.to_timestamp('ms'),
-        lambda col: col.to_timestamp('us'),
+        lambda col: col.to_timestamp("ms"),
+        lambda col: col.to_timestamp("us"),
     ],
     ids=["default", "ms", "us"],
 )

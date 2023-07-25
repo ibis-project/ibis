@@ -26,11 +26,11 @@ from ibis.backends.impala.compiler import ImpalaExprTranslator
 from ibis.legacy.udf.validate import validate_output_type
 
 __all__ = [
-    'add_operation',
-    'scalar_function',
-    'aggregate_function',
-    'wrap_udf',
-    'wrap_uda',
+    "add_operation",
+    "scalar_function",
+    "aggregate_function",
+    "wrap_udf",
+    "wrap_uda",
 ]
 
 
@@ -47,7 +47,7 @@ class Function(metaclass=abc.ABCMeta):
 
     def __repr__(self):
         klass = type(self).__name__
-        return f'{klass}({self.name}, {self.inputs!r}, {self.output!r})'
+        return f"{klass}({self.name}, {self.inputs!r}, {self.output!r})"
 
     def __call__(self, *args):
         return self._klass(*args).to_expr()
@@ -67,16 +67,16 @@ class Function(metaclass=abc.ABCMeta):
 
 class ScalarFunction(Function):
     def _create_operation_class(self):
-        fields = {f'_{i}': rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
-        fields['dtype'] = self.output
-        fields['shape'] = rlz.shape_like('args')
+        fields = {f"_{i}": rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
+        fields["dtype"] = self.output
+        fields["shape"] = rlz.shape_like("args")
         return type(f"UDF_{self.name}", (ops.Value,), fields)
 
 
 class AggregateFunction(Function):
     def _create_operation_class(self):
-        fields = {f'_{i}': rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
-        fields['dtype'] = self.output
+        fields = {f"_{i}": rlz.ValueOf(dtype) for i, dtype in enumerate(self.inputs)}
+        fields["dtype"] = self.output
         return type(f"UDA_{self.name}", (ops.Reduction,), fields)
 
 
@@ -90,8 +90,8 @@ class ImpalaFunction:
 
     def _check_library(self):
         suffix = self.lib_path[-3:]
-        if suffix not in ['.so', '.ll']:
-            raise ValueError('Invalid file type. Must be .so or .ll ')
+        if suffix not in [".so", ".ll"]:
+            raise ValueError("Invalid file type. Must be .so or .ll ")
 
     def hash(self):
         raise NotImplementedError
@@ -143,10 +143,10 @@ class ImpalaUDA(AggregateFunction, ImpalaFunction):
 
     def _check_library(self):
         suffix = self.lib_path[-3:]
-        if suffix == '.ll':
-            raise com.IbisInputError('LLVM IR UDAs are not yet supported')
-        elif suffix != '.so':
-            raise ValueError('Invalid file type. Must be .so')
+        if suffix == ".ll":
+            raise com.IbisInputError("LLVM IR UDAs are not yet supported")
+        elif suffix != ".so":
+            raise ValueError("Invalid file type. Must be .so")
 
 
 def wrap_uda(
@@ -267,7 +267,7 @@ def add_operation(op, func_name, db):
     db
         database the relevant operator is registered to
     """
-    full_name = f'{db}.{func_name}'
+    full_name = f"{db}.{func_name}"
     arity = len(op.__signature__.parameters)
     translator = fixed_arity(full_name, arity)
 
@@ -278,9 +278,9 @@ def parse_type(t):
     t = t.lower()
     if t in _impala_to_ibis_type:
         return _impala_to_ibis_type[t]
-    elif 'varchar' in t or 'char' in t:
-        return 'string'
-    elif 'decimal' in t:
+    elif "varchar" in t or "char" in t:
+        return "string"
+    elif "decimal" in t:
         result = dt.dtype(t)
         if result:
             return t
@@ -290,13 +290,13 @@ def parse_type(t):
         raise Exception(t)
 
 
-_VARCHAR_RE = re.compile(r'varchar\((\d+)\)')
+_VARCHAR_RE = re.compile(r"varchar\((\d+)\)")
 
 
 def _parse_varchar(t):
     m = _VARCHAR_RE.match(t)
     if m:
-        return 'string'
+        return "string"
     return None
 
 
@@ -314,18 +314,18 @@ def _ibis_string_to_impala(tval):
 
 
 _impala_to_ibis_type = {
-    'boolean': 'boolean',
-    'tinyint': 'int8',
-    'smallint': 'int16',
-    'int': 'int32',
-    'bigint': 'int64',
-    'float': 'float32',
-    'double': 'float64',
-    'string': 'string',
-    'varchar': 'string',
-    'char': 'string',
-    'timestamp': 'timestamp',
-    'decimal': 'decimal',
-    'date': 'date',
-    'void': 'null',
+    "boolean": "boolean",
+    "tinyint": "int8",
+    "smallint": "int16",
+    "int": "int32",
+    "bigint": "int64",
+    "float": "float32",
+    "double": "float64",
+    "string": "string",
+    "varchar": "string",
+    "char": "string",
+    "timestamp": "timestamp",
+    "decimal": "decimal",
+    "date": "date",
+    "void": "null",
 }
