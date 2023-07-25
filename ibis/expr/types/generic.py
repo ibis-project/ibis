@@ -367,7 +367,12 @@ class Value(Expr):
           other_string_col string
         Contains(string_col, other_string_col): Contains(...)
         """
-        return ops.Contains(self, values).to_expr()
+        from ibis.expr.types import ArrayValue
+
+        if isinstance(values, ArrayValue):
+            return values.contains(self)
+        else:
+            return ops.Contains(self, values).to_expr()
 
     def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
         """Check whether this expression's values are not in `values`.

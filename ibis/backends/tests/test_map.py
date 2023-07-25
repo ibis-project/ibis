@@ -74,9 +74,8 @@ def test_literal_map_values(con):
     assert np.array_equal(result, ["a", "b"])
 
 
-@pytest.mark.notimpl(["trino", "postgres"])
+@pytest.mark.notimpl(["postgres"])
 @pytest.mark.notyet(["snowflake"])
-@pytest.mark.notyet(["duckdb"], reason="sqlalchemy warning")
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
