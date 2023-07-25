@@ -159,6 +159,13 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                 *columns,
                 quote=translator._quote_table_names,
             )
+        elif not op.data:
+            result = sa.select(
+                *(
+                    translator.translate(ops.Literal(None, dtype=type_)).label(name)
+                    for name, type_ in op.schema.items()
+                )
+            ).limit(0)
         elif self.context.compiler.support_values_syntax_in_select:
             rows = list(ref_op.data.to_frame().itertuples(index=False))
             result = sa.values(*columns, name=ref_op.name).data(rows)

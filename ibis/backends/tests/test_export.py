@@ -10,6 +10,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
+from ibis.common.exceptions import OperationNotDefinedError
 
 pa = pytest.importorskip("pyarrow")
 
@@ -453,3 +454,15 @@ def test_to_torch(alltypes):
     non_numeric = alltypes.select(~selector).limit(1)
     with pytest.raises(TypeError):
         non_numeric.to_torch()
+
+
+@pytest.mark.notimpl(
+    ["datafusion"],
+    raises=OperationNotDefinedError,
+    reason="InMemoryTable not yet implemented for the datafusion backend",
+)
+def test_empty_memtable(backend, con):
+    expected = pd.DataFrame({"a": []})
+    table = ibis.memtable(expected)
+    result = con.execute(table)
+    backend.assert_frame_equal(result, expected)
