@@ -9,7 +9,7 @@ _STRING_REGEX = (
     """('[^\n'\\\\]*(?:\\\\.[^\n'\\\\]*)*'|"[^\n"\\\\"]*(?:\\\\.[^\n"\\\\]*)*")"""
 )
 
-SPACES = parsy.regex(r'\s*', re.MULTILINE)
+SPACES = parsy.regex(r"\s*", re.MULTILINE)
 
 
 def spaceless(parser):

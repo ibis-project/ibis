@@ -28,7 +28,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     supports_arrays_outside_of_select = False
     check_dtype = False
     supports_divide_by_zero = True
-    returned_timestamp_unit = 's'
+    returned_timestamp_unit = "s"
     supports_structs = False
     supports_json = False
     deps = "fsspec", "requests", "impala"
@@ -96,7 +96,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
             futures.append(
                 executor.submit(
                     toolz.compose(compute_stats, con.avro_file),
-                    os.path.join(env.test_data_dir, 'impala', 'avro', 'tpch', 'region'),
+                    os.path.join(env.test_data_dir, "impala", "avro", "tpch", "region"),
                     avro_schema={
                         "type": "record",
                         "name": "a",
@@ -122,7 +122,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
                     schema=TEST_TABLES.get(os.path.basename(path)),
                 )
                 for path in con.hdfs.ls(
-                    os.path.join(env.test_data_dir, 'impala', 'parquet')
+                    os.path.join(env.test_data_dir, "impala", "parquet")
                 )
             )
             for fut in concurrent.futures.as_completed(futures):
@@ -175,59 +175,59 @@ class IbisTestEnv:
 
     @property
     def impala_host(self):
-        return os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
+        return os.environ.get("IBIS_TEST_IMPALA_HOST", "localhost")
 
     @property
     def impala_port(self):
-        return int(os.environ.get('IBIS_TEST_IMPALA_PORT', "21050"))
+        return int(os.environ.get("IBIS_TEST_IMPALA_PORT", "21050"))
 
     @property
     def tmp_db(self):
         options.impala.temp_db = tmp_db = os.environ.get(
-            'IBIS_TEST_TMP_DB', 'ibis_testing_tmp_db'
+            "IBIS_TEST_TMP_DB", "ibis_testing_tmp_db"
         )
         return tmp_db
 
     @property
     def tmp_dir(self):
         options.impala.temp_hdfs_path = tmp_dir = os.environ.get(
-            'IBIS_TEST_TMP_HDFS_DIR', f'/tmp/__ibis_test_{util.guid()}'
+            "IBIS_TEST_TMP_HDFS_DIR", f"/tmp/__ibis_test_{util.guid()}"
         )
         return tmp_dir
 
     @property
     def test_data_db(self):
-        return os.environ.get('IBIS_TEST_DATA_DB', 'ibis_testing')
+        return os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing")
 
     @property
     def test_data_dir(self):
-        return os.environ.get('IBIS_TEST_DATA_HDFS_DIR', '/__ibis/ibis-testing-data')
+        return os.environ.get("IBIS_TEST_DATA_HDFS_DIR", "/__ibis/ibis-testing-data")
 
     @property
     def nn_host(self):
-        return os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
+        return os.environ.get("IBIS_TEST_NN_HOST", "localhost")
 
     @property
     def hdfs_port(self):
-        return int(os.environ.get('IBIS_TEST_HDFS_PORT', 50070))
+        return int(os.environ.get("IBIS_TEST_HDFS_PORT", 50070))
 
     @property
     def hdfs_superuser(self):
-        return os.environ.get('IBIS_TEST_HDFS_SUPERUSER', 'hdfs')
+        return os.environ.get("IBIS_TEST_HDFS_SUPERUSER", "hdfs")
 
     @property
     def use_codegen(self):
         return ast.literal_eval(
-            os.environ.get('IBIS_TEST_USE_CODEGEN', 'False').lower().capitalize()
+            os.environ.get("IBIS_TEST_USE_CODEGEN", "False").lower().capitalize()
         )
 
     @property
     def auth_mechanism(self):
-        return os.environ.get('IBIS_TEST_AUTH_MECH', 'NOSASL')
+        return os.environ.get("IBIS_TEST_AUTH_MECH", "NOSASL")
 
     @property
     def hdfs_user(self):
-        return os.environ.get('IBIS_TEST_HDFS_USER', 'hdfs')
+        return os.environ.get("IBIS_TEST_HDFS_USER", "hdfs")
 
     @property
     def hdfs_protocol(self):
@@ -279,7 +279,7 @@ def backend(tmp_path_factory, data_dir, worker_id):
 def con(env, backend):
     con = backend.connection
     con.disable_codegen(disabled=not env.use_codegen)
-    assert con.get_options()['DISABLE_CODEGEN'] == str(int(not env.use_codegen))
+    assert con.get_options()["DISABLE_CODEGEN"] == str(int(not env.use_codegen))
     yield con
     con.close()
 
@@ -315,7 +315,7 @@ def alltypes_df(alltypes):
 
 @pytest.fixture
 def temp_database(con):
-    name = util.gen_name('database')
+    name = util.gen_name("database")
     con.create_database(name)
     yield name
     con.drop_database(name, force=True)
@@ -323,7 +323,7 @@ def temp_database(con):
 
 @pytest.fixture
 def temp_table_db(con, temp_database):
-    name = util.gen_name('table')
+    name = util.gen_name("table")
     yield temp_database, name
     assert name in con.list_tables(database=temp_database), name
     con.drop_table(name, database=temp_database)
@@ -331,14 +331,14 @@ def temp_table_db(con, temp_database):
 
 @pytest.fixture
 def temp_parquet_table_schema():
-    return ibis.schema([('id', 'int32'), ('name', 'string'), ('files', 'int32')])
+    return ibis.schema([("id", "int32"), ("name", "string"), ("files", "int32")])
 
 
 @pytest.fixture
 def temp_parquet_table(con, tmp_db, temp_parquet_table_schema):
     name = util.guid()
     db = con.database(tmp_db)
-    db.create_table(name, schema=temp_parquet_table_schema, format='parquet')
+    db.create_table(name, schema=temp_parquet_table_schema, format="parquet")
     yield db[name]
     db.client.drop_table(name, database=tmp_db)
 
@@ -347,7 +347,7 @@ def temp_parquet_table(con, tmp_db, temp_parquet_table_schema):
 def temp_parquet_table2(con, tmp_db, temp_parquet_table_schema):
     name = util.guid()
     db = con.database(tmp_db)
-    db.create_table(name, schema=temp_parquet_table_schema, format='parquet')
+    db.create_table(name, schema=temp_parquet_table_schema, format="parquet")
     yield db[name]
     db.client.drop_table(name, database=tmp_db)
 
@@ -359,7 +359,7 @@ def mockcon():
 
 @pytest.fixture(scope="module")
 def kudu_table(con, test_data_db):
-    name = 'kudu_backed_table'
+    name = "kudu_backed_table"
     cur = con.raw_sql(
         f"""\
 CREATE TABLE {test_data_db}.{name} (
@@ -409,18 +409,18 @@ def impala_create_test_database(con, env):
     con.drop_database(env.test_data_db, force=True)
     con.create_database(env.test_data_db)
     con.create_table(
-        'alltypes',
+        "alltypes",
         schema=ibis.schema(
             dict(
-                a='int8',
-                b='int16',
-                c='int32',
-                d='int64',
-                e='float',
-                f='double',
-                g='string',
-                h='boolean',
-                i='timestamp',
+                a="int8",
+                b="int16",
+                c="int32",
+                d="int64",
+                e="float",
+                f="double",
+                g="string",
+                h="boolean",
+                i="timestamp",
             )
         ),
         database=env.test_data_db,

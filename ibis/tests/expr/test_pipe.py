@@ -22,12 +22,12 @@ import ibis
 def pipe_table():
     return ibis.table(
         [
-            ('key1', 'string'),
-            ('key2', 'string'),
-            ('key3', 'string'),
-            ('value', 'double'),
+            ("key1", "string"),
+            ("key2", "string"),
+            ("key3", "string"),
+            ("value", "double"),
         ],
-        'foo_table',
+        "foo_table",
     )
 
 
@@ -35,8 +35,8 @@ def test_pipe_positional_args(pipe_table):
     def my_func(data, foo, bar):
         return data[bar] + foo
 
-    result = pipe_table.pipe(my_func, 4, 'value')
-    expected = pipe_table['value'] + 4
+    result = pipe_table.pipe(my_func, 4, "value")
+    expected = pipe_table["value"] + 4
 
     assert result.equals(expected)
 
@@ -45,8 +45,8 @@ def test_pipe_keyword_args(pipe_table):
     def my_func(data, foo=None, bar=None):
         return data[bar] + foo
 
-    result = pipe_table.pipe(my_func, foo=4, bar='value')
-    expected = pipe_table['value'] + 4
+    result = pipe_table.pipe(my_func, foo=4, bar="value")
+    expected = pipe_table["value"] + 4
 
     assert result.equals(expected)
 
@@ -55,7 +55,7 @@ def test_pipe_pass_to_keyword(pipe_table):
     def my_func(x, y, data=None):
         return data[x] + y
 
-    result = pipe_table.pipe((my_func, 'data'), 'value', 4)
-    expected = pipe_table['value'] + 4
+    result = pipe_table.pipe((my_func, "data"), "value", 4)
+    expected = pipe_table["value"] + 4
 
     assert result.equals(expected)

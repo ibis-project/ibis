@@ -18,18 +18,18 @@ def extract_field(sql_attr):
 
 
 def extract_epoch_seconds(t, op):
-    return f'unix_timestamp({t.translate(op.arg)})'
+    return f"unix_timestamp({t.translate(op.arg)})"
 
 
 def truncate(translator, op):
     base_unit_names = {
-        'Y': 'Y',
-        'Q': 'Q',
-        'M': 'MONTH',
-        'W': 'W',
-        'D': 'J',
-        'h': 'HH',
-        'm': 'MI',
+        "Y": "Y",
+        "Q": "Q",
+        "M": "MONTH",
+        "W": "W",
+        "D": "J",
+        "h": "HH",
+        "m": "MI",
     }
     arg, unit = op.args
 
@@ -38,7 +38,7 @@ def truncate(translator, op):
         unit = base_unit_names[unit.short]
     except KeyError:
         raise com.UnsupportedOperationError(
-            f'{unit!r} unit is not supported in timestamp truncate'
+            f"{unit!r} unit is not supported in timestamp truncate"
         )
 
     return f"trunc({arg_formatted}, '{unit}')"
@@ -47,7 +47,7 @@ def truncate(translator, op):
 def interval_from_integer(translator, op):
     # interval cannot be selected from impala
     arg = translator.translate(op.arg)
-    return f'INTERVAL {arg} {op.dtype.resolution.upper()}'
+    return f"INTERVAL {arg} {op.dtype.resolution.upper()}"
 
 
 def timestamp_op(func):
@@ -57,19 +57,19 @@ def timestamp_op(func):
 
         left_dtype = op.left.dtype
         if left_dtype.is_timestamp() or left_dtype.is_date():
-            formatted_left = f'cast({formatted_left} as timestamp)'
+            formatted_left = f"cast({formatted_left} as timestamp)"
 
         right_dtype = op.right.dtype
         if right_dtype.is_timestamp() or right_dtype.is_date():
-            formatted_right = f'cast({formatted_right} as timestamp)'
+            formatted_right = f"cast({formatted_right} as timestamp)"
 
-        return f'{func}({formatted_left}, {formatted_right})'
+        return f"{func}({formatted_left}, {formatted_right})"
 
     return _formatter
 
 
 def timestamp_diff(translator, op):
-    return 'unix_timestamp({}) - unix_timestamp({})'.format(
+    return "unix_timestamp({}) - unix_timestamp({})".format(
         translator.translate(op.left), translator.translate(op.right)
     )
 
@@ -81,13 +81,13 @@ def _from_unixtime(translator, expr):
 
 def timestamp_from_unix(translator, op):
     val, unit = op.args
-    val = util.convert_unit(val, unit.short, 's').to_expr().cast("int32").op()
+    val = util.convert_unit(val, unit.short, "s").to_expr().cast("int32").op()
     arg = _from_unixtime(translator, val)
-    return f'CAST({arg} AS timestamp)'
+    return f"CAST({arg} AS timestamp)"
 
 
 def day_of_week_index(t, op):
-    return f'pmod(dayofweek({t.translate(op.arg)}) - 2, 7)'
+    return f"pmod(dayofweek({t.translate(op.arg)}) - 2, 7)"
 
 
 def strftime(t, op):
@@ -103,4 +103,4 @@ def strftime(t, op):
 
 
 def day_of_week_name(t, op):
-    return f'dayname({t.translate(op.arg)})'
+    return f"dayname({t.translate(op.arg)})"

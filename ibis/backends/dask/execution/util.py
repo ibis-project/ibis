@@ -273,7 +273,7 @@ def compute_sorted_frame(
 
     result = df.assign(**new_columns)
     result = result.sort_values(
-        computed_sort_keys, ascending=ascending, kind='mergesort'
+        computed_sort_keys, ascending=ascending, kind="mergesort"
     )
     # TODO: we'll eventually need to return this frame with the temporary
     # columns and drop them in the caller (maybe using post_execute?)
@@ -298,7 +298,7 @@ def assert_identical_grouping_keys(*args):
 
 def add_globally_consecutive_column(
     df: dd.DataFrame | dd.Series,
-    col_name: str = '_ibis_index',
+    col_name: str = "_ibis_index",
     set_as_index: bool = True,
 ) -> dd.DataFrame:
     """Add a column that is globally consecutive across the distributed data.
@@ -367,5 +367,5 @@ def is_row_order_preserving(nodes) -> bool:
 def rename_index(df: dd.DataFrame, new_index_name: str) -> dd.DataFrame:
     # No elegant way to rename index
     # https://github.com/dask/dask/issues/4950
-    df = df.map_partitions(pd.DataFrame.rename_axis, new_index_name, axis='index')
+    df = df.map_partitions(pd.DataFrame.rename_axis, new_index_name, axis="index")
     return df

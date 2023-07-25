@@ -33,7 +33,7 @@ class TableColumn(Value, Named):
             name = table.schema.name_at_position(name)
 
         if name not in table.schema:
-            columns_formatted = ', '.join(map(repr, table.schema.names))
+            columns_formatted = ", ".join(map(repr, table.schema.names))
             raise com.IbisTypeError(
                 f"Column {name!r} is not found in table. "
                 f"Existing columns: {columns_formatted}."
@@ -168,24 +168,24 @@ class NullIf(Value):
 class Coalesce(Value):
     arg: VarTuple[Value]
 
-    shape = rlz.shape_like('arg')
-    dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class Greatest(Value):
     arg: VarTuple[Value]
 
-    shape = rlz.shape_like('arg')
-    dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 @public
 class Least(Value):
     arg: VarTuple[Value]
 
-    shape = rlz.shape_like('arg')
-    dtype = rlz.dtype_like('arg')
+    shape = rlz.shape_like("arg")
+    dtype = rlz.dtype_like("arg")
 
 
 T = TypeVar("T", bound=dt.DataType, covariant=True)
@@ -224,7 +224,7 @@ class ScalarParameter(Scalar, Named):
 
     @property
     def name(self):
-        return f'param_{self.counter:d}'
+        return f"param_{self.counter:d}"
 
 
 @public

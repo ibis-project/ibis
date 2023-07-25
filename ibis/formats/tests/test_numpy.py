@@ -13,10 +13,10 @@ from ibis.formats.numpy import NumpySchema, NumpyType
 
 roundtripable_types = st.deferred(
     lambda: (
-        npst.integer_dtypes(endianness='=')
-        | npst.floating_dtypes(endianness='=')
-        | npst.datetime64_dtypes(max_period='ns', endianness='=')
-        | npst.timedelta64_dtypes(max_period='s', endianness='=')
+        npst.integer_dtypes(endianness="=")
+        | npst.floating_dtypes(endianness="=")
+        | npst.datetime64_dtypes(max_period="ns", endianness="=")
+        | npst.timedelta64_dtypes(max_period="s", endianness="=")
     )
 )
 
@@ -50,7 +50,7 @@ def test_roundtripable_types(numpy_type):
     assert_dtype_roundtrip(numpy_type, nullable=True)
 
 
-@h.given(npst.unicode_string_dtypes(endianness='='))
+@h.given(npst.unicode_string_dtypes(endianness="="))
 def test_non_roundtripable_str_type(numpy_type):
     assert_dtype_roundtrip(
         numpy_type, dt.String(nullable=False), np.dtype("object"), nullable=False
@@ -60,7 +60,7 @@ def test_non_roundtripable_str_type(numpy_type):
     )
 
 
-@h.given(npst.byte_string_dtypes(endianness='='))
+@h.given(npst.byte_string_dtypes(endianness="="))
 def test_non_roundtripable_bytes_type(numpy_type):
     assert_dtype_roundtrip(
         numpy_type, dt.Binary(nullable=False), np.dtype("object"), nullable=False
@@ -106,7 +106,7 @@ def test_schema_from_numpy(numpy_schema):
 
 
 @pytest.mark.parametrize(
-    ('numpy_dtype', 'ibis_dtype'),
+    ("numpy_dtype", "ibis_dtype"),
     [
         (np.bool_, dt.boolean),
         (np.int8, dt.int8),
@@ -133,4 +133,4 @@ def test_dtype_from_numpy_dtype_timedelta():
     if vparse(pytest.importorskip("pyarrow").__version__) < vparse("9"):
         pytest.skip("pyarrow < 9 globally mutates the timedelta64 numpy dtype")
 
-    assert NumpyType.to_ibis(np.dtype(np.timedelta64)) == dt.Interval(unit='s')
+    assert NumpyType.to_ibis(np.dtype(np.timedelta64)) == dt.Interval(unit="s")

@@ -15,7 +15,7 @@ from ibis.backends.base.sql.alchemy import (
 from ibis.backends.base.sql.alchemy.registry import substr, variance_reduction
 
 
-def _reduction(func, cast_type='int32'):
+def _reduction(func, cast_type="int32"):
     def reduction_compiler(t, op):
         arg, where = op.args
 
@@ -75,25 +75,25 @@ def _round(t, op):
         return sa.func.round(sa_arg, 0)
 
 
-def _timestamp_from_unix(x, unit='s'):
-    if unit == 's':
-        return sa.func.dateadd(sa.text('s'), x, '1970-01-01 00:00:00')
-    if unit == 'ms':
-        return sa.func.dateadd(sa.text('s'), x / 1_000, '1970-01-01 00:00:00')
+def _timestamp_from_unix(x, unit="s"):
+    if unit == "s":
+        return sa.func.dateadd(sa.text("s"), x, "1970-01-01 00:00:00")
+    if unit == "ms":
+        return sa.func.dateadd(sa.text("s"), x / 1_000, "1970-01-01 00:00:00")
     raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
 
 _truncate_precisions = {
-    'us': 'microsecond',
-    'ms': 'millisecond',
-    's': 'second',
-    'm': 'minute',
-    'h': 'hour',
-    'D': 'day',
-    'W': 'week',
-    'M': 'month',
-    'Q': 'quarter',
-    'Y': 'year',
+    "us": "microsecond",
+    "ms": "millisecond",
+    "s": "second",
+    "m": "minute",
+    "h": "hour",
+    "D": "day",
+    "W": "week",
+    "M": "month",
+    "Q": "quarter",
+    "Y": "year",
 }
 
 
@@ -101,7 +101,7 @@ def _timestamp_truncate(t, op):
     arg = t.translate(op.arg)
     unit = op.unit.short
     if unit not in _truncate_precisions:
-        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
+        raise com.UnsupportedOperationError(f"Unsupported truncate unit {op.unit!r}")
 
     return sa.func.datetrunc(sa.text(_truncate_precisions[unit]), arg)
 
@@ -116,7 +116,7 @@ operation_registry.update(
         ops.Max: _reduction(sa.func.max),
         ops.Min: _reduction(sa.func.min),
         ops.Sum: _reduction(sa.func.sum),
-        ops.Mean: _reduction(sa.func.avg, 'float64'),
+        ops.Mean: _reduction(sa.func.avg, "float64"),
         ops.Where: fixed_arity(sa.func.iif, 3),
         # string methods
         ops.Capitalize: unary(
@@ -158,25 +158,25 @@ operation_registry.update(
         ops.Log: fixed_arity(lambda x, p: sa.func.log(x, p), 2),
         ops.Log2: fixed_arity(lambda x: sa.func.log(x, 2), 1),
         ops.Log10: fixed_arity(lambda x: sa.func.log(x, 10), 1),
-        ops.StandardDev: variance_reduction('stdev', {'sample': '', 'pop': 'p'}),
-        ops.Variance: variance_reduction('var', {'sample': '', 'pop': 'p'}),
+        ops.StandardDev: variance_reduction("stdev", {"sample": "", "pop": "p"}),
+        ops.Variance: variance_reduction("var", {"sample": "", "pop": "p"}),
         # timestamp methods
         ops.TimestampNow: fixed_arity(sa.func.GETDATE, 0),
-        ops.ExtractYear: _extract('year'),
-        ops.ExtractMonth: _extract('month'),
-        ops.ExtractDay: _extract('day'),
-        ops.ExtractDayOfYear: _extract('dayofyear'),
-        ops.ExtractHour: _extract('hour'),
-        ops.ExtractMinute: _extract('minute'),
-        ops.ExtractSecond: _extract('second'),
-        ops.ExtractMillisecond: _extract('millisecond'),
-        ops.ExtractWeekOfYear: _extract('iso_week'),
+        ops.ExtractYear: _extract("year"),
+        ops.ExtractMonth: _extract("month"),
+        ops.ExtractDay: _extract("day"),
+        ops.ExtractDayOfYear: _extract("dayofyear"),
+        ops.ExtractHour: _extract("hour"),
+        ops.ExtractMinute: _extract("minute"),
+        ops.ExtractSecond: _extract("second"),
+        ops.ExtractMillisecond: _extract("millisecond"),
+        ops.ExtractWeekOfYear: _extract("iso_week"),
         ops.DayOfWeekIndex: fixed_arity(
-            lambda x: sa.func.datepart(sa.text('weekday'), x) - 1, 1
+            lambda x: sa.func.datepart(sa.text("weekday"), x) - 1, 1
         ),
         ops.ExtractEpochSeconds: fixed_arity(
             lambda x: sa.cast(
-                sa.func.datediff(sa.text('s'), '1970-01-01 00:00:00', x), sa.BIGINT
+                sa.func.datediff(sa.text("s"), "1970-01-01 00:00:00", x), sa.BIGINT
             ),
             1,
         ),

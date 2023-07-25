@@ -160,4 +160,4 @@ def execute_round_series(op, data, places, **kwargs):
     if data.dtype == np.dtype(np.object_):
         return vectorize_object(op, data, places, **kwargs)
     result = data.round(places or 0)
-    return result if places else result.astype('int64')
+    return result if places else result.astype("int64")

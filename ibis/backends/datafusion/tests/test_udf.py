@@ -11,10 +11,10 @@ pytest.importorskip("datafusion")
 pc = pytest.importorskip("pyarrow.compute")
 
 
-@elementwise(input_type=['string'], output_type='int64')
+@elementwise(input_type=["string"], output_type="int64")
 def my_string_length(arr, **kwargs):
     # arr is a pyarrow.StringArray
-    return pc.cast(pc.multiply(pc.utf8_length(arr), 2), target_type='int64')
+    return pc.cast(pc.multiply(pc.utf8_length(arr), 2), target_type="int64")
 
 
 @elementwise(input_type=[dt.int64, dt.int64], output_type=dt.int64)
@@ -42,7 +42,7 @@ def test_multiple_argument_udf(alltypes):
     expr = my_add(alltypes.smallint_col, alltypes.int_col).name("tmp")
     result = expr.execute()
 
-    df = alltypes[['smallint_col', 'int_col']].execute()
-    expected = (df.smallint_col + df.int_col).astype('int64')
+    df = alltypes[["smallint_col", "int_col"]].execute()
+    expected = (df.smallint_col + df.int_col).astype("int64")
 
-    tm.assert_series_equal(result, expected.rename('tmp'))
+    tm.assert_series_equal(result, expected.rename("tmp"))

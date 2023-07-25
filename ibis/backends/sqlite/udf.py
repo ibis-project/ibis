@@ -464,8 +464,8 @@ def _number_of_arguments(callable):
         param.default is not inspect.Parameter.empty for param in parameters
     ):
         raise TypeError(
-            'Only positional arguments without defaults are supported in Ibis '
-            'SQLite function registration'
+            "Only positional arguments without defaults are supported in Ibis "
+            "SQLite function registration"
         )
     return len(parameters)
 

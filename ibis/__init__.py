@@ -13,18 +13,18 @@ from ibis.expr.api import *  # noqa: F403
 from ibis.expr.operations import udf
 
 __all__ = [  # noqa: PLE0604
-    'api',
-    'examples',
-    'ir',
-    'udf',
-    'util',
-    'BaseBackend',
-    'IbisError',
-    'options',
+    "api",
+    "examples",
+    "ir",
+    "udf",
+    "util",
+    "BaseBackend",
+    "IbisError",
+    "options",
     *api.__all__,
 ]
 
-_KNOWN_BACKENDS = ['heavyai']
+_KNOWN_BACKENDS = ["heavyai"]
 
 
 def __dir__() -> list[str]:

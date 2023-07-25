@@ -23,7 +23,7 @@ def test_parse_sql_basic_projection():
     code = ibis.decompile(expr, format=True)  # noqa: F841
 
 
-@pytest.mark.parametrize('how', ['right', 'left', 'inner'])
+@pytest.mark.parametrize("how", ["right", "left", "inner"])
 def test_parse_sql_basic_join(how):
     sql = f"""
 SELECT

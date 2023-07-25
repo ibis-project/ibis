@@ -8,7 +8,7 @@ pytest.importorskip("dask.dataframe")
 
 
 @pytest.mark.parametrize(
-    'grouping, bad_grouping',
+    "grouping, bad_grouping",
     [
         ("dup_strings", "dup_ints"),
         (["dup_strings"], ["dup_ints"]),

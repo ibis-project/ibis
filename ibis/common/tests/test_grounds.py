@@ -96,9 +96,9 @@ class VariadicArgsAndKeywords(Concrete):
     kwargs = varkwargs(is_int)
 
 
-T = TypeVar('T', covariant=True)
-K = TypeVar('K', covariant=True)
-V = TypeVar('V', covariant=True)
+T = TypeVar("T", covariant=True)
+K = TypeVar("K", covariant=True)
+V = TypeVar("V", covariant=True)
 
 
 class List(Concrete, Sequence[T], Coercible):
@@ -241,7 +241,7 @@ def test_annotable():
     class Between(BetweenSimple):
         pass
 
-    argnames = ('value', 'lower', 'upper')
+    argnames = ("value", "lower", "upper")
     signature = BetweenSimple.__signature__
     assert isinstance(signature, Signature)
     assert tuple(signature.parameters.keys()) == argnames
@@ -419,7 +419,7 @@ def test_maintain_definition_order():
         upper = optional(is_int, default=None)
 
     param_names = list(Between.__signature__.parameters.keys())
-    assert param_names == ['value', 'lower', 'upper']
+    assert param_names == ["value", "lower", "upper"]
 
 
 def test_signature_inheritance():
@@ -440,33 +440,33 @@ def test_signature_inheritance():
 
     assert IntBinop.__signature__ == Signature(
         [
-            Parameter('left', annotation=required(is_int)),
-            Parameter('right', annotation=required(is_int)),
+            Parameter("left", annotation=required(is_int)),
+            Parameter("right", annotation=required(is_int)),
         ]
     )
 
     assert FloatAddRhs.__signature__ == Signature(
         [
-            Parameter('left', annotation=required(is_int)),
-            Parameter('right', annotation=required(is_float)),
+            Parameter("left", annotation=required(is_int)),
+            Parameter("right", annotation=required(is_float)),
         ]
     )
 
     assert FloatAddClip.__signature__ == Signature(
         [
-            Parameter('left', annotation=required(is_float)),
-            Parameter('right', annotation=required(is_float)),
-            Parameter('clip_lower', annotation=optional(is_int, default=0)),
-            Parameter('clip_upper', annotation=optional(is_int, default=10)),
+            Parameter("left", annotation=required(is_float)),
+            Parameter("right", annotation=required(is_float)),
+            Parameter("clip_lower", annotation=optional(is_int, default=0)),
+            Parameter("clip_upper", annotation=optional(is_int, default=10)),
         ]
     )
 
     assert IntAddClip.__signature__ == Signature(
         [
-            Parameter('left', annotation=required(is_int)),
-            Parameter('right', annotation=required(is_int)),
-            Parameter('clip_lower', annotation=optional(is_int, default=0)),
-            Parameter('clip_upper', annotation=optional(is_int, default=10)),
+            Parameter("left", annotation=required(is_int)),
+            Parameter("right", annotation=required(is_int)),
+            Parameter("clip_lower", annotation=optional(is_int, default=0)),
+            Parameter("clip_upper", annotation=optional(is_int, default=10)),
         ]
     )
 
@@ -575,7 +575,7 @@ def test_variadic_keyword_argument_reordering():
     assert b.a == 1
     assert b.b == 2
     assert b.c == 3
-    assert b.options == {'d': 4, 'e': 5}
+    assert b.options == {"d": 4, "e": 5}
 
     msg = "only one variadic \\*\\*kwargs parameter is allowed"
     with pytest.raises(TypeError, match=msg):
@@ -602,8 +602,8 @@ def test_variadic_keyword_argument():
         options = varkwargs(is_int)
 
     assert Test(1, 2).options == {}
-    assert Test(1, 2, a=3).options == {'a': 3}
-    assert Test(1, 2, a=3, b=4, c=5).options == {'a': 3, 'b': 4, 'c': 5}
+    assert Test(1, 2, a=3).options == {"a": 3}
+    assert Test(1, 2, a=3, b=4, c=5).options == {"a": 3, "b": 4, "c": 5}
 
 
 def test_concrete_copy_with_variadic_argument():
@@ -629,12 +629,12 @@ def test_concrete_pickling_variadic_arguments():
     assert_pickle_roundtrip(v)
 
     v = VariadicKeywords(a=3, b=4, c=5)
-    assert v.kwargs == {'a': 3, 'b': 4, 'c': 5}
+    assert v.kwargs == {"a": 3, "b": 4, "c": 5}
     assert_pickle_roundtrip(v)
 
     v = VariadicArgsAndKeywords(1, 2, 3, 4, 5, a=3, b=4, c=5)
     assert v.args == (1, 2, 3, 4, 5)
-    assert v.kwargs == {'a': 3, 'b': 4, 'c': 5}
+    assert v.kwargs == {"a": 3, "b": 4, "c": 5}
     assert_pickle_roundtrip(v)
 
 
@@ -681,7 +681,7 @@ def test_copy_mutable_with_default_attribute():
 
 def test_slots_are_inherited_and_overridable():
     class Op(Annotable):
-        __slots__ = ('_cache',)  # first definition
+        __slots__ = ("_cache",)  # first definition
         arg = Any()
 
     class StringOp(Op):
@@ -691,13 +691,13 @@ def test_slots_are_inherited_and_overridable():
         sep = CoercedTo(str)  # new slot
 
     class StringJoin(StringOp):
-        __slots__ = ('_memoize',)  # new slot
+        __slots__ = ("_memoize",)  # new slot
         sep = CoercedTo(str)  # new overridden slot
 
-    assert Op.__slots__ == ('_cache', 'arg')
-    assert StringOp.__slots__ == ('arg',)
-    assert StringSplit.__slots__ == ('sep',)
-    assert StringJoin.__slots__ == ('_memoize', 'sep')
+    assert Op.__slots__ == ("_cache", "arg")
+    assert StringOp.__slots__ == ("arg",)
+    assert StringSplit.__slots__ == ("sep",)
+    assert StringJoin.__slots__ == ("_memoize", "sep")
 
 
 def test_multiple_inheritance():
@@ -705,7 +705,7 @@ def test_multiple_inheritance():
     # __slots__ definition, otherwise python will raise lay-out conflict
 
     class Op(Annotable):
-        __slots__ = ('_hash',)
+        __slots__ = ("_hash",)
 
     class Value(Annotable):
         arg = InstanceOf(object)
@@ -731,7 +731,7 @@ def test_multiple_inheritance():
         class AB(A, B):
             ab = is_int
 
-    assert UDAF.__slots__ == ('arity',)
+    assert UDAF.__slots__ == ("arity",)
     strlen = UDAF(arg=2, func=lambda value: len(str(value)), arity=1)
     assert strlen.arg == 2
     assert strlen.arity == 1
@@ -814,7 +814,7 @@ class Value4(BaseValue):
 
 def test_annotable_with_dict_slot():
     class Flexible(Annotable):
-        __slots__ = ('__dict__',)
+        __slots__ = ("__dict__",)
 
     v = Flexible()
     v.a = 1
@@ -828,22 +828,22 @@ def test_annotable_attribute():
         BaseValue(1, 2)
 
     v = BaseValue(1)
-    assert v.__slots__ == ('i', 'j')
+    assert v.__slots__ == ("i", "j")
     assert v.i == 1
-    assert not hasattr(v, 'j')
+    assert not hasattr(v, "j")
     v.j = 2
     assert v.j == 2
 
     with pytest.raises(ValidationError):
-        v.j = 'foo'
+        v.j = "foo"
 
 
 def test_annotable_attribute_init():
-    assert Value2.__slots__ == ('k',)
+    assert Value2.__slots__ == ("k",)
     v = Value2(1)
 
     assert v.i == 1
-    assert not hasattr(v, 'j')
+    assert not hasattr(v, "j")
     v.j = 2
     assert v.j == 2
     assert v.k == 3
@@ -925,7 +925,7 @@ def test_initialized_attribute_mixed_with_classvar():
 class Node(Comparable):
     # override the default cache object
     __cache__ = WeakCache()
-    __slots__ = ('name',)
+    __slots__ = ("name",)
     num_equal_calls = 0
 
     def __init__(self, name):
@@ -1052,7 +1052,7 @@ class OneAndOnly(Singleton):
 
 
 class DataType(Singleton):
-    __slots__ = ('nullable',)
+    __slots__ = ("nullable",)
     __instances__ = weakref.WeakValueDictionary()
 
     def __init__(self, nullable=True):

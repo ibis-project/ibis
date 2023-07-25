@@ -44,8 +44,8 @@ class NumpyType(TypeMapper[np.dtype]):
             return dt.Timestamp(nullable=nullable)
         elif np.issubdtype(typ, np.timedelta64):
             unit, _ = np.datetime_data(typ)
-            if unit == 'generic':
-                unit = 's'
+            if unit == "generic":
+                unit = "s"
             return dt.Interval(unit, nullable=nullable)
         elif np.issubdtype(typ, np.str_):
             return dt.String(nullable=nullable)

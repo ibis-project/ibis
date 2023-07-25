@@ -241,12 +241,12 @@ if TYPE_CHECKING:
 
 class AggregationContext(abc.ABC):
     __slots__ = (
-        'parent',
-        'group_by',
-        'order_by',
-        'dtype',
-        'max_lookback',
-        'output_type',
+        "parent",
+        "group_by",
+        "order_by",
+        "dtype",
+        "max_lookback",
+        "output_type",
     )
 
     def __init__(
@@ -285,7 +285,7 @@ def wrap_for_apply(
     kwargs : Optional[Dict[str, Any]]
         kwargs to be passed to function when it is called by Pandas `apply`
     """
-    assert callable(function), f'function {function} is not callable'
+    assert callable(function), f"function {function} is not callable"
 
     new_args: tuple[Any, ...] = ()
     if args is not None:
@@ -339,7 +339,7 @@ def wrap_for_agg(
     kwargs : Dict[str, Any]
         kwargs to be passed to function when it is called by Pandas `agg`
     """
-    assert callable(function), f'function {function} is not callable'
+    assert callable(function), f"function {function} is not callable"
 
     @functools.wraps(function)
     def wrapped_func(
@@ -354,8 +354,8 @@ def wrap_for_agg(
             # Force `agg` to NOT behave like `apply`. We want Pandas to use
             # `function` as an aggregation function, not as a mapping function.
             raise TypeError(
-                f'This function expects a Series, but saw an object of type '
-                f'{type(data)} instead.'
+                f"This function expects a Series, but saw an object of type "
+                f"{type(data)} instead."
             )
         return function(data, *args, **kwargs)
 
@@ -370,7 +370,7 @@ class Summarize(AggregationContext):
             return getattr(grouped_data, function)(*args, **kwargs)
 
         if not callable(function):
-            raise TypeError(f'Object {function} is not callable or a string')
+            raise TypeError(f"Object {function} is not callable or a string")
 
         if isinstance(grouped_data, pd.core.groupby.generic.SeriesGroupBy) and len(
             grouped_data
@@ -460,7 +460,7 @@ def window_agg_built_in(
         def sliced_agg(s):
             return agg_method(s.iloc[-max_lookback.value :])
 
-        method = operator.methodcaller('apply', sliced_agg, raw=False)
+        method = operator.methodcaller("apply", sliced_agg, raw=False)
 
     result = method(windowed)
     index = result.index
@@ -479,7 +479,7 @@ def create_window_input_iter(
     # create a generator for each input series
     # the generator will yield a slice of the
     # input series for each valid window
-    data = getattr(grouped_data, 'obj', grouped_data).values
+    data = getattr(grouped_data, "obj", grouped_data).values
     lower_indices_array = masked_window_lower_indices.values
     upper_indices_array = masked_window_upper_indices.values
     for i in range(len(lower_indices_array)):
@@ -529,8 +529,8 @@ def window_agg_udf(
     # be additional input columns in args.
     inputs = (grouped_data,) + args
 
-    masked_window_lower_indices = window_lower_indices[mask].astype('i8')
-    masked_window_upper_indices = window_upper_indices[mask].astype('i8')
+    masked_window_lower_indices = window_lower_indices[mask].astype("i8")
+    masked_window_upper_indices = window_upper_indices[mask].astype("i8")
 
     input_iters = [
         create_window_input_iter(
@@ -556,15 +556,15 @@ def window_agg_udf(
 
 
 class Window(AggregationContext):
-    __slots__ = ('construct_window',)
+    __slots__ = ("construct_window",)
 
     def __init__(self, kind, *args, **kwargs):
         super().__init__(
-            parent=kwargs.pop('parent', None),
-            group_by=kwargs.pop('group_by', None),
-            order_by=kwargs.pop('order_by', None),
-            output_type=kwargs.pop('output_type'),
-            max_lookback=kwargs.pop('max_lookback', None),
+            parent=kwargs.pop("parent", None),
+            group_by=kwargs.pop("group_by", None),
+            order_by=kwargs.pop("order_by", None),
+            output_type=kwargs.pop("output_type"),
+            max_lookback=kwargs.pop("max_lookback", None),
         )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)
 
@@ -586,8 +586,8 @@ class Window(AggregationContext):
         # (passed in when constructing this context object in
         # execute_node(ops.Window))
         parent = self.parent
-        frame = getattr(parent, 'obj', parent)
-        obj = getattr(grouped_data, 'obj', grouped_data)
+        frame = getattr(parent, "obj", parent)
+        obj = getattr(grouped_data, "obj", grouped_data)
         name = obj.name
         if frame[name] is not obj or name in group_by or name in order_by:
             name = f"{name}_{ibis.util.guid()}"
@@ -601,7 +601,7 @@ class Window(AggregationContext):
         # Create a new frame to avoid mutating the original one
         indexed_by_ordering = frame[columns].copy()
         # placeholder column to compute window_sizes below
-        indexed_by_ordering['_placeholder'] = 0
+        indexed_by_ordering["_placeholder"] = 0
         indexed_by_ordering = indexed_by_ordering.set_index(order_by)
 
         # regroup if needed
@@ -625,7 +625,7 @@ class Window(AggregationContext):
             # To deal with this, we create a _placeholder column
 
             windowed_frame = self.construct_window(grouped_frame)
-            window_sizes = windowed_frame['_placeholder'].count().reset_index(drop=True)
+            window_sizes = windowed_frame["_placeholder"].count().reset_index(drop=True)
             mask = ~(window_sizes.isna())
             window_upper_indices = pd.Series(range(len(window_sizes))) + 1
             window_lower_indices = window_upper_indices - window_sizes
@@ -670,7 +670,7 @@ class Cumulative(Window):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
-        super().__init__('expanding', *args, **kwargs)
+        super().__init__("expanding", *args, **kwargs)
 
 
 class Moving(Window):
@@ -681,12 +681,12 @@ class Moving(Window):
 
         start = compute_window_spec(start.dtype, start.value)
         if isinstance(start, timedelta_types + (pd.offsets.DateOffset,)):
-            closed = 'both'
+            closed = "both"
         else:
             closed = None
 
         super().__init__(
-            'rolling',
+            "rolling",
             start,
             *args,
             max_lookback=max_lookback,
@@ -696,4 +696,4 @@ class Moving(Window):
         )
 
     def short_circuit_method(self, grouped_data, function):
-        raise AttributeError('No short circuit method for rolling operations')
+        raise AttributeError("No short circuit method for rolling operations")

@@ -61,13 +61,13 @@ class PySparkTable(ir.Table):
     @staticmethod
     def _validate_compatible(from_schema, to_schema):
         if set(from_schema.names) != set(to_schema.names):
-            raise com.IbisInputError('Schemas have different names')
+            raise com.IbisInputError("Schemas have different names")
 
         for name in from_schema:
             lt = from_schema[name]
             rt = to_schema[name]
             if not dt.castable(lt, rt):
-                raise com.IbisInputError(f'Cannot safely cast {lt!r} to {rt!r}')
+                raise com.IbisInputError(f"Cannot safely cast {lt!r} to {rt!r}")
 
     def insert(
         self,

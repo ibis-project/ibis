@@ -58,9 +58,9 @@ def test_json_map(json_t):
     result = expr.execute()
     expected = pd.Series(
         [
-            {'a': [1, 2, 3, 4], 'b': 1},
-            {'a': None, 'b': 2},
-            {'a': 'foo', 'c': None},
+            {"a": [1, 2, 3, 4], "b": 1},
+            {"a": None, "b": 2},
+            {"a": "foo", "c": None},
             None,
             None,
             None,

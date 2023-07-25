@@ -32,7 +32,7 @@ class Summarize(AggregationContext):
             return getattr(grouped_data, function)(*args, **kwargs)
 
         if not callable(function):
-            raise TypeError(f'Object {function} is not callable or a string')
+            raise TypeError(f"Object {function} is not callable or a string")
 
         elif isinstance(grouped_data, dd.Series):
             return grouped_data.reduction(wrap_for_agg(function, args, kwargs))
@@ -43,7 +43,7 @@ class Summarize(AggregationContext):
 class Transform(PandasTransform):
     def agg(self, grouped_data, function, *args, **kwargs):
         res = super().agg(grouped_data, function, *args, **kwargs)
-        index_name = res.index.name if res.index.name is not None else 'index'
+        index_name = res.index.name if res.index.name is not None else "index"
         res = res.reset_index().set_index(index_name).iloc[:, 0]
         return res
 
@@ -66,7 +66,7 @@ def dask_window_agg_built_in(
         def sliced_agg(s):
             return agg_method(s.iloc[-max_lookback:])
 
-        method = operator.methodcaller('apply', sliced_agg, raw=False)
+        method = operator.methodcaller("apply", sliced_agg, raw=False)
 
     result = method(windowed)
     # No MultiIndex support in dask
@@ -75,15 +75,15 @@ def dask_window_agg_built_in(
 
 
 class Window(AggregationContext):
-    __slots__ = ('construct_window',)
+    __slots__ = ("construct_window",)
 
     def __init__(self, kind, *args, **kwargs):
         super().__init__(
-            parent=kwargs.pop('parent', None),
-            group_by=kwargs.pop('group_by', None),
-            order_by=kwargs.pop('order_by', None),
-            output_type=kwargs.pop('output_type'),
-            max_lookback=kwargs.pop('max_lookback', None),
+            parent=kwargs.pop("parent", None),
+            group_by=kwargs.pop("group_by", None),
+            order_by=kwargs.pop("order_by", None),
+            output_type=kwargs.pop("output_type"),
+            max_lookback=kwargs.pop("max_lookback", None),
         )
         self.construct_window = operator.methodcaller(kind, *args, **kwargs)
 
@@ -105,9 +105,9 @@ class Window(AggregationContext):
         # (passed in when constructing this context object in
         # execute_node(ops.Window))
         parent = self.parent
-        frame = getattr(parent, 'obj', parent)
-        grouped_meta = getattr(grouped_data, '_meta_nonempty', grouped_data)
-        obj = getattr(grouped_meta, 'obj', grouped_data)
+        frame = getattr(parent, "obj", parent)
+        grouped_meta = getattr(grouped_data, "_meta_nonempty", grouped_data)
+        obj = getattr(grouped_meta, "obj", grouped_data)
         name = obj.name
         if frame[name] is not obj or name in group_by or name in order_by:
             name = f"{name}_{ibis.util.guid()}"
@@ -121,7 +121,7 @@ class Window(AggregationContext):
         # Create a new frame to avoid mutating the original one
         indexed_by_ordering = frame[columns].copy()
         # placeholder column to compute window_sizes below
-        indexed_by_ordering['_placeholder'] = 0
+        indexed_by_ordering["_placeholder"] = 0
         indexed_by_ordering = indexed_by_ordering.set_index(order_by)
 
         # regroup if needed
@@ -144,7 +144,7 @@ class Window(AggregationContext):
             #     https://github.com/pandas-dev/pandas/issues/23002
             # To deal with this, we create a _placeholder column
             windowed_frame = self.construct_window(grouped_frame)
-            window_sizes = windowed_frame['_placeholder'].count().reset_index(drop=True)
+            window_sizes = windowed_frame["_placeholder"].count().reset_index(drop=True)
             mask = ~(window_sizes.isna())
             window_upper_indices = dd.Series(range(len(window_sizes))) + 1
             window_lower_indices = window_upper_indices - window_sizes
@@ -192,7 +192,7 @@ class Cumulative(Window):
     __slots__ = ()
 
     def __init__(self, window, *args, **kwargs):
-        super().__init__('rolling', *args, window=window, min_periods=1, **kwargs)
+        super().__init__("rolling", *args, window=window, min_periods=1, **kwargs)
 
 
 class Moving(Window):
@@ -202,7 +202,7 @@ class Moving(Window):
         start = compute_window_spec(start.dtype, start.value)
 
         super().__init__(
-            'rolling',
+            "rolling",
             start,
             *args,
             max_lookback=max_lookback,
@@ -211,4 +211,4 @@ class Moving(Window):
         )
 
     def short_circuit_method(self, grouped_data, function):
-        raise AttributeError('No short circuit method for rolling operations')
+        raise AttributeError("No short circuit method for rolling operations")

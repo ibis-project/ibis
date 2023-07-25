@@ -73,7 +73,7 @@ class TwoLevelDispatcher(Dispatcher):
 
     def __init__(self, name, doc=None):
         super().__init__(name, doc)
-        self._meta_dispatcher = Dispatcher(f'{name}_meta')
+        self._meta_dispatcher = Dispatcher(f"{name}_meta")
 
     def register(self, *types, **kwargs):
         type0 = types[0]

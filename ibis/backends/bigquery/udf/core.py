@@ -231,10 +231,10 @@ class PythonToJavaScriptTranslator:
         return "/"
 
     def visit_FloorDiv(self, node):
-        raise AssertionError('should never reach FloorDiv')
+        raise AssertionError("should never reach FloorDiv")
 
     def visit_Pow(self, node):
-        raise AssertionError('should never reach Pow')
+        raise AssertionError("should never reach Pow")
 
     def visit_UnaryOp(self, node):
         return f"({self.visit(node.op)}{self.visit(node.operand)})"

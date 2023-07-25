@@ -30,11 +30,11 @@ sa = pytest.importorskip("sqlalchemy")
 
 from sqlalchemy.dialects import postgresql  # noqa: E402
 
-POSTGRES_TEST_DB = os.environ.get('IBIS_TEST_POSTGRES_DATABASE', 'ibis_testing')
-IBIS_POSTGRES_HOST = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
-IBIS_POSTGRES_PORT = os.environ.get('IBIS_TEST_POSTGRES_PORT', '5432')
-IBIS_POSTGRES_USER = os.environ.get('IBIS_TEST_POSTGRES_USER', 'postgres')
-IBIS_POSTGRES_PASS = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD', 'postgres')
+POSTGRES_TEST_DB = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
+IBIS_POSTGRES_HOST = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
+IBIS_POSTGRES_PORT = os.environ.get("IBIS_TEST_POSTGRES_PORT", "5432")
+IBIS_POSTGRES_USER = os.environ.get("IBIS_TEST_POSTGRES_USER", "postgres")
+IBIS_POSTGRES_PASS = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD", "postgres")
 
 
 def test_table(alltypes):
@@ -49,9 +49,9 @@ def test_array_execute(alltypes):
 
 
 def test_literal_execute(con):
-    expr = ibis.literal('1234')
+    expr = ibis.literal("1234")
     result = con.execute(expr)
-    assert result == '1234'
+    assert result == "1234"
 
 
 def test_simple_aggregate_execute(alltypes):
@@ -62,11 +62,11 @@ def test_simple_aggregate_execute(alltypes):
 
 def test_list_tables(con):
     assert len(con.list_tables()) > 0
-    assert len(con.list_tables(like='functional')) == 1
+    assert len(con.list_tables(like="functional")) == 1
 
 
 def test_compile_toplevel(snapshot):
-    t = ibis.table([('foo', 'double')], name='t0')
+    t = ibis.table([("foo", "double")], name="t0")
 
     # it works!
     expr = t.foo.sum()
@@ -82,11 +82,11 @@ def test_list_databases(con):
 def test_schema_type_conversion(con):
     typespec = [
         # name, type, nullable
-        ('json', postgresql.JSON, True, dt.JSON),
-        ('jsonb', postgresql.JSONB, True, dt.JSON),
-        ('uuid', postgresql.UUID, True, dt.UUID),
-        ('macaddr', postgresql.MACADDR, True, dt.MACADDR),
-        ('inet', postgresql.INET, True, dt.INET),
+        ("json", postgresql.JSON, True, dt.JSON),
+        ("jsonb", postgresql.JSONB, True, dt.JSON),
+        ("uuid", postgresql.UUID, True, dt.UUID),
+        ("macaddr", postgresql.MACADDR, True, dt.MACADDR),
+        ("inet", postgresql.INET, True, dt.INET),
     ]
 
     sqla_types = []
@@ -96,7 +96,7 @@ def test_schema_type_conversion(con):
         ibis_types.append((name, ibis_type(nullable=nullable)))
 
     # Create a table with placeholder stubs for JSON, JSONB, and UUID.
-    table = sa.Table('tname', sa.MetaData(), *sqla_types)
+    table = sa.Table("tname", sa.MetaData(), *sqla_types)
 
     # Check that we can correctly create a schema with dt.any for the
     # missing types.
@@ -140,14 +140,14 @@ def test_unsupported_intervals(con):
     assert t["g"].type() == dt.Interval("M")
 
 
-@pytest.mark.parametrize('params', [{}, {'database': POSTGRES_TEST_DB}])
+@pytest.mark.parametrize("params", [{}, {"database": POSTGRES_TEST_DB}])
 def test_create_and_drop_table(con, temp_table, params):
     sch = ibis.schema(
         [
-            ('first_name', 'string'),
-            ('last_name', 'string'),
-            ('department_name', 'string'),
-            ('salary', 'float64'),
+            ("first_name", "string"),
+            ("last_name", "string"),
+            ("department_name", "string"),
+            ("salary", "float64"),
         ]
     )
 

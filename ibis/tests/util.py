@@ -12,9 +12,9 @@ def assert_equal(left, right):
     """Assert that two ibis objects are equal."""
 
     if util.all_of([left, right], ibis.Schema):
-        assert left.equals(right), f'Comparing schemas: \n{left!r} !=\n{right!r}'
+        assert left.equals(right), f"Comparing schemas: \n{left!r} !=\n{right!r}"
     else:
-        assert left.equals(right), f'Objects unequal: \n{left!r}\nvs\n{right!r}'
+        assert left.equals(right), f"Objects unequal: \n{left!r}\nvs\n{right!r}"
 
 
 def assert_pickle_roundtrip(obj):
@@ -36,7 +36,7 @@ def assert_decompile_roundtrip(expr, snapshot=None, check_equality=True):
     # execute the rendered python code
     locals_ = {}
     exec(rendered, {}, locals_)
-    restored = locals_['result']
+    restored = locals_["result"]
 
     if check_equality:
         assert expr.unbind().equals(restored)

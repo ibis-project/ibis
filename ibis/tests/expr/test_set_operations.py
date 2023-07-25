@@ -38,13 +38,13 @@ c = ibis.table(C)
 d = ibis.table(D)
 
 
-@pytest.mark.parametrize('method', ['union', 'intersect', 'difference'])
+@pytest.mark.parametrize("method", ["union", "intersect", "difference"])
 def test_operation_requires_equal_schemas(method):
     with pytest.raises(RelationError):
         getattr(a, method)(d)
 
 
-@pytest.mark.parametrize('method', ['union', 'intersect', 'difference'])
+@pytest.mark.parametrize("method", ["union", "intersect", "difference"])
 def test_operation_supports_schemas_with_different_field_order(method):
     u1 = getattr(a, method)(b)
     u2 = getattr(a, method)(c)
@@ -61,5 +61,5 @@ def test_operation_supports_schemas_with_different_field_order(method):
     assert u2.schema == a.schema()
     assert u2.left == a.op()
 
-    reprojected = c.select(['a', 'b', 'c'])
+    reprojected = c.select(["a", "b", "c"])
     assert u2.right == reprojected.op()

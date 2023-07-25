@@ -43,19 +43,19 @@ except ImportError:
 
 
 NULL_BACKEND_TYPES = {
-    'bigquery': "NULL",
-    'clickhouse': 'Nullable(Nothing)',
-    'datafusion': "NULL",
-    'duckdb': "NULL",
-    'impala': 'BOOLEAN',
-    'snowflake': None,
-    'sqlite': "null",
-    'trino': 'unknown',
+    "bigquery": "NULL",
+    "clickhouse": "Nullable(Nothing)",
+    "datafusion": "NULL",
+    "duckdb": "NULL",
+    "impala": "BOOLEAN",
+    "snowflake": None,
+    "sqlite": "null",
+    "trino": "unknown",
     "postgres": "null",
 }
 
 
-@pytest.mark.broken(["impala", "bigquery"], 'assert nan is None')
+@pytest.mark.broken(["impala", "bigquery"], "assert nan is None")
 def test_null_literal(con, backend):
     expr = ibis.null()
     result = con.execute(expr)
@@ -67,12 +67,12 @@ def test_null_literal(con, backend):
 
 
 BOOLEAN_BACKEND_TYPE = {
-    'bigquery': "BOOL",
-    'clickhouse': 'UInt8',
-    'impala': 'BOOLEAN',
-    'snowflake': "BOOLEAN",
-    'sqlite': "integer",
-    'trino': 'boolean',
+    "bigquery": "BOOL",
+    "clickhouse": "UInt8",
+    "impala": "BOOLEAN",
+    "snowflake": "BOOLEAN",
+    "sqlite": "integer",
+    "trino": "boolean",
     "duckdb": "BOOLEAN",
     "postgres": "boolean",
 }
@@ -90,7 +90,7 @@ def test_boolean_literal(con, backend):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         param(
             ibis.NA.fillna(5),
@@ -186,7 +186,7 @@ def test_column_fillna(backend, alltypes, value):
 
 
 @pytest.mark.parametrize(
-    ('expr', 'expected'),
+    ("expr", "expected"),
     [
         param(ibis.coalesce(5, None, 4), 5, id="generic"),
         param(ibis.coalesce(ibis.NA, 4, ibis.NA), 4, id="null_start_end"),
@@ -209,12 +209,12 @@ def test_coalesce(con, expr, expected):
 # TODO(dask) - identicalTo - #2553
 @pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark", "mssql", "druid"])
 def test_identical_to(backend, alltypes, sorted_df):
-    sorted_alltypes = alltypes.order_by('id')
+    sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
-    dt = df[['tinyint_col', 'double_col']]
+    dt = df[["tinyint_col", "double_col"]]
 
     ident = sorted_alltypes.tinyint_col.identical_to(sorted_alltypes.double_col)
-    expr = sorted_alltypes['id', ident.name('tmp')].order_by('id')
+    expr = sorted_alltypes["id", ident.name("tmp")].order_by("id")
     result = expr.execute().tmp
 
     expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
@@ -226,22 +226,22 @@ def test_identical_to(backend, alltypes, sorted_df):
 
 
 @pytest.mark.parametrize(
-    ('column', 'elements'),
+    ("column", "elements"),
     [
-        ('int_col', [1, 2, 3]),
-        ('int_col', (1, 2, 3)),
-        ('string_col', ['1', '2', '3']),
-        ('string_col', ('1', '2', '3')),
-        ('int_col', {1}),
-        ('int_col', frozenset({1})),
+        ("int_col", [1, 2, 3]),
+        ("int_col", (1, 2, 3)),
+        ("string_col", ["1", "2", "3"]),
+        ("string_col", ("1", "2", "3")),
+        ("int_col", {1}),
+        ("int_col", frozenset({1})),
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid"])
 def test_isin(backend, alltypes, sorted_df, column, elements):
-    sorted_alltypes = alltypes.order_by('id')
+    sorted_alltypes = alltypes.order_by("id")
     expr = sorted_alltypes[
-        'id', sorted_alltypes[column].isin(elements).name('tmp')
-    ].order_by('id')
+        "id", sorted_alltypes[column].isin(elements).name("tmp")
+    ].order_by("id")
     result = expr.execute().tmp
 
     expected = sorted_df[column].isin(elements)
@@ -250,22 +250,22 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
 
 
 @pytest.mark.parametrize(
-    ('column', 'elements'),
+    ("column", "elements"),
     [
-        ('int_col', [1, 2, 3]),
-        ('int_col', (1, 2, 3)),
-        ('string_col', ['1', '2', '3']),
-        ('string_col', ('1', '2', '3')),
-        ('int_col', {1}),
-        ('int_col', frozenset({1})),
+        ("int_col", [1, 2, 3]),
+        ("int_col", (1, 2, 3)),
+        ("string_col", ["1", "2", "3"]),
+        ("string_col", ("1", "2", "3")),
+        ("int_col", {1}),
+        ("int_col", frozenset({1})),
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid"])
 def test_notin(backend, alltypes, sorted_df, column, elements):
-    sorted_alltypes = alltypes.order_by('id')
+    sorted_alltypes = alltypes.order_by("id")
     expr = sorted_alltypes[
-        'id', sorted_alltypes[column].notin(elements).name('tmp')
-    ].order_by('id')
+        "id", sorted_alltypes[column].notin(elements).name("tmp")
+    ].order_by("id")
     result = expr.execute().tmp
 
     expected = ~sorted_df[column].isin(elements)
@@ -274,15 +274,15 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
 
 
 @pytest.mark.parametrize(
-    ('predicate_fn', 'expected_fn'),
+    ("predicate_fn", "expected_fn"),
     [
         param(
-            lambda t: t['bool_col'],
-            lambda df: df['bool_col'],
+            lambda t: t["bool_col"],
+            lambda df: df["bool_col"],
             id="no_op",
             marks=pytest.mark.min_version(datafusion="0.5.0"),
         ),
-        param(lambda t: ~t['bool_col'], lambda df: ~df['bool_col'], id="negate"),
+        param(lambda t: ~t["bool_col"], lambda df: ~df["bool_col"], id="negate"),
         param(
             lambda t: t.bool_col & t.bool_col,
             lambda df: df.bool_col & df.bool_col,
@@ -303,8 +303,8 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
 )
 @pytest.mark.notimpl(["druid"])
 def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
-    sorted_alltypes = alltypes.order_by('id')
-    table = sorted_alltypes[predicate_fn(sorted_alltypes)].order_by('id')
+    sorted_alltypes = alltypes.order_by("id")
+    table = sorted_alltypes[predicate_fn(sorted_alltypes)].order_by("id")
     result = table.execute()
     expected = sorted_df[expected_fn(sorted_df)]
 
@@ -330,14 +330,14 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     ]
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
-    sorted_alltypes = alltypes.order_by('id')
+    sorted_alltypes = alltypes.order_by("id")
     table = sorted_alltypes
     window = ibis.window(group_by=table.id)
-    table = table.filter(lambda t: t['id'].mean().over(window) > 3).order_by('id')
+    table = table.filter(lambda t: t["id"].mean().over(window) > 3).order_by("id")
     result = table.execute()
     expected = (
-        sorted_df.groupby(['id'])
-        .filter(lambda t: t['id'].mean() > 3)
+        sorted_df.groupby(["id"])
+        .filter(lambda t: t["id"].mean() > 3)
         .reset_index(drop=True)
     )
     backend.assert_frame_equal(result, expected)
@@ -349,23 +349,23 @@ def test_case_where(backend, alltypes, df):
     table = table.mutate(
         new_col=(
             ibis.case()
-            .when(table['int_col'] == 1, 20)
-            .when(table['int_col'] == 0, 10)
+            .when(table["int_col"] == 1, 20)
+            .when(table["int_col"] == 0, 10)
             .else_(0)
             .end()
-            .cast('int64')
+            .cast("int64")
         )
     )
 
     result = table.execute()
 
     expected = df.copy()
-    mask_0 = expected['int_col'] == 1
-    mask_1 = expected['int_col'] == 0
+    mask_0 = expected["int_col"] == 1
+    mask_1 = expected["int_col"] == 0
 
-    expected['new_col'] = 0
-    expected.loc[mask_0, 'new_col'] = 20
-    expected.loc[mask_1, 'new_col'] = 10
+    expected["new_col"] = 0
+    expected.loc[mask_0, "new_col"] = 20
+    expected.loc[mask_1, "new_col"] = 10
 
     backend.assert_frame_equal(result, expected)
 
@@ -385,19 +385,19 @@ def test_select_filter_mutate(backend, alltypes, df):
     # Prepare the float_col so that filter must execute
     # before the cast to get the correct result.
     t = t.mutate(
-        float_col=ibis.case().when(t['bool_col'], t['float_col']).else_(np.nan).end()
+        float_col=ibis.case().when(t["bool_col"], t["float_col"]).else_(np.nan).end()
     )
 
     # Actual test
     t = t[t.columns]
-    t = t[~t['float_col'].isnan()]
-    t = t.mutate(float_col=t['float_col'].cast('float64'))
+    t = t[~t["float_col"].isnan()]
+    t = t.mutate(float_col=t["float_col"].cast("float64"))
     result = t.execute()
 
     expected = df.copy()
-    expected.loc[~df['bool_col'], 'float_col'] = None
-    expected = expected[~expected['float_col'].isna()].reset_index(drop=True)
-    expected = expected.assign(float_col=expected['float_col'].astype('float64'))
+    expected.loc[~df["bool_col"], "float_col"] = None
+    expected = expected[~expected["float_col"].isna()].reset_index(drop=True)
+    expected = expected.assign(float_col=expected["float_col"].astype("float64"))
 
     backend.assert_series_equal(result.float_col, expected.float_col)
 
@@ -406,7 +406,7 @@ def test_table_fillna_invalid(alltypes):
     with pytest.raises(
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
-        alltypes.fillna({'invalid_col': 0.0})
+        alltypes.fillna({"invalid_col": 0.0})
 
     with pytest.raises(
         com.IbisTypeError, match="Cannot fillna on column 'string_col' of type.*"
@@ -475,15 +475,15 @@ def test_dropna_invalid(alltypes):
     with pytest.raises(
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
-        alltypes.dropna(subset=['invalid_col'])
+        alltypes.dropna(subset=["invalid_col"])
 
     with pytest.raises(ValidationError, match=r"'invalid' doesn't match"):
-        alltypes.dropna(how='invalid')
+        alltypes.dropna(how="invalid")
 
 
-@pytest.mark.parametrize('how', ['any', 'all'])
+@pytest.mark.parametrize("how", ["any", "all"])
 @pytest.mark.parametrize(
-    'subset', [None, [], 'col_1', ['col_1', 'col_2'], ['col_1', 'col_3']]
+    "subset", [None, [], "col_1", ["col_1", "col_2"], ["col_1", "col_3"]]
 )
 @pytest.mark.notimpl(["datafusion"])
 def test_dropna_table(backend, alltypes, how, subset):
@@ -692,7 +692,7 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     reason="unsupported operation with later versions of pandas",
 )
 def test_zeroifnull_column(backend, alltypes, df):
-    expr = alltypes.int_col.nullif(1).zeroifnull().name('tmp')
+    expr = alltypes.int_col.nullif(1).zeroifnull().name("tmp")
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)
@@ -712,8 +712,8 @@ def test_where_select(backend, alltypes, df):
 
     expected = df.loc[:, ["int_col"]].copy()
 
-    expected['where_col'] = -1
-    expected.loc[expected['int_col'] == 0, 'where_col'] = 42
+    expected["where_col"] = -1
+    expected.loc[expected["int_col"] == 0, "where_col"] = 42
 
     backend.assert_frame_equal(result, expected)
 
@@ -783,10 +783,10 @@ def test_correlated_subquery(alltypes):
 @pytest.mark.notimpl(["polars", "pyspark", "datafusion"])
 def test_uncorrelated_subquery(backend, batting, batting_df):
     subset_batting = batting[batting.yearID <= 2000]
-    expr = batting[_.yearID == subset_batting.yearID.max()]['playerID', 'yearID']
+    expr = batting[_.yearID == subset_batting.yearID.max()]["playerID", "yearID"]
     result = expr.execute()
 
-    expected = batting_df[batting_df.yearID == 2000][['playerID', 'yearID']]
+    expected = batting_df[batting_df.yearID == 2000][["playerID", "yearID"]]
     backend.assert_frame_equal(result, expected)
 
 
@@ -1006,7 +1006,7 @@ def test_pivot_longer(backend):
             "table",
             "price",
         ],
-        value_vars=list('xyz'),
+        value_vars=list("xyz"),
         var_name="pos",
         value_name="xyz",
     )

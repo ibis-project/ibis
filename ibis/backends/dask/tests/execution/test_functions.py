@@ -23,7 +23,7 @@ from ibis.backends.dask.execution import execute  # noqa: E402
 
 
 @pytest.mark.parametrize(
-    'op',
+    "op",
     [
         # comparison
         operator.eq,
@@ -44,7 +44,7 @@ def test_binary_operations(t, df, op):
     )
 
 
-@pytest.mark.parametrize('op', [operator.and_, operator.or_, operator.xor])
+@pytest.mark.parametrize("op", [operator.and_, operator.or_, operator.xor])
 def test_binary_boolean_operations(t, df, op):
     expr = op(t.plain_int64 == 1, t.plain_int64 == 2)
     result = expr.compile()
@@ -61,48 +61,48 @@ def operate(func):
         try:
             return func(*args, **kwargs)
         except decimal.InvalidOperation:
-            return decimal.Decimal('NaN')
+            return decimal.Decimal("NaN")
 
     return wrapper
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'dask_func'),
+    ("ibis_func", "dask_func"),
     [
-        param(methodcaller('round'), lambda x: np.int64(round(x)), id="round"),
+        param(methodcaller("round"), lambda x: np.int64(round(x)), id="round"),
         param(
-            methodcaller('round', 2),
-            lambda x: x.quantize(decimal.Decimal('.00')),
+            methodcaller("round", 2),
+            lambda x: x.quantize(decimal.Decimal(".00")),
             id="round_2",
         ),
         param(
-            methodcaller('round', 0),
-            lambda x: x.quantize(decimal.Decimal('0.')),
+            methodcaller("round", 0),
+            lambda x: x.quantize(decimal.Decimal("0.")),
             id="round_0",
         ),
-        param(methodcaller('ceil'), lambda x: decimal.Decimal(math.ceil(x)), id="ceil"),
+        param(methodcaller("ceil"), lambda x: decimal.Decimal(math.ceil(x)), id="ceil"),
         param(
-            methodcaller('floor'), lambda x: decimal.Decimal(math.floor(x)), id="floor"
+            methodcaller("floor"), lambda x: decimal.Decimal(math.floor(x)), id="floor"
         ),
-        param(methodcaller('exp'), methodcaller('exp'), id="exp"),
+        param(methodcaller("exp"), methodcaller("exp"), id="exp"),
         param(
-            methodcaller('sign'),
+            methodcaller("sign"),
             lambda x: x if not x else decimal.Decimal(1).copy_sign(x),
             id="sign",
         ),
-        param(methodcaller('sqrt'), operate(lambda x: x.sqrt()), id="sqrt"),
+        param(methodcaller("sqrt"), operate(lambda x: x.sqrt()), id="sqrt"),
         param(
-            methodcaller('log', 2),
+            methodcaller("log", 2),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
             id="log_2",
         ),
-        param(methodcaller('ln'), operate(lambda x: x.ln()), id="ln"),
+        param(methodcaller("ln"), operate(lambda x: x.ln()), id="ln"),
         param(
-            methodcaller('log2'),
+            methodcaller("log2"),
             operate(lambda x: x.ln() / decimal.Decimal(2).ln()),
             id="log2",
         ),
-        param(methodcaller('log10'), operate(lambda x: x.log10()), id="log10"),
+        param(methodcaller("log10"), operate(lambda x: x.log10()), id="log10"),
     ],
 )
 def test_math_functions_decimal(t, df, ibis_func, dask_func):
@@ -134,8 +134,8 @@ def test_round_decimal_with_negative_places(t, df):
     result = expr.compile()
     expected = dd.from_pandas(
         pd.Series(
-            list(map(decimal.Decimal, ['1.0E+2', '2.3E+2', '-1.00E+3'])),
-            name='float64_as_strings',
+            list(map(decimal.Decimal, ["1.0E+2", "2.3E+2", "-1.00E+3"])),
+            name="float64_as_strings",
         ),
         npartitions=1,
     )
@@ -147,11 +147,11 @@ def test_round_decimal_with_negative_places(t, df):
 
 @pytest.mark.xfail(
     raises=OperationNotDefinedError,
-    reason='TODO - arrays - #2553'
+    reason="TODO - arrays - #2553"
     # Need an ops.MultiQuantile execution func that dispatches on ndarrays
 )
 @pytest.mark.parametrize(
-    ('ibis_func', 'dask_func'),
+    ("ibis_func", "dask_func"),
     [
         (
             lambda x: x.quantile([0.25, 0.75]),
@@ -159,7 +159,7 @@ def test_round_decimal_with_negative_places(t, df):
         )
     ],
 )
-@pytest.mark.parametrize('column', ['float64_with_zeros', 'int64_with_zeros'])
+@pytest.mark.parametrize("column", ["float64_with_zeros", "int64_with_zeros"])
 def test_quantile_list(t, df, ibis_func, dask_func, column):
     expr = ibis_func(t[column])
     result = expr.compile()
@@ -168,7 +168,7 @@ def test_quantile_list(t, df, ibis_func, dask_func, column):
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'dask_func'),
+    ("ibis_func", "dask_func"),
     [
         (lambda x: x.quantile(0), lambda x: x.quantile(0)),
         (lambda x: x.quantile(1), lambda x: x.quantile(1)),
@@ -190,14 +190,14 @@ def test_quantile_scalar(t, df, ibis_func, dask_func):
 
 
 @pytest.mark.parametrize(
-    ('ibis_func', 'exc'),
+    ("ibis_func", "exc"),
     [
         # no lower/upper specified
         (lambda x: x.clip(), ValueError),
         # out of range on quantile
         (lambda x: x.quantile(5.0), ValueError),
         # invalid interpolation arg
-        (lambda x: x.quantile(0.5, interpolation='foo'), ValidationError),
+        (lambda x: x.quantile(0.5, interpolation="foo"), ValidationError),
     ],
 )
 def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
@@ -207,7 +207,7 @@ def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
 
 @pytest.mark.xfail(
     raises=OperationNotDefinedError,
-    reason='TODO - arrays - #2553'
+    reason="TODO - arrays - #2553"
     # Need an ops.MultiQuantile execution func that dispatches on ndarrays
 )
 def test_quantile_array_access(client, t, df):

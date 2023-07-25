@@ -21,18 +21,18 @@ except ImportError:
 
 
 @pytest.mark.parametrize(
-    ('column', 'raw_value'),
+    ("column", "raw_value"),
     [
-        ('double_col', 0.0),
-        ('double_col', 10.1),
-        ('float_col', 1.1),
-        ('float_col', 2.2),
+        ("double_col", 0.0),
+        ("double_col", 10.1),
+        ("float_col", 1.1),
+        ("float_col", 2.2),
     ],
 )
 @pytest.mark.notimpl(["datafusion"])
 def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
     value = ibis.param(dt.double)
-    expr = (alltypes[column] + value).name('tmp')
+    expr = (alltypes[column] + value).name("tmp")
     expected = df[column] + raw_value
     result = expr.execute(params={value: raw_value})
     expected = backend.default_series_rename(expected)
@@ -40,8 +40,8 @@ def test_floating_scalar_parameter(backend, alltypes, df, column, raw_value):
 
 
 @pytest.mark.parametrize(
-    ('start_string', 'end_string'),
-    [('2009-03-01', '2010-07-03'), ('2014-12-01', '2017-01-05')],
+    ("start_string", "end_string"),
+    [("2009-03-01", "2010-07-03"), ("2014-12-01", "2017-01-05")],
 )
 @pytest.mark.notimpl(["datafusion", "mssql", "trino", "druid"])
 @pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError)
@@ -49,8 +49,8 @@ def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
     start, end = ibis.param(dt.date), ibis.param(dt.date)
 
     col = alltypes.timestamp_col.date()
-    expr = col.between(start, end).name('output')
-    expected_expr = col.between(start_string, end_string).name('output')
+    expr = col.between(start, end).name("output")
+    expected_expr = col.between(start_string, end_string).name("output")
 
     result = expr.execute(params={start: start_string, end: end_string})
     expected = expected_expr.execute()
@@ -60,7 +60,7 @@ def test_date_scalar_parameter(backend, alltypes, start_string, end_string):
 
 @pytest.mark.notimpl(["datafusion"])
 def test_timestamp_accepts_date_literals(alltypes):
-    date_string = '2009-03-01'
+    date_string = "2009-03-01"
     param = ibis.param(dt.timestamp)
     expr = alltypes.mutate(param=param)
     params = {param: date_string}
@@ -101,10 +101,10 @@ def test_scalar_param_struct(con):
 )
 @pytest.mark.notyet(["bigquery"])
 def test_scalar_param_map(con):
-    value = {'a': 'ghi', 'b': 'def', 'c': 'abc'}
+    value = {"a": "ghi", "b": "def", "c": "abc"}
     param = ibis.param(dt.Map(dt.string, dt.string))
-    result = con.execute(param['b'], params={param: value})
-    assert result == value['b']
+    result = con.execute(param["b"], params={param: value})
+    assert result == value["b"]
 
 
 @pytest.mark.parametrize(

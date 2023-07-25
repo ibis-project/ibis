@@ -31,7 +31,7 @@ class FlinkSelect(Select):
         lines = []
         if len(self.group_by) > 0:
             group_keys = map(self._translate, self.group_by)
-            clause = 'GROUP BY {}'.format(', '.join(list(group_keys)))
+            clause = "GROUP BY {}".format(", ".join(list(group_keys)))
             lines.append(clause)
 
         if len(self.having) > 0:
@@ -39,9 +39,9 @@ class FlinkSelect(Select):
             for expr in self.having:
                 translated = self._translate(expr)
                 trans_exprs.append(translated)
-            lines.append('HAVING {}'.format(' AND '.join(trans_exprs)))
+            lines.append("HAVING {}".format(" AND ".join(trans_exprs)))
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 class FlinkCompiler(Compiler):
@@ -58,7 +58,7 @@ def translate(op: ops.TableNode) -> str:
 
 @functools.singledispatch
 def translate_op(op: ops.TableNode) -> str:
-    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+    raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
 @translate_op.register(ops.Literal)
@@ -68,13 +68,13 @@ def _literal(op: ops.Literal) -> str:
 
     if dtype.is_boolean():
         # TODO(chloeh13q): Flink supports a third boolean called "UNKNOWN"
-        return 'TRUE' if value else 'FALSE'
+        return "TRUE" if value else "FALSE"
     elif dtype.is_string():
         quoted = value.replace("'", "''").replace("\\", "\\\\")
         return f"'{quoted}'"
     elif dtype.is_date():
         if isinstance(value, datetime.date):
-            value = value.strftime('%Y-%m-%d')
+            value = value.strftime("%Y-%m-%d")
         return repr(value)
     elif dtype.is_numeric():
         if math.isnan(value):
@@ -85,19 +85,19 @@ def _literal(op: ops.Literal) -> str:
     elif dtype.is_timestamp():
         # TODO(chloeh13q): support timestamp with local timezone
         if isinstance(value, datetime.datetime):
-            fmt = '%Y-%m-%d %H:%M:%S'
+            fmt = "%Y-%m-%d %H:%M:%S"
             # datetime.datetime only supports resolution up to microseconds, even
             # though Flink supports fractional precision up to 9 digits. We will
             # need to use numpy or pandas datetime types for higher resolutions.
             if value.microsecond:
-                fmt += '.%f'
-            return 'TIMESTAMP ' + repr(value.strftime(fmt))
-        raise NotImplementedError(f'No translation rule for timestamp {value}')
+                fmt += ".%f"
+            return "TIMESTAMP " + repr(value.strftime(fmt))
+        raise NotImplementedError(f"No translation rule for timestamp {value}")
     elif dtype.is_time():
         return f"TIME '{value}'"
     elif dtype.is_interval():
         return f"INTERVAL {translate_interval(value, dtype)}"
-    raise NotImplementedError(f'No translation rule for {dtype}')
+    raise NotImplementedError(f"No translation rule for {dtype}")
 
 
 @translate_op.register(ops.Selection)

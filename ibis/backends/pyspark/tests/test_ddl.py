@@ -16,7 +16,7 @@ pyspark = pytest.importorskip("pyspark")
 
 @pytest.fixture
 def temp_view(con) -> str:
-    name = util.gen_name('view')
+    name = util.gen_name("view")
     yield name
     con.drop_view(name, force=True)
 
@@ -24,7 +24,7 @@ def temp_view(con) -> str:
 def test_create_exists_view(con, alltypes, temp_view):
     assert temp_view not in con.list_tables()
 
-    t1 = alltypes.group_by('string_col').size()
+    t1 = alltypes.group_by("string_col").size()
     t2 = con.create_view(temp_view, t1)
 
     assert temp_view in con.list_tables()
@@ -63,7 +63,7 @@ def test_create_database_with_location(con, temp_db):
 
 
 def test_drop_table_not_exist(con):
-    non_existent_table = f'ibis_table_{util.guid()}'
+    non_existent_table = f"ibis_table_{util.guid()}"
     with pytest.raises(pyspark.sql.utils.AnalysisException):
         con.drop_table(non_existent_table)
     con.drop_table(non_existent_table, force=True)
@@ -100,10 +100,10 @@ def test_ctas_from_table_expr(con, alltypes, temp_table_db):
 def test_create_empty_table(con, temp_table):
     schema = ibis.schema(
         [
-            ('a', 'string'),
-            ('b', 'timestamp'),
-            ('c', 'decimal(12, 8)'),
-            ('d', 'double'),
+            ("a", "string"),
+            ("b", "timestamp"),
+            ("c", "decimal(12, 8)"),
+            ("d", "double"),
         ]
     )
 
@@ -141,23 +141,23 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     expr = alltypes
     t = con.create_table(
         temp_table,
-        schema=expr['tinyint_col', 'int_col', 'string_col'].schema(),
+        schema=expr["tinyint_col", "int_col", "string_col"].schema(),
         database=db,
     )
 
     to_insert = expr[
-        expr.tinyint_col, expr.smallint_col.name('int_col'), expr.string_col
+        expr.tinyint_col, expr.smallint_col.name("int_col"), expr.string_col
     ]
     t.insert(to_insert.limit(10))
 
     to_insert = expr[
         expr.tinyint_col,
-        expr.smallint_col.cast('int32').name('int_col'),
+        expr.smallint_col.cast("int32").name("int_col"),
         expr.string_col,
     ]
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[expr.tinyint_col, expr.bigint_col.name('int_col'), expr.string_col]
+    to_insert = expr[expr.tinyint_col, expr.bigint_col.name("int_col"), expr.string_col]
 
     limit_expr = to_insert.limit(10)
     with pytest.raises(com.IbisError):
@@ -186,16 +186,16 @@ def test_drop_view(con, created_view):
 
 @pytest.fixture
 def table(con, temp_database):
-    table_name = f'table_{util.guid()}'
-    schema = ibis.schema([('foo', 'string'), ('bar', 'int64')])
+    table_name = f"table_{util.guid()}"
+    schema = ibis.schema([("foo", "string"), ("bar", "int64")])
     yield con.create_table(
-        table_name, database=temp_database, schema=schema, format='parquet'
+        table_name, database=temp_database, schema=schema, format="parquet"
     )
     con.drop_table(table_name, database=temp_database)
 
 
 def test_change_properties(con, table, temp_database):
-    props = {'foo': '1', 'bar': '2'}
+    props = {"foo": "1", "bar": "2"}
 
     table.alter(tbl_properties=props)
     tbl_props_rows = con.raw_sql(

@@ -92,7 +92,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     # druid has the same rounding behavior as postgres
     check_dtype = False
     supports_window_operations = False
-    returned_timestamp_unit = 's'
+    returned_timestamp_unit = "s"
     supports_arrays = False
     supports_arrays_outside_of_select = supports_arrays
     native_bool = True
@@ -128,6 +128,6 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         return ibis.connect(DRUID_URL, **kw)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

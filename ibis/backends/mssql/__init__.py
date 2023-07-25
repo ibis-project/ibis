@@ -42,7 +42,7 @@ class Backend(BaseAlchemyBackend):
             user=user,
             password=password,
             database=database,
-            driver=f'mssql+{driver}',
+            driver=f"mssql+{driver}",
         )
         self.database_name = alchemy_url.database
 

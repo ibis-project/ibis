@@ -33,9 +33,9 @@ def test_translate_timestamp_from_unix(snapshot, simple_table, unit):
 
 def test_translate_complex_projections(snapshot, simple_table):
     expr = (
-        simple_table.group_by(['a', 'c'])
+        simple_table.group_by(["a", "c"])
         .aggregate(the_sum=simple_table.b.sum())
-        .group_by('a')
+        .group_by("a")
         .aggregate(mad=lambda x: x.the_sum.abs().mean())
     )
     result = translate(expr.as_table().op())
@@ -44,7 +44,7 @@ def test_translate_complex_projections(snapshot, simple_table):
 
 def test_translate_filter(snapshot, simple_table):
     expr = simple_table[
-        ((simple_table.c > 0) | (simple_table.c < 0)) & simple_table.g.isin(['A', 'B'])
+        ((simple_table.c > 0) | (simple_table.c < 0)) & simple_table.g.isin(["A", "B"])
     ]
     result = translate(expr.as_table().op())
     snapshot.assert_match(result, "out.sql")
@@ -71,7 +71,7 @@ def test_translate_extract_fields(snapshot, simple_table, kind):
 
 
 def test_translate_complex_groupby_aggregation(snapshot, simple_table):
-    keys = [simple_table.i.year().name('year'), simple_table.i.month().name('month')]
+    keys = [simple_table.i.year().name("year"), simple_table.i.month().name("month")]
     b_unique = simple_table.b.nunique()
     expr = simple_table.group_by(keys).aggregate(
         total=simple_table.count(), b_unique=b_unique
@@ -81,17 +81,17 @@ def test_translate_complex_groupby_aggregation(snapshot, simple_table):
 
 
 def test_translate_simple_filtered_agg(snapshot, simple_table):
-    expr = simple_table.b.nunique(where=simple_table.g == 'A')
+    expr = simple_table.b.nunique(where=simple_table.g == "A")
     result = translate(expr.as_table().op())
     snapshot.assert_match(result, "out.sql")
 
 
 def test_translate_complex_filtered_agg(snapshot, simple_table):
-    expr = simple_table.group_by('b').aggregate(
+    expr = simple_table.group_by("b").aggregate(
         total=simple_table.count(),
         avg_a=simple_table.a.mean(),
-        avg_a_A=simple_table.a.mean(where=simple_table.g == 'A'),
-        avg_a_B=simple_table.a.mean(where=simple_table.g == 'B'),
+        avg_a_A=simple_table.a.mean(where=simple_table.g == "A"),
+        avg_a_B=simple_table.a.mean(where=simple_table.g == "B"),
     )
     result = translate(expr.as_table().op())
     snapshot.assert_match(result, "out.sql")
@@ -105,9 +105,9 @@ def test_translate_value_counts(snapshot, simple_table):
 
 def test_translate_having(snapshot, simple_table):
     expr = (
-        simple_table.group_by('g')
+        simple_table.group_by("g")
         .having(simple_table.count() >= 1000)
-        .aggregate(simple_table.b.sum().name('b_sum'))
+        .aggregate(simple_table.b.sum().name("b_sum"))
     )
     result = translate(expr.as_table().op())
     snapshot.assert_match(result, "out.sql")

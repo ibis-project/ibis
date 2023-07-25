@@ -18,7 +18,7 @@ pytestmark = pytest.mark.geospatial
 
 
 def test_load_geodata(con):
-    t = con.table('geo')
+    t = con.table("geo")
     result = t.execute()
     assert isinstance(result, gpd.GeoDataFrame)
 
@@ -30,45 +30,45 @@ def test_empty_select(geotable):
 
 
 def test_select_point_geodata(geotable):
-    expr = geotable['geo_point']
+    expr = geotable["geo_point"]
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
+    compiled = str(sqla_expr.compile(compile_kwargs={"literal_binds": True}))
     expected = "SELECT ST_AsEWKB(t0.geo_point) AS geo_point \nFROM geo AS t0"
     assert compiled == expected
     data = expr.execute()
-    assert data.geom_type.iloc[0] == 'Point'
+    assert data.geom_type.iloc[0] == "Point"
 
 
 def test_select_linestring_geodata(geotable):
-    expr = geotable['geo_linestring']
+    expr = geotable["geo_linestring"]
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
+    compiled = str(sqla_expr.compile(compile_kwargs={"literal_binds": True}))
     expected = "SELECT ST_AsEWKB(t0.geo_linestring) AS geo_linestring \nFROM geo AS t0"
     assert compiled == expected
     data = expr.execute()
-    assert data.geom_type.iloc[0] == 'LineString'
+    assert data.geom_type.iloc[0] == "LineString"
 
 
 def test_select_polygon_geodata(geotable):
-    expr = geotable['geo_polygon']
+    expr = geotable["geo_polygon"]
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
+    compiled = str(sqla_expr.compile(compile_kwargs={"literal_binds": True}))
     expected = "SELECT ST_AsEWKB(t0.geo_polygon) AS geo_polygon \nFROM geo AS t0"
     assert compiled == expected
     data = expr.execute()
-    assert data.geom_type.iloc[0] == 'Polygon'
+    assert data.geom_type.iloc[0] == "Polygon"
 
 
 def test_select_multipolygon_geodata(geotable):
-    expr = geotable['geo_multipolygon']
+    expr = geotable["geo_multipolygon"]
     sqla_expr = expr.compile()
-    compiled = str(sqla_expr.compile(compile_kwargs={'literal_binds': True}))
+    compiled = str(sqla_expr.compile(compile_kwargs={"literal_binds": True}))
     expected = (
         "SELECT ST_AsEWKB(t0.geo_multipolygon) AS geo_multipolygon \nFROM geo AS t0"
     )
     assert compiled == expected
     data = expr.execute()
-    assert data.geom_type.iloc[0] == 'MultiPolygon'
+    assert data.geom_type.iloc[0] == "MultiPolygon"
 
 
 def test_geo_area(geotable, gdf):
@@ -166,9 +166,9 @@ def test_geo_geometry_n(geotable, gdf):
 
 def test_geo_geometry_type(geotable):
     expr = geotable.geo_point.geometry_type()
-    assert (expr.execute() == 'ST_Point').all()
+    assert (expr.execute() == "ST_Point").all()
     expr = geotable.geo_multipolygon.geometry_type()
-    assert (expr.execute() == 'ST_MultiPolygon').all()
+    assert (expr.execute() == "ST_MultiPolygon").all()
 
 
 def test_geo_intersects(geotable):

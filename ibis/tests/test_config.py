@@ -12,5 +12,5 @@ def test_sql_config(monkeypatch):
     with pytest.raises(ValidationError):
         options.sql.default_limit = -1
 
-    monkeypatch.setattr(options.sql, 'default_limit', 100)
+    monkeypatch.setattr(options.sql, "default_limit", 100)
     assert options.sql.default_limit == 100

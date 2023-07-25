@@ -39,14 +39,14 @@ class DataFrameWriter:
         self.temp_hdfs_dirs = set()
 
     def write_temp_csv(self):
-        temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path, f'pandas_{util.guid()}')
+        temp_hdfs_dir = pjoin(options.impala.temp_hdfs_path, f"pandas_{util.guid()}")
         self.client.hdfs.mkdir(temp_hdfs_dir)
 
         # Keep track of the temporary HDFS file
         self.temp_hdfs_dirs.add(temp_hdfs_dir)
 
         # Write the file to HDFS
-        hdfs_path = pjoin(temp_hdfs_dir, '0.csv')
+        hdfs_path = pjoin(temp_hdfs_dir, "0.csv")
 
         self.write_csv(hdfs_path)
 
@@ -58,22 +58,22 @@ class DataFrameWriter:
         # https://github.com/ibis-project/ibis/issues/2267
         with tempfile.TemporaryDirectory() as f:
             # Write the DataFrame to the temporary file path
-            tmp_file_path = os.path.join(f, 'impala_temp_file.csv')
+            tmp_file_path = os.path.join(f, "impala_temp_file.csv")
             if options.verbose:
-                util.log(f'Writing DataFrame to temporary directory {tmp_file_path}')
+                util.log(f"Writing DataFrame to temporary directory {tmp_file_path}")
 
             self.df.to_csv(
                 tmp_file_path,
                 header=False,
                 index=False,
-                sep=',',
+                sep=",",
                 quoting=csv.QUOTE_NONE,
-                escapechar='\\',
-                na_rep='#NULL',
+                escapechar="\\",
+                na_rep="#NULL",
             )
 
             if options.verbose:
-                util.log(f'Writing CSV to: {path}')
+                util.log(f"Writing CSV to: {path}")
 
             self.client.hdfs.put(tmp_file_path, path)
         return path
@@ -86,11 +86,11 @@ class DataFrameWriter:
         return self.client.delimited_file(
             csv_dir,
             self.get_schema(),
-            name=f'ibis_tmp_pandas_{util.guid()}',
+            name=f"ibis_tmp_pandas_{util.guid()}",
             database=database,
-            delimiter=',',
-            na_rep='#NULL',
-            escapechar='\\\\',
+            delimiter=",",
+            na_rep="#NULL",
+            escapechar="\\\\",
             external=True,
             persist=False,
         )

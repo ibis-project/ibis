@@ -178,7 +178,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
 class AlchemySelect(Select):
     def __init__(self, *args, **kwargs):
-        self.exists = kwargs.pop('exists', False)
+        self.exists = kwargs.pop("exists", False)
         super().__init__(*args, **kwargs)
 
     def compile(self):
@@ -247,7 +247,7 @@ class AlchemySelect(Select):
 
         if has_select_star:
             if table_set is None:
-                raise ValueError('table_set cannot be None here')
+                raise ValueError("table_set cannot be None here")
 
             clauses = [table_set] + to_select
         else:

@@ -11,13 +11,13 @@ def format_call(translator, func, *args):
         fmt_arg = translator.translate(arg)
         formatted_args.append(fmt_arg)
 
-    return '{}({})'.format(func, ', '.join(formatted_args))
+    return "{}({})".format(func, ", ".join(formatted_args))
 
 
-def quote_identifier(name, quotechar='`', force=False):
+def quote_identifier(name, quotechar="`", force=False):
     """Add quotes to the `name` identifier if needed."""
-    if force or name.count(' ') or name in identifiers.base_identifiers:
-        return '{0}{1}{0}'.format(quotechar, name)
+    if force or name.count(" ") or name in identifiers.base_identifiers:
+        return "{0}{1}{0}".format(quotechar, name)
     else:
         return name
 
@@ -51,28 +51,28 @@ def needs_parens(op: ops.Node):
     return isinstance(op, _NEEDS_PARENS_OPS)
 
 
-parenthesize = '({})'.format
+parenthesize = "({})".format
 
 
 sql_type_names = {
-    'int8': 'tinyint',
-    'int16': 'smallint',
-    'int32': 'int',
-    'int64': 'bigint',
-    'float': 'float',
-    'float32': 'float',
-    'double': 'double',
-    'float64': 'double',
-    'string': 'string',
-    'boolean': 'boolean',
-    'timestamp': 'timestamp',
-    'decimal': 'decimal',
+    "int8": "tinyint",
+    "int16": "smallint",
+    "int32": "int",
+    "int64": "bigint",
+    "float": "float",
+    "float32": "float",
+    "double": "double",
+    "float64": "double",
+    "string": "string",
+    "boolean": "boolean",
+    "timestamp": "timestamp",
+    "decimal": "decimal",
 }
 
 
 def type_to_sql_string(tval):
     if tval.is_decimal():
-        return f'decimal({tval.precision}, {tval.scale})'
+        return f"decimal({tval.precision}, {tval.scale})"
     name = tval.name.lower()
     try:
         return sql_type_names[name]

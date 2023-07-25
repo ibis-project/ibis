@@ -25,17 +25,17 @@ pytestmark = pytest.mark.benchmark
 def make_t():
     return ibis.table(
         [
-            ('_timestamp', 'int32'),
-            ('dim1', 'int32'),
-            ('dim2', 'int32'),
-            ('valid_seconds', 'int32'),
-            ('meas1', 'int32'),
-            ('meas2', 'int32'),
-            ('year', 'int32'),
-            ('month', 'int32'),
-            ('day', 'int32'),
-            ('hour', 'int32'),
-            ('minute', 'int32'),
+            ("_timestamp", "int32"),
+            ("dim1", "int32"),
+            ("dim2", "int32"),
+            ("valid_seconds", "int32"),
+            ("meas1", "int32"),
+            ("meas2", "int32"),
+            ("year", "int32"),
+            ("month", "int32"),
+            ("day", "int32"),
+            ("hour", "int32"),
+            ("minute", "int32"),
         ],
         name="t",
     )
@@ -85,21 +85,21 @@ def base(t):
 def make_large_expr(base):
     src_table = base
     src_table = src_table.mutate(
-        _timestamp=(src_table['_timestamp'] - src_table['_timestamp'] % 3600)
-        .cast('int32')
-        .name('_timestamp'),
+        _timestamp=(src_table["_timestamp"] - src_table["_timestamp"] % 3600)
+        .cast("int32")
+        .name("_timestamp"),
         valid_seconds=300,
     )
 
     aggs = []
-    for meas in ['meas1', 'meas2']:
-        aggs.append(src_table[meas].sum().cast('float').name(meas))
+    for meas in ["meas1", "meas2"]:
+        aggs.append(src_table[meas].sum().cast("float").name(meas))
     src_table = src_table.aggregate(
-        aggs, by=['_timestamp', 'dim1', 'dim2', 'valid_seconds']
+        aggs, by=["_timestamp", "dim1", "dim2", "valid_seconds"]
     )
 
-    part_keys = ['year', 'month', 'day', 'hour', 'minute']
-    ts_col = src_table['_timestamp'].cast('timestamp')
+    part_keys = ["year", "month", "day", "hour", "minute"]
+    ts_col = src_table["_timestamp"].cast("timestamp")
     new_cols = {}
     for part_key in part_keys:
         part_col = getattr(ts_col, part_key)()
@@ -107,16 +107,16 @@ def make_large_expr(base):
     src_table = src_table.mutate(**new_cols)
     return src_table[
         [
-            '_timestamp',
-            'dim1',
-            'dim2',
-            'meas1',
-            'meas2',
-            'year',
-            'month',
-            'day',
-            'hour',
-            'minute',
+            "_timestamp",
+            "dim1",
+            "dim2",
+            "meas1",
+            "meas2",
+            "year",
+            "month",
+            "day",
+            "hour",
+            "minute",
         ]
     ]
 
@@ -201,22 +201,22 @@ def pt():
     n = 60_000
     data = pd.DataFrame(
         {
-            'key': np.random.choice(16000, size=n),
-            'low_card_key': np.random.choice(30, size=n),
-            'value': np.random.rand(n),
-            'timestamps': pd.date_range(
-                start='2023-05-05 16:37:57', periods=n, freq='s'
+            "key": np.random.choice(16000, size=n),
+            "low_card_key": np.random.choice(30, size=n),
+            "value": np.random.rand(n),
+            "timestamps": pd.date_range(
+                start="2023-05-05 16:37:57", periods=n, freq="s"
             ).values,
-            'timestamp_strings': pd.date_range(
-                start='2023-05-05 16:37:39', periods=n, freq='s'
+            "timestamp_strings": pd.date_range(
+                start="2023-05-05 16:37:39", periods=n, freq="s"
             ).values.astype(str),
-            'repeated_timestamps': pd.date_range(start='2018-09-01', periods=30).repeat(
+            "repeated_timestamps": pd.date_range(start="2018-09-01", periods=30).repeat(
                 int(n / 30)
             ),
         }
     )
 
-    return ibis.pandas.connect(dict(df=data)).table('df')
+    return ibis.pandas.connect(dict(df=data)).table("df")
 
 
 def high_card_group_by(t):
@@ -233,8 +233,8 @@ def cast_to_dates_from_strings(t):
 
 def multikey_group_by_with_mutate(t):
     return (
-        t.mutate(dates=t.timestamps.cast('date'))
-        .group_by(['low_card_key', 'dates'])
+        t.mutate(dates=t.timestamps.cast("date"))
+        .group_by(["low_card_key", "dates"])
         .aggregate(avg_value=lambda t: t.value.mean())
     )
 
@@ -244,15 +244,15 @@ def simple_sort(t):
 
 
 def simple_sort_projection(t):
-    return t[['key', 'value']].order_by(['key'])
+    return t[["key", "value"]].order_by(["key"])
 
 
 def multikey_sort(t):
-    return t.order_by(['low_card_key', 'key'])
+    return t.order_by(["low_card_key", "key"])
 
 
 def multikey_sort_projection(t):
-    return t[['low_card_key', 'key', 'value']].order_by(['low_card_key', 'key'])
+    return t[["low_card_key", "key", "value"]].order_by(["low_card_key", "key"])
 
 
 def low_card_rolling_window(t):
@@ -279,7 +279,7 @@ def high_card_grouped_rolling(t):
     return t.value.mean().over(high_card_rolling_window(t))
 
 
-@udf.reduction(['double'], 'double')
+@udf.reduction(["double"], "double")
 def my_mean(series):
     return series.mean()
 
@@ -292,7 +292,7 @@ def high_card_grouped_rolling_udf_mean(t):
     return my_mean(t.value).over(high_card_rolling_window(t))
 
 
-@udf.analytic(['double'], 'double')
+@udf.analytic(["double"], "double")
 def my_zscore(series):
     return (series - series.mean()) / series.std()
 
@@ -313,7 +313,7 @@ def high_card_window_analytics_udf(t):
     return my_zscore(t.value).over(high_card_window(t))
 
 
-@udf.reduction(['double', 'double'], 'double')
+@udf.reduction(["double", "double"], "double")
 def my_wm(v, w):
     return np.average(v, weights=w)
 

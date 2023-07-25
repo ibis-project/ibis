@@ -297,7 +297,7 @@ class CodeContext:
         ops.TableNode: "t",
     }
 
-    def __init__(self, assign_result_to='result'):
+    def __init__(self, assign_result_to="result"):
         self.assign_result_to = assign_result_to
         self._shorthand_counters = collections.defaultdict(itertools.count)
 
@@ -311,7 +311,7 @@ class CodeContext:
             name = klass.__name__.lower()
 
         # increment repeated type names: table, table1, table2, ...
-        nth = next(self._shorthand_counters[name]) or ''
+        nth = next(self._shorthand_counters[name]) or ""
         return f"{name}{nth}"
 
     def render(self, node, code, n_dependents):
@@ -342,7 +342,7 @@ class CodeContext:
 def decompile(
     node: ops.Node | ir.Expr,
     render_import: bool = True,
-    assign_result_to: str = 'result',
+    assign_result_to: str = "result",
     format: bool = False,
 ) -> str:
     """Decompile an ibis expression into Python source code.

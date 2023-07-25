@@ -13,7 +13,7 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.patterns import ValidationError
 
-t = ibis.table([('a', 'int64')], name='t')
+t = ibis.table([("a", "int64")], name="t")
 
 true = ir.literal(True)
 false = ir.literal(False)
@@ -21,14 +21,14 @@ two = ir.literal(2)
 three = ir.literal(3)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def operations(request):
     true = ir.literal(True)
     false = ir.literal(False)
     two = ir.literal(2)
     three = ir.literal(3)
     return [
-        ops.Cast(three, to='int64'),
+        ops.Cast(three, to="int64"),
         ops.TypeOf(arg=2),
         ops.Negate(4),
         ops.Negate(4.0),
@@ -48,39 +48,39 @@ def operations(request):
         ops.Round(3.43456, digits=1),
         ops.Clip(123, lower=30),
         ops.Clip(123, lower=30, upper=100),
-        ops.BaseConvert('EEE', from_base=16, to_base=10),
+        ops.BaseConvert("EEE", from_base=16, to_base=10),
         ops.Logarithm(100),
         ops.Log(100),
         ops.Log(100, base=2),
         ops.Ln(100),
         ops.Log2(100),
         ops.Log10(100),
-        ops.Uppercase('asd'),
-        ops.Lowercase('asd'),
-        ops.Reverse('asd'),
-        ops.Strip('asd'),
-        ops.LStrip('asd'),
-        ops.RStrip('asd'),
-        ops.Capitalize('asd'),
-        ops.Substring('asd', start=1),
-        ops.Substring('asd', 1),
-        ops.Substring('asd', 1, length=2),
-        ops.StrRight('asd', nchars=2),
-        ops.Repeat('asd', times=4),
-        ops.StringFind('asd', 'sd', start=1),
-        ops.Translate('asd', from_str='bd', to_str='ce'),
-        ops.LPad('asd', length=2, pad='ss'),
-        ops.RPad('asd', length=2, pad='ss'),
-        ops.StringJoin(',', ['asd', 'bsdf']),
-        ops.FuzzySearch('asd', pattern='n'),
-        ops.StringSQLLike('asd', pattern='as', escape='asd'),
-        ops.RegexExtract('asd', pattern='as', index=1),
-        ops.RegexReplace('asd', 'as', 'a'),
-        ops.StringReplace('asd', 'as', 'a'),
-        ops.StringSplit('asd', 's'),
-        ops.StringConcat(('s', 'e')),
-        ops.StartsWith('asd', 'as'),
-        ops.EndsWith('asd', 'xyz'),
+        ops.Uppercase("asd"),
+        ops.Lowercase("asd"),
+        ops.Reverse("asd"),
+        ops.Strip("asd"),
+        ops.LStrip("asd"),
+        ops.RStrip("asd"),
+        ops.Capitalize("asd"),
+        ops.Substring("asd", start=1),
+        ops.Substring("asd", 1),
+        ops.Substring("asd", 1, length=2),
+        ops.StrRight("asd", nchars=2),
+        ops.Repeat("asd", times=4),
+        ops.StringFind("asd", "sd", start=1),
+        ops.Translate("asd", from_str="bd", to_str="ce"),
+        ops.LPad("asd", length=2, pad="ss"),
+        ops.RPad("asd", length=2, pad="ss"),
+        ops.StringJoin(",", ["asd", "bsdf"]),
+        ops.FuzzySearch("asd", pattern="n"),
+        ops.StringSQLLike("asd", pattern="as", escape="asd"),
+        ops.RegexExtract("asd", pattern="as", index=1),
+        ops.RegexReplace("asd", "as", "a"),
+        ops.StringReplace("asd", "as", "a"),
+        ops.StringSplit("asd", "s"),
+        ops.StringConcat(("s", "e")),
+        ops.StartsWith("asd", "as"),
+        ops.EndsWith("asd", "xyz"),
         ops.Not(false),
         ops.And(false, true),
         ops.Or(false, true),
@@ -235,14 +235,14 @@ def test_instance_of_operation():
     MyOperation(ir.literal(5))
 
     with pytest.raises(ValidationError):
-        MyOperation(ir.literal('string'))
+        MyOperation(ir.literal("string"))
 
 
 def test_array_input():
     class MyOp(ops.Value):
         value: ops.Value[dt.Array[dt.Float64], ds.Any]
-        dtype = rlz.dtype_like('value')
-        shape = rlz.shape_like('value')
+        dtype = rlz.dtype_like("value")
+        shape = rlz.shape_like("value")
 
     raw_value = [1.0, 2.0, 3.0]
     op = MyOp(raw_value)
@@ -260,12 +260,12 @@ def test_custom_table_expr():
             return MyTable(self)
 
     con = ibis.pandas.connect({})
-    node = SpecialTable('foo', ibis.schema([('a', 'int64')]), con)
+    node = SpecialTable("foo", ibis.schema([("a", "int64")]), con)
     expr = node.to_expr()
     assert isinstance(expr, MyTable)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def dummy_op():
     class DummyOp(ops.Value):
         arg: ops.Value
@@ -306,7 +306,7 @@ def test_sortkey_propagates_dtype_and_shape():
     assert k.dtype == dt.int8
     assert k.shape.is_scalar()
 
-    t = ibis.table([('a', 'int16')], name='t')
+    t = ibis.table([("a", "int16")], name="t")
     k = ops.SortKey(t.a, ascending=True)
     assert k.dtype == dt.int16
     assert k.shape.is_columnar()

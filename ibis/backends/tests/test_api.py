@@ -53,7 +53,7 @@ def test_list_tables(con):
     tables = con.list_tables()
     assert isinstance(tables, list)
     # only table that is guaranteed to be in all backends
-    key = 'functional_alltypes'
+    key = "functional_alltypes"
     assert key in tables or key.upper() in tables
     assert all(isinstance(table, str) for table in tables)
 
@@ -92,7 +92,7 @@ def test_tables_accessor_tab_completion(backend, con):
     name = backend.default_identifier_case_fn("functional_alltypes")
     attrs = dir(con.tables)
     assert name in attrs
-    assert 'keys' in attrs  # type methods also present
+    assert "keys" in attrs  # type methods also present
 
     keys = con.tables._ipython_key_completions_()
     assert name in keys
@@ -101,7 +101,7 @@ def test_tables_accessor_tab_completion(backend, con):
 def test_tables_accessor_repr(backend, con):
     name = backend.default_identifier_case_fn("functional_alltypes")
     result = repr(con.tables)
-    assert f'- {name}' in result
+    assert f"- {name}" in result
 
 
 @pytest.mark.parametrize(

@@ -35,7 +35,7 @@ def test_mutate_with_analytic_functions(alltypes):
         f.max(),
     ]
 
-    exprs = [expr.name('e%d' % i) for i, expr in enumerate(exprs)]
+    exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
     proj = g.mutate(exprs)
     for field in proj.op().selections[1:]:
         assert isinstance(field, ops.Alias)

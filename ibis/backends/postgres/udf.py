@@ -53,7 +53,7 @@ def _create_udf_node(
         A new PostgresUDFNode subclass
     """
     definition = next(_udf_name_cache[name])
-    external_name = f'{name}_{definition:d}'
+    external_name = f"{name}_{definition:d}"
     return type(external_name, (PostgresUDFNode,), fields)
 
 
@@ -61,7 +61,7 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     """Create an ibis function that refers to an existing Postgres UDF."""
 
     if parameters is None:
-        parameters = [f'v{i}' for i in range(len(input_types))]
+        parameters = [f"v{i}" for i in range(len(input_types))]
     elif len(input_types) != len(parameters):
         raise ValueError(
             (
@@ -75,8 +75,8 @@ def existing_udf(name, input_types, output_type, schema=None, parameters=None):
     udf_node_fields = {
         name: rlz.ValueOf(type_) for name, type_ in zip(parameters, input_types)
     }
-    udf_node_fields['name'] = name
-    udf_node_fields['dtype'] = output_type
+    udf_node_fields["name"] = name
+    udf_node_fields["dtype"] = output_type
 
     udf_node = _create_udf_node(name, udf_node_fields)
 
@@ -141,8 +141,8 @@ def udf(
         internal_name = name
     signature = inspect.signature(python_func)
     parameter_names = signature.parameters.keys()
-    replace_text = ' OR REPLACE ' if replace else ''
-    schema_fragment = (schema + '.') if schema else ''
+    replace_text = " OR REPLACE " if replace else ""
+    schema_fragment = (schema + ".") if schema else ""
     template = """CREATE {replace} FUNCTION
 {schema_fragment}{name}({signature})
 RETURNS {return_type}
@@ -153,19 +153,19 @@ return {internal_name}({args})
 $$;
 """
 
-    postgres_signature = ', '.join(
-        f'{name} {_ibis_to_postgres_str(type_)}'
+    postgres_signature = ", ".join(
+        f"{name} {_ibis_to_postgres_str(type_)}"
         for name, type_ in zip(parameter_names, in_types)
     )
     return_type = _ibis_to_postgres_str(out_type)
     # If function definition is indented extra,
     # Postgres UDF will fail with indentation error.
     func_definition = dedent(inspect.getsource(python_func))
-    if func_definition.strip().startswith('@'):
+    if func_definition.strip().startswith("@"):
         raise PostgresUDFError(
-            'Use of decorators on a function to be turned into Postgres UDF '
-            'is not supported. The body of the UDF must be wholly '
-            'self-contained. '
+            "Use of decorators on a function to be turned into Postgres UDF "
+            "is not supported. The body of the UDF must be wholly "
+            "self-contained. "
         )
         # Since the decorator syntax does not first bind
         # the function name to the wrapped function but instead includes
@@ -185,7 +185,7 @@ $$;
         # for internal_name, need to make sure this works if passing
         # name parameter
         internal_name=python_func.__name__,
-        args=', '.join(parameter_names),
+        args=", ".join(parameter_names),
     )
     with client.begin() as con:
         con.exec_driver_sql(formatted_sql)

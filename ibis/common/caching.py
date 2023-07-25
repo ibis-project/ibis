@@ -32,10 +32,10 @@ def memoize(func: Callable) -> Callable:
 
 
 class WeakCache(MutableMapping):
-    __slots__ = ('_data',)
+    __slots__ = ("_data",)
 
     def __init__(self):
-        object.__setattr__(self, '_data', {})
+        object.__setattr__(self, "_data", {})
 
     def __setattr__(self, name, value):
         raise TypeError(f"can't set {name}")

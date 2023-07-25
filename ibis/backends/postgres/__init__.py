@@ -34,7 +34,7 @@ class Backend(BaseAlchemyBackend):
 
     def do_connect(
         self,
-        host: str = 'localhost',
+        host: str = "localhost",
         user: str | None = None,
         password: str | None = None,
         port: int = 5432,
@@ -103,8 +103,8 @@ class Backend(BaseAlchemyBackend):
             year : int32
             month : int32
         """
-        if driver != 'psycopg2':
-            raise NotImplementedError('psycopg2 is currently the only supported driver')
+        if driver != "psycopg2":
+            raise NotImplementedError("psycopg2 is currently the only supported driver")
 
         alchemy_url = self._build_alchemy_url(
             url=url,
@@ -113,7 +113,7 @@ class Backend(BaseAlchemyBackend):
             user=user,
             password=password,
             database=database,
-            driver=f'postgresql+{driver}',
+            driver=f"postgresql+{driver}",
         )
         self.database_name = alchemy_url.database
 

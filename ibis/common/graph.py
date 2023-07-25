@@ -99,7 +99,7 @@ class Graph(Dict[Node, Sequence[Node]]):
     @classmethod
     def from_bfs(cls, root: Node, filter=Node) -> Graph:
         if not isinstance(root, Node):
-            raise TypeError('node must be an instance of ibis.common.graph.Node')
+            raise TypeError("node must be an instance of ibis.common.graph.Node")
 
         queue = deque([root])
         graph = cls()
@@ -114,7 +114,7 @@ class Graph(Dict[Node, Sequence[Node]]):
     @classmethod
     def from_dfs(cls, root: Node, filter=Node) -> Graph:
         if not isinstance(root, Node):
-            raise TypeError('node must be an instance of ibis.common.graph.Node')
+            raise TypeError("node must be an instance of ibis.common.graph.Node")
 
         stack = deque([root])
         graph = dict()
@@ -216,8 +216,8 @@ def traverse(
                 args = control
             else:
                 raise TypeError(
-                    'First item of the returned tuple must be '
-                    'an instance of boolean or iterable'
+                    "First item of the returned tuple must be "
+                    "an instance of boolean or iterable"
                 )
 
             todo.extend(reversed(args))
