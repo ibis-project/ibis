@@ -505,6 +505,40 @@ def degrees(op, **kw):
     return translate(op.arg, **kw) * df.lit(180) / df.lit(math.pi)
 
 
+@translate.register(ops.Power)
+def power(op, **kw):
+    base = translate(op.left, **kw)
+    exponent = translate(op.right, **kw)
+    return df.functions.power(base, exponent)
+
+
+@translate.register(ops.Sign)
+def sign(op, **kw):
+    arg = translate(op.arg, **kw)
+
+    arrow_sign = df.udf(
+        pc.sign,
+        input_types=[PyArrowType.from_ibis(op.arg.output_dtype)],
+        return_type=PyArrowType.from_ibis(op.output_dtype),
+        volatility="immutable",
+    )
+
+    return arrow_sign(arg)
+
+
+@translate.register(ops.NullIfZero)
+def null_if_zero(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.nullif(arg, df.literal(0))
+
+
+@translate.register(ops.Log)
+def log(op, **kw):
+    arg = translate(op.arg, **kw)
+    base = translate(op.base, **kw)
+    return df.functions.log(base, arg)
+
+
 @translate.register(ops.RandomScalar)
 def random_scalar(_, **__):
     return df.functions.random()
