@@ -801,40 +801,23 @@ def test_isnan_isinf(
             L(5.556).sign(),
             1,
             id='sign-pos',
-            marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-            ],
         ),
         param(
             L(-5.556).sign(),
             -1,
             id='sign-neg',
-            marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-            ],
         ),
         param(
             L(0).sign(),
             0,
             id='sign-zero',
-            marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-            ],
         ),
         param(L(5.556).sqrt(), math.sqrt(5.556), id='sqrt'),
         param(
             L(5.556).log(2),
             math.log(5.556, 2),
             id='log-base',
-            marks=pytest.mark.notimpl(
-                ["datafusion", "druid"], raises=com.OperationNotDefinedError
-            ),
+            marks=pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
         ),
         param(
             L(5.556).ln(),
@@ -911,14 +894,6 @@ def test_trig_functions_literals(con, expr, expected):
         param(_.dc.tan(), np.tan, id="tan"),
     ],
 )
-@pytest.mark.notyet(
-    ["datafusion"],
-    reason=(
-        "datafusion implements trig functions but can't easily test them due"
-        " to missing NullIfZero"
-    ),
-    raises=com.OperationNotDefinedError,
-)
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     dc_max = df.double_col.max()
     expr = alltypes.mutate(dc=(_.double_col / dc_max).nullifzero()).select(tmp=expr)
@@ -955,9 +930,6 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
             lambda t: np.sign(t.double_col),
             id='sign',
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
                 pytest.mark.notyet(
                     ["oracle"],
                     raises=AssertionError,
@@ -970,9 +942,6 @@ def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
             lambda t: np.sign(-t.double_col),
             id='sign-negative',
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
                 pytest.mark.notyet(
                     ["oracle"],
                     raises=AssertionError,
@@ -1013,9 +982,6 @@ def test_simple_math_functions_columns(
             lambda t: t.double_col.add(1).log(2),
             lambda t: np.log2(t.double_col + 1),
             id='log2',
-            marks=pytest.mark.notimpl(
-                ["datafusion"], raises=com.OperationNotDefinedError
-            ),
         ),
         param(
             lambda t: t.double_col.add(1).ln(),
@@ -1151,14 +1117,7 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
         operator.mul,
         operator.truediv,
         operator.floordiv,
-        param(
-            operator.pow,
-            marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-            ],
-        ),
+        operator.pow,
     ],
     ids=lambda op: op.__name__,
 )
