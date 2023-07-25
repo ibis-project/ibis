@@ -368,14 +368,20 @@ jobs:
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.serial
-        run: just ci-check -m ${{ matrix.backend.name }}
+        if: matrix.backend.serial && matrix.backend.name == 'impala'
+        run: just ci-check -m ${{ matrix.backend.name }} --randomly-dont-reorganize
         env:
           IBIS_TEST_NN_HOST: localhost
           IBIS_TEST_IMPALA_HOST: localhost
           IBIS_TEST_IMPALA_PORT: 21050
           IBIS_TEST_WEBHDFS_PORT: 50070
           IBIS_TEST_WEBHDFS_USER: hdfs
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: "run serial tests: ${{ matrix.backend.name }}"
+        if: matrix.backend.serial && matrix.backend.name != 'impala'
+        run: just ci-check -m ${{ matrix.backend.name }}
+        env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: check that no untracked files were produced
