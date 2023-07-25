@@ -56,6 +56,11 @@ def execute_array_index_scalar(op, data, index, **kwargs):
         return None
 
 
+@execute_node.register(ops.ArrayContains, np.ndarray, object)
+def execute_node_contains_value_array(op, haystack, needle, **kwargs):
+    return needle in haystack
+
+
 def _concat_iterables_to_series(
     iter1: Collection[Any],
     iter2: Collection[Any],
