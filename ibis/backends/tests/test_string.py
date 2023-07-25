@@ -24,11 +24,11 @@ except ImportError:
         param(
             "STRING",
             {
-                'bigquery': "STRING",
-                'clickhouse': 'String',
-                'snowflake': "VARCHAR",
-                'sqlite': 'text',
-                'trino': 'varchar(6)',
+                "bigquery": "STRING",
+                "clickhouse": "String",
+                "snowflake": "VARCHAR",
+                "sqlite": "text",
+                "trino": "varchar(6)",
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
@@ -38,11 +38,11 @@ except ImportError:
         param(
             "STRI'NG",
             {
-                'bigquery': "STRING",
-                'clickhouse': 'String',
-                'snowflake': "VARCHAR",
-                'sqlite': 'text',
-                'trino': 'varchar(7)',
+                "bigquery": "STRING",
+                "clickhouse": "String",
+                "snowflake": "VARCHAR",
+                "sqlite": "text",
+                "trino": "varchar(7)",
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
@@ -55,13 +55,13 @@ except ImportError:
             ),
         ),
         param(
-            "STRI\"NG",
+            'STRI"NG',
             {
-                'bigquery': "STRING",
-                'clickhouse': 'String',
-                'snowflake': "VARCHAR",
-                'sqlite': 'text',
-                'trino': 'varchar(7)',
+                "bigquery": "STRING",
+                "clickhouse": "String",
+                "snowflake": "VARCHAR",
+                "sqlite": "text",
+                "trino": "varchar(7)",
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
@@ -98,12 +98,12 @@ def test_string_col_is_unicode(alltypes, df):
 
 
 @pytest.mark.parametrize(
-    ('result_func', 'expected_func'),
+    ("result_func", "expected_func"),
     [
         param(
-            lambda t: t.string_col.contains('6'),
-            lambda t: t.string_col.str.contains('6'),
-            id='contains',
+            lambda t: t.string_col.contains("6"),
+            lambda t: t.string_col.str.contains("6"),
+            id="contains",
             marks=[
                 pytest.mark.broken(
                     ["mssql"],
@@ -111,7 +111,7 @@ def test_string_col_is_unicode(alltypes, df):
                     reason=(
                         "(pymssql._pymssql.ProgrammingError) (102, b\"Incorrect syntax near '>'."
                         "DB-Lib error message 20018, severity 15:\nGeneral SQL Server error: "
-                        "Check messages from the SQL Server\n\")"
+                        'Check messages from the SQL Server\n")'
                         "[SQL: SELECT charindex(%(param_1)s, t0.string_col) - %(charindex_1)s >= "
                         "%(param_2)s AS tmp"
                         "FROM functional_alltypes AS t0]"
@@ -120,9 +120,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.like('6%'),
-            lambda t: t.string_col.str.contains('6.*'),
-            id='like',
+            lambda t: t.string_col.like("6%"),
+            lambda t: t.string_col.str.contains("6.*"),
+            id="like",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion", "polars"], raises=com.OperationNotDefinedError
@@ -135,9 +135,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.like('6^%'),
-            lambda t: t.string_col.str.contains('6%'),
-            id='complex_like_escape',
+            lambda t: t.string_col.like("6^%"),
+            lambda t: t.string_col.str.contains("6%"),
+            id="complex_like_escape",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion", "polars"], raises=com.OperationNotDefinedError
@@ -150,9 +150,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.like('6^%%'),
-            lambda t: t.string_col.str.contains('6%.*'),
-            id='complex_like_escape_match',
+            lambda t: t.string_col.like("6^%%"),
+            lambda t: t.string_col.str.contains("6%.*"),
+            id="complex_like_escape_match",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion", "polars"], raises=com.OperationNotDefinedError
@@ -165,9 +165,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.ilike('6%'),
-            lambda t: t.string_col.str.contains('6.*'),
-            id='ilike',
+            lambda t: t.string_col.ilike("6%"),
+            lambda t: t.string_col.str.contains("6.*"),
+            id="ilike",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion", "pyspark", "polars"],
@@ -204,9 +204,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_search(r'\d+'),
-            lambda t: t.string_col.str.contains(r'\d+'),
-            id='re_search',
+            lambda t: t.string_col.re_search(r"\d+"),
+            lambda t: t.string_col.str.contains(r"\d+"),
+            id="re_search",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "oracle"],
@@ -216,9 +216,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_search(r'[[:digit:]]+'),
-            lambda t: t.string_col.str.contains(r'\d+'),
-            id='re_search_posix',
+            lambda t: t.string_col.re_search(r"[[:digit:]]+"),
+            lambda t: t.string_col.str.contains(r"\d+"),
+            id="re_search_posix",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "oracle"],
@@ -233,9 +233,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: ("xyz" + t.string_col + "abcd").re_extract(r'(\d+)', 0),
-            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract',
+            lambda t: ("xyz" + t.string_col + "abcd").re_extract(r"(\d+)", 0),
+            lambda t: t.string_col.str.extract(r"(\d+)", expand=False),
+            id="re_extract",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -245,9 +245,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: ("xyz" + t.string_col + "abcd").re_extract(r'(\d+)abc', 1),
-            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract_group',
+            lambda t: ("xyz" + t.string_col + "abcd").re_extract(r"(\d+)abc", 1),
+            lambda t: t.string_col.str.extract(r"(\d+)", expand=False),
+            id="re_extract_group",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -257,9 +257,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_extract(r'([[:digit:]]+)', 1),
-            lambda t: t.string_col.str.extract(r'(\d+)', expand=False),
-            id='re_extract_posix',
+            lambda t: t.string_col.re_extract(r"([[:digit:]]+)", 1),
+            lambda t: t.string_col.str.extract(r"(\d+)", expand=False),
+            id="re_extract_posix",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -269,9 +269,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: (t.string_col + "1").re_extract(r'\d(\d+)', 0),
-            lambda t: (t.string_col + "1").str.extract(r'(\d+)', expand=False),
-            id='re_extract_whole_group',
+            lambda t: (t.string_col + "1").re_extract(r"\d(\d+)", 0),
+            lambda t: (t.string_col + "1").str.extract(r"(\d+)", expand=False),
+            id="re_extract_whole_group",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -281,11 +281,11 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.date_string_col.re_extract(r'(\d+)\D(\d+)\D(\d+)', 1),
+            lambda t: t.date_string_col.re_extract(r"(\d+)\D(\d+)\D(\d+)", 1),
             lambda t: t.date_string_col.str.extract(
-                r'(\d+)\D(\d+)\D(\d+)', expand=False
+                r"(\d+)\D(\d+)\D(\d+)", expand=False
             ).iloc[:, 0],
-            id='re_extract_group_1',
+            id="re_extract_group_1",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -295,11 +295,11 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.date_string_col.re_extract(r'(\d+)\D(\d+)\D(\d+)', 2),
+            lambda t: t.date_string_col.re_extract(r"(\d+)\D(\d+)\D(\d+)", 2),
             lambda t: t.date_string_col.str.extract(
-                r'(\d+)\D(\d+)\D(\d+)', expand=False
+                r"(\d+)\D(\d+)\D(\d+)", expand=False
             ).iloc[:, 1],
-            id='re_extract_group_2',
+            id="re_extract_group_2",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -309,11 +309,11 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.date_string_col.re_extract(r'(\d+)\D(\d+)\D(\d+)', 3),
+            lambda t: t.date_string_col.re_extract(r"(\d+)\D(\d+)\D(\d+)", 3),
             lambda t: t.date_string_col.str.extract(
-                r'(\d+)\D(\d+)\D(\d+)', expand=False
+                r"(\d+)\D(\d+)\D(\d+)", expand=False
             ).iloc[:, 2],
-            id='re_extract_group_3',
+            id="re_extract_group_3",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -323,9 +323,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.date_string_col.re_extract(r'^(\d+)', 1),
-            lambda t: t.date_string_col.str.extract(r'^(\d+)', expand=False),
-            id='re_extract_group_at_beginning',
+            lambda t: t.date_string_col.re_extract(r"^(\d+)", 1),
+            lambda t: t.date_string_col.str.extract(r"^(\d+)", expand=False),
+            id="re_extract_group_at_beginning",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -335,9 +335,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.date_string_col.re_extract(r'(\d+)$', 1),
-            lambda t: t.date_string_col.str.extract(r'(\d+)$', expand=False),
-            id='re_extract_group_at_end',
+            lambda t: t.date_string_col.re_extract(r"(\d+)$", 1),
+            lambda t: t.date_string_col.str.extract(r"(\d+)$", expand=False),
+            id="re_extract_group_at_end",
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"],
@@ -347,9 +347,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_replace(r'[[:digit:]]+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
-            id='re_replace_posix',
+            lambda t: t.string_col.re_replace(r"[[:digit:]]+", "a"),
+            lambda t: t.string_col.str.replace(r"\d+", "a", regex=True),
+            id="re_replace_posix",
             marks=[
                 pytest.mark.notimpl(
                     ["mysql", "mssql", "druid", "oracle"],
@@ -362,9 +362,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_replace(r'\d+', 'a'),
-            lambda t: t.string_col.str.replace(r'\d+', 'a', regex=True),
-            id='re_replace',
+            lambda t: t.string_col.re_replace(r"\d+", "a"),
+            lambda t: t.string_col.str.replace(r"\d+", "a", regex=True),
+            id="re_replace",
             marks=[
                 pytest.mark.notimpl(
                     ["mysql", "mssql", "druid", "oracle"],
@@ -407,9 +407,9 @@ def test_string_col_is_unicode(alltypes, df):
             ),
         ),
         param(
-            lambda t: t.string_col.translate('01', 'ab'),
-            lambda t: t.string_col.str.translate(str.maketrans('01', 'ab')),
-            id='translate',
+            lambda t: t.string_col.translate("01", "ab"),
+            lambda t: t.string_col.str.translate(str.maketrans("01", "ab")),
+            id="translate",
             marks=[
                 pytest.mark.notimpl(
                     [
@@ -426,36 +426,36 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.find('a'),
-            lambda t: t.string_col.str.find('a'),
-            id='find',
+            lambda t: t.string_col.find("a"),
+            lambda t: t.string_col.str.find("a"),
+            id="find",
             marks=pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
         ),
         param(
-            lambda t: t.date_string_col.find('13', 3),
-            lambda t: t.date_string_col.str.find('13', 3),
-            id='find_start',
+            lambda t: t.date_string_col.find("13", 3),
+            lambda t: t.date_string_col.str.find("13", 3),
+            id="find_start",
             marks=[
                 pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(["bigquery"], raises=NotImplementedError),
             ],
         ),
         param(
-            lambda t: t.string_col.lpad(10, 'a'),
-            lambda t: t.string_col.str.pad(10, fillchar='a', side='left'),
-            id='lpad',
+            lambda t: t.string_col.lpad(10, "a"),
+            lambda t: t.string_col.str.pad(10, fillchar="a", side="left"),
+            id="lpad",
             marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
         ),
         param(
-            lambda t: t.string_col.rpad(10, 'a'),
-            lambda t: t.string_col.str.pad(10, fillchar='a', side='right'),
-            id='rpad',
+            lambda t: t.string_col.rpad(10, "a"),
+            lambda t: t.string_col.str.pad(10, fillchar="a", side="right"),
+            id="rpad",
             marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
         ),
         param(
-            lambda t: t.string_col.find_in_set(['1']),
-            lambda t: t.string_col.str.find('1'),
-            id='find_in_set',
+            lambda t: t.string_col.find_in_set(["1"]),
+            lambda t: t.string_col.str.find("1"),
+            id="find_in_set",
             marks=pytest.mark.notimpl(
                 [
                     "bigquery",
@@ -473,9 +473,9 @@ def test_string_col_is_unicode(alltypes, df):
             ),
         ),
         param(
-            lambda t: t.string_col.find_in_set(['a']),
-            lambda t: t.string_col.str.find('a'),
-            id='find_in_set_all_missing',
+            lambda t: t.string_col.find_in_set(["a"]),
+            lambda t: t.string_col.str.find("a"),
+            id="find_in_set_all_missing",
             marks=pytest.mark.notimpl(
                 [
                     "bigquery",
@@ -495,39 +495,39 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.string_col.lower(),
             lambda t: t.string_col.str.lower(),
-            id='lower',
+            id="lower",
         ),
         param(
             lambda t: t.string_col.upper(),
             lambda t: t.string_col.str.upper(),
-            id='upper',
+            id="upper",
         ),
         param(
             lambda t: t.string_col.reverse(),
             lambda t: t.string_col.str[::-1],
-            id='reverse',
+            id="reverse",
         ),
         param(
             lambda t: t.string_col.ascii_str(),
-            lambda t: t.string_col.map(ord).astype('int32'),
-            id='ascii_str',
+            lambda t: t.string_col.map(ord).astype("int32"),
+            id="ascii_str",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", 'druid'], raises=com.OperationNotDefinedError
+                    ["polars", "druid"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
         param(
             lambda t: t.string_col.length(),
-            lambda t: t.string_col.str.len().astype('int32'),
-            id='length',
+            lambda t: t.string_col.str.len().astype("int32"),
+            id="length",
         ),
         param(
             lambda t: t.int_col.cases([(1, "abcd"), (2, "ABCD")], "dabc").startswith(
                 "abc"
             ),
             lambda t: t.int_col == 1,
-            id='startswith',
+            id="startswith",
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
@@ -543,11 +543,11 @@ def test_string_col_is_unicode(alltypes, df):
                     raises=sa.exc.OperationalError,
                     reason=(
                         '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near the keyword '
-                        '\'LIKE\'.DB-Lib error message 20018, severity 15:\nGeneral SQL Server error: '
-                        'Check messages from the SQL Server\n\")'
-                        '[SQL: SELECT (CASE t0.int_col WHEN %(param_1)s THEN %(param_2)s WHEN %(param_3)s '
-                        'THEN %(param_4)s ELSE %(param_5)s END LIKE %(param_6)s + \'%\') AS tmp'
-                        'FROM functional_alltypes AS t0]'
+                        "'LIKE'.DB-Lib error message 20018, severity 15:\nGeneral SQL Server error: "
+                        'Check messages from the SQL Server\n")'
+                        "[SQL: SELECT (CASE t0.int_col WHEN %(param_1)s THEN %(param_2)s WHEN %(param_3)s "
+                        "THEN %(param_4)s ELSE %(param_5)s END LIKE %(param_6)s + '%') AS tmp"
+                        "FROM functional_alltypes AS t0]"
                     ),
                 ),
             ],
@@ -557,7 +557,7 @@ def test_string_col_is_unicode(alltypes, df):
                 "bcd"
             ),
             lambda t: t.int_col == 1,
-            id='endswith',
+            id="endswith",
             # pyspark doesn't support `cases` yet
             marks=[
                 pytest.mark.notimpl(
@@ -569,7 +569,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql"],
                     reason=(
                         '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
-                        'the keyword \'LIKE\'.DB-Lib error message 20018, severity 15:\n'
+                        "the keyword 'LIKE'.DB-Lib error message 20018, severity 15:\n"
                         'General SQL Server error: Check messages from the SQL Server\n")'
                     ),
                     raises=sa.exc.OperationalError,
@@ -579,7 +579,7 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.date_string_col.startswith("2010-01"),
             lambda t: t.date_string_col.str.startswith("2010-01"),
-            id='startswith-simple',
+            id="startswith-simple",
             marks=[
                 pytest.mark.notimpl(
                     ["dask"],
@@ -590,7 +590,7 @@ def test_string_col_is_unicode(alltypes, df):
                     raises=sa.exc.OperationalError,
                     reason=(
                         '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
-                        'the keyword \'LIKE\'.DB-Lib error message 20018, severity 15:\n'
+                        "the keyword 'LIKE'.DB-Lib error message 20018, severity 15:\n"
                         'General SQL Server error: Check messages from the SQL Server\n")'
                     ),
                 ),
@@ -599,7 +599,7 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.date_string_col.endswith("/10"),
             lambda t: t.date_string_col.str.endswith("/10"),
-            id='endswith-simple',
+            id="endswith-simple",
             marks=[
                 pytest.mark.notimpl(
                     ["dask", "datafusion"],
@@ -610,7 +610,7 @@ def test_string_col_is_unicode(alltypes, df):
                     raises=sa.exc.OperationalError,
                     reason=(
                         '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
-                        'the keyword \'LIKE\'.DB-Lib error message 20018, severity 15:\n'
+                        "the keyword 'LIKE'.DB-Lib error message 20018, severity 15:\n"
                         'General SQL Server error: Check messages from the SQL Server\n")'
                     ),
                 ),
@@ -619,32 +619,32 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.string_col.strip(),
             lambda t: t.string_col.str.strip(),
-            id='strip',
+            id="strip",
         ),
         param(
             lambda t: t.string_col.lstrip(),
             lambda t: t.string_col.str.lstrip(),
-            id='lstrip',
+            id="lstrip",
         ),
         param(
             lambda t: t.string_col.rstrip(),
             lambda t: t.string_col.str.rstrip(),
-            id='rstrip',
+            id="rstrip",
         ),
         param(
             lambda t: t.string_col.capitalize(),
             lambda t: t.string_col.str.capitalize(),
-            id='capitalize',
+            id="capitalize",
         ),
         param(
             lambda t: t.date_string_col.substr(2, 3),
             lambda t: t.date_string_col.str[2:5],
-            id='substr',
+            id="substr",
         ),
         param(
             lambda t: t.date_string_col.substr(2),
             lambda t: t.date_string_col.str[2:],
-            id='substr-start-only',
+            id="substr-start-only",
             marks=[
                 pytest.mark.notimpl(
                     ["pyspark"],
@@ -665,7 +665,7 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.date_string_col.left(2),
             lambda t: t.date_string_col.str[:2],
-            id='left',
+            id="left",
         ),
         param(
             lambda t: t.date_string_col.right(2),
@@ -675,12 +675,12 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.date_string_col[1:3],
             lambda t: t.date_string_col.str[1:3],
-            id='slice',
+            id="slice",
         ),
         param(
             lambda t: t.date_string_col[-2],
             lambda t: t.date_string_col.str[-2],
-            id='negative-index',
+            id="negative-index",
             marks=[
                 pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
                 pytest.mark.broken(["datafusion", "impala"], raises=AssertionError),
@@ -690,7 +690,7 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.date_string_col[t.date_string_col.length() - 1 :],
             lambda t: t.date_string_col.str[-1:],
-            id='expr_slice_begin',
+            id="expr_slice_begin",
             # TODO: substring #2553
             marks=[
                 pytest.mark.notimpl(
@@ -704,7 +704,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
                     reason=(
-                        'Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)'
+                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
                 pytest.mark.broken(
@@ -718,21 +718,21 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.date_string_col[: t.date_string_col.length()],
             lambda t: t.date_string_col,
-            id='expr_slice_end',
+            id="expr_slice_end",
             # TODO: substring #2553
             marks=[
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=NotImplementedError,
                     reason=(
-                        'Specifiying `start` or `length` with column expressions is not supported.'
+                        "Specifiying `start` or `length` with column expressions is not supported."
                     ),
                 ),
                 pytest.mark.notimpl(
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
                     reason=(
-                        'Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)'
+                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
                 pytest.mark.broken(
@@ -746,14 +746,14 @@ def test_string_col_is_unicode(alltypes, df):
         param(
             lambda t: t.date_string_col[:],
             lambda t: t.date_string_col,
-            id='expr_empty_slice',
+            id="expr_empty_slice",
             # TODO: substring #2553
             marks=[
                 pytest.mark.notimpl(
                     ["pyspark"],
                     raises=NotImplementedError,
                     reason=(
-                        'Specifiying `start` or `length` with column expressions is not supported.'
+                        "Specifiying `start` or `length` with column expressions is not supported."
                     ),
                 ),
                 pytest.mark.notimpl(
@@ -777,7 +777,7 @@ def test_string_col_is_unicode(alltypes, df):
                 t.date_string_col.length() - 2 : t.date_string_col.length() - 1
             ],
             lambda t: t.date_string_col.str[-2:-1],
-            id='expr_slice_begin_end',
+            id="expr_slice_begin_end",
             # TODO: substring #2553
             marks=[
                 pytest.mark.notimpl(
@@ -791,7 +791,7 @@ def test_string_col_is_unicode(alltypes, df):
                     ["polars"],
                     raises=com.UnsupportedArgumentError,
                     reason=(
-                        'Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)'
+                        "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
                 pytest.mark.broken(
@@ -803,9 +803,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.date_string_col.split('/'),
-            lambda t: t.date_string_col.str.split('/'),
-            id='split',
+            lambda t: t.date_string_col.split("/"),
+            lambda t: t.date_string_col.str.split("/"),
+            id="split",
             marks=pytest.mark.notimpl(
                 [
                     "dask",
@@ -821,24 +821,24 @@ def test_string_col_is_unicode(alltypes, df):
             ),
         ),
         param(
-            lambda t: ibis.literal('-').join(['a', t.string_col, 'c']),
-            lambda t: 'a-' + t.string_col + '-c',
-            id='join',
+            lambda t: ibis.literal("-").join(["a", t.string_col, "c"]),
+            lambda t: "a-" + t.string_col + "-c",
+            id="join",
         ),
         param(
             lambda t: t.string_col + t.date_string_col,
             lambda t: t.string_col + t.date_string_col,
-            id='concat_columns',
+            id="concat_columns",
         ),
         param(
-            lambda t: t.string_col + 'a',
-            lambda t: t.string_col + 'a',
-            id='concat_column_scalar',
+            lambda t: t.string_col + "a",
+            lambda t: t.string_col + "a",
+            id="concat_column_scalar",
         ),
         param(
-            lambda t: 'a' + t.string_col,
-            lambda t: 'a' + t.string_col,
-            id='concat_scalar_column',
+            lambda t: "a" + t.string_col,
+            lambda t: "a" + t.string_col,
+            id="concat_scalar_column",
         ),
         param(
             lambda t: t.string_col.replace("1", "42"),
@@ -848,7 +848,7 @@ def test_string_col_is_unicode(alltypes, df):
     ],
 )
 def test_string(backend, alltypes, df, result_func, expected_func):
-    expr = result_func(alltypes).name('tmp')
+    expr = result_func(alltypes).name("tmp")
     result = expr.execute()
 
     expected = backend.default_series_rename(expected_func(df))
@@ -870,7 +870,7 @@ def test_re_replace_global(con):
     ["mssql"],
     raises=sa.exc.OperationalError,
     reason=(
-        "(pymssql._pymssql.OperationalError) (4145, b\"An expression of non-boolean type specified in "
+        '(pymssql._pymssql.OperationalError) (4145, b"An expression of non-boolean type specified in '
         "a context where a condition is expected, near 'THEN'.DB-Lib error message 20018, severity 15:\n"
     ),
 )
@@ -883,7 +883,7 @@ def test_re_replace_global(con):
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
         substr_col_null=ibis.case()
-        .when(alltypes['bool_col'], alltypes['string_col'])
+        .when(alltypes["bool_col"], alltypes["string_col"])
         .else_(None)
         .end()
         .substr(0, 2)
@@ -891,10 +891,10 @@ def test_substr_with_null_values(backend, alltypes, df):
     result = table.execute()
 
     expected = df.copy()
-    mask = ~expected['bool_col']
-    expected['substr_col_null'] = expected['string_col']
-    expected.loc[mask, 'substr_col_null'] = None
-    expected['substr_col_null'] = expected['substr_col_null'].str.slice(0, 2)
+    mask = ~expected["bool_col"]
+    expected["substr_col_null"] = expected["string_col"]
+    expected.loc[mask, "substr_col_null"] = None
+    expected["substr_col_null"] = expected["substr_col_null"].str.slice(0, 2)
 
     backend.assert_frame_equal(result, expected)
 
@@ -951,9 +951,9 @@ def test_substr_with_null_values(backend, alltypes, df):
         ),
         param(lambda d: d.path(), "/docs/books/tutorial/index.html", id="path"),
         param(lambda d: d.query(), "name=networking", id="query"),
-        param(lambda d: d.query('name'), "networking", id="query-key"),
+        param(lambda d: d.query("name"), "networking", id="query-key"),
         param(
-            lambda d: d.query(ibis.literal('na') + ibis.literal('me')),
+            lambda d: d.query(ibis.literal("na") + ibis.literal("me")),
             "networking",
             id="query-dynamic-key",
         ),

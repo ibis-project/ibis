@@ -55,18 +55,18 @@ def calc_zscore(s):
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t, win: t.float_col.lag().over(win),
             lambda t: t.float_col.shift(1),
-            id='lag',
+            id="lag",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
             lambda t: t.float_col.shift(-1),
-            id='lead',
+            id="lead",
             marks=[
                 pytest.mark.broken(
                     ["clickhouse"],
@@ -78,8 +78,8 @@ def calc_zscore(s):
         ),
         param(
             lambda t, win: t.id.rank().over(win),
-            lambda t: t.id.rank(method='min').astype('int64') - 1,
-            id='rank',
+            lambda t: t.id.rank(method="min").astype("int64") - 1,
+            id="rank",
             marks=[
                 pytest.mark.min_server_version(clickhouse="22.8"),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
@@ -87,8 +87,8 @@ def calc_zscore(s):
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
-            lambda t: t.id.rank(method='dense').astype('int64') - 1,
-            id='dense_rank',
+            lambda t: t.id.rank(method="dense").astype("int64") - 1,
+            id="dense_rank",
             marks=[
                 pytest.mark.min_server_version(clickhouse="22.8"),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
@@ -101,7 +101,7 @@ def calc_zscore(s):
                     df.sort_values("id").id.rank(method="min").sub(1).div(len(df) - 1)
                 )
             ).reset_index(drop=True, level=[0]),
-            id='percent_rank',
+            id="percent_rank",
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse"],
@@ -113,8 +113,8 @@ def calc_zscore(s):
         ),
         param(
             lambda t, win: t.id.cume_dist().over(win),
-            lambda t: t.id.rank(method='min') / t.id.transform(len),
-            id='cume_dist',
+            lambda t: t.id.rank(method="min") / t.id.transform(len),
+            id="cume_dist",
             marks=[
                 pytest.mark.notimpl(["pyspark"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["clickhouse"], raises=com.OperationNotDefinedError),
@@ -124,19 +124,19 @@ def calc_zscore(s):
         param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),
             lambda t: t,
-            id='ntile',
+            id="ntile",
             marks=pytest.mark.xfail,
         ),
         param(
             lambda t, win: t.float_col.first().over(win),
-            lambda t: t.float_col.transform('first'),
-            id='first',
+            lambda t: t.float_col.transform("first"),
+            id="first",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.last().over(win),
-            lambda t: t.float_col.transform('last'),
-            id='last',
+            lambda t: t.float_col.transform("last"),
+            id="last",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
@@ -161,7 +161,7 @@ def calc_zscore(s):
         param(
             lambda _, win: ibis.row_number().over(win),
             lambda t: t.cumcount(),
-            id='row_number',
+            id="row_number",
             marks=[
                 pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
@@ -171,25 +171,25 @@ def calc_zscore(s):
         param(
             lambda t, win: t.double_col.cumsum().over(win),
             lambda t: t.double_col.cumsum(),
-            id='cumsum',
+            id="cumsum",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.double_col.cummean().over(win),
             lambda t: (t.double_col.expanding().mean().reset_index(drop=True, level=0)),
-            id='cummean',
+            id="cummean",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.cummin().over(win),
             lambda t: t.float_col.cummin(),
-            id='cummin',
+            id="cummin",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.cummax().over(win),
             lambda t: t.float_col.cummax(),
-            id='cummax',
+            id="cummax",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
@@ -200,7 +200,7 @@ def calc_zscore(s):
                 .reset_index(drop=True, level=0)
                 .astype(bool)
             ),
-            id='cumany',
+            id="cumany",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
@@ -214,7 +214,7 @@ def calc_zscore(s):
                 .reset_index(drop=True, level=0)
                 .astype(bool)
             ),
-            id='cumnotany',
+            id="cumnotany",
             marks=[
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
@@ -229,7 +229,7 @@ def calc_zscore(s):
                 .reset_index(drop=True, level=0)
                 .astype(bool)
             ),
-            id='cumall',
+            id="cumall",
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
@@ -243,7 +243,7 @@ def calc_zscore(s):
                 .reset_index(drop=True, level=0)
                 .astype(bool)
             ),
-            id='cumnotall',
+            id="cumnotall",
             marks=[
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
@@ -253,7 +253,7 @@ def calc_zscore(s):
         param(
             lambda t, win: t.double_col.sum().over(win),
             lambda gb: gb.double_col.cumsum(),
-            id='sum',
+            id="sum",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
@@ -261,19 +261,19 @@ def calc_zscore(s):
             lambda gb: (
                 gb.double_col.expanding().mean().reset_index(drop=True, level=0)
             ),
-            id='mean',
+            id="mean",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.min().over(win),
             lambda gb: gb.float_col.cummin(),
-            id='min',
+            id="min",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
             lambda t, win: t.float_col.max().over(win),
             lambda gb: gb.float_col.cummax(),
-            id='max',
+            id="max",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
         param(
@@ -281,7 +281,7 @@ def calc_zscore(s):
             # pandas doesn't including the current row, but following=0 implies
             # that we must, so we add one to the pandas result
             lambda gb: gb.double_col.cumcount() + 1,
-            id='count',
+            id="count",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
     ],
@@ -301,11 +301,11 @@ def test_grouped_bounded_expanding_window(
         )
     )
 
-    result = expr.execute().set_index('id').sort_index()
-    column = expected_fn(df.sort_values('id').groupby('string_col', group_keys=True))
+    result = expr.execute().set_index("id").sort_index()
+    column = expected_fn(df.sort_values("id").groupby("string_col", group_keys=True))
     if column.index.nlevels > 1:
         column = column.droplevel(0)
-    expected = df.assign(val=column).set_index('id').sort_index()
+    expected = df.assign(val=column).set_index("id").sort_index()
 
     left, right = result.val, expected.val
 
@@ -313,12 +313,12 @@ def test_grouped_bounded_expanding_window(
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t, win: t.double_col.mean().over(win),
             lambda df: (df.double_col.expanding().mean()),
-            id='mean',
+            id="mean",
             # marks=[
             #     pytest.mark.broken(
             #         ["dask"],
@@ -332,7 +332,7 @@ def test_grouped_bounded_expanding_window(
             # Pandas UDFs are only supported on unbounded windows
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda df: (df.double_col.expanding().mean()),
-            id='mean_udf',
+            id="mean_udf",
             marks=[
                 pytest.mark.notimpl(
                     [
@@ -366,10 +366,10 @@ def test_ungrouped_bounded_expanding_window(
             win=ibis.window(following=0, order_by=[alltypes.id]),
         )
     )
-    result = expr.execute().set_index('id').sort_index()
+    result = expr.execute().set_index("id").sort_index()
 
-    column = expected_fn(df.sort_values('id'))
-    expected = df.assign(val=column).set_index('id').sort_index()
+    column = expected_fn(df.sort_values("id"))
+    expected = df.assign(val=column).set_index("id").sort_index()
 
     left, right = result.val, expected.val
 
@@ -396,11 +396,11 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
 
     expr = alltypes.mutate(val=alltypes.id.mean().over(window))
 
-    result = expr.execute().set_index('id').sort_index()
+    result = expr.execute().set_index("id").sort_index()
 
     # shift id column before applying Pandas rolling window summarizer to
     # simulate forward looking window aggregation
-    gdf = df.sort_values('id').groupby('string_col')
+    gdf = df.sort_values("id").groupby("string_col")
     gdf.id = gdf.apply(lambda t: t.id.shift(-2))
     expected = (
         df.assign(
@@ -409,7 +409,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
             .sort_index(level=1)
             .reset_index(drop=True)
         )
-        .set_index('id')
+        .set_index("id")
         .sort_index()
     )
 
@@ -421,7 +421,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
 
 
 @pytest.mark.parametrize(
-    'window_fn',
+    "window_fn",
     [
         param(
             lambda t: ibis.window(
@@ -430,7 +430,7 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
                 group_by=[t.string_col],
                 order_by=[t.id],
             ),
-            id='preceding-2-following-0',
+            id="preceding-2-following-0",
         ),
         param(
             lambda t: ibis.window(
@@ -439,13 +439,13 @@ def test_grouped_bounded_following_window(backend, alltypes, df, preceding, foll
                 group_by=[t.string_col],
                 order_by=[t.id],
             ),
-            id='preceding-2-following-0-tuple',
+            id="preceding-2-following-0-tuple",
         ),
         param(
             lambda t: ibis.trailing_window(
                 preceding=2, group_by=[t.string_col], order_by=[t.id]
             ),
-            id='trailing-2',
+            id="trailing-2",
         ),
     ],
 )
@@ -455,8 +455,8 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     window = window_fn(alltypes)
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
 
-    result = expr.execute().set_index('id').sort_index()
-    gdf = df.sort_values('id').groupby('string_col')
+    result = expr.execute().set_index("id").sort_index()
+    gdf = df.sort_values("id").groupby("string_col")
     expected = (
         df.assign(
             val=gdf.double_col.rolling(3, min_periods=1)
@@ -464,7 +464,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
             .sort_index(level=1)
             .reset_index(drop=True)
         )
-        .set_index('id')
+        .set_index("id")
         .sort_index()
     )
 
@@ -474,17 +474,17 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t, win: t.double_col.mean().over(win),
-            lambda gb: (gb.double_col.transform('mean')),
-            id='mean',
+            lambda gb: (gb.double_col.transform("mean")),
+            id="mean",
         ),
         param(
             lambda t, win: mean_udf(t.double_col).over(win),
-            lambda gb: (gb.double_col.transform('mean')),
-            id='mean_udf',
+            lambda gb: (gb.double_col.transform("mean")),
+            id="mean_udf",
             marks=[
                 pytest.mark.notimpl(
                     [
@@ -507,14 +507,14 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
     ],
 )
 @pytest.mark.parametrize(
-    ('ordered'),
+    ("ordered"),
     [
         param(
             True,
-            id='ordered',
+            id="ordered",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
-        param(False, id='unordered'),
+        param(False, id="unordered"),
     ],
 )
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
@@ -534,14 +534,14 @@ def test_grouped_unbounded_window(
         )
     )
     result = expr.execute()
-    result = result.set_index('id').sort_index()
+    result = result.set_index("id").sort_index()
 
     # Apply `expected_fn` onto a DataFrame that is
     # 1) Grouped
     # 2) Ordered if `ordered` is True
-    df = df.sort_values('id') if ordered else df
-    expected = df.assign(val=expected_fn(df.groupby('string_col')))
-    expected = expected.set_index('id').sort_index()
+    df = df.sort_values("id") if ordered else df
+    expected = df.assign(val=expected_fn(df.groupby("string_col")))
+    expected = expected.set_index("id").sort_index()
 
     left, right = result.val, expected.val
     backend.assert_series_equal(left, right)
@@ -561,11 +561,11 @@ def test_grouped_unbounded_window(
 def test_simple_ungrouped_unbound_following_window(
     backend, alltypes, ibis_method, pandas_fn
 ):
-    t = alltypes[alltypes.double_col < 50].order_by('id')
+    t = alltypes[alltypes.double_col < 50].order_by("id")
     df = t.execute()
 
     w = ibis.window(rows=(0, None), order_by=t.id)
-    expr = ibis_method(t.double_col).over(w).name('double_col')
+    expr = ibis_method(t.double_col).over(w).name("double_col")
     result = expr.execute()
     expected = pandas_fn(df.double_col[::-1])[::-1]
     backend.assert_series_equal(result, expected)
@@ -584,9 +584,9 @@ def test_simple_ungrouped_unbound_following_window(
 )
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
-    t = alltypes[alltypes.double_col < 50].order_by('id')
+    t = alltypes[alltypes.double_col < 50].order_by("id")
     w = ibis.window(rows=(0, None), order_by=ibis.NA)
-    expr = t.double_col.sum().over(w).name('double_col')
+    expr = t.double_col.sum().over(w).name("double_col")
     # hard to reproduce this in pandas, so just test that it actually executes
     expr.execute()
 
@@ -599,13 +599,13 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: t.double_col.mean().over(win),
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             True,
-            id='ordered-mean',
+            id="ordered-mean",
             marks=[
                 pytest.mark.broken(["pandas"], raises=AssertionError),
                 pytest.mark.notimpl(
                     ["dask"],
                     raises=NotImplementedError,
-                    reason='Window operations are unsupported in the dask backend',
+                    reason="Window operations are unsupported in the dask backend",
                 ),
                 pytest.mark.broken(
                     ["bigquery", "clickhouse", "impala"],
@@ -618,13 +618,13 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: t.double_col.mean().over(win),
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             False,
-            id='unordered-mean',
+            id="unordered-mean",
         ),
         param(
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             True,
-            id='ordered-mean_udf',
+            id="ordered-mean_udf",
             marks=[
                 pytest.mark.notimpl(
                     [
@@ -654,7 +654,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             False,
-            id='unordered-mean_udf',
+            id="unordered-mean_udf",
             marks=[
                 pytest.mark.notimpl(
                     [
@@ -679,13 +679,13 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: t.float_col.lag().over(win),
             lambda df: df.float_col.shift(1),
             True,
-            id='ordered-lag',
+            id="ordered-lag",
         ),
         param(
             lambda t, win: t.float_col.lag().over(win),
             lambda df: df.float_col.shift(1),
             False,
-            id='unordered-lag',
+            id="unordered-lag",
             marks=[
                 pytest.mark.broken(
                     ["trino"],
@@ -710,7 +710,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: t.float_col.lead().over(win),
             lambda df: df.float_col.shift(-1),
             True,
-            id='ordered-lead',
+            id="ordered-lead",
             marks=[
                 pytest.mark.notimpl(["clickhouse"], raises=AssertionError),
             ],
@@ -719,7 +719,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: t.float_col.lead().over(win),
             lambda df: df.float_col.shift(-1),
             False,
-            id='unordered-lead',
+            id="unordered-lead",
             marks=[
                 pytest.mark.broken(
                     ["trino"],
@@ -747,7 +747,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: calc_zscore(t.double_col).over(win),
             lambda df: df.double_col.transform(calc_zscore.func),
             True,
-            id='ordered-zscore_udf',
+            id="ordered-zscore_udf",
             marks=[
                 pytest.mark.notimpl(
                     [
@@ -769,7 +769,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                 pytest.mark.notimpl(
                     ["pandas"],
                     raises=RuntimeWarning,
-                    reason='invalid value encountered in divide',
+                    reason="invalid value encountered in divide",
                 ),
                 pytest.mark.broken(
                     ["dask"],
@@ -782,7 +782,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda t, win: calc_zscore(t.double_col).over(win),
             lambda df: df.double_col.transform(calc_zscore.func),
             False,
-            id='unordered-zscore_udf',
+            id="unordered-zscore_udf",
             marks=pytest.mark.notimpl(
                 [
                     "bigquery",
@@ -816,14 +816,14 @@ def test_ungrouped_unbounded_window(
     window = ibis.window(order_by=order_by)
     expr = alltypes.mutate(val=result_fn(alltypes, win=window))
     result = expr.execute()
-    result = result.set_index('id').sort_index()
+    result = result.set_index("id").sort_index()
 
     # Apply `expected_fn` onto a DataFrame that is
     # 1) Ungrouped
     # 2) Ordered if `ordered` is True
-    df = df.sort_values('id') if ordered else df
+    df = df.sort_values("id") if ordered else df
     expected = df.assign(val=expected_fn(df))
-    expected = expected.set_index('id').sort_index()
+    expected = expected.set_index("id").sort_index()
 
     left, right = result.val, expected.val
 
@@ -864,11 +864,11 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     window = ibis.range_window(
         preceding=preceding,
         following=0,
-        order_by='id',
-        group_by='string_col',
+        order_by="id",
+        group_by="string_col",
     )
     expr = alltypes.mutate(val=alltypes.double_col.sum().over(window))
-    result = expr.execute().set_index('id').sort_index()
+    result = expr.execute().set_index("id").sort_index()
 
     def gb_fn(df):
         indices = np.searchsorted(df.id, [df["prec"], df["foll"]], side="left")
@@ -892,7 +892,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
             # Mimic our range window spec using .apply()
             val=res
         )
-        .set_index('id')
+        .set_index("id")
         .sort_index()
     )
 
@@ -912,9 +912,9 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 
-    result = expr.execute().set_index('id').sort_index()
+    result = expr.execute().set_index("id").sort_index()
     column = df.id.rank(method="min").sub(1).div(len(df) - 1)
-    expected = df.assign(val=column).set_index('id').sort_index()
+    expected = df.assign(val=column).set_index("id").sort_index()
 
     backend.assert_series_equal(result.val, expected.val)
 
@@ -979,7 +979,7 @@ def test_mutate_window_filter(backend, alltypes, df):
 @pytest.mark.notimpl(
     ["datafusion"],
     raises=Exception,
-    reason='KeyError: "Table with name win doesn\'t exist.',
+    reason="KeyError: \"Table with name win doesn't exist.",
 )
 @pytest.mark.broken(
     ["impala"],

@@ -24,15 +24,15 @@ def s():
 def test_struct_operations():
     value = OrderedDict(
         [
-            ('a', 1),
-            ('b', list('abc')),
-            ('c', OrderedDict([('foo', [1.0, 2.0])])),
+            ("a", 1),
+            ("b", list("abc")),
+            ("c", OrderedDict([("foo", [1.0, 2.0])])),
         ]
     )
     expr = ibis.literal(value)
     assert isinstance(expr, ir.StructValue)
-    assert isinstance(expr['b'], ir.ArrayValue)
-    assert isinstance(expr['a'].op(), ops.StructField)
+    assert isinstance(expr["b"], ir.ArrayValue)
+    assert isinstance(expr["a"].op(), ops.StructField)
 
 
 def test_struct_getattr():
@@ -44,7 +44,7 @@ def test_struct_getattr():
 
 
 def test_struct_tab_completion():
-    t = ibis.table([('struct_col', 'struct<my_field: string, for: int64>')])
+    t = ibis.table([("struct_col", "struct<my_field: string, for: int64>")])
     # Only valid python identifiers in getattr completions
     attrs = dir(t.struct_col)
     assert "my_field" in attrs

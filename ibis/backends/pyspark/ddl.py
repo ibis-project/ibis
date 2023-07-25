@@ -12,7 +12,7 @@ from ibis.backends.base.sql.ddl import (
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.backends.pyspark.datatypes import type_to_sql_string
 
-_format_aliases = {'TEXTFILE': 'TEXT'}
+_format_aliases = {"TEXTFILE": "TEXT"}
 
 
 def _sanitize_format(format):
@@ -21,24 +21,24 @@ def _sanitize_format(format):
     format = format.upper()
     format = _format_aliases.get(format, format)
     if format not in (
-        'TEXT',
-        'CSV',
-        'JSON',
-        'JDBC',
-        'PARQUET',
-        'ORC',
-        'HIVE',
-        'DELTA',
-        'LIBSVM',
+        "TEXT",
+        "CSV",
+        "JSON",
+        "JDBC",
+        "PARQUET",
+        "ORC",
+        "HIVE",
+        "DELTA",
+        "LIBSVM",
     ):
-        raise ValueError(f'Invalid format: {format!r}')
+        raise ValueError(f"Invalid format: {format!r}")
 
     return format
 
 
 def format_tblproperties(props):
     formatted_props = _format_properties(props)
-    return f'TBLPROPERTIES {formatted_props}'
+    return f"TBLPROPERTIES {formatted_props}"
 
 
 def _format_properties(props):
@@ -46,7 +46,7 @@ def _format_properties(props):
     for k, v in sorted(props.items()):
         tokens.append(f"  '{k}'='{v}'")
 
-    return '(\n{}\n)'.format(',\n'.join(tokens))
+    return "(\n{}\n)".format(",\n".join(tokens))
 
 
 class CreateTable(CreateTable):
@@ -56,7 +56,7 @@ class CreateTable(CreateTable):
         self,
         table_name,
         database=None,
-        format='parquet',
+        format="parquet",
         can_exist=False,
         tbl_properties=None,
     ):
@@ -71,12 +71,12 @@ class CreateTable(CreateTable):
         )
 
     def _storage(self):
-        return f'USING {self.format}'
+        return f"USING {self.format}"
 
 
 class CreateTableWithSchema(CreateTableWithSchema):
     def _storage(self):
-        return f'USING {self.format}'
+        return f"USING {self.format}"
 
 
 class CTAS(CTAS):
@@ -87,7 +87,7 @@ class CTAS(CTAS):
         table_name,
         select,
         database=None,
-        format='parquet',
+        format="parquet",
         can_exist=False,
     ):
         super().__init__(
@@ -100,7 +100,7 @@ class CTAS(CTAS):
         self.select = select
 
     def _storage(self):
-        return f'USING {self.format}'
+        return f"USING {self.format}"
 
 
 class CreateView(CTAS):
@@ -119,36 +119,36 @@ class CreateView(CTAS):
 
     @property
     def _pieces(self):
-        yield 'AS'
+        yield "AS"
         yield self.select.compile()
 
     @property
     def _prefix(self):
-        return f'CREATE {self._or_replace_clause()}{self._temporary_clause()}VIEW'
+        return f"CREATE {self._or_replace_clause()}{self._temporary_clause()}VIEW"
 
     def _or_replace_clause(self):
-        return 'OR REPLACE ' if self.can_exist else ''
+        return "OR REPLACE " if self.can_exist else ""
 
     def _temporary_clause(self):
-        return 'TEMPORARY ' if self.temporary else ''
+        return "TEMPORARY " if self.temporary else ""
 
     def _if_exists(self):
-        return ''
+        return ""
 
 
 def format_schema(schema):
     elements = [
         _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
     ]
-    return '({})'.format(',\n '.join(elements))
+    return "({})".format(",\n ".join(elements))
 
 
 def _format_schema_element(name, t):
-    return f'{quote_identifier(name, force=True)} {type_to_sql_string(t)}'
+    return f"{quote_identifier(name, force=True)} {type_to_sql_string(t)}"
 
 
 class DropDatabase(DropObject):
-    _object_type = 'DATABASE'
+    _object_type = "DATABASE"
 
     def __init__(self, name, must_exist=True, cascade=False):
         super().__init__(must_exist=must_exist)
@@ -161,13 +161,13 @@ class DropDatabase(DropObject):
     def compile(self):
         compiled = super().compile()
         if self.cascade:
-            return f'{compiled} CASCADE'
+            return f"{compiled} CASCADE"
         else:
             return compiled
 
 
 class DropFunction(DropObject):
-    _object_type = 'TEMPORARY FUNCTION'
+    _object_type = "TEMPORARY FUNCTION"
 
     def __init__(self, name, must_exist=True):
         super().__init__(must_exist=must_exist)
@@ -191,13 +191,13 @@ class InsertSelect(InsertSelect):
 
     def compile(self):
         if self.overwrite:
-            cmd = 'INSERT OVERWRITE TABLE'
+            cmd = "INSERT OVERWRITE TABLE"
         else:
-            cmd = 'INSERT INTO'
+            cmd = "INSERT INTO"
 
         select_query = self.select.compile()
         scoped_name = self._get_scoped_name(self.table_name, self.database)
-        return f'{cmd} {scoped_name}\n{select_query}'
+        return f"{cmd} {scoped_name}\n{select_query}"
 
 
 class AlterTable(AlterTable):
@@ -212,7 +212,7 @@ class AlterTable(AlterTable):
 
     def compile(self):
         props = self._format_properties()
-        action = f'{self.table} SET{props}'
+        action = f"{self.table} SET{props}"
         return self._wrap_command(action)
 
 

@@ -27,7 +27,7 @@ class try_cast(GenericFunction):
 
 
 def variance_reduction(func_name, suffix=None):
-    suffix = suffix or {'sample': '_samp', 'pop': '_pop'}
+    suffix = suffix or {"sample": "_samp", "pop": "_pop"}
 
     def variance_compiler(t, op):
         arg = op.arg
@@ -35,7 +35,7 @@ def variance_reduction(func_name, suffix=None):
         if arg.dtype.is_boolean():
             arg = ops.Cast(op.arg, to=dt.int32)
 
-        func = getattr(sa.func, f'{func_name}{suffix[op.how]}')
+        func = getattr(sa.func, f"{func_name}{suffix[op.how]}")
 
         if op.where is not None:
             arg = ops.Where(op.where, arg, None)
@@ -50,7 +50,7 @@ def fixed_arity(sa_func, arity):
         arg_count = len(op.args)
         if arity != arg_count:
             raise com.IbisError(
-                f'Incorrect number of args. Expected: {arity}. Current: {arg_count}'
+                f"Incorrect number of args. Expected: {arity}. Current: {arg_count}"
             )
 
         return _varargs_call(sa_func, t, op.args)
@@ -175,7 +175,7 @@ def _cast(t, op):
         return t.integer_to_timestamp(sa_arg, tz=typ.timezone)
 
     if arg_dtype.is_binary() and typ.is_string():
-        return sa.func.encode(sa_arg, 'escape')
+        return sa.func.encode(sa_arg, "escape")
 
     if typ.is_binary():
         #  decode yields a column of memoryview which is annoying to deal with
@@ -349,12 +349,12 @@ def _window_function(t, window):
     if isinstance(window.frame, ops.RowsWindowFrame):
         if window.frame.max_lookback is not None:
             raise NotImplementedError(
-                'Rows with max lookback is not implemented for SQLAlchemy-based '
-                'backends.'
+                "Rows with max lookback is not implemented for SQLAlchemy-based "
+                "backends."
             )
-        how = 'rows'
+        how = "rows"
     elif isinstance(window.frame, ops.RangeWindowFrame):
-        how = 'range_'
+        how = "range_"
     else:
         raise NotImplementedError(type(window.frame))
 
@@ -636,13 +636,13 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.BitwiseRightShift: _bitwise_op(">>"),
     ops.BitwiseNot: _bitwise_not,
     ops.JSONGetItem: fixed_arity(lambda x, y: x.op("->")(y), 2),
-    ops.ExtractYear: _extract('year'),
-    ops.ExtractQuarter: _extract('quarter'),
-    ops.ExtractMonth: _extract('month'),
-    ops.ExtractDay: _extract('day'),
-    ops.ExtractHour: _extract('hour'),
-    ops.ExtractMinute: _extract('minute'),
-    ops.ExtractSecond: _extract('second'),
+    ops.ExtractYear: _extract("year"),
+    ops.ExtractQuarter: _extract("quarter"),
+    ops.ExtractMonth: _extract("month"),
+    ops.ExtractDay: _extract("day"),
+    ops.ExtractHour: _extract("hour"),
+    ops.ExtractMinute: _extract("minute"),
+    ops.ExtractSecond: _extract("second"),
     ops.Time: fixed_arity(lambda arg: sa.cast(arg, sa.TIME), 1),
 }
 

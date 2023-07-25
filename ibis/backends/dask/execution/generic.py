@@ -187,12 +187,12 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
     `.loc` will only work if our index lines up with the label.
     """
     data = data[mask] if mask is not None else data
-    if op.how == 'first':
+    if op.how == "first":
         index = 0
-    elif op.how == 'last':
+    elif op.how == "last":
         index = len(data) - 1  # TODO - computation
     else:
-        raise com.OperationNotDefinedError(f'Arbitrary {op.how!r} is not supported')
+        raise com.OperationNotDefinedError(f"Arbitrary {op.how!r} is not supported")
 
     return data.loc[index]
 
@@ -201,10 +201,10 @@ def execute_arbitrary_series_mask(op, data, mask, aggcontext=None, **kwargs):
 def execute_arbitrary_series_groupby(op, data, _, aggcontext=None, **kwargs):
     how = op.how
     if how is None:
-        how = 'first'
+        how = "first"
 
-    if how not in {'first', 'last'}:
-        raise com.OperationNotDefinedError(f'Arbitrary {how!r} is not supported')
+    if how not in {"first", "last"}:
+        raise com.OperationNotDefinedError(f"Arbitrary {how!r} is not supported")
     return aggcontext.agg(data, how)
 
 
@@ -290,7 +290,7 @@ def execute_cast_series_timestamp(op, data, type, **kwargs):
         return data
 
     tz = type.timezone
-    dtype = 'M8[ns]' if tz is None else DatetimeTZDtype('ns', tz)
+    dtype = "M8[ns]" if tz is None else DatetimeTZDtype("ns", tz)
 
     if from_type.is_timestamp():
         from_tz = from_type.timezone
@@ -328,14 +328,14 @@ def execute_cast_series_date(op, data, type, **kwargs):
 
     if from_type.equals(dt.string):
         # TODO - this is broken
-        datetimes = data.map_partitions(to_datetime, meta=(data.name, 'datetime64[ns]'))
+        datetimes = data.map_partitions(to_datetime, meta=(data.name, "datetime64[ns]"))
 
         # TODO - we are getting rid of the index here
         return datetimes.dt.normalize()
 
     if from_type.is_integer():
         return data.map_partitions(
-            to_datetime, unit='D', meta=(data.name, 'datetime64[ns]')
+            to_datetime, unit="D", meta=(data.name, "datetime64[ns]")
         )
 
     raise TypeError(f"Don't know how to cast {from_type} to {type}")
@@ -391,8 +391,8 @@ def execute_binary_op_date_right(op, left, right, **kwargs):
 def execute_binary_op_series_group_by(op, left, right, **kwargs):
     if left.index != right.index:
         raise ValueError(
-            'Cannot perform {} operation on two series with '
-            'different groupings'.format(type(op).__name__)
+            "Cannot perform {} operation on two series with "
+            "different groupings".format(type(op).__name__)
         )
     result = execute_binary_op(
         op, make_selected_obj(left), make_selected_obj(right), **kwargs

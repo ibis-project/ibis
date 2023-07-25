@@ -37,11 +37,11 @@ def mean_udf(s):
 
 
 aggregate_test_params = [
-    param(lambda t: t.double_col.mean(), lambda t: t.double_col.mean(), id='mean'),
+    param(lambda t: t.double_col.mean(), lambda t: t.double_col.mean(), id="mean"),
     param(
         lambda t: mean_udf(t.double_col),
         lambda t: t.double_col.mean(),
-        id='mean_udf',
+        id="mean_udf",
         marks=[
             pytest.mark.notimpl(
                 [
@@ -67,13 +67,13 @@ aggregate_test_params = [
             ),
         ],
     ),
-    param(lambda t: t.double_col.min(), lambda t: t.double_col.min(), id='min'),
-    param(lambda t: t.double_col.max(), lambda t: t.double_col.max(), id='max'),
+    param(lambda t: t.double_col.min(), lambda t: t.double_col.min(), id="min"),
+    param(lambda t: t.double_col.max(), lambda t: t.double_col.max(), id="max"),
     param(
         # int_col % 3 so there are no ties for most common value
         lambda t: (t.int_col % 3).mode(),
         lambda t: (t.int_col % 3).mode().iloc[0],
-        id='mode',
+        id="mode",
         marks=pytest.mark.notyet(
             [
                 "bigquery",
@@ -93,12 +93,12 @@ aggregate_test_params = [
     param(
         lambda t: (t.double_col + 5).sum(),
         lambda t: (t.double_col + 5).sum(),
-        id='complex_sum',
+        id="complex_sum",
     ),
     param(
         lambda t: t.timestamp_col.max(),
         lambda t: t.timestamp_col.max(),
-        id='timestamp_max',
+        id="timestamp_max",
         marks=pytest.mark.broken(
             ["druid"],
             raises=sa.exc.ProgrammingError,
@@ -128,20 +128,20 @@ def make_argidx_params(marks):
         param(
             lambda t: t.timestamp_col.argmin(t.id),
             lambda s: s.timestamp_col.iloc[s.id.argmin()],
-            id='argmin',
+            id="argmin",
             marks=marks,
         ),
         param(
             lambda t: t.double_col.argmax(t.id),
             lambda s: s.double_col.iloc[s.id.argmax()],
-            id='argmax',
+            id="argmax",
             marks=marks,
         ),
     ]
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     aggregate_test_params + make_argidx_params(argidx_not_grouped_marks),
 )
 def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
@@ -150,17 +150,17 @@ def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
 
     # Create a single-row single-column dataframe with the Pandas `agg` result
     # (to match the output format of Ibis `aggregate`)
-    expected = pd.DataFrame({'tmp': [expected_fn(df)]})
+    expected = pd.DataFrame({"tmp": [expected_fn(df)]})
 
     backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     aggregate_test_params + make_argidx_params(argidx_grouped_marks),
 )
 def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
-    grouping_key_col = 'bigint_col'
+    grouping_key_col = "bigint_col"
 
     # Two (equivalent) variations:
     #  1) `group_by` then `aggregate`
@@ -172,7 +172,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_col).apply(expected_fn).rename('tmp').reset_index()
+        df.groupby(grouping_key_col).apply(expected_fn).rename("tmp").reset_index()
     )
 
     # Row ordering may differ depending on backend, so sort on the
@@ -219,22 +219,22 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
 
     @reduction(
         input_type=[dt.double],
-        output_type=dt.Struct({'mean': dt.double, 'std': dt.double}),
+        output_type=dt.Struct({"mean": dt.double, "std": dt.double}),
     )
     def mean_and_std(v):
         return v.mean(), v.std()
 
-    grouping_key_cols = ['bigint_col', 'int_col']
+    grouping_key_cols = ["bigint_col", "int_col"]
 
     expr1 = alltypes.group_by(grouping_key_cols).aggregate(
-        mean_and_std(alltypes['double_col']).destructure()
+        mean_and_std(alltypes["double_col"]).destructure()
     )
 
     result1 = expr1.execute()
 
     # Note: Using `reset_index` to get the grouping key as a column
     expected = (
-        df.groupby(grouping_key_cols)['double_col'].agg(['mean', 'std']).reset_index()
+        df.groupby(grouping_key_cols)["double_col"].agg(["mean", "std"]).reset_index()
     )
 
     # Row ordering may differ depending on backend, so sort on the
@@ -250,22 +250,22 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t, where: t.bool_col.count(where=where),
             lambda t, where: len(t.bool_col[where].dropna()),
-            id='count',
+            id="count",
         ),
         param(
             lambda t, where: t.bool_col.nunique(where=where),
             lambda t, where: t.bool_col[where].dropna().nunique(),
-            id='nunique',
+            id="nunique",
         ),
         param(
             lambda t, where: t.bool_col.any(where=where),
             lambda t, where: t.bool_col[where].any(),
-            id='any',
+            id="any",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"],
@@ -281,7 +281,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.bool_col.notany(where=where),
             lambda t, where: ~t.bool_col[where].any(),
-            id='notany',
+            id="notany",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"],
@@ -302,7 +302,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: -t.bool_col.any(where=where),
             lambda t, where: ~t.bool_col[where].any(),
-            id='any_negate',
+            id="any_negate",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"],
@@ -323,7 +323,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.bool_col.all(where=where),
             lambda t, where: t.bool_col[where].all(),
-            id='all',
+            id="all",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"],
@@ -339,7 +339,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.bool_col.notall(where=where),
             lambda t, where: ~t.bool_col[where].all(),
-            id='notall',
+            id="notall",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"],
@@ -360,7 +360,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: -t.bool_col.all(where=where),
             lambda t, where: ~t.bool_col[where].all(),
-            id='all_negate',
+            id="all_negate",
             marks=[
                 pytest.mark.notimpl(
                     ["datafusion"],
@@ -381,7 +381,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.double_col.sum(where=where),
             lambda t, where: t.double_col[where].sum(),
-            id='sum',
+            id="sum",
         ),
         param(
             lambda t, where: (t.int_col > 0).sum(where=where),
@@ -406,23 +406,23 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.double_col.mean(where=where),
             lambda t, where: t.double_col[where].mean(),
-            id='mean',
+            id="mean",
         ),
         param(
             lambda t, where: t.double_col.min(where=where),
             lambda t, where: t.double_col[where].min(),
-            id='min',
+            id="min",
         ),
         param(
             lambda t, where: t.double_col.max(where=where),
             lambda t, where: t.double_col[where].max(),
-            id='max',
+            id="max",
         ),
         param(
             # int_col % 3 so there are no ties for most common value
             lambda t, where: (t.int_col % 3).mode(where=where),
             lambda t, where: (t.int_col % 3)[where].mode().iloc[0],
-            id='mode',
+            id="mode",
             marks=pytest.mark.notyet(
                 [
                     "bigquery",
@@ -442,7 +442,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.double_col.argmin(t.int_col, where=where),
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmin()],
-            id='argmin',
+            id="argmin",
             marks=[
                 pytest.mark.notyet(
                     [
@@ -460,7 +460,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.double_col.argmax(t.int_col, where=where),
             lambda t, where: t.double_col[where].iloc[t.int_col[where].argmax()],
-            id='argmax',
+            id="argmax",
             marks=[
                 pytest.mark.notyet(
                     [
@@ -476,9 +476,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: t.double_col.std(how='sample', where=where),
+            lambda t, where: t.double_col.std(how="sample", where=where),
             lambda t, where: t.double_col[where].std(ddof=1),
-            id='std',
+            id="std",
             marks=[
                 mark.notimpl(
                     ["druid"],
@@ -488,9 +488,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: t.double_col.var(how='sample', where=where),
+            lambda t, where: t.double_col.var(how="sample", where=where),
             lambda t, where: t.double_col[where].var(ddof=1),
-            id='var',
+            id="var",
             marks=[
                 mark.notimpl(
                     ["druid"],
@@ -500,9 +500,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: t.double_col.std(how='pop', where=where),
+            lambda t, where: t.double_col.std(how="pop", where=where),
             lambda t, where: t.double_col[where].std(ddof=0),
-            id='std_pop',
+            id="std_pop",
             marks=[
                 mark.notimpl(
                     ["druid"],
@@ -512,9 +512,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: t.double_col.var(how='pop', where=where),
+            lambda t, where: t.double_col.var(how="pop", where=where),
             lambda t, where: t.double_col[where].var(ddof=0),
-            id='var_pop',
+            id="var_pop",
             marks=[
                 mark.notimpl(
                     ["druid"],
@@ -526,40 +526,40 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
-            id='approx_nunique',
+            id="approx_nunique",
             marks=pytest.mark.notimpl(
-                ['polars', "datafusion"], raises=com.OperationNotDefinedError
+                ["polars", "datafusion"], raises=com.OperationNotDefinedError
             ),
         ),
         param(
             lambda t, where: t.double_col.arbitrary(where=where),
             lambda t, where: t.double_col[where].iloc[0],
-            id='arbitrary_default',
+            id="arbitrary_default",
             marks=pytest.mark.notimpl(
-                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid", "oracle"],
+                ["impala", "mysql", "polars", "datafusion", "mssql", "druid", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
         param(
-            lambda t, where: t.double_col.arbitrary(how='first', where=where),
+            lambda t, where: t.double_col.arbitrary(how="first", where=where),
             lambda t, where: t.double_col[where].iloc[0],
-            id='arbitrary_first',
+            id="arbitrary_first",
             marks=pytest.mark.notimpl(
-                ['impala', 'mysql', 'polars', 'datafusion', "mssql", "druid", "oracle"],
+                ["impala", "mysql", "polars", "datafusion", "mssql", "druid", "oracle"],
                 raises=com.OperationNotDefinedError,
             ),
         ),
         param(
-            lambda t, where: t.double_col.arbitrary(how='last', where=where),
+            lambda t, where: t.double_col.arbitrary(how="last", where=where),
             lambda t, where: t.double_col[where].iloc[-1],
-            id='arbitrary_last',
+            id="arbitrary_last",
             marks=[
                 pytest.mark.notimpl(
                     [
-                        'impala',
-                        'mysql',
-                        'polars',
-                        'datafusion',
+                        "impala",
+                        "mysql",
+                        "polars",
+                        "datafusion",
                         "mssql",
                         "druid",
                         "oracle",
@@ -574,9 +574,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: t.double_col.arbitrary(how='heavy', where=where),
+            lambda t, where: t.double_col.arbitrary(how="heavy", where=where),
             lambda t, where: t.double_col[where].iloc[8],
-            id='arbitrary_heavy',
+            id="arbitrary_heavy",
             # only clickhouse implements this option
             marks=[
                 pytest.mark.notimpl(
@@ -609,7 +609,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.double_col.first(where=where),
             lambda t, where: t.double_col[where].iloc[0],
-            id='first',
+            id="first",
             marks=pytest.mark.notimpl(
                 ["dask", "datafusion", "druid", "impala", "mssql", "mysql", "oracle"],
                 raises=com.OperationNotDefinedError,
@@ -618,7 +618,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.double_col.last(where=where),
             lambda t, where: t.double_col[where].iloc[-1],
-            id='last',
+            id="last",
             marks=pytest.mark.notimpl(
                 ["dask", "datafusion", "druid", "impala", "mssql", "mysql", "oracle"],
                 raises=com.OperationNotDefinedError,
@@ -627,7 +627,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),
             lambda t, where: np.bitwise_and.reduce(t.bigint_col[where].values),
-            id='bit_and',
+            id="bit_and",
             marks=[
                 pytest.mark.notimpl(
                     ["polars", "datafusion", "mssql"],
@@ -651,7 +651,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.bigint_col.bit_or(where=where),
             lambda t, where: np.bitwise_or.reduce(t.bigint_col[where].values),
-            id='bit_or',
+            id="bit_or",
             marks=[
                 pytest.mark.notimpl(
                     ["polars", "datafusion", "mssql"],
@@ -675,7 +675,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.bigint_col.bit_xor(where=where),
             lambda t, where: np.bitwise_xor.reduce(t.bigint_col[where].values),
-            id='bit_xor',
+            id="bit_xor",
             marks=[
                 pytest.mark.notimpl(
                     ["polars", "datafusion", "mssql"],
@@ -699,7 +699,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
         param(
             lambda t, where: t.count(where=where),
             lambda t, where: len(t[where]),
-            id='count_star',
+            id="count_star",
             marks=[
                 pytest.mark.broken(
                     ["polars"],
@@ -741,13 +741,13 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
     ],
 )
 @pytest.mark.parametrize(
-    ('ibis_cond', 'pandas_cond'),
+    ("ibis_cond", "pandas_cond"),
     [
-        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(lambda _: None, lambda _: slice(None), id="no_cond"),
         param(
-            lambda t: t.string_col.isin(['1', '7']),
-            lambda t: t.string_col.isin(['1', '7']),
-            id='is_in',
+            lambda t: t.string_col.isin(["1", "7"]),
+            lambda t: t.string_col.isin(["1", "7"]),
+            id="is_in",
             marks=[mark.broken(["datafusion"], raises=AssertionError)],
         ),
     ],
@@ -773,7 +773,7 @@ def test_reduction_ops(
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t, where: t.double_col.quantile(0.5, where=where),
@@ -858,13 +858,13 @@ def test_reduction_ops(
     ],
 )
 @pytest.mark.parametrize(
-    ('ibis_cond', 'pandas_cond'),
+    ("ibis_cond", "pandas_cond"),
     [
-        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(lambda _: None, lambda _: slice(None), id="no_cond"),
         param(
-            lambda t: t.string_col.isin(['1', '7']),
-            lambda t: t.string_col.isin(['1', '7']),
-            id='is_in',
+            lambda t: t.string_col.isin(["1", "7"]),
+            lambda t: t.string_col.isin(["1", "7"]),
+            id="is_in",
             marks=[mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)],
         ),
     ],
@@ -884,12 +884,12 @@ def test_quantile(
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t, where: t.G.cov(t.RBI, where=where, how="pop"),
             lambda t, where: t.G[where].cov(t.RBI[where], ddof=0),
-            id='covar_pop',
+            id="covar_pop",
             marks=[
                 pytest.mark.notimpl(
                     ["dask", "datafusion", "pandas", "polars", "druid"],
@@ -903,7 +903,7 @@ def test_quantile(
         param(
             lambda t, where: t.G.cov(t.RBI, where=where, how="sample"),
             lambda t, where: t.G[where].cov(t.RBI[where], ddof=1),
-            id='covar_samp',
+            id="covar_samp",
             marks=[
                 pytest.mark.notimpl(
                     ["dask", "datafusion", "pandas", "polars", "druid"],
@@ -918,7 +918,7 @@ def test_quantile(
         param(
             lambda t, where: t.G.corr(t.RBI, where=where, how="pop"),
             lambda t, where: t.G[where].corr(t.RBI[where]),
-            id='corr_pop',
+            id="corr_pop",
             marks=[
                 pytest.mark.notimpl(
                     ["dask", "datafusion", "pandas", "druid"],
@@ -943,7 +943,7 @@ def test_quantile(
         param(
             lambda t, where: t.G.corr(t.RBI, where=where, how="sample"),
             lambda t, where: t.G[where].corr(t.RBI[where]),
-            id='corr_samp',
+            id="corr_samp",
             marks=[
                 pytest.mark.notimpl(
                     ["dask", "datafusion", "pandas", "druid"],
@@ -972,7 +972,7 @@ def test_quantile(
                 how="pop",
             ),
             lambda t, where: (t.G[where] > 34.0).cov(t.G[where] <= 34.0, ddof=0),
-            id='covar_pop_bool',
+            id="covar_pop_bool",
             marks=[
                 pytest.mark.notimpl(
                     ["dask", "datafusion", "pandas", "polars", "druid"],
@@ -995,7 +995,7 @@ def test_quantile(
                 how="pop",
             ),
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
-            id='corr_pop_bool',
+            id="corr_pop_bool",
             marks=[
                 pytest.mark.notimpl(
                     ["dask", "datafusion", "pandas", "druid"],
@@ -1025,13 +1025,13 @@ def test_quantile(
     ],
 )
 @pytest.mark.parametrize(
-    ('ibis_cond', 'pandas_cond'),
+    ("ibis_cond", "pandas_cond"),
     [
-        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(lambda _: None, lambda _: slice(None), id="no_cond"),
         param(
             lambda t: t.yearID.isin([2009, 2015]),
             lambda t: t.yearID.isin([2009, 2015]),
-            id='cond',
+            id="cond",
         ),
     ],
 )
@@ -1091,13 +1091,13 @@ def test_median(alltypes, df):
 
 
 @mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t, where, sep: (
-                t.group_by('bigint_col')
+                t.group_by("bigint_col")
                 .aggregate(tmp=lambda t: t.string_col.group_concat(sep, where=where))
-                .order_by('bigint_col')
+                .order_by("bigint_col")
             ),
             lambda t, where, sep: (
                 (
@@ -1105,15 +1105,15 @@ def test_median(alltypes, df):
                     if isinstance(where, slice)
                     else t.assign(string_col=t.string_col.where(where))
                 )
-                .groupby('bigint_col')
+                .groupby("bigint_col")
                 .string_col.agg(
                     lambda s: (np.nan if pd.isna(s).all() else sep.join(s.values))
                 )
-                .rename('tmp')
+                .rename("tmp")
                 .sort_index()
                 .reset_index()
             ),
-            id='group_concat',
+            id="group_concat",
         )
     ],
 )
@@ -1133,10 +1133,10 @@ def test_median(alltypes, df):
                 mark.notyet(
                     ["bigquery"],
                     raises=GoogleBadRequest,
-                    reason='Argument 2 to STRING_AGG must be a literal or query parameter',
+                    reason="Argument 2 to STRING_AGG must be a literal or query parameter",
                 ),
                 mark.broken(
-                    ["pyspark"], raises=TypeError, reason='Column is not iterable'
+                    ["pyspark"], raises=TypeError, reason="Column is not iterable"
                 ),
                 mark.broken(
                     ["mysql"],
@@ -1147,20 +1147,20 @@ def test_median(alltypes, df):
     ],
 )
 @mark.parametrize(
-    ('ibis_cond', 'pandas_cond'),
+    ("ibis_cond", "pandas_cond"),
     [
-        param(lambda _: None, lambda _: slice(None), id='no_cond'),
+        param(lambda _: None, lambda _: slice(None), id="no_cond"),
         param(
-            lambda t: t.string_col.isin(['1', '7']),
-            lambda t: t.string_col.isin(['1', '7']),
+            lambda t: t.string_col.isin(["1", "7"]),
+            lambda t: t.string_col.isin(["1", "7"]),
             marks=mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
-            id='is_in',
+            id="is_in",
         ),
         param(
-            lambda t: t.string_col.notin(['1', '7']),
-            lambda t: ~t.string_col.isin(['1', '7']),
+            lambda t: t.string_col.notin(["1", "7"]),
+            lambda t: ~t.string_col.isin(["1", "7"]),
             marks=mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
-            id='not_in',
+            id="not_in",
         ),
     ],
 )
@@ -1207,24 +1207,24 @@ def test_topk_op(alltypes, df):
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
     t = alltypes.order_by(alltypes.string_col)
-    df = df.sort_values('string_col')
+    df = df.sort_values("string_col")
     expr = t.string_col.topk(3)
     result = expr.execute()
-    expected = df.groupby('string_col')['string_col'].count().head(3)
+    expected = df.groupby("string_col")["string_col"].count().head(3)
     assert all(result.iloc[:, 1].values == expected.values)
 
 
 @pytest.mark.parametrize(
-    ('result_fn', 'expected_fn'),
+    ("result_fn", "expected_fn"),
     [
         param(
             lambda t: t.semi_join(t.string_col.topk(3), "string_col"),
             lambda t: t[
                 t.string_col.isin(
-                    t.groupby('string_col')['string_col'].count().head(3).index
+                    t.groupby("string_col")["string_col"].count().head(3).index
                 )
             ],
-            id='string_col_filter_top3',
+            id="string_col_filter_top3",
         )
     ],
 )
@@ -1253,7 +1253,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
     # Note: Maybe would be good if TopK could order by "count"
     # and the field used by TopK
     t = alltypes.order_by(alltypes.string_col)
-    df = df.sort_values('string_col')
+    df = df.sort_values("string_col")
     expr = result_fn(t)
     result = expr.execute()
     expected = expected_fn(df)
@@ -1261,7 +1261,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
 
 
 @pytest.mark.parametrize(
-    'agg_fn', [lambda s: list(s), lambda s: np.array(s)], ids=lambda obj: obj.__name__
+    "agg_fn", [lambda s: list(s), lambda s: np.array(s)], ids=lambda obj: obj.__name__
 )
 @mark.notimpl(
     [
@@ -1296,7 +1296,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     result = expr.execute()
 
     # Expecting a 1-row DataFrame
-    expected = pd.DataFrame({'result_col': [agg_fn(df.double_col)]})
+    expected = pd.DataFrame({"result_col": [agg_fn(df.double_col)]})
 
     backend.assert_frame_equal(result, expected)
 
@@ -1343,8 +1343,8 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
 
     expected = pd.DataFrame(
         {
-            'sum_col': [sum_udf.func(df.double_col)],
-            'collect_udf': [collect_udf.func(df.double_col)],
+            "sum_col": [sum_udf.func(df.double_col)],
+            "collect_udf": [collect_udf.func(df.double_col)],
         }
     )
 
@@ -1355,7 +1355,7 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
 def test_binds_are_cast(alltypes):
     expr = alltypes.aggregate(
         high_line_count=(
-            alltypes.string_col.case().when('1-URGENT', 1).else_(0).end().sum()
+            alltypes.string_col.case().when("1-URGENT", 1).else_(0).end().sum()
         )
     )
 

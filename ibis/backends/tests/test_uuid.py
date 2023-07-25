@@ -17,34 +17,34 @@ TEST_UUID = uuid.UUID(RAW_TEST_UUID)
 SQLALCHEMY2 = vparse(sqlalchemy.__version__) >= vparse("2")
 
 UUID_BACKEND_TYPE = {
-    'bigquery': 'STRING',
-    'duckdb': "UUID",
-    'sqlite': "text",
-    'snowflake': 'VARCHAR',
-    'trino': 'varchar(32)' if SQLALCHEMY2 else 'uuid',
+    "bigquery": "STRING",
+    "duckdb": "UUID",
+    "sqlite": "text",
+    "snowflake": "VARCHAR",
+    "trino": "varchar(32)" if SQLALCHEMY2 else "uuid",
     "postgres": "uuid",
 }
 
 UUID_EXPECTED_VALUES = {
-    'pandas': TEST_UUID,
-    'bigquery': TEST_UUID,
-    'duckdb': TEST_UUID,
-    'sqlite': TEST_UUID,
-    'snowflake': TEST_UUID,
-    'trino': TEST_UUID,
+    "pandas": TEST_UUID,
+    "bigquery": TEST_UUID,
+    "duckdb": TEST_UUID,
+    "sqlite": TEST_UUID,
+    "snowflake": TEST_UUID,
+    "trino": TEST_UUID,
     "postgres": TEST_UUID,
-    'mysql': TEST_UUID,
-    'mssql': TEST_UUID,
-    'dask': TEST_UUID,
-    'oracle': TEST_UUID,
+    "mysql": TEST_UUID,
+    "mssql": TEST_UUID,
+    "dask": TEST_UUID,
+    "oracle": TEST_UUID,
 }
 
 pytestmark = pytest.mark.notimpl(
     ["druid"],
     raises=sqlalchemy.exc.CompileError,
     reason=(
-        'No literal value renderer is available for literal value '
-        '"UUID(\'08f48812-7948-4718-96c7-27fa6a398db6\')" with datatype NULL'
+        "No literal value renderer is available for literal value "
+        "\"UUID('08f48812-7948-4718-96c7-27fa6a398db6')\" with datatype NULL"
     ),
 )
 
@@ -60,7 +60,7 @@ pytestmark = pytest.mark.notimpl(
     raises=sqlalchemy.exc.NotSupportedError,
 )
 @pytest.mark.notimpl(
-    ['impala', 'datafusion', 'polars', 'clickhouse'], raises=NotImplementedError
+    ["impala", "datafusion", "polars", "clickhouse"], raises=NotImplementedError
 )
 def test_uuid_literal(con, backend):
     backend_name = backend.name()

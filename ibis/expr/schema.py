@@ -27,8 +27,8 @@ class Schema(Concrete, Coercible, MapSet):
         space = 2 + max(map(len, self.names), default=0)
         return "ibis.Schema {{{}\n}}".format(
             indent(
-                ''.join(
-                    f'\n{name.ljust(space)}{type!s}' for name, type in self.items()
+                "".join(
+                    f"\n{name.ljust(space)}{type!s}" for name, type in self.items()
                 ),
                 2,
             )
@@ -126,7 +126,7 @@ class Schema(Concrete, Coercible, MapSet):
             duplicate_names = list(names)
             for v in name_locs:
                 duplicate_names.remove(v)
-            raise IntegrityError(f'Duplicate column name(s): {duplicate_names}')
+            raise IntegrityError(f"Duplicate column name(s): {duplicate_names}")
 
         # construct the schema
         return cls(dict(zip(names, types)))

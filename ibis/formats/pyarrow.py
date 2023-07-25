@@ -129,7 +129,7 @@ class PyArrowType(TypeMapper):
             return pa.date64()
         elif dtype.is_array():
             value_field = pa.field(
-                'item',
+                "item",
                 cls.from_ibis(dtype.value_type),
                 nullable=dtype.value_type.nullable,
             )
@@ -142,12 +142,12 @@ class PyArrowType(TypeMapper):
             return pa.struct(fields)
         elif dtype.is_map():
             key_field = pa.field(
-                'key',
+                "key",
                 cls.from_ibis(dtype.key_type),
                 nullable=False,  # pyarrow doesn't allow nullable keys
             )
             value_field = pa.field(
-                'value',
+                "value",
                 cls.from_ibis(dtype.value_type),
                 nullable=dtype.value_type.nullable,
             )

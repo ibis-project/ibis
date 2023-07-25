@@ -84,8 +84,8 @@ class SimpleCaseBuilder(CaseBuilder):
         """
         if not rlz.comparable(self.base, case_expr):
             raise TypeError(
-                f'Base expression {rlz._arg_type_error_format(self.base)} and '
-                f'case {rlz._arg_type_error_format(case_expr)} are not comparable'
+                f"Base expression {rlz._arg_type_error_format(self.base)} and "
+                f"case {rlz._arg_type_error_format(case_expr)} are not comparable"
             )
         return super().when(case_expr, result_expr)
 
@@ -225,7 +225,7 @@ class LegacyWindowBuilder(WindowBuilder):
 
         if (preceding_tuple and has_following) or (following_tuple and has_preceding):
             raise IbisInputError(
-                'Can only specify one window side when you want an off-center window'
+                "Can only specify one window side when you want an off-center window"
             )
         elif preceding_tuple:
             start, end = preceding

@@ -32,8 +32,8 @@ class B3(B2):
 
 @pytest.fixture
 def foo_dispatchers():
-    foo = TwoLevelDispatcher('foo', doc='Test dispatcher foo')
-    foo_m = Dispatcher('foo_m', doc='Control dispatcher foo_m')
+    foo = TwoLevelDispatcher("foo", doc="Test dispatcher foo")
+    foo_m = Dispatcher("foo_m", doc="Control dispatcher foo_m")
 
     @foo.register(A1, B1)
     @foo_m.register(A1, B1)
@@ -80,7 +80,7 @@ def foo_m(foo_dispatchers):
 def test_cache(foo, mocker):
     """Test that cache is properly set after calling with args."""
 
-    spy = mocker.spy(foo, 'dispatch')
+    spy = mocker.spy(foo, "dispatch")
     a1, b1 = A1(), B1()
 
     assert (A1, B1) not in foo._cache
@@ -94,7 +94,7 @@ def test_dispatch(foo, mocker):
     """Test that calling dispatcher with a signature that is registered does
     not trigger a linear search through dispatch_iter."""
 
-    spy = mocker.spy(foo, 'dispatch_iter')
+    spy = mocker.spy(foo, "dispatch_iter")
 
     # This should not trigger a linear search
     foo(A1(), B1())
@@ -108,7 +108,7 @@ def test_dispatch(foo, mocker):
 
 
 @pytest.mark.parametrize(
-    'args',
+    "args",
     [
         (A1(), B1()),
         (A1(), B2()),
@@ -137,7 +137,7 @@ def test_funcs(foo, foo_m):
     assert foo.funcs == foo_m.funcs
 
 
-@pytest.mark.parametrize('args', [(B1(),), (B2(),), (A1(), A1()), (A1(), A2(), A3())])
+@pytest.mark.parametrize("args", [(B1(),), (B2(),), (A1(), A1()), (A1(), A2(), A3())])
 def test_unregistered(foo, args):
     with pytest.raises(NotImplementedError, match="Could not find signature for foo.*"):
         foo(*args)

@@ -88,15 +88,15 @@ def _array_column(t, op):
 _truncate_precisions = {
     # ms unit is not yet officially documented in Trino's public documentation,
     # but it just works.
-    'ms': 'millisecond',
-    's': 'second',
-    'm': 'minute',
-    'h': 'hour',
-    'D': 'day',
-    'W': 'week',
-    'M': 'month',
-    'Q': 'quarter',
-    'Y': 'year',
+    "ms": "millisecond",
+    "s": "second",
+    "m": "minute",
+    "h": "hour",
+    "D": "day",
+    "W": "week",
+    "M": "month",
+    "Q": "quarter",
+    "Y": "year",
 }
 
 
@@ -105,7 +105,7 @@ def _timestamp_truncate(t, op):
     try:
         precision = _truncate_precisions[op.unit.short]
     except KeyError:
-        raise com.UnsupportedOperationError(f'Unsupported truncate unit {op.unit!r}')
+        raise com.UnsupportedOperationError(f"Unsupported truncate unit {op.unit!r}")
     return sa.func.date_trunc(precision, sa_arg)
 
 
@@ -369,24 +369,24 @@ operation_registry.update(
         ops.StrRight: fixed_arity(lambda arg, nchars: sa.func.substr(arg, -nchars), 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         ops.Repeat: fixed_arity(
-            lambda value, count: sa.func.array_join(sa.func.repeat(value, count), ''), 2
+            lambda value, count: sa.func.array_join(sa.func.repeat(value, count), ""), 2
         ),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
         ops.DateFromYMD: fixed_arity(
             lambda y, m, d: sa.func.from_iso8601_date(
-                sa.func.format('%04d-%02d-%02d', y, m, d)
+                sa.func.format("%04d-%02d-%02d", y, m, d)
             ),
             3,
         ),
         ops.TimeFromHMS: fixed_arity(
-            lambda h, m, s: sa.cast(sa.func.format('%02d:%02d:%02d', h, m, s), sa.TIME),
+            lambda h, m, s: sa.cast(sa.func.format("%02d:%02d:%02d", h, m, s), sa.TIME),
             3,
         ),
         ops.TimestampFromYMDHMS: fixed_arity(
             lambda y, mo, d, h, m, s: sa.cast(
                 sa.func.from_iso8601_timestamp(
-                    sa.func.format('%04d-%02d-%02dT%02d:%02d:%02d', y, mo, d, h, m, s)
+                    sa.func.format("%04d-%02d-%02dT%02d:%02d:%02d", y, mo, d, h, m, s)
                 ),
                 sa.TIMESTAMP(timezone=False),
             ),

@@ -81,7 +81,7 @@ class PySparkExprTranslator:
             scope.set_value(op, timecontext, result)
             return result
         else:
-            raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+            raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
 compiles = PySparkExprTranslator.compiles
@@ -157,7 +157,7 @@ def compile_selection(t, op, *, scope, timecontext, **kwargs):
         # directly use filter with a window operation. The workaround
         # here is to assign a temporary column for the filter predicate,
         # do the filtering, and then drop the temporary column.
-        filter_column = f'predicate_{guid()}'
+        filter_column = f"predicate_{guid()}"
         result_table = result_table.withColumn(filter_column, col)
         result_table = result_table.filter(F.col(filter_column))
         result_table = result_table.drop(filter_column)
@@ -260,8 +260,8 @@ def compile_cast(t, op, **kwargs):
             return interval(op.arg.value, op.to.unit).op()
         else:
             raise com.UnsupportedArgumentError(
-                'Casting to intervals is only supported for literals '
-                'in the PySpark backend. {} not allowed.'.format(type(op.arg))
+                "Casting to intervals is only supported for literals "
+                "in the PySpark backend. {} not allowed.".format(type(op.arg))
             )
 
     cast_type = PySparkType.from_ibis(op.to)
@@ -274,8 +274,8 @@ def compile_cast(t, op, **kwargs):
 def compile_limit(t, op, **kwargs):
     if op.offset != 0:
         raise com.UnsupportedArgumentError(
-            'PySpark backend does not support non-zero offset is for '
-            'limit operation. Got offset {}.'.format(op.offset)
+            "PySpark backend does not support non-zero offset is for "
+            "limit operation. Got offset {}.".format(op.offset)
         )
     df = t.translate(op.table, **kwargs)
     return df.limit(op.n)
@@ -620,9 +620,9 @@ def compile_approx_median(t, op, **kwargs):
 def compile_std(t, op, **kwargs):
     how = op.how
 
-    if how == 'sample':
+    if how == "sample":
         fn = F.stddev_samp
-    elif how == 'pop':
+    elif how == "pop":
         fn = F.stddev_pop
     else:
         raise com.TranslationError(f"Unexpected 'how' in translation: {how}")
@@ -634,9 +634,9 @@ def compile_std(t, op, **kwargs):
 def compile_variance(t, op, **kwargs):
     how = op.how
 
-    if how == 'sample':
+    if how == "sample":
         fn = F.var_samp
-    elif how == 'pop':
+    elif how == "pop":
         fn = F.var_pop
     else:
         raise com.TranslationError(f"Unexpected 'how' in translation: {how}")
@@ -677,9 +677,9 @@ def compile_correlation(t, op, **kwargs):
 def compile_arbitrary(t, op, **kwargs):
     how = op.how
 
-    if how == 'first':
+    if how == "first":
         fn = functools.partial(F.first, ignorenulls=True)
-    elif how == 'last':
+    elif how == "last":
         fn = functools.partial(F.last, ignorenulls=True)
     else:
         raise com.UnsupportedOperationError(
@@ -740,8 +740,8 @@ def compile_abs(t, op, **kwargs):
 @compiles(ops.Clip)
 def compile_clip(t, op, **kwargs):
     col = t.translate(op.arg, **kwargs)
-    upper = t.translate(op.upper, **kwargs) if op.upper is not None else float('inf')
-    lower = t.translate(op.lower, **kwargs) if op.lower is not None else float('-inf')
+    upper = t.translate(op.upper, **kwargs) if op.upper is not None else float("inf")
+    lower = t.translate(op.lower, **kwargs) if op.lower is not None else float("-inf")
 
     def column_min(value, limit):
         """Return values greater than or equal to `limit`."""
@@ -763,7 +763,7 @@ def compile_round(t, op, **kwargs):
     scale = t.translate(op.digits, **kwargs, raw=True) if op.digits is not None else 0
     rounded = F.round(src_column, scale=scale)
     if scale == 0:
-        rounded = rounded.astype('long')
+        rounded = rounded.astype("long")
     return rounded
 
 
@@ -958,7 +958,7 @@ def compile_string_length(t, op, **kwargs):
 
 @compiles(ops.StrRight)
 def compile_str_right(t, op, **kwargs):
-    @F.udf('string')
+    @F.udf("string")
     def str_right(s, nchars):
         return s[-nchars:]
 
@@ -969,7 +969,7 @@ def compile_str_right(t, op, **kwargs):
 
 @compiles(ops.Repeat)
 def compile_repeat(t, op, **kwargs):
-    @F.udf('string')
+    @F.udf("string")
     def repeat(s, times):
         return s * times
 
@@ -980,7 +980,7 @@ def compile_repeat(t, op, **kwargs):
 
 @compiles(ops.StringFind)
 def compile_string_find(t, op, **kwargs):
-    @F.udf('long')
+    @F.udf("long")
     def str_find(s, substr, start, end):
         return s.find(substr, start, end)
 
@@ -1017,7 +1017,7 @@ def compile_rpad(t, op, **kwargs):
 
 @compiles(ops.StringJoin)
 def compile_string_join(t, op, **kwargs):
-    @F.udf('string')
+    @F.udf("string")
     def join(sep, arr):
         return sep.join(arr)
 
@@ -1030,7 +1030,7 @@ def compile_string_join(t, op, **kwargs):
 def compile_regex_search(t, op, **kwargs):
     import re
 
-    @F.udf('boolean')
+    @F.udf("boolean")
     def regex_search(s, pattern):
         return re.search(pattern, s) is not None
 
@@ -1089,32 +1089,32 @@ def compile_string_like(t, op, **kwargs):
 
 @compiles(ops.InnerJoin)
 def compile_inner_join(t, op, **kwargs):
-    return compile_join(t, op, **kwargs, how='inner')
+    return compile_join(t, op, **kwargs, how="inner")
 
 
 @compiles(ops.LeftJoin)
 def compile_left_join(t, op, **kwargs):
-    return compile_join(t, op, **kwargs, how='left')
+    return compile_join(t, op, **kwargs, how="left")
 
 
 @compiles(ops.RightJoin)
 def compile_right_join(t, op, **kwargs):
-    return compile_join(t, op, **kwargs, how='right')
+    return compile_join(t, op, **kwargs, how="right")
 
 
 @compiles(ops.OuterJoin)
 def compile_outer_join(t, op, **kwargs):
-    return compile_join(t, op, **kwargs, how='outer')
+    return compile_join(t, op, **kwargs, how="outer")
 
 
 @compiles(ops.LeftSemiJoin)
 def compile_left_semi_join(t, op, **kwargs):
-    return compile_join(t, op, **kwargs, how='leftsemi')
+    return compile_join(t, op, **kwargs, how="leftsemi")
 
 
 @compiles(ops.LeftAntiJoin)
 def compile_left_anti_join(t, op, **kwargs):
-    return compile_join(t, op, **kwargs, how='leftanti')
+    return compile_join(t, op, **kwargs, how="leftanti")
 
 
 def compile_join(t, op, how, **kwargs):
@@ -1147,8 +1147,8 @@ def _canonicalize_interval(t, interval, **kwargs):
         return interval
     else:
         raise com.UnsupportedOperationError(
-            f'type {type(interval)} is not supported in preceding /following '
-            'in window.'
+            f"type {type(interval)} is not supported in preceding /following "
+            "in window."
         )
 
 
@@ -1175,7 +1175,7 @@ def compile_window_function(t, op, **kwargs):
 
     # Timestamp needs to be cast to long for window bounds in spark
     ordering_keys = [
-        F.col(sort.name).cast('long') if sort.dtype.is_timestamp() else sort.name
+        F.col(sort.name).cast("long") if sort.dtype.is_timestamp() else sort.name
         for sort in op.frame.order_by
     ]
     aggcontext = AggregationContext.WINDOW
@@ -1194,7 +1194,7 @@ def compile_window_function(t, op, **kwargs):
         else:
             win_end = t.translate(op.frame.end, **kwargs)
 
-        if op.frame.how == 'range':
+        if op.frame.how == "range":
             pyspark_window = pyspark_window.rangeBetween(win_start, win_end)
         else:
             pyspark_window = pyspark_window.rowsBetween(win_start, win_end)
@@ -1213,7 +1213,7 @@ def compile_window_function(t, op, **kwargs):
         return ~result
     elif isinstance(func, ops.RankBase):
         # result must be cast to long type for Rank / RowNumber
-        return result.astype('long') - 1
+        return result.astype("long") - 1
     else:
         return result
 
@@ -1257,7 +1257,7 @@ def compile_percent_rank(t, op, **kwargs):
 @compiles(ops.CumeDist)
 def compile_cume_dist(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'PySpark backend does not support cume_dist with Ibis.'
+        "PySpark backend does not support cume_dist with Ibis."
     )
 
 
@@ -1295,26 +1295,26 @@ def compile_row_number(t, op, **kwargs):
 
 # Ibis value to PySpark value
 _time_unit_mapping = {
-    'Y': 'year',
-    'Q': 'quarter',
-    'M': 'month',
-    'W': 'week',
-    'D': 'day',
-    'h': 'hour',
-    'm': 'minute',
-    's': 'second',
+    "Y": "year",
+    "Q": "quarter",
+    "M": "month",
+    "W": "week",
+    "D": "day",
+    "h": "hour",
+    "m": "minute",
+    "s": "second",
 }
 
 
 @compiles(ops.Date)
 def compile_date(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
-    return F.to_date(src_column).cast('timestamp')
+    return F.to_date(src_column).cast("timestamp")
 
 
 def _extract_component_from_datetime(t, op, extract_fn, **kwargs):
     date_col = t.translate(op.arg, **kwargs)
-    return extract_fn(date_col).cast('integer')
+    return extract_fn(date_col).cast("integer")
 
 
 @compiles(ops.ExtractYear)
@@ -1372,14 +1372,14 @@ def compile_extract_second(t, op, **kwargs):
 @compiles(ops.ExtractMicrosecond)
 def compile_extract_microsecond(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'PySpark backend does not support extracting microseconds.'
+        "PySpark backend does not support extracting microseconds."
     )
 
 
 @compiles(ops.ExtractMillisecond)
 def compile_extract_millisecond(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'PySpark backend does not support extracting milliseconds.'
+        "PySpark backend does not support extracting milliseconds."
     )
 
 
@@ -1389,7 +1389,7 @@ def compile_date_truncate(t, op, **kwargs):
         unit = _time_unit_mapping[op.unit.short]
     except KeyError:
         raise com.UnsupportedOperationError(
-            f'{op.unit!r} unit is not supported in timestamp truncate'
+            f"{op.unit!r} unit is not supported in timestamp truncate"
         )
 
     src_column = t.translate(op.arg, **kwargs)
@@ -1405,7 +1405,7 @@ def compile_timestamp_truncate(t, op, **kwargs):
 def compile_strftime(t, op, **kwargs):
     format_str = op.format_str.value
 
-    @pandas_udf('string', PandasUDFType.SCALAR)
+    @pandas_udf("string", PandasUDFType.SCALAR)
     def strftime(timestamps):
         return timestamps.dt.strftime(format_str)
 
@@ -1418,13 +1418,13 @@ def compile_timestamp_from_unix(t, op, **kwargs):
     unixtime = t.translate(op.arg, **kwargs)
     if not op.unit:
         return F.to_timestamp(F.from_unixtime(unixtime))
-    elif op.unit.short == 's':
-        fmt = 'yyyy-MM-dd HH:mm:ss'
+    elif op.unit.short == "s":
+        fmt = "yyyy-MM-dd HH:mm:ss"
         return F.to_timestamp(F.from_unixtime(unixtime, fmt), fmt)
     else:
         raise com.UnsupportedArgumentError(
-            'PySpark backend does not support timestamp from unix time with '
-            'unit {}. Supported unit is s.'.format(op.unit.short)
+            "PySpark backend does not support timestamp from unix time with "
+            "unit {}. Supported unit is s.".format(op.unit.short)
         )
 
 
@@ -1442,22 +1442,22 @@ def compile_string_to_timestamp(t, op, **kwargs):
 
 @compiles(ops.DayOfWeekIndex)
 def compile_day_of_week_index(t, op, **kwargs):
-    @pandas_udf('short', PandasUDFType.SCALAR)
+    @pandas_udf("short", PandasUDFType.SCALAR)
     def day_of_week(s):
         return s.dt.dayofweek
 
     src_column = t.translate(op.arg, **kwargs)
-    return day_of_week(src_column.cast('timestamp'))
+    return day_of_week(src_column.cast("timestamp"))
 
 
 @compiles(ops.DayOfWeekName)
 def compiles_day_of_week_name(t, op, **kwargs):
-    @pandas_udf('string', PandasUDFType.SCALAR)
+    @pandas_udf("string", PandasUDFType.SCALAR)
     def day_name(s):
         return s.dt.day_name()
 
     src_column = t.translate(op.arg, **kwargs)
-    return day_name(src_column.cast('timestamp'))
+    return day_name(src_column.cast("timestamp"))
 
 
 def _get_interval_col(t, op, allowed_units=None, **kwargs):
@@ -1466,13 +1466,13 @@ def _get_interval_col(t, op, allowed_units=None, **kwargs):
     dtype = op.dtype
     if not dtype.is_interval():
         raise com.UnsupportedArgumentError(
-            f'{dtype} expression cannot be converted to interval column. '
-            'Must be Interval dtype.'
+            f"{dtype} expression cannot be converted to interval column. "
+            "Must be Interval dtype."
         )
     if allowed_units and dtype.unit.short not in allowed_units:
         raise com.UnsupportedArgumentError(
             f'Interval unit "{dtype.unit.short}" is not allowed. Allowed units are: '
-            f'{allowed_units}'
+            f"{allowed_units}"
         )
 
     # if interval expression is a binary op, translate expression into
@@ -1495,13 +1495,13 @@ def _get_interval_col(t, op, allowed_units=None, **kwargs):
         td_nanos = op.value.value
         if td_nanos % 1000 != 0:
             raise com.UnsupportedArgumentError(
-                'Interval with nanoseconds is not supported. The '
-                'smallest unit supported by Spark is microseconds.'
+                "Interval with nanoseconds is not supported. The "
+                "smallest unit supported by Spark is microseconds."
             )
         td_micros = td_nanos // 1000
-        return F.expr(f'INTERVAL {td_micros} MICROSECOND')
+        return F.expr(f"INTERVAL {td_micros} MICROSECOND")
     else:
-        return F.expr(f'INTERVAL {op.value} {_time_unit_mapping[dtype.unit.short]}')
+        return F.expr(f"INTERVAL {op.value} {_time_unit_mapping[dtype.unit.short]}")
 
 
 def _compile_datetime_binop(t, op, *, fn, **kwargs):
@@ -1512,11 +1512,11 @@ def _compile_datetime_binop(t, op, *, fn, **kwargs):
 
 @compiles(ops.DateAdd)
 def compile_date_add(t, op, **kwargs):
-    allowed_units = ['Y', 'W', 'M', 'D']
+    allowed_units = ["Y", "W", "M", "D"]
     return _compile_datetime_binop(
         t,
         op,
-        fn=lambda lhs, rhs: (lhs + rhs).cast('timestamp'),
+        fn=lambda lhs, rhs: (lhs + rhs).cast("timestamp"),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1524,11 +1524,11 @@ def compile_date_add(t, op, **kwargs):
 
 @compiles(ops.DateSub)
 def compile_date_sub(t, op, **kwargs):
-    allowed_units = ['Y', 'W', 'M', 'D']
+    allowed_units = ["Y", "W", "M", "D"]
     return _compile_datetime_binop(
         t,
         op,
-        fn=lambda lhs, rhs: (lhs - rhs).cast('timestamp'),
+        fn=lambda lhs, rhs: (lhs - rhs).cast("timestamp"),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1546,11 +1546,11 @@ def compile_date_diff(t, op, **kwargs):
 
 @compiles(ops.TimestampAdd)
 def compile_timestamp_add(t, op, **kwargs):
-    allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
+    allowed_units = ["Y", "W", "M", "D", "h", "m", "s"]
     return _compile_datetime_binop(
         t,
         op,
-        fn=lambda lhs, rhs: (lhs + rhs).cast('timestamp'),
+        fn=lambda lhs, rhs: (lhs + rhs).cast("timestamp"),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1558,11 +1558,11 @@ def compile_timestamp_add(t, op, **kwargs):
 
 @compiles(ops.TimestampSub)
 def compile_timestamp_sub(t, op, **kwargs):
-    allowed_units = ['Y', 'W', 'M', 'D', 'h', 'm', 's']
+    allowed_units = ["Y", "W", "M", "D", "h", "m", "s"]
     return _compile_datetime_binop(
         t,
         op,
-        fn=lambda lhs, rhs: (lhs - rhs).cast('timestamp'),
+        fn=lambda lhs, rhs: (lhs - rhs).cast("timestamp"),
         allowed_units=allowed_units,
         **kwargs,
     )
@@ -1571,8 +1571,8 @@ def compile_timestamp_sub(t, op, **kwargs):
 @compiles(ops.TimestampDiff)
 def compile_timestamp_diff(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'PySpark backend does not support TimestampDiff as there is no '
-        'timedelta type.'
+        "PySpark backend does not support TimestampDiff as there is no "
+        "timedelta type."
     )
 
 
@@ -1596,7 +1596,7 @@ def compile_interval_subtract(t, op, **kwargs):
 @compiles(ops.IntervalFromInteger)
 def compile_interval_from_integer(t, op, **kwargs):
     raise com.UnsupportedOperationError(
-        'Interval from integer column is unsupported for the PySpark backend.'
+        "Interval from integer column is unsupported for the PySpark backend."
     )
 
 

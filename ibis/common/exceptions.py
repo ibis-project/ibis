@@ -149,7 +149,7 @@ def mark_as_unsupported(f: Callable) -> Callable:
     # function that raises UnsupportedOperationError
     def _mark_as_unsupported(self):
         raise UnsupportedOperationError(
-            f'Method `{f.__name__}` is unsupported by class `{self.__class__.__name__}`.'
+            f"Method `{f.__name__}` is unsupported by class `{self.__class__.__name__}`."
         )
 
     _mark_as_unsupported.__doc__ = f.__doc__

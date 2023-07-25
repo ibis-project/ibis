@@ -118,9 +118,9 @@ def _extract_url_query(t, op):
     parsed_url = sa.func.parse_url(t.translate(op.arg), 1)
 
     if (key := op.key) is not None:
-        r = sa.func.get(sa.func.get(parsed_url, 'parameters'), t.translate(key))
+        r = sa.func.get(sa.func.get(parsed_url, "parameters"), t.translate(key))
     else:
-        r = sa.func.get(parsed_url, 'query')
+        r = sa.func.get(parsed_url, "query")
 
     return sa.func.nullif(sa.func.as_varchar(r), "")
 
@@ -228,7 +228,7 @@ def _regex_extract(t, op):
     pattern = t.translate(op.pattern)
     index = t.translate(op.index)
     # https://docs.snowflake.com/en/sql-reference/functions/regexp_substr
-    return sa.func.regexp_substr(arg, pattern, 1, 1, 'ce', index)
+    return sa.func.regexp_substr(arg, pattern, 1, 1, "ce", index)
 
 
 def _map_get(t, op):

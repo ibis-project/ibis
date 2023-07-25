@@ -28,12 +28,12 @@ def test_table_from_dataframe(dataframe, ibis_table, core_client):
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
-    t = core_client.from_dataframe(dataframe, name='foo')
+    t = core_client.from_dataframe(dataframe, name="foo")
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
     client = core_client
-    t = core_client.from_dataframe(dataframe, name='foo', client=client)
+    t = core_client.from_dataframe(dataframe, name="foo", client=client)
     expected = ibis_table.execute()
     tm.assert_frame_equal(result, expected)
 
@@ -66,13 +66,13 @@ def test_pre_execute_basic():
 
 
 def test_execute_parameter_only():
-    param = ibis.param('int64')
+    param = ibis.param("int64")
     result = execute(param.op(), params={param.op(): 42})
     assert result == 42
 
 
 def test_missing_data_sources():
-    t = ibis.table([('a', 'string')])
+    t = ibis.table([("a", "string")])
     expr = t.a.length()
     with pytest.raises(com.UnboundExpressionError):
         execute(expr.op())
@@ -88,7 +88,7 @@ def test_post_execute_called_on_joins(dataframe, core_client, ibis_table):
 
     left = ibis_table
     right = left.view()
-    join = left.join(right, 'plain_strings')[left.plain_int64]
+    join = left.join(right, "plain_strings")[left.plain_int64]
     result = join.execute()
     assert result is not None
     assert len(result.index) > 0
@@ -108,4 +108,4 @@ def test_scope_look_up():
 def test_new_dispatcher():
     types = (ops.TableColumn, dd.DataFrame)
     assert execute_node.dispatch(*types) is not None
-    assert pandas_execute_node.dispatch(*types).__name__ == 'raise_unknown_op'
+    assert pandas_execute_node.dispatch(*types).__name__ == "raise_unknown_op"

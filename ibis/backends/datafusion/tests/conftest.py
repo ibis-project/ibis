@@ -30,16 +30,16 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return ibis.datafusion.connect(**kw)
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def alltypes_df(alltypes):
     return alltypes.execute()

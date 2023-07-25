@@ -75,7 +75,7 @@ def _get_post_process_function(frame: ops.WindowFrame) -> Callable:
         return _post_process_empty
 
 
-get_aggcontext = Dispatcher('get_aggcontext')
+get_aggcontext = Dispatcher("get_aggcontext")
 
 
 @get_aggcontext.register(object)
@@ -186,7 +186,7 @@ def _post_process_empty(
     else:
         # Project any non delayed object to the shape of "parent"
         return parent.apply(
-            lambda row, result=result: result, meta=(None, 'object'), axis=1
+            lambda row, result=result: result, meta=(None, "object"), axis=1
         )
 
 
@@ -209,7 +209,7 @@ def _post_process_order_by(
         series = add_globally_consecutive_column(series)
         return series[0]
 
-    series_index_name = 'index' if series.index.name is None else series.index.name
+    series_index_name = "index" if series.index.name is None else series.index.name
     # Need to sort series back before returning.
     series = series.reset_index().set_index(series_index_name).iloc[:, 0]
 
@@ -283,7 +283,7 @@ def execute_window_op(
 
     if frame.group_by:
         if frame.order_by:
-            raise NotImplementedError('Grouped and order windows not supported yet')
+            raise NotImplementedError("Grouped and order windows not supported yet")
             # TODO finish implementeing grouped/order windows.
         else:
             if len(grouping_keys) == 1 and isinstance(grouping_keys[0], dd.Series):
@@ -414,7 +414,7 @@ def execute_series_lead_lag_timedelta(
 
     # get the DataFrame from the parent object, handling the DataFrameGroupBy
     # case
-    parent_df = getattr(parent, 'obj', parent)
+    parent_df = getattr(parent, "obj", parent)
 
     # perform the time shift
     adjusted_parent_df = parent_df.assign(
@@ -425,7 +425,7 @@ def execute_series_lead_lag_timedelta(
     adjusted_indexed_parent = adjusted_parent_df.set_index(group_by + order_by)
 
     # get the column we care about
-    result = adjusted_indexed_parent[getattr(data, 'obj', data).name]
+    result = adjusted_indexed_parent[getattr(data, "obj", data).name]
 
     # add a default if necessary
     return post_lead_lag(result, default)
@@ -448,7 +448,7 @@ def execute_series_first_value(op, data, **kwargs):
 
 @execute_node.register(ops.FirstValue, ddgb.SeriesGroupBy)
 def execute_series_group_by_first_value(op, data, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'first')
+    return aggcontext.agg(data, "first")
 
 
 @execute_node.register(ops.LastValue, dd.Series)
@@ -463,4 +463,4 @@ def execute_series_last_value(op, data, **kwargs):
 
 @execute_node.register(ops.LastValue, ddgb.SeriesGroupBy)
 def execute_series_group_by_last_value(op, data, aggcontext=None, **kwargs):
-    return aggcontext.agg(data, 'last')
+    return aggcontext.agg(data, "last")

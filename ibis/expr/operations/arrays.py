@@ -65,8 +65,8 @@ class ArrayConcat(Value):
     def __init__(self, left, right):
         if left.dtype != right.dtype:
             raise com.IbisTypeError(
-                'Array types must match exactly in a {} operation. '
-                'Left type {} != Right type {}'.format(
+                "Array types must match exactly in a {} operation. "
+                "Left type {} != Right type {}".format(
                     type(self).__name__, left.dtype, right.dtype
                 )
             )

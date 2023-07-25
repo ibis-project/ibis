@@ -106,12 +106,12 @@ def test_multiple_case_null_else(table):
 
 def test_case_mixed_type():
     t0 = ibis.table(
-        [('one', 'string'), ('two', 'double'), ('three', 'int32')],
-        name='my_data',
+        [("one", "string"), ("two", "double"), ("three", "int32")],
+        name="my_data",
     )
 
     expr = (
-        t0.three.case().when(0, 'low').when(1, 'high').else_('null').end().name('label')
+        t0.three.case().when(0, "low").when(1, "high").else_("null").end().name("label")
     )
     result = t0[expr]
-    assert result['label'].type().equals(dt.string)
+    assert result["label"].type().equals(dt.string)

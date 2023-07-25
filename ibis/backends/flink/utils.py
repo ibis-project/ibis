@@ -80,7 +80,7 @@ def format_precision(precision: int, unit: IntervalUnit) -> str:
             f"{precision} is bigger than the allowed precision for {unit} ({MAX_ALLOWED_PRECISION[unit]})"
         )
 
-    return '' if precision <= 2 else f'({precision})'
+    return "" if precision <= 2 else f"({precision})"
 
 
 class FlinkIntervalType(ABC):

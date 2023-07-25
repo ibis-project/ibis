@@ -20,7 +20,7 @@ from ibis.backends.impala.compat import HS2Error  # noqa: E402
 
 @pytest.fixture
 def temp_view(con) -> str:
-    name = util.gen_name('view')
+    name = util.gen_name("view")
     yield name
     con.drop_view(name, force=True)
 
@@ -28,7 +28,7 @@ def temp_view(con) -> str:
 def test_create_exists_view(con, temp_view):
     assert temp_view not in con.list_tables()
 
-    t1 = con.table('functional_alltypes').limit(1)
+    t1 = con.table("functional_alltypes").limit(1)
     t2 = con.create_view(temp_view, t1)
 
     assert temp_view in con.list_tables()
@@ -66,7 +66,7 @@ def test_create_table_with_location_execute(
     con, hdfs, tmp_dir, alltypes, test_data_db, temp_table
 ):
     base = pjoin(tmp_dir, util.guid())
-    name = f'test_{util.guid()}'
+    name = f"test_{util.guid()}"
     tmp_path = pjoin(base, name)
 
     expr = alltypes
@@ -76,7 +76,7 @@ def test_create_table_with_location_execute(
 
 
 def test_drop_table_not_exist(con):
-    non_existent_table = f'ibis_table_{util.guid()}'
+    non_existent_table = f"ibis_table_{util.guid()}"
     with pytest.raises(HS2Error):
         con.drop_table(non_existent_table)
     con.drop_table(non_existent_table, force=True)
@@ -90,8 +90,8 @@ def test_truncate_table(con, alltypes, temp_table):
     try:
         con.truncate_table(temp_table)
     except HS2Error as e:
-        if 'AnalysisException' in e.args[0]:
-            pytest.skip('TRUNCATE not available in this version of Impala')
+        if "AnalysisException" in e.args[0]:
+            pytest.skip("TRUNCATE not available in this version of Impala")
 
     t = con.table(temp_table)
     nrows = t.count().execute()
@@ -118,10 +118,10 @@ def test_ctas_from_table_expr(con, alltypes, temp_table_db):
 def test_create_empty_table(con, temp_table):
     schema = ibis.schema(
         [
-            ('a', 'string'),
-            ('b', 'timestamp'),
-            ('c', 'decimal(12, 8)'),
-            ('d', 'double'),
+            ("a", "string"),
+            ("b", "timestamp"),
+            ("c", "decimal(12, 8)"),
+            ("d", "double"),
         ]
     )
 
@@ -160,25 +160,25 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
     expr = alltypes
     con.create_table(
         temp_table,
-        schema=expr['tinyint_col', 'int_col', 'string_col'].schema(),
+        schema=expr["tinyint_col", "int_col", "string_col"].schema(),
         database=db,
     )
 
     t = con.table(temp_table, database=db)
 
     to_insert = expr[
-        expr.tinyint_col, expr.smallint_col.name('int_col'), expr.string_col
+        expr.tinyint_col, expr.smallint_col.name("int_col"), expr.string_col
     ]
     t.insert(to_insert.limit(10))
 
     to_insert = expr[
         expr.tinyint_col,
-        expr.smallint_col.cast('int32').name('int_col'),
+        expr.smallint_col.cast("int32").name("int_col"),
         expr.string_col,
     ]
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[expr.tinyint_col, expr.bigint_col.name('int_col'), expr.string_col]
+    to_insert = expr[expr.tinyint_col, expr.bigint_col.name("int_col"), expr.string_col]
 
     limit_expr = to_insert.limit(10)
     with pytest.raises(com.IbisError):
@@ -186,12 +186,12 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
 
 
 def test_compute_stats(con):
-    t = con.table('functional_alltypes')
+    t = con.table("functional_alltypes")
 
     t.compute_stats()
     t.compute_stats(incremental=True)
 
-    con.compute_stats('functional_alltypes')
+    con.compute_stats("functional_alltypes")
 
 
 @pytest.fixture
@@ -210,13 +210,13 @@ def test_drop_view(con, created_view):
 def test_rename_table(con, temp_database):
     tmp_db = temp_database
 
-    orig_name = 'tmp_rename_test'
-    con.create_table(orig_name, con.table('region'))
+    orig_name = "tmp_rename_test"
+    con.create_table(orig_name, con.table("region"))
     table = con.table(orig_name)
 
     old_name = table.name
 
-    new_name = 'rename_test'
+    new_name = "rename_test"
     renamed = table.rename(new_name, database=tmp_db)
     renamed.execute()
 
@@ -228,7 +228,7 @@ def test_rename_table(con, temp_database):
 
 @pytest.fixture
 def path_uuid():
-    return f'change-location-{util.guid()}'
+    return f"change-location-{util.guid()}"
 
 
 @pytest.fixture
@@ -251,15 +251,15 @@ def table(con, tmp_db, tmp_dir, path_uuid):
 def test_change_location(table, tmp_dir, path_uuid):
     old_loc = table.metadata().location
 
-    new_path = pjoin(tmp_dir, 'new-path')
+    new_path = pjoin(tmp_dir, "new-path")
     table.alter(location=new_path)
 
     new_loc = table.metadata().location
-    assert new_loc == old_loc.replace(path_uuid, 'new-path')
+    assert new_loc == old_loc.replace(path_uuid, "new-path")
 
 
 def test_change_properties(table):
-    props = {'foo': '1', 'bar': '2'}
+    props = {"foo": "1", "bar": "2"}
 
     table.alter(tbl_properties=props)
     tbl_props = table.metadata().tbl_properties
@@ -273,14 +273,14 @@ def test_change_properties(table):
 
 
 def test_change_format(table):
-    table.alter(format='avro')
+    table.alter(format="avro")
 
     meta = table.metadata()
-    assert 'Avro' in meta.hive_format
+    assert "Avro" in meta.hive_format
 
 
 def test_query_avro(con, test_data_dir, tmp_db):
-    hdfs_path = pjoin(test_data_dir, 'impala/avro/tpch/region')
+    hdfs_path = pjoin(test_data_dir, "impala/avro/tpch/region")
 
     avro_schema = {
         "fields": [
@@ -317,7 +317,7 @@ def temp_table_id(con):
 
 
 def test_create_table_reserved_identifier(con, temp_table_id):
-    expr = con.table('functional_alltypes')
+    expr = con.table("functional_alltypes")
     expected = expr.count().execute()
     con.create_table(temp_table_id, expr)
     result = con.table(temp_table_id).count().execute()
@@ -325,21 +325,21 @@ def test_create_table_reserved_identifier(con, temp_table_id):
 
 
 def test_query_delimited_file_directory(con, test_data_dir, tmp_db):
-    hdfs_path = pjoin(test_data_dir, 'csv')
+    hdfs_path = pjoin(test_data_dir, "csv")
 
-    schema = ibis.schema([('foo', 'string'), ('bar', 'double'), ('baz', 'int8')])
-    name = 'delimited_table_test1'
+    schema = ibis.schema([("foo", "string"), ("bar", "double"), ("baz", "int8")])
+    name = "delimited_table_test1"
     table = con.delimited_file(
-        hdfs_path, schema, name=name, database=tmp_db, delimiter=','
+        hdfs_path, schema, name=name, database=tmp_db, delimiter=","
     )
 
     expr = (
         table[table.bar > 0]
-        .group_by('foo')
+        .group_by("foo")
         .aggregate(
             [
-                table.bar.sum().name('sum(bar)'),
-                table.baz.sum().name('mean(baz)'),
+                table.bar.sum().name("sum(bar)"),
+                table.baz.sum().name("mean(baz)"),
             ]
         )
     )
@@ -365,8 +365,8 @@ CREATE TABLE IF NOT EXISTS {name} (
 
 
 def test_varchar_char_support(temp_char_table):
-    assert isinstance(temp_char_table['group1'], ir.StringValue)
-    assert isinstance(temp_char_table['group2'], ir.StringValue)
+    assert isinstance(temp_char_table["group1"], ir.StringValue)
+    assert isinstance(temp_char_table["group2"], ir.StringValue)
 
 
 def test_temp_table_concurrency(con, test_data_dir):
@@ -378,7 +378,7 @@ def test_temp_table_concurrency(con, test_data_dir):
         return t.order_by(t.r_regionkey).limit(1, offset=offset).execute()
 
     nthreads = multiprocessing.cpu_count()
-    hdfs_path = pjoin(test_data_dir, 'impala/parquet/region')
+    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
 
     num_rows = int(con.parquet_file(hdfs_path).count().execute())
     with concurrent.futures.ThreadPoolExecutor(max_workers=nthreads) as e:
@@ -393,8 +393,8 @@ def test_temp_table_concurrency(con, test_data_dir):
 
 
 def test_access_kudu_table(kudu_table):
-    assert kudu_table.columns == ['a']
-    assert kudu_table['a'].type() == dt.string
+    assert kudu_table.columns == ["a"]
+    assert kudu_table["a"].type() == dt.string
 
 
 def test_kudu_property_raises_useful_error(con):

@@ -52,7 +52,7 @@ class BasePandasBackend(BaseBackend):
     def from_dataframe(
         self,
         df: pd.DataFrame,
-        name: str = 'df',
+        name: str = "df",
         client: BasePandasBackend | None = None,
     ) -> ir.Table:
         """Construct an ibis table from a pandas DataFrame.
@@ -83,10 +83,10 @@ class BasePandasBackend(BaseBackend):
 
     @property
     def current_database(self):
-        raise NotImplementedError('pandas backend does not support databases')
+        raise NotImplementedError("pandas backend does not support databases")
 
     def list_databases(self, like=None):
-        raise NotImplementedError('pandas backend does not support databases')
+        raise NotImplementedError("pandas backend does not support databases")
 
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self.dictionary.keys()), like)
@@ -235,7 +235,7 @@ class BasePandasBackend(BaseBackend):
 
 
 class Backend(BasePandasBackend):
-    name = 'pandas'
+    name = "pandas"
 
     def to_pyarrow(
         self,
@@ -268,13 +268,13 @@ class Backend(BasePandasBackend):
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )
 
-    def execute(self, query, params=None, limit='default', **kwargs):
+    def execute(self, query, params=None, limit="default", **kwargs):
         from ibis.backends.pandas.core import execute_and_reset
 
-        if limit != 'default' and limit is not None:
+        if limit != "default" and limit is not None:
             raise ValueError(
-                'limit parameter to execute is not yet implemented in the '
-                'pandas backend'
+                "limit parameter to execute is not yet implemented in the "
+                "pandas backend"
             )
 
         if not isinstance(query, ir.Expr):

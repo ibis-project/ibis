@@ -56,7 +56,7 @@ def test_udf_sql(snapshot):
 
     format_t = udf.sql(
         "format_t",
-        params={'input': dt.string},
+        params={"input": dt.string},
         output_type=dt.double,
         sql_expression="FORMAT('%T', input)",
     )

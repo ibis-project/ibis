@@ -25,7 +25,7 @@ from ibis.backends.clickhouse.datatypes import serialize
 @functools.singledispatch
 def translate_val(op, **_):
     """Translate a value expression into sqlglot."""
-    raise com.OperationNotDefinedError(f'No translation rule for {type(op)}')
+    raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
 @translate_val.register(dt.DataType)
@@ -443,17 +443,17 @@ def _literal(op, **kw):
         precision = dtype.precision
         if precision is None or not 1 <= precision <= 76:
             raise NotImplementedError(
-                f'Unsupported precision. Supported values: [1 : 76]. Current value: {precision!r}'
+                f"Unsupported precision. Supported values: [1 : 76]. Current value: {precision!r}"
             )
 
         if 1 <= precision <= 9:
-            type_name = 'Decimal32'
+            type_name = "Decimal32"
         elif 10 <= precision <= 18:
-            type_name = 'Decimal64'
+            type_name = "Decimal64"
         elif 19 <= precision <= 38:
-            type_name = 'Decimal128'
+            type_name = "Decimal128"
         else:
-            type_name = 'Decimal256'
+            type_name = "Decimal256"
         return f"to{type_name}({value!s}, {dtype.scale})"
     elif dtype.is_numeric():
         return repr(value)
@@ -482,7 +482,7 @@ def _literal(op, **kw):
         return f"{func}({joined_args})"
 
     elif dtype.is_date():
-        formatted = value.strftime('%Y-%m-%d')
+        formatted = value.strftime("%Y-%m-%d")
         return f"toDate('{formatted}')"
     elif dtype.is_array():
         value_type = dtype.value_type
@@ -504,7 +504,7 @@ def _literal(op, **kw):
         )
         return f"tuple({fields})"
     else:
-        raise NotImplementedError(f'Unsupported type: {dtype!r}')
+        raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
 
 def _sql(obj, dialect="clickhouse"):
@@ -1150,9 +1150,9 @@ def cumulative_to_window(func, frame):
 def format_window_boundary(boundary, **kw):
     value = translate_val(boundary.value, **kw)
     if boundary.preceding:
-        return f'{value} PRECEDING'
+        return f"{value} PRECEDING"
     else:
-        return f'{value} FOLLOWING'
+        return f"{value} FOLLOWING"
 
 
 def format_window_frame(func, frame, **kw):
@@ -1160,20 +1160,20 @@ def format_window_frame(func, frame, **kw):
 
     if frame.how == "rows" and frame.max_lookback is not None:
         raise NotImplementedError(
-            'Rows with max lookback is not implemented for the ClickHouse backend.'
+            "Rows with max lookback is not implemented for the ClickHouse backend."
         )
 
     if frame.group_by:
-        partition_args = ', '.join(
+        partition_args = ", ".join(
             map(_sql, map(partial(translate_val, **kw), frame.group_by))
         )
-        components.append(f'PARTITION BY {partition_args}')
+        components.append(f"PARTITION BY {partition_args}")
 
     if frame.order_by:
-        order_args = ', '.join(
+        order_args = ", ".join(
             map(_sql, map(partial(translate_val, **kw), frame.order_by))
         )
-        components.append(f'ORDER BY {order_args}')
+        components.append(f"ORDER BY {order_args}")
 
     frame_clause_not_allowed = (
         ops.Lag,
@@ -1191,30 +1191,30 @@ def format_window_frame(func, frame, **kw):
         pass
     elif not isinstance(func, frame_clause_not_allowed):
         if frame.start is None:
-            start = 'UNBOUNDED PRECEDING'
+            start = "UNBOUNDED PRECEDING"
         else:
             start = format_window_boundary(frame.start, **kw)
 
         if frame.end is None:
-            end = 'UNBOUNDED FOLLOWING'
+            end = "UNBOUNDED FOLLOWING"
         else:
             end = format_window_boundary(frame.end, **kw)
 
-        frame = f'{frame.how.upper()} BETWEEN {start} AND {end}'
+        frame = f"{frame.how.upper()} BETWEEN {start} AND {end}"
         components.append(frame)
 
     return f"OVER ({' '.join(components)})"
 
 
 _map_interval_to_microseconds = {
-    'W': 604800000000,
-    'D': 86400000000,
-    'h': 3600000000,
-    'm': 60000000,
-    's': 1000000,
-    'ms': 1000,
-    'us': 1,
-    'ns': 0.001,
+    "W": 604800000000,
+    "D": 86400000000,
+    "h": 3600000000,
+    "m": 60000000,
+    "s": 1000000,
+    "ms": 1000,
+    "us": 1,
+    "ns": 0.001,
 }
 
 _map_interval_op_to_op = {
@@ -1239,7 +1239,7 @@ UNSUPPORTED_REDUCTIONS = (
 def _window(op: ops.WindowFunction, **kw: Any):
     if isinstance(op.func, UNSUPPORTED_REDUCTIONS):
         raise com.UnsupportedOperationError(
-            f'{type(op.func)} is not supported in window functions'
+            f"{type(op.func)} is not supported in window functions"
         )
 
     if isinstance(op.func, ops.CumulativeOp):
@@ -1249,7 +1249,7 @@ def _window(op: ops.WindowFunction, **kw: Any):
     window_formatted = format_window_frame(op, op.frame, **kw)
     func = op.func.__window_op__
     func_formatted = translate_val(func, **kw)
-    result = f'{func_formatted} {window_formatted}'
+    result = f"{func_formatted} {window_formatted}"
 
     if isinstance(func, ops.RankBase):
         return f"({result} - 1)"
@@ -1269,7 +1269,7 @@ def shift_like(op_class, name):
 
         if default is not None:
             if offset is None:
-                offset_fmt = '1'
+                offset_fmt = "1"
             else:
                 offset_fmt = translate_val(offset, **kw)
 

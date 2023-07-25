@@ -22,7 +22,7 @@ def normalize(r: str | re.Pattern):
         The compiled regex.
     """
     r = getattr(r, "pattern", r)
-    return re.compile('^' + r.lstrip('^').rstrip('$') + '$')
+    return re.compile("^" + r.lstrip("^").rstrip("$") + "$")
 
 
 def lazy_singledispatch(func):
@@ -81,7 +81,7 @@ def lazy_singledispatch(func):
                     return impl
         # Can never get here, since a base `object` implementation is
         # always registered
-        raise AssertionError('should never get here')  # pragma: no cover
+        raise AssertionError("should never get here")  # pragma: no cover
 
     @functools.wraps(func)
     def call(arg, *args, **kwargs):

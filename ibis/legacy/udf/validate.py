@@ -52,10 +52,10 @@ def validate_input_type(input_type: list[dt.DataType], func: Callable) -> Signat
 
         if declared_parameter_count != function_parameter_count:
             raise TypeError(
-                'Function signature {!r} has {:d} parameters, '
-                'input_type has {:d}. These must match. Non-column '
-                'parameters must be defined as keyword only, i.e., '
-                'def foo(col, *, function_param).'.format(
+                "Function signature {!r} has {:d} parameters, "
+                "input_type has {:d}. These must match. Non-column "
+                "parameters must be defined as keyword only, i.e., "
+                "def foo(col, *, function_param).".format(
                     func.__name__,
                     function_parameter_count,
                     declared_parameter_count,
@@ -69,4 +69,4 @@ def validate_output_type(output_type: Any) -> None:
     """Check that the output type is a single datatype."""
 
     if isinstance(output_type, list):
-        raise com.IbisTypeError('The output type of a UDF must be a single datatype.')
+        raise com.IbisTypeError("The output type of a UDF must be a single datatype.")

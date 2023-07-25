@@ -34,10 +34,10 @@ if TYPE_CHECKING:
 def execute_aggregation_dataframe(
     op, data, scope=None, timecontext: TimeContext | None = None, **kwargs
 ):
-    assert op.metrics, 'no metrics found during aggregation execution'
+    assert op.metrics, "no metrics found during aggregation execution"
 
     if op.sort_keys:
-        raise NotImplementedError('sorting on aggregations not yet implemented')
+        raise NotImplementedError("sorting on aggregations not yet implemented")
 
     if op.predicates:
         predicate = functools.reduce(
@@ -88,8 +88,8 @@ def execute_aggregation_dataframe(
         # raise
         if not op.by:
             raise ValueError(
-                'Filtering out aggregation values is not allowed without at '
-                'least one grouping key'
+                "Filtering out aggregation values is not allowed without at "
+                "least one grouping key"
             )
 
         # TODO(phillipc): Don't recompute identical subexpressions
@@ -102,7 +102,7 @@ def execute_aggregation_dataframe(
         )
         assert len(predicate) == len(
             result
-        ), 'length of predicate does not match length of DataFrame'
+        ), "length of predicate does not match length of DataFrame"
         result = result.loc[predicate.values]
     return result
 

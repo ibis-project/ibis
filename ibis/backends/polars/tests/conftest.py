@@ -21,10 +21,10 @@ class TestConf(BackendTest, RoundAwayFromZero):
     def _load_data(self, **_: Any) -> None:
         con = self.connection
         for table_name in TEST_TABLES:
-            path = self.data_dir / 'parquet' / f'{table_name}.parquet'
+            path = self.data_dir / "parquet" / f"{table_name}.parquet"
             con.register(path, table_name=table_name)
-        con.register(array_types, table_name='array_types')
-        con.register(struct_types, table_name='struct')
+        con.register(array_types, table_name="array_types")
+        con.register(struct_types, table_name="struct")
         con.register(win, table_name="win")
 
     @staticmethod
@@ -42,16 +42,16 @@ class TestConf(BackendTest, RoundAwayFromZero):
         )
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def alltypes_df(alltypes):
     return alltypes.execute()

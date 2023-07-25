@@ -543,9 +543,9 @@ def test_matching_sequence_remaining():
 def test_matching_sequence_complicated():
     pattern = [
         1,
-        'a' @ ListOf(InstanceOf(int) & Check(lambda x: x < 10)),
+        "a" @ ListOf(InstanceOf(int) & Check(lambda x: x < 10)),
         4,
-        'b' @ SequenceOf(...),
+        "b" @ SequenceOf(...),
         8,
         9,
     ]
@@ -568,8 +568,8 @@ def test_matching_sequence_complicated():
     expected = {"first": [1, 2], "second": [4, 5]}
     assert match(pattern, [0, 1, 2, 4, 5, 3]) == expected
 
-    pattern = [1, 2, 'remaining' @ SequenceOf(...)]
-    expected = {'remaining': (3, 4, 5, 6, 7, 8, 9)}
+    pattern = [1, 2, "remaining" @ SequenceOf(...)]
+    expected = {"remaining": (3, 4, 5, 6, 7, 8, 9)}
     assert match(pattern, range(1, 10)) == expected
 
     assert match([0, SequenceOf([1, 2]), 3], [0, [1, 2], [1, 2], 3]) == {}
@@ -588,7 +588,7 @@ def test_matching_mapping():
     assert match({1: 2}, {1: 3}) is NoMatch
 
     assert match({}, 3) is NoMatch
-    assert match({'a': "capture" @ InstanceOf(int)}, {'a': 1}) == {"capture": 1}
+    assert match({"a": "capture" @ InstanceOf(int)}, {"a": 1}) == {"capture": 1}
 
     p = {
         "a": "capture" @ InstanceOf(int),
@@ -616,9 +616,9 @@ def test_matching_mapping():
         (InstanceOf(float), 1.0, 1.0),
         (IsIn({"a", "b"}), "a", "a"),
         (IsIn({"a": 1, "b": 2}), "a", "a"),
-        (IsIn(['a', 'b']), 'a', 'a'),
-        (IsIn(('a', 'b')), 'b', 'b'),
-        (IsIn({'a', 'b', 'c'}), 'c', 'c'),
+        (IsIn(["a", "b"]), "a", "a"),
+        (IsIn(("a", "b")), "b", "b"),
+        (IsIn({"a", "b", "c"}), "c", "c"),
         (TupleOf(InstanceOf(int)), (1, 2, 3), (1, 2, 3)),
         (TupleOf((InstanceOf(int), InstanceOf(str))), (1, "a"), (1, "a")),
         (ListOf(InstanceOf(str)), ["a", "b"], ["a", "b"]),
@@ -642,7 +642,7 @@ def test_various_patterns(pattern, value, expected):
 
 
 @pytest.mark.parametrize(
-    ('pattern', 'value'),
+    ("pattern", "value"),
     [
         (InstanceOf(bool), "foo"),
         (InstanceOf(str), True),

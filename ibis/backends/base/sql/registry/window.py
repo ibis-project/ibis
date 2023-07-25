@@ -6,13 +6,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 _map_interval_to_microseconds = {
-    'W': 604800000000,
-    'D': 86400000000,
-    'h': 3600000000,
-    'm': 60000000,
-    's': 1000000,
-    'ms': 1000,
-    'us': 1,
+    "W": 604800000000,
+    "D": 86400000000,
+    "h": 3600000000,
+    "m": 60000000,
+    "s": 1000000,
+    "ms": 1000,
+    "us": 1,
 }
 
 
@@ -85,38 +85,38 @@ def format_window_boundary(translator, boundary):
     value = translator.translate(boundary.value)
     direction = "PRECEDING" if boundary.preceding else "FOLLOWING"
 
-    return f'{value} {direction}'
+    return f"{value} {direction}"
 
 
 def format_window_frame(translator, func, frame):
     components = []
 
     if frame.group_by:
-        partition_args = ', '.join(map(translator.translate, frame.group_by))
-        components.append(f'PARTITION BY {partition_args}')
+        partition_args = ", ".join(map(translator.translate, frame.group_by))
+        components.append(f"PARTITION BY {partition_args}")
 
     if frame.order_by:
-        order_args = ', '.join(map(translator.translate, frame.order_by))
-        components.append(f'ORDER BY {order_args}')
+        order_args = ", ".join(map(translator.translate, frame.order_by))
+        components.append(f"ORDER BY {order_args}")
 
     if frame.start is None and frame.end is None:
         # no-op, default is full sample
         pass
     elif not isinstance(func, translator._forbids_frame_clause):
         if frame.start is None:
-            start = 'UNBOUNDED PRECEDING'
+            start = "UNBOUNDED PRECEDING"
         else:
             start = format_window_boundary(translator, frame.start)
 
         if frame.end is None:
-            end = 'UNBOUNDED FOLLOWING'
+            end = "UNBOUNDED FOLLOWING"
         else:
             end = format_window_boundary(translator, frame.end)
 
-        frame = f'{frame.how.upper()} BETWEEN {start} AND {end}'
+        frame = f"{frame.how.upper()} BETWEEN {start} AND {end}"
         components.append(frame)
 
-    return 'OVER ({})'.format(' '.join(components))
+    return "OVER ({})".format(" ".join(components))
 
 
 def window(translator, op):
@@ -126,7 +126,7 @@ def window(translator, op):
 
     if isinstance(func, _unsupported_reductions):
         raise com.UnsupportedOperationError(
-            f'{type(func)} is not supported in window functions'
+            f"{type(func)} is not supported in window functions"
         )
 
     if isinstance(func, ops.CumulativeOp):
@@ -146,16 +146,16 @@ def window(translator, op):
     elif isinstance(frame, ops.RowsWindowFrame):
         if frame.max_lookback is not None:
             raise NotImplementedError(
-                'Rows with max lookback is not implemented for SQL-based backends.'
+                "Rows with max lookback is not implemented for SQL-based backends."
             )
 
     window_formatted = format_window_frame(translator, func, frame)
 
     arg_formatted = translator.translate(func.__window_op__)
-    result = f'{arg_formatted} {window_formatted}'
+    result = f"{arg_formatted} {window_formatted}"
 
     if isinstance(func, ops.RankBase):
-        return f'({result} - 1)'
+        return f"({result} - 1)"
     else:
         return result
 
@@ -168,21 +168,21 @@ def shift_like(name):
 
         if default is not None:
             if offset is None:
-                offset_formatted = '1'
+                offset_formatted = "1"
             else:
                 offset_formatted = translator.translate(offset)
 
             default_formatted = translator.translate(default)
 
-            return f'{name}({arg_formatted}, {offset_formatted}, {default_formatted})'
+            return f"{name}({arg_formatted}, {offset_formatted}, {default_formatted})"
         elif offset is not None:
             offset_formatted = translator.translate(offset)
-            return f'{name}({arg_formatted}, {offset_formatted})'
+            return f"{name}({arg_formatted}, {offset_formatted})"
         else:
-            return f'{name}({arg_formatted})'
+            return f"{name}({arg_formatted})"
 
     return formatter
 
 
 def ntile(translator, op):
-    return f'ntile({translator.translate(op.buckets)})'
+    return f"ntile({translator.translate(op.buckets)})"

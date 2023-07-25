@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 
 
 class Backend(BaseBackend):
-    name = 'datafusion'
+    name = "datafusion"
     builder = None
     supports_in_memory_tables = False
 
@@ -96,7 +96,7 @@ class Backend(BaseBackend):
             A table expression
         """
         catalog = self._context.catalog()
-        database = catalog.database('public')
+        database = catalog.database("public")
         table = database.table(name)
         schema = sch.schema(table.schema)
         return ops.DatabaseTable(name, schema, self).to_expr()

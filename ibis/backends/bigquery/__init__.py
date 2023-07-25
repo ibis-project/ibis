@@ -467,7 +467,7 @@ Please align the two schemas, or provide only one of the two arguments."""
                 table = obj
             sql_select = self.compile(table)
             table_ref = f"`{project_id}`.`{dataset}`.`{name}`"
-            self.raw_sql(f'CREATE TABLE {table_ref} AS ({sql_select})')
+            self.raw_sql(f"CREATE TABLE {table_ref} AS ({sql_select})")
         elif schema is not None:
             table_id = self._fully_qualified_name(name, database)
             table = bq.Table(table_id, schema=BigQuerySchema.from_ibis(schema))

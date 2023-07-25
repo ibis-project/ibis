@@ -26,7 +26,7 @@ class AlchemyContext(QueryContext):
 
         if len(queries) > 1:
             raise NotImplementedError(
-                'Only a single query is supported for SQLAlchemy backends'
+                "Only a single query is supported for SQLAlchemy backends"
             )
         return queries[0]
 

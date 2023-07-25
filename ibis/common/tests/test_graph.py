@@ -18,7 +18,7 @@ class MyNode(Node):
 
     @property
     def __argnames__(self):
-        return ('children',)
+        return ("children",)
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.name})"

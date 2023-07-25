@@ -39,7 +39,7 @@ disallowed_imports = {
 }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     dependency_graph = generate_dependency_graph(*sys.argv[1:])
     prohibited_deps = check_dependency_rules(dependency_graph, disallowed_imports)
 

@@ -106,7 +106,7 @@ class Value(Expr):
             return self
 
         if op.to.is_geospatial():
-            from_geotype = self.type().geotype or 'geometry'
+            from_geotype = self.type().geotype or "geometry"
             to_geotype = op.to.geotype
             if from_geotype == to_geotype:
                 return self
@@ -883,9 +883,9 @@ class Value(Expr):
         roots = find_immediate_parent_tables(self.op())
         if len(roots) > 1:
             raise com.RelationError(
-                f'Cannot convert {type(self)} expression '
-                'involving multiple base table references '
-                'to a projection'
+                f"Cannot convert {type(self)} expression "
+                "involving multiple base table references "
+                "to a projection"
             )
         table = roots[0].to_expr()
         return table.select(self)
@@ -1265,7 +1265,7 @@ class Column(Value, _FixedTextJupyterMixin):
         assert by.op().name != self.op().name
 
         if not arg_table.equals(by_table):
-            raise com.IbisError('Cross-table TopK; must provide a parent joined table')
+            raise com.IbisError("Cross-table TopK; must provide a parent joined table")
 
         return (
             arg_table.aggregate(by, by=[self])

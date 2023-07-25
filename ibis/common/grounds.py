@@ -42,7 +42,7 @@ class BaseMeta(ABCMeta):
 
 
 class Base(metaclass=BaseMeta):
-    __slots__ = ('__weakref__',)
+    __slots__ = ("__weakref__",)
     __create__ = classmethod(type.__call__)  # type: ignore
 
 
@@ -61,9 +61,9 @@ class AnnotableMeta(BaseMeta):
                 signatures.append(parent.__signature__)
 
         # collection type annotations and convert them to validators
-        module = dct.get('__module__')
-        qualname = dct.get('__qualname__') or clsname
-        annotations = dct.get('__annotations__', {})
+        module = dct.get("__module__")
+        qualname = dct.get("__qualname__") or clsname
+        annotations = dct.get("__annotations__", {})
 
         # TODO(kszucs): pass dct as localns to evaluate_annotations
         typehints = evaluate_annotations(annotations, module)
@@ -77,7 +77,7 @@ class AnnotableMeta(BaseMeta):
                 dct[name] = Argument.required(validator, typehint=typehint)
 
         # collect the newly defined annotations
-        slots = list(dct.pop('__slots__', []))
+        slots = list(dct.pop("__slots__", []))
         namespace, arguments = {}, {}
         for name, attrib in dct.items():
             if isinstance(attrib, Validator):

@@ -349,7 +349,7 @@ def test_approx_median(alltypes):
 
 
 def test_create_table_bignumeric(con, temp_table):
-    schema = ibis.schema({'col1': dt.Decimal(76, 38)})
+    schema = ibis.schema({"col1": dt.Decimal(76, 38)})
     temporary_table = con.create_table(temp_table, schema=schema)
     con.raw_sql(f"INSERT {con.current_database}.{temp_table} (col1) VALUES (10.2)")
     df = temporary_table.execute()
@@ -357,7 +357,7 @@ def test_create_table_bignumeric(con, temp_table):
 
 
 def test_geography_table(con, temp_table):
-    schema = ibis.schema({'col1': dt.GeoSpatial(geotype="geography", srid=4326)})
+    schema = ibis.schema({"col1": dt.GeoSpatial(geotype="geography", srid=4326)})
     temporary_table = con.create_table(temp_table, schema=schema)
     con.raw_sql(
         f"INSERT {con.current_database}.{temp_table} (col1) VALUES (ST_GEOGPOINT(1,3))"
@@ -372,7 +372,7 @@ def test_geography_table(con, temp_table):
 
 def test_timestamp_table(con, temp_table):
     schema = ibis.schema(
-        {'datetime_col': dt.Timestamp(), 'timestamp_col': dt.Timestamp(timezone="UTC")}
+        {"datetime_col": dt.Timestamp(), "timestamp_col": dt.Timestamp(timezone="UTC")}
     )
     temporary_table = con.create_table(temp_table, schema=schema)
     con.raw_sql(

@@ -316,7 +316,7 @@ def _group_agg_dispatch(name):
     def wrapper(self, *args, **kwargs):
         f = getattr(self.arr, name)
         metric = f(*args, **kwargs)
-        alias = f'{name}({self.arr.get_name()})'
+        alias = f"{name}({self.arr.get_name()})"
         return self.parent.aggregate(metric.name(alias))
 
     wrapper.__name__ = name
@@ -328,15 +328,15 @@ class GroupedArray:
         self.arr = arr
         self.parent = parent
 
-    count = _group_agg_dispatch('count')
+    count = _group_agg_dispatch("count")
     size = count
-    min = _group_agg_dispatch('min')
-    max = _group_agg_dispatch('max')
-    approx_nunique = _group_agg_dispatch('approx_nunique')
-    approx_median = _group_agg_dispatch('approx_median')
-    group_concat = _group_agg_dispatch('group_concat')
+    min = _group_agg_dispatch("min")
+    max = _group_agg_dispatch("max")
+    approx_nunique = _group_agg_dispatch("approx_nunique")
+    approx_median = _group_agg_dispatch("approx_median")
+    group_concat = _group_agg_dispatch("group_concat")
 
 
 class GroupedNumbers(GroupedArray):
-    mean = _group_agg_dispatch('mean')
-    sum = _group_agg_dispatch('sum')
+    mean = _group_agg_dispatch("mean")
+    sum = _group_agg_dispatch("sum")

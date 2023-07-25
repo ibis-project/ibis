@@ -234,7 +234,7 @@ def execute_group_concat_series_mask(op, data, sep, mask, aggcontext=None, **kwa
 @execute_node.register(ops.GroupConcat, ddgb.SeriesGroupBy, str, type(None))
 def execute_group_concat_series_gb(op, data, sep, _, aggcontext=None, **kwargs):
     custom_group_concat = dd.Aggregation(
-        name='custom_group_concat',
+        name="custom_group_concat",
         chunk=lambda s: s.apply(list),
         agg=lambda s0: s0.apply(
             lambda chunks: sep.join(
@@ -259,7 +259,7 @@ def execute_group_concat_series_gb_mask(op, data, sep, mask, aggcontext=None, **
 
 @execute_node.register(ops.StringAscii, dd.Series)
 def execute_string_ascii(op, data, **kwargs):
-    output_meta = pd.Series([], dtype=np.dtype('int32'), name=data.name)
+    output_meta = pd.Series([], dtype=np.dtype("int32"), name=data.name)
     return data.map(ord, meta=output_meta)
 
 
@@ -275,7 +275,7 @@ def execute_series_regex_search_gb(op, data, pattern, **kwargs):
     return execute_series_regex_search(
         op,
         make_selected_obj(data),
-        getattr(pattern, 'obj', pattern),
+        getattr(pattern, "obj", pattern),
         **kwargs,
     ).groupby(data.index)
 
@@ -321,7 +321,7 @@ def execute_series_find_in_set(op, needle, haystack, **kwargs):
 
 @execute_node.register(ops.FindInSet, ddgb.SeriesGroupBy, list)
 def execute_series_group_by_find_in_set(op, needle, haystack, **kwargs):
-    pieces = [getattr(piece, 'obj', piece) for piece in haystack]
+    pieces = [getattr(piece, "obj", piece) for piece in haystack]
     return execute_series_find_in_set(
         op, make_selected_obj(needle), pieces, **kwargs
     ).groupby(needle.index)
@@ -344,10 +344,10 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
     try:
         (collection_type,) = frozenset(map(type, series_in_haystack))
     except ValueError:
-        raise ValueError('Mixing Series and ddgb.SeriesGroupBy is not allowed')
+        raise ValueError("Mixing Series and ddgb.SeriesGroupBy is not allowed")
 
     pieces = haystack_to_dask_series_of_lists(
-        [getattr(piece, 'obj', piece) for piece in haystack]
+        [getattr(piece, "obj", piece) for piece in haystack]
     )
 
     result = pieces.map(toolz.flip(ibis.util.safe_index)(needle))
@@ -358,6 +358,6 @@ def execute_string_group_by_find_in_set(op, needle, haystack, **kwargs):
 
     return result.groupby(
         toolz.first(
-            piece.grouper.groupings for piece in haystack if hasattr(piece, 'grouper')
+            piece.grouper.groupings for piece in haystack if hasattr(piece, "grouper")
         )
     )

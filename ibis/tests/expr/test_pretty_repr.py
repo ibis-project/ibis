@@ -115,7 +115,7 @@ def test_format_date_column(is_date):
 
 def test_format_interval_column():
     values = [datetime.timedelta(seconds=1)]
-    fmts, _, _ = format_column(dt.Interval('s'), values)
+    fmts, _, _ = format_column(dt.Interval("s"), values)
     strs = [str(f) for f in fmts]
     assert strs == [str(v) for v in values]
 

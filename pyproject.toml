@@ -478,7 +478,6 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.black]
 line_length = 88
-skip_string_normalization = true
 extend_exclude = '\.ipynb|\.direnv|result(-\d+)|_py310\.py|decompiled\.py'
 
 [tool.conda-lock]

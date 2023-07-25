@@ -23,7 +23,7 @@ class DDL(abc.ABC):
 
 
 class QueryAST:
-    __slots__ = 'context', 'dml', 'setup_queries', 'teardown_queries'
+    __slots__ = "context", "dml", "setup_queries", "teardown_queries"
 
     def __init__(self, context, dml, setup_queries=None, teardown_queries=None):
         self.context = context
@@ -82,8 +82,8 @@ class SetOp(DML):
         context = self.context
         subqueries = self.subqueries
 
-        return ',\n'.join(
-            '{} AS (\n{}\n)'.format(
+        return ",\n".join(
+            "{} AS (\n{}\n)".format(
                 context.get_ref(expr),
                 util.indent(context.get_compiled_expr(expr), 2),
             )
@@ -93,7 +93,7 @@ class SetOp(DML):
     def format_relation(self, expr):
         ref = self.context.get_ref(expr)
         if ref is not None:
-            return f'SELECT *\nFROM {ref}'
+            return f"SELECT *\nFROM {ref}"
         return self.context.get_compiled_expr(expr)
 
     def compile(self):
@@ -104,7 +104,7 @@ class SetOp(DML):
         buf = []
 
         if extracted:
-            buf.append(f'WITH {extracted}')
+            buf.append(f"WITH {extracted}")
 
         buf.extend(
             toolz.interleave(
@@ -114,4 +114,4 @@ class SetOp(DML):
                 )
             )
         )
-        return '\n'.join(buf)
+        return "\n".join(buf)

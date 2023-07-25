@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 
 class Backend(BaseAlchemyBackend):
-    name = 'mysql'
+    name = "mysql"
     compiler = MySQLCompiler
     supports_create_or_replace = False
 
@@ -93,8 +93,8 @@ class Backend(BaseAlchemyBackend):
             year : int32
             month : int32
         """
-        if driver != 'pymysql':
-            raise NotImplementedError('pymysql is currently the only supported driver')
+        if driver != "pymysql":
+            raise NotImplementedError("pymysql is currently the only supported driver")
         alchemy_url = self._build_alchemy_url(
             url=url,
             host=host,
@@ -102,7 +102,7 @@ class Backend(BaseAlchemyBackend):
             user=user,
             password=password,
             database=database,
-            driver=f'mysql+{driver}',
+            driver=f"mysql+{driver}",
         )
 
         self.database_name = alchemy_url.database
