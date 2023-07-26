@@ -3,7 +3,14 @@ from __future__ import annotations
 import pyarrow as pa
 import pytest
 
-pytestmark = pytest.mark.skipif(pa.__version__ < "12.", reason="pyarrow >= 12 required")
+pytestmark = [
+    pytest.mark.skipif(pa.__version__ < "12.", reason="pyarrow >= 12 required"),
+    pytest.mark.notimpl(
+        ["pyspark"],
+        raises=NotImplementedError,
+        reason="PySpark doesn't implement fetchmany",
+    ),
+]
 
 
 @pytest.mark.notimpl(["dask", "druid"])
