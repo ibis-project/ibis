@@ -72,7 +72,15 @@ def __getattr__(name: str) -> BaseBackend:
     import ibis
 
     (entry_point,) = entry_points
-    module = entry_point.load()
+    try:
+        module = entry_point.load()
+    except ImportError as exc:
+        raise ImportError(
+            f"Failed to import the {name} backend due to missing dependencies.\n\n"
+            f"You can pip or conda install the {name} backend as follows:\n\n"
+            f'  python -m pip install -U "ibis-framework[{name}]"  # pip install\n'
+            f"  conda install -c conda-forge ibis-{name}           # or conda install"
+        ) from exc
     backend = module.Backend()
     # The first time a backend is loaded, we register its options, and we set
     # it as an attribute of `ibis`, so `__getattr__` is not called again for it
