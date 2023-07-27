@@ -1,11 +1,11 @@
-CREATE TEMPORARY FUNCTION my_len_0(
+CREATE OR REPLACE TEMPORARY FUNCTION my_len_0(
     s STRING
 )
 RETURNS FLOAT64
 LANGUAGE js AS
 '\n\'use strict\';\nfunction my_len(s) {\n    return s.length;\n}\nreturn my_len(s);\n';
 
-CREATE TEMPORARY FUNCTION my_len_1(
+CREATE OR REPLACE TEMPORARY FUNCTION my_len_1(
     s STRING
 )
 RETURNS FLOAT64

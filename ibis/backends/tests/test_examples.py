@@ -13,7 +13,7 @@ pytestmark = pytest.mark.examples
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
 )
 @pytest.mark.notimpl(["dask", "datafusion", "pyspark", "flink"])
-@pytest.mark.notyet(["bigquery", "clickhouse", "druid", "impala", "mssql", "trino"])
+@pytest.mark.notyet(["clickhouse", "druid", "impala", "mssql", "trino"])
 @pytest.mark.parametrize(
     ("example", "columns"),
     [
