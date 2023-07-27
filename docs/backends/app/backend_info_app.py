@@ -107,11 +107,13 @@ def get_selected_backend_name():
     selected_categories_names = st.sidebar.multiselect(
         'Backend category',
         options=backend_categories,
-        default=None,
+        default=backend_categories,
     )
-    if not selected_categories_names:
-        return get_backend_names()
     return get_backend_names(selected_categories_names)
+
+
+def get_backend_subset(subset):
+    return st.sidebar.multiselect('Backend name', options=subset, default=subset)
 
 
 def get_selected_operation_categories():
@@ -130,7 +132,7 @@ def get_selected_operation_categories():
     return selected_ops_categories
 
 
-current_backend_names = get_selected_backend_name()
+current_backend_names = get_backend_subset(get_selected_backend_name())
 sort_by_coverage = st.sidebar.checkbox('Sort by API Coverage', value=False)
 current_ops_categories = get_selected_operation_categories()
 
