@@ -561,6 +561,7 @@ class Backend(BaseSQLBackend):
         name = self._fully_qualified_name(name, database)
         return self.raw_sql(f"ANALYZE TABLE {name} COMPUTE STATISTICS{maybe_noscan}")
 
+    @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in PySparkExprTranslator._registry
 
