@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import builtins
 import contextlib
+import importlib
+import inspect
 import os
 import platform
 import re
 import string
 import subprocess
 import sys
+from operator import itemgetter
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -23,6 +27,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.conftest import ALL_BACKENDS
 from ibis.util import gen_name, guid
 
 if TYPE_CHECKING:
@@ -999,7 +1004,8 @@ def test_repr_mimebundle(alltypes, interactive, expr_type, monkeypatch):
     ["postgres", "mysql", "bigquery"],
     reason="These backends explicitly do support Geo operations",
 )
-def test_has_operation_no_geo(con):
+@pytest.mark.parametrize("op", [ops.GeoDistance, ops.GeoAsText, ops.GeoUnaryUnion])
+def test_has_operation_no_geo(con, op):
     """Previously some backends mistakenly reported Geo operations as
     supported.
 
@@ -1033,9 +1039,8 @@ def test_set_backend(con, monkeypatch):
 @pytest.mark.parametrize(
     "name",
     [
-        param("duckdb", marks=mark.duckdb, id="duckdb"),
-        param("polars", marks=mark.polars, id="polars"),
-        param("sqlite", marks=mark.sqlite, id="sqlite"),
+        param(name, marks=getattr(mark, name), id=name)
+        for name in ("datafusion", "duckdb", "polars", "sqlite", "pandas", "dask")
     ],
 )
 def test_set_backend_name(name, monkeypatch):
