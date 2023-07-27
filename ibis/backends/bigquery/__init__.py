@@ -27,7 +27,7 @@ from ibis.backends.bigquery.client import (
     schema_from_bigquery_table,
 )
 from ibis.backends.bigquery.compiler import BigQueryCompiler
-from ibis.backends.bigquery.datatypes import BigQuerySchema
+from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
 from ibis.formats.pandas import PandasData
 
 with contextlib.suppress(ImportError):
@@ -438,47 +438,119 @@ class Backend(BaseSQLBackend):
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
+        default_collate: str | None = None,
+        partition_by: str | None = None,
+        cluster_by: Iterable[str] | None = None,
+        options: Mapping[str, Any] | None = None,
     ) -> ir.Table:
+        """Create a table in BigQuery.
+
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but one of `obj`
+            or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but one of `obj` or
+            `schema` must be specified
+        database
+            The BigQuery *dataset* in which to create the table; optional
+        temp
+            This parameter is not yet supported in the BigQuery backend
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail if
+            the table exists
+        default_collate
+            Default collation for string columns. See BigQuery's documentation
+            for more details: https://cloud.google.com/bigquery/docs/reference/standard-sql/collation-concepts
+        partition_by
+            Partition the table by the given expression. See BigQuery's documentation
+            for more details: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#partition_expression
+        cluster_by
+            List of columns to cluster the table by. See BigQuery's documentation
+            for more details: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#clustering_column_list
+        options
+            BigQuery-specific table options; see the BigQuery documentation for
+            details: https://cloud.google.com/bigquery/docs/reference/standard-sql/data-definition-language#table_option_list
+
+        Returns
+        -------
+        Table
+            The table that was just created
+        """
         if obj is None and schema is None:
-            raise com.IbisError("The schema or obj parameter is required")
-        if temp is True:
+            raise com.IbisError("One of the `schema` or `obj` parameter is required")
+
+        if temp:
+            # TODO: these require a BQ session; figure out how to handle that
             raise NotImplementedError(
-                "BigQuery backend does not yet support temporary tables"
+                "Temporary tables in the BigQuery backend are not yet supported"
             )
-        if overwrite is not False:
-            raise NotImplementedError(
-                "BigQuery backend does not yet support overwriting tables"
-            )
+
+        create_stmt = "CREATE"
+
+        if overwrite:
+            create_stmt += " OR REPLACE"
+
+        table_ref = self._fully_qualified_name(name, database)
+
+        create_stmt += f" TABLE `{table_ref}`"
 
         if isinstance(obj, ir.Table) and schema is not None:
             if not schema.equals(obj.schema()):
                 raise com.IbisTypeError(
-                    """Provided schema and Ibis table schema are incompatible.
-Please align the two schemas, or provide only one of the two arguments."""
+                    "Provided schema and Ibis table schema are incompatible. Please "
+                    "align the two schemas, or provide only one of the two arguments."
                 )
+
+        if schema is not None:
+            schema_str = ", ".join(
+                (
+                    f"{name} {BigQueryType.from_ibis(typ)}"
+                    + " NOT NULL" * (not typ.nullable)
+                )
+                for name, typ in schema.items()
+            )
+            create_stmt += f" ({schema_str})"
+
+        if default_collate is not None:
+            create_stmt += f" DEFAULT COLLATE {default_collate!r}"
+
+        if partition_by is not None:
+            create_stmt += f" PARTITION BY {partition_by}"
+
+        if cluster_by is not None:
+            create_stmt += f" CLUSTER BY {', '.join(cluster_by)}"
+
+        if options:
+            pairs = ", ".join(f"{k}={v!r}" for k, v in options.items())
+            create_stmt += f" OPTIONS({pairs})"
 
         if obj is not None:
             import pyarrow as pa
 
-            project_id, dataset = self._parse_project_and_dataset(database)
             if isinstance(obj, (pd.DataFrame, pa.Table)):
                 table = ibis.memtable(obj, schema=schema)
             else:
                 table = obj
-            sql_select = self.compile(table)
-            table_ref = f"`{project_id}`.`{dataset}`.`{name}`"
-            self.raw_sql(f'CREATE TABLE {table_ref} AS ({sql_select})')
-        elif schema is not None:
-            table_id = self._fully_qualified_name(name, database)
-            table = bq.Table(table_id, schema=BigQuerySchema.from_ibis(schema))
-            self.client.create_table(table)
-        return self.table(name, database=database)
+
+            create_stmt += f" AS ({self.compile(table)})"
+
+        self.raw_sql(create_stmt)
+
+        return self.table(table_ref)
 
     def drop_table(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
         table_id = self._fully_qualified_name(name, database)
-        self.client.delete_table(table_id, not_found_ok=not force)
+        drop_stmt = "DROP TABLE"
+        if force:
+            drop_stmt += " IF EXISTS"
+        drop_stmt += f" `{table_id}`"
+        self.raw_sql(drop_stmt)
 
     def create_view(
         self,
@@ -491,14 +563,20 @@ Please align the two schemas, or provide only one of the two arguments."""
         or_replace = "OR REPLACE " * overwrite
         sql_select = self.compile(obj)
         table_id = self._fully_qualified_name(name, database)
-        code = f"CREATE {or_replace}VIEW {table_id} AS {sql_select}"
+        code = f"CREATE {or_replace}VIEW `{table_id}` AS {sql_select}"
         self.raw_sql(code)
         return self.table(name, database=database)
 
     def drop_view(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
-        self.drop_table(name=name, database=database, force=force)
+        # default_project, default_dataset = self._parse_project_and_dataset(database)
+        table_id = self._fully_qualified_name(name, database)
+        drop_stmt = "DROP VIEW"
+        if force:
+            drop_stmt += " IF EXISTS"
+        drop_stmt += f" `{table_id}`"
+        self.raw_sql(drop_stmt)
 
 
 def compile(expr, params=None, **kwargs):

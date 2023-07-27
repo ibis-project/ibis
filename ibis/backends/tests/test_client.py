@@ -1288,7 +1288,7 @@ def gen_test_name(con: BaseBackend) -> str:
 
 
 @mark.notimpl(
-    ["bigquery", "datafusion", "polars"],
+    ["datafusion", "polars"],
     raises=NotImplementedError,
     reason="overwriting not implemented in ibis for this backend",
 )
