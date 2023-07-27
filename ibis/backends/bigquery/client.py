@@ -18,10 +18,10 @@ def schema_from_bigquery_table(table):
     schema = BigQuerySchema.to_ibis(table.schema)
 
     # Check for partitioning information
-    partition_info = table._properties.get("timePartitioning", None)
+    partition_info = table.time_partitioning
     if partition_info is not None:
         # We have a partitioned table
-        partition_field = partition_info.get("field", NATIVE_PARTITION_COL)
+        partition_field = partition_info.field or NATIVE_PARTITION_COL
         # Only add a new column if it's not already a column in the schema
         if partition_field not in schema:
             schema |= {partition_field: dt.timestamp}
@@ -137,7 +137,7 @@ def bq_param_date(_: dt.Date, value, name):
 
 def rename_partitioned_column(table_expr, bq_table, partition_col):
     """Rename native partition column to user-defined name."""
-    partition_info = bq_table._properties.get("timePartitioning", None)
+    partition_info = bq_table.time_partitioning
 
     # If we don't have any partition information, the table isn't partitioned
     if partition_info is None:
@@ -145,7 +145,7 @@ def rename_partitioned_column(table_expr, bq_table, partition_col):
 
     # If we have a partition, but no "field" field in the table properties,
     # then use NATIVE_PARTITION_COL as the default
-    partition_field = partition_info.get("field", NATIVE_PARTITION_COL)
+    partition_field = partition_info.field or NATIVE_PARTITION_COL
 
     # The partition field must be in table_expr columns
     assert partition_field in table_expr.columns

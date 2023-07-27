@@ -42,6 +42,8 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
 
+    import ibis.expr.schema as sch
+
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
 EXTERNAL_DATA_SCOPES = [
     "https://www.googleapis.com/auth/bigquery",
@@ -92,6 +94,13 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
     compiler = BigQueryCompiler
     supports_in_memory_tables = False
     supports_python_udfs = False
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._session_dataset: str | None = None
+        self._query_cache.lookup = lambda name: self.table(
+            name, schema=self._session_dataset, database=self.billing_project
+        ).op()
 
     def _from_url(self, url: str, **kwargs):
         result = urlparse(url)
@@ -255,20 +264,24 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         collate: str | None = None,
         **options: Any,
     ) -> None:
-        create_stmt = "CREATE SCHEMA"
-        if force:
-            create_stmt += " IF NOT EXISTS"
-
-        create_stmt += " "
-        create_stmt += ".".join(filter(None, [database, name]))
+        properties = [
+            sg.exp.Property(this=sg.to_identifier(name), value=sg.exp.convert(value))
+            for name, value in (options or {}).items()
+        ]
 
         if collate is not None:
-            create_stmt += f" DEFAULT COLLATION {collate}"
+            properties.append(
+                sg.exp.CollateProperty(this=sg.exp.convert(collate), default=True)
+            )
 
-        options_str = ", ".join(f"{name}={value!r}" for name, value in options.items())
-        if options_str:
-            create_stmt += f" OPTIONS({options_str})"
-        self.raw_sql(create_stmt)
+        stmt = sg.exp.Create(
+            kind="SCHEMA",
+            this=sg.table(name, db=database),
+            exists=force,
+            properties=sg.exp.Properties(expressions=properties),
+        )
+
+        self.raw_sql(stmt.sql(self.name))
 
     def drop_schema(
         self,
@@ -277,49 +290,119 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         force: bool = False,
         cascade: bool = False,
     ) -> None:
-        drop_stmt = "DROP SCHEMA"
-        if force:
-            drop_stmt += " IF EXISTS"
+        """Drop a BigQuery dataset."""
+        stmt = sg.exp.Drop(
+            kind="SCHEMA",
+            this=sg.table(name, db=database),
+            exists=force,
+            cascade=cascade,
+        )
 
-        drop_stmt += " "
-        drop_stmt += ".".join(filter(None, [database, name]))
-        drop_stmt += " CASCADE" if cascade else " RESTRICT"
-        self.raw_sql(drop_stmt)
+        self.raw_sql(stmt.sql(self.name))
 
-    def table(self, name: str, database: str | None = None) -> ir.TableExpr:
-        if database is None:
-            database = f"{self.data_project}.{self.current_schema}"
-        table_id = self._fully_qualified_name(name, database)
-        t = super().table(table_id)
-        bq_table = self.client.get_table(table_id)
-        return rename_partitioned_column(t, bq_table, self.partition_column)
+    def table(
+        self, name: str, database: str | None = None, schema: str | None = None
+    ) -> ir.TableExpr:
+        if database is not None and schema is None:
+            util.warn_deprecated(
+                "database",
+                instead=(
+                    f"{self.name} cannot list tables only using `database` specifier. "
+                    "Include a `schema` argument."
+                ),
+                as_of="7.1",
+                removed_in="8.0",
+            )
 
-    def _fully_qualified_name(self, name, database):
-        parts = name.split(".")
-        if len(parts) == 3:
-            return name
+        table = sg.parse_one(name, into=sg.exp.Table, read=self.name)
 
-        default_project, default_dataset = self._parse_project_and_dataset(database)
-        if len(parts) == 2:
-            return f"{default_project}.{name}"
-        elif len(parts) == 1:
-            return f"{default_project}.{default_dataset}.{name}"
-        raise ValueError(f"Got too many components in table name: {name}")
+        # table.catalog will be the empty string
+        if table.catalog:
+            if database is not None:
+                raise com.IbisInputError(
+                    "Cannot specify database both in the table name and as an argument"
+                )
+            else:
+                database = table.catalog
 
-    def _get_schema_using_query(self, query):
-        job_config = bq.QueryJobConfig(dry_run=True, use_query_cache=False)
-        job = self.client.query(query, job_config=job_config)
+        # table.db will be the empty string
+        if table.db:
+            if schema is not None:
+                raise com.IbisInputError(
+                    "Cannot specify schema both in the table name and as an argument"
+                )
+            else:
+                schema = table.db
+
+        if database is not None and schema is None:
+            database = sg.parse_one(database, into=sg.exp.Table, read=self.name)
+            database.args["quoted"] = False
+            database = database.sql(dialect=self.name)
+        elif database is None and schema is not None:
+            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name)
+            database.args["quoted"] = False
+            database = database.sql(dialect=self.name)
+        else:
+            database = (
+                sg.table(schema, db=database, quoted=False).sql(dialect=self.name)
+                or None
+            )
+
+        project, dataset = self._parse_project_and_dataset(database)
+
+        bq_table = self.client.get_table(
+            bq.TableReference(
+                bq.DatasetReference(project=project, dataset_id=dataset),
+                table.name,
+            )
+        )
+
+        node = ops.DatabaseTable(
+            table.name,
+            schema=schema_from_bigquery_table(bq_table),
+            source=self,
+            namespace=ops.Namespace(schema=dataset, database=project),
+        )
+        table_expr = node.to_expr()
+        return rename_partitioned_column(table_expr, bq_table, self.partition_column)
+
+    def _make_session(self) -> tuple[str, str]:
+        if self._session_dataset is None:
+            job_config = bq.job.QueryJobConfig(
+                create_session=True, use_legacy_sql=False, use_query_cache=False
+            )
+            query = self.client.query(
+                "SELECT 1", job_config=job_config, project=self.billing_project
+            )
+            connection_properties = [
+                bq.ConnectionProperty("session_id", query.session_info.session_id)
+            ]
+
+            # default load/query job configs are merged with further
+            # configuration in load/query jobs, e.g., when executing a query
+            self.client.default_load_job_config = bq.LoadJobConfig(
+                connection_properties=connection_properties
+            )
+
+            self.client.default_query_job_config = bq.QueryJobConfig(
+                connection_properties=connection_properties
+            )
+            self._session_dataset = query.destination.dataset_id
+
+    def _get_schema_using_query(self, query: str) -> sch.Schema:
+        self._make_session()
+
+        job = self.client.query(
+            query, job_config=bq.QueryJobConfig(dry_run=True, use_query_cache=False)
+        )
         return BigQuerySchema.to_ibis(job.schema)
 
-    def _get_table_schema(self, qualified_name):
-        dataset, table = qualified_name.rsplit(".", 1)
-        assert dataset is not None, "dataset is None"
-        return self.get_schema(table, database=dataset)
-
     def _execute(self, stmt, results=True, query_parameters=None):
-        job_config = bq.job.QueryJobConfig()
-        job_config.query_parameters = query_parameters or []
-        job_config.use_legacy_sql = False  # False by default in >=0.28
+        self._make_session()
+
+        job_config = bq.job.QueryJobConfig(
+            query_parameters=query_parameters or [], use_legacy_sql=False
+        )
         query = self.client.query(
             stmt, job_config=job_config, project=self.billing_project
         )
@@ -357,9 +440,9 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
 
         return ";\n\n".join(
             query.transform(_anonymous_unnest_to_explode).sql(
-                dialect="bigquery", pretty=True
+                dialect=self.name, pretty=True
             )
-            for query in sg.parse(sql, read="bigquery")
+            for query in sg.parse(sql, read=self.name)
         )
 
     def raw_sql(self, query: str, results=False, params=None):
@@ -505,11 +588,15 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         )
         return pa.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
 
-    def get_schema(self, name, database=None):
-        table_id = self._fully_qualified_name(name, database)
-        table_ref = bq.TableReference.from_string(table_id)
-        table = self.client.get_table(table_ref)
-        return schema_from_bigquery_table(table)
+    def get_schema(self, name, schema: str | None = None, database: str | None = None):
+        table_ref = bq.TableReference(
+            bq.DatasetReference(
+                project=database or self.data_project,
+                dataset_id=schema or self.current_schema,
+            ),
+            name,
+        )
+        return schema_from_bigquery_table(self.client.get_table(table_ref))
 
     def list_schemas(
         self, like: str | None = None, database: str | None = None
@@ -562,15 +649,18 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
                 as_of="7.1",
                 removed_in="8.0",
             )
-            database = sg.parse_one(database, into=sg.exp.Table, read=self.name).sql(
-                dialect=self.name
-            )
+            database = sg.parse_one(database, into=sg.exp.Table, read=self.name)
+            database.args["quoted"] = False
+            database = database.sql(dialect=self.name)
         elif database is None and schema is not None:
-            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name).sql(
-                dialect=self.name
-            )
+            database = sg.parse_one(schema, into=sg.exp.Table, read=self.name)
+            database.args["quoted"] = False
+            database = database.sql(dialect=self.name)
         else:
-            database = sg.table(schema, db=database).sql(dialect=self.name) or None
+            database = (
+                sg.table(schema, db=database, quoted=False).sql(dialect=self.name)
+                or None
+            )
 
         project, dataset = self._parse_project_and_dataset(database)
         dataset_ref = bq.DatasetReference(project, dataset)
@@ -591,7 +681,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
-        temp: bool | None = None,
+        temp: bool = False,
         overwrite: bool = False,
         default_collate: str | None = None,
         partition_by: str | None = None,
@@ -613,7 +703,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         database
             The BigQuery *dataset* in which to create the table; optional
         temp
-            This parameter is not yet supported in the BigQuery backend
+            Whether the table is temporary
         overwrite
             If `True`, replace the table if it already exists, otherwise fail if
             the table exists
@@ -638,21 +728,6 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")
 
-        if temp:
-            # TODO: these require a BQ session; figure out how to handle that
-            raise NotImplementedError(
-                "Temporary tables in the BigQuery backend are not yet supported"
-            )
-
-        create_stmt = "CREATE"
-
-        if overwrite:
-            create_stmt += " OR REPLACE"
-
-        table_ref = self._fully_qualified_name(name, database)
-
-        create_stmt += f" TABLE `{table_ref}`"
-
         if isinstance(obj, ir.Table) and schema is not None:
             if not schema.equals(obj.schema()):
                 raise com.IbisTypeError(
@@ -660,79 +735,156 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
                     "align the two schemas, or provide only one of the two arguments."
                 )
 
-        if schema is not None:
-            schema_str = ", ".join(
-                (
-                    f"{name} {BigQueryType.from_ibis(typ)}"
-                    + " NOT NULL" * (not typ.nullable)
-                )
-                for name, typ in schema.items()
-            )
-            create_stmt += f" ({schema_str})"
+        project_id, dataset = self._parse_project_and_dataset(database)
+
+        properties = []
 
         if default_collate is not None:
-            create_stmt += f" DEFAULT COLLATE {default_collate!r}"
+            properties.append(
+                sg.exp.CollateProperty(
+                    this=sg.exp.convert(default_collate), default=True
+                )
+            )
 
         if partition_by is not None:
-            create_stmt += f" PARTITION BY {partition_by}"
+            properties.append(
+                sg.exp.PartitionedByProperty(
+                    this=sg.exp.Tuple(
+                        expressions=list(map(sg.to_identifier, partition_by))
+                    )
+                )
+            )
 
         if cluster_by is not None:
-            create_stmt += f" CLUSTER BY {', '.join(cluster_by)}"
+            properties.append(
+                sg.exp.Cluster(expressions=list(map(sg.to_identifier, cluster_by)))
+            )
 
-        if options:
-            pairs = ", ".join(f"{k}={v!r}" for k, v in options.items())
-            create_stmt += f" OPTIONS({pairs})"
+        properties.extend(
+            sg.exp.Property(this=sg.to_identifier(name), value=sg.exp.convert(value))
+            for name, value in (options or {}).items()
+        )
 
         if obj is not None:
             import pyarrow as pa
             import pyarrow_hotfix  # noqa: F401
 
             if isinstance(obj, (pd.DataFrame, pa.Table)):
-                table = ibis.memtable(obj, schema=schema)
-            else:
-                table = obj
+                obj = ibis.memtable(obj, schema=schema)
 
-            create_stmt += f" AS ({self.compile(table)})"
+        if temp:
+            dataset = self._session_dataset
+        else:
+            dataset = database or self.current_schema
 
-        self.raw_sql(create_stmt)
+        try:
+            table = sg.parse_one(name, into=sg.exp.Table, read="bigquery")
+        except sg.ParseError:
+            table = sg.table(name, db=dataset, catalog=project_id)
+        else:
+            if table.args["db"] is None:
+                table.args["db"] = dataset
 
-        return self.table(table_ref)
+            if table.args["catalog"] is None:
+                table.args["catalog"] = project_id
+
+        column_defs = [
+            sg.exp.ColumnDef(
+                this=name,
+                kind=sg.parse_one(
+                    BigQueryType.from_ibis(typ),
+                    into=sg.exp.DataType,
+                    read=self.name,
+                ),
+                constraints=(
+                    None
+                    if typ.nullable
+                    else [
+                        sg.exp.ColumnConstraint(kind=sg.exp.NotNullColumnConstraint())
+                    ]
+                ),
+            )
+            for name, typ in (schema or {}).items()
+        ]
+
+        stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(this=table, expressions=column_defs or None),
+            replace=overwrite,
+            properties=sg.exp.Properties(expressions=properties),
+            expression=None if obj is None else self.compile(obj),
+        )
+
+        sql = stmt.sql(self.name)
+
+        self.raw_sql(sql)
+        return self.table(table.name, schema=table.db, database=table.catalog)
 
     def drop_table(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self,
+        name: str,
+        *,
+        schema: str | None = None,
+        database: str | None = None,
+        force: bool = False,
     ) -> None:
-        table_id = self._fully_qualified_name(name, database)
-        drop_stmt = "DROP TABLE"
-        if force:
-            drop_stmt += " IF EXISTS"
-        drop_stmt += f" `{table_id}`"
-        self.raw_sql(drop_stmt)
+        stmt = sg.exp.Drop(
+            kind="TABLE",
+            this=sg.table(
+                name,
+                db=schema or self.current_schema,
+                catalog=database or self.data_project,
+            ),
+            exists=force,
+        )
+        self.raw_sql(stmt.sql(self.name))
 
     def create_view(
         self,
         name: str,
         obj: ir.Table,
         *,
+        schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        or_replace = "OR REPLACE " * overwrite
-        sql_select = self.compile(obj)
-        table_id = self._fully_qualified_name(name, database)
-        code = f"CREATE {or_replace}VIEW `{table_id}` AS {sql_select}"
-        self.raw_sql(code)
-        return self.table(name, database=database)
+        stmt = sg.exp.Create(
+            kind="VIEW",
+            this=sg.table(
+                name,
+                db=schema or self.current_schema,
+                catalog=database or self.data_project,
+            ),
+            expression=self.compile(obj),
+            replace=overwrite,
+        )
+        self.raw_sql(stmt.sql(self.name))
+        return self.table(name, schema=schema, database=database)
 
     def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self,
+        name: str,
+        *,
+        schema: str | None = None,
+        database: str | None = None,
+        force: bool = False,
     ) -> None:
-        # default_project, default_dataset = self._parse_project_and_dataset(database)
-        table_id = self._fully_qualified_name(name, database)
-        drop_stmt = "DROP VIEW"
-        if force:
-            drop_stmt += " IF EXISTS"
-        drop_stmt += f" `{table_id}`"
-        self.raw_sql(drop_stmt)
+        stmt = sg.exp.Drop(
+            kind="VIEW",
+            this=sg.table(
+                name,
+                db=schema or self.current_schema,
+                catalog=database or self.data_project,
+            ),
+            exists=force,
+        )
+        self.raw_sql(stmt.sql(self.name))
+
+    def _load_into_cache(self, name, expr):
+        self.create_table(name, expr, schema=expr.schema(), temp=True)
+
+    def _clean_up_cached_table(self, op):
+        self.drop_table(op.name, schema=self._session_dataset)
 
 
 def compile(expr, params=None, **kwargs):

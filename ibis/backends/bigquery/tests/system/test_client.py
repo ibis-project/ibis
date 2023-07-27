@@ -244,8 +244,10 @@ def test_exists_table_different_project(con):
 
 
 def test_multiple_project_queries(con, snapshot):
-    so = con.table("posts_questions", database="bigquery-public-data.stackoverflow")
-    trips = con.table("trips", database="nyc-tlc.yellow")
+    with pytest.warns(FutureWarning, match="`database` is deprecated as of v7.1"):
+        so = con.table("posts_questions", database="bigquery-public-data.stackoverflow")
+    with pytest.warns(FutureWarning, match="`database` is deprecated as of v7.1"):
+        trips = con.table("trips", database="nyc-tlc.yellow")
     join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
     result = join.compile()
     snapshot.assert_match(result, "out.sql")
@@ -253,9 +255,11 @@ def test_multiple_project_queries(con, snapshot):
 
 def test_multiple_project_queries_database_api(con, snapshot):
     stackoverflow = con.database("bigquery-public-data.stackoverflow")
-    posts_questions = stackoverflow.posts_questions
+    with pytest.warns(FutureWarning, match="`database` is deprecated as of v7.1"):
+        posts_questions = stackoverflow.posts_questions
     yellow = con.database("nyc-tlc.yellow")
-    trips = yellow.trips
+    with pytest.warns(FutureWarning, match="`database` is deprecated as of v7.1"):
+        trips = yellow.trips
     predicate = posts_questions.tags == trips.rate_code
     join = posts_questions.join(trips, predicate)[[posts_questions.title]]
     result = join.compile()
@@ -264,9 +268,13 @@ def test_multiple_project_queries_database_api(con, snapshot):
 
 def test_multiple_project_queries_execute(con):
     stackoverflow = con.database("bigquery-public-data.stackoverflow")
-    posts_questions = stackoverflow.posts_questions.limit(5)
+    with pytest.warns(FutureWarning, match="`database` is deprecated as of v7.1"):
+        posts_questions = stackoverflow.posts_questions
+    posts_questions = posts_questions.limit(5)
     yellow = con.database("nyc-tlc.yellow")
-    trips = yellow.trips.limit(5)
+    with pytest.warns(FutureWarning, match="`database` is deprecated as of v7.1"):
+        trips = yellow.trips
+    trips = trips.limit(5)
     predicate = posts_questions.tags == trips.rate_code
     cols = [posts_questions.title]
     join = posts_questions.left_join(trips, predicate)[cols]

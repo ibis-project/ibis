@@ -143,6 +143,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     __array_ufunc__ = None
 
+    def get_name(self) -> str:
+        """Return the fully qualified name of the table."""
+        arg = self._arg
+        namespace = getattr(arg, "namespace", ops.Namespace())
+        pieces = namespace.database, namespace.schema, arg.name
+        return ".".join(filter(None, pieces))
+
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 

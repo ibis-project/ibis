@@ -1216,12 +1216,12 @@ def test_create_table_timestamp(con, temp_table):
     assert result == schema
 
 
-@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_persist_expression_ref_count(con, alltypes):
+def test_persist_expression_ref_count(backend, con, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation")
     persisted_table = non_persisted_table.cache()
 
@@ -1229,62 +1229,72 @@ def test_persist_expression_ref_count(con, alltypes):
 
     # ref count is unaffected without a context manager
     assert con._query_cache.refs[op] == 1
-    tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
+    backend.assert_frame_equal(
+        non_persisted_table.to_pandas(), persisted_table.to_pandas()
+    )
     assert con._query_cache.refs[op] == 1
 
 
-@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_persist_expression(alltypes):
+def test_persist_expression(backend, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation", other_calc="xyz")
     persisted_table = non_persisted_table.cache()
-    tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
+    backend.assert_frame_equal(
+        non_persisted_table.to_pandas(), persisted_table.to_pandas()
+    )
 
 
-@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_persist_expression_contextmanager(alltypes):
+def test_persist_expression_contextmanager(backend, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc"
     )
     with non_cached_table.cache() as cached_table:
-        tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+        backend.assert_frame_equal(
+            non_cached_table.to_pandas(), cached_table.to_pandas()
+        )
 
 
-@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_persist_expression_contextmanager_ref_count(con, alltypes):
+def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
     )
     op = non_cached_table.op()
     with non_cached_table.cache() as cached_table:
-        tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+        backend.assert_frame_equal(
+            non_cached_table.to_pandas(), cached_table.to_pandas()
+        )
         assert con._query_cache.refs[op] == 1
     assert con._query_cache.refs[op] == 0
 
 
-@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-def test_persist_expression_multiple_refs(con, alltypes):
+def test_persist_expression_multiple_refs(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
     )
     op = non_cached_table.op()
     with non_cached_table.cache() as cached_table:
-        tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+        backend.assert_frame_equal(
+            non_cached_table.to_pandas(), cached_table.to_pandas()
+        )
 
         name1 = cached_table.op().name
 
@@ -1306,7 +1316,7 @@ def test_persist_expression_multiple_refs(con, alltypes):
     assert name2 not in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1320,7 +1330,7 @@ def test_persist_expression_repeated_cache(alltypes):
             assert not nested_cached_table.to_pandas().empty
 
 
-@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
