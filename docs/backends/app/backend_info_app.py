@@ -23,7 +23,7 @@ sql_queries = []
 ibis.options.verbose_log = lambda sql: sql_queries.append(sql)
 
 
-@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+@st.cache_data(ttl=ONE_HOUR_IN_SECONDS)
 def support_matrix_df():
     resp = requests.get("https://ibis-project.org/backends/raw_support_matrix.csv")
     resp.raise_for_status()
@@ -41,7 +41,7 @@ def support_matrix_df():
         )
 
 
-@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+@st.cache_data(ttl=ONE_HOUR_IN_SECONDS)
 def backends_info_df():
     return pd.DataFrame(
         {
@@ -71,7 +71,7 @@ backend_info_table = ibis.memtable(backends_info_df())
 support_matrix_table = ibis.memtable(support_matrix_df())
 
 
-@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+@st.cache_data(ttl=ONE_HOUR_IN_SECONDS)
 def get_all_backend_categories():
     return (
         backend_info_table.select(category=_.categories.unnest())
@@ -82,7 +82,7 @@ def get_all_backend_categories():
     )
 
 
-@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+@st.cache_data(ttl=ONE_HOUR_IN_SECONDS)
 def get_all_operation_categories():
     return (
         support_matrix_table.select(_.operation_category)
@@ -92,7 +92,7 @@ def get_all_operation_categories():
     )
 
 
-@st.experimental_memo(ttl=ONE_HOUR_IN_SECONDS)
+@st.cache_data(ttl=ONE_HOUR_IN_SECONDS)
 def get_backend_names(categories: Optional[List[str]] = None):
     backend_expr = backend_info_table.mutate(category=_.categories.unnest())
     if categories:
