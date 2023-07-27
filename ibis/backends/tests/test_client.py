@@ -1013,8 +1013,25 @@ def test_has_operation_no_geo(con, op):
     they're excluded here, skipping the few backends that explicitly do
     support them.
     """
-    for op in [ops.GeoDistance, ops.GeoAsText, ops.GeoUnaryUnion]:
-        assert not con.has_operation(op)
+    assert not con.has_operation(op)
+
+
+@pytest.mark.parametrize(
+    ("module_name", "op"),
+    [
+        param(backend, obj, marks=getattr(mark, backend), id=f"{backend}-{name}")
+        for name, obj in sorted(inspect.getmembers(builtins), key=itemgetter(0))
+        for backend in sorted(ALL_BACKENDS)
+        # filter out builtins that are types, except for tuples on ClickHouse
+        # because tuples are used to represent lists of expressions
+        if isinstance(obj, type)
+        if (obj != tuple or backend != "clickhouse")
+        if (backend != "pyspark" or vparse(pd.__version__) < vparse("2"))
+    ],
+)
+def test_has_operation_no_builtins(module_name, op):
+    mod = importlib.import_module(f"ibis.backends.{module_name}")
+    assert not mod.Backend.has_operation(op)
 
 
 def test_get_backend(con, alltypes, monkeypatch):
