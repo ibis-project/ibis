@@ -513,7 +513,7 @@ class Backend(BaseBackend):
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         from ibis.backends.clickhouse.compiler.values import translate_val
 
-        return operation in translate_val.registry
+        return translate_val.dispatch(operation) is not translate_val.dispatch(object)
 
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"

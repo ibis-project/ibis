@@ -397,9 +397,9 @@ def _log(op, **kw):
 
 
 @translate_val.register(tuple)
-def _node_list(op, punct="()", **kw):
+def _node_list(op, **kw):
     values = ", ".join(map(_sql, map(partial(translate_val, **kw), op)))
-    return f"{punct[0]}{values}{punct[1]}"
+    return f"({values})"
 
 
 def _interval_format(op):
