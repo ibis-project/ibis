@@ -15,6 +15,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.bigquery.client import bigquery_param
+from ibis.util import gen_name
 
 
 def test_column_execute(alltypes, df):
@@ -393,3 +394,25 @@ def test_fully_qualified_table_creation(con, project_id, dataset_id, temp_table)
     schema = ibis.schema({'col1': dt.GeoSpatial(geotype="geography", srid=4326)})
     t = con.create_table(f"{project_id}.{dataset_id}.{temp_table}", schema=schema)
     assert t.get_name() == f"{project_id}.{dataset_id}.{temp_table}"
+
+
+def test_create_table_with_options(con):
+    name = gen_name("bigquery_temp_table")
+    schema = ibis.schema(dict(a="int64", b="int64", c="array<string>", d="date"))
+    t = con.create_table(
+        name,
+        schema=schema,
+        overwrite=True,
+        default_collate="und:ci",
+        partition_by="d",
+        cluster_by=["a", "b"],
+        options={
+            "friendly_name": "bigquery_temp_table",
+            "description": "A table for testing BigQuery's create_table implementation",
+            "labels": [("org", "ibis")],
+        },
+    )
+    try:
+        assert t.execute().empty
+    finally:
+        con.drop_table(name)
