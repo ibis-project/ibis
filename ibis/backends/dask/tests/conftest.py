@@ -17,6 +17,9 @@ from ibis.backends.tests.data import array_types, json_types, win
 # avoids the issue https://github.com/dask/dask/issues/10034.
 dask.config.set({"dataframe.shuffle.method": "tasks"})
 
+# TODO: support pyarrow string column types across ibis
+dask.config.set({"dataframe.convert-string": False})
+
 # It's necessary that NPARTITIONS > 1 in order to test cross partitioning bugs.
 NPARTITIONS = 2
 
