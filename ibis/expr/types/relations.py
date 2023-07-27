@@ -2650,18 +2650,15 @@ class Table(Expr, _FixedTextJupyterMixin):
         return expr
 
     def sql(self, query: str, dialect: str | None = None) -> ir.Table:
-        """Run a SQL query against a table expression.
-
-        See [`Table.alias`][ibis.expr.types.relations.Table.alias] for
-        details on using named table expressions in a SQL string.
+        '''Run a SQL query against a table expression.
 
         Parameters
         ----------
         query
             Query string
         dialect
-            Optional string indicating the dialect of `query`. The default
-            value of `None` will use the backend's native dialect.
+            Optional string indicating the dialect of `query`. Defaults to the
+            backend's native dialect.
 
         Returns
         -------
@@ -2671,20 +2668,72 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
+        >>> from ibis import _
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch(table_name="penguins")
-        >>> expr = t.sql("SELECT island, mean(bill_length_mm) FROM penguins GROUP BY 1 ORDER BY 2 DESC")
+        >>> expr = t.sql(
+        ...     """
+        ...     SELECT island, mean(bill_length_mm) AS avg_bill_length
+        ...     FROM penguins
+        ...     GROUP BY 1
+        ...     ORDER BY 2 DESC
+        ...     """
+        ... )
         >>> expr
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ island    ┃ mean(bill_length_mm) ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string    │ float64              │
-        ├───────────┼──────────────────────┤
-        │ Biscoe    │            45.257485 │
-        │ Dream     │            44.167742 │
-        │ Torgersen │            38.950980 │
-        └───────────┴──────────────────────┘
-        """
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ avg_bill_length ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+        │ string    │ float64         │
+        ├───────────┼─────────────────┤
+        │ Biscoe    │       45.257485 │
+        │ Dream     │       44.167742 │
+        │ Torgersen │       38.950980 │
+        └───────────┴─────────────────┘
+
+        Mix and match ibis expressions with SQL queries
+
+        >>> t = ibis.examples.penguins.fetch(table_name="penguins")
+        >>> expr = t.sql(
+        ...     """
+        ...     SELECT island, mean(bill_length_mm) AS avg_bill_length
+        ...     FROM penguins
+        ...     GROUP BY 1
+        ...     ORDER BY 2 DESC
+        ...     """
+        ... )
+        >>> expr = expr.mutate(
+        ...     island=_.island.lower(),
+        ...     avg_bill_length=_.avg_bill_length.round(1),
+        ... )
+        >>> expr
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ avg_bill_length ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+        │ string    │ float64         │
+        ├───────────┼─────────────────┤
+        │ biscoe    │            45.3 │
+        │ dream     │            44.2 │
+        │ torgersen │            39.0 │
+        └───────────┴─────────────────┘
+
+        Because ibis expressions aren't named, they aren't visible to
+        subsequent `.sql` calls. Use the [`alias`][ibis.expr.types.relations.Table.alias] method
+        to assign a name to an expression.
+
+        >>> expr.alias("b").sql("SELECT * FROM b WHERE avg_bill_length > 40")
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+        ┃ island ┃ avg_bill_length ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+        │ string │ float64         │
+        ├────────┼─────────────────┤
+        │ biscoe │            45.3 │
+        │ dream  │            44.2 │
+        └────────┴─────────────────┘
+
+        See Also
+        --------
+        [`Table.alias`][ibis.expr.types.relations.Table.alias]
+        '''
 
         # only transpile if dialect was passed
         if dialect is not None:
