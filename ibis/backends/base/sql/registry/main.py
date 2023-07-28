@@ -47,9 +47,8 @@ def is_null(translator, op):
 
 
 def not_(translator, op):
-    (arg,) = op.args
-    formatted_arg = translator.translate(arg)
-    if helpers.needs_parens(arg):
+    formatted_arg = translator.translate(op.arg)
+    if helpers.needs_parens(op.arg):
         formatted_arg = helpers.parenthesize(formatted_arg)
     return f"NOT {formatted_arg}"
 
@@ -351,8 +350,8 @@ operation_registry = {
     ops.Least: varargs("least"),
     ops.Where: fixed_arity("if", 3),
     ops.Between: between,
-    ops.Contains: binary_infix.contains("IN"),
-    ops.NotContains: binary_infix.contains("NOT IN"),
+    ops.InValues: binary_infix.in_values,
+    ops.InColumn: binary_infix.in_column,
     ops.SimpleCase: case.simple_case,
     ops.SearchedCase: case.searched_case,
     ops.TableColumn: table_column,

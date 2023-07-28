@@ -9,5 +9,5 @@ SELECT
       WHERE
         t0.x > 2
     ) AS t1
-  ) AS `Contains(x, x)`
+  ) AS `InColumn(x, x)`
 FROM t AS t0

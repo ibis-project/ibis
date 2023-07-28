@@ -1205,65 +1205,39 @@ def execute_node_string_join(op, args, **kwargs):
     return op.sep.join(args)
 
 
-@execute_node.register(ops.Contains, object, tuple)
-def execute_node_contains_value_nodes(op, data, elements, **kwargs):
+@execute_node.register(ops.InValues, object, tuple)
+def execute_node_scalar_in_values(op, data, elements, **kwargs):
     elements = [execute(arg, **kwargs) for arg in elements]
     return data in elements
 
 
-@execute_node.register(ops.Contains, object, np.ndarray)
-def execute_node_contains_value_array(op, data, elements, **kwargs):
+@execute_node.register(ops.InColumn, object, np.ndarray)
+def execute_node_scalar_in_column(op, data, elements, **kwargs):
     return data in elements
 
 
-@execute_node.register(ops.Contains, pd.Series, tuple)
-def execute_node_contains_series_nodes(op, data, elements, **kwargs):
+@execute_node.register(ops.InValues, pd.Series, tuple)
+def execute_node_column_in_values(op, data, elements, **kwargs):
     elements = [execute(arg, **kwargs) for arg in elements]
     return data.isin(elements)
 
 
-@execute_node.register(ops.Contains, pd.Series, pd.Series)
-def execute_node_contains_series_sequence(op, data, elements, **kwargs):
+@execute_node.register(ops.InColumn, pd.Series, pd.Series)
+def execute_node_column_in_column(op, data, elements, **kwargs):
     return data.isin(elements)
 
 
-@execute_node.register(ops.Contains, SeriesGroupBy, tuple)
-def execute_node_contains_series_group_by_nodes(op, data, elements, **kwargs):
+@execute_node.register(ops.InValues, SeriesGroupBy, tuple)
+def execute_node_group_in_values(op, data, elements, **kwargs):
     elements = [execute(arg, **kwargs) for arg in elements]
     return data.obj.isin(elements).groupby(
         get_grouping(data.grouper.groupings), group_keys=False
     )
 
 
-@execute_node.register(ops.Contains, SeriesGroupBy, pd.Series)
-def execute_node_contains_series_group_by_sequence(op, data, elements, **kwargs):
+@execute_node.register(ops.InColumn, SeriesGroupBy, pd.Series)
+def execute_node_group_in_column(op, data, elements, **kwargs):
     return data.obj.isin(elements).groupby(
-        get_grouping(data.grouper.groupings), group_keys=False
-    )
-
-
-@execute_node.register(ops.NotContains, pd.Series, tuple)
-def execute_node_not_contains_series_nodes(op, data, elements, **kwargs):
-    elements = [execute(arg, **kwargs) for arg in elements]
-    return ~(data.isin(elements))
-
-
-@execute_node.register(ops.NotContains, pd.Series, pd.Series)
-def execute_node_not_contains_series_sequence(op, data, elements, **kwargs):
-    return ~(data.isin(elements))
-
-
-@execute_node.register(ops.NotContains, SeriesGroupBy, tuple)
-def execute_node_not_contains_series_group_by_nodes(op, data, elements, **kwargs):
-    elements = [execute(arg, **kwargs) for arg in elements]
-    return (~data.obj.isin(elements)).groupby(
-        get_grouping(data.grouper.groupings), group_keys=False
-    )
-
-
-@execute_node.register(ops.NotContains, SeriesGroupBy, pd.Series)
-def execute_node_not_contains_series_group_by_sequence(op, data, elements, **kwargs):
-    return (~data.obj.isin(elements)).groupby(
         get_grouping(data.grouper.groupings), group_keys=False
     )
 
