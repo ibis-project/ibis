@@ -169,6 +169,8 @@ def _clean_join_predicates(left, right, predicates):
             pred = lk == rk
         elif isinstance(pred, str):
             pred = left.to_expr()[pred] == right.to_expr()[pred]
+        elif pred is True or pred is False:
+            pred = ops.Literal(pred, dtype="bool").to_expr()
         elif isinstance(pred, Value):
             pred = pred.to_expr()
         elif isinstance(pred, Deferred):
@@ -177,8 +179,8 @@ def _clean_join_predicates(left, right, predicates):
         elif not isinstance(pred, ir.Expr):
             raise NotImplementedError
 
-        if not isinstance(pred, ir.BooleanColumn):
-            raise com.ExpressionError('Join predicate must be comparison')
+        if not isinstance(pred, ir.BooleanValue):
+            raise com.ExpressionError('Join predicate must be a boolean expression')
 
         preds = an.flatten_predicate(pred.op())
         result.extend(preds)
