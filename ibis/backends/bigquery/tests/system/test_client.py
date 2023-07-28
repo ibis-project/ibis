@@ -387,3 +387,9 @@ def test_timestamp_table(con, temp_table):
             ("timestamp_col", dt.Timestamp(timezone="UTC")),
         ]
     )
+
+
+def test_fully_qualified_table_creation(con, project_id, dataset_id, temp_table):
+    schema = ibis.schema({'col1': dt.GeoSpatial(geotype="geography", srid=4326)})
+    t = con.create_table(f"{project_id}.{dataset_id}.{temp_table}", schema=schema)
+    assert t.get_name() == f"{project_id}.{dataset_id}.{temp_table}"
