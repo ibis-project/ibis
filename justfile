@@ -9,7 +9,7 @@ clean:
 # lock dependencies without updating existing versions
 lock:
     poetry lock --no-update
-    poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
+    poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 
 # show all backends
 @list-backends:

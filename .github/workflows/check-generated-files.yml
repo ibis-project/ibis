@@ -6,15 +6,13 @@ on:
       - README.md
       - poetry.lock
       - pyproject.toml
-      - requirements.txt
-      - .github/workflows/check-requirements-txt.yml
+      - requirements-dev.txt
   pull_request:
     paths:
       - README.md
       - poetry.lock
       - pyproject.toml
-      - requirements.txt
-      - .github/workflows/check-requirements-txt.yml
+      - requirements-dev.txt
   merge_group:
 
 concurrency:
@@ -61,24 +59,24 @@ jobs:
 
           diff --unified "$old" "$new"
 
-      - name: generate requirements.txt
-        run: poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements.txt
+      - name: generate requirements-dev.txt
+        run: poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 
-      - name: check requirements.txt
-        run: git diff --exit-code requirements.txt
+      - name: check requirements-dev.txt
+        run: git diff --exit-code requirements-dev.txt
 
       - uses: syphar/restore-virtualenv@v1
         with:
-          requirement_files: requirements.txt
+          requirement_files: requirements-dev.txt
           custom_cache_key_element: check-setuptools-install
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
-          requirement_files: requirements.txt
+          requirement_files: requirements-dev.txt
           custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
 
-      - name: install using requirements.txt
-        run: pip install -r requirements.txt
+      - name: install using requirements-dev.txt
+        run: pip install -r requirements-dev.txt
 
       - name: install ibis in development mode
         run: pip install -e .
