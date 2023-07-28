@@ -355,7 +355,7 @@ class Value(Expr):
         >>> table.string_col.isin(['foo', 'bar', 'baz'])
         r0 := UnboundTable: t
           string_col string
-        Contains(string_col): Contains(...)
+        InValues(string_col): InValues(...)
 
         Check whether a column's values are contained in another table's column
 
@@ -365,14 +365,16 @@ class Value(Expr):
           string_col string
         r1 := UnboundTable: t2
           other_string_col string
-        Contains(string_col, other_string_col): Contains(...)
+        InColumn(string_col, other_string_col): InColumn(...)
         """
         from ibis.expr.types import ArrayValue
 
         if isinstance(values, ArrayValue):
-            return values.contains(self)
+            return ops.ArrayContains(values, self).to_expr()
+        elif isinstance(values, Column):
+            return ops.InColumn(self, values).to_expr()
         else:
-            return ops.Contains(self, values).to_expr()
+            return ops.InValues(self, values).to_expr()
 
     def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
         """Check whether this expression's values are not in `values`.
@@ -405,19 +407,19 @@ class Value(Expr):
         │          19.3 │
         └───────────────┘
         >>> t.bill_depth_mm.notin([18.7, 18.1])
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ NotContains(bill_depth_mm) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                    │
-        ├────────────────────────────┤
-        │ False                      │
-        │ True                       │
-        │ True                       │
-        │ NULL                       │
-        │ True                       │
-        └────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Not(InValues(bill_depth_mm)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                      │
+        ├──────────────────────────────┤
+        │ False                        │
+        │ True                         │
+        │ True                         │
+        │ NULL                         │
+        │ True                         │
+        └──────────────────────────────┘
         """
-        return ops.NotContains(self, values).to_expr()
+        return ~self.isin(values)
 
     def substitute(
         self,

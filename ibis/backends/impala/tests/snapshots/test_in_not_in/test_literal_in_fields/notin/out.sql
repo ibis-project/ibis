@@ -1,1 +1,1 @@
-2 NOT IN (`a`, `b`, `c`)
+NOT 2 IN (`a`, `b`, `c`)

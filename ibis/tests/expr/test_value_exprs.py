@@ -269,10 +269,11 @@ def test_isin_notin_list(table, container):
     not_expr = table.a.notin(values)
 
     assert isinstance(expr, ir.BooleanColumn)
-    assert isinstance(expr.op(), ops.Contains)
+    assert isinstance(expr.op(), ops.InValues)
 
     assert isinstance(not_expr, ir.BooleanColumn)
-    assert isinstance(not_expr.op(), ops.NotContains)
+    assert isinstance(not_expr.op(), ops.Not)
+    assert isinstance(not_expr.op().arg, ops.InValues)
 
 
 def test_value_counts(table, string_col):
