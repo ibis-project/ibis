@@ -5,7 +5,7 @@ import contextlib
 import functools
 from functools import partial
 from operator import add, mul, sub
-from typing import Any, Literal, Mapping
+from typing import Any, Mapping
 
 import sqlglot as sg
 from toolz import flip
@@ -824,38 +824,36 @@ def _string_contains(op, **kw):
     return f"locate({haystack}, {needle}) > 0"
 
 
-def contains(op_string: Literal["IN", "NOT IN"]) -> str:
-    def tr(op, *, cache, **kw):
-        from ibis.backends.clickhouse.compiler import translate
+@translate_val.register(ops.InValues)
+def _in_values(op, **kw):
+    # TODO(kszucs): move this optimization to expression construction
+    if not op.options:
+        return "FALSE"
 
-        value = op.value
-        options = op.options
-        if isinstance(options, tuple) and not options:
-            return {"NOT IN": "TRUE", "IN": "FALSE"}[op_string]
+    value = translate_val(op.value, **kw)
+    if helpers.needs_parens(op.value):
+        value = helpers.parenthesize(value)
 
-        left_arg = translate_val(value, **kw)
-        if helpers.needs_parens(value):
-            left_arg = helpers.parenthesize(left_arg)
+    options = _sql(translate_val(op.options, **kw))
 
-        # special case non-foreign isin/notin expressions
-        if not isinstance(options, tuple) and options.shape.is_columnar():
-            # this will fail to execute if there's a correlation, but it's too
-            # annoying to detect so we let it through to enable the
-            # uncorrelated use case (pandas-style `.isin`)
-            subquery = translate(options.to_expr().as_table().op(), {})
-            right_arg = f"({_sql(subquery)})"
-        else:
-            right_arg = _sql(translate_val(options, cache=cache, **kw))
-
-        # we explicitly do NOT parenthesize the right side because it doesn't
-        # make sense to do so for Sequence operations
-        return f"{left_arg} {op_string} {right_arg}"
-
-    return tr
+    # we explicitly do NOT parenthesize the right side because it doesn't
+    # make sense to do so for Sequence operations
+    return f"{value} IN {options}"
 
 
-translate_val.register(ops.Contains)(contains("IN"))
-translate_val.register(ops.NotContains)(contains("NOT IN"))
+@translate_val.register(ops.InColumn)
+def _in_column(op, **kw):
+    from ibis.backends.clickhouse.compiler import translate
+
+    value = translate_val(op.value, **kw)
+    if helpers.needs_parens(op.value):
+        value = helpers.parenthesize(value)
+
+    # this will fail to execute if there's a correlation, but it's too
+    # annoying to detect so we let it through to enable the
+    # uncorrelated use case (pandas-style `.isin`)
+    subquery = translate(op.options.to_expr().as_table().op(), {})
+    return f"{value} IN ({_sql(subquery)})"
 
 
 @translate_val.register(ops.DayOfWeekName)

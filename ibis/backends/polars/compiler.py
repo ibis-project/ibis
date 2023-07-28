@@ -433,34 +433,21 @@ def greatest(op, **kw):
         return pl.max(arg)
 
 
-@translate.register(ops.Contains)
-def contains(op, **kw):
+@translate.register(ops.InColumn)
+def in_column(op, **kw):
     value = translate(op.value, **kw)
-
-    if isinstance(op.options, tuple):
-        options = list(map(translate, op.options))
-        try:
-            return pl.any_horizontal([value == option for option in options])
-        except AttributeError:
-            return pl.any([value == option for option in options])
-    else:
-        options = translate(op.options, **kw)
-        return value.is_in(options)
+    options = translate(op.options, **kw)
+    return value.is_in(options)
 
 
-@translate.register(ops.NotContains)
-def not_contains(op, **kw):
+@translate.register(ops.InValues)
+def in_values(op, **kw):
     value = translate(op.value, **kw)
-
-    if isinstance(op.options, tuple):
-        options = list(map(translate, op.options))
-        try:
-            return ~pl.any_horizontal([value == option for option in options])
-        except AttributeError:
-            return ~pl.any([value == option for option in options])
-    else:
-        options = translate(op.options, **kw)
-        return ~value.is_in(options)
+    options = list(map(translate, op.options))
+    try:
+        return pl.any_horizontal([value == option for option in options])
+    except AttributeError:
+        return pl.any([value == option for option in options])
 
 
 _string_unary = {

@@ -145,18 +145,22 @@ def test_string_temporal_compare_between_datetimes(con, left, right):
 
 
 @pytest.mark.parametrize("container", [list, tuple, set])
-def test_field_in_literals(con, alltypes, translate, container):
-    values = {"foo", "bar", "baz"}
+def test_field_in_literals(con, alltypes, df, translate, container):
+    values = {"1", "2", "3", "5", "7"}
     foobar = container(values)
     expected = tuple(values)
 
     expr = alltypes.string_col.isin(foobar)
+    result_col = con.execute(expr.name("result"))
+    expected_col = df.string_col.isin(foobar).rename("result")
     assert translate(expr.op()) == f"string_col IN {expected}"
-    assert len(con.execute(expr))
+    tm.assert_series_equal(result_col, expected_col)
 
     expr = alltypes.string_col.notin(foobar)
-    assert translate(expr.op()) == f"string_col NOT IN {expected}"
-    assert len(con.execute(expr))
+    result_col = con.execute(expr.name("result"))
+    expected_col = (~df.string_col.isin(foobar)).rename("result")
+    assert translate(expr.op()) == f"NOT string_col IN {expected}"
+    tm.assert_series_equal(result_col, expected_col)
 
 
 @pytest.mark.parametrize(

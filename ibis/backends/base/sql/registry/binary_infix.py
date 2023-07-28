@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Literal
-
 import ibis.expr.analysis as an
 from ibis.backends.base.sql.registry import helpers
 
@@ -50,37 +48,41 @@ def xor(translator, op):
     return "({0} OR {1}) AND NOT ({0} AND {1})".format(left_arg, right_arg)
 
 
-def contains(op_string: Literal["IN", "NOT IN"]) -> str:
-    def translate(translator, op):
-        from ibis.backends.base.sql.registry.main import table_array_view
+def in_values(translator, op):
+    if not op.options:
+        return "FALSE"
 
-        if isinstance(op.options, tuple) and not op.options:
-            return {"NOT IN": "TRUE", "IN": "FALSE"}[op_string]
+    left = translator.translate(op.value)
+    if helpers.needs_parens(op.value):
+        left = helpers.parenthesize(left)
 
-        left = translator.translate(op.value)
-        if helpers.needs_parens(op.value):
-            left = helpers.parenthesize(left)
+    values = [translator.translate(x) for x in op.options]
+    right = helpers.parenthesize(", ".join(values))
 
-        ctx = translator.context
+    # we explicitly do NOT parenthesize the right side because it doesn't
+    # make sense to do so for Sequence operations
+    return f"{left} IN {right}"
 
-        if isinstance(op.options, tuple):
-            values = [translator.translate(x) for x in op.options]
-            right = helpers.parenthesize(", ".join(values))
-        elif op.options.shape.is_columnar():
-            right = translator.translate(op.options)
-            if not any(
-                ctx.is_foreign_expr(leaf)
-                for leaf in an.find_immediate_parent_tables(op.options)
-            ):
-                array = op.options.to_expr().as_table().to_array().op()
-                right = table_array_view(translator, array)
-            else:
-                right = translator.translate(op.options)
-        else:
-            right = translator.translate(op.options)
 
-        # we explicitly do NOT parenthesize the right side because it doesn't
-        # make sense to do so for Sequence operations
-        return f"{left} {op_string} {right}"
+def in_column(translator, op):
+    from ibis.backends.base.sql.registry.main import table_array_view
 
-    return translate
+    ctx = translator.context
+
+    left = translator.translate(op.value)
+    if helpers.needs_parens(op.value):
+        left = helpers.parenthesize(left)
+
+    right = translator.translate(op.options)
+    if not any(
+        ctx.is_foreign_expr(leaf)
+        for leaf in an.find_immediate_parent_tables(op.options)
+    ):
+        array = op.options.to_expr().as_table().to_array().op()
+        right = table_array_view(translator, array)
+    else:
+        right = translator.translate(op.options)
+
+    # we explicitly do NOT parenthesize the right side because it doesn't
+    # make sense to do so for Sequence operations
+    return f"{left} IN {right}"

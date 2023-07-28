@@ -207,6 +207,22 @@ def _contains(func):
     return translate
 
 
+def _in_values(t, op):
+    if not op.options:
+        return sa.literal(False)
+    value = t.translate(op.value)
+    options = [t.translate(x) for x in op.options]
+    return value.in_(options)
+
+
+def _in_column(t, op):
+    value = t.translate(op.value)
+    options = t.translate(ops.TableArrayView(op.options.to_expr().as_table()))
+    if not isinstance(options, sa.sql.Selectable):
+        options = sa.select(options)
+    return value.in_(options)
+
+
 def _alias(t, op):
     # just compile the underlying argument because the naming is handled
     # by the translator for the top level expression
@@ -514,8 +530,8 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Cast: _cast,
     ops.Coalesce: varargs(sa.func.coalesce),
     ops.NullIf: fixed_arity(sa.func.nullif, 2),
-    ops.Contains: _contains(lambda left, right: left.in_(right)),
-    ops.NotContains: _contains(lambda left, right: left.notin_(right)),
+    ops.InValues: _in_values,
+    ops.InColumn: _in_column,
     ops.Count: reduction(sa.func.count),
     ops.CountStar: _count_star,
     ops.Sum: reduction(sa.func.sum),
