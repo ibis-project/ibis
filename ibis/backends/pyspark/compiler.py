@@ -434,24 +434,18 @@ def compile_difference(t, op, **kwargs):
     return left.subtract(right) if op.distinct else left.exceptAll(right)
 
 
-@compiles(ops.Contains)
-def compile_contains(t, op, **kwargs):
-    col = t.translate(op.value, **kwargs)
-    if isinstance(op.options, tuple):
-        options = [t.translate(option, **kwargs) for option in op.options]
-    else:
-        options = t.translate(op.options, **kwargs)
-    return col.isin(options)
+@compiles(ops.InColumn)
+def in_column(t, op, **kwargs):
+    value = t.translate(op.value, **kwargs)
+    options = t.translate(op.options, **kwargs)
+    return value.isin(options)
 
 
-@compiles(ops.NotContains)
-def compile_not_contains(t, op, **kwargs):
-    col = t.translate(op.value, **kwargs)
-    if isinstance(op.options, tuple):
-        options = [t.translate(option, **kwargs) for option in op.options]
-    else:
-        options = t.translate(op.options, **kwargs)
-    return ~col.isin(options)
+@compiles(ops.InValues)
+def in_values(t, op, **kwargs):
+    value = t.translate(op.value, **kwargs)
+    options = [t.translate(option, **kwargs) for option in op.options]
+    return value.isin(options)
 
 
 @compiles(ops.StartsWith)

@@ -691,6 +691,7 @@ def test_unnest_struct(con):
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
     expr = t.value.unnest()
     result = con.execute(expr)
+
     expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)
     tm.assert_series_equal(result, expected)
 

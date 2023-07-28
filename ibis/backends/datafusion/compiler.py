@@ -452,18 +452,11 @@ def stddev(op, **kw):
         raise ValueError(f"Unrecognized how value: {op.how}")
 
 
-@translate.register(ops.Contains)
-def contains(op, **kw):
+@translate.register(ops.InValues)
+def in_values(op, **kw):
     value = translate(op.value, **kw)
     options = list(map(partial(translate, **kw), op.options))
     return df.functions.in_list(value, options, negated=False)
-
-
-@translate.register(ops.NotContains)
-def not_contains(op, **kw):
-    value = translate(op.value, **kw)
-    options = list(map(partial(translate, **kw), op.options))
-    return df.functions.in_list(value, options, negated=True)
 
 
 @translate.register(ops.Negate)

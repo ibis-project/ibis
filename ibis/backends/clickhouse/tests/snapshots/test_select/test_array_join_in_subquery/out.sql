@@ -3,5 +3,5 @@ SELECT
     SELECT
       arrayJoin(t0.ids) AS ids
     FROM way_view AS t0
-  ) AS "Contains(id, ids)"
+  ) AS "InColumn(id, ids)"
 FROM node_view AS t0

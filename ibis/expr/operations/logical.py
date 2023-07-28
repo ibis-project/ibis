@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-from typing import Union
 
 from public import public
 
@@ -129,26 +128,26 @@ class Between(Value):
         super().__init__(arg=arg, lower_bound=lower_bound, upper_bound=upper_bound)
 
 
-# TODO(kszucs): decompose it into at least two operations
 @public
-class Contains(Value):
+class InValues(Value):
     value: Value
-    options: Union[VarTuple[Value], Column[dt.Any]]
+    options: VarTuple[Value]
 
     dtype = dt.boolean
 
     @attribute.default
     def shape(self):
-        if isinstance(self.options, tuple):
-            args = [self.value, *self.options]
-        else:
-            args = self.args
+        args = [self.value, *self.options]
         return rlz.highest_precedence_shape(args)
 
 
 @public
-class NotContains(Contains):
-    pass
+class InColumn(Value):
+    value: Value
+    options: Column[dt.Any]
+
+    dtype = dt.boolean
+    shape = rlz.shape_like("args")
 
 
 @public
