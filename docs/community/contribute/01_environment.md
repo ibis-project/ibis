@@ -100,7 +100,7 @@ hide:
 
         ```sh
         pip install 'poetry>=1.3,<1.4'
-        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
         ```
 
     1. Install ibis in development mode
