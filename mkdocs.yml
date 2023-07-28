@@ -139,9 +139,17 @@ markdown_extensions:
   - toc:
       permalink: true
       permalink_title: "Anchor link to this section for reference"
+validation:
+  nav:
+    omitted_files: warn
+    not_found: warn
+    absolute_links: warn
+  links:
+    not_found: warn
+    absolute_links: warn
+    unrecognized_links: info
 extra:
   project_name: "ibis"
-  # maybe version goes here?
   team:
     - name: "Maintainers"
       members:

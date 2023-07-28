@@ -1,11 +1,11 @@
 # Why Ibis?
 
-Ibis is a dataframe interface to execution engines with support for [15+
-backends](/backends/). Ibis doesn't replace your existing execution
+Ibis is a dataframe interface to execution engines with support for [17+
+backends](../backends/index.md). Ibis doesn't replace your existing execution
 engine, it _extends_ it with powerful abstractions and intuitive syntax.
 
 Ibis works with what you already have, so why not check out our [getting started
-guide](/tutorial/getting_started/)?
+guide](../tutorial/getting_started.md)?
 
 # How does Ibis compare to...
 
@@ -34,7 +34,7 @@ we can summarize some key points:
 - Ibis lets you use SQL when you want to (for our SQL-based backends)
 
 If your SQL-fu is strong, we might not convince you to leave it all behind, but
-check out our [Ibis for SQL users guide](/tutorial/ibis-for-sql-users/)
+check out our [Ibis for SQL users guide](../tutorial/ibis-for-sql-users.ipynb)
 and see if it whets your appetite.
 
 ## `pandas`
@@ -53,7 +53,7 @@ Ibis to quickly and easily switch to a different backend that supports
 out-of-core execution.
 
 Ibis syntax is similar to `pandas` syntax, but it isn't a drop-in replacement.
-Check out our [Ibis for pandas Users guide](/tutorial/ibis-for-pandas-users/) if
+Check out our [Ibis for pandas Users guide](../tutorial/ibis-for-pandas-users.ipynb) if
 you'd like to give Ibis a try!
 
 ## `sqlalchemy` and `sqlglot`
@@ -72,4 +72,4 @@ using SQLGlot.
 
 If you are looking for a dataframe API to construct and execute your analytics
 queries against a large collection of powerful execution engines, then allow us
-point you at the [Ibis Getting Started guide](/tutorial/getting_started/).
+point you at the [Ibis Getting Started guide](../tutorial/getting_started.md).
