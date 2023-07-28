@@ -1152,3 +1152,8 @@ def execute_view(op, *, ctx: pl.SQLContext, **kw):
     child = translate(op.child, ctx=ctx, **kw)
     ctx.register(op.name, child)
     return child
+
+
+@translate.register(ops.SelfReference)
+def execute_self_reference(op, **kw):
+    return translate(op.table, **kw)
