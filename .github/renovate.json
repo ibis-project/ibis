@@ -19,7 +19,7 @@
       "autoApprove": true
     },
     {
-      "matchPackagePatterns": ["clickhouse-connect"],
+      "matchPackagePrefixes": ["clickhouse"],
       "addLabels": ["clickhouse"]
     },
     {
