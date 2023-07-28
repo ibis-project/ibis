@@ -234,8 +234,8 @@ class Backend(BaseSQLBackend):
     def table(self, name: str, database: str | None = None) -> ir.TableExpr:
         if database is None:
             database = f"{self.data_project}.{self.current_database}"
-        t = super().table(name, database=database)
         table_id = self._fully_qualified_name(name, database)
+        t = super().table(table_id)
         bq_table = self.client.get_table(table_id)
         return rename_partitioned_column(t, bq_table, self.partition_column)
 
