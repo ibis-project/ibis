@@ -254,8 +254,8 @@ def test_multiple_project_queries(con):
     result = join.compile()
     expected = """\
 SELECT t0.`title`
-FROM `bigquery-public-data.stackoverflow`.posts_questions t0
-  INNER JOIN `nyc-tlc.yellow`.trips t1
+FROM `bigquery-public-data.stackoverflow.posts_questions` t0
+  INNER JOIN `nyc-tlc.yellow.trips` t1
     ON t0.`tags` = t1.`rate_code`"""
     assert result == expected
 
@@ -270,8 +270,8 @@ def test_multiple_project_queries_database_api(con):
     result = join.compile()
     expected = """\
 SELECT t0.`title`
-FROM `bigquery-public-data.stackoverflow`.posts_questions t0
-  INNER JOIN `nyc-tlc.yellow`.trips t1
+FROM `bigquery-public-data.stackoverflow.posts_questions` t0
+  INNER JOIN `nyc-tlc.yellow.trips` t1
     ON t0.`tags` = t1.`rate_code`"""
     assert result == expected
 
