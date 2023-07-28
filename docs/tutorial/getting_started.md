@@ -5,7 +5,7 @@ This is a quick tour of some basic commands and usage patterns, just to get your
 ## Install `ibis`
 
 This quick-start guide uses the DuckDB backend. You can check out the [Install
-page](/install/) for information on how to install other backends.
+page](../install.md) for information on how to install other backends.
 
 ```shell title="Install Ibis using pip"
 $ pip install 'ibis-framework[duckdb]'
@@ -372,7 +372,7 @@ You can also use a `selector` alongside a column name.
 └───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴───────┘
 ```
 
-You can read more about [`selectors`](/reference/selectors/) in the docs!
+You can read more about [`selectors`](../reference/selectors.md) in the docs!
 
 ### order_by
 
