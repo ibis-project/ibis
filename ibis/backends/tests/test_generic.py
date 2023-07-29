@@ -276,12 +276,7 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
 @pytest.mark.parametrize(
     ('predicate_fn', 'expected_fn'),
     [
-        param(
-            lambda t: t['bool_col'],
-            lambda df: df['bool_col'],
-            id="no_op",
-            marks=pytest.mark.min_version(datafusion="0.5.0"),
-        ),
+        param(lambda t: t['bool_col'], lambda df: df['bool_col'], id="no_op"),
         param(lambda t: ~t['bool_col'], lambda df: ~df['bool_col'], id="negate"),
         param(
             lambda t: t.bool_col & t.bool_col,
@@ -372,7 +367,6 @@ def test_case_where(backend, alltypes, df):
 
 # TODO: some of these are notimpl (datafusion) others are probably never
 @pytest.mark.notimpl(["datafusion", "mysql", "sqlite", "mssql", "druid", "oracle"])
-@pytest.mark.min_version(duckdb="0.3.3", reason="isnan/isinf unsupported")
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
 
@@ -688,10 +682,6 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
 
 
 @pytest.mark.notimpl(["datafusion"])
-@pytest.mark.min_version(
-    dask="2022.01.1",
-    reason="unsupported operation with later versions of pandas",
-)
 def test_zeroifnull_column(backend, alltypes, df):
     expr = alltypes.int_col.nullif(1).zeroifnull().name('tmp')
     result = expr.execute().astype("int32")

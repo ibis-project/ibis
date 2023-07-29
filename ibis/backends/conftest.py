@@ -382,56 +382,6 @@ def pytest_runtest_call(item):
 
     backend = next(iter(backend))
 
-    for marker in item.iter_markers(name="min_server_version"):
-        kwargs = marker.kwargs
-        if backend not in kwargs:
-            continue
-
-        funcargs = item.funcargs
-        con = funcargs.get(
-            "con",
-            getattr(
-                funcargs.get("backend"),
-                "connection",
-                None,
-            ),
-        )
-
-        if con is None:
-            continue
-
-        min_server_version = kwargs.pop(backend)
-        server_version = con.version
-        condition = vparse(server_version) < vparse(min_server_version)
-        item.add_marker(
-            pytest.mark.xfail(
-                condition,
-                reason=(
-                    f"unsupported functionality for server version {server_version}"
-                ),
-                **kwargs,
-            )
-        )
-
-    for marker in item.iter_markers(name="min_version"):
-        kwargs = marker.kwargs
-        if backend not in kwargs:
-            continue
-
-        min_version = kwargs.pop(backend)
-        reason = kwargs.pop("reason", None)
-        version = getattr(importlib.import_module(backend), "__version__", None)
-        if condition := version is None:  # pragma: no cover
-            if reason is None:
-                reason = f"{backend} backend module has no __version__ attribute"
-        else:
-            condition = vparse(version) < vparse(min_version)
-            if reason is None:
-                reason = f"test requires {backend}>={version}; got version {version}"
-            else:
-                reason = f"{backend}@{version} (<{min_version}): {reason}"
-        item.add_marker(pytest.mark.xfail(condition, reason=reason, **kwargs))
-
     # Ibis hasn't exposed existing functionality
     # This xfails so that you know when it starts to pass
     for marker in item.iter_markers(name="notimpl"):
@@ -441,13 +391,9 @@ def pytest_runtest_call(item):
                 and "raises" not in marker.kwargs.keys()
             ):
                 raise ValueError("notimpl requires a raises")
-            reason = marker.kwargs.get("reason")
-            item.add_marker(
-                pytest.mark.xfail(
-                    reason=reason or f'Feature not yet exposed in {backend}',
-                    **{k: v for k, v in marker.kwargs.items() if k != "reason"},
-                )
-            )
+            kwargs = marker.kwargs.copy()
+            kwargs.setdefault("reason", f"Feature not yet exposed in {backend}")
+            item.add_marker(pytest.mark.xfail(**kwargs))
 
     # Functionality is unavailable upstream (but could be)
     # This xfails so that you know when it starts to pass
@@ -458,23 +404,16 @@ def pytest_runtest_call(item):
                 and "raises" not in marker.kwargs.keys()
             ):
                 raise ValueError("notyet requires a raises")
-            reason = marker.kwargs.get("reason")
-            item.add_marker(
-                pytest.mark.xfail(
-                    reason=reason or f'Feature not available upstream for {backend}',
-                    **{k: v for k, v in marker.kwargs.items() if k != "reason"},
-                )
-            )
+
+            kwargs = marker.kwargs.copy()
+            kwargs.setdefault("reason", f"Feature not available upstream for {backend}")
+            item.add_marker(pytest.mark.xfail(**kwargs))
 
     for marker in item.iter_markers(name="never"):
         if backend in marker.args[0]:
             if "reason" not in marker.kwargs.keys():
                 raise ValueError("never requires a reason")
-            item.add_marker(
-                pytest.mark.xfail(
-                    **marker.kwargs,
-                )
-            )
+            item.add_marker(pytest.mark.xfail(**marker.kwargs))
 
     # Something has been exposed as broken by a new test and it shouldn't be
     # imperative for a contributor to fix it just because they happened to
@@ -486,13 +425,10 @@ def pytest_runtest_call(item):
                 and "raises" not in marker.kwargs.keys()
             ):
                 raise ValueError("broken requires a raises")
-            reason = marker.kwargs.get("reason")
-            item.add_marker(
-                pytest.mark.xfail(
-                    reason=reason or f"Feature is failing on {backend}",
-                    **{k: v for k, v in marker.kwargs.items() if k != "reason"},
-                )
-            )
+
+            kwargs = marker.kwargs.copy()
+            kwargs.setdefault("reason", f"Feature is failing on {backend}")
+            item.add_marker(pytest.mark.xfail(**kwargs))
 
     for marker in item.iter_markers(name="xfail_version"):
         kwargs = marker.kwargs.copy()
