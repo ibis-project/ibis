@@ -362,9 +362,11 @@ class Limit(TableNode):
 class SelfReference(TableNode):
     table = rlz.table
 
-    @property
+    @attribute.default
     def name(self) -> str:
-        return f"{self.table.name}_ref"
+        if (name := getattr(self.table, "name", None)) is not None:
+            return f"{name}_ref"
+        return util.gen_name("self_ref")
 
     @property
     def schema(self):
