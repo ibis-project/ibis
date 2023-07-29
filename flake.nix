@@ -62,7 +62,8 @@
         sqlite-interactive
       ];
       shellHook = ''
-        ln -sf "${pkgs.ibisTestingData}" "$PWD/ci/ibis-testing-data"
+        rm -f "$PWD/ci/ibis-testing-data"
+        ln -s "${pkgs.ibisTestingData}" "$PWD/ci/ibis-testing-data"
 
         # necessary for mkdocs
         export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
