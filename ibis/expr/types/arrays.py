@@ -207,7 +207,7 @@ class ArrayValue(Value):
     def __radd__(self, other: ArrayValue) -> ArrayValue:
         return ops.ArrayConcat((other, self)).to_expr()
 
-    def __mul__(self, n: int | ir.IntegerValue) -> ArrayValue:
+    def repeat(self, n: int | ir.IntegerValue) -> ArrayValue:
         """Repeat this array `n` times.
 
         Parameters
@@ -235,7 +235,7 @@ class ArrayValue(Value):
         │ [3]                  │
         │ NULL                 │
         └──────────────────────┘
-        >>> t.a * 2
+        >>> t.a.repeat(2)
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ ArrayRepeat(a, 2)    ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━┩
@@ -245,37 +245,9 @@ class ArrayValue(Value):
         │ [3, 3]               │
         │ []                   │
         └──────────────────────┘
-        """
-        return ops.ArrayRepeat(self, n).to_expr()
 
-    def __rmul__(self, n: int | ir.IntegerValue) -> ArrayValue:
-        """Repeat this array `n` times.
+        `repeat` is also available using the `*` operator
 
-        Parameters
-        ----------
-        n
-            Number of times to repeat `self`.
-
-        Returns
-        -------
-        ArrayValue
-            `self` repeated `n` times
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [[7], [3] , None]})
-        >>> t
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ a                    ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [7]                  │
-        │ [3]                  │
-        │ NULL                 │
-        └──────────────────────┘
         >>> 2 * t.a
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ ArrayRepeat(a, 2)    ┃
@@ -288,6 +260,8 @@ class ArrayValue(Value):
         └──────────────────────┘
         """
         return ops.ArrayRepeat(self, n).to_expr()
+
+    __mul__ = __rmul__ = repeat
 
     def unnest(self) -> ir.Value:
         """Flatten an array into a column.
