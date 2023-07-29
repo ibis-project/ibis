@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import operator
+from functools import partial
 from typing import Any, Collection
 
 import numpy as np
@@ -56,45 +57,53 @@ def execute_array_index_scalar(op, data, index, **kwargs):
         return None
 
 
-def _concat_iterables_to_series(
-    iter1: Collection[Any],
-    iter2: Collection[Any],
-) -> pd.Series:
+def _concat_iterables_to_series(*iters: Collection[Any]) -> pd.Series:
     """Concatenate two collections to create a Series.
 
     The two collections are assumed to have the same length.
 
     Used for ArrayConcat implementation.
     """
-    assert len(iter1) == len(iter2)
+    first, *rest = iters
+    assert all(len(series) == len(first) for series in rest)
     # Doing the iteration using `map` is much faster than doing the iteration
     # using `Series.apply` due to Pandas-related overhead.
-    result = pd.Series(map(lambda x, y: np.concatenate([x, y]), iter1, iter2))
-    return result
+    return pd.Series(map(lambda *args: np.concatenate(args), first, *rest))
 
 
-@execute_node.register(ops.ArrayConcat, pd.Series, pd.Series)
-def execute_array_concat_series(op, left, right, **kwargs):
-    return _concat_iterables_to_series(left, right)
+@execute_node.register(ops.ArrayConcat, tuple)
+def execute_array_concat(op, args, **kwargs):
+    return execute_node(op, *map(partial(execute, **kwargs), args), **kwargs)
 
 
-@execute_node.register(ops.ArrayConcat, pd.Series, np.ndarray)
-@execute_node.register(ops.ArrayConcat, np.ndarray, pd.Series)
-def execute_array_concat_mixed(op, left, right, **kwargs):
+@execute_node.register(ops.ArrayConcat, pd.Series, pd.Series, [pd.Series])
+def execute_array_concat_series(op, first, second, *args, **kwargs):
+    return _concat_iterables_to_series(first, second, *args)
+
+
+@execute_node.register(
+    ops.ArrayConcat, np.ndarray, pd.Series, [(pd.Series, np.ndarray)]
+)
+def execute_array_concat_mixed_left(op, left, right, *args, **kwargs):
     # ArrayConcat given a column (pd.Series) and a scalar (np.ndarray).
     # We will broadcast the scalar to the length of the column.
-    if isinstance(left, np.ndarray):
-        # Broadcast `left` to the length of `right`
-        left = np.tile(left, (len(right), 1))
-    elif isinstance(right, np.ndarray):
-        # Broadcast `right` to the length of `left`
-        right = np.tile(right, (len(left), 1))
+    # Broadcast `left` to the length of `right`
+    left = np.tile(left, (len(right), 1))
     return _concat_iterables_to_series(left, right)
 
 
-@execute_node.register(ops.ArrayConcat, np.ndarray, np.ndarray)
-def execute_array_concat_scalar(op, left, right, **kwargs):
-    return np.concatenate([left, right])
+@execute_node.register(
+    ops.ArrayConcat, pd.Series, np.ndarray, [(pd.Series, np.ndarray)]
+)
+def execute_array_concat_mixed_right(op, left, right, *args, **kwargs):
+    # Broadcast `right` to the length of `left`
+    right = np.tile(right, (len(left), 1))
+    return _concat_iterables_to_series(left, right)
+
+
+@execute_node.register(ops.ArrayConcat, np.ndarray, np.ndarray, [np.ndarray])
+def execute_array_concat_scalar(op, left, right, *args, **kwargs):
+    return np.concatenate([left, right, *args])
 
 
 @execute_node.register(ops.ArrayRepeat, pd.Series, int)

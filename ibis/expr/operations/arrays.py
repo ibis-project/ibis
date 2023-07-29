@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from public import public
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
@@ -52,21 +51,17 @@ class ArrayIndex(Value):
 
 @public
 class ArrayConcat(Value):
-    left = rlz.array
-    right = rlz.array
+    arg = rlz.tuple_of(rlz.array, min_length=2)
 
-    output_dtype = rlz.dtype_like("left")
-    output_shape = rlz.shape_like("args")
+    @attribute.default
+    def output_dtype(self):
+        return dt.Array(
+            dt.highest_precedence(arg.output_dtype.value_type for arg in self.arg)
+        )
 
-    def __init__(self, left, right):
-        if left.output_dtype != right.output_dtype:
-            raise com.IbisTypeError(
-                'Array types must match exactly in a {} operation. '
-                'Left type {} != Right type {}'.format(
-                    type(self).__name__, left.output_dtype, right.output_dtype
-                )
-            )
-        super().__init__(left=left, right=right)
+    @attribute.default
+    def output_shape(self):
+        return rlz.highest_precedence_shape(self.arg)
 
 
 @public

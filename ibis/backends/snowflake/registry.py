@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import itertools
 
 import numpy as np
@@ -18,6 +19,7 @@ from ibis.backends.base.sql.alchemy.registry import (
     get_sqla_table,
     reduction,
     unary,
+    varargs,
 )
 from ibis.backends.postgres.registry import _literal as _postgres_literal
 from ibis.backends.postgres.registry import operation_registry as _operation_registry
@@ -370,7 +372,9 @@ operation_registry.update(
         ),
         ops.ArrayIndex: fixed_arity(sa.func.get, 2),
         ops.ArrayLength: fixed_arity(sa.func.array_size, 1),
-        ops.ArrayConcat: fixed_arity(sa.func.array_cat, 2),
+        ops.ArrayConcat: varargs(
+            lambda *args: functools.reduce(sa.func.array_cat, args)
+        ),
         ops.ArrayColumn: lambda t, op: sa.func.array_construct(
             *map(t.translate, op.cols)
         ),

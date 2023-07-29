@@ -22,8 +22,10 @@ execute_node = TraceTwoLevelDispatcher(
 
 @execute_node.register(ops.Node, [object])
 def raise_unknown_op(node, *args, **kwargs):
+    signature = ", ".join(type(arg).__name__ for arg in args)
     raise com.OperationNotDefinedError(
-        f"Operation {type(node).__name__!r} is not implemented for this backend"
+        "Operation is not implemented for this backend with "
+        f"signature: execute_node({type(node).__name__}, {signature})"
     )
 
 

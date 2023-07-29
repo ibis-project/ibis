@@ -924,6 +924,12 @@ def _map_get(op, **kw):
     return f"if(mapContains({arg}, {key}), {arg}[{key}], {default})"
 
 
+@translate_val.register(ops.ArrayConcat)
+def _array_concat(op, **kw):
+    args = ", ".join(map(_sql, map(partial(translate_val, **kw), op.arg)))
+    return f"arrayConcat({args})"
+
+
 def _binary_infix(symbol: str):
     def formatter(op, **kw):
         left = translate_val(op_left := op.left, **kw)
@@ -1056,7 +1062,6 @@ _simple_ops = {
     # because clickhouse"s greatest and least doesn"t support varargs
     ops.Where: "if",
     ops.ArrayLength: "length",
-    ops.ArrayConcat: "arrayConcat",
     ops.Unnest: "arrayJoin",
     ops.Degrees: "degrees",
     ops.Radians: "radians",
@@ -1395,7 +1400,7 @@ def _array_remove(op, **kw):
 
 @translate_val.register(ops.ArrayUnion)
 def _array_union(op, **kw):
-    return translate_val(ops.ArrayDistinct(ops.ArrayConcat(op.left, op.right)), **kw)
+    return translate_val(ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right))), **kw)
 
 
 @translate_val.register(ops.ArrayZip)

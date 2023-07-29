@@ -1640,9 +1640,7 @@ def compile_array_index(t, op, **kwargs):
 
 @compiles(ops.ArrayConcat)
 def compile_array_concat(t, op, **kwargs):
-    left = t.translate(op.left, **kwargs)
-    right = t.translate(op.right, **kwargs)
-    return F.concat(left, right)
+    return F.concat(*map(partial(t.translate, **kwargs), op.arg))
 
 
 @compiles(ops.ArrayRepeat)
