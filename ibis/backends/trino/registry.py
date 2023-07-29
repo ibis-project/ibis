@@ -11,7 +11,9 @@ from trino.sqlalchemy.datatype import DOUBLE
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.alchemy.registry import _literal as _alchemy_literal
+from ibis.backends.base.sql.alchemy.registry import (
+    _literal as _alchemy_literal,
+)
 from ibis.backends.base.sql.alchemy.registry import (
     array_filter,
     array_map,
@@ -21,6 +23,7 @@ from ibis.backends.base.sql.alchemy.registry import (
     sqlalchemy_window_functions_registry,
     try_cast,
     unary,
+    varargs,
 )
 from ibis.backends.postgres.registry import _corr, _covar
 
@@ -328,7 +331,7 @@ operation_registry.update(
         ops.BitwiseRightShift: fixed_arity(sa.func.bitwise_right_shift, 2),
         ops.BitwiseNot: unary(sa.func.bitwise_not),
         ops.ArrayCollect: reduction(sa.func.array_agg),
-        ops.ArrayConcat: fixed_arity(sa.func.concat, 2),
+        ops.ArrayConcat: varargs(sa.func.concat),
         ops.ArrayLength: unary(sa.func.cardinality),
         ops.ArrayIndex: fixed_arity(
             lambda arg, index: sa.func.element_at(arg, index + 1), 2

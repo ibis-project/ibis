@@ -125,18 +125,20 @@ class ArrayValue(Value):
             op = ops.ArrayIndex(self, index)
         return op.to_expr()
 
-    def __add__(self, other: ArrayValue) -> ArrayValue:
-        """Concatenate this array with another.
+    def concat(self, other: ArrayValue, *args: ArrayValue) -> ArrayValue:
+        """Concatenate this array with one or more arrays.
 
         Parameters
         ----------
         other
-            Array to concat with `self`
+            Other array to concat with `self`
+        args
+            Other arrays to concat with `self`
 
         Returns
         -------
         ArrayValue
-            `self` concatenated with `other`
+            `self` concatenated with `other` and `args`
 
         Examples
         --------
@@ -153,9 +155,9 @@ class ArrayValue(Value):
         │ [3]                  │
         │ NULL                 │
         └──────────────────────┘
-        >>> t.a + t.a
+        >>> t.a.concat(t.a)
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayConcat(a, a)    ┃
+        ┃ ArrayConcat()        ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━┩
         │ array<int64>         │
         ├──────────────────────┤
@@ -163,9 +165,9 @@ class ArrayValue(Value):
         │ [3, 3]               │
         │ NULL                 │
         └──────────────────────┘
-        >>> t.a + ibis.literal([4], type="array<int64>")
+        >>> t.a.concat(ibis.literal([4], type="array<int64>"))
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayConcat(a, (4,)) ┃
+        ┃ ArrayConcat()        ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━┩
         │ array<int64>         │
         ├──────────────────────┤
@@ -173,49 +175,37 @@ class ArrayValue(Value):
         │ [3, 4]               │
         │ [4]                  │
         └──────────────────────┘
+
+        `concat` is also available using the `+` operator
+
+        >>> [1] + t.a
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat()        ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │
+        ├──────────────────────┤
+        │ [1, 7]               │
+        │ [1, 3]               │
+        │ [1]                  │
+        └──────────────────────┘
+        >>> t.a + [1]
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat()        ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │
+        ├──────────────────────┤
+        │ [7, 1]               │
+        │ [3, 1]               │
+        │ [1]                  │
+        └──────────────────────┘
         """
-        return ops.ArrayConcat(self, other).to_expr()
+        return ops.ArrayConcat((self, other, *args)).to_expr()
+
+    def __add__(self, other: ArrayValue) -> ArrayValue:
+        return self.concat(other)
 
     def __radd__(self, other: ArrayValue) -> ArrayValue:
-        """Concatenate this array with another.
-
-        Parameters
-        ----------
-        other
-            Array to concat with `self`
-
-        Returns
-        -------
-        ArrayValue
-            `self` concatenated with `other`
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [[7], [3] , None]})
-        >>> t
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ a                    ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [7]                  │
-        │ [3]                  │
-        │ NULL                 │
-        └──────────────────────┘
-        >>> ibis.literal([4], type="array<int64>") + t.a
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayConcat((4,), a) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [4, 7]               │
-        │ [4, 3]               │
-        │ [4]                  │
-        └──────────────────────┘
-        """
-        return ops.ArrayConcat(other, self).to_expr()
+        return ops.ArrayConcat((other, self)).to_expr()
 
     def __mul__(self, n: int | ir.IntegerValue) -> ArrayValue:
         """Repeat this array `n` times.

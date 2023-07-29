@@ -1008,7 +1008,7 @@ def test_array_concat(array_types, catop):
 
 def test_array_concat_mixed_types(array_types):
     with pytest.raises(TypeError):
-        array_types.x + array_types.x.cast('array<double>')
+        array_types.y + array_types.x.cast('array<double>')
 
 
 @pytest.fixture

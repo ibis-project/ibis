@@ -862,12 +862,15 @@ def array_length(op, **kw):
 
 @translate.register(ops.ArrayConcat)
 def array_concat(op, **kw):
-    left = translate(op.left, **kw)
-    right = translate(op.right, **kw)
-    try:
-        return left.arr.concat(right)
-    except AttributeError:
-        return left.list.concat(right)
+    result, *rest = map(partial(translate, **kw), op.arg)
+
+    for arg in rest:
+        try:
+            result = result.arr.concat(arg)
+        except AttributeError:
+            result = result.list.concat(arg)
+
+    return result
 
 
 @translate.register(ops.ArrayColumn)

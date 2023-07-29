@@ -353,7 +353,6 @@ operation_registry.update(
             )
         ),
         ops.TryCast: _try_cast,
-        ops.ArrayConcat: fixed_arity(sa.func.array_concat, 2),
         ops.ArrayRepeat: fixed_arity(
             lambda arg, times: sa.func.flatten(
                 sa.func.array(

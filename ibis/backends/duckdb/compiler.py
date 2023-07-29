@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.backends.base.sql.alchemy.datatypes as sat
@@ -39,7 +40,12 @@ def compile_uint(element, compiler, **kw):
 
 @compiles(sat.ArrayType, "duckdb")
 def compile_array(element, compiler, **kw):
-    return f"{compiler.process(element.value_type, **kw)}[]"
+    if isinstance(value_type := element.value_type, sa.types.NullType):
+        # duckdb infers empty arrays with no other context as array<int32>
+        typ = "INTEGER"
+    else:
+        typ = compiler.process(value_type, **kw)
+    return f"{typ}[]"
 
 
 rewrites = DuckDBSQLExprTranslator.rewrites

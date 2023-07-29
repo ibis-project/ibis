@@ -27,6 +27,7 @@ from ibis.backends.base.sql.alchemy import (
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
     unary,
+    varargs,
 )
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.backends.base.sql.alchemy.registry import (
@@ -658,7 +659,7 @@ operation_registry.update(
         ops.ArrayIndex: _array_index(
             index_converter=_neg_idx_to_pos, func=lambda arg, index: arg[index]
         ),
-        ops.ArrayConcat: fixed_arity(sa.sql.expression.ColumnElement.concat, 2),
+        ops.ArrayConcat: varargs(lambda *args: functools.reduce(operator.add, args)),
         ops.ArrayRepeat: _array_repeat,
         ops.Unnest: _unnest,
         ops.Covariance: _covar,

@@ -124,7 +124,7 @@ def _struct_column(translator, op):
 
 
 def _array_concat(translator, op):
-    return "ARRAY_CONCAT({})".format(", ".join(map(translator.translate, op.args)))
+    return "ARRAY_CONCAT({})".format(", ".join(map(translator.translate, op.arg)))
 
 
 def _array_column(translator, op):

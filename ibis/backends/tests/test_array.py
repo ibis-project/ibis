@@ -107,6 +107,33 @@ def test_array_concat(con):
     assert np.array_equal(result, expected)
 
 
+# Issues #2370
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+def test_array_concat_variadic(con):
+    left = ibis.literal([1, 2, 3])
+    right = ibis.literal([2, 1])
+    expr = left.concat(right, right, right)
+    result = con.execute(expr.name("tmp"))
+    expected = np.array([1, 2, 3, 2, 1, 2, 1, 2, 1])
+    assert np.array_equal(result, expected)
+
+
+# Issues #2370
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["postgres", "trino"],
+    raises=sa.exc.ProgrammingError,
+    reason="postgres can't infer the type of an empty array",
+)
+def test_array_concat_some_empty(con):
+    left = ibis.literal([])
+    right = ibis.literal([2, 1])
+    expr = left.concat(right)
+    result = con.execute(expr.name("tmp"))
+    expected = np.array([2, 1])
+    assert np.array_equal(result, expected)
+
+
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_array_radd_concat(con):
     left = [1]

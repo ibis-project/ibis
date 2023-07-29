@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+from functools import partial
 
 import dask.dataframe as dd
 import dask.dataframe.groupby as ddgb
@@ -51,3 +52,8 @@ def execute_array_collect(op, data, where, aggcontext=None, **kwargs):
 @execute_node.register(ops.ArrayCollect, ddgb.SeriesGroupBy, type(None))
 def execute_array_collect_grouped_series(op, data, where, **kwargs):
     return data.agg(collect_list)
+
+
+@execute_node.register(ops.ArrayConcat, tuple)
+def execute_array_concat(op, args, **kwargs):
+    return execute_node(op, *map(partial(execute, **kwargs), args), **kwargs)
