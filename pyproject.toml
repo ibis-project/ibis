@@ -334,8 +334,6 @@ markers = [
   "examples: tests that exercise examples",
   "geospatial: tests for geospatial functionality",
   "hdfs: Hadoop file system tests",
-  "min_version: backend tests that require a specific version of a dependency to pass",
-  "min_server_version: backend tests that require a specific version of a backend's server to pass",
   "xfail_version: backend tests that for a specific version of a dependency",
   "notimpl: functionality that isn't implemented in ibis",
   "notyet: for functionality that isn't implemented in a backend",

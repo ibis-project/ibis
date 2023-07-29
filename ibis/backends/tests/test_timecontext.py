@@ -58,7 +58,7 @@ def ctx_col():
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.min_version(pyspark="3.1")
+@pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
 @pytest.mark.parametrize(
     'window',
     [

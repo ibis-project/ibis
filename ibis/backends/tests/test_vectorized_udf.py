@@ -491,11 +491,8 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
     udf_backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.min_version(pyspark="3.1")
-@pytest.mark.parametrize(
-    'method',
-    ['destructure', 'unpack'],
-)
+@pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
+@pytest.mark.parametrize('method', ['destructure', 'unpack'])
 @pytest.mark.skip("dask")
 def test_elementwise_udf_destructure_exact_once(
     udf_backend, udf_alltypes, method, tmp_path

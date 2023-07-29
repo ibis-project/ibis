@@ -80,19 +80,13 @@ def calc_zscore(s):
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method='min').astype('int64') - 1,
             id='rank',
-            marks=[
-                pytest.mark.min_server_version(clickhouse="22.8"),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-            ],
+            marks=[pytest.mark.notimpl(["dask"], raises=NotImplementedError)],
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method='dense').astype('int64') - 1,
             id='dense_rank',
-            marks=[
-                pytest.mark.min_server_version(clickhouse="22.8"),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
-            ],
+            marks=[pytest.mark.notimpl(["dask"], raises=NotImplementedError)],
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -163,9 +157,9 @@ def calc_zscore(s):
             lambda t: t.cumcount(),
             id='row_number',
             marks=[
-                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
-                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
-                pytest.mark.min_server_version(clickhouse="22.8"),
+                pytest.mark.notimpl(
+                    ["dask", "pandas"], raises=com.OperationNotDefinedError
+                )
             ],
         ),
         param(

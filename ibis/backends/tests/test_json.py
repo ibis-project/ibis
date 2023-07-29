@@ -1,9 +1,12 @@
 """Tests for JSON operations."""
 from __future__ import annotations
 
+import sqlite3
+
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 from ibis.common.exceptions import OperationNotDefinedError
@@ -20,25 +23,20 @@ pytestmark = [
     [
         param(
             lambda t: t.js["a"].name("res"),
-            pd.Series(
-                [[1, 2, 3, 4], None, "foo", None, None, None],
-                name="res",
-                dtype="object",
-            ),
-            marks=[pytest.mark.min_server_version(sqlite="3.38.0")],
-            id="getitem_object",
+            pd.Series([[1, 2, 3, 4], None, "foo"] + [None] * 3, name="res"),
+            id="object",
         ),
         param(
             lambda t: t.js[1].name("res"),
-            pd.Series(
-                [None, None, None, None, 47, None],
-                dtype="object",
-                name="res",
-            ),
-            marks=[pytest.mark.min_server_version(sqlite="3.38.0")],
-            id="getitem_array",
+            pd.Series([None] * 4 + [47, None], dtype="object", name="res"),
+            id="array",
         ),
     ],
+)
+@pytest.mark.notyet(
+    ["sqlite"],
+    condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
+    reason="JSON not supported in SQLite < 3.38.0",
 )
 def test_json_getitem(json_t, expr_fn, expected):
     expr = expr_fn(json_t)
