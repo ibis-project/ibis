@@ -211,3 +211,10 @@ def test_get_schema_from_query(con, pg_type, expected_type):
 def test_unknown_column_type(con, col):
     awards_players = con.table("awards_players_special_types")
     assert awards_players[col].type().is_unknown()
+
+
+def test_insert_with_cte(con):
+    X = con.create_table("X", schema=ibis.schema(dict(id="int")), temp=True)
+    expr = X.join(X.mutate(a=X["id"] + 1), ["id"])
+    Y = con.create_table("Y", expr, temp=True)
+    assert Y.execute().empty
