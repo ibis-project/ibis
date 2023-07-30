@@ -8,8 +8,10 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis.formats.pandas import DaskData
 
+dask = pytest.importorskip("dask")
 dd = pytest.importorskip("dask.dataframe")
 
+dask.config.set({"dataframe.convert-string": False})
 
 from dask.dataframe.utils import tm  # noqa: E402
 
