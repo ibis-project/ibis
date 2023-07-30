@@ -112,3 +112,9 @@ def test_parse_sql_simple_select_count():
     sql = """SELECT COUNT(first_name) FROM employee"""
     expr = ibis.parse_sql(sql, catalog)
     code = ibis.decompile(expr, format=True)  # noqa: F841
+
+
+def test_parse_sql_table_alias():
+    sql = """SELECT e.* FROM employee AS e"""
+    expr = ibis.parse_sql(sql, catalog)
+    code = ibis.decompile(expr, format=True)  # noqa: F841
