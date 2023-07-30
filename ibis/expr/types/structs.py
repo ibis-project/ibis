@@ -396,4 +396,5 @@ class StructScalar(Scalar, StructValue):
 
 @public
 class StructColumn(Column, StructValue):
-    pass
+    def __getitem__(self, name: str) -> ir.Column:
+        return StructValue.__getitem__(self, name)

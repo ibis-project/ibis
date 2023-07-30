@@ -388,7 +388,8 @@ class MapScalar(Scalar, MapValue):
 
 @public
 class MapColumn(Column, MapValue):
-    pass
+    def __getitem__(self, key: ir.Value) -> ir.Column:
+        return MapValue.__getitem__(self, key)
 
 
 @public

@@ -132,4 +132,7 @@ class JSONScalar(Scalar, JSONValue):
 
 @public
 class JSONColumn(Column, JSONValue):
-    pass
+    def __getitem__(
+        self, key: str | int | ir.StringValue | ir.IntegerValue
+    ) -> JSONColumn:
+        return JSONValue.__getitem__(self, key)
