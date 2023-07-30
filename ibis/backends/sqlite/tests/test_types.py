@@ -4,6 +4,7 @@ import sqlite3
 
 import pandas as pd
 import pytest
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -66,7 +67,9 @@ def test_timestamps(db, table, data):
     t = con.table(table)
     assert t.ts.type() == dt.timestamp
     res = t.ts.execute()
-    stamps = pd.to_datetime(data, format="mixed", utc=True)
+    # the "mixed" format was added in pandas 2.0.0
+    format = "mixed" if vparse(pd.__version__) >= vparse("2.0.0") else None
+    stamps = pd.to_datetime(data, format=format, utc=True)
     # we're casting to timestamp without a timezone, so remove it in the
     # expected output
     localized = stamps.tz_localize(None)

@@ -2,10 +2,20 @@ from __future__ import annotations
 
 import builtins
 import os
+import platform
 
 import pytest
 
 import ibis
+
+SANDBOXED = (
+    any(key.startswith("NIX_") for key in os.environ)
+    and os.environ.get("IN_NIX_SHELL") != "impure"
+)
+LINUX = platform.system() == "Linux"
+MACOS = platform.system() == "Darwin"
+WINDOWS = platform.system() == "Windows"
+CI = os.environ.get("CI") is not None
 
 
 @pytest.fixture(autouse=True)

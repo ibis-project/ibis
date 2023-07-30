@@ -6,6 +6,8 @@ import dateutil
 import pandas as pd
 import pytest
 import pytz
+from packaging.version import parse as vparse
+from pytest import param
 
 from ibis.common.patterns import CoercedTo
 from ibis.common.temporal import (
@@ -14,6 +16,7 @@ from ibis.common.temporal import (
     normalize_timedelta,
     normalize_timezone,
 )
+from ibis.conftest import WINDOWS
 
 interval_units = pytest.mark.parametrize(
     ["singular", "plural", "short"],
@@ -199,7 +202,18 @@ def test_normalize_datetime(value, expected):
         (datetime(2022, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.gettz("CET")), "CET"),
         # pandas timestamp with timezone
         (pd.Timestamp("2022-01-01 00:00:00.000001+00:00"), "UTC"),
-        (pd.Timestamp("2022-01-01 00:00:00.000001+01:00"), "UTC+01:00"),
+        param(
+            pd.Timestamp("2022-01-01 00:00:00.000001+01:00"),
+            "UTC+01:00",
+            marks=pytest.mark.xfail(
+                vparse(pd.__version__) < vparse("2.0.0") and not WINDOWS,
+                reason=(
+                    "tzdata is missing in pandas < 2.0.0 due to an incorrect marker "
+                    "in the tzdata package specification that restricts its installation "
+                    "to windows only"
+                ),
+            ),
+        ),
     ],
 )
 def test_normalized_datetime_tzname(value, expected):
