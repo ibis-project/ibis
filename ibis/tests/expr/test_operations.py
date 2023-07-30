@@ -278,3 +278,13 @@ def test_sortkey_propagates_dtype_and_shape():
     k = ops.SortKey(t.a, ascending=True)
     assert k.output_dtype == dt.int16
     assert k.output_shape == rlz.Shape.COLUMNAR
+
+
+def test_getitem_on_column_is_error():
+    t = ibis.table(dict(a="int"))
+
+    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
+        t.a[0]
+
+    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
+        t.a[:1]

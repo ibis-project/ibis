@@ -825,7 +825,8 @@ class ArrayScalar(Scalar, ArrayValue):
 
 @public
 class ArrayColumn(Column, ArrayValue):
-    pass
+    def __getitem__(self, index: int | ir.IntegerValue | slice) -> ir.Column:
+        return ArrayValue.__getitem__(self, index)
 
 
 @public

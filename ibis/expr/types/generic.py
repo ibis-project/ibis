@@ -986,6 +986,12 @@ class Column(Value, _FixedTextJupyterMixin):
 
     __array_ufunc__ = None
 
+    def __getitem__(self, _):
+        raise TypeError(
+            f"{self.__class__.__name__!r} is not subscriptable: "
+            "see https://ibis-project.org/tutorial/ibis-for-pandas-users/#ibis-for-pandas-users for details."
+        )
+
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 

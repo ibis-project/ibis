@@ -1523,4 +1523,5 @@ class StringScalar(Scalar, StringValue):
 
 @public
 class StringColumn(Column, StringValue):
-    pass
+    def __getitem__(self, key: slice | int | ir.IntegerScalar) -> StringColumn:
+        return StringValue.__getitem__(self, key)
