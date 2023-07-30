@@ -6,7 +6,7 @@ import pytest
 
 import ibis.examples
 import ibis.util
-from ibis.backends.conftest import CI, LINUX, SANDBOXED
+from ibis.conftest import CI, LINUX, SANDBOXED
 
 pytestmark = pytest.mark.examples
 

@@ -4,8 +4,6 @@ import contextlib
 import importlib
 import importlib.metadata
 import itertools
-import os
-import platform
 import sys
 from functools import lru_cache
 from pathlib import Path
@@ -22,15 +20,7 @@ from packaging.version import parse as vparse
 import ibis
 from ibis import util
 from ibis.backends.base import _get_backend_names
-
-SANDBOXED = (
-    any(key.startswith("NIX_") for key in os.environ)
-    and os.environ.get("IN_NIX_SHELL") != "impure"
-)
-LINUX = platform.system() == "Linux"
-MACOS = platform.system() == "Darwin"
-WINDOWS = platform.system() == "Windows"
-CI = os.environ.get("CI") is not None
+from ibis.conftest import WINDOWS
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
@@ -528,7 +518,7 @@ def con(backend):
 
 
 def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
-    if (backend := request.param) == "duckdb" and platform.system() == "Windows":
+    if (backend := request.param) == "duckdb" and WINDOWS:
         pytest.xfail(
             "windows prevents two connections to the same duckdb file "
             "even in the same process"

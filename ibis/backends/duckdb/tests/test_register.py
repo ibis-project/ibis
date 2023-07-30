@@ -15,7 +15,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.conftest import LINUX, SANDBOXED
+from ibis.conftest import LINUX, SANDBOXED
 
 
 def test_read_csv(data_dir):

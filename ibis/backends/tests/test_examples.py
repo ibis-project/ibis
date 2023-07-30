@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
-from ibis.backends.conftest import LINUX, SANDBOXED
+from ibis.conftest import LINUX, SANDBOXED
 
 pytestmark = pytest.mark.examples
 

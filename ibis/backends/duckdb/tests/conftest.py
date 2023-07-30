@@ -5,8 +5,9 @@ from typing import TYPE_CHECKING, Iterator
 import pytest
 
 import ibis
-from ibis.backends.conftest import SANDBOXED, TEST_TABLES
+from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.conftest import SANDBOXED
 
 if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
