@@ -60,6 +60,13 @@ class Catalog(Dict[str, sch.Schema]):
 
     def overlay(self, step):
         updates = {dep.name: convert(dep, catalog=self) for dep in step.dependencies}
+
+        # handle scan aliases: FROM foo AS bar
+        source = getattr(step, "source", None)
+        alias = getattr(source, "args", {}).get("alias")
+        if alias is not None and (source_name := self.get(source.name)) is not None:
+            self[alias.name] = source_name
+
         return Catalog({**self, **updates})
 
 
