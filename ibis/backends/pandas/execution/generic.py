@@ -756,10 +756,12 @@ def execute_std_series_groupby_mask(op, data, mask, aggcontext=None, **kwargs):
 
 @execute_node.register(ops.CountStar, DataFrameGroupBy, type(None))
 def execute_count_star_frame_groupby(op, data, _, **kwargs):
-    result = data.size()
-    # FIXME(phillipc): We should not hard code this column name
-    result.name = 'count'
-    return result
+    return data.size()
+
+
+@execute_node.register(ops.CountDistinctStar, DataFrameGroupBy, type(None))
+def execute_count_distinct_star_frame_groupby(op, data, _, **kwargs):
+    return data.nunique()
 
 
 @execute_node.register(ops.Reduction, pd.Series, (pd.Series, type(None)))
@@ -899,7 +901,17 @@ def execute_count_star_frame(op, data, _, **kwargs):
 
 @execute_node.register(ops.CountStar, pd.DataFrame, pd.Series)
 def execute_count_star_frame_filter(op, data, where, **kwargs):
-    return len(data) - (len(where) - where.sum())
+    return len(data) - len(where) + where.sum()
+
+
+@execute_node.register(ops.CountDistinctStar, pd.DataFrame, type(None))
+def execute_count_distinct_star_frame(op, data, _, **kwargs):
+    return len(data.drop_duplicates())
+
+
+@execute_node.register(ops.CountDistinctStar, pd.DataFrame, pd.Series)
+def execute_count_distinct_star_frame_filter(op, data, filt, **kwargs):
+    return len(data.loc[filt].drop_duplicates())
 
 
 @execute_node.register(ops.BitAnd, pd.Series, (pd.Series, type(None)))

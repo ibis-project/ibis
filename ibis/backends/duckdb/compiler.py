@@ -14,7 +14,9 @@ class DuckDBSQLExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _has_reduction_filter_syntax = True
+    _supports_tuple_syntax = True
     _dialect_name = "duckdb"
+
     type_mapper = DuckDBType
 
 

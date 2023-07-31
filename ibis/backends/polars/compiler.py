@@ -1157,3 +1157,11 @@ def execute_view(op, *, ctx: pl.SQLContext, **kw):
 @translate.register(ops.SelfReference)
 def execute_self_reference(op, **kw):
     return translate(op.table, **kw)
+
+
+@translate.register(ops.CountDistinctStar)
+def execute_count_distinct_star(op, **kw):
+    arg = pl.struct(*op.arg.schema.names)
+    if op.where is not None:
+        arg = arg.filter(translate(op.where, **kw))
+    return arg.n_unique()

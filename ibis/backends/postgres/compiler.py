@@ -15,6 +15,7 @@ class PostgreSQLExprTranslator(AlchemyExprTranslator):
     _registry = operation_registry.copy()
     _rewrites = AlchemyExprTranslator._rewrites.copy()
     _has_reduction_filter_syntax = True
+    _supports_tuple_syntax = True
     _dialect_name = "postgresql"
 
     # it does support it, but we can't use it because of support for pivot

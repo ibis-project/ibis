@@ -6,6 +6,7 @@ import operator
 from typing import Any
 
 import sqlalchemy as sa
+from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import FunctionElement, GenericFunction
 
 import ibis.common.exceptions as com
@@ -493,11 +494,48 @@ def _count_star(t, op):
     return sa.func.count(t.translate(ops.Where(where, 1, None)))
 
 
+def _count_distinct_star(t, op):
+    schema = op.arg.schema
+    cols = [sa.column(col, t.get_sqla_type(typ)) for col, typ in schema.items()]
+
+    if t._supports_tuple_syntax:
+        func = lambda *cols: sa.func.count(sa.distinct(sa.tuple_(*cols)))
+    else:
+        func = count_distinct
+
+    if op.where is None:
+        return func(*cols)
+
+    if t._has_reduction_filter_syntax:
+        return func(*cols).filter(t.translate(op.where))
+
+    if not t._supports_tuple_syntax and len(cols) > 1:
+        raise com.UnsupportedOperationError(
+            f"{t._dialect_name} backend doesn't support `COUNT(DISTINCT ...)` with a "
+            "filter with more than one column"
+        )
+
+    return sa.func.count(t.translate(ops.Where(op.where, sa.distinct(*cols), None)))
+
+
 def _extract(fmt: str):
     def translator(t, op: ops.Node):
         return sa.cast(sa.extract(fmt, t.translate(op.arg)), sa.SMALLINT)
 
     return translator
+
+
+class count_distinct(FunctionElement):
+    inherit_cache = True
+
+
+@compiles(count_distinct)
+def compile_count_distinct(element, compiler, **kw):
+    quote_identifier = compiler.preparer.quote_identifier
+    clauses = ", ".join(
+        quote_identifier(compiler.process(clause, **kw)) for clause in element.clauses
+    )
+    return f"COUNT(DISTINCT {clauses})"
 
 
 class array_map(FunctionElement):
@@ -522,6 +560,7 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.NotContains: _contains(lambda left, right: left.notin_(right)),
     ops.Count: reduction(sa.func.count),
     ops.CountStar: _count_star,
+    ops.CountDistinctStar: _count_distinct_star,
     ops.Sum: reduction(sa.func.sum),
     ops.Mean: reduction(sa.func.avg),
     ops.Min: reduction(sa.func.min),

@@ -773,6 +773,47 @@ def test_reduction_ops(
 
 
 @pytest.mark.parametrize(
+    ("ibis_cond", "pandas_cond"),
+    [
+        param(lambda _: None, lambda _: slice(None), id="no_cond"),
+        param(
+            lambda t: t.string_col.isin(["1", "7"]),
+            lambda t: t.string_col.isin(["1", "7"]),
+            id="cond",
+            marks=[
+                mark.notyet(
+                    ["snowflake", "mysql"],
+                    raises=com.UnsupportedOperationError,
+                    reason="backend does not support filtered count distinct with more than one column",
+                ),
+            ],
+        ),
+    ],
+)
+@mark.notyet(
+    ["bigquery", "druid", "mssql", "oracle", "sqlite"],
+    raises=(
+        sa.exc.OperationalError,
+        sa.exc.DatabaseError,
+        com.UnsupportedOperationError,
+    ),
+    reason="backend doesn't support count distinct with multiple columns",
+)
+@mark.notyet(
+    ["datafusion", "impala"],
+    raises=com.OperationNotDefinedError,
+    reason="no one has attempted implementation yet",
+)
+def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
+    table = alltypes[["int_col", "double_col", "string_col"]]
+    expr = table.nunique(where=ibis_cond(table))
+    result = expr.execute()
+    df = df[["int_col", "double_col", "string_col"]]
+    expected = len(df.loc[pandas_cond(df)].drop_duplicates())
+    assert int(result) == int(expected)
+
+
+@pytest.mark.parametrize(
     ('result_fn', 'expected_fn'),
     [
         param(

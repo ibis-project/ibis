@@ -653,6 +653,12 @@ def table_column(translator, op):
     return quoted_name
 
 
+def _count_distinct_star(t, op):
+    raise com.UnsupportedOperationError(
+        "BigQuery doesn't support COUNT(DISTINCT ...) with multiple columns"
+    )
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -800,6 +806,7 @@ OPERATION_REGISTRY = {
     ops.StartsWith: fixed_arity("STARTS_WITH", 2),
     ops.EndsWith: fixed_arity("ENDS_WITH", 2),
     ops.TableColumn: table_column,
+    ops.CountDistinctStar: _count_distinct_star,
 }
 
 _invalid_operations = {
