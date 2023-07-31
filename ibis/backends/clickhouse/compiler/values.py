@@ -1412,3 +1412,12 @@ def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
             sql_arg = sql_arg.sql(dialect="clickhouse")
         arglist.append(sql_arg)
     return f"arrayZip({', '.join(arglist)})"
+
+
+@translate_val.register(ops.CountDistinctStar)
+def _count_distinct_star(op: ops.CountDistinctStar, **kw: Any) -> str:
+    column_list = ", ".join(map(_sql, map(sg.column, op.arg.schema.names)))
+    if op.where is not None:
+        return f"countDistinctIf(({column_list}), {translate_val(op.where, **kw)})"
+    else:
+        return f"countDistinct(({column_list}))"

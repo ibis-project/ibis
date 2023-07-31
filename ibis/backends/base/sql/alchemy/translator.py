@@ -47,6 +47,7 @@ class AlchemyExprTranslator(ExprTranslator):
 
     _bool_aggs_need_cast_to_int32 = True
     _has_reduction_filter_syntax = False
+    _supports_tuple_syntax = False
     _integer_to_timestamp = staticmethod(sa.func.to_timestamp)
     _timestamp_type = sa.TIMESTAMP
 

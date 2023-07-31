@@ -582,6 +582,21 @@ def compile_count_star(t, op, aggcontext=None, **kwargs):
         return src_table.select(col)
 
 
+@compiles(ops.CountDistinctStar)
+def compile_count_distinct_star(t, op, aggcontext=None, **kwargs):
+    src_table = t.translate(op.arg, **kwargs)
+    src_col = F.struct(*map(F.col, op.arg.schema.names))
+
+    if (where := op.where) is not None:
+        src_col = F.when(t.translate(where, **kwargs), src_col)
+
+    src_col = F.countDistinct(src_col)
+    if aggcontext is not None:
+        return src_col
+    else:
+        return src_table.select(src_col)
+
+
 @compiles(ops.Max)
 @compiles(ops.CumulativeMax)
 def compile_max(t, op, **kwargs):

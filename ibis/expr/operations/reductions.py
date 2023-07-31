@@ -38,6 +38,13 @@ class CountStar(Filterable, Reduction):
 
 
 @public
+class CountDistinctStar(Filterable, Reduction):
+    arg = rlz.table
+
+    output_dtype = dt.int64
+
+
+@public
 class Arbitrary(Filterable, Reduction):
     arg = rlz.column(rlz.any)
     how = rlz.isin({'first', 'last', 'heavy'})

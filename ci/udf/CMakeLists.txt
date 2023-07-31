@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-project(impala_test_udfs LANGUAGES CXX)
 cmake_minimum_required(VERSION 3.22)
+
+project(impala_test_udfs LANGUAGES CXX)
 set(CMAKE_CXX_COMPILER clang++)
 
 # where to put generated libraries and binaries

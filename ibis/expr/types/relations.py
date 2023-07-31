@@ -2012,6 +2012,41 @@ class Table(Expr, _FixedTextJupyterMixin):
         ]
         return an.apply_filter(self.op(), predicates).to_expr()
 
+    def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+        """Compute the number of unique rows in the table.
+
+        Parameters
+        ----------
+        where
+            Optional boolean expression to filter rows when counting.
+
+        Returns
+        -------
+        IntegerScalar
+            Number of unique rows in the table
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": ["foo", "bar", "bar"]})
+        >>> t
+        ┏━━━━━━━━┓
+        ┃ a      ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ foo    │
+        │ bar    │
+        │ bar    │
+        └────────┘
+        >>> t.nunique()
+        2
+        >>> t.nunique(t.a != "foo")
+        1
+        """
+        return ops.CountDistinctStar(self, where=where).to_expr()
+
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
 
