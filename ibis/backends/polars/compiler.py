@@ -952,7 +952,7 @@ def day_of_week_name(op, **kw):
     index = translate(op.arg, **kw).dt.weekday() - _day_of_week_offset
     arg = None
     for i, name in enumerate(calendar.day_name):
-        arg = pl.when(index == i).then(name).otherwise(arg)
+        arg = pl.when(index == i).then(pl.lit(name)).otherwise(arg)
     return arg
 
 

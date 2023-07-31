@@ -178,6 +178,7 @@ jobs:
             sys-deps:
               - libkrb5-dev
               - krb5-config
+              - freetds-dev
           - name: trino
             title: Trino
             extras:
@@ -267,6 +268,7 @@ jobs:
               sys-deps:
                 - libkrb5-dev
                 - krb5-config
+                - freetds-dev
           - os: windows-latest
             backend:
               name: trino
@@ -707,6 +709,10 @@ jobs:
       - name: install libgeos for shapely
         if: ${{ matrix.backend.name == 'postgres' }}
         run: sudo apt-get install -qq -y build-essential libgeos-dev
+
+      - name: install freetds-dev for mssql
+        if: ${{ matrix.backend.name == 'mssql' }}
+        run: sudo apt-get install -qq -y build-essential libkrb5-dev krb5-config freetds-dev
 
       - uses: extractions/setup-just@v1
         env:

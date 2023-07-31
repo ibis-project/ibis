@@ -75,7 +75,7 @@ jobs:
           set -euo pipefail
 
           sudo apt-get update -y -q
-          sudo apt-get install -y -q build-essential graphviz libgeos-dev
+          sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os == 'windows-latest'
@@ -164,7 +164,7 @@ jobs:
           set -euo pipefail
 
           sudo apt-get update -y -q
-          sudo apt-get install -y -q build-essential graphviz libgeos-dev libkrb5-dev
+          sudo apt-get install -y -q build-essential graphviz libgeos-dev libkrb5-dev freetds-dev
 
       - name: checkout
         uses: actions/checkout@v3
