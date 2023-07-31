@@ -8,6 +8,7 @@ from operator import add, mul, sub
 from typing import Any, Literal, Mapping
 
 import sqlglot as sg
+from sqlglot.dialects.dialect import rename_func
 from toolz import flip
 
 import ibis
@@ -21,6 +22,16 @@ from ibis.backends.clickhouse.datatypes import serialize
 
 # TODO: Ideally we can translate bottom up a la `relations.py`
 # TODO: Find a way to remove all the dialect="clickhouse" kwargs
+
+
+# TODO: This is a hack to get around the fact that sqlglot 17.8.6 is broken for
+# ClickHouse's isNaN
+sg.dialects.clickhouse.ClickHouse.Generator.TRANSFORMS.update(
+    {
+        sg.exp.IsNan: rename_func("isNaN"),
+        sg.exp.StartsWith: rename_func("startsWith"),
+    }
+)
 
 
 @functools.singledispatch
