@@ -4,7 +4,6 @@ import functools
 import inspect
 from typing import Any as AnyType
 
-from ibis.common.collections import DotDict
 from ibis.common.patterns import (
     Any,
     FrozenDictOf,
@@ -326,7 +325,7 @@ class Signature(inspect.Signature):
         # does the reverse of bind, but doesn't apply defaults
         args, kwargs = [], {}
         for name, param in self.parameters.items():
-            value = getattr(this, name)
+            value = this[name]
             if param.kind is POSITIONAL_OR_KEYWORD:
                 args.append(value)
             elif param.kind is VAR_POSITIONAL:
@@ -362,7 +361,7 @@ class Signature(inspect.Signature):
         bound = self.bind(*args, **kwargs)
         bound.apply_defaults()
 
-        this = DotDict()
+        this = {}
         for name, value in bound.arguments.items():
             param = self.parameters[name]
             # TODO(kszucs): provide more error context on failure
@@ -372,7 +371,7 @@ class Signature(inspect.Signature):
 
     def validate_nobind(self, **kwargs):
         """Validate the arguments against the signature without binding."""
-        this = DotDict()
+        this = {}
         for name, param in self.parameters.items():
             value = kwargs.get(name, param.default)
             if value is EMPTY:
