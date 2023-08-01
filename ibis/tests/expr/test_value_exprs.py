@@ -22,9 +22,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _, literal
+from ibis.common.annotations import ValidationError
 from ibis.common.collections import frozendict
 from ibis.common.exceptions import IbisTypeError
-from ibis.common.patterns import ValidationError
 from ibis.expr import api
 from ibis.tests.util import assert_equal
 

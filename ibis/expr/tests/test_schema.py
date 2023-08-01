@@ -338,7 +338,7 @@ class ObjectWithSchema(Annotable):
 
 def test_schema_is_coercible():
     s = sch.Schema({"a": dt.int64, "b": dt.Array(dt.int64)})
-    assert CoercedTo(sch.Schema).validate(PreferenceA, {}) == s
+    assert CoercedTo(sch.Schema).match(PreferenceA, {}) == s
 
     o = ObjectWithSchema(schema=PreferenceA)
     assert o.schema == s

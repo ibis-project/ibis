@@ -7,8 +7,7 @@ from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import attribute
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
 

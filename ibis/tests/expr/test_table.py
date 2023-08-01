@@ -20,8 +20,8 @@ import ibis.expr.types as ir
 import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
+from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import RelationError
-from ibis.common.patterns import ValidationError
 from ibis.expr import api
 from ibis.expr.types import Column, Table
 from ibis.tests.expr.mocks import MockAlchemyBackend, MockBackend

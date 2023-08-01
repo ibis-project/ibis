@@ -13,7 +13,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 
 to_sql = ibis.bigquery.compile
 

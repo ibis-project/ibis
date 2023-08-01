@@ -6,7 +6,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 
 
 @pytest.fixture

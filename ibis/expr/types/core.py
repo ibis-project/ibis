@@ -12,7 +12,7 @@ from ibis.common.exceptions import IbisError, IbisTypeError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.config import _default_backend, options
 from ibis.util import experimental
-from ibis.common.patterns import ValidationError, Coercible, CoercionError
+from ibis.common.annotations import ValidationError
 from rich.jupyter import JupyterMixin
 from ibis.common.patterns import Coercible, CoercionError
 

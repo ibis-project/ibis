@@ -6,7 +6,14 @@ from typing import Union
 import pytest
 from typing_extensions import Annotated  # noqa: TCH002
 
-from ibis.common.annotations import Argument, Attribute, Parameter, Signature, annotated
+from ibis.common.annotations import (
+    Argument,
+    Attribute,
+    Parameter,
+    Signature,
+    ValidationError,
+    annotated,
+)
 from ibis.common.patterns import (
     Any,
     CoercedTo,
@@ -14,7 +21,6 @@ from ibis.common.patterns import (
     NoMatch,
     Option,
     TupleOf,
-    ValidationError,
     pattern,
 )
 
@@ -24,13 +30,13 @@ is_int = InstanceOf(int)
 def test_argument_repr():
     argument = Argument(is_int, typehint=int, default=None)
     assert repr(argument) == (
-        "Argument(validator=InstanceOf(type=<class 'int'>), default=None, "
+        "Argument(pattern=InstanceOf(type=<class 'int'>), default=None, "
         "typehint=<class 'int'>)"
     )
 
 
 def test_default_argument():
-    annotation = Argument.default(validator=lambda x, context: int(x), default=3)
+    annotation = Argument.default(pattern=lambda x, context: int(x), default=3)
     assert annotation.validate(1) == 1
     with pytest.raises(TypeError):
         annotation.validate(None)
@@ -82,7 +88,7 @@ def test_initialized():
 
     assert field.initialize(Foo) == 20
 
-    field2 = Attribute(validator=lambda x, this: str(x), default=lambda self: self.a)
+    field2 = Attribute(pattern=lambda x, this: str(x), default=lambda self: self.a)
     assert field != field2
     assert field2.initialize(Foo) == "10"
 
@@ -103,7 +109,7 @@ def test_parameter():
 
     ofn = Argument.optional(fn)
     op = Parameter("test", annotation=ofn)
-    assert op.annotation._validator == Option(fn, default=None)
+    assert op.annotation._pattern == Option(fn, default=None)
     assert op.default is None
     assert op.annotation.validate(None, {"other": 1}) is None
 
@@ -218,12 +224,12 @@ def test_signature_unbind():
 
 a = Parameter("a", annotation=Argument.required(CoercedTo(float)))
 b = Parameter("b", annotation=Argument.required(CoercedTo(float)))
-c = Parameter("c", annotation=Argument.default(default=0, validator=CoercedTo(float)))
+c = Parameter("c", annotation=Argument.default(default=0, pattern=CoercedTo(float)))
 d = Parameter(
     "d",
-    annotation=Argument.default(default=tuple(), validator=TupleOf(CoercedTo(float))),
+    annotation=Argument.default(default=tuple(), pattern=TupleOf(CoercedTo(float))),
 )
-e = Parameter("e", annotation=Argument.optional(validator=CoercedTo(float)))
+e = Parameter("e", annotation=Argument.optional(pattern=CoercedTo(float)))
 sig = Signature(parameters=[a, b, c, d, e])
 
 
