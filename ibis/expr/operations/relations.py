@@ -13,14 +13,14 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.annotations import attribute
+from ibis.common.annotations import annotated, attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.grounds import Immutable
-from ibis.common.patterns import Coercible, Pattern
-from ibis.common.typing import VarTuple
+from ibis.common.patterns import Coercible
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Column, Named, Node, Scalar, Value
-from ibis.expr.operations.sortkeys import SortKey
+from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema
 
 if TYPE_CHECKING:
@@ -458,17 +458,16 @@ class Selection(Projection):
             **kwargs,
         )
 
-    def order_by(self, sort_exprs):
+    @annotated
+    def order_by(self, keys: VarTuple[SortKey]):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
-
-        p = Pattern.from_typehint(VarTuple[SortKey])
-        keys = p.validate(sort_exprs, {})
 
         if not self.selections:
             if shares_all_roots(keys, table := self.table):
                 sort_keys = tuple(self.sort_keys) + tuple(
                     sub_immediate_parents(key, table) for key in keys
                 )
+
                 return Selection(
                     table,
                     self.selections,
@@ -536,11 +535,9 @@ class Aggregation(Relation):
             types.append(value.dtype)
         return Schema.from_tuples(zip(names, types))
 
-    def order_by(self, sort_exprs):
+    @annotated
+    def order_by(self, keys: VarTuple[SortKey]):
         from ibis.expr.analysis import shares_all_roots, sub_immediate_parents
-
-        p = Pattern.from_typehint(VarTuple[SortKey])
-        keys = p.validate(sort_exprs, {})
 
         if shares_all_roots(keys, table := self.table):
             sort_keys = tuple(self.sort_keys) + tuple(
