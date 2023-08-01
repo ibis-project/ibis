@@ -4,10 +4,10 @@
 
 {% if memtable_impl == "not_implemented" %}
 
-The {{ backend_name }} does not currently support in-memory tables.
+The {{ backend_name }} backend does not currently support in-memory tables.
 
 Please [file an issue](https://github.com/ibis-project/ibis/issues/new/choose)
-if you'd like the {{ backend_name }} to support in-memory tables.
+if you'd like the {{ backend_name }} backend to support in-memory tables.
 
 {% else %}
 
