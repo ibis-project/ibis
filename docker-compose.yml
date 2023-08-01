@@ -16,6 +16,7 @@ services:
       - clickhouse:/var/lib/clickhouse/user_files/ibis
     networks:
       - clickhouse
+
   impala:
     depends_on:
       - impala-postgres
@@ -45,6 +46,7 @@ services:
       - 25020:25020
     networks:
       - impala
+
   impala-postgres:
     user: postgres
     hostname: postgres
@@ -60,6 +62,7 @@ services:
     image: postgres:13.11-alpine
     networks:
       - impala
+
   kudu:
     cap_add:
       - SYS_TIME
@@ -80,6 +83,7 @@ services:
         - CMD-SHELL
         - kudu cluster ksck kudu:7051
       timeout: 10s
+
   kudu-tserver:
     cap_add:
       - SYS_TIME
@@ -98,6 +102,7 @@ services:
         - CMD-SHELL
         - kudu cluster ksck kudu:7051
       timeout: 10s
+
   mysql:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
@@ -120,6 +125,7 @@ services:
     volumes:
       - mysql:/data
       - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
+
   postgres:
     user: postgres
     environment:
@@ -159,6 +165,7 @@ services:
       - mssql:/data
     networks:
       - mssql
+
   trino-postgres:
     user: postgres
     environment:
@@ -180,9 +187,48 @@ services:
       - trino
     volumes:
       - trino-postgres:/data
+
+  hive-metastore-mariadb:
+    image: mariadb:10.11.4
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_DATABASE: metastore_db
+    healthcheck:
+      interval: 1s
+      retries: 30
+      test:
+        - CMD
+        - mariadb-admin
+        - ping
+      timeout: 5s
+    networks:
+      - trino
+
+  hive-metastore-minio:
+    image: minio/minio:latest
+    environment:
+      - MINIO_ACCESS_KEY=accesskey
+      - MINIO_SECRET_KEY=secretkey
+    entrypoint: sh
+    command: -c 'mkdir -p /data/warehouse && /opt/bin/minio server /data'
+    networks:
+      - trino
+
+  hive-metastore:
+    build: ./docker/trino
+    image: ibis-hive-metastore
+    depends_on:
+      - hive-metastore-mariadb
+      - hive-metastore-minio
+    networks:
+      - trino
+
   trino:
     depends_on:
       - trino-postgres
+      - hive-metastore
     healthcheck:
       interval: 5s
       retries: 10
@@ -198,6 +244,7 @@ services:
     volumes:
       - $PWD/docker/trino/catalog/postgresql.properties:/etc/trino/catalog/postgresql.properties:ro
       - $PWD/docker/trino/catalog/memory.properties:/etc/trino/catalog/memory.properties:ro
+      - $PWD/docker/trino/catalog/hive.properties:/etc/trino/catalog/hive.properties:ro
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:

@@ -2,21 +2,31 @@
 
 from __future__ import annotations
 
+import collections
 import contextlib
 import warnings
 from functools import cached_property
-from typing import Iterator
+from typing import TYPE_CHECKING, Any, Iterator, Mapping
 
+import pandas as pd
 import sqlalchemy as sa
 import toolz
 from trino.sqlalchemy.datatype import ROW as _ROW
 
+import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
-from ibis.backends.trino.datatypes import ROW, parse
+from ibis.backends.trino.datatypes import ROW, TrinoType, parse
+
+if TYPE_CHECKING:
+    import pyarrow as pa
+
+    import ibis.expr.schema as sch
 
 
 class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
@@ -128,3 +138,129 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
         if_exists = "IF EXISTS " * force
         with self.begin() as con:
             con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
+
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        *,
+        schema: sch.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+        comment: str | None = None,
+        properties: Mapping[str, Any] | None = None,
+    ) -> ir.Table:
+        """Create a table in Trino.
+
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but one of `obj`
+            or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but one of `obj` or
+            `schema` must be specified
+        database
+            Not yet implemented.
+        temp
+            This parameter is not yet supported in the Trino backend, because
+            Trino doesn't implement temporary tables
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail if
+            the table exists
+        comment
+            Add a comment to the table
+        properties
+            Table properties to set on creation
+        """
+        if obj is None and schema is None:
+            raise com.IbisError("One of the `schema` or `obj` parameter is required")
+
+        if temp:
+            raise NotImplementedError(
+                "Temporary tables in the Trino backend are not yet supported"
+            )
+
+        orig_table_ref = name
+
+        if overwrite:
+            name = util.gen_name("trino_overwrite")
+
+        create_stmt = "CREATE TABLE"
+
+        table_ref = self._quote(name)
+
+        create_stmt += f" {table_ref}"
+
+        if schema is not None and obj is None:
+            schema_str = ", ".join(
+                (
+                    f"{self._quote(name)} {TrinoType.to_string(typ)}"
+                    + " NOT NULL" * (not typ.nullable)
+                )
+                for name, typ in schema.items()
+            )
+            create_stmt += f" ({schema_str})"
+
+        if comment is not None:
+            create_stmt += f" COMMENT {comment!r}"
+
+        if properties:
+
+            def literal_compile(v):
+                if isinstance(v, collections.abc.Mapping):
+                    return f"MAP(ARRAY{list(v.keys())!r}, ARRAY{list(v.values())!r})"
+                elif util.is_iterable(v):
+                    return f"ARRAY{list(v)!r}"
+                else:
+                    return repr(v)
+
+            pairs = ", ".join(
+                f"{k} = {literal_compile(v)}" for k, v in properties.items()
+            )
+            create_stmt += f" WITH ({pairs})"
+
+        if obj is not None:
+            import pyarrow as pa
+
+            if isinstance(obj, (pd.DataFrame, pa.Table)):
+                table = ibis.memtable(obj, schema=schema)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            compiled_table = self.compile(table)
+
+            # cast here because trino doesn't allow specifying a schema in
+            # CTAS, e.g., `CREATE TABLE (schema) AS SELECT`
+            subquery = compiled_table.subquery()
+            columns = subquery.columns
+            select = sa.select(
+                *(
+                    sa.cast(columns[name], TrinoType.from_ibis(typ))
+                    for name, typ in (schema or table.schema()).items()
+                )
+            )
+            compiled = select.compile(compile_kwargs=dict(literal_binds=True))
+
+            create_stmt += f" AS {compiled}"
+
+        with self.begin() as con:
+            con.exec_driver_sql(create_stmt)
+
+            if overwrite:
+                # drop the original table
+                con.exec_driver_sql(
+                    f"DROP TABLE IF EXISTS {self._quote(orig_table_ref)}"
+                )
+
+                # rename the new table to the original table name
+                con.exec_driver_sql(
+                    f"ALTER TABLE IF EXISTS {table_ref} RENAME TO {self._quote(orig_table_ref)}"
+                )
+
+        return self.table(orig_table_ref)
