@@ -212,138 +212,183 @@ class DataType(Concrete, Coercible):
         return self.to_pandas()
 
     def is_array(self) -> bool:
+        """Return True if an instance of an Array type."""
         return isinstance(self, Array)
 
     def is_binary(self) -> bool:
+        """Return True if an instance of a Binary type."""
         return isinstance(self, Binary)
 
     def is_boolean(self) -> bool:
+        """Return True if an instance of a Boolean type."""
         return isinstance(self, Boolean)
 
     def is_date(self) -> bool:
+        """Return True if an instance of a Date type."""
         return isinstance(self, Date)
 
     def is_decimal(self) -> bool:
+        """Return True if an instance of a Decimal type."""
         return isinstance(self, Decimal)
 
     def is_enum(self) -> bool:
+        """Return True if an instance of an Enum type."""
         return isinstance(self, Enum)
 
     def is_float16(self) -> bool:
+        """Return True if an instance of a Float16 type."""
         return isinstance(self, Float16)
 
     def is_float32(self) -> bool:
+        """Return True if an instance of a Float32 type."""
         return isinstance(self, Float32)
 
     def is_float64(self) -> bool:
+        """Return True if an instance of a Float64 type."""
         return isinstance(self, Float64)
 
     def is_floating(self) -> bool:
+        """Return True if an instance of any Floating type."""
         return isinstance(self, Floating)
 
     def is_geospatial(self) -> bool:
+        """Return True if an instance of a Geospatial type."""
         return isinstance(self, GeoSpatial)
 
     def is_inet(self) -> bool:
+        """Return True if an instance of an Inet type."""
         return isinstance(self, INET)
 
     def is_int16(self) -> bool:
+        """Return True if an instance of an Int16 type."""
         return isinstance(self, Int16)
 
     def is_int32(self) -> bool:
+        """Return True if an instance of an Int32 type."""
         return isinstance(self, Int32)
 
     def is_int64(self) -> bool:
+        """Return True if an instance of an Int64 type."""
         return isinstance(self, Int64)
 
     def is_int8(self) -> bool:
+        """Return True if an instance of an Int8 type."""
         return isinstance(self, Int8)
 
     def is_integer(self) -> bool:
+        """Return True if an instance of any Integer type."""
         return isinstance(self, Integer)
 
     def is_interval(self) -> bool:
+        """Return True if an instance of an Interval type."""
         return isinstance(self, Interval)
 
     def is_json(self) -> bool:
+        """Return True if an instance of a JSON type."""
         return isinstance(self, JSON)
 
     def is_linestring(self) -> bool:
+        """Return True if an instance of a LineString type."""
         return isinstance(self, LineString)
 
     def is_macaddr(self) -> bool:
+        """Return True if an instance of a MACADDR type."""
         return isinstance(self, MACADDR)
 
     def is_map(self) -> bool:
+        """Return True if an instance of a Map type."""
         return isinstance(self, Map)
 
     def is_multilinestring(self) -> bool:
+        """Return True if an instance of a MultiLineString type."""
         return isinstance(self, MultiLineString)
 
     def is_multipoint(self) -> bool:
+        """Return True if an instance of a MultiPoint type."""
         return isinstance(self, MultiPoint)
 
     def is_multipolygon(self) -> bool:
+        """Return True if an instance of a MultiPolygon type."""
         return isinstance(self, MultiPolygon)
 
     def is_nested(self) -> bool:
+        """Return true if an instance of any nested (Array/Map/Struct) type."""
         return isinstance(self, (Array, Map, Struct))
 
     def is_null(self) -> bool:
+        """Return true if an instance of a Null type."""
         return isinstance(self, Null)
 
     def is_numeric(self) -> bool:
+        """Return true if an instance of a Numeric type."""
         return isinstance(self, Numeric)
 
     def is_point(self) -> bool:
+        """Return true if an instance of a Point type."""
         return isinstance(self, Point)
 
     def is_polygon(self) -> bool:
+        """Return true if an instance of a Polygon type."""
         return isinstance(self, Polygon)
 
     def is_primitive(self) -> bool:
+        """Return true if an instance of a Primitive type."""
         return isinstance(self, Primitive)
 
     def is_signed_integer(self) -> bool:
+        """Return true if an instance of a SignedInteger type."""
         return isinstance(self, SignedInteger)
 
     def is_string(self) -> bool:
+        """Return true if an instance of a String type."""
         return isinstance(self, String)
 
     def is_struct(self) -> bool:
+        """Return true if an instance of a Struct type."""
         return isinstance(self, Struct)
 
     def is_temporal(self) -> bool:
+        """Return true if an instance of a Temporal type."""
         return isinstance(self, Temporal)
 
     def is_time(self) -> bool:
+        """Return true if an instance of a Time type."""
         return isinstance(self, Time)
 
     def is_timestamp(self) -> bool:
+        """Return true if an instance of a Timestamp type."""
         return isinstance(self, Timestamp)
 
     def is_uint16(self) -> bool:
+        """Return true if an instance of a UInt16 type."""
         return isinstance(self, UInt16)
 
     def is_uint32(self) -> bool:
+        """Return true if an instance of a UInt32 type."""
         return isinstance(self, UInt32)
 
     def is_uint64(self) -> bool:
+        """Return true if an instance of a UInt64 type."""
         return isinstance(self, UInt64)
 
     def is_uint8(self) -> bool:
+        """Return true if an instance of a UInt8 type."""
         return isinstance(self, UInt8)
 
     def is_unknown(self) -> bool:
+        """Return true if an instance of an Unknown type."""
         return isinstance(self, Unknown)
 
     def is_unsigned_integer(self) -> bool:
+        """Return true if an instance of an UnsignedInteger type."""
         return isinstance(self, UnsignedInteger)
 
     def is_uuid(self) -> bool:
+        """Return true if an instance of a UUID type."""
         return isinstance(self, UUID)
 
     def is_variadic(self) -> bool:
+        """Return true if an instance of a Variadic type."""
         return isinstance(self, Variadic)
 
 
