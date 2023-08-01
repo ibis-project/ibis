@@ -97,7 +97,6 @@ def _create_table_as(element, compiler, **kw):
 
 class AlchemyCanCreateSchema(CanCreateSchema):
     def list_schemas(self, like: str | None = None) -> list[str]:
-        """Return a list of all schemas matching `like`."""
         return self._filter_with_like(self.inspector.get_schema_names(), like)
 
 

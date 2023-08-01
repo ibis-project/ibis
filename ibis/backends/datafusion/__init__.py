@@ -96,7 +96,6 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         )
 
     def list_schemas(self, like: str | None = None) -> list[str]:
-        """List the available schemas matching `like`."""
         return self._filter_with_like(self._context.catalog().names(), like=like)
 
     def create_schema(
