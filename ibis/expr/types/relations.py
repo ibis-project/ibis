@@ -110,8 +110,10 @@ class Table(Expr, _FixedTextJupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
-    def __dataframe__(self, *args: Any, **kwargs: Any):
-        return self.to_pyarrow().__dataframe__(*args, **kwargs)
+    def __dataframe__(self, nan_as_null: bool = False, allow_copy: bool = True):
+        from ibis.expr.types.dataframe_interchange import IbisDataFrame
+
+        return IbisDataFrame(self, nan_as_null=nan_as_null, allow_copy=allow_copy)
 
     def __pyarrow_result__(self, table: pa.Table) -> pa.Table:
         from ibis.formats.pyarrow import PyArrowData
