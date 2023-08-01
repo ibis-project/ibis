@@ -351,16 +351,6 @@ def consume(iterator: Iterator[T], n: int | None = None) -> None:
         next(itertools.islice(iterator, n, n), None)
 
 
-# TODO(kszucs): make it a more robust to better align with graph._flatten_collections()
-def recursive_get(obj, mapping):
-    if isinstance(obj, tuple):
-        return tuple(recursive_get(o, mapping) for o in obj)
-    elif isinstance(obj, dict):
-        return {k: recursive_get(v, mapping) for k, v in obj.items()}
-    else:
-        return mapping.get(obj, obj)
-
-
 def flatten_iterable(iterable):
     """Recursively flatten the iterable `iterable`."""
     if not is_iterable(iterable):

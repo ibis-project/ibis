@@ -12,6 +12,7 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis.common.annotations import ValidationError
+from ibis.common.patterns import EqualTo
 
 t = ibis.table([("a", "int64")], name="t")
 
@@ -162,9 +163,11 @@ def test_node_subtitution():
         name: str
 
     ketto = Aliased(one, "ketto")
-    subs = {Name("one"): Name("zero"), two: ketto}
 
-    new_values = values.replace(subs)
+    first_rule = EqualTo(Name("one")) >> Name("zero")
+    second_rule = EqualTo(two) >> ketto
+
+    new_values = values.replace(first_rule | second_rule)
     expected = Values((NamedValue(value=1, name=Name("zero")), ketto, three))
 
     assert expected == new_values
