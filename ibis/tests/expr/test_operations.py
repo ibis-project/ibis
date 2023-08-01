@@ -11,7 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 
 t = ibis.table([("a", "int64")], name="t")
 
