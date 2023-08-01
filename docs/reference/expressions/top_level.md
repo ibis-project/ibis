@@ -13,6 +13,7 @@ These methods and objects are available directly in the `ibis` module.
 ::: ibis.deferred
 ::: ibis.desc
 ::: ibis.difference
+::: ibis.dtype
 ::: ibis.get_backend
 ::: ibis.expr.types.Value.greatest
 ::: ibis.ifelse
