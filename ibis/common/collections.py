@@ -173,45 +173,6 @@ class FrozenDict(Mapping[K, V], Hashable):
         return self.__precomputed_hash__
 
 
-@public
-class DotDict(dict):
-    """Dictionary that allows access to keys as attributes using the dot notation.
-
-    Note, that this is not recursive, so nested access is not supported.
-
-    Examples
-    --------
-    >>> d = DotDict({'a': 1, 'b': 2})
-    >>> d.a
-    1
-    >>> d.b
-    2
-    >>> d['a']
-    1
-    >>> d['b']
-    2
-    >>> d.c = 3
-    >>> d['c']
-    3
-    >>> d.c
-    3
-    """
-
-    __slots__ = ()
-
-    __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            raise AttributeError(key)
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({super().__repr__()})"
-
-
 class RewindableIterator(Iterator):
     """Iterator that can be rewound to a checkpoint.
 
@@ -254,4 +215,4 @@ class RewindableIterator(Iterator):
         self._iterator, self._checkpoint = tee(self._iterator)
 
 
-public(frozendict=FrozenDict, dotdict=DotDict)
+public(frozendict=FrozenDict)
