@@ -263,7 +263,7 @@ class Matcher(Pattern):
         return self.__precomputed_hash__
 
     def __setattr__(self, name, value) -> None:
-        raise AttributeError("Can't set attributes on immutable instance")
+        raise AttributeError("Can't set attributes on an immutable instance")
 
     def __repr__(self):
         fields = {k: getattr(self, k) for k in self.__slots__}
@@ -1062,7 +1062,8 @@ class PatternSequence(Matcher):
                     except StopIteration:
                         break
 
-                    if match(following, item, context) is NoMatch:
+                    res = following.match(item, context)
+                    if res is NoMatch:
                         matches.append(item)
                     else:
                         it.rewind()
@@ -1202,7 +1203,9 @@ def pattern(obj: AnyType) -> Pattern:
         return EqualTo(obj)
 
 
-def match(pat: Pattern, value: AnyType, context: Optional[dict[str, AnyType]] = None):
+def match(
+    pat: Pattern, value: AnyType, context: Optional[dict[str, AnyType]] = None
+) -> Any:
     """Match a value against a pattern.
 
     Parameters
@@ -1214,24 +1217,26 @@ def match(pat: Pattern, value: AnyType, context: Optional[dict[str, AnyType]] = 
     context
         Arbitrary mapping of values to be used while matching.
 
+    Returns
+    -------
+    The matched value if the pattern matches, otherwise :obj:`NoMatch`.
+
     Examples
     --------
-    >>> assert match(Any(), 1) == {}
-    >>> assert match(1, 1) == {}
+    >>> assert match(Any(), 1) == 1
+    >>> assert match(1, 1) == 1
     >>> assert match(1, 2) is NoMatch
-    >>> assert match(1, 1, context={"x": 1}) == {"x": 1}
+    >>> assert match(1, 1, context={"x": 1}) == 1
     >>> assert match(1, 2, context={"x": 1}) is NoMatch
-    >>> assert match([1, int], [1, 2]) == {}
-    >>> assert match([1, int, "a" @ InstanceOf(str)], [1, 2, "three"]) == {"a": "three"}
+    >>> assert match([1, int], [1, 2]) == [1, 2]
+    >>> assert match([1, int, "a" @ InstanceOf(str)], [1, 2, "three"]) == [1, 2, "three"]
     """
     if context is None:
         context = {}
 
     pat = pattern(pat)
-    if pat.match(value, context=context) is NoMatch:
-        return NoMatch
-
-    return context
+    result = pat.match(value, context)
+    return NoMatch if result is NoMatch else result
 
 
 class Topmost(Matcher):
