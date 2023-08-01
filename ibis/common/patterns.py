@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import math
 import numbers
+import operator
+import sys
 from abc import ABC, abstractmethod
 from collections.abc import Callable, Hashable, Mapping, Sequence
 from enum import Enum
@@ -32,7 +34,7 @@ except ImportError:
     UnionType = object()
 
 
-T_cov = TypeVar("T_cov", covariant=True)
+T_co = TypeVar("T_co", covariant=True)
 
 
 class CoercionError(Exception):
@@ -67,6 +69,12 @@ class NoMatch(metaclass=Sentinel):
 # would be used to annotate an argument as coercible to int or to a certain type
 # without needing for the type to inherit from Coercible
 class Pattern(Hashable):
+    """Base class for all patterns.
+
+    Patterns are used to match values against a given condition. They are extensively
+    used by other core components of Ibis to validate and/or coerce user inputs.
+    """
+
     __slots__ = ()
 
     @classmethod
@@ -94,7 +102,7 @@ class Pattern(Hashable):
             # the typehint is not generic
             if annot is Ellipsis or annot is AnyType:
                 # treat both `Any` and `...` as wildcard
-                return Any()
+                return _any
             elif isinstance(annot, type):
                 # the typehint is a concrete type (e.g. int, str, etc.)
                 if allow_coercion and issubclass(annot, Coercible):
@@ -113,7 +121,7 @@ class Pattern(Hashable):
                 if annot.__bound__:
                     return cls.from_typehint(annot.__bound__)
                 else:
-                    return Any()
+                    return _any
             elif isinstance(annot, Enum):
                 # for enums we check the value against the enum values
                 return EqualTo(annot)
@@ -216,27 +224,89 @@ class Pattern(Hashable):
         """
         ...
 
+    def is_match(self, value: AnyType, context: dict[str, AnyType]) -> bool:
+        """Check if the value matches the pattern.
+
+        Parameters
+        ----------
+        value
+            The value to match the pattern against.
+        context
+            A dictionary providing arbitrary context for the pattern matching.
+
+        Returns
+        -------
+        bool
+            Whether the value matches the pattern.
+        """
+        return self.match(value, context) is not NoMatch
+
     @abstractmethod
     def __eq__(self, other: Pattern) -> bool:
         ...
 
-    def __invert__(self) -> Pattern:
+    def __invert__(self) -> Not:
+        """Syntax sugar for matching the inverse of the pattern."""
         return Not(self)
 
-    def __or__(self, other: Pattern) -> Pattern:
+    def __or__(self, other: Pattern) -> AnyOf:
+        """Syntax sugar for matching either of the patterns.
+
+        Parameters
+        ----------
+        other
+            The other pattern to match against.
+
+        Returns
+        -------
+        New pattern that matches if either of the patterns match.
+        """
         return AnyOf(self, other)
 
-    def __and__(self, other: Pattern) -> Pattern:
+    def __and__(self, other: Pattern) -> AllOf:
+        """Syntax sugar for matching both of the patterns.
+
+        Parameters
+        ----------
+        other
+            The other pattern to match against.
+
+        Returns
+        -------
+        New pattern that matches if both of the patterns match.
+        """
         return AllOf(self, other)
 
-    def __rshift__(self, name: str) -> Pattern:
-        return Capture(self, name)
+    def __rshift__(self, other: Builder) -> Replace:
+        """Syntax sugar for replacing a value.
 
-    def __rmatmul__(self, name: str) -> Pattern:
-        return Capture(self, name)
+        Parameters
+        ----------
+        other
+            The builder to use for constructing the replacement value.
+
+        Returns
+        -------
+        New replace pattern.
+        """
+        return Replace(self, other)
+
+    def __rmatmul__(self, name: str) -> Capture:
+        """Syntax sugar for capturing a value.
+
+        Parameters
+        ----------
+        name
+            The name of the capture.
+
+        Returns
+        -------
+        New capture pattern.
+        """
+        return Capture(name, self)
 
 
-class Matcher(Pattern):
+class _Slotted:
     """A lightweight alternative to `ibis.common.grounds.Concrete`.
 
     This class is used to create immutable dataclasses with slots and a precomputed
@@ -275,6 +345,212 @@ class Matcher(Pattern):
             yield name, getattr(self, name)
 
 
+class Builder(Hashable):
+    """A builder is a function that takes a context and returns a new object.
+
+    The context is a dictionary that contains all the captured values and
+    information relevant for the builder. The builder construct a new object
+    only given by the context.
+
+    The builder is used in the right hand side of the replace pattern:
+    `Replace(pattern, builder)`. Semantically when a match occurs for the
+    replace pattern, the builder is called with the context and the result
+    of the builder is used as the replacement value.
+    """
+
+    __slots__ = ()
+
+    @abstractmethod
+    def __eq__(self, other):
+        ...
+
+    @abstractmethod
+    def make(self, context: dict):
+        """Construct a new object from the context.
+
+        Parameters
+        ----------
+        context
+            A dictionary containing all the captured values and information
+            relevant for the builder.
+
+        Returns
+        -------
+        The constructed object.
+        """
+
+
+def builder(obj):
+    """Convert an object to a builder.
+
+    It encapsulates:
+        - callable objects into a `Factory` builder
+        - non-callable objects into a `Just` builder
+
+    Parameters
+    ----------
+    obj
+        The object to convert to a builder.
+
+    Returns
+    -------
+    The builder instance.
+    """
+    # TODO(kszucs): the replacer object must be handled differently from patterns
+    # basically a replacer is just a lazy way to construct objects from the context
+    # we should have a separate base class for replacers like Variable, Function,
+    # Just, Apply and Call. Something like Replacer with a specific method e.g.
+    # apply() could work
+    if isinstance(obj, Builder):
+        return obj
+    elif callable(obj):
+        # not function but something else
+        return Factory(obj)
+    else:
+        return Just(obj)
+
+
+class Variable(_Slotted, Builder):
+    """Retrieve a value from the context.
+
+    Parameters
+    ----------
+    name
+        The key to retrieve from the state.
+    """
+
+    __slots__ = ("name",)
+
+    def make(self, context):
+        return context[self]
+
+    def __getattr__(self, name):
+        return Call(operator.attrgetter(name), self)
+
+    def __getitem__(self, name):
+        return Call(operator.itemgetter(name), self)
+
+
+class Just(_Slotted, Builder):
+    """Construct exactly the given value.
+
+    Parameters
+    ----------
+    value
+        The value to return when the builder is called.
+    """
+
+    __slots__ = ("value",)
+
+    def make(self, context):
+        return self.value
+
+
+class Factory(_Slotted, Builder):
+    """Construct a value by calling a function.
+
+    The function is called with two positional arguments:
+    1. the value being matched
+    2. the context dictionary
+
+    The function must return the constructed value.
+
+    Parameters
+    ----------
+    func
+        The function to apply.
+    """
+
+    __slots__ = ("func",)
+
+    def make(self, context):
+        value = context[_]
+        return self.func(value, context)
+
+
+class Call(_Slotted, Builder):
+    """Pattern that calls a function with the given arguments.
+
+    Both positional and keyword arguments are coerced into patterns.
+
+    Parameters
+    ----------
+    func
+        The function to call.
+    args
+        The positional argument patterns.
+    kwargs
+        The keyword argument patterns.
+    """
+
+    __slots__ = ("func", "args", "kwargs")
+
+    def __init__(self, func, *args, **kwargs):
+        args = tuple(map(builder, args))
+        kwargs = frozendict({k: builder(v) for k, v in kwargs.items()})
+        super().__init__(func, args, kwargs)
+
+    def make(self, context):
+        args = tuple(arg.make(context) for arg in self.args)
+        kwargs = {k: v.make(context) for k, v in self.kwargs.items()}
+        return self.func(*args, **kwargs)
+
+    def __call__(self, *args, **kwargs):
+        if self.args or self.kwargs:
+            raise TypeError("Further specification of Call object is not allowed")
+        return Call(self.func, *args, **kwargs)
+
+    @classmethod
+    def namespace(cls, module) -> Namespace:
+        """Convenience method to create a namespace for easy object construction.
+
+        Parameters
+        ----------
+        module
+            The module object or name to look up the types.
+
+        Examples
+        --------
+        >>> from ibis.common.patterns import Call
+        >>> from ibis.expr.operations import Negate
+        >>>
+        >>> c = Call.namespace('ibis.expr.operations')
+        >>> x = Variable('x')
+        >>> pattern = c.Negate(x)
+        >>> pattern
+        Call(func=<class 'ibis.expr.operations.numeric.Negate'>, args=(Variable(name='x'),), kwargs=FrozenDict({}))
+        >>> pattern.make({x: 5})
+        <ibis.expr.operations.numeric.Negate object at 0x...>
+        """
+        return Namespace(cls, module)
+
+
+# reserved variable name for the value being matched
+_ = Variable("_")
+
+
+class Matcher(_Slotted, Pattern):
+    __slots__ = ()
+
+
+class Always(Matcher):
+    """Pattern that matches everything."""
+
+    __slots__ = ()
+
+    def match(self, value, context):
+        return value
+
+
+class Never(Matcher):
+    """Pattern that matches nothing."""
+
+    __slots__ = ()
+
+    def match(self, value, context):
+        return NoMatch
+
+
 class Is(Matcher):
     """Pattern that matches a value against a reference value.
 
@@ -302,6 +578,9 @@ class Any(Matcher):
         return value
 
 
+_any = Any()
+
+
 class Capture(Matcher):
     """Pattern that captures a value in the context.
 
@@ -309,33 +588,47 @@ class Capture(Matcher):
     ----------
     pattern
         The pattern to match against.
-    name
-        The name to use in the context if the pattern matches.
+    key
+        The key to use in the context if the pattern matches.
     """
 
-    __slots__ = ("pattern", "name")
+    __slots__ = ("key", "pattern")
+
+    def __init__(self, key, pat=_any):
+        super().__init__(key, pattern(pat))
 
     def match(self, value, context):
-        value = self.pattern.match(value, context=context)
+        value = self.pattern.match(value, context)
         if value is NoMatch:
             return NoMatch
-        context[self.name] = value
+        context[self.key] = value
         return value
 
 
-class Reference(Matcher):
-    """Retrieve a value from the context.
+class Replace(Matcher):
+    """Pattern that replaces a value with the output of another pattern.
 
     Parameters
     ----------
-    key
-        The key to retrieve from the state.
+    matcher
+        The pattern to match against.
+    replacer
+        The pattern to use as a replacement.
     """
 
-    __slots__ = ("key",)
+    __slots__ = ("matcher", "builder")
 
-    def match(self, context):
-        return context[self.key]
+    def __init__(self, matcher, replacer):
+        super().__init__(pattern(matcher), builder(replacer))
+
+    def match(self, value, context):
+        value = self.matcher.match(value, context)
+        if value is NoMatch:
+            return NoMatch
+        # use the `_` reserved variable to record the value being replaced
+        # in the context, so that it can be used in the replacer pattern
+        context[_] = value
+        return self.builder.make(context)
 
 
 class Check(Matcher):
@@ -356,7 +649,7 @@ class Check(Matcher):
             return NoMatch
 
 
-class Apply(Matcher):
+class Function(Matcher):
     """Pattern that applies a function to the value.
 
     Parameters
@@ -368,22 +661,73 @@ class Apply(Matcher):
     __slots__ = ("func",)
 
     def match(self, value, context):
-        return self.func(value)
+        return self.func(value, context)
 
 
-class Function(Matcher):
-    """Pattern that checks a value against a function.
+class Namespace:
+    """Convenience class for creating patterns for various types from a module.
+
+    Useful to reduce boilerplate when creating patterns for various types from
+    a module.
+
+    Parameters
+    ----------
+    pattern
+        The pattern to construct with the looked up types.
+    module
+        The module object or name to look up the types.
+
+    Examples
+    --------
+    >>> from ibis.common.patterns import Namespace
+    >>> import ibis.expr.operations as ops
+    >>>
+    >>> ns = Namespace(InstanceOf, ops)
+    >>> ns.Negate
+    InstanceOf(type=<class 'ibis.expr.operations.numeric.Negate'>)
+    >>>
+    >>> ns.Negate(5)
+    Object(type=InstanceOf(type=<class 'ibis.expr.operations.numeric.Negate'>), args=(EqualTo(value=5),), kwargs=FrozenDict({}))
+    """
+
+    __slots__ = ("module", "pattern")
+
+    def __init__(self, pattern, module):
+        if isinstance(module, str):
+            module = sys.modules[module]
+        self.module = module
+        self.pattern = pattern
+
+    def __getattr__(self, name: str) -> Pattern:
+        return self.pattern(getattr(self.module, name))
+
+
+class Apply(Matcher):
+    """Pattern that applies a function to the value.
+
+    The function must accept a single argument.
 
     Parameters
     ----------
     func
-        The function to use.
+        The function to apply.
+
+    Examples
+    --------
+    >>> from ibis.common.patterns import Apply, match
+    >>>
+    >>> match("a" @ Apply(lambda x: x + 1), 5)
+    6
     """
 
     __slots__ = ("func",)
 
     def match(self, value, context):
-        return self.func(value, context)
+        return self.func(value)
+
+    def __call__(self, *args, **kwargs):
+        """Convenience method to create a Call pattern."""
+        return Call(self.func, *args, **kwargs)
 
 
 class EqualTo(Matcher):
@@ -425,7 +769,7 @@ class Option(Matcher):
             else:
                 return self.default
         else:
-            return self.pattern.match(value, context=context)
+            return self.pattern.match(value, context)
 
 
 class TypeOf(Matcher):
@@ -475,6 +819,9 @@ class InstanceOf(Matcher):
         else:
             return NoMatch
 
+    def __call__(self, *args, **kwargs):
+        return Object(self.type, *args, **kwargs)
+
 
 class GenericInstanceOf(Matcher):
     """Pattern that matches a value that is an instance of a given generic type.
@@ -486,10 +833,10 @@ class GenericInstanceOf(Matcher):
 
     Examples
     --------
-    >>> class MyNumber(Generic[T_cov]):
-    ...    value: T_cov
+    >>> class MyNumber(Generic[T_co]):
+    ...    value: T_co
     ...
-    ...    def __init__(self, value: T_cov):
+    ...    def __init__(self, value: T_co):
     ...        self.value = value
     ...
     ...    def __eq__(self, other):
@@ -551,7 +898,7 @@ class LazyInstanceOf(Matcher):
         check.register(types, lambda x: True)
         super().__init__(promote_tuple(types), check)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         if self.check(value):
             return value
         else:
@@ -670,8 +1017,11 @@ class Not(Matcher):
 
     __slots__ = ("pattern",)
 
+    def __init__(self, inner):
+        super().__init__(pattern(inner))
+
     def match(self, value, context):
-        if self.pattern.match(value, context=context) is NoMatch:
+        if self.pattern.match(value, context) is NoMatch:
             return value
         else:
             return NoMatch
@@ -694,7 +1044,7 @@ class AnyOf(Matcher):
 
     def match(self, value, context):
         for pattern in self.patterns:
-            result = pattern.match(value, context=context)
+            result = pattern.match(value, context)
             if result is not NoMatch:
                 return result
         return NoMatch
@@ -718,7 +1068,7 @@ class AllOf(Matcher):
 
     def match(self, value, context):
         for pattern in self.patterns:
-            value = pattern.match(value, context=context)
+            value = pattern.match(value, context)
             if value is NoMatch:
                 return NoMatch
         return value
@@ -753,7 +1103,7 @@ class Length(Matcher):
             at_most = exactly
         super().__init__(at_least, at_most)
 
-    def match(self, value, *, context):
+    def match(self, value, context):
         length = len(value)
         if self.at_least is not None and length < self.at_least:
             return NoMatch
@@ -842,16 +1192,16 @@ class SequenceOf(Matcher):
 
         result = []
         for value in values:
-            value = self.item_pattern.match(value, context=context)
+            value = self.item_pattern.match(value, context)
             if value is NoMatch:
                 return NoMatch
             result.append(value)
 
-        result = self.type_pattern.match(result, context=context)
+        result = self.type_pattern.match(result, context)
         if result is NoMatch:
             return NoMatch
 
-        return self.length_pattern.match(result, context=context)
+        return self.length_pattern.match(result, context)
 
 
 class TupleOf(Matcher):
@@ -880,7 +1230,7 @@ class TupleOf(Matcher):
 
         result = []
         for pattern, value in zip(self.field_patterns, values):
-            value = pattern.match(value, context=context)
+            value = pattern.match(value, context)
             if value is NoMatch:
                 return NoMatch
             result.append(value)
@@ -912,13 +1262,13 @@ class MappingOf(Matcher):
 
         result = {}
         for k, v in value.items():
-            if (k := self.key_pattern.match(k, context=context)) is NoMatch:
+            if (k := self.key_pattern.match(k, context)) is NoMatch:
                 return NoMatch
-            if (v := self.value_pattern.match(v, context=context)) is NoMatch:
+            if (v := self.value_pattern.match(v, context)) is NoMatch:
                 return NoMatch
             result[k] = v
 
-        result = self.type_pattern.match(result, context=context)
+        result = self.type_pattern.match(result, context)
         if result is NoMatch:
             return NoMatch
 
@@ -937,7 +1287,7 @@ class Attrs(Matcher):
                 return NoMatch
 
             v = getattr(value, attr)
-            if match(pattern, v, context=context) is NoMatch:
+            if match(pattern, v, context) is NoMatch:
                 return NoMatch
 
         return value
@@ -959,27 +1309,84 @@ class Object(Matcher):
         The keyword arguments to match against the attributes of the object.
     """
 
-    __slots__ = ("type", "attrs_pattern")
+    __slots__ = ("type", "args", "kwargs")
+
+    def __new__(cls, type, *args, **kwargs):
+        if not args and not kwargs:
+            return InstanceOf(type)
+        else:
+            return super().__new__(cls)
 
     def __init__(self, type, *args, **kwargs):
-        kwargs.update(dict(zip(type.__match_args__, args)))
-        super().__init__(type, Attrs(**kwargs))
+        type = pattern(type)
+        args = tuple(map(pattern, args))
+        kwargs = frozendict(toolz.valmap(pattern, kwargs))
+        super().__init__(type, args, kwargs)
 
     def match(self, value, context):
-        if not isinstance(value, self.type):
+        if self.type.match(value, context) is NoMatch:
             return NoMatch
 
-        if not self.attrs_pattern.match(value, context=context):
+        patterns = {**self.kwargs, **dict(zip(value.__match_args__, self.args))}
+
+        fields = {}
+        changed = False
+        for name, pattern in patterns.items():
+            try:
+                attr = getattr(value, name)
+            except AttributeError:
+                return NoMatch
+
+            result = pattern.match(attr, context)
+            if result is NoMatch:
+                return NoMatch
+            elif result != attr:
+                changed = True
+                fields[name] = result
+            else:
+                fields[name] = attr
+
+        if changed:
+            return type(value)(**fields)
+        else:
+            return value
+
+    @classmethod
+    def namespace(cls, module):
+        return Namespace(InstanceOf, module)
+
+
+class Node(Matcher):
+    __slots__ = ("type", "each_arg")
+
+    def __init__(self, type, each_arg):
+        super().__init__(pattern(type), pattern(each_arg))
+
+    def match(self, value, context):
+        if self.type.match(value, context) is NoMatch:
             return NoMatch
 
-        return value
+        newargs = {}
+        changed = False
+        for name, arg in zip(value.__argnames__, value.__args__):
+            result = self.each_arg.match(arg, context)
+            if result is NoMatch:
+                newargs[name] = arg
+            else:
+                newargs[name] = result
+                changed = True
+
+        if changed:
+            return value.__class__(**newargs)
+        else:
+            return value
 
 
 class CallableWith(Matcher):
     __slots__ = ("arg_patterns", "return_pattern")
 
     def __init__(self, args, return_=None):
-        super().__init__(tuple(args), return_ or Any())
+        super().__init__(tuple(args), return_ or _any)
 
     def match(self, value, context):
         from ibis.common.annotations import annotated
@@ -1014,13 +1421,16 @@ class CallableWith(Matcher):
 
 
 class PatternSequence(Matcher):
+    # TODO(kszucs): add a length optimization to not even try to match if the
+    # length of the sequence is lower than the length of the pattern sequence
+
     __slots__ = ("pattern_window",)
 
     def __init__(self, patterns):
         current_patterns = [
-            SequenceOf(Any()) if p is Ellipsis else pattern(p) for p in patterns
+            SequenceOf(_any) if p is Ellipsis else pattern(p) for p in patterns
         ]
-        following_patterns = chain(current_patterns[1:], [Not(Any())])
+        following_patterns = chain(current_patterns[1:], [Not(_any)])
         pattern_window = tuple(zip(current_patterns, following_patterns))
         super().__init__(pattern_window)
 
@@ -1069,7 +1479,7 @@ class PatternSequence(Matcher):
                         it.rewind()
                         break
 
-                res = original.match(matches, context=context)
+                res = original.match(matches, context)
                 if res is NoMatch:
                     return NoMatch
                 else:
@@ -1080,7 +1490,7 @@ class PatternSequence(Matcher):
                 except StopIteration:
                     return NoMatch
 
-                res = original.match(item, context=context)
+                res = original.match(item, context)
                 if res is NoMatch:
                     return NoMatch
                 else:
@@ -1102,11 +1512,11 @@ class PatternMapping(Matcher):
             return NoMatch
 
         keys = value.keys()
-        if (keys := self.keys_pattern.match(keys, context=context)) is NoMatch:
+        if (keys := self.keys_pattern.match(keys, context)) is NoMatch:
             return NoMatch
 
         values = value.values()
-        if (values := self.values_pattern.match(values, context=context)) is NoMatch:
+        if (values := self.values_pattern.match(values, context)) is NoMatch:
             return NoMatch
 
         return dict(zip(keys, values))
@@ -1133,11 +1543,6 @@ class Between(Matcher):
             return value
         else:
             return NoMatch
-
-
-IsTruish = Check(lambda x: bool(x))
-IsNumber = InstanceOf(numbers.Number) & ~InstanceOf(bool)
-IsString = InstanceOf(str)
 
 
 def NoneOf(*args) -> Pattern:
@@ -1186,7 +1591,7 @@ def pattern(obj: AnyType) -> Pattern:
         The constructed pattern.
     """
     if obj is Ellipsis:
-        return Any()
+        return _any
     elif isinstance(obj, Pattern):
         return obj
     elif isinstance(obj, Mapping):
@@ -1261,6 +1666,7 @@ class Topmost(Matcher):
 
 
 class Innermost(Matcher):
+    # matches items in the innermost layer first, but all matches belong to the same layer
     """Traverse the value tree innermost first and match the first value that matches."""
 
     __slots__ = ("searcher", "filter")
@@ -1275,3 +1681,8 @@ class Innermost(Matcher):
                 return result
 
         return self.searcher.match(value, context)
+
+
+IsTruish = Check(lambda x: bool(x))
+IsNumber = InstanceOf(numbers.Number) & ~InstanceOf(bool)
+IsString = InstanceOf(str)
