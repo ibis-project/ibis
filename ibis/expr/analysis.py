@@ -12,8 +12,8 @@ import ibis.expr.operations as ops
 import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
+from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.common.patterns import ValidationError
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support

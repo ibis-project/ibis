@@ -14,7 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.impala import ddl
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 from ibis.expr import rules
 
 pytest.importorskip("impala")

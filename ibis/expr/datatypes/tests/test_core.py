@@ -11,7 +11,8 @@ import pytest
 from typing_extensions import Annotated
 
 import ibis.expr.datatypes as dt
-from ibis.common.patterns import As, Attrs, NoMatch, Pattern, ValidationError
+from ibis.common.annotations import ValidationError
+from ibis.common.patterns import As, Attrs, NoMatch, Pattern
 from ibis.common.temporal import TimestampUnit, TimeUnit
 
 

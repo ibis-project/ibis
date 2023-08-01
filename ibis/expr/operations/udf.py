@@ -128,9 +128,9 @@ class ScalarUDFBuilder:
 
             arg = rlz.ValueOf(dt.dtype(raw_dtype))
             if (default := param.default) is EMPTY:
-                fields[name] = Argument.required(validator=arg)
+                fields[name] = Argument.required(pattern=arg)
             else:
-                fields[name] = Argument.default(validator=arg, default=default)
+                fields[name] = Argument.default(pattern=arg, default=default)
 
         fields["dtype"] = dt.dtype(return_annotation)
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 from ibis.config import options
 
 

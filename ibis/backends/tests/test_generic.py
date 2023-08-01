@@ -18,7 +18,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 
 try:
     import duckdb
