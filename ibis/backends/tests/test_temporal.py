@@ -17,7 +17,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution.temporal import day_name
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 
 try:
     from duckdb import InvalidInputException as DuckDBInvalidInputException

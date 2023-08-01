@@ -10,6 +10,7 @@ import pytest
 from ibis.common.annotations import (
     Parameter,
     Signature,
+    ValidationError,
     argument,
     attribute,
     optional,
@@ -36,7 +37,6 @@ from ibis.common.patterns import (
     Option,
     Pattern,
     TupleOf,
-    ValidationError,
 )
 from ibis.tests.util import assert_pickle_roundtrip
 
@@ -333,7 +333,7 @@ def test_annotable_with_recursive_generic_type_annotations():
     # testing cons list
     pattern = Pattern.from_typehint(List[Integer])
     values = ["1", 2.0, 3]
-    result = pattern.validate(values, {})
+    result = pattern.match(values, {})
     expected = ConsList(1, ConsList(2, ConsList(3, EmptyList())))
     assert result == expected
     assert result[0] == 1
@@ -346,7 +346,7 @@ def test_annotable_with_recursive_generic_type_annotations():
     # testing cons map
     pattern = Pattern.from_typehint(Map[Integer, Float])
     values = {"1": 2, 3: "4.0", 5: 6.0}
-    result = pattern.validate(values, {})
+    result = pattern.match(values, {})
     expected = ConsMap((1, 2.0), ConsMap((3, 4.0), ConsMap((5, 6.0), EmptyMap())))
     assert result == expected
     assert result[1] == 2.0

@@ -4,7 +4,7 @@ import parsy
 import pytest
 
 import ibis.expr.datatypes as dt
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 
 
 @pytest.mark.parametrize(

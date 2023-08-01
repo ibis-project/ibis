@@ -16,7 +16,7 @@ import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.backends.pandas.udf import udf
-from ibis.common.patterns import ValidationError
+from ibis.common.annotations import ValidationError
 
 
 @pytest.mark.parametrize(
