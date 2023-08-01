@@ -41,6 +41,19 @@ def dtype(value: Any, nullable: bool = True) -> DataType:
     Int32(nullable=True)
     >>> ibis.dtype("array<float>")
     Array(value_type=Float64(nullable=True), nullable=True)
+
+    DataType objects may also be created from Python types:
+
+    >>> ibis.dtype(int)
+    Int64(nullable=True)
+    >>> ibis.dtype(list[float])
+    Array(value_type=Float64(nullable=True), nullable=True)
+
+    Or other type systems, like numpy/pandas/pyarrow types:
+
+    >>> import pyarrow as pa
+    >>> ibis.dtype(pa.int32())
+    Int32(nullable=True)
     """
     if isinstance(value, DataType):
         return value

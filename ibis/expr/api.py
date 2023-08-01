@@ -59,6 +59,7 @@ __all__ = (
     'decompile',
     'deferred',
     'difference',
+    'dtype',
     'e',
     'Expr',
     'geo_area',
@@ -163,6 +164,7 @@ __all__ = (
 )
 
 
+dtype = dt.dtype
 infer_dtype = dt.infer
 infer_schema = sch.infer
 
