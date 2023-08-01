@@ -569,7 +569,7 @@ class CanCreateSchema(abc.ABC):
 
     @abc.abstractmethod
     def list_schemas(self, like: str | None = None) -> list[str]:
-        """List existing databases in the current connection.
+        """List existing schemas in the current connection.
 
         Parameters
         ----------
