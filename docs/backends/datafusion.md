@@ -5,11 +5,14 @@ backend_module: datafusion
 version_added: "2.1"
 exports: ["PyArrow", "Parquet", "Delta Lake", "CSV", "Pandas"]
 imports: ["CSV", "Parquet", "Delta Lake"]
+memtable_impl: not_implemented
 ---
 
 # DataFusion
 
 {% include 'backends/badges.md' %}
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

@@ -14,6 +14,7 @@ imports:
     "SQLite",
     "Postgres",
   ]
+memtable_impl: native
 ---
 
 # DuckDB
@@ -27,6 +28,8 @@ imports:
 
       See [this issue](https://github.com/ibis-project/ibis/issues/4503) for
       more details.
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

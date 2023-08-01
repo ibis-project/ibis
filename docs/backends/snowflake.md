@@ -2,6 +2,7 @@
 backend_name: Snowflake
 backend_url: https://snowflake.com/
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
+memtable_impl: native
 ---
 
 # Snowflake
@@ -11,6 +12,8 @@ exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
 !!! experimental "Introduced in v4.0"
 
     The Snowflake backend is experimental and is subject to backwards incompatible changes.
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

@@ -3,11 +3,14 @@ backend_name: SQLite
 backend_url: https://www.sqlite.org/
 backend_module: sqlite
 imports: ["CSV", "Parquet", "JSON", "PyArrow", "Pandas", "SQLite", "Postgres"]
+memtable_impl: fallback
 ---
 
 # SQLite
 
 {% include 'backends/badges.md' %}
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

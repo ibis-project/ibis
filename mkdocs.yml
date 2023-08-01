@@ -54,6 +54,7 @@ plugins:
   - exclude:
       glob:
         - backends/template.md
+        - backends/memtable-template.md
         - backends/badges.md
         - backends/*_support_matrix.csv
         - backends/app/*

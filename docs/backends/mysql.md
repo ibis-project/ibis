@@ -4,11 +4,14 @@ backend_url: https://www.mysql.com/
 backend_module: mysql
 backend_param_style: a SQLAlchemy-style URI
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
+memtable_impl: fallback
 ---
 
 # MySQL
 
 {% include 'backends/badges.md' %}
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

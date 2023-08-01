@@ -13,6 +13,8 @@
 
 {% if not (development_only | default(False)) %}
 
+{% include 'backends/memtable-template.md' %}
+
 ## Install
 
 Install `ibis` and dependencies for the {{ backend_name }} backend:

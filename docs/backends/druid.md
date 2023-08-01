@@ -3,6 +3,7 @@ backend_name: Druid
 backend_url: https://druid.apache.org/
 backend_module: druid
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
+memtable_impl: fallback
 ---
 
 # Druid
@@ -12,6 +13,8 @@ exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
 !!! experimental "Introduced in v5.0"
 
     The Druid backend is experimental and is subject to backwards incompatible changes.
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 
