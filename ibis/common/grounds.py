@@ -25,7 +25,7 @@ from ibis.common.annotations import (
 )
 from ibis.common.caching import WeakCache
 from ibis.common.collections import FrozenDict
-from ibis.common.patterns import Validator
+from ibis.common.patterns import Pattern
 from ibis.common.typing import evaluate_annotations
 
 
@@ -60,7 +60,7 @@ class AnnotableMeta(BaseMeta):
             with contextlib.suppress(AttributeError):
                 signatures.append(parent.__signature__)
 
-        # collection type annotations and convert them to validators
+        # collection type annotations and convert them to patterns
         module = dct.get("__module__")
         qualname = dct.get("__qualname__") or clsname
         annotations = dct.get("__annotations__", {})
@@ -70,17 +70,17 @@ class AnnotableMeta(BaseMeta):
         for name, typehint in typehints.items():
             if get_origin(typehint) is ClassVar:
                 continue
-            validator = Validator.from_typehint(typehint)
+            pattern = Pattern.from_typehint(typehint)
             if name in dct:
-                dct[name] = Argument.default(dct[name], validator, typehint=typehint)
+                dct[name] = Argument.default(dct[name], pattern, typehint=typehint)
             else:
-                dct[name] = Argument.required(validator, typehint=typehint)
+                dct[name] = Argument.required(pattern, typehint=typehint)
 
         # collect the newly defined annotations
         slots = list(dct.pop("__slots__", []))
         namespace, arguments = {}, {}
         for name, attrib in dct.items():
-            if isinstance(attrib, Validator):
+            if isinstance(attrib, Pattern):
                 attrib = Argument.required(attrib)
 
             if isinstance(attrib, Argument):

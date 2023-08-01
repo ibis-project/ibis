@@ -39,10 +39,6 @@ class CoercionError(Exception):
     ...
 
 
-class ValidationError(Exception):
-    ...
-
-
 class MatchError(Exception):
     ...
 
@@ -63,7 +59,14 @@ class Coercible(ABC):
         ...
 
 
-class Validator(ABC):
+class NoMatch(metaclass=Sentinel):
+    """Marker to indicate that a pattern didn't match."""
+
+
+# TODO(kszucs): have an As[int] or Coerced[int] type in ibis.common.typing which
+# would be used to annotate an argument as coercible to int or to a certain type
+# without needing for the type to inherit from Coercible
+class Pattern(Hashable):
     __slots__ = ()
 
     @classmethod
@@ -194,15 +197,6 @@ class Validator(ABC):
                 f"Cannot create validator from annotation {annot!r} {origin!r}"
             )
 
-
-class NoMatch(metaclass=Sentinel):
-    """Marker to indicate that a pattern didn't match."""
-
-
-# TODO(kszucs): have an As[int] or Coerced[int] type in ibis.common.typing which
-# would be used to annotate an argument as coercible to int or to a certain type
-# without needing for the type to inherit from Coercible
-class Pattern(Validator, Hashable):
     @abstractmethod
     def match(self, value: AnyType, context: dict[str, AnyType]) -> AnyType:
         """Match a value against the pattern.
@@ -241,30 +235,6 @@ class Pattern(Validator, Hashable):
     def __rmatmul__(self, name: str) -> Pattern:
         return Capture(self, name)
 
-    def validate(
-        self, value: AnyType, context: Optional[dict[str, AnyType]] = None
-    ) -> Any:
-        """Validate a value against the pattern.
-
-        If the pattern doesn't match the value, then it raises a `ValidationError`.
-
-        Parameters
-        ----------
-        value
-            The value to match the pattern against.
-        context
-            A dictionary providing arbitrary context for the pattern matching.
-
-        Returns
-        -------
-        match
-            The matched / validated value.
-        """
-        result = self.match(value, context=context)
-        if result is NoMatch:
-            raise ValidationError(f"{value!r} doesn't match {self}")
-        return result
-
 
 class Matcher(Pattern):
     """A lightweight alternative to `ibis.common.grounds.Concrete`.
@@ -293,7 +263,7 @@ class Matcher(Pattern):
         return self.__precomputed_hash__
 
     def __setattr__(self, name, value) -> None:
-        raise AttributeError("Can't set attributes on immutable ENode instance")
+        raise AttributeError("Can't set attributes on immutable instance")
 
     def __repr__(self):
         fields = {k: getattr(self, k) for k in self.__slots__}

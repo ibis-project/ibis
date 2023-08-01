@@ -10,8 +10,9 @@ import ibis.expr.builders as bl
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisInputError, IbisTypeError
-from ibis.common.patterns import Pattern, ValidationError
+from ibis.common.patterns import NoMatch, Pattern
 
 
 def test_window_boundary():
@@ -35,21 +36,19 @@ def test_window_boundary_typevars():
 
     p = Pattern.from_typehint(ops.WindowBoundary[dt.Integer, ds.Any])
     b = ops.WindowBoundary(5, preceding=False)
-    assert p.validate(b, {}) == b
-    with pytest.raises(ValidationError):
-        p.validate(ops.WindowBoundary(5.0, preceding=False), {})
-    with pytest.raises(ValidationError):
-        p.validate(ops.WindowBoundary(lit, preceding=True), {})
+    assert p.match(b, {}) == b
+    assert p.match(ops.WindowBoundary(5.0, preceding=False), {}) is NoMatch
+    assert p.match(ops.WindowBoundary(lit, preceding=True), {}) is NoMatch
 
     p = Pattern.from_typehint(ops.WindowBoundary[dt.Interval, ds.Any])
     b = ops.WindowBoundary(lit, preceding=True)
-    assert p.validate(b, {}) == b
+    assert p.match(b, {}) == b
 
 
 def test_window_boundary_coercions():
     RowsWindowBoundary = ops.WindowBoundary[dt.Integer, ds.Any]
     p = Pattern.from_typehint(RowsWindowBoundary)
-    assert p.validate(1, {}) == RowsWindowBoundary(ops.Literal(1, dtype=dt.int8), False)
+    assert p.match(1, {}) == RowsWindowBoundary(ops.Literal(1, dtype=dt.int8), False)
 
 
 def test_window_builder_rows():

@@ -13,8 +13,8 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import OperationNotDefinedError
-from ibis.common.patterns import ValidationError
 
 dd = pytest.importorskip("dask.dataframe")
 from dask.dataframe.utils import tm  # noqa: E402

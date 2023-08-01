@@ -51,9 +51,9 @@ def test_interval_units(singular, plural, short):
 def test_interval_unit_coercions(singular, plural, short):
     u = IntervalUnit[singular.upper()]
     v = CoercedTo(IntervalUnit)
-    assert v.validate(singular, {}) == u
-    assert v.validate(plural, {}) == u
-    assert v.validate(short, {}) == u
+    assert v.match(singular, {}) == u
+    assert v.match(plural, {}) == u
+    assert v.match(short, {}) == u
 
 
 @pytest.mark.parametrize(
@@ -70,7 +70,7 @@ def test_interval_unit_coercions(singular, plural, short):
 )
 def test_interval_unit_aliases(alias, expected):
     v = CoercedTo(IntervalUnit)
-    assert v.validate(alias, {}) == IntervalUnit(expected)
+    assert v.match(alias, {}) == IntervalUnit(expected)
 
 
 @pytest.mark.parametrize(
@@ -119,7 +119,7 @@ def test_normalize_timedelta_invalid(value, unit):
 def test_interval_unit_compatibility():
     v = CoercedTo(IntervalUnit)
     for unit in itertools.chain(DateUnit, TimeUnit):
-        interval = v.validate(unit, {})
+        interval = v.match(unit, {})
         assert isinstance(interval, IntervalUnit)
         assert unit.value == interval.value
 

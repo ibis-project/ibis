@@ -23,6 +23,7 @@ from typing import (
 import pytest
 from typing_extensions import Annotated
 
+from ibis.common.annotations import ValidationError
 from ibis.common.collections import FrozenDict
 from ibis.common.graph import Node
 from ibis.common.patterns import (
@@ -63,7 +64,6 @@ from ibis.common.patterns import (
     Topmost,
     TupleOf,
     TypeOf,
-    ValidationError,
     match,
     pattern,
 )
@@ -638,7 +638,6 @@ def test_matching_mapping():
 )
 def test_various_patterns(pattern, value, expected):
     assert pattern.match(value, context={}) == expected
-    assert pattern.validate(value, context={}) == expected
 
 
 @pytest.mark.parametrize(
@@ -663,8 +662,6 @@ def test_various_patterns(pattern, value, expected):
 )
 def test_various_not_matching_patterns(pattern, value):
     assert pattern.match(value, context={}) is NoMatch
-    with pytest.raises(ValidationError):
-        pattern.validate(value, context={})
 
 
 @pattern

@@ -9,8 +9,8 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import OperationNotDefinedError
-from ibis.common.patterns import ValidationError
 
 try:
     from google.api_core.exceptions import BadRequest
