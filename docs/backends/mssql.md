@@ -5,11 +5,14 @@ backend_module: mssql
 backend_param_style: connection parameters
 version_added: "4.0"
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
+memtable_impl: fallback
 ---
 
 # MSSQL
 
 {% include 'backends/badges.md' %}
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

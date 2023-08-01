@@ -3,11 +3,14 @@ backend_name: ClickHouse
 backend_url: https://clickhouse.yandex/
 backend_module: clickhouse
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
+memtable_impl: native
 ---
 
 # ClickHouse
 
 {% include 'backends/badges.md' %}
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

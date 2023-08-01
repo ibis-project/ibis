@@ -5,11 +5,14 @@ backend_module: pyspark
 backend_param_style: PySpark things
 exports: ["PyArrow", "Parquet", "Delta Lake", "Pandas"]
 imports: ["CSV", "Parquet", "Delta Lake"]
+memtable_impl: native
 ---
 
 # PySpark
 
 {% include 'backends/badges.md' %}
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 

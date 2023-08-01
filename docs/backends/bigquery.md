@@ -2,11 +2,14 @@
 backend_name: Google BigQuery
 backend_url: https://cloud.google.com/bigquery
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
+memtable_impl: fallback
 ---
 
 # BigQuery
 
 {% include 'backends/badges.md' %}
+
+{% include 'backends/memtable-template.md' %}
 
 ## Install
 
