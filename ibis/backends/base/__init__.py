@@ -559,13 +559,35 @@ class CanCreateSchema(abc.ABC):
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        """Create a schema named `name` in `database`."""
+        """Create a schema named `name` in `database`.
+
+        Parameters
+        ----------
+        name
+            Name of the schema to create.
+        database
+            Name of the database in which to create the schema. If `None`, the
+            current database is used.
+        force
+            If `False`, an exception is raised if the schema exists.
+        """
 
     @abc.abstractmethod
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        """Drop the schema with `name` in `database`."""
+        """Drop the schema with `name` in `database`.
+
+        Parameters
+        ----------
+        name
+            Name of the schema to drop.
+        database
+            Name of the database to drop the schema from. If `None`, the
+            current database is used.
+        force
+            If `False`, an exception is raised if the schema does not exist.
+        """
 
     @abc.abstractmethod
     def list_schemas(self, like: str | None = None) -> list[str]:
