@@ -14,6 +14,7 @@ import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend, Database
 from ibis.backends.polars.compiler import translate
 from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
+from ibis.common.patterns import Replace
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
@@ -347,12 +348,14 @@ class Backend(BaseBackend):
     ):
         node = expr.op()
         ctx = self._context
+
         if params:
-            replacements = {}
-            for p, v in params.items():
-                op = p.op() if isinstance(p, ir.Expr) else p
-                replacements[op] = ibis.literal(v, type=op.dtype).op()
-            node = node.replace(replacements)
+            params = {param.op(): value for param, value in params.items()}
+            rule = Replace(
+                ops.ScalarParameter,
+                lambda op, ctx: ops.Literal(value=params[op], dtype=op.dtype),
+            )
+            node = node.replace(rule)
             expr = node.to_expr()
 
         node = expr.as_table().op()
