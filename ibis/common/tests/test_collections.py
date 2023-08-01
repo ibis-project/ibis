@@ -4,7 +4,7 @@ from collections.abc import ItemsView, Iterator, KeysView, ValuesView
 
 import pytest
 
-from ibis.common.collections import DotDict, FrozenDict, MapSet, RewindableIterator
+from ibis.common.collections import FrozenDict, MapSet, RewindableIterator
 from ibis.tests.util import assert_pickle_roundtrip
 
 
@@ -177,27 +177,6 @@ def test_mapset_set_api():
     assert (b ^ a).identical(MySchema(c=3))
     assert (a ^ f).identical(MySchema(a=1, b=2, d=4, e=5))
     assert (f ^ a).identical(MySchema(d=4, e=5, a=1, b=2))
-
-
-def test_dotdict():
-    d = DotDict({"a": 1, "b": 2, "c": 3})
-    assert d["a"] == d.a == 1
-    assert d["b"] == d.b == 2
-
-    d.b = 3
-    assert d.b == 3
-    assert d["b"] == 3
-
-    del d.c
-    assert not hasattr(d, "c")
-    assert "c" not in d
-
-    assert repr(d) == "DotDict({'a': 1, 'b': 3})"
-
-    with pytest.raises(KeyError):
-        assert d["x"]
-    with pytest.raises(AttributeError):
-        assert d.x
 
 
 def test_frozendict():
