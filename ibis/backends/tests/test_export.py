@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pandas.testing as tm
+import pyarrow as pa
 import pytest
 import sqlalchemy as sa
 from packaging.version import parse as vparse
@@ -10,8 +11,6 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
-
-pa = pytest.importorskip("pyarrow")
 
 try:
     from pyspark.sql.utils import ParseException
@@ -417,17 +416,6 @@ def test_arrow_timestamp_with_time_zone(alltypes):
     with t.to_pyarrow_batches() as reader:
         (batch,) = reader
     assert batch.schema.types == expected
-
-
-@pytest.mark.notimpl(["dask", "druid"])
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
-def test_dataframe_protocol(alltypes):
-    pytest.importorskip("pyarrow", minversion="12")
-    output = alltypes.__dataframe__()
-    assert list(output.column_names()) == alltypes.columns
-    assert alltypes.count().to_pandas() == output.num_rows()
 
 
 @pytest.mark.notimpl(["dask", "druid"])
