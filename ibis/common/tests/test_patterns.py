@@ -25,12 +25,14 @@ from typing_extensions import Annotated
 
 from ibis.common.annotations import ValidationError
 from ibis.common.collections import FrozenDict
-from ibis.common.graph import Node
+from ibis.common.graph import Node as GraphNode
 from ibis.common.patterns import (
     AllOf,
+    Always,
     Any,
     AnyOf,
     Between,
+    Call,
     CallableWith,
     Capture,
     Check,
@@ -45,11 +47,14 @@ from ibis.common.patterns import (
     Innermost,
     InstanceOf,
     IsIn,
+    Just,
     LazyInstanceOf,
     Length,
     ListOf,
     MappingOf,
     MatchError,
+    Never,
+    Node,
     NoMatch,
     NoneOf,
     Not,
@@ -58,12 +63,14 @@ from ibis.common.patterns import (
     Pattern,
     PatternMapping,
     PatternSequence,
-    Reference,
+    Replace,
     SequenceOf,
     SubclassOf,
     Topmost,
     TupleOf,
     TypeOf,
+    Variable,
+    _,
     match,
     pattern,
 )
@@ -97,6 +104,29 @@ class Min(Pattern):
         return self.__class__ == other.__class__ and self.min == other.min
 
 
+x = Variable("x")
+y = Variable("y")
+z = Variable("z")
+
+
+def test_always():
+    p = Always()
+    assert p.match(1, context={}) == 1
+    assert p.match(2, context={}) == 2
+
+
+def test_never():
+    p = Never()
+    assert p.match(1, context={}) is NoMatch
+    assert p.match(2, context={}) is NoMatch
+
+
+def test_just():
+    p = Just(1)
+    assert p.make({}) == 1
+    assert p.make({"a": 1}) == 1
+
+
 def test_min():
     p = Min(10)
     assert p.match(10, context={}) == 10
@@ -114,16 +144,16 @@ def test_any():
     assert p.match("foo", context={}) == "foo"
 
 
-def test_reference():
-    p = Reference("other")
-    context = {"other": 10}
-    assert p.match(context=context) == 10
+def test_variable():
+    p = Variable("other")
+    context = {p: 10}
+    assert p.make(context) == 10
 
 
 def test_capture():
     ctx = {}
 
-    p = Capture(Min(11), "result")
+    p = Capture("result", Min(11))
     assert p.match(10, context=ctx) is NoMatch
     assert ctx == {}
 
@@ -401,22 +431,48 @@ def test_mapping_of():
     assert p.match({"foo": 1}, context={}) is NoMatch
 
 
+class Foo:
+    __match_args__ = ("a", "b")
+
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.a == other.a and self.b == other.b
+
+
+class Bar:
+    __match_args__ = ("c", "d")
+
+    def __init__(self, c, d):
+        self.c = c
+        self.d = d
+
+    def __eq__(self, other):
+        return type(self) == type(other) and self.c == other.c and self.d == other.d
+
+
 def test_object_pattern():
-    class Foo:
-        __match_args__ = ("a", "b")
-
-        def __init__(self, a, b):
-            self.a = a
-            self.b = b
-
-        def __eq__(self, other):
-            return type(self) == type(other) and self.a == other.a and self.b == other.b
-
     p = Object(Foo, 1, b=2)
     o = Foo(1, 2)
     r = match(p, o)
     assert r is o
     assert r == Foo(1, 2)
+
+
+def test_object_pattern_complex_type():
+    p = Object(Not(Foo), 1, 2)
+    o = Bar(1, 2)
+
+    # test that the pattern isn't changing the input object if none of
+    # its arguments are changed by subpatterns
+    assert match(p, o) is o
+    assert match(p, Foo(1, 2)) is NoMatch
+    assert match(p, Bar(1, 3)) is NoMatch
+
+    p = Object(Not(Foo), 1, b=2)
+    assert match(p, Bar(1, 2)) is NoMatch
 
 
 def test_callable_with():
@@ -482,10 +538,12 @@ def test_matching():
     assert match(InstanceOf(int), 1) == 1
     assert match(InstanceOf(int), "foo") is NoMatch
 
-    assert Capture(InstanceOf(float), "pi") == "pi" @ InstanceOf(float)
-    assert Capture(InstanceOf(float), "pi") == InstanceOf(float) >> "pi"
+    assert Capture("pi", InstanceOf(float)) == "pi" @ InstanceOf(float)
+    assert Capture("pi", InstanceOf(float)) == "pi" @ InstanceOf(float)
 
-    assert match(Capture(InstanceOf(float), "pi"), 3.14, ctx := {}) == 3.14
+    assert match(Capture("pi", InstanceOf(float)), 3.14, ctx := {}) == 3.14
+    assert ctx == {"pi": 3.14}
+    assert match("pi" @ InstanceOf(float), 3.14, ctx := {}) == 3.14
     assert ctx == {"pi": 3.14}
 
     assert match("pi" @ InstanceOf(float), 3.14, ctx := {}) == 3.14
@@ -493,6 +551,58 @@ def test_matching():
 
     assert match(InstanceOf(int) | InstanceOf(float), 3) == 3
     assert match(InstanceOf(object) & InstanceOf(float), 3.14) == 3.14
+
+
+def test_replace_passes_matched_value_as_underscore():
+    class MyInt:
+        def __init__(self, value):
+            self.value = value
+
+        def __eq__(self, other):
+            return self.value == other.value
+
+    p = InstanceOf(int) >> Call(MyInt, value=_)
+    assert p.match(1, context={}) == MyInt(1)
+
+
+def test_replace_in_nested_object_pattern():
+    # simple example using reference to replace a value
+    b = Variable("b")
+    p = Object(Foo, 1, b=Replace(..., b))
+    f = p.match(Foo(1, 2), {b: 3})
+    assert f.a == 1
+    assert f.b == 3
+
+    # nested example using reference to replace a value
+    d = Variable("d")
+    p = Object(Foo, 1, b=Object(Bar, 2, d=Replace(..., d)))
+    g = p.match(Foo(1, Bar(2, 3)), {d: 4})
+    assert g.b.c == 2
+    assert g.b.d == 4
+
+    # nested example using reference to replace a value with a captured value
+    p = Object(
+        Foo,
+        1,
+        b=Replace(Object(Bar, 2, d="d" @ Any()), lambda _, ctx: Foo(-1, b=ctx["d"])),
+    )
+    h = p.match(Foo(1, Bar(2, 3)), {})
+    assert isinstance(h, Foo)
+    assert h.a == 1
+    assert isinstance(h.b, Foo)
+    assert h.b.b == 3
+
+    # same example with more syntactic sugar
+    o = Object.namespace(__name__)
+    c = Call.namespace(__name__)
+
+    d = Variable("d")
+    p = o.Foo(1, b=o.Bar(2, d=d @ Any()) >> c.Foo(-1, b=d))
+    h1 = p.match(Foo(1, Bar(2, 3)), {})
+    assert isinstance(h1, Foo)
+    assert h1.a == 1
+    assert isinstance(h1.b, Foo)
+    assert h1.b.b == 3
 
 
 def test_matching_sequence_pattern():
@@ -523,8 +633,8 @@ def test_matching_sequence_with_captures():
     assert ctx == {"rest": (5, 6, 7, 8)}
 
     v = list(range(5))
-    assert match([0, 1, "var" @ SequenceOf(...), 4], v, ctx := {}) == v
-    assert ctx == {"var": (2, 3)}
+    assert match([0, 1, x @ SequenceOf(...), 4], v, ctx := {}) == v
+    assert ctx == {x: (2, 3)}
     assert match([0, 1, "var" @ SequenceOf(...), 4], v, ctx := {}) == v
     assert ctx == {"var": (2, 3)}
 
@@ -582,8 +692,8 @@ def test_matching_sequence_complicated():
 
     pattern = [
         0,
-        PatternSequence([1, 2]) >> "first",
-        PatternSequence([4, 5]) >> "second",
+        "first" @ PatternSequence([1, 2]),
+        "second" @ PatternSequence([4, 5]),
         3,
     ]
     expected = {"first": [1, 2], "second": [4, 5]}
@@ -702,7 +812,7 @@ def test_various_not_matching_patterns(pattern, value):
 
 
 @pattern
-def endswith_d(s, context):
+def endswith_d(s, ctx):
     if not s.endswith("d"):
         return NoMatch
     return s
@@ -865,12 +975,15 @@ def test_pattern_function():
     assert pattern(f) == Function(f)
 
 
-class Term(Node):
+class Term(GraphNode):
     def __eq__(self, other):
         return type(self) is type(other) and self.__args__ == other.__args__
 
     def __hash__(self):
         return hash((self.__class__, self.__args__))
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({', '.join(map(repr, self.__args__))})"
 
 
 class Lit(Term):
@@ -912,10 +1025,11 @@ two = Mul(Lit(2), one)
 three = Add(one, two)
 six = Mul(two, three)
 seven = Add(one, six)
+fourteen = Add(seven, seven)
 
 
 def test_topmost_innermost():
-    inner = Object(Mul, Capture(Any(), "a"), Capture(Any(), "b"))
+    inner = Object(Mul, Capture("a"), Capture("b"))
     assert inner.match(six, {}) is six
 
     context = {}
@@ -928,3 +1042,27 @@ def test_topmost_innermost():
     m = p.match(seven, context)
     assert m is two
     assert context == {"a": Lit(2), "b": one}
+
+
+def test_graph_path():
+    p = Object(Mul, left="lit" @ Object(Lit))
+    ctx = {}
+    r = p.match(two, ctx)
+    assert r == two
+    assert ctx["lit"] == Lit(2)
+
+    ctx = {}
+    r = six.path(..., Object(Mul, left="lit" @ Object(Lit)), ..., context=ctx)
+    assert ctx["lit"] == Lit(2)
+    assert r == [six, two, Lit(2)]
+
+
+def test_node():
+    pat = Node(
+        InstanceOf(Add),
+        each_arg=Replace(
+            Object(Lit, value=Capture("v")), lambda _, ctx: Lit(ctx["v"] + 100)
+        ),
+    )
+    result = six.replace(pat)
+    assert result == Mul(two, Add(Lit(101), two))
