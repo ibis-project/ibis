@@ -22,8 +22,26 @@ from ibis.common.validators import Coercible
 
 
 @lazy_singledispatch
-def dtype(value, nullable=True) -> DataType:
-    """Construct an ibis datatype from a python type."""
+def dtype(value: Any, nullable: bool = True) -> DataType:
+    """Create a DataType object.
+
+    Parameters
+    ----------
+    value
+        The object to coerce to an Ibis DataType. Supported inputs include
+        strings, python type annotations, numpy dtypes, pandas dtypes, and
+        pyarrow types.
+    nullable
+        Whether the type should be nullable. Defaults to True.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.dtype("int32")
+    Int32(nullable=True)
+    >>> ibis.dtype("array<float>")
+    Array(value_type=Float64(nullable=True), nullable=True)
+    """
     if isinstance(value, DataType):
         return value
     else:
