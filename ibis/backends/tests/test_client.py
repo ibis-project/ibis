@@ -1342,7 +1342,8 @@ def test_create_schema(con_create_schema):
 
 
 def test_list_schemas(con_create_schema):
-    assert con_create_schema.list_schemas()
+    schemas = con_create_schema.list_schemas()
+    assert len(schemas) == len(set(schemas))
 
 
 @pytest.mark.notyet(["datafusion"], reason="cannot list or drop databases")
