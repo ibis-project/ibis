@@ -103,8 +103,9 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
 
     @property
     def _current_schema(self) -> str:
+        query = sa.select(sa.func.current_schema())
         with self.begin() as con:
-            return con.execute(sa.select(sa.func.current_schema())).scalar()
+            return con.execute(query).scalar()
 
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
@@ -429,6 +430,12 @@ $$""".format(
             ).scalars()
         return self._filter_with_like(databases, like)
 
+    @property
+    def current_database(self) -> str:
+        query = sa.select(sa.func.current_database())
+        with self.begin() as con:
+            return con.execute(query).scalar()
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 
@@ -439,9 +446,15 @@ $$""".format(
 
         with self.begin() as con:
             if con.exec_driver_sql(f"SHOW TABLES LIKE '{raw_name}'").scalar() is None:
+                pieces = con.execute(
+                    sa.select(sa.func.current_database(), sa.func.current_schema())
+                ).one()
+                namespace = ".".join(map(quote, filter(None, pieces)))
+
                 # 1. create a temporary stage for holding parquet files
                 stage = util.gen_name("stage")
-                con.exec_driver_sql(f"CREATE TEMP STAGE {stage}")
+
+                con.exec_driver_sql(f"CREATE TEMP STAGE {namespace}.{stage}")
 
                 tmpdir = tempfile.TemporaryDirectory()
                 try:
