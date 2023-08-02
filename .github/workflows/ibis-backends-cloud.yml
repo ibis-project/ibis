@@ -34,8 +34,10 @@ jobs:
         backend:
           - name: bigquery
             title: BigQuery
+            serial: false
           - name: snowflake
             title: Snowflake
+            serial: true
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -94,7 +96,12 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
+        if: ${{ !matrix.backend.serial }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+
+      - name: "run serial tests: ${{ matrix.backend.name }}"
+        if: matrix.backend.serial
+        run: just ci-check -m ${{ matrix.backend.name }}
 
       - name: upload code coverage
         if: success()
