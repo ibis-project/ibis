@@ -34,14 +34,17 @@ def test_version(backend):
     raises=NotImplementedError,
     reason="CURRENT_DATABASE() isn't implemented",
 )
+@pytest.mark.never(
+    ["bigquery"], raises=FutureWarning, reason="list_databases is deprecated"
+)
 def test_database_consistency(backend, con):
-    # every backend has a different set of databases, not testing the
-    # exact names for now
     databases = con.list_databases()
     assert isinstance(databases, list)
     assert len(databases) >= 1
     assert all(isinstance(database, str) for database in databases)
 
+    # every backend has a different set of databases, not testing the
+    # exact names for now
     current_database = con.current_database
     assert isinstance(current_database, str)
     if backend.name() == "snowflake":
