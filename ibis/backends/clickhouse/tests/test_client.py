@@ -74,8 +74,9 @@ def test_verbose_log_queries(con):
 
     expected = 'DESCRIBE ibis_testing.functional_alltypes'
 
-    assert len(queries) == 1
-    assert queries[0] == expected
+    # might be other queries in there, we only check that a describe table
+    # query was logged
+    assert expected in queries
 
 
 def test_sql_query_limits(alltypes):
