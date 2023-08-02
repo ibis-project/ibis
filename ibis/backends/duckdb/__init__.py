@@ -28,7 +28,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
+from ibis.backends.base import CanCreateSchema
+from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType, parse
 from ibis.expr.operations.relations import PandasDataFrameProxy
@@ -71,7 +72,7 @@ _UDF_INPUT_TYPE_MAPPING = {
 }
 
 
-class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
+class Backend(BaseAlchemyBackend, CanCreateSchema):
     name = "duckdb"
     compiler = DuckDBSQLCompiler
     supports_create_or_replace = True
@@ -81,6 +82,23 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
         query = sa.select(sa.func.current_database())
         with self.begin() as con:
             return con.execute(query).scalar()
+
+    def list_schemas(self, like: str | None = None) -> list[str]:
+        s = sa.table(
+            "schemata",
+            sa.column("catalog_name", sa.TEXT()),
+            sa.column("schema_name", sa.TEXT()),
+            schema="information_schema",
+        )
+
+        where = s.c.catalog_name == sa.func.current_database()
+
+        if like is not None:
+            where &= s.c.schema_name.like(like)
+
+        query = sa.select(s.c.schema_name).select_from(s).where(where)
+        with self.begin() as con:
+            return list(con.execute(query).scalars())
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
