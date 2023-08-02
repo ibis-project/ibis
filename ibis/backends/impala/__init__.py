@@ -414,7 +414,7 @@ class Backend(BaseSQLBackend):
         return list(map(operator.itemgetter(0), tuples))
 
     @property
-    def current_database(self):
+    def current_database(self) -> str | None:
         # XXX The parent `Client` has a generic method that calls this same
         # method in the backend. But for whatever reason calling this code from
         # that method doesn't seem to work. Maybe `con` is a copy?

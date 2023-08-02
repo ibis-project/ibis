@@ -326,7 +326,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         return self._execute(query, results=results, query_parameters=query_parameters)
 
     @property
-    def current_database(self) -> str:
+    def current_database(self) -> str | None:
         return self.dataset
 
     def database(self, name=None):

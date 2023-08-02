@@ -734,7 +734,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         Returns
         -------
         str | None
-            Name of the current database.
+            Name of the current database or `None` if the backend supports the
+            concept of a database but doesn't support multiple databases.
         """
 
     @staticmethod

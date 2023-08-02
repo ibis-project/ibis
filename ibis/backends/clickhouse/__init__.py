@@ -192,8 +192,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         return self.con.server_version
 
     @property
-    def current_database(self) -> str:
-        return self.con.database
+    def current_database(self) -> str | None:
+        with closing(self.raw_sql("SELECT currentDatabase()")) as result:
+            [(db,)] = result.result_rows
+        return db
 
     def list_databases(self, like: str | None = None) -> list[str]:
         with closing(self.raw_sql("SELECT name FROM system.databases")) as result:
