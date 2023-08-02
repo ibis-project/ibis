@@ -78,7 +78,7 @@ class Backend(BaseAlchemyBackend, CanCreateSchema):
     supports_create_or_replace = True
 
     @property
-    def current_database(self) -> str:
+    def current_database(self) -> str | None:
         query = sa.select(sa.func.current_database())
         with self.begin() as con:
             return con.execute(query).scalar()

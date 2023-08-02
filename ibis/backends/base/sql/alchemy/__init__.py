@@ -452,7 +452,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
         return self.database().schema(name)
 
     @property
-    def current_database(self) -> str:
+    def current_database(self) -> str | None:
         """The name of the current database this client is connected to."""
         return self.database_name
 

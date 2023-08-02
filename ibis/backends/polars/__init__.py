@@ -50,7 +50,8 @@ class Backend(BaseBackend):
     def version(self) -> str:
         return pl.__version__
 
-    def current_database(self):
+    @property
+    def current_database(self) -> str | None:
         raise NotImplementedError('polars backend does not support databases')
 
     def list_tables(self, like=None, database=None):

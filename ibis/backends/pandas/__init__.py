@@ -82,7 +82,7 @@ class BasePandasBackend(BaseBackend):
         return pd.__version__
 
     @property
-    def current_database(self):
+    def current_database(self) -> str | None:
         raise NotImplementedError('pandas backend does not support databases')
 
     def list_tables(self, like=None, database=None):

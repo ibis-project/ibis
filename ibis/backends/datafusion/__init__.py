@@ -73,7 +73,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
             self.register(path, table_name=name)
 
     @property
-    def current_database(self) -> str:
+    def current_database(self) -> str | None:
         raise NotImplementedError()
 
     def list_databases(self, like: str | None = None) -> list[str]:

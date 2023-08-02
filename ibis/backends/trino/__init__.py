@@ -35,13 +35,16 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
     supports_create_or_replace = False
     supports_temporary_tables = False
 
-    def current_database(self) -> str:
-        raise NotImplementedError(type(self))
-
     @cached_property
     def version(self) -> str:
         with self.begin() as con:
             return con.execute(sa.select(sa.func.version())).scalar()
+
+    @property
+    def current_database(self) -> str | None:
+        query = sa.select(sa.literal_column("current_catalog"))
+        with self.begin() as con:
+            return con.execute(query).scalar()
 
     def do_connect(
         self,
