@@ -18,6 +18,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
+from ibis.backends.base import CanListDatabases
 from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
     import ibis.expr.schema as sch
 
 
-class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
+class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
     name = "trino"
     compiler = TrinoSQLCompiler
     supports_create_or_replace = False
@@ -37,14 +38,27 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
 
     @cached_property
     def version(self) -> str:
-        with self.begin() as con:
-            return con.execute(sa.select(sa.func.version())).scalar()
+        return self._scalar_query(sa.select(sa.func.version()))
 
     @property
-    def current_database(self) -> str | None:
-        query = sa.select(sa.literal_column("current_catalog"))
+    def current_database(self) -> str:
+        return self._scalar_query(sa.select(sa.literal_column("current_catalog")))
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        s = sa.table(
+            "schemata",
+            sa.column("catalog_name", sa.VARCHAR()),
+            schema="information_schema",
+        )
+
+        query = sa.select(sa.distinct(s.c.catalog_name)).order_by(s.c.catalog_name)
         with self.begin() as con:
-            return con.execute(query).scalar()
+            results = list(con.execute(query).scalars())
+        return self._filter_with_like(results, like=like)
+
+    @property
+    def current_schema(self) -> str:
+        return self._scalar_query(sa.select(sa.literal_column("current_schema")))
 
     def do_connect(
         self,

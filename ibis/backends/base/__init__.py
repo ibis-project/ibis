@@ -519,23 +519,7 @@ class _FileIOHandler:
             write_deltalake(path, batch_reader, **kwargs)
 
 
-class CanCreateDatabase(abc.ABC):
-    @abc.abstractmethod
-    def create_database(self, name: str, force: bool = False) -> None:
-        """Create a new database.
-
-        Parameters
-        ----------
-        name
-            Name of the new database.
-        force
-            If `False`, an exception is raised if the database already exists.
-        """
-
-    @abc.abstractmethod
-    def drop_database(self, name: str, force: bool = False) -> None:
-        """Drop a database with name `name`."""
-
+class CanListDatabases(abc.ABC):
     @abc.abstractmethod
     def list_databases(self, like: str | None = None) -> list[str]:
         """List existing databases in the current connection.
@@ -551,6 +535,37 @@ class CanCreateDatabase(abc.ABC):
         list[str]
             The database names that exist in the current connection, that match
             the `like` pattern if provided.
+        """
+
+    @property
+    @abc.abstractmethod
+    def current_database(self) -> str:
+        """The current database in use."""
+
+
+class CanCreateDatabase(CanListDatabases):
+    @abc.abstractmethod
+    def create_database(self, name: str, force: bool = False) -> None:
+        """Create a new database.
+
+        Parameters
+        ----------
+        name
+            Name of the new database.
+        force
+            If `False`, an exception is raised if the database already exists.
+        """
+
+    @abc.abstractmethod
+    def drop_database(self, name: str, force: bool = False) -> None:
+        """Drop a database with name `name`.
+
+        Parameters
+        ----------
+        name
+            Database to drop.
+        force
+            If `False`, an exception is raised if the database does not exist.
         """
 
 
@@ -605,6 +620,11 @@ class CanCreateSchema(abc.ABC):
             The schema names that exist in the current connection, that match
             the `like` pattern if provided.
         """
+
+    @property
+    @abc.abstractmethod
+    def current_schema(self) -> str:
+        """Return the current schema."""
 
 
 class BaseBackend(abc.ABC, _FileIOHandler):
@@ -723,20 +743,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             A database object for the specified database.
         """
         return Database(name=name or self.current_database, client=self)
-
-    @property
-    @abc.abstractmethod
-    def current_database(self) -> str | None:
-        """Return the name of the current database.
-
-        Backends that don't support different databases will return None.
-
-        Returns
-        -------
-        str | None
-            Name of the current database or `None` if the backend supports the
-            concept of a database but doesn't support multiple databases.
-        """
 
     @staticmethod
     def _filter_with_like(

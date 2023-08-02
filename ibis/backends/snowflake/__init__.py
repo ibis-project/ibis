@@ -101,20 +101,21 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
 
     _latest_udf_python_version = (3, 10)
 
-    @property
-    def _current_schema(self) -> str:
-        query = sa.select(sa.func.current_schema())
-        with self.begin() as con:
-            return con.execute(query).scalar()
-
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
             kwargs["account"] = kwargs.pop("host")
 
     @property
     def version(self) -> str:
-        with self.begin() as con:
-            return con.execute(sa.select(sa.func.current_version())).scalar()
+        return self._scalar_query(sa.select(sa.func.current_version()))
+
+    @property
+    def current_schema(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_schema()))
+
+    @property
+    def current_database(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_database()))
 
     def _compile_sqla_type(self, typ) -> str:
         return sa.types.to_instance(typ).compile(dialect=self.con.dialect)
@@ -189,7 +190,6 @@ $$ {defn["source"]} $$"""
         url = URL(
             account=account, user=user, password=password or "", **dbparams, **kwargs
         )
-        self.database_name = dbparams["database"]
         if connect_args is None:
             connect_args = {}
 
@@ -226,7 +226,7 @@ $$ {defn["source"]} $$"""
             dialect = engine.dialect
             quote = dialect.preparer(dialect).quote_identifier
             with dbapi_connection.cursor() as cur:
-                (database, schema) = cur.execute(
+                database, schema = cur.execute(
                     "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
                 ).fetchone()
                 try:
@@ -424,17 +424,15 @@ $$""".format(
             yield name, typ
 
     def list_databases(self, like=None) -> list[str]:
+        d = sa.table(
+            "databases",
+            sa.column("database_name", sa.TEXT()),
+            schema="information_schema",
+        )
+        query = sa.select(d.c.database_name).order_by(d.c.database_name)
         with self.begin() as con:
-            databases = con.exec_driver_sql(
-                "SELECT database_name FROM information_schema.databases"
-            ).scalars()
+            databases = list(con.execute(query).scalars())
         return self._filter_with_like(databases, like)
-
-    @property
-    def current_database(self) -> str:
-        query = sa.select(sa.func.current_database())
-        with self.begin() as con:
-            return con.execute(query).scalar()
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq

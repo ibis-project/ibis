@@ -508,11 +508,11 @@ def test_list_databases(alchemy_con):
     test_databases = {
         "sqlite": {"main"},
         "postgres": {"postgres", "ibis_testing"},
-        "mssql": {"INFORMATION_SCHEMA"},
+        "mssql": {"ibis_testing"},
         "mysql": {"ibis_testing", "information_schema"},
-        "duckdb": {"information_schema", "main"},
+        "duckdb": {"memory"},
         "snowflake": {"IBIS_TESTING"},
-        "trino": {"default"},
+        "trino": {"memory"},
         "oracle": set(),
     }
     assert test_databases[alchemy_con.name] <= set(alchemy_con.list_databases())

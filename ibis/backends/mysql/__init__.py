@@ -106,8 +106,6 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
             driver=f'mysql+{driver}',
         )
 
-        self.database_name = alchemy_url.database
-
         engine = sa.create_engine(
             alchemy_url, poolclass=sa.pool.StaticPool, connect_args=kwargs
         )
@@ -121,6 +119,10 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
                     warnings.warn("Unable to set session timezone to UTC.")
 
         super().do_connect(engine)
+
+    @property
+    def current_database(self) -> str:
+        return self._scalar_query(sa.select(sa.func.database()))
 
     @staticmethod
     def _new_sa_metadata():
