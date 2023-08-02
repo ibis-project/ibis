@@ -444,15 +444,9 @@ $$""".format(
 
         with self.begin() as con:
             if con.exec_driver_sql(f"SHOW TABLES LIKE '{raw_name}'").scalar() is None:
-                pieces = con.execute(
-                    sa.select(sa.func.current_database(), sa.func.current_schema())
-                ).one()
-                namespace = ".".join(map(quote, filter(None, pieces)))
-
                 # 1. create a temporary stage for holding parquet files
                 stage = util.gen_name("stage")
-
-                con.exec_driver_sql(f"CREATE TEMP STAGE {namespace}.{stage}")
+                con.exec_driver_sql(f"CREATE TEMP STAGE {stage}")
 
                 tmpdir = tempfile.TemporaryDirectory()
                 try:
