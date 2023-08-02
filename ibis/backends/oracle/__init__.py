@@ -131,8 +131,6 @@ class Backend(BaseAlchemyBackend):
         # see user tables
         # select table_name from user_tables
 
-        self.database_name = database  # not sure what should go here
-
         # Note: for the moment, we need to pass the `database` in to the `make_url` call
         # AND specify it here as the `service_name`.  I don't know why.
         engine = sa.create_engine(
@@ -159,6 +157,10 @@ class Backend(BaseAlchemyBackend):
                 return name
 
         self.con.dialect.normalize_name = normalize_name
+
+    @property
+    def current_database(self) -> str:
+        return self._scalar_query("SELECT * FROM global_name")
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         query = f"SELECT * FROM ({query.strip(';')}) FETCH FIRST 0 ROWS ONLY"

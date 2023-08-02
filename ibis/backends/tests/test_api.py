@@ -22,17 +22,14 @@ def test_version(backend):
 # 1. `current_database` returns '.', but isn't listed in list_databases()
 @pytest.mark.never(
     ["polars", "dask", "pandas"],
-    reason="backends does not support databases",
+    reason="backend does not support databases",
     raises=AttributeError,
 )
-@pytest.mark.notimpl(
-    ["duckdb", "mssql", "trino", "druid", "oracle"],
-    raises=AssertionError,
-)
+@pytest.mark.notimpl(["oracle"], raises=AssertionError)
 @pytest.mark.notimpl(
     ["datafusion"],
     raises=NotImplementedError,
-    reason="CURRENT_DATABASE() isn't implemented",
+    reason="current_database isn't implemented",
 )
 @pytest.mark.never(
     ["bigquery"], raises=FutureWarning, reason="list_databases is deprecated"

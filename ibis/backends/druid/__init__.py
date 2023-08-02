@@ -20,6 +20,11 @@ class Backend(BaseAlchemyBackend):
     compiler = DruidCompiler
     supports_create_or_replace = False
 
+    @property
+    def current_database(self) -> str:
+        # https://druid.apache.org/docs/latest/querying/sql-metadata-tables.html#schemata-table
+        return "druid"
+
     def do_connect(
         self,
         host: str = "localhost",
@@ -80,9 +85,7 @@ class Backend(BaseAlchemyBackend):
                 yield con.execute(query, *args, **kwargs)
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        query = f"EXPLAIN PLAN FOR {query}"
-        with self.begin() as con:
-            result = con.exec_driver_sql(query).scalar()
+        result = self._scalar_query(f"EXPLAIN PLAN FOR {query}")
 
         (plan,) = json.loads(result)
         for column in plan["signature"]:

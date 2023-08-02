@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import warnings
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
 from urllib.parse import parse_qs, urlparse
 
@@ -17,7 +18,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.backends.base import CanCreateSchema, Database
+from ibis.backends.base import CanCreateSchema, CanListDatabases, Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
@@ -71,7 +72,7 @@ def _create_client_info_gapic(application_name):
     return ClientInfo(user_agent=_create_user_agent(application_name))
 
 
-class Backend(BaseSQLBackend, CanCreateSchema):
+class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
     name = "bigquery"
     compiler = BigQueryCompiler
     supports_in_memory_tables = False
@@ -272,7 +273,7 @@ class Backend(BaseSQLBackend, CanCreateSchema):
 
     def table(self, name: str, database: str | None = None) -> ir.TableExpr:
         if database is None:
-            database = f"{self.data_project}.{self.current_database}"
+            database = f"{self.data_project}.{self.current_schema}"
         table_id = self._fully_qualified_name(name, database)
         t = super().table(table_id)
         bq_table = self.client.get_table(table_id)
@@ -326,7 +327,17 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         return self._execute(query, results=results, query_parameters=query_parameters)
 
     @property
-    def current_database(self) -> str | None:
+    def current_database(self) -> str:
+        warnings.warn(
+            "current_database will return the current *data project* in ibis 7.0.0; "
+            "use current_schema for the current BigQuery dataset",
+            category=FutureWarning,
+        )
+        # TODO: return self.data_project in ibis 7.0.0
+        return self.dataset
+
+    @property
+    def current_schema(self) -> str | None:
         return self.dataset
 
     def database(self, name=None):

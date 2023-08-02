@@ -73,8 +73,12 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
             self.register(path, table_name=name)
 
     @property
-    def current_database(self) -> str | None:
+    def current_database(self) -> str:
         raise NotImplementedError()
+
+    @property
+    def current_schema(self) -> str:
+        return NotImplementedError()
 
     def list_databases(self, like: str | None = None) -> list[str]:
         code = "SELECT DISTINCT table_catalog FROM information_schema.tables"

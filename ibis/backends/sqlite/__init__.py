@@ -26,6 +26,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
+from ibis.backends.base import CanListDatabases
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-class Backend(BaseAlchemyBackend):
+class Backend(BaseAlchemyBackend, CanListDatabases):
     name = 'sqlite'
     compiler = SQLiteCompiler
     supports_create_or_replace = False
@@ -55,6 +56,18 @@ class Backend(BaseAlchemyBackend):
             )
         )
         return r
+
+    @property
+    def current_database(self) -> str:
+        # AFAICT there is no notion of a schema in SQLite
+        return "main"
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        with self.begin() as con:
+            mappings = con.exec_driver_sql("PRAGMA database_list").mappings()
+            results = list(toolz.pluck("name", mappings))
+
+        return sorted(self._filter_with_like(results, like))
 
     def do_connect(
         self,

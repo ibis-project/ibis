@@ -169,7 +169,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         return pyspark.__version__
 
     @property
-    def current_database(self) -> str | None:
+    def current_database(self) -> str:
         return self._catalog.currentDatabase()
 
     def list_databases(self, like=None):
