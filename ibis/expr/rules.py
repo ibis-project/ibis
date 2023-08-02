@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import operator
 from itertools import product, starmap
+from typing import Optional
 
 from public import public
 
@@ -9,7 +10,8 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.annotations import attribute
-from ibis.common.patterns import CoercionError, Matcher, NoMatch
+from ibis.common.grounds import Concrete
+from ibis.common.patterns import CoercionError, NoMatch, Pattern
 from ibis.common.temporal import IntervalUnit
 
 
@@ -174,7 +176,7 @@ def _arg_type_error_format(op):
         return f"{op.name}:{op.dtype}"
 
 
-class ValueOf(Matcher):
+class ValueOf(Concrete, Pattern):
     """Match a value of a specific type **instance**.
 
     This is different from the Value[T] annotations which construct
@@ -187,11 +189,7 @@ class ValueOf(Matcher):
         The datatype the constructed Value instance should conform to.
     """
 
-    __slots__ = ("dtype",)
-
-    def __init__(self, dtype=None):
-        dtype = None if dtype is None else dt.dtype(dtype)
-        super().__init__(dtype)
+    dtype: Optional[dt.DataType] = None
 
     def match(self, value, context):
         try:

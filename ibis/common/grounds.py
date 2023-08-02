@@ -1,17 +1,14 @@
 from __future__ import annotations
 
 import contextlib
-from abc import ABCMeta, abstractmethod
 from copy import copy
 from typing import (
     Any,
     ClassVar,
-    Mapping,
     Tuple,
     Union,
     get_origin,
 )
-from weakref import WeakValueDictionary
 
 from typing_extensions import Self, dataclass_transform
 
@@ -23,27 +20,17 @@ from ibis.common.annotations import (
     Signature,
     attribute,
 )
-from ibis.common.caching import WeakCache
-from ibis.common.collections import FrozenDict
+from ibis.common.bases import (  # noqa: F401
+    Base,
+    BaseMeta,
+    Comparable,
+    Final,
+    Immutable,
+    Singleton,
+)
+from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.patterns import Pattern
 from ibis.common.typing import evaluate_annotations
-
-
-class BaseMeta(ABCMeta):
-    __slots__ = ()
-
-    def __new__(metacls, clsname, bases, dct, **kwargs):
-        # enforce slot definitions
-        dct.setdefault("__slots__", ())
-        return super().__new__(metacls, clsname, bases, dct, **kwargs)
-
-    def __call__(cls, *args, **kwargs):
-        return cls.__create__(*args, **kwargs)
-
-
-class Base(metaclass=BaseMeta):
-    __slots__ = ("__weakref__",)
-    __create__ = classmethod(type.__call__)  # type: ignore
 
 
 class AnnotableMeta(BaseMeta):
@@ -185,79 +172,6 @@ class Annotable(Base, metaclass=AnnotableMeta):
         for name, value in overrides.items():
             setattr(this, name, value)
         return this
-
-
-class Immutable(Base):
-    def __copy__(self):
-        return self
-
-    def __deepcopy__(self, memo):
-        return self
-
-    def __setattr__(self, name: str, _: Any) -> None:
-        raise AttributeError(
-            f"Attribute {name!r} cannot be assigned to immutable instance of "
-            f"type {type(self)}"
-        )
-
-
-class Singleton(Base):
-    __instances__: Mapping[Any, Self] = WeakValueDictionary()
-
-    @classmethod
-    def __create__(cls, *args, **kwargs):
-        key = (cls, args, FrozenDict(kwargs))
-        try:
-            return cls.__instances__[key]
-        except KeyError:
-            instance = super().__create__(*args, **kwargs)
-            cls.__instances__[key] = instance
-            return instance
-
-
-class Final(Base):
-    def __init_subclass__(cls, **kwargs):
-        cls.__init_subclass__ = cls.__prohibit_inheritance__
-
-    @classmethod
-    def __prohibit_inheritance__(cls, **kwargs):
-        raise TypeError(f"Cannot inherit from final class {cls}")
-
-
-class Comparable(Base):
-    __cache__ = WeakCache()
-
-    def __eq__(self, other) -> bool:
-        try:
-            return self.__cached_equals__(other)
-        except TypeError:
-            return NotImplemented
-
-    @abstractmethod
-    def __equals__(self, other) -> bool:
-        ...
-
-    def __cached_equals__(self, other) -> bool:
-        if self is other:
-            return True
-
-        # type comparison should be cheap
-        if type(self) is not type(other):
-            return False
-
-        # reduce space required for commutative operation
-        if id(self) < id(other):
-            key = (self, other)
-        else:
-            key = (other, self)
-
-        try:
-            result = self.__cache__[key]
-        except KeyError:
-            result = self.__equals__(other)
-            self.__cache__[key] = result
-
-        return result
 
 
 class Concrete(Immutable, Comparable, Annotable):

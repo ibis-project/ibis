@@ -109,6 +109,12 @@ y = Variable("y")
 z = Variable("z")
 
 
+def test_immutability_of_patterns():
+    p = InstanceOf(int)
+    with pytest.raises(AttributeError):
+        p.types = [str]
+
+
 def test_always():
     p = Always()
     assert p.match(1, context={}) == 1
@@ -237,7 +243,7 @@ def test_generic_instance_of_disallow_nested_coercion():
     p = Pattern.from_typehint(Box[MyString])
     assert isinstance(p, GenericInstanceOf)
     assert p.origin == Box
-    assert p.field_patterns == {"value": InstanceOf(MyString)}
+    assert p.fields == {"value": InstanceOf(MyString)}
 
 
 def test_coerced_to():
