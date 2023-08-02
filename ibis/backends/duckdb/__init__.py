@@ -76,8 +76,11 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
     compiler = DuckDBSQLCompiler
     supports_create_or_replace = True
 
+    @property
     def current_database(self) -> str:
-        return "main"
+        query = sa.select(sa.func.current_database())
+        with self.begin() as con:
+            return con.execute(query).scalar()
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:
