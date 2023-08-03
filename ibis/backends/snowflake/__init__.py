@@ -21,6 +21,7 @@ from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 from sqlalchemy.ext.compiler import compiles
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -505,12 +506,23 @@ $$""".format(
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
     def create_database(self, name: str, force: bool = False) -> None:
+        current_database = self.current_database
         name = self._quote(name)
         if_not_exists = "IF NOT EXISTS " * force
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE DATABASE {if_not_exists}{name}")
+            # Snowflake automatically switches to the new database after creating
+            # it per
+            # https://docs.snowflake.com/en/sql-reference/sql/create-database#general-usage-notes
+            # so we switch back to the original database
+            con.exec_driver_sql(f"USE DATABASE {self._quote(current_database)}")
 
     def drop_database(self, name: str, force: bool = False) -> None:
+        current_database = self.current_database
+        if name == current_database:
+            raise com.UnsupportedOperationError(
+                "Dropping the current database is not supported because its behavior is undefined"
+            )
         name = self._quote(name)
         if_exists = "IF EXISTS " * force
         with self.begin() as con:
@@ -521,12 +533,28 @@ $$""".format(
     ) -> None:
         name = ".".join(map(self._quote, filter(None, [database, name])))
         if_not_exists = "IF NOT EXISTS " * force
+        current_database = self.current_database
+        current_schema = self.current_schema
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+            # Snowflake automatically switches to the new schema after creating
+            # it per
+            # https://docs.snowflake.com/en/sql-reference/sql/create-schema#usage-notes
+            # so we switch back to the original schema
+            con.exec_driver_sql(
+                f"USE SCHEMA {self._quote(current_database)}.{self._quote(current_schema)}"
+            )
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
+        if self.current_schema == name and (
+            database is None or self.current_database == database
+        ):
+            raise com.UnsupportedOperationError(
+                "Dropping the current schema is not supported because its behavior is undefined"
+            )
+
         name = ".".join(map(self._quote, filter(None, [database, name])))
         if_exists = "IF EXISTS " * force
         with self.begin() as con:

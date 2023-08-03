@@ -6,6 +6,7 @@ import pyarrow as pa
 import pytest
 
 import ibis
+import ibis.common.exceptions as com
 from ibis.backends.snowflake.tests.conftest import _get_url
 from ibis.util import gen_name
 
@@ -81,3 +82,81 @@ def test_timestamp_tz_column(simple_con):
     ).mutate(ts=lambda t: t.ts.to_timestamp("YYYY-MM-DD HH24-MI-SS"))
     expr = t.ts
     assert expr.execute().empty
+
+
+def test_create_schema(simple_con):
+    schema = gen_name("test_create_schema")
+
+    cur_schema = simple_con.current_schema
+    cur_db = simple_con.current_database
+
+    simple_con.create_schema(schema)
+
+    assert simple_con.current_schema == cur_schema
+    assert simple_con.current_database == cur_db
+
+    simple_con.drop_schema(schema)
+
+    assert simple_con.current_schema == cur_schema
+    assert simple_con.current_database == cur_db
+
+
+def test_create_database(simple_con):
+    database = gen_name("test_create_database")
+    cur_db = simple_con.current_database
+
+    simple_con.create_database(database)
+    assert simple_con.current_database == cur_db
+
+    simple_con.drop_database(database)
+    assert simple_con.current_database == cur_db
+
+
+@pytest.fixture(scope="session")
+def db_con():
+    return ibis.connect(_get_url())
+
+
+@pytest.fixture(scope="session")
+def schema_con():
+    return ibis.connect(_get_url())
+
+
+def test_drop_current_db_not_allowed(db_con):
+    database = gen_name("test_create_database")
+    cur_db = db_con.current_database
+
+    db_con.create_database(database)
+
+    assert db_con.current_database == cur_db
+
+    with db_con.begin() as c:
+        c.exec_driver_sql(f'USE DATABASE "{database}"')
+
+    with pytest.raises(com.UnsupportedOperationError, match="behavior is undefined"):
+        db_con.drop_database(database)
+
+    with db_con.begin() as c:
+        c.exec_driver_sql(f"USE DATABASE {cur_db}")
+
+    db_con.drop_database(database)
+
+
+def test_drop_current_schema_not_allowed(schema_con):
+    schema = gen_name("test_create_schema")
+    cur_schema = schema_con.current_schema
+
+    schema_con.create_schema(schema)
+
+    assert schema_con.current_schema == cur_schema
+
+    with schema_con.begin() as c:
+        c.exec_driver_sql(f'USE SCHEMA "{schema}"')
+
+    with pytest.raises(com.UnsupportedOperationError, match="behavior is undefined"):
+        schema_con.drop_schema(schema)
+
+    with schema_con.begin() as c:
+        c.exec_driver_sql(f"USE SCHEMA {cur_schema}")
+
+    schema_con.drop_schema(schema)
