@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ibis-framework"
-version = "6.0.0"
+version = "6.1.0"
 packages = [{ include = "ibis" }]
 include = [
   "ibis/examples/*.json",

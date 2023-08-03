@@ -507,6 +507,7 @@ $$""".format(
 
     def create_database(self, name: str, force: bool = False) -> None:
         current_database = self.current_database
+        current_schema = self.current_schema
         name = self._quote(name)
         if_not_exists = "IF NOT EXISTS " * force
         with self.begin() as con:
@@ -514,8 +515,10 @@ $$""".format(
             # Snowflake automatically switches to the new database after creating
             # it per
             # https://docs.snowflake.com/en/sql-reference/sql/create-database#general-usage-notes
-            # so we switch back to the original database
-            con.exec_driver_sql(f"USE DATABASE {self._quote(current_database)}")
+            # so we switch back to the original database and schema
+            con.exec_driver_sql(
+                f"USE SCHEMA {self._quote(current_database)}.{self._quote(current_schema)}"
+            )
 
     def drop_database(self, name: str, force: bool = False) -> None:
         current_database = self.current_database
