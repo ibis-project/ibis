@@ -628,16 +628,6 @@ def flatten_predicate(node):
     return list(g.traverse(predicate, node))
 
 
-def is_analytic(node):
-    def predicate(node):
-        if isinstance(node, (ops.Reduction, ops.Analytic)):
-            return g.halt, True
-        else:
-            return g.proceed, None
-
-    return any(g.traverse(predicate, node))
-
-
 def is_reduction(node):
     """Check whether an expression contains a reduction or not.
 
