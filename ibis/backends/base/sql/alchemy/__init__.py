@@ -139,7 +139,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
     def do_connect(self, con: sa.engine.Engine) -> None:
         self.con = con
         self._inspector = None
-        self._schemas: dict[str, sch.Schema] = {}
         self._temp_views: set[str] = set()
 
     @property
@@ -295,8 +294,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
         if schema is None:
             schema = obj.schema()
 
-        self._schemas[self._fully_qualified_name(name, database)] = schema
-
         if has_expr := obj is not None:
             # this has to happen outside the `begin` block, so that in-memory
             # tables are visible inside the transaction created by it
@@ -430,12 +427,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
         with self.begin() as bind:
             t.drop(bind=bind, checkfirst=force)
 
-        qualified_name = self._fully_qualified_name(name, database)
-
-        with contextlib.suppress(KeyError):
-            # schemas won't be cached if created with raw_sql
-            del self._schemas[qualified_name]
-
     def truncate_table(self, name: str, database: str | None = None) -> None:
         t = self._get_sqla_table(name, schema=database)
         with self.begin() as con:
@@ -494,39 +485,26 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 return table
             return self._handle_failed_column_type_inference(table, nulltype_cols)
 
-    # TODO(kszucs): remove the schema parameter
     @classmethod
-    def _schema_from_sqla_table(
-        cls,
-        table: sa.sql.TableClause,
-        schema: sch.Schema | None = None,
-    ) -> sch.Schema:
+    def _schema_from_sqla_table(cls, table: sa.sql.TableClause) -> sch.Schema:
         """Retrieve an ibis schema from a SQLAlchemy `Table`.
 
         Parameters
         ----------
         table
             Table whose schema to infer
-        schema
-            Predefined ibis schema to pull types from
-        dialect
-            Optional sqlalchemy dialect
 
         Returns
         -------
         schema
             An ibis schema corresponding to the types of the columns in `table`.
         """
-        schema = schema if schema is not None else {}
         pairs = []
         for column in table.columns:
             name = column.name
-            if name in schema:
-                dtype = schema[name]
-            else:
-                dtype = cls.compiler.translator_class.get_ibis_type(
-                    column.type, nullable=column.nullable
-                )
+            dtype = cls.compiler.translator_class.get_ibis_type(
+                column.type, nullable=column.nullable
+            )
             pairs.append((name, dtype))
         return sch.schema(pairs)
 
@@ -613,9 +591,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         sqla_table = self._get_sqla_table(name, schema=schema)
 
-        schema = self._schema_from_sqla_table(
-            sqla_table, schema=self._schemas.get(name)
-        )
+        schema = self._schema_from_sqla_table(sqla_table)
         node = ops.DatabaseTable(
             name=name, schema=schema, source=self, namespace=namespace
         )
