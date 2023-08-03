@@ -104,55 +104,6 @@ class Node(Hashable):
         """Support for rich reprerentation of the node."""
         return zip(self.__argnames__, self.__args__)
 
-    @experimental
-    def branches(self) -> Iterator[Sequence[Node]]:
-        """Yield all branches of the graph.
-
-        A branch is a path from the root to a leaf node. This method is primarily
-        used to implement the `path` method supporting `XPath`-like queries.
-
-        Yields
-        ------
-        A sequence of nodes representing a branch.
-        """
-        stack = [(self, [])]
-
-        while stack:
-            node, path = stack.pop()
-
-            if children := node.__children__():
-                for child in reversed(children):
-                    stack.append((child, path + [node]))
-            else:
-                yield path + [node]
-
-    @experimental
-    def path(
-        self, *pats: Any, context: Optional[dict] = None
-    ) -> Iterator[Sequence[Node]]:
-        """Return the first tree branch matching a given sequence pattern.
-
-        This method provides a way to query the graph using `XPath`-like expressions.
-        The following XPath expression "//Alias//Value[dtype==int64]" would roughly
-        translate to the following Python code:
-
-            node.path(..., Alias, ..., Object(Value, dtype=dt.Int64), ...)
-
-        Parameters
-        ----------
-        pats
-            Sequence which is coerced to a sequence pattern. See `ibis.common.patterns`
-            for more details.
-        context
-            Optional context to use for the pattern matching.
-        """
-        pat = pattern(list(pats))
-        for branch in self.branches():
-            result = pat.match(branch, context)
-            if result is not NoMatch:
-                return result
-        return NoMatch
-
     def map(self, fn: Callable, filter: Optional[type] = None) -> dict[Node, Any]:
         """Apply a function to all nodes in the graph.
 
