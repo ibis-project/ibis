@@ -37,7 +37,8 @@ def test_list_tables(con):
 
 
 def test_current_database(con, dataset_id):
-    db = con.current_database
+    with pytest.warns(FutureWarning, match="data project"):
+        db = con.current_database
     assert db == dataset_id
     assert db == con.dataset_id
     assert con.list_tables(database=db, like="alltypes") == con.list_tables(
@@ -352,7 +353,7 @@ def test_approx_median(alltypes):
 def test_create_table_bignumeric(con, temp_table):
     schema = ibis.schema({'col1': dt.Decimal(76, 38)})
     temporary_table = con.create_table(temp_table, schema=schema)
-    con.raw_sql(f"INSERT {con.current_database}.{temp_table} (col1) VALUES (10.2)")
+    con.raw_sql(f"INSERT {con.current_schema}.{temp_table} (col1) VALUES (10.2)")
     df = temporary_table.execute()
     assert df.shape == (1, 1)
 
@@ -361,7 +362,7 @@ def test_geography_table(con, temp_table):
     schema = ibis.schema({'col1': dt.GeoSpatial(geotype="geography", srid=4326)})
     temporary_table = con.create_table(temp_table, schema=schema)
     con.raw_sql(
-        f"INSERT {con.current_database}.{temp_table} (col1) VALUES (ST_GEOGPOINT(1,3))"
+        f"INSERT {con.current_schema}.{temp_table} (col1) VALUES (ST_GEOGPOINT(1,3))"
     )
     df = temporary_table.execute()
     assert df.shape == (1, 1)
@@ -377,7 +378,7 @@ def test_timestamp_table(con, temp_table):
     )
     temporary_table = con.create_table(temp_table, schema=schema)
     con.raw_sql(
-        f"INSERT {con.current_database}.{temp_table} (datetime_col, timestamp_col) VALUES (CURRENT_DATETIME(), CURRENT_TIMESTAMP())"
+        f"INSERT {con.current_schema}.{temp_table} (datetime_col, timestamp_col) VALUES (CURRENT_DATETIME(), CURRENT_TIMESTAMP())"
     )
     df = temporary_table.execute()
     assert df.shape == (1, 2)

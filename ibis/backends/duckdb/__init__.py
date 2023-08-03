@@ -78,10 +78,24 @@ class Backend(BaseAlchemyBackend, CanCreateSchema):
     supports_create_or_replace = True
 
     @property
-    def current_database(self) -> str | None:
-        query = sa.select(sa.func.current_database())
+    def current_database(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_database()))
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        s = sa.table(
+            "schemata",
+            sa.column("catalog_name", sa.TEXT()),
+            schema="information_schema",
+        )
+
+        query = sa.select(sa.distinct(s.c.catalog_name)).order_by(s.c.catalog_name)
         with self.begin() as con:
-            return con.execute(query).scalar()
+            results = list(con.execute(query).scalars())
+        return self._filter_with_like(results, like=like)
+
+    @property
+    def current_schema(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_schema()))
 
     def list_schemas(self, like: str | None = None) -> list[str]:
         s = sa.table(
@@ -91,14 +105,14 @@ class Backend(BaseAlchemyBackend, CanCreateSchema):
             schema="information_schema",
         )
 
-        where = s.c.catalog_name == sa.func.current_database()
-
-        if like is not None:
-            where &= s.c.schema_name.like(like)
-
-        query = sa.select(s.c.schema_name).select_from(s).where(where)
+        query = (
+            sa.select(s.c.schema_name)
+            .where(s.c.catalog_name == sa.func.current_database())
+            .order_by(s.c.schema_name)
+        )
         with self.begin() as con:
-            return list(con.execute(query).scalars())
+            results = list(con.execute(query).scalars())
+        return self._filter_with_like(results, like=like)
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:

@@ -107,6 +107,11 @@ class BaseAlchemyBackend(BaseSQLBackend):
     supports_temporary_tables = True
     _temporary_prefix = "TEMPORARY"
 
+    def _scalar_query(self, query):
+        method = "exec_driver_sql" if isinstance(query, str) else "execute"
+        with self.begin() as con:
+            return getattr(con, method)(query).scalar()
+
     def _compile_type(self, dtype) -> str:
         dialect = self.con.dialect
         return sa.types.to_instance(
@@ -450,11 +455,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
             The ibis schema of `name`
         """
         return self.database().schema(name)
-
-    @property
-    def current_database(self) -> str | None:
-        """The name of the current database this client is connected to."""
-        return self.database_name
 
     def _log(self, sql):
         try:

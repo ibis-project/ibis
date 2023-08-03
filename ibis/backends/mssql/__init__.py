@@ -45,7 +45,6 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
             database=database,
             driver=f'mssql+{driver}',
         )
-        self.database_name = alchemy_url.database
 
         engine = sa.create_engine(alchemy_url, poolclass=sa.pool.StaticPool)
 
@@ -66,6 +65,22 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
         with self.begin() as bind:
             for column in bind.execute(query).mappings():
                 yield column["name"], _type_from_result_set_info(column)
+
+    @property
+    def current_database(self) -> str:
+        return self._scalar_query(sa.select(sa.func.db_name()))
+
+    def list_databases(self, like: str | None = None) -> list[str]:
+        s = sa.table("databases", sa.column("name", sa.VARCHAR()), schema="sys")
+        query = sa.select(sa.distinct(s.c.name)).select_from(s).order_by(s.c.name)
+
+        with self.begin() as con:
+            results = list(con.execute(query).scalars())
+        return self._filter_with_like(results, like=like)
+
+    @property
+    def current_schema(self) -> str:
+        return self._scalar_query(sa.select(sa.func.schema_name()))
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled

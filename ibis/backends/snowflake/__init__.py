@@ -21,6 +21,7 @@ from snowflake.sqlalchemy import ARRAY, OBJECT, URL
 from sqlalchemy.ext.compiler import compiles
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
@@ -101,20 +102,21 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
 
     _latest_udf_python_version = (3, 10)
 
-    @property
-    def _current_schema(self) -> str:
-        query = sa.select(sa.func.current_schema())
-        with self.begin() as con:
-            return con.execute(query).scalar()
-
     def _convert_kwargs(self, kwargs):
         with contextlib.suppress(KeyError):
             kwargs["account"] = kwargs.pop("host")
 
     @property
     def version(self) -> str:
-        with self.begin() as con:
-            return con.execute(sa.select(sa.func.current_version())).scalar()
+        return self._scalar_query(sa.select(sa.func.current_version()))
+
+    @property
+    def current_schema(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_schema()))
+
+    @property
+    def current_database(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_database()))
 
     def _compile_sqla_type(self, typ) -> str:
         return sa.types.to_instance(typ).compile(dialect=self.con.dialect)
@@ -189,7 +191,6 @@ $$ {defn["source"]} $$"""
         url = URL(
             account=account, user=user, password=password or "", **dbparams, **kwargs
         )
-        self.database_name = dbparams["database"]
         if connect_args is None:
             connect_args = {}
 
@@ -226,7 +227,7 @@ $$ {defn["source"]} $$"""
             dialect = engine.dialect
             quote = dialect.preparer(dialect).quote_identifier
             with dbapi_connection.cursor() as cur:
-                (database, schema) = cur.execute(
+                database, schema = cur.execute(
                     "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
                 ).fetchone()
                 try:
@@ -424,17 +425,15 @@ $$""".format(
             yield name, typ
 
     def list_databases(self, like=None) -> list[str]:
+        d = sa.table(
+            "databases",
+            sa.column("database_name", sa.TEXT()),
+            schema="information_schema",
+        )
+        query = sa.select(d.c.database_name).order_by(d.c.database_name)
         with self.begin() as con:
-            databases = con.exec_driver_sql(
-                "SELECT database_name FROM information_schema.databases"
-            ).scalars()
+            databases = list(con.execute(query).scalars())
         return self._filter_with_like(databases, like)
-
-    @property
-    def current_database(self) -> str:
-        query = sa.select(sa.func.current_database())
-        with self.begin() as con:
-            return con.execute(query).scalar()
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
@@ -446,15 +445,9 @@ $$""".format(
 
         with self.begin() as con:
             if con.exec_driver_sql(f"SHOW TABLES LIKE '{raw_name}'").scalar() is None:
-                pieces = con.execute(
-                    sa.select(sa.func.current_database(), sa.func.current_schema())
-                ).one()
-                namespace = ".".join(map(quote, filter(None, pieces)))
-
                 # 1. create a temporary stage for holding parquet files
                 stage = util.gen_name("stage")
-
-                con.exec_driver_sql(f"CREATE TEMP STAGE {namespace}.{stage}")
+                con.exec_driver_sql(f"CREATE TEMP STAGE {stage}")
 
                 tmpdir = tempfile.TemporaryDirectory()
                 try:
@@ -513,12 +506,23 @@ $$""".format(
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
     def create_database(self, name: str, force: bool = False) -> None:
+        current_database = self.current_database
         name = self._quote(name)
         if_not_exists = "IF NOT EXISTS " * force
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE DATABASE {if_not_exists}{name}")
+            # Snowflake automatically switches to the new database after creating
+            # it per
+            # https://docs.snowflake.com/en/sql-reference/sql/create-database#general-usage-notes
+            # so we switch back to the original database
+            con.exec_driver_sql(f"USE DATABASE {self._quote(current_database)}")
 
     def drop_database(self, name: str, force: bool = False) -> None:
+        current_database = self.current_database
+        if name == current_database:
+            raise com.UnsupportedOperationError(
+                "Dropping the current database is not supported because its behavior is undefined"
+            )
         name = self._quote(name)
         if_exists = "IF EXISTS " * force
         with self.begin() as con:
@@ -529,12 +533,28 @@ $$""".format(
     ) -> None:
         name = ".".join(map(self._quote, filter(None, [database, name])))
         if_not_exists = "IF NOT EXISTS " * force
+        current_database = self.current_database
+        current_schema = self.current_schema
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+            # Snowflake automatically switches to the new schema after creating
+            # it per
+            # https://docs.snowflake.com/en/sql-reference/sql/create-schema#usage-notes
+            # so we switch back to the original schema
+            con.exec_driver_sql(
+                f"USE SCHEMA {self._quote(current_database)}.{self._quote(current_schema)}"
+            )
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
+        if self.current_schema == name and (
+            database is None or self.current_database == database
+        ):
+            raise com.UnsupportedOperationError(
+                "Dropping the current schema is not supported because its behavior is undefined"
+            )
+
         name = ".".join(map(self._quote, filter(None, [database, name])))
         if_exists = "IF EXISTS " * force
         with self.begin() as con:

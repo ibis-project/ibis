@@ -218,3 +218,8 @@ def test_insert_with_cte(con):
     expr = X.join(X.mutate(a=X["id"] + 1), ["id"])
     Y = con.create_table("Y", expr, temp=True)
     assert Y.execute().empty
+
+
+def test_connect_url_with_empty_host():
+    con = ibis.connect("postgres:///ibis_testing")
+    assert con.con.url.host is None

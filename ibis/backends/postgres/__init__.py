@@ -34,7 +34,7 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
 
     def do_connect(
         self,
-        host: str = 'localhost',
+        host: str | None = None,
         user: str | None = None,
         password: str | None = None,
         port: int = 5432,
@@ -115,7 +115,6 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
             database=database,
             driver=f'postgresql+{driver}',
         )
-        self.database_name = alchemy_url.database
 
         connect_args = {}
         if schema is not None:
@@ -132,14 +131,21 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
 
         super().do_connect(engine)
 
-    def list_databases(self, like=None):
+    def list_databases(self, like=None) -> list[str]:
+        query = "SELECT datname FROM pg_catalog.pg_database WHERE NOT datistemplate"
         with self.begin() as con:
             # http://dba.stackexchange.com/a/1304/58517
-            databases = con.exec_driver_sql(
-                "SELECT datname FROM pg_catalog.pg_database WHERE NOT datistemplate"
-            ).scalars()
+            databases = list(con.exec_driver_sql(query).scalars())
 
         return self._filter_with_like(databases, like)
+
+    @property
+    def current_database(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_database()))
+
+    @property
+    def current_schema(self) -> str:
+        return self._scalar_query(sa.select(sa.func.current_schema()))
 
     def function(self, name: str, *, schema: str | None = None) -> Callable:
         query = sa.text(
