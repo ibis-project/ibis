@@ -16,7 +16,6 @@ from clickhouse_connect.driver.external import ExternalData
 import ibis
 import ibis.common.exceptions as com
 import ibis.config
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -244,16 +243,11 @@ class Backend(BaseBackend, CanCreateDatabase):
         return external_data
 
     def _collect_in_memory_tables(
-        self, expr: ir.TableExpr | None, *, external_tables: Mapping | None = None
+        self, expr: ir.TableExpr | None, external_tables: Mapping | None = None
     ):
-        return toolz.merge(
-            (
-                {op.name: op for op in an.find_memtables(expr.op())}
-                if expr is not None
-                else {}
-            ),
-            external_tables or {},
-        )
+        memtables = {op.name: op for op in expr.op().find(ops.InMemoryTable)}
+        externals = toolz.valmap(_to_memtable, external_tables or {})
+        return toolz.merge(memtables, externals)
 
     def to_pyarrow(
         self,
@@ -340,9 +334,8 @@ class Backend(BaseBackend, CanCreateDatabase):
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 
-        external_data = self._normalize_external_tables(
-            self._collect_in_memory_tables(expr, external_tables=external_tables)
-        )
+        external_tables = self._collect_in_memory_tables(expr, external_tables)
+        external_data = self._normalize_external_tables(external_tables)
 
         def batcher(sql: str, *, schema: pa.Schema) -> Iterator[pa.RecordBatch]:
             settings = {}
@@ -377,9 +370,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         schema = table.schema()
         self._log(sql)
 
-        external_tables = self._collect_in_memory_tables(
-            expr, external_tables=toolz.valmap(_to_memtable, external_tables or {})
-        )
+        external_tables = self._collect_in_memory_tables(expr, external_tables)
         external_data = self._normalize_external_tables(external_tables)
         df = self.con.query_df(
             sql, external_data=external_data, use_na_values=False, use_none=True
@@ -634,13 +625,14 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         if obj is not None:
             code += f" AS {self.compile(obj)}"
+            external_tables = self._collect_in_memory_tables(obj)
+        else:
+            external_tables = {}
 
-        external_tables = self._collect_in_memory_tables(obj)
+        external_data = self._normalize_external_tables(external_tables)
 
         # create the table
-        self.con.raw_query(
-            code, external_data=self._normalize_external_tables(external_tables)
-        )
+        self.con.raw_query(code, external_data=external_data)
 
         return self.table(name, database=database)
 
@@ -656,9 +648,8 @@ class Backend(BaseBackend, CanCreateDatabase):
         replace = "OR REPLACE " * overwrite
         query = self.compile(obj)
         code = f"CREATE {replace}VIEW {qualname} AS {query}"
-        with closing(
-            self.raw_sql(code, external_tables=self._collect_in_memory_tables(obj))
-        ):
+        external_tables = self._collect_in_memory_tables(obj)
+        with closing(self.raw_sql(code, external_tables=external_tables)):
             pass
         return self.table(name, database=database)
 
