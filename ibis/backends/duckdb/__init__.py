@@ -25,6 +25,7 @@ from packaging.version import parse as vparse
 
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
@@ -39,8 +40,6 @@ from ibis.formats.pandas import PandasData
 if TYPE_CHECKING:
     import pandas as pd
     import torch
-
-    import ibis.expr.operations as ops
 
 
 def normalize_filenames(source_list):
@@ -711,11 +710,9 @@ class Backend(BaseAlchemyBackend, CanCreateSchema):
             con.execute(sa.text(f"CALL sqlite_attach('{path}', overwrite={overwrite})"))
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
-        from ibis.expr.analysis import find_physical_tables
-
         # Warn for any tables depending on RecordBatchReaders that have already
         # started being consumed.
-        for t in find_physical_tables(expr.op()):
+        for t in expr.op().find(ops.PhysicalTable):
             started = self._record_batch_readers_consumed.get(t.name)
             if started is True:
                 warnings.warn(
