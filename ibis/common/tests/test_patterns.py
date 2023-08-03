@@ -1044,19 +1044,6 @@ def test_topmost_innermost():
     assert context == {"a": Lit(2), "b": one}
 
 
-def test_graph_path():
-    p = Object(Mul, left="lit" @ Object(Lit))
-    ctx = {}
-    r = p.match(two, ctx)
-    assert r == two
-    assert ctx["lit"] == Lit(2)
-
-    ctx = {}
-    r = six.path(..., Object(Mul, left="lit" @ Object(Lit)), ..., context=ctx)
-    assert ctx["lit"] == Lit(2)
-    assert r == [six, two, Lit(2)]
-
-
 def test_node():
     pat = Node(
         InstanceOf(Add),
