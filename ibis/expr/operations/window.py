@@ -12,9 +12,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.patterns import CoercionError
 from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.expr.operations.analytic import Analytic
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.generic import Literal
 from ibis.expr.operations.numeric import Negate
+from ibis.expr.operations.reductions import Reduction
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 
@@ -127,13 +129,9 @@ class WindowFunction(Value):
     shape = ds.columnar
 
     def __init__(self, func, frame):
-        from ibis.expr.analysis import (
-            is_analytic,
-            propagate_down_window,
-            shares_all_roots,
-        )
+        from ibis.expr.analysis import propagate_down_window, shares_all_roots
 
-        if not is_analytic(func):
+        if not func.find((Reduction, Analytic)):
             raise com.IbisTypeError("Window function expression must be analytic")
 
         func = propagate_down_window(func, frame)
