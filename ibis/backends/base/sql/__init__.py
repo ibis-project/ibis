@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any, Iterable, Mapping
 import toolz
 
 import ibis.common.exceptions as exc
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -269,7 +268,7 @@ class BaseSQLBackend(BaseBackend):
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         if self.compiler.cheap_in_memory_tables:
-            for memtable in an.find_memtables(expr.op()):
+            for memtable in expr.op().find(ops.InMemoryTable):
                 self._register_in_memory_table(memtable)
 
     @abc.abstractmethod

@@ -797,15 +797,6 @@ def _rewrite_filter_value_list(op, **kwargs):
     return op.__class__(*visited)
 
 
-def find_memtables(node: ops.Node) -> Iterator[ops.InMemoryTable]:
-    """Find all in-memory tables in `node`."""
-
-    def finder(node):
-        return g.proceed, node if isinstance(node, ops.InMemoryTable) else None
-
-    return g.traverse(finder, node, filter=ops.Node)
-
-
 def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
     def finder(node):
         return (
