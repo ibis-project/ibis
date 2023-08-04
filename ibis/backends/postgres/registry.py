@@ -382,7 +382,7 @@ def _array_index(*, index_converter, func):
     return translate
 
 
-def _literal(t, op):
+def _literal(_, op):
     dtype = op.output_dtype
     value = op.value
 
@@ -784,11 +784,23 @@ operation_registry.update(
             ),
             2,
         ),
-        ops.ArrayDistinct: fixed_arity(
-            lambda arg: sa.func.array(
-                sa.select(
-                    sa.distinct(sa.func.unnest(arg).column_valued())
+        ops.ArrayUnion: fixed_arity(
+            lambda left, right: sa.func.array(
+                sa.union(
+                    sa.select(sa.func.unnest(left).column_valued()),
+                    sa.select(sa.func.unnest(right).column_valued()),
                 ).scalar_subquery()
+            ),
+            2,
+        ),
+        ops.ArrayDistinct: fixed_arity(
+            lambda arg: sa.case(
+                (arg.is_(sa.null()), sa.null()),
+                else_=sa.func.array(
+                    sa.select(
+                        sa.distinct(sa.func.unnest(arg).column_valued())
+                    ).scalar_subquery()
+                ),
             ),
             1,
         ),

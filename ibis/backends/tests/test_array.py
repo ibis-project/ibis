@@ -648,7 +648,7 @@ def test_array_sort(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "postgres"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
