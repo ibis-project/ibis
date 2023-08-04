@@ -382,13 +382,27 @@ operation_registry.update(
         ops.ArrayPosition: fixed_arity(
             lambda lst, el: sa.func.list_indexof(lst, el) - 1, 2
         ),
-        ops.ArrayDistinct: fixed_arity(sa.func.list_distinct, 1),
+        ops.ArrayDistinct: fixed_arity(
+            lambda arg: if_(
+                arg.is_(sa.null()),
+                sa.null(),
+                # append a null if the input array has a null
+                sa.func.list_distinct(arg)
+                + if_(
+                    # list_count doesn't count nulls
+                    sa.func.list_count(arg) < sa.func.array_length(arg),
+                    sa.func.list_value(sa.null()),
+                    sa.func.list_value(),
+                ),
+            ),
+            1,
+        ),
         ops.ArraySort: fixed_arity(sa.func.list_sort, 1),
         ops.ArrayRemove: lambda t, op: _array_filter(
             t, ops.ArrayFilter(op.arg, flip(ops.NotEquals, op.other))
         ),
-        ops.ArrayUnion: fixed_arity(
-            lambda left, right: sa.func.list_distinct(sa.func.list_cat(left, right)), 2
+        ops.ArrayUnion: lambda t, op: t.translate(
+            ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right)))
         ),
         ops.ArrayZip: _array_zip,
         ops.DayOfWeekName: unary(sa.func.dayname),

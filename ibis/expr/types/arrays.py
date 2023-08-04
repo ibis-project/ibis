@@ -709,7 +709,7 @@ class ArrayValue(Value):
         │ array<int64>           │
         ├────────────────────────┤
         │ [1, 2, ... +1]         │
-        │ []                     │
+        │ [None]                 │
         │ [5]                    │
         └────────────────────────┘
         >>> t.arr1.union(t.arr2).contains(3)
