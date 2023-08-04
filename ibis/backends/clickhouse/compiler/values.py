@@ -1092,7 +1092,6 @@ _simple_ops = {
     ops.BitwiseLeftShift: "bitShiftLeft",
     ops.BitwiseRightShift: "bitShiftRight",
     ops.BitwiseNot: "bitNot",
-    ops.ArrayDistinct: "arrayDistinct",
     ops.ArraySort: "arraySort",
     ops.ArrayContains: "has",
     ops.FirstValue: "first_value",
@@ -1114,6 +1113,13 @@ for _op, _name in _simple_ops.items():
 
 
 del _fmt, _name, _op
+
+
+@translate_val.register(ops.ArrayDistinct)
+def _array_distinct(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    null_element = f"if(countEqual({arg}, NULL) > 0, [NULL], [])"
+    return f"arrayConcat(arrayDistinct({arg}), {null_element})"
 
 
 @translate_val.register(ops.ExtractMicrosecond)

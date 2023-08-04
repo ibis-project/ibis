@@ -617,6 +617,11 @@ def test_array_remove(backend, con):
     raises=com.IbisTypeError,
     reason="argument passes none of the following rules:....",
 )
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=TypeError,
+    reason="clickhouse doesn't support nullable array types",
+)
 def test_array_unique(backend, con):
     t = ibis.memtable({"a": [[1, 3, 3], [], [42, 42], [], [None], None]})
     expr = t.a.unique()
