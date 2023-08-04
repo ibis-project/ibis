@@ -459,6 +459,7 @@ operation_registry.update(
         ops.Median: reduction(sa.func.median),
         ops.TableColumn: _table_column,
         ops.Levenshtein: fixed_arity(sa.func.editdistance, 2),
+        ops.ArraySort: fixed_arity(sa.func.array_sort, 1),
     }
 )
 
@@ -471,7 +472,6 @@ _invalid_operations = {
     # ibis.expr.operations.array
     ops.ArrayRemove,
     ops.ArrayRepeat,
-    ops.ArraySort,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,
     # ibis.expr.operations.strings
