@@ -473,6 +473,7 @@ operation_registry.update(
             lambda arg: sa.cast(sa.func.date_format(arg, "%f"), sa.INTEGER()),
             1,
         ),
+        ops.Levenshtein: fixed_arity(sa.func.levenshtein_distance, 2),
     }
 )
 
