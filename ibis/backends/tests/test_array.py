@@ -656,7 +656,6 @@ def test_array_unique(backend, con):
         "mssql",
         "pandas",
         "polars",
-        "postgres",
         "snowflake",
     ],
     raises=com.OperationNotDefinedError,

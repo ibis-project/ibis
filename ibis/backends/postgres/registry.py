@@ -555,6 +555,11 @@ def _unnest(t, op):
     return sa.func.row(*derived.c)
 
 
+def _array_sort(arg):
+    flat = sa.func.unnest(arg).column_valued()
+    return sa.func.array(sa.select(flat).order_by(flat).scalar_subquery())
+
+
 operation_registry.update(
     {
         ops.Literal: _literal,
@@ -716,5 +721,6 @@ operation_registry.update(
             lambda arg: sa.extract("microsecond", arg) % 1_000_000, 1
         ),
         ops.Levenshtein: fixed_arity(sa.func.levenshtein, 2),
+        ops.ArraySort: fixed_arity(_array_sort, 1),
     }
 )
