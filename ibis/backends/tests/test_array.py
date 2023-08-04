@@ -485,16 +485,7 @@ def test_array_slice(backend, start, stop):
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "datafusion",
-        "impala",
-        "mssql",
-        "polars",
-        "postgres",
-        "snowflake",
-        "sqlite",
-    ],
+    ["bigquery", "datafusion", "impala", "mssql", "polars", "snowflake", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -526,7 +517,6 @@ def test_array_map(backend, con):
         "mssql",
         "pandas",
         "polars",
-        "postgres",
         "snowflake",
     ],
     raises=com.OperationNotDefinedError,
@@ -567,16 +557,7 @@ def test_array_contains(backend, con):
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "dask",
-        "datafusion",
-        "impala",
-        "mssql",
-        "pandas",
-        "polars",
-        "postgres",
-    ],
+    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -593,16 +574,7 @@ def test_array_position(backend, con):
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "dask",
-        "datafusion",
-        "impala",
-        "mssql",
-        "pandas",
-        "polars",
-        "postgres",
-    ],
+    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -619,16 +591,7 @@ def test_array_remove(backend, con):
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "dask",
-        "datafusion",
-        "impala",
-        "mssql",
-        "pandas",
-        "polars",
-        "postgres",
-    ],
+    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
