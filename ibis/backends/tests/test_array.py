@@ -648,16 +648,7 @@ def test_array_unique(backend, con):
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "dask",
-        "datafusion",
-        "impala",
-        "mssql",
-        "pandas",
-        "polars",
-        "snowflake",
-    ],
+    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
