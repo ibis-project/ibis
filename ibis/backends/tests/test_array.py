@@ -618,10 +618,10 @@ def test_array_remove(backend, con):
     reason="argument passes none of the following rules:....",
 )
 def test_array_unique(backend, con):
-    t = ibis.memtable({"a": [[1, 3, 3], [], [42, 42], []]})
+    t = ibis.memtable({"a": [[1, 3, 3], [], [42, 42], [], [None], None]})
     expr = t.a.unique()
     result = con.execute(expr).map(set, na_action="ignore")
-    expected = pd.Series([{3, 1}, set(), {42}, set()], dtype="object")
+    expected = pd.Series([{3, 1}, set(), {42}, set(), {None}, None], dtype="object")
     backend.assert_series_equal(result, expected, check_names=False)
 
 
@@ -646,11 +646,6 @@ def test_array_sort(backend, con):
     ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(
-    ["snowflake", "trino", "pyspark"],
-    raises=AssertionError,
-    reason="array_distinct([NULL]) seems to differ from other backends",
-)
 @pytest.mark.notyet(
     ["bigquery"],
     raises=BadRequest,
@@ -665,7 +660,7 @@ def test_array_union(con):
     t = ibis.memtable({"a": [[3, 2], [], []], "b": [[1, 3], [None], [5]]})
     expr = t.a.union(t.b)
     result = con.execute(expr).map(set, na_action="ignore")
-    expected = pd.Series([{1, 2, 3}, set(), {5}], dtype="object")
+    expected = pd.Series([{1, 2, 3}, {None}, {5}], dtype="object")
     assert len(result) == len(expected)
 
     for i, (lhs, rhs) in enumerate(zip(result, expected)):
