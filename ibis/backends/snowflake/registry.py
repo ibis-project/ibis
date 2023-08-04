@@ -458,6 +458,7 @@ operation_registry.update(
         ops.ApproxMedian: reduction(lambda x: sa.func.approx_percentile(x, 0.5)),
         ops.Median: reduction(sa.func.median),
         ops.TableColumn: _table_column,
+        ops.Levenshtein: fixed_arity(sa.func.editdistance, 2),
     }
 )
 

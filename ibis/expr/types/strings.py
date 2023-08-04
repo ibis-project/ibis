@@ -1515,6 +1515,29 @@ class StringValue(Value):
 
     __rmul__ = __mul__
 
+    def levenshtein(self, other: StringValue) -> ir.IntegerValue:
+        """Return the Levenshtein distance between two strings.
+
+        Parameters
+        ----------
+        other
+            String to compare to
+
+        Returns
+        -------
+        IntegerValue
+            The edit distance between the two strings
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> s = ibis.literal("kitten")
+        >>> s.levenshtein("sitting")
+        3
+        """
+        return ops.Levenshtein(self, other).to_expr()
+
 
 @public
 class StringScalar(Scalar, StringValue):

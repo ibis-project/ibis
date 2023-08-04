@@ -715,5 +715,6 @@ operation_registry.update(
         ops.ExtractMicrosecond: fixed_arity(
             lambda arg: sa.extract("microsecond", arg) % 1_000_000, 1
         ),
+        ops.Levenshtein: fixed_arity(sa.func.levenshtein, 2),
     }
 )

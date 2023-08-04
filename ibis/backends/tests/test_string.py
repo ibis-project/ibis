@@ -1023,3 +1023,28 @@ def test_multiple_subs(con):
     expr = ibis.literal("foo").substitute(m)
     result = con.execute(expr)
     assert result == "FOO"
+
+
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "druid",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "polars",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize(
+    "right", ["sitting", ibis.literal("sitting")], ids=["python", "ibis"]
+)
+def test_levenshtein(con, right):
+    left = ibis.literal("kitten")
+    expr = left.levenshtein(right)
+    result = con.execute(expr)
+    assert result == 3

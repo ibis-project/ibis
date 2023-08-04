@@ -2059,3 +2059,10 @@ def compile_hash_column(t, op, **kwargs):
 @compiles(ops.ArrayZip)
 def compile_zip(t, op, **kwargs):
     return F.arrays_zip(*map(partial(t.translate, **kwargs), op.arg))
+
+
+@compiles(ops.Levenshtein)
+def compile_levenshtein(t, op, **kwargs):
+    left = t.translate(op.left, **kwargs)
+    right = t.translate(op.right, **kwargs)
+    return F.levenshtein(left, right)

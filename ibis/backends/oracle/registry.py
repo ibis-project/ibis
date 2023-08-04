@@ -90,6 +90,7 @@ operation_registry.update(
         # Generic
         ops.Hash: unary(sa.func.ora_hash),
         ops.Literal: _literal,
+        ops.Levenshtein: fixed_arity(sa.func.utl_match.edit_distance, 2),
     }
 )
 

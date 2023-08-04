@@ -298,3 +298,12 @@ class StringContains(Value):
 
     output_shape = rlz.shape_like("args")
     output_dtype = dt.bool
+
+
+@public
+class Levenshtein(Value):
+    left = rlz.string
+    right = rlz.string
+
+    output_dtype = dt.int64
+    output_shape = rlz.shape_like("args")
