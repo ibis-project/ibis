@@ -224,17 +224,16 @@ $$ {defn["source"]} $$"""
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
             """Register UDFs on a `"connect"` event."""
-            dialect = engine.dialect
-            quote = dialect.preparer(dialect).quote_identifier
             with dbapi_connection.cursor() as cur:
                 database, schema = cur.execute(
                     "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
                 ).fetchone()
                 try:
                     cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
+                    # snowflake activates a database on creation
+                    cur.execute(f"USE SCHEMA {database}.{schema}")
                     for name, defn in _SNOWFLAKE_MAP_UDFS.items():
                         cur.execute(self._make_udf(name, defn))
-                    cur.execute(f"USE SCHEMA {quote(database)}.{quote(schema)}")
                 except Exception as e:  # noqa: BLE001
                     warnings.warn(
                         f"Unable to create map UDFs, some functionality will not work: {e}"
@@ -397,10 +396,7 @@ $$""".format(
             schema = default_schema
         *db, schema = schema.split(".")
         db = "".join(db) or database or default_db
-        ident = ".".join(filter(None, (db, schema)))
-        if ident:
-            with self.begin() as con:
-                con.exec_driver_sql(f"USE {ident}")
+        ident = ".".join(map(self._quote, filter(None, (db, schema))))
         try:
             result = super()._get_sqla_table(
                 name, schema=schema, autoload=autoload, database=db, **kwargs
@@ -408,8 +404,6 @@ $$""".format(
         except sa.exc.NoSuchTableError:
             raise sa.exc.NoSuchTableError(name)
 
-        with self.begin() as con:
-            con.exec_driver_sql(f"USE {default_db}.{default_schema}")
         result.schema = ident
         return result
 
