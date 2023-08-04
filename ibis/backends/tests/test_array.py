@@ -604,7 +604,6 @@ def test_array_position(backend, con):
         "pandas",
         "polars",
         "postgres",
-        "snowflake",
     ],
     raises=com.OperationNotDefinedError,
 )

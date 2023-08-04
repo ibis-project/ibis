@@ -399,6 +399,7 @@ operation_registry.update(
             lambda left, right: sa.func.array_distinct(sa.func.array_cat(left, right)),
             2,
         ),
+        ops.ArrayRemove: fixed_arity(sa.func.array_remove, 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         # snowflake typeof only accepts VARIANT, so we cast
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),
@@ -470,7 +471,6 @@ _invalid_operations = {
     ops.CumulativeOp,
     ops.NTile,
     # ibis.expr.operations.array
-    ops.ArrayRemove,
     ops.ArrayRepeat,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,
