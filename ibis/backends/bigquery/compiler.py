@@ -130,6 +130,8 @@ class BigQueryTableSetFormatter(sql_compiler.TableSetFormatter):
         return f"`{name}`"
 
     def _format_in_memory_table(self, op):
+        import ibis
+
         schema = op.schema
         names = schema.names
         types = schema.types
@@ -137,9 +139,9 @@ class BigQueryTableSetFormatter(sql_compiler.TableSetFormatter):
         raw_rows = []
         for row in op.data.to_frame().itertuples(index=False):
             raw_row = ", ".join(
-                f"{self._translate(lit)} AS {name}"
+                f"{self._translate(lit.op())} AS {name}"
                 for lit, name in zip(
-                    map(ops.Literal, row, types), map(self._quote_identifier, names)
+                    map(ibis.literal, row, types), map(self._quote_identifier, names)
                 )
             )
             raw_rows.append(f"STRUCT({raw_row})")

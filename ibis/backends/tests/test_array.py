@@ -10,6 +10,7 @@ import pytest
 import sqlalchemy as sa
 import toolz
 from packaging.version import parse as parse_version
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -22,15 +23,15 @@ except ImportError:
     duckdb = None
 
 try:
-    from polars import ComputeError as PolarsComputeError
-
-except ImportError:
-    PolarsComputeError = None
-
-try:
     from clickhouse_driver.dbapi.errors import OperationalError
 except ImportError:
     OperationalError = None
+
+
+try:
+    from google.api_core.exceptions import BadRequest
+except ImportError:
+    BadRequest = None
 
 pytestmark = [
     pytest.mark.never(
@@ -485,7 +486,7 @@ def test_array_slice(backend, start, stop):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "datafusion", "impala", "mssql", "polars", "snowflake", "sqlite"],
+    ["datafusion", "impala", "mssql", "polars", "snowflake", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -498,46 +499,63 @@ def test_array_slice(backend, start, stop):
     raises=com.IbisTypeError,
     reason="argument passes none of the following rules: ...",
 )
-def test_array_map(backend, con):
-    t = ibis.memtable(
-        {"a": [[1, None, 2], [4]]}, schema=ibis.schema(dict(a="!array<int8>"))
-    )
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, 2], [4]]},
+            {"a": [[2, None, 3], [5]]},
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=BadRequest,
+                    reason="BigQuery doesn't support arrays with null elements",
+                )
+            ],
+            id="nulls",
+        ),
+        param({"a": [[1, 2], [4]]}, {"a": [[2, 3], [5]]}, id="no_nulls"),
+    ],
+)
+def test_array_map(backend, con, input, output):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expr = t.select(a=t.a.map(lambda x: x + 1))
     result = con.execute(expr)
-    expected = pd.DataFrame({"a": [[2, None, 3], [5]]})
+    expected = pd.DataFrame(output)
     backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "dask",
-        "datafusion",
-        "impala",
-        "mssql",
-        "pandas",
-        "polars",
-        "snowflake",
-    ],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "snowflake"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["dask", "pandas"],
+    raises=com.OperationNotDefinedError,
+    reason="Operation 'ArrayMap' is not implemented for this backend",
 )
 @pytest.mark.notimpl(
     ["sqlite", "mysql"],
     raises=com.IbisTypeError,
     reason="argument passes none of the following rules: ...",
 )
-def test_array_filter(backend, con):
-    t = ibis.memtable(
-        {"a": [[1, None, 2], [4]]}, schema=ibis.schema(dict(a="!array<int8>"))
-    )
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param({"a": [[1, None, 2], [4]]}, {"a": [[2], [4]]}, id="nulls"),
+        param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
+    ],
+)
+def test_array_filter(backend, con, input, output):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expr = t.select(a=t.a.filter(lambda x: x > 1))
     result = con.execute(expr)
-    expected = pd.DataFrame({"a": [[2], [4]]})
+    expected = pd.DataFrame(output)
     backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "datafusion", "mssql", "pandas", "polars", "postgres"],
+    ["datafusion", "mssql", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["datafusion"], raises=Exception)
@@ -557,7 +575,7 @@ def test_array_contains(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -574,7 +592,7 @@ def test_array_position(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -591,7 +609,7 @@ def test_array_remove(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -608,7 +626,7 @@ def test_array_unique(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -625,22 +643,18 @@ def test_array_sort(backend, con):
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "dask",
-        "datafusion",
-        "impala",
-        "mssql",
-        "pandas",
-        "polars",
-        "postgres",
-    ],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
     ["snowflake", "trino", "pyspark"],
     raises=AssertionError,
     reason="array_distinct([NULL]) seems to differ from other backends",
+)
+@pytest.mark.notyet(
+    ["bigquery"],
+    raises=BadRequest,
+    reason="BigQuery doesn't support arrays with null elements",
 )
 @pytest.mark.notimpl(
     ["sqlite", "mysql"],
@@ -659,7 +673,7 @@ def test_array_union(con):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    ["dask", "datafusion", "impala", "mssql", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -706,7 +720,6 @@ def test_unnest_struct(con):
     raises=com.OperationNotDefinedError,
     reason="no array support",
 )
-@pytest.mark.notyet(["bigquery"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["dask", "datafusion", "druid", "oracle", "pandas", "polars", "postgres"],
     raises=com.OperationNotDefinedError,
