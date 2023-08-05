@@ -619,14 +619,34 @@ def test_array_remove(backend, con):
 )
 @pytest.mark.notyet(
     ["clickhouse"],
-    raises=TypeError,
+    raises=(AssertionError, TypeError),
     reason="clickhouse doesn't support nullable array types",
 )
-def test_array_unique(backend, con):
-    t = ibis.memtable({"a": [[1, 3, 3], [], [42, 42], [], [None], None]})
+@pytest.mark.notyet(
+    ["bigquery"],
+    raises=(AssertionError, BadRequest),
+    reason="bigquery doesn't support null elements in arrays",
+)
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        param(
+            {"a": [[1, 3, 3], [], [42, 42], [], [None], None]},
+            [{3, 1}, set(), {42}, set(), {None}, None],
+            id="null",
+        ),
+        param(
+            {"a": [[1, 3, 3], [], [42, 42], [], None]},
+            [{3, 1}, set(), {42}, set(), None],
+            id="not_null",
+        ),
+    ],
+)
+def test_array_unique(backend, con, input, expected):
+    t = ibis.memtable(input)
     expr = t.a.unique()
     result = con.execute(expr).map(set, na_action="ignore")
-    expected = pd.Series([{3, 1}, set(), {42}, set(), {None}, None], dtype="object")
+    expected = pd.Series(expected, dtype="object")
     backend.assert_series_equal(result, expected, check_names=False)
 
 
