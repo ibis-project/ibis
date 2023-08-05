@@ -91,6 +91,11 @@ return longest.map((_, i) => {
     return Object.assign(...keys.map((key, j) => ({[key]: arrays[j][i]})));
 })""",
     },
+    "ibis_udfs.public.array_sort": {
+        "inputs": {"array": ARRAY},
+        "returns": ARRAY,
+        "source": """return array.sort();""",
+    },
 }
 
 

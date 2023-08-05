@@ -460,7 +460,7 @@ operation_registry.update(
         ops.Median: reduction(sa.func.median),
         ops.TableColumn: _table_column,
         ops.Levenshtein: fixed_arity(sa.func.editdistance, 2),
-        ops.ArraySort: fixed_arity(sa.func.array_sort, 1),
+        ops.ArraySort: unary(sa.func.ibis_udfs.public.array_sort),
     }
 )
 
