@@ -17,7 +17,7 @@ import pyarrow as pa
 import sqlalchemy as sa
 import sqlalchemy.types as sat
 from snowflake.connector.constants import FIELD_ID_TO_NAME
-from snowflake.sqlalchemy import ARRAY, OBJECT, URL
+from snowflake.sqlalchemy import ARRAY, DOUBLE, OBJECT, URL
 from sqlalchemy.ext.compiler import compiles
 
 import ibis
@@ -95,6 +95,13 @@ return longest.map((_, i) => {
         "inputs": {"array": ARRAY},
         "returns": ARRAY,
         "source": """return array.sort();""",
+    },
+    "ibis_udfs.public.array_repeat": {
+        # Integer inputs are not allowed because JavaScript only supports
+        # doubles
+        "inputs": {"value": ARRAY, "count": DOUBLE},
+        "returns": ARRAY,
+        "source": """return Array(count).fill(value).flat();""",
     },
 }
 

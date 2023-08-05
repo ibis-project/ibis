@@ -84,9 +84,7 @@ def test_array_scalar(con, backend):
         assert con.execute(expr.typeof()) == ARRAY_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(
-    ["polars", "datafusion", "snowflake"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["polars", "datafusion"], raises=com.OperationNotDefinedError)
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 

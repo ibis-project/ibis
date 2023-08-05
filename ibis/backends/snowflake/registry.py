@@ -462,6 +462,7 @@ operation_registry.update(
         ops.TableColumn: _table_column,
         ops.Levenshtein: fixed_arity(sa.func.editdistance, 2),
         ops.ArraySort: unary(sa.func.ibis_udfs.public.array_sort),
+        ops.ArrayRepeat: fixed_arity(sa.func.ibis_udfs.public.array_repeat, 2),
     }
 )
 
@@ -471,8 +472,6 @@ _invalid_operations = {
     ops.CumulativeAny,
     ops.CumulativeOp,
     ops.NTile,
-    # ibis.expr.operations.array
-    ops.ArrayRepeat,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,
     # ibis.expr.operations.strings
