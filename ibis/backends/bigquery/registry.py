@@ -13,6 +13,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.backends.base.sql.registry import (
     fixed_arity,
     helpers,
@@ -138,6 +139,92 @@ def _array_index(translator, op):
     return f"{arg}[SAFE_OFFSET({index})]"
 
 
+def _array_contains(translator, op):
+    arg = translator.translate(op.arg)
+    other = translator.translate(op.other)
+    name = util.gen_name("bq_arr")
+    return f"(SELECT LOGICAL_OR({name} = {other}) FROM UNNEST({arg}) {name})"
+
+
+def _array_position(translator, op):
+    arg = translator.translate(op.arg)
+    other = translator.translate(op.other)
+    name = util.gen_name("bq_arr")
+    idx = util.gen_name("bq_arr_idx")
+    unnest = f"UNNEST({arg}) {name} WITH OFFSET AS {idx}"
+    return f"COALESCE((SELECT {idx} FROM {unnest} WHERE {name} = {other} LIMIT 1), -1)"
+
+
+def _array_remove(translator, op):
+    arg = translator.translate(op.arg)
+    other = translator.translate(op.other)
+    name = util.gen_name("bq_arr")
+    return f"ARRAY(SELECT {name} FROM UNNEST({arg}) {name} WHERE {name} <> {other})"
+
+
+def _array_distinct(translator, op):
+    arg = translator.translate(op.arg)
+    name = util.gen_name("bq_arr")
+    return f"ARRAY(SELECT DISTINCT {name} FROM UNNEST({arg}) {name})"
+
+
+def _array_sort(translator, op):
+    arg = translator.translate(op.arg)
+    name = util.gen_name("bq_arr")
+    return f"ARRAY(SELECT {name} FROM UNNEST({arg}) {name} ORDER BY {name})"
+
+
+def _array_union(translator, op):
+    left = translator.translate(op.left)
+    right = translator.translate(op.right)
+
+    lname = util.gen_name("bq_arr_left")
+    rname = util.gen_name("bq_arr_right")
+
+    left_expr = f"SELECT {lname} FROM UNNEST({left}) {lname}"
+    right_expr = f"SELECT {rname} FROM UNNEST({right}) {rname}"
+
+    return f"ARRAY({left_expr} UNION DISTINCT {right_expr})"
+
+
+def _array_intersect(translator, op):
+    left = translator.translate(op.left)
+    right = translator.translate(op.right)
+
+    lname = util.gen_name("bq_arr_left")
+    rname = util.gen_name("bq_arr_right")
+
+    left_expr = f"SELECT {lname} FROM UNNEST({left}) {lname}"
+    right_expr = f"SELECT {rname} FROM UNNEST({right}) {rname}"
+
+    return f"ARRAY({left_expr} INTERSECT DISTINCT {right_expr})"
+
+
+def _array_zip(translator, op):
+    arg = list(map(translator.translate, op.arg))
+    lengths = ", ".join(map("ARRAY_LENGTH({}) - 1".format, arg))
+    indices = f"UNNEST(GENERATE_ARRAY(0, GREATEST({lengths})))"
+    idx = util.gen_name("bq_arr_idx")
+    struct_fields = ", ".join(
+        f"{arr}[SAFE_OFFSET({idx})] AS {name}"
+        for name, arr in zip(op.output_dtype.value_type.names, arg)
+    )
+    return f"ARRAY(SELECT AS STRUCT {struct_fields} FROM {indices} {idx})"
+
+
+def _array_map(translator, op):
+    arg = translator.translate(op.arg)
+    result = translator.translate(op.result)
+    return f"ARRAY(SELECT {result} FROM UNNEST({arg}) {op.parameter})"
+
+
+def _array_filter(translator, op):
+    arg = translator.translate(op.arg)
+    result = translator.translate(op.result)
+    param = op.parameter
+    return f"ARRAY(SELECT {param} FROM UNNEST({arg}) {param} WHERE {result})"
+
+
 def _hash(translator, op):
     arg_formatted = translator.translate(op.arg)
     return f"farm_fingerprint({arg_formatted})"
@@ -232,7 +319,9 @@ def _string_substring(translator, op):
 
 
 def _array_literal_format(op):
-    return str(list(op.value))
+    values = ["NULL" if element is None else repr(element) for element in op.value]
+    joined_values = ", ".join(values)
+    return f"[{joined_values}]"
 
 
 def _log(translator, op):
@@ -743,6 +832,16 @@ OPERATION_REGISTRY = {
     ops.ArrayLength: unary("ARRAY_LENGTH"),
     ops.ArrayRepeat: _array_repeat,
     ops.ArraySlice: _array_slice,
+    ops.ArrayContains: _array_contains,
+    ops.ArrayPosition: _array_position,
+    ops.ArrayRemove: _array_remove,
+    ops.ArrayDistinct: _array_distinct,
+    ops.ArraySort: _array_sort,
+    ops.ArrayUnion: _array_union,
+    ops.ArrayIntersect: _array_intersect,
+    ops.ArrayZip: _array_zip,
+    ops.ArrayMap: _array_map,
+    ops.ArrayFilter: _array_filter,
     ops.Log: _log,
     ops.Log2: _log2,
     ops.Arbitrary: _arbitrary,
@@ -807,6 +906,7 @@ OPERATION_REGISTRY = {
     ops.EndsWith: fixed_arity("ENDS_WITH", 2),
     ops.TableColumn: table_column,
     ops.CountDistinctStar: _count_distinct_star,
+    ops.Argument: lambda _, op: op.name,
 }
 
 _invalid_operations = {
