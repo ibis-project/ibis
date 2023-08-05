@@ -472,6 +472,9 @@ _invalid_operations = {
     ops.CumulativeAny,
     ops.CumulativeOp,
     ops.NTile,
+    # ibis.expr.operarions.array
+    ops.ArrayMap,
+    ops.ArrayFilter,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,
     # ibis.expr.operations.strings
