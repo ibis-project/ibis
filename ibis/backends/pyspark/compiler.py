@@ -2051,6 +2051,13 @@ def compile_array_union(t, op, **kwargs):
     return F.array_union(left, right)
 
 
+@compiles(ops.ArrayIntersect)
+def compile_array_intersect(t, op, **kwargs):
+    left = t.translate(op.left, **kwargs)
+    right = t.translate(op.right, **kwargs)
+    return F.array_intersect(left, right)
+
+
 @compiles(ops.Hash)
 def compile_hash_column(t, op, **kwargs):
     return F.hash(t.translate(op.arg, **kwargs))

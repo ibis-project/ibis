@@ -400,6 +400,7 @@ operation_registry.update(
             2,
         ),
         ops.ArrayRemove: fixed_arity(sa.func.array_remove, 2),
+        ops.ArrayIntersect: fixed_arity(sa.func.array_intersection, 2),
         ops.StringSplit: fixed_arity(sa.func.split, 2),
         # snowflake typeof only accepts VARIANT, so we cast
         ops.TypeOf: unary(lambda arg: sa.func.typeof(sa.func.to_variant(arg))),

@@ -722,5 +722,14 @@ operation_registry.update(
         ),
         ops.Levenshtein: fixed_arity(sa.func.levenshtein, 2),
         ops.ArraySort: fixed_arity(_array_sort, 1),
+        ops.ArrayIntersect: fixed_arity(
+            lambda left, right: sa.func.array(
+                sa.intersect(
+                    sa.select(sa.func.unnest(left).column_valued()),
+                    sa.select(sa.func.unnest(right).column_valued()),
+                ).scalar_subquery()
+            ),
+            2,
+        ),
     }
 )

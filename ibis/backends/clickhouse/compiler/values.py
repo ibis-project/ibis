@@ -1414,6 +1414,13 @@ def _array_union(op, **kw):
     return translate_val(ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right))), **kw)
 
 
+@translate_val.register(ops.ArrayIntersect)
+def _array_intersect(op, **kw):
+    left = translate_val(op.left, **kw)
+    right = translate_val(op.right, **kw)
+    return f"arrayIntersect({left}, {right})"
+
+
 @translate_val.register(ops.ArrayZip)
 def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
     arglist = []

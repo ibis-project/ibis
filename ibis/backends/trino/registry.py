@@ -289,6 +289,12 @@ def _try_cast(t, op):
     return try_cast(arg, type_=to)
 
 
+def _array_intersect(t, op):
+    return t.translate(
+        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x))
+    )
+
+
 operation_registry.update(
     {
         # conditional expressions
@@ -474,6 +480,7 @@ operation_registry.update(
             1,
         ),
         ops.Levenshtein: fixed_arity(sa.func.levenshtein_distance, 2),
+        ops.ArrayIntersect: _array_intersect,
     }
 )
 
