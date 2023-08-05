@@ -270,6 +270,12 @@ def _array_filter(t, op):
     )
 
 
+def _array_intersect(t, op):
+    return t.translate(
+        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x))
+    )
+
+
 def _map_keys(t, op):
     m = t.translate(op.arg)
     return sa.cast(
@@ -466,6 +472,7 @@ operation_registry.update(
         ops.Median: reduction(sa.func.median),
         ops.First: reduction(sa.func.first),
         ops.Last: reduction(sa.func.last),
+        ops.ArrayIntersect: _array_intersect,
     }
 )
 

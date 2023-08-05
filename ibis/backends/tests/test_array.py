@@ -697,6 +697,28 @@ def test_array_union(con):
         assert lhs == rhs, f"row {i:d} differs"
 
 
+@pytest.mark.notimpl(
+    ["bigquery", "dask", "datafusion", "impala", "mssql", "pandas", "polars"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["sqlite", "mysql"],
+    raises=com.IbisTypeError,
+    reason="argument passes none of the following rules:....",
+)
+def test_array_intersect(con):
+    t = ibis.memtable(
+        {"a": [[3, 2], [], []], "b": [[1, 3], [None], [5]], "c": range(3)}
+    )
+    expr = t.select("c", d=t.a.intersect(t.b)).order_by("c").drop("c").d
+    result = con.execute(expr).map(set, na_action="ignore")
+    expected = pd.Series([{3}, set(), set()], dtype="object")
+    assert len(result) == len(expected)
+
+    for i, (lhs, rhs) in enumerate(zip(result, expected)):
+        assert lhs == rhs, f"row {i:d} differs"
+
+
 @unnest
 @pytest.mark.notimpl(
     ["clickhouse"],

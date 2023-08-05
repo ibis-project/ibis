@@ -174,6 +174,15 @@ class ArrayUnion(Value):
 
 
 @public
+class ArrayIntersect(Value):
+    left = rlz.array
+    right = rlz.array
+
+    output_dtype = rlz.dtype_like("args")
+    output_shape = rlz.shape_like("args")
+
+
+@public
 class ArrayZip(Value):
     arg = rlz.tuple_of(rlz.array, min_length=2)
 

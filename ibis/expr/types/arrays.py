@@ -725,7 +725,48 @@ class ArrayValue(Value):
         """
         return ops.ArrayUnion(self, other).to_expr()
 
-    def zip(self, other: ir.Array, *others: ir.Array) -> ir.Array:
+    def intersect(self, other: ArrayValue) -> ArrayValue:
+        """Intersect two arrays.
+
+        Parameters
+        ----------
+        other
+            Another array to intersect with `self`
+
+        Returns
+        -------
+        ArrayValue
+            Intersected arrays
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr1": [[3, 2], [], None], "arr2": [[1, 3], [None], [5]]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ arr1                 ┃ arr2                 ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │ array<int64>         │
+        ├──────────────────────┼──────────────────────┤
+        │ [3, 2]               │ [1, 3]               │
+        │ []                   │ [None]               │
+        │ NULL                 │ [5]                  │
+        └──────────────────────┴──────────────────────┘
+        >>> t.arr1.intersect(t.arr2)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayIntersect(arr1, arr2) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>               │
+        ├────────────────────────────┤
+        │ [3]                        │
+        │ []                         │
+        │ NULL                       │
+        └────────────────────────────┘
+        """
+        return ops.ArrayIntersect(self, other).to_expr()
+
+    def zip(self, other: ArrayValue, *others: ArrayValue) -> ArrayValue:
         """Zip two or more arrays together.
 
         Parameters
