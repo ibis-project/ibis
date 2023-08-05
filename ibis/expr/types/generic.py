@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
+    import ibis.expr.builders as bl
     import ibis.expr.types as ir
 
 
@@ -603,7 +604,7 @@ class Value(Expr):
         """
         return ops.NotNull(self).to_expr()
 
-    def case(self):
+    def case(self) -> bl.SimpleCaseBuilder:
         """Create a SimpleCaseBuilder to chain multiple if-else statements.
 
         Add new search expressions with the `.when()` method. These must be

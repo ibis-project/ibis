@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -12,6 +13,9 @@ from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.expr.deferred import Deferred
 from ibis.expr.types.relations import bind_expr
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 class Builder(Concrete):
@@ -25,7 +29,7 @@ class CaseBuilder(Builder):
     def type(self):
         return rlz.highest_precedence_dtype(self.results)
 
-    def when(self, case_expr, result_expr):
+    def when(self, case_expr, result_expr) -> Self:
         """Add a new case-result pair.
 
         Parameters
@@ -40,11 +44,11 @@ class CaseBuilder(Builder):
         results = self.results + (result_expr,)
         return self.copy(cases=cases, results=results)
 
-    def else_(self, result_expr):
+    def else_(self, result_expr) -> Self:
         """Construct an `ELSE` expression."""
         return self.copy(default=result_expr)
 
-    def end(self):
+    def end(self) -> ir.Value:
         default = self.default
         if default is None:
             default = ir.null().cast(self.type())
@@ -65,7 +69,7 @@ class SimpleCaseBuilder(CaseBuilder):
     base = rlz.any
     cases = rlz.optional(rlz.tuple_of(rlz.any), default=[])
 
-    def when(self, case_expr, result_expr):
+    def when(self, case_expr, result_expr) -> Self:
         """Add a new case-result pair.
 
         Parameters
@@ -173,13 +177,13 @@ class WindowBuilder(Builder):
         method = self._determine_how(start, end)
         return method(start, end)
 
-    def group_by(self, expr):
+    def group_by(self, expr) -> Self:
         return self.copy(groupings=self.groupings + util.promote_tuple(expr))
 
-    def order_by(self, expr):
+    def order_by(self, expr) -> Self:
         return self.copy(orderings=self.orderings + util.promote_tuple(expr))
 
-    def lookback(self, value):
+    def lookback(self, value) -> Self:
         return self.copy(max_lookback=value)
 
     @annotated(table=rlz.table)
@@ -215,7 +219,7 @@ class LegacyWindowBuilder(WindowBuilder):
             value = value.op().value
         return value < 0
 
-    def preceding_following(self, preceding, following, how=None):
+    def preceding_following(self, preceding, following, how=None) -> Self:
         preceding_tuple = has_preceding = False
         following_tuple = has_following = False
         if preceding is not None:
