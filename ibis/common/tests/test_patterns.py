@@ -156,6 +156,16 @@ def test_variable():
     assert p.make(context) == 10
 
 
+def test_pattern_factory_wraps_variable_with_capture():
+    v = Variable("other")
+    p = pattern(v)
+    assert p == Capture(v, Any())
+
+    ctx = {}
+    assert p.match(10, ctx) == 10
+    assert ctx == {v: 10}
+
+
 def test_capture():
     ctx = {}
 
