@@ -21,7 +21,6 @@ def compiles_nulltype(element, compiler, **kw):
 
 
 _SNOWFLAKE_TYPES = {
-    "FIXED": dt.int64,
     "REAL": dt.float64,
     "TEXT": dt.string,
     "DATE": dt.date,
@@ -38,8 +37,18 @@ _SNOWFLAKE_TYPES = {
 }
 
 
-def parse(text: str) -> dt.DataType:
+def parse(
+    text: str, *, precision: int | None = None, scale: int | None = None
+) -> dt.DataType:
     """Parse a Snowflake type into an ibis data type."""
+    if text == "FIXED":
+        if (precision is None and scale is None) or (precision and not scale):
+            return dt.int64
+        else:
+            return dt.Decimal(precision=precision or 38, scale=scale or 0)
+    elif text.startswith("TIMESTAMP"):
+        # timestamp columns have a specified scale, defaulting to 9
+        return _SNOWFLAKE_TYPES[text].copy(scale=scale or 9)
     return _SNOWFLAKE_TYPES[text]
 
 

@@ -424,11 +424,9 @@ $$""".format(
             result = cur.describe(query)
 
         for name, type_code, _, _, precision, scale, is_nullable in result:
-            if precision is not None and scale is not None:
-                typ = dt.Decimal(precision=precision, scale=scale, nullable=is_nullable)
-            else:
-                typ = parse(FIELD_ID_TO_NAME[type_code]).copy(nullable=is_nullable)
-            yield name, typ
+            typ_name = FIELD_ID_TO_NAME[type_code]
+            typ = parse(typ_name, precision=precision, scale=scale)
+            yield name, typ.copy(nullable=is_nullable)
 
     def list_databases(self, like: str | None = None) -> list[str]:
         with self.begin() as con:
