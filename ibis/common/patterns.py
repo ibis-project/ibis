@@ -1591,6 +1591,8 @@ def pattern(obj: AnyType) -> Pattern:
         return _any
     elif isinstance(obj, Pattern):
         return obj
+    elif isinstance(obj, Variable):
+        return Capture(obj)
     elif isinstance(obj, Mapping):
         return PatternMapping(obj)
     elif isinstance(obj, type):

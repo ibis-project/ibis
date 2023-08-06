@@ -14,10 +14,13 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.common.patterns import Call, Object
+from ibis.common.patterns import Call, Object, Variable
 
 p = Object.namespace(ops)
 c = Call.namespace(ops)
+
+x = Variable("x")
+y = Variable("y")
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support
@@ -167,15 +170,9 @@ def substitute_parents(node):
 
 def substitute_unbound(node):
     """Rewrite `node` by replacing table expressions with an equivalent unbound table."""
-    assert isinstance(node, ops.Node), type(node)
-
-    def fn(node, _, **kwargs):
-        if isinstance(node, ops.DatabaseTable):
-            return ops.UnboundTable(name=node.name, schema=node.schema)
-        else:
-            return node.__class__(**kwargs)
-
-    return node.map(fn)[node]
+    return node.replace(
+        p.DatabaseTable(name=x, schema=y) >> c.UnboundTable(name=x, schema=y)
+    )
 
 
 def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
