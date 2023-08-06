@@ -209,6 +209,8 @@ class Node(Hashable):
             # kwargs to the pattern rather than the original one node object, this way
             # we can match on already replaced nodes
             if (result := pat.match(node, ctx)) is NoMatch:
+                # TODO(kszucs): annotable instances should use node.__recreate__()
+                # for quick reconstruction
                 return node.__class__(**kwargs)
             else:
                 return result
