@@ -5,7 +5,7 @@ FROM (
   SELECT
     t4.street,
     (
-      ROW_NUMBER() OVER (ORDER BY t4.street) - 1
+      row_number() OVER (ORDER BY t4.street) - 1
     ) AS key
   FROM (
     SELECT
@@ -15,7 +15,7 @@ FROM (
       SELECT
         t0.*,
         (
-          ROW_NUMBER() OVER (ORDER BY t0.street) - 1
+          row_number() OVER (ORDER BY t0.street) - 1
         ) AS key
       FROM data AS t0
     ) AS t1
@@ -26,7 +26,7 @@ FROM (
         SELECT
           t0.*,
           (
-            ROW_NUMBER() OVER (ORDER BY t0.street) - 1
+            row_number() OVER (ORDER BY t0.street) - 1
           ) AS key
         FROM data AS t0
       ) AS t1
@@ -41,7 +41,7 @@ INNER JOIN (
     SELECT
       t4.street,
       (
-        ROW_NUMBER() OVER (ORDER BY t4.street) - 1
+        row_number() OVER (ORDER BY t4.street) - 1
       ) AS key
     FROM (
       SELECT
@@ -51,7 +51,7 @@ INNER JOIN (
         SELECT
           t0.*,
           (
-            ROW_NUMBER() OVER (ORDER BY t0.street) - 1
+            row_number() OVER (ORDER BY t0.street) - 1
           ) AS key
         FROM data AS t0
       ) AS t1
@@ -62,7 +62,7 @@ INNER JOIN (
           SELECT
             t0.*,
             (
-              ROW_NUMBER() OVER (ORDER BY t0.street) - 1
+              row_number() OVER (ORDER BY t0.street) - 1
             ) AS key
           FROM data AS t0
         ) AS t1

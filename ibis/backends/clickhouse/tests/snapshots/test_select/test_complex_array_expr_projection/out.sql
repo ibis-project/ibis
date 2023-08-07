@@ -3,7 +3,7 @@ SELECT
 FROM (
   SELECT
     t0.string_col,
-    COUNT(*) AS count
+    count(*) AS count
   FROM ibis_testing.functional_alltypes AS t0
   GROUP BY
     t0.string_col
