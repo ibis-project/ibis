@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from public import public
 
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
@@ -33,7 +32,7 @@ class StructColumn(Value):
     names: VarTuple[str]
     values: VarTuple[Value]
 
-    shape = ds.columnar
+    shape = rlz.shape_like("values")
 
     @attribute.default
     def dtype(self) -> dt.DataType:

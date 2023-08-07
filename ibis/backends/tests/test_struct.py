@@ -88,3 +88,25 @@ def test_struct_column(alltypes, df):
         name="s",
     )
     tm.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "polars"])
+def test_collect_into_struct(alltypes):
+    from ibis import _
+
+    t = alltypes
+    expr = (
+        t[_.string_col.isin(("0", "1"))]
+        .group_by(group="string_col")
+        .agg(
+            val=lambda t: ibis.struct(
+                dict(key=t.bigint_col.collect().cast("!array<int64>"))
+            )
+        )
+    )
+    result = expr.execute()
+    assert result.shape == (2, 2)
+    assert set(result.group) == {"0", "1"}
+    val = result.val
+    assert len(val.loc[result.group == "0"].iat[0]["key"]) == 730
+    assert len(val.loc[result.group == "1"].iat[0]["key"]) == 730
