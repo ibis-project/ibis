@@ -75,7 +75,6 @@ def test_literal_map_values(con):
 
 
 @pytest.mark.notimpl(["postgres"])
-@pytest.mark.notyet(["snowflake"])
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
