@@ -83,9 +83,9 @@ class Expr(Immutable, Coercible):
         return hash((self.__class__, self._arg))
 
     def _repr(self) -> str:
-        from ibis.expr.format import fmt
+        from ibis.expr.format import pretty
 
-        return fmt(self)
+        return pretty(self)
 
     def equals(self, other):
         """Return whether this expression is _structurally_ equivalent to `other`.
