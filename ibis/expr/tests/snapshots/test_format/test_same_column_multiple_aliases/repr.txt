@@ -1,0 +1,7 @@
+r0 := UnboundTable: t
+  col int64
+
+Selection[r0]
+  selections:
+    fakealias1: r0.col
+    fakealias2: r0.col

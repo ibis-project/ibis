@@ -1,0 +1,51 @@
+r0 := DatabaseTable: airlines
+  year                int32
+  month               int32
+  day                 int32
+  dayofweek           int32
+  dep_time            int32
+  crs_dep_time        int32
+  arr_time            int32
+  crs_arr_time        int32
+  carrier             string
+  flight_num          int32
+  tail_num            int32
+  actual_elapsed_time int32
+  crs_elapsed_time    int32
+  airtime             int32
+  arrdelay            int32
+  depdelay            int32
+  origin              string
+  dest                string
+  distance            int32
+  taxi_in             int32
+  taxi_out            int32
+  cancelled           int32
+  cancellation_code   string
+  diverted            int32
+  carrier_delay       int32
+  weather_delay       int32
+  nas_delay           int32
+  security_delay      int32
+  late_aircraft_delay int32
+
+r1 := Selection[r0]
+  selections:
+    arrdelay: r0.arrdelay
+    dest:     r0.dest
+
+r2 := Selection[r1]
+  selections:
+    r1
+    dest_avg: WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
+    dev:      r1.arrdelay - WindowFunction(func=Mean(r1.arrdelay), frame=RowsWindowFrame(table=r1, group_by=[r1.dest]))
+
+r3 := Selection[r2]
+  predicates:
+    NotNull(r2.dev)
+
+r4 := Selection[r3]
+  sort_keys:
+    desc r3.dev
+
+Limit[r4, n=10]

@@ -1,0 +1,25 @@
+r0 := UnboundTable: right
+  time2  int32
+  value2 float64
+  b      string
+
+r1 := UnboundTable: left
+  time1 int32
+  value float64
+  a     string
+
+r2 := InnerJoin[r1, r0] r1.a == r0.b
+
+r3 := InnerJoin[r2, r0] r1.value == r0.value2
+
+Selection[r3]
+  selections:
+    time1:        r2.time1
+    value:        r2.value
+    a:            r2.a
+    time2:        r2.time2
+    value2:       r2.value2
+    b:            r2.b
+    time2_right:  r0.time2
+    value2_right: r0.value2
+    b_right:      r0.b

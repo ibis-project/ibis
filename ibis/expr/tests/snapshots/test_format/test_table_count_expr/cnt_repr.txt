@@ -1,0 +1,5 @@
+r0 := UnboundTable: t1
+  a int64
+  b float64
+
+CountStar(t1): CountStar(r0)
