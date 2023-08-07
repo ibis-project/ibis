@@ -16,7 +16,7 @@ SELECT
     THEN 'Antarctica'
     ELSE 'Unknown continent'
   END AS `cont`,
-  SUM(t0.`population`) AS `total_pop`
+  sum(t0.`population`) AS `total_pop`
 FROM countries AS t0
 GROUP BY
   1
