@@ -182,10 +182,13 @@ def test_sql(backend, con):
 
 
 backend_type_mapping = {
+    # backends only implement int64
     "bigquery": {
-        # backend only implements int64
-        dt.int32: dt.int64
-    }
+        dt.int32: dt.int64,
+    },
+    "snowflake": {
+        dt.int32: dt.int64,
+    },
 }
 
 
@@ -293,11 +296,12 @@ def test_nullable_input_output(con, temp_table):
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
-    try:
+    tables = ddl_con.list_tables()
+
+    if table_name in tables or (table_name := table_name.upper()) in tables:
         expr = ddl_con.table(table_name)
-    except (KeyError, sa.exc.NoSuchTableError):
-        table_name = table_name.upper()
-        expr = ddl_con.table(table_name)
+    else:
+        raise ValueError(f"table `{table_name}` does not exist")
 
     expr = expr.limit(1)
 
@@ -541,7 +545,7 @@ def test_in_memory(alchemy_backend, alchemy_temp_table):
 @pytest.mark.notyet(
     ["mssql", "mysql", "postgres", "snowflake", "sqlite", "trino"],
     raises=TypeError,
-    reason="postgres, mysql and sqlite do not support unsigned integer types",
+    reason="backend does not support unsigned integer types",
 )
 def test_unsigned_integer_type(alchemy_con, alchemy_temp_table):
     alchemy_con.create_table(
@@ -830,8 +834,6 @@ def test_agg_memory_table(con):
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
 def test_create_from_in_memory_table(backend, con, t, temp_table):
-    if backend.name() == "snowflake":
-        pytest.skip("snowflake is unreliable here")
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
 

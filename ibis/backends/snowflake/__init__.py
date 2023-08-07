@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping
 
 import pyarrow as pa
 import sqlalchemy as sa
-import sqlalchemy.types as sat
 from snowflake.connector.constants import FIELD_ID_TO_NAME
 from snowflake.sqlalchemy import ARRAY, DOUBLE, OBJECT, URL
 from sqlalchemy.ext.compiler import compiles
@@ -236,14 +235,15 @@ $$ {defn["source"]} $$"""
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
             """Register UDFs on a `"connect"` event."""
+            dialect = engine.dialect
+            quote = dialect.preparer(dialect).quote_identifier
             with dbapi_connection.cursor() as cur:
                 database, schema = cur.execute(
                     "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
                 ).fetchone()
                 try:
                     cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
-                    # snowflake activates a database on creation
-                    cur.execute(f"USE SCHEMA {database}.{schema}")
+                    cur.execute(f"USE SCHEMA {quote(database)}.{quote(schema)}")
                     for name, defn in _SNOWFLAKE_MAP_UDFS.items():
                         cur.execute(self._make_udf(name, defn))
                 except Exception as e:  # noqa: BLE001
@@ -395,27 +395,38 @@ $$""".format(
                 for t in cur.cursor.fetch_arrow_batches()
             )
 
+    @contextlib.contextmanager
+    def _use_schema(self, ident):
+        db = self.current_database
+        schema = self.current_schema
+        try:
+            with self.begin() as c:
+                c.exec_driver_sql(f"USE SCHEMA {ident}")
+            yield
+        finally:
+            with self.begin() as c:
+                c.exec_driver_sql(f"USE SCHEMA {self._quote(db)}.{self._quote(schema)}")
+
     def _get_sqla_table(
         self,
         name: str,
         schema: str | None = None,
         database: str | None = None,
-        autoload: bool = True,
-        **kwargs: Any,
+        **_: Any,
     ) -> sa.Table:
-        default_db, default_schema = self.con.url.database.split("/", 1)
+        current_db = self.current_database
+        current_schema = self.current_schema
         if schema is None:
-            schema = default_schema
+            schema = current_schema
         *db, schema = schema.split(".")
-        db = "".join(db) or database or default_db
+        db = "".join(db) or database or current_db
         ident = ".".join(map(self._quote, filter(None, (db, schema))))
-        try:
-            result = super()._get_sqla_table(
-                name, schema=schema, autoload=autoload, database=db, **kwargs
-            )
-        except sa.exc.NoSuchTableError:
-            raise sa.exc.NoSuchTableError(name)
 
+        pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)}")
+        ibis_schema = ibis.schema(pairs)
+
+        with self._use_schema(ident):
+            result = self._table_from_schema(name, schema=ibis_schema)
         result.schema = ident
         return result
 
@@ -451,10 +462,12 @@ $$""".format(
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 
-        dialect = self.con.dialect
-        quote = dialect.preparer(dialect).quote_identifier
         raw_name = op.name
-        table = quote(raw_name)
+        table = self._quote(raw_name)
+
+        current_db = self.current_database
+        current_schema = self.current_schema
+        ident = f"{self._quote(current_db)}.{self._quote(current_schema)}.{table}"
 
         with self.begin() as con:
             if con.exec_driver_sql(f"SHOW TABLES LIKE '{raw_name}'").scalar() is None:
@@ -491,22 +504,17 @@ $$""".format(
 
                 # 3. create a temporary table
                 schema = ", ".join(
-                    "{name} {typ}".format(
-                        name=quote(col),
-                        typ=sat.to_instance(SnowflakeType.from_ibis(typ)).compile(
-                            dialect=dialect
-                        ),
-                    )
+                    f"{self._quote(col)} {SnowflakeType.to_string(typ) + ' NOT NULL' * (not typ.nullable)}"
                     for col, typ in op.schema.items()
                 )
-                con.exec_driver_sql(f"CREATE TEMP TABLE {table} ({schema})")
+                con.exec_driver_sql(f"CREATE TEMP TABLE {ident} ({schema})")
                 # 4. copy the data into the table
                 columns = op.schema.names
-                column_names = ", ".join(map(quote, columns))
+                column_names = ", ".join(map(self._quote, columns))
                 parquet_column_names = ", ".join(f"$1:{col}" for col in columns)
                 con.exec_driver_sql(
                     f"""
-                    COPY INTO {table} ({column_names})
+                    COPY INTO {ident} ({column_names})
                     FROM (SELECT {parquet_column_names} FROM @{stage})
                     FILE_FORMAT = (TYPE = PARQUET COMPRESSION = AUTO)
                     PURGE = TRUE
@@ -576,13 +584,118 @@ $$""".format(
         with self.begin() as con:
             con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
 
+    def create_table(
+        self,
+        name: str,
+        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        *,
+        schema: sch.Schema | None = None,
+        database: str | None = None,
+        temp: bool = False,
+        overwrite: bool = False,
+        comment: str | None = None,
+    ) -> ir.Table:
+        """Create a table in Snowflake.
+
+        Parameters
+        ----------
+        name
+            Name of the table to create
+        obj
+            The data with which to populate the table; optional, but at least
+            one of `obj` or `schema` must be specified
+        schema
+            The schema of the table to create; optional, but at least one of
+            `obj` or `schema` must be specified
+        database
+            The name of the database in which to create the table; if not
+            passed, the current database is used.
+        temp
+            Create a temporary table
+        overwrite
+            If `True`, replace the table if it already exists, otherwise fail
+            if the table exists
+        comment
+            Add a comment to the table
+        """
+        if obj is None and schema is None:
+            raise ValueError("Either `obj` or `schema` must be specified")
+
+        create_stmt = "CREATE"
+
+        if overwrite:
+            create_stmt += " OR REPLACE"
+
+        if temp:
+            create_stmt += " TEMPORARY"
+
+        ident = self._quote(name)
+        create_stmt += f" TABLE {ident}"
+
+        if schema is not None:
+            schema_sql = ", ".join(
+                f"{name} {SnowflakeType.to_string(typ) + ' NOT NULL' * (not typ.nullable)}"
+                for name, typ in zip(map(self._quote, schema.keys()), schema.values())
+            )
+            create_stmt += f" ({schema_sql})"
+
+        if obj is not None:
+            if not isinstance(obj, ir.Expr):
+                table = ibis.memtable(obj)
+            else:
+                table = obj
+
+            self._run_pre_execute_hooks(table)
+
+            query = self.compile(table).compile(
+                dialect=self.con.dialect, compile_kwargs=dict(literal_binds=True)
+            )
+            create_stmt += f" AS {query}"
+
+        if comment is not None:
+            create_stmt += f" COMMENT '{comment}'"
+
+        with self.begin() as con:
+            con.exec_driver_sql(create_stmt)
+
+        return self.table(name, schema=database)
+
+    def drop_table(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = self._quote(name)
+        # TODO: handle database quoting
+        if database is not None:
+            name = f"{database}.{name}"
+        drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
+        with self.begin() as con:
+            con.exec_driver_sql(drop_stmt)
+
 
 @compiles(sa.sql.Join, "snowflake")
 def compile_join(element, compiler, **kw):
+    """Override compilation of LATERAL joins.
+
+    Snowflake doesn't support lateral joins with ON clauses as of
+    https://docs.snowflake.com/en/release-notes/bcr-bundles/2023_04/bcr-1057
+    even if they are trivial boolean literals.
+    """
     result = compiler.visit_join(element, **kw)
 
-    # snowflake doesn't support lateral joins with ON clauses as of
-    # https://docs.snowflake.com/en/release-notes/bcr-bundles/2023_04/bcr-1057
     if element.right._is_lateral:
         return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE)
     return result
+
+
+@compiles(sa.Table, "snowflake")
+def compile_table(element, compiler, **kw):
+    """Override compilation of leaf tables.
+
+    The override is necessary because snowflake-sqlalchemy does not handle
+    quoting databases and schemas correctly.
+    """
+    schema = element.schema
+    name = compiler.preparer.quote_identifier(element.name)
+    if schema is not None:
+        return f"{schema}.{name}"
+    return name

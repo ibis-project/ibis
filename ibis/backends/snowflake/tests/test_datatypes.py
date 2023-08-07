@@ -16,7 +16,7 @@ dtypes = [
     ("DATE", dt.date),
     ("TIMESTAMP", dt.Timestamp(scale=9)),
     ("VARIANT", dt.json),
-    ("TIMESTAMP_LTZ", dt.Timestamp(scale=9)),
+    ("TIMESTAMP_LTZ", dt.Timestamp(timezone="UTC", scale=9)),
     ("TIMESTAMP_TZ", dt.Timestamp(timezone="UTC", scale=9)),
     ("TIMESTAMP_NTZ", dt.Timestamp(scale=9)),
     ("OBJECT", dt.Map(dt.string, dt.json)),

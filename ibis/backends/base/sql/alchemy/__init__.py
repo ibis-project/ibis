@@ -409,6 +409,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             *columns,
             prefixes=[self._temporary_prefix] if temp else [],
             quote=self.compiler.translator_class._quote_table_names,
+            schema=database,
             **kwargs,
         )
 
