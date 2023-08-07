@@ -7,6 +7,10 @@ from ibis.backends.datafusion.tests.conftest import BackendTest
 pytest.importorskip("datafusion")
 
 
+@pytest.mark.xfail_version(
+    datafusion=["datafusion==28.0.0"],
+    reason="datafusion panics with with the float_col * 2 filter",
+)
 def test_where_multiple_conditions(alltypes, alltypes_df):
     expr = alltypes.filter(
         [
