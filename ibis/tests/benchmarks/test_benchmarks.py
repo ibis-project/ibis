@@ -738,7 +738,7 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
     # LINEITEM at scale factor 1 is around 6MM rows, but we limit to 1,000,000
     # to make the benchmark fast enough for development, yet large enough to show a
     # difference if there's a performance hit
-    lineitem = con.table("LINEITEM", schema="snowflake_sample_data.tpch_sf1").limit(
+    lineitem = con.table("LINEITEM", schema="SNOWFLAKE_SAMPLE_DATA.TPCH_SF1").limit(
         1_000_000
     )
 

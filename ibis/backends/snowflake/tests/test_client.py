@@ -14,23 +14,35 @@ from ibis.util import gen_name
 @pytest.fixture
 def temp_db(con):
     db = gen_name("tmp_db")
-    con.raw_sql(f"CREATE DATABASE {db}")
+
+    con.create_database(db)
+    assert db in con.list_databases()
+
     yield db
-    con.raw_sql(f"DROP DATABASE {db}")
+
+    con.drop_database(db)
+    assert db not in con.list_databases()
 
 
 @pytest.fixture
 def temp_schema(con, temp_db):
     schema = gen_name("tmp_schema")
-    con.raw_sql(f"CREATE SCHEMA {temp_db}.{schema}")
+
+    con.create_schema(schema, database=temp_db)
     assert schema in con.list_schemas(database=temp_db)
+
     yield schema
-    con.raw_sql(f"DROP SCHEMA {temp_db}.{schema}")
+
+    con.drop_schema(schema, database=temp_db)
+    assert schema not in con.list_schemas(database=temp_db)
 
 
 def test_cross_db_access(con, temp_db, temp_schema):
     table = gen_name("tmp_table")
-    con.raw_sql(f'CREATE TABLE {temp_db}.{temp_schema}."{table}" ("x" INT)')
+    with con.begin() as c:
+        c.exec_driver_sql(
+            f'CREATE TABLE "{temp_db}"."{temp_schema}"."{table}" ("x" INT)'
+        )
     t = con.table(table, schema=f"{temp_db}.{temp_schema}")
     assert t.schema() == ibis.schema(dict(x="int"))
     assert t.execute().empty

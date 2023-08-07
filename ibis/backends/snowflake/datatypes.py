@@ -26,7 +26,7 @@ _SNOWFLAKE_TYPES = {
     "DATE": dt.date,
     "TIMESTAMP": dt.timestamp,
     "VARIANT": dt.json,
-    "TIMESTAMP_LTZ": dt.timestamp,
+    "TIMESTAMP_LTZ": dt.Timestamp("UTC"),
     "TIMESTAMP_TZ": dt.Timestamp("UTC"),
     "TIMESTAMP_NTZ": dt.timestamp,
     "OBJECT": dt.Map(dt.string, dt.json),
