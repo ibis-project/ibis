@@ -1228,7 +1228,7 @@ def t2():
             id="not_exists",
         ),
         param(
-            lambda t1, t2: -(-(t1.key1 == t2.key1).any()),
+            lambda t1, t2: -(-(t1.key1 == t2.key1).any()),  # noqa: B002
             ops.UnresolvedExistsSubquery,
             id="not_not_exists",
         ),
@@ -1258,7 +1258,7 @@ def test_unresolved_existence_predicate(t1, t2, func, expected_type):
             id="not_exists",
         ),
         param(
-            lambda t1, t2: t1[-(-(t1.key1 == t2.key1).any())],
+            lambda t1, t2: t1[-(-(t1.key1 == t2.key1).any())],  # noqa: B002
             ops.ExistsSubquery,
             ops.NotExistsSubquery,
             id="not_not_exists",
