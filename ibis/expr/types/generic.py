@@ -279,7 +279,7 @@ class Value(Expr):
     def nullif(self, null_if_expr: Value) -> Value:
         """Set values to null if they equal the values `null_if_expr`.
 
-        Commonly use to avoid divide-by-zero problems by replacing zero with
+        Commonly used to avoid divide-by-zero problems by replacing zero with
         `NULL` in the divisor.
 
         Parameters
