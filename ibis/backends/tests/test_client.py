@@ -224,9 +224,6 @@ def tmpcon(alchemy_con):
     "be switched from using atexit to weakref.finalize",
 )
 @mark.notimpl(["trino", "druid"], reason="doesn't implement temporary tables")
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1144,9 +1141,6 @@ def test_create_table_timestamp(con, temp_table):
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1164,9 +1158,6 @@ def test_persist_expression_ref_count(con, alltypes):
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1178,9 +1169,6 @@ def test_persist_expression(alltypes):
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1194,9 +1182,6 @@ def test_persist_expression_contextmanager(alltypes):
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1213,9 +1198,6 @@ def test_persist_expression_contextmanager_ref_count(con, alltypes):
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1249,9 +1231,6 @@ def test_persist_expression_multiple_refs(con, alltypes):
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1266,9 +1245,6 @@ def test_persist_expression_repeated_cache(alltypes):
 
 
 @mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
-@mark.notyet(
-    ["sqlite"], reason="sqlite only support temporary tables in temporary databases"
-)
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
