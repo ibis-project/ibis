@@ -526,6 +526,32 @@ def null_if_zero(op, **kw):
     return df.functions.nullif(arg, df.literal(0))
 
 
+@translate.register(ops.Coalesce)
+def coalesce(op, **kw):
+    args = (translate(arg, **kw) for arg in op.arg)
+    return df.functions.coalesce(*args)
+
+
+@translate.register(ops.NullIf)
+def nullif(op, **kw):
+    arg = translate(op.arg, **kw)
+    null_if_value = translate(op.null_if_expr, **kw)
+    return df.functions.nullif(arg, null_if_value)
+
+
+@translate.register(ops.IfNull)
+def if_null(op, **kw):
+    arg = translate(op.arg, **kw)
+    ifnull_expr = translate(op.ifnull_expr, **kw)
+    return df.functions.coalesce(arg, ifnull_expr)
+
+
+@translate.register(ops.ZeroIfNull)
+def zero_if_null(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.coalesce(arg, df.literal(0))
+
+
 @translate.register(ops.Log)
 def log(op, **kw):
     arg = translate(op.arg, **kw)

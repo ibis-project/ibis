@@ -108,7 +108,6 @@ def test_boolean_literal(con, backend):
         param(ibis.literal(10).nullif(5), 10, id="nullif_not_null"),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_scalar_fillna_nullif(con, expr, expected):
     if expected is None:
         # The exact kind of null value used differs per backend (and version).
@@ -168,6 +167,7 @@ def test_isna(backend, alltypes, col, filt):
                     "snowflake",
                     "polars",
                     "trino",
+                    "datafusion",
                 ],
                 reason="NaN != NULL for these backends",
             ),
@@ -175,7 +175,7 @@ def test_isna(backend, alltypes, col, filt):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "druid", "oracle"])
+@pytest.mark.notimpl(["mssql", "druid", "oracle"])
 def test_column_fillna(backend, alltypes, value):
     table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
     pd_table = table.execute()
@@ -193,7 +193,6 @@ def test_column_fillna(backend, alltypes, value):
         param(ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14, id="non_null_last"),
     ],
 )
-@pytest.mark.notimpl(["datafusion"])
 def test_coalesce(con, expr, expected):
     result = con.execute(expr.name("tmp"))
 
@@ -670,7 +669,6 @@ def test_logical_negation_column(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.parametrize(
     ("dtype", "zero", "expected"),
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
@@ -680,7 +678,6 @@ def test_zeroifnull_literals(con, dtype, zero, expected):
     assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
 
 
-@pytest.mark.notimpl(["datafusion"])
 def test_zeroifnull_column(backend, alltypes, df):
     expr = alltypes.int_col.nullif(1).zeroifnull().name("tmp")
     result = expr.execute().astype("int32")
