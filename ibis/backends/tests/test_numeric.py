@@ -1371,8 +1371,10 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
 )
 def test_histogram(con, alltypes):
     n = 10
-    results = con.execute(alltypes.int_col.histogram(n).name("tmp"))
-    assert len(results.value_counts()) == n
+    hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
+    vc = hist.value_counts().sort_index()
+    vc_np, _bin_edges = np.histogram(alltypes.int_col.execute(), bins=n)
+    assert vc.tolist() == vc_np.tolist()
 
 
 @pytest.mark.parametrize("const", ["pi", "e"])

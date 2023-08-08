@@ -34,6 +34,7 @@ from ibis.backends.pandas.core import (
     date_types,
     integer_types,
     numeric_types,
+    scalar_types,
     simple_types,
     timestamp_types,
 )
@@ -361,6 +362,9 @@ def execute_not_scalar_or_series(op, data, **kwargs):
 @execute_node.register(ops.Binary, dd.Series, dd.Series)
 @execute_node.register(ops.Binary, dd.Series, dd.core.Scalar)
 @execute_node.register(ops.Binary, dd.core.Scalar, dd.Series)
+@execute_node.register(ops.Binary, dd.core.Scalar, scalar_types)
+@execute_node.register(ops.Binary, scalar_types, dd.core.Scalar)
+@execute_node.register(ops.Binary, dd.core.Scalar, dd.core.Scalar)
 @execute_node.register(
     (ops.NumericBinary, ops.LogicalBinary, ops.Comparison),
     numeric_types,
