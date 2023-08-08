@@ -44,6 +44,7 @@ jobs:
       matrix:
         python-version:
           - "3.9"
+          - "3.10" # For PyFlink, which does not support Python 3.11 yet
           - "3.11"
     steps:
       - name: checkout
@@ -786,7 +787,7 @@ jobs:
           - windows-latest
         python-version:
           - "3.9"
-          - "3.11"
+          - "3.10"
     steps:
       - name: checkout
         uses: actions/checkout@v3
@@ -826,6 +827,10 @@ jobs:
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras flink
+
+      # TODO(deepyaman): Remove step once Ibis and Flink are compatible.
+      - name: install pyflink
+        run: poetry run pip install apache-flink
 
       - name: show installed deps
         run: poetry run pip list

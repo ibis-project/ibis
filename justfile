@@ -59,7 +59,8 @@ doctest *args:
         -and -not -wholename '*test*.py' \
         -and -not -wholename '*__init__*' \
         -and -not -wholename '*gen_*.py' \
-        -and -not -wholename '*ibis/expr/selectors.py'
+        -and -not -wholename '*ibis/expr/selectors.py' \
+        -and -not -wholename '*ibis/backends/flink/*' # FIXME(deepyaman)
     )
 
 # download testing data
