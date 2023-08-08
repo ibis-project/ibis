@@ -1032,17 +1032,13 @@ class NumericColumn(Column, NumericValue):
             )
 
         if binwidth is None or base is None:
-            import ibis
-
             if nbins is None:
                 raise ValueError("`nbins` is required if `binwidth` is not provided")
 
-            empty_window = ibis.window()
-
             if base is None:
-                base = self.min().over(empty_window) - eps
+                base = self.min() - eps
 
-            binwidth = (self.max().over(empty_window) - base) / (nbins - 1)
+            binwidth = (self.max() - base) / nbins
 
         return ((self - base) / binwidth).floor()
 
