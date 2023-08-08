@@ -49,6 +49,9 @@ def test_magic_methods_not_deferred():
     with pytest.raises(AttributeError, match="__fizzbuzz__"):
         _.__fizzbuzz__()
 
+    with pytest.raises(AttributeError, match="DeferredAttr.+__fizzbuzz__"):
+        _.a.__fizzbuzz__()
+
 
 def test_getattr(table):
     expr = _.a
@@ -166,3 +169,15 @@ def test_unary_ops(symbol, op, table):
     res = expr.resolve(table)
     assert res.equals(sol)
     assert repr(expr) == f"{symbol}_.a"
+
+
+@pytest.mark.parametrize("obj", [_, _.a, _.a.b[0]])
+def test_deferred_is_not_iterable(obj):
+    with pytest.raises(TypeError, match="object is not iterable"):
+        sorted(obj)
+
+    with pytest.raises(TypeError, match="object is not iterable"):
+        iter(obj)
+
+    with pytest.raises(TypeError, match="is not an iterator"):
+        next(obj)

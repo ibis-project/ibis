@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import Any, Callable
+from typing import Any, Callable, NoReturn
 
 _BINARY_OPS: dict[str, Callable[[Any, Any], Any]] = {
     "+": operator.add,
@@ -59,9 +59,14 @@ class Deferred:
     def _resolve(self, param: Any) -> Any:
         return param
 
+    def __iter__(self) -> NoReturn:
+        raise TypeError(f"{self.__class__.__name__!r} object is not iterable")
+
     def __getattr__(self, attr: str) -> Deferred:
         if attr.startswith("__"):
-            raise AttributeError(f"'Deferred' object has no attribute {attr!r}")
+            raise AttributeError(
+                f"{self.__class__.__name__!r} object has no attribute {attr!r}"
+            )
         return DeferredAttr(self, attr)
 
     def __getitem__(self, key: Any) -> Deferred:

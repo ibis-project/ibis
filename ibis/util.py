@@ -217,7 +217,15 @@ def is_iterable(o: Any) -> bool:
     >>> is_iterable([])
     True
     """
-    return not isinstance(o, (str, bytes)) and isinstance(o, collections.abc.Iterable)
+    if isinstance(o, (str, bytes)):
+        return False
+
+    try:
+        iter(o)
+    except TypeError:
+        return False
+    else:
+        return True
 
 
 def convert_unit(value, unit, to, floor: bool = True):
