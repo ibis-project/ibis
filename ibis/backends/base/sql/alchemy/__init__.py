@@ -312,7 +312,15 @@ class BaseAlchemyBackend(BaseSQLBackend):
             self._run_pre_execute_hooks(obj)
 
         table = self._table_from_schema(
-            name, schema, database=database or self.current_database, temp=temp
+            name,
+            schema,
+            # most databases don't allow temporary tables in a specific
+            # database so let the backend decide
+            #
+            # the ones that do (e.g., snowflake) should implement their own
+            # `create_table`
+            database=None if temp else (database or self.current_database),
+            temp=temp,
         )
 
         if has_expr:
@@ -409,7 +417,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
             *columns,
             prefixes=[self._temporary_prefix] if temp else [],
             quote=self.compiler.translator_class._quote_table_names,
-            schema=database,
             **kwargs,
         )
 
