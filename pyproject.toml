@@ -196,7 +196,7 @@ duckdb = [
   "sqlalchemy",
   "sqlalchemy-views",
 ]
-flink = []
+flink = ["pyspark"]
 geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
@@ -225,6 +225,7 @@ dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
+flink = "ibis.backends.flink"
 impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
 mssql = "ibis.backends.mssql"
