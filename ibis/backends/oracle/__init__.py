@@ -175,23 +175,48 @@ class Backend(BaseAlchemyBackend):
         return self._scalar_query("SELECT * FROM global_name")
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        table = f"__ibis_oracle_metadata_{util.guid()}"
+        from sqlalchemy_views import CreateView, DropView
+
+        name = util.gen_name("oracle_metadata")
+
+        view = sa.table(name)
+        create_view = CreateView(view, sa.text(query))
+        drop_view = DropView(view, if_exists=True)
+
+        t = sa.table(
+            "all_tab_columns",
+            sa.column("table_name"),
+            sa.column("column_name"),
+            sa.column("data_type"),
+            sa.column("data_precision"),
+            sa.column("data_scale"),
+            sa.column("nullable"),
+        )
+        metadata_query = sa.select(
+            t.c.column_name,
+            t.c.data_type,
+            t.c.data_precision,
+            t.c.data_scale,
+            (t.c.nullable == "Y").label("nullable"),
+        ).where(t.c.table_name == name)
 
         with self.begin() as con:
-            con.exec_driver_sql(
-                f"CREATE PRIVATE TEMPORARY TABLE {table} AS {query.strip(';')}"
-            )
-            result = con.exec_driver_sql(f"DESCRIBE {table}").mappings().all()
-            con.exec_driver_sql(f"DROP TABLE {table}")
+            con.execute(create_view)
+            try:
+                results = con.execute(metadata_query).fetchall()
+            finally:
+                # drop the view no matter what
+                con.execute(drop_view)
 
-        fields = {}
-        for field in result:
-            name = field["Field"]
-            type_string = field["Type"]
-            is_nullable = field["Null"] == "YES"
-            fields[name] = OracleType.from_string(type_string, nullable=is_nullable)
-
-        return sch.Schema(fields)
+        for name, type_string, precision, scale, nullable in results:
+            if precision is not None and scale is not None and precision != 0:
+                typ = dt.Decimal(precision=precision, scale=scale, nullable=nullable)
+            elif precision == 0:
+                # TODO: how to disambiguate between int and float here without inspecting the value?
+                typ = dt.float
+            else:
+                typ = OracleType.from_string(type_string, nullable=nullable)
+            yield name, typ
 
     def _table_from_schema(
         self,
