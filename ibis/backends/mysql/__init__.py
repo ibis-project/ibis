@@ -139,6 +139,11 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
 
         return meta
 
+    def list_databases(self, like: str | None = None) -> list[str]:
+        # In MySQL, "database" and "schema" are synonymous
+        databases = self.inspector.get_schema_names()
+        return self._filter_with_like(databases, like)
+
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         if (
             re.search(r"^\s*SELECT\s", query, flags=re.MULTILINE | re.IGNORECASE)

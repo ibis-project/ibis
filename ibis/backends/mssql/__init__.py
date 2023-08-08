@@ -72,7 +72,7 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
 
     def list_databases(self, like: str | None = None) -> list[str]:
         s = sa.table("databases", sa.column("name", sa.VARCHAR()), schema="sys")
-        query = sa.select(sa.distinct(s.c.name)).select_from(s).order_by(s.c.name)
+        query = sa.select(s.c.name)
 
         with self.begin() as con:
             results = list(con.execute(query).scalars())

@@ -99,8 +99,15 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
             "DataFusion does not support dropping databases"
         )
 
-    def list_schemas(self, like: str | None = None) -> list[str]:
-        return self._filter_with_like(self._context.catalog().names(), like=like)
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        return self._filter_with_like(
+            self._context.catalog(
+                database if database is not None else "datafusion"
+            ).names(),
+            like=like,
+        )
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False

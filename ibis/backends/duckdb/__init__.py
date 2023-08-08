@@ -87,31 +87,30 @@ class Backend(BaseAlchemyBackend, CanCreateSchema):
             schema="information_schema",
         )
 
-        query = sa.select(sa.distinct(s.c.catalog_name)).order_by(s.c.catalog_name)
+        query = sa.select(sa.distinct(s.c.catalog_name))
         with self.begin() as con:
             results = list(con.execute(query).scalars())
         return self._filter_with_like(results, like=like)
+
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        # override duckdb because all databases are always visible
+        text = """\
+SELECT schema_name
+FROM information_schema.schemata
+WHERE catalog_name = :database"""
+        query = sa.text(text).bindparams(
+            database=database if database is not None else self.current_database
+        )
+
+        with self.begin() as con:
+            schemas = list(con.execute(query).scalars())
+        return self._filter_with_like(schemas, like=like)
 
     @property
     def current_schema(self) -> str:
         return self._scalar_query(sa.select(sa.func.current_schema()))
-
-    def list_schemas(self, like: str | None = None) -> list[str]:
-        s = sa.table(
-            "schemata",
-            sa.column("catalog_name", sa.TEXT()),
-            sa.column("schema_name", sa.TEXT()),
-            schema="information_schema",
-        )
-
-        query = (
-            sa.select(s.c.schema_name)
-            .where(s.c.catalog_name == sa.func.current_database())
-            .order_by(s.c.schema_name)
-        )
-        with self.begin() as con:
-            results = list(con.execute(query).scalars())
-        return self._filter_with_like(results, like=like)
 
     @staticmethod
     def _convert_kwargs(kwargs: MutableMapping) -> None:

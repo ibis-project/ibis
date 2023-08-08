@@ -96,8 +96,22 @@ def _create_table_as(element, compiler, **kw):
 
 
 class AlchemyCanCreateSchema(CanCreateSchema):
-    def list_schemas(self, like: str | None = None) -> list[str]:
-        return self._filter_with_like(self.inspector.get_schema_names(), like)
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        schema = ".".join(filter(None, (database, "information_schema")))
+        sch = sa.table(
+            "schemata",
+            sa.column("catalog_name", sa.TEXT()),
+            sa.column("schema_name", sa.TEXT()),
+            schema=schema,
+        )
+
+        query = sa.select(sch.c.schema_name)
+
+        with self.begin() as con:
+            schemas = list(con.execute(query).scalars())
+        return self._filter_with_like(schemas, like=like)
 
 
 class BaseAlchemyBackend(BaseSQLBackend):
@@ -152,11 +166,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
         tables = self.inspector.get_table_names(schema=database)
         views = self.inspector.get_view_names(schema=database)
         return self._filter_with_like(tables + views, like)
-
-    def list_databases(self, like=None):
-        """List databases in the current server."""
-        databases = self.inspector.get_schema_names()
-        return self._filter_with_like(databases, like)
 
     @property
     def inspector(self):

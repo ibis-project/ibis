@@ -605,7 +605,9 @@ class CanCreateSchema(abc.ABC):
         """
 
     @abc.abstractmethod
-    def list_schemas(self, like: str | None = None) -> list[str]:
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         """List existing schemas in the current connection.
 
         Parameters
@@ -613,6 +615,9 @@ class CanCreateSchema(abc.ABC):
         like
             A pattern in Python's regex format to filter returned schema
             names.
+        database
+            The database to list schemas from. If `None`, the current database
+            is searched.
 
         Returns
         -------
@@ -745,10 +750,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         return Database(name=name or self.current_database, client=self)
 
     @staticmethod
-    def _filter_with_like(
-        values: Iterable[str],
-        like: str | None = None,
-    ) -> list[str]:
+    def _filter_with_like(values: Iterable[str], like: str | None = None) -> list[str]:
         """Filter names with a `like` pattern (regex).
 
         The methods `list_databases` and `list_tables` accept a `like`
@@ -771,10 +773,10 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             Names filtered by the `like` pattern.
         """
         if like is None:
-            return list(values)
+            return sorted(values)
 
         pattern = re.compile(like)
-        return sorted(filter(lambda t: pattern.findall(t), values))
+        return sorted(filter(pattern.findall, values))
 
     @abc.abstractmethod
     def list_tables(

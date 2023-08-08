@@ -132,10 +132,16 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
         super().do_connect(engine)
 
     def list_databases(self, like=None) -> list[str]:
-        query = "SELECT datname FROM pg_catalog.pg_database WHERE NOT datistemplate"
+        # http://dba.stackexchange.com/a/1304/58517
+        dbs = sa.table(
+            "pg_database",
+            sa.column("datname", sa.TEXT()),
+            sa.column("datistemplate", sa.BOOLEAN()),
+            schema="pg_catalog",
+        )
+        query = sa.select(dbs.c.datname).where(sa.not_(dbs.c.datistemplate))
         with self.begin() as con:
-            # http://dba.stackexchange.com/a/1304/58517
-            databases = list(con.exec_driver_sql(query).scalars())
+            databases = list(con.execute(query).scalars())
 
         return self._filter_with_like(databases, like)
 
