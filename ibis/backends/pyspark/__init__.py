@@ -172,11 +172,13 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
     def current_database(self) -> str:
         return self._catalog.currentDatabase()
 
-    def list_databases(self, like=None):
+    def list_databases(self, like: str | None = None) -> list[str]:
         databases = [db.name for db in self._catalog.listDatabases()]
         return self._filter_with_like(databases, like)
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         tables = [
             t.name
             for t in self._catalog.listTables(dbName=database or self.current_database)

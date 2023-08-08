@@ -430,16 +430,25 @@ $$""".format(
                 typ = parse(FIELD_ID_TO_NAME[type_code]).copy(nullable=is_nullable)
             yield name, typ
 
-    def list_databases(self, like=None) -> list[str]:
-        d = sa.table(
-            "databases",
-            sa.column("database_name", sa.TEXT()),
-            schema="information_schema",
-        )
-        query = sa.select(d.c.database_name).order_by(d.c.database_name)
+    def list_databases(self, like: str | None = None) -> list[str]:
         with self.begin() as con:
-            databases = list(con.execute(query).scalars())
+            databases = [
+                row["name"] for row in con.exec_driver_sql("SHOW DATABASES").mappings()
+            ]
         return self._filter_with_like(databases, like)
+
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        query = "SHOW SCHEMAS"
+
+        if database is not None:
+            query += f" IN {self._quote(database)}"
+
+        with self.begin() as con:
+            schemata = [row["name"] for row in con.exec_driver_sql(query).mappings()]
+
+        return self._filter_with_like(schemata, like)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq

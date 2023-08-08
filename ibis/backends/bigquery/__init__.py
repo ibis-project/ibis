@@ -459,10 +459,14 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         table = self.client.get_table(table_ref)
         return schema_from_bigquery_table(table)
 
-    def list_schemas(self, like=None):
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         results = [
             dataset.dataset_id
-            for dataset in self.client.list_datasets(project=self.data_project)
+            for dataset in self.client.list_datasets(
+                project=database if database is not None else self.data_project
+            )
         ]
         return self._filter_with_like(results, like)
 
@@ -472,7 +476,9 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
     def list_databases(self, like=None):
         return self.list_schemas(like=like)
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         project, dataset = self._parse_project_and_dataset(database)
         dataset_ref = bq.DatasetReference(project, dataset)
         result = [table.table_id for table in self.client.list_tables(dataset_ref)]

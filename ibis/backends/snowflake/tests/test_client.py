@@ -23,6 +23,7 @@ def temp_db(con):
 def temp_schema(con, temp_db):
     schema = gen_name("tmp_schema")
     con.raw_sql(f"CREATE SCHEMA {temp_db}.{schema}")
+    assert schema in con.list_schemas(database=temp_db)
     yield schema
     con.raw_sql(f"DROP SCHEMA {temp_db}.{schema}")
 

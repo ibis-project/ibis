@@ -503,6 +503,11 @@ def test_insert_from_memtable(alchemy_con, alchemy_temp_table):
     assert alchemy_con.tables[table_name].schema() == ibis.schema({"x": "int64"})
 
 
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=AttributeError,
+    reason="oracle doesn't support the common notion of a database",
+)
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
     test_databases = {
@@ -1354,5 +1359,21 @@ def test_create_database_schema(con_create_database_schema):
         schema = gen_name("test_create_database_schema")
         con_create_database_schema.create_schema(schema, database=database)
         con_create_database_schema.drop_schema(schema, database=database)
+    finally:
+        con_create_database_schema.drop_database(database)
+
+
+@pytest.mark.notyet(["datafusion"], reason="cannot list or drop databases")
+def test_list_databases_schemas(con_create_database_schema):
+    database = gen_name("test_create_database")
+    con_create_database_schema.create_database(database)
+    try:
+        schema = gen_name("test_create_database_schema")
+        con_create_database_schema.create_schema(schema, database=database)
+
+        try:
+            assert schema in con_create_database_schema.list_schemas(database=database)
+        finally:
+            con_create_database_schema.drop_schema(schema, database=database)
     finally:
         con_create_database_schema.drop_database(database)
