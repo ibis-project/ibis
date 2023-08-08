@@ -1288,3 +1288,9 @@ def test_try_cast_table(con):
 )
 def test_try_cast_func(con, from_val, to_type, func):
     assert func(con.execute(ibis.literal(from_val).try_cast(to_type)))
+
+
+def test_shape(backend):
+    shape = backend.functional_alltypes.shape
+    # druid has a __time column in every table
+    assert shape == (7300, 13 + (backend.name() == "druid"))

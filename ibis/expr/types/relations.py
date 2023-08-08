@@ -3611,6 +3611,40 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return self.group_by(id_cols).aggregate(**aggs)
 
+    @property
+    def shape(self) -> tuple[int, int]:
+        """Return the number of rows and columns in the table.
+
+        !!! warning "Computing the shape of an expression may not be fast."
+
+            Computing the number of rows (the [`count` method][ibis.expr.types.relations.Table.count])
+            is not a constant-time operation in most backends.
+
+        Returns
+        -------
+        tuple[int, int]
+            Number of rows and columns in the table.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.shape
+        (344, 8)
+        >>> expr = t.filter(t.sex == "female")
+        >>> expr.shape
+        (165, 8)
+        >>> expr = t.filter(t.sex == "female").select("island", "body_mass_g")
+        >>> expr.shape
+        (165, 2)
+
+        See Also
+        --------
+        [`count`][ibis.expr.types.relations.Table.count]
+        """
+        return int(self.count().to_pandas()), len(self.columns)
+
 
 @public
 class CachedTable(Table):
