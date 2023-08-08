@@ -9,7 +9,6 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import pytz
-import toolz
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -82,7 +81,7 @@ def test_count_distinct_with_filter(alltypes):
 
 def test_cast_string_to_date(alltypes, df):
     string_col = alltypes.date_string_col
-    month, day, year = toolz.take(3, string_col.split("/"))
+    month, day, year = map(string_col.split("/").__getitem__, range(3))
 
     expr = "20" + ibis.literal("-").join([year, month, day])
     expr = expr.cast("date")
