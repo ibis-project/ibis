@@ -352,15 +352,15 @@ def matches(regex: str | re.Pattern) -> Selector:
 
 
 @public
-def any_of(*predicates: Predicate) -> Predicate:
+def any_of(*predicates: str | Predicate) -> Predicate:
     """Include columns satisfying any of `predicates`."""
-    return functools.reduce(operator.or_, predicates)
+    return functools.reduce(operator.or_, map(_to_selector, predicates))
 
 
 @public
-def all_of(*predicates: Predicate) -> Predicate:
+def all_of(*predicates: str | Predicate) -> Predicate:
     """Include columns satisfying all of `predicates`."""
-    return functools.reduce(operator.and_, predicates)
+    return functools.reduce(operator.and_, map(_to_selector, predicates))
 
 
 @public
@@ -654,6 +654,11 @@ def all() -> Predicate:
     return r[:]
 
 
-def _to_selector(obj: str | Selector) -> Selector:
+def _to_selector(obj: str | Selector | Sequence[str | Selector]) -> Selector:
     """Convert an object to a `Selector`."""
-    return c(obj) if isinstance(obj, str) else obj
+    if isinstance(obj, Selector):
+        return obj
+    elif isinstance(obj, str):
+        return c(obj)
+    else:
+        return any_of(*obj)

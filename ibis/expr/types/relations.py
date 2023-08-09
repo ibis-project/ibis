@@ -1069,8 +1069,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 )
             return ops.Distinct(self).to_expr()
 
-        if not isinstance(on, s.Selector):
-            on = s.c(*util.promote_list(on))
+        on = s._to_selector(on)
 
         if keep is None:
             having = lambda t: t.count() == 1
@@ -1936,8 +1935,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ):
             raise KeyError(f"Fields not in table: {sorted(missing_fields)}")
 
-        sels = (s.c(f) if isinstance(f, str) else f for f in fields)
-        return self.select(~s.any_of(*sels))
+        return self.select(~s._to_selector(fields))
 
     def filter(
         self,
@@ -3111,7 +3109,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         import ibis.selectors as s
 
-        pivot_sel = s.c(col) if isinstance(col, str) else col
+        pivot_sel = s._to_selector(col)
 
         pivot_cols = pivot_sel.expand(self)
         if not pivot_cols:
@@ -3334,7 +3332,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> us_rent_income.pivot_wider(
         ...     names_from="variable",
         ...     names_sep=".",
-        ...     values_from=s.c("estimate", "moe"),
+        ...     values_from=("estimate", "moe"),
         ... )
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
         ┃ geoid  ┃ name                 ┃ estimate.income ┃ moe.income ┃ … ┃
@@ -3540,8 +3538,8 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         orig_names_from = util.promote_list(names_from)
 
-        names_from = s.any_of(*map(s._to_selector, orig_names_from))
-        values_from = s.any_of(*map(s._to_selector, util.promote_list(values_from)))
+        names_from = s._to_selector(orig_names_from)
+        values_from = s._to_selector(values_from)
 
         if id_cols is None:
             id_cols = ~(names_from | values_from)
