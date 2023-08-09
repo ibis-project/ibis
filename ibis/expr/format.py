@@ -6,7 +6,6 @@ import textwrap
 import types
 from typing import Mapping, Sequence
 
-import rich.pretty
 from public import public
 
 import ibis
@@ -77,7 +76,9 @@ def truncate(pieces: Sequence[str], limit: int) -> list[str]:
 
 
 def render(obj, indent_level=0, limit_items=None, key_separator=":"):
-    if isinstance(obj, Mapping):
+    if isinstance(obj, str):
+        result = obj
+    elif isinstance(obj, Mapping):
         rendered = {f"{k}{key_separator}": render(v) for k, v in obj.items() if v}
         if not rendered:
             return ""
@@ -86,7 +87,7 @@ def render(obj, indent_level=0, limit_items=None, key_separator=":"):
         if limit_items is not None:
             lines = truncate(lines, limit_items)
         result = "\n".join(lines)
-    elif util.is_iterable(obj):
+    elif isinstance(obj, Sequence):
         lines = tuple(render(item) for item in obj)
         if limit_items is not None:
             lines = truncate(lines, limit_items)
@@ -203,6 +204,8 @@ def _physical_table(op, name, **kwargs):
 
 @fmt.register(ops.InMemoryTable)
 def _in_memory_table(op, data, **kwargs):
+    import rich.pretty
+
     name = f"{op.__class__.__name__}\n"
     data = rich.pretty.pretty_repr(op.data, max_length=ibis.options.repr.table_columns)
     return name + render_fields({"data": data}, 1)

@@ -58,10 +58,10 @@ class Expr(Immutable, Coercible):
             raise CoercionError("Unable to coerce value to an expression")
 
     def __repr__(self) -> str:
-        from ibis.expr.types.pretty import simple_console
-
         if not options.interactive:
             return self._repr()
+
+        from ibis.expr.types.pretty import simple_console
 
         with simple_console.capture() as capture:
             try:
