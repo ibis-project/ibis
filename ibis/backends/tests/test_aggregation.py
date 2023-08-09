@@ -1269,7 +1269,6 @@ def test_topk_op(alltypes, df):
         )
     ],
 )
-@mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @mark.broken(
     ["bigquery"],
     raises=GoogleBadRequest,

@@ -47,6 +47,7 @@ def in_memory_table(op, ctx, **kw):
     schema = op.schema
 
     if data := op.data:
+        ctx.deregister_table(op.name)
         return ctx.from_arrow_table(data.to_pyarrow(schema), name=op.name)
 
     # datafusion panics when given an empty table
@@ -92,8 +93,7 @@ def cast(op, **kw):
 
 @translate.register(ops.TableColumn)
 def column(op, **_):
-    id_parts = [getattr(op.table, "name", None), op.name]
-    return df.column(".".join(f'"{id}"' for id in id_parts if id))
+    return df.column(f'"{op.name}"')
 
 
 @translate.register(ops.SortKey)
@@ -829,3 +829,59 @@ def extract_query(op, **kw):
         if op.key is not None
         else extract_query_udf(arg)
     )
+
+
+_join_types = {
+    ops.InnerJoin: "inner",
+    ops.LeftJoin: "left",
+    ops.RightJoin: "right",
+    ops.OuterJoin: "full",
+    ops.LeftAntiJoin: "anti",
+    ops.LeftSemiJoin: "semi",
+}
+
+
+@translate.register(ops.Join)
+def join(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+
+    right_table = op.right
+    if isinstance(op, ops.RightJoin):
+        how = "left"
+        right_table = op.left
+        left, right = right, left
+    else:
+        how = _join_types[type(op)]
+
+    left_cols = set(left.schema().names)
+    right_cols = {}
+    for col in right.schema().names:
+        if col in left_cols:
+            right_cols[col] = f"{col}_right"
+        else:
+            right_cols[col] = f"{col}"
+
+    left_keys, right_keys = [], []
+    for pred in op.predicates:
+        if isinstance(pred, ops.Equals):
+            left_keys.append(f'"{pred.left.name}"')
+            right_keys.append(f'"{right_cols[pred.right.name]}"')
+        else:
+            raise com.TranslationError(
+                "DataFusion backend is unable to compile join predicate "
+                f"with operation type of {type(pred)}"
+            )
+
+    right = translate(
+        ops.Selection(
+            right_table,
+            [
+                ops.Alias(ops.TableColumn(right_table, key), value)
+                for key, value in right_cols.items()
+            ],
+        ),
+        **kw,
+    )
+
+    return left.join(right, join_keys=(left_keys, right_keys), how=how)
