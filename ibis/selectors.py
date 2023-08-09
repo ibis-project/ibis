@@ -73,7 +73,7 @@ class Selector(Concrete):
 
     @abc.abstractmethod
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
-        """Expand `table` into a sequence of value expressions.
+        """Expand `table` into value expressions that match the selector.
 
         Parameters
         ----------
@@ -83,8 +83,25 @@ class Selector(Concrete):
         Returns
         -------
         Sequence[Value]
-            A sequence of value expressions
+            A sequence of value expressions that match the selector
         """
+
+    def positions(self, table: ir.Table) -> Sequence[int]:
+        """Expand `table` into column indices that match the selector.
+
+        Parameters
+        ----------
+        table
+            An ibis table expression
+
+        Returns
+        -------
+        Sequence[int]
+            A sequence of column indices where the selector matches
+        """
+        raise NotImplementedError(
+            f"`positions` doesn't make sense for {self.__class__.__name__} selector"
+        )
 
 
 class Predicate(Selector):
@@ -99,6 +116,11 @@ class Predicate(Selector):
             An ibis table expression
         """
         return [col for column in table.columns if self.predicate(col := table[column])]
+
+    def positions(self, table: ir.Table) -> Sequence[int]:
+        return [
+            i for i, column in enumerate(table.columns) if self.predicate(table[column])
+        ]
 
     def __and__(self, other: Selector) -> Predicate:
         """Compute the conjunction of two `Selector`s.
