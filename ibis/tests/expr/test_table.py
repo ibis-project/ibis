@@ -1798,9 +1798,7 @@ def test_pivot_wider():
         names=["Release", "Lisbon"], names_from="station", values_from="seen"
     )
     assert res.schema().names == ("fish", "Release", "Lisbon")
-    with pytest.raises(
-        com.IbisInputError, match="No matching names columns in `names_from`"
-    ):
+    with pytest.raises(com.IbisInputError, match="Columns .+ are not present in"):
         fish.pivot_wider(names=["Release", "Lisbon"], values_from="seen")
 
 

@@ -56,6 +56,7 @@ from typing import Callable, Iterable, Mapping, Optional, Sequence, Union
 
 from public import public
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
@@ -366,7 +367,16 @@ def all_of(*predicates: str | Predicate) -> Predicate:
 def c(*names: str) -> Predicate:
     """Select specific column names."""
     names = frozenset(names)
-    return where(lambda col: col.get_name() in names)
+
+    def func(col: ir.Value) -> bool:
+        schema = col.op().table.schema
+        if extra_cols := (names - schema.keys()):
+            raise exc.IbisInputError(
+                f"Columns {extra_cols} are not present in {schema.names}"
+            )
+        return col.get_name() in names
+
+    return where(func)
 
 
 class Across(Selector):
