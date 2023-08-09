@@ -3609,6 +3609,189 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return self.group_by(id_cols).aggregate(**aggs)
 
+    def relocate(
+        self,
+        *columns: str | s.Selector,
+        before: str | s.Selector | None = None,
+        after: str | s.Selector | None = None,
+        **kwargs: str,
+    ) -> Table:
+        """Relocate `columns` before or after other specified columns.
+
+        Parameters
+        ----------
+        columns
+            Columns to relocate. Selectors are accepted.
+        before
+            A column name or selector to insert the new columns before.
+        after
+            A column name or selector. Columns in `columns` are relocated after the last
+            column selected in `after`.
+        kwargs
+            Additional column names to relocate, renaming argument values to
+            keyword argument names.
+
+        Returns
+        -------
+        Table
+            A table with the columns relocated.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> import ibis.selectors as s
+        >>> t = ibis.memtable(dict(a=[1], b=[1], c=[1], d=["a"], e=["a"], f=["a"]))
+        >>> t
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b     ┃ c     ┃ d      ┃ e      ┃ f      ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ int64 │ int64 │ string │ string │ string │
+        ├───────┼───────┼───────┼────────┼────────┼────────┤
+        │     1 │     1 │     1 │ a      │ a      │ a      │
+        └───────┴───────┴───────┴────────┴────────┴────────┘
+        >>> t.relocate("f")
+        ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ f      ┃ a     ┃ b     ┃ c     ┃ d      ┃ e      ┃
+        ┡━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ string │ int64 │ int64 │ int64 │ string │ string │
+        ├────────┼───────┼───────┼───────┼────────┼────────┤
+        │ a      │     1 │     1 │     1 │ a      │ a      │
+        └────────┴───────┴───────┴───────┴────────┴────────┘
+        >>> t.relocate("a", after="c")
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ b     ┃ c     ┃ a     ┃ d      ┃ e      ┃ f      ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ int64 │ int64 │ string │ string │ string │
+        ├───────┼───────┼───────┼────────┼────────┼────────┤
+        │     1 │     1 │     1 │ a      │ a      │ a      │
+        └───────┴───────┴───────┴────────┴────────┴────────┘
+        >>> t.relocate("f", before="b")
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ f      ┃ b     ┃ c     ┃ d      ┃ e      ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │ int64 │ int64 │ string │ string │
+        ├───────┼────────┼───────┼───────┼────────┼────────┤
+        │     1 │ a      │     1 │     1 │ a      │ a      │
+        └───────┴────────┴───────┴───────┴────────┴────────┘
+        >>> t.relocate("a", after=s.last())
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ b     ┃ c     ┃ d      ┃ e      ┃ f      ┃ a     ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │ string │ string │ string │ int64 │
+        ├───────┼───────┼────────┼────────┼────────┼───────┤
+        │     1 │     1 │ a      │ a      │ a      │     1 │
+        └───────┴───────┴────────┴────────┴────────┴───────┘
+
+        Relocate allows renaming
+
+        >>> t.relocate(ff="f")
+        ┏━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ ff     ┃ a     ┃ b     ┃ c     ┃ d      ┃ e      ┃
+        ┡━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ string │ int64 │ int64 │ int64 │ string │ string │
+        ├────────┼───────┼───────┼───────┼────────┼────────┤
+        │ a      │     1 │     1 │     1 │ a      │ a      │
+        └────────┴───────┴───────┴───────┴────────┴────────┘
+
+        You can relocate based on any predicate selector, such as
+        [`of_type`][ibis.selectors.of_type]
+
+        >>> t.relocate(s.of_type("string"))
+        ┏━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ d      ┃ e      ┃ f      ┃ a     ┃ b     ┃ c     ┃
+        ┡━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ string │ string │ string │ int64 │ int64 │ int64 │
+        ├────────┼────────┼────────┼───────┼───────┼───────┤
+        │ a      │ a      │ a      │     1 │     1 │     1 │
+        └────────┴────────┴────────┴───────┴───────┴───────┘
+        >>> t.relocate(s.numeric(), after=s.last())
+        ┏━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ d      ┃ e      ┃ f      ┃ a     ┃ b     ┃ c     ┃
+        ┡━━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ string │ string │ string │ int64 │ int64 │ int64 │
+        ├────────┼────────┼────────┼───────┼───────┼───────┤
+        │ a      │ a      │ a      │     1 │     1 │     1 │
+        └────────┴────────┴────────┴───────┴───────┴───────┘
+        >>> t.relocate(s.any_of(s.c(*"ae")))
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ e      ┃ b     ┃ c     ┃ d      ┃ f      ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │ int64 │ int64 │ string │ string │
+        ├───────┼────────┼───────┼───────┼────────┼────────┤
+        │     1 │ a      │     1 │     1 │ a      │ a      │
+        └───────┴────────┴───────┴───────┴────────┴────────┘
+
+        When multiple columns are selected with `before` or `after`, those
+        selected columns are moved before and after the `selectors` input
+
+        >>> t = ibis.memtable(dict(a=[1], b=["a"], c=[1], d=["a"]))
+        >>> t.relocate(s.numeric(), after=s.of_type("string"))
+        ┏━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ b      ┃ d      ┃ a     ┃ c     ┃
+        ┡━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ string │ string │ int64 │ int64 │
+        ├────────┼────────┼───────┼───────┤
+        │ a      │ a      │     1 │     1 │
+        └────────┴────────┴───────┴───────┘
+        >>> t.relocate(s.numeric(), before=s.of_type("string"))
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ c     ┃ b      ┃ d      ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ int64 │ string │ string │
+        ├───────┼───────┼────────┼────────┤
+        │     1 │     1 │ a      │ a      │
+        └───────┴───────┴────────┴────────┘
+        """
+        import ibis.selectors as s
+
+        if not columns and before is None and after is None and not kwargs:
+            raise com.IbisInputError(
+                "At least one selector or `before` or `after` must be provided"
+            )
+
+        if before is not None and after is not None:
+            raise com.IbisInputError("Cannot specify both `before` and `after`")
+
+        sels = {}
+        table_columns = self.columns
+
+        for name, sel in itertools.chain(
+            zip(itertools.repeat(None), map(s._to_selector, columns)),
+            zip(kwargs.keys(), map(s._to_selector, kwargs.values())),
+        ):
+            for pos in sel.positions(self):
+                if pos in sels:
+                    # make sure the last duplicate column wins by reinserting
+                    # the position if it already exists
+                    del sels[pos]
+                sels[pos] = name if name is not None else table_columns[pos]
+
+        ncols = len(table_columns)
+
+        if before is not None:
+            where = min(s._to_selector(before).positions(self), default=0)
+        elif after is not None:
+            where = max(s._to_selector(after).positions(self), default=ncols - 1) + 1
+        else:
+            assert before is None and after is None
+            where = 0
+
+        # all columns that should come BEFORE the matched selectors
+        front = [left for left in range(where) if left not in sels]
+
+        # all columns that should come AFTER the matched selectors
+        back = [right for right in range(where, ncols) if right not in sels]
+
+        # selected columns
+        middle = [self[i].name(name) for i, name in sels.items()]
+
+        relocated = self.select(*front, *middle, *back)
+
+        assert len(relocated.columns) == ncols
+
+        return relocated
+
 
 @public
 class CachedTable(Table):
