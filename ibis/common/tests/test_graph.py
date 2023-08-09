@@ -1,8 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
+
 import pytest
 
-from ibis.common.graph import Graph, Node, bfs, dfs, toposort
+from ibis.common.collections import frozendict
+from ibis.common.graph import (
+    Graph,
+    Node,
+    _flatten_collections,
+    _recursive_get,
+    bfs,
+    dfs,
+    toposort,
+)
 from ibis.common.grounds import Annotable, Concrete
 from ibis.common.patterns import InstanceOf, TupleOf
 
@@ -178,3 +189,75 @@ def test_concrete_with_traversable_children():
 
     copied = node.copy(arguments=(T, F))
     assert copied == All((T, F), strict=False)
+
+
+class MySequence(Sequence):
+    def __init__(self, *items):
+        self.items = items
+
+    def __getitem__(self, index):
+        raise AssertionError("must not be called")  # pragma: no cover
+
+    def __len__(self):
+        return len(self.items)
+
+
+class MyMapping(Mapping):
+    def __init__(self, **items):
+        self.items = items
+
+    def __getitem__(self, key):
+        raise AssertionError("must not be called")  # pragma: no cover
+
+    def __iter__(self):
+        return iter(self.items)
+
+    def __len__(self):
+        return len(self.items)
+
+
+def test_flatten_collections():
+    # test that flatten collections doesn't recurse into arbitrary mappings
+    # and sequences, just the commonly used builtin ones: list, tuple, dict
+
+    result = _flatten_collections(
+        [0.0, 1, 2, [3, 4, (5, 6)], "7", MySequence(8, 9)], filter=int
+    )
+    assert list(result) == [1, 2, 3, 4, 5, 6]
+
+    result = _flatten_collections(
+        {
+            "a": 0.0,
+            "b": 1,
+            "c": (MyMapping(d=2, e=3), frozendict(f=4)),
+            "d": [5, "6", {"e": (7, 8.9)}],
+        },
+        filter=int,
+    )
+    assert list(result) == [1, 4, 5, 7]
+
+
+def test_recurse_get():
+    results = {"a": "A", "b": "B", "c": "C", "d": "D"}
+
+    assert _recursive_get((0, 1, "a", {"b": "c"}), results, filter=str) == (
+        0,
+        1,
+        "A",
+        {"b": "C"},
+    )
+    assert _recursive_get({"a": "b", "c": "d"}, results, filter=str) == {
+        "a": "B",
+        "c": "D",
+    }
+    assert _recursive_get(["a", "b", "c"], results, filter=str) == ("A", "B", "C")
+    assert _recursive_get("a", results, filter=str) == "A"
+
+    my_seq = MySequence("a", "b", "c")
+    my_map = MyMapping(a="a", b="b", c="c")
+    assert _recursive_get(("a", my_seq, ["b", "a"], my_map), results, filter=str) == (
+        "A",
+        my_seq,
+        ("B", "A"),
+        my_map,
+    )
