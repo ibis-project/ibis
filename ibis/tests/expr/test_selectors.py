@@ -432,7 +432,22 @@ def test_all_of(penguins):
     assert expr.equals(expected)
 
 
+def test_all_of_string_list(penguins):
+    # a bit silly, but robust nonetheless
+    expr = penguins.select(s.all_of("year", "year"))
+    expected = penguins.select("year")
+    assert expr.equals(expected)
+
+
 def test_any_of(penguins):
     expr = penguins.select(s.any_of(s.startswith("bill"), s.c("year")))
     expected = penguins.select("bill_length_mm", "bill_depth_mm", "year")
+    assert expr.equals(expected)
+
+
+def test_any_of_string_list(penguins):
+    expr = penguins.select(s.any_of("year", "body_mass_g", s.matches("length")))
+    expected = penguins.select(
+        "bill_length_mm", "flipper_length_mm", "body_mass_g", "year"
+    )
     assert expr.equals(expected)
