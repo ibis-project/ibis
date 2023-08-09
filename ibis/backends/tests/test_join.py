@@ -59,13 +59,13 @@ def check_eq(left, right, how, **kwargs):
             # syntax, but we might be able to work around that using
             # LEFT JOIN UNION RIGHT JOIN
             marks=pytest.mark.notimpl(
-                ["mysql"]
+                ["mysql", "datafusion"]
                 + (["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39")))
             ),
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.xfail_version(
     polars=["polars>=0.18.6,<0.18.8"],
     reason="https://github.com/pola-rs/polars/issues/9955",
@@ -119,7 +119,7 @@ def test_mutating_join(backend, batting, awards_players, how):
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
-@pytest.mark.notimpl(["bigquery", "dask", "datafusion", "druid"])
+@pytest.mark.notimpl(["bigquery", "dask", "druid"])
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
@@ -148,7 +148,6 @@ def test_filtering_join(backend, batting, awards_players, how):
     backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.broken(
     ["polars"],
     raises=ValueError,
@@ -166,7 +165,6 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     assert not q.execute().empty
 
 
-@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.broken(
     ["polars"],
     raises=ValueError,
@@ -180,7 +178,7 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["datafusion", "bigquery", "druid"])
+@pytest.mark.notimpl(["bigquery", "druid"])
 @pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
 @pytest.mark.broken(
     ["polars"],
@@ -205,7 +203,7 @@ def test_semi_join_topk(batting, awards_players, func):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "druid"])
+@pytest.mark.notimpl(["dask", "druid"])
 def test_join_with_pandas(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
@@ -215,14 +213,14 @@ def test_join_with_pandas(batting, awards_players):
     assert df.yearID.nunique() == 7
 
 
-@pytest.mark.notimpl(["dask", "datafusion"])
+@pytest.mark.notimpl(["dask"])
 def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900][
         ["yearID"]
     ].execute()
 
-    # ensure that none of the columns of eitherr table have type null
+    # ensure that none of the columns of either table have type null
     batting_schema = batting_filt.schema()
     assert len(batting_schema) == 1
     assert batting_schema["yearID"].is_integer()
@@ -297,10 +295,7 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion"], raises=com.OperationNotDefinedError, reason="joins not implemented"
-)
-@pytest.mark.notimpl(
-    ["polars"],
+    ["polars", "datafusion"],
     raises=com.TranslationError,
     reason="polars doesn't support join predicates",
 )
