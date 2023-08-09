@@ -451,3 +451,23 @@ def test_any_of_string_list(penguins):
         "bill_length_mm", "flipper_length_mm", "body_mass_g", "year"
     )
     assert expr.equals(expected)
+
+
+def test_c_error_on_misspelled_column(penguins):
+    match = "Columns .+ are not present"
+
+    sel = s.c("inland")
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)
+
+    sel = s.any_of(s.c("inland"), s.c("island"))
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)
+
+    sel = s.any_of(s.c("island"), s.c("inland"))
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)
+
+    sel = s.any_of(s.c("island", "inland"))
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)
