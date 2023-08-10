@@ -443,6 +443,57 @@ WHERE catalog_name = :database"""
             con.exec_driver_sql(view)
         return self.table(table_name)
 
+    def _get_sqla_table(
+        self,
+        name: str,
+        schema: str | None = None,
+        database: str | None = None,
+        **_: Any,
+    ) -> sa.Table:
+        current_db = self.current_database
+        current_schema = self.current_schema
+        if schema is None:
+            schema = current_schema
+        *db, schema = schema.split(".")
+        db = "".join(db) or database
+        ident = ".".join(
+            map(
+                self._quote,
+                filter(None, (db if db != current_db else None, schema)),
+            )
+        )
+
+        query = f"DESCRIBE SELECT * FROM {ident}.{self._quote(name)}"
+
+        with self.begin() as con:
+            # fetch metadata with pyarrow, it's much faster for tables with "lots"
+            # of columns
+            meta = con.exec_driver_sql(query).cursor.fetch_arrow_table()
+
+        names = meta["column_name"].to_pylist()
+        types = meta["column_type"].to_pylist()
+        nullables = pa.compute.equal(meta["null"], "YES").to_pylist()
+
+        ibis_schema = sch.Schema(
+            {
+                name: parse(typ).copy(nullable=nullable)
+                for name, typ, nullable in zip(names, types, nullables)
+            }
+        )
+        columns = self._columns_from_schema(name, ibis_schema)
+        return sa.table(name, *columns, schema=ident)
+
+    def drop_table(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = self._quote(name)
+        # TODO: handle database quoting
+        if database is not None:
+            name = f"{database}.{name}"
+        drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
+        with self.begin() as con:
+            con.exec_driver_sql(drop_stmt)
+
     def read_parquet(
         self,
         source_list: str | Iterable[str],
@@ -991,17 +1042,6 @@ WHERE catalog_name = :database"""
                 _register(name, table)
             except duckdb.NotImplementedException:
                 _register(name, data.to_pyarrow(schema))
-
-    def _get_sqla_table(
-        self, name: str, schema: str | None = None, **kwargs: Any
-    ) -> sa.Table:
-        with warnings.catch_warnings():
-            # We don't rely on index reflection, ignore this warning
-            warnings.filterwarnings(
-                "ignore",
-                message="duckdb-engine doesn't yet support reflection on indices",
-            )
-            return super()._get_sqla_table(name, schema, **kwargs)
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled

@@ -700,13 +700,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
             from_table_expr = obj
 
-            with self.begin() as bind:
-                if from_table_expr is not None:
-                    compiled = from_table_expr.compile()
-                    columns = [
-                        self.con.dialect.normalize_name(c)
-                        for c in from_table_expr.columns
-                    ]
+            if from_table_expr is not None:
+                compiled = from_table_expr.compile()
+                columns = [
+                    self.con.dialect.normalize_name(c) for c in from_table_expr.columns
+                ]
+                with self.begin() as bind:
                     bind.execute(to_table.insert().from_select(columns, compiled))
         elif isinstance(obj, (list, dict)):
             to_table = self._get_sqla_table(table_name, schema=database)
