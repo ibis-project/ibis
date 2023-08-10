@@ -46,3 +46,13 @@ def test_hive_table_overwrite(tmp_name):
     t = con.create_table(tmp_name, schema=schema, overwrite=True)
     assert tmp_name in con.list_tables()
     assert t.schema() == schema
+
+
+def test_list_catalogs(con):
+    assert {"hive", "postgresql", "memory", "system", "tpch", "tpcds"}.issubset(
+        con.list_databases()
+    )
+
+
+def test_list_schemas(con):
+    assert {"information_schema", "sf1"}.issubset(con.list_schemas(database="tpch"))

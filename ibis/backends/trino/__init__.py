@@ -45,13 +45,11 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
         return self._scalar_query(sa.select(sa.literal_column("current_catalog")))
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        s = sa.table(
-            "schemata",
-            sa.column("catalog_name", sa.VARCHAR()),
-            schema="information_schema",
-        )
+        query = "SHOW CATALOGS"
+        with self.begin() as con:
+            catalogs = list(con.exec_driver_sql(query).scalars())
+        return self._filter_with_like(catalogs, like=like)
 
-        query = sa.select(sa.distinct(s.c.catalog_name)).order_by(s.c.catalog_name)
         with self.begin() as con:
             results = list(con.execute(query).scalars())
         return self._filter_with_like(results, like=like)
