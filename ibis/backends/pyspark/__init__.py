@@ -671,8 +671,12 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         ir.Table
             The just-registered table
         """
+        inferSchema = kwargs.pop("inferSchema", True)
+        header = kwargs.pop("header", True)
         source_list = normalize_filenames(source_list)
-        spark_df = self._session.read.csv(source_list, **kwargs)
+        spark_df = self._session.read.csv(
+            source_list, inferSchema=inferSchema, header=header, **kwargs
+        )
         table_name = table_name or util.gen_name("read_csv")
 
         spark_df.createOrReplaceTempView(table_name)

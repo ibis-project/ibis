@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Iterator
 import pytest
 from pytest import param
 
+import ibis
 from ibis.backends.conftest import TEST_TABLES
 
 if TYPE_CHECKING:
@@ -444,6 +445,21 @@ def num_diamonds(data_dir):
         return sum(1 for _ in f) - 1
 
 
+DIAMONDS_COLUMN_TYPES = {
+    # snowflake's `INFER_SCHEMA` returns this for the diamonds CSV `price`
+    # column type
+    "snowflake": {
+        "carat": "decimal(3, 2)",
+        "depth": "decimal(3, 1)",
+        "table": "decimal(3, 1)",
+        "x": "decimal(4, 2)",
+        "y": "decimal(4, 2)",
+        "z": "decimal(4, 2)",
+    },
+    "pyspark": {"price": "int32"},
+}
+
+
 @pytest.mark.parametrize(
     ("in_table_name", "out_table_name"),
     [
@@ -474,4 +490,22 @@ def test_read_csv(con, data_dir, in_table_name, out_table_name, num_diamonds):
         table = con.read_csv(fname, table_name=in_table_name)
 
     assert any(out_table_name in t for t in con.list_tables())
+
+    special_types = DIAMONDS_COLUMN_TYPES.get(con.name, {})
+
+    assert table.schema() == ibis.schema(
+        {
+            "carat": "float64",
+            "cut": "string",
+            "color": "string",
+            "clarity": "string",
+            "depth": "float64",
+            "table": "float64",
+            "price": "int64",
+            "x": "float64",
+            "y": "float64",
+            "z": "float64",
+            **special_types,
+        }
+    )
     assert table.count().execute() == num_diamonds
