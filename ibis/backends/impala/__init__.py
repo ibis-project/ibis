@@ -226,7 +226,7 @@ class Backend(BaseSQLBackend):
         pool_size: int = 8,
         hdfs_client: fsspec.spec.AbstractFileSystem | None = None,
     ):
-        """Create an Impala Backend for use with Ibis.
+        """Create an Impala `Backend` for use with Ibis.
 
         Parameters
         ----------
