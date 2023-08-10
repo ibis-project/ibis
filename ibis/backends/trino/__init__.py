@@ -50,9 +50,17 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
             catalogs = list(con.exec_driver_sql(query).scalars())
         return self._filter_with_like(catalogs, like=like)
 
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        query = "SHOW SCHEMAS"
+
+        if database is not None:
+            query += f" IN {self._quote(database)}"
+
         with self.begin() as con:
-            results = list(con.execute(query).scalars())
-        return self._filter_with_like(results, like=like)
+            schemata = list(con.exec_driver_sql(query).scalars())
+        return self._filter_with_like(schemata, like)
 
     @property
     def current_schema(self) -> str:
@@ -108,7 +116,7 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
 
     @contextlib.contextmanager
     def _prepare_metadata(self, query: str) -> Iterator[dict[str, str]]:
-        name = util.gen_name("ibis_trino_metadata")
+        name = util.gen_name("trino_metadata")
         with self.begin() as con:
             con.exec_driver_sql(f"PREPARE {name} FROM {query}")
             try:
