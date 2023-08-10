@@ -786,10 +786,11 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         Parameters
         ----------
-        like : str, optional
+        like
             A pattern in Python's regex format.
-        database : str, optional
-            The database to list tables of, if not the current one.
+        database
+            The database from which to list tables. If not provided, the
+            current database is used.
 
         Returns
         -------

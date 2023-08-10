@@ -30,8 +30,8 @@ from ibis.backends.base import CanCreateDatabase
 from ibis.backends.base.sql.alchemy import (
     AlchemyCanCreateSchema,
     AlchemyCompiler,
+    AlchemyCrossSchemaBackend,
     AlchemyExprTranslator,
-    BaseAlchemyBackend,
 )
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.snowflake.datatypes import SnowflakeType, parse
@@ -108,11 +108,12 @@ return longest.map((_, i) => {
 }
 
 
-class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
+class Backend(AlchemyCrossSchemaBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     name = "snowflake"
     compiler = SnowflakeCompiler
     supports_create_or_replace = True
     supports_python_udfs = True
+    use_stmt_prefix = "USE SCHEMA"
 
     _latest_udf_python_version = (3, 10)
 
@@ -399,43 +400,6 @@ $$""".format(
                 .to_batches(max_chunksize=chunk_size)
                 for t in cur.cursor.fetch_arrow_batches()
             )
-
-    @contextlib.contextmanager
-    def _use_schema(self, ident: str, fallback: str):
-        if ident == fallback:
-            yield
-        else:
-            try:
-                with self.begin() as c:
-                    c.exec_driver_sql(f"USE SCHEMA {ident}")
-                yield
-            finally:
-                with self.begin() as c:
-                    c.exec_driver_sql(f"USE SCHEMA {fallback}")
-
-    def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        database: str | None = None,
-        **_: Any,
-    ) -> sa.Table:
-        current_db = self.current_database
-        current_schema = self.current_schema
-        if schema is None:
-            schema = current_schema
-        *db, schema = schema.split(".")
-        db = "".join(db) or database or current_db
-        ident = ".".join(map(self._quote, filter(None, (db, schema))))
-
-        pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)}")
-        ibis_schema = ibis.schema(pairs)
-
-        fallback = f"{self._quote(current_db)}.{self._quote(current_schema)}"
-        with self._use_schema(ident, fallback=fallback):
-            result = self._table_from_schema(name, schema=ibis_schema)
-        result.schema = ident
-        return result
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as con, con.connection.cursor() as cur:
@@ -855,17 +819,3 @@ def compile_join(element, compiler, **kw):
     if element.right._is_lateral:
         return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE | re.DOTALL)
     return result
-
-
-@compiles(sa.Table, "snowflake")
-def compile_table(element, compiler, **kw):
-    """Override compilation of leaf tables.
-
-    The override is necessary because snowflake-sqlalchemy does not handle
-    quoting databases and schemas correctly.
-    """
-    schema = element.schema
-    name = compiler.preparer.quote_identifier(element.name)
-    if schema is not None:
-        return f"{schema}.{name}"
-    return name
