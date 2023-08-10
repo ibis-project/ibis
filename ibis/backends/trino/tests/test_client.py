@@ -7,7 +7,7 @@ import ibis
 
 @pytest.fixture
 def tmp_name(con):
-    name = ibis.util.gen_name("test_trino_table_properties")
+    name = ibis.util.gen_name("test_trino")
     yield name
     con.drop_table(name, force=True)
 
@@ -33,3 +33,16 @@ def test_table_properties(tmp_name):
         ddl = c.exec_driver_sql(f"SHOW CREATE TABLE {tmp_name}").scalar()
     assert "ORC" in ddl
     assert "bucketed_by" in ddl
+
+
+def test_hive_table_overwrite(tmp_name):
+    con = ibis.trino.connect(database="hive", schema="default")
+    schema = ibis.schema(dict(a="int"))
+
+    t = con.create_table(tmp_name, schema=schema)
+    assert tmp_name in con.list_tables()
+    assert t.schema() == schema
+
+    t = con.create_table(tmp_name, schema=schema, overwrite=True)
+    assert tmp_name in con.list_tables()
+    assert t.schema() == schema
