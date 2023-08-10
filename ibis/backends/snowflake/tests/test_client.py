@@ -173,3 +173,12 @@ def test_drop_current_schema_not_allowed(schema_con):
         c.exec_driver_sql(f"USE SCHEMA {cur_schema}")
 
     schema_con.drop_schema(schema)
+
+
+def test_read_csv_options(con, tmp_path):
+    path = tmp_path / "test_pipe.csv"
+    path.write_text("a|b\n1|2\n3|4\n")
+
+    t = con.read_csv(path, field_delimiter="|")
+
+    assert t.schema() == ibis.schema(dict(a="int64", b="int64"))

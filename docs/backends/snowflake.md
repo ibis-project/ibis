@@ -1,6 +1,7 @@
 ---
 backend_name: Snowflake
 backend_url: https://snowflake.com/
+imports: ["CSV"]
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
 memtable_impl: native
 ---

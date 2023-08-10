@@ -437,16 +437,18 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name, out_table_n
         table.count().execute()
 
 
+@pytest.fixture(scope="module")
+def num_diamonds(data_dir):
+    with open(data_dir / "csv" / "diamonds.csv") as f:
+        # subtract 1 for the header
+        return sum(1 for _ in f) - 1
+
+
 @pytest.mark.parametrize(
-    ("fname", "in_table_name", "out_table_name"),
+    ("in_table_name", "out_table_name"),
     [
-        param("diamonds.csv", None, "ibis_read_csv_", id="default"),
-        param(
-            "diamonds.csv",
-            "fancy_stones",
-            "fancy_stones",
-            id="file_name",
-        ),
+        param(None, "ibis_read_csv_", id="default"),
+        param("fancy_stones", "fancy_stones", id="file_name"),
     ],
 )
 @pytest.mark.notyet(
@@ -459,12 +461,12 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name, out_table_n
         "mysql",
         "pandas",
         "postgres",
-        "snowflake",
         "sqlite",
         "trino",
     ]
 )
-def test_read_csv(con, data_dir, fname, in_table_name, out_table_name):
+def test_read_csv(con, data_dir, in_table_name, out_table_name, num_diamonds):
+    fname = "diamonds.csv"
     with pushd(data_dir / "csv"):
         if con.name == "pyspark":
             # pyspark doesn't respect CWD
@@ -472,5 +474,4 @@ def test_read_csv(con, data_dir, fname, in_table_name, out_table_name):
         table = con.read_csv(fname, table_name=in_table_name)
 
     assert any(out_table_name in t for t in con.list_tables())
-    if con.name != "datafusion":
-        table.count().execute()
+    assert table.count().execute() == num_diamonds
