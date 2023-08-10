@@ -123,11 +123,13 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
 
     @property
     def current_schema(self) -> str:
-        return self._scalar_query(sa.select(sa.func.current_schema()))
+        with self.con.connect() as con:
+            return con.connection.schema
 
     @property
     def current_database(self) -> str:
-        return self._scalar_query(sa.select(sa.func.current_database()))
+        with self.con.connect() as con:
+            return con.connection.database
 
     def _compile_sqla_type(self, typ) -> str:
         return sa.types.to_instance(typ).compile(dialect=self.con.dialect)
@@ -396,16 +398,17 @@ $$""".format(
             )
 
     @contextlib.contextmanager
-    def _use_schema(self, ident):
-        db = self.current_database
-        schema = self.current_schema
-        try:
-            with self.begin() as c:
-                c.exec_driver_sql(f"USE SCHEMA {ident}")
+    def _use_schema(self, ident: str, fallback: str):
+        if ident == fallback:
             yield
-        finally:
-            with self.begin() as c:
-                c.exec_driver_sql(f"USE SCHEMA {self._quote(db)}.{self._quote(schema)}")
+        else:
+            try:
+                with self.begin() as c:
+                    c.exec_driver_sql(f"USE SCHEMA {ident}")
+                yield
+            finally:
+                with self.begin() as c:
+                    c.exec_driver_sql(f"USE SCHEMA {fallback}")
 
     def _get_sqla_table(
         self,
@@ -425,7 +428,8 @@ $$""".format(
         pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)}")
         ibis_schema = ibis.schema(pairs)
 
-        with self._use_schema(ident):
+        fallback = f"{self._quote(current_db)}.{self._quote(current_schema)}"
+        with self._use_schema(ident, fallback=fallback):
             result = self._table_from_schema(name, schema=ibis_schema)
         result.schema = ident
         return result
