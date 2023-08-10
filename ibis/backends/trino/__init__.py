@@ -19,7 +19,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanListDatabases
-from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
+from ibis.backends.base.sql.alchemy import (
+    AlchemyCanCreateSchema,
+    AlchemyCrossSchemaBackend,
+)
 from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
 from ibis.backends.trino.datatypes import ROW, TrinoType, parse
@@ -32,11 +35,12 @@ if TYPE_CHECKING:
     import ibis.expr.schema as sch
 
 
-class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
+class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabases):
     name = "trino"
     compiler = TrinoSQLCompiler
     supports_create_or_replace = False
     supports_temporary_tables = False
+    use_stmt_prefix = "USE"
 
     @cached_property
     def version(self) -> str:
@@ -67,6 +71,19 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
     @property
     def current_schema(self) -> str:
         return self._scalar_query(sa.select(sa.literal_column("current_schema")))
+
+    def list_tables(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        query = "SHOW TABLES"
+
+        if database is not None:
+            query += f" IN {database}"
+
+        with self.begin() as con:
+            tables = list(con.exec_driver_sql(query).scalars())
+
+        return self._filter_with_like(tables, like=like)
 
     def do_connect(
         self,
@@ -330,3 +347,19 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
                 )
 
         return self.table(orig_table_ref)
+
+    def _table_from_schema(
+        self,
+        name: str,
+        schema: sch.Schema,
+        temp: bool = False,
+        database: str | None = None,
+        **kwargs: Any,
+    ) -> sa.Table:
+        return super()._table_from_schema(
+            name,
+            schema,
+            temp=temp,
+            trino_catalog=database or self.current_database,
+            **kwargs,
+        )

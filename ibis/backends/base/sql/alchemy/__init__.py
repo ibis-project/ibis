@@ -877,3 +877,83 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
         with self.begin() as con:
             con.execute(view)
+
+
+class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
+    """A SQLAlchemy backend that supports cross-schema queries.
+
+    This backend differs from the default SQLAlchemy backend in that it
+    overrides `_get_sqla_table` to potentially switch schemas during table
+    reflection, if the table requested lives in a different schema than the
+    currently active one.
+    """
+
+    @property
+    @abc.abstractmethod
+    def use_stmt_prefix(self) -> str:
+        """The prefix to use for switching schemas.
+
+        Common examples are `USE` and `USE SCHEMA`.
+        """
+
+    @contextlib.contextmanager
+    def _use_schema(self, ident: str, current_db: str, current_schema: str) -> None:
+        use_prefix = self.use_stmt_prefix
+
+        try:
+            with self.begin() as c:
+                c.exec_driver_sql(f"{use_prefix} {ident}")
+            yield
+        finally:
+            with self.begin() as c:
+                c.exec_driver_sql(
+                    f"{use_prefix} {self._quote(current_db)}.{self._quote(current_schema)}"
+                )
+
+    def _get_sqla_table(
+        self,
+        name: str,
+        schema: str | None = None,
+        database: str | None = None,
+        **_: Any,
+    ) -> sa.Table:
+        current_db = self.current_database
+        current_schema = self.current_schema
+        if schema is None:
+            schema = current_schema
+        *db, schema = schema.split(".")
+        db = "".join(db) or database or current_db
+        ident = ".".join(map(self._quote, filter(None, (db, schema))))
+
+        pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)}")
+        ibis_schema = ibis.schema(pairs)
+
+        with self._use_schema(ident, current_db, current_schema):
+            result = self._table_from_schema(name, schema=ibis_schema)
+        result.schema = schema
+        return result
+
+    def drop_table(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = self._quote(name)
+        # TODO: handle database quoting
+        if database is not None:
+            name = f"{database}.{name}"
+        drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
+        with self.begin() as con:
+            con.exec_driver_sql(drop_stmt)
+
+
+@compiles(sa.Table, "snowflake")
+def compile_table(element, compiler, **kw):
+    """Override compilation of leaf tables.
+
+    The override is necessary because the dialect does not handle database
+    hierarchies and/or quoting properly.
+    """
+    schema = element.schema
+    name = compiler.preparer.quote_identifier(element.name)
+    if schema is not None:
+        return f"{schema}.{name}"
+    return name
