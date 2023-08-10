@@ -342,10 +342,7 @@ $$""".format(
         limit: int | str | None = None,
         **_: Any,
     ) -> pa.Table:
-        self._run_pre_execute_hooks(expr)
-
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
+        sql = self._extracted_from_to_pyarrow_batches(expr, limit, params)
         with self.begin() as con:
             res = con.execute(sql).cursor.fetch_arrow_all()
 
@@ -372,9 +369,7 @@ $$""".format(
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        self._run_pre_execute_hooks(expr)
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
+        sql = self._extracted_from_to_pyarrow_batches(expr, limit, params)
         target_schema = expr.as_table().schema().to_pyarrow()
 
         return pa.RecordBatchReader.from_batches(
@@ -383,6 +378,11 @@ $$""".format(
                 sql, target_schema=target_schema, chunk_size=chunk_size
             ),
         )
+
+    def _extracted_from_to_pyarrow_batches(self, expr, limit, params):
+        self._run_pre_execute_hooks(expr)
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        return query_ast.compile()
 
     def _make_batch_iter(
         self, sql: str, *, target_schema: sch.Schema, chunk_size: int
