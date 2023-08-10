@@ -95,17 +95,17 @@ def test_null_dtype():
 def test_parse_quoted_struct_field():
     import ibis.backends.duckdb.datatypes as ddt
 
-    assert ddt.parse('STRUCT("a" INT, "a b c" INT)') == dt.Struct(
+    assert ddt.parse('STRUCT("a" INTEGER, "a b c" INTEGER)') == dt.Struct(
         {"a": dt.int32, "a b c": dt.int32}
     )
 
 
 def test_generate_quoted_struct():
     typ = sat.StructType(
-        {"in come": sa.TEXT(), "my count": sa.BIGINT(), "thing": sa.INT()}
+        {"in come": sa.VARCHAR(), "my count": sa.BIGINT(), "thing": sa.INTEGER()}
     )
     result = typ.compile(dialect=duckdb_engine.Dialect())
-    expected = 'STRUCT("in come" TEXT, "my count" BIGINT, thing INTEGER)'
+    expected = 'STRUCT("in come" VARCHAR, "my count" BIGINT, thing INTEGER)'
     assert result == expected
 
 
