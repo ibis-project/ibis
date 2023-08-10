@@ -105,8 +105,8 @@ bench +args='ibis/tests/benchmarks':
     pytest --benchmark-only --benchmark-enable --benchmark-autosave {{ args }}
 
 # run benchmarks and compare with a previous run
-benchcmp *args:
-    just bench {{ args }} --benchmark-compare
+benchcmp number *args:
+    just bench --benchmark-compare {{ number }} {{ args }}
 
 # check for invalid links in a locally built version of the docs
 checklinks *args:
