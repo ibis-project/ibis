@@ -976,9 +976,15 @@ def test_pattern_coercible_sequence_type():
 
 
 def test_pattern_function():
+    class MyNegativeInt(int, Coercible):
+        @classmethod
+        def __coerce__(cls, other):
+            return cls(-int(other))
+
     assert pattern(...) == Any()
     assert pattern(Any()) == Any()
     assert pattern(int) == InstanceOf(int)
+    assert pattern(MyNegativeInt) == CoercedTo(MyNegativeInt)
     assert pattern(List[int]) == ListOf(InstanceOf(int))
     assert pattern([int, str, 1]) == PatternSequence(
         [InstanceOf(int), InstanceOf(str), EqualTo(1)]
