@@ -77,7 +77,46 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
         source: str | None = None,
         **connect_args,
     ) -> None:
-        """Create an Ibis client connected to a Trino database."""
+        """Connect to Trino.
+
+        Parameters
+        ----------
+        user
+            Username to connect with
+        password
+            Password to connect with
+        host
+            Hostname of the Trino server
+        port
+            Port of the Trino server
+        database
+            Catalog to use on the Trino server
+        schema
+            Schema to use on the Trino server
+        source
+            Application name passed to Trino
+        connect_args
+            Additional keyword arguments passed directly to SQLAlchemy's
+            `create_engine`
+
+        Examples
+        --------
+        >>> catalog = "hive"
+        >>> schema = "default"
+
+        Connect using a URL, with the default user, password, host and port
+
+        >>> con = ibis.connect(f"trino:///{catalog}/{schema}")
+
+        Connect using a URL
+
+        >>> con = ibis.connect(f"trino://user:password@host:port/{catalog}/{schema}")
+
+        Connect using keyword arguments
+
+        >>> con = ibis.trino.connect(database=catalog, schema=schema)
+        >>> con = ibis.trino.connect(database=catalog, schema=schema, source="my-app")
+        """
         database = "/".join(filter(None, (database, schema)))
         url = sa.engine.URL.create(
             drivername="trino",
