@@ -74,6 +74,7 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
         port: int = 8080,
         database: str | None = None,
         schema: str | None = None,
+        source: str | None = None,
         **connect_args,
     ) -> None:
         """Create an Ibis client connected to a Trino database."""
@@ -85,6 +86,7 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema, CanListDatabases):
             host=host,
             port=port,
             database=database,
+            query=dict(source="ibis" if source is None else source),
         )
         connect_args.setdefault("timezone", "UTC")
         with warnings.catch_warnings():
