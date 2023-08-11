@@ -450,29 +450,57 @@ WHERE catalog_name = :database"""
         database: str | None = None,
         **_: Any,
     ) -> sa.Table:
-        current_db = self.current_database
-        current_schema = self.current_schema
         if schema is None:
-            schema = current_schema
+            schema = self.current_schema
         *db, schema = schema.split(".")
         db = "".join(db) or database
         ident = ".".join(
             map(
                 self._quote,
-                filter(None, (db if db != current_db else None, schema)),
+                filter(None, (db if db != self.current_database else None, schema)),
             )
         )
 
-        query = f"DESCRIBE SELECT * FROM {ident}.{self._quote(name)}"
+        s = sa.table(
+            "columns",
+            sa.column("table_catalog", sa.TEXT()),
+            sa.column("table_schema", sa.TEXT()),
+            sa.column("table_name", sa.TEXT()),
+            sa.column("column_name", sa.TEXT()),
+            sa.column("data_type", sa.TEXT()),
+            sa.column("is_nullable", sa.TEXT()),
+            sa.column("ordinal_position", sa.INTEGER()),
+            schema="information_schema",
+        )
+
+        where = s.c.table_name == name
+
+        if db:
+            where &= s.c.table_catalog == db
+
+        if schema:
+            where &= s.c.table_schema == schema
+
+        query = (
+            sa.select(
+                s.c.column_name,
+                s.c.data_type,
+                (s.c.is_nullable == "YES").label("nullable"),
+            )
+            .where(where)
+            .order_by(sa.asc(s.c.ordinal_position))
+        )
 
         with self.begin() as con:
-            # fetch metadata with pyarrow, it's much faster for tables with "lots"
-            # of columns
-            meta = con.exec_driver_sql(query).cursor.fetch_arrow_table()
+            # fetch metadata with pyarrow, it's much faster for wide tables
+            meta = con.execute(query).cursor.fetch_arrow_table()
+
+        if not meta:
+            raise sa.exc.NoSuchTableError(name)
 
         names = meta["column_name"].to_pylist()
-        types = meta["column_type"].to_pylist()
-        nullables = pa.compute.equal(meta["null"], "YES").to_pylist()
+        types = meta["data_type"].to_pylist()
+        nullables = meta["nullable"].to_pylist()
 
         ibis_schema = sch.Schema(
             {
