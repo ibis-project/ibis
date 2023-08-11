@@ -13,17 +13,11 @@ from __future__ import annotations
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
-
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
 from ibis.tests.expr.mocks import MockBackend
-
-collect_ignore = []
-if sys.version_info < (3, 10):
-    collect_ignore.append("test_operations_py310.py")
 
 
 @pytest.fixture
