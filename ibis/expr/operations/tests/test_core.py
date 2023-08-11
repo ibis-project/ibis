@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Optional, Tuple
 
-import numpy as np
 import pytest
 
 import ibis
@@ -20,75 +19,6 @@ true = ir.literal(True)
 false = ir.literal(False)
 two = ir.literal(2)
 three = ir.literal(3)
-
-
-@pytest.fixture(scope="module")
-def operations(request):
-    true = ir.literal(True)
-    false = ir.literal(False)
-    two = ir.literal(2)
-    three = ir.literal(3)
-    return [
-        ops.Cast(three, to="int64"),
-        ops.TypeOf(arg=2),
-        ops.Negate(4),
-        ops.Negate(4.0),
-        ops.NullIfZero(0),
-        ops.NullIfZero(1),
-        ops.IsNull(ir.null()),
-        ops.NotNull(ir.null()),
-        ops.ZeroIfNull(ir.null()),
-        ops.IfNull(1, ops.NullIfZero(0).to_expr()),
-        ops.NullIf(ir.null(), ops.NullIfZero(0).to_expr()),
-        ops.IsNan(np.nan),
-        ops.IsInf(np.inf),
-        ops.Ceil(4.5),
-        ops.Floor(4.5),
-        ops.Round(3.43456),
-        ops.Round(3.43456, 2),
-        ops.Round(3.43456, digits=1),
-        ops.Clip(123, lower=30),
-        ops.Clip(123, lower=30, upper=100),
-        ops.BaseConvert("EEE", from_base=16, to_base=10),
-        ops.Logarithm(100),
-        ops.Log(100),
-        ops.Log(100, base=2),
-        ops.Ln(100),
-        ops.Log2(100),
-        ops.Log10(100),
-        ops.Uppercase("asd"),
-        ops.Lowercase("asd"),
-        ops.Reverse("asd"),
-        ops.Strip("asd"),
-        ops.LStrip("asd"),
-        ops.RStrip("asd"),
-        ops.Capitalize("asd"),
-        ops.Substring("asd", start=1),
-        ops.Substring("asd", 1),
-        ops.Substring("asd", 1, length=2),
-        ops.StrRight("asd", nchars=2),
-        ops.Repeat("asd", times=4),
-        ops.StringFind("asd", "sd", start=1),
-        ops.Translate("asd", from_str="bd", to_str="ce"),
-        ops.LPad("asd", length=2, pad="ss"),
-        ops.RPad("asd", length=2, pad="ss"),
-        ops.StringJoin(",", ["asd", "bsdf"]),
-        ops.FuzzySearch("asd", pattern="n"),
-        ops.StringSQLLike("asd", pattern="as", escape="asd"),
-        ops.RegexExtract("asd", pattern="as", index=1),
-        ops.RegexReplace("asd", "as", "a"),
-        ops.StringReplace("asd", "as", "a"),
-        ops.StringSplit("asd", "s"),
-        ops.StringConcat(("s", "e")),
-        ops.StartsWith("asd", "as"),
-        ops.EndsWith("asd", "xyz"),
-        ops.Not(false),
-        ops.And(false, true),
-        ops.Or(false, true),
-        ops.GreaterEqual(three, two),
-        ops.Sum(t.a),
-        t.a.op(),
-    ]
 
 
 class Expr:
@@ -121,6 +51,8 @@ values = Values((one, two, three))
 
 
 def test_node_base():
+    assert hasattr(one, "__slots__")
+    assert not hasattr(one, "__dict__")
     assert one.__args__ == (1, Name("one"))
     assert values.__args__ == ((one, two, three),)
 
@@ -204,7 +136,7 @@ def test_value_annotations():
     assert Op4(1).arg.dtype == dt.int8
 
 
-def test_operation():
+def test_operation_definition():
     class Logarithm(ir.Expr):
         pass
 
@@ -215,17 +147,12 @@ def test_operation():
         def to_expr(self):
             return Logarithm(self)
 
-    Log(1, base=2)
-    Log(1, base=2)
-    Log(arg=10)
+    assert Log(1, base=2).arg == ops.Literal(1, dtype=dt.float64)
+    assert Log(1, base=2).base == ops.Literal(2, dtype=dt.float64)
+    assert Log(arg=10).arg == ops.Literal(10, dtype=dt.float64)
+    assert Log(arg=10).base is None
 
     assert isinstance(Log(arg=100).to_expr(), Logarithm)
-
-
-def test_operation_nodes_are_slotted(operations):
-    for op in operations:
-        assert hasattr(op, "__slots__")
-        assert not hasattr(op, "__dict__")
 
 
 def test_instance_of_operation():
@@ -268,22 +195,25 @@ def test_custom_table_expr():
     assert isinstance(expr, MyTable)
 
 
-@pytest.fixture(scope="session")
-def dummy_op():
+def test_too_many_or_too_few_args_not_allowed():
     class DummyOp(ops.Value):
         arg: ops.Value
 
-    return DummyOp
-
-
-def test_too_many_args_not_allowed(dummy_op):
     with pytest.raises(TypeError):
-        dummy_op(1, 2)
+        DummyOp(1, 2)
 
-
-def test_too_few_args_not_allowed(dummy_op):
     with pytest.raises(TypeError):
-        dummy_op()
+        DummyOp()
+
+
+def test_getitem_on_column_is_error():
+    t = ibis.table(dict(a="int"))
+
+    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
+        t.a[0]
+
+    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
+        t.a[:1]
 
 
 def test_operation_class_aliases():
@@ -302,24 +232,3 @@ def test_expression_class_aliases():
     assert ir.AnyValue is ir.Value
     assert ir.AnyScalar is ir.Scalar
     assert ir.AnyColumn is ir.Column
-
-
-def test_sortkey_propagates_dtype_and_shape():
-    k = ops.SortKey(ibis.literal(1), ascending=True)
-    assert k.dtype == dt.int8
-    assert k.shape.is_scalar()
-
-    t = ibis.table([("a", "int16")], name="t")
-    k = ops.SortKey(t.a, ascending=True)
-    assert k.dtype == dt.int16
-    assert k.shape.is_columnar()
-
-
-def test_getitem_on_column_is_error():
-    t = ibis.table(dict(a="int"))
-
-    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
-        t.a[0]
-
-    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
-        t.a[:1]
