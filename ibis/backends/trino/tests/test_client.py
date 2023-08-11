@@ -3,6 +3,12 @@ from __future__ import annotations
 import pytest
 
 import ibis
+from ibis.backends.trino.tests.conftest import (
+    TRINO_HOST,
+    TRINO_PASS,
+    TRINO_PORT,
+    TRINO_USER,
+)
 
 
 @pytest.fixture
@@ -56,3 +62,17 @@ def test_list_catalogs(con):
 
 def test_list_schemas(con):
     assert {"information_schema", "sf1"}.issubset(con.list_schemas(database="tpch"))
+
+
+@pytest.mark.parametrize(("source", "expected"), [(None, "ibis"), ("foo", "foo")])
+def test_con_source(source, expected):
+    con = ibis.trino.connect(
+        user=TRINO_USER,
+        host=TRINO_HOST,
+        port=TRINO_PORT,
+        password=TRINO_PASS,
+        database="hive",
+        schema="default",
+        source=source,
+    )
+    assert con.con.url.query["source"] == expected
