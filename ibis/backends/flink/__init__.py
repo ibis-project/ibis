@@ -10,7 +10,7 @@ import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis.backends.base import BaseBackend, CanListDatabases
-from ibis.backends.base.sql.ddl import is_fully_qualified
+from ibis.backends.base.sql.ddl import fully_qualified_re, is_fully_qualified
 from ibis.backends.flink.compiler.core import FlinkCompiler
 
 if TYPE_CHECKING:
@@ -88,7 +88,9 @@ class Backend(BaseBackend, CanListDatabases):
             )
         schema = self.get_schema(name, database=database)
         qualified_name = self._fully_qualified_name(name, database)
-        node = ops.DatabaseTable(qualified_name, schema, self)
+        _, quoted, unquoted = fully_qualified_re.search(qualified_name).groups()
+        unqualified_name = quoted or unquoted
+        node = ops.DatabaseTable(unqualified_name, schema, self, namespace=database)
         return node.to_expr()
 
     def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
