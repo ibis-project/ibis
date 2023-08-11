@@ -659,7 +659,7 @@ class Namespace:
     InstanceOf(type=<class 'ibis.expr.operations.numeric.Negate'>)
     >>>
     >>> ns.Negate(5)
-    Object(type=InstanceOf(type=<class 'ibis.expr.operations.numeric.Negate'>), args=(EqualTo(value=5),), kwargs=FrozenDict({}))
+    Object(type=CoercedTo(target=<class 'ibis.expr.operations.numeric.Negate'>), args=(EqualTo(value=5),), kwargs=FrozenDict({}))
     """
 
     __slots__ = ("module", "pattern")
@@ -929,9 +929,6 @@ class CoercedTo(Slotted, Pattern):
             return value
         else:
             return NoMatch
-
-    def __repr__(self):
-        return f"CoercedTo({self.target.__name__!r})"
 
 
 As = CoercedTo
@@ -1596,7 +1593,10 @@ def pattern(obj: AnyType) -> Pattern:
     elif isinstance(obj, Mapping):
         return PatternMapping(obj)
     elif isinstance(obj, type):
-        return InstanceOf(obj)
+        if issubclass(obj, Coercible):
+            return CoercedTo(obj)
+        else:
+            return InstanceOf(obj)
     elif get_origin(obj):
         return Pattern.from_typehint(obj)
     elif is_iterable(obj):
