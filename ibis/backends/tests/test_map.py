@@ -244,3 +244,9 @@ def test_map_create_table(con, temp_table):
 def test_map_length(con):
     expr = ibis.literal(dict(a="A", b="B")).length()
     assert con.execute(expr) == 2
+
+
+def test_map_keys_unnest(backend):
+    expr = backend.map.head(1).kv.keys().unnest()
+    result = expr.to_pandas()
+    assert frozenset(result) == frozenset("abc")
