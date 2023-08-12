@@ -1,0 +1,35 @@
+# Altair + Ibis
+
+If you don't have data to visualize, you can load an example table:
+
+
+```{python}
+# | code-fold: true
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+t.head(3)
+```
+
+## Using Altair with Ibis
+
+Refer to the [Altair documentation](https://altair-viz.github.io/). Simply pass in Ibis tables or expressions:
+
+```{python}
+import altair as alt
+
+chart = (
+    alt.Chart(t.group_by("species").agg(count=ibis._.count()))
+    .mark_bar()
+    .encode(
+        x="species",
+        y="count",
+    )
+    .properties(width=600, height=400)
+)
+chart
+```
+

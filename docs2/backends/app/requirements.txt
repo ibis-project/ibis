@@ -1,0 +1,5 @@
+ibis-framework[duckdb]>=4.0
+pandas
+requests
+streamlit
+sqlglot

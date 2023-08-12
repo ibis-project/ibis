@@ -1,0 +1,14 @@
+.quarto
+_site
+
+*.ddb*
+
+index.ipynb
+
+site_libs
+
+*.csv
+*.parquet
+*.delta
+
+/.quarto/

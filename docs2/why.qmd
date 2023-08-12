@@ -1,0 +1,35 @@
+---
+title: "Why use Ibis?"
+---
+
+Ibis is a powerful Python library designed for data analysis and manipulation. It offers a seamless integration with various backends, enabling users to effortlessly work with data stored in different formats and platforms. Whether you are a data scientist, analyst, or developer, Ibis provides numerous benefits that enhance your data-related workflows and empower you to make data-driven decisions.
+
+## Simplified data manipulation
+
+One of the key advantages of Ibis is its intuitive and straightforward interface for data manipulation. With Ibis, you can effortlessly filter, transform, and aggregate your data using familiar Python syntax. This simplicity allows you to focus on the analysis rather than getting lost in complex code.
+
+## Seamless backend integration
+
+Ibis seamlessly integrates with multiple backend systems, such as BigQuery, Snowflake, MySQL, PostgreSQL, and more. This flexibility allows you to leverage the power of Ibis regardless of where your data resides. Whether you prefer working with SQL or pandas-like syntax, Ibis enables you to harness the capabilities of your chosen backend effortlessly.
+
+## Efficient query execution
+
+Ibis optimizes your queries for efficient execution and performance. It leverages the strengths of each backend to ensure that your data operations are executed as quickly as possible. This optimization translates into faster query results, reducing the time it takes to derive insights from your data.
+
+## Powerful analytics capabilities
+
+Ibis empowers you to perform advanced analytics at scale. With built-in functions for statistical analysis, grouping, aggregation, and more, you can easily derive meaningful insights from your data. Whether you need to calculate descriptive statistics, perform regression analysis, or create custom analytics workflows, Ibis provides the tools you need.
+
+## Easy integration with data science ecosystem
+
+As an integral part of the Python data science ecosystem, Ibis seamlessly integrates with popular libraries such as pandas, PySpark, Polars, and DataFusion. This integration allows you to combine the power of Ibis with the extensive capabilities of these libraries, enabling you to build end-to-end data pipelines and perform complex data analyses with ease.
+
+## Robust input and output support
+
+Ibis supports a wide range of input and output options, making it easy to work with different file formats and data platforms. Whether you need to read data from CSV files, write to Parquet files, or connect to a database, Ibis provides a consistent and reliable interface for handling your data.
+
+## Active community and support
+
+Ibis benefits from an active and thriving community of data professionals and open-source contributors. This community actively maintains and enhances the library, ensuring that it stays up-to-date and relevant to the evolving needs of data analysis. Additionally, comprehensive documentation and online resources make it easy to learn Ibis and find answers to your questions.
+
+In conclusion, Ibis is a valuable tool that simplifies data manipulation, integrates seamlessly with different backends, provides efficient query execution, offers powerful analytics capabilities, integrates with the data science ecosystem, supports various input and output options, and is backed by a vibrant community. By using Ibis, you can unlock the true potential of your data and accelerate your data analysis workflows.

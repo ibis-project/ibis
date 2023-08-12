@@ -1,0 +1,5 @@
+# Chain expressions (`ibis._`)
+
+## Prerequisites
+
+An Ibis table.
