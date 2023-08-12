@@ -14,6 +14,8 @@ from ibis.backends.base.sql.ddl import fully_qualified_re, is_fully_qualified
 from ibis.backends.flink.compiler.core import FlinkCompiler
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import pandas as pd
     import pyarrow as pa
     from pyflink.table import TableEnvironment
@@ -118,6 +120,15 @@ class Backend(BaseBackend, CanListDatabases):
     @property
     def version(self) -> str:
         return pyflink.version.__version__
+
+    def compile(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        """Compile an expression."""
+        return super().compile(expr, params=params)  # Discard `limit` and other kwargs.
 
     def _to_sql(self, expr: ir.Expr, **kwargs: Any) -> str:
         return str(self.compile(expr, **kwargs))
