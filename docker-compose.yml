@@ -234,7 +234,7 @@ services:
       retries: 10
       test:
         - CMD-SHELL
-        - trino --execute 'SELECT 1 AS one'
+        - trino --output-format null --execute 'show schemas in postgresql; show schemas in hive; show schemas in memory'
       timeout: 30s
     image: trinodb/trino:423
     ports:
