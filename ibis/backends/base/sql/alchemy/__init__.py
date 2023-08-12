@@ -578,16 +578,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 )
         return table
 
-    def raw_sql(self, query) -> None:
-        """Execute a query string.
-
-        !!! warning "The returned cursor object must be **manually** released."
-
-        Parameters
-        ----------
-        query
-            DDL or DML statement
-        """
+    def raw_sql(self, query):
         return self.con.connect().execute(
             sa.text(query) if isinstance(query, str) else query
         )
