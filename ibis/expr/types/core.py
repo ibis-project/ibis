@@ -544,9 +544,7 @@ class Expr(Immutable, Coercible):
         raise NotImplementedError(type(self))
 
 
-def _binop(
-    op_class: type[ops.Binary], left: ir.Value, right: ir.Value
-) -> ir.Value | NotImplemented:
+def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Value:
     """Try to construct a binary operation.
 
     Parameters

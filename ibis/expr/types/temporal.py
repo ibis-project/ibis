@@ -210,7 +210,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
     def __add__(
         self,
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
-    ) -> TimeValue | NotImplemented:
+    ) -> TimeValue:
         """Add an interval to a time expression."""
         return _binop(ops.TimeAdd, self, other)
 
@@ -224,7 +224,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
     Returns
     -------
-    Value : TimeValue | NotImplemented
+    Value : TimeValue
     """
 
     @annotated
@@ -248,7 +248,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
     Returns
     -------
-    Value : IntervalValue | TimeValue | NotImplemented
+    Value : IntervalValue | TimeValue
     """
 
     @annotated
@@ -295,7 +295,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
     def __add__(
         self,
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
-    ) -> DateValue | NotImplemented:
+    ) -> DateValue:
         """Add an interval to a date."""
         return _binop(ops.DateAdd, self, other)
 
@@ -309,7 +309,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
     Returns
     -------
-    Value : DateValue | NotImplemented
+    Value : DateValue
     """
 
     @annotated
@@ -333,7 +333,7 @@ class DateValue(TemporalValue, _DateComponentMixin):
 
     Returns
     -------
-    Value : DateValue | NotImplemented
+    Value : DateValue
     """
 
     @annotated
@@ -393,7 +393,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
     def __add__(
         self,
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
-    ) -> TimestampValue | NotImplemented:
+    ) -> TimestampValue:
         """Add an interval to a timestamp."""
         return _binop(ops.TimestampAdd, self, other)
 
@@ -407,7 +407,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
     Returns
     -------
-    Value : TimestampValue | NotImplemented
+    Value : TimestampValue
     """
 
     @annotated
@@ -431,7 +431,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
 
     Returns
     -------
-    Value : IntervalValue | TimestampValue | NotImplemented
+    Value : IntervalValue | TimestampValue
     """
 
     @annotated
@@ -537,7 +537,7 @@ class IntervalValue(Value):
     def __add__(
         self,
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
-    ) -> IntervalValue | NotImplemented:
+    ) -> IntervalValue:
         """Add this interval to `other`."""
         return _binop(ops.IntervalAdd, self, other)
 
@@ -546,7 +546,7 @@ class IntervalValue(Value):
     def __sub__(
         self,
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
-    ) -> IntervalValue | NotImplemented:
+    ) -> IntervalValue:
         """Subtract `other` from this interval."""
         return _binop(ops.IntervalSubtract, self, other)
 
@@ -555,7 +555,7 @@ class IntervalValue(Value):
     def __rsub__(
         self,
         other: datetime.timedelta | pd.Timedelta | IntervalValue,
-    ) -> IntervalValue | NotImplemented:
+    ) -> IntervalValue:
         """Subtract `other` from this interval."""
         return _binop(ops.IntervalSubtract, other, self)
 
@@ -564,7 +564,7 @@ class IntervalValue(Value):
     def __mul__(
         self,
         other: int | ir.IntegerValue,
-    ) -> IntervalValue | NotImplemented:
+    ) -> IntervalValue:
         """Multiply this interval by `other`."""
         return _binop(ops.IntervalMultiply, self, other)
 
@@ -573,7 +573,7 @@ class IntervalValue(Value):
     def __floordiv__(
         self,
         other: ir.IntegerValue,
-    ) -> IntervalValue | NotImplemented:
+    ) -> IntervalValue:
         """Floor-divide this interval by `other`."""
         return _binop(ops.IntervalFloorDivide, self, other)
 
