@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import json
+
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
@@ -182,3 +185,29 @@ def test_read_csv_options(con, tmp_path):
     t = con.read_csv(path, field_delimiter="|")
 
     assert t.schema() == ibis.schema(dict(a="int64", b="int64"))
+
+
+@pytest.fixture(scope="module")
+def json_data():
+    return [
+        {"a": 1, "b": "abc", "c": [{"d": 1}]},
+        {"a": 2, "b": "def", "c": [{"d": 2}]},
+        {"a": 3, "b": "ghi", "c": [{"d": 3}]},
+    ]
+
+
+@pytest.mark.parametrize(
+    "serialize",
+    [
+        param(lambda obj: "\n".join(map(json.dumps, obj)), id="ndjson"),
+        param(json.dumps, id="json"),
+    ],
+)
+def test_read_json(con, tmp_path, serialize, json_data):
+    path = tmp_path / "test.json"
+    path.write_text(serialize(json_data))
+
+    t = con.read_json(path)
+
+    assert t.schema() == ibis.schema(dict(a="int", b="string", c="array<json>"))
+    assert t.count().execute() == len(json_data)

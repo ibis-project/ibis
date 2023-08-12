@@ -767,6 +767,78 @@ $$""".format(
 
         return self.table(table)
 
+    def read_json(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Read newline-delimited JSON into an ibis table, using Snowflake.
+
+        Parameters
+        ----------
+        path
+            File or list of files
+        table_name
+            Optional table name
+        **kwargs
+            Additional keyword arguments. See
+            https://docs.snowflake.com/en/sql-reference/sql/create-file-format#type-json
+            for the full list of options.
+
+        Returns
+        -------
+        Table
+            An ibis table expression
+        """
+        stage = util.gen_name("read_json_stage")
+        file_format = util.gen_name("read_json_format")
+        table = table_name or util.gen_name("read_json_snowflake")
+        qtable = self._quote(table)
+        threads = min((os.cpu_count() or 2) // 2, 99)
+
+        kwargs.setdefault("strip_outer_array", True)
+        match_by_column_name = kwargs.pop("match_by_column_name", "case_sensitive")
+
+        options = " " * bool(kwargs) + " ".join(
+            f"{name.upper()} = {value!r}" for name, value in kwargs.items()
+        )
+
+        with self.begin() as con:
+            con.exec_driver_sql(
+                f"CREATE TEMP FILE FORMAT {file_format} TYPE = JSON" + options
+            )
+
+            con.exec_driver_sql(
+                f"CREATE TEMP STAGE {stage} FILE_FORMAT = {file_format}"
+            )
+            con.exec_driver_sql(
+                f"PUT '{Path(path).absolute().as_uri()}' @{stage} PARALLEL = {threads:d}"
+            )
+
+            con.exec_driver_sql(
+                f"""
+                CREATE TEMP TABLE {qtable}
+                USING TEMPLATE (
+                    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+                    FROM TABLE(
+                        INFER_SCHEMA(
+                            LOCATION => '@{stage}',
+                            FILE_FORMAT => '{file_format}'
+                        )
+                    )
+                )
+                """
+            )
+
+            # load the JSON file into the table
+            con.exec_driver_sql(
+                f"""
+                COPY INTO {qtable}
+                FROM @{stage}
+                MATCH_BY_COLUMN_NAME = {str(match_by_column_name).upper()}
+                """
+            )
+
+        return self.table(table)
+
 
 @compiles(sa.sql.Join, "snowflake")
 def compile_join(element, compiler, **kw):
