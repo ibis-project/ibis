@@ -654,25 +654,25 @@ class NumericValue(Value):
         """
         return ops.Tan(self).to_expr()
 
-    def __add__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __add__(self, other: NumericValue) -> NumericValue:
         """Add `self` with `other`."""
         return _binop(ops.Add, self, other)
 
     add = radd = __radd__ = __add__
 
-    def __sub__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __sub__(self, other: NumericValue) -> NumericValue:
         """Subtract `other` from `self`."""
         return _binop(ops.Subtract, self, other)
 
     sub = __sub__
 
-    def __rsub__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __rsub__(self, other: NumericValue) -> NumericValue:
         """Subtract `self` from `other`."""
         return _binop(ops.Subtract, other, self)
 
     rsub = __rsub__
 
-    def __mul__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __mul__(self, other: NumericValue) -> NumericValue:
         """Multiply `self` and `other`."""
         return _binop(ops.Multiply, self, other)
 
@@ -684,7 +684,7 @@ class NumericValue(Value):
 
     div = __div__ = __truediv__
 
-    def __rtruediv__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __rtruediv__(self, other: NumericValue) -> NumericValue:
         """Divide `other` by `self`."""
         return _binop(ops.Divide, other, self)
 
@@ -693,7 +693,7 @@ class NumericValue(Value):
     def __floordiv__(
         self,
         other: NumericValue,
-    ) -> NumericValue | NotImplemented:
+    ) -> NumericValue:
         """Floor divide `self` by `other`."""
         return _binop(ops.FloorDivide, self, other)
 
@@ -702,31 +702,31 @@ class NumericValue(Value):
     def __rfloordiv__(
         self,
         other: NumericValue,
-    ) -> NumericValue | NotImplemented:
+    ) -> NumericValue:
         """Floor divide `other` by `self`."""
         return _binop(ops.FloorDivide, other, self)
 
     rfloordiv = __rfloordiv__
 
-    def __pow__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __pow__(self, other: NumericValue) -> NumericValue:
         """Raise `self` to the `other`th power."""
         return _binop(ops.Power, self, other)
 
     pow = __pow__
 
-    def __rpow__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __rpow__(self, other: NumericValue) -> NumericValue:
         """Raise `other` to the `self`th power."""
         return _binop(ops.Power, other, self)
 
     rpow = __rpow__
 
-    def __mod__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __mod__(self, other: NumericValue) -> NumericValue:
         """Compute `self` modulo `other`."""
         return _binop(ops.Modulus, self, other)
 
     mod = __mod__
 
-    def __rmod__(self, other: NumericValue) -> NumericValue | NotImplemented:
+    def __rmod__(self, other: NumericValue) -> NumericValue:
         """Compute `other` modulo `self`."""
 
         return _binop(ops.Modulus, other, self)
@@ -1102,37 +1102,37 @@ class IntegerValue(NumericValue):
         """
         return ops.BaseConvert(self, from_base, to_base).to_expr()
 
-    def __and__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+    def __and__(self, other: IntegerValue) -> IntegerValue:
         """Bitwise and `self` with `other`."""
         return _binop(ops.BitwiseAnd, self, other)
 
     __rand__ = __and__
 
-    def __or__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+    def __or__(self, other: IntegerValue) -> IntegerValue:
         """Bitwise or `self` with `other`."""
         return _binop(ops.BitwiseOr, self, other)
 
     __ror__ = __or__
 
-    def __xor__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+    def __xor__(self, other: IntegerValue) -> IntegerValue:
         """Bitwise xor `self` with `other`."""
         return _binop(ops.BitwiseXor, self, other)
 
     __rxor__ = __xor__
 
-    def __lshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+    def __lshift__(self, other: IntegerValue) -> IntegerValue:
         """Bitwise left shift `self` with `other`."""
         return _binop(ops.BitwiseLeftShift, self, other)
 
-    def __rlshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+    def __rlshift__(self, other: IntegerValue) -> IntegerValue:
         """Bitwise left shift `self` with `other`."""
         return _binop(ops.BitwiseLeftShift, other, self)
 
-    def __rshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+    def __rshift__(self, other: IntegerValue) -> IntegerValue:
         """Bitwise right shift `self` with `other`."""
         return _binop(ops.BitwiseRightShift, self, other)
 
-    def __rrshift__(self, other: IntegerValue) -> IntegerValue | NotImplemented:
+    def __rrshift__(self, other: IntegerValue) -> IntegerValue:
         """Bitwise right shift `self` with `other`."""
         return _binop(ops.BitwiseRightShift, other, self)
 
