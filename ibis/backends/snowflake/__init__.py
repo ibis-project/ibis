@@ -779,7 +779,7 @@ def compile_join(element, compiler, **kw):
     result = compiler.visit_join(element, **kw)
 
     if element.right._is_lateral:
-        return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE)
+        return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE | re.DOTALL)
     return result
 
 
