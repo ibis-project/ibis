@@ -1,4 +1,4 @@
-FROM openjdk:8u342-jre
+FROM eclipse-temurin:8u342-b07-jre-jammy
 
 WORKDIR /opt
 
