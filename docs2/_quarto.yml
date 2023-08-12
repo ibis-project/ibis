@@ -1,0 +1,119 @@
+project:
+  type: website
+
+website:
+  title: "Ibis"
+  site-url: https://ibis-project.org
+  description: "the dataframe library"
+  favicon: logo.svg
+
+  # search
+  search:
+    location: navbar
+    type: textbox
+
+  # options
+  reader-mode: false
+  twitter-card: true
+  back-to-top-navigation: true
+  repo-url: https://github.com/ibis-project/ibis
+  repo-actions: [edit, issue]
+  issue-url: https://github.com/ibis-project/ibis/issues/new/choose
+
+  # footer
+  page-footer:
+    border: false
+    left: ""
+    right:
+      - icon: github
+        href: https://github.com/ibis-project
+      - icon: slack
+        href: https://gitter.im/ibis-dev/Lobby
+      - icon: rss
+        href: https://ibis-project.org/posts.xml
+
+  # nav
+  navbar:
+    logo: logo.svg
+    tools:
+      - icon: github
+        menu:
+          - text: Home
+            url:  https://github.com/ibis-project/ibis
+          - text: Report a bug
+            url: https://github.com/ibis-project/ibis/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml&title=bug
+          - text: Submit a feature request
+            url: https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat
+          - text: Ask the community for help
+            url: https://github.com/ibis-project/ibis/discussions/new?category=q-a
+    left:
+      - sidebar:getting-started
+      - sidebar:concepts
+      - sidebar:backends
+      - sidebar:how-to
+      - sidebar:reference
+    right:
+      - posts.qmd
+      - community.qmd
+
+  sidebar:
+    - id: ""
+    - id: getting-started
+      title: "Getting started"
+      style: "docked"
+      collapse-level: 2
+      contents: 
+        - why.qmd
+        - install.qmd
+        - auto: tutorials/*.qmd
+    - id: concepts
+      title: "Concepts"
+      style: "docked"
+      collapse-level: 2
+      contents:
+        - what.qmd
+        - auto: concepts/*.qmd
+    - id: backends
+      title: "Backends"
+      style: "docked"
+      collapse-level: 2
+      contents: 
+        - support_matrix.qmd
+        - auto: backends/*.qmd
+    - id: how-to
+      title: "How-to guides"
+      style: "docked"
+      collapse-level: 2
+      contents: how-to
+    - id: community
+      title: "Community"
+      style: "docked"
+      collapse-level: 2
+      contents: 
+        - auto: community
+    - id: presentations
+      title: "Presentations"
+      style: "docked"
+      collapse-level: 2
+      contents: presentations
+    - id: reference
+      title: "Reference"
+      style: "docked"
+      collapse-level: 2
+      contents:
+        - auto: reference/*.qmd
+        - release_notes.qmd
+
+format:
+  html:
+    theme: 
+      light: flatly
+      dark: darkly
+    css: styles.css
+    toc: true
+
+    # TODO: remove this after proper theme settled and ready to merge
+    # if using the vapor theme, adjust the text color optionally
+    #fontcolor: fuchsia
+    #linkcolor: fuchsia
+

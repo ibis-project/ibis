@@ -1,0 +1,13 @@
+---
+title: "AI"
+format: 
+  html:
+    page-layout: full
+---
+
+**Extremely experimental. Please do not abuse.**
+
+```{=html}
+<iframe class="streamlit-app-inner" width="100%" height="100%" src="https://ibis-ai.streamlit.app/?embedded=true"></iframe>
+```
+

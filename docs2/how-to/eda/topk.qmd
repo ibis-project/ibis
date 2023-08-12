@@ -1,0 +1,33 @@
+# Compute the top K records
+
+<!-- prettier-ignore-start -->
+Here we use the [`topk`][ibis.expr.types.Column.topk] method to compute the top
+5 customers for some generated TPC-H data by:
+<!-- prettier-ignore-end -->
+
+- count (the default)
+- sum of order totals
+
+```{python}
+import ibis
+ibis.options.interactive = True
+con = ibis.duckdb.connect()  # in-memory duckdb
+con.raw_sql("CALL dbgen(sf=0.1)")
+orders = con.table("orders")
+orders.o_custkey.topk(5)  # top 5 most frequent customers
+```
+
+```{python}
+topk = orders.o_custkey.topk(5, by=orders.o_totalprice.sum())  # top 5 largest spending customers
+topk
+```
+
+<!-- prettier-ignore-start -->
+You can also use [`topk`][ibis.expr.types.Column.topk] to retrieve the rows
+from the original table that match the key used, in this case `o_custkey`. This
+is done with a left semi join:
+<!-- prettier-ignore-end -->
+
+```{python}
+orders.semi_join(topk, "o_custkey")
+```

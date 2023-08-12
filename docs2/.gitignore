@@ -1,0 +1,11 @@
+.quarto
+_site
+
+*.ddb*
+
+site_libs
+/.quarto/
+
+*.csv
+*.parquet
+*.delta

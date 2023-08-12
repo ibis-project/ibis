@@ -1,0 +1,935 @@
+---
+title: "Ibis"
+repo-actions: false
+code-annotations: hover
+warning: false
+format:
+  html:
+    toc: false
+about:
+  id: about
+  template: jolla
+  image: logo.svg
+  links:
+    - icon: info-circle
+      href: why.qmd
+    - icon: forward
+      href: tutorials/getting_started.qmd
+    - icon: github
+      text: GitHub
+      href: https://github.com/ibis-project
+    - icon: slack
+      text: Gitter
+      href: https://gitter.im/ibis-dev/Lobby
+    - icon: rss
+      text: RSS
+      href: https://ibis-project.org/posts.xml
+---
+
+::: {#about}
+
+the Python dataframe library
+
+:::
+
+## Install
+
+We recommend starting with the default backend (DuckDB), Polars, or DataFusion.
+
+```bash
+pip install 'ibis-framework[duckdb]' # <1>
+```
+
+1. Install Ibis with optional dependencies (DuckDB in this case).
+
+See the [15+ supported backends](#backends-supported) for more options.
+
+## Quickstart
+
+See [the getting started tutorial](tutorials/getting_started.qmd) for a more in-depth introduction to Ibis. Below is a quick overview of Ibis.
+
+```{python}
+import ibis  # <1>
+
+ibis.options.interactive = True  # <2>
+
+t = ibis.examples.penguins.fetch()  # <3>
+t  # <4>
+```
+
+1. Ensure you install Ibis first.
+2. Use interactive mode for exploratory data analysis (EDA) or demos.
+3. Load a dataset from the built-in examples.
+4. Display the table.
+
+Ibis is a dataframe library with familiar syntax.
+
+```{python}
+t[10:15]  # <1>
+```
+
+1. Display a slice of the table.
+
+### Analytics
+
+Ibis is built for easy analytics at scale in Python.
+
+```{python}
+t.group_by(["species", "island"]).aggregate(count=ibis._.count()).order_by(  # <1>
+    ibis.desc("count")  # <1>
+)  # <1>
+```
+
+1. Group by species and island, and compute the number of rows in each group.
+
+### Exploratory data analysis
+
+Use built-in methods for exploration and [visualization](#visualization).
+
+```{python}
+num_species = int(t.select("species").nunique().to_pandas())  # <1>
+t["species"].topk(num_species)  # <2>
+```
+
+1. Compute the number of species in the dataset.
+2. Display the top species by count.
+
+### Visualization
+
+Ibis works with any Python plotting library that supports the [dataframe interchange protocol](https://data-apis.org/dataframe-protocol/latest/index.html).
+
+```{python}
+# | code-fold: true
+width = 640  # <1>
+height = 480  # <1>
+```
+
+1. Set the width and height of the plots.
+
+```{python}
+grouped = (  # <2>
+    t.group_by("species")  # <2>
+    .aggregate(count=ibis._.count())  # <2>
+    .order_by(ibis.desc("count"))  # <2>
+)  # <2>
+grouped  # <3>
+```
+
+1. Setup dimensions to plot.
+2. Setup data to plot.
+3. Display the table.
+
+::: {.panel-tabset}
+
+## Altair
+
+```{.bash}
+pip install altair
+```
+
+```{python}
+import altair as alt
+
+chart = (
+    alt.Chart(grouped)
+    .mark_bar()
+    .encode(
+        x="species",
+        y="count",
+    )
+    .properties(width=width, height=height)
+)
+chart
+```
+
+## Plotly
+
+```{.bash}
+pip install plotly
+```
+
+```{python}
+import plotly.express as px
+
+px.bar(
+    grouped,
+    x="species",
+    y="count",
+    width=width,
+    height=height,
+)
+```
+
+## plotnine
+
+```{.bash}
+pip install plotnine
+```
+```{python}
+from plotnine import ggplot, aes, geom_bar, theme
+
+(
+    ggplot(
+        grouped,
+        aes(x="species", y="count"),
+    )
+    + geom_bar(stat="identity")
+    + theme(figure_size=(width / 100, height / 100))
+)
+```
+
+:::
+
+### Data science
+
+Use Ibis with your favorite data science libraries for concise and efficient workflows.
+
+
+```{python}
+import ibis.selectors as s  # <1>
+
+
+def transform(t):  # <2>
+    t = t.mutate(  # <2>
+        s.across(s.numeric(), {"zscore": lambda x: (x - x.mean()) / x.std()})  # <2>
+    ).dropna()  # <2>
+    return t  # <2>
+
+
+f = transform(t.drop("year"))  # <3>
+f.select("species", "island", s.contains("zscore"))  # <4>
+```
+
+1. Import the selectors module.
+2. Define a function to transform the table for code reuse (compute z-scores on numeric columns).
+3. Apply the function to the table and assign it to a new variable.
+4. Display the transformed table.
+
+```bash
+pip install scikit-learn
+```
+
+```{python}
+import plotly.express as px  # <1>
+from sklearn.decomposition import PCA  # <1>
+
+X = f.select(s.contains("zscore"))  # <2>
+
+n_components = 3  # <3>
+pca = PCA(n_components=n_components).fit(X)  # <3>
+
+t_pca = ibis.memtable(pca.transform(X)).relabel(  # <4>
+    {"col0": "pc1", "col1": "pc2", "col2": "pc3"}  # <4>
+)  # <4>
+
+f = f.mutate(row_number=ibis.row_number().over()).join(  # <5>
+    t_pca.mutate(row_number=ibis.row_number().over()), "row_number"  # <5>
+)  # <5>
+
+px.scatter_3d(  # <6>
+    f,  # <6>
+    x="pc1",  # <6>
+    y="pc2",  # <6>
+    z="pc3",  # <6>
+    color="species",  # <6>
+    symbol="island",  # <6>
+)  # <6>
+```
+
+1. Import data science libraries
+2. Select "features" (numeric columns) as X
+3. Compute PCA
+4. Create a table from the PCA results
+5. Join the PCA results to the original table
+6. Plot the results
+
+### Input and output
+
+Ibis supports a variety of input and output options.
+
+#### Data platforms
+
+You can connect Ibis to [any supported backend](#backends-supported) to read and write data in backend-native tables.
+
+```{python}
+# | code-fold: true
+
+con = ibis.duckdb.connect("penguins.ddb")
+t = con.create_table("penguins", t.to_pyarrow(), overwrite=True)
+```
+
+```{python}
+con = ibis.duckdb.connect("penguins.ddb")  # <1>
+t = con.table("penguins")  # <2>
+t  # <3>
+```
+
+1. Connect to a backend.
+2. Load a table.
+3. Display the table.
+
+```{python}
+grouped = (  # <1>
+    t.group_by(["species", "island"])  # <1>
+    .aggregate(count=ibis._.count())  # <1>
+    .order_by(ibis.desc("count"))  # <1>
+)  # <1>
+con.create_table("penguins_grouped", grouped.to_pyarrow(), overwrite=True)  # <2>
+```
+
+1. Create a lazily evaluated Ibis expression.
+2. Write to a table.
+
+#### File formats
+
+Depending on the backend, you can read and write data in several file formats.
+
+::: {.panel-tabset}
+
+## CSV
+
+```{.bash}
+pip install 'ibis-framework[duckdb]'
+```
+
+```{python}
+t.to_csv("penguins.csv")  # <1>
+ibis.read_csv("penguins.csv")  # <2>
+```
+
+1. Write the table to a CSV file. Dependent on backend.
+2. Read the CSV file into a table. Dependent on backend.
+
+## Delta Lake
+
+```{.bash}
+pip install 'ibis-framework[duckdb,deltalake]'
+```
+
+```{python}
+t.to_delta("penguins.delta", mode="overwrite")  # <1>
+ibis.read_delta("penguins.delta")  # <2>
+```
+
+1. Write the table to a Delta Lake table. Dependent on backend.
+2. Read the Delta Lake table into a table. Dependent on backend.
+
+## Parquet
+
+```{.bash}
+pip install 'ibis-framework[duckdb]'
+```
+
+```{python}
+t.to_parquet("penguins.parquet")  # <1>
+ibis.read_parquet("penguins.parquet")  # <2>
+```
+
+1. Write the table to a Parquet file. Dependent on backend.
+2. Read the Parquet file into a table. Dependent on backend.
+
+:::
+
+#### With other Python libraries
+
+Ibis uses [Apache Arrow](https://arrow.apache.org/) for efficient data transfer to and from other libraries. Ibis tables implement the `__dataframe__` and `__array__` protocols, so you can pass them to any library that supports.
+
+::: {.panel-tabset}
+
+## pandas
+
+You can convert Ibis tables to pandas dataframes.
+
+```{python}
+df = t.to_pandas()  # <1>
+df.head()
+```
+
+1. Returns a pandas dataframe.
+
+Or you can convert pandas dataframes to Ibis tables.
+
+```{python}
+t = ibis.memtable(df)  # <1>
+t.head()
+```
+
+1. Returns an Ibis table.
+
+## Polars
+
+You can convert Ibis tables to Polars dataframes.
+
+```{python}
+import polars as pl
+
+df = pl.from_arrow(t.to_pyarrow())
+df.head()
+```
+
+Or Polars dataframes to Ibis tables.
+
+```{python}
+t = ibis.memtable(df)
+t.head()
+```
+
+## PyArrow
+
+You can convert Ibis tables to PyArrow tables.
+
+```{python}
+t.to_pyarrow()
+```
+
+Or PyArrow batches:
+
+```{python}
+t.to_pyarrow_batches()
+```
+
+And you can convert PyArrow tables to Ibis tables.
+
+```{python}
+ibis.memtable(t.to_pyarrow())
+```
+
+## PyTorch
+
+You can convert Ibis tables to torch tensors.
+
+```bash
+pip install torch
+```
+
+```{python}
+t.select(s.numeric()).limit(3).to_torch()
+```
+
+## `__dataframe__`
+
+You can directly call the `__dataframe__` protocol on Ibis tables, though this is typically handled by the library you're using.
+
+```{python}
+t.__dataframe__()
+```
+
+## `__array__`
+
+You can directly call the `__array__` protocol on Ibis tables, though this is typically handled by the library you're using.
+
+```{python}
+t.__array__()
+```
+
+:::
+
+### SQL + Python
+
+You can use the `ibis.to_sql` to generate SQL strings and `ibis.show_sql` display them. Ibis uses [SQLGlot](https://sqlglot.com) under the hood to allow passing a `dialect` parameter to SQL methods.
+
+::: {.panel-tabset}
+
+## BigQuery
+
+```{python}
+dialect = "bigquery"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+## Snowflake
+
+```{python}
+dialect = "snowflake"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+## Oracle
+
+```{python}
+dialect = "oracle"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+## MySQL
+
+```{python}
+dialect = "mysql"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+## MSSQL
+
+```{python}
+dialect = "mssql"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+## PostgreSQL
+
+```{python}
+dialect = "postgres"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+## SQLite
+
+```{python}
+dialect = "sqlite"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+## Trino
+
+```{python}
+dialect = "trino"  # <1>
+sql = ibis.to_sql(  # <2>
+    grouped,  # <2>
+    dialect=dialect,  # <2>
+)  # <2>
+sql  # <3>
+```
+
+1. Set the dialect.
+2. Convert the table to a SQL string.
+3. Display the SQL string.
+
+You can chain Ibis expressions and `.sql` together.
+
+```{python}
+con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
+```
+
+1. Chain `.sql` calls and Ibis expressions together.
+
+:::
+
+## Backends supported
+
+Need to use Ibis with a backend that isn't currently supported? [Let us know!](https://github.com/ibis-project/ibis/discussions/new?category=q-a)
+
+::: {.panel-tabset}
+
+## BigQuery
+
+Install with the BigQuery extra:
+
+```{.bash}
+pip install 'ibis-framework[bigquery]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.bigquery.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Clickhouse
+
+Install with the Clickhouse extra:
+
+```{.bash}
+pip install 'ibis-framework[clickhouse]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.clickhouse.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Dask
+
+Install with the Dask extra:
+
+```{.bash}
+pip install 'ibis-framework[dask]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.dask.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## DataFusion
+
+Install with the DataFusion extra:
+
+```{.bash}
+pip install 'ibis-framework[datafusion]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.datafusion.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Druid
+Install with the Druid extra:
+
+```{.bash}
+pip install 'ibis-framework[druid]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.druid.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## DuckDB
+
+Install with the DuckDB extra:
+
+```{.bash}
+pip install 'ibis-framework[duckdb]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.duckdb.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Impala
+
+Install with the Impala extra:
+
+```{.bash}
+pip install 'ibis-framework[impala]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+    
+con = ibis.impala.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## MSSQL
+
+Install with the MSSQL extra:
+
+```{.bash}
+pip install 'ibis-framework[mssql]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.mssql.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## MySQL
+
+Install with the MySQL extra:
+
+```{.bash}
+pip install 'ibis-framework[mysql]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.mysql.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+    
+## Oracle
+
+Install with the Oracle extra:
+
+```{.bash}
+pip install 'ibis-framework[oracle]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.oracle.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## pandas
+
+Install with the pandas extra:
+
+```{.bash}
+pip install 'ibis-framework[pandas]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.pandas.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## Polars
+
+Install with the Polars extra:
+
+```{.bash}
+pip install 'ibis-framework[polars]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.polars.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## PostgreSQL
+
+Install with the Postgres extra:
+
+```{.bash}
+pip install 'ibis-framework[postgres]'
+```
+
+And connect:
+
+
+```{.python}
+import ibis
+
+con = ibis.postgres.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## PySpark
+
+Install with the PySpark extra:
+
+```{.bash}
+pip install 'ibis-framework[pyspark]'
+```
+
+And connect:
+
+
+```{.python}
+import ibis
+
+con = ibis.pyspark.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## Snowflake
+
+Install with the Snowflake extra:
+
+```{.bash}
+pip install 'ibis-framework[snowflake]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.snowflake.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## SQLite
+
+Install with the SQLite extra:
+
+```{.bash}
+pip install 'ibis-framework[sqlite]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.sqlite.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## Trino
+
+Install with the Trino extra:
+
+```{.bash}
+pip install 'ibis-framework[trino]'
+```
+
+And connect:
+
+
+```{.python}
+import ibis
+
+con = ibis.trino.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+:::
+
+See the [backend support matrix](support_matrix.qmd) for details on operations supported. [Open a feature request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat) if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
