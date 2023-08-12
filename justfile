@@ -134,3 +134,13 @@ decouple *args:
 # profile something
 profile +args:
     pyinstrument {{ args }}
+
+# preview docs
+preview:
+    quarto preview docs2
+
+render:
+    @quarto render docs2
+
+upload:
+    @az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs2/_site/*" --recursive

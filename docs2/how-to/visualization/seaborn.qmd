@@ -1,0 +1,29 @@
+# seaborn + Ibis
+
+If you don't have data to visualize, you can load an example table:
+
+
+```{python}
+# | code-fold: true
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+t.head(3)
+```
+
+## Using seaborn with Ibis
+
+Refer to the [seaborn documentation](https://seaborn.pydata.org/). matplotlib has not implemented the dataframe interchange protocol so it is recommended to call to_pandas() on the Ibis table before plotting.
+
+```{python}
+import seaborn as sns
+
+sns.barplot(
+    t.group_by("species").aggregate(count=ibis._.count()).to_pandas(),
+    x="species",
+    y="count",
+)
+```

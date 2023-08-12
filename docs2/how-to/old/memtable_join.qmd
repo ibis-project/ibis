@@ -1,0 +1,81 @@
+# Join an in-memory DataFrame to a TableExpression
+
+You might have an in-memory DataFrame that you want to join to a TableExpression.
+For example, you might have a file on your local machine that you don't want to upload to
+your backend, but you need to join it to a table in that backend.
+
+You can perform joins on local data to TableExpressions from your backend easily with Ibis MemTables.
+
+In this guide, you will learn how to join a pandas DataFrame to a TableExpression.
+
+## Data Setup:
+
+In this example, we will create two DataFrames: one containing events and one containing event names.
+We will save the events to a parquet file and read that as a TableExpression in the DuckDB backend.
+We will then convert the event names DataFrame to a PandasInMemoryTable (MemTable), which is
+a pandas DataFrame as a TableExpression and join the two expressions together as we would
+two TableExpressions in a backend.
+
+```{python}
+import ibis
+
+import pandas as pd
+from datetime import date
+
+# create a pandas DataFrame that we will convert to a
+# PandasInMemoryTable (Ibis MemTable)
+events = pd.DataFrame(
+    {
+        'event_id': range(4),
+        'event_name': [f'e{k}' for k in range(4)],
+    }
+)
+
+# Create a parquet file that we will read in using the DuckDB backend
+# as a TableExpression
+measures = pd.DataFrame({
+    "event_id": [0] * 2 + [1] * 3 + [2] * 5 + [3] * 2
+    ,"measured_on": map(
+        date
+        ,[2021] * 12, [6] * 4 + [5] * 6 + [7] * 2
+        ,range(1, 13)
+    )
+    ,"measurement": None
+})
+
+measures.at[1, "measurement"] = 5.
+measures.at[4, "measurement"] = 42.
+measures.at[5, "measurement"] = 42.
+measures.at[7, "measurement"] = 11.
+
+# Save measures to parquet:
+measures.to_parquet('measures.parquet')
+
+# connect to a DuckDB backend
+conn = ibis.connect('duckdb://:memory:')
+measures = conn.register('measures.parquet', 'measures')
+
+# `measures` is a TableExpression in a DuckDB backend connection:
+measures
+```
+
+Converting a pandas DataFrame to a MemTable is as simple as feeding it to `ibis.memtable`:
+
+```{python}
+# To join, convert your DataFrame to a memtable
+mem_events = ibis.memtable(events)
+
+mem_events
+```
+
+and joining is the same as joining any two TableExpressions:
+
+```{python}
+# Join as you would two table expressions
+measures.join(
+    mem_events,
+    measures['event_id'] == mem_events['event_id']
+).to_pandas()
+```
+
+Note that the return result of the `join` is a TableExpression and that `to_pandas` returns a pandas DataFrame.
