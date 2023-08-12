@@ -59,7 +59,7 @@ services:
         - CMD
         - pg_isready
       timeout: 5s
-    image: postgres:13.12-alpine
+    image: postgres:15.4-alpine
     networks:
       - impala
 
@@ -248,7 +248,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:15.3-alpine
+    image: postgres:15.4-alpine
     container_name: druid-postgres
     environment:
       - POSTGRES_PASSWORD=FoolishPassword
