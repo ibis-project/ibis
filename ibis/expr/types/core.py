@@ -17,8 +17,11 @@ from rich.jupyter import JupyterMixin
 from ibis.common.patterns import Coercible, CoercionError
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
     import pyarrow as pa
+    import torch
 
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend

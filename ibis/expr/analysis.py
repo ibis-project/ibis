@@ -27,7 +27,7 @@ y = Variable("y")
 # compilation later
 
 
-def sub_for(node: ops.Node, substitutions: Mapping[ops.node, ops.Node]) -> ops.Node:
+def sub_for(node: ops.Node, substitutions: Mapping[ops.Node, ops.Node]) -> ops.Node:
     """Substitute operations in `node` with nodes in `substitutions`.
 
     Parameters
