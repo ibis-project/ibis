@@ -1245,7 +1245,7 @@ class Column(Value, _FixedTextJupyterMixin):
         self,
         k: int,
         by: ir.Value | None = None,
-    ) -> ir.TopK:
+    ) -> ir.Table:
         """Return a "top k" expression.
 
         Parameters

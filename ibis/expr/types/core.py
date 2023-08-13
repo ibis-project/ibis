@@ -6,19 +6,22 @@ import webbrowser
 from typing import TYPE_CHECKING, Any, Mapping, NoReturn, Tuple
 
 from public import public
+from rich.jupyter import JupyterMixin
 
 import ibis.expr.operations as ops
+from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
 from ibis.common.grounds import Immutable
+from ibis.common.patterns import Coercible, CoercionError
 from ibis.config import _default_backend, options
 from ibis.util import experimental
-from ibis.common.annotations import ValidationError
-from rich.jupyter import JupyterMixin
-from ibis.common.patterns import Coercible, CoercionError
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
     import pyarrow as pa
+    import torch
 
     import ibis.expr.types as ir
     from ibis.backends.base import BaseBackend
@@ -41,6 +44,7 @@ class Expr(Immutable, Coercible):
     """Base expression class."""
 
     __slots__ = ("_arg",)
+    _arg: ops.Node
 
     def __init__(self, arg: ops.Node) -> None:
         object.__setattr__(self, "_arg", arg)
