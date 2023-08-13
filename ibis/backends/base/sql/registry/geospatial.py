@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterable, List, TypeVar
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, TypeVar
 
 import ibis.expr.datatypes as dt
 from ibis.common import exceptions as ex
@@ -13,12 +14,12 @@ if TYPE_CHECKING:
 NumberType = TypeVar("NumberType", int, float)
 # Geometry primitives (2D)
 PointType = Iterable[NumberType]
-LineStringType = List[PointType]
-PolygonType = List[LineStringType]
+LineStringType = list[PointType]
+PolygonType = list[LineStringType]
 # Multipart geometries (2D)
-MultiPointType = List[PointType]
-MultiLineStringType = List[LineStringType]
-MultiPolygonType = List[PolygonType]
+MultiPointType = list[PointType]
+MultiLineStringType = list[LineStringType]
+MultiPolygonType = list[PolygonType]
 
 
 def _format_point_value(value: PointType) -> str:

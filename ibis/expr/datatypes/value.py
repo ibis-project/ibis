@@ -7,7 +7,8 @@ import enum
 import ipaddress
 import json
 import uuid
-from typing import Any, Mapping, NamedTuple, Sequence
+from collections.abc import Mapping, Sequence
+from typing import Any, NamedTuple
 
 import toolz
 from public import public

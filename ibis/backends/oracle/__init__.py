@@ -5,6 +5,7 @@ from __future__ import annotations
 import atexit
 import contextlib
 import sys
+from typing import TYPE_CHECKING, Any
 
 import oracledb
 
@@ -20,8 +21,6 @@ import oracledb
 oracledb.__version__ = oracledb.version = "7"
 
 sys.modules["cx_Oracle"] = oracledb
-
-from typing import TYPE_CHECKING, Any, Iterable  # noqa: E402
 
 import sqlalchemy as sa  # noqa: E402
 
@@ -39,6 +38,8 @@ from ibis.backends.oracle.datatypes import (  # noqa: E402
 from ibis.backends.oracle.registry import operation_registry  # noqa: E402
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import ibis.expr.schema as sch
 
 

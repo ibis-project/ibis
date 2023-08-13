@@ -5,9 +5,9 @@ import importlib
 import importlib.metadata
 import itertools
 import sys
-from functools import lru_cache
+from functools import cache
 from pathlib import Path
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import _pytest
 import numpy as np
@@ -22,6 +22,9 @@ import ibis.common.exceptions as com
 from ibis import util
 from ibis.backends.base import CanCreateDatabase, CanCreateSchema, _get_backend_names
 from ibis.conftest import WINDOWS
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 TEST_TABLES = {
     "functional_alltypes": ibis.schema(
@@ -327,7 +330,7 @@ def pytest_collection_modifyitems(session, config, items):
             item.add_marker(marker)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _get_backends_to_test(
     keep: tuple[str, ...] = (),
     discard: tuple[str, ...] = (),

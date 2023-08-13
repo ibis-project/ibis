@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy.types as sat
 import trino.client
@@ -12,6 +12,9 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.common.collections import FrozenDict
 from ibis.formats.parser import TypeParser
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class ROW(_ROW):

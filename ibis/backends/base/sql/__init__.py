@@ -4,7 +4,7 @@ import abc
 import contextlib
 import os
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any
 
 import toolz
 
@@ -17,6 +17,8 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.compiler import Compiler
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import pandas as pd
     import pyarrow as pa
 

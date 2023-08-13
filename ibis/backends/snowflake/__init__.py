@@ -12,7 +12,7 @@ import tempfile
 import textwrap
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 import sqlalchemy as sa
@@ -38,6 +38,8 @@ from ibis.backends.snowflake.datatypes import SnowflakeType, parse
 from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
+
     import pandas as pd
 
     import ibis.expr.schema as sch

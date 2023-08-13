@@ -6,7 +6,7 @@ import contextlib
 import getpass
 import warnings
 from operator import methodcaller
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
@@ -41,6 +41,8 @@ from ibis.backends.base.sql.alchemy.translator import (
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import pandas as pd
     import pyarrow as pa
 

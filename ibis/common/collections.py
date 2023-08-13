@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Hashable, Iterator, Mapping
 from itertools import tee
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Hashable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from public import public
 

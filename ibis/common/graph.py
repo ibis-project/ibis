@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Hashable, Iterable, Iterator
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence
+from collections.abc import Hashable, Iterable, Iterator, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from ibis.common.collections import frozendict
 from ibis.common.patterns import NoMatch, pattern
@@ -256,7 +256,7 @@ class Node(Hashable):
         return self.map(fn, filter=filter)[self]
 
 
-class Graph(Dict[Node, Sequence[Node]]):
+class Graph(dict[Node, Sequence[Node]]):
     """A mapping-like graph data structure for easier graph traversal and manipulation.
 
     The data structure is a mapping of nodes to their children. The children are

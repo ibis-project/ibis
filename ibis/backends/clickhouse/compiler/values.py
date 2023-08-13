@@ -5,7 +5,7 @@ import contextlib
 import functools
 from functools import partial
 from operator import add, mul, sub
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 from sqlglot.dialects.dialect import rename_func
@@ -18,6 +18,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import helpers
 from ibis.backends.clickhouse.datatypes import serialize
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 # TODO: Ideally we can translate bottom up a la `relations.py`
 # TODO: Find a way to remove all the dialect="clickhouse" kwargs

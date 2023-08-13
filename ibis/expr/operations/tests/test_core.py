@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple
+from typing import Optional
 
 import pytest
 
@@ -41,7 +41,7 @@ class NamedValue(Base):
 
 
 class Values(Base):
-    lst: Tuple[ops.Node, ...]
+    lst: tuple[ops.Node, ...]
 
 
 one = NamedValue(value=1, name=Name("one"))

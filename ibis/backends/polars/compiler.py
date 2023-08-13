@@ -4,8 +4,8 @@ import calendar
 import functools
 import math
 import operator
+from collections.abc import Mapping
 from functools import partial
-from typing import Mapping
 
 import numpy as np
 import pandas as pd

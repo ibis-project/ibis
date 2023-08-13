@@ -11,13 +11,16 @@ import tempfile
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Iterable, Mapping
+from typing import TYPE_CHECKING
 
 import pooch
 import requests
 from google.cloud import storage
 
 import ibis
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
 
 EXAMPLES_DIRECTORY = Path(__file__).parent
 

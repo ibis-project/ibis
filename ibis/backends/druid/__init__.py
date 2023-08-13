@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import json
 import warnings
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 
@@ -13,6 +13,9 @@ import ibis.backends.druid.datatypes as ddt
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.druid.compiler import DruidCompiler
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class Backend(BaseAlchemyBackend):

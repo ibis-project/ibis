@@ -3,7 +3,6 @@ from __future__ import annotations
 import datetime
 import pickle
 import re
-from typing import List
 
 import numpy as np
 import pandas as pd
@@ -1467,7 +1466,7 @@ def test_unbound_table_name():
 class MyTable:
     a: int
     b: str
-    c: List[float]
+    c: list[float]
 
 
 def test_unbound_table_using_class_definition():

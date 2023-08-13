@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Tuple, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 import dask.dataframe as dd
 import dask.delayed
@@ -21,10 +21,10 @@ if TYPE_CHECKING:
     from ibis.backends.pandas.trace import TraceTwoLevelDispatcher
     from ibis.expr.operations.sortkeys import SortKey
 
-DispatchRule = Tuple[Tuple[Union[Type, Tuple], ...], Callable]
+DispatchRule = tuple[tuple[Union[type, tuple], ...], Callable]
 
-TypeRegistrationDict = Dict[
-    Union[Type[ops.Node], Tuple[Type[ops.Node], ...]], List[DispatchRule]
+TypeRegistrationDict = dict[
+    Union[type[ops.Node], tuple[type[ops.Node], ...]], list[DispatchRule]
 ]
 
 

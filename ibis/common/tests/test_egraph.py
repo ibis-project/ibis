@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import itertools
-from typing import Any, Tuple
+from typing import Any
 
 import pytest
 
@@ -167,7 +167,7 @@ def test_enode_roundtrip():
 
 class MySecondNode(Concrete, Node):
     a: int
-    b: Tuple[int, ...]
+    b: tuple[int, ...]
 
 
 def test_enode_roundtrip_with_variadic_arg():
@@ -187,7 +187,7 @@ class MyInt(Concrete, Node):
 
 class MyThirdNode(Concrete, Node):
     a: int
-    b: Tuple[MyInt, ...]
+    b: tuple[MyInt, ...]
 
 
 def test_enode_roundtrip_with_nested_arg():

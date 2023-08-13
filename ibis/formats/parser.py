@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Mapping
+from typing import TYPE_CHECKING
 
 import sqlglot as sg
 from sqlglot.expressions import ColumnDef, DataType, DataTypeSize
@@ -9,6 +9,9 @@ from sqlglot.expressions import ColumnDef, DataType, DataTypeSize
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 SQLGLOT_TYPE_TO_IBIS_TYPE = {
     DataType.Type.BIGDECIMAL: dt.Decimal(76, 38),

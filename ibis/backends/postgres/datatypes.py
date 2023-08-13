@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Mapping
+from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psql
@@ -10,6 +10,9 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
 from ibis.common.collections import FrozenDict
 from ibis.formats.parser import TypeParser
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class PostgresTypeParser(TypeParser):

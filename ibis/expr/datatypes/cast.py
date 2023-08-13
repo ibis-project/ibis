@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import functools
-from typing import Iterator
+from typing import TYPE_CHECKING
 
 from multipledispatch import Dispatcher
 from public import public
 
 import ibis.expr.datatypes.core as dt
 from ibis.common.exceptions import IbisTypeError
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 castable = Dispatcher("castable")
 

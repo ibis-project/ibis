@@ -3,7 +3,7 @@ from __future__ import annotations
 import re
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import datafusion
 import pyarrow as pa
@@ -27,6 +27,8 @@ except ImportError:
     SessionConfig = None
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import pandas as pd
 
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import functools
-from typing import TYPE_CHECKING, Literal, Mapping
+from typing import TYPE_CHECKING, Literal
 
 import sqlglot as sg
 from sqlglot.expressions import ColumnDef, DataType
@@ -12,6 +12,8 @@ from ibis.common.collections import FrozenDict
 from ibis.formats.parser import TypeParser
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from sqlglot.expressions import DataTypeSize, Expression
 
 

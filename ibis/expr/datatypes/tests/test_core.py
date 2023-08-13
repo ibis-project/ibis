@@ -5,10 +5,9 @@ import decimal  # noqa: TCH003
 import sys
 import uuid  # noqa: TCH003
 from dataclasses import dataclass
-from typing import Dict, List, NamedTuple, Tuple
+from typing import Annotated, NamedTuple
 
 import pytest
-from typing_extensions import Annotated
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import ValidationError
@@ -223,9 +222,9 @@ class PyStruct:
     h: datetime.datetime
     i: datetime.timedelta
     j: decimal.Decimal
-    k: List[int]
-    l: Dict[str, int]  # noqa: E741
-    n: Tuple[str]
+    k: list[int]
+    l: dict[str, int]  # noqa: E741
+    n: tuple[str]
     o: uuid.UUID
     p: None
     q: MyStruct

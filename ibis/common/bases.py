@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 from weakref import WeakValueDictionary
 
 from ibis.common.caching import WeakCache
 from ibis.common.collections import FrozenDict
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from typing_extensions import Self
 
 

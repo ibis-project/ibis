@@ -18,8 +18,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
-    Iterator,
-    Sequence,
     TypeVar,
 )
 from uuid import uuid4
@@ -27,6 +25,7 @@ from uuid import uuid4
 import toolz
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Sequence
     from numbers import Real
     from pathlib import Path
 

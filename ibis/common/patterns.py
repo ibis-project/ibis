@@ -9,19 +9,19 @@ from collections.abc import Callable, Hashable, Mapping, Sequence
 from enum import Enum
 from inspect import Parameter
 from itertools import chain
-from typing import Any as AnyType
 from typing import (
+    Annotated,
     ForwardRef,
     Generic,  # noqa: F401
     Literal,
     Optional,
-    Tuple,
     TypeVar,
     Union,
 )
+from typing import Any as AnyType
 
 import toolz
-from typing_extensions import Annotated, GenericMeta, Self, get_args, get_origin
+from typing_extensions import GenericMeta, Self, get_args, get_origin
 
 from ibis.common.bases import Singleton, Slotted
 from ibis.common.collections import RewindableIterator, frozendict
@@ -170,7 +170,7 @@ class Pattern(Hashable):
                 # in case of Callable without args we check for the Callable
                 # protocol only
                 return InstanceOf(Callable)
-        elif issubclass(origin, Tuple):
+        elif issubclass(origin, tuple):
             # construct validators for the tuple elements, but need to treat
             # variadic tuples differently, e.g. tuple[int, ...] is a variadic
             # tuple of integers, while tuple[int] is a tuple with a single int

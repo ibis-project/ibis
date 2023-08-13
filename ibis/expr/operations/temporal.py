@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import operator
+from typing import Annotated
 
 from public import public
-from typing_extensions import Annotated
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz

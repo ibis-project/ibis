@@ -4,7 +4,7 @@ import collections
 import inspect
 import itertools
 from textwrap import dedent
-from typing import Any, Callable, MutableMapping, Sequence
+from typing import TYPE_CHECKING, Any, Callable
 
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import dialect
@@ -16,6 +16,9 @@ from ibis import IbisError
 from ibis.backends.postgres.compiler import PostgreSQLExprTranslator, PostgresUDFNode
 from ibis.backends.postgres.datatypes import PostgresType
 from ibis.legacy.udf.validate import validate_output_type
+
+if TYPE_CHECKING:
+    from collections.abc import MutableMapping, Sequence
 
 _udf_name_cache: MutableMapping[str, Any] = collections.defaultdict(itertools.count)
 

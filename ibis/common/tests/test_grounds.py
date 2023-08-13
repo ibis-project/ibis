@@ -3,7 +3,8 @@ from __future__ import annotations
 import copy
 import pickle
 import weakref
-from typing import Callable, Generic, Mapping, Optional, Sequence, Tuple, TypeVar, Union
+from collections.abc import Mapping, Sequence
+from typing import Callable, Generic, Optional, TypeVar, Union
 
 import pytest
 
@@ -156,7 +157,7 @@ class EmptyMap(Map[K, V]):
 
 
 class ConsMap(Map[K, V]):
-    head: Tuple[K, V]
+    head: tuple[K, V]
     rest: Map[K, V]
 
     def __getitem__(self, key):
@@ -1000,12 +1001,12 @@ def test_init_subclass_keyword_arguments():
 
 def test_argument_order_using_optional_annotations():
     class Case1(Annotable):
-        results: Optional[Tuple[int]] = ()
+        results: Optional[tuple[int]] = ()
         default: Optional[int] = None
 
     class SimpleCase1(Case1):
         base: int
-        cases: Optional[Tuple[int]] = ()
+        cases: Optional[tuple[int]] = ()
 
     class Case2(Annotable):
         results = optional(TupleOf(is_int), default=())
