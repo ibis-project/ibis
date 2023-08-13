@@ -161,7 +161,7 @@ class Slotted(Base):
     __slots__ = ("__precomputed_hash__",)
     __precomputed_hash__: int
 
-    def __init__(self, **kwargs) -> Self:
+    def __init__(self, **kwargs) -> None:
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
         hashvalue = hash(tuple(kwargs.values()))
