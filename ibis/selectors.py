@@ -60,7 +60,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
-from ibis.common.collections import frozendict, FrozenDict
+from ibis.common.collections import FrozenDict, frozendict
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.patterns import Coercible
 from ibis.expr.deferred import Deferred

@@ -9,8 +9,8 @@ from collections.abc import Callable, Hashable, Mapping, Sequence
 from enum import Enum
 from inspect import Parameter
 from itertools import chain
-from typing import Any as AnyType
 from typing import (
+    TYPE_CHECKING,
     ForwardRef,
     Generic,  # noqa: F401
     Literal,
@@ -19,15 +19,19 @@ from typing import (
     TypeVar,
     Union,
 )
+from typing import Any as AnyType
 
 import toolz
 from typing_extensions import Annotated, GenericMeta, Self, get_args, get_origin
 
 from ibis.common.bases import Singleton, Slotted
-from ibis.common.collections import RewindableIterator, frozendict
+from ibis.common.collections import FrozenDict, RewindableIterator, frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.typing import Sentinel, get_bound_typevars, get_type_params
 from ibis.util import is_iterable, promote_tuple
+
+if TYPE_CHECKING:
+    from types import ModuleType
 
 if sys.version_info >= (3, 10):
     from types import UnionType
@@ -382,6 +386,8 @@ class Variable(Slotted, Builder):
     """
 
     __slots__ = ("name",)
+    # Used Any as don't know what type the name is
+    name: Any
 
     def __init__(self, name):
         super().__init__(name=name)
@@ -406,6 +412,7 @@ class Just(Slotted, Builder):
     """
 
     __slots__ = ("value",)
+    value: Any
 
     def __init__(self, value):
         assert not isinstance(value, (Pattern, Builder))
@@ -431,6 +438,7 @@ class Factory(Slotted, Builder):
     """
 
     __slots__ = ("func",)
+    func: Callable
 
     def __init__(self, func):
         assert callable(func)
@@ -457,6 +465,9 @@ class Call(Slotted, Builder):
     """
 
     __slots__ = ("func", "args", "kwargs")
+    func: Callable
+    args: tuple
+    kwargs: FrozenDict
 
     def __init__(self, func, *args, **kwargs):
         assert callable(func)
@@ -527,6 +538,7 @@ class Is(Slotted, Pattern):
     """
 
     __slots__ = ("value",)
+    value: Any
 
     def match(self, value, context):
         if value is self.value:
@@ -557,6 +569,8 @@ class Capture(Slotted, Pattern):
     """
 
     __slots__ = ("key", "pattern")
+    key: Any
+    pattern: Pattern
 
     def __init__(self, key, pat=_any):
         super().__init__(key=key, pattern=pattern(pat))
@@ -581,6 +595,8 @@ class Replace(Slotted, Pattern):
     """
 
     __slots__ = ("pattern", "builder")
+    pattern: Pattern
+    builder: Builder
 
     def __init__(self, matcher, replacer):
         super().__init__(pattern=pattern(matcher), builder=builder(replacer))
@@ -605,6 +621,7 @@ class Check(Slotted, Pattern):
     """
 
     __slots__ = ("predicate",)
+    predicate: Callable
 
     def __init__(self, predicate):
         assert callable(predicate)
@@ -627,6 +644,7 @@ class Function(Slotted, Pattern):
     """
 
     __slots__ = ("func",)
+    func: Callable
 
     def __init__(self, func):
         assert callable(func)
@@ -663,6 +681,8 @@ class Namespace:
     """
 
     __slots__ = ("module", "pattern")
+    module: ModuleType
+    pattern: Pattern
 
     def __init__(self, pattern, module):
         if isinstance(module, str):
@@ -693,6 +713,7 @@ class Apply(Slotted, Pattern):
     """
 
     __slots__ = ("func",)
+    func: Callable
 
     def __init__(self, func):
         assert callable(func)
@@ -716,6 +737,7 @@ class EqualTo(Slotted, Pattern):
     """
 
     __slots__ = ("value",)
+    value: Any
 
     def __init__(self, value):
         super().__init__(value=value)
@@ -737,6 +759,8 @@ class Option(Slotted, Pattern):
     """
 
     __slots__ = ("pattern", "default")
+    pattern: Pattern
+    default: Any
 
     def __init__(self, pat, default=None):
         super().__init__(pattern=pattern(pat), default=default)
@@ -755,6 +779,8 @@ class TypeOf(Slotted, Pattern):
     """Pattern that matches a value that is of a given type."""
 
     __slots__ = ("type",)
+    # Used Any as not sure how to type this
+    type: Any
 
     def __init__(self, typ):
         super().__init__(type=typ)
@@ -797,6 +823,8 @@ class InstanceOf(Slotted, Singleton, Pattern):
     """
 
     __slots__ = ("type",)
+    # Used Any as not sure how to type this
+    type: Any
 
     def __init__(self, typ):
         super().__init__(type=typ)
@@ -840,6 +868,8 @@ class GenericInstanceOf(Slotted, Pattern):
     """
 
     __slots__ = ("origin", "fields")
+    origin: type
+    fields: dict
 
     def __init__(self, typ):
         origin = get_origin(typ)
@@ -879,6 +909,8 @@ class LazyInstanceOf(Slotted, Pattern):
     """
 
     __slots__ = ("types", "check")
+    types: tuple[type, ...]
+    check: Callable
 
     def __init__(self, types):
         types = promote_tuple(types)
@@ -908,6 +940,7 @@ class CoercedTo(Slotted, Pattern):
     """
 
     __slots__ = ("target",)
+    target: type
 
     def __new__(cls, target):
         if issubclass(target, Coercible):
@@ -974,6 +1007,9 @@ class GenericCoercedTo(Slotted, Pattern):
     """
 
     __slots__ = ("origin", "params", "checker")
+    origin: type
+    params: FrozenDict
+    checker: GenericInstanceOf
 
     def __init__(self, target):
         origin = get_origin(target)
@@ -1003,6 +1039,7 @@ class Not(Slotted, Pattern):
     """
 
     __slots__ = ("pattern",)
+    pattern: Pattern
 
     def __init__(self, inner):
         super().__init__(pattern=pattern(inner))
@@ -1025,6 +1062,7 @@ class AnyOf(Slotted, Pattern):
     """
 
     __slots__ = ("patterns",)
+    patterns: tuple[Pattern, ...]
 
     def __init__(self, *pats):
         patterns = tuple(map(pattern, pats))
@@ -1050,6 +1088,7 @@ class AllOf(Slotted, Pattern):
     """
 
     __slots__ = ("patterns",)
+    patterns: tuple[Pattern, ...]
 
     def __init__(self, *pats):
         patterns = tuple(map(pattern, pats))
@@ -1078,6 +1117,8 @@ class Length(Slotted, Pattern):
     """
 
     __slots__ = ("at_least", "at_most")
+    at_least: int
+    at_most: int
 
     def __init__(
         self,
@@ -1111,6 +1152,8 @@ class Contains(Slotted, Pattern):
     """
 
     __slots__ = ("needle",)
+    # Used Any as not sure how to type this
+    needle: Any
 
     def __init__(self, needle):
         super().__init__(needle=needle)
@@ -1132,6 +1175,7 @@ class IsIn(Slotted, Pattern):
     """
 
     __slots__ = ("haystack",)
+    haystack: frozenset
 
     def __init__(self, haystack):
         super().__init__(haystack=frozenset(haystack))
@@ -1164,6 +1208,9 @@ class SequenceOf(Slotted, Pattern):
     """
 
     __slots__ = ("item", "type", "length")
+    item: Pattern
+    type: CoercedTo
+    length: Length
 
     def __init__(
         self,
@@ -1206,6 +1253,7 @@ class TupleOf(Slotted, Pattern):
     """
 
     __slots__ = ("fields",)
+    fields: tuple[Pattern, ...]
 
     def __new__(cls, fields):
         if isinstance(fields, tuple):
@@ -1248,6 +1296,9 @@ class MappingOf(Slotted, Pattern):
     """
 
     __slots__ = ("key", "value", "type")
+    key: Pattern
+    value: Pattern
+    type: CoercedTo
 
     def __init__(self, key: Pattern, value: Pattern, type: type = dict):
         super().__init__(key=pattern(key), value=pattern(value), type=CoercedTo(type))
@@ -1273,6 +1324,7 @@ class MappingOf(Slotted, Pattern):
 
 class Attrs(Slotted, Pattern):
     __slots__ = ("fields",)
+    fields: FrozenDict[str, Pattern]
 
     def __init__(self, **fields):
         fields = frozendict(toolz.valmap(pattern, fields))
@@ -1307,6 +1359,9 @@ class Object(Slotted, Pattern):
     """
 
     __slots__ = ("type", "args", "kwargs")
+    type: Pattern
+    args: tuple[Pattern, ...]
+    kwargs: FrozenDict[str, Pattern]
 
     def __new__(cls, type, *args, **kwargs):
         if not args and not kwargs:
@@ -1355,6 +1410,7 @@ class Object(Slotted, Pattern):
 
 class Node(Slotted, Pattern):
     __slots__ = ("type", "each_arg")
+    type: Pattern
 
     def __init__(self, type, each_arg):
         super().__init__(type=pattern(type), each_arg=pattern(each_arg))
@@ -1381,6 +1437,9 @@ class Node(Slotted, Pattern):
 
 class CallableWith(Slotted, Pattern):
     __slots__ = ("args", "return_")
+    args: tuple
+    # Used Any as not sure how to type this
+    return_: Any
 
     def __init__(self, args, return_=_any):
         super().__init__(args=tuple(args), return_=return_)
@@ -1422,6 +1481,7 @@ class PatternSequence(Slotted, Pattern):
     # length of the sequence is lower than the length of the pattern sequence
 
     __slots__ = ("pattern_window",)
+    pattern_window: tuple[tuple[Pattern, Pattern], ...]
 
     def __init__(self, patterns):
         current_patterns = [
@@ -1495,6 +1555,8 @@ class PatternSequence(Slotted, Pattern):
 
 class PatternMapping(Slotted, Pattern):
     __slots__ = ("keys", "values")
+    keys: PatternSequence
+    values: PatternSequence
 
     def __init__(self, patterns):
         keys = PatternSequence(list(map(pattern, patterns.keys())))
@@ -1528,6 +1590,8 @@ class Between(Slotted, Pattern):
     """
 
     __slots__ = ("lower", "upper")
+    lower: float
+    upper: float
 
     def __init__(self, lower: float = -math.inf, upper: float = math.inf):
         super().__init__(lower=lower, upper=upper)
@@ -1647,6 +1711,9 @@ class Topmost(Slotted, Pattern):
     """Traverse the value tree topmost first and match the first value that matches."""
 
     __slots__ = ("pattern", "filter")
+    pattern: Pattern
+    # Used Any as not sure how to type this
+    filter: Any
 
     def __init__(self, searcher, filter=None):
         super().__init__(pattern=pattern(searcher), filter=filter)
@@ -1669,6 +1736,9 @@ class Innermost(Slotted, Pattern):
     """Traverse the value tree innermost first and match the first value that matches."""
 
     __slots__ = ("pattern", "filter")
+    pattern: Pattern
+    # Used Any as not sure how to type this
+    filter: Any
 
     def __init__(self, searcher, filter=None):
         super().__init__(pattern=pattern(searcher), filter=filter)

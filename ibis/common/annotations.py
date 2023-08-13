@@ -43,6 +43,9 @@ class Annotation:
     """
 
     __slots__ = ("_pattern", "_default", "_typehint")
+    _pattern: Pattern | callable | None
+    _default: Any
+    _typehint: Any
 
     def __init__(self, pattern=None, default=EMPTY, typehint=EMPTY):
         if pattern is None or isinstance(pattern, Pattern):
@@ -127,6 +130,7 @@ class Argument(Annotation):
     """
 
     __slots__ = ("_kind",)
+    _kind: int
 
     def __init__(
         self,

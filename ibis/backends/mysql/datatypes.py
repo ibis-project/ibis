@@ -148,6 +148,7 @@ class _FieldFlags:
     NUM = 1 << 15
 
     __slots__ = ("value",)
+    value: int
 
     def __init__(self, value: int) -> None:
         self.value = value

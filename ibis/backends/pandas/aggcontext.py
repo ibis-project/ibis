@@ -557,6 +557,7 @@ def window_agg_udf(
 
 class Window(AggregationContext):
     __slots__ = ("construct_window",)
+    construct_window: operator.methodcaller
 
     def __init__(self, kind, *args, **kwargs):
         super().__init__(

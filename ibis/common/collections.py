@@ -141,6 +141,8 @@ class FrozenDict(Mapping[K, V], Hashable):
     """Immutable dictionary with a precomputed hash value."""
 
     __slots__ = ("__view__", "__precomputed_hash__")
+    __view__: MappingProxyType
+    __precomputed_hash__: int
 
     def __init__(self, *args, **kwargs):
         dictview = MappingProxyType(dict(*args, **kwargs))

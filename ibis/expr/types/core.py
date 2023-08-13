@@ -44,6 +44,7 @@ class Expr(Immutable, Coercible):
     """Base expression class."""
 
     __slots__ = ("_arg",)
+    _arg: ops.Node
 
     def __init__(self, arg: ops.Node) -> None:
         object.__setattr__(self, "_arg", arg)
