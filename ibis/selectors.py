@@ -60,7 +60,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import attribute
-from ibis.common.collections import frozendict
+from ibis.common.collections import frozendict, FrozenDict
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.patterns import Coercible
 from ibis.expr.deferred import Deferred
@@ -374,7 +374,7 @@ class Across(Selector):
     funcs: Union[
         Deferred,
         Callable[[ir.Value], ir.Value],
-        frozendict[Optional[str], Union[Deferred, Callable[[ir.Value], ir.Value]]],
+        FrozenDict[Optional[str], Union[Deferred, Callable[[ir.Value], ir.Value]]],
     ]
     names: Union[str, Callable[[str, Optional[str]], str]]
 
