@@ -885,3 +885,114 @@ def join(op, **kw):
     )
 
     return left.join(right, join_keys=(left_keys, right_keys), how=how)
+
+
+@translate.register(ops.ExtractYear)
+def extract_year(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("year"), arg)
+
+
+@translate.register(ops.ExtractMonth)
+def extract_month(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("month"), arg)
+
+
+@translate.register(ops.ExtractDay)
+def extract_day(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("day"), arg)
+
+
+@translate.register(ops.ExtractQuarter)
+def extract_quarter(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("quarter"), arg)
+
+
+@translate.register(ops.ExtractMinute)
+def extract_minute(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("minute"), arg)
+
+
+@translate.register(ops.ExtractHour)
+def extract_hour(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("hour"), arg)
+
+
+@translate.register(ops.ExtractMillisecond)
+def extract_millisecond(op, **kw):
+    def ms(array: pa.Array) -> pa.Array:
+        return pc.cast(pc.millisecond(array), pa.int32())
+
+    extract_milliseconds_udf = df.udf(
+        ms,
+        input_types=[PyArrowType.from_ibis(op.arg.dtype)],
+        return_type=PyArrowType.from_ibis(op.dtype),
+        volatility="immutable",
+        name="extract_milliseconds_udf",
+    )
+    arg = translate(op.arg, **kw)
+    return extract_milliseconds_udf(arg)
+
+
+@translate.register(ops.ExtractSecond)
+def extract_second(op, **kw):
+    def s(array: pa.Array) -> pa.Array:
+        return pc.cast(pc.second(array), pa.int32())
+
+    extract_seconds_udf = df.udf(
+        s,
+        input_types=[PyArrowType.from_ibis(op.arg.dtype)],
+        return_type=PyArrowType.from_ibis(op.dtype),
+        volatility="immutable",
+        name="extract_seconds_udf",
+    )
+    arg = translate(op.arg, **kw)
+    return extract_seconds_udf(arg)
+
+
+@translate.register(ops.ExtractDayOfYear)
+def extract_day_of_the_year(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("doy"), arg)
+
+
+@translate.register(ops.DayOfWeekIndex)
+def extract_day_of_the_week_index(op, **kw):
+    arg = translate(op.arg, **kw)
+    return (df.functions.date_part(df.literal("dow"), arg) + df.lit(6)) % df.lit(7)
+
+
+@translate.register(ops.DayOfWeekName)
+def extract_down(op, **kw):
+    def down(array: pa.Array) -> pa.Array:
+        return pc.choose(
+            pc.day_of_week(array),
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+        )
+
+    extract_down_udf = df.udf(
+        down,
+        input_types=[PyArrowType.from_ibis(op.arg.dtype)],
+        return_type=PyArrowType.from_ibis(op.dtype),
+        volatility="immutable",
+        name="extract_seconds_udf",
+    )
+    arg = translate(op.arg, **kw)
+    return extract_down_udf(arg)
+
+
+@translate.register(ops.Date)
+def date(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_trunc(df.literal("day"), arg)
