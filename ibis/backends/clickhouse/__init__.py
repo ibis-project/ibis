@@ -211,7 +211,15 @@ class Backend(BaseBackend, CanCreateDatabase):
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        query = "SHOW TABLES" + (f" FROM `{database}`" * (database is not None))
+        query = "SELECT name FROM system.tables WHERE"
+
+        if database is None:
+            database = "currentDatabase()"
+        else:
+            database = f"'{database}'"
+
+        query += f" database = {database} OR is_temporary"
+
         with closing(self.raw_sql(query)) as result:
             results = result.result_columns
 
