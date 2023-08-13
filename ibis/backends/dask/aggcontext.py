@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple, Union
+from typing import TYPE_CHECKING, Any, Callable, Union
 
 import dask.dataframe as dd
 
@@ -53,8 +53,8 @@ def dask_window_agg_built_in(
     windowed: dd.rolling.Rolling,
     function: str,
     max_lookback: int,
-    *args: Tuple[Any],
-    **kwargs: Dict[str, Any],
+    *args: tuple[Any],
+    **kwargs: dict[str, Any],
 ) -> dd.Series:
     """Apply window aggregation with built-in aggregators."""
     assert isinstance(function, str)

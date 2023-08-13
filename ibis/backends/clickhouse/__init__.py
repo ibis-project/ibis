@@ -4,7 +4,7 @@ import ast
 import json
 from contextlib import closing, suppress
 from functools import partial
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import clickhouse_connect as cc
 import pyarrow as pa
@@ -25,6 +25,7 @@ from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
     from pathlib import Path
 
     import pandas as pd

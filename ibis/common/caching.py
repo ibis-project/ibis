@@ -3,7 +3,8 @@ from __future__ import annotations
 import functools
 import weakref
 from collections import Counter, defaultdict
-from typing import TYPE_CHECKING, Any, Callable, MutableMapping
+from collections.abc import MutableMapping
+from typing import TYPE_CHECKING, Any, Callable
 
 from bidict import bidict
 

@@ -11,10 +11,6 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
-    Iterator,
-    Mapping,
-    MutableMapping,
 )
 
 import duckdb
@@ -38,6 +34,8 @@ from ibis.expr.operations.udf import InputType
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+
     import pandas as pd
     import torch
 

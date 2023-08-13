@@ -5,7 +5,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import defaultdict
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 from toolz import concatv, first
@@ -20,6 +20,8 @@ from ibis.backends.pandas.execution import constants, util
 from ibis.backends.pandas.execution.util import coerce_to_output
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from ibis.backends.base.df.timecontext import TimeContext
 
 

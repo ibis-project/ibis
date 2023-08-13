@@ -6,7 +6,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import TYPE_CHECKING, Any, Iterable, NamedTuple, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeVar
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -36,6 +36,7 @@ from ibis.expr.types import (
 from ibis.util import experimental
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Sequence
     from pathlib import Path
 
     import numpy as np

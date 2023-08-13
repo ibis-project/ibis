@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from io import StringIO
-from typing import Iterable
+from typing import TYPE_CHECKING
 
 import sqlglot as sg
 import toolz
@@ -16,6 +16,9 @@ from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryCont
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.common.grounds import Comparable
 from ibis.config import options
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class TableSetFormatter:

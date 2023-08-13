@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 
 import pandas as pd
 import requests
@@ -93,7 +93,7 @@ def get_all_operation_categories():
 
 
 @st.cache_data(ttl=ONE_HOUR_IN_SECONDS)
-def get_backend_names(categories: Optional[List[str]] = None):
+def get_backend_names(categories: Optional[list[str]] = None):
     backend_expr = backend_info_table.mutate(category=_.categories.unnest())
     if categories:
         backend_expr = backend_expr.filter(_.category.isin(categories))

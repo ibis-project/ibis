@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
@@ -35,6 +35,8 @@ with contextlib.suppress(ImportError):
     from ibis.backends.bigquery.udf import udf  # noqa: F401
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
 

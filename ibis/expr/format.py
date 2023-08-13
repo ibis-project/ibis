@@ -4,7 +4,7 @@ import functools
 import itertools
 import textwrap
 import types
-from typing import Mapping, Sequence
+from collections.abc import Mapping, Sequence
 
 from public import public
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Mapping
+from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 import sqlalchemy.types as sat
@@ -11,6 +11,9 @@ import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 if geospatial_supported:
     import geoalchemy2 as ga

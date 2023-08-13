@@ -111,7 +111,7 @@ See ibis.common.scope for details about the implementation.
 from __future__ import annotations
 
 import functools
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import dask.dataframe as dd
 from multipledispatch import Dispatcher
@@ -134,6 +134,9 @@ from ibis.backends.pandas.core import (
     is_computable_input,
     is_computable_input_arg,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 is_computable_input.register(dd.core.Scalar)(is_computable_input_arg)
 

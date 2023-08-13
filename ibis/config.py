@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Any, Callable, Optional
+from typing import Annotated, Any, Callable, Optional
 
 from public import public
-from typing_extensions import Annotated
 
 import ibis.common.exceptions as com
 from ibis.common.grounds import Annotable

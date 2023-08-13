@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import operator
 from collections import defaultdict
-from typing import Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING
 
 import toolz
 
@@ -15,6 +15,9 @@ from ibis import util
 from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisTypeError, IntegrityError
 from ibis.common.patterns import Call, Object, Variable
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
 
 p = Object.namespace(ops)
 c = Call.namespace(ops)

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Callable, Iterable, Literal
+from typing import TYPE_CHECKING, Callable, Literal
 
 import sqlalchemy as sa
 
@@ -17,6 +17,8 @@ from ibis.backends.postgres.datatypes import parse
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import ibis.expr.datatypes as dt
 
 

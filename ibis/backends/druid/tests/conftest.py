@@ -6,7 +6,7 @@ import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import chain, repeat
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from requests import Session
@@ -15,6 +15,7 @@ import ibis
 from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 DRUID_URL = os.environ.get(

@@ -5,7 +5,7 @@ import csv
 import gzip
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 import pytest
 from pytest import param
@@ -14,6 +14,8 @@ import ibis
 from ibis.backends.conftest import TEST_TABLES
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     import pyarrow as pa
 
 pytestmark = pytest.mark.notimpl(["druid", "oracle"])

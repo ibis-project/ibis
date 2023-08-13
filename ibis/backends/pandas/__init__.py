@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import importlib
 from functools import lru_cache
-from typing import Any, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import pyarrow as pa
@@ -15,6 +15,9 @@ import ibis.expr.types as ir
 from ibis.backends.base import BaseBackend
 from ibis.formats.pandas import PandasData, PandasSchema
 from ibis.formats.pyarrow import PyArrowData
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, MutableMapping
 
 
 class BasePandasBackend(BaseBackend):

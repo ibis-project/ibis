@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import contextlib
 import itertools
-from typing import Callable, Iterable, Iterator
+from typing import TYPE_CHECKING, Callable
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import operation_registry, quote_identifier
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
 
 
 class QueryContext:

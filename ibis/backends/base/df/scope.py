@@ -37,16 +37,18 @@ different time contexts.
 from __future__ import annotations
 
 from collections import namedtuple
-from typing import TYPE_CHECKING, Any, Iterable, Tuple
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
 from ibis.backends.base.df.timecontext import TimeContextRelation, compare_timecontext
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     from ibis.expr.operations import Node
 
-TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
+TimeContext = tuple[pd.Timestamp, pd.Timestamp]
 
 ScopeItem = namedtuple("ScopeItem", ["timecontext", "value"])
 

@@ -6,7 +6,7 @@ import collections
 import contextlib
 import warnings
 from functools import cached_property
-from typing import TYPE_CHECKING, Any, Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import sqlalchemy as sa
@@ -25,6 +25,8 @@ from ibis.backends.trino.compiler import TrinoSQLCompiler
 from ibis.backends.trino.datatypes import ROW, TrinoType, parse
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+
     import pyarrow as pa
 
     import ibis.expr.schema as sch

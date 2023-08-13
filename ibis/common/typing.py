@@ -4,16 +4,13 @@ import sys
 from itertools import zip_longest
 from typing import (
     Any,
-    Dict,
     Generic,  # noqa: F401
     Optional,
-    Tuple,
     TypeVar,
     get_args,
     get_origin,
 )
-
-from typing_extensions import get_type_hints as _get_type_hints
+from typing import get_type_hints as _get_type_hints
 
 from ibis.common.caching import memoize
 
@@ -26,8 +23,8 @@ except ImportError:
 T = TypeVar("T")
 U = TypeVar("U")
 
-Namespace = Dict[str, Any]
-VarTuple = Tuple[T, ...]
+Namespace = dict[str, Any]
+VarTuple = tuple[T, ...]
 
 
 @memoize
@@ -180,9 +177,9 @@ def evaluate_annotations(
 
     Examples
     --------
-    >>> annots = {'a': 'Dict[str, float]', 'b': 'int'}
+    >>> annots = {'a': 'dict[str, float]', 'b': 'int'}
     >>> evaluate_annotations(annots, __name__)
-    {'a': typing.Dict[str, float], 'b': <class 'int'>}
+    {'a': dict[str, float], 'b': <class 'int'>}
     """
     module = sys.modules.get(module_name, None)
     globalns = getattr(module, "__dict__", None)

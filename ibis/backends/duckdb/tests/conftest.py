@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -10,6 +10,8 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.conftest import SANDBOXED
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from ibis.backends.base import BaseBackend
 
 

@@ -220,7 +220,7 @@ import abc
 import functools
 import itertools
 import operator
-from typing import TYPE_CHECKING, Any, Callable, Iterator
+from typing import TYPE_CHECKING, Any, Callable
 
 import pandas as pd
 from pandas.core.groupby import SeriesGroupBy
@@ -236,6 +236,8 @@ from ibis.backends.base.df.timecontext import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     import numpy as np
 
 

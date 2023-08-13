@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import sqlalchemy as sa
@@ -11,6 +11,7 @@ from ibis.backends.conftest import init_database
 from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 MSSQL_USER = os.environ.get("IBIS_TEST_MSSQL_USER", "sa")

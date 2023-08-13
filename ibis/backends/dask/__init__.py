@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 import dask
 import dask.dataframe as dd
@@ -18,6 +18,9 @@ from ibis.backends.dask.core import execute_and_reset
 from ibis.backends.pandas import BasePandasBackend
 from ibis.backends.pandas.core import _apply_schema
 from ibis.formats.pandas import DaskData
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, MutableMapping
 
 # Make sure that the pandas backend options have been loaded
 ibis.pandas  # noqa: B018

@@ -5,7 +5,7 @@ import contextlib
 import itertools
 import os
 import subprocess
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import sqlalchemy as sa
@@ -14,6 +14,7 @@ import ibis
 from ibis.backends.tests.base import RoundHalfToEven, ServiceBackendTest
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from pathlib import Path
 
 ORACLE_USER = os.environ.get("IBIS_TEST_ORACLE_USER", "ibis")
