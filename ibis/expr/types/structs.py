@@ -338,7 +338,7 @@ class StructValue(Value):
         table = an.find_first_base_table(self.op()).to_expr()
         return table[[self[name] for name in self.names]]
 
-    def destructure(self) -> list[ir.ValueExpr]:
+    def destructure(self) -> list[ir.Value]:
         """Destructure a ``StructValue`` into the corresponding struct fields.
 
         When assigned, a destruct value will be destructured and assigned to

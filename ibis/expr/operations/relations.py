@@ -110,6 +110,8 @@ class SQLQueryResult(TableNode):
 
 class TableProxy(Immutable):
     __slots__ = ("_data", "_hash")
+    _data: Any
+    _hash: int
 
     def __init__(self, data) -> None:
         object.__setattr__(self, "_data", data)
