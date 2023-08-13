@@ -1140,7 +1140,7 @@ def test_create_table_timestamp(con, temp_table):
     assert result == schema
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1157,7 +1157,7 @@ def test_persist_expression_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 1
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1168,7 +1168,7 @@ def test_persist_expression(alltypes):
     tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1181,7 +1181,7 @@ def test_persist_expression_contextmanager(alltypes):
         tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1197,7 +1197,7 @@ def test_persist_expression_contextmanager_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 0
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1230,7 +1230,7 @@ def test_persist_expression_multiple_refs(con, alltypes):
     assert name2 not in con.list_tables()
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1244,7 +1244,7 @@ def test_persist_expression_repeated_cache(alltypes):
             assert not nested_cached_table.to_pandas().empty
 
 
-@mark.notimpl(["clickhouse", "datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",

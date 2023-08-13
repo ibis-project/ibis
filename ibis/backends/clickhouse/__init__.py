@@ -583,14 +583,17 @@ class Backend(BaseBackend, CanCreateDatabase):
         Table
             The new table
         """
-        if temp:
-            raise com.IbisError(
-                "ClickHouse temporary tables are not yet supported due to a bug in `clickhouse_driver`"
-            )
-
         tmp = "TEMPORARY " * temp
         replace = "OR REPLACE " * overwrite
-        table = self._fully_qualified_name(name, database)
+
+        if temp and overwrite:
+            raise com.IbisInputError("Cannot specify both temp and overwrite")
+
+        if not temp:
+            table = self._fully_qualified_name(name, database)
+        else:
+            table = name
+            database = None
         code = f"CREATE {replace}{tmp}TABLE {table}"
 
         if obj is None and schema is None:
@@ -658,3 +661,9 @@ class Backend(BaseBackend, CanCreateDatabase):
         if_exists = "IF EXISTS " * force
         with closing(self.raw_sql(f"DROP VIEW {if_exists}{name}")):
             pass
+
+    def _load_into_cache(self, name, expr):
+        self.create_table(name, expr, schema=expr.schema(), temp=True)
+
+    def _clean_up_cached_table(self, op):
+        self.drop_table(op.name)
