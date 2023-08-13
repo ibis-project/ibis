@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 def memoize(func: Callable) -> Callable:
     """Memoize a function."""
-    cache = {}
+    cache: dict = {}
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -94,11 +94,11 @@ class RefCountedCache:
         key: Callable[[Any], Any],
     ) -> None:
         self.cache = bidict()
-        self.refs = Counter()
+        self.refs: Counter = Counter()
         self.populate = populate
         self.lookup = lookup
         self.finalize = finalize
-        self.names = defaultdict(generate_name)
+        self.names: defaultdict = defaultdict(generate_name)
         self.key = key or (lambda x: x)
 
     def get(self, key, default=None):

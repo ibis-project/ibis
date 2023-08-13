@@ -235,7 +235,7 @@ class MetadataParser:
         params = self._parse_nested_params(self._storage_param_cleaners)
         self.storage["Desc Params"] = params
 
-    _storage_param_cleaners = {}
+    _storage_param_cleaners: dict = {}
 
     def _parse_nested_params(self, cleaners):
         import pandas as pd
