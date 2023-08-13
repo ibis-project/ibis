@@ -4,7 +4,7 @@ FROM (
   SELECT
     t0.string_col,
     sum(t0.float_col) AS total
-  FROM ibis_testing.functional_alltypes AS t0
+  FROM functional_alltypes AS t0
   WHERE
     t0.int_col > 0
   GROUP BY

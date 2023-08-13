@@ -4,7 +4,7 @@ FROM (
   SELECT
     t0.string_col,
     count(*) AS count
-  FROM ibis_testing.functional_alltypes AS t0
+  FROM functional_alltypes AS t0
   GROUP BY
     t0.string_col
 ) AS t1

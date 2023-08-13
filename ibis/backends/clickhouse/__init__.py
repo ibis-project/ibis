@@ -468,9 +468,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         self.con.close()
 
     def _fully_qualified_name(self, name: str, database: str | None) -> str:
-        return sg.table(name, db=database or self.current_database or None).sql(
-            dialect="clickhouse"
-        )
+        return sg.table(name, db=database).sql(dialect="clickhouse")
 
     def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
