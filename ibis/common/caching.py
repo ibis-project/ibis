@@ -33,6 +33,7 @@ def memoize(func: Callable) -> Callable:
 
 class WeakCache(MutableMapping):
     __slots__ = ("_data",)
+    _data: dict
 
     def __init__(self):
         object.__setattr__(self, "_data", {})
