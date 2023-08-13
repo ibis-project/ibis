@@ -29,9 +29,9 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.typing import Sentinel, get_bound_typevars, get_type_params
 from ibis.util import is_iterable, promote_tuple
 
-try:
+if sys.version_info >= (3, 10):
     from types import UnionType
-except ImportError:
+else:
     UnionType = object()
 
 

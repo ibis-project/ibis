@@ -17,9 +17,9 @@ from typing_extensions import get_type_hints as _get_type_hints
 
 from ibis.common.caching import memoize
 
-try:
+if sys.version_info >= (3, 10):
     from types import UnionType
-except ImportError:
+else:
     UnionType = object()
 
 
