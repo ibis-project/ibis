@@ -25,6 +25,8 @@ from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import pandas as pd
 
     from ibis.common.typing import SupportsSchema
@@ -243,7 +245,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         return external_data
 
     def _collect_in_memory_tables(
-        self, expr: ir.TableExpr | None, external_tables: Mapping | None = None
+        self, expr: ir.Table | None, external_tables: Mapping | None = None
     ):
         memtables = {op.name: op for op in expr.op().find(ops.InMemoryTable)}
         externals = toolz.valmap(_to_memtable, external_tables or {})
@@ -532,6 +534,49 @@ class Backend(BaseBackend, CanCreateDatabase):
         ident = self._fully_qualified_name(name, database)
         with closing(self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")):
             pass
+
+    def read_parquet(
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        engine: str = "File(Parquet)",
+        **kwargs: Any,
+    ) -> ir.Table:
+        import pyarrow.parquet as pq
+        from clickhouse_connect.driver.tools import insert_file
+
+        from ibis.formats.pyarrow import PyArrowSchema
+
+        schema = PyArrowSchema.to_ibis(pq.read_metadata(path).schema.to_arrow_schema())
+
+        name = table_name or util.gen_name("clickhouse_read_parquet")
+        table = self.create_table(name, engine=engine, schema=schema, temp=True)
+
+        insert_file(
+            client=self.con, table=name, file_path=str(path), fmt="Parquet", **kwargs
+        )
+        return table
+
+    def read_csv(
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        engine: str = "File(Native)",
+        **kwargs: Any,
+    ) -> ir.Table:
+        import pyarrow.csv as pac
+        from clickhouse_connect.driver.tools import insert_file
+
+        from ibis.formats.pyarrow import PyArrowSchema
+
+        with pac.open_csv(path) as f:
+            schema = PyArrowSchema.to_ibis(f.schema)
+
+        name = table_name or util.gen_name("clickhouse_read_csv")
+        table = self.create_table(name, engine=engine, schema=schema, temp=True)
+
+        insert_file(client=self.con, table=name, file_path=str(path), **kwargs)
+        return table
 
     def create_table(
         self,
