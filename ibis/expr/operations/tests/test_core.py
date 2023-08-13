@@ -185,12 +185,11 @@ def test_custom_table_expr():
     class MyTable(ir.Table):
         pass
 
-    class SpecialTable(ops.DatabaseTable):
+    class SpecialTable(ops.UnboundTable):
         def to_expr(self):
             return MyTable(self)
 
-    con = ibis.pandas.connect({})
-    node = SpecialTable("foo", ibis.schema([("a", "int64")]), con)
+    node = SpecialTable(name="foo", schema=ibis.schema([("a", "int64")]))
     expr = node.to_expr()
     assert isinstance(expr, MyTable)
 
