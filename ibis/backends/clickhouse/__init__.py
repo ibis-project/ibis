@@ -557,7 +557,7 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         schema = PyArrowSchema.to_ibis(pq.read_metadata(path).schema.to_arrow_schema())
 
-        name = table_name or util.gen_name("clickhouse_read_parquet")
+        name = table_name or util.gen_name("read_parquet")
         table = self.create_table(name, engine=engine, schema=schema, temp=True)
 
         insert_file(
@@ -580,7 +580,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         with pac.open_csv(path) as f:
             schema = PyArrowSchema.to_ibis(f.schema)
 
-        name = table_name or util.gen_name("clickhouse_read_csv")
+        name = table_name or util.gen_name("read_csv")
         table = self.create_table(name, engine=engine, schema=schema, temp=True)
 
         insert_file(client=self.con, table=name, file_path=str(path), **kwargs)

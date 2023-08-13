@@ -405,7 +405,6 @@ def test_register_garbage(con, monkeypatch):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "dask",
         "impala",
         "mssql",
@@ -470,7 +469,6 @@ DIAMONDS_COLUMN_TYPES = {
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "dask",
         "impala",
         "mssql",
