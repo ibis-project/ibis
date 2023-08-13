@@ -1,93 +1,43 @@
 from __future__ import annotations
 
-import parsy
+from typing import Mapping
+
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psql
 import sqlalchemy.types as sat
-import toolz
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.common.parsing import (
-    COMMA,
-    LBRACKET,
-    LPAREN,
-    PRECISION,
-    RBRACKET,
-    RPAREN,
-    SCALE,
-    spaceless,
-    spaceless_string,
-)
-
-_BRACKETS = "[]"
+from ibis.common.collections import FrozenDict
+from ibis.formats.parser import TypeParser
 
 
-def _parse_numeric(
-    text: str, default_decimal_parameters: tuple[int | None, int | None] = (None, None)
-) -> dt.DataType:
-    decimal = spaceless_string("decimal", "numeric").then(
-        parsy.seq(LPAREN.then(PRECISION.skip(COMMA)), SCALE.skip(RPAREN))
-        .optional(default_decimal_parameters)
-        .combine(dt.Decimal)
+class PostgresTypeParser(TypeParser):
+    __slots__ = ()
+
+    dialect = "postgres"
+    default_interval_precision = "s"
+
+    short_circuit: Mapping[str, dt.DataType] = FrozenDict(
+        {
+            "vector": dt.unknown,
+            "tsvector": dt.unknown,
+            "line": dt.linestring,
+            "line[]": dt.Array(dt.linestring),
+            "polygon": dt.polygon,
+            "polygon[]": dt.Array(dt.polygon),
+            "point": dt.point,
+            "point[]": dt.Array(dt.point),
+            "macaddr": dt.macaddr,
+            "macaddr[]": dt.Array(dt.macaddr),
+            "macaddr8": dt.macaddr,
+            "macaddr8[]": dt.Array(dt.macaddr),
+        }
     )
 
-    brackets = spaceless(LBRACKET).then(spaceless(RBRACKET))
 
-    pg_array = parsy.seq(decimal, brackets.at_least(1).map(len)).combine(
-        lambda value_type, n: toolz.nth(n, toolz.iterate(dt.Array, value_type))
-    )
+parse = PostgresTypeParser.parse
 
-    ty = pg_array | decimal
-    return ty.parse(text)
-
-
-# TODO(kszucs): rename to dtype_from_postgres_typeinfo or parse_postgres_typeinfo
-def _get_type(typestr: str) -> dt.DataType:
-    is_array = typestr.endswith(_BRACKETS)
-    if (typ := _type_mapping.get(typestr.replace(_BRACKETS, ""))) is not None:
-        return dt.Array(typ) if is_array else typ
-    try:
-        return _parse_numeric(typestr)
-    except parsy.ParseError:
-        # postgres can have arbitrary types unknown to ibis
-        return dt.unknown
-
-
-_type_mapping = {
-    "bigint": dt.int64,
-    "boolean": dt.bool,
-    "bytea": dt.binary,
-    "character varying": dt.string,
-    "character": dt.string,
-    "character(1)": dt.string,
-    "date": dt.date,
-    "double precision": dt.float64,
-    "geography": dt.geography,
-    "geometry": dt.geometry,
-    "inet": dt.inet,
-    "integer": dt.int32,
-    "interval": dt.Interval("s"),
-    "json": dt.json,
-    "jsonb": dt.json,
-    "line": dt.linestring,
-    "macaddr": dt.macaddr,
-    "macaddr8": dt.macaddr,
-    "numeric": dt.decimal,
-    "point": dt.point,
-    "polygon": dt.polygon,
-    "real": dt.float32,
-    "smallint": dt.int16,
-    "text": dt.string,
-    # NB: this isn't correct because we're losing the "with time zone"
-    # information (ibis doesn't have time type that is time-zone aware), but we
-    # try to do _something_ here instead of failing
-    "time with time zone": dt.time,
-    "time without time zone": dt.time,
-    "timestamp with time zone": dt.Timestamp("UTC"),
-    "timestamp without time zone": dt.timestamp,
-    "uuid": dt.uuid,
-}
 
 _from_postgres_types = {
     psql.DOUBLE_PRECISION: dt.Float64,
