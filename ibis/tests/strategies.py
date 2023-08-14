@@ -117,10 +117,11 @@ def time_dtype(nullable=_nullable):
 
 _timezone = st.none() | tzst.timezones().map(str)
 _interval = st.sampled_from(list(IntervalUnit))
+_timestamp_scale = st.none() | st.integers(min_value=0, max_value=9)
 
 
-def timestamp_dtype(timezone=_timezone, nullable=_nullable):
-    return st.builds(dt.Timestamp, timezone=timezone, nullable=nullable)
+def timestamp_dtype(scale=_timestamp_scale, timezone=_timezone, nullable=_nullable):
+    return st.builds(dt.Timestamp, scale=scale, timezone=timezone, nullable=nullable)
 
 
 def interval_dtype(interval=_interval, nullable=_nullable):

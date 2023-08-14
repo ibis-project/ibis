@@ -1,1 +1,1 @@
-CAST(timestamp_col AS DateTime64(3))
+CAST(timestamp_col AS DATETIME)

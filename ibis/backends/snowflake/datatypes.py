@@ -13,43 +13,12 @@ from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
+from ibis.backends.base.sql.glot.datatypes import SnowflakeType as SqlglotSnowflakeType
 
 
 @compiles(sat.NullType, "snowflake")
 def compiles_nulltype(element, compiler, **kw):
     return "VARIANT"
-
-
-_SNOWFLAKE_TYPES = {
-    "REAL": dt.float64,
-    "TEXT": dt.string,
-    "DATE": dt.date,
-    "TIMESTAMP": dt.timestamp,
-    "VARIANT": dt.json,
-    "TIMESTAMP_LTZ": dt.Timestamp("UTC"),
-    "TIMESTAMP_TZ": dt.Timestamp("UTC"),
-    "TIMESTAMP_NTZ": dt.timestamp,
-    "OBJECT": dt.Map(dt.string, dt.json),
-    "ARRAY": dt.Array(dt.json),
-    "BINARY": dt.binary,
-    "TIME": dt.time,
-    "BOOLEAN": dt.boolean,
-}
-
-
-def parse(
-    text: str, *, precision: int | None = None, scale: int | None = None
-) -> dt.DataType:
-    """Parse a Snowflake type into an ibis data type."""
-    if text == "FIXED":
-        if (precision is None and scale is None) or (precision and not scale):
-            return dt.int64
-        else:
-            return dt.Decimal(precision=precision or 38, scale=scale or 0)
-    elif text.startswith("TIMESTAMP"):
-        # timestamp columns have a specified scale, defaulting to 9
-        return _SNOWFLAKE_TYPES[text].copy(scale=scale or 9)
-    return _SNOWFLAKE_TYPES[text]
 
 
 class SnowflakeType(AlchemyType):
@@ -103,3 +72,7 @@ class SnowflakeType(AlchemyType):
                 )
         else:
             return super().to_ibis(typ, nullable=nullable)
+
+    @classmethod
+    def from_string(cls, type_string, nullable=True):
+        return SqlglotSnowflakeType.from_string(type_string, nullable=nullable)

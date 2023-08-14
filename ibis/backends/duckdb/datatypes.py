@@ -5,22 +5,7 @@ import sqlalchemy.dialects.postgresql as psql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.formats.parser import TypeParser
-
-
-class DuckDBTypeParser(TypeParser):
-    __slots__ = ()
-
-    dialect = "duckdb"
-    default_decimal_precision = 18
-    default_decimal_scale = 3
-    default_interval_precision = "us"
-
-    fallback = {"INTERVAL": dt.Interval(default_interval_precision)}
-
-
-parse = DuckDBTypeParser.parse
-
+from ibis.backends.base.sql.glot.datatypes import DuckDBType as SqlglotDuckdbType
 
 _from_duckdb_types = {
     psql.BYTEA: dt.Binary,
@@ -69,3 +54,7 @@ class DuckDBType(AlchemyType):
             return typ
         else:
             return super().from_ibis(dtype)
+
+    @classmethod
+    def from_string(cls, type_string, nullable=True):
+        return SqlglotDuckdbType.from_string(type_string, nullable=nullable)

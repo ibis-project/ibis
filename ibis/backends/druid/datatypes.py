@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import sqlalchemy as sa
 import sqlalchemy.types as sat
 from dateutil.parser import parse as timestamp_parse
@@ -9,11 +7,7 @@ from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.common.collections import FrozenDict
-from ibis.formats.parser import TypeParser
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
+from ibis.backends.base.sql.glot.datatypes import DruidType as SqlglotDruidType
 
 
 class DruidDateTime(sat.TypeDecorator):
@@ -60,17 +54,6 @@ def _smallint(element, compiler, **kw):
     return "SMALLINT"
 
 
-class DruidTypeParser(TypeParser):
-    __slots__ = ()
-
-    # druid doesn't have a sophisticated type system and hive is close enough
-    dialect = "hive"
-    short_circuit: Mapping[str, dt.DataType] = FrozenDict({"complex<json>": dt.json})
-
-
-parse = DruidTypeParser.parse
-
-
 class DruidType(AlchemyType):
     dialect = "hive"
 
@@ -95,3 +78,7 @@ class DruidType(AlchemyType):
             return DruidString()
         else:
             return super().from_ibis(dtype)
+
+    @classmethod
+    def from_string(cls, type_string, nullable=True):
+        return SqlglotDruidType.from_string(type_string, nullable=nullable)

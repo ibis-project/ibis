@@ -1,1 +1,1 @@
-CAST(int_col AS DateTime64(3))
+CAST(int_col AS DATETIME)

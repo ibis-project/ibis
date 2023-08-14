@@ -23,7 +23,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, CanCreateDatabase
 from ibis.backends.clickhouse.compiler import translate
-from ibis.backends.clickhouse.datatypes import parse, serialize
+from ibis.backends.clickhouse.datatypes import ClickhouseType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -219,7 +219,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 raise TypeError(f"Schema is empty for external table {name}")
 
             structure = [
-                f"{name} {serialize(typ.copy(nullable=not typ.is_nested()))}"
+                f"{name} {ClickhouseType.to_string(typ.copy(nullable=not typ.is_nested()))}"
                 for name, typ in schema.items()
             ]
             external_data.add_file(
@@ -501,7 +501,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         query = f"DESCRIBE {qualified_name}"
         with closing(self.raw_sql(query)) as results:
             names, types, *_ = results.result_columns
-        return sch.Schema(dict(zip(names, map(parse, types))))
+        return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         query = f"EXPLAIN json = 1, description = 0, header = 1 {query}"
@@ -509,7 +509,10 @@ class Backend(BaseBackend, CanCreateDatabase):
             [[raw_plans]] = results.result_columns
         [plan] = json.loads(raw_plans)
         return sch.Schema(
-            {field["Name"]: parse(field["Type"]) for field in plan["Plan"]["Header"]}
+            {
+                field["Name"]: ClickhouseType.from_string(field["Type"])
+                for field in plan["Plan"]["Header"]
+            }
         )
 
     @classmethod
@@ -667,7 +670,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             schema = obj.schema()
 
         serialized_schema = ", ".join(
-            f"`{name}` {serialize(typ)}" for name, typ in schema.items()
+            f"`{name}` {ClickhouseType.to_string(typ)}" for name, typ in schema.items()
         )
 
         code += f" ({serialized_schema}) ENGINE = {engine}"

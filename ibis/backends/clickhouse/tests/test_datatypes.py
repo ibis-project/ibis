@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import hypothesis as h
+import hypothesis.strategies as st
 import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.backends.clickhouse.datatypes import parse
+import ibis.tests.strategies as its
+from ibis.backends.clickhouse.datatypes import ClickhouseType
 
 pytest.importorskip("clickhouse_connect")
 
@@ -114,12 +117,12 @@ def test_columns_types_with_additional_argument(con):
         ),
         param(
             "Array(DateTime)",
-            dt.Array(dt.Timestamp(nullable=False), nullable=False),
+            dt.Array(dt.Timestamp(scale=0, nullable=False), nullable=False),
             id="array_datetime",
         ),
         param(
-            "Array(DateTime64)",
-            dt.Array(dt.Timestamp(nullable=False), nullable=False),
+            "Array(DateTime64(9))",
+            dt.Array(dt.Timestamp(scale=9, nullable=False), nullable=False),
             id="array_datetime64",
         ),
         param("Array(Nothing)", dt.Array(dt.null, nullable=False), id="array_nothing"),
@@ -207,13 +210,18 @@ def test_columns_types_with_additional_argument(con):
             ),
             id="nested",
         ),
+        param("DateTime", dt.Timestamp(scale=0, nullable=False), id="datetime"),
+        param(
+            "DateTime('Europe/Budapest')",
+            dt.Timestamp(scale=0, timezone="Europe/Budapest", nullable=False),
+            id="datetime_timezone",
+        ),
         param(
             "DateTime64(0)", dt.Timestamp(scale=0, nullable=False), id="datetime64_zero"
         ),
         param(
             "DateTime64(1)", dt.Timestamp(scale=1, nullable=False), id="datetime64_one"
         ),
-        param("DateTime64", dt.Timestamp(nullable=False), id="datetime64"),
     ]
     + [
         param(
@@ -226,4 +234,42 @@ def test_columns_types_with_additional_argument(con):
     ],
 )
 def test_parse_type(ch_type, ibis_type):
-    assert parse(ch_type) == ibis_type
+    parsed_ibis_type = ClickhouseType.from_string(ch_type)
+    assert parsed_ibis_type == ibis_type
+
+
+false = st.just(False)
+
+map_key_types = (
+    its.string_dtype(nullable=false)
+    | its.integer_dtypes(nullable=false)
+    | its.date_dtype(nullable=false)
+    | its.timestamp_dtype(scale=st.integers(0, 9), nullable=false)
+)
+
+roundtrippable_types = st.deferred(
+    lambda: (
+        its.null_dtype
+        | its.boolean_dtype()
+        | its.integer_dtypes()
+        | st.just(dt.Float32())
+        | st.just(dt.Float64())
+        | its.decimal_dtypes()
+        | its.string_dtype()
+        | its.json_dtype()
+        | its.inet_dtype()
+        | its.uuid_dtype()
+        | its.date_dtype()
+        | its.time_dtype()
+        | its.timestamp_dtype(scale=st.integers(0, 9))
+        | its.array_dtypes(roundtrippable_types)
+        | its.map_dtypes(map_key_types, roundtrippable_types, nullable=false)
+    )
+)
+
+
+@h.given(roundtrippable_types)
+def test_type_roundtrip(ibis_type):
+    type_string = ClickhouseType.to_string(ibis_type)
+    parsed_ibis_type = ClickhouseType.from_string(type_string)
+    assert parsed_ibis_type == ibis_type

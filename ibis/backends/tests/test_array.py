@@ -23,9 +23,11 @@ except ImportError:
     duckdb = None
 
 try:
-    from clickhouse_driver.dbapi.errors import OperationalError
+    from clickhouse_connect.driver.exceptions import (
+        DatabaseError as ClickhouseDatabaseError,
+    )
 except ImportError:
-    OperationalError = None
+    ClickhouseDatabaseError = None
 
 
 try:
@@ -705,7 +707,7 @@ def test_array_intersect(con):
 @builtin_array
 @pytest.mark.notimpl(
     ["clickhouse"],
-    raises=OperationalError,
+    raises=ClickhouseDatabaseError,
     reason="ClickHouse won't accept dicts for struct type values",
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
@@ -713,6 +715,7 @@ def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
     expr = t.value.unnest()
+
     result = con.execute(expr)
 
     expected = pd.DataFrame(data).explode("value").iloc[:, 0].reset_index(drop=True)

@@ -11,6 +11,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
+from ibis.formats.pyarrow import PyArrowType
 
 try:
     from pyspark.sql.utils import ParseException
@@ -349,7 +350,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "impala",
         "mysql",
         "oracle",
@@ -361,6 +361,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     raises=AttributeError,
     reason="read_delta not yet implemented",
 )
+@pytest.mark.notyet(["clickhouse"], raises=Exception)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
 @pytest.mark.notyet(["dask"], raises=NotImplementedError)
 @pytest.mark.notyet(
@@ -399,18 +400,16 @@ def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
 def test_arrow_timestamp_with_time_zone(alltypes):
-    from ibis import _
-
-    # TODO(cpcloud): see if this can be abstracted over in tests, e.g., pandas
-    # is ns, most others are us
-    unit = "us"
-
     t = alltypes.select(
-        tz=_.timestamp_col.cast("timestamp('UTC')"),
-        no_tz=_.timestamp_col,
+        tz=alltypes.timestamp_col.cast(
+            alltypes.timestamp_col.type().copy(timezone="UTC")
+        ),
+        no_tz=alltypes.timestamp_col,
     ).limit(1)
 
-    expected = [pa.timestamp(unit, tz="UTC"), pa.timestamp(unit)]
+    patype = PyArrowType.from_ibis(alltypes.timestamp_col.type())
+    paunit = patype.unit
+    expected = [pa.timestamp(paunit, tz="UTC"), pa.timestamp(paunit)]
     assert t.to_pyarrow().schema.types == expected
 
     with t.to_pyarrow_batches() as reader:
