@@ -781,7 +781,7 @@ class Decimal(Numeric, Parametric):
             if precision is not None and precision < scale:
                 raise ValueError(
                     "Decimal type precision must be greater than or equal to "
-                    "scale. Got precision={:d} and scale={:d}".format(precision, scale)
+                    f"scale. Got precision={precision:d} and scale={scale:d}"
                 )
         super().__init__(precision=precision, scale=scale, **kwargs)
 

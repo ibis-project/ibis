@@ -1047,8 +1047,8 @@ def execute_binary_op_series_group_by(op, left, right, **kwargs):
     right_groupings = get_grouping(right.grouper.groupings)
     if left_groupings != right_groupings:
         raise ValueError(
-            "Cannot perform {} operation on two series with "
-            "different groupings".format(type(op).__name__)
+            f"Cannot perform {type(op).__name__} operation on two series with "
+            "different groupings"
         )
     result = execute_binary_op(op, left.obj, right.obj, **kwargs)
     return result.groupby(left_groupings, group_keys=False)

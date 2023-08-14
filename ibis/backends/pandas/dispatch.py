@@ -32,11 +32,9 @@ def raise_unknown_op(node, *args, **kwargs):
 @execute_node.register(ops.TableNode)
 def raise_unknown_table_node(node, **kwargs):
     raise com.UnboundExpressionError(
-        (
-            "Node of type {!r} has no data bound to it. "
-            "You probably tried to execute an expression without a data "
-            "source."
-        ).format(type(node).__name__)
+        f"Node of type {type(node).__name__!r} has no data bound to it. "
+        "You probably tried to execute an expression without a data "
+        "source."
     )
 
 

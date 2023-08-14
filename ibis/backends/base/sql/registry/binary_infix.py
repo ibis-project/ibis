@@ -45,7 +45,7 @@ def xor(translator, op):
     if helpers.needs_parens(op.right):
         right_arg = helpers.parenthesize(right_arg)
 
-    return "({0} OR {1}) AND NOT ({0} AND {1})".format(left_arg, right_arg)
+    return f"({left_arg} OR {right_arg}) AND NOT ({left_arg} AND {right_arg})"
 
 
 def in_values(translator, op):
