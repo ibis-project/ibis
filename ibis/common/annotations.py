@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 from typing import Any as AnyType
+from typing import Callable
 
 from ibis.common.patterns import (
     Any,
@@ -43,6 +44,9 @@ class Annotation:
     """
 
     __slots__ = ("_pattern", "_default", "_typehint")
+    _pattern: Pattern | Callable | None
+    _default: AnyType
+    _typehint: AnyType
 
     def __init__(self, pattern=None, default=EMPTY, typehint=EMPTY):
         if pattern is None or isinstance(pattern, Pattern):
@@ -127,6 +131,7 @@ class Argument(Annotation):
     """
 
     __slots__ = ("_kind",)
+    _kind: int
 
     def __init__(
         self,
@@ -331,7 +336,8 @@ class Signature(inspect.Signature):
             Tuple of positional and keyword arguments.
         """
         # does the reverse of bind, but doesn't apply defaults
-        args, kwargs = [], {}
+        args: list = []
+        kwargs: dict = {}
         for name, param in self.parameters.items():
             value = this[name]
             if param.kind is POSITIONAL_OR_KEYWORD:

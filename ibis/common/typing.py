@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import sys
 from itertools import zip_longest
+from types import ModuleType  # noqa: F401
 from typing import (
     Any,
     Generic,  # noqa: F401
     Optional,
     TypeVar,
+    Union,
     get_args,
     get_origin,
 )
@@ -14,10 +16,17 @@ from typing import get_type_hints as _get_type_hints
 
 from ibis.common.caching import memoize
 
-try:
+if sys.version_info >= (3, 10):
     from types import UnionType
-except ImportError:
+    from typing import TypeAlias
+
+    # Keep this alias in sync with unittest.case._ClassInfo
+    _ClassInfo: TypeAlias = type | UnionType | tuple["_ClassInfo", ...]
+else:
+    from typing_extensions import TypeAlias  # noqa: TCH002
+
     UnionType = object()
+    _ClassInfo: TypeAlias = Union[type, tuple["_ClassInfo", ...]]
 
 
 T = TypeVar("T")
@@ -49,8 +58,7 @@ def get_type_hints(
 
     Returns
     -------
-    dict[str, Any]
-        Mapping of parameter or attribute name to type hint.
+    Mapping of parameter or attribute name to type hint.
     """
     try:
         hints = _get_type_hints(obj, include_extras=include_extras)
@@ -69,7 +77,7 @@ def get_type_hints(
 
 
 @memoize
-def get_type_params(obj: Any) -> dict[str, Any]:
+def get_type_params(obj: Any) -> dict[str, type]:
     """Get type parameters for a generic class.
 
     Parameters
@@ -79,8 +87,7 @@ def get_type_params(obj: Any) -> dict[str, Any]:
 
     Returns
     -------
-    dict[str, Any]
-        Mapping of type parameter name to type.
+    Mapping of type parameter name to type.
 
     Examples
     --------
@@ -112,7 +119,7 @@ def get_type_params(obj: Any) -> dict[str, Any]:
 
 
 @memoize
-def get_bound_typevars(obj: Any) -> dict[str, Any]:
+def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
     """Get type variables bound to concrete types for a generic class.
 
     Parameters
@@ -122,8 +129,7 @@ def get_bound_typevars(obj: Any) -> dict[str, Any]:
 
     Returns
     -------
-    dict[str, Any]
-        Mapping of type variable name to type.
+    Mapping of type variable to attribute name and type.
 
     Examples
     --------
@@ -172,8 +178,7 @@ def evaluate_annotations(
 
     Returns
     -------
-    dict[str, Any]
-        Actual type hints.
+    Actual type hints.
 
     Examples
     --------
