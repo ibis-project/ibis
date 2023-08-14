@@ -1,1 +1,1 @@
-CAST(string_col AS Nullable(DateTime64(3)))
+CAST(string_col AS Nullable(DATETIME))

@@ -1,40 +1,28 @@
 from __future__ import annotations
 
-import functools
-from typing import TYPE_CHECKING, Literal
+from typing import Literal
 
-import sqlglot as sg
-from sqlglot.expressions import ColumnDef, DataType
+import sqlglot.expressions as sge
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis.backends.base.sql.glot.datatypes import SqlglotType
 from ibis.common.collections import FrozenDict
-from ibis.formats.parser import TypeParser
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-    from sqlglot.expressions import Expression
-
-    try:
-        from sqlglot.expressions import DataTypeParam
-    except ImportError:
-        from sqlglot.expressions import DataTypeSize as DataTypeParam
+typecode = sge.DataType.Type
 
 
 def _bool_type() -> Literal["Bool", "UInt8", "Int8"]:
     return getattr(getattr(ibis.options, "clickhouse", None), "bool_type", "Bool")
 
 
-class ClickHouseTypeParser(TypeParser):
-    __slots__ = ()
-
+class ClickhouseType(SqlglotType):
     dialect = "clickhouse"
     default_decimal_precision = None
     default_decimal_scale = None
     default_nullable = False
 
-    short_circuit: Mapping[str, dt.DataType] = FrozenDict(
+    unknown_type_strings = FrozenDict(
         {
             "IPv4": dt.INET(nullable=default_nullable),
             "IPv6": dt.INET(nullable=default_nullable),
@@ -45,135 +33,71 @@ class ClickHouseTypeParser(TypeParser):
     )
 
     @classmethod
-    def _get_DATETIME(
-        cls, first: DataTypeParam | None = None, second: DataTypeParam | None = None
-    ) -> dt.Timestamp:
-        if first is not None and second is not None:
-            scale = first
-            timezone = second
-        elif first is not None and second is None:
-            timezone, scale = (
-                (first, second) if first.this.is_string else (second, first)
-            )
+    def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
+        """Convert a sqlglot type to an ibis type."""
+        typ = super().from_ibis(dtype)
+        if dtype.nullable and not dtype.is_map():
+            # map cannot be nullable in clickhouse
+            return sge.DataType(this=typecode.NULLABLE, expressions=[typ])
         else:
-            scale = first
-            timezone = second
-        return cls._get_TIMESTAMP(scale=scale, timezone=timezone)
+            return typ
 
     @classmethod
-    def _get_DATETIME64(
-        cls, scale: DataTypeParam | None = None, timezone: DataTypeParam | None = None
+    def _from_sqlglot_NULLABLE(cls, inner_type: sge.DataType) -> dt.DataType:
+        return cls.to_ibis(inner_type, nullable=True)
+
+    @classmethod
+    def _from_sqlglot_DATETIME(
+        cls, timezone: sge.DataTypeParam | None = None
     ) -> dt.Timestamp:
-        return cls._get_TIMESTAMP(scale=scale, timezone=timezone)
-
-    @classmethod
-    def _get_NULLABLE(cls, inner_type: DataType) -> dt.DataType:
-        return cls._get_type(inner_type).copy(nullable=True)
-
-    @classmethod
-    def _get_LOWCARDINALITY(cls, inner_type: DataType) -> dt.DataType:
-        return cls._get_type(inner_type)
-
-    @classmethod
-    def _get_NESTED(cls, *fields: DataType) -> dt.Struct:
-        return dt.Struct(
-            {
-                field.name: dt.Array(
-                    cls._get_type(field.args["kind"]), nullable=cls.default_nullable
-                )
-                for field in fields
-            },
+        return dt.Timestamp(
+            scale=0,
+            timezone=None if timezone is None else timezone.this.this,
             nullable=cls.default_nullable,
         )
 
     @classmethod
-    def _get_STRUCT(cls, *fields: Expression) -> dt.Struct:
-        types = {}
+    def _from_sqlglot_DATETIME64(
+        cls,
+        scale: sge.DataTypeSize | None = None,
+        timezone: sge.Literal | None = None,
+    ) -> dt.Timestamp:
+        return dt.Timestamp(
+            timezone=None if timezone is None else timezone.this.this,
+            scale=int(scale.this.this),
+            nullable=cls.default_nullable,
+        )
 
-        for i, field in enumerate(fields):
-            if isinstance(field, ColumnDef):
-                inner_type = field.args["kind"]
-                name = field.name
-            else:
-                inner_type = sg.parse_one(str(field), into=DataType, read="clickhouse")
-                name = f"f{i:d}"
+    @classmethod
+    def _from_sqlglot_LOWCARDINALITY(cls, inner_type: sge.DataType) -> dt.DataType:
+        return cls.to_ibis(inner_type)
 
-            types[name] = cls._get_type(inner_type)
-        return dt.Struct(types, nullable=cls.default_nullable)
+    @classmethod
+    def _from_sqlglot_NESTED(cls, *fields: sge.DataType) -> dt.Struct:
+        fields = {
+            field.name: dt.Array(
+                cls.to_ibis(field.args["kind"]), nullable=cls.default_nullable
+            )
+            for field in fields
+        }
+        return dt.Struct(fields, nullable=cls.default_nullable)
 
+    @classmethod
+    def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
+        if dtype.timezone is None:
+            timezone = None
+        else:
+            timezone = sge.DataTypeParam(this=sge.Literal.string(dtype.timezone))
 
-parse = ClickHouseTypeParser.parse
+        if dtype.scale is None:
+            return sge.DataType(this=typecode.DATETIME, expressions=[timezone])
+        else:
+            scale = sge.DataTypeParam(this=sge.Literal.number(dtype.scale))
+            return sge.DataType(this=typecode.DATETIME64, expressions=[scale, timezone])
 
-
-@functools.singledispatch
-def serialize(ty) -> str:
-    raise NotImplementedError(f"{ty} not serializable to clickhouse type string")
-
-
-@serialize.register(dt.DataType)
-def _(ty: dt.DataType) -> str:
-    ser_ty = serialize_raw(ty)
-    if ty.nullable:
-        return f"Nullable({ser_ty})"
-    return ser_ty
-
-
-@serialize.register(dt.Map)
-def _(ty: dt.Map) -> str:
-    return serialize_raw(ty)
-
-
-@functools.singledispatch
-def serialize_raw(ty: dt.DataType) -> str:
-    raise NotImplementedError(f"{ty} not serializable to clickhouse type string")
-
-
-@serialize_raw.register(dt.DataType)
-def _(ty: dt.DataType) -> str:
-    return type(ty).__name__.capitalize()
-
-
-@serialize_raw.register(dt.Binary)
-def _(_: dt.Binary) -> str:
-    return "BLOB"
-
-
-@serialize_raw.register(dt.Boolean)
-def _(_: dt.Boolean) -> str:
-    return _bool_type()
-
-
-@serialize_raw.register(dt.Array)
-def _(ty: dt.Array) -> str:
-    return f"Array({serialize(ty.value_type)})"
-
-
-@serialize_raw.register(dt.Map)
-def _(ty: dt.Map) -> str:
-    # nullable key type is not allowed inside maps
-    key_type = serialize_raw(ty.key_type)
-    value_type = serialize(ty.value_type)
-    return f"Map({key_type}, {value_type})"
-
-
-@serialize_raw.register(dt.Struct)
-def _(ty: dt.Struct) -> str:
-    fields = ", ".join(
-        f"{name} {serialize(field_ty)}" for name, field_ty in ty.fields.items()
-    )
-    return f"Tuple({fields})"
-
-
-@serialize_raw.register(dt.Timestamp)
-def _(ty: dt.Timestamp) -> str:
-    if (scale := ty.scale) is None:
-        scale = 3
-
-    if (timezone := ty.timezone) is not None:
-        return f"DateTime64({scale:d}, {timezone!r})"
-    return f"DateTime64({scale:d})"
-
-
-@serialize_raw.register(dt.Decimal)
-def _(ty: dt.Decimal) -> str:
-    return f"Decimal({ty.precision}, {ty.scale})"
+    @classmethod
+    def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
+        # key cannot be nullable in clickhouse
+        key_type = cls.from_ibis(dtype.key_type.copy(nullable=False))
+        value_type = cls.from_ibis(dtype.value_type)
+        return sge.DataType(this=typecode.MAP, expressions=[key_type, value_type])

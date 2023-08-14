@@ -25,7 +25,7 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
-from ibis.backends.trino.datatypes import ROW, TrinoType, parse
+from ibis.backends.trino.datatypes import ROW, TrinoType
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -188,7 +188,7 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
         with self._prepare_metadata(query) as mappings:
             yield from (
                 # trino types appear to be always nullable
-                (name, parse(trino_type).copy(nullable=True))
+                (name, TrinoType.from_string(trino_type).copy(nullable=True))
                 for name, trino_type in toolz.pluck(["Column Name", "Type"], mappings)
             )
 

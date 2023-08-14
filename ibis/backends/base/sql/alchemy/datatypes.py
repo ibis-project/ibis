@@ -9,6 +9,7 @@ from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
+from ibis.backends.base.sql.glot.datatypes import SqlglotType
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
 
@@ -224,6 +225,10 @@ class AlchemyType(TypeMapper):
         return str(
             sa.types.to_instance(cls.from_ibis(dtype)).compile(dialect=dialect_class())
         )
+
+    @classmethod
+    def from_string(cls, type_string, nullable=True):
+        return SqlglotType.from_string(type_string, nullable=nullable)
 
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sat.TypeEngine:

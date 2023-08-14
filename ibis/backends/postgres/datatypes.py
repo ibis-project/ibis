@@ -1,46 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 import sqlalchemy as sa
 import sqlalchemy.dialects.postgresql as psql
 import sqlalchemy.types as sat
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.common.collections import FrozenDict
-from ibis.formats.parser import TypeParser
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-
-
-class PostgresTypeParser(TypeParser):
-    __slots__ = ()
-
-    dialect = "postgres"
-    default_interval_precision = "s"
-
-    short_circuit: Mapping[str, dt.DataType] = FrozenDict(
-        {
-            "vector": dt.unknown,
-            "tsvector": dt.unknown,
-            "line": dt.linestring,
-            "line[]": dt.Array(dt.linestring),
-            "polygon": dt.polygon,
-            "polygon[]": dt.Array(dt.polygon),
-            "point": dt.point,
-            "point[]": dt.Array(dt.point),
-            "macaddr": dt.macaddr,
-            "macaddr[]": dt.Array(dt.macaddr),
-            "macaddr8": dt.macaddr,
-            "macaddr8[]": dt.Array(dt.macaddr),
-        }
-    )
-
-
-parse = PostgresTypeParser.parse
-
+from ibis.backends.base.sql.glot.datatypes import PostgresType as SqlglotPostgresType
 
 _from_postgres_types = {
     psql.DOUBLE_PRECISION: dt.Float64,
@@ -116,3 +82,7 @@ class PostgresType(AlchemyType):
             return dt.Interval(unit=unit, nullable=nullable)
         else:
             return super().to_ibis(typ, nullable=nullable)
+
+    @classmethod
+    def from_string(cls, type_string: str) -> PostgresType:
+        return SqlglotPostgresType.from_string(type_string)

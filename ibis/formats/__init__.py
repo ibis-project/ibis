@@ -49,9 +49,36 @@ class TypeMapper(ABC, Generic[T]):
         """
 
     @classmethod
+    @abstractmethod
+    def from_string(cls, text: str, nullable: bool = True) -> DataType:
+        """Convert a backend-specific string representation into an Ibis DataType.
+
+        Parameters
+        ----------
+        text
+            The backend-specific string representation to convert.
+        nullable
+            Whether the Ibis DataType should be nullable.
+
+        Returns
+        -------
+        Ibis DataType.
+        """
+
+    @classmethod
+    @abstractmethod
     def to_string(cls, dtype: DataType) -> str:
-        """Convert `dtype` into a backend-specific string representation."""
-        return str(cls.from_ibis(dtype))
+        """Convert `dtype` into a backend-specific string representation.
+
+        Parameters
+        ----------
+        dtype
+            The Ibis DataType to convert.
+
+        Returns
+        -------
+        Backend-specific string representation.
+        """
 
 
 class SchemaMapper(ABC, Generic[S]):

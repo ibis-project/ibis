@@ -10,7 +10,7 @@ from pytest import param
 import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.duckdb.datatypes import parse
+from ibis.backends.duckdb.datatypes import DuckDBType
 
 
 @pytest.mark.parametrize(
@@ -58,7 +58,7 @@ from ibis.backends.duckdb.datatypes import parse
     ],
 )
 def test_parser(typ, expected):
-    ty = parse(typ)
+    ty = DuckDBType.from_string(typ)
     assert ty == expected
 
 
@@ -93,9 +93,7 @@ def test_null_dtype():
 
 
 def test_parse_quoted_struct_field():
-    import ibis.backends.duckdb.datatypes as ddt
-
-    assert ddt.parse('STRUCT("a" INTEGER, "a b c" INTEGER)') == dt.Struct(
+    assert DuckDBType.from_string('STRUCT("a" INTEGER, "a b c" INTEGER)') == dt.Struct(
         {"a": dt.int32, "a b c": dt.int32}
     )
 

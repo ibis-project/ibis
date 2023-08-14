@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import sqlalchemy.types as sat
 import trino.client
@@ -10,11 +10,7 @@ from trino.sqlalchemy.datatype import ROW as _ROW
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.common.collections import FrozenDict
-from ibis.formats.parser import TypeParser
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping
+from ibis.backends.base.sql.glot.datatypes import TrinoType as SqlglotTrinoType
 
 
 class ROW(_ROW):
@@ -75,26 +71,6 @@ def _floating(element, compiler, **kw):
     return type(element).__name__.upper()
 
 
-class TrinoTypeParser(TypeParser):
-    __slots__ = ()
-
-    dialect = "trino"
-
-    default_decimal_precision = 18
-    default_decimal_scale = 3
-    default_temporal_scale = 3
-
-    short_circuit: Mapping[str, dt.DataType] = FrozenDict(
-        {
-            "INTERVAL YEAR TO MONTH": dt.Interval("M"),
-            "INTERVAL DAY TO SECOND": dt.Interval("ms"),
-        }
-    )
-
-
-parse = TrinoTypeParser.parse
-
-
 class TrinoType(AlchemyType):
     dialect = "trino"
     source_types = {
@@ -146,3 +122,7 @@ class TrinoType(AlchemyType):
             return TIMESTAMP(precision=dtype.scale, timezone=bool(dtype.timezone))
         else:
             return super().from_ibis(dtype)
+
+    @classmethod
+    def from_string(cls, type_string, nullable=True):
+        return SqlglotTrinoType.from_string(type_string, nullable=nullable)

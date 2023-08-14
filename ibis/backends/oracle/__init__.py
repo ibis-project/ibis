@@ -33,7 +33,7 @@ from ibis.backends.base.sql.alchemy import (  # noqa: E402
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
-from ibis.backends.oracle.datatypes import OracleType, parse  # noqa: E402
+from ibis.backends.oracle.datatypes import OracleType  # noqa: E402
 from ibis.backends.oracle.registry import operation_registry  # noqa: E402
 
 if TYPE_CHECKING:
@@ -186,7 +186,7 @@ class Backend(BaseAlchemyBackend):
                 # TODO: how to disambiguate between int and float here without inspecting the value?
                 typ = dt.float
             else:
-                typ = parse(type_code).copy(nullable=is_nullable)
+                typ = OracleType.from_string(type_code).copy(nullable=is_nullable)
             yield name, typ
 
     def _table_from_schema(

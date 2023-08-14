@@ -13,7 +13,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.postgres.compiler import PostgreSQLCompiler
-from ibis.backends.postgres.datatypes import parse
+from ibis.backends.postgres.datatypes import PostgresType
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
@@ -178,7 +178,7 @@ WHERE p.proname = :name
 
         def split_name_type(arg: str) -> tuple[str, dt.DataType]:
             name, typ = arg.split(" ", 1)
-            return name, parse(typ)
+            return name, PostgresType.from_string(typ)
 
         with self.begin() as con:
             rows = con.execute(query).mappings().fetchall()
@@ -190,7 +190,7 @@ WHERE p.proname = :name
             raise exc.AmbiguousUDFError(name)
 
         [row] = rows
-        return_type = parse(row["return_type"])
+        return_type = PostgresType.from_string(row["return_type"])
         signature = list(map(split_name_type, row["signature"]))
 
         # dummy callable
@@ -265,7 +265,10 @@ ORDER BY attnum"""
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE TEMPORARY VIEW {name} AS {query}")
             try:
-                yield from ((col, parse(typestr)) for col, typestr in con.execute(text))
+                yield from (
+                    (col, PostgresType.from_string(typestr))
+                    for col, typestr in con.execute(text)
+                )
             finally:
                 con.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
 

@@ -9,10 +9,15 @@ from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 
-import ibis.backends.druid.datatypes as ddt
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.druid.compiler import DruidCompiler
+from ibis.backends.druid.datatypes import (
+    DruidBinary,
+    DruidDateTime,
+    DruidString,
+    DruidType,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -64,11 +69,11 @@ class Backend(BaseAlchemyBackend):
         @sa.event.listens_for(meta, "column_reflect")
         def column_reflect(inspector, table, column_info):
             if isinstance(typ := column_info["type"], sa.DateTime):
-                column_info["type"] = ddt.DruidDateTime()
+                column_info["type"] = DruidDateTime()
             elif isinstance(typ, (sa.LargeBinary, sa.BINARY, sa.VARBINARY)):
-                column_info["type"] = ddt.DruidBinary()
+                column_info["type"] = DruidBinary()
             elif isinstance(typ, sa.String):
-                column_info["type"] = ddt.DruidString()
+                column_info["type"] = DruidString()
 
         return meta
 
@@ -96,7 +101,7 @@ class Backend(BaseAlchemyBackend):
             if name == "__time":
                 dtype = dt.timestamp
             else:
-                dtype = ddt.parse(typ)
+                dtype = DruidType.from_string(typ)
             yield name, dtype
 
     def _get_temp_view_definition(

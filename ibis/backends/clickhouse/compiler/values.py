@@ -17,7 +17,7 @@ import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import helpers
-from ibis.backends.clickhouse.datatypes import serialize
+from ibis.backends.clickhouse.datatypes import ClickhouseType
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -44,7 +44,7 @@ def translate_val(op, **_):
 
 @translate_val.register(dt.DataType)
 def _datatype(t, **_):
-    return serialize(t)
+    return ClickhouseType.to_string(t)
 
 
 @translate_val.register(ops.PhysicalTable)
@@ -100,7 +100,7 @@ def _cast(op, **kw):
 
 @translate_val.register(ops.TryCast)
 def _try_cast(op, **kw):
-    return f"accurateCastOrNull({translate_val(op.arg, **kw)}, '{serialize(op.to)}')"
+    return f"accurateCastOrNull({translate_val(op.arg, **kw)}, '{ClickhouseType.to_string(op.to)}')"
 
 
 @translate_val.register(ops.Between)
@@ -445,7 +445,7 @@ def _literal(op, **kw):
     if value is None and dtype.nullable:
         if dtype.is_null():
             return "Null"
-        return f"CAST(Null AS {serialize(dtype)})"
+        return f"CAST(Null AS {ClickhouseType.to_string(dtype)})"
     if dtype.is_boolean():
         return str(int(bool(value)))
     elif dtype.is_inet():
@@ -753,7 +753,7 @@ def _struct_column(op, **kw):
     # ClickHouse struct types cannot be nullable
     # (non-nested fields can be nullable)
     values = translate_val(op.values, **kw)
-    struct_type = serialize(op.dtype.copy(nullable=False))
+    struct_type = ClickhouseType.to_string(op.dtype.copy(nullable=False))
     return f"CAST({values} AS {struct_type})"
 
 
@@ -776,7 +776,7 @@ def _struct_field(op, render_aliases: bool = False, **kw):
     arg = translate_val(op.arg, render_aliases=render_aliases, **kw)
     idx = arg_dtype.names.index(op.field)
     typ = arg_dtype.types[idx]
-    return f"CAST({arg}.{idx + 1} AS {serialize(typ)})"
+    return f"CAST({arg}.{idx + 1} AS {ClickhouseType.to_string(typ)})"
 
 
 @translate_val.register(ops.NthValue)
@@ -921,7 +921,7 @@ def _vararg_func(op, **kw):
 def _map(op, **kw):
     keys = translate_val(op.keys, **kw)
     values = translate_val(op.values, **kw)
-    typ = serialize(op.dtype)
+    typ = ClickhouseType.to_string(op.dtype)
     return f"CAST(({keys}, {values}) AS {typ})"
 
 
@@ -1123,7 +1123,7 @@ def _array_distinct(op, **kw):
 @translate_val.register(ops.ExtractMicrosecond)
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
-    dtype = serialize(op.dtype)
+    dtype = ClickhouseType.to_string(op.dtype)
 
     datetime_type_args = ["6"]
     if (tz := op.arg.dtype.timezone) is not None:
@@ -1136,7 +1136,7 @@ def _extract_microsecond(op, **kw):
 @translate_val.register(ops.ExtractMillisecond)
 def _extract_millisecond(op, **kw):
     arg = translate_val(op.arg, **kw)
-    dtype = serialize(op.dtype)
+    dtype = ClickhouseType.to_string(op.dtype)
 
     datetime_type_args = ["3"]
     if (tz := op.arg.dtype.timezone) is not None:

@@ -36,7 +36,7 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyExprTranslator,
 )
 from ibis.backends.snowflake.converter import SnowflakePandasData
-from ibis.backends.snowflake.datatypes import SnowflakeType, parse
+from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
@@ -411,9 +411,9 @@ $$""".format(
         with self.begin() as con, con.connection.cursor() as cur:
             result = cur.describe(query)
 
-        for name, type_code, _, _, precision, scale, is_nullable in result:
+        for name, type_code, _, _, _, _, is_nullable in result:
             typ_name = FIELD_ID_TO_NAME[type_code]
-            typ = parse(typ_name, precision=precision, scale=scale)
+            typ = SnowflakeType.from_string(typ_name)
             yield name, typ.copy(nullable=is_nullable)
 
     def list_databases(self, like: str | None = None) -> list[str]:

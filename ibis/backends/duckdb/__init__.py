@@ -28,7 +28,7 @@ from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
-from ibis.backends.duckdb.datatypes import DuckDBType, parse
+from ibis.backends.duckdb.datatypes import DuckDBType
 from ibis.expr.operations.relations import PandasDataFrameProxy
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pandas import PandasData
@@ -160,7 +160,9 @@ WHERE catalog_name = :database"""
                             f"DESCRIBE SELECT {quoted_colname} FROM {quoted_tablename}"
                         )
                         _, typ, *_ = con.connection.fetchone()
-                    complex_type_info_cache[colname] = coltype = parse(typ)
+                    complex_type_info_cache[colname] = coltype = DuckDBType.from_string(
+                        typ
+                    )
 
                 column_info["type"] = DuckDBType.from_ibis(coltype)
 
@@ -511,7 +513,7 @@ WHERE catalog_name = :database"""
 
         ibis_schema = sch.Schema(
             {
-                name: parse(typ).copy(nullable=nullable)
+                name: DuckDBType.from_string(typ, nullable=nullable)
                 for name, typ, nullable in zip(names, types, nullables)
             }
         )
@@ -1042,8 +1044,9 @@ WHERE catalog_name = :database"""
             for name, type, null in toolz.pluck(
                 ["column_name", "column_type", "null"], rows.mappings()
             ):
-                ibis_type = parse(type)
-                yield name, ibis_type.copy(nullable=null.lower() == "yes")
+                nullable = null.lower() == "yes"
+                ibis_type = DuckDBType.from_string(type, nullable=nullable)
+                yield name, ibis_type
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # in theory we could use pandas dataframes, but when using dataframes
