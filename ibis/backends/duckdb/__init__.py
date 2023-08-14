@@ -11,10 +11,6 @@ from pathlib import Path
 from typing import (
     TYPE_CHECKING,
     Any,
-    Iterable,
-    Iterator,
-    Mapping,
-    MutableMapping,
 )
 
 import duckdb
@@ -38,6 +34,8 @@ from ibis.expr.operations.udf import InputType
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+
     import pandas as pd
     import torch
 
@@ -442,6 +440,85 @@ WHERE catalog_name = :database"""
         with self.begin() as con:
             con.exec_driver_sql(view)
         return self.table(table_name)
+
+    def _get_sqla_table(
+        self,
+        name: str,
+        schema: str | None = None,
+        database: str | None = None,
+        **_: Any,
+    ) -> sa.Table:
+        if schema is None:
+            schema = self.current_schema
+        *db, schema = schema.split(".")
+        db = "".join(db) or database
+        ident = ".".join(
+            map(
+                self._quote,
+                filter(None, (db if db != self.current_database else None, schema)),
+            )
+        )
+
+        s = sa.table(
+            "columns",
+            sa.column("table_catalog", sa.TEXT()),
+            sa.column("table_schema", sa.TEXT()),
+            sa.column("table_name", sa.TEXT()),
+            sa.column("column_name", sa.TEXT()),
+            sa.column("data_type", sa.TEXT()),
+            sa.column("is_nullable", sa.TEXT()),
+            sa.column("ordinal_position", sa.INTEGER()),
+            schema="information_schema",
+        )
+
+        where = s.c.table_name == name
+
+        if db:
+            where &= s.c.table_catalog == db
+
+        if schema:
+            where &= s.c.table_schema == schema
+
+        query = (
+            sa.select(
+                s.c.column_name,
+                s.c.data_type,
+                (s.c.is_nullable == "YES").label("nullable"),
+            )
+            .where(where)
+            .order_by(sa.asc(s.c.ordinal_position))
+        )
+
+        with self.begin() as con:
+            # fetch metadata with pyarrow, it's much faster for wide tables
+            meta = con.execute(query).cursor.fetch_arrow_table()
+
+        if not meta:
+            raise sa.exc.NoSuchTableError(name)
+
+        names = meta["column_name"].to_pylist()
+        types = meta["data_type"].to_pylist()
+        nullables = meta["nullable"].to_pylist()
+
+        ibis_schema = sch.Schema(
+            {
+                name: parse(typ).copy(nullable=nullable)
+                for name, typ, nullable in zip(names, types, nullables)
+            }
+        )
+        columns = self._columns_from_schema(name, ibis_schema)
+        return sa.table(name, *columns, schema=ident)
+
+    def drop_table(
+        self, name: str, database: str | None = None, force: bool = False
+    ) -> None:
+        name = self._quote(name)
+        # TODO: handle database quoting
+        if database is not None:
+            name = f"{database}.{name}"
+        drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
+        with self.begin() as con:
+            con.exec_driver_sql(drop_stmt)
 
     def read_parquet(
         self,
@@ -991,17 +1068,6 @@ WHERE catalog_name = :database"""
                 _register(name, table)
             except duckdb.NotImplementedException:
                 _register(name, data.to_pyarrow(schema))
-
-    def _get_sqla_table(
-        self, name: str, schema: str | None = None, **kwargs: Any
-    ) -> sa.Table:
-        with warnings.catch_warnings():
-            # We don't rely on index reflection, ignore this warning
-            warnings.filterwarnings(
-                "ignore",
-                message="duckdb-engine doesn't yet support reflection on indices",
-            )
-            return super()._get_sqla_table(name, schema, **kwargs)
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled

@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import inspect
 import sqlite3
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 import toolz
@@ -33,6 +33,7 @@ from ibis.backends.sqlite.compiler import SQLiteCompiler
 from ibis.backends.sqlite.datatypes import ISODATETIME, SqliteType, parse
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
     from pathlib import Path
 
     import ibis.expr.operations as ops

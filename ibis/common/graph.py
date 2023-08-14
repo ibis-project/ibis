@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Hashable, Iterable, Iterator, Mapping
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence
+from collections.abc import Hashable, Iterable, Iterator, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
+from ibis.common.collections import frozendict
 from ibis.common.patterns import NoMatch, pattern
 from ibis.util import experimental
 
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-def _flatten_collections(node: Node, filter: type) -> Iterator[Node]:
+def _flatten_collections(node: Any, filter: type) -> Iterator[Node]:
     """Flatten collections of nodes into a single iterator.
 
     We treat common collection types inherently traversable (e.g. list, tuple, dict)
@@ -21,51 +22,84 @@ def _flatten_collections(node: Node, filter: type) -> Iterator[Node]:
 
     Parameters
     ----------
-    node : Any
+    node
         Flattaneble object unless it's an instance of the types passed as filter.
-    filter : type, default Node
+    filter
         Type to filter out for the traversal, e.g. Node.
 
     Returns
     -------
-    Iterator : Any
+    A flat generator of the filtered nodes.
+
+    Examples
+    --------
+    >>> from ibis.common.grounds import Concrete
+    >>> from ibis.common.graph import Node
+    >>>
+    >>> class MyNode(Concrete, Node):
+    ...     number: int
+    ...     string: str
+    ...     children: tuple[Node, ...]
+    ...
+    >>> a = MyNode(4, "a", ())
+    >>>
+    >>> b = MyNode(3, "b", ())
+    >>> c = MyNode(2, "c", (a, b))
+    >>> d = MyNode(1, "d", (c,))
+    >>>
+    >>> assert list(_flatten_collections(a, Node)) == [a]
+    >>> assert list(_flatten_collections((c,), Node)) == [c]
+    >>> assert list(_flatten_collections([a, b, (c, a)], Node)) == [a, b, c, a]
     """
     if isinstance(node, filter):
         yield node
-    elif isinstance(node, (str, bytes)):
-        pass
-    elif isinstance(node, Sequence):
+    elif isinstance(node, (tuple, list)):
         for item in node:
             yield from _flatten_collections(item, filter)
-    elif isinstance(node, Mapping):
-        for key, value in node.items():
-            yield from _flatten_collections(key, filter)
+    elif isinstance(node, (dict, frozendict)):
+        for value in node.values():
             yield from _flatten_collections(value, filter)
 
 
-def _recursive_get(obj: Any, dct: dict[Node, Any]) -> Any:
+def _recursive_get(obj: Any, dct: dict[Node, Any], filter: type) -> Any:
     """Recursively replace objects in a nested structure with values from a dict.
 
-    Since we treat collection types inherently traversable (e.g. list, tuple, dict) we
-    need to traverse them implicitly and replace the values given a result mapping.
+    Since we treat common collection types inherently traversable, so we need to
+    traverse them implicitly and replace the values given a result mapping.
 
     Parameters
     ----------
-    obj : Any
+    obj
         Object to replace.
-    dct : dict[Node, Any]
+    dct
         Mapping of objects to replace with their values.
+    filter
+        Type to filter out for the traversal, e.g. Node.
 
     Returns
     -------
     Object with replaced values.
+
+    Examples
+    --------
+    >>> from ibis.common.graph import _recursive_get
+    >>>
+    >>> dct = {1: 2, 3: 4}
+    >>> _recursive_get((1, 3), dct, filter=int)
+    (2, 4)
+    >>> _recursive_get(frozendict({1: 3}), dct, filter=int)
+    {1: 4}
+    >>> _recursive_get(frozendict({1: (1, 3)}), dct, filter=int)
+    {1: (2, 4)}
     """
-    if isinstance(obj, tuple):
-        return tuple(_recursive_get(o, dct) for o in obj)
-    elif isinstance(obj, dict):
-        return {k: _recursive_get(v, dct) for k, v in obj.items()}
+    if isinstance(obj, filter):
+        return dct[obj]
+    elif isinstance(obj, (tuple, list)):
+        return tuple(_recursive_get(o, dct, filter) for o in obj)
+    elif isinstance(obj, (dict, frozendict)):
+        return {k: _recursive_get(v, dct, filter) for k, v in obj.items()}
     else:
-        return dct.get(obj, obj)
+        return obj
 
 
 class Node(Hashable):
@@ -123,10 +157,14 @@ class Node(Hashable):
         -------
         A mapping of nodes to their results.
         """
+        filter = filter or Node
         results = {}
         for node in Graph.from_bfs(self, filter=filter).toposort():
-            kwargs = dict(zip(node.__argnames__, node.__args__))
-            kwargs = _recursive_get(kwargs, results)
+            # minor optimization to directly recurse into the children
+            kwargs = {
+                k: _recursive_get(v, results, filter)
+                for k, v in zip(node.__argnames__, node.__args__)
+            }
             results[node] = fn(node, results, **kwargs)
         return results
 
@@ -218,7 +256,7 @@ class Node(Hashable):
         return self.map(fn, filter=filter)[self]
 
 
-class Graph(Dict[Node, Sequence[Node]]):
+class Graph(dict[Node, Sequence[Node]]):
     """A mapping-like graph data structure for easier graph traversal and manipulation.
 
     The data structure is a mapping of nodes to their children. The children are

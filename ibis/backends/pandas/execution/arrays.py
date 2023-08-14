@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import operator
 from functools import partial
-from typing import Any, Collection
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -11,6 +11,9 @@ from pandas.core.groupby import SeriesGroupBy
 import ibis.expr.operations as ops
 from ibis.backends.pandas.core import execute
 from ibis.backends.pandas.dispatch import execute_node
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 
 @execute_node.register(ops.ArrayColumn, tuple)

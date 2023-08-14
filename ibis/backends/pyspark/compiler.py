@@ -261,7 +261,7 @@ def compile_cast(t, op, **kwargs):
         else:
             raise com.UnsupportedArgumentError(
                 "Casting to intervals is only supported for literals "
-                "in the PySpark backend. {} not allowed.".format(type(op.arg))
+                f"in the PySpark backend. {type(op.arg)} not allowed."
             )
 
     cast_type = PySparkType.from_ibis(op.to)
@@ -275,7 +275,7 @@ def compile_limit(t, op, **kwargs):
     if op.offset != 0:
         raise com.UnsupportedArgumentError(
             "PySpark backend does not support non-zero offset is for "
-            "limit operation. Got offset {}.".format(op.offset)
+            f"limit operation. Got offset {op.offset}."
         )
     df = t.translate(op.table, **kwargs)
     return df.limit(op.n)
@@ -1433,7 +1433,7 @@ def compile_timestamp_from_unix(t, op, **kwargs):
     else:
         raise com.UnsupportedArgumentError(
             "PySpark backend does not support timestamp from unix time with "
-            "unit {}. Supported unit is s.".format(op.unit.short)
+            f"unit {op.unit.short}. Supported unit is s."
         )
 
 

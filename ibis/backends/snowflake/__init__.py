@@ -11,7 +11,8 @@ import sys
 import tempfile
 import textwrap
 import warnings
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 import sqlalchemy as sa
@@ -37,6 +38,8 @@ from ibis.backends.snowflake.datatypes import SnowflakeType, parse
 from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
+
     import pandas as pd
 
     import ibis.expr.schema as sch
@@ -675,6 +678,169 @@ $$""".format(
         with self.begin() as con:
             con.exec_driver_sql(drop_stmt)
 
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV file as a table in the Snowflake backend.
+
+        Parameters
+        ----------
+        path
+            Path to the CSV file
+        table_name
+            Optional name for the table; if not passed, a random name will be generated
+        kwargs
+            Snowflake-specific file format configuration arguments. See the documentation for
+            the full list of options: https://docs.snowflake.com/en/sql-reference/sql/create-file-format#type-csv
+
+        Returns
+        -------
+        Table
+            The table that was read from the CSV file
+        """
+        stage = ibis.util.gen_name("stage")
+        file_format = ibis.util.gen_name("format")
+        # 99 is the maximum allowed number of threads by Snowflake:
+        # https://docs.snowflake.com/en/sql-reference/sql/put#optional-parameters
+        threads = min((os.cpu_count() or 2) // 2, 99)
+        table = table_name or ibis.util.gen_name("read_csv_snowflake")
+
+        parse_header = header = kwargs.pop("parse_header", True)
+        skip_header = kwargs.pop("skip_header", True)
+
+        if int(parse_header) != int(skip_header):
+            raise com.IbisInputError(
+                "`parse_header` and `skip_header` must match: "
+                f"parse_header = {parse_header}, skip_header = {skip_header}"
+            )
+
+        options = " " * bool(kwargs) + " ".join(
+            f"{name.upper()} = {value!r}" for name, value in kwargs.items()
+        )
+
+        with self.begin() as con:
+            # create a temporary stage for the file
+            con.exec_driver_sql(f"CREATE TEMP STAGE {stage}")
+
+            # create a temporary file format for CSV schema inference
+            create_infer_fmt = (
+                f"CREATE TEMP FILE FORMAT {file_format}_infer TYPE = CSV PARSE_HEADER = {str(header).upper()}"
+                + options
+            )
+            con.exec_driver_sql(create_infer_fmt)
+
+            # create a temporary file format for loading
+            create_load_fmt = (
+                f"CREATE TEMP FILE FORMAT {file_format}_load TYPE = CSV SKIP_HEADER = {int(header)}"
+                + options
+            )
+            con.exec_driver_sql(create_load_fmt)
+
+            # copy the local file to the stage
+            con.exec_driver_sql(
+                f"PUT '{Path(path).absolute().as_uri()}' @{stage} PARALLEL = {threads:d} AUTO_COMPRESS = FALSE"
+            )
+
+            # create a temporary table using the stage and format inferred
+            # from the CSV
+            con.exec_driver_sql(
+                f"""
+                CREATE TEMP TABLE "{table}"
+                USING TEMPLATE (
+                    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+                    FROM TABLE(
+                        INFER_SCHEMA(
+                            LOCATION => '@{stage}',
+                            FILE_FORMAT => '{file_format}_infer'
+                        )
+                    )
+                )
+                """
+            )
+
+            # load the CSV into the table
+            con.exec_driver_sql(
+                f"""
+                COPY INTO "{table}"
+                FROM @{stage}
+                FILE_FORMAT = (FORMAT_NAME = {file_format}_load)
+                """
+            )
+
+        return self.table(table)
+
+    def read_json(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Read newline-delimited JSON into an ibis table, using Snowflake.
+
+        Parameters
+        ----------
+        path
+            File or list of files
+        table_name
+            Optional table name
+        **kwargs
+            Additional keyword arguments. See
+            https://docs.snowflake.com/en/sql-reference/sql/create-file-format#type-json
+            for the full list of options.
+
+        Returns
+        -------
+        Table
+            An ibis table expression
+        """
+        stage = util.gen_name("read_json_stage")
+        file_format = util.gen_name("read_json_format")
+        table = table_name or util.gen_name("read_json_snowflake")
+        qtable = self._quote(table)
+        threads = min((os.cpu_count() or 2) // 2, 99)
+
+        kwargs.setdefault("strip_outer_array", True)
+        match_by_column_name = kwargs.pop("match_by_column_name", "case_sensitive")
+
+        options = " " * bool(kwargs) + " ".join(
+            f"{name.upper()} = {value!r}" for name, value in kwargs.items()
+        )
+
+        with self.begin() as con:
+            con.exec_driver_sql(
+                f"CREATE TEMP FILE FORMAT {file_format} TYPE = JSON" + options
+            )
+
+            con.exec_driver_sql(
+                f"CREATE TEMP STAGE {stage} FILE_FORMAT = {file_format}"
+            )
+            con.exec_driver_sql(
+                f"PUT '{Path(path).absolute().as_uri()}' @{stage} PARALLEL = {threads:d}"
+            )
+
+            con.exec_driver_sql(
+                f"""
+                CREATE TEMP TABLE {qtable}
+                USING TEMPLATE (
+                    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+                    FROM TABLE(
+                        INFER_SCHEMA(
+                            LOCATION => '@{stage}',
+                            FILE_FORMAT => '{file_format}'
+                        )
+                    )
+                )
+                """
+            )
+
+            # load the JSON file into the table
+            con.exec_driver_sql(
+                f"""
+                COPY INTO {qtable}
+                FROM @{stage}
+                MATCH_BY_COLUMN_NAME = {str(match_by_column_name).upper()}
+                """
+            )
+
+        return self.table(table)
+
 
 @compiles(sa.sql.Join, "snowflake")
 def compile_join(element, compiler, **kw):
@@ -687,7 +853,7 @@ def compile_join(element, compiler, **kw):
     result = compiler.visit_join(element, **kw)
 
     if element.right._is_lateral:
-        return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE)
+        return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE | re.DOTALL)
     return result
 
 

@@ -5,14 +5,17 @@ import csv
 import gzip
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
 
 import pytest
 from pytest import param
 
+import ibis
 from ibis.backends.conftest import TEST_TABLES
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     import pyarrow as pa
 
 pytestmark = pytest.mark.notimpl(["druid", "oracle"])
@@ -404,7 +407,6 @@ def test_register_garbage(con, monkeypatch):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "dask",
         "impala",
         "mssql",
@@ -437,34 +439,50 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name, out_table_n
         table.count().execute()
 
 
+@pytest.fixture(scope="module")
+def num_diamonds(data_dir):
+    with open(data_dir / "csv" / "diamonds.csv") as f:
+        # subtract 1 for the header
+        return sum(1 for _ in f) - 1
+
+
+DIAMONDS_COLUMN_TYPES = {
+    # snowflake's `INFER_SCHEMA` returns this for the diamonds CSV `price`
+    # column type
+    "snowflake": {
+        "carat": "decimal(3, 2)",
+        "depth": "decimal(3, 1)",
+        "table": "decimal(3, 1)",
+        "x": "decimal(4, 2)",
+        "y": "decimal(4, 2)",
+        "z": "decimal(4, 2)",
+    },
+    "pyspark": {"price": "int32"},
+}
+
+
 @pytest.mark.parametrize(
-    ("fname", "in_table_name", "out_table_name"),
+    ("in_table_name", "out_table_name"),
     [
-        param("diamonds.csv", None, "ibis_read_csv_", id="default"),
-        param(
-            "diamonds.csv",
-            "fancy_stones",
-            "fancy_stones",
-            id="file_name",
-        ),
+        param(None, "ibis_read_csv_", id="default"),
+        param("fancy_stones", "fancy_stones", id="file_name"),
     ],
 )
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "dask",
         "impala",
         "mssql",
         "mysql",
         "pandas",
         "postgres",
-        "snowflake",
         "sqlite",
         "trino",
     ]
 )
-def test_read_csv(con, data_dir, fname, in_table_name, out_table_name):
+def test_read_csv(con, data_dir, in_table_name, out_table_name, num_diamonds):
+    fname = "diamonds.csv"
     with pushd(data_dir / "csv"):
         if con.name == "pyspark":
             # pyspark doesn't respect CWD
@@ -472,5 +490,22 @@ def test_read_csv(con, data_dir, fname, in_table_name, out_table_name):
         table = con.read_csv(fname, table_name=in_table_name)
 
     assert any(out_table_name in t for t in con.list_tables())
-    if con.name != "datafusion":
-        table.count().execute()
+
+    special_types = DIAMONDS_COLUMN_TYPES.get(con.name, {})
+
+    assert table.schema() == ibis.schema(
+        {
+            "carat": "float64",
+            "cut": "string",
+            "color": "string",
+            "clarity": "string",
+            "depth": "float64",
+            "table": "float64",
+            "price": "int64",
+            "x": "float64",
+            "y": "float64",
+            "z": "float64",
+            **special_types,
+        }
+    )
+    assert table.count().execute() == num_diamonds

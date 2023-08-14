@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import operator
 from functools import singledispatch
-from typing import IO, Dict
+from typing import IO
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -18,7 +18,7 @@ import ibis.expr.types as ir
 from ibis.util import experimental
 
 
-class Catalog(Dict[str, sch.Schema]):
+class Catalog(dict[str, sch.Schema]):
     """A catalog of tables and their schemas."""
 
     typemap = {

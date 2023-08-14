@@ -59,7 +59,7 @@ services:
         - CMD
         - pg_isready
       timeout: 5s
-    image: postgres:13.11-alpine
+    image: postgres:13.12-alpine
     networks:
       - impala
 
@@ -234,9 +234,9 @@ services:
       retries: 10
       test:
         - CMD-SHELL
-        - trino --execute 'SELECT 1 AS one'
+        - trino --output-format null --execute 'show schemas in postgresql; show schemas in hive; show schemas in memory'
       timeout: 30s
-    image: trinodb/trino:422
+    image: trinodb/trino:423
     ports:
       - 8080:8080
     networks:
@@ -248,7 +248,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:15.3-alpine
+    image: postgres:15.4-alpine
     container_name: druid-postgres
     environment:
       - POSTGRES_PASSWORD=FoolishPassword

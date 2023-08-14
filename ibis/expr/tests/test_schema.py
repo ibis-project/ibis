@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from dataclasses import dataclass
-from typing import Dict, List, NamedTuple, Tuple
+from typing import NamedTuple
 
 import numpy as np
 import pandas.testing as tm
@@ -235,12 +235,12 @@ class FooSchema:
     a: int
     b: str
     c: float
-    d: Tuple[str]
-    e: List[int]
-    f: Dict[str, int]
+    d: tuple[str]
+    e: list[int]
+    f: dict[str, int]
     g: BarSchema
-    h: List[BarSchema]
-    j: Dict[str, BarSchema]
+    h: list[BarSchema]
+    j: dict[str, BarSchema]
 
 
 foo_schema = sch.Schema(
@@ -271,12 +271,12 @@ class NamedFoo(NamedTuple):
     a: int
     b: str
     c: float
-    d: Tuple[str]
-    e: List[int]
-    f: Dict[str, int]
+    d: tuple[str]
+    e: list[int]
+    f: dict[str, int]
     g: NamedBar
-    h: List[NamedBar]
-    j: Dict[str, NamedBar]
+    h: list[NamedBar]
+    j: dict[str, NamedBar]
 
 
 def test_schema_from_namedtuple():
@@ -294,16 +294,16 @@ class DataFooBase:
     a: int
     b: str
     c: float
-    d: Tuple[str]
+    d: tuple[str]
 
 
 @dataclass
 class DataFoo(DataFooBase):
-    e: List[int]
-    f: Dict[str, int]
+    e: list[int]
+    f: dict[str, int]
     g: DataBar
-    h: List[DataBar]
-    j: Dict[str, DataBar]
+    h: list[DataBar]
+    j: dict[str, DataBar]
 
 
 def test_schema_from_dataclass():

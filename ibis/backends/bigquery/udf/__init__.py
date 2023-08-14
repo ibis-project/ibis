@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import inspect
 import itertools
-from typing import Callable, Iterable, Literal, Mapping
+from typing import TYPE_CHECKING, Callable, Literal
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
@@ -11,6 +11,9 @@ from ibis.backends.bigquery.datatypes import BigQueryType, spread_type
 from ibis.backends.bigquery.operations import BigQueryUDFNode
 from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.legacy.udf.validate import validate_output_type
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
 
 __all__ = ("udf",)
 

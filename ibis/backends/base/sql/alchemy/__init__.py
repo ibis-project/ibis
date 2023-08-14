@@ -6,7 +6,7 @@ import contextlib
 import getpass
 import warnings
 from operator import methodcaller
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
@@ -41,6 +41,8 @@ from ibis.backends.base.sql.alchemy.translator import (
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import pandas as pd
     import pyarrow as pa
 
@@ -578,16 +580,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 )
         return table
 
-    def raw_sql(self, query) -> None:
-        """Execute a query string.
-
-        !!! warning "The returned cursor object must be **manually** released."
-
-        Parameters
-        ----------
-        query
-            DDL or DML statement
-        """
+    def raw_sql(self, query):
         return self.con.connect().execute(
             sa.text(query) if isinstance(query, str) else query
         )
@@ -709,13 +702,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
 
             from_table_expr = obj
 
-            with self.begin() as bind:
-                if from_table_expr is not None:
-                    compiled = from_table_expr.compile()
-                    columns = [
-                        self.con.dialect.normalize_name(c)
-                        for c in from_table_expr.columns
-                    ]
+            if from_table_expr is not None:
+                compiled = from_table_expr.compile()
+                columns = [
+                    self.con.dialect.normalize_name(c) for c in from_table_expr.columns
+                ]
+                with self.begin() as bind:
                     bind.execute(to_table.insert().from_select(columns, compiled))
         elif isinstance(obj, (list, dict)):
             to_table = self._get_sqla_table(table_name, schema=database)

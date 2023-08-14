@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import operator
 from functools import partial
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import duckdb
 import numpy as np
@@ -35,6 +35,8 @@ from ibis.backends.postgres.registry import (
 from ibis.common.exceptions import UnsupportedOperationError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from ibis.backends.base.sql.alchemy.datatypes import StructType
 
 operation_registry = {
@@ -104,7 +106,7 @@ class struct_pack(GenericFunction):
 def compiles_struct_pack(element, compiler, **kw):
     quote = compiler.preparer.quote
     args = ", ".join(
-        "{key} := {value}".format(key=quote(key), value=compiler.process(value, **kw))
+        f"{quote(key)} := {compiler.process(value, **kw)}"
         for key, value in element.values.items()
     )
     return f"struct_pack({args})"

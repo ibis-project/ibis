@@ -13,17 +13,11 @@ from __future__ import annotations
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import sys
-
 import pytest
 
 import ibis
 import ibis.common.exceptions as com
 from ibis.tests.expr.mocks import MockBackend
-
-collect_ignore = []
-if sys.version_info < (3, 10):
-    collect_ignore.append("test_operations_py310.py")
 
 
 @pytest.fixture
@@ -107,14 +101,3 @@ def pytest_pyfunc_call(pyfuncitem):
             len(markers) == 1
         ), f"More than one xfail_unsupported marker found on test {pyfuncitem}"
         pytest.xfail(reason=repr(e))
-
-
-@pytest.fixture
-def graphviz():
-    """A fixture to ensure the graphviz library and CLI are installed"""
-    graphviz = pytest.importorskip("graphviz")
-    try:
-        graphviz.version()
-    except graphviz.ExecutableNotFound:
-        pytest.skip("graphviz CLI not installed")
-    return graphviz

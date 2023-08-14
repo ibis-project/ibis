@@ -58,10 +58,10 @@ class Expr(Immutable, Coercible):
             raise CoercionError("Unable to coerce value to an expression")
 
     def __repr__(self) -> str:
-        from ibis.expr.types.pretty import simple_console
-
         if not options.interactive:
             return self._repr()
+
+        from ibis.expr.types.pretty import simple_console
 
         with simple_console.capture() as capture:
             try:
@@ -83,9 +83,9 @@ class Expr(Immutable, Coercible):
         return hash((self.__class__, self._arg))
 
     def _repr(self) -> str:
-        from ibis.expr.format import fmt
+        from ibis.expr.format import pretty
 
-        return fmt(self)
+        return pretty(self)
 
     def equals(self, other):
         """Return whether this expression is _structurally_ equivalent to `other`.
@@ -544,9 +544,7 @@ class Expr(Immutable, Coercible):
         raise NotImplementedError(type(self))
 
 
-def _binop(
-    op_class: type[ops.Binary], left: ir.Value, right: ir.Value
-) -> ir.Value | NotImplemented:
+def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Value:
     """Try to construct a binary operation.
 
     Parameters

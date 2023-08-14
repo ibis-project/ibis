@@ -5,7 +5,7 @@ import concurrent.futures
 import inspect
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,8 @@ import toolz
 from filelock import FileLock
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
+
     import ibis.expr.types as ir
 
 

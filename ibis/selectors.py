@@ -52,7 +52,8 @@ import functools
 import inspect
 import operator
 import re
-from typing import Callable, Iterable, Mapping, Optional, Sequence, Union
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Callable, Optional, Union
 
 from public import public
 

@@ -10,7 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 
-pytest.importorskip("graphviz")
+graphviz = pytest.importorskip("graphviz")
 
 import ibis.expr.visualize as viz  # noqa: E402
 from ibis.expr import api  # noqa: E402
@@ -36,10 +36,10 @@ def key(node):
         .aggregate(amean=lambda f: f.a.mean(), bsum=lambda f: f.b.sum()),
     ],
 )
-def test_exprs(table, expr_func):
-    expr = expr_func(table)
+def test_exprs(alltypes, expr_func):
+    expr = expr_func(alltypes)
     graph = viz.to_graph(expr)
-    assert key(table.op()) in graph.source
+    assert key(alltypes.op()) in graph.source
     assert key(expr.op()) in graph.source
 
 
@@ -98,7 +98,7 @@ def test_order_by():
     assert key(expr.op()) in graph.source
 
 
-def test_optional_graphviz_repr(monkeypatch, graphviz):
+def test_optional_graphviz_repr(monkeypatch):
     monkeypatch.setattr(ibis.options, "graphviz_repr", True)
 
     t = ibis.table([("a", "int64"), ("b", "string"), ("c", "int32")])
@@ -148,7 +148,7 @@ def test_filter():
     assert "predicates[1]" in graph.source
 
 
-def test_html_escape(monkeypatch, graphviz):
+def test_html_escape(monkeypatch):
     monkeypatch.setattr(ibis.options, "graphviz_repr", True)
     # Check that we correctly escape HTML <> characters in the graphviz
     # representation. If an error is thrown, _repr_png_ returns None.

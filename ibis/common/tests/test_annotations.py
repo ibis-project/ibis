@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import inspect
-from typing import Union
+from typing import Annotated, Union
 
 import pytest
-from typing_extensions import Annotated  # noqa: TCH002
 
 from ibis.common.annotations import (
     Argument,

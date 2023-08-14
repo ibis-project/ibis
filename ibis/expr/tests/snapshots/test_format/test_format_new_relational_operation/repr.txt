@@ -1,0 +1,30 @@
+r0 := UnboundTable: alltypes
+  a int8
+  b int16
+  c int32
+  d int64
+  e float32
+  f float64
+  g string
+  h boolean
+  i timestamp
+  j date
+  k time
+
+r1 := MyRelation
+  a int8
+  b int16
+  c int32
+  d int64
+  e float32
+  f float64
+  g string
+  h boolean
+  i timestamp
+  j date
+  k time
+
+Selection[r1]
+  selections:
+    r1
+    a2: r1.a

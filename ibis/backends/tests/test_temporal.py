@@ -72,7 +72,6 @@ except ImportError:
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -108,7 +107,7 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
         "second",
     ],
 )
-@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -251,7 +250,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_literal(con, func, expected):
     value = ibis.timestamp("2015-09-01 14:48:05.359")
     assert con.execute(func(value).name("tmp")) == expected
@@ -283,7 +281,7 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1581,10 +1579,13 @@ def test_string_to_timestamp(alltypes, fmt):
         param("2017-01-07", 5, "Saturday", id="saturday"),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "mssql", "druid", "oracle"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
+@pytest.mark.broken(
+    ["datafusion"],
+    raises=Exception,
+    reason="Exception: Arrow error: Cast error: Cannot cast string to value of Date64 type",
+)
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
@@ -1594,9 +1595,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     assert result_day.lower() == expected_day.lower()
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "mssql", "oracle"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
@@ -1632,7 +1631,7 @@ def test_day_of_week_column(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -2125,9 +2124,7 @@ def test_date_column_from_iso(con, alltypes, df):
     tm.assert_series_equal(golden.rename("tmp"), actual.rename("tmp"))
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["pyspark"],
     raises=com.UnsupportedOperationError,

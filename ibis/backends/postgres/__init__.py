@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import textwrap
-from typing import TYPE_CHECKING, Callable, Iterable, Literal
+from typing import TYPE_CHECKING, Callable, Literal
 
 import sqlalchemy as sa
 
@@ -13,10 +13,12 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.base.sql.alchemy import AlchemyCanCreateSchema, BaseAlchemyBackend
 from ibis.backends.postgres.compiler import PostgreSQLCompiler
-from ibis.backends.postgres.datatypes import _get_type
+from ibis.backends.postgres.datatypes import parse
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import ibis.expr.datatypes as dt
 
 
@@ -176,20 +178,20 @@ WHERE p.proname = :name
 
         def split_name_type(arg: str) -> tuple[str, dt.DataType]:
             name, typ = arg.split(" ", 1)
-            return name, _get_type(typ)
+            return name, parse(typ)
 
         with self.begin() as con:
             rows = con.execute(query).mappings().fetchall()
 
-            if not rows:
-                name = f"{schema}.{name}" if schema else name
-                raise exc.MissingUDFError(name)
-            elif len(rows) > 1:
-                raise exc.AmbiguousUDFError(name)
+        if not rows:
+            name = f"{schema}.{name}" if schema else name
+            raise exc.MissingUDFError(name)
+        elif len(rows) > 1:
+            raise exc.AmbiguousUDFError(name)
 
-            [row] = rows
-            return_type = _get_type(row["return_type"])
-            signature = list(map(split_name_type, row["signature"]))
+        [row] = rows
+        return_type = parse(row["return_type"])
+        signature = list(map(split_name_type, row["signature"]))
 
         # dummy callable
         def fake_func(*args, **kwargs):
@@ -263,9 +265,7 @@ ORDER BY attnum"""
         with self.begin() as con:
             con.exec_driver_sql(f"CREATE TEMPORARY VIEW {name} AS {query}")
             try:
-                yield from (
-                    (col, _get_type(typestr)) for col, typestr in con.execute(text)
-                )
+                yield from ((col, parse(typestr)) for col, typestr in con.execute(text))
             finally:
                 con.exec_driver_sql(f"DROP VIEW IF EXISTS {name}")
 

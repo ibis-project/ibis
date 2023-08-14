@@ -42,7 +42,7 @@ pyarrow = ">=2,<13"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
-sqlglot = ">=10.4.3,<18"
+sqlglot = ">=17.12.0,<18"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 black = { version = ">=22.1.0,<24", optional = true }
@@ -454,7 +454,7 @@ ignore = [
   "UP007",   # Optional[str] -> str | None
 ]
 exclude = ["*_py310.py", "ibis/tests/*/snapshots/*"]
-target-version = "py38"
+target-version = "py39"
 # none of these codes will be automatically fixed by ruff
 unfixable = [
   "T201",   # print statements

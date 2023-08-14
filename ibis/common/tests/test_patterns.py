@@ -3,25 +3,23 @@ from __future__ import annotations
 import re
 import sys
 from collections.abc import Callable as CallableABC
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import (
-    Any as AnyType,
-)
-from typing import (
+from typing import (  # noqa: UP035
+    Annotated,
     Callable,
-    Dict,
     Generic,
     List,
     Literal,
     Optional,
-    Sequence,
-    Tuple,
     TypeVar,
     Union,
 )
+from typing import (
+    Any as AnyType,
+)
 
 import pytest
-from typing_extensions import Annotated
 
 from ibis.common.annotations import ValidationError
 from ibis.common.collections import FrozenDict
@@ -849,14 +847,14 @@ def test_pattern_decorator():
         (Optional[Union[str, int]], Option(AnyOf(InstanceOf(str), InstanceOf(int)))),
         (Union[int, str], AnyOf(InstanceOf(int), InstanceOf(str))),
         (Annotated[int, Min(3)], AllOf(InstanceOf(int), Min(3))),
-        (List[int], SequenceOf(InstanceOf(int), list)),
+        (list[int], SequenceOf(InstanceOf(int), list)),
         (
-            Tuple[int, float, str],
+            tuple[int, float, str],
             TupleOf((InstanceOf(int), InstanceOf(float), InstanceOf(str))),
         ),
-        (Tuple[int, ...], TupleOf(InstanceOf(int))),
+        (tuple[int, ...], TupleOf(InstanceOf(int))),
         (
-            Dict[str, float],
+            dict[str, float],
             DictOf(InstanceOf(str), InstanceOf(float)),
         ),
         (FrozenDict[str, int], FrozenDictOf(InstanceOf(str), InstanceOf(int))),
@@ -949,7 +947,7 @@ def test_pattern_coercible_checks_type():
     assert v.match(1, context={}) is NoMatch
 
 
-class DoubledList(Coercible, List[T]):
+class DoubledList(Coercible, list[T]):
     @classmethod
     def __coerce__(cls, obj):
         return cls(list(obj) * 2)
@@ -960,11 +958,11 @@ def test_pattern_coercible_sequence_type():
     with pytest.raises(TypeError, match=r"Sequence\(\) takes no arguments"):
         s.match([1, 2, 3], context={})
 
-    s = Pattern.from_typehint(List[PlusOne])
+    s = Pattern.from_typehint(list[PlusOne])
     assert s == SequenceOf(CoercedTo(PlusOne), type=list)
     assert s.match([1, 2, 3], context={}) == [PlusOne(2), PlusOne(3), PlusOne(4)]
 
-    s = Pattern.from_typehint(Tuple[PlusOne, ...])
+    s = Pattern.from_typehint(tuple[PlusOne, ...])
     assert s == TupleOf(CoercedTo(PlusOne))
     assert s.match([1, 2, 3], context={}) == (PlusOne(2), PlusOne(3), PlusOne(4))
 
@@ -976,10 +974,16 @@ def test_pattern_coercible_sequence_type():
 
 
 def test_pattern_function():
+    class MyNegativeInt(int, Coercible):
+        @classmethod
+        def __coerce__(cls, other):
+            return cls(-int(other))
+
     assert pattern(...) == Any()
     assert pattern(Any()) == Any()
     assert pattern(int) == InstanceOf(int)
-    assert pattern(List[int]) == ListOf(InstanceOf(int))
+    assert pattern(MyNegativeInt) == CoercedTo(MyNegativeInt)
+    assert pattern(List[int]) == ListOf(InstanceOf(int))  # noqa: UP006
     assert pattern([int, str, 1]) == PatternSequence(
         [InstanceOf(int), InstanceOf(str), EqualTo(1)]
     )

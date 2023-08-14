@@ -5,13 +5,13 @@ import decimal as pydecimal
 import numbers
 import uuid as pyuuid
 from abc import abstractmethod
-from collections.abc import Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from numbers import Integral, Real
-from typing import Any, Generic, Iterable, Literal, NamedTuple, Optional, TypeVar
+from typing import Any, Generic, Literal, NamedTuple, Optional, TypeVar, get_type_hints
 
 import toolz
 from public import public
-from typing_extensions import Self, get_args, get_origin, get_type_hints
+from typing_extensions import Self, get_args, get_origin
 
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict, MapSet
@@ -781,7 +781,7 @@ class Decimal(Numeric, Parametric):
             if precision is not None and precision < scale:
                 raise ValueError(
                     "Decimal type precision must be greater than or equal to "
-                    "scale. Got precision={:d} and scale={:d}".format(precision, scale)
+                    f"scale. Got precision={precision:d} and scale={scale:d}"
                 )
         super().__init__(precision=precision, scale=scale, **kwargs)
 

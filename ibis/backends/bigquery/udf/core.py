@@ -164,7 +164,7 @@ class PythonToJavaScriptTranslator:
         if not isinstance(target, (ast.Name, ast.Subscript, ast.Attribute)):
             raise NotImplementedError(
                 "Only index, attribute, and variable name assignment "
-                "supported, got {}".format(type(target).__name__)
+                f"supported, got {type(target).__name__}"
             )
 
         is_name = isinstance(target, ast.Name)

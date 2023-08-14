@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Iterable, Iterator
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import pytest
@@ -13,6 +13,7 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 from ibis.backends.tests.data import struct_types
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator
     from pathlib import Path
 
 TRINO_USER = os.environ.get(

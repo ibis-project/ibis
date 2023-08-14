@@ -110,7 +110,7 @@ from __future__ import annotations
 import datetime
 import functools
 import numbers
-from typing import Any, Callable, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, Callable
 
 import numpy as np
 import pandas as pd
@@ -131,6 +131,9 @@ from ibis.backends.pandas.dispatch import (
     pre_execute,
 )
 from ibis.backends.pandas.trace import trace
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
 
 integer_types = np.integer, int
 floating_types = (numbers.Real,)

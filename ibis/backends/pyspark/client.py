@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 
@@ -10,6 +10,8 @@ import ibis.expr.types as ir
 from ibis.backends.pyspark import ddl
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import pandas as pd
 
 

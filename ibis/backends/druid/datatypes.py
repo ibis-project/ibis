@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import parsy
+from typing import TYPE_CHECKING
+
 import sqlalchemy as sa
 import sqlalchemy.types as sat
 from dateutil.parser import parse as timestamp_parse
@@ -8,11 +9,11 @@ from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.common.parsing import (
-    LANGLE,
-    RANGLE,
-    spaceless_string,
-)
+from ibis.common.collections import FrozenDict
+from ibis.formats.parser import TypeParser
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class DruidDateTime(sat.TypeDecorator):
@@ -59,23 +60,15 @@ def _smallint(element, compiler, **kw):
     return "SMALLINT"
 
 
-def parse(text: str) -> dt.DataType:
-    """Parse a Druid type into an ibis data type."""
-    primitive = (
-        spaceless_string("string").result(dt.string)
-        | spaceless_string("double").result(dt.float64)
-        | spaceless_string("float").result(dt.float32)
-        | spaceless_string("long").result(dt.int64)
-        | spaceless_string("json").result(dt.json)
-    )
+class DruidTypeParser(TypeParser):
+    __slots__ = ()
 
-    ty = parsy.forward_declaration()
+    # druid doesn't have a sophisticated type system and hive is close enough
+    dialect = "hive"
+    short_circuit: Mapping[str, dt.DataType] = FrozenDict({"complex<json>": dt.json})
 
-    json = spaceless_string("complex").then(LANGLE).then(ty).skip(RANGLE)
-    array = spaceless_string("array").then(LANGLE).then(ty.map(dt.Array)).skip(RANGLE)
 
-    ty.become(primitive | array | json)
-    return ty.parse(text)
+parse = DruidTypeParser.parse
 
 
 class DruidType(AlchemyType):

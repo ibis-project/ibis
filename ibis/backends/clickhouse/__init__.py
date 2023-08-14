@@ -4,7 +4,7 @@ import ast
 import json
 from contextlib import closing, suppress
 from functools import partial
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import clickhouse_connect as cc
 import pyarrow as pa
@@ -25,6 +25,9 @@ from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import parse, serialize
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
+    from pathlib import Path
+
     import pandas as pd
 
     from ibis.common.typing import SupportsSchema
@@ -209,7 +212,15 @@ class Backend(BaseBackend, CanCreateDatabase):
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        query = "SHOW TABLES" + (f" FROM `{database}`" * (database is not None))
+        query = "SELECT name FROM system.tables WHERE"
+
+        if database is None:
+            database = "currentDatabase()"
+        else:
+            database = f"'{database}'"
+
+        query += f" database = {database} OR is_temporary"
+
         with closing(self.raw_sql(query)) as result:
             results = result.result_columns
 
@@ -243,7 +254,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         return external_data
 
     def _collect_in_memory_tables(
-        self, expr: ir.TableExpr | None, external_tables: Mapping | None = None
+        self, expr: ir.Table | None, external_tables: Mapping | None = None
     ):
         memtables = {op.name: op for op in expr.op().find(ops.InMemoryTable)}
         externals = toolz.valmap(_to_memtable, external_tables or {})
@@ -468,9 +479,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         self.con.close()
 
     def _fully_qualified_name(self, name: str, database: str | None) -> str:
-        return sg.table(name, db=database or self.current_database or None).sql(
-            dialect="clickhouse"
-        )
+        return sg.table(name, db=database).sql(dialect="clickhouse")
 
     def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
@@ -535,6 +544,49 @@ class Backend(BaseBackend, CanCreateDatabase):
         with closing(self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")):
             pass
 
+    def read_parquet(
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        engine: str = "File(Parquet)",
+        **kwargs: Any,
+    ) -> ir.Table:
+        import pyarrow.parquet as pq
+        from clickhouse_connect.driver.tools import insert_file
+
+        from ibis.formats.pyarrow import PyArrowSchema
+
+        schema = PyArrowSchema.to_ibis(pq.read_metadata(path).schema.to_arrow_schema())
+
+        name = table_name or util.gen_name("read_parquet")
+        table = self.create_table(name, engine=engine, schema=schema, temp=True)
+
+        insert_file(
+            client=self.con, table=name, file_path=str(path), fmt="Parquet", **kwargs
+        )
+        return table
+
+    def read_csv(
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        engine: str = "File(Native)",
+        **kwargs: Any,
+    ) -> ir.Table:
+        import pyarrow.csv as pac
+        from clickhouse_connect.driver.tools import insert_file
+
+        from ibis.formats.pyarrow import PyArrowSchema
+
+        with pac.open_csv(path) as f:
+            schema = PyArrowSchema.to_ibis(f.schema)
+
+        name = table_name or util.gen_name("read_csv")
+        table = self.create_table(name, engine=engine, schema=schema, temp=True)
+
+        insert_file(client=self.con, table=name, file_path=str(path), **kwargs)
+        return table
+
     def create_table(
         self,
         name: str,
@@ -585,14 +637,17 @@ class Backend(BaseBackend, CanCreateDatabase):
         Table
             The new table
         """
-        if temp:
-            raise com.IbisError(
-                "ClickHouse temporary tables are not yet supported due to a bug in `clickhouse_driver`"
-            )
-
         tmp = "TEMPORARY " * temp
         replace = "OR REPLACE " * overwrite
-        table = self._fully_qualified_name(name, database)
+
+        if temp and overwrite:
+            raise com.IbisInputError("Cannot specify both temp and overwrite")
+
+        if not temp:
+            table = self._fully_qualified_name(name, database)
+        else:
+            table = name
+            database = None
         code = f"CREATE {replace}{tmp}TABLE {table}"
 
         if obj is None and schema is None:
@@ -660,3 +715,9 @@ class Backend(BaseBackend, CanCreateDatabase):
         if_exists = "IF EXISTS " * force
         with closing(self.raw_sql(f"DROP VIEW {if_exists}{name}")):
             pass
+
+    def _load_into_cache(self, name, expr):
+        self.create_table(name, expr, schema=expr.schema(), temp=True)
+
+    def _clean_up_cached_table(self, op):
+        self.drop_table(op.name)

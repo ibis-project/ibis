@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import sqlalchemy as sa
 import toolz
@@ -13,6 +13,8 @@ from ibis.backends.mssql.compiler import MsSqlCompiler
 from ibis.backends.mssql.datatypes import _type_from_result_set_info
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
 

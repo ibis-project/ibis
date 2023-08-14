@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Any, Callable, Optional
+from typing import Annotated, Any, Callable, Optional
 
 from public import public
-from typing_extensions import Annotated
 
 import ibis.common.exceptions as com
 from ibis.common.grounds import Annotable
@@ -110,6 +109,8 @@ class Repr(Config):
         The maximum number of expression nodes to print when repring.
     table_columns : int
         The number of columns to show in leaf table expressions.
+    table_rows : int
+        The number of rows to show for in memory tables.
     query_text_length : int
         The maximum number of characters to show in the `query` field repr of
         SQLQueryResult operations.
@@ -121,6 +122,7 @@ class Repr(Config):
 
     depth: Optional[PosInt] = None
     table_columns: Optional[PosInt] = None
+    table_rows: PosInt = 10
     query_text_length: PosInt = 80
     show_types: bool = False
     interactive: Interactive = Interactive()

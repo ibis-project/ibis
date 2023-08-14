@@ -5,7 +5,6 @@ from copy import copy
 from typing import (
     Any,
     ClassVar,
-    Tuple,
     Union,
     get_origin,
 )
@@ -104,9 +103,9 @@ class AnnotableMeta(BaseMeta):
 class Annotable(Base, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
-    __argnames__: ClassVar[Tuple[str, ...]]
+    __argnames__: ClassVar[tuple[str, ...]]
     __attributes__: ClassVar[FrozenDict[str, Annotation]]
-    __match_args__: ClassVar[Tuple[str, ...]]
+    __match_args__: ClassVar[tuple[str, ...]]
     __signature__: ClassVar[Signature]
 
     @classmethod
@@ -152,7 +151,7 @@ class Annotable(Base, metaclass=AnnotableMeta):
         )
 
     @property
-    def __args__(self) -> Tuple[Any, ...]:
+    def __args__(self) -> tuple[Any, ...]:
         return tuple(getattr(self, name) for name in self.__argnames__)
 
     def copy(self, **overrides: Any) -> Annotable:
@@ -202,7 +201,7 @@ class Concrete(Immutable, Comparable, Annotable):
         return self.__args__
 
     @property
-    def argnames(self) -> Tuple[str, ...]:
+    def argnames(self) -> tuple[str, ...]:
         return self.__argnames__
 
     def copy(self, **overrides) -> Self:

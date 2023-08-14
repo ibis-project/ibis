@@ -3,15 +3,8 @@ from __future__ import annotations
 import collections
 import itertools
 import math
-from typing import (
-    Any,
-    Hashable,
-    Iterable,
-    Iterator,
-    Mapping,
-    Set,
-    TypeVar,
-)
+from collections.abc import Hashable, Iterable, Iterator, Mapping
+from typing import Any, TypeVar
 
 from ibis.common.graph import Node
 from ibis.util import promote_list
@@ -19,7 +12,7 @@ from ibis.util import promote_list
 K = TypeVar("K", bound=Hashable)
 
 
-class DisjointSet(Mapping[K, Set[K]]):
+class DisjointSet(Mapping[K, set[K]]):
     """Disjoint set data structure.
 
     Also known as union-find data structure. It is a data structure that keeps

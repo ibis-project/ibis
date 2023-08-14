@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 import warnings
-from typing import TYPE_CHECKING, Iterable, Literal
+from typing import TYPE_CHECKING, Literal
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
@@ -15,6 +15,8 @@ from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.mysql.datatypes import MySQLDateTime, _type_from_cursor_info
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+
     import ibis.expr.datatypes as dt
 
 

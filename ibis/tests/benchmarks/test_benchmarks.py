@@ -743,3 +743,13 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
     )
 
     benchmark.pedantic(lineitem.to_pandas, rounds=5, iterations=1, warmup_rounds=1)
+
+
+def test_parse_many_duckdb_types(benchmark):
+    parse = pytest.importorskip("ibis.backends.duckdb.datatypes").parse
+
+    def parse_many(types):
+        list(map(parse, types))
+
+    types = ["VARCHAR", "INTEGER", "DOUBLE", "BIGINT"] * 1000
+    benchmark(parse_many, types)

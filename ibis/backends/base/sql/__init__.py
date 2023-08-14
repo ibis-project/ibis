@@ -4,7 +4,7 @@ import abc
 import contextlib
 import os
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from typing import TYPE_CHECKING, Any
 
 import toolz
 
@@ -17,6 +17,8 @@ from ibis.backends.base import BaseBackend
 from ibis.backends.base.sql.compiler import Compiler
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping
+
     import pandas as pd
     import pyarrow as pa
 
@@ -127,14 +129,46 @@ class BaseSQLBackend(BaseBackend):
         raise NotImplementedError(f"Backend {self.name} does not support .sql()")
 
     def raw_sql(self, query: str):
-        """Execute a query string.
+        """Execute a query string and return the cursor used for execution.
 
-        !!! warning "The returned cursor object must be **manually** released if results are returned."
+        !!! tip "Consider using [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] instead"
+
+            If your query is a SELECT statement, you should use the
+            [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] method to avoid
+            having to release the cursor returned from this method manually.
+
+            ??? warning "The returned cursor object must be **manually released** if you use `raw_sql`."
+
+                To release a cursor, call the `close` method on the returned cursor object.
+
+                You can close the cursor by explicitly calling its `close` method:
+
+                ```python
+                cursor = con.raw_sql("SELECT ...")
+                cursor.close()
+                ```
+
+                Or you can use a context manager:
+
+                ```python
+                with con.raw_sql("SELECT ...") as cursor:
+                    ...
+                ```
 
         Parameters
         ----------
         query
             DDL or DML statement
+
+        Examples
+        --------
+        >>> con = ibis.connect("duckdb://")
+        >>> with con.raw_sql("SELECT 1") as cursor:
+        ...     result = cursor.fetchall()
+        >>> result
+        [(1,)]
+        >>> cursor.closed
+        True
         """
         return self.con.execute(query)
 

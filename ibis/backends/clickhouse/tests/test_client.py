@@ -10,7 +10,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config
-from ibis.common.exceptions import IbisError
 from ibis.util import gen_name
 
 cc = pytest.importorskip("clickhouse_connect")
@@ -72,7 +71,7 @@ def test_verbose_log_queries(con):
         with config.option_context("verbose_log", logger):
             con.table("functional_alltypes")
 
-    expected = "DESCRIBE ibis_testing.functional_alltypes"
+    expected = "DESCRIBE functional_alltypes"
 
     # might be other queries in there, we only check that a describe table
     # query was logged
@@ -198,20 +197,7 @@ def test_list_tables_empty_database(con, temp_db):
     assert not con.list_tables(database=temp_db)
 
 
-@pytest.mark.parametrize(
-    "temp",
-    [
-        param(
-            True,
-            marks=pytest.mark.xfail(
-                reason="Ibis is likely making incorrect assumptions about object lifetime and cursors",
-                raises=IbisError,
-            ),
-        ),
-        False,
-    ],
-    ids=["temp", "no_temp"],
-)
+@pytest.mark.parametrize("temp", [True, False], ids=["temp", "no_temp"])
 def test_create_table_no_data(con, temp, temp_table):
     schema = ibis.schema(dict(a="!int", b="string"))
     t = con.create_table(temp_table, schema=schema, temp=temp, engine="Memory")

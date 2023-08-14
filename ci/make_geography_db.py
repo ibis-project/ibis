@@ -19,11 +19,14 @@ import argparse
 import datetime
 import tempfile
 from pathlib import Path
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import requests
 import sqlalchemy as sa
 import toolz
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 SCHEMAS = {
     "countries": [

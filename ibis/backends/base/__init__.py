@@ -13,10 +13,6 @@ from typing import (
     Any,
     Callable,
     ClassVar,
-    Iterable,
-    Iterator,
-    Mapping,
-    MutableMapping,
 )
 
 import ibis
@@ -28,6 +24,7 @@ from ibis import util
 from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
     from pathlib import Path
 
     import pandas as pd
@@ -1109,7 +1106,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         return query
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def _get_backend_names() -> frozenset[str]:
     """Return the set of known backend names.
 

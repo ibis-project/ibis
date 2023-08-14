@@ -33,7 +33,7 @@ def test_interactive_execute_on_repr(con):
     assert len(con.executed_queries) > 0
 
 
-def test_repr_png_is_none_in_interactive(con, graphviz):
+def test_repr_png_is_none_in_interactive(con):
     table = con.table("functional_alltypes")
 
     with config.option_context("interactive", True):

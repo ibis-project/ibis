@@ -41,13 +41,16 @@ those as input to construct the output.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.clickhouse.compiler.relations import translate_rel
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expression:

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
 
 import polars as pl
 
@@ -18,6 +18,8 @@ from ibis.common.patterns import Replace
 from ibis.util import gen_name, normalize_filename
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, MutableMapping
+
     import pandas as pd
     import pyarrow as pa
 

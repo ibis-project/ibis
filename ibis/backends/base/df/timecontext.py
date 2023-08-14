@@ -43,7 +43,7 @@ from __future__ import annotations
 
 import enum
 import functools
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -51,7 +51,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 from ibis import config
 
-TimeContext = Tuple[pd.Timestamp, pd.Timestamp]
+TimeContext = tuple[pd.Timestamp, pd.Timestamp]
 
 
 if TYPE_CHECKING:
