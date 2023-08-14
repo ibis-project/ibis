@@ -827,6 +827,10 @@ jobs:
       - name: install ibis
         run: poetry install --without dev --without docs --extras flink
 
+      # TODO(deepyaman): Remove step once Ibis and Flink are compatible.
+      - name: install pyflink
+        run: pip install apache-flink
+
       - name: show installed deps
         run: poetry run pip list
 
