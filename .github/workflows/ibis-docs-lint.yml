@@ -173,6 +173,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      # FIXME(deepyaman)
+      - name: install pyflink
+        run: nix develop --ignore-environment -c pip install apache-flink
+
       - name: build docs
         run: nix develop --ignore-environment -c mkdocs build --strict
 

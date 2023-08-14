@@ -188,7 +188,9 @@ jobs:
           custom_cache_key_element: doctests
 
       - name: install ibis with all extras
-        run: poetry install --without dev --without docs --extras all
+        run: |
+          poetry install --without dev --without docs --extras all
+          pip install apache-flink  # FIXME(deepyaman)
 
       - uses: extractions/setup-just@v1
         env:
