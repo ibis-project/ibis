@@ -348,6 +348,7 @@ markers = [
   "datafusion: Apache Datafusion tests",
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
+  "flink: Flink tests",
   "impala: Apache Impala tests",
   "mysql: MySQL tests",
   "mssql: MS SQL Server tests",
