@@ -3,7 +3,7 @@ from __future__ import annotations
 import collections
 import itertools
 import math
-from collections.abc import Hashable, Iterable, Iterator, Mapping
+from collections.abc import Callable, Hashable, Iterable, Iterator, Mapping
 from typing import Any, TypeVar
 
 from ibis.common.graph import Node
@@ -49,6 +49,8 @@ class DisjointSet(Mapping[K, set[K]]):
     """
 
     __slots__ = ("_parents", "_classes")
+    _parents: dict
+    _classes: dict
 
     def __init__(self, data: Iterable[K] | None = None):
         self._parents = {}
@@ -241,6 +243,7 @@ class Slotted:
     """
 
     __slots__ = ("__precomputed_hash__",)
+    __precomputed_hash__: int
 
     def __init__(self, *args):
         for name, value in itertools.zip_longest(self.__slots__, args):
@@ -274,6 +277,7 @@ class Variable(Slotted):
     """
 
     __slots__ = ("name",)
+    name: str
 
     def __init__(self, name: str):
         if name is None:
@@ -322,6 +326,9 @@ class Pattern(Slotted):
     """
 
     __slots__ = ("head", "args", "name")
+    head: type
+    args: tuple
+    name: str | None
 
     # TODO(kszucs): consider to raise if the pattern matches none
     def __init__(self, head, args, name=None, conditions=None):
@@ -435,6 +442,7 @@ class DynamicApplier(Slotted):
     """A dynamic applier which calls a function to compute the result."""
 
     __slots__ = ("func",)
+    func: Callable
 
     def substitute(self, egraph, enode, subst):
         kwargs = {k: v for k, v in subst.items() if isinstance(k, str)}
@@ -448,6 +456,8 @@ class Rewrite(Slotted):
     """A rewrite rule which matches a pattern and applies a pattern or a function."""
 
     __slots__ = ("matcher", "applier")
+    matcher: Pattern
+    applier: Callable | Pattern | Variable
 
     def __init__(self, matcher, applier):
         if callable(applier):
@@ -474,6 +484,8 @@ class ENode(Slotted, Node):
     """
 
     __slots__ = ("head", "args")
+    head: type
+    args: tuple
 
     def __init__(self, head, args):
         # TODO(kszucs): ensure that it is a ground term, this check should be removed
@@ -522,6 +534,9 @@ class ENode(Slotted, Node):
 
 class EGraph:
     __slots__ = ("_nodes", "_etables", "_eclasses")
+    _nodes: dict
+    _etables: collections.defaultdict
+    _eclasses: DisjointSet
 
     def __init__(self):
         # store the nodes before converting them to enodes, so we can spare the initial

@@ -141,6 +141,8 @@ class FrozenDict(Mapping[K, V], Hashable):
     """Immutable dictionary with a precomputed hash value."""
 
     __slots__ = ("__view__", "__precomputed_hash__")
+    __view__: MappingProxyType
+    __precomputed_hash__: int
 
     def __init__(self, *args, **kwargs):
         dictview = MappingProxyType(dict(*args, **kwargs))
@@ -215,4 +217,7 @@ class RewindableIterator(Iterator):
         self._iterator, self._checkpoint = tee(self._iterator)
 
 
+# Need to provide type hint as else a static type checker does not recognize
+# that frozendict exists in this module
+frozendict: type[FrozenDict]
 public(frozendict=FrozenDict)
