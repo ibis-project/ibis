@@ -214,9 +214,9 @@ def _clean_join_predicates(left, right, predicates):
     for predicate in result:
         if not shares_all_roots(predicate, [left, right]):
             raise com.RelationError(
-                "The expression {!r} does not fully "
+                f"The expression {predicate!r} does not fully "
                 "originate from dependencies of the table "
-                "expression.".format(predicate)
+                "expression."
             )
 
     assert all(isinstance(pred, ops.Node) for pred in result)

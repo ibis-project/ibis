@@ -39,9 +39,9 @@ def filter_by_time_context(
         )
     else:
         raise com.TranslationError(
-            "'time' column missing in Dataframe {}."
+            f"'time' column missing in Dataframe {df}."
             "To use time context, a Timestamp column name 'time' must"
-            "present in the table. ".format(df)
+            "present in the table. "
         )
 
 
