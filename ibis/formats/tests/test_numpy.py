@@ -71,18 +71,21 @@ def test_non_roundtripable_bytes_type(numpy_type):
 
 
 @h.given(
-    ibst.null_dtype | ibst.variadic_dtypes | ibst.decimal_dtype() | ibst.struct_dtypes()
+    ibst.null_dtype
+    | ibst.variadic_dtypes()
+    | ibst.decimal_dtypes()
+    | ibst.struct_dtypes()
 )
 def test_variadic_to_numpy(ibis_type):
     assert NumpyType.from_ibis(ibis_type) == np.dtype("object")
 
 
-@h.given(ibst.date_dtype | ibst.timestamp_dtype)
+@h.given(ibst.date_dtype() | ibst.timestamp_dtype())
 def test_date_to_numpy(ibis_type):
     assert NumpyType.from_ibis(ibis_type) == np.dtype("datetime64[ns]")
 
 
-@h.given(ibst.time_dtype)
+@h.given(ibst.time_dtype())
 def test_time_to_numpy(ibis_type):
     assert NumpyType.from_ibis(ibis_type) == np.dtype("timedelta64[ns]")
 
