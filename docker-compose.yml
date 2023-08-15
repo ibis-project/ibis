@@ -117,7 +117,7 @@ services:
         - mariadb-admin
         - ping
       timeout: 5s
-    image: mariadb:10.11.4
+    image: mariadb:10.11.5
     ports:
       - 3306:3306
     networks:
@@ -189,7 +189,7 @@ services:
       - trino-postgres:/data
 
   hive-metastore-mariadb:
-    image: mariadb:10.11.4
+    image: mariadb:10.11.5
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
       MYSQL_USER: admin
