@@ -206,6 +206,8 @@ jobs:
               - flink
             additional_deps:
               - apache-flink
+            even_more_deps:
+              - pandas~=1.5
         exclude:
           - os: windows-latest
             backend:
@@ -368,6 +370,11 @@ jobs:
       - name: install other deps
         if: matrix.backend.additional_deps != null
         run: poetry run pip install "${{ join(matrix.backend.additional_deps, ' ') }}"
+
+      # FIXME(deepyaman)
+      - name: install even more deps
+        if: matrix.backend.even_more_deps != null
+        run: poetry run pip install "${{ join(matrix.backend.even_more_deps, ' ') }}"
 
       - name: show installed deps
         run: poetry run pip list
