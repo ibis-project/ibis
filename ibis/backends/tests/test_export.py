@@ -323,6 +323,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
             id="decimal256",
             marks=[
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
+                pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
                 pytest.mark.notyet(
                     ["druid", "duckdb", "snowflake", "trino"],
                     raises=sa.exc.ProgrammingError,
