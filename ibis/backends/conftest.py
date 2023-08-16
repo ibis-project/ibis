@@ -539,6 +539,7 @@ def ddl_con(ddl_backend):
     params=_get_backends_to_test(
         keep=(
             "duckdb",
+            "exasol",
             "mssql",
             "mysql",
             "oracle",

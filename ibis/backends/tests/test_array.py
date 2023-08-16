@@ -36,7 +36,9 @@ except ImportError:
 
 pytestmark = [
     pytest.mark.never(
-        ["sqlite", "mysql", "mssql"], reason="No array support", raises=Exception
+        ["sqlite", "mysql", "mssql", "exasol"],
+        reason="No array support",
+        raises=Exception,
     ),
     pytest.mark.notyet(["impala"], reason="No array support", raises=Exception),
     pytest.mark.notimpl(["druid", "oracle"], raises=Exception),

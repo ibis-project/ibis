@@ -20,6 +20,7 @@ pytestmark = pytest.mark.notimpl(
         "bigquery",
         "clickhouse",
         "datafusion",
+        "exasol",
         "impala",
         "mysql",
         "postgres",

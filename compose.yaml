@@ -412,6 +412,23 @@ services:
     volumes:
       - oracle:/opt/oracle/data
 
+  exasol:
+    image: exasol/docker-db:7.1.23
+    privileged: true
+    ports:
+      - 8563:8563
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - /usr/opt/EXASuite-7/EXASolution-7.1.23/bin/Console/exaplus -c 127.0.0.1:8563 -u sys -p exasol -encryption OFF <<< 'SELECT 1'
+    networks:
+      - exasol
+    volumes:
+      - exasol:/data
+
   flink-jobmanager:
     build: ./docker/flink
     image: ibis-flink
@@ -452,6 +469,7 @@ networks:
   trino:
   druid:
   oracle:
+  exasol:
   flink:
 
 volumes:
@@ -469,3 +487,4 @@ volumes:
   oracle:
   postgres:
   minio:
+  exasol:

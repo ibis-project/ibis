@@ -251,6 +251,7 @@ def tmpcon(alchemy_con):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_create_temporary_table_from_schema(tmpcon, new_schema):
     temp_table = f"_{guid()}"
     table = tmpcon.create_table(temp_table, schema=new_schema, temp=True)
@@ -276,6 +277,7 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "datafusion",
         "druid",
         "duckdb",
+        "exasol",
         "flink",
         "mssql",
         "mysql",
@@ -505,7 +507,7 @@ def test_insert_overwrite_from_expr(
     ["trino"], reason="memory connector doesn't allow writing to tables"
 )
 @pytest.mark.notyet(
-    "oracle",
+    ["oracle", "exasol"],
     reason="No support for in-place multirow inserts",
     raises=sa.exc.CompileError,
 )
@@ -547,6 +549,11 @@ def test_insert_from_memtable(alchemy_con, alchemy_temp_table):
     raises=AttributeError,
     reason="oracle doesn't support the common notion of a database",
 )
+@pytest.mark.notyet(
+    ["exasol"],
+    raises=AttributeError,
+    reason="exasol doesn't support the common notion of a database",
+)
 def test_list_databases(alchemy_con):
     # Every backend has its own databases
     test_databases = {
@@ -558,6 +565,7 @@ def test_list_databases(alchemy_con):
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
         "oracle": set(),
+        "exasol": set(),
     }
     assert test_databases[alchemy_con.name] <= set(alchemy_con.list_databases())
 
@@ -570,6 +578,7 @@ def test_list_databases(alchemy_con):
 @pytest.mark.notyet(
     ["trino"], reason="memory connector doesn't allow writing to tables"
 )
+@pytest.mark.notimpl(["exasol"])
 def test_in_memory(alchemy_backend, alchemy_temp_table):
     con = getattr(ibis, alchemy_backend.name()).connect(":memory:")
     with con.begin() as c:
@@ -884,7 +893,7 @@ def test_self_join_memory_table(backend, con):
     ],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
-def test_create_from_in_memory_table(con, t, temp_table):
+def test_create_from_in_memory_table(backend, con, t, temp_table):
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
 
@@ -1187,6 +1196,7 @@ def test_set_backend_url(url, monkeypatch):
         "dask",
         "datafusion",
         "duckdb",
+        "exasol",
         "impala",
         "mssql",
         "mysql",
@@ -1229,6 +1239,7 @@ def test_create_table_timestamp(con, temp_table):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_ref_count(backend, con, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation")
     persisted_table = non_persisted_table.cache()
@@ -1248,6 +1259,7 @@ def test_persist_expression_ref_count(backend, con, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression(backend, alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation", other_calc="xyz")
     persisted_table = non_persisted_table.cache()
@@ -1261,6 +1273,7 @@ def test_persist_expression(backend, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_contextmanager(backend, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc"
@@ -1276,6 +1289,7 @@ def test_persist_expression_contextmanager(backend, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
@@ -1294,6 +1308,7 @@ def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_multiple_refs(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
@@ -1329,6 +1344,7 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_repeated_cache(alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 2"
@@ -1343,6 +1359,7 @@ def test_persist_expression_repeated_cache(alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 def test_persist_expression_release(con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column="calculation", other_column="big calc 3"

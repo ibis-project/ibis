@@ -10,6 +10,11 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 
+try:
+    from pyexasol.exceptions import ExaQueryError
+except ImportError:
+    ExaQueryError = None
+
 MACADDR_BACKEND_TYPE = {
     "bigquery": "STRING",
     "clickhouse": "String",
@@ -106,6 +111,7 @@ def test_macaddr_literal(con, backend):
 )
 @pytest.mark.notimpl(["flink", "polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(["druid", "oracle"], raises=KeyError)
+@pytest.mark.notimpl(["exasol"], raises=(ExaQueryError, KeyError))
 def test_inet_literal(con, backend, test_value, expected_values, expected_types):
     backend_name = backend.name()
     expr = ibis.literal(test_value, type=dt.inet)

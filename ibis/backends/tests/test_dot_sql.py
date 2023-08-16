@@ -15,7 +15,7 @@ except ImportError:
     PolarsComputeError = None
 
 table_dot_sql_notimpl = pytest.mark.notimpl(["bigquery", "impala", "druid"])
-dot_sql_notimpl = pytest.mark.notimpl(["datafusion", "flink"])
+dot_sql_notimpl = pytest.mark.notimpl(["datafusion", "exasol", "flink"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake", "oracle"],
     reason="snowflake and oracle column names are case insensitive",
@@ -203,6 +203,7 @@ def test_table_dot_sql_repr(con):
 @dot_sql_never
 @pytest.mark.notimpl(["oracle"])
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
+@pytest.mark.notimpl(["exasol"], strict=False)
 def test_table_dot_sql_does_not_clobber_existing_tables(con, temp_table):
     t = con.create_table(temp_table, schema=ibis.schema(dict(a="string")))
     expr = t.sql("SELECT 1 as x FROM functional_alltypes")
@@ -235,7 +236,7 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     backend.assert_series_equal(foo2.x.execute(), expected2)
 
 
-_NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink"}
+_NO_SQLGLOT_DIALECT = {"pandas", "dask", "druid", "flink", "exasol"}
 no_sqlglot_dialect = sorted(
     param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
 )

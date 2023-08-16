@@ -534,9 +534,9 @@ def normalize_filename(source: str | Path) -> str:
 
 
 def gen_name(namespace: str) -> str:
-    """Create a case-insensitive uuid4 unique table name."""
+    """Create a unique identifier."""
     uid = base64.b32encode(uuid.uuid4().bytes).decode().rstrip("=").lower()
-    return f"_ibis_{namespace}_{uid}"
+    return f"ibis_{namespace}_{uid}"
 
 
 def slice_to_limit_offset(

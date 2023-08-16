@@ -69,7 +69,9 @@ def test_timestamp_accepts_date_literals(alltypes):
     assert expr.compile(params=params) is not None
 
 
-@pytest.mark.notimpl(["dask", "impala", "pandas", "pyspark", "druid", "oracle"])
+@pytest.mark.notimpl(
+    ["dask", "impala", "pandas", "pyspark", "druid", "oracle", "exasol"]
+)
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
@@ -81,7 +83,16 @@ def test_scalar_param_array(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "impala", "flink", "postgres", "pyspark", "druid", "oracle"]
+    [
+        "datafusion",
+        "impala",
+        "flink",
+        "postgres",
+        "pyspark",
+        "druid",
+        "oracle",
+        "exasol",
+    ]
 )
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
@@ -95,7 +106,9 @@ def test_scalar_param_struct(con):
     assert result == value["a"]
 
 
-@pytest.mark.notimpl(["datafusion", "impala", "pyspark", "polars", "druid", "oracle"])
+@pytest.mark.notimpl(
+    ["datafusion", "impala", "pyspark", "polars", "druid", "oracle", "exasol"]
+)
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",
@@ -235,6 +248,7 @@ def test_scalar_param_date(backend, alltypes, value):
         "pyspark",
         "mssql",
         "druid",
+        "exasol",
     ]
 )
 @pytest.mark.notimpl(["flink"], "WIP")

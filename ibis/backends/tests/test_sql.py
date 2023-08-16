@@ -13,7 +13,7 @@ from ibis.backends.conftest import _get_backends_to_test
 sa = pytest.importorskip("sqlalchemy")
 sg = pytest.importorskip("sqlglot")
 
-pytestmark = pytest.mark.notimpl(["druid", "flink"])
+pytestmark = pytest.mark.notimpl(["druid", "flink", "exasol"])
 
 
 @pytest.mark.never(

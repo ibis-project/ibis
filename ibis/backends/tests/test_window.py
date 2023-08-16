@@ -15,7 +15,7 @@ import ibis.expr.datatypes as dt
 from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = pytest.mark.notimpl(
-    ["druid"],
+    ["druid", "exasol"],
     raises=(
         sa.exc.ProgrammingError,
         sa.exc.NoSuchTableError,

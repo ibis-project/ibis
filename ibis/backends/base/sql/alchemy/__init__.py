@@ -554,7 +554,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 dtype = schema[name]
             else:
                 dtype = cls.compiler.translator_class.get_ibis_type(
-                    column.type, nullable=column.nullable
+                    column.type, nullable=column.nullable or column.nullable is None
                 )
             pairs.append((name, dtype))
         return sch.schema(pairs)

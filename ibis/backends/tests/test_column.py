@@ -11,6 +11,7 @@ import ibis.common.exceptions as com
         "clickhouse",
         "dask",
         "datafusion",
+        "exasol",
         "impala",
         "mssql",
         "mysql",

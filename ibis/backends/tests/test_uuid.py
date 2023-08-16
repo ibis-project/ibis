@@ -19,6 +19,7 @@ SQLALCHEMY2 = vparse(sqlalchemy.__version__) >= vparse("2")
 UUID_BACKEND_TYPE = {
     "bigquery": "STRING",
     "duckdb": "UUID",
+    "exasol": "UUID",
     "flink": "CHAR(36) NOT NULL",
     "sqlite": "text",
     "snowflake": "VARCHAR",
@@ -39,6 +40,7 @@ UUID_EXPECTED_VALUES = {
     "dask": TEST_UUID,
     "oracle": TEST_UUID,
     "flink": RAW_TEST_UUID,
+    "exasol": TEST_UUID,
 }
 
 pytestmark = pytest.mark.notimpl(

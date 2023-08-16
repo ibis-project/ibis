@@ -99,6 +99,7 @@ def test_empty_column_to_pyarrow(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", no_limit)
+@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_empty_scalar_to_pyarrow(limit, awards_players):
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.sum()
     array = expr.to_pyarrow(limit=limit)
@@ -106,12 +107,13 @@ def test_empty_scalar_to_pyarrow(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", no_limit)
+@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_scalar_to_pyarrow_scalar(limit, awards_players):
     scalar = awards_players.yearID.sum().to_pyarrow(limit=limit)
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["druid", "flink"])
+@pytest.mark.notimpl(["druid", "flink", "exasol"])
 def test_table_to_pyarrow_table_schema(awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
@@ -260,6 +262,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
     reason="no partitioning support",
 )
 @pytest.mark.notimpl(["druid", "flink"], reason="No to_parquet support")
+@pytest.mark.notimpl(["exasol"], raises=TypeError)
 def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     outparquet = tmp_path / "outhive.parquet"
     awards_players.to_parquet(outparquet, partition_by="yearID")
@@ -304,7 +307,7 @@ def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     assert outfile.is_file()
 
 
-@pytest.mark.notimpl(["flink"])
+@pytest.mark.notimpl(["flink", "exasol"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 
@@ -318,7 +321,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
-@pytest.mark.notimpl(["flink"])
+@pytest.mark.notimpl(["flink", "exasol"])
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
@@ -345,6 +348,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
             marks=[
                 pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
+                pytest.mark.notyet(["exasol"], raises=sa.exc.DBAPIError),
             ],
         ),
         param(
@@ -365,6 +369,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                     reason="precision is out of range",
                 ),
                 pytest.mark.notyet(["flink"], raises=NotImplementedError),
+                pytest.mark.notyet(["exasol"], raises=sa.exc.DBAPIError),
             ],
         ),
     ],
@@ -392,6 +397,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "dask",
         "trino",
         "flink",
+        "exasol",
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
@@ -486,7 +492,10 @@ def test_to_pandas_batches_empty_table(backend, con):
 
 
 @pytest.mark.notimpl(["druid", "flink"])
-@pytest.mark.parametrize("n", [None, 1])
+@pytest.mark.parametrize(
+    "n",
+    [param(None, marks=pytest.mark.notimpl(["exasol"], raises=sa.exc.CompileError)), 1],
+)
 def test_to_pandas_batches_nonempty_table(backend, con, n):
     t = backend.functional_alltypes.limit(n)
     n = t.count().execute()
@@ -496,7 +505,15 @@ def test_to_pandas_batches_nonempty_table(backend, con, n):
 
 
 @pytest.mark.notimpl(["flink"])
-@pytest.mark.parametrize("n", [None, 0, 1, 2])
+@pytest.mark.parametrize(
+    "n",
+    [
+        param(None, marks=pytest.mark.notimpl(["exasol"], raises=sa.exc.CompileError)),
+        0,
+        1,
+        2,
+    ],
+)
 def test_to_pandas_batches_column(backend, con, n):
     t = backend.functional_alltypes.limit(n).timestamp_col
     n = t.count().execute()

@@ -33,18 +33,20 @@ try:
 except ImportError:
     ClickhouseDriverDatabaseError = None
 
-
 try:
     from google.api_core.exceptions import BadRequest
 except ImportError:
     BadRequest = None
-
 
 try:
     from impala.error import HiveServer2Error
 except ImportError:
     HiveServer2Error = None
 
+try:
+    from pyexasol.exceptions import ExaQueryError
+except ImportError:
+    ExaQueryError = None
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
@@ -84,6 +86,7 @@ BOOLEAN_BACKEND_TYPE = {
 }
 
 
+@pytest.mark.notimpl(["exasol"])
 def test_boolean_literal(con, backend):
     expr = ibis.literal(False, type=dt.boolean)
     result = con.execute(expr)
@@ -135,6 +138,7 @@ def test_scalar_fillna_nullif(con, expr, expected):
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError, strict=False)
 def test_isna(backend, alltypes, col, filt):
     table = alltypes.select(
         nan_col=ibis.literal(np.nan), none_col=ibis.NA.cast("float64")
@@ -168,6 +172,7 @@ def test_isna(backend, alltypes, col, filt):
                         "mssql",
                         "druid",
                         "oracle",
+                        "exasol",
                     ],
                     reason="NaN != NULL for these backends",
                 ),
@@ -209,7 +214,9 @@ def test_coalesce(con, expr, expected):
 
 
 # TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark", "mssql", "druid"])
+@pytest.mark.notimpl(
+    ["clickhouse", "datafusion", "dask", "pyspark", "mssql", "druid", "exasol"]
+)
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -323,6 +330,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "trino",
         "druid",
         "oracle",
+        "exasol",
     ]
 )
 @pytest.mark.never(
@@ -370,7 +378,7 @@ def test_case_where(backend, alltypes, df):
 
 
 # TODO: some of these are notimpl (datafusion) others are probably never
-@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "oracle"])
+@pytest.mark.notimpl(["mysql", "sqlite", "mssql", "druid", "oracle", "exasol"])
 @pytest.mark.notyet(["flink"], "NaN is not supported in Flink SQL", raises=ValueError)
 def test_select_filter_mutate(backend, alltypes, df):
     """Test that select, filter and mutate are executed in right order.
@@ -489,7 +497,17 @@ def test_dropna_invalid(alltypes):
 
 @pytest.mark.parametrize("how", ["any", "all"])
 @pytest.mark.parametrize(
-    "subset", [None, [], "col_1", ["col_1", "col_2"], ["col_1", "col_3"]]
+    "subset",
+    [
+        None,
+        param(
+            [],
+            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError, strict=False),
+        ),
+        "col_1",
+        ["col_1", "col_2"],
+        ["col_1", "col_3"],
+    ],
 )
 def test_dropna_table(backend, alltypes, how, subset):
     is_two = alltypes.int_col == 2
@@ -559,6 +577,10 @@ def test_order_by_random(alltypes):
     raises=sa.exc.ProgrammingError,
     reason="Druid only supports trivial unions",
 )
+@pytest.mark.notyet(
+    ["exasol"],
+    raises=AssertionError,
+)
 def test_table_info(alltypes):
     expr = alltypes.info()
     df = expr.execute()
@@ -581,11 +603,13 @@ def test_table_info(alltypes):
         param(
             _.string_col.isin([]),
             lambda df: df.string_col.isin([]),
+            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             id="isin",
         ),
         param(
             _.string_col.notin([]),
             lambda df: ~df.string_col.isin([]),
+            marks=pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             id="notin",
         ),
         param(
@@ -656,6 +680,7 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
         param(False, True, neg, id="false_negate"),
     ],
 )
+@pytest.mark.notimpl(["exasol"])
 def test_logical_negation_literal(con, expr, expected, op):
     assert con.execute(op(ibis.literal(expr)).name("tmp")) == expected
 
@@ -795,7 +820,7 @@ def test_int_column(alltypes):
     assert result.dtype == np.int8
 
 
-@pytest.mark.notimpl(["druid", "oracle"])
+@pytest.mark.notimpl(["druid", "oracle", "exasol"])
 @pytest.mark.never(
     ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
 )
@@ -806,7 +831,7 @@ def test_int_scalar(alltypes):
     assert result.dtype == np.int16
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])
+@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid", "exasol"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
@@ -834,6 +859,7 @@ def test_exists(batting, awards_players, method_name):
         "polars",
         "druid",
         "oracle",
+        "exasol",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -849,6 +875,7 @@ def test_typeof(con):
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "pyspark", "druid"])
 @pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
@@ -868,7 +895,7 @@ def test_isin_uncorrelated(
 
 
 @pytest.mark.broken(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["datafusion", "pyspark", "druid"])
+@pytest.mark.notimpl(["datafusion", "pyspark", "druid", "exasol"])
 @pytest.mark.notyet(["dask"], reason="not supported by the backend")
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
@@ -914,6 +941,7 @@ def test_literal_na(con, dtype):
     assert pd.isna(result)
 
 
+@pytest.mark.notimpl(["exasol"])
 def test_memtable_bool_column(backend, con):
     t = ibis.memtable({"a": [True, False, True]})
     backend.assert_series_equal(
@@ -989,6 +1017,7 @@ def test_memtable_column_naming_mismatch(backend, con, monkeypatch, df, columns)
     ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
 )
 @pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
         t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
@@ -1003,7 +1032,7 @@ def test_many_subqueries(con, snapshot):
 
 
 @pytest.mark.notimpl(
-    ["dask", "pandas", "oracle", "flink"], raises=com.OperationNotDefinedError
+    ["dask", "pandas", "oracle", "flink", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
@@ -1117,6 +1146,10 @@ def test_pivot_wider(backend):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement deduplication",
 )
+@pytest.mark.notimpl(
+    ["exasol"],
+    raises=com.OperationNotDefinedError,
+)
 def test_distinct_on_keep(backend, on, keep):
     from ibis import _
 
@@ -1168,6 +1201,10 @@ def test_distinct_on_keep(backend, on, keep):
     reason="arbitrary not implemented in the backend",
 )
 @pytest.mark.notimpl(
+    ["exasol"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
     ["dask", "datafusion"],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement window functions",
@@ -1209,7 +1246,7 @@ def test_distinct_on_keep_is_none(backend, on):
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres", "flink"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "flink", "exasol"])
 @pytest.mark.notyet(
     [
         "sqlite",
@@ -1241,6 +1278,7 @@ def test_hash_consistent(backend, alltypes):
         "pyspark",
         "snowflake",
         "sqlite",
+        "exasol",
     ]
 )
 @pytest.mark.parametrize(
@@ -1307,6 +1345,7 @@ def test_try_cast_expected(con, from_val, to_type, expected):
         "pyspark",
         "snowflake",
         "sqlite",
+        "exasol",
     ]
 )
 def test_try_cast_table(backend, con):
@@ -1336,6 +1375,7 @@ def test_try_cast_table(backend, con):
         "pyspark",
         "snowflake",
         "sqlite",
+        "exasol",
     ]
 )
 @pytest.mark.parametrize(
@@ -1371,9 +1411,25 @@ def test_try_cast_func(con, from_val, to_type, func):
         ### NONE/ZERO start
         # no stop
         param(slice(None, 0), lambda _: 0, id="[:0]"),
-        param(slice(None, None), lambda t: t.count().to_pandas(), id="[:]"),
+        param(
+            slice(None, None),
+            lambda t: t.count().to_pandas(),
+            marks=pytest.mark.notyet(
+                ["exasol"],
+                raises=sa.exc.CompileError,
+            ),
+            id="[:]",
+        ),
         param(slice(0, 0), lambda _: 0, id="[0:0]"),
-        param(slice(0, None), lambda t: t.count().to_pandas(), id="[0:]"),
+        param(
+            slice(0, None),
+            lambda t: t.count().to_pandas(),
+            marks=pytest.mark.notyet(
+                ["exasol"],
+                raises=sa.exc.CompileError,
+            ),
+            id="[0:]",
+        ),
         # positive stop
         param(slice(None, 2), lambda _: 2, id="[:2]"),
         param(slice(0, 2), lambda _: 2, id="[0:2]"),
@@ -1404,6 +1460,10 @@ def test_try_cast_func(con, from_val, to_type, func):
                     raises=sa.exc.CompileError,
                     reason="mssql doesn't support OFFSET without LIMIT",
                 ),
+                pytest.mark.notyet(
+                    ["exasol"],
+                    raises=sa.exc.CompileError,
+                ),
                 pytest.mark.never(
                     ["impala"],
                     raises=HiveServer2Error,
@@ -1427,6 +1487,10 @@ def test_try_cast_func(con, from_val, to_type, func):
                     ["mssql"],
                     raises=sa.exc.CompileError,
                     reason="mssql doesn't support OFFSET without LIMIT",
+                ),
+                pytest.mark.notyet(
+                    ["exasol"],
+                    raises=sa.exc.DBAPIError,
                 ),
                 pytest.mark.notyet(
                     ["impala"],
@@ -1486,6 +1550,10 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=sa.exc.CompileError,
     reason="mssql doesn't support dynamic limit/offset without an ORDER BY",
 )
+@pytest.mark.notimpl(
+    ["exasol"],
+    raises=sa.exc.CompileError,
+)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickhouseDriverDatabaseError,
@@ -1524,6 +1592,10 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     ["mysql", "snowflake", "trino"],
     raises=sa.exc.ProgrammingError,
     reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notimpl(
+    ["exasol"],
+    raises=sa.exc.CompileError,
 )
 @pytest.mark.notyet(
     ["clickhouse"],
@@ -1579,6 +1651,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
         "flink",
         "polars",
         "snowflake",
+        "exasol",
     ]
 )
 def test_sample(backend):
@@ -1603,6 +1676,7 @@ def test_sample(backend):
         "flink",
         "polars",
         "snowflake",
+        "exasol",
     ]
 )
 def test_sample_memtable(con, backend):
@@ -1628,6 +1702,7 @@ def test_sample_memtable(con, backend):
         "snowflake",
         "sqlite",
         "trino",
+        "exasol",
     ]
 )
 def test_sample_with_seed(backend):
