@@ -12,7 +12,7 @@ from pytest import param
 pytestmark = [
     pytest.mark.never(["impala"], reason="doesn't support JSON and never will"),
     pytest.mark.notyet(["clickhouse"], reason="upstream is broken"),
-    pytest.mark.notimpl(["datafusion", "mssql", "druid", "oracle"]),
+    pytest.mark.notimpl(["datafusion", "exasol", "mssql", "druid", "oracle"]),
 ]
 
 

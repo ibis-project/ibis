@@ -159,6 +159,13 @@ jobs:
               - oracle
             services:
               - oracle
+          - name: exasol
+            title: Exasol
+            serial: true
+            extras:
+              - exasol
+            services:
+              - exasol
           - name: flink
             title: Flink
             serial: true
@@ -283,6 +290,15 @@ jobs:
                 - flink
               services:
                 - flink
+          - os: windows-latest
+            backend:
+              name: exasol
+              title: Exasol
+              serial: true
+              extras:
+                - exasol
+              services:
+                - exasol
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
@@ -604,7 +620,7 @@ jobs:
       - run: python -m pip install --upgrade pip 'poetry==1.7.1'
 
       - name: remove deps that are not compatible with sqlalchemy 2
-        run: poetry remove snowflake-sqlalchemy
+        run: poetry remove snowflake-sqlalchemy sqlalchemy-exasol
 
       - name: add sqlalchemy 2
         run: poetry add --lock --optional 'sqlalchemy>=2,<3'

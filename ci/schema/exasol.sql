@@ -1,0 +1,75 @@
+DROP SCHEMA IF EXISTS EXASOL CASCADE;
+CREATE SCHEMA EXASOL;
+
+CREATE OR REPLACE TABLE EXASOL.diamonds
+(
+    "carat"   DOUBLE,
+    "cut"     VARCHAR(256),
+    "color"   VARCHAR(256),
+    "clarity" VARCHAR(256),
+    "depth"   DOUBLE,
+    "table"   DOUBLE,
+    "price"   BIGINT,
+    "x"       DOUBLE,
+    "y"       DOUBLE,
+    "z"       DOUBLE
+);
+
+CREATE OR REPLACE TABLE EXASOL.batting
+(
+    "playerID" VARCHAR(256),
+    "yearID"   BIGINT,
+    "stint"    BIGINT,
+    "teamID"   VARCHAR(256),
+    "logID"    VARCHAR(256),
+    "G"        BIGINT,
+    "AB"       BIGINT,
+    "R"        BIGINT,
+    "H"        BIGINT,
+    "X2B"      BIGINT,
+    "X3B"      BIGINT,
+    "HR"       BIGINT,
+    "RBI"      BIGINT,
+    "SB"       BIGINT,
+    "CS"       BIGINT,
+    "BB"       BIGINT,
+    "SO"       BIGINT,
+    "IBB"      BIGINT,
+    "HBP"      BIGINT,
+    "SH"       BIGINT,
+    "SF"       BIGINT,
+    "GIDP"     BIGINT
+);
+
+CREATE OR REPLACE TABLE EXASOL.awards_players
+(
+    "playerId" VARCHAR(256),
+    "awardID"  VARCHAR(256),
+    "yearID"   VARCHAR(256),
+    "logID"    VARCHAR(256),
+    "tie"      VARCHAR(256),
+    "notest"   VARCHAR(256)
+);
+
+CREATE OR REPLACE TABLE EXASOL.functional_alltypes
+(
+    "id"              INTEGER,
+    "bool_col"        BOOLEAN,
+    "tinyint_col"     SHORTINT,
+    "small_int"       SMALLINT,
+    "int_col"         INTEGER,
+    "bigint_col"      BIGINT,
+    "float_col"       FLOAT,
+    "double_col"      DOUBLE PRECISION,
+    "date_string_col" VARCHAR(256),
+    "string_col"      VARCHAR(256),
+    "timestamp_col"   TIMESTAMP,
+    "year"            INTEGER,
+    "month"           INTEGER
+);
+
+
+IMPORT INTO EXASOL.diamonds FROM LOCAL CSV FILE '/data/diamonds.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL.batting FROM LOCAL CSV FILE '/data/batting.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL.awards_players FROM LOCAL CSV FILE '/data/awards_players.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL.functional_alltypes FROM LOCAL CSV FILE '/data/functional_alltypes.csv' COLUMN SEPARATOR = ',' SKIP = 1;

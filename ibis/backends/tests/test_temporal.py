@@ -65,6 +65,12 @@ except ImportError:
     Py4JJavaError = None
 
 
+try:
+    from pyexasol.exceptions import ExaQueryError
+except ImportError:
+    ExaQueryError = None
+
+
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
 @pytest.mark.parametrize(
     "expr_fn",
@@ -82,6 +88,7 @@ except ImportError:
     raises=AttributeError,
     reason="Can only use .dt accessor with datetimelike values",
 )
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_date_extract(backend, alltypes, df, attr, expr_fn):
     expr = getattr(expr_fn(alltypes.timestamp_col), attr)()
     expected = getattr(df.timestamp_col.dt, attr).astype("int32")
@@ -94,22 +101,38 @@ def test_date_extract(backend, alltypes, df, attr, expr_fn):
 @pytest.mark.parametrize(
     "attr",
     [
-        "year",
-        "month",
-        "day",
+        param(
+            "year", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
+        ),
+        param(
+            "month", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
+        ),
+        param("day", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]),
         param(
             "day_of_year",
             marks=[
-                pytest.mark.notimpl(["impala"], raises=com.OperationNotDefinedError),
+                pytest.mark.notimpl(
+                    ["exasol", "impala"], raises=com.OperationNotDefinedError
+                ),
                 pytest.mark.notyet(["oracle"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
-            "quarter", marks=pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError)
+            "quarter",
+            marks=[
+                pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
+                pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError),
+            ],
         ),
-        "hour",
-        "minute",
-        "second",
+        param(
+            "hour", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
+        ),
+        param(
+            "minute", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
+        ),
+        param(
+            "second", marks=[pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)]
+        ),
     ],
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
@@ -141,6 +164,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -153,6 +177,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -165,6 +190,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -177,6 +203,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -189,6 +216,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -201,6 +229,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=sa.exc.CompileError,
                     reason='No literal value renderer is available for literal value "datetime.datetime(2015, 9, 1, 14, 48, 5, 359000)" with datatype DATETIME',
                 ),
+                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -209,7 +238,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="millisecond",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "oracle"], raises=com.OperationNotDefinedError
+                    ["druid", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
                     ["pyspark"],
@@ -224,7 +253,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="day_of_week_index",
             marks=[
                 pytest.mark.notimpl(
-                    ["druid", "oracle"], raises=com.OperationNotDefinedError
+                    ["druid", "oracle", "exasol"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -234,7 +263,8 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             id="day_of_week_full_name",
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError
+                    ["mssql", "druid", "oracle", "exasol"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
                     ["flink"],
@@ -271,6 +301,7 @@ def test_timestamp_extract_literal(con, func, expected):
     reason="Impala backend does not support extracting microseconds.",
 )
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_microseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.microsecond().name("microsecond")
     result = expr.execute()
@@ -292,6 +323,7 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     reason="PySpark backend does not support extracting milliseconds.",
 )
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
     result = expr.execute()
@@ -316,6 +348,7 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     pyspark=["pandas<2.1"],
     reason="test was adjusted to work with pandas 2.1 output; pyspark doesn't support pandas 2",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name("tmp")
     result = expr.execute()
@@ -332,6 +365,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'week_of_year'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_week_of_year(backend, alltypes, df):
     expr = alltypes.timestamp_col.week_of_year().name("tmp")
     result = expr.execute()
@@ -574,6 +608,7 @@ PANDAS_UNITS = {
     raises=AttributeError,
     reason="AttributeError: 'StringColumn' object has no attribute 'truncate'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.truncate(unit).name("tmp")
 
@@ -665,6 +700,7 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
     raises=AttributeError,
     reason="AttributeError: 'StringColumn' object has no attribute 'date'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_date_truncate(backend, alltypes, df, unit):
     expr = alltypes.timestamp_col.date().truncate(unit).name("tmp")
 
@@ -879,6 +915,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     raises=ValidationError,
     reason="Given argument with datatype interval('h') is not implicitly castable to string",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
@@ -959,6 +996,7 @@ def test_integer_to_interval_timestamp(
         "No translation rule for <class 'ibis.expr.operations.strings.StringSplit'>"
     ),
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split("/")
@@ -1183,6 +1221,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
     ],
 )
 @pytest.mark.notimpl(["mssql", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
     expected = expected_fn(df, backend)
@@ -1369,6 +1408,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
     ],
 )
 @pytest.mark.notimpl(["sqlite", "mssql", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
 ):
@@ -1411,6 +1451,7 @@ def test_temporal_binop_pandas_timedelta(
     raises=AttributeError,
     reason="Can only use .dt accessor with datetimelike values",
 )
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     ts = pd.Timestamp("20100302", tz="UTC").to_pydatetime()
 
@@ -1549,6 +1590,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     raises=Py4JJavaError,
     reason="ParseException: Encountered '+ INTERVAL CAST'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -1570,6 +1612,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'date'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -1677,6 +1720,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'strftime'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
@@ -1767,6 +1811,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
     ["mysql", "postgres", "sqlite", "druid", "oracle"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_timestamp(backend, con, unit):
     backend_unit = backend.returned_timestamp_unit
     factor = unit_factors[unit]
@@ -1864,6 +1909,7 @@ def test_integer_to_timestamp(backend, con, unit):
     ],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_to_timestamp(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.to_timestamp(fmt)).execute()
@@ -1893,6 +1939,7 @@ def test_string_to_timestamp(alltypes, fmt):
     raises=Py4JJavaError,
     reason="DayOfWeekName is not supported in Flink",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
@@ -1917,6 +1964,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
         "Ref: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/table/functions/systemfunctions/#temporal-functions"
     ),
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -1967,6 +2015,7 @@ def test_day_of_week_column(backend, alltypes, df):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'day_of_week'",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_day_of_week_column_group_by(
     backend, alltypes, df, day_of_week_expr, day_of_week_pandas
 ):
@@ -1991,6 +2040,7 @@ def test_day_of_week_column_group_by(
 @pytest.mark.notimpl(
     ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_now(con):
     expr = ibis.now()
     result = con.execute(expr.name("tmp"))
@@ -2001,6 +2051,7 @@ def test_now(con):
 @pytest.mark.notimpl(
     ["datafusion", "druid", "oracle"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_now_from_projection(alltypes):
     n = 2
     expr = alltypes.select(now=ibis.now()).limit(n)
@@ -2044,6 +2095,7 @@ DATE_BACKEND_TYPES = {
     ),
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
@@ -2090,6 +2142,7 @@ TIMESTAMP_BACKEND_TYPES = {
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_timestamp_literal(con, backend):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
     result = con.execute(expr)
@@ -2158,6 +2211,7 @@ def test_timestamp_literal(con, backend):
     "https://github.com/ibis-project/ibis/pull/6920/files#r1372453059",
     raises=AssertionError,
 )
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_timestamp_with_timezone_literal(con, timezone, expected):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
     result = con.execute(expr)
@@ -2204,6 +2258,7 @@ TIME_BACKEND_TYPES = {
 @pytest.mark.broken(
     ["druid"], raises=sa.exc.ProgrammingError, reason="SQL parse failed"
 )
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_time_literal(con, backend):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
@@ -2263,6 +2318,7 @@ def test_time_literal(con, backend):
     ],
     ids=["second", "subsecond"],
 )
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_extract_time_from_timestamp(con, microsecond):
     raw_ts = datetime.datetime(2023, 1, 7, 13, 20, 5, microsecond)
     ts = ibis.timestamp(raw_ts)
@@ -2374,6 +2430,7 @@ def test_interval_literal(con, backend):
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936: missing expression"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
@@ -2402,6 +2459,7 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904 make timestamp invalid"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.timestamp(
@@ -2447,6 +2505,7 @@ def test_date_scalar_from_iso(con):
     raises=sa.exc.DatabaseError,
     reason="ORA-22849 type CLOB is not supported",
 )
+@pytest.mark.notimpl(["exasol"], raises=AssertionError, strict=False)
 def test_date_column_from_iso(backend, con, alltypes, df):
     expr = (
         alltypes.year.cast("string")
@@ -2473,6 +2532,7 @@ def test_date_column_from_iso(backend, con, alltypes, df):
     raises=com.UnsupportedOperationError,
     reason="PySpark backend does not support extracting milliseconds.",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_milliseconds_with_big_value(con):
     timestamp = ibis.timestamp("2021-01-01 01:30:59.333456")
     millis = timestamp.millisecond()
@@ -2497,6 +2557,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature to_timestamp(<NUMERIC>)",
 )
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -2519,6 +2580,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     reason="No match found for function signature to_timestamp(<NUMERIC>)",
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.notimpl(["exasol"], raises=sa.exc.DBAPIError)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -2645,6 +2707,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
     raises=ArrowInvalid,
 )
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp("4567-01-01 00:00:00")
@@ -2737,6 +2800,7 @@ def test_large_timestamp(con):
     raises=sa.exc.DatabaseError,
     reason="ORA-01843: invalid month was specified",
 )
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 def test_timestamp_precision_output(con, ts, scale, unit):
     dtype = dt.Timestamp(scale=scale)
     expr = ibis.literal(ts).cast(dtype)
@@ -2799,6 +2863,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
         ),
     ],
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_delta(con, start, end, unit, expected):
     expr = end.delta(start, unit)
     assert con.execute(expr) == expected
@@ -2895,6 +2960,7 @@ def test_delta(con, start, end, unit, expected):
         ),
     ],
 )
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_bucket(backend, kws, pd_freq):
     ts = backend.functional_alltypes.timestamp_col.name("ts").execute()
     res = backend.functional_alltypes.timestamp_col.bucket(**kws).name("ts").execute()
@@ -2929,6 +2995,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.parametrize("offset_mins", [2, -2], ids=["pos", "neg"])
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_bucket_offset(backend, offset_mins):
     ts = backend.functional_alltypes.timestamp_col.name("ts")
     expr = ts.bucket(minutes=5, offset=ibis.interval(minutes=offset_mins)).name("ts")

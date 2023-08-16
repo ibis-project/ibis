@@ -21,7 +21,7 @@ def test_version(backend):
 
 # 1. `current_database` returns '.', but isn't listed in list_databases()
 @pytest.mark.never(
-    ["polars", "dask", "pandas", "druid", "oracle"],
+    ["polars", "dask", "exasol", "pandas", "druid", "oracle"],
     reason="backend does not support databases",
     raises=AttributeError,
 )

@@ -41,6 +41,12 @@ except ImportError:
     Py4JError = None
 
 
+try:
+    from pyexasol.exceptions import ExaQueryError
+except ImportError:
+    ExaQueryError = None
+
+
 @reduction(input_type=[dt.double], output_type=dt.double)
 def mean_udf(s):
     return s.mean()
@@ -68,6 +74,7 @@ aggregate_test_params = [
                     "druid",
                     "oracle",
                     "flink",
+                    "exasol",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -99,6 +106,7 @@ aggregate_test_params = [
                     "druid",
                     "oracle",
                     "flink",
+                    "exasol",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -131,6 +139,7 @@ argidx_not_grouped_marks = [
     "druid",
     "oracle",
     "flink",
+    "exasol",
 ]
 argidx_grouped_marks = ["dask"] + argidx_not_grouped_marks
 
@@ -221,6 +230,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "druid",
         "oracle",
         "flink",
+        "exasol",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -309,6 +319,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=sa.exc.DatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
+                pytest.mark.notimpl(
+                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
+                ),
             ],
         ),
         param(
@@ -325,6 +338,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["oracle"],
                     raises=sa.exc.DatabaseError,
                     reason="ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.notimpl(
+                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
                 ),
             ],
         ),
@@ -355,6 +371,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=sa.exc.DatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
+                pytest.mark.notimpl(
+                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
+                ),
             ],
         ),
         param(
@@ -371,6 +390,9 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["oracle"],
                     raises=sa.exc.DatabaseError,
                     reason="ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.notimpl(
+                    ["exasol"], raises=(sa.exc.DBAPIError, ExaQueryError)
                 ),
             ],
         ),
@@ -432,6 +454,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "trino",
                         "druid",
                         "oracle",
+                        "exasol",
                         "flink",
                     ],
                     raises=com.OperationNotDefinedError,
@@ -451,6 +474,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "druid",
                         "oracle",
+                        "exasol",
                         "flink",
                     ],
                     raises=com.OperationNotDefinedError,
@@ -470,6 +494,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "druid",
                         "oracle",
+                        "exasol",
                         "flink",
                     ],
                     raises=com.OperationNotDefinedError,
@@ -545,6 +570,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     "mssql",
                     "druid",
                     "oracle",
+                    "exasol",
                     "flink",
                 ],
                 raises=com.OperationNotDefinedError,
@@ -563,6 +589,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     "mssql",
                     "druid",
                     "oracle",
+                    "exasol",
                     "flink",
                 ],
                 raises=com.OperationNotDefinedError,
@@ -582,6 +609,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "druid",
                         "oracle",
+                        "exasol",
                         "flink",
                     ],
                     raises=com.OperationNotDefinedError,
@@ -611,6 +639,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "pandas",
                         "polars",
                         "sqlite",
+                        "exasol",
                         "flink",
                     ],
                     raises=com.OperationNotDefinedError,
@@ -736,6 +765,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "druid",
                         "oracle",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -757,15 +787,34 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("ibis_cond", "pandas_cond"),
     [
-        param(lambda _: None, lambda _: slice(None), id="no_cond"),
+        param(
+            lambda _: None,
+            lambda _: slice(None),
+            marks=pytest.mark.notimpl(
+                ["exasol"],
+                raises=(com.OperationNotDefinedError, ExaQueryError, sa.exc.DBAPIError),
+                strict=False,
+            ),
+            id="no_cond",
+        ),
         param(
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
+            marks=pytest.mark.notimpl(
+                ["exasol"],
+                raises=(com.OperationNotDefinedError, ExaQueryError),
+                strict=False,
+            ),
             id="is_in",
         ),
         param(
             lambda _: ibis._.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
+            marks=pytest.mark.notimpl(
+                ["exasol"],
+                raises=(com.OperationNotDefinedError, ExaQueryError),
+                strict=False,
+            ),
             id="is_in_deferred",
         ),
     ],
@@ -823,6 +872,9 @@ def test_reduction_ops(
     raises=com.OperationNotDefinedError,
     reason="no one has attempted implementation yet",
 )
+@pytest.mark.notimpl(
+    ["exasol"], raises=(sa.exc.DBAPIError, com.UnsupportedOperationError)
+)
 def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
     table = alltypes[["int_col", "double_col", "string_col"]]
     expr = table.nunique(where=ibis_cond(table))
@@ -851,6 +903,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "sqlite",
                         "druid",
                         "oracle",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -893,6 +946,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "sqlite",
                         "druid",
                         "oracle",
+                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1092,10 +1146,8 @@ def test_quantile(
         ),
     ],
 )
-@pytest.mark.notimpl(
-    ["mssql"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_corr_cov(
     con,
     batting,
@@ -1123,7 +1175,7 @@ def test_corr_cov(
 
 
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "mssql", "druid"],
+    ["mysql", "sqlite", "mssql", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1139,7 +1191,7 @@ def test_approx_median(alltypes):
 
 
 @pytest.mark.notimpl(
-    ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
+    ["bigquery", "druid", "sqlite", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
     ["impala", "mysql", "mssql", "druid", "pyspark", "trino"],
@@ -1246,6 +1298,7 @@ def test_median(alltypes, df):
     raises=sa.exc.DatabaseError,
     reason="ORA-00904: 'GROUP_CONCAT': invalid identifier",
 )
+@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(
     ["flink"],
     raises=Py4JError,
@@ -1349,6 +1402,7 @@ def test_topk_filter_op(alltypes, df, result_fn, expected_fn):
         "trino",
         "druid",
         "oracle",
+        "exasol",
         "flink",
     ],
     raises=com.OperationNotDefinedError,
@@ -1388,6 +1442,8 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "trino",
         "druid",
         "oracle",
+        "flink",
+        "exasol",
         "flink",
     ],
     raises=com.OperationNotDefinedError,
@@ -1485,7 +1541,7 @@ def test_grouped_case(backend, con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "polars"], raises=com.OperationNotDefinedError
+    ["datafusion", "mssql", "polars", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
     ["dask", "pandas"],

@@ -12,6 +12,11 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import _
 
+try:
+    from pyexasol.exceptions import ExaQueryError
+except ImportError:
+    ExaQueryError = None
+
 
 @pytest.fixture
 def union_subsets(alltypes, df):
@@ -68,7 +73,15 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
+                [
+                    "bigquery",
+                    "dask",
+                    "pandas",
+                    "sqlite",
+                    "snowflake",
+                    "mssql",
+                    "exasol",
+                ],
                 reason="backend doesn't support INTERSECT ALL",
             ),
             id="all",
@@ -107,7 +120,15 @@ def test_intersect(backend, alltypes, df, distinct):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
+                [
+                    "bigquery",
+                    "dask",
+                    "pandas",
+                    "sqlite",
+                    "snowflake",
+                    "mssql",
+                    "exasol",
+                ],
                 reason="backend doesn't support EXCEPT ALL",
             ),
             id="all",
@@ -178,7 +199,7 @@ def test_top_level_union(backend, con, alltypes, distinct):
         param(
             False,
             marks=pytest.mark.notimpl(
-                ["bigquery", "dask", "mssql", "pandas", "snowflake", "sqlite"]
+                ["bigquery", "dask", "mssql", "pandas", "snowflake", "sqlite", "exasol"]
             ),
         ),
     ],

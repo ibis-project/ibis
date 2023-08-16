@@ -74,6 +74,7 @@ def check_eq(left, right, how, **kwargs):
     reason="https://github.com/pola-rs/polars/issues/9955",
     raises=ColumnNotFoundError,
 )
+@pytest.mark.notimpl(["exasol"], raises=AttributeError)
 def test_mutating_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
@@ -122,7 +123,7 @@ def test_mutating_join(backend, batting, awards_players, how):
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
-@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(["dask", "druid", "exasol"])
 @pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins or anti joins")
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
@@ -157,6 +158,7 @@ def test_filtering_join(backend, batting, awards_players, how):
     raises=ValueError,
     reason="https://github.com/pola-rs/polars/issues/9335",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_join_then_filter_no_column_overlap(awards_players, batting):
     left = batting[batting.yearID == 2015]
     year = left.yearID.name("year")
@@ -174,6 +176,7 @@ def test_join_then_filter_no_column_overlap(awards_players, batting):
     raises=ValueError,
     reason="https://github.com/pola-rs/polars/issues/9335",
 )
+@pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_mutate_then_join_no_column_overlap(batting, awards_players):
     left = batting.mutate(year=batting.yearID).filter(lambda t: t.year == 2015)
     left = left["year", "RBI"]
@@ -201,6 +204,7 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
         param(lambda left, right: left.join(right, "year", how="semi"), id="how_semi"),
     ],
 )
+@pytest.mark.notimpl(["exasol"], raises=com.IbisTypeError)
 def test_semi_join_topk(batting, awards_players, func):
     batting = batting.mutate(year=batting.yearID)
     left = func(batting, batting.year.topk(5)).select("year", "RBI")
@@ -208,7 +212,7 @@ def test_semi_join_topk(batting, awards_players, func):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(["dask", "druid", "exasol"])
 def test_join_with_pandas(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
@@ -218,7 +222,7 @@ def test_join_with_pandas(batting, awards_players):
     assert df.yearID.nunique() == 7
 
 
-@pytest.mark.notimpl(["dask"])
+@pytest.mark.notimpl(["dask", "exasol"])
 def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
     awards_players_filt = awards_players[lambda t: t.yearID < 1900][
@@ -309,6 +313,10 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
     raises=TypeError,
     reason="dask and pandas don't support join predicates",
 )
+@pytest.mark.notimpl(
+    ["exasol"],
+    raises=com.IbisTypeError,
+)
 def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_value):
     n = 5
 
@@ -329,7 +337,9 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
 
 
 @pytest.mark.notimpl(
-    ["druid"], raises=sa.exc.NoSuchTableError, reason="`win` table isn't loaded"
+    ["druid", "exasol"],
+    raises=sa.exc.NoSuchTableError,
+    reason="`win` table isn't loaded",
 )
 @pytest.mark.notimpl(["flink"], reason="`win` table isn't loaded")
 @pytest.mark.parametrize(

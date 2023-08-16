@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     import pyarrow as pa
 
-pytestmark = pytest.mark.notimpl(["druid", "oracle"])
+pytestmark = pytest.mark.notimpl(["druid", "exasol", "oracle"])
 
 
 @contextlib.contextmanager

@@ -33,15 +33,15 @@ if TYPE_CHECKING:
 
 __all__ = ("BaseBackend", "Database", "connect")
 
-
 _IBIS_TO_SQLGLOT_DIALECT = {
     "mssql": "tsql",
     "impala": "hive",
     "pyspark": "spark",
     "polars": "postgres",
     "datafusion": "postgres",
+    # closest match see https://github.com/ibis-project/ibis/pull/7303#discussion_r1350223901
+    "exa.websocket": "oracle",
 }
-
 
 _SQLALCHEMY_TO_SQLGLOT_DIALECT = {
     # sqlalchemy dialects of backends not listed here match the sqlglot dialect
@@ -52,6 +52,8 @@ _SQLALCHEMY_TO_SQLGLOT_DIALECT = {
     # druid allows double quotes for identifiers, like postgres:
     # https://druid.apache.org/docs/latest/querying/sql#identifiers-and-literals
     "druid": "postgres",
+    # closest match see https://github.com/ibis-project/ibis/pull/7303#discussion_r1350223901
+    "exa.websocket": "oracle",
 }
 
 
