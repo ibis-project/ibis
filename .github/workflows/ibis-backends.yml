@@ -200,6 +200,12 @@ jobs:
               - oracle
             services:
               - oracle
+          - name: flink
+            title: Flink
+            extras:
+              - flink
+            additional_deps:
+              - apache-flink
         exclude:
           - os: windows-latest
             backend:

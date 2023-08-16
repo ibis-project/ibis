@@ -1,10 +1,27 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 import ibis
-import ibis.expr.types as ir
-from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+
+
+class TestConf(BackendTest, RoundAwayFromZero):
+    deps = ("apache-flink",)
+
+    @staticmethod
+    def connect(*, tmpdir, worker_id, **kw: Any):
+        from pyflink.table import EnvironmentSettings, TableEnvironment
+
+        env_settings = EnvironmentSettings.in_batch_mode()
+        table_env = TableEnvironment.create(env_settings)
+        return ibis.flink.connect(table_env, **kw)
+
+    def _load_data(self, **_: Any) -> None:
+        for stmt in self.ddl_script:
+            self.connection._t_env.execute_sql(stmt.format(data_dir=self.data_dir))
 
 
 @pytest.fixture
@@ -27,13 +44,3 @@ def simple_schema():
 @pytest.fixture
 def simple_table(simple_schema):
     return ibis.table(simple_schema, name="table")
-
-
-@pytest.fixture
-def batting() -> ir.Table:
-    return ibis.table(schema=TEST_TABLES["batting"], name="batting")
-
-
-@pytest.fixture
-def awards_players() -> ir.Table:
-    return ibis.table(schema=TEST_TABLES["awards_players"], name="awards_players")
