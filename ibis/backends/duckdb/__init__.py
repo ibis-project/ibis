@@ -862,11 +862,20 @@ WHERE catalog_name = :database"""
     ) -> pa.Table:
         self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
+
+        # We use `.sql` instead of `.execute` below for performance - in
+        # certain cases duckdb query -> arrow table can be significantly faster
+        # in this configuration. Currently `.sql` doesn't support parametrized
+        # queries, so we need to compile with literal_binds for now.
+        sql = str(
+            query_ast.compile().compile(
+                dialect=self.con.dialect, compile_kwargs={"literal_binds": True}
+            )
+        )
 
         with self.begin() as con:
-            cursor = con.execute(sql)
-            table = cursor.cursor.fetch_arrow_table()
+            cursor = con.connection.cursor()
+            table = cursor.sql(sql).to_arrow_table()
 
         return expr.__pyarrow_result__(table)
 
