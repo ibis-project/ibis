@@ -157,8 +157,12 @@ def zscore(c):
             s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
         ),
         lambda t: t.select(s.across(s.numeric() & ~s.c("year"), zscore)),
+        lambda t: t.select(
+            s.across(s.numeric() & ~s.c(t.year), (_ - _.mean()) / _.std())
+        ),
+        lambda t: t.select(s.across(s.numeric() & ~s.c(t.year), zscore)),
     ],
-    ids=["deferred", "func"],
+    ids=["deferred", "func", "deferred-column-ref", "func-column-ref"],
 )
 def test_across_select(penguins, expr_func):
     expr = expr_func(penguins)
