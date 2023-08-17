@@ -12,8 +12,8 @@ CREATE TABLE functional_alltypes (
     date_string_col VARCHAR,
     string_col VARCHAR,
     timestamp_col TIMESTAMP,
-    year INT,
-    month INT
+    `year` INT,
+    `month` INT
 ) WITH (
     'connector' = 'filesystem',
     'path' = 'file:///{data_dir}/csv/functional_alltypes.csv',
@@ -29,7 +29,7 @@ CREATE TABLE diamonds (
     color VARCHAR,
     clarity VARCHAR,
     depth DOUBLE,
-    table DOUBLE,
+    `table` DOUBLE,
     price BIGINT,
     x DOUBLE,
     y DOUBLE,
