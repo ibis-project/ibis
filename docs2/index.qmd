@@ -32,7 +32,11 @@ the Python dataframe library
 
 :::
 
-## Install
+<div></div>
+
+## Install <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseInstall" role="button" aria-expanded="false" aria-controls="collapseInstall">Show</a>
+
+::: {#collapseInstall .collapse .multi-collapse}
 
 We recommend starting with the default backend (DuckDB), Polars, or DataFusion.
 
@@ -44,7 +48,11 @@ pip install 'ibis-framework[duckdb]' # <1>
 
 See the [15+ supported backends](#backends-supported) for more options.
 
-## Quickstart
+:::
+
+## Quickstart <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseQuickstart" role="button" aria-expanded="false" aria-controls="collapseQuickstart">Show</a>
+
+::: {#collapseQuickstart .collapse .multi-collapse}
 
 See [the getting started tutorial](tutorials/getting_started.qmd) for a more in-depth introduction to Ibis. Below is a quick overview of Ibis.
 
@@ -70,7 +78,9 @@ t[10:15]  # <1>
 
 1. Display a slice of the table.
 
-### Analytics
+### Analytics <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseAnalytics" role="button" aria-expanded="false" aria-controls="collapseAnalytics">Show</a>
+
+::: {#collapseAnalytics .collapse .multi-collapse}
 
 Ibis is built for easy analytics at scale in Python.
 
@@ -81,8 +91,11 @@ t.group_by(["species", "island"]).aggregate(count=ibis._.count()).order_by(  # <
 ```
 
 1. Group by species and island, and compute the number of rows in each group.
+:::
 
-### Exploratory data analysis
+### Exploratory data analysis <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseEda" role="button" aria-expanded="false" aria-controls="collapseEda">Show</a>
+
+::: {#collapseEda .collapse .multi-collapse}
 
 Use built-in methods for exploration and [visualization](#visualization).
 
@@ -94,7 +107,11 @@ t["species"].topk(num_species)  # <2>
 1. Compute the number of species in the dataset.
 2. Display the top species by count.
 
-### Visualization
+:::
+
+### Visualization <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseVisualization" role="button" aria-expanded="false" aria-controls="collapseVisualization">Show</a>
+
+::: {#collapseVisualization .collapse .multi-collapse}
 
 Ibis works with any Python plotting library that supports the [dataframe interchange protocol](https://data-apis.org/dataframe-protocol/latest/index.html).
 
@@ -180,7 +197,11 @@ from plotnine import ggplot, aes, geom_bar, theme
 
 :::
 
-### Data science
+:::
+
+### Data science <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseDataScience" role="button" aria-expanded="false" aria-controls="collapseDataScience">Show</a>
+
+::: {#collapseDataScience .collapse .multi-collapse}
 
 Use Ibis with your favorite data science libraries for concise and efficient workflows.
 
@@ -243,7 +264,11 @@ px.scatter_3d(  # <6>
 5. Join the PCA results to the original table
 6. Plot the results
 
-### Input and output
+:::
+
+### Input and output <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseInputOutput" role="button" aria-expanded="false" aria-controls="collapseInputOutput">Show</a>
+
+::: {#collapseInputOutput .collapse .multi-collapse}
 
 Ibis supports a variety of input and output options.
 
@@ -424,7 +449,11 @@ t.__array__()
 
 :::
 
-### SQL + Python
+:::
+
+### SQL + Python <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseSQLPython" role="button" aria-expanded="false" aria-controls="collapseSQLPython">Show</a>
+
+::: {#collapseSQLPython .collapse .multi-collapse}
 
 You can use the `ibis.to_sql` to generate SQL strings and `ibis.show_sql` display them. Ibis uses [SQLGlot](https://sqlglot.com) under the hood to allow passing a `dialect` parameter to SQL methods.
 
@@ -616,7 +645,13 @@ con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
 
 :::
 
-## Backends supported
+:::
+
+:::
+
+## Backends <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseBackends" role="button" aria-expanded="false" aria-controls="collapseBackends">Show</a>
+
+::: {#collapseBackends .collapse .multi-collapse}
 
 Need to use Ibis with a backend that isn't currently supported? [Let us know!](https://github.com/ibis-project/ibis/discussions/new?category=q-a)
 
@@ -929,7 +964,9 @@ con = ibis.trino.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
-:::
 
 See the [backend support matrix](support_matrix.qmd) for details on operations supported. [Open a feature request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat) if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
+
+:::
+
+:::
