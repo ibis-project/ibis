@@ -76,3 +76,19 @@ def test_con_source(source, expected):
         source=source,
     )
     assert con.con.url.query["source"] == expected
+
+
+@pytest.mark.parametrize(
+    ("schema", "table"),
+    [
+        # tables known to exist
+        ("memory.default", "diamonds"),
+        ("postgresql.public", "map"),
+        ("system.metadata", "table_comments"),
+        ("tpcds.sf1", "store"),
+        ("tpch.sf1", "nation"),
+    ],
+)
+def test_cross_schema_table_access(con, schema, table):
+    t = con.table(table, schema=schema)
+    assert t.count().execute()
