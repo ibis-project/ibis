@@ -325,8 +325,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
                 pytest.mark.notyet(["impala"], reason="precision not supported"),
                 pytest.mark.notyet(["duckdb"], reason="precision is out of range"),
                 pytest.mark.notyet(
-                    ["druid", "duckdb", "snowflake", "trino"],
-                    raises=sa.exc.ProgrammingError,
+                    ["druid", "snowflake", "trino"], raises=sa.exc.ProgrammingError
                 ),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
                 pytest.mark.notyet(["dask"], raises=NotImplementedError),
