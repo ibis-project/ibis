@@ -23,8 +23,6 @@ def alltypes():
     return ibis.table(
         ibis.schema(
             dict(
-                index="int64",
-                Unnamed_0="int64",
                 id="int32",
                 bool_col="boolean",
                 tinyint_col="int8",

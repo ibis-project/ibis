@@ -14,7 +14,6 @@ from google.cloud import bigquery as bq
 
 import ibis
 import ibis.expr.datatypes as dt
-import ibis.selectors as s
 from ibis.backends.bigquery import EXTERNAL_DATA_SCOPES, Backend
 from ibis.backends.bigquery.datatypes import BigQueryType
 from ibis.backends.conftest import TEST_TABLES
@@ -23,8 +22,6 @@ from ibis.backends.tests.data import json_types, non_null_array_types, struct_ty
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-
-    import ibis.expr.types as ir
 
 DATASET_ID = "ibis_gbq_testing"
 DATASET_ID_TOKYO = "ibis_gbq_testing_tokyo"
@@ -301,11 +298,6 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
 
             for fut in concurrent.futures.as_completed(futures):
                 fut.result()
-
-    @property
-    def functional_alltypes(self) -> ir.Table:
-        t = super().functional_alltypes
-        return t.select(~s.c("index", "Unnamed_0"))
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw) -> Backend:
