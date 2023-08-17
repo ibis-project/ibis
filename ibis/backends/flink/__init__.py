@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 import pyflink.version
@@ -267,3 +268,13 @@ class Backend(BaseBackend, CanListDatabases):
             raise exc.IntegrityError(f"View {name} does not exist.")
 
         # TODO(deepyaman): Support (and differentiate) permanent views.
+
+    @classmethod
+    @lru_cache
+    def _get_operations(cls):
+        translator = cls.compiler.translator_class
+        return translator._registry.keys()
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        return operation in cls._get_operations()
