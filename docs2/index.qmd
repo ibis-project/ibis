@@ -38,8 +38,6 @@ the Python dataframe library
 
 <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseInstall" role="button" aria-expanded="false" aria-controls="collapseInstall">Show</a>
 
-::: {#collapseInstall .collapse .multi-collapse}
-
 We recommend starting with the default backend (DuckDB), Polars, or DataFusion.
 
 ```bash
@@ -48,9 +46,7 @@ pip install 'ibis-framework[duckdb]' # <1>
 
 1. Install Ibis with optional dependencies (DuckDB in this case).
 
-See the [15+ supported backends](#backends-supported) for more options.
-
-:::
+See the [15+ supported backends below](#backends-supported) for more options.
 
 ## Backends 
 
