@@ -328,7 +328,7 @@ filterwarnings = [
   # snowflake vendors an older version requests
   "ignore:'urllib3\\.contrib\\.pyopenssl' module is deprecated and will be removed in a future release of urllib3:DeprecationWarning",
   # apache-beam
-  "ignore:the imp module is deprecated in favour of importlib and slated for removal in Python 3.12:DeprecationWarning",
+  "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
