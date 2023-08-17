@@ -874,8 +874,7 @@ WHERE catalog_name = :database"""
         )
 
         with self.begin() as con:
-            cursor = con.connection.cursor()
-            table = cursor.sql(sql).to_arrow_table()
+            table = con.connection.sql(sql).to_arrow_table()
 
         return expr.__pyarrow_result__(table)
 
