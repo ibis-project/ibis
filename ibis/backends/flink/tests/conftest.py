@@ -9,7 +9,7 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
-    deps = ("apache-flink",)
+    deps = ("pyflink",)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw: Any):
