@@ -688,17 +688,10 @@ $$""".format(
 
             # create a temporary file format for CSV schema inference
             create_infer_fmt = (
-                f"CREATE TEMP FILE FORMAT {file_format}_infer TYPE = CSV PARSE_HEADER = {str(header).upper()}"
+                f"CREATE TEMP FILE FORMAT {file_format} TYPE = CSV PARSE_HEADER = {str(header).upper()}"
                 + options
             )
             con.exec_driver_sql(create_infer_fmt)
-
-            # create a temporary file format for loading
-            create_load_fmt = (
-                f"CREATE TEMP FILE FORMAT {file_format}_load TYPE = CSV SKIP_HEADER = {int(header)}"
-                + options
-            )
-            con.exec_driver_sql(create_load_fmt)
 
             # copy the local file to the stage
             con.exec_driver_sql(
@@ -715,7 +708,7 @@ $$""".format(
                     FROM TABLE(
                         INFER_SCHEMA(
                             LOCATION => '@{stage}',
-                            FILE_FORMAT => '{file_format}_infer'
+                            FILE_FORMAT => '{file_format}'
                         )
                     )
                 )
@@ -727,7 +720,7 @@ $$""".format(
                 f"""
                 COPY INTO "{table}"
                 FROM @{stage}
-                FILE_FORMAT = (FORMAT_NAME = {file_format}_load)
+                FILE_FORMAT = (TYPE = CSV SKIP_HEADER = {int(header)}{options})
                 """
             )
 
