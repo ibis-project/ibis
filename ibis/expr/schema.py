@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
@@ -9,7 +9,7 @@ from ibis.common.collections import FrozenDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Coercible
+from ibis.common.patterns import Coercible, Length
 from ibis.util import deprecated, indent
 
 if TYPE_CHECKING:
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class Schema(Concrete, Coercible, MapSet):
     """An object for holding table schema information."""
 
-    fields: FrozenDict[str, dt.DataType]
+    fields: Annotated[FrozenDict[str, dt.DataType], Length(at_least=1)]
     """A mapping of [`str`][str] to [`DataType`][ibis.expr.datatypes.DataType] objects
     representing the type of each column."""
 
