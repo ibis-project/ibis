@@ -52,6 +52,330 @@ See the [15+ supported backends](#backends-supported) for more options.
 
 :::
 
+## Backends 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseBackends" role="button" aria-expanded="false" aria-controls="collapseBackends">Show</a>
+
+::: {#collapseBackends .collapse .multi-collapse}
+
+Need to use Ibis with a backend that isn't currently supported? [Let us know!](https://github.com/ibis-project/ibis/discussions/new?category=q-a)
+
+::: {.panel-tabset}
+
+## BigQuery
+
+Install with the BigQuery extra:
+
+```{.bash}
+pip install 'ibis-framework[bigquery]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.bigquery.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Clickhouse
+
+Install with the Clickhouse extra:
+
+```{.bash}
+pip install 'ibis-framework[clickhouse]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.clickhouse.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Dask
+
+Install with the Dask extra:
+
+```{.bash}
+pip install 'ibis-framework[dask]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.dask.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## DataFusion
+
+Install with the DataFusion extra:
+
+```{.bash}
+pip install 'ibis-framework[datafusion]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.datafusion.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Druid
+Install with the Druid extra:
+
+```{.bash}
+pip install 'ibis-framework[druid]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.druid.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## DuckDB
+
+Install with the DuckDB extra:
+
+```{.bash}
+pip install 'ibis-framework[duckdb]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.duckdb.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## Impala
+
+Install with the Impala extra:
+
+```{.bash}
+pip install 'ibis-framework[impala]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+    
+con = ibis.impala.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## MSSQL
+
+Install with the MSSQL extra:
+
+```{.bash}
+pip install 'ibis-framework[mssql]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.mssql.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## MySQL
+
+Install with the MySQL extra:
+
+```{.bash}
+pip install 'ibis-framework[mysql]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.mysql.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+    
+## Oracle
+
+Install with the Oracle extra:
+
+```{.bash}
+pip install 'ibis-framework[oracle]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.oracle.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## pandas
+
+Install with the pandas extra:
+
+```{.bash}
+pip install 'ibis-framework[pandas]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.pandas.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## Polars
+
+Install with the Polars extra:
+
+```{.bash}
+pip install 'ibis-framework[polars]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.polars.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## PostgreSQL
+
+Install with the Postgres extra:
+
+```{.bash}
+pip install 'ibis-framework[postgres]'
+```
+
+And connect:
+
+
+```{.python}
+import ibis
+
+con = ibis.postgres.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## PySpark
+
+Install with the PySpark extra:
+
+```{.bash}
+pip install 'ibis-framework[pyspark]'
+```
+
+And connect:
+
+
+```{.python}
+import ibis
+
+con = ibis.pyspark.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## Snowflake
+
+Install with the Snowflake extra:
+
+```{.bash}
+pip install 'ibis-framework[snowflake]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.snowflake.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## SQLite
+
+Install with the SQLite extra:
+
+```{.bash}
+pip install 'ibis-framework[sqlite]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.sqlite.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+ 
+## Trino
+
+Install with the Trino extra:
+
+```{.bash}
+pip install 'ibis-framework[trino]'
+```
+
+And connect:
+
+
+```{.python}
+import ibis
+
+con = ibis.trino.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+See the [backend support matrix](support_matrix.qmd) for details on operations supported. [Open a feature request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat) if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
+
+:::
+
+:::
+
 ## Quickstart 
 
 <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseQuickstart" role="button" aria-expanded="false" aria-controls="collapseQuickstart">Show</a>
@@ -660,330 +984,6 @@ con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
 1. Chain `.sql` calls and Ibis expressions together.
 
 :::
-
-:::
-
-:::
-
-## Backends 
-
-<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseBackends" role="button" aria-expanded="false" aria-controls="collapseBackends">Show</a>
-
-::: {#collapseBackends .collapse .multi-collapse}
-
-Need to use Ibis with a backend that isn't currently supported? [Let us know!](https://github.com/ibis-project/ibis/discussions/new?category=q-a)
-
-::: {.panel-tabset}
-
-## BigQuery
-
-Install with the BigQuery extra:
-
-```{.bash}
-pip install 'ibis-framework[bigquery]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.bigquery.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## Clickhouse
-
-Install with the Clickhouse extra:
-
-```{.bash}
-pip install 'ibis-framework[clickhouse]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.clickhouse.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## Dask
-
-Install with the Dask extra:
-
-```{.bash}
-pip install 'ibis-framework[dask]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.dask.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## DataFusion
-
-Install with the DataFusion extra:
-
-```{.bash}
-pip install 'ibis-framework[datafusion]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.datafusion.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## Druid
-Install with the Druid extra:
-
-```{.bash}
-pip install 'ibis-framework[druid]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.druid.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## DuckDB
-
-Install with the DuckDB extra:
-
-```{.bash}
-pip install 'ibis-framework[duckdb]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.duckdb.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## Impala
-
-Install with the Impala extra:
-
-```{.bash}
-pip install 'ibis-framework[impala]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-    
-con = ibis.impala.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## MSSQL
-
-Install with the MSSQL extra:
-
-```{.bash}
-pip install 'ibis-framework[mssql]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.mssql.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-## MySQL
-
-Install with the MySQL extra:
-
-```{.bash}
-pip install 'ibis-framework[mysql]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.mysql.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-    
-## Oracle
-
-Install with the Oracle extra:
-
-```{.bash}
-pip install 'ibis-framework[oracle]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.oracle.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
- 
-## pandas
-
-Install with the pandas extra:
-
-```{.bash}
-pip install 'ibis-framework[pandas]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.pandas.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
- 
-## Polars
-
-Install with the Polars extra:
-
-```{.bash}
-pip install 'ibis-framework[polars]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.polars.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
- 
-## PostgreSQL
-
-Install with the Postgres extra:
-
-```{.bash}
-pip install 'ibis-framework[postgres]'
-```
-
-And connect:
-
-
-```{.python}
-import ibis
-
-con = ibis.postgres.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
- 
-## PySpark
-
-Install with the PySpark extra:
-
-```{.bash}
-pip install 'ibis-framework[pyspark]'
-```
-
-And connect:
-
-
-```{.python}
-import ibis
-
-con = ibis.pyspark.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
- 
-## Snowflake
-
-Install with the Snowflake extra:
-
-```{.bash}
-pip install 'ibis-framework[snowflake]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.snowflake.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
- 
-## SQLite
-
-Install with the SQLite extra:
-
-```{.bash}
-pip install 'ibis-framework[sqlite]'
-```
-
-And connect:
-
-```{.python}
-import ibis
-
-con = ibis.sqlite.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
- 
-## Trino
-
-Install with the Trino extra:
-
-```{.bash}
-pip install 'ibis-framework[trino]'
-```
-
-And connect:
-
-
-```{.python}
-import ibis
-
-con = ibis.trino.connect()  # <1>
-```
-
-1. Adjust connection parameters as needed.
-
-See the [backend support matrix](support_matrix.qmd) for details on operations supported. [Open a feature request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat) if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
 
 :::
 
