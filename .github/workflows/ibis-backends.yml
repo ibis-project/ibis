@@ -328,6 +328,14 @@ jobs:
       - name: download backend data
         run: just download-data
 
+      - name: delete header rows
+        if: matrix.backend.name == 'flink'
+        run: |
+          readonly TEST_FILES=(functional_alltypes diamonds batting awards_players)
+          for file in "${TEST_FILES[@]}"; do
+            sed -i '1d' "ci/ibis-testing-data/csv/${file}.csv"
+          done
+
       - name: start services
         if: matrix.backend.services != null
         run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
