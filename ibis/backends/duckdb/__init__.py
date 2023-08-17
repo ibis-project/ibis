@@ -427,7 +427,10 @@ WHERE catalog_name = :database"""
 
         # auto_detect and columns collide, so we set auto_detect=True
         # unless COLUMNS has been specified
-        if any(source.startswith(("http://", "https://")) for source in source_list):
+        if any(
+            source.startswith(("http://", "https://", "s3://"))
+            for source in source_list
+        ):
             self._load_extensions(["httpfs"])
 
         kwargs.setdefault("header", True)
