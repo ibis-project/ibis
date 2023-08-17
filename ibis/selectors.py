@@ -365,9 +365,9 @@ def all_of(*predicates: str | Predicate) -> Predicate:
 
 
 @public
-def c(*names: str) -> Predicate:
+def c(*names: str | ir.Column) -> Predicate:
     """Select specific column names."""
-    names = frozenset(names)
+    names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
 
     def func(col: ir.Value) -> bool:
         schema = col.op().table.schema
@@ -664,10 +664,14 @@ def all() -> Predicate:
     return r[:]
 
 
-def _to_selector(obj: str | Selector | Sequence[str | Selector]) -> Selector:
+def _to_selector(
+    obj: str | Selector | ir.Column | Sequence[str | Selector | ir.Column],
+) -> Selector:
     """Convert an object to a `Selector`."""
     if isinstance(obj, Selector):
         return obj
+    elif isinstance(obj, ir.Column):
+        return c(obj.get_name())
     elif isinstance(obj, str):
         return c(obj)
     else:
