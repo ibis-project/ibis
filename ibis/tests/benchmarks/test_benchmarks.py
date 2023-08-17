@@ -753,3 +753,59 @@ def test_parse_many_duckdb_types(benchmark):
 
     types = ["VARCHAR", "INTEGER", "DOUBLE", "BIGINT"] * 1000
     benchmark(parse_many, types)
+
+
+@pytest.fixture(scope="session")
+def sql() -> str:
+    return """
+    SELECT t1.id as t1_id, x, t2.id as t2_id, y
+    FROM t1 INNER JOIN t2
+      ON t1.id = t2.id
+    """
+
+
+@pytest.fixture(scope="session")
+def ddb(tmp_path_factory):
+    duckdb = pytest.importorskip("duckdb")
+
+    N = 20_000_000
+
+    con = duckdb.connect()
+
+    path = str(tmp_path_factory.mktemp("duckdb") / "data.ddb")
+    sql = (
+        lambda var, table, n=N: f"""
+        CREATE TABLE {table} AS
+        SELECT ROW_NUMBER() OVER () AS id, {var}
+        FROM (
+            SELECT {var}
+            FROM RANGE({n}) _ ({var})
+            ORDER BY RANDOM()
+        )
+        """
+    )
+
+    with duckdb.connect(path) as con:
+        con.execute(sql("x", table="t1"))
+        con.execute(sql("y", table="t2"))
+    return path
+
+
+def test_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
+    # yes, we're benchmarking duckdb here, not ibis
+    #
+    # we do this to get a baseline for comparison
+    duckdb = pytest.importorskip("duckdb")
+    con = duckdb.connect(ddb, read_only=True)
+
+    benchmark(lambda sql: con.sql(sql).to_arrow_table(), sql)
+
+
+def test_ibis_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
+    pytest.importorskip("duckdb")
+    pytest.importorskip("duckdb_engine")
+
+    con = ibis.duckdb.connect(ddb, read_only=True)
+
+    expr = con.sql(sql)
+    benchmark(expr.to_pyarrow)
