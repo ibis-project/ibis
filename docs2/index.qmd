@@ -34,7 +34,9 @@ the Python dataframe library
 
 <div></div>
 
-## Install <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseInstall" role="button" aria-expanded="false" aria-controls="collapseInstall">Show</a>
+## Install 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseInstall" role="button" aria-expanded="false" aria-controls="collapseInstall">Show</a>
 
 ::: {#collapseInstall .collapse .multi-collapse}
 
@@ -50,7 +52,9 @@ See the [15+ supported backends](#backends-supported) for more options.
 
 :::
 
-## Quickstart <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseQuickstart" role="button" aria-expanded="false" aria-controls="collapseQuickstart">Show</a>
+## Quickstart 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseQuickstart" role="button" aria-expanded="false" aria-controls="collapseQuickstart">Show</a>
 
 ::: {#collapseQuickstart .collapse .multi-collapse}
 
@@ -78,7 +82,9 @@ t[10:15]  # <1>
 
 1. Display a slice of the table.
 
-### Analytics <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseAnalytics" role="button" aria-expanded="false" aria-controls="collapseAnalytics">Show</a>
+### Analytics 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseAnalytics" role="button" aria-expanded="false" aria-controls="collapseAnalytics">Show</a>
 
 ::: {#collapseAnalytics .collapse .multi-collapse}
 
@@ -93,7 +99,9 @@ t.group_by(["species", "island"]).aggregate(count=ibis._.count()).order_by(  # <
 1. Group by species and island, and compute the number of rows in each group.
 :::
 
-### Exploratory data analysis <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseEda" role="button" aria-expanded="false" aria-controls="collapseEda">Show</a>
+### Exploratory data analysis 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseEda" role="button" aria-expanded="false" aria-controls="collapseEda">Show</a>
 
 ::: {#collapseEda .collapse .multi-collapse}
 
@@ -109,7 +117,9 @@ t["species"].topk(num_species)  # <2>
 
 :::
 
-### Visualization <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseVisualization" role="button" aria-expanded="false" aria-controls="collapseVisualization">Show</a>
+### Visualization 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseVisualization" role="button" aria-expanded="false" aria-controls="collapseVisualization">Show</a>
 
 ::: {#collapseVisualization .collapse .multi-collapse}
 
@@ -199,7 +209,9 @@ from plotnine import ggplot, aes, geom_bar, theme
 
 :::
 
-### Data science <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseDataScience" role="button" aria-expanded="false" aria-controls="collapseDataScience">Show</a>
+### Data science 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseDataScience" role="button" aria-expanded="false" aria-controls="collapseDataScience">Show</a>
 
 ::: {#collapseDataScience .collapse .multi-collapse}
 
@@ -266,7 +278,9 @@ px.scatter_3d(  # <6>
 
 :::
 
-### Input and output <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseInputOutput" role="button" aria-expanded="false" aria-controls="collapseInputOutput">Show</a>
+### Input and output 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseInputOutput" role="button" aria-expanded="false" aria-controls="collapseInputOutput">Show</a>
 
 ::: {#collapseInputOutput .collapse .multi-collapse}
 
@@ -451,7 +465,9 @@ t.__array__()
 
 :::
 
-### SQL + Python <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseSQLPython" role="button" aria-expanded="false" aria-controls="collapseSQLPython">Show</a>
+### SQL + Python 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseSQLPython" role="button" aria-expanded="false" aria-controls="collapseSQLPython">Show</a>
 
 ::: {#collapseSQLPython .collapse .multi-collapse}
 
@@ -649,7 +665,9 @@ con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
 
 :::
 
-## Backends <a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseBackends" role="button" aria-expanded="false" aria-controls="collapseBackends">Show</a>
+## Backends 
+
+<a class="btn btn-primary" data-bs-toggle="collapse" href="#collapseBackends" role="button" aria-expanded="false" aria-controls="collapseBackends">Show</a>
 
 ::: {#collapseBackends .collapse .multi-collapse}
 
