@@ -930,8 +930,12 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
 
         with self._use_schema(ident, current_db, current_schema):
             result = self._table_from_schema(name, schema=ibis_schema)
-        result.schema = schema
+        result.schema = self._get_schema_for_table(qualname=ident, schema=schema)
         return result
+
+    @abc.abstractmethod
+    def _get_schema_for_table(self, *, qualname: str, schema: str) -> str:
+        """Choose whether to prefix a table with its fully qualified path or schema."""
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
@@ -943,17 +947,3 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
         drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
         with self.begin() as con:
             con.exec_driver_sql(drop_stmt)
-
-
-@compiles(sa.Table, "snowflake")
-def compile_table(element, compiler, **kw):
-    """Override compilation of leaf tables.
-
-    The override is necessary because the dialect does not handle database
-    hierarchies and/or quoting properly.
-    """
-    schema = element.schema
-    name = compiler.preparer.quote_identifier(element.name)
-    if schema is not None:
-        return f"{schema}.{name}"
-    return name

@@ -805,6 +805,23 @@ $$""".format(
 
         return self.table(table)
 
+    def _get_schema_for_table(self, *, qualname: str, schema: str) -> str:
+        return qualname
+
+
+@compiles(sa.Table, "snowflake")
+def compile_table(element, compiler, **kw):
+    """Override compilation of leaf tables.
+
+    The override is necessary because snowflake-sqlalchemy does not handle
+    quoting databases and schemas correctly.
+    """
+    schema = element.schema
+    name = compiler.preparer.quote_identifier(element.name)
+    if schema is not None:
+        return f"{schema}.{name}"
+    return name
+
 
 @compiles(sa.sql.Join, "snowflake")
 def compile_join(element, compiler, **kw):
