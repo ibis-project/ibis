@@ -171,6 +171,7 @@ class Options(Config):
     context_adjustment: ContextAdjustment = ContextAdjustment()
     sql: SQL = SQL()
     clickhouse: Optional[Config] = None
+    chdb: Optional[Config] = None
     dask: Optional[Config] = None
     impala: Optional[Config] = None
     pandas: Optional[Config] = None

@@ -39,6 +39,7 @@ _IBIS_TO_SQLGLOT_DIALECT = {
     "impala": "hive",
     "pyspark": "spark",
     "polars": "postgres",
+    "chdb": "clickhouse",
 }
 
 

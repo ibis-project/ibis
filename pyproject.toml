@@ -220,6 +220,7 @@ deltalake = ["deltalake"]
 
 [tool.poetry.plugins."ibis.backends"]
 bigquery = "ibis.backends.bigquery"
+chdb = "ibis.backends.chdb"
 clickhouse = "ibis.backends.clickhouse"
 dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
@@ -358,6 +359,7 @@ markers = [
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",
+  "chdb: chDB tests",
 ]
 
 [tool.pydeps]
