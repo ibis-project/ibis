@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+import decimal
 import uuid
 
 import pytest
@@ -168,3 +169,8 @@ def test_timestamp_literal_without_tz():
     now_raw = datetime.datetime.utcnow()
     assert now_raw.tzinfo is None
     assert ibis.literal(now_raw).type().timezone is None
+
+
+def test_integer_as_decimal():
+    lit = ibis.literal(12, type="decimal")
+    assert lit.op().value == decimal.Decimal(12)

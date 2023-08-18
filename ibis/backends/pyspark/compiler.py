@@ -394,6 +394,8 @@ def compile_literal(t, op, *, raw=False, **kwargs):
         return F.struct(*(F.lit(val).alias(name) for name, val in value.items()))
     elif dtype.is_timestamp():
         return F.from_utc_timestamp(F.lit(str(value)), tz="UTC")
+    elif dtype.is_decimal():
+        return F.lit(value.normalize())
     else:
         return F.lit(value)
 

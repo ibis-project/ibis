@@ -17,6 +17,7 @@ import ibis.expr.datatypes as dt
 from ibis.common.collections import frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisTypeError, InputTypeError
+from ibis.common.numeric import normalize_decimal
 from ibis.common.temporal import (
     IntervalUnit,
     normalize_datetime,
@@ -242,6 +243,7 @@ class _WellKnownText(NamedTuple):
         return self.text
 
 
+# TODO(kszucs): should raise ValueError instead of TypeError
 def normalize(typ, value):
     """Ensure that the Python type underlying a literal resolves to a single type."""
 
@@ -288,10 +290,7 @@ def normalize(typ, value):
     elif dtype.is_string():
         return str(value)
     elif dtype.is_decimal():
-        out = decimal.Decimal(value)
-        if isinstance(value, int):
-            return out.scaleb(-dtype.scale)
-        return out
+        return normalize_decimal(value, precision=dtype.precision, scale=dtype.scale)
     elif dtype.is_uuid():
         return value if isinstance(value, uuid.UUID) else uuid.UUID(value)
     elif dtype.is_array():

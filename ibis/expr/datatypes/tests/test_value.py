@@ -370,3 +370,32 @@ def test_normalize_non_convertible_float(typename):
     typ = getattr(dt, typename)
     with pytest.raises(TypeError, match="Unable to normalize .+ to Float"):
         dt.normalize(typ, "not convertible")
+
+
+@pytest.mark.parametrize(
+    ("value", "dtype", "expected"),
+    [
+        (1, dt.Decimal(), "1"),
+        (1.0, dt.Decimal(), "1"),
+        (1.0, dt.Decimal(2, 1), "1.0"),
+        (1.0, dt.Decimal(2, 0), "1"),
+        (1.0, dt.Decimal(4, 3), "1.000"),
+        (12, dt.Decimal(6, 3), "12.000"),
+        (12.1234, dt.Decimal(7, 5), "12.12340"),
+        (True, dt.Decimal(4, 0), "1"),
+        (True, dt.Decimal(4, 3), "1.000"),
+        (False, dt.Decimal(4, 0), "0"),
+        (decimal.Decimal("1.1"), dt.Decimal(76, 38), "1.1" + "0" * 37),
+    ],
+)
+def test_normalize_decimal(value, dtype, expected):
+    assert str(dt.normalize(dtype, value)) == expected
+
+
+def test_normalize_decimal_invalid():
+    with pytest.raises(TypeError):
+        dt.normalize(dt.Decimal(4, 2), "invalid")
+    with pytest.raises(TypeError):
+        dt.normalize(dt.Decimal(4, 2), 1234)
+    with pytest.raises(TypeError):
+        dt.normalize(12.1234, dt.Decimal(6, 2))

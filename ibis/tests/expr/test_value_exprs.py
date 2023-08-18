@@ -130,7 +130,7 @@ multipolygon1 = [polygon1, polygon2]
         param(uuid.uuid4(), "uuid", id="uuid"),
         param(str(uuid.uuid4()), "uuid", id="uuid_str"),
         param(Decimal("234.234"), "decimal(6, 3)", id="decimal_native"),
-        param(234234, "decimal(6, 3)", id="decimal_int"),
+        param(234234, "decimal(9, 3)", id="decimal_int"),
     ],
 )
 def test_literal_with_explicit_type(value, expected_type):
@@ -143,13 +143,13 @@ def test_literal_with_explicit_type(value, expected_type):
     [
         # precision > scale
         (Decimal("234.234"), Decimal("234.234"), "decimal(6, 3)"),
-        (234234, Decimal("234.234"), "decimal(6, 3)"),
+        (234234, Decimal("234234.000"), "decimal(9, 3)"),
         # scale == 0
         (Decimal("234"), Decimal("234"), "decimal(6, 0)"),
         (234, Decimal("234"), "decimal(6, 0)"),
         # precision == scale
         (Decimal(".234"), Decimal(".234"), "decimal(3, 3)"),
-        (234, Decimal(".234"), "decimal(3, 3)"),
+        (234, Decimal("234.000"), "decimal(6, 3)"),
     ],
 )
 def test_normalize_decimal_literal(value, expected, dtype):
