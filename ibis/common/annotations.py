@@ -103,8 +103,18 @@ class Attribute(Annotation):
         """Annotation to mark a field with a default value computed by a callable."""
         return Attribute(default=fn)
 
-    def initialize(self, this):
-        """Compute the default value of the field."""
+    def initialize(self, this: AnyType) -> AnyType:
+        """Compute the default value of the field.
+
+        Parameters
+        ----------
+        this
+            The instance of the class the attribute is defined on.
+
+        Returns
+        -------
+        The default value for the field.
+        """
         if self._default is EMPTY:
             return EMPTY
         elif callable(self._default):
@@ -429,7 +439,6 @@ varkwargs = Argument.varkwargs
 
 
 # TODO(kszucs): try to cache pattern objects
-# TODO(kszucs): try a quicker curry implementation
 
 
 def annotated(_1=None, _2=None, _3=None, **kwargs):
