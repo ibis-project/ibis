@@ -44,7 +44,6 @@ jobs:
       matrix:
         python-version:
           - "3.9"
-          - "3.10" # For PyFlink, which does not support Python 3.11 yet
           - "3.11"
     steps:
       - name: checkout
@@ -305,6 +304,17 @@ jobs:
                 - oracle
               services:
                 - oracle
+          - python-version: "3.11"
+            backend:
+              name: flink
+              title: Flink
+              serial: true
+              extras:
+                - flink
+              additional_deps:
+                - apache-flink
+              even_more_deps:
+                - pandas~=1.5
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
