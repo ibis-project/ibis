@@ -108,6 +108,8 @@ def render_fields(fields, indent_level=0, limit_items=None):
 
 
 def render_schema(schema, indent_level=0, limit_items=None):
+    if not len(schema):
+        return util.indent("<empty schema>", spaces=indent_level * 2)
     if limit_items is None:
         limit_items = ibis.options.repr.table_columns
     return render(schema, indent_level, limit_items, key_separator="")
