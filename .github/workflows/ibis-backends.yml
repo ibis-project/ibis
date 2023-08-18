@@ -426,7 +426,7 @@ jobs:
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
         if: matrix.backend.serial && matrix.backend.name != 'impala'
-        run: just ci-check -m ${{ matrix.backend.name }} -v
+        run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
