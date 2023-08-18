@@ -42,6 +42,13 @@ def test_format_projection(alltypes, snapshot):
     snapshot.assert_match(result, "repr.txt")
 
 
+def test_format_table_with_empty_schema(snapshot):
+    # GH #6837
+    schema = ibis.table({}, name="t")
+    result = fmt(schema)
+    snapshot.assert_match(result, "repr.txt")
+
+
 def test_table_type_output(snapshot):
     foo = ibis.table(
         [

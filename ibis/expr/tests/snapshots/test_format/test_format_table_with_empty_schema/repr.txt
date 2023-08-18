@@ -1,0 +1,2 @@
+UnboundTable: t
+  <empty schema>
