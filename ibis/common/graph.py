@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Hashable, Iterable, Iterator, Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from collections.abc import Hashable, Iterable, Iterator, KeysView, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ibis.common.collections import frozendict
 from ibis.common.patterns import NoMatch, pattern
@@ -13,8 +13,10 @@ from ibis.util import experimental
 if TYPE_CHECKING:
     from typing_extensions import Self
 
+    N = TypeVar("N")
 
-def _flatten_collections(node: Any, filter: type) -> Iterator[Node]:
+
+def _flatten_collections(node: Any, filter: type[N]) -> Iterator[N]:
     """Flatten collections of nodes into a single iterator.
 
     We treat common collection types inherently traversable (e.g. list, tuple, dict)
@@ -61,7 +63,7 @@ def _flatten_collections(node: Any, filter: type) -> Iterator[Node]:
             yield from _flatten_collections(value, filter)
 
 
-def _recursive_get(obj: Any, dct: dict[Node, Any], filter: type) -> Any:
+def _recursive_get(obj: Any, dct: dict, filter: type) -> Any:
     """Recursively replace objects in a nested structure with values from a dict.
 
     Since we treat common collection types inherently traversable, so we need to
@@ -158,7 +160,7 @@ class Node(Hashable):
         A mapping of nodes to their results.
         """
         filter = filter or Node
-        results = {}
+        results: dict[Node, Any] = {}
         for node in Graph.from_bfs(self, filter=filter).toposort():
             # minor optimization to directly recurse into the children
             kwargs = {
@@ -337,7 +339,7 @@ class Graph(dict[Node, Sequence[Node]]):
     def __repr__(self):
         return f"{self.__class__.__name__}({super().__repr__()})"
 
-    def nodes(self) -> set[Node]:
+    def nodes(self) -> KeysView[Node]:
         """Return all unique nodes in the graph."""
         return self.keys()
 
@@ -351,7 +353,7 @@ class Graph(dict[Node, Sequence[Node]]):
         -------
         The inverted graph.
         """
-        result = {node: [] for node in self}
+        result: dict[Node, list[Node]] = {node: [] for node in self}
         for node, dependencies in self.items():
             for dependency in dependencies:
                 result[dependency].append(node)
@@ -441,7 +443,9 @@ halt = False
 
 
 def traverse(
-    fn: Callable[[Node], tuple[bool | Iterable, Any]], node: Iterable[Node], filter=Node
+    fn: Callable[[Node], tuple[bool | Iterable, Any]],
+    node: Iterable[Node] | Node,
+    filter=Node,
 ) -> Iterator[Any]:
     """Utility for generic expression tree traversal.
 
@@ -456,8 +460,8 @@ def traverse(
         Restrict initial traversal to this kind of node
     """
     args = reversed(node) if isinstance(node, Iterable) else [node]
-    todo = deque(arg for arg in args if isinstance(arg, filter))
-    seen = set()
+    todo: deque[Node] = deque(arg for arg in args if isinstance(arg, filter))
+    seen: set[Node] = set()
 
     while todo:
         node = todo.pop()

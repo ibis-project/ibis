@@ -57,6 +57,7 @@ from typing import Callable, Optional, Union
 
 from public import public
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
@@ -352,22 +353,31 @@ def matches(regex: str | re.Pattern) -> Selector:
 
 
 @public
-def any_of(*predicates: Predicate) -> Predicate:
+def any_of(*predicates: str | Predicate) -> Predicate:
     """Include columns satisfying any of `predicates`."""
-    return functools.reduce(operator.or_, predicates)
+    return functools.reduce(operator.or_, map(_to_selector, predicates))
 
 
 @public
-def all_of(*predicates: Predicate) -> Predicate:
+def all_of(*predicates: str | Predicate) -> Predicate:
     """Include columns satisfying all of `predicates`."""
-    return functools.reduce(operator.and_, predicates)
+    return functools.reduce(operator.and_, map(_to_selector, predicates))
 
 
 @public
-def c(*names: str) -> Predicate:
+def c(*names: str | ir.Column) -> Predicate:
     """Select specific column names."""
-    names = frozenset(names)
-    return where(lambda col: col.get_name() in names)
+    names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
+
+    def func(col: ir.Value) -> bool:
+        schema = col.op().table.schema
+        if extra_cols := (names - schema.keys()):
+            raise exc.IbisInputError(
+                f"Columns {extra_cols} are not present in {schema.names}"
+            )
+        return col.get_name() in names
+
+    return where(func)
 
 
 class Across(Selector):
@@ -654,6 +664,15 @@ def all() -> Predicate:
     return r[:]
 
 
-def _to_selector(obj: str | Selector) -> Selector:
+def _to_selector(
+    obj: str | Selector | ir.Column | Sequence[str | Selector | ir.Column],
+) -> Selector:
     """Convert an object to a `Selector`."""
-    return c(obj) if isinstance(obj, str) else obj
+    if isinstance(obj, Selector):
+        return obj
+    elif isinstance(obj, ir.Column):
+        return c(obj.get_name())
+    elif isinstance(obj, str):
+        return c(obj)
+    else:
+        return any_of(*obj)

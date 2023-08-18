@@ -157,8 +157,12 @@ def zscore(c):
             s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
         ),
         lambda t: t.select(s.across(s.numeric() & ~s.c("year"), zscore)),
+        lambda t: t.select(
+            s.across(s.numeric() & ~s.c(t.year), (_ - _.mean()) / _.std())
+        ),
+        lambda t: t.select(s.across(s.numeric() & ~s.c(t.year), zscore)),
     ],
-    ids=["deferred", "func"],
+    ids=["deferred", "func", "deferred-column-ref", "func-column-ref"],
 )
 def test_across_select(penguins, expr_func):
     expr = expr_func(penguins)
@@ -432,7 +436,42 @@ def test_all_of(penguins):
     assert expr.equals(expected)
 
 
+def test_all_of_string_list(penguins):
+    # a bit silly, but robust nonetheless
+    expr = penguins.select(s.all_of("year", "year"))
+    expected = penguins.select("year")
+    assert expr.equals(expected)
+
+
 def test_any_of(penguins):
     expr = penguins.select(s.any_of(s.startswith("bill"), s.c("year")))
     expected = penguins.select("bill_length_mm", "bill_depth_mm", "year")
     assert expr.equals(expected)
+
+
+def test_any_of_string_list(penguins):
+    expr = penguins.select(s.any_of("year", "body_mass_g", s.matches("length")))
+    expected = penguins.select(
+        "bill_length_mm", "flipper_length_mm", "body_mass_g", "year"
+    )
+    assert expr.equals(expected)
+
+
+def test_c_error_on_misspelled_column(penguins):
+    match = "Columns .+ are not present"
+
+    sel = s.c("inland")
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)
+
+    sel = s.any_of(s.c("inland"), s.c("island"))
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)
+
+    sel = s.any_of(s.c("island"), s.c("inland"))
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)
+
+    sel = s.any_of(s.c("island", "inland"))
+    with pytest.raises(exc.IbisInputError, match=match):
+        penguins.select(sel)

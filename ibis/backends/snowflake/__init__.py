@@ -30,8 +30,8 @@ from ibis.backends.base import CanCreateDatabase
 from ibis.backends.base.sql.alchemy import (
     AlchemyCanCreateSchema,
     AlchemyCompiler,
+    AlchemyCrossSchemaBackend,
     AlchemyExprTranslator,
-    BaseAlchemyBackend,
 )
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.snowflake.datatypes import SnowflakeType, parse
@@ -108,11 +108,12 @@ return longest.map((_, i) => {
 }
 
 
-class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
+class Backend(AlchemyCrossSchemaBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     name = "snowflake"
     compiler = SnowflakeCompiler
     supports_create_or_replace = True
     supports_python_udfs = True
+    use_stmt_prefix = "USE SCHEMA"
 
     _latest_udf_python_version = (3, 10)
 
@@ -400,43 +401,6 @@ $$""".format(
                 for t in cur.cursor.fetch_arrow_batches()
             )
 
-    @contextlib.contextmanager
-    def _use_schema(self, ident: str, fallback: str):
-        if ident == fallback:
-            yield
-        else:
-            try:
-                with self.begin() as c:
-                    c.exec_driver_sql(f"USE SCHEMA {ident}")
-                yield
-            finally:
-                with self.begin() as c:
-                    c.exec_driver_sql(f"USE SCHEMA {fallback}")
-
-    def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        database: str | None = None,
-        **_: Any,
-    ) -> sa.Table:
-        current_db = self.current_database
-        current_schema = self.current_schema
-        if schema is None:
-            schema = current_schema
-        *db, schema = schema.split(".")
-        db = "".join(db) or database or current_db
-        ident = ".".join(map(self._quote, filter(None, (db, schema))))
-
-        pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)}")
-        ibis_schema = ibis.schema(pairs)
-
-        fallback = f"{self._quote(current_db)}.{self._quote(current_schema)}"
-        with self._use_schema(ident, fallback=fallback):
-            result = self._table_from_schema(name, schema=ibis_schema)
-        result.schema = ident
-        return result
-
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         with self.begin() as con, con.connection.cursor() as cur:
             result = cur.describe(query)
@@ -470,18 +434,9 @@ $$""".format(
         import pyarrow.parquet as pq
 
         raw_name = op.name
-        table = self._quote(raw_name)
-
-        current_db = self.current_database
-        current_schema = self.current_schema
-        ident = f"{self._quote(current_db)}.{self._quote(current_schema)}.{table}"
 
         with self.begin() as con:
             if con.exec_driver_sql(f"SHOW TABLES LIKE '{raw_name}'").scalar() is None:
-                # 1. create a temporary stage for holding parquet files
-                stage = util.gen_name("stage")
-                con.exec_driver_sql(f"CREATE TEMP STAGE {stage}")
-
                 tmpdir = tempfile.TemporaryDirectory()
                 try:
                     path = os.path.join(tmpdir.name, f"{raw_name}.parquet")
@@ -490,43 +445,10 @@ $$""".format(
                     pq.write_table(
                         op.data.to_pyarrow(schema=op.schema), path, compression="zstd"
                     )
-
-                    # 2. copy the parquet file into the stage
-                    #
-                    # disable the automatic compression to gzip because we've
-                    # already compressed the data with zstd
-                    #
-                    # 99 is the limit on the number of threads use to upload data,
-                    # who knows why?
-                    con.exec_driver_sql(
-                        f"""
-                        PUT 'file://{path}' @{stage}
-                        PARALLEL = {min((os.cpu_count() or 2) // 2, 99)}
-                        AUTO_COMPRESS = FALSE
-                        """
-                    )
+                    self.read_parquet(path, table_name=raw_name)
                 finally:
                     with contextlib.suppress(Exception):
                         shutil.rmtree(tmpdir.name)
-
-                # 3. create a temporary table
-                schema = ", ".join(
-                    f"{self._quote(col)} {SnowflakeType.to_string(typ) + ' NOT NULL' * (not typ.nullable)}"
-                    for col, typ in op.schema.items()
-                )
-                con.exec_driver_sql(f"CREATE TEMP TABLE {ident} ({schema})")
-                # 4. copy the data into the table
-                columns = op.schema.names
-                column_names = ", ".join(map(self._quote, columns))
-                parquet_column_names = ", ".join(f"$1:{col}" for col in columns)
-                con.exec_driver_sql(
-                    f"""
-                    COPY INTO {ident} ({column_names})
-                    FROM (SELECT {parquet_column_names} FROM @{stage})
-                    FILE_FORMAT = (TYPE = PARQUET COMPRESSION = AUTO)
-                    PURGE = TRUE
-                    """
-                )
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
@@ -724,17 +646,10 @@ $$""".format(
 
             # create a temporary file format for CSV schema inference
             create_infer_fmt = (
-                f"CREATE TEMP FILE FORMAT {file_format}_infer TYPE = CSV PARSE_HEADER = {str(header).upper()}"
+                f"CREATE TEMP FILE FORMAT {file_format} TYPE = CSV PARSE_HEADER = {str(header).upper()}"
                 + options
             )
             con.exec_driver_sql(create_infer_fmt)
-
-            # create a temporary file format for loading
-            create_load_fmt = (
-                f"CREATE TEMP FILE FORMAT {file_format}_load TYPE = CSV SKIP_HEADER = {int(header)}"
-                + options
-            )
-            con.exec_driver_sql(create_load_fmt)
 
             # copy the local file to the stage
             con.exec_driver_sql(
@@ -751,7 +666,7 @@ $$""".format(
                     FROM TABLE(
                         INFER_SCHEMA(
                             LOCATION => '@{stage}',
-                            FILE_FORMAT => '{file_format}_infer'
+                            FILE_FORMAT => '{file_format}'
                         )
                     )
                 )
@@ -763,7 +678,7 @@ $$""".format(
                 f"""
                 COPY INTO "{table}"
                 FROM @{stage}
-                FILE_FORMAT = (FORMAT_NAME = {file_format}_load)
+                FILE_FORMAT = (TYPE = CSV SKIP_HEADER = {int(header)}{options})
                 """
             )
 
@@ -841,20 +756,80 @@ $$""".format(
 
         return self.table(table)
 
+    def _get_schema_for_table(self, *, qualname: str, schema: str) -> str:
+        return qualname
 
-@compiles(sa.sql.Join, "snowflake")
-def compile_join(element, compiler, **kw):
-    """Override compilation of LATERAL joins.
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Read a Parquet file into an ibis table, using Snowflake.
 
-    Snowflake doesn't support lateral joins with ON clauses as of
-    https://docs.snowflake.com/en/release-notes/bcr-bundles/2023_04/bcr-1057
-    even if they are trivial boolean literals.
-    """
-    result = compiler.visit_join(element, **kw)
+        Parameters
+        ----------
+        path
+            Path to a Parquet file
+        table_name
+            Optional table name
+        **kwargs
+            Additional keyword arguments. See
+            https://docs.snowflake.com/en/sql-reference/sql/create-file-format#type-parquet
+            for the full list of options.
 
-    if element.right._is_lateral:
-        return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE | re.DOTALL)
-    return result
+        Returns
+        -------
+        Table
+            An ibis table expression
+        """
+        import pyarrow.parquet as pq
+
+        from ibis.formats.pyarrow import PyArrowSchema
+
+        schema = PyArrowSchema.to_ibis(pq.read_metadata(path).schema.to_arrow_schema())
+
+        stage = util.gen_name("read_parquet_stage")
+        file_format = util.gen_name("read_parquet_format")
+        table = table_name or util.gen_name("read_parquet_snowflake")
+        qtable = self._quote(table)
+        threads = min((os.cpu_count() or 2) // 2, 99)
+
+        options = " " * bool(kwargs) + " ".join(
+            f"{name.upper()} = {value!r}" for name, value in kwargs.items()
+        )
+
+        # we can't infer the schema from the format alone because snowflake
+        # doesn't support logical timestamp types in parquet files
+        #
+        # see
+        # https://community.snowflake.com/s/article/How-to-load-logical-type-TIMESTAMP-data-from-Parquet-files-into-Snowflake
+        names_types = [
+            (name, SnowflakeType.to_string(typ), typ.nullable, typ.is_timestamp())
+            for name, typ in schema.items()
+        ]
+        snowflake_schema = ", ".join(
+            f"{self._quote(col)} {typ}{' NOT NULL' * (not nullable)}"
+            for col, typ, nullable, _ in names_types
+        )
+        cols = ", ".join(
+            f"$1:{col}{'::VARCHAR' * is_timestamp}::{typ}"
+            for col, typ, _, is_timestamp in names_types
+        )
+
+        with self.begin() as con:
+            con.exec_driver_sql(
+                f"CREATE TEMP FILE FORMAT {file_format} TYPE = PARQUET" + options
+            )
+            con.exec_driver_sql(
+                f"CREATE TEMP STAGE {stage} FILE_FORMAT = {file_format}"
+            )
+            con.exec_driver_sql(
+                f"PUT '{Path(path).absolute().as_uri()}' @{stage} PARALLEL = {threads:d}"
+            )
+            con.exec_driver_sql(f"CREATE TEMP TABLE {qtable} ({snowflake_schema})")
+            con.exec_driver_sql(
+                f"COPY INTO {qtable} FROM (SELECT {cols} FROM @{stage})"
+            )
+
+        return self.table(table)
 
 
 @compiles(sa.Table, "snowflake")
@@ -869,3 +844,18 @@ def compile_table(element, compiler, **kw):
     if schema is not None:
         return f"{schema}.{name}"
     return name
+
+
+@compiles(sa.sql.Join, "snowflake")
+def compile_join(element, compiler, **kw):
+    """Override compilation of LATERAL joins.
+
+    Snowflake doesn't support lateral joins with ON clauses as of
+    https://docs.snowflake.com/en/release-notes/bcr-bundles/2023_04/bcr-1057
+    even if they are trivial boolean literals.
+    """
+    result = compiler.visit_join(element, **kw)
+
+    if element.right._is_lateral:
+        return re.sub(r"^(.+) ON true$", r"\1", result, flags=re.IGNORECASE | re.DOTALL)
+    return result

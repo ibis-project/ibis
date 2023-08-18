@@ -211,3 +211,11 @@ def test_read_json(con, tmp_path, serialize, json_data):
 
     assert t.schema() == ibis.schema(dict(a="int", b="string", c="array<json>"))
     assert t.count().execute() == len(json_data)
+
+
+def test_read_parquet(con, data_dir):
+    path = data_dir / "parquet" / "functional_alltypes.parquet"
+
+    t = con.read_parquet(path)
+
+    assert t.timestamp_col.type().is_timestamp()

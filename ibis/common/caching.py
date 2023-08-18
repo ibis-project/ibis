@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 def memoize(func: Callable) -> Callable:
     """Memoize a function."""
-    cache = {}
+    cache: dict = {}
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
@@ -34,6 +34,7 @@ def memoize(func: Callable) -> Callable:
 
 class WeakCache(MutableMapping):
     __slots__ = ("_data",)
+    _data: dict
 
     def __init__(self):
         object.__setattr__(self, "_data", {})
@@ -95,11 +96,13 @@ class RefCountedCache:
         key: Callable[[Any], Any],
     ) -> None:
         self.cache = bidict()
-        self.refs = Counter()
+        # Somehow mypy needs a type hint here
+        self.refs: Counter = Counter()
         self.populate = populate
         self.lookup = lookup
         self.finalize = finalize
-        self.names = defaultdict(generate_name)
+        # Somehow mypy needs a type hint here
+        self.names: defaultdict = defaultdict(generate_name)
         self.key = key or (lambda x: x)
 
     def get(self, key, default=None):

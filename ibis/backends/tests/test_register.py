@@ -413,7 +413,6 @@ def test_register_garbage(con, monkeypatch):
         "mysql",
         "pandas",
         "postgres",
-        "snowflake",
         "sqlite",
         "trino",
     ]

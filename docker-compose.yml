@@ -117,7 +117,7 @@ services:
         - mariadb-admin
         - ping
       timeout: 5s
-    image: mariadb:10.11.4
+    image: mariadb:10.11.5
     ports:
       - 3306:3306
     networks:
@@ -189,7 +189,7 @@ services:
       - trino-postgres:/data
 
   hive-metastore-mariadb:
-    image: mariadb:10.11.4
+    image: mariadb:10.11.5
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
       MYSQL_USER: admin
@@ -236,7 +236,7 @@ services:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in postgresql; show schemas in hive; show schemas in memory'
       timeout: 30s
-    image: trinodb/trino:423
+    image: trinodb/trino:424
     ports:
       - 8080:8080
     networks:
@@ -268,7 +268,7 @@ services:
   druid-zookeeper:
     hostname: zookeeper
     container_name: zookeeper
-    image: zookeeper:3.8
+    image: zookeeper:3.9
     environment:
       - ZOO_MY_ID=1
     healthcheck:

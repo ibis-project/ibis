@@ -103,7 +103,7 @@ codespell = { version = ">=2.2.4,<3", extras = [
 ] }
 google-cloud-storage = ">=2.7.0,<3"
 ipython = ">=8.7.0,<9"
-poetry-dynamic-versioning = ">=0.18.0,<1"
+poetry-dynamic-versioning = ">=0.18.0,<2"
 pre-commit = ">=3.1,<4"
 pydeps = ">=1.12.7,<2"
 pyinstrument = ">=4.5.1,<5"

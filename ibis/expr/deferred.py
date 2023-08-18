@@ -174,6 +174,8 @@ class Deferred:
 
 class DeferredAttr(Deferred):
     __slots__ = ("_value", "_attr")
+    _value: Any
+    _attr: str
 
     def __init__(self, value: Any, attr: str) -> None:
         self._value = value
@@ -189,6 +191,8 @@ class DeferredAttr(Deferred):
 
 class DeferredItem(Deferred):
     __slots__ = ("_value", "_key")
+    _value: Any
+    _key: Any
 
     def __init__(self, value: Any, key: Any) -> None:
         self._value = value
@@ -204,6 +208,9 @@ class DeferredItem(Deferred):
 
 class DeferredCall(Deferred):
     __slots__ = ("_func", "_args", "_kwargs")
+    _func: Callable
+    _args: tuple[Any, ...]
+    _kwargs: dict[str, Any]
 
     def __init__(self, func: Any, *args: Any, **kwargs: Any) -> None:
         self._func = func
@@ -224,6 +231,9 @@ class DeferredCall(Deferred):
 
 class DeferredBinaryOp(Deferred):
     __slots__ = ("_symbol", "_left", "_right")
+    _symbol: str
+    _left: Any
+    _right: Any
 
     def __init__(self, symbol: str, left: Any, right: Any) -> None:
         self._symbol = symbol
@@ -241,6 +251,8 @@ class DeferredBinaryOp(Deferred):
 
 class DeferredUnaryOp(Deferred):
     __slots__ = ("_symbol", "_value")
+    _symbol: str
+    _value: Any
 
     def __init__(self, symbol: str, value: Any) -> None:
         self._symbol = symbol
