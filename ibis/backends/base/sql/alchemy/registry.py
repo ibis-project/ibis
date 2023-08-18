@@ -239,6 +239,8 @@ def _literal(_, op):
 
     if dtype.is_array():
         value = list(value)
+    elif dtype.is_decimal():
+        value = value.normalize()
 
     return sa.literal(value)
 
