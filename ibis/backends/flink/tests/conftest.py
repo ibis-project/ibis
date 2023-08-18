@@ -9,6 +9,7 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
+    supports_structs = False
     deps = ("pyflink",)
 
     @staticmethod
