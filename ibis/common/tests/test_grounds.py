@@ -865,7 +865,7 @@ def test_initialized_attribute_basics():
     op = Value(1)
     assert op.a == 1
     assert op.double_a == 2
-    assert len(Value.__attributes__) == 2
+    assert len(Value.__attributes__) == 1
     assert "double_a" in Value.__slots__
 
 
