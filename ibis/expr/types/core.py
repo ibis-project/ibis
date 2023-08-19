@@ -13,7 +13,7 @@ from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
 from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible, CoercionError
-from ibis.config import _default_backend, options
+from ibis.config import _default_backend, options as opts
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -46,6 +46,16 @@ class Expr(Immutable, Coercible):
     __slots__ = ("_arg",)
     _arg: ops.Node
 
+    def __rich_console__(self, console, options):
+        if not opts.interactive:
+            from rich.text import Text
+
+            return console.render(Text(self._repr()), options=options)
+        return self.__interactive_rich_console__(console, options)
+
+    def __interactive_rich_console__(self, console, options):
+        raise NotImplementedError()
+
     def __init__(self, arg: ops.Node) -> None:
         object.__setattr__(self, "_arg", arg)
 
@@ -62,7 +72,7 @@ class Expr(Immutable, Coercible):
             raise CoercionError("Unable to coerce value to an expression")
 
     def __repr__(self) -> str:
-        if not options.interactive:
+        if not opts.interactive:
             return self._repr()
 
         from ibis.expr.types.pretty import simple_console
@@ -132,7 +142,7 @@ class Expr(Immutable, Coercible):
         return self._arg.name
 
     def _repr_png_(self) -> bytes | None:
-        if options.interactive or not options.graphviz_repr:
+        if opts.interactive or not opts.graphviz_repr:
             return None
         try:
             import ibis.expr.visualize as viz

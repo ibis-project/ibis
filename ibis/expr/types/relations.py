@@ -295,13 +295,8 @@ class Table(Expr, _FixedTextJupyterMixin):
             cols.append(new_col)
         return self.select(*cols)
 
-    def __rich_console__(self, console, options):
-        from rich.text import Text
-
+    def __interactive_rich_console__(self, console, options):
         from ibis.expr.types.pretty import to_rich_table
-
-        if not ibis.options.interactive:
-            return console.render(Text(self._repr()), options=options)
 
         if console.is_jupyter:
             # Rich infers a console width in jupyter notebooks, but since
