@@ -407,6 +407,30 @@ class _FileIOHandler:
             f"{self.name} does not support direct registration of CSV data."
         )
 
+    def read_json(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a JSON file as a table in the current backend.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the JSON file.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the backend loading function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        raise NotImplementedError(
+            f"{self.name} does not support direct registration of JSON data."
+        )
+
     @util.experimental
     def to_parquet(
         self,

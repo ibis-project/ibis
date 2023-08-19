@@ -439,6 +439,105 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name, out_table_n
 
 
 @pytest.fixture(scope="module")
+def ft_data(data_dir):
+    pq = pytest.importorskip("pyarrow.parquet")
+    nrows = 5
+    table = pq.read_table(data_dir.joinpath("parquet", "functional_alltypes.parquet"))
+    return table.slice(0, nrows)
+
+
+@pytest.mark.notyet(
+    [
+        "bigquery",
+        "dask",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "sqlite",
+        "trino",
+    ]
+)
+def test_read_parquet_glob(con, tmp_path, ft_data):
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    nrows = len(ft_data)
+    ntables = 2
+    ext = "parquet"
+
+    fnames = [f"data{i}.{ext}" for i in range(ntables)]
+    for fname in fnames:
+        pq.write_table(ft_data, tmp_path / fname)
+
+    table = con.read_parquet(tmp_path / f"*.{ext}")
+
+    assert table.count().execute() == nrows * ntables
+
+
+@pytest.mark.notyet(
+    [
+        "bigquery",
+        "dask",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "sqlite",
+        "trino",
+    ]
+)
+def test_read_csv_glob(con, tmp_path, ft_data):
+    pc = pytest.importorskip("pyarrow.csv")
+
+    nrows = len(ft_data)
+    ntables = 2
+    ext = "csv"
+
+    fnames = [f"data{i}.{ext}" for i in range(ntables)]
+    for fname in fnames:
+        pc.write_csv(ft_data, tmp_path / fname)
+
+    table = con.read_csv(tmp_path / f"*.{ext}")
+
+    assert table.count().execute() == nrows * ntables
+
+
+@pytest.mark.notyet(
+    [
+        "bigquery",
+        "dask",
+        "impala",
+        "mssql",
+        "mysql",
+        "pandas",
+        "postgres",
+        "pyspark",
+        "sqlite",
+        "trino",
+    ]
+)
+def test_read_json_glob(con, tmp_path, ft_data):
+    nrows = len(ft_data)
+    ntables = 2
+    ext = "json"
+
+    df = ft_data.to_pandas()
+
+    for i in range(ntables):
+        df.to_json(
+            tmp_path / f"data{i}.{ext}", orient="records", lines=True, date_format="iso"
+        )
+
+    table = con.read_json(tmp_path / f"*.{ext}")
+
+    assert table.count().execute() == nrows * ntables
+
+
+@pytest.fixture(scope="module")
 def num_diamonds(data_dir):
     with open(data_dir / "csv" / "diamonds.csv") as f:
         # subtract 1 for the header
