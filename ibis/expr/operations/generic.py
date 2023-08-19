@@ -299,7 +299,7 @@ class SimpleCase(Value):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, **kwargs)
 
-    @attribute.default
+    @attribute
     def dtype(self):
         values = [*self.results, self.default]
         return rlz.highest_precedence_dtype(values)
@@ -315,12 +315,12 @@ class SearchedCase(Value):
         assert len(cases) == len(results)
         super().__init__(cases=cases, results=results, default=default)
 
-    @attribute.default
+    @attribute
     def shape(self):
         # TODO(kszucs): can be removed after making Sequence iterable
         return rlz.highest_precedence_shape(self.cases)
 
-    @attribute.default
+    @attribute
     def dtype(self):
         exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)

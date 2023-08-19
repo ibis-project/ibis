@@ -15,15 +15,15 @@ class MyObject(Concrete):
     c: tuple[int, ...]
     d: frozendict[str, int]
 
-    @attribute.default
+    @attribute
     def e(self):
         return self.a * 2
 
-    @attribute.default
+    @attribute
     def f(self):
         return self.b * 2
 
-    @attribute.default
+    @attribute
     def g(self):
         return self.c * 2
 

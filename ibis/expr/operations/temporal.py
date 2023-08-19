@@ -288,7 +288,7 @@ class TimestampDiff(Binary):
 
 @public
 class IntervalBinary(Binary):
-    @attribute.default
+    @attribute
     def dtype(self):
         interval_unit_args = [
             arg.dtype.unit for arg in (self.left, self.right) if arg.dtype.is_interval()
@@ -333,7 +333,7 @@ class IntervalFromInteger(Value):
 
     shape = rlz.shape_like("arg")
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Interval(self.unit)
 

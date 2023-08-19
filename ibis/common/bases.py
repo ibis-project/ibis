@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABCMeta, abstractmethod
+from collections.abc import Hashable
 from typing import TYPE_CHECKING, Any
 from weakref import WeakValueDictionary
 
@@ -154,6 +155,35 @@ class Comparable(Base):
 
 
 class Slotted(Base):
+    """A lightweight alternative to `ibis.common.grounds.Annotable`.
+
+    The class is mostly used to reduce boilerplate code.
+    """
+
+    __slots__ = ()
+
+    def __init__(self, **kwargs) -> None:
+        for name, value in kwargs.items():
+            object.__setattr__(self, name, value)
+
+    def __eq__(self, other) -> bool:
+        if self is other:
+            return True
+        if type(self) is not type(other):
+            return NotImplemented
+        return all(getattr(self, n) == getattr(other, n) for n in self.__slots__)
+
+    def __repr__(self):
+        fields = {k: getattr(self, k) for k in self.__slots__}
+        fieldstring = ", ".join(f"{k}={v!r}" for k, v in fields.items())
+        return f"{self.__class__.__name__}({fieldstring})"
+
+    def __rich_repr__(self):
+        for name in self.__slots__:
+            yield name, getattr(self, name)
+
+
+class FrozenSlotted(Slotted, Immutable, Hashable):
     """A lightweight alternative to `ibis.common.grounds.Concrete`.
 
     This class is used to create immutable dataclasses with slots and a precomputed
@@ -169,24 +199,5 @@ class Slotted(Base):
         hashvalue = hash(tuple(kwargs.values()))
         object.__setattr__(self, "__precomputed_hash__", hashvalue)
 
-    def __eq__(self, other) -> bool:
-        if self is other:
-            return True
-        if type(self) is not type(other):
-            return NotImplemented
-        return all(getattr(self, n) == getattr(other, n) for n in self.__slots__)
-
     def __hash__(self) -> int:
         return self.__precomputed_hash__
-
-    def __setattr__(self, name, value) -> None:
-        raise AttributeError("Can't set attributes on an immutable instance")
-
-    def __repr__(self):
-        fields = {k: getattr(self, k) for k in self.__slots__}
-        fieldstring = ", ".join(f"{k}={v!r}" for k, v in fields.items())
-        return f"{self.__class__.__name__}({fieldstring})"
-
-    def __rich_repr__(self):
-        for name in self.__slots__:
-            yield name, getattr(self, name)

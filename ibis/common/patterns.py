@@ -23,7 +23,8 @@ from typing import Any as AnyType
 import toolz
 from typing_extensions import GenericMeta, Self, get_args, get_origin
 
-from ibis.common.bases import Singleton, Slotted
+from ibis.common.bases import FrozenSlotted as Slotted
+from ibis.common.bases import Singleton
 from ibis.common.collections import FrozenDict, RewindableIterator, frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.typing import (

@@ -15,7 +15,7 @@ class Map(Value):
 
     shape = rlz.shape_like("args")
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Map(
             self.keys.dtype.value_type,
@@ -37,7 +37,7 @@ class MapGet(Value):
 
     shape = rlz.shape_like("args")
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.higher_precedence(self.default.dtype, self.arg.dtype.value_type)
 
@@ -55,7 +55,7 @@ class MapContains(Value):
 class MapKeys(Unary):
     arg: Value[dt.Map]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Array(self.arg.dtype.key_type)
 
@@ -64,7 +64,7 @@ class MapKeys(Unary):
 class MapValues(Unary):
     arg: Value[dt.Map]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Array(self.arg.dtype.value_type)
 

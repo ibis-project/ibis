@@ -62,7 +62,7 @@ def comparable(left, right):
 
 @public
 def dtype_like(name):
-    @attribute.default
+    @attribute
     def dtype(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
@@ -73,7 +73,7 @@ def dtype_like(name):
 
 @public
 def shape_like(name):
-    @attribute.default
+    @attribute
     def shape(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
@@ -143,7 +143,7 @@ def _promote_decimal_binop(args, op):
 
 @public
 def numeric_like(name, op):
-    @attribute.default
+    @attribute
     def dtype(self):
         args = getattr(self, name)
         dtypes = [arg.dtype for arg in args]

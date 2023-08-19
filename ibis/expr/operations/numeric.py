@@ -202,14 +202,14 @@ class BaseConvert(Value):
 class MathUnary(Unary):
     arg: SoftNumeric
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.higher_precedence(self.arg.dtype, dt.double)
 
 
 @public
 class ExpandingMathUnary(MathUnary):
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.higher_precedence(self.arg.dtype.largest, dt.double)
 
