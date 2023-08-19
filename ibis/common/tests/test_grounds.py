@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import copy
 import pickle
+import sys
 import weakref
 from collections.abc import Mapping, Sequence
 from typing import Callable, Generic, Optional, TypeVar, Union
@@ -29,6 +30,7 @@ from ibis.common.grounds import (
 )
 from ibis.common.patterns import (
     Any,
+    As,
     CoercedTo,
     Coercible,
     InstanceOf,
@@ -508,7 +510,7 @@ def test_variadic_argument_reordering():
         c = is_int
         args = varargs(is_int)
 
-    with pytest.raises(TypeError, match="missing a required argument: 'c'"):
+    with pytest.raises(ValidationError, match="missing a required argument: 'c'"):
         Test2(1, 2)
 
     a = Test2(1, 2, 3)
@@ -540,7 +542,7 @@ def test_variadic_keyword_argument_reordering():
         c = is_int
         options = varkwargs(is_int)
 
-    with pytest.raises(TypeError, match="missing a required argument: 'c'"):
+    with pytest.raises(ValidationError, match="missing a required argument: 'c'"):
         Test2(1, 2)
 
     a = Test2(1, 2, c=3)
@@ -802,7 +804,7 @@ def test_annotable_with_dict_slot():
 
 
 def test_annotable_attribute():
-    with pytest.raises(TypeError, match="too many positional arguments"):
+    with pytest.raises(ValidationError, match="too many positional arguments"):
         BaseValue(1, 2)
 
     v = BaseValue(1)
@@ -1052,3 +1054,24 @@ def test_annotable_with_optional_coercible_typehint():
     assert Example(None).value is None
     assert Example(1).value == 1
     assert isinstance(Example(1).value, MyInt)
+
+
+def test_error_message(snapshot):
+    class Example(Annotable):
+        a: int
+        b: int = 0
+        c: str = "foo"
+        d: Optional[float] = None
+        e: tuple[int, ...] = (1, 2, 3)
+        f: As[int] = 1
+
+    with pytest.raises(ValidationError) as exc_info:
+        Example("1", "2", "3", "4", "5", [])
+
+    # assert "Failed" in str(exc_info.value)
+
+    if sys.version_info >= (3, 11):
+        target = "error_message_py311.txt"
+    else:
+        target = "error_message.txt"
+    snapshot.assert_match(str(exc_info.value), target)

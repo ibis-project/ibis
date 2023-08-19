@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import sys
 from itertools import zip_longest
 from types import ModuleType  # noqa: F401
@@ -192,6 +193,19 @@ def evaluate_annotations(
         k: eval(v, globalns, localns) if isinstance(v, str) else v  # noqa: PGH001
         for k, v in annots.items()
     }
+
+
+def format_typehint(typ: Any) -> str:
+    if isinstance(typ, type):
+        return typ.__name__
+    elif isinstance(typ, TypeVar):
+        if typ.__bound__ is None:
+            return str(typ)
+        else:
+            return format_typehint(typ.__bound__)
+    else:
+        # remove the module name from the typehint, including generics
+        return re.sub(r"(\w+\.)+", "", str(typ))
 
 
 class DefaultTypeVars:

@@ -121,7 +121,7 @@ class DataType(Concrete, Coercible):
             return value
         try:
             return dtype(value)
-        except TypeError as e:
+        except (TypeError, RuntimeError) as e:
             raise CoercionError("Unable to coerce to a DataType") from e
 
     def __call__(self, **kwargs):
@@ -165,7 +165,12 @@ class DataType(Concrete, Coercible):
 
         if origin_type is None:
             if isinstance(typ, type):
-                if issubclass(typ, DataType):
+                if issubclass(typ, Parametric):
+                    raise TypeError(
+                        f"Cannot construct a parametric {typ.__name__} datatype based "
+                        "on the type itself"
+                    )
+                elif issubclass(typ, DataType):
                     return typ(nullable=nullable)
                 elif typ is type(None):
                     return null

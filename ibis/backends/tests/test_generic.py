@@ -482,7 +482,7 @@ def test_dropna_invalid(alltypes):
     ):
         alltypes.dropna(subset=["invalid_col"])
 
-    with pytest.raises(ValidationError, match=r"'invalid' doesn't match"):
+    with pytest.raises(ValidationError):
         alltypes.dropna(how="invalid")
 
 

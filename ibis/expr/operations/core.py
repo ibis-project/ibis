@@ -75,7 +75,7 @@ class Value(Node, Named, Coercible, DefaultTypeVars, Generic[T, S]):
 
         try:
             try:
-                dtype = dt.dtype(T)
+                dtype = dt.DataType.from_typehint(T)
             except TypeError:
                 dtype = dt.infer(value)
             return Literal(value, dtype=dtype)

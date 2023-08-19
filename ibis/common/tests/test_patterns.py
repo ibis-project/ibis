@@ -27,7 +27,6 @@ from ibis.common.collections import FrozenDict
 from ibis.common.graph import Node as GraphNode
 from ibis.common.patterns import (
     AllOf,
-    Always,
     Any,
     AnyOf,
     Between,
@@ -52,11 +51,11 @@ from ibis.common.patterns import (
     Length,
     ListOf,
     MappingOf,
-    Never,
     Node,
     NoMatch,
     NoneOf,
     Not,
+    Nothing,
     Object,
     Option,
     Pattern,
@@ -114,14 +113,8 @@ def test_immutability_of_patterns():
         p.types = [str]
 
 
-def test_always():
-    p = Always()
-    assert p.match(1, context={}) == 1
-    assert p.match(2, context={}) == 2
-
-
-def test_never():
-    p = Never()
+def test_nothing():
+    p = Nothing()
     assert p.match(1, context={}) is NoMatch
     assert p.match(2, context={}) is NoMatch
 
@@ -178,39 +171,78 @@ def test_capture():
 
 def test_option():
     p = Option(InstanceOf(str))
+    assert Option(str) == p
     assert p.match(None, context={}) is None
     assert p.match("foo", context={}) == "foo"
     assert p.match(1, context={}) is NoMatch
+    assert p.describe() == "either None or a str"
+    assert p.describe(plural=True) == "optional strs"
+
+    p = Option(int, default=-1)
+    assert p.match(None, context={}) == -1
+    assert p.match(1, context={}) == 1
+    assert p.match(1.0, context={}) is NoMatch
+    assert p.describe() == "either None or an int"
+    assert p.describe(plural=True) == "optional ints"
 
 
 def test_check():
-    p = Check(lambda x: x == 10)
+    def checker(x):
+        return x == 10
+
+    p = Check(checker)
     assert p.match(10, context={}) == 10
     assert p.match(11, context={}) is NoMatch
+    assert p.describe() == "a value that satisfies checker()"
+    assert p.describe(plural=True) == "values that satisfy checker()"
 
 
 def test_equal_to():
     p = EqualTo(10)
     assert p.match(10, context={}) == 10
     assert p.match(11, context={}) is NoMatch
+    assert p.describe() == "10"
+    assert p.describe(plural=True) == "10"
+
+    p = EqualTo("10")
+    assert p.match(10, context={}) is NoMatch
+    assert p.match("10", context={}) == "10"
+    assert p.describe() == "'10'"
+    assert p.describe(plural=True) == "'10'"
 
 
 def test_type_of():
     p = TypeOf(int)
     assert p.match(1, context={}) == 1
     assert p.match("foo", context={}) is NoMatch
+    assert p.describe() == "exactly an int"
+    assert p.describe(plural=True) == "exactly ints"
 
 
 def test_subclass_of():
     p = SubclassOf(Pattern)
     assert p.match(Double, context={}) == Double
     assert p.match(int, context={}) is NoMatch
+    assert p.describe() == "a subclass of Pattern"
+    assert p.describe(plural=True) == "subclasses of Pattern"
 
 
 def test_instance_of():
     p = InstanceOf(int)
     assert p.match(1, context={}) == 1
     assert p.match("foo", context={}) is NoMatch
+    assert p.describe() == "an int"
+    assert p.describe(plural=True) == "ints"
+
+    p = InstanceOf((int, str))
+    assert p.match(1, context={}) == 1
+    assert p.match("foo", context={}) == "foo"
+    assert p.match(1.0, context={}) is NoMatch
+    assert p.describe() == "an int or a str"
+    assert p.describe(plural=True) == "ints or strs"
+
+    p = InstanceOf((int, str, float))
+    assert p.describe() == "an int, a str or a float"
 
 
 def test_lazy_instance_of():
@@ -233,6 +265,7 @@ class My(Generic[T, S]):
 def test_generic_instance_of_with_covariant_typevar():
     p = Pattern.from_typehint(My[int, AnyType])
     assert p.match(My(1, 2, "3"), context={}) == My(1, 2, "3")
+    assert p.describe() == "a My[int, Any]"
 
     assert match(My[int, AnyType], v := My(1, 2, "3")) == v
     assert match(My[int, int], v := My(1, 2, "3")) == v
@@ -327,6 +360,8 @@ def test_generic_coerced_to():
     p = Pattern.from_typehint(Literal[String])
     r = p.match("foo", context={})
     assert r == Literal("foo", Scalar())
+    expected = "coercible to a <locals>.Literal[<locals>.String]"
+    assert p.describe() == expected
 
 
 def test_not():
@@ -336,6 +371,8 @@ def test_not():
     assert p == p1
     assert p.match(1, context={}) is NoMatch
     assert p.match("foo", context={}) == "foo"
+    assert p.describe() == "anything except an int"
+    assert p.describe(plural=True) == "anything except ints"
 
 
 def test_any_of():
@@ -346,6 +383,11 @@ def test_any_of():
     assert p.match(1, context={}) == 1
     assert p.match("foo", context={}) == "foo"
     assert p.match(1.0, context={}) is NoMatch
+    assert p.describe() == "an int or a str"
+    assert p.describe(plural=True) == "ints or strs"
+
+    p = AnyOf(InstanceOf(int), InstanceOf(str), InstanceOf(float))
+    assert p.describe() == "an int, a str or a float"
 
 
 def test_all_of():
@@ -358,6 +400,14 @@ def test_all_of():
     assert p == p1
     assert p.match(1, context={}) is NoMatch
     assert p.match(-1, context={}) == -1
+    assert p.match(1.0, context={}) is NoMatch
+    assert p.describe() == "an int then a value that satisfies negative()"
+
+    p = AllOf(InstanceOf(int), CoercedTo(float), CoercedTo(str))
+    assert p.match(1, context={}) == "1.0"
+    assert p.match(1.0, context={}) is NoMatch
+    assert p.match("1", context={}) is NoMatch
+    assert p.describe() == "an int, coercible to a float then coercible to a str"
 
 
 def test_none_of():
@@ -368,6 +418,7 @@ def test_none_of():
     assert p.match(1.0, context={}) == 1.0
     assert p.match(-1.0, context={}) is NoMatch
     assert p.match(1, context={}) is NoMatch
+    assert p.describe() == "anything except an int or a value that satisfies negative()"
 
 
 def test_length():
@@ -379,14 +430,17 @@ def test_length():
     p = Length(exactly=3)
     assert p.match([1, 2, 3], context={}) == [1, 2, 3]
     assert p.match([1, 2], context={}) is NoMatch
+    assert p.describe() == "with length exactly 3"
 
     p = Length(at_least=3)
     assert p.match([1, 2, 3], context={}) == [1, 2, 3]
     assert p.match([1, 2], context={}) is NoMatch
+    assert p.describe() == "with length at least 3"
 
     p = Length(at_most=3)
     assert p.match([1, 2, 3], context={}) == [1, 2, 3]
     assert p.match([1, 2, 3, 4], context={}) is NoMatch
+    assert p.describe() == "with length at most 3"
 
     p = Length(at_least=3, at_most=5)
     assert p.match([1, 2], context={}) is NoMatch
@@ -394,18 +448,31 @@ def test_length():
     assert p.match([1, 2, 3, 4], context={}) == [1, 2, 3, 4]
     assert p.match([1, 2, 3, 4, 5], context={}) == [1, 2, 3, 4, 5]
     assert p.match([1, 2, 3, 4, 5, 6], context={}) is NoMatch
+    assert p.describe() == "with length between 3 and 5"
 
 
 def test_contains():
     p = Contains(1)
     assert p.match([1, 2, 3], context={}) == [1, 2, 3]
     assert p.match([2, 3], context={}) is NoMatch
+    assert p.match({1, 2, 3}, context={}) == {1, 2, 3}
+    assert p.match({2, 3}, context={}) is NoMatch
+    assert p.describe() == "containing 1"
+    assert p.describe(plural=True) == "containing 1"
+
+    p = Contains("1")
+    assert p.match([1, 2, 3], context={}) is NoMatch
+    assert p.match(["1", 2, 3], context={}) == ["1", 2, 3]
+    assert p.match("123", context={}) == "123"
+    assert p.describe() == "containing '1'"
 
 
 def test_isin():
     p = IsIn([1, 2, 3])
     assert p.match(1, context={}) == 1
     assert p.match(4, context={}) is NoMatch
+    assert p.describe() == "in {1, 2, 3}"
+    assert p.describe(plural=True) == "in {1, 2, 3}"
 
 
 def test_sequence_of():
@@ -415,6 +482,8 @@ def test_sequence_of():
     assert p.match([1, 2], context={}) is NoMatch
     assert p.match(1, context={}) is NoMatch
     assert p.match("string", context={}) is NoMatch
+    assert p.describe() == "a list of strs"
+    assert p.describe(plural=True) == "lists of strs"
 
 
 def test_generic_sequence_of():
@@ -447,6 +516,8 @@ def test_list_of():
     assert p.match(["foo", "bar"], context={}) == ["foo", "bar"]
     assert p.match([1, 2], context={}) is NoMatch
     assert p.match(1, context={}) is NoMatch
+    assert p.describe() == "a list of strs"
+    assert p.describe(plural=True) == "lists of strs"
 
 
 def test_tuple_of():
@@ -454,12 +525,16 @@ def test_tuple_of():
     assert p.match(("foo", 1, 1.0), context={}) == ("foo", 1, 1.0)
     assert p.match(["foo", 1, 1.0], context={}) == ("foo", 1, 1.0)
     assert p.match(1, context={}) is NoMatch
+    assert p.describe() == "a tuple of (a str, an int, a float)"
+    assert p.describe(plural=True) == "tuples of (a str, an int, a float)"
 
     p = TupleOf(InstanceOf(str))
     assert p == SequenceOf(InstanceOf(str), tuple)
     assert p.match(("foo", "bar"), context={}) == ("foo", "bar")
     assert p.match(["foo"], context={}) == ("foo",)
     assert p.match(1, context={}) is NoMatch
+    assert p.describe() == "a tuple of strs"
+    assert p.describe(plural=True) == "tuples of strs"
 
 
 def test_mapping_of():
@@ -556,7 +631,7 @@ def test_callable_with():
     wrapped = p.match(func, context={})
     assert wrapped(1, "st") == "1st"
 
-    with pytest.raises(ValidationError, match="2 doesn't match InstanceOf"):
+    with pytest.raises(ValidationError):
         wrapped(1, 2)
 
     p = CallableWith([InstanceOf(int)])
@@ -959,7 +1034,7 @@ class PlusOneRaise(PlusOne):
         if isinstance(obj, cls):
             return obj
         else:
-            raise TypeError("raise on coercion")
+            raise ValueError("raise on coercion")
 
 
 class PlusOneChild(PlusOne):
@@ -983,7 +1058,7 @@ def test_pattern_coercible_bypass_coercion():
     # bypass coercion since it's already an instance of SomethingRaise
     assert s.match(PlusOneRaise(10), context={}) == PlusOneRaise(10)
     # but actually call __coerce__ if it's not an instance
-    with pytest.raises(TypeError, match="raise on coercion"):
+    with pytest.raises(ValueError, match="raise on coercion"):
         s.match(10, context={})
 
 

@@ -198,10 +198,10 @@ def test_too_many_or_too_few_args_not_allowed():
     class DummyOp(ops.Value):
         arg: ops.Value
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         DummyOp(1, 2)
 
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         DummyOp()
 
 

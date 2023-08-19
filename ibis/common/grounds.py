@@ -12,7 +12,6 @@ from typing import (
 from typing_extensions import Self, dataclass_transform
 
 from ibis.common.annotations import (
-    EMPTY,
     Annotation,
     Argument,
     Attribute,
@@ -115,14 +114,14 @@ class Annotable(Base, metaclass=AnnotableMeta):
 
     @classmethod
     def __create__(cls, *args: Any, **kwargs: Any) -> Self:
-        # construct the instance by passing the validated keyword arguments
-        kwargs = cls.__signature__.validate(*args, **kwargs)
+        # construct the instance by passing only validated keyword arguments
+        kwargs = cls.__signature__.validate(cls, args, kwargs)
         return super().__create__(**kwargs)
 
     @classmethod
     def __recreate__(cls, kwargs: Any) -> Self:
         # bypass signature binding by requiring keyword arguments only
-        kwargs = cls.__signature__.validate_nobind(**kwargs)
+        kwargs = cls.__signature__.validate_nobind(cls, kwargs)
         return super().__create__(**kwargs)
 
     def __init__(self, **kwargs: Any) -> None:
@@ -131,16 +130,17 @@ class Annotable(Base, metaclass=AnnotableMeta):
             object.__setattr__(self, name, value)
         # initialize the remaining attributes
         for name, field in self.__attributes__.items():
-            if (default := field.initialize(self)) is not EMPTY:
-                object.__setattr__(self, name, default)
+            if field.has_default():
+                object.__setattr__(self, name, field.get_default(name, self))
 
     def __setattr__(self, name, value) -> None:
         # first try to look up the argument then the attribute
         if param := self.__signature__.parameters.get(name):
-            value = param.annotation.validate(value, self)
-        elif field := self.__attributes__.get(name):
-            value = field.validate(value, self)
-        super().__setattr__(name, value)
+            value = param.annotation.validate(name, value, self)
+        # then try to look up the attribute
+        elif annot := self.__attributes__.get(name):
+            value = annot.validate(name, value, self)
+        return super().__setattr__(name, value)
 
     def __repr__(self) -> str:
         args = (f"{n}={getattr(self, n)!r}" for n in self.__argnames__)
@@ -204,8 +204,8 @@ class Concrete(Immutable, Comparable, Annotable):
 
         # initialize the remaining attributes
         for name, field in self.__attributes__.items():
-            if (default := field.initialize(self)) is not EMPTY:
-                object.__setattr__(self, name, default)
+            if field.has_default():
+                object.__setattr__(self, name, field.get_default(name, self))
 
     def __reduce__(self):
         # assuming immutability and idempotency of the __init__ method, we can

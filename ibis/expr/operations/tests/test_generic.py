@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import partial
 from typing import Union
 
 import pytest
@@ -7,6 +8,7 @@ import pytest
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.annotations import ValidationError
 from ibis.common.patterns import NoMatch, match
 
 
@@ -76,3 +78,22 @@ def test_coerced_to_interval_value():
 
     expected = ops.Literal(3661, dt.Interval("s"))
     assert match(ops.Value[dt.Interval], pd.Timedelta("1h 1m 1s")) == expected
+
+
+@pytest.mark.parametrize(
+    ("call", "error"),
+    [
+        (partial(ops.Literal, 1), "missing_a_required_argument"),
+        (partial(ops.Literal, 1, dt.int8, "foo"), "too_many_positional_arguments"),
+        (partial(ops.Literal, 1, dt.int8, name="foo"), "got_an_unexpected_keyword"),
+        (
+            partial(ops.Literal, 1, dt.int8, dtype=dt.int16),
+            "multiple_values_for_argument",
+        ),
+        (partial(ops.Literal, 1, 4), "invalid_dtype"),
+    ],
+)
+def test_error_message_when_constructing_literal(call, error, snapshot):
+    with pytest.raises(ValidationError) as exc:
+        call()
+    snapshot.assert_match(str(exc.value), f"{error}.txt")

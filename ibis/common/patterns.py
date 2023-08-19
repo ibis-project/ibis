@@ -12,7 +12,7 @@ from itertools import chain
 from typing import (
     Annotated,
     ForwardRef,
-    Generic,  # noqa: F401
+    Generic,
     Literal,
     Optional,
     TypeVar,
@@ -32,6 +32,7 @@ from ibis.common.typing import (
     Sentinel,
     UnionType,
     _ClassInfo,
+    format_typehint,
     get_bound_typevars,
     get_type_params,
 )
@@ -128,6 +129,8 @@ class Pattern(Hashable):
                 return LazyInstanceOf(annot)
             else:
                 raise TypeError(f"Cannot create validator from annotation {annot!r}")
+        elif origin is CoercedTo:
+            return CoercedTo(args[0])
         elif origin is Literal:
             # for literal types we check the value against the literal values
             return IsIn(args)
@@ -236,6 +239,9 @@ class Pattern(Hashable):
         Whether the value matches the pattern.
         """
         return self.match(value, context) is not NoMatch
+
+    def describe(self, plural=False):
+        return "matching {self!r}"
 
     @abstractmethod
     def __eq__(self, other: Pattern) -> bool:
@@ -504,20 +510,6 @@ class Call(Slotted, Builder):
 _ = Variable("_")
 
 
-class Always(Slotted, Singleton, Pattern):
-    """Pattern that matches everything."""
-
-    def match(self, value, context):
-        return value
-
-
-class Never(Slotted, Singleton, Pattern):
-    """Pattern that matches nothing."""
-
-    def match(self, value, context):
-        return NoMatch
-
-
 class Is(Slotted, Pattern):
     """Pattern that matches a value against a reference value.
 
@@ -545,6 +537,13 @@ class Any(Slotted, Singleton, Pattern):
 
 
 _any = Any()
+
+
+class Nothing(Slotted, Singleton, Pattern):
+    """Pattern that no values."""
+
+    def match(self, value, context):
+        return NoMatch
 
 
 class Capture(Slotted, Pattern):
@@ -617,6 +616,12 @@ class Check(Slotted, Pattern):
         assert callable(predicate)
         super().__init__(predicate=predicate)
 
+    def describe(self, plural=False):
+        if plural:
+            return f"values that satisfy {self.predicate.__name__}()"
+        else:
+            return f"a value that satisfies {self.predicate.__name__}()"
+
     def match(self, value, context):
         if self.predicate(value):
             return value
@@ -667,7 +672,7 @@ class Namespace:
     InstanceOf(type=<class 'ibis.expr.operations.numeric.Negate'>)
     >>>
     >>> ns.Negate(5)
-    Object(type=CoercedTo(target=<class 'ibis.expr.operations.numeric.Negate'>), args=(EqualTo(value=5),), kwargs=FrozenDict({}))
+    Object(type=CoercedTo(target=<class 'ibis.expr.operations.numeric.Negate'>, func=<bound method Value.__coerce__ of <class 'ibis.expr.operations.numeric.Negate'>>), args=(EqualTo(value=5),), kwargs=FrozenDict({}))
     """
 
     __slots__ = ("module", "pattern")
@@ -682,39 +687,6 @@ class Namespace:
 
     def __getattr__(self, name: str) -> Pattern:
         return self.pattern(getattr(self.module, name))
-
-
-class Apply(Slotted, Pattern):
-    """Pattern that applies a function to the value.
-
-    The function must accept a single argument.
-
-    Parameters
-    ----------
-    func
-        The function to apply.
-
-    Examples
-    --------
-    >>> from ibis.common.patterns import Apply, match
-    >>>
-    >>> match("a" @ Apply(lambda x: x + 1), 5)
-    6
-    """
-
-    __slots__ = ("func",)
-    func: Callable
-
-    def __init__(self, func):
-        assert callable(func)
-        super().__init__(func=func)
-
-    def match(self, value, context):
-        return self.func(value)
-
-    def __call__(self, *args, **kwargs):
-        """Convenience method to create a Call pattern."""
-        return Call(self.func, *args, **kwargs)
 
 
 class EqualTo(Slotted, Pattern):
@@ -738,6 +710,9 @@ class EqualTo(Slotted, Pattern):
         else:
             return NoMatch
 
+    def describe(self, plural=False):
+        return repr(self.value)
+
 
 class Option(Slotted, Pattern):
     """Pattern that matches `None` or a value that passes the inner validator.
@@ -755,6 +730,12 @@ class Option(Slotted, Pattern):
     def __init__(self, pat, default=None):
         super().__init__(pattern=pattern(pat), default=default)
 
+    def describe(self, plural=False):
+        if plural:
+            return f"optional {self.pattern.describe(plural=True)}"
+        else:
+            return f"either None or {self.pattern.describe(plural=False)}"
+
     def match(self, value, context):
         if value is None:
             if self.default is None:
@@ -765,6 +746,22 @@ class Option(Slotted, Pattern):
             return self.pattern.match(value, context)
 
 
+def _describe_type(typ, plural=False):
+    if isinstance(typ, tuple):
+        *rest, last = typ
+        rest = ", ".join(_describe_type(t, plural=plural) for t in rest)
+        last = _describe_type(last, plural=plural)
+        return f"{rest} or {last}" if rest else last
+
+    name = format_typehint(typ)
+    if plural:
+        return f"{name}s"
+    elif name[0].lower() in "aeiou":
+        return f"an {name}"
+    else:
+        return f"a {name}"
+
+
 class TypeOf(Slotted, Pattern):
     """Pattern that matches a value that is of a given type."""
 
@@ -773,6 +770,9 @@ class TypeOf(Slotted, Pattern):
 
     def __init__(self, typ):
         super().__init__(type=typ)
+
+    def describe(self, plural=False):
+        return f"exactly {_describe_type(self.type, plural=plural)}"
 
     def match(self, value, context):
         if type(value) is self.type:
@@ -795,6 +795,12 @@ class SubclassOf(Slotted, Pattern):
     def __init__(self, typ):
         super().__init__(type=typ)
 
+    def describe(self, plural=False):
+        if plural:
+            return f"subclasses of {self.type.__name__}"
+        else:
+            return f"a subclass of {self.type.__name__}"
+
     def match(self, value, context):
         if issubclass(value, self.type):
             return value
@@ -816,6 +822,9 @@ class InstanceOf(Slotted, Singleton, Pattern):
 
     def __init__(self, typ):
         super().__init__(type=typ)
+
+    def describe(self, plural=False):
+        return _describe_type(self.type, plural=plural)
 
     def match(self, value, context):
         if isinstance(value, self.type):
@@ -855,7 +864,7 @@ class GenericInstanceOf(Slotted, Pattern):
     >>> assert p.match(MyNumber(1), {}) is NoMatch
     """
 
-    __slots__ = ("origin", "fields")
+    __slots__ = ("type", "origin", "fields")
     origin: type
     fields: FrozenDict[str, Pattern]
 
@@ -871,7 +880,10 @@ class GenericInstanceOf(Slotted, Pattern):
                 )
             fields[attr] = Pattern.from_typehint(type_, allow_coercion=False)
 
-        super().__init__(origin=origin, fields=frozendict(fields))
+        super().__init__(type=typ, origin=origin, fields=frozendict(fields))
+
+    def describe(self, plural=False):
+        return _describe_type(self.type, plural=plural)
 
     def match(self, value, context):
         if not isinstance(value, self.origin):
@@ -913,8 +925,7 @@ class LazyInstanceOf(Slotted, Pattern):
             return NoMatch
 
 
-# TODO(kszucs): to support As[int] or CoercedTo[int] syntax
-class CoercedTo(Slotted, Pattern):
+class CoercedTo(Slotted, Pattern, Generic[T_co]):
     """Force a value to have a particular Python type.
 
     If a Coercible subclass is passed, the `__coerce__` method will be used to
@@ -927,23 +938,24 @@ class CoercedTo(Slotted, Pattern):
         The type to coerce to.
     """
 
-    __slots__ = ("target",)
-    target: type
-
-    def __new__(cls, target):
-        if issubclass(target, Coercible):
-            return super().__new__(cls)
-        else:
-            return Apply(target)
+    __slots__ = ("target", "func")
+    target: T_co
 
     def __init__(self, target):
-        assert isinstance(target, type)
-        super().__init__(target=target)
+        func = target.__coerce__ if issubclass(target, Coercible) else target
+        super().__init__(target=target, func=func)
+
+    def describe(self, plural=False):
+        target = _describe_type(self.target, plural=False)
+        if plural:
+            return f"coercibles to {target}"
+        else:
+            return f"coercible to {target}"
 
     def match(self, value, context):
         try:
-            value = self.target.__coerce__(value)
-        except CoercionError:
+            value = self.func(value)
+        except (TypeError, CoercionError):
             return NoMatch
 
         if isinstance(value, self.target):
@@ -1005,6 +1017,12 @@ class GenericCoercedTo(Slotted, Pattern):
         params = frozendict(get_type_params(target))
         super().__init__(origin=origin, params=params, checker=checker)
 
+    def describe(self, plural=False):
+        if plural:
+            return f"coercibles to {self.checker.describe(plural=False)}"
+        else:
+            return f"coercible to {self.checker.describe(plural=False)}"
+
     def match(self, value, context):
         try:
             value = self.origin.__coerce__(value, **self.params)
@@ -1032,6 +1050,12 @@ class Not(Slotted, Pattern):
     def __init__(self, inner):
         super().__init__(pattern=pattern(inner))
 
+    def describe(self, plural=False):
+        if plural:
+            return f"anything except {self.pattern.describe(plural=True)}"
+        else:
+            return f"anything except {self.pattern.describe(plural=False)}"
+
     def match(self, value, context):
         if self.pattern.match(value, context) is NoMatch:
             return value
@@ -1055,6 +1079,12 @@ class AnyOf(Slotted, Pattern):
     def __init__(self, *pats):
         patterns = tuple(map(pattern, pats))
         super().__init__(patterns=patterns)
+
+    def describe(self, plural=False):
+        *rest, last = self.patterns
+        rest = ", ".join(p.describe(plural=plural) for p in rest)
+        last = last.describe(plural=plural)
+        return f"{rest} or {last}" if rest else last
 
     def match(self, value, context):
         for pattern in self.patterns:
@@ -1081,6 +1111,12 @@ class AllOf(Slotted, Pattern):
     def __init__(self, *pats):
         patterns = tuple(map(pattern, pats))
         super().__init__(patterns=patterns)
+
+    def describe(self, plural=False):
+        *rest, last = self.patterns
+        rest = ", ".join(p.describe(plural=plural) for p in rest)
+        last = last.describe(plural=plural)
+        return f"{rest} then {last}" if rest else last
 
     def match(self, value, context):
         for pattern in self.patterns:
@@ -1121,6 +1157,19 @@ class Length(Slotted, Pattern):
             at_most = exactly
         super().__init__(at_least=at_least, at_most=at_most)
 
+    def describe(self, plural=False):
+        if self.at_least is not None and self.at_most is not None:
+            if self.at_least == self.at_most:
+                return f"with length exactly {self.at_least}"
+            else:
+                return f"with length between {self.at_least} and {self.at_most}"
+        elif self.at_least is not None:
+            return f"with length at least {self.at_least}"
+        elif self.at_most is not None:
+            return f"with length at most {self.at_most}"
+        else:
+            return "with any length"
+
     def match(self, value, context):
         length = len(value)
         if self.at_least is not None and length < self.at_least:
@@ -1145,6 +1194,9 @@ class Contains(Slotted, Pattern):
     def __init__(self, needle):
         super().__init__(needle=needle)
 
+    def describe(self, plural=False):
+        return f"containing {self.needle!r}"
+
     def match(self, value, context):
         if self.needle in value:
             return value
@@ -1166,6 +1218,9 @@ class IsIn(Slotted, Pattern):
 
     def __init__(self, haystack):
         super().__init__(haystack=frozenset(haystack))
+
+    def describe(self, plural=False):
+        return f"in {set(self.haystack)!r}"
 
     def match(self, value, context):
         if value in self.haystack:
@@ -1218,6 +1273,11 @@ class SequenceOf(Slotted, Pattern):
 
     def __init__(self, item, type=tuple):
         super().__init__(item=pattern(item), type=type)
+
+    def describe(self, plural=False):
+        typ = _describe_type(self.type, plural=plural)
+        item = self.item.describe(plural=True)
+        return f"{typ} of {item}"
 
     def match(self, values, context):
         if not is_iterable(values):
@@ -1325,6 +1385,13 @@ class TupleOf(Slotted, Pattern):
     def __init__(self, fields):
         fields = tuple(map(pattern, fields))
         super().__init__(fields=fields)
+
+    def describe(self, plural=False):
+        fields = ", ".join(f.describe(plural=False) for f in self.fields)
+        if plural:
+            return f"tuples of ({fields})"
+        else:
+            return f"a tuple of ({fields})"
 
     def match(self, values, context):
         if not is_iterable(values):

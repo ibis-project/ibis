@@ -1,0 +1,8 @@
+Example('1', '2', '3', '4', '5', []) has failed due to the following errors:
+  `a`: '1' is not an int
+  `b`: '2' is not an int
+  `d`: '4' is not either None or a float
+  `e`: '5' is not a tuple of ints
+  `f`: [] is not coercible to an int
+
+Expected signature: Example(a: int, b: int = 0, c: str = 'foo', d: Optional[float] = None, e: tuple = (1, 2, 3), f: CoercedTo[int] = 1)

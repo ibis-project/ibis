@@ -69,8 +69,6 @@ def test_dtype(spec, expected):
         (dt.Boolean, dt.boolean),
         (dt.Date, dt.date),
         (dt.Time, dt.time),
-        (dt.Decimal, dt.decimal),
-        (dt.Timestamp, dt.timestamp),
     ],
 )
 def test_dtype_from_classes(klass, expected):
@@ -145,8 +143,6 @@ class BarStruct:
     l: dt.Boolean  # noqa: E741
     m: dt.Date
     n: dt.Time
-    o: dt.Timestamp
-    q: dt.Decimal
     r: dt.Array[dt.Int16]
     s: dt.Map[dt.String, dt.Int16]
 
@@ -167,8 +163,6 @@ bar_struct = dt.Struct(
         "l": dt.boolean,
         "m": dt.date,
         "n": dt.time,
-        "o": dt.timestamp,
-        "q": dt.decimal,
         "r": dt.Array(dt.int16),
         "s": dt.Map(dt.string, dt.int16),
     }
