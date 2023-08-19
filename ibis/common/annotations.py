@@ -25,6 +25,9 @@ VAR_KEYWORD = inspect.Parameter.VAR_KEYWORD
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
 
 
+_any = Any()
+
+
 class ValidationError(Exception):
     ...
 
@@ -38,9 +41,6 @@ class Annotation(Slotted, Immutable):
     __slots__ = ()
 
     def validate(self, arg, context=None):
-        if self.pattern is None:
-            return arg
-
         result = self.pattern.match(arg, context)
         if result is NoMatch:
             raise ValidationError(f"{arg!r} doesn't match {self.pattern!r}")
@@ -66,10 +66,8 @@ class Attribute(Annotation):
     pattern: Pattern
     default: AnyType
 
-    def __init__(self, pattern: Pattern | None = None, default: AnyType = EMPTY):
-        if pattern is not None:
-            pattern = ensure_pattern(pattern)
-        super().__init__(pattern=pattern, default=default)
+    def __init__(self, pattern: Pattern = _any, default: AnyType = EMPTY):
+        super().__init__(pattern=ensure_pattern(pattern), default=default)
 
     def initialize(self, this: AnyType) -> AnyType:
         """Compute the default value of the field.
@@ -120,17 +118,20 @@ class Argument(Annotation):
 
     def __init__(
         self,
-        pattern: Pattern | None = None,
+        pattern: Pattern = _any,
         default: AnyType = EMPTY,
         typehint: type | None = None,
         kind: int = POSITIONAL_OR_KEYWORD,
     ):
-        if pattern is not None:
-            pattern = ensure_pattern(pattern)
-        super().__init__(pattern=pattern, default=default, typehint=typehint, kind=kind)
+        super().__init__(
+            pattern=ensure_pattern(pattern),
+            default=default,
+            typehint=typehint,
+            kind=kind,
+        )
 
 
-def attribute(pattern=None, default=EMPTY):
+def attribute(pattern=_any, default=EMPTY):
     """Annotation to mark a field in a class."""
     if default is EMPTY and isinstance(pattern, (types.FunctionType, types.MethodType)):
         return Attribute(default=pattern)
@@ -138,12 +139,12 @@ def attribute(pattern=None, default=EMPTY):
         return Attribute(pattern, default=default)
 
 
-def argument(pattern=None, default=EMPTY, typehint=None):
+def argument(pattern=_any, default=EMPTY, typehint=None):
     """Annotation type for all fields which should be passed as arguments."""
     return Argument(pattern, default=default, typehint=typehint)
 
 
-def optional(pattern=None, default=None, typehint=None):
+def optional(pattern=_any, default=None, typehint=None):
     """Annotation to allow and treat `None` values as missing arguments."""
     if pattern is None:
         pattern = Option(Any(), default=default)
@@ -152,16 +153,14 @@ def optional(pattern=None, default=None, typehint=None):
     return Argument(pattern, default=None, typehint=typehint)
 
 
-def varargs(pattern=None, typehint=None):
+def varargs(pattern=_any, typehint=None):
     """Annotation to mark a variable length positional arguments."""
-    pattern = None if pattern is None else TupleOf(pattern)
-    return Argument(pattern, kind=VAR_POSITIONAL, typehint=typehint)
+    return Argument(TupleOf(pattern), kind=VAR_POSITIONAL, typehint=typehint)
 
 
-def varkwargs(pattern=None, typehint=None):
+def varkwargs(pattern=_any, typehint=None):
     """Annotation to mark a variable length keyword arguments."""
-    pattern = None if pattern is None else FrozenDictOf(Any(), pattern)
-    return Argument(pattern, kind=VAR_KEYWORD, typehint=typehint)
+    return Argument(FrozenDictOf(_any, pattern), kind=VAR_KEYWORD, typehint=typehint)
 
 
 class Parameter(inspect.Parameter):
@@ -286,7 +285,7 @@ class Signature(inspect.Signature):
             elif typehint is not None:
                 pattern = Pattern.from_typehint(typehint)
             else:
-                pattern = None
+                pattern = _any
 
             if kind is VAR_POSITIONAL:
                 annot = varargs(pattern, typehint=typehint)
