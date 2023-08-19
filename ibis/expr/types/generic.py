@@ -925,11 +925,7 @@ class Value(Expr):
 
 @public
 class Scalar(Value):
-    def __rich_console__(self, console, options):
-        from rich.text import Text
-
-        if not ibis.options.interactive:
-            return console.render(Text(self._repr()), options=options)
+    def __interactive_rich_console__(self, console, options):
         return console.render(repr(self.execute()), options=options)
 
     def __pyarrow_result__(self, table: pa.Table) -> pa.Scalar:
@@ -995,7 +991,7 @@ class Column(Value, _FixedTextJupyterMixin):
     def __array__(self, dtype=None):
         return self.execute().__array__(dtype)
 
-    def __rich_console__(self, console, options):
+    def __interactive_rich_console__(self, console, options):
         named = self.name(self.op().name)
         projection = named.as_table()
         return console.render(projection, options=options)
