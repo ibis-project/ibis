@@ -56,7 +56,7 @@ def test_window_builder_rows():
 
     assert w0.start is None
     assert w0.end is None
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         w0.rows(5)
 
     w1 = w0.rows(5, 10)
@@ -104,7 +104,7 @@ def test_window_builder_range():
 
     assert w0.start is None
     assert w0.end is None
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         w0.range(5)
 
     w1 = w0.range(5, 10)

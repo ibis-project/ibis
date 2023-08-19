@@ -1860,7 +1860,7 @@ def test_pivot_wider():
 def test_invalid_deferred():
     t = ibis.table(dict(value="int", lagged_value="int"), name="t")
 
-    with pytest.raises(ValidationError, match="doesn't match"):
+    with pytest.raises(ValidationError):
         ibis.greatest(t.value, ibis._.lagged_value)
 
 

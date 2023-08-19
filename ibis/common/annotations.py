@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 import types
+from typing import TYPE_CHECKING, Callable
 from typing import Any as AnyType
 
 from ibis.common.bases import Immutable, Slotted
@@ -15,7 +16,10 @@ from ibis.common.patterns import (
     TupleOf,
 )
 from ibis.common.patterns import pattern as ensure_pattern
-from ibis.common.typing import get_type_hints
+from ibis.common.typing import format_typehint, get_type_hints
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY
@@ -29,7 +33,65 @@ _any = Any()
 
 
 class ValidationError(Exception):
-    ...
+    __slots__ = ()
+
+
+class AttributeValidationError(ValidationError):
+    __slots__ = ("name", "value", "pattern")
+
+    def __init__(self, name: str, value: AnyType, pattern: Pattern):
+        self.name = name
+        self.value = value
+        self.pattern = pattern
+
+    def __str__(self):
+        return f"Failed to validate attribute `{self.name}`: {self.value!r} is not {self.pattern.describe()}"
+
+
+class ReturnValidationError(ValidationError):
+    __slots__ = ("func", "value", "pattern")
+
+    def __init__(self, func: Callable, value: AnyType, pattern: Pattern):
+        self.func = func
+        self.value = value
+        self.pattern = pattern
+
+    def __str__(self):
+        return f"Failed to validate return value of `{self.func.__name__}`: {self.value!r} is not {self.pattern.describe()}"
+
+
+class SignatureValidationError(ValidationError):
+    __slots__ = ("msg", "sig", "func", "args", "kwargs", "errors")
+
+    def __init__(
+        self,
+        msg: str,
+        sig: Signature,
+        func: Callable,
+        args: tuple[AnyType, ...],
+        kwargs: dict[str, AnyType],
+        errors: Sequence[tuple[str, AnyType, Pattern]] = (),
+    ):
+        self.msg = msg
+        self.sig = sig
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+        self.errors = errors
+
+    def __str__(self):
+        args = tuple(repr(arg) for arg in self.args)
+        args += tuple(f"{k}={v!r}" for k, v in self.kwargs.items())
+        call = f"{self.func.__name__}({', '.join(args)})"
+
+        errors = ""
+        for name, value, pattern in self.errors:
+            errors += f"\n  `{name}`: {value!r} is not {pattern.describe()}"
+
+        sig = f"{self.func.__name__}{self.sig}"
+        cause = str(self.__cause__) if self.__cause__ else ""
+
+        return self.msg.format(sig=sig, call=call, cause=cause, errors=errors)
 
 
 class Annotation(Slotted, Immutable):
@@ -40,11 +102,29 @@ class Annotation(Slotted, Immutable):
 
     __slots__ = ()
 
-    def validate(self, arg, context=None):
-        result = self.pattern.match(arg, context)
-        if result is NoMatch:
-            raise ValidationError(f"{arg!r} doesn't match {self.pattern!r}")
+    def validate(self, name: str, value: AnyType, this: AnyType) -> AnyType:
+        """Validate the field.
 
+        Parameters
+        ----------
+        name
+            The name of the attribute.
+        value
+            The value of the attribute.
+        this
+            The instance of the class the attribute is defined on.
+
+        Returns
+        -------
+        The validated value for the field.
+        """
+        result = self.pattern.match(value, this)
+        if result is NoMatch:
+            raise AttributeValidationError(
+                name=name,
+                value=value,
+                pattern=self.pattern,
+            )
         return result
 
 
@@ -69,11 +149,22 @@ class Attribute(Annotation):
     def __init__(self, pattern: Pattern = _any, default: AnyType = EMPTY):
         super().__init__(pattern=ensure_pattern(pattern), default=default)
 
-    def initialize(self, this: AnyType) -> AnyType:
-        """Compute the default value of the field.
+    def has_default(self):
+        """Check if the field has a default value.
+
+        Returns
+        -------
+        bool
+        """
+        return self.default is not EMPTY
+
+    def get_default(self, name: str, this: AnyType) -> AnyType:
+        """Get the default value of the field.
 
         Parameters
         ----------
+        name
+            The name of the attribute.
         this
             The instance of the class the attribute is defined on.
 
@@ -81,13 +172,11 @@ class Attribute(Annotation):
         -------
         The default value for the field.
         """
-        if self.default is EMPTY:
-            return EMPTY
-        elif callable(self.default):
+        if callable(self.default):
             value = self.default(this)
         else:
             value = self.default
-        return self.validate(value, this)
+        return self.validate(name, value, this)
 
     def __call__(self, default):
         """Needed to support the decorator syntax."""
@@ -179,6 +268,26 @@ class Parameter(inspect.Parameter):
             default=annotation.default,
             annotation=annotation,
         )
+
+    def __str__(self):
+        formatted = self._name
+
+        if self._annotation is not EMPTY:
+            typehint = format_typehint(self._annotation.typehint)
+            formatted = f"{formatted}: {typehint}"
+
+        if self._default is not EMPTY:
+            if self._annotation is not EMPTY:
+                formatted = f"{formatted} = {self._default!r}"
+            else:
+                formatted = f"{formatted}={self._default!r}"
+
+        if self._kind == VAR_POSITIONAL:
+            formatted = "*" + formatted
+        elif self._kind == VAR_KEYWORD:
+            formatted = "**" + formatted
+
+        return formatted
 
 
 class Signature(inspect.Signature):
@@ -339,11 +448,13 @@ class Signature(inspect.Signature):
                 raise TypeError(f"unsupported parameter kind {param.kind}")
         return tuple(args), kwargs
 
-    def validate(self, *args, **kwargs):
+    def validate(self, func, args, kwargs):
         """Validate the arguments against the signature.
 
         Parameters
         ----------
+        func : Callable
+            Callable to validate the arguments for.
         args : tuple
             Positional arguments.
         kwargs : dict
@@ -354,39 +465,77 @@ class Signature(inspect.Signature):
         validated : dict
             Dictionary of validated arguments.
         """
-        # bind the signature to the passed arguments and apply the patterns
-        # before passing the arguments, so self.__init__() receives already
-        # validated arguments as keywords
-        bound = self.bind(*args, **kwargs)
-        bound.apply_defaults()
+        try:
+            bound = self.bind(*args, **kwargs)
+            bound.apply_defaults()
+        except TypeError as err:
+            raise SignatureValidationError(
+                "{call} {cause}\n\nExpected signature: {sig}",
+                sig=self,
+                func=func,
+                args=args,
+                kwargs=kwargs,
+            ) from err
 
-        this = {}
+        this, errors = {}, []
         for name, value in bound.arguments.items():
             param = self.parameters[name]
-            # TODO(kszucs): provide more error context on failure
-            this[name] = param.annotation.validate(value, this)
+            pattern = param.annotation.pattern
+
+            result = pattern.match(value, this)
+            if result is NoMatch:
+                errors.append((name, value, pattern))
+            else:
+                this[name] = result
+
+        if errors:
+            raise SignatureValidationError(
+                "{call} has failed due to the following errors:{errors}\n\nExpected signature: {sig}",
+                sig=self,
+                func=func,
+                args=args,
+                kwargs=kwargs,
+                errors=errors,
+            )
 
         return this
 
-    def validate_nobind(self, **kwargs):
+    def validate_nobind(self, func, kwargs):
         """Validate the arguments against the signature without binding."""
-        this = {}
+        this, errors = {}, []
         for name, param in self.parameters.items():
             value = kwargs.get(name, param.default)
             if value is EMPTY:
                 raise TypeError(f"missing required argument `{name!r}`")
-            this[name] = param.annotation.validate(value, kwargs)
+
+            pattern = param.annotation.pattern
+            result = pattern.match(value, this)
+            if result is NoMatch:
+                errors.append((name, value, pattern))
+            else:
+                this[name] = result
+
+        if errors:
+            raise SignatureValidationError(
+                "{call} has failed due to the following errors:{errors}\n\nExpected signature: {sig}",
+                sig=self,
+                func=func,
+                args=(),
+                kwargs=kwargs,
+                errors=errors,
+            )
+
         return this
 
-    def validate_return(self, value, context):
+    def validate_return(self, func, value):
         """Validate the return value of a function.
 
         Parameters
         ----------
+        func : Callable
+            Callable to validate the return value for.
         value : Any
             Return value of the function.
-        context : dict
-            Context dictionary.
 
         Returns
         -------
@@ -396,9 +545,13 @@ class Signature(inspect.Signature):
         if self.return_annotation is EMPTY:
             return value
 
-        result = self.return_annotation.match(value, context)
+        result = self.return_annotation.match(value, {})
         if result is NoMatch:
-            raise ValidationError(f"{value!r} doesn't match {self}")
+            raise ReturnValidationError(
+                func=func,
+                value=value,
+                pattern=self.return_annotation,
+            )
 
         return result
 
@@ -476,13 +629,13 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
     @functools.wraps(func)
     def wrapped(*args, **kwargs):
         # 1. Validate the passed arguments
-        values = sig.validate(*args, **kwargs)
+        values = sig.validate(func, args, kwargs)
         # 2. Reconstruction of the original arguments
         args, kwargs = sig.unbind(values)
         # 3. Call the function with the validated arguments
         result = func(*args, **kwargs)
         # 4. Validate the return value
-        return sig.validate_return(result, {})
+        return sig.validate_return(func, result)
 
     wrapped.__signature__ = sig
 
