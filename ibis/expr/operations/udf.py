@@ -127,13 +127,9 @@ class ScalarUDFBuilder:
                 raise exc.MissingParameterAnnotationError(fn, name)
 
             arg = rlz.ValueOf(dt.dtype(raw_dtype))
-            if (default := param.default) is EMPTY:
-                fields[name] = Argument.required(pattern=arg)
-            else:
-                fields[name] = Argument.default(pattern=arg, default=default)
+            fields[name] = Argument(pattern=arg, default=param.default)
 
         fields["dtype"] = dt.dtype(return_annotation)
-
         fields["__input_type__"] = input_type
         # can't be just `fn` otherwise `fn` is assumed to be a method
         fields["__func__"] = property(fget=lambda _, fn=fn: fn)

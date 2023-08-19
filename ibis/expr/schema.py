@@ -53,15 +53,15 @@ class Schema(Concrete, Coercible, MapSet):
             return value
         return schema(value)
 
-    @attribute.default
+    @attribute
     def names(self):
         return tuple(self.keys())
 
-    @attribute.default
+    @attribute
     def types(self):
         return tuple(self.values())
 
-    @attribute.default
+    @attribute
     def _name_locs(self) -> dict[str, int]:
         return {v: i for i, v in enumerate(self.names)}
 

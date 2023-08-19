@@ -139,7 +139,7 @@ class StringJoin(Value):
 
     dtype = dt.string
 
-    @attribute.default
+    @attribute
     def shape(self):
         return rlz.highest_precedence_shape(self.arg)
 

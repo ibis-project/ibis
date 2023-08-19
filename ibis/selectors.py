@@ -600,7 +600,7 @@ class HashableSlice(Concrete, Coercible):
     def step(self):
         return self.slice.step
 
-    @attribute.default
+    @attribute
     def __precomputed_hash__(self) -> int:
         return hash((self.__class__, (self.start, self.stop, self.step)))
 

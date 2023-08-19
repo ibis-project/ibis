@@ -12,6 +12,9 @@ from ibis.common.annotations import (
     Signature,
     ValidationError,
     annotated,
+    argument,
+    attribute,
+    optional,
 )
 from ibis.common.patterns import (
     Any,
@@ -26,16 +29,66 @@ from ibis.common.patterns import (
 is_int = InstanceOf(int)
 
 
+def test_argument_factory():
+    a = argument(is_int, default=1, typehint=int)
+    assert a == Argument(is_int, default=1, typehint=int)
+
+    a = argument(is_int, default=1)
+    assert a == Argument(is_int, default=1)
+
+    a = argument(is_int)
+    assert a == Argument(is_int)
+
+
+def test_attribute_factory():
+    a = attribute(is_int, default=1)
+    assert a == Attribute(is_int, default=1)
+
+    a = attribute(is_int)
+    assert a == Attribute(is_int)
+
+    a = attribute(default=2)
+    assert a == Attribute(default=2)
+
+    a = attribute(int, default=2)
+    assert a == Attribute(int, default=2)
+
+
+def test_annotations_are_immutable():
+    a = argument(is_int, default=1)
+    with pytest.raises(AttributeError):
+        a.pattern = Any()
+    with pytest.raises(AttributeError):
+        a.default = 2
+
+    a = attribute(is_int, default=1)
+    with pytest.raises(AttributeError):
+        a.pattern = Any()
+    with pytest.raises(AttributeError):
+        a.default = 2
+
+
+def test_annotations_are_not_hashable():
+    # in order to use the with mutable defaults
+    a = argument(is_int, default=1)
+    with pytest.raises(TypeError, match="unhashable type: 'Argument'"):
+        hash(a)
+
+    a = attribute(is_int, default=1)
+    with pytest.raises(TypeError, match="unhashable type: 'Attribute'"):
+        hash(a)
+
+
 def test_argument_repr():
     argument = Argument(is_int, typehint=int, default=None)
     assert repr(argument) == (
         "Argument(pattern=InstanceOf(type=<class 'int'>), default=None, "
-        "typehint=<class 'int'>)"
+        "typehint=<class 'int'>, kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>)"
     )
 
 
 def test_default_argument():
-    annotation = Argument.default(pattern=lambda x, context: int(x), default=3)
+    annotation = Argument(pattern=lambda x, context: int(x), default=3)
     assert annotation.validate(1) == 1
     with pytest.raises(TypeError):
         annotation.validate(None)
@@ -46,43 +99,36 @@ def test_default_argument():
     [(None, None), (0, 0), ("default", "default")],
 )
 def test_optional_argument(default, expected):
-    annotation = Argument.optional(default=default)
+    annotation = optional(default=default)
     assert annotation.validate(None) == expected
 
 
 @pytest.mark.parametrize(
     ("argument", "value", "expected"),
     [
-        (Argument.optional(Any(), default=None), None, None),
-        (Argument.optional(Any(), default=None), "three", "three"),
-        (Argument.optional(Any(), default=1), None, 1),
-        (Argument.optional(CoercedTo(int), default=11), None, 11),
-        (Argument.optional(CoercedTo(int), default=None), None, None),
-        (Argument.optional(CoercedTo(int), default=None), 18, 18),
-        (Argument.optional(CoercedTo(str), default=None), "caracal", "caracal"),
+        (optional(Any(), default=None), None, None),
+        (optional(Any(), default=None), "three", "three"),
+        (optional(Any(), default=1), None, 1),
+        (optional(CoercedTo(int), default=11), None, 11),
+        (optional(CoercedTo(int), default=None), None, None),
+        (optional(CoercedTo(int), default=None), 18, 18),
+        (optional(CoercedTo(str), default=None), "caracal", "caracal"),
     ],
 )
 def test_valid_optional(argument, value, expected):
     assert argument.validate(value) == expected
 
 
-@pytest.mark.parametrize(
-    ("arg", "value", "expected"),
-    [
-        (Argument.optional(is_int, default=""), None, TypeError),
-        (Argument.optional(is_int), "lynx", TypeError),
-    ],
-)
-def test_invalid_optional_argument(arg, value, expected):
-    with pytest.raises(expected):
-        arg(value)
+def test_invalid_optional_argument():
+    with pytest.raises(ValidationError):
+        optional(is_int).validate("lynx")
 
 
 def test_initialized():
     class Foo:
         a = 10
 
-    field = Attribute.default(lambda self: self.a + 10)
+    field = Attribute(default=lambda self: self.a + 10)
     assert field == field
 
     assert field.initialize(Foo) == 20
@@ -96,7 +142,7 @@ def test_parameter():
     def fn(x, this):
         return int(x) + this["other"]
 
-    annot = Argument.required(fn)
+    annot = argument(fn)
     p = Parameter("test", annotation=annot)
 
     assert p.annotation is annot
@@ -106,9 +152,9 @@ def test_parameter():
     with pytest.raises(TypeError):
         p.annotation.validate({}, valid=inspect.Parameter.empty)
 
-    ofn = Argument.optional(fn)
+    ofn = optional(fn)
     op = Parameter("test", annotation=ofn)
-    assert op.annotation._pattern == Option(fn, default=None)
+    assert op.annotation.pattern == Option(fn, default=None)
     assert op.default is None
     assert op.annotation.validate(None, {"other": 1}) is None
 
@@ -123,8 +169,8 @@ def test_signature():
     def add_other(x, this):
         return int(x) + this["other"]
 
-    other = Parameter("other", annotation=Argument.required(to_int))
-    this = Parameter("this", annotation=Argument.required(add_other))
+    other = Parameter("other", annotation=Argument(to_int))
+    this = Parameter("this", annotation=Argument(add_other))
 
     sig = Signature(parameters=[other, this])
     assert sig.validate(1, 2) == {"other": 1, "this": 3}
@@ -155,9 +201,9 @@ def test_signature_from_callable_with_varargs():
     assert sig.validate(2, 3) == {"a": 2, "b": 3, "args": ()}
     assert sig.validate(2, 3, 4) == {"a": 2, "b": 3, "args": (4,)}
     assert sig.validate(2, 3, 4, 5) == {"a": 2, "b": 3, "args": (4, 5)}
-    assert sig.parameters["a"].annotation._typehint is int
-    assert sig.parameters["b"].annotation._typehint is int
-    assert sig.parameters["args"].annotation._typehint is int
+    assert sig.parameters["a"].annotation.typehint is int
+    assert sig.parameters["b"].annotation.typehint is int
+    assert sig.parameters["args"].annotation.typehint is int
 
     with pytest.raises(ValidationError):
         sig.validate(2, 3, 4, "5")
@@ -210,8 +256,8 @@ def test_signature_unbind():
     def add_other(x, this):
         return int(x) + this["other"]
 
-    other = Parameter("other", annotation=Argument.required(to_int))
-    this = Parameter("this", annotation=Argument.required(add_other))
+    other = Parameter("other", annotation=Argument(to_int))
+    this = Parameter("this", annotation=Argument(add_other))
 
     sig = Signature(parameters=[other, this])
     params = sig.validate(1, this=2)
@@ -221,14 +267,14 @@ def test_signature_unbind():
     assert kwargs == {}
 
 
-a = Parameter("a", annotation=Argument.required(CoercedTo(float)))
-b = Parameter("b", annotation=Argument.required(CoercedTo(float)))
-c = Parameter("c", annotation=Argument.default(default=0, pattern=CoercedTo(float)))
+a = Parameter("a", annotation=Argument(CoercedTo(float)))
+b = Parameter("b", annotation=Argument(CoercedTo(float)))
+c = Parameter("c", annotation=Argument(CoercedTo(float), default=0))
 d = Parameter(
     "d",
-    annotation=Argument.default(default=tuple(), pattern=TupleOf(CoercedTo(float))),
+    annotation=Argument(TupleOf(CoercedTo(float)), default=()),
 )
-e = Parameter("e", annotation=Argument.optional(pattern=CoercedTo(float)))
+e = Parameter("e", annotation=Argument(Option(CoercedTo(float)), default=None))
 sig = Signature(parameters=[a, b, c, d, e])
 
 

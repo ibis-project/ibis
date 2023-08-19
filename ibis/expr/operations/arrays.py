@@ -18,7 +18,7 @@ class ArrayColumn(Value):
 
     shape = ds.columnar
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Array(rlz.highest_precedence_dtype(self.cols))
 
@@ -48,7 +48,7 @@ class ArrayIndex(Value):
 
     shape = rlz.shape_like("args")
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return self.arg.dtype.value_type
 
@@ -57,11 +57,11 @@ class ArrayIndex(Value):
 class ArrayConcat(Value):
     arg: VarTuple[Value[dt.Array]]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Array(dt.highest_precedence(arg.dtype.value_type for arg in self.arg))
 
-    @attribute.default
+    @attribute
     def shape(self):
         return rlz.highest_precedence_shape(self.arg)
 
@@ -78,12 +78,12 @@ class ArrayRepeat(Value):
 class ArrayApply(Value):
     arg: Value[dt.Array]
 
-    @attribute.default
+    @attribute
     def parameter(self):
         (name,) = self.func.__signature__.parameters.keys()
         return name
 
-    @attribute.default
+    @attribute
     def result(self):
         arg = Argument(
             name=self.parameter,
@@ -92,7 +92,7 @@ class ArrayApply(Value):
         )
         return self.func(arg)
 
-    @attribute.default
+    @attribute
     def shape(self):
         return self.arg.shape
 
@@ -101,7 +101,7 @@ class ArrayApply(Value):
 class ArrayMap(ArrayApply):
     func: Callable[[Value], Value]
 
-    @attribute.default
+    @attribute
     def dtype(self) -> dt.DataType:
         return dt.Array(self.result.dtype)
 
@@ -119,7 +119,7 @@ class Unnest(Value):
 
     shape = ds.columnar
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return self.arg.dtype.value_type
 
@@ -191,7 +191,7 @@ class ArrayZip(Value):
 
     shape = rlz.shape_like("arg")
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Array(
             dt.Struct(

@@ -9,13 +9,13 @@ from typing import Callable, Generic, Optional, TypeVar, Union
 import pytest
 
 from ibis.common.annotations import (
+    Argument,
     Parameter,
     Signature,
     ValidationError,
     argument,
     attribute,
     optional,
-    required,
     varargs,
     varkwargs,
 )
@@ -76,7 +76,7 @@ class BetweenWithCalculated(Concrete):
     lower = optional(is_int, default=0)
     upper = optional(is_int, default=None)
 
-    @attribute.default
+    @attribute
     def calculated(self):
         return self.value + self.lower
 
@@ -418,22 +418,22 @@ def test_signature_inheritance():
 
     assert IntBinop.__signature__ == Signature(
         [
-            Parameter("left", annotation=required(is_int)),
-            Parameter("right", annotation=required(is_int)),
+            Parameter("left", annotation=Argument(is_int)),
+            Parameter("right", annotation=Argument(is_int)),
         ]
     )
 
     assert FloatAddRhs.__signature__ == Signature(
         [
-            Parameter("left", annotation=required(is_int)),
-            Parameter("right", annotation=required(is_float)),
+            Parameter("left", annotation=Argument(is_int)),
+            Parameter("right", annotation=Argument(is_float)),
         ]
     )
 
     assert FloatAddClip.__signature__ == Signature(
         [
-            Parameter("left", annotation=required(is_float)),
-            Parameter("right", annotation=required(is_float)),
+            Parameter("left", annotation=Argument(is_float)),
+            Parameter("right", annotation=Argument(is_float)),
             Parameter("clip_lower", annotation=optional(is_int, default=0)),
             Parameter("clip_upper", annotation=optional(is_int, default=10)),
         ]
@@ -441,8 +441,8 @@ def test_signature_inheritance():
 
     assert IntAddClip.__signature__ == Signature(
         [
-            Parameter("left", annotation=required(is_int)),
-            Parameter("right", annotation=required(is_int)),
+            Parameter("left", annotation=Argument(is_int)),
+            Parameter("right", annotation=Argument(is_int)),
             Parameter("clip_lower", annotation=optional(is_int, default=0)),
             Parameter("clip_upper", annotation=optional(is_int, default=10)),
         ]
@@ -629,9 +629,9 @@ def test_dont_copy_default_argument():
 def test_copy_mutable_with_default_attribute():
     class Test(Annotable):
         a = attribute(InstanceOf(dict), default={})
-        b = argument(InstanceOf(str))
+        b = argument(InstanceOf(str))  # required argument
 
-        @attribute.default
+        @attribute
         def c(self):
             return self.b.upper()
 
@@ -777,7 +777,7 @@ class BaseValue(Annotable):
 
 
 class Value2(BaseValue):
-    @attribute.default
+    @attribute
     def k(self):
         return 3
 
@@ -858,7 +858,7 @@ def test_initialized_attribute_basics():
     class Value(Annotable):
         a = is_int
 
-        @attribute.default
+        @attribute
         def double_a(self):
             return 2 * self.a
 
@@ -867,6 +867,27 @@ def test_initialized_attribute_basics():
     assert op.double_a == 2
     assert len(Value.__attributes__) == 1
     assert "double_a" in Value.__slots__
+
+
+def test_initialized_attribute_with_validation():
+    class Value(Annotable):
+        a = is_int
+
+        @attribute(int)
+        def double_a(self):
+            return 2 * self.a
+
+    op = Value(1)
+    assert op.a == 1
+    assert op.double_a == 2
+    assert len(Value.__attributes__) == 1
+    assert "double_a" in Value.__slots__
+
+    op.double_a = 3
+    assert op.double_a == 3
+
+    with pytest.raises(ValidationError):
+        op.double_a = "foo"
 
 
 def test_initialized_attribute_mixed_with_classvar():
@@ -880,7 +901,7 @@ def test_initialized_attribute_mixed_with_classvar():
         shape = "scalar"
 
     class Variadic(Value):
-        @attribute.default
+        @attribute
         def shape(self):
             if self.arg > 10:
                 return "columnar"

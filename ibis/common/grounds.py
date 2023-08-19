@@ -57,16 +57,16 @@ class AnnotableMeta(BaseMeta):
                 continue
             pattern = Pattern.from_typehint(typehint)
             if name in dct:
-                dct[name] = Argument.default(dct[name], pattern, typehint=typehint)
+                dct[name] = Argument(pattern, default=dct[name], typehint=typehint)
             else:
-                dct[name] = Argument.required(pattern, typehint=typehint)
+                dct[name] = Argument(pattern, typehint=typehint)
 
         # collect the newly defined annotations
         slots = list(dct.pop("__slots__", []))
         namespace, arguments = {}, {}
         for name, attrib in dct.items():
             if isinstance(attrib, Pattern):
-                arguments[name] = Argument.required(attrib)
+                arguments[name] = Argument(attrib)
                 slots.append(name)
             elif isinstance(attrib, Argument):
                 arguments[name] = attrib
