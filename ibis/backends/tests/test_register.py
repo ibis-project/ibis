@@ -509,7 +509,9 @@ def test_read_csv_glob(con, tmp_path, ft_data):
 @pytest.mark.notyet(
     [
         "bigquery",
+        "clickhouse",
         "dask",
+        "datafusion",
         "impala",
         "mssql",
         "mysql",
