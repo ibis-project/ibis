@@ -33,6 +33,8 @@ from ibis.backends.pyspark.compiler import PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import PySparkType
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     import pandas as pd
     import pyarrow as pa
 
@@ -678,6 +680,38 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
             source_list, inferSchema=inferSchema, header=header, **kwargs
         )
         table_name = table_name or util.gen_name("read_csv")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def read_json(
+        self,
+        source_list: str | Sequence[str],
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a JSON file as a table in the current database.
+
+        Parameters
+        ----------
+        source_list
+            The data source(s). May be a path to a file or directory of JSON files, or an
+            iterable of JSON files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.json.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        source_list = normalize_filenames(source_list)
+        spark_df = self._session.read.json(source_list, **kwargs)
+        table_name = table_name or util.gen_name("read_json")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)

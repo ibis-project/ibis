@@ -455,7 +455,6 @@ def ft_data(data_dir):
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "sqlite",
         "trino",
     ]
@@ -485,7 +484,6 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "sqlite",
         "trino",
     ]
@@ -517,7 +515,6 @@ def test_read_csv_glob(con, tmp_path, ft_data):
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "sqlite",
         "trino",
     ]
