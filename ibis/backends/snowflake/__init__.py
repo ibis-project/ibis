@@ -615,7 +615,7 @@ $$""".format(
         Parameters
         ----------
         path
-            Path to the CSV file
+            A string or Path to a CSV file; globs are supported
         table_name
             Optional name for the table; if not passed, a random name will be generated
         kwargs
@@ -711,7 +711,7 @@ $$""".format(
         Parameters
         ----------
         path
-            File or list of files
+            A string or Path to a JSON file; globs are supported
         table_name
             Optional table name
         kwargs
@@ -786,7 +786,7 @@ $$""".format(
         Parameters
         ----------
         path
-            Path to a Parquet file
+            A string or Path to a Parquet file; globs are supported
         table_name
             Optional table name
         kwargs

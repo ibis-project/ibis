@@ -144,7 +144,7 @@ class Backend(BaseBackend):
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
-        """Register a CSV file as a table in the current database.
+        """Register a CSV file as a table.
 
         Parameters
         ----------
@@ -170,6 +170,37 @@ class Backend(BaseBackend):
         except pl.exceptions.ComputeError:
             # handles compressed csvs
             self._add_table(table_name, pl.read_csv(path, **kwargs))
+        return self.table(table_name)
+
+    def read_json(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a JSON file as a table.
+
+        Parameters
+        ----------
+        path
+            A string or Path to a JSON file; globs are supported
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to Polars loading function.
+            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_ndjson.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        path = normalize_filename(path)
+        table_name = table_name or gen_name("read_json")
+        try:
+            self._add_table(table_name, pl.scan_ndjson(path, **kwargs))
+        except pl.exceptions.ComputeError:
+            # handles compressed json files
+            self._add_table(table_name, pl.read_ndjson(path, **kwargs))
         return self.table(table_name)
 
     def read_delta(
