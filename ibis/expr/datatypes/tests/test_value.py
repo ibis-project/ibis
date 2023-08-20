@@ -342,3 +342,31 @@ def test_normalize_json():
 
     with pytest.raises(TypeError):
         dt.normalize(dt.json, "invalid")
+
+
+def test_normalize_none_with_non_nullable_type():
+    typ = dt.Int64(nullable=False)
+    with pytest.raises(TypeError, match="Cannot convert `None` to non-nullable type"):
+        dt.normalize(typ, None)
+
+
+def test_normalize_non_convertible_boolean():
+    typ = dt.boolean
+    value = np.array([1, 2, 3])
+    with pytest.raises(TypeError, match="Unable to normalize .+ to Boolean"):
+        dt.normalize(typ, value)
+
+
+@pytest.mark.parametrize("bits", [8, 16, 32, 64])
+@pytest.mark.parametrize("kind", ["uint", "int"])
+def test_normalize_non_convertible_int(kind, bits):
+    typ = getattr(dt, f"{kind}{bits:d}")
+    with pytest.raises(TypeError, match="Unable to normalize .+ to U?Int"):
+        dt.normalize(typ, "not convertible")
+
+
+@pytest.mark.parametrize("typename", ["float32", "float64"])
+def test_normalize_non_convertible_float(typename):
+    typ = getattr(dt, typename)
+    with pytest.raises(TypeError, match="Unable to normalize .+ to Float"):
+        dt.normalize(typ, "not convertible")
