@@ -163,6 +163,7 @@ $$ {defn["source"]} $$"""
         password: str | None = None,
         authenticator: str | None = None,
         connect_args: Mapping[str, Any] | None = None,
+        create_object_udfs: bool = True,
         **kwargs: Any,
     ):
         """Connect to Snowflake.
@@ -189,9 +190,12 @@ $$ {defn["source"]} $$"""
             database connection is made. This means that
             `ibis.snowflake.connect(...)` can succeed, while subsequent API
             calls fail if the authentication fails for any reason.
+        create_object_udfs
+            Enable object UDF extensions defined by ibis on the first
+            connection to the database.
         connect_args
             Additional arguments passed to the SQLAlchemy engine creation call.
-        kwargs:
+        kwargs
             Additional arguments passed to the SQLAlchemy URL constructor.
             See https://docs.snowflake.com/en/developer-guide/python-connector/sqlalchemy#additional-connection-parameters
             for more details
@@ -241,23 +245,24 @@ $$ {defn["source"]} $$"""
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
             """Register UDFs on a `"connect"` event."""
-            dialect = engine.dialect
-            quote = dialect.preparer(dialect).quote_identifier
-            with dbapi_connection.cursor() as cur:
-                database, schema = cur.execute(
-                    "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
-                ).fetchone()
-                try:
-                    cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
-                    cur.execute(f"USE SCHEMA {quote(database)}.{quote(schema)}")
-                    for name, defn in _SNOWFLAKE_MAP_UDFS.items():
-                        cur.execute(self._make_udf(name, defn))
-                except Exception as e:  # noqa: BLE001
-                    warnings.warn(
-                        f"Unable to create map UDFs, some functionality will not work: {e}"
-                    )
+            if create_object_udfs:
+                with dbapi_connection.cursor() as cur:
+                    database, schema = cur.execute(
+                        "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
+                    ).fetchone()
+                    try:
+                        cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
+                        # snowflake activates a database on creation, so reset
+                        # it back to the original database and schema
+                        cur.execute(f"USE SCHEMA {database}.{schema}")
+                        for name, defn in _SNOWFLAKE_MAP_UDFS.items():
+                            cur.execute(self._make_udf(name, defn))
+                    except Exception as e:  # noqa: BLE001
+                        warnings.warn(
+                            f"Unable to create map UDFs, some functionality will not work: {e}"
+                        )
 
-        res = super().do_connect(engine)
+        super().do_connect(engine)
 
         def normalize_name(name):
             if name is None:
@@ -270,7 +275,6 @@ $$ {defn["source"]} $$"""
                 return name
 
         self.con.dialect.normalize_name = normalize_name
-        return res
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__
