@@ -1483,11 +1483,6 @@ def test_group_concat_over_window(backend, con):
 
 
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
-@pytest.mark.notyet(
-    ["polars"],
-    reason="polars panics",
-    raises=BaseException,  # BaseException is required to catch the panic
-)
 def test_value_counts_on_expr(backend, alltypes, df):
     expr = alltypes.bigint_col.add(1).value_counts()
     columns = expr.columns
