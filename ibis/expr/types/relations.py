@@ -1925,6 +1925,11 @@ class Table(Expr, _FixedTextJupyterMixin):
             # no-op if nothing to be dropped
             return self
 
+        fields = tuple(
+            field.resolve(self) if isinstance(field, Deferred) else field
+            for field in fields
+        )
+
         if missing_fields := {f for f in fields if isinstance(f, str)}.difference(
             self.schema().names
         ):
