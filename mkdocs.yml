@@ -58,7 +58,6 @@ plugins:
         - backends/badges.md
         - backends/*_support_matrix.csv
         - backends/app/*
-        - backends/flink/* # FIXME(deepyaman)
         - CONTRIBUTING.md
   - gen-files:
       scripts:

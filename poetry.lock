@@ -5512,7 +5512,7 @@ decompiler = ["black"]
 deltalake = ["deltalake"]
 druid = ["pydruid", "sqlalchemy"]
 duckdb = ["duckdb", "duckdb-engine", "packaging", "sqlalchemy", "sqlalchemy-views"]
-flink = ["pyspark"]
+flink = []
 geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
 mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
@@ -5530,4 +5530,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "8fbf79cd2f7f559cd0e50786762297d7a1ce0bf53360e6e5dc6d2338825e40d6"
+content-hash = "20bf8a382abd046450418addfdc5eda4a475e10aa8c7b606a7fca3251737c95a"
