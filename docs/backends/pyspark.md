@@ -4,7 +4,7 @@ backend_url: https://spark.apache.org/docs/latest/api/python/
 backend_module: pyspark
 backend_param_style: PySpark things
 exports: ["PyArrow", "Parquet", "Delta Lake", "Pandas"]
-imports: ["CSV", "Parquet", "Delta Lake"]
+imports: ["CSV", "Parquet", "Delta Lake", "JSON"]
 memtable_impl: native
 ---
 
@@ -65,6 +65,10 @@ con = ibis.pyspark.connect(session=session)
       heading_level: 4
       show_docstring_returns: false
 ::: ibis.backends.pyspark.Backend.read_parquet
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.pyspark.Backend.read_json
     options:
       heading_level: 4
       show_docstring_returns: false

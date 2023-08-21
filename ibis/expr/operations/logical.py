@@ -134,7 +134,7 @@ class InValues(Value):
 
     dtype = dt.boolean
 
-    @attribute.default
+    @attribute
     def shape(self):
         args = [self.value, *self.options]
         return rlz.highest_precedence_shape(args)
@@ -164,7 +164,7 @@ class Where(Value):
 
     shape = rlz.shape_like("args")
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return rlz.highest_precedence_dtype([self.true_expr, self.false_null_expr])
 

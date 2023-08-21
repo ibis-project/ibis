@@ -16,7 +16,7 @@ class StructField(Value):
 
     shape = rlz.shape_like("arg")
 
-    @attribute.default
+    @attribute
     def dtype(self) -> dt.DataType:
         struct_dtype = self.arg.dtype
         value_dtype = struct_dtype[self.field]
@@ -34,7 +34,7 @@ class StructColumn(Value):
 
     shape = rlz.shape_like("values")
 
-    @attribute.default
+    @attribute
     def dtype(self) -> dt.DataType:
         dtypes = (value.dtype for value in self.values)
         return dt.Struct.from_tuples(zip(self.names, dtypes))

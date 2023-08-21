@@ -388,8 +388,8 @@ def translate(expr, context=None, named=False):
 def impala_build_and_upload_udfs(hdfs, env, *, fs):
     IBIS_HOME = Path(__file__).absolute().parents[4]
     cwd = str(IBIS_HOME / "ci" / "udf")
-    subprocess.run(["cmake", ".", "-G", "Ninja"], cwd=cwd)
-    subprocess.run(["ninja"], cwd=cwd)
+    subprocess.run(["cmake", ".", "-G", "Ninja"], cwd=cwd, check=True)
+    subprocess.run(["ninja"], cwd=cwd, check=True)
     build_dir = IBIS_HOME / "ci" / "udf" / "build"
     bitcode_dir = os.path.join(env.test_data_dir, "udf")
 

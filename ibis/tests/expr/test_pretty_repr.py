@@ -5,6 +5,7 @@ import decimal
 
 import pandas as pd
 import pytest
+from rich.console import Console
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -166,3 +167,14 @@ def test_all_empty_groups_repr():
     dtype = dt.float64
     fmts, *_ = format_column(dtype, values)
     assert list(map(str, fmts)) == ["nan", "nan"]
+
+
+def test_non_interactive_column_repr():
+    t = ibis.table(dict(names="string", values="int"))
+    expr = t.names
+    console = Console()
+    with console.capture() as capture:
+        console.print(expr)
+
+    result = capture.get()
+    assert "Selection" not in result

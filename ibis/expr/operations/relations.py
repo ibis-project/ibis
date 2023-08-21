@@ -389,7 +389,7 @@ class Limit(Relation):
 class SelfReference(Relation):
     table: Relation
 
-    @attribute.default
+    @attribute
     def name(self) -> str:
         if (name := getattr(self.table, "name", None)) is not None:
             return f"{name}_ref"
@@ -404,7 +404,7 @@ class Projection(Relation):
     table: Relation
     selections: VarTuple[Relation | Value]
 
-    @attribute.default
+    @attribute
     def schema(self):
         # Resolve schema and initialize
         if not self.selections:
@@ -479,7 +479,7 @@ class Selection(Projection):
 
         return Selection(self, [], sort_keys=keys)
 
-    @attribute.default
+    @attribute
     def _projection(self):
         return Projection(self.table, self.selections)
 
@@ -529,7 +529,7 @@ class Aggregation(Relation):
             sort_keys=sort_keys,
         )
 
-    @attribute.default
+    @attribute
     def schema(self):
         names, types = [], []
         for value in self.by + self.metrics:
@@ -625,7 +625,7 @@ class SQLStringView(PhysicalTable):
     name: str
     query: str
 
-    @attribute.default
+    @attribute
     def schema(self):
         # TODO(kszucs): avoid converting to expression
         backend = self.child.to_expr()._find_backend()

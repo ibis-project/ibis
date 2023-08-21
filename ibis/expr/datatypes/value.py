@@ -248,19 +248,19 @@ def normalize(typ, value):
     dtype = dt.dtype(typ)
     if value is None:
         if not dtype.nullable:
-            raise TypeError("Cannot convert `None` to non-nullable type {typ!r}")
+            raise TypeError(f"Cannot convert `None` to non-nullable type {typ!r}")
         return None
 
     if dtype.is_boolean():
         try:
             return bool(value)
         except ValueError:
-            raise TypeError("Unable to normalize {value!r} to {dtype!r}")
+            raise TypeError(f"Unable to normalize {value!r} to {dtype!r}")
     elif dtype.is_integer():
         try:
             value = int(value)
         except ValueError:
-            raise TypeError("Unable to normalize {value!r} to {dtype!r}")
+            raise TypeError(f"Unable to normalize {value!r} to {dtype!r}")
         if value not in dtype.bounds:
             raise TypeError(
                 f"Value {value} is out of bounds for type {dtype!r} "
@@ -272,7 +272,7 @@ def normalize(typ, value):
         try:
             return float(value)
         except ValueError:
-            raise TypeError("Unable to normalize {value!r} to {dtype!r}")
+            raise TypeError(f"Unable to normalize {value!r} to {dtype!r}")
     elif dtype.is_json():
         if isinstance(value, str):
             try:

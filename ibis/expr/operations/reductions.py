@@ -153,7 +153,7 @@ class BitXor(Filterable, Reduction):
 class Sum(Filterable, Reduction):
     arg: Column[dt.Numeric | dt.Boolean]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         if self.arg.dtype.is_boolean():
             return dt.int64
@@ -165,7 +165,7 @@ class Sum(Filterable, Reduction):
 class Mean(Filterable, Reduction):
     arg: Column[dt.Numeric | dt.Boolean]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         if (dtype := self.arg.dtype).is_boolean():
             return dt.float64
@@ -177,7 +177,7 @@ class Mean(Filterable, Reduction):
 class Median(Filterable, Reduction):
     arg: Column[dt.Numeric | dt.Boolean]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.higher_precedence(self.arg.dtype, dt.float64)
 
@@ -209,7 +209,7 @@ class VarianceBase(Filterable, Reduction):
     arg: Column[dt.Numeric | dt.Boolean]
     how: Literal["sample", "pop"]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         if (dtype := self.arg.dtype).is_decimal():
             return dtype.largest
@@ -327,7 +327,7 @@ class CountDistinct(Filterable, Reduction):
 class ArrayCollect(Filterable, Reduction):
     arg: Column
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.Array(self.arg.dtype)
 

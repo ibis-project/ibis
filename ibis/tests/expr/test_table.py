@@ -1626,6 +1626,15 @@ def test_drop():
 
     assert res.equals(t.drop(s.matches("a|b")))
 
+    res = t.drop(_.a)
+    assert res.equals(t.select("b", "c", "d"))
+
+    res = t.drop(_.a, _.b)
+    assert res.equals(t.select("c", "d"))
+
+    res = t.drop(_.a, "b")
+    assert res.equals(t.select("c", "d"))
+
     with pytest.raises(KeyError):
         t.drop("e")
 

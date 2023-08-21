@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import contextlib
+import glob
 import inspect
 import itertools
+import json
 import os
 import platform
 import re
@@ -11,6 +13,7 @@ import sys
 import tempfile
 import textwrap
 import warnings
+from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -163,6 +166,7 @@ $$ {defn["source"]} $$"""
         password: str | None = None,
         authenticator: str | None = None,
         connect_args: Mapping[str, Any] | None = None,
+        create_object_udfs: bool = True,
         **kwargs: Any,
     ):
         """Connect to Snowflake.
@@ -189,9 +193,12 @@ $$ {defn["source"]} $$"""
             database connection is made. This means that
             `ibis.snowflake.connect(...)` can succeed, while subsequent API
             calls fail if the authentication fails for any reason.
+        create_object_udfs
+            Enable object UDF extensions defined by ibis on the first
+            connection to the database.
         connect_args
             Additional arguments passed to the SQLAlchemy engine creation call.
-        kwargs:
+        kwargs
             Additional arguments passed to the SQLAlchemy URL constructor.
             See https://docs.snowflake.com/en/developer-guide/python-connector/sqlalchemy#additional-connection-parameters
             for more details
@@ -241,23 +248,24 @@ $$ {defn["source"]} $$"""
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
             """Register UDFs on a `"connect"` event."""
-            dialect = engine.dialect
-            quote = dialect.preparer(dialect).quote_identifier
-            with dbapi_connection.cursor() as cur:
-                database, schema = cur.execute(
-                    "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
-                ).fetchone()
-                try:
-                    cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
-                    cur.execute(f"USE SCHEMA {quote(database)}.{quote(schema)}")
-                    for name, defn in _SNOWFLAKE_MAP_UDFS.items():
-                        cur.execute(self._make_udf(name, defn))
-                except Exception as e:  # noqa: BLE001
-                    warnings.warn(
-                        f"Unable to create map UDFs, some functionality will not work: {e}"
-                    )
+            if create_object_udfs:
+                with dbapi_connection.cursor() as cur:
+                    database, schema = cur.execute(
+                        "SELECT CURRENT_DATABASE(), CURRENT_SCHEMA()"
+                    ).fetchone()
+                    try:
+                        cur.execute("CREATE DATABASE IF NOT EXISTS ibis_udfs")
+                        # snowflake activates a database on creation, so reset
+                        # it back to the original database and schema
+                        cur.execute(f"USE SCHEMA {database}.{schema}")
+                        for name, defn in _SNOWFLAKE_MAP_UDFS.items():
+                            cur.execute(self._make_udf(name, defn))
+                    except Exception as e:  # noqa: BLE001
+                        warnings.warn(
+                            f"Unable to create map UDFs, some functionality will not work: {e}"
+                        )
 
-        res = super().do_connect(engine)
+        super().do_connect(engine)
 
         def normalize_name(name):
             if name is None:
@@ -270,7 +278,6 @@ $$ {defn["source"]} $$"""
                 return name
 
         self.con.dialect.normalize_name = normalize_name
-        return res
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         name = type(udf_node).__name__
@@ -608,7 +615,7 @@ $$""".format(
         Parameters
         ----------
         path
-            Path to the CSV file
+            A string or Path to a CSV file; globs are supported
         table_name
             Optional name for the table; if not passed, a random name will be generated
         kwargs
@@ -626,6 +633,7 @@ $$""".format(
         # https://docs.snowflake.com/en/sql-reference/sql/put#optional-parameters
         threads = min((os.cpu_count() or 2) // 2, 99)
         table = table_name or ibis.util.gen_name("read_csv_snowflake")
+        qtable = self._quote(table)
 
         parse_header = header = kwargs.pop("parse_header", True)
         skip_header = kwargs.pop("skip_header", True)
@@ -653,15 +661,15 @@ $$""".format(
 
             # copy the local file to the stage
             con.exec_driver_sql(
-                f"PUT '{Path(path).absolute().as_uri()}' @{stage} PARALLEL = {threads:d} AUTO_COMPRESS = FALSE"
+                f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}"
             )
 
-            # create a temporary table using the stage and format inferred
-            # from the CSV
-            con.exec_driver_sql(
-                f"""
-                CREATE TEMP TABLE "{table}"
-                USING TEMPLATE (
+            # handle setting up the schema in python because snowflake is
+            # broken for csv globs: it cannot parse the result of the following
+            # query in  USING TEMPLATE
+            fields = json.loads(
+                con.exec_driver_sql(
+                    f"""
                     SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
                     FROM TABLE(
                         INFER_SCHEMA(
@@ -669,14 +677,25 @@ $$""".format(
                             FILE_FORMAT => '{file_format}'
                         )
                     )
-                )
-                """
+                    """
+                ).scalar()
             )
+            fields = [
+                (self._quote(field["COLUMN_NAME"]), field["TYPE"], field["NULLABLE"])
+                for field in sorted(fields, key=itemgetter("ORDER_ID"))
+            ]
+            columns = ", ".join(
+                f"{quoted_name} {typ}{' NOT NULL' * (not nullable)}"
+                for quoted_name, typ, nullable in fields
+            )
+            # create a temporary table using the stage and format inferred
+            # from the CSV
+            con.exec_driver_sql(f"CREATE TEMP TABLE {qtable} ({columns})")
 
             # load the CSV into the table
             con.exec_driver_sql(
                 f"""
-                COPY INTO "{table}"
+                COPY INTO {qtable}
                 FROM @{stage}
                 FILE_FORMAT = (TYPE = CSV SKIP_HEADER = {int(header)}{options})
                 """
@@ -692,10 +711,10 @@ $$""".format(
         Parameters
         ----------
         path
-            File or list of files
+            A string or Path to a JSON file; globs are supported
         table_name
             Optional table name
-        **kwargs
+        kwargs
             Additional keyword arguments. See
             https://docs.snowflake.com/en/sql-reference/sql/create-file-format#type-json
             for the full list of options.
@@ -727,7 +746,7 @@ $$""".format(
                 f"CREATE TEMP STAGE {stage} FILE_FORMAT = {file_format}"
             )
             con.exec_driver_sql(
-                f"PUT '{Path(path).absolute().as_uri()}' @{stage} PARALLEL = {threads:d}"
+                f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}"
             )
 
             con.exec_driver_sql(
@@ -767,10 +786,10 @@ $$""".format(
         Parameters
         ----------
         path
-            Path to a Parquet file
+            A string or Path to a Parquet file; globs are supported
         table_name
             Optional table name
-        **kwargs
+        kwargs
             Additional keyword arguments. See
             https://docs.snowflake.com/en/sql-reference/sql/create-file-format#type-parquet
             for the full list of options.
@@ -780,14 +799,16 @@ $$""".format(
         Table
             An ibis table expression
         """
-        import pyarrow.parquet as pq
+        import pyarrow.dataset as ds
 
         from ibis.formats.pyarrow import PyArrowSchema
 
-        schema = PyArrowSchema.to_ibis(pq.read_metadata(path).schema.to_arrow_schema())
+        abspath = Path(path).absolute()
+        schema = PyArrowSchema.to_ibis(
+            ds.dataset(glob.glob(str(abspath)), format="parquet").schema
+        )
 
         stage = util.gen_name("read_parquet_stage")
-        file_format = util.gen_name("read_parquet_format")
         table = table_name or util.gen_name("read_parquet_snowflake")
         qtable = self._quote(table)
         threads = min((os.cpu_count() or 2) // 2, 99)
@@ -816,13 +837,10 @@ $$""".format(
 
         with self.begin() as con:
             con.exec_driver_sql(
-                f"CREATE TEMP FILE FORMAT {file_format} TYPE = PARQUET" + options
+                f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET{options})"
             )
             con.exec_driver_sql(
-                f"CREATE TEMP STAGE {stage} FILE_FORMAT = {file_format}"
-            )
-            con.exec_driver_sql(
-                f"PUT '{Path(path).absolute().as_uri()}' @{stage} PARALLEL = {threads:d}"
+                f"PUT 'file://{abspath}' @{stage} PARALLEL = {threads:d}"
             )
             con.exec_driver_sql(f"CREATE TEMP TABLE {qtable} ({snowflake_schema})")
             con.exec_driver_sql(

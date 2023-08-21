@@ -1,7 +1,7 @@
 ---
 backend_name: Snowflake
 backend_url: https://snowflake.com/
-imports: ["CSV"]
+imports: ["CSV", "Parquet", "JSON"]
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
 memtable_impl: native
 ---
@@ -123,3 +123,20 @@ available databases and schema in the "Data" sidebar item in the Snowflake web
 app.
 
 ![Snowflake Database](./images/snowflake_database.png)
+
+## File Support
+
+<!-- prettier-ignore-start -->
+::: ibis.backends.snowflake.Backend.read_csv
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.snowflake.Backend.read_parquet
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.snowflake.Backend.read_json
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+<!-- prettier-ignore-end -->

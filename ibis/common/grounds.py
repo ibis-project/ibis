@@ -17,7 +17,6 @@ from ibis.common.annotations import (
     Argument,
     Attribute,
     Signature,
-    attribute,
 )
 from ibis.common.bases import (  # noqa: F401
     Base,
@@ -58,20 +57,19 @@ class AnnotableMeta(BaseMeta):
                 continue
             pattern = Pattern.from_typehint(typehint)
             if name in dct:
-                dct[name] = Argument.default(dct[name], pattern, typehint=typehint)
+                dct[name] = Argument(pattern, default=dct[name], typehint=typehint)
             else:
-                dct[name] = Argument.required(pattern, typehint=typehint)
+                dct[name] = Argument(pattern, typehint=typehint)
 
         # collect the newly defined annotations
         slots = list(dct.pop("__slots__", []))
         namespace, arguments = {}, {}
         for name, attrib in dct.items():
             if isinstance(attrib, Pattern):
-                attrib = Argument.required(attrib)
-
-            if isinstance(attrib, Argument):
+                arguments[name] = Argument(attrib)
+                slots.append(name)
+            elif isinstance(attrib, Argument):
                 arguments[name] = attrib
-                attributes[name] = attrib
                 slots.append(name)
             elif isinstance(attrib, Attribute):
                 attributes[name] = attrib
@@ -103,10 +101,17 @@ class AnnotableMeta(BaseMeta):
 class Annotable(Base, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
-    __argnames__: ClassVar[tuple[str, ...]]
-    __attributes__: ClassVar[FrozenDict[str, Annotation]]
-    __match_args__: ClassVar[tuple[str, ...]]
     __signature__: ClassVar[Signature]
+    """Signature of the class, containing the Argument annotations."""
+
+    __attributes__: ClassVar[FrozenDict[str, Annotation]]
+    """Mapping of the Attribute annotations."""
+
+    __argnames__: ClassVar[tuple[str, ...]]
+    """Names of the arguments."""
+
+    __match_args__: ClassVar[tuple[str, ...]]
+    """Names of the arguments to be used for pattern matching."""
 
     @classmethod
     def __create__(cls, *args: Any, **kwargs: Any) -> Self:
@@ -120,19 +125,20 @@ class Annotable(Base, metaclass=AnnotableMeta):
         kwargs = cls.__signature__.validate_nobind(**kwargs)
         return super().__create__(**kwargs)
 
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         # set the already validated arguments
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
-
-        # post-initialize the remaining attributes
+        # initialize the remaining attributes
         for name, field in self.__attributes__.items():
-            if isinstance(field, Attribute):
-                if (value := field.initialize(self)) is not EMPTY:
-                    object.__setattr__(self, name, value)
+            if (default := field.initialize(self)) is not EMPTY:
+                object.__setattr__(self, name, default)
 
     def __setattr__(self, name, value) -> None:
-        if field := self.__attributes__.get(name):
+        # first try to look up the argument then the attribute
+        if param := self.__signature__.parameters.get(name):
+            value = param.annotation.validate(value, self)
+        elif field := self.__attributes__.get(name):
             value = field.validate(value, self)
         super().__setattr__(name, value)
 
@@ -142,13 +148,17 @@ class Annotable(Base, metaclass=AnnotableMeta):
         return f"{self.__class__.__name__}({argstring})"
 
     def __eq__(self, other) -> bool:
+        # compare types
         if type(self) is not type(other):
             return NotImplemented
-
-        return all(
-            getattr(self, name, None) == getattr(other, name, None)
-            for name in self.__attributes__
-        )
+        # compare arguments
+        if self.__args__ != other.__args__:
+            return False
+        # compare attributes
+        for name in self.__attributes__:
+            if getattr(self, name, None) != getattr(other, name, None):
+                return False
+        return True
 
     @property
     def __args__(self) -> tuple[Any, ...]:
@@ -176,13 +186,26 @@ class Annotable(Base, metaclass=AnnotableMeta):
 class Concrete(Immutable, Comparable, Annotable):
     """Opinionated base class for immutable data classes."""
 
-    @attribute.default
-    def __args__(self):
-        return tuple(getattr(self, name) for name in self.__argnames__)
+    __slots__ = ("__args__", "__precomputed_hash__")
 
-    @attribute.default
-    def __precomputed_hash__(self) -> int:
-        return hash((self.__class__, self.__args__))
+    def __init__(self, **kwargs: Any) -> None:
+        # collect and set the arguments in a single pass
+        args = []
+        for name in self.__argnames__:
+            value = kwargs[name]
+            args.append(value)
+            object.__setattr__(self, name, value)
+
+        # precompute the hash value since the instance is immutable
+        args = tuple(args)
+        hashvalue = hash((self.__class__, args))
+        object.__setattr__(self, "__args__", args)
+        object.__setattr__(self, "__precomputed_hash__", hashvalue)
+
+        # initialize the remaining attributes
+        for name, field in self.__attributes__.items():
+            if (default := field.initialize(self)) is not EMPTY:
+                object.__setattr__(self, name, default)
 
     def __reduce__(self):
         # assuming immutability and idempotency of the __init__ method, we can

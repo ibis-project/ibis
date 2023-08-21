@@ -23,7 +23,8 @@ from typing import Any as AnyType
 import toolz
 from typing_extensions import GenericMeta, Self, get_args, get_origin
 
-from ibis.common.bases import Singleton, Slotted
+from ibis.common.bases import FrozenSlotted as Slotted
+from ibis.common.bases import Singleton
 from ibis.common.collections import FrozenDict, RewindableIterator, frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.typing import (
@@ -1183,6 +1184,64 @@ In = IsIn
 class SequenceOf(Slotted, Pattern):
     """Pattern that matches if all of the items in a sequence match a given pattern.
 
+    Specialization of the more flexible GenericSequenceOf pattern which uses two
+    additional patterns to possibly coerce the sequence type and to match on
+    the length of the sequence.
+
+    Parameters
+    ----------
+    item
+        The pattern to match against each item in the sequence.
+    type
+        The type to coerce the sequence to. Defaults to tuple.
+    """
+
+    __slots__ = ("item", "type")
+    item: Pattern
+    type: type
+
+    def __new__(
+        cls,
+        item,
+        type: type = tuple,
+        exactly: Optional[int] = None,
+        at_least: Optional[int] = None,
+        at_most: Optional[int] = None,
+    ):
+        if (
+            exactly is not None
+            or at_least is not None
+            or at_most is not None
+            or issubclass(type, Coercible)
+        ):
+            return GenericSequenceOf(
+                item, type=type, exactly=exactly, at_least=at_least, at_most=at_most
+            )
+        else:
+            return super().__new__(cls)
+
+    def __init__(self, item, type=tuple):
+        super().__init__(item=pattern(item), type=type)
+
+    def match(self, values, context):
+        try:
+            iterable = iter(values)
+        except TypeError:
+            return NoMatch
+
+        result = []
+        for item in iterable:
+            item = self.item.match(item, context)
+            if item is NoMatch:
+                return NoMatch
+            result.append(item)
+
+        return self.type(result)
+
+
+class GenericSequenceOf(Slotted, Pattern):
+    """Pattern that matches if all of the items in a sequence match a given pattern.
+
     Parameters
     ----------
     item
@@ -1199,8 +1258,26 @@ class SequenceOf(Slotted, Pattern):
 
     __slots__ = ("item", "type", "length")
     item: Pattern
-    type: CoercedTo
+    type: Pattern
     length: Length
+
+    def __new__(
+        cls,
+        item: Pattern,
+        type: type = tuple,
+        exactly: Optional[int] = None,
+        at_least: Optional[int] = None,
+        at_most: Optional[int] = None,
+    ):
+        if (
+            exactly is None
+            and at_least is None
+            and at_most is None
+            and not issubclass(type, Coercible)
+        ):
+            return SequenceOf(item, type=type)
+        else:
+            return super().__new__(cls)
 
     def __init__(
         self,
@@ -1216,11 +1293,13 @@ class SequenceOf(Slotted, Pattern):
         super().__init__(item=item, type=type, length=length)
 
     def match(self, values, context):
-        if not is_iterable(values):
+        try:
+            iterable = iter(values)
+        except TypeError:
             return NoMatch
 
         result = []
-        for value in values:
+        for value in iterable:
             value = self.item.match(value, context)
             if value is NoMatch:
                 return NoMatch
@@ -1272,7 +1351,7 @@ class TupleOf(Slotted, Pattern):
         return tuple(result)
 
 
-class MappingOf(Slotted, Pattern):
+class GenericMappingOf(Slotted, Pattern):
     """Pattern that matches if all of the keys and values match the given patterns.
 
     Parameters
@@ -1288,7 +1367,7 @@ class MappingOf(Slotted, Pattern):
     __slots__ = ("key", "value", "type")
     key: Pattern
     value: Pattern
-    type: CoercedTo
+    type: Pattern
 
     def __init__(self, key: Pattern, value: Pattern, type: type = dict):
         super().__init__(key=pattern(key), value=pattern(value), type=CoercedTo(type))
@@ -1310,6 +1389,9 @@ class MappingOf(Slotted, Pattern):
             return NoMatch
 
         return result
+
+
+MappingOf = GenericMappingOf
 
 
 class Attrs(Slotted, Pattern):
@@ -1500,8 +1582,8 @@ class PatternSequence(Slotted, Pattern):
             if isinstance(following, Capture):
                 following = following.pattern
 
-            if isinstance(current, (SequenceOf, PatternSequence)):
-                if isinstance(following, SequenceOf):
+            if isinstance(current, (SequenceOf, GenericSequenceOf, PatternSequence)):
+                if isinstance(following, (SequenceOf, GenericSequenceOf)):
                     following = following.item
                 elif isinstance(following, PatternSequence):
                     # first pattern to match from the pattern window

@@ -857,12 +857,12 @@ class Struct(Parametric, MapSet):
         """
         return cls(dict(pairs), nullable=nullable)
 
-    @attribute.default
+    @attribute
     def names(self) -> tuple[str, ...]:
         """Return the names of the struct's fields."""
         return tuple(self.keys())
 
-    @attribute.default
+    @attribute
     def types(self) -> tuple[DataType, ...]:
         """Return the types of the struct's fields."""
         return tuple(self.values())

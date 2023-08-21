@@ -23,7 +23,7 @@ class Bucket(Value):
 
     shape = ds.columnar
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.infer(self.nbuckets)
 

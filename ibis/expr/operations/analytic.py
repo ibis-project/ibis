@@ -89,7 +89,7 @@ class CumulativeSum(Cumulative):
 
     arg: Column[dt.Numeric]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.higher_precedence(self.arg.dtype.largest, dt.int64)
 
@@ -103,7 +103,7 @@ class CumulativeMean(Cumulative):
 
     arg: Column[dt.Numeric]
 
-    @attribute.default
+    @attribute
     def dtype(self):
         return dt.higher_precedence(self.arg.dtype.largest, dt.float64)
 

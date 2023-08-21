@@ -42,6 +42,7 @@ from ibis.common.patterns import (
     FrozenDictOf,
     Function,
     GenericInstanceOf,
+    GenericSequenceOf,
     Innermost,
     InstanceOf,
     IsIn,
@@ -409,13 +410,38 @@ def test_isin():
 
 def test_sequence_of():
     p = SequenceOf(InstanceOf(str), list)
+    assert isinstance(p, SequenceOf)
     assert p.match(["foo", "bar"], context={}) == ["foo", "bar"]
     assert p.match([1, 2], context={}) is NoMatch
     assert p.match(1, context={}) is NoMatch
 
 
+def test_generic_sequence_of():
+    class MyList(list, Coercible):
+        @classmethod
+        def __coerce__(cls, value, T=...):
+            return cls(value)
+
+    p = SequenceOf(InstanceOf(str), MyList)
+    assert isinstance(p, GenericSequenceOf)
+    assert p == GenericSequenceOf(InstanceOf(str), MyList)
+    assert p.match(["foo", "bar"], context={}) == MyList(["foo", "bar"])
+
+    p = SequenceOf(InstanceOf(str), tuple, at_least=1)
+    assert isinstance(p, GenericSequenceOf)
+    assert p == GenericSequenceOf(InstanceOf(str), tuple, at_least=1)
+    assert p.match(("foo", "bar"), context={}) == ("foo", "bar")
+    assert p.match([], context={}) is NoMatch
+
+    p = GenericSequenceOf(InstanceOf(str), list)
+    assert isinstance(p, SequenceOf)
+    assert p == SequenceOf(InstanceOf(str), list)
+    assert p.match(("foo", "bar"), context={}) == ["foo", "bar"]
+
+
 def test_list_of():
     p = ListOf(InstanceOf(str))
+    assert isinstance(p, SequenceOf)
     assert p.match(["foo", "bar"], context={}) == ["foo", "bar"]
     assert p.match([1, 2], context={}) is NoMatch
     assert p.match(1, context={}) is NoMatch
