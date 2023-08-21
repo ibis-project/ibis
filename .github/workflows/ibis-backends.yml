@@ -44,7 +44,6 @@ jobs:
       matrix:
         python-version:
           - "3.9"
-          - "3.10" # For PyFlink, which does not support Python 3.11 yet
           - "3.11"
     steps:
       - name: checkout
