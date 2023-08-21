@@ -3,6 +3,7 @@ backend_name: ClickHouse
 backend_url: https://clickhouse.yandex/
 backend_module: clickhouse
 exports: ["PyArrow", "Parquet", "CSV", "Pandas"]
+imports: ["CSV", "Parquet"]
 memtable_impl: native
 ---
 
@@ -83,3 +84,16 @@ or
 ```python
 con = ibis.connect("clickhouse://play:clickhouse@play.clickhouse.com:443?secure=True")
 ```
+
+## File Support
+
+<!-- prettier-ignore-start -->
+::: ibis.backends.clickhouse.Backend.read_csv
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.clickhouse.Backend.read_parquet
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+<!-- prettier-ignore-end -->

@@ -5,7 +5,7 @@ backend_module: polars
 is_experimental: true
 version_added: "4.0"
 exports: ["PyArrow", "Parquet", "Delta Lake", "CSV", "Pandas"]
-imports: ["CSV", "Parquet", "Delta Lake", "Pandas"]
+imports: ["CSV", "Parquet", "Delta Lake", "Pandas", "JSON"]
 memtable_impl: native
 ---
 
@@ -70,6 +70,10 @@ con = ibis.polars.connect()
       heading_level: 4
       show_docstring_returns: false
 ::: ibis.backends.polars.Backend.read_delta
+    options:
+      heading_level: 4
+      show_docstring_returns: false
+::: ibis.backends.polars.Backend.read_json
     options:
       heading_level: 4
       show_docstring_returns: false
