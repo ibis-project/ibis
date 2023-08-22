@@ -214,7 +214,7 @@ def test_to_pyarrow_batches_memtable(con):
     assert n == 3
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "flink"])
 def test_table_to_parquet(tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet)
@@ -242,7 +242,7 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     reason="no partitioning support",
 )
 @pytest.mark.notimpl(
-    ["dask", "impala", "pyspark", "druid"], reason="No to_parquet support"
+    ["dask", "impala", "pyspark", "druid", "flink"], reason="No to_parquet support"
 )
 def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     outparquet = tmp_path / "outhive.parquet"
@@ -268,7 +268,7 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
 
 
 @pytest.mark.notimpl(
-    ["dask", "impala", "pyspark"], reason="No support for exporting files"
+    ["dask", "impala", "pyspark", "flink"], reason="No support for exporting files"
 )
 @pytest.mark.parametrize("ftype", ["csv", "parquet"])
 def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
@@ -290,7 +290,7 @@ def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     assert outfile.is_file()
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "flink"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 
@@ -318,6 +318,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
                 pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(["dask"], raises=NotImplementedError),
                 pytest.mark.notyet(["pyspark"], raises=NotImplementedError),
+                pytest.mark.notyet(["flink"], raises=NotImplementedError),
             ],
         ),
         param(
@@ -334,6 +335,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
                 pytest.mark.notyet(["dask"], raises=NotImplementedError),
                 pytest.mark.notyet(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(["pyspark"], raises=ParseException),
+                pytest.mark.notyet(["flink"], raises=NotImplementedError),
             ],
         ),
     ],
@@ -360,6 +362,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "snowflake",
         "sqlite",
         "trino",
+        "flink",
     ],
     raises=AttributeError,
     reason="read_delta not yet implemented",
@@ -401,6 +404,7 @@ def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
+@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis import _
 
@@ -421,7 +425,7 @@ def test_arrow_timestamp_with_time_zone(alltypes):
     assert batch.schema.types == expected
 
 
-@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(["dask", "druid", "flink"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
@@ -442,6 +446,7 @@ def test_to_torch(alltypes):
         non_numeric.to_torch()
 
 
+@pytest.mark.notimpl(["flink"])
 def test_empty_memtable(backend, con):
     expected = pd.DataFrame({"a": []})
     table = ibis.memtable(expected)
