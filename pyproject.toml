@@ -327,6 +327,8 @@ filterwarnings = [
   "ignore:Datatype BOOL does not support CAST on MySQL/MariaDB; the cast will be skipped:sqlalchemy.exc.SAWarning",
   # snowflake vendors an older version requests
   "ignore:'urllib3\\.contrib\\.pyopenssl' module is deprecated and will be removed in a future release of urllib3:DeprecationWarning",
+  # apache-beam
+  "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

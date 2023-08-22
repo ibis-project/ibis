@@ -31,7 +31,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
         sort_cols = {"functional_alltypes": "id"}
 
-        for name in TEST_TABLES.keys():
+        for name in TEST_TABLES:
             path = str(self.data_dir / "parquet" / f"{name}.parquet")
             t = s.read.parquet(path).repartition(num_partitions)
             if (sort_col := sort_cols.get(name)) is not None:

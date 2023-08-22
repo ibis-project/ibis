@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
 import pyflink.version
@@ -29,37 +30,37 @@ class Backend(BaseBackend, CanListDatabases):
     supports_temporary_tables = True
     supports_python_udfs = True
 
-    def do_connect(self, t_env: TableEnvironment) -> None:
+    def do_connect(self, table_env: TableEnvironment) -> None:
         """Create a Flink `Backend` for use with Ibis.
 
         Parameters
         ----------
-        t_env
+        table_env
             A table environment
 
         Examples
         --------
         >>> import ibis
         >>> from pyflink.table import EnvironmentSettings, TableEnvironment
-        >>> t_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())
-        >>> ibis.flink.connect(t_env)
+        >>> table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())
+        >>> ibis.flink.connect(table_env)
         <ibis.backends.flink.Backend at 0x...>
         """
-        self._t_env = t_env
+        self._table_env = table_env
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        databases = self._t_env.list_databases()
+        databases = self._table_env.list_databases()
         return self._filter_with_like(databases, like)
 
     @property
     def current_database(self) -> str:
-        return self._t_env.get_current_database()
+        return self._table_env.get_current_database()
 
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        tables = self._t_env._j_tenv.listTables(
-            self._t_env.get_current_catalog(), database or self.current_database
+        tables = self._table_env._j_tenv.listTables(
+            self._table_env.get_current_catalog(), database or self.current_database
         )
         return self._filter_with_like(tables, like)
 
@@ -111,7 +112,7 @@ class Backend(BaseBackend, CanListDatabases):
             Ibis schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        table = self._t_env.from_path(qualified_name)
+        table = self._table_env.from_path(qualified_name)
         schema = table.get_schema()
         return sch.Schema.from_pyarrow(
             create_arrow_schema(schema.get_field_names(), schema.get_field_data_types())
@@ -137,7 +138,7 @@ class Backend(BaseBackend, CanListDatabases):
         """Execute an expression."""
         table_expr = expr.as_table()
         sql = self.compile(table_expr, **kwargs)
-        df = self._t_env.sql_query(sql).to_pandas()
+        df = self._table_env.sql_query(sql).to_pandas()
 
         # TODO: remove the extra conversion
         return expr.__pandas_result__(table_expr.__pandas_result__(df))
@@ -187,9 +188,9 @@ class Backend(BaseBackend, CanListDatabases):
             obj = obj.to_pandas()
         if isinstance(obj, pd.DataFrame):
             qualified_name = self._fully_qualified_name(name, database)
-            table = self._t_env.from_pandas(obj)
+            table = self._table_env.from_pandas(obj)
             # FIXME(deepyaman): Create a catalog table, not a temp view.
-            self._t_env.create_temporary_view(qualified_name, table)
+            self._table_env.create_temporary_view(qualified_name, table)
         else:
             raise NotImplementedError  # TODO(deepyaman)
 
@@ -214,7 +215,7 @@ class Backend(BaseBackend, CanListDatabases):
             If `False`, an exception is raised if the table does not exist.
         """
         qualified_name = self._fully_qualified_name(name, database)
-        if not (self._t_env.drop_temporary_table(qualified_name) or force):
+        if not (self._table_env.drop_temporary_table(qualified_name) or force):
             raise exc.IntegrityError(f"Table {name} does not exist.")
 
         # TODO(deepyaman): Support (and differentiate) permanent tables.
@@ -263,7 +264,17 @@ class Backend(BaseBackend, CanListDatabases):
             If `False`, an exception is raised if the view does not exist.
         """
         qualified_name = self._fully_qualified_name(name, database)
-        if not (self._t_env.drop_temporary_view(qualified_name) or force):
+        if not (self._table_env.drop_temporary_view(qualified_name) or force):
             raise exc.IntegrityError(f"View {name} does not exist.")
 
         # TODO(deepyaman): Support (and differentiate) permanent views.
+
+    @classmethod
+    @lru_cache
+    def _get_operations(cls):
+        translator = cls.compiler.translator_class
+        return translator._registry.keys()
+
+    @classmethod
+    def has_operation(cls, operation: type[ops.Value]) -> bool:
+        return operation in cls._get_operations()
