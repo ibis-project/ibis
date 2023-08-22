@@ -17,7 +17,7 @@ except ImportError:
 table_dot_sql_notimpl = pytest.mark.notimpl(
     ["bigquery", "clickhouse", "impala", "druid"]
 )
-dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
+dot_sql_notimpl = pytest.mark.notimpl(["datafusion", "flink"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake", "oracle"],
     reason="snowflake and oracle column names are case insensitive",
