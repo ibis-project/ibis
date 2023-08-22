@@ -986,7 +986,7 @@ def extract_down(op, **kw):
         input_types=[PyArrowType.from_ibis(op.arg.dtype)],
         return_type=PyArrowType.from_ibis(op.dtype),
         volatility="immutable",
-        name="extract_seconds_udf",
+        name="extract_down_udf",
     )
     arg = translate(op.arg, **kw)
     return extract_down_udf(arg)
@@ -996,3 +996,42 @@ def extract_down(op, **kw):
 def date(op, **kw):
     arg = translate(op.arg, **kw)
     return df.functions.date_trunc(df.literal("day"), arg)
+
+
+@translate.register(ops.ExtractWeekOfYear)
+def extract_week_of_year(op, **kw):
+    arg = translate(op.arg, **kw)
+    return df.functions.date_part(df.literal("week"), arg)
+
+
+@translate.register(ops.ExtractMicrosecond)
+def extract_microsecond(op, **kw):
+    def us(array: pa.Array) -> pa.Array:
+        arr = pc.multiply(pc.millisecond(array), 1000)
+        return pc.cast(pc.add(pc.microsecond(array), arr), pa.int32())
+
+    extract_microseconds_udf = df.udf(
+        us,
+        input_types=[PyArrowType.from_ibis(op.arg.dtype)],
+        return_type=PyArrowType.from_ibis(op.dtype),
+        volatility="immutable",
+        name="extract_microseconds_udf",
+    )
+    arg = translate(op.arg, **kw)
+    return extract_microseconds_udf(arg)
+
+
+@translate.register(ops.ExtractEpochSeconds)
+def extract_epoch_seconds(op, **kw):
+    def epoch_seconds(array: pa.Array) -> pa.Array:
+        return pc.cast(pc.divide(pc.cast(array, pa.int64()), 1000_000), pa.int32())
+
+    extract_epoch_seconds_udf = df.udf(
+        epoch_seconds,
+        input_types=[PyArrowType.from_ibis(op.arg.dtype)],
+        return_type=PyArrowType.from_ibis(op.dtype),
+        volatility="immutable",
+        name="extract_epoch_seconds_udf",
+    )
+    arg = translate(op.arg, **kw)
+    return extract_epoch_seconds_udf(arg)
