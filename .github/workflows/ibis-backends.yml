@@ -200,6 +200,15 @@ jobs:
               - oracle
             services:
               - oracle
+          - name: flink
+            title: Flink
+            serial: true
+            extras:
+              - flink
+            additional_deps:
+              - apache-flink
+            even_more_deps:
+              - pandas~=1.5
         exclude:
           - os: windows-latest
             backend:
@@ -296,6 +305,17 @@ jobs:
                 - oracle
               services:
                 - oracle
+          - python-version: "3.11"
+            backend:
+              name: flink
+              title: Flink
+              serial: true
+              extras:
+                - flink
+              additional_deps:
+                - apache-flink
+              even_more_deps:
+                - pandas~=1.5
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
@@ -363,6 +383,11 @@ jobs:
         if: matrix.backend.additional_deps != null
         run: poetry run pip install "${{ join(matrix.backend.additional_deps, ' ') }}"
 
+      # FIXME(deepyaman)
+      - name: install even more deps
+        if: matrix.backend.even_more_deps != null
+        run: poetry run pip install "${{ join(matrix.backend.even_more_deps, ' ') }}"
+
       - name: show installed deps
         run: poetry run pip list
 
@@ -382,7 +407,13 @@ jobs:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.serial && matrix.backend.name != 'impala'
+        if: matrix.backend.serial && matrix.backend.name == 'flink'
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/flink/tests
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+
+      - name: "run serial tests: ${{ matrix.backend.name }}"
+        if: matrix.backend.serial && matrix.backend.name != 'impala' && matrix.backend.name != 'flink'
         run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
@@ -774,80 +805,6 @@ jobs:
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
 
-  test_flink:
-    name: Flink ${{ matrix.os }} python-${{ matrix.python-version }}
-    runs-on: ${{ matrix.os }}
-    needs:
-      - gen_lockfile_backends
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
-          - windows-latest
-        python-version:
-          - "3.9"
-          - "3.10"
-    steps:
-      - name: checkout
-        uses: actions/checkout@v3
-
-      - name: install python
-        uses: actions/setup-python@v4
-        id: install_python
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: download poetry lockfile
-        uses: actions/download-artifact@v3
-        with:
-          name: backend-deps-${{ matrix.python-version }}
-          path: deps
-
-      - name: pull out lockfile
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          mv -f deps/* .
-          rm -r deps
-
-      - uses: syphar/restore-pip-download-cache@v1
-        with:
-          requirement_files: poetry.lock
-          custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
-
-      - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry<1.4'
-
-      - uses: syphar/restore-virtualenv@v1
-        with:
-          requirement_files: poetry.lock
-          custom_cache_key_element: flink-${{ steps.install_python.outputs.python-version }}
-
-      - name: install ibis
-        run: poetry install --without dev --without docs --extras flink
-
-      # TODO(deepyaman): Remove step once Ibis and Flink are compatible.
-      - name: install pyflink
-        run: poetry run pip install apache-flink
-
-      - name: show installed deps
-        run: poetry run pip list
-
-      - name: "run parallel tests: flink"
-        run: poetry run pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml ibis/backends/flink/tests --numprocesses auto --dist=loadgroup
-
-      - name: check that no untracked files were produced
-        shell: bash
-        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
-
-      - name: upload code coverage
-        if: success()
-        uses: codecov/codecov-action@v3
-        with:
-          flags: backend,flink,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
-
   backends:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
@@ -856,6 +813,5 @@ jobs:
       - test_backends
       - test_backends_sqlalchemy2
       - test_pyspark
-      - test_flink
     steps:
       - run: exit 0

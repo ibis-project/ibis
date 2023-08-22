@@ -4,13 +4,11 @@ import datetime
 import math
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import TYPE_CHECKING
 
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 from ibis.common.temporal import IntervalUnit
 from ibis.util import convert_unit
-
-if TYPE_CHECKING:
-    import ibis.expr.operations as ops
 
 # For details on what precisions Flink SQL interval types support, see
 # https://nightlies.apache.org/flink/flink-docs-release-1.17/docs/dev/table/types/#interval-year-to-month
@@ -284,4 +282,6 @@ def translate_literal(op: ops.Literal) -> str:
         return f"TIME '{value}'"
     elif dtype.is_interval():
         return f"INTERVAL {_translate_interval(value, dtype)}"
+    elif dtype.is_uuid():
+        return translate_literal(ops.Literal(str(value), dtype=dt.str))
     raise NotImplementedError(f"No translation rule for {dtype}")
