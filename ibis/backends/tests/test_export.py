@@ -35,6 +35,7 @@ limit = [
                     "impala",
                     "pandas",
                     "pyspark",
+                    "flink",
                 ]
             ),
         ],
@@ -43,7 +44,9 @@ limit = [
 
 no_limit = [
     param(
-        None, id="nolimit", marks=[pytest.mark.notimpl(["dask", "impala", "pyspark"])]
+        None,
+        id="nolimit",
+        marks=[pytest.mark.notimpl(["dask", "impala", "pyspark", "flink"])],
     )
 ]
 
@@ -116,7 +119,7 @@ ARROW_STRING_TYPE = {
 }
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark", "druid"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "druid", "flink"])
 def test_table_to_pyarrow_table_schema(con, awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
@@ -135,7 +138,7 @@ def test_table_to_pyarrow_table_schema(con, awards_players):
     assert table.schema == expected_schema
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "flink"])
 def test_column_to_pyarrow_table_schema(awards_players):
     expr = awards_players.awardID
     array = expr.to_pyarrow()
@@ -143,7 +146,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == pa.string() or array.type == pa.large_string()
 
 
-@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -158,7 +161,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -175,7 +178,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "impala", "pyspark", "datafusion", "flink"])
 @pytest.mark.broken(
     ["sqlite"],
     raises=pa.ArrowException,
@@ -192,7 +195,7 @@ def test_to_pyarrow_batches_borked_types(batting):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "flink"])
 def test_to_pyarrow_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     table = con.to_pyarrow(expr)
@@ -200,7 +203,7 @@ def test_to_pyarrow_memtable(con):
     assert len(table) == 3
 
 
-@pytest.mark.notimpl(["dask", "impala", "pyspark"])
+@pytest.mark.notimpl(["dask", "impala", "pyspark", "flink"])
 def test_to_pyarrow_batches_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     n = 0
