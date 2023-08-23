@@ -179,7 +179,7 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
         return self.current_database
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
-        view = f"__ibis_sqlite_metadata{util.guid()}"
+        view = f"__ibis_sqlite_metadata_{util.guid()}"
 
         with self.begin() as con:
             if query in self.list_tables():

@@ -16,7 +16,7 @@ _from_sqlglot_types = {
     typecode.BIGDECIMAL: partial(dt.Decimal, 76, 38),
     typecode.BIGINT: dt.Int64,
     typecode.BINARY: dt.Binary,
-    typecode.BIT: dt.String,
+    # typecode.BIT: dt.String,
     typecode.BOOLEAN: dt.Boolean,
     typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
@@ -42,6 +42,7 @@ _from_sqlglot_types = {
     typecode.MEDIUMTEXT: dt.String,
     typecode.MONEY: dt.Int64,
     typecode.NCHAR: dt.String,
+    typecode.UUID: dt.UUID,
     typecode.NULL: dt.Null,
     typecode.NVARCHAR: dt.String,
     typecode.OBJECT: partial(dt.Map, dt.string, dt.json),
@@ -60,6 +61,7 @@ _from_sqlglot_types = {
     typecode.VARCHAR: dt.String,
     typecode.VARIANT: dt.JSON,
     typecode.UNIQUEIDENTIFIER: dt.UUID,
+    typecode.SET: partial(dt.Array, dt.string),
     #############################
     # Unsupported sqlglot types #
     #############################
@@ -303,6 +305,37 @@ class PostgresType(SqlglotType):
             "macaddr8[]": dt.Array(dt.macaddr),
         }
     )
+
+
+class MySQLType(SqlglotType):
+    dialect = "mysql"
+
+    unknown_type_strings = FrozenDict(
+        {
+            "year(4)": dt.int8,
+            "inet6": dt.inet,
+        }
+    )
+
+    @classmethod
+    def _from_sqlglot_BIT(cls, nbits: sge.DataTypeParam) -> dt.Integer:
+        nbits = int(nbits.this.this)
+        if nbits > 32:
+            return dt.Int64(nullable=cls.default_nullable)
+        elif nbits > 16:
+            return dt.Int32(nullable=cls.default_nullable)
+        elif nbits > 8:
+            return dt.Int16(nullable=cls.default_nullable)
+        else:
+            return dt.Int8(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_DATETIME(cls) -> dt.Timestamp:
+        return dt.Timestamp(nullable=cls.default_nullable)
+
+    @classmethod
+    def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
+        return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
 
 
 class DuckDBType(SqlglotType):

@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
-import re
 import warnings
 from typing import TYPE_CHECKING, Literal
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
 
+import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends.base import CanCreateDatabase
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.mysql.compiler import MySQLCompiler
-from ibis.backends.mysql.datatypes import MySQLDateTime, _type_from_cursor_info
+from ibis.backends.mysql.datatypes import MySQLDateTime, MySQLType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -146,20 +147,32 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
         databases = self.inspector.get_schema_names()
         return self._filter_with_like(databases, like)
 
-    def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        if (
-            re.search(r"^\s*SELECT\s", query, flags=re.MULTILINE | re.IGNORECASE)
-            is not None
-        ):
-            query = f"({query})"
+    def _metadata(self, table: str) -> Iterable[tuple[str, dt.DataType]]:
+        with self.begin() as con:
+            result = con.exec_driver_sql(f"DESCRIBE {table}").mappings().all()
+
+        for field in result:
+            name = field["Field"]
+            type_string = field["Type"]
+            is_nullable = field["Null"] == "YES"
+            yield name, MySQLType.from_string(type_string, nullable=is_nullable)
+
+    def _get_schema_using_query(self, query: str):
+        table = f"__ibis_mysql_metadata_{util.guid()}"
 
         with self.begin() as con:
-            result = con.exec_driver_sql(f"SELECT * FROM {query} _ LIMIT 0")
-            cursor = result.cursor
-            yield from (
-                (field.name, _type_from_cursor_info(descr, field))
-                for descr, field in zip(cursor.description, cursor._result.fields)
-            )
+            con.exec_driver_sql(f"CREATE TEMPORARY TABLE {table} AS {query}")
+            result = con.exec_driver_sql(f"DESCRIBE {table}").mappings().all()
+            con.exec_driver_sql(f"DROP TABLE {table}")
+
+        fields = {}
+        for field in result:
+            name = field["Field"]
+            type_string = field["Type"]
+            is_nullable = field["Null"] == "YES"
+            fields[name] = MySQLType.from_string(type_string, nullable=is_nullable)
+
+        return sch.Schema(fields)
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
