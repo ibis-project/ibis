@@ -553,7 +553,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
         self, table: sa.Table, nulltype_cols: Iterable[str]
     ) -> sa.Table:
         """Handle cases where SQLAlchemy cannot infer the column types of `table`."""
-
         self.inspector.reflect_table(table, table.columns)
 
         dialect = self.con.dialect
@@ -565,15 +564,15 @@ class BaseAlchemyBackend(BaseSQLBackend):
             )
         )
 
-        for colname, type in self._metadata(quoted_name):
+        for colname, dtype in self._metadata(quoted_name):
             if colname in nulltype_cols:
                 # replace null types discovered by sqlalchemy with non null
                 # types
                 table.append_column(
                     sa.Column(
                         colname,
-                        self.compiler.translator_class.get_sqla_type(type),
-                        nullable=type.nullable,
+                        self.compiler.translator_class.get_sqla_type(dtype),
+                        nullable=dtype.nullable,
                         quote=self.compiler.translator_class._quote_column_names,
                     ),
                     replace_existing=True,

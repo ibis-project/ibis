@@ -284,7 +284,6 @@ class AlchemyType(TypeMapper):
         -------
         Ibis type.
         """
-
         if dtype := _from_sqlalchemy_types.get(type(typ)):
             return dtype(nullable=nullable)
         elif isinstance(typ, sat.Float):

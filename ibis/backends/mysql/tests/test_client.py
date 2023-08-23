@@ -20,8 +20,8 @@ MYSQL_TYPES = [
     ("boolean", dt.int8),
     ("smallint", dt.int16),
     ("int2", dt.int16),
-    ("mediumint", dt.int32),
-    ("int3", dt.int32),
+    # ("mediumint", dt.int32), => https://github.com/tobymao/sqlglot/issues/2109
+    # ("int3", dt.int32), => https://github.com/tobymao/sqlglot/issues/2109
     ("int", dt.int32),
     ("int4", dt.int32),
     ("integer", dt.int32),
@@ -52,11 +52,15 @@ MYSQL_TYPES = [
     # mariadb doesn't have a distinct json type
     ("json", dt.string),
     ("enum('small', 'medium', 'large')", dt.string),
-    ("inet6", dt.string),
+    # con.table(name) first parses the type correctly as ibis inet using sqlglot,
+    # then convert these types to sqlalchemy types then a sqlalchemy table to
+    # get the ibis schema again from the alchemy types, but alchemy doesn't
+    # support inet6 so it gets converted to string eventually
+    # ("inet6", dt.inet),
     ("set('a', 'b', 'c', 'd')", dt.Array(dt.string)),
     ("mediumblob", dt.binary),
     ("blob", dt.binary),
-    ("uuid", dt.string),
+    ("uuid", dt.uuid),
 ]
 
 
@@ -70,15 +74,18 @@ MYSQL_TYPES = [
 def test_get_schema_from_query(con, mysql_type, expected_type):
     raw_name = ibis.util.guid()
     name = con._quote(raw_name)
+    expected_schema = ibis.schema(dict(x=expected_type))
+
     # temporary tables get cleaned up by the db when the session ends, so we
     # don't need to explicitly drop the table
     with con.begin() as c:
         c.exec_driver_sql(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
-    expected_schema = ibis.schema(dict(x=expected_type))
-    t = con.table(raw_name)
+
     result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
-    assert t.schema() == expected_schema
     assert result_schema == expected_schema
+
+    t = con.table(raw_name)
+    assert t.schema() == expected_schema
 
 
 @pytest.mark.parametrize("coltype", ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"])

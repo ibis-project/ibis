@@ -4,7 +4,7 @@ import pytest
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.backends.trino.datatypes import parse
+from ibis.backends.trino.datatypes import TrinoType
 
 dtypes = [
     ("interval year to month", dt.Interval(unit="M")),
@@ -65,4 +65,4 @@ dtypes = [
     [param(trino_type, ibis_type, id=trino_type) for trino_type, ibis_type in dtypes],
 )
 def test_parse(trino_type, ibis_type):
-    assert parse(trino_type) == ibis_type
+    assert TrinoType.from_string(trino_type) == ibis_type
