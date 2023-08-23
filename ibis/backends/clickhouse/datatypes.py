@@ -14,7 +14,12 @@ from ibis.formats.parser import TypeParser
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-    from sqlglot.expressions import DataTypeSize, Expression
+    from sqlglot.expressions import Expression
+
+    try:
+        from sqlglot.expressions import DataTypeParam
+    except ImportError:
+        from sqlglot.expressions import DataTypeSize as DataTypeParam
 
 
 def _bool_type() -> Literal["Bool", "UInt8", "Int8"]:
@@ -41,7 +46,7 @@ class ClickHouseTypeParser(TypeParser):
 
     @classmethod
     def _get_DATETIME(
-        cls, first: DataTypeSize | None = None, second: DataTypeSize | None = None
+        cls, first: DataTypeParam | None = None, second: DataTypeParam | None = None
     ) -> dt.Timestamp:
         if first is not None and second is not None:
             scale = first
@@ -57,7 +62,7 @@ class ClickHouseTypeParser(TypeParser):
 
     @classmethod
     def _get_DATETIME64(
-        cls, scale: DataTypeSize | None = None, timezone: DataTypeSize | None = None
+        cls, scale: DataTypeParam | None = None, timezone: DataTypeParam | None = None
     ) -> dt.Timestamp:
         return cls._get_TIMESTAMP(scale=scale, timezone=timezone)
 
