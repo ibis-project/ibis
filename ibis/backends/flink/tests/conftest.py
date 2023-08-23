@@ -17,7 +17,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     def connect(*, tmpdir, worker_id, **kw: Any):
         from pyflink.table import EnvironmentSettings, TableEnvironment
 
-        env_settings = EnvironmentSettings.in_batch_mode()
+        env_settings = EnvironmentSettings.in_streaming_mode()
         table_env = TableEnvironment.create(env_settings)
         return ibis.flink.connect(table_env, **kw)
 
