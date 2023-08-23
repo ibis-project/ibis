@@ -4,7 +4,7 @@ import abc
 from typing import TYPE_CHECKING
 
 import sqlglot as sg
-from sqlglot.expressions import ColumnDef, DataType, DataTypeSize
+from sqlglot.expressions import DataType
 
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
@@ -12,6 +12,13 @@ from ibis.common.collections import FrozenDict
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+
+    from sqlglot.expressions import ColumnDef
+
+    try:
+        from sqlglot.expressions import DataTypeParam
+    except ImportError:
+        from sqlglot.expressions import DataTypeSize as DataTypeParam
 
 SQLGLOT_TYPE_TO_IBIS_TYPE = {
     DataType.Type.BIGDECIMAL: dt.Decimal(76, 38),
@@ -151,7 +158,7 @@ class TypeParser(abc.ABC):
 
     @classmethod
     def _get_TIMESTAMP(
-        cls, scale: DataTypeSize | None = None, timezone: DataTypeSize | None = None
+        cls, scale: DataTypeParam | None = None, timezone: DataTypeParam | None = None
     ) -> dt.Timestamp:
         return dt.Timestamp(
             timezone=timezone if timezone is None else timezone.this.this,
@@ -160,7 +167,7 @@ class TypeParser(abc.ABC):
         )
 
     @classmethod
-    def _get_TIMESTAMPTZ(cls, scale: DataTypeSize | None = None) -> dt.Timestamp:
+    def _get_TIMESTAMPTZ(cls, scale: DataTypeParam | None = None) -> dt.Timestamp:
         return dt.Timestamp(
             timezone="UTC",
             scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
@@ -168,7 +175,7 @@ class TypeParser(abc.ABC):
         )
 
     @classmethod
-    def _get_DATETIME(cls, scale: DataTypeSize | None = None) -> dt.Timestamp:
+    def _get_DATETIME(cls, scale: DataTypeParam | None = None) -> dt.Timestamp:
         return dt.Timestamp(
             timezone="UTC",
             scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
@@ -176,14 +183,14 @@ class TypeParser(abc.ABC):
         )
 
     @classmethod
-    def _get_INTERVAL(cls, precision: DataTypeSize | None = None) -> dt.Interval:
+    def _get_INTERVAL(cls, precision: DataTypeParam | None = None) -> dt.Interval:
         if precision is None:
             precision = cls.default_interval_precision
         return dt.Interval(str(precision), nullable=cls.default_nullable)
 
     @classmethod
     def _get_DECIMAL(
-        cls, precision: DataTypeSize | None = None, scale: DataTypeSize | None = None
+        cls, precision: DataTypeParam | None = None, scale: DataTypeParam | None = None
     ) -> dt.Decimal:
         if precision is None:
             precision = cls.default_decimal_precision
