@@ -139,9 +139,7 @@ class Backend(BaseBackend, CanListDatabases):
         table_expr = expr.as_table()
         sql = self.compile(table_expr, **kwargs)
         df = self._table_env.sql_query(sql).to_pandas()
-
-        # TODO: remove the extra conversion
-        return expr.__pandas_result__(table_expr.__pandas_result__(df))
+        return table_expr.__pandas_result__(df)
 
     def create_table(
         self,
