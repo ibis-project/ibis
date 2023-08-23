@@ -340,3 +340,7 @@ class OracleType(SqlglotType):
 
 class SnowflakeType(SqlglotType):
     dialect = "snowflake"
+
+
+class SQLiteType(SqlglotType):
+    dialect = "sqlite"

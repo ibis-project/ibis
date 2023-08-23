@@ -30,7 +30,7 @@ from ibis.backends.base import CanListDatabases
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
 from ibis.backends.sqlite import udf
 from ibis.backends.sqlite.compiler import SQLiteCompiler
-from ibis.backends.sqlite.datatypes import ISODATETIME, SqliteType, parse
+from ibis.backends.sqlite.datatypes import ISODATETIME, SqliteType
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -204,7 +204,7 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
             for name, notnull, raw_typ, typ in zip(
                 names, notnulls, raw_types, single_row_types
             ):
-                ibis_type = parse(raw_typ or typ)
+                ibis_type = SqliteType.from_string(raw_typ or typ)
                 yield name, ibis_type(nullable=not notnull)
 
             # drop the view when we're done with it
