@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any
 
 import oracledb
 
+from ibis import util
+
 # Wow, this is truly horrible
 # Get out your clippers, it's time to shave a yak.
 #
@@ -28,6 +30,7 @@ import sqlalchemy as sa  # noqa: E402
 import ibis.common.exceptions as exc  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.expr.operations as ops  # noqa: E402
+import ibis.expr.schema as sch  # noqa: E402
 from ibis.backends.base.sql.alchemy import (  # noqa: E402
     AlchemyCompiler,
     AlchemyExprTranslator,
@@ -38,8 +41,6 @@ from ibis.backends.oracle.registry import operation_registry  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-    import ibis.expr.schema as sch
 
 
 class OracleExprTranslator(AlchemyExprTranslator):
@@ -174,20 +175,23 @@ class Backend(BaseAlchemyBackend):
         return self._scalar_query("SELECT * FROM global_name")
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        query = f"SELECT * FROM ({query.strip(';')}) FETCH FIRST 0 ROWS ONLY"
-        with self.begin() as con, con.connection.cursor() as cur:
-            result = cur.execute(query)
-            desc = result.description
+        table = f"__ibis_oracle_metadata_{util.guid()}"
 
-        for name, type_code, _, _, precision, scale, is_nullable in desc:
-            if precision is not None and scale is not None and precision != 0:
-                typ = dt.Decimal(precision=precision, scale=scale, nullable=is_nullable)
-            elif precision == 0:
-                # TODO: how to disambiguate between int and float here without inspecting the value?
-                typ = dt.float
-            else:
-                typ = OracleType.from_string(type_code).copy(nullable=is_nullable)
-            yield name, typ
+        with self.begin() as con:
+            con.exec_driver_sql(
+                f"CREATE PRIVATE TEMPORARY TABLE {table} AS {query.strip(';')}"
+            )
+            result = con.exec_driver_sql(f"DESCRIBE {table}").mappings().all()
+            con.exec_driver_sql(f"DROP TABLE {table}")
+
+        fields = {}
+        for field in result:
+            name = field["Field"]
+            type_string = field["Type"]
+            is_nullable = field["Null"] == "YES"
+            fields[name] = OracleType.from_string(type_string, nullable=is_nullable)
+
+        return sch.Schema(fields)
 
     def _table_from_schema(
         self,
