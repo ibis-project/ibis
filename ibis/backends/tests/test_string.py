@@ -101,6 +101,11 @@ def test_string_col_is_unicode(alltypes, df):
     assert result.map(is_text_type).all()
 
 
+def uses_java_re(t):
+    backend_name = t._find_backend().name
+    return backend_name in {"pyspark", "flink"}
+
+
 @pytest.mark.parametrize(
     ("result_func", "expected_func"),
     [
@@ -218,7 +223,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_search(r"[[:digit:]]+"),
+            lambda t: t.string_col.re_search(
+                r"\p{Digit}+" if uses_java_re(t) else r"[[:digit:]]+"
+            ),
             lambda t: t.string_col.str.contains(r"\d+"),
             id="re_search_posix",
             marks=[
@@ -226,7 +233,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["pyspark"], raises=AssertionError),
                 pytest.mark.never(
                     ["druid"],
                     reason="No posix support; regex is interpreted literally",
@@ -257,7 +263,9 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_extract(r"([[:digit:]]+)", 1),
+            lambda t: t.string_col.re_extract(
+                r"(\p{Digit}+)" if uses_java_re(t) else r"([[:digit:]]+)", 1
+            ),
             lambda t: t.string_col.str.extract(r"(\d+)", expand=False),
             id="re_extract_posix",
             marks=[
@@ -265,7 +273,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["pyspark"], raises=AssertionError),
             ],
         ),
         param(
@@ -341,17 +348,15 @@ def test_string_col_is_unicode(alltypes, df):
             ],
         ),
         param(
-            lambda t: t.string_col.re_replace(r"[[:digit:]]+", "a"),
+            lambda t: t.string_col.re_replace(
+                r"\p{Digit}+" if uses_java_re(t) else r"[[:digit:]]+", "a"
+            ),
             lambda t: t.string_col.str.replace(r"\d+", "a", regex=True),
             id="re_replace_posix",
             marks=[
                 pytest.mark.notimpl(
                     ["mysql", "mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.broken(
-                    ["pyspark"],
-                    raises=AssertionError,
                 ),
             ],
         ),
