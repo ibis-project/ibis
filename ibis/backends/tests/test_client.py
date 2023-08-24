@@ -169,7 +169,6 @@ _LIMIT = {
 
 
 @pytest.mark.notimpl(["datafusion", "polars", "mssql"])
-@pytest.mark.notyet(["sqlite"])
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
 def test_sql(backend, con):
