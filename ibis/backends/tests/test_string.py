@@ -838,6 +838,7 @@ def uses_java_re(t):
                     "mssql",
                     "druid",
                     "oracle",
+                    "flink",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -1012,7 +1013,7 @@ def test_capitalize(con):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "pandas", "polars", "druid", "oracle"],
+    ["dask", "datafusion", "pandas", "polars", "druid", "oracle", "flink"],
     raises=OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1061,6 +1062,7 @@ def test_multiple_subs(con):
         "pandas",
         "polars",
         "sqlite",
+        "flink",
     ],
     raises=com.OperationNotDefinedError,
 )
