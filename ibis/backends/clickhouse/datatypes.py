@@ -24,11 +24,11 @@ class ClickhouseType(SqlglotType):
 
     unknown_type_strings = FrozenDict(
         {
-            "IPv4": dt.INET(nullable=default_nullable),
-            "IPv6": dt.INET(nullable=default_nullable),
-            "Object('json')": dt.JSON(nullable=default_nullable),
-            "Array(Null)": dt.Array(dt.null, nullable=default_nullable),
-            "Array(Nothing)": dt.Array(dt.null, nullable=default_nullable),
+            "ipv4": dt.INET(nullable=default_nullable),
+            "ipv6": dt.INET(nullable=default_nullable),
+            "object('json')": dt.JSON(nullable=default_nullable),
+            "array(null)": dt.Array(dt.null, nullable=default_nullable),
+            "array(nothing)": dt.Array(dt.null, nullable=default_nullable),
         }
     )
 

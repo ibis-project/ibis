@@ -391,7 +391,9 @@ def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
     duckdb=["duckdb<0.8.1"], raises=AssertionError, reason="bug in duckdb"
 )
 @pytest.mark.notimpl(["dask"], raises=NotImplementedError)
-@pytest.mark.notimpl(["druid"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(
+    ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
+)
 @pytest.mark.notimpl(["mssql"], raises=pa.ArrowTypeError)
 @pytest.mark.notimpl(
     ["pyspark"], raises=NotImplementedError, reason="fetchmany not implemented"
