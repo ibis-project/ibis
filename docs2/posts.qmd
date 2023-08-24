@@ -12,4 +12,3 @@ listing:
   feed: true
 page-layout: full
 ---
-

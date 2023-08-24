@@ -10,6 +10,7 @@ docs/SUMMARY.md
 docs/api/expressions/top_level.md
 docs/overrides/*.html
 docs/release_notes.md
+docs2/_freeze
 ibis
 poetry.lock
 result*

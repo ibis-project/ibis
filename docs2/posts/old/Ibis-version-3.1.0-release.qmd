@@ -2,7 +2,7 @@
 title: Ibis v3.1.0
 author: Marlene Mhangami
 date: 2022-07-25
-categories: 
+categories:
     - release
     - blog
 ---

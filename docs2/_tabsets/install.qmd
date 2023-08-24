@@ -126,7 +126,7 @@ And connect:
 
 ```{.python}
 import ibis
-    
+
 con = ibis.impala.connect()  # <1>
 ```
 
@@ -167,7 +167,7 @@ con = ibis.mysql.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
-    
+
 ## Oracle
 
 Install with the Oracle extra:
@@ -185,7 +185,7 @@ con = ibis.oracle.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## pandas
 
 Install with the pandas extra:
@@ -203,7 +203,7 @@ con = ibis.pandas.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Polars
 
 Install with the Polars extra:
@@ -221,7 +221,7 @@ con = ibis.polars.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PostgreSQL
 
 Install with the Postgres extra:
@@ -240,7 +240,7 @@ con = ibis.postgres.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PySpark
 
 Install with the PySpark extra:
@@ -259,7 +259,7 @@ con = ibis.pyspark.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Snowflake
 
 Install with the Snowflake extra:
@@ -277,7 +277,7 @@ con = ibis.snowflake.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## SQLite
 
 Install with the SQLite extra:
@@ -295,7 +295,7 @@ con = ibis.sqlite.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Trino
 
 Install with the Trino extra:
@@ -443,7 +443,7 @@ And connect:
 
 ```{.python}
 import ibis
-    
+
 con = ibis.impala.connect()  # <1>
 ```
 
@@ -484,7 +484,7 @@ con = ibis.mysql.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
-    
+
 ## Oracle
 
 Install for Oracle:
@@ -502,7 +502,7 @@ con = ibis.oracle.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## pandas
 
 Install for pandas:
@@ -520,7 +520,7 @@ con = ibis.pandas.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Polars
 
 Install for Polars:
@@ -538,7 +538,7 @@ con = ibis.polars.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PostgreSQL
 
 Install for Postgres:
@@ -557,7 +557,7 @@ con = ibis.postgres.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PySpark
 
 Install for PySpark:
@@ -576,7 +576,7 @@ con = ibis.pyspark.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Snowflake
 
 Install for Snowflake:
@@ -594,7 +594,7 @@ con = ibis.snowflake.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## SQLite
 
 Install for SQLite:
@@ -612,7 +612,7 @@ con = ibis.sqlite.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Trino
 
 Install for Trino:
@@ -758,7 +758,7 @@ And connect:
 
 ```{.python}
 import ibis
-    
+
 con = ibis.impala.connect()  # <1>
 ```
 
@@ -799,7 +799,7 @@ con = ibis.mysql.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
-    
+
 ## Oracle
 
 Install for Oracle:
@@ -817,7 +817,7 @@ con = ibis.oracle.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## pandas
 
 Install for pandas:
@@ -835,7 +835,7 @@ con = ibis.pandas.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Polars
 
 Install for Polars:
@@ -853,7 +853,7 @@ con = ibis.polars.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PostgreSQL
 
 Install for Postgres:
@@ -872,7 +872,7 @@ con = ibis.postgres.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PySpark
 
 Install for PySpark:
@@ -891,7 +891,7 @@ con = ibis.pyspark.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Snowflake
 
 Install for Snowflake:
@@ -909,7 +909,7 @@ con = ibis.snowflake.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## SQLite
 
 Install for SQLite:
@@ -927,7 +927,7 @@ con = ibis.sqlite.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Trino
 
 Install for Trino:
@@ -1073,7 +1073,7 @@ And connect:
 
 ```{.python}
 import ibis
-    
+
 con = ibis.impala.connect()  # <1>
 ```
 
@@ -1114,7 +1114,7 @@ con = ibis.mysql.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
-    
+
 ## Oracle
 
 Install for Oracle:
@@ -1132,7 +1132,7 @@ con = ibis.oracle.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## pandas
 
 Install for pandas:
@@ -1150,7 +1150,7 @@ con = ibis.pandas.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Polars
 
 Install for Polars:
@@ -1168,7 +1168,7 @@ con = ibis.polars.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PostgreSQL
 
 Install for Postgres:
@@ -1187,7 +1187,7 @@ con = ibis.postgres.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## PySpark
 
 Install for PySpark:
@@ -1206,7 +1206,7 @@ con = ibis.pyspark.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Snowflake
 
 Install for Snowflake:
@@ -1224,7 +1224,7 @@ con = ibis.snowflake.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## SQLite
 
 Install for SQLite:
@@ -1242,7 +1242,7 @@ con = ibis.sqlite.connect()  # <1>
 ```
 
 1. Adjust connection parameters as needed.
- 
+
 ## Trino
 
 Install for Trino:

@@ -5,7 +5,7 @@ hide:
 
 # Operation support matrix
 
-::: {.callout-tip} 
+::: {.callout-tip}
 Backends with low coverage are good places to start contributing!
 
 Each backend implements operations differently, but this is usually very similar to other backends. If you want to start contributing to ibis, it's a good idea to start by adding missing operations to backends that have low operation coverage.
@@ -15,7 +15,7 @@ Each backend implements operations differently, but this is usually very similar
   <iframe class="streamlit-app-inner" width=760 height=600 src="https://ibis-project.streamlit.app/?embedded=true"></iframe>
 </div>
 
-::: {.callout-note} 
+::: {.callout-note}
 This app is built using [`streamlit`](https://streamlit.io/).
 
 You can develop the app locally by editing `docs/backends/app/backend_info_app.py` and opening a PR with your changes.

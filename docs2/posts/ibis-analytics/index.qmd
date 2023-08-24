@@ -4,7 +4,7 @@ author: "Cody Peterson"
 date: "2023-09-02"
 image: "thumbnail.png"
 code-annotations: below
-categories: 
+categories:
     - blog
     - demo
 draft: false
@@ -12,9 +12,9 @@ draft: false
 
 ## Introduction
 
-As a Python data user, I've wanted a more modular, composable, and scalable ecosystem. *It finally feels close*. Wes McKinney released pandas c. 2009 to bring dataframes into Python and it became one of the most used packages. It was built when small data was smaller and though still an excellent dataframe library today has some downsides [Wes wrote about in his "Apache Arrow and the '10 things I hate about pandas'" blog post](https://wesmckinney.com/blog/apache-arrow-pandas-internals). Wes created Ibis (and Apache Arrow) to address these issues and more with a different approach than any other Python dataframe library by supporting any backend, including pandas or DuckDB or Polars or BigQuery or Snowflake or PySpark or over a dozen others. 
+As a Python data user, I've wanted a more modular, composable, and scalable ecosystem. *It finally feels close*. Wes McKinney released pandas c. 2009 to bring dataframes into Python and it became one of the most used packages. It was built when small data was smaller and though still an excellent dataframe library today has some downsides [Wes wrote about in his "Apache Arrow and the '10 things I hate about pandas'" blog post](https://wesmckinney.com/blog/apache-arrow-pandas-internals). Wes created Ibis (and Apache Arrow) to address these issues and more with a different approach than any other Python dataframe library by supporting any backend, including pandas or DuckDB or Polars or BigQuery or Snowflake or PySpark or over a dozen others.
 
-I've experienced many pains of the ecosystem myself. I downloaded a 1 GB CSV from a database GUI and used pandas to munge it because I couldn't figure it out in SQL. When building larger ML demos that included data preprocessing on GBs, I hit OOM errors and learned about how much data expands in memory and why to store files in compressed parquet and how to parition data. I started using PySpark and Dask to overcome hurdles. I slowly learned about databases. Fortunately while I've been learning, others ([including many Ibis contributors](https://github.com/ibis-project/ibis/contributors)) have been building a modern, open-source Python data ecosystem!
+I've experienced many pains of the ecosystem myself. I downloaded a 1 GB CSV from a database GUI and used pandas to munge it because I couldn't figure it out in SQL. When building larger ML demos that included data preprocessing on GBs, I hit OOM errors and learned about how much data expands in memory and why to store files in compressed parquet and how to partition data. I started using PySpark and Dask to overcome hurdles. I slowly learned about databases. Fortunately while I've been learning, others ([including many Ibis contributors](https://github.com/ibis-project/ibis/contributors)) have been building a modern, open-source Python data ecosystem!
 
 Ibis plays a part but is only one component in any real data project. We'll look at how to combine a variety of open-source tools and freemium services including:
 
@@ -41,7 +41,7 @@ As a Technical Product Manager at Voltron Data, it is important to know and unde
 
 ## The dashboard
 
-**Note:** While I consider this "production" it does go down all the time. There are screenshots below in case that happens while you're reading this, or you can reproduce it locally (excercise for the reader).
+**Note:** While I consider this "production" it does go down all the time. There are screenshots below in case that happens while you're reading this, or you can reproduce it locally (exercise for the reader).
 
 The finished dashboard can be [viewed as a Streamlit app](https://ibis-analytics.streamlit.app).
 
@@ -313,7 +313,7 @@ jobs:
         run: just run
       - name: backup data
         run: just export-backup
-        env: 
+        env:
           AZURE_STORAGE_SECRET: ${{ secrets.AZURE_STORAGE_SECRET }}
       - name: export to MotherDuck
         run: just export-md

@@ -17,7 +17,7 @@ Ibis configuration happens through the `ibis.options` attribute. Attributes can 
 
 ## Interactive mode
 
-Ibis out of the box is in _deffered mode_. Expressions display their internal details when printed to the console. 
+Ibis out of the box is in _deffered mode_. Expressions display their internal details when printed to the console.
 
 ```{python}
 t.head(3)

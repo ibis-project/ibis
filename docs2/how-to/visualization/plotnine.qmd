@@ -31,4 +31,3 @@ chart = (
 )
 chart
 ```
-

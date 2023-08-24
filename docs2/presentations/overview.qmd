@@ -1,7 +1,7 @@
 ---
 title: "Ibis overview"
 format:
-  revealjs: 
+  revealjs:
     footer: <https://ibis-project.org>
     preview-links: true
     chalkboard: true

@@ -1,6 +1,6 @@
 # Tutorial: Ibis for SQL users
 
-## Prerequesites
+## Prerequisites
 
 {{< include /_tabsets/install_default.qmd >}}
 
