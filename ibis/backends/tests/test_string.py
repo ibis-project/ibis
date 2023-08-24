@@ -703,7 +703,9 @@ def uses_java_re(t):
             id="negative-index",
             marks=[
                 pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
-                pytest.mark.broken(["datafusion", "impala"], raises=AssertionError),
+                pytest.mark.broken(
+                    ["datafusion", "impala", "flink"], raises=AssertionError
+                ),
                 pytest.mark.notimpl(["pyspark"], raises=NotImplementedError),
             ],
         ),
