@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.registry import helpers, window
+from ibis.backends.base.sql.registry import (
+    fixed_arity,
+    helpers,
+    window,
+)
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
@@ -188,6 +192,7 @@ operation_registry.update(
         ops.ExtractMinute: _extract_field("minute"),  # equivalent to MINUTE(timestamp)
         ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
         ops.Literal: _literal,
+        ops.RegexSearch: fixed_arity("regexp", 2),
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Where: _filter,
         ops.Window: _window,
