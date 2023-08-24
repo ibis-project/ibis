@@ -614,6 +614,7 @@ operation_registry.update(
 >>>>>>> 7ff6e5c5c (test(flink): fix/skip common backend tests for flink)
     }
 )
+<<<<<<< HEAD
 
 _invalid_operations = {
     # ibis.expr.operations.strings
@@ -627,3 +628,6 @@ _invalid_operations = {
 operation_registry = {
     k: v for k, v in operation_registry.items() if k not in _invalid_operations
 }
+=======
+del operation_registry[ops.Translate]
+>>>>>>> 3f7756999 (test(flink): mark `translate` not yet BE-supported)

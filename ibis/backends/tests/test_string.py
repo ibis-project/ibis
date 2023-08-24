@@ -424,6 +424,11 @@ def uses_java_re(t):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=com.OperationNotDefinedError,
+                    reason="doesn't support `TRANSLATE`",
+                ),
             ],
         ),
         param(
