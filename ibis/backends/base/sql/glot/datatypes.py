@@ -171,7 +171,7 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
-        if dtype := cls.unknown_type_strings.get(text):
+        if dtype := cls.unknown_type_strings.get(text.lower()):
             return dtype
 
         sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
@@ -355,8 +355,8 @@ class TrinoType(SqlglotType):
 
     unknown_type_strings = FrozenDict(
         {
-            "INTERVAL YEAR TO MONTH": dt.Interval("M"),
-            "INTERVAL DAY TO SECOND": dt.Interval("ms"),
+            "interval year to month": dt.Interval("M"),
+            "interval day to second": dt.Interval("ms"),
         }
     )
 
