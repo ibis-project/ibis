@@ -11,7 +11,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base.sql.compiler.base import DML, QueryAST, SetOp
-from ibis.backends.base.sql.compiler.select_builder import SelectBuilder
+from ibis.backends.base.sql.compiler.select_builder import SelectBuilder, _LimitSpec
 from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryContext
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.common.grounds import Comparable
@@ -569,17 +569,27 @@ class Compiler:
     @classmethod
     def to_ast_ensure_limit(cls, expr, limit=None, params=None):
         context = cls.make_context(params=params)
-        table = expr.as_table()
+        query_ast = cls.to_ast(expr, context)
 
-        if limit == "default":
-            query_limit = options.sql.default_limit
-        else:
-            query_limit = limit
+        # note: limit can still be None at this point, if the global
+        # default_limit is None
+        for query in reversed(query_ast.queries):
+            if (
+                isinstance(query, Select)
+                and not isinstance(expr, ir.Scalar)
+                and query.table_set is not None
+            ):
+                if query.limit is None:
+                    if limit == "default":
+                        query_limit = options.sql.default_limit
+                    else:
+                        query_limit = limit
+                    if query_limit:
+                        query.limit = _LimitSpec(query_limit, offset=0)
+                elif limit is not None and limit != "default":
+                    query.limit = _LimitSpec(limit, query.limit.offset)
 
-        if query_limit is not None:
-            table = table.limit(query_limit)
-
-        return cls.to_ast(table, context)
+        return query_ast
 
     @classmethod
     def to_sql(cls, node, context=None, params=None):
