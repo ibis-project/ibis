@@ -2,7 +2,7 @@
 title: "Maximizing productivity with selectors"
 author: Phillip Cloud
 date: 2023-02-27
-categories: 
+categories:
     - blog
 ---
 

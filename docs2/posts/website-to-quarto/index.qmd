@@ -2,7 +2,7 @@
 title: "Migrating Ibis documentation to Quarto"
 author: "Cody"
 date: "2023-09-01"
-categories: 
+categories:
     - blog
 ---
 

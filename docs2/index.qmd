@@ -43,7 +43,7 @@ This website is under construction and will eventually replace [the current Ibis
 View our [featured post on the Ibis analytics project demo](posts/ibis-analytics/).
 :::
 
-## Install 
+## Install
 
 We recommend starting with the default backend (DuckDB).
 
@@ -59,7 +59,7 @@ pip install 'ibis-framework[duckdb]' # <1>
 
 ::: {#collapseBackends .collapse .multi-collapse}
 
-## Backends 
+## Backends
 
 Need to use Ibis with a backend that isn't currently supported? [Let us know!](https://github.com/ibis-project/ibis/discussions/new?category=q-a)
 
@@ -75,7 +75,7 @@ See the [backend support matrix](support_matrix.qmd) for details on operations s
 
 ::: {#collapseQuickstart .collapse .multi-collapse}
 
-## Quickstart 
+## Quickstart
 
 See [the getting started tutorial](tutorials/getting_started.qmd) for a more in-depth introduction to Ibis. Below is a quick overview.
 
@@ -109,7 +109,7 @@ t[10:15]  # <1>
 
 ::: {#collapseAnalytics .collapse .multi-collapse}
 
-### Analytics 
+### Analytics
 
 Ibis is built for easy analytics at scale in Python.
 
@@ -132,9 +132,9 @@ Ibis is built for easy analytics at scale in Python.
 
 ::: {#collapseVisualization .collapse .multi-collapse}
 
-### Exploratory data analysis (EDA) and visualization 
+### Exploratory data analysis (EDA) and visualization
 
-#### Exploratory data analysis 
+#### Exploratory data analysis
 
 Ibis has built-in methods for exploration and [visualization](#visualization).
 
@@ -283,7 +283,7 @@ See [the demo](/posts/ibis-analytics/) for more.
 
 ::: {#collapseDataScience .collapse .multi-collapse}
 
-### Data science 
+### Data science
 
 Use Ibis with your favorite data science libraries for concise and efficient workflows.
 
@@ -353,7 +353,7 @@ px.scatter_3d(  # <6>
 
 ::: {#collapseInputOutput .collapse .multi-collapse}
 
-### Input and output 
+### Input and output
 
 Ibis supports a variety of input and output options.
 
@@ -365,7 +365,7 @@ Ibis supports a variety of input and output options.
 
 ::: {#collapseSQLPython .collapse .multi-collapse}
 
-### SQL + Python 
+### SQL + Python
 
 Ibis has the `ibis.to_sql` to generate SQL strings and `ibis.show_sql` display them. Ibis uses [SQLGlot](https://sqlglot.com) under the hood to allow passing a `dialect` parameter to SQL methods.
 

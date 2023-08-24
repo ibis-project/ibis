@@ -1,7 +1,7 @@
 project:
   type: website
 
-execute: 
+execute:
   warning: false
   error: false
 
@@ -43,7 +43,7 @@ website:
       - icon: github
         menu:
           - text: Source code
-            url:  https://github.com/ibis-project/ibis
+            url: https://github.com/ibis-project/ibis
           - text: Report a bug
             url: https://github.com/ibis-project/ibis/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml&title=bug
           - text: Submit a feature request
@@ -66,7 +66,7 @@ website:
       title: "Getting started"
       style: "docked"
       collapse-level: 2
-      contents: 
+      contents:
         - why.qmd
         - install.qmd
         - auto: tutorials/*.qmd
@@ -81,7 +81,7 @@ website:
       title: "Backends"
       style: "docked"
       collapse-level: 2
-      contents: 
+      contents:
         - support_matrix.qmd
         - auto: backends/*.qmd
     - id: how-to
@@ -98,7 +98,7 @@ website:
       title: "Community"
       style: "docked"
       collapse-level: 2
-      contents: 
+      contents:
         - auto: community
     - id: presentations
       title: "Presentations"
@@ -115,8 +115,9 @@ website:
 
 format:
   html:
-    theme: 
-      light: flatly
+    theme:
+      light:
+        flatly
         #dark: darkly
     css: styles.css
     toc: true
@@ -125,4 +126,3 @@ format:
     # if using the vapor theme, adjust the text color optionally
     #fontcolor: fuchsia
     #linkcolor: fuchsia
-

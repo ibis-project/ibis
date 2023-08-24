@@ -2,7 +2,7 @@
 title: Ibis v4.0.0
 author: Patrick Clarke
 date: 2023-01-09
-categories: 
+categories:
     - release
     - blog
 ---

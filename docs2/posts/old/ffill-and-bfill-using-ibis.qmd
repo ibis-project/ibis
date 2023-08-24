@@ -2,7 +2,7 @@
 title: "`ffill` and `bfill` using Ibis"
 author: Patrick Clarke
 date: 2022-09-09
-categories: 
+categories:
     - blog
 ---
 

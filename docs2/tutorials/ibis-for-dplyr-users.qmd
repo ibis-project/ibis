@@ -196,7 +196,7 @@ Ibis, like dplyr, has a `select` method to include or exclude columns:
 With dplyr:
 
 ```r
-starwars |> 
+starwars |>
     select(hair_color)
 ```
 
@@ -262,7 +262,7 @@ Ibis allows you to rename columns using `relabel()` which provides similar funct
 In dplyr:
 
 ```r
-starwars |> 
+starwars |>
     rename("homeworld" = "home_world")
 ```
 
@@ -317,7 +317,7 @@ In Ibis, for `BMI` to reference `height_m`, it needs to be in a separate `mutate
     .mutate(
         height_m = _.height / 100
     )
-    .mutate(        
+    .mutate(
         BMI = _.mass / (_.height_m**2)
     )
     .select("BMI", ~s.matches("BMI"))
@@ -331,7 +331,7 @@ To summarize tables, dplyr has the verbs `summarise`/`summarize`:
 In dplyr:
 
 ```r
-starwars %>% 
+starwars %>%
     summarise(height = mean(height, na.rm = TRUE))
 ```
 
@@ -357,7 +357,7 @@ band_instruments = ibis.examples.band_instruments.fetch()
 In dplyr, we can perform a left join of these two tables like:
 
 ```r
-band_members |> 
+band_members |>
     left_join(band_instruments)
 ```
 
@@ -391,8 +391,8 @@ dplyr users are likely to be familiar with the `pivot_wider` and `pivot_longer` 
 In dplyr+tidyr:
 
 ```r
-starwars |> 
-    select(name, matches("color")) |> 
+starwars |>
+    select(name, matches("color")) |>
     pivot_longer(matches("color"), names_to = "attribute", values_to = "color")
 ```
 
@@ -412,7 +412,7 @@ starwars_colors
 And the reverse, in dplyr:
 
 ```r
-starwars_colors |> 
+starwars_colors |>
     pivot_wider(names_from = "attribute", values_from = "value")
 ```
 

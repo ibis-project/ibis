@@ -3,7 +3,7 @@
 If you don't have your own data, you can load example data from the `ibis.examples` module:
 
 ```{python}
-import ibis 
+import ibis
 import ibis.selectors as s
 
 ibis.options.interactive = True

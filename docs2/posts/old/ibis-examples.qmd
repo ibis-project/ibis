@@ -2,7 +2,7 @@
 title: "Ibis sneak peek: examples"
 author: Kae Suarez
 date: 2023-03-08
-categories: 
+categories:
     - blog
 ---
 

@@ -98,7 +98,7 @@ passing a properly formatted BigQuery connection URL to `ibis.connect`
 con = ibis.connect(f"bigquery://{project_id}/{dataset_id}")
 ```
 
-::: {.callout-note} 
+::: {.callout-note}
 This assumes you have already authenticated via the `gcloud` CLI.
 :::
 

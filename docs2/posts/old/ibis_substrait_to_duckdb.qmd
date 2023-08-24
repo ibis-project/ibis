@@ -2,7 +2,7 @@
 title: "Ibis + Substrait + DuckDB"
 author: Gil Forsyth
 date: 2023-02-01
-categories: 
+categories:
     - blog
 ---
 

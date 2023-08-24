@@ -2,7 +2,7 @@
 title: "Ibis sneak peek: writing to files"
 author: Kae Suarez
 date: 2023-03-09
-categories: 
+categories:
     - blog
 ---
 

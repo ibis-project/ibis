@@ -267,6 +267,7 @@ norecursedirs = [
   "dev",
   "docker",
   "docs",
+  "docs2",
   "nix",
   "result*",
 ]
@@ -477,6 +478,7 @@ required-imports = ["from __future__ import annotations"]
 ]
 "ci/*.py" = ["INP001"]
 "docs/*.py" = ["INP001"]
+"docs2/*.py" = ["INP001"]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 
 [tool.black]

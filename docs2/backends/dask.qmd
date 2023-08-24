@@ -63,4 +63,3 @@ con = ibis.dask.connect()  # <1>
 1. Adjust connection parameters as needed.
 
 :::
-

@@ -40,4 +40,3 @@ plt.xticks(grouped["row_number"].to_pandas(), grouped["species"].to_pandas())
 plt.ylabel("Count")
 plt.show()
 ```
-

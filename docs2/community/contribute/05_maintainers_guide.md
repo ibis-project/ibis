@@ -46,6 +46,7 @@ Assuming your file is called `example.csv`:
 Ibis is released on [PyPI](https://pypi.org/project/ibis-framework/) and [Conda Forge](https://github.com/conda-forge/ibis-framework-feedstock).
 
 ::: {.panel-tabset}
+
 ## PyPI
 
 Releases to PyPI are handled automatically using [semantic release](https://egghead.io/lessons/javascript-automating-releases-with-semantic-release).
