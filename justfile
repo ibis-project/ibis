@@ -136,11 +136,19 @@ profile +args:
     pyinstrument {{ args }}
 
 # preview docs
-preview:
+docs-preview:
     quarto preview docs2
 
-render:
+docs-render:
     @quarto render docs2
 
-upload:
-    @az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs2/_site/*" --recursive
+docs-upload:
+    #!/usr/bin/env bash
+    if [ -z "$AZURE_STORAGE_SECRET" ]; then
+        >&2 echo "AZURE_STORAGE_SECRET must be set"
+        exit 1
+    fi
+    az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs2/_output/*" --recursive --account-key "$AZURE_STORAGE_SECRET"
+
+docs-deploy: docs-render
+    just docs-upload
