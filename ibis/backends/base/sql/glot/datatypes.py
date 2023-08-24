@@ -16,7 +16,6 @@ _from_sqlglot_types = {
     typecode.BIGDECIMAL: partial(dt.Decimal, 76, 38),
     typecode.BIGINT: dt.Int64,
     typecode.BINARY: dt.Binary,
-    # typecode.BIT: dt.String,
     typecode.BOOLEAN: dt.Boolean,
     typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
@@ -65,6 +64,7 @@ _from_sqlglot_types = {
     #############################
     # Unsupported sqlglot types #
     #############################
+    # BIT = auto() # mysql
     # BIGSERIAL = auto()
     # DATETIME64 = auto() # clickhouse
     # ENUM = auto()
@@ -343,8 +343,6 @@ class DuckDBType(SqlglotType):
     default_decimal_precision = 18
     default_decimal_scale = 3
     default_interval_precision = "us"
-
-    # fallback = {"INTERVAL": dt.Interval(default_interval_precision)}
 
 
 class TrinoType(SqlglotType):

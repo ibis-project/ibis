@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
@@ -12,12 +11,11 @@ T = TypeVar("T")
 S = TypeVar("S")
 
 
-class TypeMapper(ABC, Generic[T]):
+class TypeMapper(Generic[T]):
     # `T` is the format-specific type object, e.g. pyarrow.DataType or
     # sqlalchemy.types.TypeEngine
 
     @classmethod
-    @abstractmethod
     def from_ibis(cls, dtype: DataType) -> T:
         """Convert an Ibis DataType to a format-specific type object.
 
@@ -30,9 +28,9 @@ class TypeMapper(ABC, Generic[T]):
         -------
         Format-specific type object.
         """
+        raise NotImplementedError
 
     @classmethod
-    @abstractmethod
     def to_ibis(cls, typ: T, nullable: bool = True) -> DataType:
         """Convert a format-specific type object to an Ibis DataType.
 
@@ -47,9 +45,9 @@ class TypeMapper(ABC, Generic[T]):
         -------
         Ibis DataType.
         """
+        raise NotImplementedError
 
     @classmethod
-    @abstractmethod
     def from_string(cls, text: str, nullable: bool = True) -> DataType:
         """Convert a backend-specific string representation into an Ibis DataType.
 
@@ -64,9 +62,9 @@ class TypeMapper(ABC, Generic[T]):
         -------
         Ibis DataType.
         """
+        raise NotImplementedError
 
     @classmethod
-    @abstractmethod
     def to_string(cls, dtype: DataType) -> str:
         """Convert `dtype` into a backend-specific string representation.
 
@@ -79,13 +77,13 @@ class TypeMapper(ABC, Generic[T]):
         -------
         Backend-specific string representation.
         """
+        raise NotImplementedError
 
 
-class SchemaMapper(ABC, Generic[S]):
+class SchemaMapper(Generic[S]):
     # `S` is the format-specific schema object, e.g. pyarrow.Schema
 
     @classmethod
-    @abstractmethod
     def from_ibis(cls, schema: Schema) -> S:
         """Convert an Ibis Schema to a format-specific schema object.
 
@@ -98,9 +96,9 @@ class SchemaMapper(ABC, Generic[S]):
         -------
         Format-specific schema object.
         """
+        raise NotImplementedError
 
     @classmethod
-    @abstractmethod
     def to_ibis(cls, obj: S) -> Schema:
         """Convert a format-specific schema object to an Ibis Schema.
 
@@ -113,6 +111,7 @@ class SchemaMapper(ABC, Generic[S]):
         -------
         Ibis Schema.
         """
+        raise NotImplementedError
 
 
 class DataMapper(Generic[S, C, T]):
