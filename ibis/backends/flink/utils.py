@@ -271,7 +271,7 @@ def translate_literal(op: ops.Literal) -> str:
         # TODO(chloeh13q): Flink supports a third boolean called "UNKNOWN"
         return "TRUE" if value else "FALSE"
     elif dtype.is_string():
-        quoted = value.replace("'", "''").replace("\\", "\\\\")
+        quoted = value.replace("'", "''")
         return f"'{quoted}'"
     elif dtype.is_date():
         if isinstance(value, datetime.date):
