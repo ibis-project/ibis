@@ -33,6 +33,7 @@ except ImportError:
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
+                "flink": "CHAR(6) NOT NULL",
             },
             id="string",
         ),
@@ -47,6 +48,7 @@ except ImportError:
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
+                "flink": "CHAR(7) NOT NULL",
             },
             id="string-quote1",
             marks=pytest.mark.broken(
@@ -66,6 +68,7 @@ except ImportError:
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
+                "flink": "CHAR(7) NOT NULL",
             },
             id="string-quote2",
             marks=pytest.mark.broken(
