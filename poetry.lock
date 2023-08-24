@@ -5103,14 +5103,14 @@ sqlalchemy = ">=1.0.0"
 
 [[package]]
 name = "sqlglot"
-version = "17.14.2"
+version = "17.15.0"
 description = "An easily customizable SQL parser and transpiler"
 category = "main"
 optional = false
 python-versions = "*"
 files = [
-    {file = "sqlglot-17.14.2-py3-none-any.whl", hash = "sha256:d5ed37e426c6c654eb4161687b6a83f6e06e5de86551495fcdb45b32ba3afd61"},
-    {file = "sqlglot-17.14.2.tar.gz", hash = "sha256:85f4eb2f193a5fd182621b54e0eb0d38acf5d12dcd8453a0243a65db03f68663"},
+    {file = "sqlglot-17.15.0-py3-none-any.whl", hash = "sha256:5746097e928e024edd88ad658c0f23b21a532787a66212a4afe66ada9a79ca96"},
+    {file = "sqlglot-17.15.0.tar.gz", hash = "sha256:f924f92b24a625485e86511889c3352cfc7ac8b18a15dca9ada58373d4a74b2c"},
 ]
 
 [package.extras]
