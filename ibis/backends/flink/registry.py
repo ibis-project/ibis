@@ -615,6 +615,7 @@ operation_registry.update(
     }
 )
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 _invalid_operations = {
     # ibis.expr.operations.strings
@@ -629,5 +630,8 @@ operation_registry = {
     k: v for k, v in operation_registry.items() if k not in _invalid_operations
 }
 =======
+=======
+del operation_registry[ops.FindInSet]
+>>>>>>> 47055eb9f (test(flink): mark `find_in_set` not yet BE-supported)
 del operation_registry[ops.Translate]
 >>>>>>> 3f7756999 (test(flink): mark `translate` not yet BE-supported)
