@@ -12,6 +12,7 @@ from ibis.common.collections import FrozenDict
 typecode = sge.DataType.Type
 
 
+# TODO(kszucs): add a bool converter method to support different clickhouse bool types
 def _bool_type() -> Literal["Bool", "UInt8", "Int8"]:
     return getattr(getattr(ibis.options, "clickhouse", None), "bool_type", "Bool")
 
