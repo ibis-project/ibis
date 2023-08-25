@@ -59,7 +59,7 @@ jobs:
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras ${{ matrix.backend.name }}
+        run: poetry install --without dev --without docs --without quarto --extras ${{ matrix.backend.name }}
 
       - uses: extractions/setup-just@v1
         env:

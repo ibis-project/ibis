@@ -143,6 +143,14 @@ mkdocstrings-python = ">=0.8.3,<2"
 pillow = ">=10,<11"
 requests = ">=2,<3"
 
+[tool.poetry.group.quarto.dependencies]
+# quarto docs generation requirements
+altair = ">=5.0.1,<6"
+plotnine = ">=0.12.2,<1"
+plotly = ">=5.16.1,<6"
+seaborn = ">=0.12.2,<1"
+scikit-learn = ">=1.3.0,<2"
+
 [tool.poetry.extras]
 # generate the `all` extra using nix run '.#gen-all-extras'
 all = [

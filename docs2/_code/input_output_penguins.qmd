@@ -164,8 +164,16 @@ You can convert Ibis tables to torch tensors.
 pip install torch
 ```
 
-```{python}
+```python
 t.select(s.numeric()).limit(3).to_torch()
+```
+
+```
+{'col2': tensor([39.1000, 39.5000, 40.3000], dtype=torch.float64),
+ 'col3': tensor([18.7000, 17.4000, 18.0000], dtype=torch.float64),
+ 'col4': tensor([181., 186., 195.], dtype=torch.float64),
+ 'col5': tensor([3750., 3800., 3250.], dtype=torch.float64),
+ 'col7': tensor([2007, 2007, 2007], dtype=torch.int16)}
 ```
 
 ## `__dataframe__`

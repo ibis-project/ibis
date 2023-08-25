@@ -82,7 +82,7 @@ jobs:
         run: choco install graphviz
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras visualization
+        run: poetry install --without dev --without docs --without quarto --extras visualization
 
       - uses: extractions/setup-just@v1
         env:
@@ -143,7 +143,7 @@ jobs:
 
       - name: install ibis
         # install duckdb and geospatial because of https://github.com/ibis-project/ibis/issues/4856
-        run: poetry install --without dev --without docs --without test --extras duckdb --extras geospatial
+        run: poetry install --without dev --without docs --without quarto --without test --extras duckdb --extras geospatial
 
       - name: check shapely and duckdb imports
         run: poetry run python -c 'import shapely.geometry, duckdb'
@@ -188,7 +188,7 @@ jobs:
           custom_cache_key_element: doctests
 
       - name: install ibis with all extras
-        run: poetry install --without dev --without docs --extras all
+        run: poetry install --without dev --without docs --without quarto --extras all
 
       - uses: extractions/setup-just@v1
         env:
