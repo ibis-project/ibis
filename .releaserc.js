@@ -40,6 +40,13 @@ module.exports = {
       },
     ],
     [
+      "@semantic-release/changelog",
+      {
+        changelogTitle: "Release Notes\n---",
+        changelogFile: "docs2/release_notes.qmd",
+      },
+    ],
+    [
       "semantic-release-replace-plugin",
       {
         replacements: [
