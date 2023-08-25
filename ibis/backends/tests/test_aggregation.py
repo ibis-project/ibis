@@ -4,7 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import sqlalchemy as sa
-import sqlglot
 from pytest import mark, param
 
 import ibis
@@ -876,13 +875,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     ["snowflake"],
                     reason="backend doesn't implement array of quantiles as input",
                     raises=com.OperationNotDefinedError,
-                ),
-                # strict=False untile quantilesIf works
-                mark.notyet(
-                    ["clickhouse"],
-                    reason="sqlglot throws a parse error",
-                    strict=False,
-                    raises=sqlglot.errors.ParseError,
                 ),
                 mark.never(
                     ["trino"],
