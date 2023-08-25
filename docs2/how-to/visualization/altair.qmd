@@ -22,7 +22,7 @@ Refer to the [Altair documentation](https://altair-viz.github.io/). Simply pass 
 import altair as alt
 
 chart = (
-    alt.Chart(t.group_by("species").agg(count=ibis._.count()))
+    alt.Chart(t.group_by("species").agg(count=ibis._.count()).to_pandas())
     .mark_bar()
     .encode(
         x="species",

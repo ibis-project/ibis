@@ -95,7 +95,7 @@ pip install plotly
 import plotly.express as px  # <1>
 
 px.bar(
-    grouped,
+    grouped.to_pandas(),
     x="species",
     y="count",
     width=width,
@@ -167,7 +167,7 @@ f = f.mutate(row_number=ibis.row_number().over()).join(  # <5>
 )  # <5>
 
 px.scatter_3d(  # <6>
-    f,  # <6>
+    f.to_pandas(),  # <6>
     x="pc1",  # <6>
     y="pc2",  # <6>
     z="pc3",  # <6>
