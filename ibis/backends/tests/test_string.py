@@ -14,6 +14,11 @@ from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import OperationNotDefinedError
 
 try:
+    from pyspark.sql.utils import PythonException
+except ImportError:
+    PythonException = None
+
+try:
     from google.api_core.exceptions import BadRequest
 except ImportError:
     BadRequest = None
@@ -233,6 +238,7 @@ def uses_java_re(t):
                     ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.broken(["pyspark"], raises=PythonException),
                 pytest.mark.never(
                     ["druid"],
                     reason="No posix support; regex is interpreted literally",
