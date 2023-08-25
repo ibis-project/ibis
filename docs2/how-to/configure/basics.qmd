@@ -78,7 +78,7 @@ ibis.options.verbose_log = cowsay
 
 `ibis.options.default_backend` controls which backend is used by table expressions returned by top-level functions such as `ibis.memtable`, `ibis.read_csv` or `ibis.read_parquet`.
 
-By default, it points to an instance of DuckDB backend. Assuming the [backend dependencies have been installed](../install.md), it can be updated by passing the name of the backend to `ibis.set_backend` as follows:
+By default, it points to an instance of DuckDB backend. Assuming the [backend dependencies have been installed](../../install.qmd), it can be updated by passing the name of the backend to `ibis.set_backend` as follows:
 
 ```{python}
 import ibis

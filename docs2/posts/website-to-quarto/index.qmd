@@ -49,4 +49,4 @@ Thank you!
 ## Additional resources
 
 - [Quarto FAQ](https://quarto.org/docs/faq/)
-- [Getting started with Ibis](tutorials/getting_started.qmd)
+- [Getting started with Ibis](../../tutorials/getting_started.qmd)
