@@ -84,4 +84,4 @@ for your ffill or bfill operations, you can do this as well:
     ~~~
 
 We wrote a deeper dive into how this works on the ibis-project blog
-[here](../blog/ffill-and-bfill-using-ibis.md).
+[here](../../how-to/timeseries/ffill_bfill_w_window.qmd).

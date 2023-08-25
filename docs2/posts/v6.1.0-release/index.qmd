@@ -12,9 +12,9 @@ categories:
 
 Ibis 6.1.0 is a minor release that includes new features, backend improvements, bug fixes, documentation improvements, and refactors. We are excited to see further adoption of the dataframe interchange protocol enabling visualization and other libraries to be used more easily with Ibis.
 
-You can view the full changelog in [the release notes](/release_notes/).
+You can view the full changelog in [the release notes](../../release_notes.qmd).
 
-If you're new to Ibis, see [how to install](/install/) and [the getting started tutorial](/tutorial/getting_started/).
+If you're new to Ibis, see [how to install](../../install.qmd) and [the getting started tutorial](../../tutorials/getting_started.qmd).
 
 To follow along with this blog, ensure you're on `'ibis-framework>=6.1,<7'`. First, we\'ll setup Ibis and fetch some
 sample data to use.
@@ -184,7 +184,7 @@ px.scatter_3d(  # <6>
 
 ## Backends
 
-Numerous backends received improvements. See the [release notes](/release_notes/) for more details.
+Numerous backends received improvements. See the [release notes](../../release_notes.qmd) for more details.
 
 ::: {.panel-tabset}
 
@@ -357,12 +357,12 @@ t.join(t, False, how="outer")
 
 ## Refactors
 
-Several internal refactors that shouldn\'t affect normal usage were made. See [the release notes](/release_notes/) for more details.
+Several internal refactors that shouldn\'t affect normal usage were made. See [the release notes](../../release_notes.qmd) for more details.
 
 ## Wrapping up
 
 Ibis v6.1.0 brings exciting enhancements to the library that enable broader ecosystem adoption of Python standards.
 
-As always, try Ibis by [installing](https://ibis-project.org/install/) and [getting started](/tutorial/getting_started/).
+As always, try Ibis by [installing](https://ibis-project.org/install/) and [getting started](../../tutorials/getting_started.qmd).
 
 If you run into any issues or find support is lacking for your backend, [open an issue](https://github.com/ibis-project/issues/new/choose) or [discussion](https://github.com/ibis-project/discussions/new/choose) and let us know!

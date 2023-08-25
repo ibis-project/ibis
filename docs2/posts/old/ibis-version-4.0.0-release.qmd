@@ -11,7 +11,7 @@ categories:
 
 Ibis 4.0 has officially been released as the latest version of the package.
 This release includes several new backends, improved functionality, and some major internal refactors.
-A full list of the changes can be found in the [project release notes](../release_notes.md).
+A full list of the changes can be found in the [project release notes](../../release_notes.qmd).
 Let’s talk about some of the new changes 4.0 brings for Ibis users.
 
 ## Backends

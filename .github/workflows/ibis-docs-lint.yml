@@ -153,7 +153,7 @@ jobs:
   docs_pr:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
-    concurrency: docs-${{ github.repository }}-${{ github.head_ref || github.sha }}
+    concurrency: docs_pr-${{ github.repository }}-${{ github.head_ref || github.sha }}
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v22

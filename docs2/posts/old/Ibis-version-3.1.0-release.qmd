@@ -11,7 +11,7 @@ categories:
 
 Ibis 3.1 has officially been released as the latest version of the package.
 With this release comes new convenience features, increased backend operation coverage and a plethora of bug fixes.
-As usual, a full list of the changes can be found in the project release notes [here](../release_notes.md) Let’s talk about some of the new changes 3.1 brings for Ibis users.
+As usual, a full list of the changes can be found in the project release notes [here](../../release_notes.qmd) Let’s talk about some of the new changes 3.1 brings for Ibis users.
 
 ## `ibis.connect`
 
@@ -222,7 +222,7 @@ Along with these changes, the operation matrix has had a few more holes filled.
 Contributors should note that backend test data is now loaded dynamically.
 Most users won’t be exposed to this update, but it should make contribution a bit more streamlined.
 
-To see the full patch notes, go to the [patch notes page](../release_notes.md)
+To see the full patch notes, go to the [patch notes page](../../release_notes.qmd)
 
 As always, Ibis is free and open source.
 Contributions are welcome and encouraged–drop into the discussions, raise an issue, or put in a pull request.

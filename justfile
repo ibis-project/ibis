@@ -116,9 +116,9 @@ benchcmp number *args:
     just bench --benchmark-compare {{ number }} {{ args }}
 
 # check for invalid links in a locally built version of the docs
-checklinks *args:
+checklinks base *args:
     #!/usr/bin/env bash
-    lychee --base site $(find site -name '*.html') {{ args }}
+    lychee --base {{ base }} $(find {{ base }} -name '*.html') {{ args }}
 
 # view the changelog for upcoming release (use --pretty to format with glow)
 view-changelog flags="":
