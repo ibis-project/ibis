@@ -22,7 +22,7 @@ Refer to the [Plotly documentation](https://plotly.com/python/). Simply pass in 
 import plotly.express as px
 
 chart = px.bar(
-    t.group_by("species").agg(count=ibis._.count()),
+    t.group_by("species").agg(count=ibis._.count()).to_pandas(),
     x="species",
     y="count",
     width=600,
