@@ -5,6 +5,8 @@ import math
 from abc import ABC, abstractmethod
 from collections import defaultdict
 
+from pyflink.table.types import DataTypes
+
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.temporal import IntervalUnit
@@ -30,7 +32,6 @@ MAX_ALLOWED_PRECISION = {
     IntervalUnit.MINUTE: 2,
     IntervalUnit.SECOND: 9,
 }
-
 
 MICROSECONDS_IN_UNIT = {
     unit: datetime.timedelta(**{unit.plural: 1}).total_seconds() * 10**6
@@ -244,6 +245,21 @@ def _translate_interval(value, dtype):
     return interval.format_as_string()
 
 
+_to_pyflink_types = {
+    dt.Int8: DataTypes.TINYINT(),
+    dt.Int16: DataTypes.SMALLINT(),
+    dt.Int32: DataTypes.INT(),
+    dt.Int64: DataTypes.BIGINT(),
+    dt.UInt8: DataTypes.TINYINT(),
+    dt.UInt16: DataTypes.SMALLINT(),
+    dt.UInt32: DataTypes.INT(),
+    dt.UInt64: DataTypes.BIGINT(),
+    dt.Float16: DataTypes.FLOAT(),
+    dt.Float32: DataTypes.FLOAT(),
+    dt.Float64: DataTypes.DOUBLE(),
+}
+
+
 def translate_literal(op: ops.Literal) -> str:
     value = op.value
     dtype = op.dtype
@@ -266,7 +282,7 @@ def translate_literal(op: ops.Literal) -> str:
             raise ValueError("NaN is not supported in Flink SQL")
         elif math.isinf(value):
             raise ValueError("Infinity is not supported in Flink SQL")
-        return repr(value)
+        return f"CAST({value} AS {_to_pyflink_types[type(dtype)]!s})"
     elif dtype.is_timestamp():
         # TODO(chloeh13q): support timestamp with local timezone
         if isinstance(value, datetime.datetime):
