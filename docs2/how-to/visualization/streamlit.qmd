@@ -11,7 +11,9 @@ Check out the example application below that shows the top N ingredients from a 
 And here's the source code for the application:
 
 ```{python}
-# | code-fold: true
-with open('example_streamlit_app/example_streamlit_app.py') as f:
-    print(f.read())
+# | echo: false
+# | output: asis
+with open("example_streamlit_app/example_streamlit_app.py", mode="r") as f:
+    code = f.read()
+print(f"```python\n{code}```")
 ```
