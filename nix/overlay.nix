@@ -15,6 +15,10 @@ let
     inherit python;
     groups = [ "dev" "docs" "test" ];
   };
+  mkPoetryQuartoDevEnv = python: mkPoetryEnv {
+    inherit python;
+    groups = [ "dev" "quarto" ];
+  };
 in
 {
   ibisTestingData = pkgs.fetchFromGitHub {

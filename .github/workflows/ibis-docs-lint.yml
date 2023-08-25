@@ -262,7 +262,10 @@ jobs:
             mkdocs gh-deploy --message 'docs: ibis@${{ github.sha }}' --ignore-version
 
       - name: build and push quarto docs
-        run: nix develop --ignore-environment '.#quarto' -c just docs-deploy
+        # TODO(cpcloud): get az working in the environment, right now this assumes it's installed on the runner
+        run: nix develop '.#quarto' -c just docs-deploy
+        env:
+          AZURE_STORAGE_SECRET: ${{ secrets.AZURE_STORAGE_SECRET }}
 
   simulate_release:
     runs-on: ubuntu-latest

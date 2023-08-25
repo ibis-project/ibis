@@ -60,7 +60,7 @@ jobs:
           diff --unified "$old" "$new"
 
       - name: generate requirements-dev.txt
-        run: poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
+        run: poetry export --extras all --with dev --with test --with docs --with quarto --without-hashes --no-ansi > requirements-dev.txt
 
       - name: check requirements-dev.txt
         run: git diff --exit-code requirements-dev.txt
