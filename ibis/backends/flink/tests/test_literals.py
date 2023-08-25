@@ -14,8 +14,8 @@ from ibis.backends.flink.compiler.core import translate
 @pytest.mark.parametrize(
     "value,expected",
     [
-        param(5, "5", id="int"),
-        param(1.5, "1.5", id="float"),
+        param(5, "CAST(5 AS TINYINT)", id="int"),
+        param(1.5, "CAST(1.5 AS DOUBLE)", id="float"),
         param(True, "TRUE", id="true"),
         param(False, "FALSE", id="false"),
     ],
