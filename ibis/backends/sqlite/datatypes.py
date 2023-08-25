@@ -9,7 +9,7 @@ from sqlalchemy.dialects import sqlite
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.backends.base.sql.glot.datatypes import SQLiteType as SqlglotSQLiteType
+from ibis.backends.base.sqlglot.datatypes import SQLiteType as SqlglotSQLiteType
 
 
 class SqliteType(AlchemyType):

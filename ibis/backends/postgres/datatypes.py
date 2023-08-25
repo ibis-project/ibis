@@ -6,7 +6,7 @@ import sqlalchemy.types as sat
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.backends.base.sql.glot.datatypes import PostgresType as SqlglotPostgresType
+from ibis.backends.base.sqlglot.datatypes import PostgresType as SqlglotPostgresType
 
 _from_postgres_types = {
     psql.DOUBLE_PRECISION: dt.Float64,

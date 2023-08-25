@@ -6,7 +6,7 @@ import sqlglot.expressions as sge
 
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
-from ibis.backends.base.sql.glot.datatypes import SqlglotType
+from ibis.backends.base.sqlglot.datatypes import SqlglotType
 
 
 def assert_dtype_roundtrip(ibis_type, sqlglot_expected=None):

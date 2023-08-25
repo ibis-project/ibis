@@ -9,7 +9,7 @@ from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
-from ibis.backends.base.sql.glot.datatypes import SqlglotType
+from ibis.backends.base.sqlglot.datatypes import SqlglotType
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
 

@@ -13,7 +13,7 @@ from sqlalchemy.ext.compiler import compiles
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.backends.base.sql.glot.datatypes import SnowflakeType as SqlglotSnowflakeType
+from ibis.backends.base.sqlglot.datatypes import SnowflakeType as SqlglotSnowflakeType
 
 
 @compiles(sat.NullType, "snowflake")
