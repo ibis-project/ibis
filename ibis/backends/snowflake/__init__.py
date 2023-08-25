@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 import sqlalchemy as sa
-from snowflake.connector.constants import FIELD_ID_TO_NAME
 from snowflake.sqlalchemy import ARRAY, DOUBLE, OBJECT, URL
 from sqlalchemy.ext.compiler import compiles
 
@@ -408,13 +407,15 @@ $$""".format(
             )
 
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
-        with self.begin() as con, con.connection.cursor() as cur:
-            result = cur.describe(query)
+        with self.begin() as con:
+            con.exec_driver_sql(query)
+            result = con.exec_driver_sql("DESC RESULT last_query_id()").mappings().all()
 
-        for name, type_code, _, _, _, _, is_nullable in result:
-            typ_name = FIELD_ID_TO_NAME[type_code]
-            typ = SnowflakeType.from_string(typ_name)
-            yield name, typ.copy(nullable=is_nullable)
+        for field in result:
+            name = field["name"]
+            type_string = field["type"]
+            is_nullable = field["null?"] == "Y"
+            yield name, SnowflakeType.from_string(type_string, nullable=is_nullable)
 
     def list_databases(self, like: str | None = None) -> list[str]:
         with self.begin() as con:

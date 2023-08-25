@@ -924,7 +924,7 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
         db = "".join(db) or database or current_db
         ident = ".".join(map(self._quote, filter(None, (db, schema))))
 
-        pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)}")
+        pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)} LIMIT 0")
         ibis_schema = ibis.schema(pairs)
 
         with self._use_schema(ident, current_db, current_schema):

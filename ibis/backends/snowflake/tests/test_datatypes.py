@@ -5,7 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.snowflake.datatypes import parse
+from ibis.backends.snowflake.datatypes import SnowflakeType
 from ibis.backends.snowflake.tests.conftest import _get_url
 from ibis.util import gen_name
 
@@ -35,7 +35,7 @@ dtypes = [
     ],
 )
 def test_parse(snowflake_type, ibis_type):
-    assert parse(snowflake_type.upper()) == ibis_type
+    assert SnowflakeType.from_string(snowflake_type.upper()) == ibis_type
 
 
 @pytest.fixture(scope="module")
