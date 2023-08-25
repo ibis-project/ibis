@@ -116,7 +116,7 @@ jobs:
       - run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - name: install ibis
-        run: poetry install --without dev --without docs --all-extras
+        run: poetry install --without dev --without docs --without quarto --all-extras
 
       - name: make benchmark output dir
         run: mkdir .benchmarks
@@ -177,7 +177,34 @@ jobs:
         run: nix develop --ignore-environment -c mkdocs build --strict
 
       - name: verify internal links
-        run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
+        run: nix develop --ignore-environment '.#links' -c just checklinks site --offline --no-progress
+
+  quarto_docs_pr:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    concurrency: quarto_docs_pr-${{ github.repository }}-${{ github.head_ref || github.sha }}
+    steps:
+      - name: install nix
+        uses: cachix/install-nix-action@v22
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v12
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: build docs
+        run: nix develop --ignore-environment '.#quarto' -c just docs-render
+
+      - name: verify internal links
+        run: nix develop --ignore-environment '.#links' -c just checklinks docs2/_output --offline --no-progress
 
   docs_push:
     runs-on: ubuntu-latest
@@ -233,6 +260,9 @@ jobs:
         run: |
           nix develop --ignore-environment -c \
             mkdocs gh-deploy --message 'docs: ibis@${{ github.sha }}' --ignore-version
+
+      - name: build and push quarto docs
+        run: nix develop --ignore-environment '.#quarto' -c just docs-deploy
 
   simulate_release:
     runs-on: ubuntu-latest
