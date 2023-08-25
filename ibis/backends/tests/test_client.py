@@ -277,6 +277,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
 @mark.notyet(
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
 )
+@mark.broken(["snowflake"], reason="snowflake shows not nullable column as nullable")
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [("foo", "int64"), ("bar", dt.int64(nullable=False)), ("baz", "boolean")]
