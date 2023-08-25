@@ -6,7 +6,7 @@ import sqlglot.expressions as sge
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.base.sql.glot.datatypes import SqlglotType
+from ibis.backends.base.sqlglot.datatypes import SqlglotType
 from ibis.common.collections import FrozenDict
 
 typecode = sge.DataType.Type

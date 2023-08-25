@@ -5,7 +5,7 @@ import sqlalchemy.dialects.postgresql as psql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.backends.base.sql.glot.datatypes import DuckDBType as SqlglotDuckdbType
+from ibis.backends.base.sqlglot.datatypes import DuckDBType as SqlglotDuckdbType
 
 _from_duckdb_types = {
     psql.BYTEA: dt.Binary,

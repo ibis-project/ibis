@@ -5,7 +5,7 @@ from sqlalchemy.dialects import oracle
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.backends.base.sql.glot.datatypes import OracleType as SqlglotOracleType
+from ibis.backends.base.sqlglot.datatypes import OracleType as SqlglotOracleType
 
 
 class OracleType(AlchemyType):

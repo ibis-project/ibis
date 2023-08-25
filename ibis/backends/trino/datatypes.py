@@ -10,7 +10,7 @@ from trino.sqlalchemy.datatype import ROW as _ROW
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
-from ibis.backends.base.sql.glot.datatypes import TrinoType as SqlglotTrinoType
+from ibis.backends.base.sqlglot.datatypes import TrinoType as SqlglotTrinoType
 
 
 class ROW(_ROW):

@@ -5,7 +5,7 @@ from sqlalchemy.dialects import mysql
 
 import ibis.expr.datatypes as dt
 from ibis.backends.base.sql.alchemy.datatypes import UUID, AlchemyType
-from ibis.backends.base.sql.glot.datatypes import MySQLType as SqlglotMySQLType
+from ibis.backends.base.sqlglot.datatypes import MySQLType as SqlglotMySQLType
 
 
 class MySQLDateTime(mysql.DATETIME):
