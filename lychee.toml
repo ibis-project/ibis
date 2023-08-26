@@ -4,5 +4,6 @@ exclude = [
   "postgres:/:*",
   "reference/selectors.md",
   "backends/impala.qmd",
+  "raw_support_matrix.csv",
 ]
 exclude_path = ["site/SUMMARY/index.html", "site/overrides/main.html"]

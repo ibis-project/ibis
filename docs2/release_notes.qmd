@@ -1,4 +1,4 @@
-Release Notes
+Release notes
 ---
 
 ## [6.1.0](https://github.com/ibis-project/ibis/compare/6.0.0...6.1.0) (2023-08-03)
