@@ -98,6 +98,7 @@ website:
         - auto: "how-to/input-output"
         - auto: "how-to/analytics"
         - auto: "how-to/visualization"
+        - auto: "how-to/external-dataframes"
         - auto: "how-to/old"
     - id: community
       title: "Community"
