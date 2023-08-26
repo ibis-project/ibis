@@ -1,6 +1,8 @@
 project:
   type: website
   output-dir: _output
+  preview:
+    port: 8000
 
 highlight-style: pygments
 
