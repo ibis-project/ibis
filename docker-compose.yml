@@ -236,7 +236,7 @@ services:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in postgresql; show schemas in hive; show schemas in memory'
       timeout: 30s
-    image: trinodb/trino:424
+    image: trinodb/trino:425
     ports:
       - 8080:8080
     networks:
