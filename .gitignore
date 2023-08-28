@@ -113,5 +113,5 @@ ibis/examples/descriptions
 .coverage*
 
 # quarto generated files
-docs2/_output
+docs/_output
 .local
