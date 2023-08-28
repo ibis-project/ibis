@@ -5,6 +5,7 @@ from __future__ import annotations
 import atexit
 import contextlib
 import sys
+import warnings
 from typing import TYPE_CHECKING, Any
 
 import oracledb
@@ -24,6 +25,7 @@ sys.modules["cx_Oracle"] = oracledb
 
 import sqlalchemy as sa  # noqa: E402
 
+import ibis.common.exceptions as exc  # noqa: E402
 import ibis.expr.datatypes as dt  # noqa: E402
 import ibis.expr.operations as ops  # noqa: E402
 from ibis.backends.base.sql.alchemy import (  # noqa: E402
@@ -31,10 +33,7 @@ from ibis.backends.base.sql.alchemy import (  # noqa: E402
     AlchemyExprTranslator,
     BaseAlchemyBackend,
 )
-from ibis.backends.oracle.datatypes import (  # noqa: E402
-    OracleType,
-    parse,
-)
+from ibis.backends.oracle.datatypes import OracleType, parse  # noqa: E402
 from ibis.backends.oracle.registry import operation_registry  # noqa: E402
 
 if TYPE_CHECKING:
@@ -88,7 +87,10 @@ class Backend(BaseAlchemyBackend):
         password: str,
         host: str = "localhost",
         port: int = 1521,
-        database: str | None = "FREE",
+        database: str | None = None,
+        sid: str | None = None,
+        service_name: str | None = None,
+        dsn: str | None = None,
         **_: Any,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
@@ -104,37 +106,41 @@ class Backend(BaseAlchemyBackend):
         port
             Port
         database
-            Database to connect to
+            Used as an Oracle service name if provided.
+        sid
+            Unique name of an Oracle Instance, used to construct a DSN if
+            provided.
+        service_name
+            Oracle service name, used to construct a DSN if provided.  Only one
+            of database and service_name should be provided.
+        dsn
+            An Oracle Data Source Name.  If provided, overrides all other
+            connection arguments except username and password.
         """
-        url = sa.engine.url.make_url(
-            f"oracle://{user}:{password}@{host}:{port}/{database}"
-        )
+        # SID: unique name of an INSTANCE running an oracle process (a single, identifiable machine)
+        # service name: an ALIAS to one (or many) individual instances that can
+        # be hotswapped without the client knowing / caring
+        if dsn is not None and (
+            database is not None or sid is not None or service_name is not None
+        ):
+            warnings.warn(
+                "Oracle DSN provided, overriding additional provided connection arguments"
+            )
 
-        # Creating test DB and user
-        # The ORACLE_DB env-var needs to be set in the docker-compose.yml file
-        # Then, after the container is running, exec in and run (from `/opt/oracle`)
-        # ./createAppUser user pass ORACLE_DB
-        # where ORACLE_DB is the same name you used in the docker-compose file.
+        if service_name is not None and database is not None:
+            raise exc.IbisInputError(
+                "Values provided for both service_name and database. "
+                "Both of these values map to an Oracle service_name, "
+                "please provide only one of them."
+            )
 
-        # ORACLE IS VERY CONFUSING
-        # SID -- instance identifier -- meant to distinguish oracle instances running on the same machine
-        # TABLESPACE -- logical grouping of tables and views, unclear how different from DATABASE
-        # DATABASE can be assigned (defaults?) to a tablespace
-        #
-        # sqlplus ibis/ibis@localhost:1521/IBIS_TESTING
-        # for connecting from docker exec
-        #
-        # for current session parameters
-        # select * from nls_session_parameters;
-        #
-        # alter session parameter e.g.
-        # alter session set nls_timestamp_format='YYYY-MM-DD HH24:MI:SS.FF3'
-        #
-        # see user tables
-        # select table_name from user_tables
+        if service_name is None and database is not None:
+            service_name = database
 
-        # Note: for the moment, we need to pass the `database` in to the `make_url` call
-        # AND specify it here as the `service_name`.  I don't know why.
+        if dsn is None:
+            dsn = oracledb.makedsn(host, port, service_name=service_name, sid=sid)
+        url = sa.engine.url.make_url(f"oracle://{user}:{password}@{dsn}")
+
         engine = sa.create_engine(
             url,
             poolclass=sa.pool.StaticPool,
@@ -143,7 +149,7 @@ class Backend(BaseAlchemyBackend):
             # has changed.
             # This is apparently accepted behavior.
             # https://python-oracledb.readthedocs.io/en/latest/user_guide/appendix_b.html#statement-caching-in-thin-and-thick-modes
-            connect_args={"service_name": database, "stmtcachesize": 0},
+            connect_args={"stmtcachesize": 0},
         )
 
         super().do_connect(engine)
@@ -159,6 +165,9 @@ class Backend(BaseAlchemyBackend):
                 return name
 
         self.con.dialect.normalize_name = normalize_name
+
+    def _from_url(self, url: str, **kwargs):
+        return self.do_connect(user=url.username, password=url.password, dsn=url.host)
 
     @property
     def current_database(self) -> str:
