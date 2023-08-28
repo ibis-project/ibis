@@ -115,3 +115,5 @@ ibis/examples/descriptions
 # quarto generated files
 docs/_output
 .local
+docs/objects.json
+docs/reference
