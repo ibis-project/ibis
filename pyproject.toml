@@ -135,6 +135,7 @@ plotly = ">=5.16.1,<6"
 requests = ">=2,<3"
 seaborn = ">=0.12.2,<1"
 scikit-learn = ">=1.3.0,<2"
+quartodoc = ">=0.4.3,<1"
 
 [tool.poetry.extras]
 # generate the `all` extra using nix run '.#gen-all-extras'
