@@ -22,6 +22,12 @@ ORACLE_PASS = os.environ.get("IBIS_TEST_ORACLE_PASSWORD", "ibis")
 ORACLE_HOST = os.environ.get("IBIS_TEST_ORACLE_HOST", "localhost")
 ORACLE_PORT = int(os.environ.get("IBIS_TEST_ORACLE_PORT", 1521))
 
+# Creating test DB and user
+# The ORACLE_DB env-var needs to be set in the docker-compose.yml file
+# Then, after the container is running, exec in and run (from `/opt/oracle`)
+# ./createAppUser user pass ORACLE_DB
+# where ORACLE_DB is the same name you used in the docker-compose file.
+
 
 class TestConf(ServiceBackendTest, RoundHalfToEven):
     check_dtype = False
