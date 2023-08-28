@@ -108,6 +108,7 @@ pre-commit = ">=3.1,<4"
 pydeps = ">=1.12.7,<2"
 pyinstrument = ">=4.5.1,<5"
 ruff = ">=0.0.271"
+nbstripout = ">=0.6.1,<1"
 
 [tool.poetry.group.test.dependencies]
 black = ">=22.1.0,<24"
@@ -127,27 +128,11 @@ requests = ">=2,<3"
 sqlalchemy = ">=1.4,<3"
 
 [tool.poetry.group.docs.dependencies]
-cairosvg = ">=2.7,<3"
-griffe = ">=0.25.3,<1"
-ipykernel = ">=6,<7"
-mkdocs = ">=1.2.3,<1.5.3"
-mkdocs-exclude = ">=1.0.2,<2"
-mkdocs-gen-files = ">=0.3.4,<0.6.0"
-mkdocs-git-revision-date-localized-plugin = ">=1.1.0,<2"
-mkdocs-jupyter = ">=0.24.1,<1"
-mkdocs-literate-nav = ">=0.4.1,<1"
-mkdocs-macros-plugin = ">=0.6.3,<2"
-mkdocs-material = ">=8.2.1,<9.2.4"
-mkdocstrings = ">=0.19.1,<1"
-mkdocstrings-python = ">=0.8.3,<2"
-pillow = ">=10,<11"
-requests = ">=2,<3"
-
-[tool.poetry.group.quarto.dependencies]
-# quarto docs generation requirements
 altair = ">=5.0.1,<6"
+ipykernel = ">=6,<7"
 plotnine = ">=0.12.2,<1"
 plotly = ">=5.16.1,<6"
+requests = ">=2,<3"
 seaborn = ">=0.12.2,<1"
 scikit-learn = ">=1.3.0,<2"
 
@@ -275,7 +260,6 @@ norecursedirs = [
   "dev",
   "docker",
   "docs",
-  "docs2",
   "nix",
   "result*",
 ]
@@ -486,7 +470,6 @@ required-imports = ["from __future__ import annotations"]
 ]
 "ci/*.py" = ["INP001"]
 "docs/*.py" = ["INP001"]
-"docs2/*.py" = ["INP001"]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
 
 [tool.black]
