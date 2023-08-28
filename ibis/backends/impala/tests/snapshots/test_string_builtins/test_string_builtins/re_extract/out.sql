@@ -1,1 +1,1 @@
-regexp_extract(`string_col`, '[\d]+', 0)
+regexp_extract(`string_col`, '[\\d]+', 0)

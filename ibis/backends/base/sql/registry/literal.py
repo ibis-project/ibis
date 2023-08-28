@@ -21,7 +21,22 @@ def _boolean_literal_format(translator, op):
 
 
 def _string_literal_format(translator, op):
-    return "'{}'".format(op.value.replace("'", "\\'"))
+    return "'{}'".format(
+        op.value
+        # Escape \ first so we don't double escape other characters.
+        .replace("\\", "\\\\")
+        # Escape ' since we're using those for the string literal.
+        .replace("'", "\\'")
+        # ASCII escape sequences that are recognized in Python:
+        # https://docs.python.org/3/reference/lexical_analysis.html#string-and-bytes-literals
+        .replace("\a", "\\a")  # Bell
+        .replace("\b", "\\b")  # Backspace
+        .replace("\f", "\\f")  # Formfeed
+        .replace("\n", "\\n")  # Newline / Linefeed
+        .replace("\r", "\\r")  # Carriage return
+        .replace("\t", "\\t")  # Tab
+        .replace("\v", "\\v")  # Vertical tab
+    )
 
 
 def _number_literal_format(translator, op):
