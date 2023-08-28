@@ -489,7 +489,7 @@ def test_project_list_scalar(npartitions):
     expr = table.mutate(res=table.ints.quantile([0.5, 0.95]))
     result = expr.execute()
 
-    expected = pd.Series([[1.0, 1.9] for _ in range(0, 3)], name="res")
+    expected = pd.Series([[1.0, 1.9] for _ in range(3)], name="res")
     tm.assert_series_equal(result.res, expected)
 
 
