@@ -19,7 +19,7 @@ website:
   # search
   search:
     location: navbar
-    type: textbox
+    type: overlay
 
   # options
   reader-mode: false
