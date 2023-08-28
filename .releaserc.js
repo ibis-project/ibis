@@ -35,15 +35,8 @@ module.exports = {
     [
       "@semantic-release/changelog",
       {
-        changelogTitle: "Release Notes\n---",
-        changelogFile: "docs/release_notes.md",
-      },
-    ],
-    [
-      "@semantic-release/changelog",
-      {
         changelogTitle: "Release notes\n---",
-        changelogFile: "docs2/release_notes.qmd",
+        changelogFile: "docs/release_notes.qmd",
       },
     ],
     [

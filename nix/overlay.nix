@@ -15,10 +15,6 @@ let
     inherit python;
     groups = [ "dev" "docs" "test" ];
   };
-  mkPoetryQuartoDevEnv = python: mkPoetryEnv {
-    inherit python;
-    groups = [ "dev" "quarto" ];
-  };
 in
 {
   ibisTestingData = pkgs.fetchFromGitHub {
@@ -36,8 +32,6 @@ in
   ibisDevEnv39 = mkPoetryDevEnv pkgs.python39;
   ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
   ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;
-
-  ibisQuartoDevEnv310 = mkPoetryQuartoDevEnv pkgs.python310;
 
   ibisSmallDevEnv = mkPoetryEnv {
     python = pkgs.python311;

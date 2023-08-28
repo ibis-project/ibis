@@ -1,7 +1,0 @@
-.language-pycon .gp, .language-pycon .go { /* Generic.Prompt, Generic.Output */
-    user-select: none;
-}
-
-.language-console .gp, .language-console .go { /* Generic.Prompt, Generic.Output */
-    user-select: none;
-}
