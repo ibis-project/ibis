@@ -135,13 +135,16 @@ decouple *args:
 profile +args:
     pyinstrument {{ args }}
 
-# preview docs
-docs-preview:
-    quarto preview docs
-
+# build documentation
 docs-render:
+    quartodoc build --verbose --config docs/_quarto.yml
     quarto render docs
 
+# preview docs
+docs-preview: docs-render
+    quarto preview docs
+
+# upload docs to azure storage
 docs-upload:
     #!/usr/bin/env bash
     if [ -z "$AZURE_STORAGE_SECRET" ]; then
@@ -150,5 +153,6 @@ docs-upload:
     fi
     az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs/_output/*" --recursive --account-key "$AZURE_STORAGE_SECRET"
 
+# build and deploy docs
 docs-deploy: docs-render
     just docs-upload
