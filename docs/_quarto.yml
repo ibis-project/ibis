@@ -127,7 +127,117 @@ format:
     css: styles.css
     toc: true
 
-    # TODO: remove this after proper theme settled and ready to merge
-    # if using the vapor theme, adjust the text color optionally
-    #fontcolor: fuchsia
-    #linkcolor: fuchsia
+quartodoc:
+  package: ibis
+  title: Reference
+  sidebar: reference/_sidebar.yml
+  sections:
+    - title: Expressions
+      desc: ""
+      package: ibis.expr.types
+      contents:
+        - kind: page
+          package: ibis
+          path: top_level
+          summary:
+            name: Top-level APIs
+            desc: These methods and objecst are available directly on the `ibis` module.
+          contents:
+            - name: and_
+              dynamic: true
+
+        - kind: page
+          path: expression-tables
+          package: ibis.expr.types.relations
+          summary:
+            name: Table Expressions
+            desc: Table expressions form the basis for most Ibis expressions.
+          contents:
+            - Table
+            - GroupedTable
+
+        - kind: page
+          path: expression-generic
+          package: ibis.expr.types.generic
+          summary:
+            name: Generic Expression APIs
+            desc: These expressions are available on scalars and columns of any element type.
+          contents:
+            - Value
+            - Column
+            - Scalar
+
+        - kind: page
+          path: expression-numeric
+          package: ibis.expr.types.numeric
+          summary:
+            name: Numeric and Boolean Expressions
+            desc: These APIs are available on numeric and boolean expressions.
+          contents:
+            - NumericValue
+            - NumericColumn
+            - IntegerValue
+            - IntegerColumn
+            - FloatingValue
+            - DecimalValue
+            - name: BooleanValue
+              package: ibis.expr.types.logical
+
+        - kind: page
+          path: expression-strings
+          package: ibis.expr.types.strings
+          summary:
+            name: String Expressions
+            desc: All string operations are valid for both scalars and columns.
+          contents:
+            - StringValue
+        - temporal
+
+        - kind: page
+          path: expression-collections
+          summary:
+            name: Complex Type Expressions
+            desc: These APIs are available on arrays, maps and structs.
+          contents:
+            - name: ArrayValue
+              package: ibis.expr.types.arrays
+            - name: StructValue
+              package: ibis.expr.types.structs
+            - name: MapValue
+              package: ibis.expr.types.maps
+
+        - kind: page
+          path: expression-geospatial
+          package: ibis.expr.types.geospatial
+          summary:
+            name: Geospatial Expressions
+            desc: Ibis supports the following geospatial expression APIs
+          contents:
+            - GeoSpatialValue
+            - GeoSpatialColumn
+    - title: Other
+      desc: ""
+      package: ibis
+      contents:
+        # # Column Selectors
+        - selectors
+
+        # # Schemas
+        #
+        # This module contains APIs for interacting with table schemas.
+        - expr.schema.Schema
+
+        # # Configuration Options
+        - config.Options
+        - config.Repr
+        - config.SQL
+        - config.ContextAdjustment
+
+        # # Data Types
+        #
+        # This module contains classes for handling the different logical types that
+        # occur in databases.
+        #
+        # All data type constructors take a `nullable: bool` parameter whose default
+        # value is [`True`][True].
+        - expr.datatypes.core
