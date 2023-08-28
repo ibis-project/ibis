@@ -199,7 +199,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -211,7 +210,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -240,7 +238,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -252,7 +249,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -276,7 +272,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -290,7 +285,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -304,7 +298,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -318,7 +311,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -330,7 +322,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -342,7 +333,6 @@ def test_string_col_is_unicode(alltypes, df):
                     ["mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["impala"], raises=AssertionError),
             ],
         ),
         param(
@@ -368,10 +358,6 @@ def test_string_col_is_unicode(alltypes, df):
                 pytest.mark.notimpl(
                     ["mysql", "mssql", "druid", "oracle"],
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.broken(
-                    ["impala"],
-                    raises=AssertionError,
                 ),
             ],
         ),
