@@ -116,6 +116,20 @@ def test_integer_to_timestamp(case, unit, snapshot):
 
 
 @pytest.mark.parametrize(
+    ("case",),
+    [
+        param("a\\b\\c", id="escape_backslash"),
+        param("a\ab\bc\fd\ne\rf\tg\vh", id="escape_ascii_sequences"),
+        param("a'b\"c", id="escape_quote"),
+        param("`~!@#$%^&*()_=+-|[]{};:/?<>", id="not_escape_special_characters"),
+    ],
+)
+def test_literal_string(case, snapshot):
+    expr = ibis.literal(case)
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+@pytest.mark.parametrize(
     ("case", "dtype"),
     [
         param(datetime.datetime(2017, 1, 1, 4, 55, 59), dt.timestamp, id="datetime"),
