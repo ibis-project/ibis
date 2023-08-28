@@ -4,7 +4,7 @@ project:
   preview:
     port: 8000
 
-highlight-style: pygments
+highlight-style: ayu
 
 execute:
   warning: false
@@ -122,9 +122,8 @@ website:
 format:
   html:
     theme:
-      light:
-        flatly
-        #dark: darkly
+      light: flatly
+      dark: [darkly, theme-dark.scss]
     css: styles.css
     toc: true
 
