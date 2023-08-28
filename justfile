@@ -137,10 +137,10 @@ profile +args:
 
 # preview docs
 docs-preview:
-    quarto preview docs2
+    quarto preview docs
 
 docs-render:
-    @quarto render docs2
+    quarto render docs
 
 docs-upload:
     #!/usr/bin/env bash
@@ -148,7 +148,7 @@ docs-upload:
         >&2 echo "AZURE_STORAGE_SECRET must be set"
         exit 1
     fi
-    az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs2/_output/*" --recursive --account-key "$AZURE_STORAGE_SECRET"
+    az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs/_output/*" --recursive --account-key "$AZURE_STORAGE_SECRET"
 
 docs-deploy: docs-render
     just docs-upload

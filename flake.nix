@@ -103,6 +103,8 @@
           nodejs
           # used in notebooks to download data
           curl
+          # docs
+          quarto
         ])
         ++ preCommitDeps
         ++ backendDevDeps;
@@ -130,10 +132,6 @@
         ibis39 = mkDevShell pkgs.ibisDevEnv39;
         ibis310 = mkDevShell pkgs.ibisDevEnv310;
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
-
-        quarto = (mkDevShell pkgs.ibisQuartoDevEnv310).overrideAttrs (attrs: {
-          nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ pkgs.quarto ];
-        });
 
         default = ibis310;
 
