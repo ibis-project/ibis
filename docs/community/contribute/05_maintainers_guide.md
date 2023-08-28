@@ -45,16 +45,18 @@ Assuming your file is called `example.csv`:
 
 Ibis is released on [PyPI](https://pypi.org/project/ibis-framework/) and [Conda Forge](https://github.com/conda-forge/ibis-framework-feedstock).
 
-=== "PyPI"
+::: {.panel-tabset}
 
-    Releases to PyPI are handled automatically using [semantic
-    release](https://egghead.io/lessons/javascript-automating-releases-with-semantic-release).
+## PyPI
 
-    To trigger a release use the [Release GitHub Action](https://github.com/ibis-project/ibis/actions/workflows/release.yml).
+Releases to PyPI are handled automatically using [semantic release](https://egghead.io/lessons/javascript-automating-releases-with-semantic-release).
 
-=== "`conda-forge`"
+To trigger a release use the [Release GitHub Action](https://github.com/ibis-project/ibis/actions/workflows/release.yml).
 
-    The conda-forge package is maintained as a [conda-forge feedstock](https://github.com/conda-forge/ibis-framework-feedstock).
+## `conda-forge`
 
-    After a release to PyPI, the conda-forge bot automatically updates the ibis
-    package.
+The conda-forge package is maintained as a [conda-forge feedstock](https://github.com/conda-forge/ibis-framework-feedstock).
+
+After a release to PyPI, the conda-forge bot automatically updates the ibis package.
+
+:::
