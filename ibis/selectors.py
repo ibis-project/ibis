@@ -1,6 +1,6 @@
 """Convenient column selectors.
 
-!!! tip "Check out the [blog post on selectors](../blog/selectors.md) for examples!"
+!!! tip "Check out the [blog post on selectors](../docs/posts/old/selectors.qmd) for examples!"
 
 ## Rationale
 
