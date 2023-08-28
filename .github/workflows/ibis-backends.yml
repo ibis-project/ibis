@@ -377,7 +377,7 @@ jobs:
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
       - name: install ibis
-        run: poetry install --without dev --without docs --without quarto --extras "${{ join(matrix.backend.extras, ' ') }}"
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
       - name: install other deps
         if: matrix.backend.additional_deps != null
@@ -536,7 +536,7 @@ jobs:
         run: poetry lock --no-update
 
       - name: install ibis
-        run: poetry install --without dev --without docs --without quarto --extras "${{ join(matrix.backend.extras, ' ') }}"
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
@@ -625,7 +625,7 @@ jobs:
         run: poetry lock --no-update
 
       - name: install ibis
-        run: poetry install --without dev --without docs --without quarto --extras pyspark
+        run: poetry install --without dev --without docs --extras pyspark
 
       - name: run tests
         run: just ci-check -m pyspark
@@ -790,7 +790,7 @@ jobs:
         run: python -m pip install --upgrade pip 'poetry<1.4'
 
       - name: install ibis
-        run: poetry install --without dev --without docs --without quarto --extras "${{ join(matrix.backend.extras, ' ') }}"
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
 
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
