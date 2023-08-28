@@ -1,1 +1,1 @@
-regexp_replace(`string_col`, '[\d]+', 'aaa')
+regexp_replace(`string_col`, '[\\d]+', 'aaa')
