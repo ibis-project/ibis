@@ -19,7 +19,7 @@ from ibis.backends.pyspark.compiler import _can_be_replaced_by_column_name  # no
 def test_basic(con):
     table = con.table("basic_table")
     result = table.compile().toPandas()
-    expected = pd.DataFrame({"id": range(0, 10), "str_col": "value"})
+    expected = pd.DataFrame({"id": range(10), "str_col": "value"})
 
     tm.assert_frame_equal(result, expected)
 
@@ -28,9 +28,7 @@ def test_projection(con):
     table = con.table("basic_table")
     result1 = table.mutate(v=table["id"]).compile().toPandas()
 
-    expected1 = pd.DataFrame(
-        {"id": range(0, 10), "str_col": "value", "v": range(0, 10)}
-    )
+    expected1 = pd.DataFrame({"id": range(10), "str_col": "value", "v": range(10)})
 
     result2 = (
         table.mutate(v=table["id"])
@@ -44,8 +42,8 @@ def test_projection(con):
         {
             "id": range(0, 20, 2),
             "str_col": "value",
-            "v": range(0, 10),
-            "v2": range(0, 10),
+            "v": range(10),
+            "v2": range(10),
         }
     )
 
