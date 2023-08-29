@@ -7,7 +7,7 @@ your backend, but you need to join it to a table in that backend.
 
 You can perform joins on local data to ibis expressions from your backend using ibis `memtable`s.
 
-In this guide, you will learn how to work effectively use pandas DataFrames with ibis.
+In this guide, you will learn how to work effectively using pandas DataFrames with ibis.
 
 ## Setup
 
