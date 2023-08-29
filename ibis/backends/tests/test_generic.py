@@ -1171,7 +1171,7 @@ def test_distinct_on_keep_is_none(backend, on):
     [
         "sqlite",
         "datafusion",
-        "druid",  # ???
+        "druid",  # not sure what's going on here
         "mysql",  # CHECKSUM TABLE but not column
         "trino",  # checksum returns varbinary
     ]

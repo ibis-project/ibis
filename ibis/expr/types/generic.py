@@ -68,7 +68,9 @@ class Value(Expr):
     def hash(self) -> ir.IntegerValue:
         """Compute an integer hash value.
 
-        !!! info "The hashing function used is backend-dependent."
+        ::: {.callout-info}
+        ## The hashing function used is backend-dependent.
+        :::
 
         Returns
         -------
@@ -1024,11 +1026,16 @@ class Column(Value, _FixedTextJupyterMixin):
     ) -> ir.IntegerScalar:
         """Return the approximate number of distinct elements in `self`.
 
-        !!! info "The result may or may not be exact"
+        ::: {.callout-info}
+        ## The result may or may not be exact
 
-            Whether the result is an approximation depends on the backend.
+        Whether the result is an approximation depends on the backend.
 
-            !!! warning "Do not depend on the results being exact"
+        ::: {.callout-warning}
+        ## Do not depend on the results being exact
+        :::
+
+        :::
 
         Parameters
         ----------
@@ -1058,11 +1065,16 @@ class Column(Value, _FixedTextJupyterMixin):
     ) -> Scalar:
         """Return an approximate of the median of `self`.
 
-        !!! info "The result may or may not be exact"
+        ::: {.callout-info}
+        ## The result may or may not be exact
 
-            Whether the result is an approximation depends on the backend.
+        Whether the result is an approximation depends on the backend.
 
-            !!! warning "Do not depend on the results being exact"
+        ::: {.callout-warning}
+        ## Do not depend on the results being exact
+        :::
+
+        :::
 
         Parameters
         ----------
@@ -1608,17 +1620,19 @@ def null():
 def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     """Create a scalar expression from a Python value.
 
-    !!! tip "Use specific functions for arrays, structs and maps"
+    ::: {.callout-tip}
+    ## Use specific functions for arrays, structs and maps
 
-        Ibis supports literal construction of arrays using the following
-        functions:
+    Ibis supports literal construction of arrays using the following
+    functions:
 
-        1. [`ibis.array`][ibis.array]
-        1. [`ibis.struct`][ibis.struct]
-        1. [`ibis.map`][ibis.map]
+    1. [`ibis.array`][ibis.array]
+    1. [`ibis.struct`][ibis.struct]
+    1. [`ibis.map`][ibis.map]
 
-        Constructing these types using `literal` will be deprecated in a future
-        release.
+    Constructing these types using `literal` will be deprecated in a future
+    release.
+    :::
 
     Parameters
     ----------
