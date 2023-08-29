@@ -2,7 +2,6 @@ require_https = true
 exclude = [
   "duckdb:/:memory",
   "postgres:/:*",
-  "reference/selectors.md",
   "backends/impala.qmd",
   "raw_support_matrix.csv",
 ]

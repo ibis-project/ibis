@@ -146,7 +146,7 @@ You can also use a `selector` alongside a column name.
 penguins.select("island", s.numeric())
 ```
 
-You can read more about [`selectors`](../reference/selectors.md) in the docs!
+You can read more about [`selectors`](../posts/old/selectors.qmd) in the docs!
 
 ### order_by
 
