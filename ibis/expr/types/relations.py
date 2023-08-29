@@ -1729,23 +1729,45 @@ class Table(Expr, _FixedTextJupyterMixin):
         | str
         | Literal["snake_case", "ALL_CAPS"],
     ) -> Table:
+        """Deprecated in favor of `Table.rename`"""
+        if isinstance(substitutions, Mapping):
+            substitutions = {new: old for old, new in substitutions.items()}
+        return self.rename(substitutions)
+
+    def rename(
+        self,
+        method: str
+        | Callable[[str], str | None]
+        | Literal["snake_case", "ALL_CAPS"]
+        | Mapping[str, str]
+        | None = None,
+        /,
+        **substitutions: str,
+    ) -> Table:
         """Rename columns in the table.
 
         Parameters
         ----------
+        method
+            An optional method for renaming columns. May be one of:
+
+            - A format string to use to rename all columns, like
+              ``"prefix_{name}"``.
+            - A function from old name to new name. If the function returns
+              ``None`` the old name is used.
+            - The literal strings ``"snake_case"`` or ``"ALL_CAPS"`` to
+              rename all columns using a ``snake_case`` or ``"ALL_CAPS"``
+              naming convention respectively.
+            - A mapping from new name to old name. Existing columns not present
+              in the mapping will passthrough with their original name.
         substitutions
-            A mapping, function, or format string mapping old to new column
-            names. If a column isn't in the mapping (or if the callable returns
-            None) it is left with its original name. May also pass a format
-            string to rename all columns, like ``"prefix_{name}"``. Also
-            accepts the literal string ``"snake_case"`` or ``"ALL_CAPS"`` which
-            will relabel all columns to use a ``snake_case`` or ``"ALL_CAPS"``
-            naming convention.
+            Columns to be explicitly renamed, expressed as ``new_name=old_name``
+            keyword arguments.
 
         Returns
         -------
         Table
-            A relabeled table expression
+            A renamed table expression
 
         Examples
         --------
@@ -1773,9 +1795,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …         │             … │ …                                   │
         └───────────┴───────────────┴─────────────────────────────────────┘
 
-        Relabel column names using a mapping from old name to new name
+        Rename specific columns by passing keyword arguments like
+        ``new_name="old_name"``
 
-        >>> t.relabel({"studyName": "study_name"}).head(1)
+        >>> t.rename(study_name="studyName").head(1)
         ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ study_name ┃ Sample Number ┃ Species                             ┃
         ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1784,31 +1807,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
         └────────────┴───────────────┴─────────────────────────────────────┘
 
-        Relabel column names using a snake_case convention
+        Rename all columns using a format string
 
-        >>> t.relabel("snake_case").head(1)
-        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ study_name ┃ sample_number ┃ species                             ┃
-        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string     │ int64         │ string                              │
-        ├────────────┼───────────────┼─────────────────────────────────────┤
-        │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
-        └────────────┴───────────────┴─────────────────────────────────────┘
-
-        Relabel column names using a ALL_CAPS convention
-
-        >>> t.relabel("ALL_CAPS").head(1)
-        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ STUDY_NAME ┃ SAMPLE_NUMBER ┃ SPECIES                             ┃
-        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string     │ int64         │ string                              │
-        ├────────────┼───────────────┼─────────────────────────────────────┤
-        │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
-        └────────────┴───────────────┴─────────────────────────────────────┘
-
-        Relabel columns using a format string
-
-        >>> t.relabel("p_{name}").head(1)
+        >>> t.rename("p_{name}").head(1)
         ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ p_studyName ┃ p_Sample Number ┃ p_Species                           ┃
         ┡━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1817,9 +1818,31 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ PAL0708     │               1 │ Adelie Penguin (Pygoscelis adeliae) │
         └─────────────┴─────────────────┴─────────────────────────────────────┘
 
-        Relabel column names using a callable
+        Rename all columns using a snake_case convention
 
-        >>> t.relabel(str.upper).head(1)
+        >>> t.rename("snake_case").head(1)
+        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ study_name ┃ sample_number ┃ species                             ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string     │ int64         │ string                              │
+        ├────────────┼───────────────┼─────────────────────────────────────┤
+        │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
+        └────────────┴───────────────┴─────────────────────────────────────┘
+
+        Rename all columns using an ALL_CAPS convention
+
+        >>> t.rename("ALL_CAPS").head(1)
+        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ STUDY_NAME ┃ SAMPLE_NUMBER ┃ SPECIES                             ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string     │ int64         │ string                              │
+        ├────────────┼───────────────┼─────────────────────────────────────┤
+        │ PAL0708    │             1 │ Adelie Penguin (Pygoscelis adeliae) │
+        └────────────┴───────────────┴─────────────────────────────────────┘
+
+        Rename all columns using a callable
+
+        >>> t.rename(str.upper).head(1)
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ STUDYNAME ┃ SAMPLE NUMBER ┃ SPECIES                             ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1828,33 +1851,52 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ PAL0708   │             1 │ Adelie Penguin (Pygoscelis adeliae) │
         └───────────┴───────────────┴─────────────────────────────────────┘
         """
-        observed = set()
+        if isinstance(method, Mapping):
+            substitutions.update(method)
+            method = None
 
-        if isinstance(substitutions, Mapping):
-            rename = substitutions.get
-        elif substitutions in {"snake_case", "ALL_CAPS"}:
+        # A mapping from old_name -> renamed expr
+        renamed = {}
+
+        if substitutions:
+            schema = self.schema()
+            for new_name, old_name in substitutions.items():
+                col = self[old_name]
+                if old_name not in renamed:
+                    renamed[old_name] = col.name(new_name)
+                else:
+                    raise ValueError(
+                        "duplicate new names passed for renaming {old_name!r}"
+                    )
+
+        if method is None:
+
+            def rename(c):
+                return None
+
+        elif isinstance(method, str) and method in {"snake_case", "ALL_CAPS"}:
 
             def rename(c):
                 c = c.strip()
                 if " " in c:
                     # Handle "space case possibly with-hyphens"
-                    if substitutions == "snake_case":
+                    if method == "snake_case":
                         return "_".join(c.lower().split()).replace("-", "_")
-                    elif substitutions == "ALL_CAPS":
+                    elif method == "ALL_CAPS":
                         return "_".join(c.upper().split()).replace("-", "_")
                 # Handle PascalCase, camelCase, and kebab-case
                 c = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", c)
                 c = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", c)
                 c = c.replace("-", "_")
-                if substitutions == "snake_case":
+                if method == "snake_case":
                     return c.lower()
-                elif substitutions == "ALL_CAPS":
+                elif method == "ALL_CAPS":
                     return c.upper()
 
-        elif isinstance(substitutions, str):
+        elif isinstance(method, str):
 
             def rename(name):
-                return substitutions.format(name=name)
+                return method.format(name=name)
 
             # Detect the case of missing or extra format string parameters
             try:
@@ -1866,20 +1908,17 @@ class Table(Expr, _FixedTextJupyterMixin):
             if invalid:
                 raise ValueError("Format strings must take a single parameter `name`")
         else:
-            rename = substitutions
+            rename = method
 
         exprs = []
         for c in self.columns:
-            expr = self[c]
-            if (name := rename(c)) is not None:
-                expr = expr.name(name)
-                observed.add(c)
+            if c in renamed:
+                expr = renamed[c]
+            else:
+                expr = self[c]
+                if (name := rename(c)) is not None:
+                    expr = expr.name(name)
             exprs.append(expr)
-
-        if isinstance(substitutions, Mapping):
-            for c in substitutions:
-                if c not in observed:
-                    raise KeyError(f"{c!r} is not an existing column")
 
         return self.select(exprs)
 

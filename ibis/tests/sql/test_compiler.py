@@ -159,7 +159,7 @@ def test_agg_filter_with_alias(snapshot):
 def test_table_drop_with_filter(snapshot):
     left = ibis.table(
         [("a", "int64"), ("b", "string"), ("c", "timestamp")], name="t"
-    ).relabel({"c": "C"})
+    ).rename(C="c")
     left = left.filter(left.C == datetime.datetime(2018, 1, 1))
     left = left.drop("C")
     left = left.mutate(the_date=datetime.datetime(2018, 1, 1))

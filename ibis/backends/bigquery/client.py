@@ -159,7 +159,7 @@ def rename_partitioned_column(table_expr, bq_table, partition_col):
     # is not _PARTITIONTIME
     if partition_col is None or partition_field != NATIVE_PARTITION_COL:
         return table_expr
-    return table_expr.relabel({NATIVE_PARTITION_COL: partition_col})
+    return table_expr.rename({partition_col: NATIVE_PARTITION_COL})
 
 
 def parse_project_and_dataset(project: str, dataset: str = "") -> tuple[str, str, str]:
