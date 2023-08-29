@@ -135,9 +135,11 @@ decouple *args:
 profile +args:
     pyinstrument {{ args }}
 
+docs-apigen:
+    quartodoc build --config docs/_quarto.yml
+
 # build documentation
 docs-render:
-    quartodoc build --verbose --config docs/_quarto.yml
     quarto render docs
 
 # preview docs
@@ -153,6 +155,10 @@ docs-upload:
     fi
     az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs/_output/*" --recursive --account-key "$AZURE_STORAGE_SECRET"
 
+# execute documentation generation steps for ci
+docs-ci-build: docs-apigen
+    just docs-render
+
 # build and deploy docs
-docs-deploy: docs-render
+docs-deploy: docs-ci-build
     just docs-upload
