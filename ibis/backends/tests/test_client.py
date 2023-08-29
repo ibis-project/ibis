@@ -251,26 +251,28 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "clickhouse",
         "dask",
         "datafusion",
+        "druid",
         "duckdb",
-        "mysql",
-        "pandas",
-        "oracle",
-        "postgres",
-        "sqlite",
-        "snowflake",
-        "polars",
+        "impala",
         "mssql",
+        "mysql",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
         "trino",
     ]
 )
-@mark.broken(["druid"], reason="sqlalchemy dialect is broken")
-def test_rename_table(con, temp_table, temp_table_orig, new_schema):
-    con.create_table(temp_table_orig, schema=new_schema)
-    t = con.table(temp_table_orig)
-    t.rename(temp_table)
-
-    assert con.table(temp_table) is not None
-    assert temp_table in con.list_tables()
+def test_rename_table(con, temp_table, temp_table_orig):
+    schema = ibis.schema({"a": "string", "b": "bool", "c": "int32"})
+    con.create_table(temp_table_orig, schema=schema)
+    con.rename_table(temp_table_orig, temp_table)
+    new = con.table(temp_table)
+    assert new.schema().equals(schema)
+    assert temp_table_orig not in con.list_tables()
 
 
 @mark.notimpl(["datafusion", "polars", "druid"])

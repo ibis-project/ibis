@@ -1000,6 +1000,20 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             f'Backend "{self.name}" does not implement "drop_table"'
         )
 
+    def rename_table(self, old_name: str, new_name: str) -> None:
+        """Rename an existing table.
+
+        Parameters
+        ----------
+        old_name
+            The old name of the table.
+        new_name
+            The new name of the table.
+        """
+        raise NotImplementedError(
+            f'Backend "{self.name}" does not implement "rename_table"'
+        )
+
     @abc.abstractmethod
     def create_view(
         self,
