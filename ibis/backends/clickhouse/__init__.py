@@ -38,28 +38,6 @@ def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
 
 
-class ClickhouseTable(ir.Table):
-    """References a physical table in Clickhouse."""
-
-    @property
-    def _client(self):
-        return self.op().source
-
-    @property
-    def name(self):
-        return self.op().name
-
-    def insert(self, obj, settings: Mapping[str, Any] | None = None, **kwargs):
-        import pandas as pd
-
-        if not isinstance(obj, pd.DataFrame):
-            raise com.IbisError(
-                f"Invalid input type {type(obj)}; only pandas DataFrames are accepted as input"
-            )
-
-        return self._client.con.insert_df(self.name, obj, settings=settings, **kwargs)
-
-
 class Backend(BaseBackend, CanCreateDatabase):
     name = "clickhouse"
 
@@ -437,7 +415,23 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         schema = self.get_schema(name, database=database)
         qname = self._fully_qualified_name(name, database)
-        return ClickhouseTable(ops.DatabaseTable(qname, schema, self))
+        return ops.DatabaseTable(qname, schema, self).to_expr()
+
+    def insert(
+        self,
+        name: str,
+        obj: pd.DataFrame,
+        settings: Mapping[str, Any] | None = None,
+        **kwargs: Any,
+    ):
+        import pandas as pd
+
+        if not isinstance(obj, pd.DataFrame):
+            raise com.IbisError(
+                f"Invalid input type {type(obj)}; only pandas DataFrames are accepted as input"
+            )
+
+        return self.con.insert_df(name, obj, settings=settings, **kwargs)
 
     def raw_sql(
         self,
