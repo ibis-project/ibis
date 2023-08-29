@@ -378,22 +378,26 @@ def test_relabel():
     table = api.table({"x": "int32", "y": "string", "z": "double"})
 
     # Using a mapping
-    res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
+    with pytest.warns(FutureWarning, match="Table.rename"):
+        res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
     sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
     assert_equal(res, sol)
 
     # Using a function
-    res = table.relabel(lambda x: None if x == "z" else f"{x}_1").schema()
+    with pytest.warns(FutureWarning, match="Table.rename"):
+        res = table.relabel(lambda x: None if x == "z" else f"{x}_1").schema()
     assert_equal(res, sol)
 
     # Using a format string
-    res = table.relabel("_{name}_")
-    sol = table.relabel({"x": "_x_", "y": "_y_", "z": "_z_"})
+    with pytest.warns(FutureWarning, match="Table.rename"):
+        res = table.relabel("_{name}_")
+        sol = table.relabel({"x": "_x_", "y": "_y_", "z": "_z_"})
     assert_equal(res, sol)
 
     # Mapping with unknown columns errors
     with pytest.raises(com.IbisTypeError, match="'missing' is not found in table"):
-        table.relabel({"missing": "oops"})
+        with pytest.warns(FutureWarning, match="Table.rename"):
+            table.relabel({"missing": "oops"})
 
 
 def test_rename():
