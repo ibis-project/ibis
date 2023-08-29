@@ -795,7 +795,9 @@ class NumericColumn(Column, NumericValue):
         quantile
             `0 <= quantile <= 1`, the quantile(s) to compute
         interpolation
-            !!! warning "This parameter is backend dependent and may have no effect"
+            ::: {.callout-warning}
+            ## This parameter is backend dependent and may have no effect
+            :::
 
             This parameter specifies the interpolation method to use, when the
             desired quantile lies between two data points `i` and `j`:
