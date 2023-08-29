@@ -3,6 +3,8 @@ project:
   output-dir: _output
   preview:
     port: 8000
+  post-render:
+    - ../gen_redirects.py
 
 highlight-style: ayu
 
