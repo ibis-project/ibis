@@ -1,3 +1,7 @@
+---
+filters:
+  - include-code-files
+---
 # Streamlit + Ibis
 
 Ibis supports the [streamlit `experimental_connection` interface](https://blog.streamlit.io/introducing-st-experimental_connection/), making it easier than ever to combine the powers of both tools!
@@ -10,10 +14,5 @@ Check out the example application below that shows the top N ingredients from a 
 
 And here's the source code for the application:
 
-```{python}
-# | echo: false
-# | output: asis
-with open("example_streamlit_app/example_streamlit_app.py", mode="r") as f:
-    code = f.read()
-print(f"```python\n{code}\n```")
+```{.python include="example_streamlit_app/example_streamlit_app.py" code-line-numbers="true"}
 ```
