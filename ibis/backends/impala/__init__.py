@@ -32,6 +32,7 @@ from ibis.backends.base.sql.ddl import (
     DropDatabase,
     DropTable,
     DropView,
+    RenameTable,
     TruncateTable,
     fully_qualified_re,
     is_fully_qualified,
@@ -971,6 +972,19 @@ class Backend(BaseSQLBackend):
             Database name
         """
         statement = TruncateTable(name, database=database)
+        self._safe_exec_sql(statement)
+
+    def rename_table(self, old_name: str, new_name: str) -> None:
+        """Rename an existing table.
+
+        Parameters
+        ----------
+        old_name
+            The old name of the table.
+        new_name
+            The new name of the table.
+        """
+        statement = RenameTable(old_name, new_name)
         self._safe_exec_sql(statement)
 
     def drop_table_or_view(self, name, *, database=None, force=False):
