@@ -125,32 +125,32 @@ def temporary_alltypes(con):
     con.drop_table(table)
 
 
-def test_insert(temporary_alltypes, df):
+def test_insert(con, temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df[:10]
 
     assert temporary.count().execute() == 0
-    temporary.insert(records)
+    con.insert(temporary.op().name, records)
 
     tm.assert_frame_equal(temporary.execute(), records)
 
 
-def test_insert_with_less_columns(temporary_alltypes, df):
+def test_insert_with_less_columns(con, temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df.loc[:10, ["string_col"]].copy()
     records["date_col"] = None
 
     with pytest.raises(cc.driver.exceptions.ProgrammingError):
-        temporary.insert(records)
+        con.insert(temporary.op().name, records)
 
 
-def test_insert_with_more_columns(temporary_alltypes, df):
+def test_insert_with_more_columns(con, temporary_alltypes, df):
     temporary = temporary_alltypes
     records = df[:10].copy()
     records["non_existing_column"] = "raise on me"
 
     with pytest.raises(cc.driver.exceptions.ProgrammingError):
-        temporary.insert(records)
+        con.insert(temporary.op().name, records)
 
 
 @pytest.mark.parametrize(
