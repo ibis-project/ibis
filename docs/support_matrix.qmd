@@ -40,9 +40,5 @@ The code used to generate the linked CSV file is below.
 !python ../gen_matrix.py
 ```
 
-```{python}
-#| echo: false
-#| output: asis
-with open("../gen_matrix.py") as f:
-    print(f"```python\n{f.read()}\n```")
+```{python include="../gen_matrix.py" code-line-numbers="true"}
 ```
