@@ -1,7 +1,0 @@
-title: Include Code Files
-author: Bruno Beaufils
-version: 1.0.0
-quarto-required: ">=1.2"
-contributes:
-  filters:
-    - include-code-files.lua
