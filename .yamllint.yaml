@@ -1,6 +1,9 @@
 ---
 extends: default
 
+ignore:
+  - docs/_publish.yml
+
 rules:
   document-start: disable
   line-length: disable # we already enforce this with prettier
