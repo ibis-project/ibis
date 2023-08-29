@@ -8,7 +8,9 @@ This is a quick tour of some basic commands and usage patterns, just to get your
 
 ## Create a database file
 
-Ibis can work with several file types, but at its core, it connects to existing databases and interacts with the data there. We'll use a local database (DuckDB) to get the hang of this.[^1]
+Ibis can work with several file types, but at its core it connects to existing
+databases and interacts with the data there. We'll analyze the _Palmer penguins_ [^1]
+dataset with [DuckDB](https://duckdb.org) to get the hang of this.
 
 ```{python}
 import ibis
@@ -22,7 +24,6 @@ con.create_table(
 You can now see the example dataset copied over to the database:
 
 ```{python}
-# reconnect to the persisted database (dropping temp tables)
 con = ibis.connect("duckdb://penguins.ddb")
 con.list_tables()
 ```
