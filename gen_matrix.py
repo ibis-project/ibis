@@ -45,7 +45,7 @@ def main():
     df = pd.DataFrame(support).set_index("operation").sort_index()
 
     with Path(ibis.__file__).parents[1].joinpath(
-        "backends", "raw_support_matrix.csv"
+        "docs", "backends", "raw_support_matrix.csv"
     ).open(mode="w") as f:
         df.to_csv(f, index_label="FullOperation")
 
