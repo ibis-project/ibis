@@ -114,7 +114,9 @@ class GroupedTable:
     def having(self, expr: ir.BooleanScalar) -> GroupedTable:
         """Add a post-aggregation result filter `expr`.
 
-        !!! warning "Expressions like `x is None` return `bool` and **will not** generate a SQL comparison to `NULL`"
+        ::: {.callout-warning}
+        ## Expressions like `x is None` return `bool` and **will not** generate a SQL comparison to `NULL`
+        :::
 
         Parameters
         ----------
