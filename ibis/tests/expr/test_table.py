@@ -128,7 +128,7 @@ def test_typo_method_name_recommendation(table):
 
     # Existing columns take precedence over raising an error
     # for a common method typo
-    table2 = table.relabel({"a": "sort"})
+    table2 = table.rename(sort="a")
     assert isinstance(table2.sort, Column)
 
 
@@ -374,68 +374,103 @@ def test_filter_fusion_distinct_table_objects(con):
     assert_equal(expr, expr4)
 
 
-def test_column_relabel():
+def test_relabel():
     table = api.table({"x": "int32", "y": "string", "z": "double"})
-    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
 
     # Using a mapping
     res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
+    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
     assert_equal(res, sol)
 
     # Using a function
     res = table.relabel(lambda x: None if x == "z" else f"{x}_1").schema()
     assert_equal(res, sol)
 
+    # Using a format string
+    res = table.relabel("_{name}_")
+    sol = table.relabel({"x": "_x_", "y": "_y_", "z": "_z_"})
+    assert_equal(res, sol)
+
     # Mapping with unknown columns errors
-    with pytest.raises(KeyError, match="is not an existing column"):
+    with pytest.raises(com.IbisTypeError, match="'missing' is not found in table"):
         table.relabel({"missing": "oops"})
 
 
-def test_relabel_format_string():
+def test_rename():
+    table = api.table({"x": "int32", "y": "string", "z": "double"})
+    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
+
+    # Using kwargs
+    res = table.rename(x_1="x", y_1="y").schema()
+    assert_equal(res, sol)
+
+    # Using a mapping
+    res = table.rename({"x_1": "x", "y_1": "y"}).schema()
+    assert_equal(res, sol)
+
+    # Using a mix
+    res = table.rename({"x_1": "x"}, y_1="y").schema()
+    assert_equal(res, sol)
+
+
+def test_rename_function():
+    table = api.table({"x": "int32", "y": "string", "z": "double"})
+
+    res = table.rename(lambda x: None if x == "z" else f"{x}_1").schema()
+    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
+    assert_equal(res, sol)
+
+    # Explicit rename takes precedence
+    res = table.rename(lambda x: f"{x}_1", z_2="z").schema()
+    sol = sch.schema({"x_1": "int32", "y_1": "string", "z_2": "double"})
+    assert_equal(res, sol)
+
+
+def test_rename_format_string():
     t = ibis.table({"x": "int", "y": "int", "z": "int"})
 
-    res = t.relabel("_{name}_")
-    sol = t.relabel({"x": "_x_", "y": "_y_", "z": "_z_"})
+    res = t.rename("_{name}_")
+    sol = t.rename({"_x_": "x", "_y_": "y", "_z_": "z"})
     assert_equal(res, sol)
 
     with pytest.raises(ValueError, match="Format strings must"):
-        t.relabel("no format string parameter")
+        t.rename("no format string parameter")
 
     with pytest.raises(ValueError, match="Format strings must"):
-        t.relabel("{unknown} format string parameter")
+        t.rename("{unknown} format string parameter")
 
 
-def test_relabel_snake_case():
+def test_rename_snake_case():
     cases = [
         ("cola", "cola"),
-        ("ColB", "col_b"),
-        ("colC", "col_c"),
-        ("col-d", "col_d"),
+        ("col_b", "ColB"),
+        ("col_c", "colC"),
+        ("col_d", "col-d"),
         ("col_e", "col_e"),
-        (" Column F ", "column_f"),
-        ("Column G-with-hyphens", "column_g_with_hyphens"),
-        ("Col H notCamelCase", "col_h_notcamelcase"),
+        ("column_f", " Column F "),
+        ("column_g_with_hyphens", "Column G-with-hyphens"),
+        ("col_h_notcamelcase", "Col H notCamelCase"),
     ]
-    t = ibis.table({c: "int" for c, _ in cases})
-    res = t.relabel("snake_case")
-    sol = t.relabel(dict(cases))
+    t = ibis.table({c: "int" for _, c in cases})
+    res = t.rename("snake_case")
+    sol = t.rename(dict(cases))
     assert_equal(res, sol)
 
 
-def test_relabel_all_caps():
+def test_rename_all_caps():
     cases = [
-        ("cola", "COLA"),
-        ("ColB", "COL_B"),
-        ("colC", "COL_C"),
-        ("col-d", "COL_D"),
-        ("col_e", "COL_E"),
-        (" Column F ", "COLUMN_F"),
-        ("Column G-with-hyphens", "COLUMN_G_WITH_HYPHENS"),
-        ("Col H notCamelCase", "COL_H_NOTCAMELCASE"),
+        ("COLA", "cola"),
+        ("COL_B", "ColB"),
+        ("COL_C", "colC"),
+        ("COL_D", "col-d"),
+        ("COL_E", "col_e"),
+        ("COLUMN_F", " Column F "),
+        ("COLUMN_G_WITH_HYPHENS", "Column G-with-hyphens"),
+        ("COL_H_NOTCAMELCASE", "Col H notCamelCase"),
     ]
-    t = ibis.table({c: "int" for c, _ in cases})
-    res = t.relabel("ALL_CAPS")
-    sol = t.relabel(dict(cases))
+    t = ibis.table({c: "int" for _, c in cases})
+    res = t.rename("ALL_CAPS")
+    sol = t.rename(dict(cases))
     assert_equal(res, sol)
 
 
@@ -1536,7 +1571,7 @@ def test_merge_as_of_allows_overlapping_columns():
     signal_one = signal_one[
         "value", "timestamp_received", "field"
     ]  # select columns we care about
-    signal_one = signal_one.relabel({"value": "current", "field": "signal_one"})
+    signal_one = signal_one.rename(current="value", signal_one="field")
 
     signal_two = table[
         table["field"].contains("signal_two") & table["field"].contains("voltage")
@@ -1544,7 +1579,7 @@ def test_merge_as_of_allows_overlapping_columns():
     signal_two = signal_two[
         "value", "timestamp_received", "field"
     ]  # select columns we care about
-    signal_two = signal_two.relabel({"value": "voltage", "field": "signal_two"})
+    signal_two = signal_two.rename(voltage="value", signal_two="field")
 
     merged = ibis.api.asof_join(signal_one, signal_two, "timestamp_received")
     assert merged.columns == [

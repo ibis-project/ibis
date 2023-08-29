@@ -200,11 +200,11 @@ def test_alias_after_select(con):
         # new id != t['id']
         (lambda t: t.mutate(id=t["id"] + 1), 0, False),
         # new column id is selections[0], OK to replace since
-        # new id == t['id'] (relabel is a no-op)
-        (lambda t: t.relabel({"id": "id"}), 0, True),
+        # new id == t['id'] (rename is a no-op)
+        (lambda t: t.rename({"id": "id"}), 0, True),
         # new column id2 is selections[0], cannot be replaced since
         # id2 does not exist in the table
-        (lambda t: t.relabel({"id": "id2"}), 0, False),
+        (lambda t: t.rename({"id2": "id"}), 0, False),
     ],
 )
 def test_can_be_replaced_by_column_name(selection_fn, selection_idx, expected):

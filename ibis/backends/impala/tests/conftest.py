@@ -157,7 +157,7 @@ class TestConf(UnorderedComparator, BackendTest, RoundAwayFromZero):
     def _get_renamed_table(self, tablename: str) -> ir.Table:
         t = self.connection.table(tablename)
         original_names = self._get_original_column_names(tablename)
-        return t.relabel(dict(zip(t.columns, original_names)))
+        return t.rename(dict(zip(original_names, t.columns)))
 
     @property
     def batting(self) -> ir.Table:

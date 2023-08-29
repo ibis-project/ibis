@@ -110,8 +110,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     def _remap_column_names(self, table_name: str) -> dict[str, str]:
         table = self.connection.table(table_name)
-        return table.relabel(
-            dict(zip(table.schema().names, TEST_TABLES[table_name].names))
+        return table.rename(
+            dict(zip(TEST_TABLES[table_name].names, table.schema().names))
         )
 
     @property

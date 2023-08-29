@@ -146,7 +146,7 @@ def test_join_with_post_expression_filter(how, left):
 def test_multi_join_with_post_expression_filter(how, left, df1):
     lhs = left[["key", "key2"]]
     rhs = left[["key2", "value"]]
-    rhs2 = left[["key2", "value"]].relabel({"value": "value2"})
+    rhs2 = left[["key2", "value"]].rename(value2="value")
 
     joined = lhs.join(rhs, "key2", how=how)
     projected = joined[lhs, rhs.value]
