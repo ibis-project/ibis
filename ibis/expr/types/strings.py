@@ -1324,7 +1324,9 @@ class StringValue(Value):
     def split(self, delimiter: str | StringValue) -> ir.ArrayValue:
         """Split as string on `delimiter`.
 
-        !!! note "This API only works on backends with array support."
+        ::: {.callout-note}
+        ## This API only works on backends with array support.
+        :::
 
         Parameters
         ----------

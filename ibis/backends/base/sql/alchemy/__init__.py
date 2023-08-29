@@ -602,10 +602,12 @@ class BaseAlchemyBackend(BaseSQLBackend):
         schema
             The schema inside `database` where the table resides.
 
-            !!! warning "`schema` refers to database organization"
+            ::: {.callout-warning}
+            ## `schema` refers to database hierarchy
 
-                The `schema` parameter does **not** refer to the column names
-                and types of `table`.
+            The `schema` parameter does **not** refer to the column names and
+            types of `table`.
+            :::
 
         Returns
         -------

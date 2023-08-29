@@ -131,29 +131,35 @@ class BaseSQLBackend(BaseBackend):
     def raw_sql(self, query: str):
         """Execute a query string and return the cursor used for execution.
 
-        !!! tip "Consider using [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] instead"
+        ::: {.callout-tip}
+        ## Consider using [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] instead
 
-            If your query is a SELECT statement, you should use the
-            [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] method to avoid
-            having to release the cursor returned from this method manually.
+        If your query is a SELECT statement, you should use the
+        [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] method to avoid
+        having to release the cursor returned from this method manually.
 
-            ??? warning "The returned cursor object must be **manually released** if you use `raw_sql`."
+        ::: {.callout-warning collapse="true"}
+        ## The returned cursor object must be **manually released** if you use `raw_sql`."
 
-                To release a cursor, call the `close` method on the returned cursor object.
+        To release a cursor, call the `close` method on the returned cursor
+        object.
 
-                You can close the cursor by explicitly calling its `close` method:
+        You can close the cursor by explicitly calling its `close` method:
 
-                ```python
-                cursor = con.raw_sql("SELECT ...")
-                cursor.close()
-                ```
+        ```python
+        cursor = con.raw_sql("SELECT ...")
+        cursor.close()
+        ```
 
-                Or you can use a context manager:
+        Or you can use a context manager:
 
-                ```python
-                with con.raw_sql("SELECT ...") as cursor:
-                    ...
-                ```
+        ```python
+        with con.raw_sql("SELECT ...") as cursor:
+            ...
+        ```
+        :::
+
+        :::
 
         Parameters
         ----------

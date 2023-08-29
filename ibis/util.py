@@ -412,14 +412,16 @@ def append_admonition(
             1 for _ in itertools.takewhile(str.isspace, rest[0] if rest else [])
         )
 
-        admonition_doc = f'{leading_spaces}!!! {kind} "{msg}"'
+        lines = [f"::: {{.callout-{kind}}}", f"## {msg}", ":::"]
+        admonition_doc = textwrap.indent("\n".join(lines), leading_spaces)
 
         if body:
             rest = [indent(body, spaces=len(leading_spaces) + 4), *rest]
 
         docstr = "\n\n".join([preamble, admonition_doc, *rest])
     else:
-        admonition_doc = f'!!! {kind} "{msg}"'
+        lines = [f"::: {{.callout-{kind}}}", f"## {msg}", ":::"]
+        admonition_doc = "\n".join(lines)
         if body:
             admonition_doc += f"\n\n{indent(body, spaces=4)}"
         docstr = admonition_doc
