@@ -507,6 +507,19 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         statement = DropTable(name, database=database, must_exist=not force)
         self.raw_sql(statement.compile())
 
+    def rename_table(self, old_name: str, new_name: str) -> None:
+        """Rename an existing table.
+
+        Parameters
+        ----------
+        old_name
+            The old name of the table.
+        new_name
+            The new name of the table.
+        """
+        statement = ddl.RenameTable(old_name, new_name)
+        self.raw_sql(statement.compile())
+
     def truncate_table(self, name: str, database: str | None = None) -> None:
         """Delete all rows from an existing table.
 

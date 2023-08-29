@@ -122,32 +122,6 @@ class PySparkTable(ir.Table):
         statement = ddl.InsertSelect(self._qualified_name, select, overwrite=overwrite)
         return self._client.raw_sql(statement.compile())
 
-    def rename(self, new_name: str) -> PySparkTable:
-        """Rename the table inside Spark.
-
-        References to the old table are no longer valid. Spark does not support
-        moving tables across databases using `rename`.
-
-        Parameters
-        ----------
-        new_name
-            New table name
-
-        Returns
-        -------
-        PySparkTable
-            Renamed spark table
-        """
-        new_qualified_name = self._client._fully_qualified_name(
-            new_name, self._database
-        )
-
-        statement = ddl.RenameTable(self.name, new_name)
-        self._client.raw_sql(statement.compile())
-
-        op = self.op().copy(name=new_qualified_name)
-        return type(self)(op)
-
     def alter(self, tbl_properties: Mapping[str, str] | None = None) -> Any:
         """Change settings and parameters of the table.
 
