@@ -11,12 +11,6 @@ in
   # `wheel` cannot be used as a wheel to unpack itself, since that would
   # require itself (infinite recursion)
   wheel = super.wheel.override { preferWheel = false; };
-  paginate = super.paginate.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
-  });
-  readtime = super.readtime.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
-  });
 
   # patch oscrypto for openssl 3 support: the fix is to relax some regexes that
   # inspect the libcrypto version
