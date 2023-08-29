@@ -260,7 +260,6 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "pandas",
         "polars",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",
