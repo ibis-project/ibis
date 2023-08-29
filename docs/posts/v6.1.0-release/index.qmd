@@ -12,7 +12,7 @@ categories:
 
 Ibis 6.1.0 is a minor release that includes new features, backend improvements, bug fixes, documentation improvements, and refactors. We are excited to see further adoption of the dataframe interchange protocol enabling visualization and other libraries to be used more easily with Ibis.
 
-You can view the full changelog in [the release notes](../../release_notes.qmd).
+You can view the full changelog in [the release notes](../../release_notes.md).
 
 If you're new to Ibis, see [how to install](../../install.qmd) and [the getting started tutorial](../../tutorials/getting_started.qmd).
 
@@ -184,7 +184,7 @@ px.scatter_3d(  # <6>
 
 ## Backends
 
-Numerous backends received improvements. See the [release notes](../../release_notes.qmd) for more details.
+Numerous backends received improvements. See the [release notes](../../release_notes.md) for more details.
 
 ::: {.panel-tabset}
 
@@ -357,7 +357,7 @@ t.join(t, False, how="outer")
 
 ## Refactors
 
-Several internal refactors that shouldn\'t affect normal usage were made. See [the release notes](../../release_notes.qmd) for more details.
+Several internal refactors that shouldn\'t affect normal usage were made. See [the release notes](../../release_notes.md) for more details.
 
 ## Wrapping up
 
