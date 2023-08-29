@@ -172,7 +172,9 @@ class Table(Expr, _FixedTextJupyterMixin):
     def cast(self, schema: SupportsSchema) -> Table:
         """Cast the columns of a table.
 
-        !!! note "If you need to cast columns to a single type, use [selectors](https://ibis-project.org/blog/selectors/)."
+        ::: {.callout-note}
+        ## If you need to cast columns to a single type, use [selectors](./selectors.qmd).
+        :::
 
         Parameters
         ----------
@@ -773,13 +775,15 @@ class Table(Expr, _FixedTextJupyterMixin):
     def rowid(self) -> ir.IntegerValue:
         """A unique integer per row.
 
-        !!! note "This operation is only valid on physical tables"
+        ::: {.callout-note}
+        ## This operation is only valid on physical tables
 
-            Any further meaning behind this expression is backend dependent.
-            Generally this corresponds to some index into the database storage
-            (for example, sqlite or duckdb's `rowid`).
+        Any further meaning behind this expression is backend dependent.
+        Generally this corresponds to some index into the database storage
+        (for example, SQLite and DuckDB's `rowid`).
 
         For a monotonically increasing row number, see `ibis.row_number`.
+        :::
 
         Returns
         -------
@@ -887,7 +891,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             Post-aggregation filters. The shape requirements are the same
             `metrics`, but the output type for `having` is `boolean`.
 
-            !!! warning "Expressions like `x is None` return `bool` and **will not** generate a SQL comparison to `NULL`"
+            ::: {.callout-warning}
+            ## Expressions like `x is None` return `bool` and **will not** generate a SQL comparison to `NULL`
+            :::
         kwargs
             Named aggregate expressions
 
@@ -963,7 +969,9 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Similar to `pandas.DataFrame.drop_duplicates()`.
 
-        !!! note "Some backends do not support `keep='last'`"
+        ::: {.callout-note}
+        ## Some backends do not support `keep='last'`
+        :::
 
         Parameters
         ----------
@@ -1123,7 +1131,9 @@ class Table(Expr, _FixedTextJupyterMixin):
     def limit(self, n: int | None, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
 
-        !!! note "The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by]."
+        ::: {.callout-note}
+        ## The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by].
+        :::
 
         Parameters
         ----------
@@ -1184,7 +1194,9 @@ class Table(Expr, _FixedTextJupyterMixin):
     def head(self, n: int = 5) -> Table:
         """Select the first `n` rows of a table.
 
-        !!! note "The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by]."
+        ::: {.callout-note}
+        ## The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by].
+        :::
 
         Parameters
         ----------
@@ -2219,10 +2231,12 @@ class Table(Expr, _FixedTextJupyterMixin):
     ) -> Table:
         """Fill null values in a table expression.
 
-        !!! note "There is potential lack of type stability with the `fillna` API"
+        ::: {.callout-note}
+        ## There is potential lack of type stability with the `fillna` API
 
-            For example, different library versions may impact whether a given
-            backend promotes integer replacement values to floats.
+        For example, different library versions may impact whether a given
+        backend promotes integer replacement values to floats.
+        :::
 
         Parameters
         ----------
@@ -2713,12 +2727,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         backend for use in the
         [`Table.sql`][ibis.expr.types.relations.Table.sql] method.
 
-        !!! note "`.alias` will create a temporary view"
+        ::: {.callout-note}
+        ## `.alias` will create a temporary view
 
-            `.alias` creates a temporary view in the database.
+        `.alias` creates a temporary view in the database.
 
-            This side effect will be removed in a future version of ibis and
-            **is not part of the public API**.
+        This side effect will be removed in a future version of ibis and **is
+        not part of the public API**.
+        :::
 
         Parameters
         ----------
@@ -2871,10 +2887,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         This method is idempotent: calling it multiple times in succession will
         return the same value as the first call.
 
-        !!! note "This method eagerly evaluates the expression prior to caching"
+        ::: {.callout-note}
+        ## This method eagerly evaluates the expression prior to caching
 
-            Subsequent evaluations will not recompute the expression so method
-            chaining will not incur the overhead of caching more than once.
+        Subsequent evaluations will not recompute the expression so method
+        chaining will not incur the overhead of caching more than once.
+        :::
 
         Returns
         -------

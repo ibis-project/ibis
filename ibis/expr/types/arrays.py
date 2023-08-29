@@ -266,7 +266,9 @@ class ArrayValue(Value):
     def unnest(self) -> ir.Value:
         """Flatten an array into a column.
 
-        !!! note "This operation changes the cardinality of the result"
+        ::: {.callout-note}
+        ## This operation changes the cardinality of the result
+        :::
 
         Examples
         --------
@@ -609,7 +611,9 @@ class ArrayValue(Value):
     def unique(self) -> ir.ArrayValue:
         """Return the unique values in an array.
 
-        !!! note "Element ordering in array may not be retained."
+        ::: {.callout-note}
+        ## Element ordering in array may not be retained.
+        :::
 
         Returns
         -------
