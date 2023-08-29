@@ -207,25 +207,6 @@ def test_drop_view(con, created_view):
     assert created_view not in con.list_tables()
 
 
-def test_rename_table(con, temp_database):
-    tmp_db = temp_database
-
-    orig_name = "tmp_rename_test"
-    con.create_table(orig_name, con.table("region"))
-    table = con.table(orig_name)
-
-    old_name = table.name
-
-    new_name = "rename_test"
-    renamed = table.rename(new_name, database=tmp_db)
-    renamed.execute()
-
-    t = con.table(new_name, database=tmp_db)
-    assert_equal(renamed, t)
-
-    assert table.name == old_name
-
-
 @pytest.fixture
 def path_uuid():
     return f"change-location-{util.guid()}"

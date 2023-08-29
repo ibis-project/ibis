@@ -253,7 +253,6 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "datafusion",
         "druid",
         "duckdb",
-        "impala",
         "mssql",
         "mysql",
         "oracle",

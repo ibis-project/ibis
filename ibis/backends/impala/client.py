@@ -13,12 +13,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import Database
 from ibis.backends.base.sql.compiler import DDL, DML
-from ibis.backends.base.sql.ddl import (
-    AlterTable,
-    InsertSelect,
-    RenameTable,
-    fully_qualified_re,
-)
+from ibis.backends.base.sql.ddl import AlterTable, InsertSelect
 from ibis.backends.impala import ddl
 from ibis.backends.impala.compat import HS2Error, impyla
 
@@ -333,22 +328,6 @@ class ImpalaTable(ir.Table):
     @property
     def name(self) -> str:
         return self.op().name
-
-    def rename(self, new_name: str, database: str | None = None) -> ImpalaTable:
-        """Rename table inside Impala.
-
-        References to the old table are no longer valid.
-        """
-        m = fully_qualified_re.match(new_name)
-        if not m and database is None:
-            database = self._database
-        statement = RenameTable(
-            self.name, new_name, old_database=self._database, new_database=database
-        )
-        self._client._safe_exec_sql(statement)
-
-        op = self.op().copy(name=new_name, namespace=database)
-        return self.__class__(op)
 
     @property
     def is_partitioned(self):
