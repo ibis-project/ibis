@@ -5,10 +5,12 @@ on:
     branches:
       - master
       - "*.x.x"
+      - quarto
   pull_request:
     branches:
       - master
       - "*.x.x"
+      - quarto
   merge_group:
 
 concurrency:
@@ -184,10 +186,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     concurrency: docs-${{ github.repository }}
-    needs:
-      # wait on benchmarks to prevent a race condition when pushing to the
-      # gh-pages branch
-      - benchmarks
+    # needs:
+    #   # wait on benchmarks to prevent a race condition when pushing to the
+    #   # gh-pages branch
+    #   - benchmarks
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v22
@@ -202,39 +204,20 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
 
-      - name: Generate a GitHub token
-        uses: tibdex/github-app-token@v1
-        id: generate_token
-        with:
-          app_id: ${{ secrets.DOCS_BOT_APP_ID }}
-          private_key: ${{ secrets.DOCS_BOT_APP_PRIVATE_KEY }}
+      # TODO(cpcloud): what to do with this?
+      # - name: download benchmark data
+      #   uses: actions/download-artifact@v3
+      #   with:
+      #     name: bench
+      #     path: docs/bench
 
-      - name: checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          token: ${{ steps.generate_token.outputs.token }}
-
-      - name: Configure git info
-        run: |
-          set -euo pipefail
-
-          git config user.name 'ibis-docs-bot[bot]'
-          git config user.email 'ibis-docs-bot[bot]@users.noreply.github.com'
-          git config http.postBuffer 157286400
-          git config http.version 'HTTP/1.1'
-
-      - name: download benchmark data
-        uses: actions/download-artifact@v3
-        with:
-          name: bench
-          path: docs/bench
+      - name: build api docs
+        run: nix develop -c quartodoc build --verbose --config docs/_quarto.yml
 
       - name: build and push quarto docs
-        # TODO(cpcloud): get az working in the environment, right now this assumes it's installed on the runner
-        run: nix develop -c just docs-deploy
+        run: nix develop --ignore-environment --keep NETLIFY_AUTH_TOKEN -c quarto publish --no-prompt --no-browser netlify
         env:
-          AZURE_STORAGE_SECRET: ${{ secrets.AZURE_STORAGE_SECRET }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
   simulate_release:
     runs-on: ubuntu-latest
