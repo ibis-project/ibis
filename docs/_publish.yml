@@ -1,0 +1,4 @@
+- source: project
+  netlify:
+    - id: 3832aec3-a89a-4f2e-b185-232eb2f077da
+      url: 'https://ibis-quarto.netlify.app'
