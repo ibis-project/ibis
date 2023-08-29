@@ -243,20 +243,15 @@ def _string_find(translator, op):
     )
 
 
-def _translate_pattern(translator, op):
-    # add 'r' to string literals to indicate to BigQuery this is a raw string
-    return "r" * isinstance(op, ops.Literal) + translator.translate(op)
-
-
 def _regex_search(translator, op):
     arg = translator.translate(op.arg)
-    regex = _translate_pattern(translator, op.pattern)
+    regex = translator.translate(op.pattern)
     return f"REGEXP_CONTAINS({arg}, {regex})"
 
 
 def _regex_extract(translator, op):
     arg = translator.translate(op.arg)
-    regex = _translate_pattern(translator, op.pattern)
+    regex = translator.translate(op.pattern)
     index = translator.translate(op.index)
     matches = f"REGEXP_CONTAINS({arg}, {regex})"
     # non-greedily match the regex's prefix so the regex can match as much as possible
@@ -272,7 +267,7 @@ def _regex_extract(translator, op):
 
 def _regex_replace(translator, op):
     arg = translator.translate(op.arg)
-    regex = _translate_pattern(translator, op.pattern)
+    regex = translator.translate(op.pattern)
     replacement = translator.translate(op.replacement)
     return f"REGEXP_REPLACE({arg}, {regex}, {replacement})"
 
