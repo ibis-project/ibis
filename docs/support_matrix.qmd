@@ -40,5 +40,9 @@ You can also download data from the above tables in [CSV format](./raw_support_m
 
 The code used to generate the linked CSV file is below.
 
-```{python include="../gen_matrix.py" code-line-numbers="true"}
+```{python}
+#| echo: false
+#| output: asis
+with open("../gen_matrix.py", mode="r") as f:
+    print(f"```python\n{f.read()}\n```")
 ```
