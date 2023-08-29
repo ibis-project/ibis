@@ -1629,6 +1629,8 @@ See https://github.com/ibis-project/ibis/issues/4704 for details.
 
 Use `from ibis import deferred as <NAME>` to assign a different name to
 the deferred object builder.
+
+Another option is to use `ibis._` directly.
 :::
 
 Examples
