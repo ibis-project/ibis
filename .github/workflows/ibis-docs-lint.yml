@@ -171,6 +171,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
 
+      - name: generate api docs
+        run: nix develop --ignore-environment -c just docs-apigen
+
       - name: build docs
         run: nix develop --ignore-environment -c just docs-render
 
