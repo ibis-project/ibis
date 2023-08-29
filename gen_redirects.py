@@ -2,25 +2,6 @@ from __future__ import annotations
 
 import pathlib
 
-import mkdocs_gen_files
-
-HTML_TEMPLATE = """
-<!doctype html>
-<html lang="en">
-<head>
-    <meta charset="utf-8">
-    <title>Redirecting...</title>
-    <link rel="canonical" href="{url}">
-    <meta name="robots" content="noindex">
-    <script>var anchor=window.location.hash.substr(1);location.href="{url}"+(anchor?"#"+anchor:"")</script>
-    <meta http-equiv="refresh" content="0; url={url}">
-</head>
-<body>
-Redirecting...
-</body>
-</html>
-"""
-
 # Versions for templated redirects
 VERSIONS = ["latest", "dev", "4.1.0", "4.0.0", "3.2.0", "3.1.0"]
 
@@ -95,11 +76,8 @@ REDIRECTS.update(
 )
 
 # Write all redirect files
-for old, new in REDIRECTS.items():
-    if old.endswith("/"):
-        old = old + "index.html"
+output_dir = pathlib.Path(__file__).parent.joinpath("docs", "_output")
+output_dir.mkdir(exist_ok=True, parents=True)
 
-    html = HTML_TEMPLATE.format(url=new)
-
-    with mkdocs_gen_files.open(pathlib.Path(old.lstrip("/")), "w") as f:
-        f.write(html)
+lines = "\n".join(f"{old} {new}" for old, new in REDIRECTS.items())
+output_dir.joinpath("_redirects").write_text(f"{lines}\n")
