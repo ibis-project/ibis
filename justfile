@@ -116,9 +116,9 @@ benchcmp number *args:
     just bench --benchmark-compare {{ number }} {{ args }}
 
 # check for invalid links in a locally built version of the docs
-checklinks base *args:
+checklinks *args:
     #!/usr/bin/env bash
-    lychee --base {{ base }} $(find {{ base }} -name '*.html') {{ args }}
+    lychee --base docs/_output $(find docs/_output -name '*.html') {{ args }}
 
 # view the changelog for upcoming release (use --pretty to format with glow)
 view-changelog flags="":
@@ -135,30 +135,16 @@ decouple *args:
 profile +args:
     pyinstrument {{ args }}
 
-docs-apigen:
-    quartodoc build --config docs/_quarto.yml
+docs-apigen *args:
+    quartodoc build {{ args }} --config docs/_quarto.yml
 
 # build documentation
 docs-render:
     quarto render docs
 
 # preview docs
-docs-preview: docs-render
+docs-preview:
     quarto preview docs
 
-# upload docs to azure storage
-docs-upload:
-    #!/usr/bin/env bash
-    if [ -z "$AZURE_STORAGE_SECRET" ]; then
-        >&2 echo "AZURE_STORAGE_SECRET must be set"
-        exit 1
-    fi
-    az storage azcopy blob upload -c '$web' --account-name ibisdocs -s "docs/_output/*" --recursive --account-key "$AZURE_STORAGE_SECRET"
-
-# execute documentation generation steps for ci
-docs-ci-build: docs-apigen
-    just docs-render
-
-# build and deploy docs
-docs-deploy: docs-ci-build
-    just docs-upload
+docs-deploy:
+    quarto publish --no-prompt --no-browser --no-render netlify
