@@ -16,3 +16,4 @@ poetry.lock
 result*
 site
 *.ipynb
+docs/_publish.yml
