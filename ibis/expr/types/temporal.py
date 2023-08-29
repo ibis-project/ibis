@@ -627,7 +627,9 @@ class DayOfWeek:
         IntegerValue
             The index of the day of the week.
 
-            !!! note "Ibis follows pandas' conventions for day numbers: Monday = 0 and Sunday = 6."
+            ::: {.callout-note}
+            ## Ibis follows pandas' conventions for day numbers: Monday = 0 and Sunday = 6.
+            :::
         """
         return ops.DayOfWeekIndex(self._expr).to_expr()
 
