@@ -143,7 +143,7 @@ quartodoc:
           path: top_level
           summary:
             name: Top-level APIs
-            desc: These methods and objecst are available directly on the `ibis` module.
+            desc: These methods and objects are available directly on the `ibis` module.
           contents:
             - name: and_
               dynamic: true
