@@ -117,7 +117,7 @@ website:
       collapse-level: 2
       contents:
         - auto: reference/*.qmd
-        - release_notes.qmd
+        - release_notes.md
 
 format:
   html:
