@@ -1622,12 +1622,14 @@ _ = deferred = Deferred()
 Use this object to refer to a previous table expression in a chain of
 expressions.
 
-!!! note "`_` may conflict with other idioms in Python"
+::: {.callout-note}
+## `_` may conflict with other idioms in Python
 
-    See https://github.com/ibis-project/ibis/issues/4704 for details.
+See https://github.com/ibis-project/ibis/issues/4704 for details.
 
-    Use `from ibis import deferred as <NAME>` to assign a different name to
-    the deferred object builder.
+Use `from ibis import deferred as <NAME>` to assign a different name to
+the deferred object builder.
+:::
 
 Examples
 --------

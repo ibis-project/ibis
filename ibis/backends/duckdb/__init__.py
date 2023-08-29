@@ -366,7 +366,9 @@ WHERE catalog_name = :database"""
     ) -> ir.Table:
         """Read newline-delimited JSON into an ibis table.
 
-        !!! note "This feature requires duckdb>=0.7.0"
+        ::: {.callout-note}
+        ## This feature requires duckdb>=0.7.0
+        :::
 
         Parameters
         ----------
@@ -837,7 +839,9 @@ WHERE catalog_name = :database"""
         limit
             Limit the result to this number of rows
         chunk_size
-            !!! warning "DuckDB returns 1024 size batches regardless of what argument is passed."
+            ::: {.callout-warning}
+            ## DuckDB returns 1024 size batches regardless of what argument is passed.
+            :::
         """
         self._run_pre_execute_hooks(expr)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)

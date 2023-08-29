@@ -463,7 +463,9 @@ class Expr(Immutable, Coercible):
         >>> # partition on multiple columns
         >>> penguins.to_parquet("penguins_hive_dir", partition_by=("year", "island"))  # doctest: +SKIP
 
-        !!! note "Hive-partitioned output is currently only supported when using DuckDB"
+        ::: {.callout-note}
+        ## Hive-partitioned output is currently only supported when using DuckDB
+        :::
         """
         self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
 
