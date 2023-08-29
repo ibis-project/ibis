@@ -174,13 +174,13 @@ jobs:
         uses: actions/checkout@v3
 
       - name: generate api docs
-        run: nix develop --ignore-environment -c just docs-apigen
+        run: nix develop --ignore-environment -c just docs-apigen --verbose
 
       - name: build docs
         run: nix develop --ignore-environment -c just docs-render
 
       - name: verify internal links
-        run: nix develop --ignore-environment '.#links' -c just checklinks docs/_output --offline --no-progress
+        run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
 
   docs_push:
     runs-on: ubuntu-latest
@@ -212,10 +212,16 @@ jobs:
       #     path: docs/bench
 
       - name: build api docs
-        run: nix develop -c quartodoc build --verbose --config docs/_quarto.yml
+        run: nix develop --ignore-environment -c just docs-apigen --verbose
+
+      - name: build docs
+        run: nix develop --ignore-environment -c just docs-render
+
+      - name: verify internal links
+        run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
 
       - name: build and push quarto docs
-        run: nix develop --ignore-environment --keep NETLIFY_AUTH_TOKEN -c quarto publish --no-prompt --no-browser netlify
+        run: nix develop --ignore-environment --keep NETLIFY_AUTH_TOKEN -c just docs-deploy
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
