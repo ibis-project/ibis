@@ -118,3 +118,4 @@ docs/_output
 docs/objects.json
 docs/reference
 .null-ls*
+penguins.db
