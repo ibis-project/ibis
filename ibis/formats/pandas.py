@@ -24,11 +24,11 @@ if not _has_arrow_dtype:
 class PandasType(NumpyType):
     @classmethod
     def to_ibis(cls, typ, nullable=True):
-        if pdt.is_datetime64tz_dtype(typ):
+        if isinstance(typ, pdt.DatetimeTZDtype):
             return dt.Timestamp(timezone=str(typ.tz), nullable=nullable)
         elif pdt.is_datetime64_dtype(typ):
             return dt.Timestamp(nullable=nullable)
-        elif pdt.is_categorical_dtype(typ):
+        elif isinstance(typ, pdt.CategoricalDtype):
             return dt.String(nullable=nullable)
         elif pdt.is_extension_array_dtype(typ):
             if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
@@ -162,15 +162,11 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_Timestamp(s, dtype, pandas_type):
-        import pandas.api.types as pdt
-
-        if pdt.is_datetime64tz_dtype(s.dtype):
+        if isinstance(dtype, pd.DatetimeTZDtype):
             return s.dt.tz_convert(dtype.timezone)
         elif pdt.is_datetime64_dtype(s.dtype):
             return s.dt.tz_localize(dtype.timezone)
         else:
-            import pandas as pd
-
             try:
                 return s.astype(pandas_type)
             except pd.errors.OutOfBoundsDatetime:  # uncovered
@@ -188,9 +184,7 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_Date(s, dtype, pandas_type):
-        import pandas.api.types as pdt
-
-        if pdt.is_datetime64tz_dtype(s.dtype):
+        if isinstance(s.dtype, pd.DatetimeTZDtype):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
         return s.astype(pandas_type, errors="ignore").dt.normalize()
 
