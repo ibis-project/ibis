@@ -1439,20 +1439,18 @@ def _argument(op, **_):
     return op.name
 
 
-# TODO
 @translate_val.register(ops.ArrayMap)
 def _array_map(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
-    return f"arrayMap(({op.parameter}) -> {result}, {arg})"
+    return sg.func("list_transform", arg, f"{op.parameter}) -> {result}")
 
 
-# TODO
 @translate_val.register(ops.ArrayFilter)
 def _array_filter(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
-    return f"arrayFilter(({op.parameter}) -> {result}, {arg})"
+    return sg.func("list_filter", arg, f"{op.parameter} -> {result}")
 
 
 @translate_val.register(ops.ArrayPosition)
