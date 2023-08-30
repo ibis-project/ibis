@@ -119,3 +119,4 @@ docs/objects.json
 docs/reference
 .null-ls*
 penguins.db
+docs/posts/campaign-finance/*.zip
