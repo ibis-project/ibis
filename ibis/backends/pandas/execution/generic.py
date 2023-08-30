@@ -588,7 +588,10 @@ def execute_aggregation_dataframe(
             )
             for key in op.by
         ]
-        source = data.groupby(grouping_keys, group_keys=False)
+        source = data.groupby(
+            grouping_keys[0] if len(grouping_keys) == 1 else grouping_keys,
+            group_keys=False,
+        )
     else:
         source = data
 
