@@ -369,7 +369,7 @@ show_deps = true
 [tool.codespell]
 # notebooks are skipped because there's no straightforward way to ignore base64
 # encoded strings
-skip = "*.lock,.direnv,.git,*.ipynb,docs/_freeze/**/html.json"
+skip = "*.lock,.direnv,.git,docs/_freeze/**/html.json"
 ignore-regex = '\b(DOUB|i[if]f|I[IF]F|lamduh)\b'
 builtin = "clear,rare,names"
 
@@ -475,7 +475,7 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.black]
 line_length = 88
-extend_exclude = '\.ipynb|\.direnv|result(-\d+)|_py310\.py|decompiled\.py'
+extend_exclude = '\.direnv|result(-\d+)|_py310\.py|decompiled\.py'
 
 [tool.conda-lock]
 channels = ["conda-forge"]
