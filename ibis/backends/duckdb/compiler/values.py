@@ -86,7 +86,7 @@ def _bitwise_xor(op, **kw):
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
 
-    return f"xor({left}, {right})"
+    return sg.func("xor", left, right, dialect="duckdb")
 
 
 @translate_val.register(ops.BitwiseNot)
@@ -158,6 +158,12 @@ def _try_cast(op, **kw):
     )
 
 
+@translate_val.register(ops.TypeOf)
+def _type_of(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return sg.func("typeof", arg)
+
+
 ### Comparator Conundrums
 
 
@@ -166,27 +172,19 @@ def _between(op, **kw):
     arg = translate_val(op.arg, **kw)
     lower_bound = translate_val(op.lower_bound, **kw)
     upper_bound = translate_val(op.upper_bound, **kw)
-    return f"{arg} BETWEEN {lower_bound} AND {upper_bound}"
+    return sg.expressions.Between(this=arg, low=lower_bound, high=upper_bound)
 
 
 @translate_val.register(ops.Negate)
 def _negate(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"-{_parenthesize(op.arg, arg)}"
+    return sg.expressions.Neg(this=arg)
 
 
 @translate_val.register(ops.Not)
 def _not(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"NOT {_parenthesize(op.arg, arg)}"
-
-
-def _parenthesize(op, arg):
-    # function calls don't need parens
-    if isinstance(op, (ops.Binary, ops.Unary)):
-        return f"({arg})"
-    else:
-        return arg
+    return sg.expressions.Not(this=arg)
 
 
 ### Timey McTimeFace
@@ -532,8 +530,8 @@ _simple_ops = {
     # Other operations
     ops.Where: "if",
     ops.ArrayLength: "length",
-    ops.ArrayConcat: "arrayConcat",  # TODO
-    ops.Unnest: "arrayJoin",  # TODO
+    ops.ArrayConcat: "list_concat",
+    ops.Unnest: "unnest",
     ops.Degrees: "degrees",
     ops.Radians: "radians",
     ops.NullIf: "nullIf",
@@ -576,9 +574,6 @@ del _fmt, _name, _op
 
 
 ### NULL PLAYER CHARACTER
-# ops.IsNull: "isNull",  # TODO
-# ops.NotNull: "isNotNull",  # TODO
-# ops.IfNull: "ifNull",  # TODO
 @translate_val.register(ops.IsNull)
 def _is_null(op, **kw):
     arg = translate_val(op.arg, **kw)
@@ -645,7 +640,10 @@ def _literal(op, **kw):
     elif dtype.is_inet():
         com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
     elif dtype.is_string():
-        return value
+        # TODO: if this is stringified, then test_select_filter_select breaks
+        # if it isn't, then try_cast breaks
+        # There's sqlglot.to_identifer which might help with this
+        return f"'{value}'"
     elif dtype.is_decimal():
         precision = dtype.precision
         scale = dtype.scale
@@ -666,7 +664,7 @@ def _literal(op, **kw):
             return f"'{repr(value)}inity'::FLOAT"
         elif math.isnan(value):
             return "'NaN'::FLOAT"
-        return value
+        return repr(value)
     elif dtype.is_interval():
         return _interval_format(op)
     elif dtype.is_timestamp():
@@ -711,41 +709,29 @@ def _literal(op, **kw):
 ### BELOW HERE BE DRAGONS
 
 
-# TODO
-@translate_val.register(ops.ArrayRepeat)
-def _array_repeat_op(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    times = translate_val(op.times, **kw)
-    from_ = f"(SELECT {arg} AS arr FROM system.numbers LIMIT {times})"
-    query = sg.parse_one(
-        f"SELECT arrayFlatten(groupArray(arr)) FROM {from_}", read="duckdb"
-    )
-    return query.subquery()
+# # TODO
+# @translate_val.register(ops.ArrayRepeat)
+# def _array_repeat_op(op, **kw):
+#     arg = translate_val(op.arg, **kw)
+#     times = translate_val(op.times, **kw)
+#     from_ = f"(SELECT {arg} AS arr FROM system.numbers LIMIT {times})"
+#     query = sg.parse_one(
+#         f"SELECT arrayFlatten(groupArray(arr)) FROM {from_}", read="duckdb"
+#     )
+#     return query.subquery()
 
 
-# TODO
 @translate_val.register(ops.ArraySlice)
 def _array_slice_op(op, **kw):
     arg = translate_val(op.arg, **kw)
     start = translate_val(op.start, **kw)
-    start = _parenthesize(op.start, start)
-    start_correct = f"if({start} < 0, {start}, {start} + 1)"
 
     if (stop := op.stop) is not None:
         stop = translate_val(stop, **kw)
-        stop = _parenthesize(op.stop, stop)
+    else:
+        stop = sg.expressions.Null()
 
-        neg_start = f"(length({arg}) + {start})"
-        diff_fmt = f"greatest(-0, {stop} - {{}})".format
-
-        length = (
-            f"if({stop} < 0, {stop}, "
-            f"if({start} < 0, {diff_fmt(neg_start)}, {diff_fmt(start)}))"
-        )
-
-        return f"arraySlice({arg}, {start_correct}, {length})"
-
-    return f"arraySlice({arg}, {start_correct})"
+    return sg.func("list_slice", arg, start, stop)
 
 
 @translate_val.register(ops.CountStar)
@@ -816,7 +802,10 @@ def _aggregate(op, func, *, where=None, **kw):
     ]
     if where is not None:
         predicate = translate_val(where, **kw)
-        return sg.func(func, *args).where(predicate)
+        return sg.expressions.Filter(
+            this=sg.func(func, *args, dialect="duckdb"),
+            expression=sg.expressions.Where(this=predicate),
+        )
 
     res = sg.func(func, *args)
     return res
@@ -900,6 +889,8 @@ def _table_array_view(op, *, cache, **kw):
 def _exists_subquery(op, **kw):
     from ibis.backends.duckdb.compiler.relations import translate_rel
 
+    if not "table" in kw:
+        kw["table"] = translate_rel(op.foreign_table.table, **kw)
     foreign_table = translate_rel(op.foreign_table, **kw)
     predicates = translate_val(op.predicates, **kw)
     subq = (
@@ -953,23 +944,21 @@ def _string_capitalize(op, **kw):
     return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), LOWER(SUBSTR({arg}, 2)))"
 
 
-# TODO
 @translate_val.register(ops.GroupConcat)
 def _group_concat(op, **kw):
     arg = translate_val(op.arg, **kw)
     sep = translate_val(op.sep, **kw)
 
-    args = [arg]
-    func = "groupArray"
+    concat = sg.func("array_to_string", arg, sep, dialect="duckdb")
 
     if (where := op.where) is not None:
-        func += "If"
-        args.append(translate_val(where, **kw))
+        predicate = translate_val(where, **kw)
+        return sg.expressions.Filter(
+            this=concat,
+            expression=sg.expressions.Where(this=predicate),
+        )
 
-    joined_args = ", ".join(map(_sql, args))
-    call = f"{func}({joined_args})"
-    expr = f"list_concat({call}, {sep})"
-    return f"CASE WHEN empty({call}) THEN NULL ELSE {expr} END"
+    return concat
 
 
 # TODO
@@ -1224,15 +1213,14 @@ del _op, _sym
 def _equals(op, **kw):
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    return left.eq(right)
+    return sg.expressions.EQ(this=left, expression=right)
 
 
 @translate_val.register(ops.NotEquals)
 def _equals(op, **kw):
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    breakpoint()
-    return left.eq(right)
+    return sg.expressions.NEQ(this=left, expression=right)
 
 
 # TODO
@@ -1374,7 +1362,6 @@ def _window(op: ops.WindowFunction, **kw: Any):
     return result
 
 
-# TODO
 def shift_like(op_class, name):
     @translate_val.register(op_class)
     def formatter(op, **kw):
