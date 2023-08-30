@@ -211,6 +211,9 @@ jobs:
       #     name: bench
       #     path: docs/bench
 
+      - name: checkout
+        uses: actions/checkout@v3
+
       - name: build api docs
         run: nix develop --ignore-environment -c just docs-apigen --verbose
 
