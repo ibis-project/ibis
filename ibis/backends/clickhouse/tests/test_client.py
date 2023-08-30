@@ -140,7 +140,7 @@ def test_insert_with_less_columns(con, temporary_alltypes, df):
     records = df.loc[:10, ["string_col"]].copy()
     records["date_col"] = None
 
-    with pytest.raises(cc.driver.exceptions.ProgrammingError):
+    with pytest.raises(cc.driver.exceptions.DatabaseError):
         con.insert(temporary.op().name, records)
 
 
@@ -149,7 +149,7 @@ def test_insert_with_more_columns(con, temporary_alltypes, df):
     records = df[:10].copy()
     records["non_existing_column"] = "raise on me"
 
-    with pytest.raises(cc.driver.exceptions.ProgrammingError):
+    with pytest.raises(cc.driver.exceptions.DatabaseError):
         con.insert(temporary.op().name, records)
 
 

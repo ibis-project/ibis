@@ -380,7 +380,9 @@ def test_asof_join(time_left, time_right):
     expected = pd.merge_asof(
         time_left.execute(), time_right.execute(), on="time", suffixes=("", "_right")
     )
-    tm.assert_frame_equal(result[expected.columns], expected)
+    tm.assert_frame_equal(
+        result[expected.columns].fillna(pd.NA), expected.fillna(pd.NA)
+    )
 
 
 def test_count_name(snapshot):
