@@ -24,10 +24,6 @@ repos:
     rev: 23.7.0
     hooks:
       - id: black
-  - repo: https://github.com/kynan/nbstripout
-    rev: 0.6.1
-    hooks:
-      - id: nbstripout
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.5
     hooks:

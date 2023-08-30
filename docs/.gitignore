@@ -1,9 +1,7 @@
 .quarto
-_site
+_output
 
-*.ddb*
-
-index.ipynb
+*.ddb
 
 site_libs
 
