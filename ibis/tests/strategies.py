@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings
+
 import hypothesis as h
 import hypothesis.extra.pandas as past
 import hypothesis.extra.pytz as tzst
@@ -249,5 +251,8 @@ def memtable(draw, schema=schema(primitive_dtypes)):  # noqa: B008
     columns = [past.column(name, dtype=dtype) for name, dtype in schema.to_pandas()]
     dataframe = past.data_frames(columns=columns)
 
-    df = draw(dataframe)
+    with warnings.catch_warnings():
+        # TODO(cpcloud): pandas 2.1.0 junk
+        warnings.filterwarnings("ignore", category=FutureWarning)
+        df = draw(dataframe)
     return ibis.memtable(df)

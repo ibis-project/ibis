@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 
+import pandas as pd
 import pytest
 import sqlalchemy as sa
 from pytest import param
@@ -882,7 +883,7 @@ def test_substr_with_null_values(backend, alltypes, df):
     expected.loc[mask, "substr_col_null"] = None
     expected["substr_col_null"] = expected["substr_col_null"].str.slice(0, 2)
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 
 
 @pytest.mark.parametrize(

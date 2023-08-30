@@ -584,7 +584,11 @@ def test_where_series(t, df, left_f, right_f):
         left = pd.Series(np.repeat(left, len(cond)), name=cond.name)
     expected = left.where(cond, right_f(series))
 
-    tm.assert_series_equal(result, expected, check_dtype=False)
+    tm.assert_series_equal(
+        result.astype(object).fillna(pd.NA),
+        expected.astype(object).fillna(pd.NA),
+        check_dtype=False,
+    )
 
 
 @pytest.mark.parametrize(

@@ -455,7 +455,9 @@ def test_unnest_default_name(backend):
 
     result = expr.name("x").execute()
     expected = df.x.map(lambda x: x + [1]).explode("x")
-    tm.assert_series_equal(result, expected, check_dtype=False)
+    tm.assert_series_equal(
+        result.astype(object).fillna(pd.NA), expected.fillna(pd.NA), check_dtype=False
+    )
 
 
 @pytest.mark.parametrize(

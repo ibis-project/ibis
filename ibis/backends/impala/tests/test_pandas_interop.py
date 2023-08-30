@@ -169,7 +169,7 @@ def test_insert(con, temp_table_db, exhaustive_df):
     table = con.table(table_name, database=tmp_db)
 
     result = table.execute().sort_values(by="tinyint_col").reset_index(drop=True)
-    tm.assert_frame_equal(result, exhaustive_df)
+    tm.assert_frame_equal(result.fillna(pd.NA), exhaustive_df.fillna(pd.NA))
 
 
 def test_round_trip_exhaustive(con, exhaustive_df):
@@ -182,7 +182,7 @@ def _check_roundtrip(con, df):
 
     table = writer.delimited_table(path)
     df2 = table.execute()
-    tm.assert_frame_equal(df2, df)
+    tm.assert_frame_equal(df2.fillna(pd.NA), df.fillna(pd.NA))
 
 
 def test_timestamp_with_timezone():
