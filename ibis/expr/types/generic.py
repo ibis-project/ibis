@@ -68,7 +68,7 @@ class Value(Expr):
     def hash(self) -> ir.IntegerValue:
         """Compute an integer hash value.
 
-        ::: {.callout-info}
+        ::: {.callout-note}
         ## The hashing function used is backend-dependent.
         :::
 
@@ -1026,7 +1026,7 @@ class Column(Value, _FixedTextJupyterMixin):
     ) -> ir.IntegerScalar:
         """Return the approximate number of distinct elements in `self`.
 
-        ::: {.callout-info}
+        ::: {.callout-note}
         ## The result may or may not be exact
 
         Whether the result is an approximation depends on the backend.
@@ -1065,7 +1065,7 @@ class Column(Value, _FixedTextJupyterMixin):
     ) -> Scalar:
         """Return an approximate of the median of `self`.
 
-        ::: {.callout-info}
+        ::: {.callout-note}
         ## The result may or may not be exact
 
         Whether the result is an approximation depends on the backend.
