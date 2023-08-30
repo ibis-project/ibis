@@ -28,7 +28,6 @@ repos:
     rev: 0.6.1
     hooks:
       - id: nbstripout
-        exclude: .+/rendered/.+
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.5
     hooks:
@@ -56,6 +55,7 @@ repos:
     rev: v4.4.0
     hooks:
       - id: check-added-large-files
+        args: ["--maxkb=700"]
       - id: check-case-conflict
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
