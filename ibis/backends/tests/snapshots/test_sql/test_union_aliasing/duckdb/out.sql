@@ -2,26 +2,7 @@ WITH t0 AS (
   SELECT
     t7.field_of_study AS field_of_study,
     UNNEST(
-      CAST(LIST_VALUE(
-        {'years': '1970-71', 'degrees': t7."1970-71"},
-        {'years': '1975-76', 'degrees': t7."1975-76"},
-        {'years': '1980-81', 'degrees': t7."1980-81"},
-        {'years': '1985-86', 'degrees': t7."1985-86"},
-        {'years': '1990-91', 'degrees': t7."1990-91"},
-        {'years': '1995-96', 'degrees': t7."1995-96"},
-        {'years': '2000-01', 'degrees': t7."2000-01"},
-        {'years': '2005-06', 'degrees': t7."2005-06"},
-        {'years': '2010-11', 'degrees': t7."2010-11"},
-        {'years': '2011-12', 'degrees': t7."2011-12"},
-        {'years': '2012-13', 'degrees': t7."2012-13"},
-        {'years': '2013-14', 'degrees': t7."2013-14"},
-        {'years': '2014-15', 'degrees': t7."2014-15"},
-        {'years': '2015-16', 'degrees': t7."2015-16"},
-        {'years': '2016-17', 'degrees': t7."2016-17"},
-        {'years': '2017-18', 'degrees': t7."2017-18"},
-        {'years': '2018-19', 'degrees': t7."2018-19"},
-        {'years': '2019-20', 'degrees': t7."2019-20"}
-      ) AS STRUCT(years TEXT, degrees BIGINT)[])
+      CAST([{'years': '1970-71', 'degrees': t7."1970-71"}, {'years': '1975-76', 'degrees': t7."1975-76"}, {'years': '1980-81', 'degrees': t7."1980-81"}, {'years': '1985-86', 'degrees': t7."1985-86"}, {'years': '1990-91', 'degrees': t7."1990-91"}, {'years': '1995-96', 'degrees': t7."1995-96"}, {'years': '2000-01', 'degrees': t7."2000-01"}, {'years': '2005-06', 'degrees': t7."2005-06"}, {'years': '2010-11', 'degrees': t7."2010-11"}, {'years': '2011-12', 'degrees': t7."2011-12"}, {'years': '2012-13', 'degrees': t7."2012-13"}, {'years': '2013-14', 'degrees': t7."2013-14"}, {'years': '2014-15', 'degrees': t7."2014-15"}, {'years': '2015-16', 'degrees': t7."2015-16"}, {'years': '2016-17', 'degrees': t7."2016-17"}, {'years': '2017-18', 'degrees': t7."2017-18"}, {'years': '2018-19', 'degrees': t7."2018-19"}, {'years': '2019-20', 'degrees': t7."2019-20"}] AS STRUCT(years TEXT, degrees BIGINT)[])
     ) AS __pivoted__
   FROM humanities AS t7
 ), t1 AS (
