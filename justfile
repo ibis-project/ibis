@@ -147,4 +147,4 @@ docs-preview:
     quarto preview docs
 
 docs-deploy:
-    quarto publish --no-prompt --no-browser --no-render netlify
+    quarto publish --no-prompt --no-browser --no-render netlify docs
