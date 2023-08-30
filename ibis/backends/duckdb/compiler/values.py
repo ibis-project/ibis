@@ -1399,32 +1399,29 @@ def shift_like(op_class, name):
             offset_fmt = translate_val(offset, **kw)
             pieces.append(offset_fmt)
 
-        return f"{name}({', '.join(map(_sql, pieces))})"
+        res = f"{name}({', '.join(map(_sql, pieces))})"
+        return res
 
     return formatter
 
 
-# TODO
-shift_like(ops.Lag, "lagInFrame")
-shift_like(ops.Lead, "leadInFrame")
+shift_like(ops.Lag, "lag")
+shift_like(ops.Lead, "lead")
 
 
-# TODO
 @translate_val.register(ops.RowNumber)
 def _row_number(_, **kw):
-    return "row_number()"
+    return sg.expressions.RowNumber()
 
 
-# TODO
 @translate_val.register(ops.DenseRank)
 def _dense_rank(_, **kw):
-    return "dense_rank()"
+    return sg.func("dense_rank")
 
 
-# TODO
 @translate_val.register(ops.MinRank)
 def _rank(_, **kw):
-    return "rank()"
+    return sg.func("rank")
 
 
 @translate_val.register(ops.ArrayStringJoin)
