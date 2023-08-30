@@ -227,6 +227,10 @@ WHERE catalog_name = :database"""
                 dbapi_connection.execute("SET enable_progress_bar = false")
 
         self._record_batch_readers_consumed = {}
+
+        with contextlib.suppress(duckdb.InvalidInputException):
+            duckdb.execute("SELECT ?", (1,))
+
         super().do_connect(engine)
 
     def _load_extensions(self, extensions):
