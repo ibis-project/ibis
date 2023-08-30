@@ -1226,7 +1226,7 @@ def test_group_concat(
     result = expr.execute()
     expected = expected_fn(df, pandas_cond(df), pandas_sep)
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 
 
 @mark.notimpl(

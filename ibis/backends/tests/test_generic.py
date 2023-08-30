@@ -924,7 +924,10 @@ def test_memtable_bool_column(backend, con):
 
 @pytest.mark.broken(
     ["druid"],
-    raises=AssertionError,
+    raises=(
+        TypeError,  # pandas >=2.1.0
+        AssertionError,  # pandas <2.1.0
+    ),
     reason="result contains empty strings instead of None",
 )
 def test_memtable_construct(backend, con, monkeypatch):
@@ -940,7 +943,9 @@ def test_memtable_construct(backend, con, monkeypatch):
         }
     )
     t = ibis.memtable(pa_t)
-    backend.assert_frame_equal(t.execute(), pa_t.to_pandas())
+    backend.assert_frame_equal(
+        t.execute().fillna(pd.NA), pa_t.to_pandas().fillna(pd.NA)
+    )
 
 
 @pytest.mark.notimpl(

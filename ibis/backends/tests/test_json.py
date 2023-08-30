@@ -41,7 +41,7 @@ pytestmark = [
 def test_json_getitem(json_t, expr_fn, expected):
     expr = expr_fn(json_t)
     result = expr.execute()
-    tm.assert_series_equal(result, expected)
+    tm.assert_series_equal(result.fillna(pd.NA), expected.fillna(pd.NA))
 
 
 @pytest.mark.notimpl(["dask", "mysql", "pandas"])
