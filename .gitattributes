@@ -3,4 +3,4 @@ flake.lock linguist-generated=true
 poetry.lock linguist-generated=true
 requirements.txt linguist-generated=true
 docs/backends/app/requirements.txt linguist-generated=false
-docs/**/*.ipynb linguist-generated=true
+docs/_freeze/**/html.json linguist-generated=true
