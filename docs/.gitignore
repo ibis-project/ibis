@@ -10,5 +10,10 @@ site_libs
 *.csv
 *.parquet
 *.delta
+*.zip
+*.db
+reference/
+objects.json
+*support_matrix.csv
 
 /.quarto/
