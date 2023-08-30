@@ -1,0 +1,155 @@
+# Add a reduction operation
+
+This notebook will show you how to add a new *reduction* operation `last_date` to the existing backend SQLite.
+
+A reduction operation is a function that maps $N$ rows to 1 row, for example the `sum` function.
+
+## Description
+
+We're going to add a **`last_date`** function to ibis. `last_date` simply returns the latest date of a list of dates.
+
+## Step 1: Define the Operation
+
+Let's define the `last_date` operation as a function that takes any date column as input and returns a date:
+
+```python
+import datetime
+import typing
+
+def last_date(dates: typing.List[datetime.date]) -> datetime.date:
+    """Latest date"""
+```
+
+
+```{python}
+from typing import Optional
+import ibis.expr.datatypes as dt
+import ibis.expr.datashape as ds
+import ibis.expr.rules as rlz
+
+from ibis.expr.operations import Reduction, Value
+
+
+class LastDate(Reduction):
+    arg: Value[dt.Date, ds.Any]
+    where: Optional[Value[dt.Boolean, ds.Any]] = None
+
+    dtype = rlz.dtype_like('arg')
+    shape = ds.scalar
+```
+
+We just defined a `LastDate` class that takes one date column as input, and returns a scalar output of the same type as the input. This matches both the requirements of a reduction and the specifics of the function that we want to implement.
+
+**Note**: It is very important that you write the correct argument rules and output type here. The expression *will not work* otherwise.
+
+## Step 2: Define the API
+
+Because every reduction in ibis has the ability to filter out values during aggregation (a typical feature in databases and analytics tools), to make an expression out of ``LastDate`` we need to pass an additional argument: `where` to our `LastDate` constructor.
+
+
+```{python}
+from ibis.expr.types import (
+    DateColumn,  # not DateValue! reductions are only valid on columns
+)
+
+
+def last_date(date_column, where=None):
+    return LastDate(date_column, where=where).to_expr()
+
+
+DateColumn.last_date = last_date
+```
+
+## Interlude: Create some expressions using `last_date`
+
+```{python}
+import ibis
+
+people = ibis.table(
+    dict(name='string', country='string', date_of_birth='date'), name='people'
+)
+```
+
+
+```{python}
+people.date_of_birth.last_date()
+```
+
+
+```{python}
+people.date_of_birth.last_date(people.country == 'Indonesia')
+```
+
+## Step 3: Turn the Expression into SQL
+
+
+```{python}
+import sqlalchemy as sa
+
+
+@ibis.sqlite.add_operation(LastDate)
+def _last_date(translator, expr):
+    # pull out the arguments to the expression
+    arg, where = expr.op().args
+
+    # compile the argument
+    compiled_arg = translator.translate(arg)
+
+    # call the appropriate SQLite function (`max` for the latest/maximum date)
+    agg = sa.func.max(compiled_arg)
+
+    # handle a non-None filter clause
+    if where is not None:
+        return agg.filter(translator.translate(where))
+    return agg
+```
+
+## Step 4: Putting it all Together
+
+Download the geography database.
+
+```{python}
+!curl -LsS -o geography.db 'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
+```
+
+
+```{python}
+import os
+
+import ibis
+
+db_fname = 'geography.db'
+
+con = ibis.sqlite.connect(db_fname)
+```
+
+### Create and execute a `bitwise_and` expression
+
+
+```{python}
+independence = con.table('independence')
+independence
+```
+
+Last country to gain independence in our database:
+
+
+```{python}
+expr = independence.independence_date.last_date()
+expr
+```
+
+
+```{python}
+ibis.to_sql(expr)
+```
+
+Last country to gain independence from the Spanish Empire, using the `where` parameter:
+
+
+```{python}
+expr = independence.independence_date.last_date(
+    where=independence.independence_from == 'Spanish Empire'
+)
+expr
+```
