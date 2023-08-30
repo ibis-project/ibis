@@ -369,7 +369,7 @@ show_deps = true
 [tool.codespell]
 # notebooks are skipped because there's no straightforward way to ignore base64
 # encoded strings
-skip = "*.lock,.direnv,.git,*.ipynb"
+skip = "*.lock,.direnv,.git,*.ipynb,docs/_freeze/**/html.json"
 ignore-regex = '\b(DOUB|i[if]f|I[IF]F|lamduh)\b'
 builtin = "clear,rare,names"
 
