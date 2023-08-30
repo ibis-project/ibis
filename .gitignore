@@ -55,8 +55,6 @@ venv.bak/
 Icon?
 
 # documentation files
-docs/source/generated
-docs/source/generated-notebooks
 *.org
 
 # Ibis testing data
@@ -73,14 +71,9 @@ ci/udf/Makefile
 scripts/ibis-testing*
 ibis_testing*
 .tox/
-.asv/
 .ipynb_checkpoints/
 .pytest_cache
 .mypy_cache
-docs/source/backends/generated
-
-# temporary doc build
-docbuild
 
 # nix generated files
 .direnv
@@ -89,34 +82,49 @@ result-*
 
 # generated mkdocs website
 .benchmarks
-site
 
 # tutorial data
 geography.db
-*.pbf
-*.pbf.zst
+
+# build artifacts
 ci/udf/.ninja_deps
 ci/udf/.ninja_log
 ci/udf/build.ninja
+
+# coverage
 junit.xml
+
+# spark generated files
 spark-warehouse
-docs/backends/*support_matrix.csv
+
+# bytecode
 __pycache__
+
+# ctags
 tags
+
+# macos junk
 .DS_Store
+
+# profiling data
 prof/
+
+# hypothesis generated files
 .hypothesis
+
+# r junk
 .RData
 .Rhistory
-ibis/examples/data
-ibis/examples/descriptions
+
+# coverage files
 .coverage*
 
 # quarto generated files
-docs/_output
 .local
-docs/objects.json
-docs/reference
+
+# lang server generated
 .null-ls*
-penguins.db
-docs/posts/campaign-finance/*.zip
+
+# generated examples data
+ibis/examples/data
+ibis/examples/descriptions
