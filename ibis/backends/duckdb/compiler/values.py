@@ -864,20 +864,22 @@ def _sql(obj, dialect="duckdb"):
 @translate_val.register(ops.SimpleCase)
 @translate_val.register(ops.SearchedCase)
 def _case(op, **kw):
-    buf = ["CASE"]
+    case = sg.expressions.Case()
 
     if (base := getattr(op, "base", None)) is not None:
+        breakpoint()
         buf.append(translate_val(base, **kw))
 
     for when, then in zip(op.cases, op.results):
-        buf.append(f"WHEN {translate_val(when, **kw)}")
-        buf.append(f"THEN {translate_val(then, **kw)}")
+        case = case.when(
+            condition=translate_val(when, **kw),
+            then=translate_val(then, **kw),
+        )
 
     if (default := op.default) is not None:
-        buf.append(f"ELSE {translate_val(default, **kw)}")
+        case = case.else_(condition=translate_val(default, **kw))
 
-    buf.append("END")
-    return " ".join(map(_sql, buf))
+    return case
 
 
 @translate_val.register(ops.TableArrayView)
