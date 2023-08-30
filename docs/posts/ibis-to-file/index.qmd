@@ -16,24 +16,33 @@ So, we’ve gone ahead and fixed that for Ibis 5.0.
 
 Before we can write a file, we need data — so let’s read in a file, to start this off:
 
-```python
+```{python}
+import ibis
+
+ibis.options.interactive = True
+
 t = ibis.read_csv(
     "https://storage.googleapis.com/ibis-examples/data/penguins.csv.gz"
 )
+t
 ```
 
 Of course, we could just write out, but let’s do an operation first — how about using selectors, which you can read more about [here](https://ibis-project.org/blog/selectors/)? Self-promotion aside, here’s an operation:
 
-```python
+```{python}
+from ibis import _
+import ibis.selectors as s
+
 expr = (
     t.group_by("species")
      .mutate(s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std()))
 )
+expr
 ```
 
 Now, finally, time to do the exciting part:
 
-```python
+```{python}
 expr.to_parquet("normalized.parquet")
 ```
 
