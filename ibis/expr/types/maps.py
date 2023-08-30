@@ -180,7 +180,7 @@ class MapValue(Value):
     def __getitem__(self, key: ir.Value) -> ir.Value:
         """Get the value for a given map `key`.
 
-        ::: {.callout-info}
+        ::: {.callout-note}
         ## This operation may have different semantics depending on the backend.
 
         Some backends return `NULL` when a key is missing, others may fail
