@@ -228,6 +228,8 @@ WHERE catalog_name = :database"""
 
         self._record_batch_readers_consumed = {}
 
+        # TODO(cpcloud): remove this when duckdb is >0.8.1
+        # this is here to workaround https://github.com/duckdb/duckdb/issues/8735
         with contextlib.suppress(duckdb.InvalidInputException):
             duckdb.execute("SELECT ?", (1,))
 
