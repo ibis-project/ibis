@@ -37,12 +37,6 @@ about:
 This website is under construction and will eventually replace [the current Ibis website](https://ibis-project.org). Feedback welcome!
 :::
 
-::: {.callout-tip}
-## Featured post
-
-View our [featured post on the Ibis analytics project demo](posts/ibis-analytics/).
-:::
-
 ## Install
 
 We recommend starting with the default backend (DuckDB).
