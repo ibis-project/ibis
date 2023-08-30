@@ -28,7 +28,7 @@ def test_columns_types_with_additional_argument(con):
     ]
     df = con.sql(f"SELECT {', '.join(sql_types)}").execute()
     assert df.fixedstring_col.dtype.name == "object"
-    assert df.datetime_col.dtype.name == "datetime64[s, UTC]"
+    assert df.datetime_col.dtype.name in ("datetime64[ns, UTC]", "datetime64[s, UTC]")
     assert df.datetime_ns_col.dtype.name == "datetime64[ns, UTC]"
 
 

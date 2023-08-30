@@ -425,13 +425,18 @@ class Backend(BaseBackend, CanCreateDatabase):
         **kwargs: Any,
     ):
         import pandas as pd
+        import pyarrow as pa
 
         if not isinstance(obj, pd.DataFrame):
             raise com.IbisError(
                 f"Invalid input type {type(obj)}; only pandas DataFrames are accepted as input"
             )
 
-        return self.con.insert_df(name, obj, settings=settings, **kwargs)
+        # TODO(cpcloud): add support for arrow tables
+        # TODO(cpcloud): insert_df doesn't work with pandas 2.1.0, move back to
+        # that (maybe?) when `clickhouse_connect` is fixed
+        t = pa.Table.from_pandas(obj)
+        return self.con.insert_arrow(name, t, settings=settings, **kwargs)
 
     def raw_sql(
         self,
