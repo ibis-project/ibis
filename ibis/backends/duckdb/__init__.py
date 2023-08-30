@@ -93,7 +93,11 @@ class Backend(BaseBackend, CanCreateSchema):
 
     @property
     def current_database(self) -> str:
-        return "main"
+        return (
+            self.raw_sql("PRAGMA database_size; CALL pragma_database_size();")
+            .arrow()["database_name"]
+            .to_pylist()[0]
+        )
 
     @property
     def current_schema(self) -> str:
@@ -185,7 +189,8 @@ class Backend(BaseBackend, CanCreateSchema):
         self.drop_table(op.name)
 
     def list_schemas(self):
-        ...
+        out = self.raw_sql("SELECT current_schemas(True) as schemas").arrow()
+        return list(set(out["schemas"].to_pylist()[0]))
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
