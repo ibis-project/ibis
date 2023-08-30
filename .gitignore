@@ -117,3 +117,4 @@ docs/_output
 .local
 docs/objects.json
 docs/reference
+.null-ls*
