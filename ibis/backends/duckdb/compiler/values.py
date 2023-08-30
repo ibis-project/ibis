@@ -860,15 +860,13 @@ def _sql(obj, dialect="duckdb"):
         return obj
 
 
-# TODO
 @translate_val.register(ops.SimpleCase)
 @translate_val.register(ops.SearchedCase)
 def _case(op, **kw):
     case = sg.expressions.Case()
 
     if (base := getattr(op, "base", None)) is not None:
-        breakpoint()
-        buf.append(translate_val(base, **kw))
+        case = sg.expressions.Case(this=translate_val(base, **kw))
 
     for when, then in zip(op.cases, op.results):
         case = case.when(
