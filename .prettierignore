@@ -16,6 +16,5 @@ docs/.quarto
 docs/_output
 ibis
 result*
-*.ipynb
 *.delta
 *.lock
