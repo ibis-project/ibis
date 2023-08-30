@@ -15,7 +15,7 @@ execute:
 website:
   title: "Ibis"
   site-url: https://ibis-project.org
-  description: "the dataframe library"
+  description: "the portable Python dataframe library"
   favicon: logo.svg
 
   # search
