@@ -4,3 +4,4 @@ poetry.lock linguist-generated=true
 requirements.txt linguist-generated=true
 docs/backends/app/requirements.txt linguist-generated=false
 docs/_freeze/**/html.json linguist-generated=true
+docs/**/*.excalidraw linguist-generated=true
