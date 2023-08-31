@@ -1,7 +1,0 @@
----
-title: What is Ibis?
----
-
-Ibis is a versatile Python library for data analysis and manipulation. It simplifies data tasks, seamlessly integrates with backends, and provides efficient query execution.
-
-You can think of Ibis as a frontend for data that works with 15+ backends.

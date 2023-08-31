@@ -1,35 +1,51 @@
 ---
-title: "Why use Ibis?"
+title: "Why Ibis?"
 ---
 
-Ibis is a powerful Python library designed for data analysis and manipulation. It offers a seamless integration with various backends, enabling users to effortlessly work with data stored in different formats and platforms. Whether you are a data scientist, analyst, or developer, Ibis provides numerous benefits that enhance your data-related workflows and empower you to make data-driven decisions.
+Ibis is a portable Python dataframe library. If you've had issues with scaling data transformation code in Python, need to work with data in multiple data platforms, find yourself translating between other Python dataframe APIs, or just want a great Python dataframe experience, Ibis is for you.
 
-## Simplified data manipulation
+## Portability
 
-One of the key advantages of Ibis is its intuitive and straightforward interface for data manipulation. With Ibis, you can effortlessly filter, transform, and aggregate your data using familiar Python syntax. This simplicity allows you to focus on the analysis rather than getting lost in complex code.
+Ibis is portable -- that is, you can reuse the same code across multiple backends. Most Python dataframes are tightly coupled to their execution engine. And many databases only support SQL, with no Python API. Ibis solves this problem by providing a common API for data manipulation in Python, and compiling that API into the backend's native language. This means you can learn a single API and use it across any supported backend (execution engine).
 
-## Seamless backend integration
+![Portability](./portability.png)
 
-Ibis seamlessly integrates with multiple backend systems, such as BigQuery, Snowflake, MySQL, PostgreSQL, and more. This flexibility allows you to leverage the power of Ibis regardless of where your data resides. Whether you prefer working with SQL or pandas-like syntax, Ibis enables you to harness the capabilities of your chosen backend effortlessly.
+While portability with Ibis isn't perfect, commonalities across backends and SQL dialects combined with years of engineering effort produce a pretty good result. In the long-term, we hope for standard Intermediary Representation (IR) formats for transformation like [Substrait](https://substrait.io) to simplify this further.
 
-## Efficient query execution
+## Ecosystem
 
-Ibis optimizes your queries for efficient execution and performance. It leverages the strengths of each backend to ensure that your data operations are executed as quickly as possible. This optimization translates into faster query results, reducing the time it takes to derive insights from your data.
+Ibis is part of a larger ecosystem of Python data tools. Ibis is designed to work well with other tools in the ecosystem, and we hope to make it easier to use Ibis with other tools over time.
 
-## Powerful analytics capabilities
+### Local experience
 
-Ibis empowers you to perform advanced analytics at scale. With built-in functions for statistical analysis, grouping, aggregation, and more, you can easily derive meaningful insights from your data. Whether you need to calculate descriptive statistics, perform regression analysis, or create custom analytics workflows, Ibis provides the tools you need.
+By default, Ibis offers a great local experience for working with many file formats. DuckDB is the default backend, with Polars and DataFusion as two other great local options. Many of the backends can run locally but require more setup than a pip installation.
 
-## Easy integration with data science ecosystem
+### Scaling up and out
 
-As an integral part of the Python data science ecosystem, Ibis seamlessly integrates with popular libraries such as pandas, PySpark, Polars, and DataFusion. This integration allows you to combine the power of Ibis with the extensive capabilities of these libraries, enabling you to build end-to-end data pipelines and perform complex data analyses with ease.
+After prototyping on a local backend, directly scale in the cloud.You can prototype on DuckDB and deploy with MotherDuck. You can scale from any Python client with Ibis installed to whatever your backend supports.
 
-## Robust input and output support
+## Use cases
 
-Ibis supports a wide range of input and output options, making it easy to work with different file formats and data platforms. Whether you need to read data from CSV files, write to Parquet files, or connect to a database, Ibis provides a consistent and reliable interface for handling your data.
+You can use Ibis at any stage of your data workflow. Use the same framework for local exploration on a few files or production workloads on the most advanced data platforms.
 
-## Active community and support
+Ibis can help you with:
 
-Ibis benefits from an active and thriving community of data professionals and open-source contributors. This community actively maintains and enhances the library, ensuring that it stays up-to-date and relevant to the evolving needs of data analysis. Additionally, comprehensive documentation and online resources make it easy to learn Ibis and find answers to your questions.
+- data catalog exploration
+- exploratory data analysis
+- transforming data
+- visualizing data
+- data science and machine learning
 
-In conclusion, Ibis is a valuable tool that simplifies data manipulation, integrates seamlessly with different backends, provides efficient query execution, offers powerful analytics capabilities, integrates with the data science ecosystem, supports various input and output options, and is backed by a vibrant community. By using Ibis, you can unlock the true potential of your data and accelerate your data analysis workflows.
+## Supported backends
+
+{{< include /_tabsets/install.qmd >}}
+
+See the [backend support matrix](support_matrix.qmd) for details on operations supported. [Open a feature request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat) if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
+
+## Community
+
+Community discussions primarily take place on [GitHub](https://github.com/ibis-project/ibis/discussions).
+
+## Getting started
+
+If you're interested in trying Ibis we recommend the [getting started tutorial](./tutorials/getting_started.qmd).
