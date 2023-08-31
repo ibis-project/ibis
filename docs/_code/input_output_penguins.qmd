@@ -1,6 +1,6 @@
 ## Data platforms
 
-You can connect Ibis to [any supported backend](#backends-supported) to read and write data in backend-native tables.
+You can connect Ibis to any supported backend to read and write data in backend-native tables.
 
 ```{python}
 # | code-fold: true
