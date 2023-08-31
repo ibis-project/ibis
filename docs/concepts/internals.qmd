@@ -74,7 +74,6 @@ defines the shape (scalar or column) and element type of the operation.
 An example of usage is a node that representats a logarithm operation:
 
 ```python
-
 import ibis.expr.rules as rlz
 from ibis.expr.operations import Value
 
