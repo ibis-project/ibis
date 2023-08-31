@@ -1,6 +1,27 @@
 Release Notes
 ---
 
+## [6.2.0](https://github.com/ibis-project/ibis/compare/6.1.0...6.2.0) (2023-08-31)
+
+
+### Features
+
+* **trino:** add source application to trino backend ([cf5fdb9](https://github.com/ibis-project/ibis/commit/cf5fdb9d29567c72680d94f66c9445d76d9ccbef))
+
+
+### Bug Fixes
+
+* **bigquery,impala:** escape all ASCII escape sequences in string literals ([402f5ca](https://github.com/ibis-project/ibis/commit/402f5ca756acc85e1ddddbc60af2417f371e4ee0))
+* **bigquery:** correctly escape ASCII escape sequences in regex patterns ([a455203](https://github.com/ibis-project/ibis/commit/a455203d7dc6f5410ad2627123ec18e7126d6bc9))
+* **release:** pin conventional-changelog-conventionalcommits to 6.1.0 ([d6526b8](https://github.com/ibis-project/ibis/commit/d6526b83c2250f4f620ab9e71f0421a65e89d55b))
+* **trino:** ensure that list_databases look at all catalogs not just the current one ([cfbdbf1](https://github.com/ibis-project/ibis/commit/cfbdbf19426e9771cbda9f9e665173da7286e3c5))
+* **trino:** override incorrect base sqlalchemy `list_schemas` implementation ([84d38a1](https://github.com/ibis-project/ibis/commit/84d38a1e9cd67eb480ed9faa4fc506f98247dea3))
+
+
+### Documentation
+
+* **trino:** add connection docstring ([507a00e](https://github.com/ibis-project/ibis/commit/507a00e95784fd4054bd5146f49c2e6e168793db))
+
 ## [6.1.0](https://github.com/ibis-project/ibis/compare/6.0.0...6.1.0) (2023-08-03)
 
 
