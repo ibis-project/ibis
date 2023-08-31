@@ -1,13 +1,9 @@
 { stdenv
 , lib
-, pandoc
 , esbuild
 , deno
 , fetchurl
 , dart-sass
-, rWrapper
-, rPackages
-, extraRPackages ? [ ]
 , makeWrapper
 , python3
 , extraPythonPackages ? ps: with ps; [ ]
@@ -15,25 +11,20 @@
 
 stdenv.mkDerivation rec {
   pname = "quarto";
-  version = "1.4.176";
+  version = "1.4.339";
   src = fetchurl {
     url = "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-linux-amd64.tar.gz";
-    sha256 = "sha256-wG7diTCQOhAYon659w+5A3soo82KfrYpnoE2h2tOEbM=";
+    sha256 = "sha256-Toh+sImbIGc7PK4UUq9/p8nVBANkcOA6yR3fF6Nk76M=";
   };
-
 
   nativeBuildInputs = [ makeWrapper ];
 
-  dontStrip = true;
-
   preFixup = ''
     wrapProgram $out/bin/quarto \
-      --prefix QUARTO_PANDOC : ${pandoc}/bin/pandoc \
       --prefix QUARTO_ESBUILD : ${esbuild}/bin/esbuild \
       --prefix QUARTO_DENO : ${deno}/bin/deno \
       --prefix QUARTO_DART_SASS : ${dart-sass}/bin/dart-sass \
-      --prefix QUARTO_R : ${rWrapper.override { packages = [ rPackages.rmarkdown ] ++ extraRPackages; }}/bin/R \
-      --prefix QUARTO_PYTHON : ${python3.withPackages (ps: with ps; [ jupyter ipython ] ++ (extraPythonPackages ps))}/bin/python3
+      --prefix QUARTO_PYTHON : ${python3.withPackages (ps: [ ps.jupyter ] ++ (extraPythonPackages ps))}/bin/python3
   '';
 
   installPhase = ''
@@ -41,12 +32,10 @@ stdenv.mkDerivation rec {
 
     mkdir -p $out/bin $out/share
 
-    rm -r bin/tools
-
     mv bin/* $out/bin
     mv share/* $out/share
 
-    runHook preInstall
+    runHook postInstall
   '';
 
   meta = with lib; {
