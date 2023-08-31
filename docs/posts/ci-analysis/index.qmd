@@ -4,6 +4,10 @@ author: "Phillip Cloud"
 date: "2023-01-09"
 categories:
     - blog
+    - bigquery
+    - continuous integration
+    - data engineering
+    - dogfood
 ---
 
 ## Summary
