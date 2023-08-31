@@ -693,13 +693,16 @@ def _literal(op, **kw):
         else:
             return f"make_timestamp({year}, {month}, {day}, {hour}, {minute}, {second})"
     elif dtype.is_date():
-        return f"make_date({op.value.year}, {op.value.month}, {op.value.day})"
+        return sg.expressions.DateFromParts(
+            year=op.value.year, month=op.value.month, day=op.value.day
+        )
     elif dtype.is_array():
         value_type = dtype.value_type
-        values = ", ".join(
-            _literal(ops.Literal(v, dtype=value_type), **kw) for v in value
+        is_string = isinstance(value_type, dt.String)
+        values = sg.expressions.Array().from_arg_list(
+            [sg.expressions.Literal(this=v, is_string=is_string) for v in value]
         )
-        return f"[{values}]"
+        return values
     elif dtype.is_map():
         value_type = dtype.value_type
         values = ", ".join(
