@@ -1,3 +1,0 @@
-# Frontend
-
-The Ibis frontend is the user-facing API that you typically think about when you use the library.

@@ -1,6 +1,6 @@
 # Internals
 
-The internals are designed to map the frontend to the backend.
+The internals are designed to map the Ibis API to the backend.
 
 ## Primary Goals
 
