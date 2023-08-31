@@ -176,7 +176,7 @@ pip install altair
 import altair as alt
 
 chart = (
-    alt.Chart(grouped)
+    alt.Chart(grouped.to_pandas())
     .mark_bar()
     .encode(
         x="species",
