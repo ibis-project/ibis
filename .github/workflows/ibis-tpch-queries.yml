@@ -47,7 +47,7 @@ jobs:
         working-directory: tpc-queries
         run: |
           python -m pip install -r requirements.txt
-          python -m pip install -U 'duckdb>=0.4' 'duckdb-engine>=0.6'
+          python -m pip install -U 'duckdb>=0.4' 'duckdb-engine>=0.6' 'pandas<2.1'
 
       - name: install ibis
         run: python -m pip install ".[sqlite,duckdb]"

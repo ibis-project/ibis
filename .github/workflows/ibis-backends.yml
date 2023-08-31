@@ -66,6 +66,9 @@ jobs:
       - name: remove snowflake deps that are not compatible with everything else
         run: poetry remove snowflake-sqlalchemy snowflake-connector-python
 
+      - name: constrain pandas
+        run: poetry add 'pandas<2.1'
+
       - name: update deps originally constrained by snowflake
         run: poetry update numpy pandas pyarrow datafusion
 
