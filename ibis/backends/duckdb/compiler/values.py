@@ -545,8 +545,7 @@ _simple_ops = {
     ops.MapKeys: "mapKeys",  # TODO
     ops.MapValues: "mapValues",  # TODO
     ops.MapMerge: "mapUpdate",  # TODO
-    ops.ArrayDistinct: "arrayDistinct",  # TODO
-    ops.ArraySort: "arraySort",  # TODO
+    ops.ArraySort: "list_sort",
     ops.ArrayContains: "has",
     ops.FirstValue: "first_value",
     ops.LastValue: "last_value",
@@ -599,6 +598,24 @@ def _if_null(op, **kw):
 
 
 ### Definitely Not Tensors
+
+
+@translate_val.register(ops.ArrayDistinct)
+def _array_sort(op, **kw):
+    arg = translate_val(op.arg, **kw)
+
+    sg_expr = sg.expressions.If(
+        this=arg.is_(sg.expressions.Null()),
+        true=sg.expressions.Null(),
+        false=sg.func("list_distinct", arg)
+        + sg.expressions.If(
+            this=sg.func("list_count", arg) < sg.func("array_length", arg),
+            true=sg.func("list_value", sg.expressions.Null()),
+            false=sg.func("list_value"),
+        ),
+    )
+    # TODO: this is (I think) working but tests fail because of broken NaN / None stuff
+    return sg_expr
 
 
 @translate_val.register(ops.ArrayIndex)
@@ -700,7 +717,15 @@ def _literal(op, **kw):
         value_type = dtype.value_type
         is_string = isinstance(value_type, dt.String)
         values = sg.expressions.Array().from_arg_list(
-            [sg.expressions.Literal(this=v, is_string=is_string) for v in value]
+            [
+                # TODO: this cast makes for frustrating output
+                # is there any better way to handle it?
+                sg.cast(
+                    sg.expressions.Literal(this=f"{v}", is_string=is_string),
+                    to=getattr(sg.expressions.DataType.Type, serialize(value_type)),
+                )
+                for v in value
+            ]
         )
         return values
     elif dtype.is_map():
