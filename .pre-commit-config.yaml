@@ -62,7 +62,7 @@ repos:
         args: ["--allow-missing-credentials"]
       - id: detect-private-key
       - id: end-of-file-fixer
-        exclude: .+/snapshots/.+
+        exclude: (.+/snapshots/.+)|(.*docs/_freeze/.+\.json)
       - id: fix-byte-order-marker
       - id: mixed-line-ending
       - id: trailing-whitespace
