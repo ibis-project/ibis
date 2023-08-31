@@ -138,13 +138,13 @@ string or SQLAlchemy expression.
 
 The main pieces of a `SELECT` statement are:
 
-!. The set of column expressions (`select_set`)
-!. `WHERE` clauses (`where`)
-!. `GROUP BY` clauses (`group_by`)
-!. `HAVING` clauses (`having`)
-!. `LIMIT` clauses (`limit`)
-!. `ORDER BY` clauses (`order_by`)
-!. `DISTINCT` clauses (`distinct`)
+1. The set of column expressions (`select_set`)
+1. `WHERE` clauses (`where`)
+1. `GROUP BY` clauses (`group_by`)
+1. `HAVING` clauses (`having`)
+1. `LIMIT` clauses (`limit`)
+1. `ORDER BY` clauses (`order_by`)
+1. `DISTINCT` clauses (`distinct`)
 
 Each of these pieces is translated into a SQL string and finally assembled by
 the instance of the `ibis.sql.compiler.ExprTranslator` subclass
