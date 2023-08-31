@@ -4,6 +4,9 @@ author: Kae Suarez
 date: 2023-03-09
 categories:
     - blog
+    - io
+    - new feature
+    - sneak peek
 ---
 
 Ibis 5.0 is coming soon and will offer new functionality and fixes to users. To enhance clarity around this process, we’re sharing a sneak peek into what we’re working on.

@@ -4,6 +4,10 @@ author: "Phillip Cloud"
 date: "2023-06-27"
 categories:
     - blog
+    - case study
+    - machine learning
+    - ecosystem
+    - new feature
 ---
 In this blog post we show how to leverage ecosystem tools to build an end-to-end ML pipeline using Ibis, DuckDB and PyTorch.
 
