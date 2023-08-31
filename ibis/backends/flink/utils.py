@@ -282,6 +282,17 @@ def translate_literal(op: ops.Literal) -> str:
             raise ValueError("NaN is not supported in Flink SQL")
         elif math.isinf(value):
             raise ValueError("Infinity is not supported in Flink SQL")
+        elif dtype.is_decimal():
+            # When PyFlink infers schema from `decimal.Decimal` objects,
+            # it will be `DecimalType(38, 18)`.
+            # https://github.com/apache/flink/blob/release-1.17.1/flink-python/pyflink/table/types.py#L336-L337
+            precision = 38 if dtype.precision is None else dtype.precision
+            scale = 18 if dtype.scale is None else dtype.scale
+
+            if precision > 38:
+                raise ValueError("The precision can be up to 38 in Flink")
+
+            return f"CAST({value} AS DECIMAL({precision}, {scale}))"
         return f"CAST({value} AS {_to_pyflink_types[type(dtype)]!s})"
     elif dtype.is_timestamp():
         # TODO(chloeh13q): support timestamp with local timezone

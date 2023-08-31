@@ -269,6 +269,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "druid": 1.1,
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": 1.1,
+                "flink": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -277,6 +278,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
+                "flink": "DECIMAL(38, 18) NOT NULL",
             },
             marks=[
                 pytest.mark.notimpl(
@@ -316,6 +318,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "druid": 1.1,
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": 1.1,
+                "flink": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -325,6 +328,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "trino": "decimal(2,1)",
                 "duckdb": "DECIMAL(38,9)",
                 "postgres": "numeric",
+                "flink": "DECIMAL(38, 9) NOT NULL",
             },
             marks=[
                 pytest.mark.broken(
@@ -386,6 +390,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(
+                    ["flink"],
+                    "The precision can be up to 38 in Flink",
+                    raises=ValueError,
+                ),
             ],
             id="decimal-big",
         ),
@@ -461,6 +470,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=sa.exc.DatabaseError,
                 ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    "Infinity is not supported in Flink SQL",
+                    raises=ValueError,
+                ),
             ],
             id="decimal-infinity+",
         ),
@@ -535,6 +549,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=sa.exc.DatabaseError,
+                ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    "Infinity is not supported in Flink SQL",
+                    raises=ValueError,
                 ),
             ],
             id="decimal-infinity-",
@@ -621,6 +640,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=sa.exc.DatabaseError,
+                ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    "NaN is not supported in Flink SQL",
+                    raises=ValueError,
                 ),
             ],
             id="decimal-NaN",
