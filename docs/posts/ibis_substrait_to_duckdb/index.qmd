@@ -4,6 +4,9 @@ author: Gil Forsyth
 date: 2023-02-01
 categories:
     - blog
+    - substrait
+    - ecosystem
+    - duckdb
 ---
 
 Ibis strives to provide a consistent interface for interacting with a multitude
