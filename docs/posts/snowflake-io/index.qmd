@@ -13,12 +13,7 @@ code-annotations: hover
 
 {{< video https://www.youtube.com/embed/KFz4pbCqtQU >}}
 
-It's challenging to load local files into Snowflake from Python.
-
-Multiple steps are required, and while [those steps are
-well-documented](https://docs.snowflake.com/user-guide/data-load-local-file-system),
-they involve many concepts that are not necessarily familiar to data
-scientists.
+It can be challenging to load local files into Snowflake from Python.
 
 Here's how to load a CSV file into Snowflake without Ibis.
 
@@ -54,13 +49,9 @@ FILE_FORMAT = (TYPE = CSV SKIP_HEADER = 1); -- <7>
 6. **[`INFER_SCHEMA`](https://docs.snowflake.com/en/sql-reference/functions/infer_schema)** is a powerful feature of Snowflake that allows you to load files without having to compute the schema in client code.
 7. **[`COPY INTO`](https://docs.snowflake.com/en/sql-reference/sql/copy-into-table) loads the staged data** into the created temporary table.
 
-Having so many steps to load a file also makes it more difficult to remember
-the process the next time you want to do it.
-
-To Snowflake's credit this is a genuinely difficult problem and they have
-provided the right primitives to solve it.
-
-Still, there's plenty of room for UX improvement.
+Snowflake provides the full set of primitives required to achieve this, but
+composing them together can be challenging. Some users struggle to remember the
+sequence of steps.
 
 ## Loading files with Ibis
 
