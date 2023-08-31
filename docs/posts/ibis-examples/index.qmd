@@ -4,6 +4,8 @@ author: Kae Suarez
 date: 2023-03-08
 categories:
     - blog
+    - new feature
+    - sneak peek
 ---
 
 Ibis has been moving quickly to provide a powerful but easy-to-use interface for interacting with analytical engines. However, as we’re approaching the 5.0 release of Ibis, we’ve realized that moving from not knowing Ibis to writing a first expression is not trivial.

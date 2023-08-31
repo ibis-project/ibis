@@ -6,7 +6,9 @@ image: "thumbnail.png"
 code-annotations: below
 categories:
     - blog
-    - demo
+    - duckdb
+    - case study
+    - dogfood
 draft: true
 ---
 
