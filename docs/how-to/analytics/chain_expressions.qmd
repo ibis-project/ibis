@@ -15,7 +15,7 @@ from ibis import _
 import pandas as pd
 ```
 
-Let's create two in-memory tables using [`ibis.memtable`](../external-dataframes/memtable_join.qmd), an API introduced in 3.2:
+Let's create two in-memory tables using [`ibis.memtable`], an API introduced in 3.2:
 
 ```{python}
 df1 = pd.DataFrame({'x': range(5), 'y': list('ab')*2 + list('e')})
