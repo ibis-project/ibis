@@ -4,6 +4,9 @@ author: Phillip Cloud
 date: 2023-02-27
 categories:
     - blog
+    - new feature
+    - productivity
+    - duckdb
 ---
 
 Before Ibis 5.0 it's been challenging to concisely express whole-table
