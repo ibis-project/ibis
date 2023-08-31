@@ -1,6 +1,6 @@
-# Style and Formatting
+# Style and formatting
 
-## Code Style
+## Code style
 
 - [`black`](https://github.com/psf/black): Formatting Python code
 - [`ruff`](https://github.com/charliermarsh/ruff): Formatting and sorting `import` statements
@@ -9,9 +9,9 @@
 - [`statix`](https://github.com/nerdypepper/statix): Linting nix files
 - [`nixpkgs-fmt`](https://github.com/nix-community/nixpkgs-fmt): Formatting nix files
 
-!!! tip
-
-    If you use `nix-shell`, all of these are already setup for you and ready to use, and you don't need to do anything to install these tools.
+::: {.callout-tip}
+If you use `nix-shell`, all of these are already setup for you and ready to use, and you don't need to do anything to install these tools.
+:::
 
 We use [numpydoc](https://numpydoc.readthedocs.io/en/latest/format.html) as our
 standard format for docstrings.
