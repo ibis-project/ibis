@@ -45,20 +45,16 @@ With the introduction of `__dataframe__` support in v6.0.0 and efficiency improv
 # | code-fold: true
 width = 640  # <1>
 height = 480  # <1>
-```
 
-1. Set the width and height of the plots.
-
-```{python}
 grouped = (  # <2>
     t.group_by("species")
     .aggregate(count=ibis._.count())
-    .order_by(ibis.desc("count"))  # <2>
+    .order_by(ibis.desc("count"))
 )  # <2>
 grouped  # <3>
 ```
 
-1. Setup dimensions to plot.
+1. Set the width and height of the plots.
 2. Setup data to plot.
 3. Display the table.
 
