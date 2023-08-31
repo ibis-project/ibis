@@ -1,7 +1,7 @@
 "use strict";
 
 module.exports = {
-  branches: ["master", "6.x"],
+  branches: ["master", "next-feature"],
   tagFormat: "${version}",
   preset: "conventionalcommits",
   plugins: [
