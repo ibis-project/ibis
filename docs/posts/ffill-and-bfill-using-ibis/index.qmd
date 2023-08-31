@@ -4,6 +4,8 @@ author: Patrick Clarke
 date: 2022-09-09
 categories:
     - blog
+    - window functions
+    - time series
 ---
 
 Suppose you have a table of data mapping events and dates to values, and that this data contains gaps in values.
