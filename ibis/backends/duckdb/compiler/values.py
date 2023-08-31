@@ -62,10 +62,11 @@ def _alias(op, render_aliases: bool = True, **kw):
 ### Bitwise Business
 
 _bitwise_mapping = {
-    ops.BitwiseLeftShift: "<<",
-    ops.BitwiseRightShift: ">>",
-    ops.BitwiseAnd: "&",
-    ops.BitwiseOr: "|",
+    ops.BitwiseLeftShift: sg.expressions.BitwiseLeftShift,
+    ops.BitwiseRightShift: sg.expressions.BitwiseRightShift,
+    ops.BitwiseAnd: sg.expressions.BitwiseAnd,
+    ops.BitwiseOr: sg.expressions.BitwiseOr,
+    ops.BitwiseXor: sg.expressions.BitwiseXor,
 }
 
 
@@ -73,27 +74,20 @@ _bitwise_mapping = {
 @translate_val.register(ops.BitwiseRightShift)
 @translate_val.register(ops.BitwiseAnd)
 @translate_val.register(ops.BitwiseOr)
+@translate_val.register(ops.BitwiseXor)
 def _bitwise_binary(op, **kw):
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    _operator = _bitwise_mapping[type(op)]
+    sg_expr = _bitwise_mapping[type(op)]
 
-    return f"{left} {_operator} {right}"
-
-
-@translate_val.register(ops.BitwiseXor)
-def _bitwise_xor(op, **kw):
-    left = translate_val(op.left, **kw)
-    right = translate_val(op.right, **kw)
-
-    return sg.func("xor", left, right, dialect="duckdb")
+    return sg_expr(this=left, expression=right)
 
 
 @translate_val.register(ops.BitwiseNot)
 def _bitwise_not(op, **kw):
     value = translate_val(op.arg, **kw)
 
-    return f"~{value}"
+    return sg.expressions.BitwiseNot(this=value)
 
 
 ### Mathematical Calisthenics
@@ -110,8 +104,8 @@ def _generic_log(op, **kw):
     arg = translate_val(arg, **kw)
     if base is not None:
         base = translate_val(base, **kw)
-        return f"ln({arg}) / ln({base})"
-    return f"ln({arg})"
+        return sg.func("ln", arg) / sg.func("ln", base)
+    return sg.func("ln", arg)
 
 
 ### Dtype Dysmorphia
@@ -141,11 +135,11 @@ def _cast(op, **kw):
             )
 
         else:
-            return f"INTERVAL {arg} {suffix}"
+            return sg.expressions.Interval(this=arg, unit=suffix, dialect="duckdb")
     elif isinstance(op.to, dt.Timestamp) and isinstance(op.arg.dtype, dt.Integer):
-        return sg.func("to_timestamp", arg)
+        return sg.func("to_timestamp", arg, dialect="duckdb")
     elif isinstance(op.to, dt.Timestamp) and (timezone := op.to.timezone) is not None:
-        return sg.func("timezone", timezone, arg)
+        return sg.func("timezone", f"'{timezone}'", arg, dialect="duckdb")
 
     to = translate_val(op.to, **kw)
     return sg.cast(expression=arg, to=to)
@@ -161,7 +155,7 @@ def _try_cast(op, **kw):
 @translate_val.register(ops.TypeOf)
 def _type_of(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.func("typeof", arg)
+    return sg.func("typeof", arg, dialect="duckdb")
 
 
 ### Comparator Conundrums
@@ -193,6 +187,7 @@ def _not(op, **kw):
 @translate_val.register(ops.Date)
 def _to_date(op, **kw):
     arg = translate_val(op.arg, **kw)
+    return sg.expressions.Date(this=arg)
     return f"DATE {arg}"
 
 
@@ -200,6 +195,12 @@ def _to_date(op, **kw):
 def _time(op, **kw):
     arg = translate_val(op.arg, **kw)
     return f"{arg}::TIME"
+
+
+@translate_val.register(ops.TimestampNow)
+def _timestamp_now(op, **kw):
+    """DuckDB current timestamp defaults to timestamp + tz"""
+    return sg.cast(expression=sg.func("current_timestamp"), to="TIMESTAMP")
 
 
 @translate_val.register(ops.Strftime)
@@ -232,7 +233,13 @@ def _string_to_timestamp(op, **kw):
 def _extract_epoch_seconds(op, **kw):
     arg = translate_val(op.arg, **kw)
     # TODO: do we need the TIMESTAMP cast?
-    return f"epoch({arg}::TIMESTAMP)"
+    return sg.func(
+        "epoch",
+        sg.expressions.cast(
+            expression=sg.expressions.Literal(this=arg, is_string=True),
+            to=sg.expressions.DataType.Type.TIMESTAMP,
+        ),
+    )
 
 
 _extract_mapping = {
@@ -260,7 +267,9 @@ _extract_mapping = {
 def _extract_time(op, **kw):
     part = _extract_mapping[type(op)]
     timestamp = translate_val(op.arg, **kw)
-    return f"extract({part}, {timestamp})"
+    return sg.func(
+        "extract", sg.expressions.Literal(this=part, is_string=True), timestamp
+    )
 
 
 # DuckDB extracts subminute microseconds and milliseconds
@@ -319,7 +328,7 @@ def _date_from_ymd(op, **kw):
     y = translate_val(op.year, **kw)
     m = translate_val(op.month, **kw)
     d = translate_val(op.day, **kw)
-    return f"make_date({y}, {m}, {d})"
+    return sg.expressions.DateFromParts(year=y, month=m, day=d)
 
 
 @translate_val.register(ops.DayOfWeekIndex)
@@ -331,15 +340,10 @@ def _day_of_week_index(op, **kw):
 @translate_val.register(ops.TimestampFromUNIX)
 def _timestamp_from_unix(op, **kw):
     arg = translate_val(op.arg, **kw)
-    if (unit := op.unit.short) in {"ns"}:
+    if (unit := op.unit.short) in {"ms", "us", "ns"}:
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
-    if op.unit.short == "ms":
-        return f"to_timestamp({arg[:-3]}) + INTERVAL {arg[-3:]} millisecond"
-    elif op.unit.short == "us":
-        return f"to_timestamp({arg[:-6]}) + INTERVAL {arg[-6:]} microsecond"
-
-    return f"to_timestamp({arg})"
+    return sg.expressions.UnixToTime(this=arg)
 
 
 @translate_val.register(ops.TimestampFromYMDHMS)
@@ -361,9 +365,9 @@ def _timestamp_from_ymdhms(op, **kw):
 
 
 _interval_mapping = {
-    ops.IntervalAdd: operator.add,
-    ops.IntervalSubtract: operator.sub,
-    ops.IntervalMultiply: operator.mul,
+    ops.IntervalAdd: sg.expressions.Add,
+    ops.IntervalSubtract: sg.expressions.Sub,
+    ops.IntervalMultiply: sg.expressions.Mul,
 }
 
 
@@ -373,9 +377,9 @@ _interval_mapping = {
 def _interval_binary(op, **kw):
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    _operator = _interval_mapping[type(op)]
+    sg_expr = _interval_mapping[type(op)]
 
-    return operator(left, right)
+    return sg_expr(this=left, expression=right)
 
 
 def _interval_format(op):
@@ -385,7 +389,10 @@ def _interval_format(op):
             "Duckdb doesn't support nanosecond interval resolutions"
         )
 
-    return f"INTERVAL {op.value} {dtype.resolution.upper()}"
+    return sg.expressions.Interval(
+        this=sg.expressions.Literal(this=op.value, is_string=False),
+        unit=dtype.resolution.upper(),
+    )
 
 
 @translate_val.register(ops.IntervalFromInteger)
@@ -525,8 +532,6 @@ _simple_ops = {
     ops.Strip: "trim",
     ops.StringAscii: "ascii",
     ops.StrRight: "right",
-    # Temporal operations
-    ops.TimestampNow: "current_timestamp",
     # Other operations
     ops.Where: "if",
     ops.ArrayLength: "length",
@@ -609,7 +614,9 @@ def _in_values(op, **kw):
     if not op.options:
         return False
     value = translate_val(op.value, **kw)
-    options = [translate_val(x, **kw) for x in op.options]
+    options = sg.expressions.Array().from_arg_list(
+        [translate_val(x, **kw) for x in op.options]
+    )
     return sg.func("list_contains", options, value, dialect="duckdb")
 
 
@@ -633,17 +640,14 @@ def _literal(op, **kw):
     dtype = op.dtype
     if value is None and dtype.nullable:
         if dtype.is_null():
-            return "Null"
+            return sg.expressions.Null()
         return f"CAST(Null AS {serialize(dtype)})"
     if dtype.is_boolean():
-        return str(int(bool(value)))
+        return sg.expressions.Boolean(value)
     elif dtype.is_inet():
         com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
     elif dtype.is_string():
-        # TODO: if this is stringified, then test_select_filter_select breaks
-        # if it isn't, then try_cast breaks
-        # There's sqlglot.to_identifer which might help with this
-        return f"'{value}'"
+        return sg.expressions.Literal(this=f"{value}", is_string=True)
     elif dtype.is_decimal():
         precision = dtype.precision
         scale = dtype.scale
@@ -661,10 +665,17 @@ def _literal(op, **kw):
         return f"{value!s}::decimal({precision}, {scale})"
     elif dtype.is_numeric():
         if math.isinf(value):
-            return f"'{repr(value)}inity'::FLOAT"
+            return sg.expressions.cast(
+                expression=sg.expressions.Literal(this=value, is_string=True),
+                to=sg.expressions.DataType.Type.FLOAT,
+            )
         elif math.isnan(value):
-            return "'NaN'::FLOAT"
-        return repr(value)
+            return sg.expressions.cast(
+                expression=sg.expressions.Literal(this="NaN", is_string=True),
+                to=sg.expressions.DataType.Type.FLOAT,
+            )
+        # return value
+        return sg.expressions.Literal(this=f"{value}", is_string=False)
     elif dtype.is_interval():
         return _interval_format(op)
     elif dtype.is_timestamp():
@@ -1029,18 +1040,16 @@ def _repeat(op, **kw):
     return f"repeat({arg}, {times})"
 
 
-# TODO
 @translate_val.register(ops.NullIfZero)
 def _null_if_zero(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"nullIf({arg}, 0)"
+    return sg.func("nullif", arg, 0, dialect="duckdb")
 
 
-# TODO
 @translate_val.register(ops.ZeroIfNull)
 def _zero_if_null(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"ifNull({arg}, 0)"
+    return sg.func("ifnull", arg, 0, dialect="duckdb")
 
 
 @translate_val.register(ops.FloorDivide)
@@ -1167,12 +1176,12 @@ def _map_get(op, **kw):
     return f"if(mapContains({arg}, {key}), {arg}[{key}], {default})"
 
 
-def _binary_infix(symbol: str):
+def _binary_infix(sg_expr: sg.expressions._Expression):
     def formatter(op, **kw):
-        left = translate_val(op_left := op.left, **kw)
-        right = translate_val(op_right := op.right, **kw)
+        left = translate_val(op.left, **kw)
+        right = translate_val(op.right, **kw)
 
-        return symbol(left, right)
+        return sg_expr(this=left, expression=right, dialect="duckdb")
 
     return formatter
 
@@ -1181,25 +1190,28 @@ import operator
 
 _binary_infix_ops = {
     # Binary operations
-    ops.Add: operator.add,
-    ops.Subtract: operator.sub,
-    ops.Multiply: operator.mul,
-    ops.Divide: operator.truediv,
-    ops.Modulus: operator.mod,
+    ops.Add: sg.expressions.Add,
+    ops.Subtract: sg.expressions.Sub,
+    ops.Multiply: sg.expressions.Mul,
+    ops.Divide: sg.expressions.Div,
+    ops.Modulus: sg.expressions.Mod,
     # Comparisons
-    ops.GreaterEqual: operator.ge,
-    ops.Greater: operator.gt,
-    ops.LessEqual: operator.le,
-    ops.Less: operator.lt,
+    ops.GreaterEqual: sg.expressions.GTE,
+    ops.Greater: sg.expressions.GT,
+    ops.LessEqual: sg.expressions.LTE,
+    ops.Less: sg.expressions.LT,
+    ops.Equals: sg.expressions.EQ,
+    ops.NotEquals: sg.expressions.NEQ,
+    ops.Xor: sg.expressions.Xor,
     # Boolean comparisons
-    ops.And: operator.and_,
-    ops.Or: operator.or_,
-    ops.DateAdd: operator.add,
-    ops.DateSub: operator.sub,
-    ops.DateDiff: operator.sub,
-    ops.TimestampAdd: operator.add,
-    ops.TimestampSub: operator.sub,
-    ops.TimestampDiff: operator.sub,
+    ops.And: sg.expressions.And,
+    ops.Or: sg.expressions.Or,
+    ops.DateAdd: sg.expressions.Add,
+    ops.DateSub: sg.expressions.Sub,
+    ops.DateDiff: sg.expressions.Sub,
+    ops.TimestampAdd: sg.expressions.Add,
+    ops.TimestampSub: sg.expressions.Sub,
+    ops.TimestampDiff: sg.expressions.Sub,
 }
 
 
@@ -1209,18 +1221,19 @@ for _op, _sym in _binary_infix_ops.items():
 del _op, _sym
 
 
-@translate_val.register(ops.Equals)
-def _equals(op, **kw):
+@translate_val.register(ops.Xor)
+def _xor(op, **kw):
+    # TODO: is this really the best way to do this?
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    return sg.expressions.EQ(this=left, expression=right)
-
-
-@translate_val.register(ops.NotEquals)
-def _equals(op, **kw):
-    left = translate_val(op.left, **kw)
-    right = translate_val(op.right, **kw)
-    return sg.expressions.NEQ(this=left, expression=right)
+    return sg.expressions.And(
+        this=sg.expressions.Paren(this=sg.expressions.Or(this=left, expression=right)),
+        expression=sg.expressions.Paren(
+            this=sg.expressions.Not(
+                this=sg.expressions.And(this=left, expression=right)
+            )
+        ),
+    )
 
 
 # TODO
