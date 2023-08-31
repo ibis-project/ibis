@@ -65,7 +65,7 @@ website:
       - sidebar:reference
     right:
       - posts.qmd
-      - community.qmd
+      - sidebar:contribute
 
   sidebar:
     - id: ""
@@ -102,12 +102,12 @@ website:
         - auto: "how-to/visualization"
         - auto: "how-to/external-dataframes"
         - auto: "how-to/old"
-    - id: community
-      title: "Community"
+    - id: contribute
+      title: "Contribute"
       style: "docked"
       collapse-level: 2
       contents:
-        - auto: community
+        - auto: contribute
     - id: presentations
       title: "Presentations"
       style: "docked"
