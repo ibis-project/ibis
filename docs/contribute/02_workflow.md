@@ -1,10 +1,10 @@
-# Contribute to the Ibis Codebase
+# Contribute to the Ibis codebase
 
 ## Getting started
 
 First, set up a [development environment](01_environment.md).
 
-## Taking Issues
+## Taking issues
 
 If you find an issue you want to work on, write a comment with the text
 `/take` on the issue. GitHub will then assign the issue to you.
@@ -17,9 +17,11 @@ To run tests that do not require a backend:
 pytest -m core
 ```
 
-### Backend Test Suites
+### Backend test suites
 
-!!! info "You may be able to skip this section"
+:::{.callout-tip}
+You may be able to skip this section
+:::
 
     If you haven't made changes to the core of ibis (e.g., `ibis/expr`)
     or any specific backends (`ibis/backends`) this material isn't necessary to
@@ -74,6 +76,6 @@ The type (e.g. `fix`) can be:
 
       fixes #4242
 
-## Submit a PR
+## Submit a pull request
 
-Ibis follows the standard Git Pull Request process. The team will review the PR and merge when it's ready.
+Ibis follows the standard GitHub pull request process. The team will review the PR and merge when it's ready.

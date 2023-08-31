@@ -3,86 +3,81 @@ hide:
   - toc
 ---
 
-# Setting Up a Development Environment
+# Setting up a development environment
 
-## Required Dependencies
+## Required dependencies
 
 - [`git`](https://git-scm.com/)
 
-=== "Conda"
+::: {.panel-tabset}
 
-    !!! info "Some optional dependencies for Windows are not available through `conda`/`mamba`"
+## pip
 
-        1. `clickhouse-cityhash`. Required for compression support in the ClickHouse backend.
+::: {.callout-warning}
+`pip` will not handle installation of system dependencies
 
-    #### Support Matrix
+`pip` will not install system dependencies needed for some packages such as `psycopg2` and `kerberos`.
 
-    |      Python Version :material-arrow-right: |                      Python 3.9                  |                  Python 3.10                     |                  Python 3.11                     |
-    | -----------------------------------------: | :----------------------------------------------: | :----------------------------------------------: | :----------------------------------------------: |
-    | **Operating System** :material-arrow-down: |                                                  |                                                  |                                                  |
-    |                                  **Linux** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
-    |                         **macOS (x86_64)** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
-    |                        **macOS (aarch64)** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
-    |                                **Windows** | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+For a better development experience see the `conda` or `nix` setup instructions.
+:::
 
-    {% set managers = {"conda": {"name": "Miniconda", "url": "https://docs.conda.io/en/latest/miniconda.html"}, "mamba": {"name": "Mamba", "url": "https://github.com/mamba-org/mamba"}} %}
-    {% for manager, params in managers.items() %}
+1. [Install `gh`](https://cli.github.com/manual/installation)
 
-    === "`{{ manager }}`"
+1. Fork and clone the ibis repository:
 
-        1. Install [{{ params["name"] }}]({{ params["url"] }})
+   ```sh
+   gh repo fork --clone --remote ibis-project/ibis
+   ```
 
-        1. Install `gh`
+1. Change directory into `ibis`:
 
-            ```sh
-            {{ manager }} install -c conda-forge gh
-            ```
+   ```sh
+   cd ibis
+   ```
 
-        1. Fork and clone the ibis repository:
+1. Install development dependencies
 
-            ```sh
-            gh repo fork --clone --remote ibis-project/ibis
-            ```
+   ```sh
+   pip install 'poetry>=1.3,<1.4'
+   pip install -r requirements-dev.txt
+   ```
 
-        1. Create a Conda environment from a lock file in the repo:
+1. Install ibis in development mode
 
-            {% set platforms = {"Linux": "linux-64", "macOS (x86_64)": "osx-64", "macOS (aarch64)": "osx-arm64", "Windows": "win-64"} %}
-            {% for os, platform in platforms.items() %}
-            === "{{ os }}"
+   ```sh
+   pip install -e .
+   ```
 
-                ```sh
-                # Create a dev environment for {{platform}}
-                cd ibis
-                {{ manager }} create -n ibis-dev --file=conda-lock/{{ platform }}-3.10.lock
-                ```
-            {% endfor %}
+## Conda
 
-        1. Activate the environment
+::: {.callout-note}
+Some optional dependencies for Windows are not available through `conda`/`mamba`
+:::
 
-            ```sh
-            {{ manager }} activate ibis-dev
-            ```
+1. `clickhouse-cityhash`. Required for compression support in the ClickHouse backend.
 
-        1. Install your local copy of `ibis` into the Conda environment.
+### Support matrix
 
-            ```sh
-            cd ibis
-            pip install -e .
-            ```
+| Python Version       | Python 3.9                                       | Python 3.10                                      | Python 3.11                                      |
+| -------------------- | ------------------------------------------------ | ------------------------------------------------ | ------------------------------------------------ |
+| **Operating System** |                                                  |                                                  |                                                  |
+| **Linux**            | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+| **macOS (x86_64)**   | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+| **macOS (aarch64)**  | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
+| **Windows**          | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} | {{ config.extra.support_levels.supported.icon }} |
 
-    {% endfor %}
+{% set managers = {"conda": {"name": "Miniconda", "url": "https://docs.conda.io/en/latest/miniconda.html"}, "mamba": {"name": "Mamba", "url": "https://github.com/mamba-org/mamba"}} %}
+{% for manager, params in managers.items() %}
 
-=== "pip"
+=== "`{{ manager }}`"
 
-    !!! warning "`pip` will not handle installation of system dependencies"
+    1. Install [{{ params["name"] }}]({{ params["url"] }})
 
-        `pip` will not install system dependencies needed for some packages
-        such as `psycopg2` and `kerberos`.
+    1. Install `gh`
 
-        For a better development experience see the `conda` or `nix` setup
-        instructions.
-
-    1. [Install `gh`](https://cli.github.com/manual/installation)
+        ```sh
+        {{ manager }} install -c conda-forge gh
+        ```
 
     1. Fork and clone the ibis repository:
 
@@ -90,83 +85,90 @@ hide:
         gh repo fork --clone --remote ibis-project/ibis
         ```
 
-    1. Change directory into `ibis`:
+    1. Create a Conda environment from a lock file in the repo:
+
+        {% set platforms = {"Linux": "linux-64", "macOS (x86_64)": "osx-64", "macOS (aarch64)": "osx-arm64", "Windows": "win-64"} %}
+        {% for os, platform in platforms.items() %}
+        === "{{ os }}"
+
+            ```sh
+            # Create a dev environment for {{platform}}
+            cd ibis
+            {{ manager }} create -n ibis-dev --file=conda-lock/{{ platform }}-3.10.lock
+            ```
+        {% endfor %}
+
+    1. Activate the environment
+
+        ```sh
+        {{ manager }} activate ibis-dev
+        ```
+
+    1. Install your local copy of `ibis` into the Conda environment.
 
         ```sh
         cd ibis
-        ```
-
-    1. Install development dependencies
-
-        ```sh
-        pip install 'poetry>=1.3,<1.4'
-        pip install -r requirements-dev.txt
-        ```
-
-    1. Install ibis in development mode
-
-        ```sh
         pip install -e .
         ```
 
-=== "Nix"
+{% endfor %}
 
-    #### Support Matrix
+## Nix
 
-    |      Python Version :material-arrow-right: |                     Python 3.9                     |                    Python 3.10                     |                    Python 3.11                     |
-    | -----------------------------------------: | :------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
-    | **Operating System** :material-arrow-down: |                                                    |                                                    |                                                    |
-    |                                  **Linux** |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
-    |                         **macOS (x86_64)** |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
-    |                        **macOS (aarch64)** |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |
-    |                                **Windows** | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} |
+#### Support Matrix
 
-    1. [Install `nix`](https://nixos.org/download.html)
-    1. Install `gh`:
+|      Python Version :material-arrow-right: |                     Python 3.9                     |                    Python 3.10                     |                    Python 3.11                     |
+| -----------------------------------------: | :------------------------------------------------: | :------------------------------------------------: | :------------------------------------------------: |
+| **Operating System** :material-arrow-down: |                                                    |                                                    |                                                    |
+|                                  **Linux** |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
+|                         **macOS (x86_64)** |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |  {{ config.extra.support_levels.supported.icon }}  |
+|                        **macOS (aarch64)** |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |   {{ config.extra.support_levels.unknown.icon }}   |
+|                                **Windows** | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} | {{ config.extra.support_levels.unsupported.icon }} |
 
-        === "`nix-shell`"
+1.  [Install `nix`](https://nixos.org/download.html)
+1.  Install `gh`:
 
-            ```sh
-            nix-shell -p gh
-            ```
-
-        === "`nix-env`"
-
-            ```sh
-            nix-env -iA gh
-            ```
-
-    1. Fork and clone the ibis repository:
+    === "`nix-shell`"
 
         ```sh
-        gh repo fork --clone --remote ibis-project/ibis
+        nix-shell -p gh
         ```
 
-    1. Set up the public `ibis` Cachix cache to pull pre-built dependencies:
+    === "`nix-env`"
 
         ```sh
-        nix-shell -p cachix --run 'cachix use ibis'
+        nix-env -iA gh
         ```
 
-    1. Run `nix-shell` in the checkout directory:
+1.  Fork and clone the ibis repository:
 
-        ```sh
-        cd ibis
-        nix-shell
-        ```
+    ```sh
+    gh repo fork --clone --remote ibis-project/ibis
+    ```
 
-        This may take a while due to artifact download from the cache.
+1.  Set up the public `ibis` Cachix cache to pull pre-built dependencies:
 
-## Building the Docs
+    ```sh
+    nix-shell -p cachix --run 'cachix use ibis'
+    ```
+
+1.  Run `nix-shell` in the checkout directory:
+
+    ```sh
+    cd ibis
+    nix-shell
+    ```
+
+    This may take a while due to artifact download from the cache.
+
+:::
+
+## Building the docs
 
 Run
 
 ```bash
-mkdocs serve --strict
+just docs-preview
 ```
 
 to build and serve the documentation.
-
-{% for data in config.extra.support_levels.values() %}
-[^{{ loop.index }}]: {{ data.description }}
-{% endfor %}
