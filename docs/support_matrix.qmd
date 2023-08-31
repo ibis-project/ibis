@@ -31,12 +31,7 @@ The changes will show up in the dev docs when your PR is merged!
 
 ## Raw Data
 
-```{python}
-#| echo: false
-!python ../gen_matrix.py
-```
-
-You can also download data from the above tables in [CSV format](./raw_support_matrix.csv).
+You can also download data from the above tables in [CSV format](./backends/raw_support_matrix.csv).
 
 The code used to generate the linked CSV file is below.
 
