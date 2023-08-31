@@ -124,9 +124,8 @@ website:
 format:
   html:
     theme:
-      light: flatly
+      light: [flatly, theme-light.scss]
       dark: [darkly, theme-dark.scss]
-    css: styles.css
     toc: true
 
 quartodoc:
