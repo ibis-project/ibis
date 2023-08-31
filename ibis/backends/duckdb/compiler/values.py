@@ -658,7 +658,10 @@ def _literal(op, **kw):
     if value is None and dtype.nullable:
         if dtype.is_null():
             return sg.expressions.Null()
-        return f"CAST(Null AS {serialize(dtype)})"
+        return sg.cast(
+            sg.expressions.Null(),
+            to=getattr(sg.expressions.DataType.Type, serialize(dtype)),
+        )
     if dtype.is_boolean():
         return sg.expressions.Boolean(value)
     elif dtype.is_inet():
