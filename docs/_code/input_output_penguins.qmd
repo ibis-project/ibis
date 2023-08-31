@@ -86,7 +86,7 @@ Ibis uses [Apache Arrow](https://arrow.apache.org/) for efficient data transfer 
 
 ::: {.panel-tabset}
 
-## pandas
+## `pandas`
 
 You can convert Ibis tables to pandas dataframes.
 
@@ -110,7 +110,7 @@ t.head(3)
 
 1. Returns an Ibis table.
 
-## Polars
+## `polars`
 
 You can convert Ibis tables to Polars dataframes.
 
@@ -132,7 +132,7 @@ t = ibis.memtable(df)
 t.head(3)
 ```
 
-## PyArrow
+## `pyarrow`
 
 You can convert Ibis tables to PyArrow tables.
 
@@ -156,7 +156,7 @@ And you can convert PyArrow tables to Ibis tables.
 ibis.memtable(t.to_pyarrow()).head(3)
 ```
 
-## PyTorch
+## `torch`
 
 You can convert Ibis tables to torch tensors.
 
