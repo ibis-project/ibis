@@ -4,6 +4,10 @@ author: "Nick Crews"
 date: "2023-03-24"
 categories:
     - blog
+    - data engineering
+    - case study
+    - duckdb
+    - performance
 ---
 Hi! My name is [Nick Crews](https://www.linkedin.com/in/nicholas-b-crews/),
 and I'm a data engineer that looks at public campaign finance data.
