@@ -7,7 +7,9 @@ categories:
 ---
 In this blog post we show how to leverage ecosystem tools to build an end-to-end ML pipeline using Ibis, DuckDB and PyTorch.
 
-Check out the live stream of this notebook here: https://www.youtube.com/live/L4_deAdStKs?feature=share
+Check out the live stream of this notebook below!
+
+{{< video https://www.youtube.com/embed/L4_deAdStKs >}}
 
 Let's get started!
 
