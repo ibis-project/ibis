@@ -111,7 +111,7 @@ to see which `project_id`s and `dataset_id`s are available to use.
 
 ### BigQuery Authentication
 
-The simplest way to authenticate with the BigQuery backend is to use [Google's `gcloud` CLI tool](https://cloud.google.com/sdk/docs/install-sdk).
+The simplest way to authenticate with the BigQuery backend is to use [Google's `gcloud` CLI tool](https://cloud.google.com/sdk/docs/install).
 
 Once you have `gcloud` installed, you can authenticate to BigQuery (and other Google Cloud services) by running
 
