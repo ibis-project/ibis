@@ -21,7 +21,6 @@ permissions:
   # increase the rate limit for nix operations hitting github, but limit the
   # permissions to reading things
   contents: read
-  deployments: write
 
 jobs:
   commitlint:
@@ -182,37 +181,6 @@ jobs:
 
       - name: verify internal links
         run: nix develop --ignore-environment '.#links' -c just checklinks --offline --no-progress
-
-      - name: install netlify cli
-        run: npm install -g netlify-cli
-
-      - name: create github deployment
-        uses: bobheadxi/deployments@v0.4.3
-        id: deployment
-        with:
-          step: start
-          token: ${{ secrets.GITHUB_TOKEN }}
-          env: pr-${{ github.event.number }}
-          ref: ${{ github.head_ref }}
-          transient: true
-          logs: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-      - name: netlify docs preview
-        run: netlify deploy --dir=docs/_output --alias="${{ steps.deployment.outputs.env }}"
-        env:
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-
-      - name: update github deployment
-        uses: bobheadxi/deployments@v0.4.3
-        if: always()
-        with:
-          step: finish
-          token: ${{ secrets.GITHUB_TOKEN }}
-          status: ${{ job.status }}
-          deployment_id: ${{ steps.deployment.outputs.deployment_id }}
-          env_url: "https://${{ steps.deployment.outputs.env }}--ibis-quarto.netlify.app"
-          logs: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   docs_push:
     runs-on: ubuntu-latest
