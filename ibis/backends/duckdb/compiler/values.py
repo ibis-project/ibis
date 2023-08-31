@@ -938,21 +938,24 @@ def _string_concat(op, **kw):
 def _string_like(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return f"{arg} LIKE {pattern}"
+    return sg.expressions.Like(this=arg, expression=pattern)
 
 
 @translate_val.register(ops.StringSQLILike)
 def _string_ilike(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return f"lower({arg}) LIKE lower({pattern})"
+    return sg.expressions.Like(this=sg.func("lower", arg), expression=pattern)
 
 
-# TODO
 @translate_val.register(ops.Capitalize)
 def _string_capitalize(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"CONCAT(UPPER(SUBSTR({arg}, 1, 1)), LOWER(SUBSTR({arg}, 2)))"
+    return sg.func(
+        "concat",
+        sg.func("upper", sg.func("substr", arg, 1, 1)),
+        sg.func("lower", sg.func("substr", arg, 2)),
+    )
 
 
 @translate_val.register(ops.GroupConcat)
@@ -1181,7 +1184,7 @@ def _binary_infix(sg_expr: sg.expressions._Expression):
         left = translate_val(op.left, **kw)
         right = translate_val(op.right, **kw)
 
-        return sg_expr(this=left, expression=right, dialect="duckdb")
+        return sg_expr(this=left, expression=right)
 
     return formatter
 
