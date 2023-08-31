@@ -532,7 +532,8 @@ enable = true
 dirty = true
 style = "pep440"
 pattern = '^(?P<base>\d+(\.\d+)*)'
-format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ bump_version(base) }}.dev{{ distance }}{% endif %}"
+# index=0 bumps the major version, to handle backports that occur after a breaking change commit
+format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ bump_version(base, index=0) }}.dev{{ distance }}{% endif %}"
 
 [build-system]
 requires = ["poetry-core>=1.1.0", "poetry-dynamic-versioning"]
