@@ -76,7 +76,6 @@ website:
       style: "docked"
       collapse-level: 2
       contents:
-        - why.qmd
         - install.qmd
         - auto: tutorials/*.qmd
     - id: concepts
@@ -84,7 +83,7 @@ website:
       style: "docked"
       collapse-level: 2
       contents:
-        - what.qmd
+        - why.qmd
         - auto: concepts/*.qmd
     - id: backends
       title: "Backends"
