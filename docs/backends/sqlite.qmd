@@ -1,3 +1,6 @@
+---
+code-annotations: hover
+---
 # SQLite
 
 ![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-SQLite tables | CSV | JSON | pandas | Parquet | Postgres | PyArrow-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-SQLite tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
@@ -70,13 +73,13 @@ con = ibis.sqlite.connect()  # <1>
 ### `ibis.sqlite.connect`
 
 ```python
-con = ibis.sqlite.connect()  # (1)
+con = ibis.sqlite.connect()  # <1>
 ```
 
 1. Use an ephemeral, in-memory database
 
 ```python
-con = ibis.sqlite.connect("mydb.sqlite")  # (1)
+con = ibis.sqlite.connect("mydb.sqlite")  # <1>
 ```
 
 1. Connect to, or create, a local SQLite file
@@ -103,7 +106,7 @@ con = ibis.connect("sqlite:///path/to/local/file")
 ```
 
 ```python
-con = ibis.connect("sqlite://") # (1)
+con = ibis.connect("sqlite://") # <1>
 ```
 
 1. ephemeral, in-memory database
