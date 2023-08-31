@@ -10,6 +10,8 @@ site_libs
 *.delta
 *.zip
 *.db
+diamonds.json
+*.ndjson
 reference/
 objects.json
 *support_matrix.csv
