@@ -14,4 +14,8 @@ reference/
 objects.json
 *support_matrix.csv
 
+# generated notebooks and files
+*.ipynb
+*_files
+
 /.quarto/
