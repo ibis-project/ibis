@@ -12,7 +12,6 @@ code-annotations: hover
 execute:
   warning: false
   error: false
-  eval: false
 
 filters:
   - interlinks
