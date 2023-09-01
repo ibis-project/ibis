@@ -84,16 +84,18 @@ con = ibis.sqlite.connect("mydb.sqlite")
 ```
 
 ::: {.callout-note}
-`ibis.sqlite.connect` is a thin wrapper around [`ibis.backends.sqlite.Backend.do_connect`][ibis.backends.sqlite.Backend.do_connect].
+`ibis.sqlite.connect` is a thin wrapper around [`ibis.backends.sqlite.Backend.do_connect`](#ibis.backends.sqlite.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.sqlite.Backend.do_connect
-    options:
-      heading_level: 4
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("sqlite")
+```
 
 ### `ibis.connect` URL format
 

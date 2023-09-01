@@ -79,17 +79,19 @@ con = ibis.bigquery.connect(
 
 ::: {.callout-note}
 
-`ibis.bigquery.connect` is a thin wrapper around [`ibis.backends.bigquery.Backend.do_connect`][ibis.backends.bigquery.Backend.do_connect].
+`ibis.bigquery.connect` is a thin wrapper around [`ibis.backends.bigquery.Backend.do_connect`](ibis.backends.bigquery.Backend.do_connect).
 
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.bigquery.Backend.do_connect
-    options:
-      heading_level: 4
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("bigquery")
+```
 
 ### `ibis.connect` URL format
 

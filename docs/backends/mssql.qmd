@@ -80,17 +80,18 @@ con = ibis.mssql.connect(
 ```
 
 ::: {.callout-note}
-ibis.mssql.connect` is a thin wrapper around [`ibis.backends.mssql.Backend.do_connect`][ibis.backends.mssql.Backend.do_connect].
+`ibis.mssql.connect` is a thin wrapper around [`ibis.backends.mssql.Backend.do_connect`](#ibis.backends.mssql.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.mssql.Backend.do_connect
-    options:
-      heading_level: 4
-      show_docstring_examples: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("mssql")
+```
 
 ### `ibis.connect` URL format
 
