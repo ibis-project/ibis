@@ -41,21 +41,25 @@ t.limit(3)
 With the introduction of `__dataframe__` support in v6.0.0 and efficiency improvements in this release, Ibis now works with [Altair](https://altair-viz.github.io/index.html), [Plotly](https://plotly.com/python/), [plotnine](https://plotnine.readthedocs.io/en/stable/), and any other visualization library that implements the protocol. This enables passing Ibis tables directly to visualization libraries without a `.to_pandas()` or `to_pyarrow()` call for any of the 15+ backends supported, with data efficiently transferred through Apache Arrow.
 
 ```{python}
-# | code-fold: true
+#| code-fold: true
 width = 640  # <1>
 height = 480  # <1>
-
-grouped = (  # <2>
-    t.group_by("species")
-    .aggregate(count=ibis._.count())
-    .order_by(ibis.desc("count"))
-)  # <2>
-grouped  # <3>
 ```
 
 1. Set the width and height of the plots.
-2. Setup data to plot.
-3. Display the table.
+
+```{python}}
+
+grouped = (  # <1>
+    t.group_by("species")
+    .aggregate(count=ibis._.count())
+    .order_by(ibis.desc("count"))
+)  # <1>
+grouped  # <2>
+```
+
+1. Setup data to plot.
+2. Display the table.
 
 ::: {.panel-tabset}
 
