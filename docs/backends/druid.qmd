@@ -81,17 +81,18 @@ con = ibis.druid.connect(
 ```
 
 ::: {.callout-note}
-ibis.druid.connect` is a thin wrapper around [`ibis.backends.druid.Backend.do_connect`][ibis.backends.druid.Backend.do_connect].
+`ibis.druid.connect` is a thin wrapper around [`ibis.backends.druid.Backend.do_connect`](#ibis.backends.druid.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.druid.Backend.do_connect
-    options:
-      heading_level: 4
-      show_docstring_examples: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("druid")
+```
 
 ### `ibis.connect` URL format
 
