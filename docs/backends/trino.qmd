@@ -1,4 +1,6 @@
-# [Trino](https://trino.io/)
+# Trino
+
+[https://trino.io](https://trino.io)
 
 {{< include /_callouts/experimental_backend.qmd >}}
 

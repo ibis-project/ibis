@@ -5,7 +5,9 @@ keywords:
     - Ibis
 ---
 
-# [DuckDB](https://duckdb.org/)
+# DuckDB
+
+[https://duckdb.org](https://duckdb.org)
 
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-DuckDB tables | CSV | Delta Lake | JSON | pandas | Parquet | Postgres | PyArrow | SQLite-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-DuckDB tables | CSV | Delta Lake |  pandas | Parquet | PyArrow | PyTorch-orange?style=flat-square)
 
