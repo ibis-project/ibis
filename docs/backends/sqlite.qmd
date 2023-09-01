@@ -1,6 +1,3 @@
----
-code-annotations: hover
----
 # SQLite
 
 ![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-SQLite tables | CSV | JSON | pandas | Parquet | Postgres | PyArrow-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-SQLite tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
