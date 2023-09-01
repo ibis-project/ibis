@@ -1,4 +1,6 @@
-# [ClickHouse](https://clickhouse.com/)
+# ClickHouse
+
+[https://clickhouse.com](https://clickhouse.com)
 
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-ClickHouse tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-ClickHouse tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 
