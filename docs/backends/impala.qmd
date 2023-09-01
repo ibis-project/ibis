@@ -64,104 +64,109 @@ con = ibis.impala.connect()  # <1>
 
 :::
 
+```{python}
+#| echo: false
+
+# setup dynamic quartodoc rendering
+
+from quartodoc import get_object, MdRenderer
+
+backend = get_object("ibis.backends.impala", "Backend")
+table = get_object("ibis.backends.impala.client", "ImpalaTable")
+renderer = MdRenderer(header_level=4)
+
+
+def render_methods(obj, *methods: str):
+    for method in methods:
+        print(f"### {method}")
+        print(renderer.render(obj[method]))
+        print()
+
+
+def render_backend_methods(*methods):
+    render_methods(backend, *methods)
+
+
+def render_table_methods(*methods):
+    render_methods(table, *methods)
+```
+
 ## Database methods
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    options:
-      heading_level: 3
-      members:
-        - create_database
-        - drop_database
-        - list_databases
-        - exists_database
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_backend_methods("create_database", "drop_database", "list_databases")
+```
 
 ## Table methods
 
 The `Backend` object itself has many helper utility methods. You'll
 find the most methods on `ImpalaTable`.
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    options:
-      heading_level: 3
-      members:
-        - table
-        - sql
-        - raw_sql
-        - list_tables
-        - exists_table
-        - drop_table
-        - create_table
-        - insert
-        - invalidate_metadata
-        - truncate_table
-        - get_schema
-        - cache_table
-        - load_data
-        - get_options
-        - set_options
-        - set_compression_codec
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_backend_methods(
+    "table",
+    "sql",
+    "raw_sql",
+    "list_tables",
+    "drop_table",
+    "create_table",
+    "insert",
+    "invalidate_metadata",
+    "truncate_table",
+    "get_schema",
+    "cache_table",
+    "get_options",
+    "set_options",
+    "set_compression_codec",
+)
+```
 
 The best way to interact with a single table is through the
 `ImpalaTable` object you get back from `Backend.table`.
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - add_partition
-        - alter
-        - alter_partition
-        - column_stats
-        - compute_stats
-        - describe_formatted
-        - drop
-        - drop_partition
-        - files
-        - insert
-        - invalidate_metadata
-        - is_partitioned
-        - load_data
-        - metadata
-        - partition_schema
-        - partitions
-        - refresh
-        - rename
-        - schema
-        - stats
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_table_methods(
+    "add_partition",
+    "alter",
+    "alter_partition",
+    "column_stats",
+    "compute_stats",
+    "drop",
+    "drop_partition",
+    "files",
+    "insert",
+    "is_partitioned",
+    "metadata",
+    "partition_schema",
+    "partitions",
+    "refresh",
+    "stats",
+    "describe_formatted",
+    "invalidate_metadata",
+)
+```
 
 ## Creating views
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    options:
-      heading_level: 3
-      members:
-        - drop_table_or_view
-        - create_view
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_backend_methods("drop_table_or_view", "create_view")
+```
 
 ## Accessing data formats in HDFS
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    options:
-      heading_level: 3
-      members:
-        - delimited_file
-        - parquet_file
-        - avro_file
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_backend_methods("delimited_file", "parquet_file", "avro_file")
+```
 
 ## HDFS Interaction
 
@@ -196,11 +201,11 @@ table or database.
 
 ## Table objects
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.base.sql.BaseSQLBackend.table
-    options:
-      heading_level: 3
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_methods(get_object("ibis.backends.base.sql", "BaseSQLBackend"), "table")
+```
 
 The client's `table` method allows you to create an Ibis table
 expression referencing a physical Impala table:
@@ -212,18 +217,6 @@ table = client.table('functional_alltypes', database='ibis_testing')
 `ImpalaTable` is a Python subclass of the more general Ibis `Table`
 that has additional Impala-specific methods. So you can use it
 interchangeably with any code expecting a `Table`.
-
-Like all table expressions in Ibis, `ImpalaTable` has a `schema` method
-you can use to examine its schema:
-
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - schema
-
-<!-- prettier-ignore-end -->
 
 While the client has a `drop_table` method you can use to drop tables,
 the table itself has a method `drop` that you can use:
@@ -260,11 +253,11 @@ There are several ways to create new Impala tables:
 In all cases, you should use the `create_table` method either on the
 top-level client connection or a database object.
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend.create_table
-    options:
-      heading_level: 3
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_backend_methods("create_table")
+```
 
 ### Creating tables from a table expression
 
@@ -380,18 +373,17 @@ There are a handful of table methods for adding and removing partitions
 and getting information about the partition schema and any existing
 partition data:
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - add_partition
-        - drop_partition
-        - is_partitioned
-        - partition_schema
-        - partitions
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_table_methods(
+    "add_partition",
+    "drop_partition",
+    "is_partitioned",
+    "partition_schema",
+    "partitions",
+)
+```
 
 To address a specific partition in any method that is partition
 specific, you can either use a dict with the partition key names and
@@ -464,11 +456,11 @@ metadata.
 To get a handy wrangled version of `DESCRIBE FORMATTED` use the
 `metadata` method.
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable.metadata
-    options:
-      heading_level: 3
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_table_methods("metadata")
+```
 
 ```python
 >>> t = client.table('ibis_testing.functional_alltypes')
@@ -522,14 +514,11 @@ datetime.datetime(2021, 1, 14, 21, 23, 8)
 The `files` function is also available to see all of the physical HDFS
 data files backing a table:
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - files
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_table_methods("files")
+```
 
 ```python
 >>> ss = c.table('tpcds_parquet.store_sales')
@@ -556,15 +545,11 @@ For unpartitioned tables, you can use the `alter` method to change its
 location, file format, and other properties. For partitioned tables, to
 change partition-specific metadata use `alter_partition`.
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - alter
-        - alter_partition
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_table_methods("alter", "alter_partition")
+```
 
 For example, if you wanted to \"point\" an existing table at a directory
 of CSV files, you could run the following command:
@@ -597,14 +582,11 @@ table.alter_partition(
 
 ### Computing table and partition statistics
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - compute_stats
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_table_methods("compute_stats")
+```
 
 Impala-backed physical tables have a method `compute_stats` that
 computes table, column, and partition-level statistics to assist with
@@ -624,15 +606,11 @@ table.compute_stats(incremental=True)
 
 ### Seeing table and column statistics
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - column_stats
-        - stats
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_table_methods("column_stats", "stats")
+```
 
 The `compute_stats` and `stats` functions return the results of
 `SHOW COLUMN STATS` and `SHOW TABLE STATS`, respectively, and their
@@ -697,24 +675,12 @@ output will depend, of course, on the last `COMPUTE STATS` call.
 These DDL commands are available as table-level and client-level
 methods:
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    options:
-      heading_level: 3
-      members:
-        - invalidate_metadata
-
-<!-- prettier-ignore-end -->
-
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - invalidate_metadata
-        - refresh
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_backend_methods("invalidate_metadata")
+render_table_methods("invalidate_metadata", "refresh")
+```
 
 You can invalidate the cached metadata for a single table or for all
 tables using `invalidate_metadata`, and similarly invoke
@@ -733,66 +699,21 @@ These methods are often used in conjunction with the `LOAD DATA`
 commands and `COMPUTE STATS`. See the Impala documentation for full
 details.
 
-## Issuing `LOAD DATA` commands
-
-The `LOAD DATA` DDL physically moves a single data file or a directory
-of files into the correct location for a table or table partition. It is
-especially useful for partitioned tables as you do not have to construct
-the directory path for a partition by hand, so simpler and less
-error-prone than manually moving files with low level HDFS commands. It
-also deals with file name conflicts so data is not lost in such cases.
-
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    options:
-      heading_level: 3
-      members:
-        - load_data
-
-<!-- prettier-ignore-end -->
-
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.client.ImpalaTable
-    options:
-      heading_level: 3
-      members:
-        - load_data
-
-<!-- prettier-ignore-end -->
-
-To use these methods, pass the path of a single file or a directory of
-files you want to load. Afterward, you may want to update the table
-statistics (see Impala documentation):
-
-```python
-table.load_data(path)
-table.refresh()
-```
-
-Like the other methods with support for partitioned tables, you can load
-into a particular partition with the `partition` keyword argument:
-
-```python
-part = [2007, 5]
-table.load_data(path, partition=part)
-```
-
 ## Parquet and other session options
 
 Ibis gives you access to Impala session-level variables that affect
 query execution:
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.impala.Backend
-    options:
-      heading_level: 3
-      members:
-        - disable_codegen
-        - get_options
-        - set_options
-        - set_compression_codec
-
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+render_backend_methods(
+    "disable_codegen",
+    "get_options",
+    "set_options",
+    "set_compression_codec",
+)
+```
 
 For example:
 

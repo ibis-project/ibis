@@ -139,7 +139,7 @@ class BaseSQLBackend(BaseBackend):
         having to release the cursor returned from this method manually.
 
         ::: {.callout-warning collapse="true"}
-        ## The returned cursor object must be **manually released** if you use `raw_sql`."
+        ## The returned cursor object must be **manually released** if you use `raw_sql`.
 
         To release a cursor, call the `close` method on the returned cursor
         object.
