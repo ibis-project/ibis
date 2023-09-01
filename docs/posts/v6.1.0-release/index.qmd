@@ -2,7 +2,6 @@
 title: Ibis v6.1.0
 author: "Ibis team"
 date: "2023-08-02"
-code-annotations: hover
 categories:
     - release
     - blog
