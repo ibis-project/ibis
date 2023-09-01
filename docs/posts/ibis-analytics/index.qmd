@@ -3,7 +3,6 @@ title: Modern, hybrid, open analytics
 author: "Cody Peterson"
 date: "2023-09-02"
 image: "thumbnail.png"
-code-annotations: below
 categories:
     - blog
     - duckdb
