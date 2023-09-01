@@ -3,8 +3,6 @@ project:
   output-dir: _output
   preview:
     port: 8000
-  pre-render:
-    - ../gen_matrix.py
   post-render:
     - ../gen_redirects.py
 
