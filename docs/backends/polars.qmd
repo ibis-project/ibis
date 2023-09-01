@@ -77,30 +77,27 @@ con = ibis.polars.connect()
 ```
 
 ::: {.callout-note}
-`ibis.polars.connect` is a thin wrapper around [`ibis.backends.polars.Backend.do_connect`][ibis.backends.polars.Backend.do_connect].
+`ibis.polars.connect` is a thin wrapper around [`ibis.backends.polars.Backend.do_connect`](#ibis.backends.polars.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.polars.Backend.do_connect
-    options:
-      heading_level: 4
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("polars")
+```
 
 ## File Support
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.polars.Backend.read_csv
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.polars.Backend.read_parquet
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.polars.Backend.read_delta
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_methods, get_backend
+
+methods = ("read_csv", "read_parquet", "read_delta")
+backend = get_backend("polars")
+render_methods(backend, *methods, level=4)
+```

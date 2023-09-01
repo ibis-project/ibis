@@ -88,16 +88,18 @@ con = ibis.snowflake.connect(
 ```
 
 ::: {.callout-note}
-`ibis.snowflake.connect` is a thin wrapper around [`ibis.backends.snowflake.Backend.do_connect`][ibis.backends.snowflake.Backend.do_connect].
+`ibis.snowflake.connect` is a thin wrapper around [`ibis.backends.snowflake.Backend.do_connect`](#ibis.backends.snowflake.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.snowflake.Backend.do_connect
-    options:
-      heading_level: 4
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("snowflake")
+```
 
 ### `ibis.connect` URL format
 
@@ -164,3 +166,15 @@ available databases and schema in the "Data" sidebar item in the Snowflake web
 app.
 
 ![Snowflake Database](./images/snowflake_database.png)
+
+## File Support
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_methods, get_backend
+
+methods = ("read_csv", "read_parquet", "read_json")
+backend = get_backend("snowflake")
+render_methods(backend, *methods, level=4)
+```
