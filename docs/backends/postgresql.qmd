@@ -81,17 +81,18 @@ con = ibis.postgres.connect(
 ```
 
 ::: {.callout-note}
-`ibis.postgres.connect` is a thin wrapper around [`ibis.backends.postgres.Backend.do_connect`][ibis.backends.postgres.Backend.do_connect].
+`ibis.postgres.connect` is a thin wrapper around [`ibis.backends.postgres.Backend.do_connect`](#ibis.backends.postgres.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.postgres.Backend.do_connect
-    options:
-      heading_level: 4
-      show_docstring_examples: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("postgres")
+```
 
 ### `ibis.connect` URL format
 

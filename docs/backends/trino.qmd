@@ -84,13 +84,15 @@ con = ibis.trino.connect(
 ```
 
 ::: {.callout-note}
-`ibis.trino.connect` is a thin wrapper around [`ibis.backends.trino.Backend.do_connect`][ibis.backends.trino.Backend.do_connect]."
+`ibis.trino.connect` is a thin wrapper around [`ibis.backends.trino.Backend.do_connect`](#ibis.backends.trino.Backend.do_connect)."
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.trino.Backend.do_connect
-    options:
-      heading_level: 4
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("trino")
+```

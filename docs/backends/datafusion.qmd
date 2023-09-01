@@ -83,31 +83,25 @@ con = ibis.datafusion.connect(
 ```
 
 ::: {.callout-note}
-ibis.datafusion.connect` is a thin wrapper around [`ibis.backends.datafusion.Backend.do_connect`][ibis.backends.datafusion.Backend.do_connect].
+`ibis.datafusion.connect` is a thin wrapper around [`ibis.backends.datafusion.Backend.do_connect`](#ibis.backends.datafusion.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.datafusion.Backend.do_connect
-    options:
-      heading_level: 4
-      show_docstring_examples: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("datafusion")
+```
 
 ## File Support
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.datafusion.Backend.read_csv
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.datafusion.Backend.read_parquet
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.datafusion.Backend.read_delta
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_methods, get_backend
+backend = get_backend("datafusion")
+render_methods(backend, "read_csv", "read_parquet", "read_delta", level=4)
+```

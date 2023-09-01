@@ -71,26 +71,13 @@ con = ibis.impala.connect()  # <1>
 
 # setup dynamic quartodoc rendering
 
-from quartodoc import get_object, MdRenderer
+from functools import partial
 
+from _utils import get_backend, get_object, render_methods
+
+render_methods = partial(render_methods, level=4)
 backend = get_object("ibis.backends.impala", "Backend")
 table = get_object("ibis.backends.impala.client", "ImpalaTable")
-renderer = MdRenderer(header_level=4)
-
-
-def render_methods(obj, *methods: str):
-    for method in methods:
-        print(f"### {method}")
-        print(renderer.render(obj[method]))
-        print()
-
-
-def render_backend_methods(*methods):
-    render_methods(backend, *methods)
-
-
-def render_table_methods(*methods):
-    render_methods(table, *methods)
 ```
 
 ## Database methods
@@ -98,7 +85,7 @@ def render_table_methods(*methods):
 ```{python}
 #| echo: false
 #| output: asis
-render_backend_methods("create_database", "drop_database", "list_databases")
+render_methods(backend, "create_database", "drop_database", "list_databases")
 ```
 
 ## Table methods
@@ -109,19 +96,17 @@ find the most methods on `ImpalaTable`.
 ```{python}
 #| echo: false
 #| output: asis
-render_backend_methods(
+render_methods(
+    backend,
     "table",
     "sql",
     "raw_sql",
     "list_tables",
     "drop_table",
-    "create_table",
     "insert",
-    "invalidate_metadata",
     "truncate_table",
     "get_schema",
     "cache_table",
-    "get_options",
     "set_options",
     "set_compression_codec",
 )
@@ -133,24 +118,18 @@ The best way to interact with a single table is through the
 ```{python}
 #| echo: false
 #| output: asis
-render_table_methods(
-    "add_partition",
-    "alter",
-    "alter_partition",
-    "column_stats",
-    "compute_stats",
+render_methods(
+    table,
     "drop",
     "drop_partition",
     "files",
     "insert",
     "is_partitioned",
-    "metadata",
     "partition_schema",
     "partitions",
     "refresh",
     "stats",
     "describe_formatted",
-    "invalidate_metadata",
 )
 ```
 
@@ -159,7 +138,7 @@ render_table_methods(
 ```{python}
 #| echo: false
 #| output: asis
-render_backend_methods("drop_table_or_view", "create_view")
+render_methods(backend, "drop_table_or_view", "create_view")
 ```
 
 ## Accessing data formats in HDFS
@@ -167,7 +146,7 @@ render_backend_methods("drop_table_or_view", "create_view")
 ```{python}
 #| echo: false
 #| output: asis
-render_backend_methods("delimited_file", "parquet_file", "avro_file")
+render_methods(backend, "delimited_file", "parquet_file", "avro_file")
 ```
 
 ## HDFS Interaction
@@ -258,7 +237,7 @@ top-level client connection or a database object.
 ```{python}
 #| echo: false
 #| output: asis
-render_backend_methods("create_table")
+render_methods(backend, "create_table")
 ```
 
 ### Creating tables from a table expression
@@ -378,7 +357,8 @@ partition data:
 ```{python}
 #| echo: false
 #| output: asis
-render_table_methods(
+render_methods(
+    table,
     "add_partition",
     "drop_partition",
     "is_partitioned",
@@ -461,7 +441,7 @@ To get a handy wrangled version of `DESCRIBE FORMATTED` use the
 ```{python}
 #| echo: false
 #| output: asis
-render_table_methods("metadata")
+render_methods(table, "metadata")
 ```
 
 ```python
@@ -519,7 +499,7 @@ data files backing a table:
 ```{python}
 #| echo: false
 #| output: asis
-render_table_methods("files")
+render_methods(table, "files")
 ```
 
 ```python
@@ -550,7 +530,7 @@ change partition-specific metadata use `alter_partition`.
 ```{python}
 #| echo: false
 #| output: asis
-render_table_methods("alter", "alter_partition")
+render_methods(table, "alter", "alter_partition")
 ```
 
 For example, if you wanted to \"point\" an existing table at a directory
@@ -587,7 +567,7 @@ table.alter_partition(
 ```{python}
 #| echo: false
 #| output: asis
-render_table_methods("compute_stats")
+render_methods(table, "compute_stats")
 ```
 
 Impala-backed physical tables have a method `compute_stats` that
@@ -611,7 +591,7 @@ table.compute_stats(incremental=True)
 ```{python}
 #| echo: false
 #| output: asis
-render_table_methods("column_stats", "stats")
+render_methods(table, "column_stats", "stats")
 ```
 
 The `compute_stats` and `stats` functions return the results of
@@ -680,8 +660,8 @@ methods:
 ```{python}
 #| echo: false
 #| output: asis
-render_backend_methods("invalidate_metadata")
-render_table_methods("invalidate_metadata", "refresh")
+render_methods(backend, "invalidate_metadata")
+render_methods(table, "invalidate_metadata", "refresh")
 ```
 
 You can invalidate the cached metadata for a single table or for all
@@ -709,7 +689,8 @@ query execution:
 ```{python}
 #| echo: false
 #| output: asis
-render_backend_methods(
+render_methods(
+    backend,
     "disable_codegen",
     "get_options",
     "set_options",
