@@ -79,17 +79,18 @@ con = ibis.clickhouse.connect(
 ```
 
 ::: {.callout-note}
-ibis.clickhouse.connect` is a thin wrapper around [`ibis.backends.clickhouse.Backend.do_connect`][ibis.backends.clickhouse.Backend.do_connect].
+`ibis.clickhouse.connect` is a thin wrapper around [`ibis.backends.clickhouse.Backend.do_connect`](#ibis.backends.clickhouse.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.clickhouse.Backend.do_connect
-    options:
-      heading_level: 4
-      show_docstring_examples: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("clickhouse")
+```
 
 ### `ibis.connect` URL format
 
@@ -104,17 +105,21 @@ con = ibis.connect(f"clickhouse://{user}:{password}@{host}:{port}?secure={secure
 
 ClickHouse provides a free playground with several datasets that you can connect to using `ibis`:
 
-```python
+```{python}
+from ibis.interactive import *
+
 con = ibis.clickhouse.connect(
     host="play.clickhouse.com",
     secure=True,
     user="play",
     password="clickhouse",
 )
+con.table("actors")
 ```
 
 or
 
-```python
+```{python}
 con = ibis.connect("clickhouse://play:clickhouse@play.clickhouse.com:443?secure=True")
+con.table("opensky")
 ```
