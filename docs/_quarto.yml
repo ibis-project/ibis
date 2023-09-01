@@ -7,6 +7,7 @@ project:
     - ../gen_redirects.py
 
 highlight-style: ayu
+code-annotations: hover
 
 execute:
   warning: false
