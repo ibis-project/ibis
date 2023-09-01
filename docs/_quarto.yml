@@ -13,6 +13,25 @@ execute:
   warning: false
   error: false
 
+
+filters:
+  - interlinks
+
+
+interlinks:
+  fast: true
+  sources:
+    python:
+      url: https://docs.python.org/3/
+    sqlalchemy:
+      url: https://docs.sqlalchemy.org/
+    arrow:
+      url: https://arrow.apache.org/docs/
+    pandas:
+      url: http://pandas.pydata.org/pandas-docs/stable/
+
+
+
 website:
   title: "Ibis"
   site-url: https://ibis-project.org
@@ -130,6 +149,7 @@ quartodoc:
   package: ibis
   title: Reference
   sidebar: reference/_sidebar.yml
+  render_interlinks: true
   sections:
     - title: Expressions
       desc: ""
