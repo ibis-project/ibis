@@ -12,6 +12,7 @@ code-annotations: hover
 execute:
   warning: false
   error: false
+  eval: false
 
 filters:
   - interlinks
@@ -146,6 +147,7 @@ quartodoc:
   title: Reference
   sidebar: reference/_sidebar.yml
   render_interlinks: true
+  renderer: _renderer.py
   sections:
     - title: Expressions
       desc: ""
