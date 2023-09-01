@@ -77,7 +77,7 @@ con = ibis.pyspark.connect(session=session)
 ```
 
 ::: {.callout-note}
-`ibis.pyspark.connect` is a thin wrapper around [`ibis.backends.pyspark.Backend.do_connect`][ibis.backends.pyspark.Backend.do_connect].
+`ibis.pyspark.connect` is a thin wrapper around [`ibis.backends.pyspark.Backend.do_connect`](#ibis.backends.pyspark.Backend.do_connect).
 :::
 
 ::: {.callout-note}
@@ -86,21 +86,22 @@ The `pyspark` backend does not create `SparkSession` objects, you must create a 
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.pyspark.Backend.do_connect
-    options:
-      heading_level: 4
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("pyspark")
+```
 
 ## File Support
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.pyspark.Backend.read_csv
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.pyspark.Backend.read_parquet
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_methods, get_backend
+
+methods = ("read_csv", "read_parquet")
+backend = get_backend("pyspark")
+render_methods(backend, *methods, level=4)
+```

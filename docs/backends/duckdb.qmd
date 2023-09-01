@@ -90,16 +90,18 @@ con = ibis.duckdb.connect("mydb.duckdb")  # (1)
 1. Connect to, or create, a local DuckDB file
 
 ::: {.callout-note}
-ibis.duckdb.connect` is a thin wrapper around [`ibis.backends.duckdb.Backend.do_connect`][ibis.backends.duckdb.Backend.do_connect].
+`ibis.duckdb.connect` is a thin wrapper around [`ibis.backends.duckdb.Backend.do_connect`](#ibis.backends.duckdb.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.duckdb.Backend.do_connect
-    options:
-      heading_level: 4
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("duckdb")
+```
 
 ### `ibis.connect` URL format
 
@@ -148,34 +150,11 @@ You can store it as an environment variable to avoid having to log in again:
 
 ## File Support
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.duckdb.Backend.read_csv
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.duckdb.Backend.read_parquet
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.duckdb.Backend.read_delta
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.duckdb.Backend.read_json
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.duckdb.Backend.read_in_memory
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-::: ibis.backends.duckdb.Backend.read_sqlite
-    options:
-      heading_level: 4
-      show_docstring_examples: false
-      show_docstring_returns: false
-::: ibis.backends.duckdb.Backend.read_postgres
-    options:
-      heading_level: 4
-      show_docstring_returns: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_methods, get_backend
+backend = get_backend("duckdb")
+methods = [f"read_{kind}" for kind in ("csv", "parquet", "delta", "json", "in_memory", "sqlite", "postgres")]
+render_methods(backend, *methods, level=4)
+```

@@ -83,17 +83,18 @@ con = ibis.oracle.connect(
 ```
 
 ::: {.callout-note}
-`ibis.oracle.connect` is a thin wrapper around [`ibis.backends.oracle.Backend.do_connect`][ibis.backends.oracle.Backend.do_connect].
+`ibis.oracle.connect` is a thin wrapper around [`ibis.backends.oracle.Backend.do_connect`](#ibis.backends.oracle.Backend.do_connect).
 :::
 
 ### Connection Parameters
 
-<!-- prettier-ignore-start -->
-::: ibis.backends.oracle.Backend.do_connect
-    options:
-      heading_level: 4
-      show_docstring_examples: false
-<!-- prettier-ignore-end -->
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("oracle")
+```
 
 ### `ibis.connect` URL format
 
