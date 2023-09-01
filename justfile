@@ -136,6 +136,8 @@ profile +args:
     pyinstrument {{ args }}
 
 docs-apigen *args:
+    cd docs && quarto add machow/quartodoc --no-prompt
+    cd docs && quartodoc interlinks
     quartodoc build {{ args }} --config docs/_quarto.yml
 
 # build documentation
