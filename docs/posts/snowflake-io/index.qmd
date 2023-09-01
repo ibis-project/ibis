@@ -7,7 +7,6 @@ categories:
     - snowflake
     - io
     - productivity
-code-annotations: hover
 ---
 ## Loading files without Ibis
 
