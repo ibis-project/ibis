@@ -1,4 +1,6 @@
-# [PostgreSQL](https://www.postgresql.org/)
+# PostgreSQL
+
+[https://www.postgresql.org](https://www.postgresql.org)
 
 ![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-Postgres tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Postgres tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 

@@ -1,4 +1,6 @@
-# [PySpark](https://spark.apache.org/docs/latest/api/python)
+# PySpark
+
+[https://spark.apache.org/docs/latest/api/python](https://spark.apache.org/docs/latest/api/python)
 
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-PySpark SQL tables | CSV | Delta Lake | Parquet-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-PySpark SQL tables | Delta Lake | pandas | PyArrow-orange?style=flat-square)
 
