@@ -147,6 +147,9 @@ quartodoc:
   sidebar: reference/_sidebar.yml
   render_interlinks: true
   renderer: _renderer.py
+  options:
+    member_options:
+      signature_name: short
   sections:
     - title: Expressions
       desc: ""
