@@ -13,7 +13,6 @@ import sys
 import tempfile
 import textwrap
 import warnings
-from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -671,6 +670,7 @@ $$""".format(
                 con.exec_driver_sql(
                     f"""
                     SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+                    WITHIN GROUP (ORDER BY ORDER_ID ASC)
                     FROM TABLE(
                         INFER_SCHEMA(
                             LOCATION => '@{stage}',
@@ -682,7 +682,7 @@ $$""".format(
             )
             fields = [
                 (self._quote(field["COLUMN_NAME"]), field["TYPE"], field["NULLABLE"])
-                for field in sorted(fields, key=itemgetter("ORDER_ID"))
+                for field in fields
             ]
             columns = ", ".join(
                 f"{quoted_name} {typ}{' NOT NULL' * (not nullable)}"
@@ -754,6 +754,7 @@ $$""".format(
                 CREATE TEMP TABLE {qtable}
                 USING TEMPLATE (
                     SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+                    WITHIN GROUP (ORDER BY ORDER_ID ASC)
                     FROM TABLE(
                         INFER_SCHEMA(
                             LOCATION => '@{stage}',
