@@ -1,4 +1,4 @@
-# DataFusion
+# [DataFusion](https://arrow.apache.org/datafusion/)
 
 {{< include /_callouts/experimental_backend.qmd >}}
 
