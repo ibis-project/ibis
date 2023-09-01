@@ -1,4 +1,4 @@
-# Druid
+# [Druid](https://druid.apache.org/)
 
 {{< include /_callouts/experimental_backend.qmd >}}
 
