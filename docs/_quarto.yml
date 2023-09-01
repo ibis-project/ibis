@@ -13,10 +13,8 @@ execute:
   warning: false
   error: false
 
-
 filters:
   - interlinks
-
 
 interlinks:
   fast: true
@@ -29,8 +27,6 @@ interlinks:
       url: https://arrow.apache.org/docs/
     pandas:
       url: http://pandas.pydata.org/pandas-docs/stable/
-
-
 
 website:
   title: "Ibis"
