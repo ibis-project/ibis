@@ -65,8 +65,8 @@
         rm -f "$PWD/ci/ibis-testing-data"
         ln -s "${pkgs.ibisTestingData}" "$PWD/ci/ibis-testing-data"
 
-        # necessary for mkdocs
-        export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}
+        # necessary for quarto and quartodoc
+        export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}:''${PWD}/docs
       '';
 
       preCommitDeps = with pkgs; [
