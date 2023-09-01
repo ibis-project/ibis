@@ -1,4 +1,6 @@
-# [Oracle](https://docs.oracle.com/database/oracle/oracle-database/)
+# Oracle
+
+[https://docs.oracle.com/database/oracle/oracle-database](https://docs.oracle.com/database/oracle/oracle-database)
 
 {{< include /_callouts/experimental_backend.qmd >}}
 

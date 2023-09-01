@@ -1,4 +1,6 @@
-# [Polars](https://www.pola.rs/)
+# Polars
+
+[https://www.pola.rs](https://www.pola.rs)
 
 {{< include /_callouts/experimental_backend.qmd >}}
 

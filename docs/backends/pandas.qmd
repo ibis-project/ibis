@@ -1,4 +1,6 @@
-# [pandas](https://pandas.pydata.org/)
+# pandas
+
+[https://pandas.pydata.org/](https://pandas.pydata.org/)
 
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-CSV | Parquet-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 
