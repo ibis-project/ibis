@@ -262,7 +262,7 @@ penguins.filter(penguins.sex == "male").group_by(["island", "year"]).aggregate(
 
 ## Learn more
 
-That's all for this quick-start guide. If you want to learn more, check out the [tutorial](https://github.com/ibis-project/ibis-examples).
+That's all for this quick-start guide. If you want to learn more, check out the [examples repository](https://github.com/ibis-project/ibis-examples).
 
 [^1]:
     Horst AM, Hill AP, Gorman KB (2020).
