@@ -825,7 +825,7 @@ class Interval(Parametric):
 
     @property
     def _pretty_piece(self) -> str:
-        return f"({self.unit!r})"
+        return f"('{self.unit.value}')"
 
 
 @public
