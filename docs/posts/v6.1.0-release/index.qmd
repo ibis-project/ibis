@@ -48,8 +48,7 @@ height = 480  # <1>
 
 1. Set the width and height of the plots.
 
-```{python}}
-
+```{python}
 grouped = (  # <1>
     t.group_by("species")
     .aggregate(count=ibis._.count())
