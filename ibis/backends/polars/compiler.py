@@ -257,7 +257,7 @@ def aggregation(op, **kw):
 
     if op.by:
         group_by = [translate(arg, **kw) for arg in op.by]
-        lf = lf.groupby(group_by).agg
+        lf = lf.group_by(group_by).agg
     else:
         lf = lf.select
 
@@ -484,13 +484,13 @@ def string_unary(op, **kw):
 @translate.register(ops.Capitalize)
 def captalize(op, **kw):
     arg = translate(op.arg, **kw)
-    return arg.apply(lambda x: x.capitalize())
+    return arg.map_elements(lambda x: x.capitalize())
 
 
 @translate.register(ops.Reverse)
 def reverse(op, **kw):
     arg = translate(op.arg, **kw)
-    return arg.apply(lambda x: x[::-1])
+    return arg.map_elements(lambda x: x[::-1])
 
 
 @translate.register(ops.StringSplit)
@@ -653,7 +653,7 @@ def log(op, **kw):
 def repeat(op, **kw):
     arg = translate(op.arg, **kw)
     _assert_literal(op.times)
-    return arg.apply(lambda x: x * op.times.value)
+    return arg.map_elements(lambda x: x * op.times.value)
 
 
 @translate.register(ops.Sign)
@@ -794,14 +794,14 @@ def date_from_ymd(op, **kw):
 def atan2(op, **kw):
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
-    return pl.map([left, right], lambda cols: np.arctan2(cols[0], cols[1]))
+    return pl.map_batches([left, right], lambda cols: np.arctan2(cols[0], cols[1]))
 
 
 @translate.register(ops.Modulus)
 def modulus(op, **kw):
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
-    return pl.map([left, right], lambda cols: np.mod(cols[0], cols[1]))
+    return pl.map_batches([left, right], lambda cols: np.mod(cols[0], cols[1]))
 
 
 @translate.register(ops.TimestampFromYMDHMS)
@@ -1010,11 +1010,11 @@ def bitwise_binops(op, **kw):
     right = translate(op.right, **kw)
 
     if isinstance(op.right, ops.Literal):
-        result = left.map(lambda col: ufunc(col, op.right.value))
+        result = left.map_batches(lambda col: ufunc(col, op.right.value))
     elif isinstance(op.left, ops.Literal):
-        result = right.map(lambda col: ufunc(op.left.value, col))
+        result = right.map_batches(lambda col: ufunc(op.left.value, col))
     else:
-        result = pl.map([left, right], lambda cols: ufunc(cols[0], cols[1]))
+        result = pl.map_batches([left, right], lambda cols: ufunc(cols[0], cols[1]))
 
     return result.cast(dtype_to_polars(op.dtype))
 
@@ -1022,7 +1022,7 @@ def bitwise_binops(op, **kw):
 @translate.register(ops.BitwiseNot)
 def bitwise_not(op, **kw):
     arg = translate(op.arg, **kw)
-    return arg.map(lambda x: np.invert(x))
+    return arg.map_batches(lambda x: np.invert(x))
 
 
 _binops = {
@@ -1058,7 +1058,9 @@ def elementwise_udf(op, **kw):
     func_args = [translate(arg, **kw) for arg in op.func_args]
     return_type = dtype_to_polars(op.return_type)
 
-    return pl.map(func_args, lambda args: op.func(*args), return_dtype=return_type)
+    return pl.map_batches(
+        func_args, lambda args: op.func(*args), return_dtype=return_type
+    )
 
 
 @translate.register(ops.E)
