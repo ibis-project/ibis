@@ -1224,13 +1224,11 @@ class SequenceOf(Slotted, Pattern):
         super().__init__(item=pattern(item), type=type)
 
     def match(self, values, context):
-        try:
-            iterable = iter(values)
-        except TypeError:
+        if not is_iterable(values):
             return NoMatch
 
         result = []
-        for item in iterable:
+        for item in values:
             item = self.item.match(item, context)
             if item is NoMatch:
                 return NoMatch
@@ -1293,13 +1291,11 @@ class GenericSequenceOf(Slotted, Pattern):
         super().__init__(item=item, type=type, length=length)
 
     def match(self, values, context):
-        try:
-            iterable = iter(values)
-        except TypeError:
+        if not is_iterable(values):
             return NoMatch
 
         result = []
-        for value in iterable:
+        for value in values:
             value = self.item.match(value, context)
             if value is NoMatch:
                 return NoMatch
