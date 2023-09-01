@@ -414,6 +414,7 @@ def test_sequence_of():
     assert p.match(["foo", "bar"], context={}) == ["foo", "bar"]
     assert p.match([1, 2], context={}) is NoMatch
     assert p.match(1, context={}) is NoMatch
+    assert p.match("string", context={}) is NoMatch
 
 
 def test_generic_sequence_of():
@@ -426,6 +427,7 @@ def test_generic_sequence_of():
     assert isinstance(p, GenericSequenceOf)
     assert p == GenericSequenceOf(InstanceOf(str), MyList)
     assert p.match(["foo", "bar"], context={}) == MyList(["foo", "bar"])
+    assert p.match("string", context={}) is NoMatch
 
     p = SequenceOf(InstanceOf(str), tuple, at_least=1)
     assert isinstance(p, GenericSequenceOf)
