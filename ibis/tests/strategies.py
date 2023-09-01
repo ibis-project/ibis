@@ -149,28 +149,30 @@ def primitive_dtypes(nullable=_nullable):
 _item_strategy = primitive_dtypes()
 
 
-def array_dtypes(item_strategy=_item_strategy, nullable=_nullable):
-    return st.builds(dt.Array, value_type=item_strategy, nullable=nullable)
+def array_dtypes(value_type=_item_strategy, nullable=_nullable):
+    return st.builds(dt.Array, value_type=value_type, nullable=nullable)
 
 
-def map_dtypes(
-    key_strategy=_item_strategy, value_strategy=_item_strategy, nullable=_nullable
-):
+def map_dtypes(key_type=_item_strategy, value_type=_item_strategy, nullable=_nullable):
     return st.builds(
-        dt.Map, key_type=key_strategy, value_type=value_strategy, nullable=nullable
+        dt.Map, key_type=key_type, value_type=value_type, nullable=nullable
     )
+
+
+_any_text = st.text()
 
 
 @st.composite
 def struct_dtypes(
     draw,
-    item_strategy=_item_strategy,
+    types=_item_strategy,
+    names=_any_text,
     num_fields=st.integers(min_value=0, max_value=20),  # noqa: B008
     nullable=_nullable,
 ):
     num_fields = draw(num_fields)
-    names = draw(st.lists(st.text(), min_size=num_fields, max_size=num_fields))
-    types = draw(st.lists(item_strategy, min_size=num_fields, max_size=num_fields))
+    names = draw(st.lists(names, min_size=num_fields, max_size=num_fields))
+    types = draw(st.lists(types, min_size=num_fields, max_size=num_fields))
     fields = dict(zip(names, types))
     return dt.Struct(fields, nullable=draw(nullable))
 

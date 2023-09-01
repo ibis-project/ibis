@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import string
+
+import hypothesis as h
+import hypothesis.strategies as st
 import parsy
 import pytest
 
 import ibis.expr.datatypes as dt
+import ibis.tests.strategies as its
 from ibis.common.annotations import ValidationError
 
 
@@ -101,7 +106,8 @@ def test_parse_struct():
                         name: string,
                         price: decimal(12, 2),
                         discount_perc: decimal(12, 2),
-                        shipdate: string
+                        shipdate: string,
+                        : bool
                     >>
                 >>"""
     expected = dt.Array(
@@ -121,6 +127,7 @@ def test_parse_struct():
                                 ("price", dt.Decimal(12, 2)),
                                 ("discount_perc", dt.Decimal(12, 2)),
                                 ("shipdate", dt.string),
+                                ("", dt.boolean),
                             ]
                         )
                     ),
@@ -169,9 +176,10 @@ def test_parse_empty_map_failure():
         dt.dtype("map<>")
 
 
-def test_parse_map_does_not_allow_non_primitive_keys():
-    with pytest.raises(parsy.ParseError):
-        dt.dtype("map<array<string>, double>")
+def test_parse_map_allow_non_primitive_keys():
+    assert dt.dtype("map<array<string>, double>") == dt.Map(
+        dt.Array(dt.string), dt.double
+    )
 
 
 def test_parse_timestamp_with_timezone_single_quote():
@@ -254,3 +262,33 @@ def test_parse_time():
 
 def test_parse_null():
     assert dt.parse("null") == dt.null
+
+
+# corresponds to its.all_dtypes() but without:
+# - geospacial types, the string representation is different from what the parser expects
+# - struct types, the generated struct field names contain special characters
+
+field_names = st.text(
+    alphabet=st.characters(
+        whitelist_characters=string.ascii_letters + string.digits,
+        whitelist_categories=(),
+    )
+)
+
+roundtrippable_dtypes = st.deferred(
+    lambda: (
+        its.primitive_dtypes()
+        | its.string_like_dtypes()
+        | its.temporal_dtypes()
+        | its.interval_dtype()
+        | its.variadic_dtypes()
+        | its.struct_dtypes(names=field_names)
+        | its.array_dtypes(roundtrippable_dtypes)
+        | its.map_dtypes(roundtrippable_dtypes, roundtrippable_dtypes)
+    )
+)
+
+
+@h.given(roundtrippable_dtypes)
+def test_parse_dtype_roundtrip(dtype):
+    assert dt.dtype(str(dtype)) == dtype
