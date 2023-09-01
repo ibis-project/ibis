@@ -79,7 +79,7 @@ con = ibis.bigquery.connect(
 
 ::: {.callout-note}
 
-`ibis.bigquery.connect` is a thin wrapper around [`ibis.backends.bigquery.Backend.do_connect`](ibis.backends.bigquery.Backend.do_connect).
+`ibis.bigquery.connect` is a thin wrapper around [`ibis.backends.bigquery.Backend.do_connect`](#ibis.backends.bigquery.Backend.do_connect).
 
 :::
 
