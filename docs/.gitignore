@@ -20,4 +20,8 @@ objects.json
 *.ipynb
 *_files
 
+# inventories
+_inv
+objects.txt
+
 /.quarto/
