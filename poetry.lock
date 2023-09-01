@@ -2164,14 +2164,14 @@ referencing = ">=0.28.0"
 
 [[package]]
 name = "jupyter-client"
-version = "8.3.0"
+version = "8.3.1"
 description = "Jupyter protocol implementation and client libraries"
 category = "dev"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "jupyter_client-8.3.0-py3-none-any.whl", hash = "sha256:7441af0c0672edc5d28035e92ba5e32fadcfa8a4e608a434c228836a89df6158"},
-    {file = "jupyter_client-8.3.0.tar.gz", hash = "sha256:3af69921fe99617be1670399a0b857ad67275eefcfa291e2c81a160b7b650f5f"},
+    {file = "jupyter_client-8.3.1-py3-none-any.whl", hash = "sha256:5eb9f55eb0650e81de6b7e34308d8b92d04fe4ec41cd8193a913979e33d8e1a5"},
+    {file = "jupyter_client-8.3.1.tar.gz", hash = "sha256:60294b2d5b869356c893f57b1a877ea6510d60d45cf4b38057f1672d85699ac9"},
 ]
 
 [package.dependencies]
@@ -2608,6 +2608,29 @@ files = [
     {file = "mypy_extensions-1.0.0-py3-none-any.whl", hash = "sha256:4392f6c0eb8a5668a69e23d168ffa70f0be9ccfd32b5cc2d26a34ae5b844552d"},
     {file = "mypy_extensions-1.0.0.tar.gz", hash = "sha256:75dbf8955dc00442a438fc4d0666508a9a97b6bd41aa2f0ffe9d2f2725af0782"},
 ]
+
+[[package]]
+name = "nbclient"
+version = "0.8.0"
+description = "A client library for executing notebooks. Formerly nbconvert's ExecutePreprocessor."
+category = "dev"
+optional = false
+python-versions = ">=3.8.0"
+files = [
+    {file = "nbclient-0.8.0-py3-none-any.whl", hash = "sha256:25e861299e5303a0477568557c4045eccc7a34c17fc08e7959558707b9ebe548"},
+    {file = "nbclient-0.8.0.tar.gz", hash = "sha256:f9b179cd4b2d7bca965f900a2ebf0db4a12ebff2f36a711cb66861e4ae158e55"},
+]
+
+[package.dependencies]
+jupyter-client = ">=6.1.12"
+jupyter-core = ">=4.12,<5.0.0 || >=5.1.0"
+nbformat = ">=5.1"
+traitlets = ">=5.4"
+
+[package.extras]
+dev = ["pre-commit"]
+docs = ["autodoc-traits", "mock", "moto", "myst-parser", "nbclient[test]", "sphinx (>=1.7)", "sphinx-book-theme", "sphinxcontrib-spelling"]
+test = ["flaky", "ipykernel (>=6.19.3)", "ipython", "ipywidgets", "nbconvert (>=7.0.0)", "pytest (>=7.0)", "pytest-asyncio", "pytest-cov (>=4.0)", "testpath", "xmltodict"]
 
 [[package]]
 name = "nbformat"
@@ -5663,4 +5686,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "2321623ea3eeefa9b692bc1a2ad19e02a877899e233eb19b3b6da79747eb10cf"
+content-hash = "7f46b2b5bb6926aee56f0374a0f934c025e0f3f56828f3e4da8073fd6ee2b306"
