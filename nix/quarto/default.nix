@@ -6,8 +6,6 @@
 , dart-sass
 , makeWrapper
 , autoPatchelfHook
-, python3
-, extraPythonPackages ? ps: with ps; [ ]
 }:
 
 stdenv.mkDerivation rec {
@@ -24,8 +22,7 @@ stdenv.mkDerivation rec {
     wrapProgram $out/bin/quarto \
       --prefix QUARTO_ESBUILD : ${esbuild}/bin/esbuild \
       --prefix QUARTO_DENO : ${deno}/bin/deno \
-      --prefix QUARTO_DART_SASS : ${dart-sass}/bin/dart-sass \
-      --prefix QUARTO_PYTHON : ${python3.withPackages (ps: [ ps.jupyter ] ++ (extraPythonPackages ps))}/bin/python3
+      --prefix QUARTO_DART_SASS : ${dart-sass}/bin/dart-sass
   '';
 
   installPhase = ''
