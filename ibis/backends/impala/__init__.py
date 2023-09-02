@@ -918,7 +918,7 @@ class Backend(BaseSQLBackend):
         """Insert data into an existing table.
 
         See
-        [`ImpalaTable.insert`][ibis.backends.impala.client.ImpalaTable.insert]
+        [`ImpalaTable.insert`](../backends/impala.qmd#ibis.backends.impala.client.ImpalaTable.insert)
         for parameters.
 
         Examples

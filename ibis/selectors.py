@@ -21,7 +21,7 @@ Without selectors this becomes quite verbose and tedious to write:
 >>> t.select([t[c] for c in t.columns if t[c].type().is_numeric()])  # doctest: +SKIP
 ```
 
-Compare that to the [`numeric`][ibis.selectors.numeric] selector:
+Compare that to the [`numeric`](#ibis.selectors.numeric) selector:
 
 ```python
 >>> import ibis.selectors as s
@@ -192,7 +192,7 @@ def numeric() -> Predicate:
 
     See Also
     --------
-    [`of_type`][ibis.selectors.of_type]
+    [`of_type`](#ibis.selectors.of_type)
     """
     return of_type(dt.Numeric)
 
@@ -236,7 +236,7 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
 
     See Also
     --------
-    [`numeric`][ibis.selectors.numeric]
+    [`numeric`](#ibis.selectors.numeric)
     """
     if isinstance(dtype, str):
         # A mapping of abstract or parametric types, to allow selecting all
@@ -286,7 +286,7 @@ def startswith(prefixes: str | tuple[str, ...]) -> Predicate:
 
     See Also
     --------
-    [`endswith`][ibis.selectors.endswith]
+    [`endswith`](#ibis.selectors.endswith)
     """
     return where(lambda col: col.get_name().startswith(prefixes))
 
@@ -302,7 +302,7 @@ def endswith(suffixes: str | tuple[str, ...]) -> Predicate:
 
     See Also
     --------
-    [`startswith`][ibis.selectors.startswith]
+    [`startswith`](#ibis.selectors.startswith)
     """
     return where(lambda col: col.get_name().endswith(suffixes))
 
@@ -340,7 +340,7 @@ def contains(
 
     See Also
     --------
-    [`matches`][ibis.selectors.matches]
+    [`matches`](#ibis.selectors.matches)
     """
 
     def predicate(col: ir.Value) -> bool:
@@ -370,7 +370,7 @@ def matches(regex: str | re.Pattern) -> Selector:
 
     See Also
     --------
-    [`contains`][ibis.selectors.contains]
+    [`contains`](#ibis.selectors.contains)
     """
     pattern = re.compile(regex)
     return where(lambda col: pattern.search(col.get_name()) is not None)
