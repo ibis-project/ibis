@@ -21,7 +21,7 @@ class Schema(Concrete, Coercible, MapSet):
 
     fields: FrozenDict[str, dt.DataType]
     """A mapping of [](`str`) to
-    [`DataType`](./expr.datatypes.core.qmd#ibis.expr.datatypes.DataType)
+    [`DataType`](./datatypes-schemas.qmd#ibis.expr.datatypes.DataType)
     objects representing the type of each column."""
 
     def __repr__(self) -> str:
