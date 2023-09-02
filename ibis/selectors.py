@@ -668,6 +668,7 @@ class Sliceable(Singleton):
 
 
 r = Sliceable()
+"""Ranges of columns."""
 
 
 @public
