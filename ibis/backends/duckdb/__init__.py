@@ -691,13 +691,15 @@ WHERE catalog_name = :database"""
         )
         return self._filter_with_like(tables + views + temp_views, like)
 
-    def read_postgres(self, uri, table_name: str | None = None, schema: str = "public"):
+    def read_postgres(
+        self, uri: str, table_name: str | None = None, schema: str = "public"
+    ) -> ir.Table:
         """Register a table from a postgres instance into a DuckDB table.
 
         Parameters
         ----------
         uri
-            The postgres URI in form 'postgres://user:password@host:port'
+            A postgres URI of the form `postgres://user:password@host:port`
         table_name
             The table to read
         schema

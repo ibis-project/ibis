@@ -62,7 +62,7 @@ class SQL(Config):
     ----------
     default_limit : int | None
         Number of rows to be retrieved for a table expression without an
-        explicit limit. [`None`][None] means no limit.
+        explicit limit. [](`None`) means no limit.
     default_dialect : str
         Dialect to use for printing SQL when the backend cannot be determined.
     """
@@ -138,7 +138,7 @@ class Options(Config):
     repr : Repr
         Options controlling expression printing.
     verbose : bool
-        Run in verbose mode if [`True`][True]
+        Run in verbose mode if [](`True`)
     verbose_log: Callable[[str], None] | None
         A callable to use when logging.
     graphviz_repr : bool
