@@ -77,12 +77,10 @@ class NumericValue(Value):
             Here's how the `digits` parameter affects the expression output
             type:
 
-            |   `digits`    | `self.type()` |  Output   |
-            | :-----------: | :-----------: | :-------: |
-            | `None` or `0` |   `decimal`   | `decimal` |
-            |    Nonzero    |   `decimal`   | `decimal` |
-            | `None` or `0` |   Floating    |  `int64`  |
-            |    Nonzero    |   Floating    | `float64` |
+            - `digits` is `False`-y; `self.type()` is `decimal` → `decimal`
+            -   `digits` is nonzero; `self.type()` is `decimal` → `decimal`
+            - `digits` is `False`-y; `self.type()` is Floating  → `int64`
+            -   `digits` is nonzero; `self.type()` is Floating  → `float64`
 
         Returns
         -------
