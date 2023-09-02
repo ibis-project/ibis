@@ -46,11 +46,11 @@ def struct(
 
     Examples
     --------
-    Create a struct literal from a [`dict`](dict) with the type inferred
+    Create a struct literal from a [](`dict`) with the type inferred
     >>> import ibis
     >>> t = ibis.struct(dict(a=1, b='foo'))
 
-    Create a struct literal from a [`dict`](dict) with a specified type
+    Create a struct literal from a [](`dict`) with a specified type
     >>> t = ibis.struct(dict(a=1, b='foo'), type='struct<a: float, b: string>')
 
     Specify a specific type for the struct literal

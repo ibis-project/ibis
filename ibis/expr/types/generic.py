@@ -1639,7 +1639,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     value
         A Python value
     type
-        An instance of [`DataType`](./expr.datatypes.core.qmd#ibis.expr.datatypes.DataType) or a string
+        An instance of [`DataType`](./datatypes-schemas.qmd#ibis.expr.datatypes.DataType) or a string
         indicating the ibis type of `value`. This parameter can be used
         in cases where ibis's type inference isn't sufficient for discovering
         the type of `value`.
