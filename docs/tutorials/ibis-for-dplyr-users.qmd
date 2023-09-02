@@ -4,16 +4,36 @@ execute:
 ---
 # Tutorial: Ibis for dplyr users
 
-[R](https://www.r-project.org/) users familiar with [dplyr](https://dplyr.tidyverse.org/), [tidyr](https://tidyr.tidyverse.org/), and other packages in the [Tidyverse](https://www.tidyverse.org/) are likely to find Ibis familiar.
-In fact, some Ibis features were even inspired by similar features in the [Tidyverse](https://www.tidyverse.org/).
+[R](https://www.r-project.org/) users familiar with
+[dplyr](https://dplyr.tidyverse.org/), [tidyr](https://tidyr.tidyverse.org/),
+and other packages in the [Tidyverse](https://www.tidyverse.org/) are likely to
+find Ibis familiar.
 
-However, due to differences between Python and R and the design and goals of Ibis itself, you may notice some big differences right away:
+In fact, some Ibis features were even inspired by similar features in the
+[Tidyverse](https://www.tidyverse.org/).
 
-- **No pipe:** The handy [magrittr pipe](https://magrittr.tidyverse.org/) (`%>%`) or R's newer native pipe (`|>`) don't exist in Python so you instead have to chain sequences of operations together with a period (`.`). The `.` in Python is analogous to R's `$` which lets you access attributes and methods on objects.
-- **No unquoted column names:** Non-standard evaluation is common in R but not present in Python. To reference a column in Ibis, you can pass a string, property on a table (e.g., `tbl.some_column`), or you can make use of [selectors](https://ibis-project.org/api/selectors/).
-- **Ibis is lazy by default:** Similar to [dbplyr](https://dbplyr.tidyverse.org/) and its `collect()` method, Ibis does not evaluate our queries until we call `.to_pandas()`. For the purposes of this document, we set `ibis.options.interactive = True` which limits results to 10 rows, executes automatically, and prints a nicely-formatted table.
+However, due to differences between Python and R and the design and goals of
+Ibis itself, you may notice some big differences right away:
 
-Using the same example data and similar operations as in [Introduction to dplyr](https://dplyr.tidyverse.org/articles/dplyr.html), below you will find some examples of the more common dplyr and tidyr operations and their Ibis equivalents.
+- **No pipe:** The handy [magrittr pipe](https://magrittr.tidyverse.org/)
+  (`%>%`) or R's newer native pipe (`|>`) don't exist in Python so you instead
+  have to chain sequences of operations together with a period (`.`). The `.`
+  in Python is analogous to R's `$` which lets you access attributes and
+  methods on objects.
+- **No unquoted column names:** Non-standard evaluation is common in R but not
+  present in Python. To reference a column in Ibis, you can pass a string,
+  property on a table (e.g., `tbl.some_column`), or you can make use of
+  [selectors](../reference/selectors.qmd).
+- **Ibis is lazy by default:** Similar to
+  [dbplyr](https://dbplyr.tidyverse.org/) and its `collect()` method, Ibis does
+  not evaluate our queries until we call `.to_pandas()`. For the purposes of
+  this document, we set `ibis.options.interactive = True` which limits results
+  to 10 rows, executes automatically, and prints a nicely-formatted table.
+
+Using the same example data and similar operations as in [Introduction to
+dplyr](https://dplyr.tidyverse.org/articles/dplyr.html), below you will find
+some examples of the more common dplyr and tidyr operations and their Ibis
+equivalents.
 
 ## Loading Ibis
 
@@ -38,7 +58,8 @@ import ibis.selectors as s
 from ibis import _
 ```
 
-Last, as mentioned above, to get Ibis to automatically execute our queries and show the results in a nicely-formatted table, we run:
+Last, as mentioned above, to get Ibis to automatically execute our queries and
+show the results in a nicely-formatted table, we run:
 
 
 ```{python}
@@ -47,21 +68,28 @@ ibis.options.interactive = True
 
 ## Loading example data
 
-In R, datasets are typically lazily loaded with packages. For instance, the `starwars` dataset is packaged with dplyr, but is not loaded in memory before you start using it. Ibis provides many datasets in the `examples` module. So to be able to use the `starwars` dataset, you can use:
+In R, datasets are typically lazily loaded with packages. For instance, the
+`starwars` dataset is packaged with dplyr, but is not loaded in memory before
+you start using it. Ibis provides many datasets in the `examples` module. So to
+be able to use the `starwars` dataset, you can use:
 
 
 ```{python}
 starwars = ibis.examples.starwars.fetch()
 ```
 
-Similar to dplyr, if we evaluate the name of a table, we get a nicely-formatted table:
+Similar to dplyr, if we evaluate the name of a table, we get a nicely-formatted
+table:
 
 
 ```{python}
 starwars
 ```
 
-In addition to printing a nicely-formatted table and automatically executing, setting `ibis.options.interactive` to `True` also causes our query to be limited to 10 rows. To get Ibis to give us all rows, we can directly call `to_pandas` and save the result as a pandas DataFrame:
+In addition to printing a nicely-formatted table and automatically executing,
+setting `ibis.options.interactive` to `True` also causes our query to be
+limited to 10 rows. To get Ibis to give us all rows, we can directly call
+`to_pandas` and save the result as a pandas DataFrame:
 
 
 ```{python}
@@ -75,11 +103,15 @@ Which then gives us all of the data as a pandas DataFrame:
 starwars_df
 ```
 
-Directly calling `to_pandas` and saving the result to a variable is useful for passing the results of Ibis table expressions to other packages (e.g., matplotlib).
+Directly calling `to_pandas` and saving the result to a variable is useful for
+passing the results of Ibis table expressions to other packages (e.g.,
+matplotlib).
 
 ## Inspecting the dataset with `head()`
 
-Just like in R, you can use `head()` to inspect the beginning of a dataset. You can also specify the number of rows you want to get back by using the parameter `n` (default `n = 5`).
+Just like in R, you can use `head()` to inspect the beginning of a dataset. You
+can also specify the number of rows you want to get back by using the parameter
+`n` (default `n = 5`).
 
 In R:
 
@@ -94,9 +126,11 @@ With Ibis:
 starwars.head(6)
 ```
 
-There is no `tail()` in Ibis because most databases do not support this operation.
+There is no `tail()` in Ibis because most databases do not support this
+operation.
 
-Another method you can use to limit the number of rows returned by a query is `limit()` which also takes the `n` parameter.
+Another method you can use to limit the number of rows returned by a query is
+`limit()` which also takes the `n` parameter.
 
 
 ```{python}
@@ -135,7 +169,10 @@ In Ibis, you can do the same by putting multiple conditions in a list:
 starwars.filter([_.skin_color == "light", _.eye_color == "brown"])
 ```
 
-In previous code, we used the `_` helper we imported earlier. The `_` is shorthand for the table returned by the previous step in the chained sequence of operations (in this case, `starwars`). We could have also written the more verbose form,
+In previous code, we used the `_` helper we imported earlier. The `_` is
+shorthand for the table returned by the previous step in the chained sequence
+of operations (in this case, `starwars`). We could have also written the more
+verbose form,
 
 ```{python}
 starwars.filter([starwars.skin_color == "light", starwars.eye_color == "brown"])
@@ -176,7 +213,9 @@ Ibis has the `order_by` method, so to perform the same operation:
 starwars.order_by(_.height)
 ```
 
-You might notice that while dplyr puts missing values at the end, Ibis places them at the top. This behavior can actually vary from backend to backend and is something to be aware of when using Ibis.
+You might notice that while dplyr puts missing values at the end, Ibis places
+them at the top. This behavior can actually vary from backend to backend and is
+something to be aware of when using Ibis.
 
 If you want to order using multiple variables, you can pass them as a list:
 
@@ -210,7 +249,10 @@ In Ibis:
 starwars.select(_.hair_color)
 ```
 
-Note: A common pitfall to be aware of when referencing column names in Ibis is when column names collide with built-in methods on the Ibis Table object, such as `count`. In this situation, you will have to reference `count` like `table["count"]` or `_["count"]`.
+Note: A common pitfall to be aware of when referencing column names in Ibis is
+when column names collide with built-in methods on the Ibis Table object, such
+as `count`. In this situation, you will have to reference `count` like
+`table["count"]` or `_["count"]`.
 
 dplyr also allows selecting more than one column at a time:
 
@@ -239,7 +281,7 @@ To select columns by name based on a condition, dplyr has helpers such as:
 - ends_with(): Ends with a suffix.
 - contains(): Contains a literal string.
 
-These and many more [selectors](https://ibis-project.org/api/selectors/) are available in Ibis as well, with slightly different names:
+These and many more [selectors](../reference/selectors.qmd) are available in Ibis as well, with slightly different names:
 
 
 ```{python}
@@ -256,7 +298,7 @@ starwars.select(s.endswith("color"))
 starwars.select(s.contains("world"))
 ```
 
-See the Ibis [Column Selectors](https://ibis-project.org/api/selectors/) documentation for the full list of selectors in Ibis.
+See the Ibis [Column Selectors](../reference/selectors.qmd) documentation for the full list of selectors in Ibis.
 
 ## Renaming columns with relabel()
 
@@ -299,7 +341,11 @@ In Ibis:
 )
 ```
 
-A big difference between dplyr's `mutate` and Ibis' `mutate` is that, in Ibis, you have to chain separate `mutate` calls together when you reference newly-created columns in the same `mutate` whereas in dplyr, you can put them all in the same call. This makes Ibis' `mutate` more similar to `transform` in base R.
+A big difference between dplyr's `mutate` and Ibis' `mutate` is that, in Ibis,
+you have to chain separate `mutate` calls together when you reference
+newly-created columns in the same `mutate` whereas in dplyr, you can put them
+all in the same call. This makes Ibis' `mutate` more similar to `transform` in
+base R.
 
 In dplyr, we only need one `mutate` call:
 
@@ -433,4 +479,9 @@ In Ibis:
 
 ## Next Steps
 
-Now that you've gotten an introduction to the common differences between dplyr and Ibis, head over to [Getting Started with ibis](./getting_started.qmd) for a full introduction. If you're familiar with SQL, check out [Ibis for SQL Programmers](https://ibis-project.org/tutorial/ibis-for-sql-users/). If you're familiar with pandas, take a look at [Ibis for pandas Users](https://ibis-project.org/tutorial/ibis-for-pandas-users/.)
+Now that you've gotten an introduction to the common differences between dplyr
+and Ibis, head over to [Getting Started with ibis](./getting_started.qmd) for a
+full introduction. If you're familiar with SQL, check out [Ibis for SQL
+Programmers](./ibis-for-sql-users.qmd). If you're
+familiar with pandas, take a look at [Ibis for pandas
+Users](./ibis-for-pandas-users.qmd)
