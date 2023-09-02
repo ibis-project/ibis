@@ -1,0 +1,24 @@
+name: Documentation Issue
+description: Open an issue about the Ibis documentation
+title: "docs: "
+labels: ["docs"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to open an issue about our documentation!
+  - type: textarea
+    id: docs-issue
+    attributes:
+      label: Please describe the issue
+      description: Include as much detail as possible and screenshots if relevant.
+      placeholder: Description of the issue
+    validations:
+      required: true
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ibis-project/ibis/blob/master/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true
