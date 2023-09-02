@@ -48,7 +48,7 @@ class PySparkTable(ir.Table):
 
         See Also
         --------
-        [`ibis.backends.spark.Backend.compute_stats`][ibis.backends.spark.Backend.compute_stats]
+        [`pyspark.Backend.compute_stats`](../backends/pyspark.qmd#ibis.backends.pyspark.Backend.compute_stats)
         """
         return self._client.compute_stats(self._qualified_name, noscan=noscan)
 

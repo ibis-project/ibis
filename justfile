@@ -149,3 +149,9 @@ docs-preview:
 
 docs-deploy:
     quarto publish --no-prompt --no-browser --no-render netlify docs
+
+# run the entire docs build pipeline
+docs-build-all:
+    just docs-apigen --verbose
+    just docs-render
+    just checklinks docs/_output --offline --no-progress
