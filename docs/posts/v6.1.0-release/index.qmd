@@ -361,6 +361,6 @@ Several internal refactors that shouldn\'t affect normal usage were made. See [t
 
 Ibis v6.1.0 brings exciting enhancements to the library that enable broader ecosystem adoption of Python standards.
 
-As always, try Ibis by [installing](https://ibis-project.org/install/) and [getting started](../../tutorials/getting_started.qmd).
+As always, try Ibis by [installing](../../install.qmd) and [getting started](../../tutorials/getting_started.qmd).
 
 If you run into any issues or find support is lacking for your backend, [open an issue](https://github.com/ibis-project/issues/new/choose) or [discussion](https://github.com/ibis-project/discussions/new/choose) and let us know!
