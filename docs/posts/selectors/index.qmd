@@ -16,7 +16,7 @@ Let's jump right in!
 
 We'll look at selectors examples using the [`palmerpenguins` data
 set](https://allisonhorst.github.io/palmerpenguins/) with the [DuckDB
-backend](https://ibis-project.org/backends/DuckDB/).
+backend](../../backends/duckdb.qmd).
 
 ## Setup
 
@@ -188,5 +188,5 @@ Good thing you didn't have to write that by hand!
 This blog post illustrates the ability to apply computations to many columns at
 once and the power of ibis as a composable, expressive library for analytics.
 
-- [Get involved!](https://ibis-project.org/community/contribute/)
+- [Get involved!](../../contribute/index.md)
 - [Report issues!](https://github.com/ibis-project/ibis/issues/new/choose)
