@@ -5,6 +5,8 @@
 , fetchurl
 , dart-sass
 , makeWrapper
+, rWrapper
+, rPackages
 , autoPatchelfHook
 }:
 
@@ -22,6 +24,7 @@ stdenv.mkDerivation rec {
     wrapProgram $out/bin/quarto \
       --prefix QUARTO_ESBUILD : ${esbuild}/bin/esbuild \
       --prefix QUARTO_DENO : ${deno}/bin/deno \
+      --prefix QUARTO_R : ${rWrapper.override { packages = with rPackages; [ dplyr reticulate rmarkdown tidyr ]; }}/bin/R \
       --prefix QUARTO_DART_SASS : ${dart-sass}/bin/dart-sass
   '';
 
