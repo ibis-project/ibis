@@ -238,12 +238,10 @@ quartodoc:
       desc: ""
       package: ibis
       contents:
-        # # Column Selectors
+        # Column Selectors
         - selectors
 
-        # # Schemas
-        #
-        # This module contains APIs for interacting with table schemas.
+        # Schemas
         - expr.schema.Schema
 
         # # Configuration Options
@@ -252,11 +250,5 @@ quartodoc:
         - config.SQL
         - config.ContextAdjustment
 
-        # # Data Types
-        #
-        # This module contains classes for handling the different logical types that
-        # occur in databases.
-        #
-        # All data type constructors take a `nullable: bool` parameter whose default
-        # value is [`True`][True].
+        # Data types
         - expr.datatypes.core

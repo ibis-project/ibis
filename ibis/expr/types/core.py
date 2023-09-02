@@ -171,7 +171,7 @@ class Expr(Immutable, Coercible):
         label_edges
             Show operation input names as edge labels
         verbose
-            Print the graphviz DOT code to stderr if [`True`][True]
+            Print the graphviz DOT code to stderr if [](`True`)
 
         Raises
         ------
@@ -260,10 +260,10 @@ class Expr(Immutable, Coercible):
         Parameters
         ----------
         use_default
-            If [`True`][True] and the default backend isn't set, initialize the
+            If [](`True`) and the default backend isn't set, initialize the
             default backend and use that. This should only be set to `True` for
             `.execute()`. For other contexts such as compilation, this option
-            doesn't make sense so the default value is [`False`][False].
+            doesn't make sense so the default value is [](`False`).
 
         Returns
         -------
@@ -566,8 +566,7 @@ def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Va
     Parameters
     ----------
     op_class
-        The [`Binary`][ibis.expr.operations.Binary] subclass for the
-        operation
+        The `ops.Binary` subclass for the operation
     left
         Left operand
     right

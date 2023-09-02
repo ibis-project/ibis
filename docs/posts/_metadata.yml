@@ -2,7 +2,7 @@
 
 # freeze computational output
 # (see https://quarto.org/docs/projects/code-execution.html#freeze)
-freeze: true
+freeze: auto
 
 # Enable banner style title blocks
 title-block-banner: true
@@ -11,6 +11,5 @@ title-block-banner: true
 comments:
   giscus:
     repo: ibis-project/ibis
-    theme: light
     category: Q&A
     reactions-enabled: false
