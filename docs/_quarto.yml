@@ -82,6 +82,7 @@ website:
     right:
       - posts.qmd
       - sidebar:contribute
+      - release_notes.md
 
   sidebar:
     - id: ""
@@ -132,7 +133,6 @@ website:
       collapse-level: 2
       contents:
         - auto: reference/*.qmd
-        - release_notes.md
 
 format:
   html:
