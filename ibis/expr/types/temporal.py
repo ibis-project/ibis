@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Literal, Union
+from typing import TYPE_CHECKING, Literal
 
 from public import public
 
@@ -10,7 +10,6 @@ import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 from ibis.common.annotations import annotated
-from ibis.common.patterns import Pattern
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.common.temporal import IntervalUnit
@@ -53,12 +52,7 @@ class TemporalColumn(Column, TemporalValue):
 
 
 class _DateComponentMixin:
-    """Temporal expressions that have a date component.
-
-    Currently this includes
-    [`TimestampValue`][ibis.expr.types.temporal.TimestampValue]s and
-    [`DateValue`][ibis.expr.types.temporal.DateValue]s
-    """
+    """Temporal expressions that have a date component."""
 
     def epoch_seconds(self) -> ir.IntegerValue:
         """Extract UNIX epoch in seconds."""
@@ -102,12 +96,7 @@ class _DateComponentMixin:
 
 
 class _TimeComponentMixin:
-    """Temporal expressions that have a time component.
-
-    Currently this includes
-    [`TimestampValue`][ibis.expr.types.temporal.TimestampValue]s and
-    [`TimeValue`][ibis.expr.types.temporal.TimeValue]s
-    """
+    """Temporal expressions that have a time component."""
 
     def time(self) -> TimeValue:
         """Return the time component of the expression.
@@ -622,14 +611,14 @@ class DayOfWeek:
     def index(self):
         """Get the index of the day of the week.
 
+        ::: {.callout-note}
+        ## Ibis follows the `pandas` convention for day numbering: Monday = 0 and Sunday = 6.
+        :::
+
         Returns
         -------
         IntegerValue
             The index of the day of the week.
-
-            ::: {.callout-note}
-            ## Ibis follows pandas' conventions for day numbers: Monday = 0 and Sunday = 6.
-            :::
         """
         return ops.DayOfWeekIndex(self._expr).to_expr()
 

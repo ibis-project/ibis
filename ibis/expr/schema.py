@@ -20,8 +20,9 @@ class Schema(Concrete, Coercible, MapSet):
     """An object for holding table schema information."""
 
     fields: FrozenDict[str, dt.DataType]
-    """A mapping of [`str`][str] to [`DataType`][ibis.expr.datatypes.DataType] objects
-    representing the type of each column."""
+    """A mapping of [](`str`) to
+    [`DataType`](./expr.datatypes.core.qmd#ibis.expr.datatypes.DataType)
+    objects representing the type of each column."""
 
     def __repr__(self) -> str:
         space = 2 + max(map(len, self.names), default=0)

@@ -107,8 +107,6 @@ render_methods(
     "truncate_table",
     "get_schema",
     "cache_table",
-    "set_options",
-    "set_compression_codec",
 )
 ```
 
@@ -128,7 +126,6 @@ render_methods(
     "partition_schema",
     "partitions",
     "refresh",
-    "stats",
     "describe_formatted",
 )
 ```

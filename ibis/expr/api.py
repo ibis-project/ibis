@@ -236,7 +236,7 @@ def schema(
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
-    """Validate and return a [`Schema`][ibis.expr.schema.Schema] object.
+    """Validate and return a [`Schema`](./expr.schema.Schema.qmd#ibis.expr.schema.Schema) object.
 
     Parameters
     ----------
@@ -342,10 +342,10 @@ def memtable(
         Do not depend on the underlying storage type (e.g., pyarrow.Table), it's subject
         to change across non-major releases.
     columns
-        Optional [`Iterable`][typing.Iterable] of [`str`][str] column names.
+        Optional [](`typing.Iterable`) of [](`str`) column names.
     schema
-        Optional [`Schema`][ibis.expr.schema.Schema]. The functions use `data`
-        to infer a schema if not passed.
+        Optional [`Schema`](./expr.schema.Schema.qmd#ibis.expr.schema.Schema).
+        The functions use `data` to infer a schema if not passed.
     name
         Optional name of the table.
 
@@ -586,7 +586,7 @@ def or_(*predicates: ir.BooleanValue) -> ir.BooleanValue:
 def random() -> ir.FloatingScalar:
     """Return a random floating point number in the range [0.0, 1.0).
 
-    Similar to [`random.random`][random.random] in the Python standard library.
+    Similar to [](`random.random`) in the Python standard library.
 
     Returns
     -------
