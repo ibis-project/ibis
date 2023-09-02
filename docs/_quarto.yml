@@ -164,6 +164,94 @@ quartodoc:
           contents:
             - name: and_
               dynamic: true
+            - name: array
+              dynamic: true
+            - name: asc
+              dynamic: true
+            - name: case
+              dynamic: true
+            - name: coalesce
+              package: expr.api
+            - name: cumulative_window
+              dynamic: true
+            - name: date
+              dynamic: true
+            - name: desc
+              dynamic: true
+            - name: difference
+              dynamic: true
+            - name: dtype
+              dynamic: true
+            - name: get_backend
+              dynamic: true
+            - name: greatest
+              package: expr.api
+            - name: ifelse
+              package: expr.api
+            - name: intersect
+              dynamic: true
+            - name: interval
+              dynamic: true
+            - name: least
+              package: expr.api
+            - name: literal
+              dynamic: true
+            - name: map
+              dynamic: true
+            - name: memtable
+              dynamic: true
+            - name: negate
+              package: expr.api
+            - name: NA
+              package: expr.api
+            - name: now
+              dynamic: true
+            - name: "null"
+              dynamic: true
+            - name: or_
+              dynamic: true
+            - name: param
+              dynamic: true
+            - name: show_sql
+              dynamic: true
+            - name: to_sql
+              dynamic: true
+            - name: random
+              dynamic: true
+            - name: range_window
+              dynamic: true
+            - name: read_csv
+              dynamic: true
+            - name: read_delta
+              dynamic: true
+            - name: read_json
+              dynamic: true
+            - name: read_parquet
+              dynamic: true
+            - name: row_number
+              dynamic: true
+            - name: schema
+              dynamic: true
+            - name: set_backend
+              dynamic: true
+            - name: struct
+              dynamic: true
+            - name: table
+              dynamic: true
+            - name: time
+              dynamic: true
+            - name: timestamp
+              dynamic: true
+            - name: trailing_range_window
+              dynamic: true
+            - name: trailing_window
+              dynamic: true
+            - name: union
+              dynamic: true
+            - name: where
+              package: expr.api
+            - name: window
+              dynamic: true
 
         - kind: page
           path: expression-tables
@@ -210,7 +298,19 @@ quartodoc:
             desc: All string operations are valid for both scalars and columns.
           contents:
             - StringValue
-        - temporal
+
+        - kind: page
+          path: expression-temporal
+          package: ibis.expr.types.temporal
+          summary:
+            name: Temporal Expressions
+            desc: Temporal operations
+          contents:
+            - TimestampValue
+            - DateValue
+            - TimeValue
+            - IntervalValue
+            - DayOfWeek
 
         - kind: page
           path: expression-collections
@@ -234,21 +334,51 @@ quartodoc:
           contents:
             - GeoSpatialValue
             - GeoSpatialColumn
-    - title: Other
-      desc: ""
-      package: ibis
-      contents:
-        # Column Selectors
-        - selectors
 
-        # Schemas
-        - expr.schema.Schema
+        - kind: page
+          summary:
+            name: Column selectors
+            desc: Convenient column selectors
+          path: selectors
+          package: ibis.selectors
+          contents:
+            - where
+            - numeric
+            - of_type
+            - startswith
+            - endswith
+            - contains
+            - matches
+            - any_of
+            - all_of
+            - c
+            - across
+            - if_any
+            - if_all
+            - r
+            - first
+            - last
+            - all
 
-        # # Configuration Options
-        - config.Options
-        - config.Repr
-        - config.SQL
-        - config.ContextAdjustment
+        - kind: page
+          path: datatypes-schemas
+          package: ibis.expr
+          summary:
+            name: Data types and schemas
+            desc: Data types and schemas
+          contents:
+            - name: Schema
+              package: ibis.expr.schema
+            - datatypes.core
 
-        # Data types
-        - expr.datatypes.core
+        - kind: page
+          path: config
+          package: ibis.config
+          summary:
+            name: Config
+            desc: Ibis configuration
+          contents:
+            - Options
+            - Repr
+            - SQL
+            - ContextAdjustment
