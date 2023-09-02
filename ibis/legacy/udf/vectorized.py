@@ -31,7 +31,7 @@ def _coerce_to_dict(
 ) -> tuple:
     """Coerce the following shapes to a tuple.
 
-    - [`list`](list)
+    - [](`list`)
     - `np.ndarray`
     - `pd.Series`
     """
@@ -45,7 +45,7 @@ def _coerce_to_np_array(
 ) -> np.ndarray:
     """Coerce the following shapes to an np.ndarray.
 
-    - [`list`](list)
+    - [](`list`)
     - `np.ndarray`
     - `pd.Series`
     """
@@ -62,7 +62,7 @@ def _coerce_to_series(
     This method does NOT always return a new Series. If a Series is
     passed in, this method will return the original object.
 
-    - [`list`](list)
+    - [](`list`)
     - `np.ndarray`
     - `pd.Series`
 
