@@ -39,7 +39,7 @@ def infer(value: Any) -> dt.DataType:
 # which should trigger infer_map instead
 @infer.register(collections.OrderedDict)
 def infer_struct(value: Mapping[str, Any]) -> dt.Struct:
-    """Infer the [`Struct`][ibis.expr.datatypes.Struct] type of `value`."""
+    """Infer the [`Struct`](./expr.datatypes.core.qmd#ibis.expr.datatypes.Struct) type of `value`."""
     if not value:
         raise TypeError("Empty struct type not supported")
     fields = {name: infer(val) for name, val in value.items()}
@@ -48,7 +48,7 @@ def infer_struct(value: Mapping[str, Any]) -> dt.Struct:
 
 @infer.register(collections.abc.Mapping)
 def infer_map(value: Mapping[Any, Any]) -> dt.Map:
-    """Infer the [`Map`][ibis.expr.datatypes.Map] type of `value`."""
+    """Infer the [`Map`](./expr.datatypes.core.qmd#ibis.expr.datatypes.Map) type of `value`."""
     if not value:
         return dt.Map(dt.null, dt.null)
     try:
@@ -62,7 +62,7 @@ def infer_map(value: Mapping[Any, Any]) -> dt.Map:
 
 @infer.register((list, tuple, set, frozenset))
 def infer_list(values: Sequence[Any]) -> dt.Array:
-    """Infer the [`Array`][ibis.expr.datatypes.Array] type of `value`."""
+    """Infer the [`Array`](./expr.datatypes.core.qmd#ibis.expr.datatypes.Array) type of `value`."""
     if not values:
         return dt.Array(dt.null)
     return dt.Array(highest_precedence(map(infer, values)))
@@ -140,7 +140,7 @@ def infer_enum(_: enum.Enum) -> dt.String:
 
 @infer.register(decimal.Decimal)
 def infer_decimal(value: decimal.Decimal) -> dt.Decimal:
-    """Infer the [`Decimal`][ibis.expr.datatypes.Decimal] type of `value`."""
+    """Infer the [`Decimal`](./expr.datatypes.core.qmd#ibis.expr.datatypes.Decimal) type of `value`."""
     return dt.decimal
 
 
