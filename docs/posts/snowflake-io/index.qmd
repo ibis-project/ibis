@@ -117,8 +117,12 @@ diamonds
 
 ## Conclusion
 
-Ibis 7.0.0 adds support for `read_csv`, `read_parquet`, and `read_json` to the
-Snowflake backend.
+Ibis 7.0.0 adds support for
+[`read_csv`](../../backends/snowflake.qmd#ibis.backends.snowflake.Backend.read_csv),
+[`read_parquet`](../../backends/snowflake.qmd#ibis.backends.snowflake.Backend.read_parquet)
+and
+[`read_json`](../../backends/snowflake.qmd#ibis.backends.snowflake.Backend.read_json)
+to the Snowflake backend.
 
 We think you'll enjoy the increase in productivity these new features bring to the
 Snowflake backend and we'd love to hear your feedback!
