@@ -825,7 +825,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`ibis.difference`][ibis.difference]
+        [`ibis.difference`](./top_level.qmd#ibis.difference)
 
         Returns
         -------
@@ -1064,7 +1064,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t.count()
         344
 
-        You can pass [`selectors`][ibis.selectors] to `on`
+        You can pass [`selectors`](./selectors.qmd) to `on`
 
         >>> t.distinct(on=~s.numeric())
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
@@ -1132,7 +1132,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """Select `n` rows from `self` starting at `offset`.
 
         ::: {.callout-note}
-        ## The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by].
+        ## The result set is not deterministic without a call to [`order_by`](#ibis.expr.types.relations.Table.order_by).
         :::
 
         Parameters
@@ -1187,7 +1187,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`Table.order_by`][ibis.expr.types.relations.Table.order_by]
+        [`Table.order_by`](#ibis.expr.types.relations.Table.order_by)
         """
         return ops.Limit(self, n, offset).to_expr()
 
@@ -1195,7 +1195,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """Select the first `n` rows of a table.
 
         ::: {.callout-note}
-        ## The result set is not deterministic without a call to [`order_by`][ibis.expr.types.relations.Table.order_by].
+        ## The result set is not deterministic without a call to [`order_by`](#ibis.expr.types.relations.Table.order_by).
         :::
 
         Parameters
@@ -1235,8 +1235,8 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`Table.limit`][ibis.expr.types.relations.Table.limit]
-        [`Table.order_by`][ibis.expr.types.relations.Table.order_by]
+        [`Table.limit`](#ibis.expr.types.relations.Table.limit)
+        [`Table.order_by`](#ibis.expr.types.relations.Table.order_by)
         """
         return self.limit(n=n)
 
@@ -1328,7 +1328,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`ibis.union`][ibis.union]
+        [`ibis.union`](./top_level.qmd#ibis.union)
 
         Examples
         --------
@@ -1402,7 +1402,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`ibis.intersect`][ibis.intersect]
+        [`ibis.intersect`](./top_level.qmd#ibis.intersect)
 
         Examples
         --------
@@ -2375,7 +2375,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`StructValue.lift`][ibis.expr.types.structs.StructValue.lift]
+        [`StructValue.lift`](./expression-collections.qmd#ibis.expr.types.structs.StructValue.lift)
         """
         columns_to_unpack = frozenset(columns)
         result_columns = []
@@ -2725,7 +2725,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         This method is useful for exposing an ibis expression to the underlying
         backend for use in the
-        [`Table.sql`][ibis.expr.types.relations.Table.sql] method.
+        [`Table.sql`](#ibis.expr.types.relations.Table.sql) method.
 
         ::: {.callout-note}
         ## `.alias` will create a temporary view
@@ -2841,7 +2841,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────────┴─────────────────┘
 
         Because ibis expressions aren't named, they aren't visible to
-        subsequent `.sql` calls. Use the [`alias`][ibis.expr.types.relations.Table.alias] method
+        subsequent `.sql` calls. Use the [`alias`](#ibis.expr.types.relations.Table.alias) method
         to assign a name to an expression.
 
         >>> expr.alias("b").sql("SELECT * FROM b WHERE avg_bill_length > 40")
@@ -2856,7 +2856,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`Table.alias`][ibis.expr.types.relations.Table.alias]
+        [`Table.alias`](#ibis.expr.types.relations.Table.alias)
         '''
 
         # only transpile if dialect was passed
@@ -2872,7 +2872,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Parameters
         ----------
         kwargs
-            Same as keyword arguments to [`execute`][ibis.expr.types.core.Expr.execute]
+            Same as keyword arguments to [`execute`](./expression-generic.qmd#ibis.expr.types.core.Expr.execute)
         """
         return self.execute(**kwargs)
 
@@ -3301,8 +3301,8 @@ class Table(Expr, _FixedTextJupyterMixin):
             argument will be used to join their values together into a single
             string to use as a column name.
         names_sort
-            If [`True`][True] columns are sorted. If [`False`][False] column
-            names are ordered by appearance.
+            If [](`True`) columns are sorted. If [](`False`) column names are
+            ordered by appearance.
         names
             An explicit sequence of values to look for in columns matching
             `names_from`.
@@ -3803,7 +3803,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └────────┴───────┴───────┴───────┴────────┴────────┘
 
         You can relocate based on any predicate selector, such as
-        [`of_type`][ibis.selectors.of_type]
+        [`of_type`](./selectors.qmd#ibis.selectors.of_type)
 
         >>> t.relocate(s.of_type("string"))
         ┏━━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓

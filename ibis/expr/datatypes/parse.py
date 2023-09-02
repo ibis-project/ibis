@@ -54,7 +54,7 @@ FIELD = parsy.regex("[a-zA-Z_0-9]+") | parsy.string("")
 def parse(
     text: str, default_decimal_parameters: tuple[int | None, int | None] = (None, None)
 ) -> dt.DataType:
-    """Parse a type from a [`str`][str] `text`.
+    """Parse a type from a [](`str`) `text`.
 
     The default `maxsize` parameter for caching is chosen to cache the most
     commonly used types--there are about 30--along with some capacity for less

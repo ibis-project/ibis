@@ -538,7 +538,7 @@ def gen_name(namespace: str) -> str:
 def slice_to_limit_offset(
     what: slice, count: ir.IntegerScalar
 ) -> tuple[int | ir.IntegerScalar, int | ir.IntegerScalar]:
-    """Convert a Python [`slice`][slice] to a `limit`, `offset` pair.
+    """Convert a Python [`slice`](slice) to a `limit`, `offset` pair.
 
     Parameters
     ----------

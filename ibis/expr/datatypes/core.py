@@ -89,7 +89,7 @@ del dtype.register
 class DataType(Concrete, Coercible):
     """Base class for all data types.
 
-    [`DataType`][ibis.expr.datatypes.DataType] instances are immutable.
+    Instances are immutable.
     """
 
     nullable: bool = True
@@ -473,7 +473,7 @@ class Null(Primitive):
 
 @public
 class Boolean(Primitive):
-    """[`True`][True] or [`False`][False] values."""
+    """[](`True`) or [](`False`) values."""
 
     scalar = "BooleanScalar"
     column = "BooleanColumn"

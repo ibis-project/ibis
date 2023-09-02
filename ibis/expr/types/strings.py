@@ -23,7 +23,7 @@ class StringValue(Value):
         Parameters
         ----------
         key
-            [`int`][int], [`slice`][slice] or integer scalar expression
+            [](`int`), [](`slice`) or integer scalar expression
 
         Returns
         -------
@@ -820,7 +820,7 @@ class StringValue(Value):
 
         See Also
         --------
-        [`ArrayValue.join`][ibis.expr.types.arrays.ArrayValue.join]
+        [`ArrayValue.join`](./expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.join)
         """
         import ibis.expr.types as ir
 

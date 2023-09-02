@@ -215,7 +215,7 @@ class GroupedTable:
 
         See Also
         --------
-        [`GroupedTable.mutate`][ibis.expr.types.groupby.GroupedTable.mutate]
+        [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
         exprs = self._selectables(*exprs, **kwexprs)
         return self.table.select(exprs)
@@ -225,7 +225,7 @@ class GroupedTable:
 
         See Also
         --------
-        [`GroupedTable.mutate`][ibis.expr.types.groupby.GroupedTable.mutate]
+        [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
         table = self.table
         default_frame = self._get_window()

@@ -132,10 +132,10 @@ class BaseSQLBackend(BaseBackend):
         """Execute a query string and return the cursor used for execution.
 
         ::: {.callout-tip}
-        ## Consider using [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] instead
+        ## Consider using [`.sql`](#ibis.backends.base.sql.BaseSQLBackend.sql) instead
 
         If your query is a SELECT statement, you should use the
-        [`.sql`][ibis.backends.base.sql.BaseSQLBackend.sql] method to avoid
+        [backend `.sql`](#ibis.backends.base.sql.BaseSQLBackend.sql) method to avoid
         having to release the cursor returned from this method manually.
 
         ::: {.callout-warning collapse="true"}

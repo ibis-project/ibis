@@ -64,10 +64,10 @@ class ArrayValue(Value):
         Returns
         -------
         Value
-            - If `index` is an [`int`][int] or
-              [`IntegerValue`][ibis.expr.types.IntegerValue] then the return
-              type is the element type of `self`.
-            - If `index` is a [`slice`][slice] then the return type is the same
+            - If `index` is an [](`int`) or
+              [`IntegerValue`](./expression-numeric.qmd#ibis.expr.types.IntegerValue)
+              then the return type is the element type of `self`.
+            - If `index` is a [](`slice`) then the return type is the same
               type as the input.
 
         Examples
@@ -351,7 +351,7 @@ class ArrayValue(Value):
 
         See Also
         --------
-        [`StringValue.join`][ibis.expr.types.strings.StringValue.join]
+        [`StringValue.join`](./expression-strings.qmd#ibis.expr.types.strings.StringValue.join)
         """
         return ops.ArrayStringJoin(sep, self).to_expr()
 

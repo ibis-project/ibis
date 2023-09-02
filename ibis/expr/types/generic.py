@@ -906,7 +906,7 @@ class Value(Expr):
         Parameters
         ----------
         kwargs
-            Same as keyword arguments to [`execute`][ibis.expr.types.core.Expr.execute]
+            Same as keyword arguments to [`execute`](#ibis.expr.types.core.Expr.execute)
 
         Examples
         --------
@@ -1626,9 +1626,9 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     Ibis supports literal construction of arrays using the following
     functions:
 
-    1. [`ibis.array`][ibis.array]
-    1. [`ibis.struct`][ibis.struct]
-    1. [`ibis.map`][ibis.map]
+    1. [`ibis.array`](./expression-collections.qmd#ibis.array)
+    1. [`ibis.struct`](./expression-collections.qmd#ibis.struct)
+    1. [`ibis.map`](./expression-collections.qmd#ibis.map)
 
     Constructing these types using `literal` will be deprecated in a future
     release.
@@ -1639,7 +1639,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     value
         A Python value
     type
-        An instance of [`DataType`][ibis.expr.datatypes.DataType] or a string
+        An instance of [`DataType`](./expr.datatypes.core.qmd#ibis.expr.datatypes.DataType) or a string
         indicating the ibis type of `value`. This parameter can be used
         in cases where ibis's type inference isn't sufficient for discovering
         the type of `value`.
