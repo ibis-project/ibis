@@ -2,7 +2,7 @@
 
 ## Getting started
 
-First, set up a [development environment](01_environment.md).
+First, set up a [development environment](./01_environment.qmd).
 
 ## Taking issues
 
