@@ -97,7 +97,7 @@ def struct(
 class StructValue(Value):
     """A struct literal or column.
 
-    Can be constructed with [`ibis.struct()`][ibis.expr.types.struct].
+    Can be constructed with [`ibis.struct()`](#ibis.expr.types.struct).
 
     Examples
     --------
