@@ -109,18 +109,18 @@ def coerce_to_output(
     Examples below use pandas objects for legibility, but functionality is the
     same on dask objects.
 
-    >>> coerce_to_output(pd.Series(1), expr)  # doctest: +SKIP
+    >>> coerce_to_output(pd.Series(1), expr)  # quartodoc: +SKIP # doctest: +SKIP
     0    1
     Name: result, dtype: int64
-    >>> coerce_to_output(1, expr)  # doctest: +SKIP
+    >>> coerce_to_output(1, expr)  # quartodoc: +SKIP # doctest: +SKIP
     0    1
     Name: result, dtype: int64
-    >>> coerce_to_output(1, expr, [1,2,3])  # doctest: +SKIP
+    >>> coerce_to_output(1, expr, [1,2,3])  # quartodoc: +SKIP # doctest: +SKIP
     1    1
     2    1
     3    1
     Name: result, dtype: int64
-    >>> coerce_to_output([1,2,3], expr)  # doctest: +SKIP
+    >>> coerce_to_output([1,2,3], expr)  # quartodoc: +SKIP # doctest: +SKIP
     0    [1, 2, 3]
     Name: result, dtype: object
     """

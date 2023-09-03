@@ -31,7 +31,7 @@ Pandas
     ...     'time': pd.date_range(periods=4, start='now')
     ... })
     >>> s = pd.Series(df.value.sum(), index=df.index, name='sum_value')
-    >>> s  # doctest: +SKIP
+    >>> s  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
@@ -42,7 +42,7 @@ Ibis
     ...    ('time', 'timestamp'), ('key', 'string'), ('value', 'double')
     ... ]
     >>> t = ibis.table(schema, name='t')
-    >>> t[t, t.value.sum().name('sum_value')].sum_value  # doctest: +SKIP
+    >>> t[t, t.value.sum().name('sum_value')].sum_value  # quartodoc: +SKIP # doctest: +SKIP
 
 
 ``group_by``, no ``order_by``: ``context.Transform()``
@@ -69,7 +69,7 @@ Pandas
     ...     'value': np.random.randn(4),
     ...     'time': pd.date_range(periods=4, start='now')
     ... })
-    >>> df.groupby('key').value.transform('sum')  # doctest: +SKIP
+    >>> df.groupby('key').value.transform('sum')  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
@@ -80,7 +80,7 @@ Ibis
     ...     ('time', 'timestamp'), ('key', 'string'), ('value', 'double')
     ... ]
     >>> t = ibis.table(schema, name='t')
-    >>> t.value.sum().over(ibis.window(group_by=t.key))  # doctest: +SKIP
+    >>> t.value.sum().over(ibis.window(group_by=t.key))  # quartodoc: +SKIP # doctest: +SKIP
 
 ``order_by``, no ``group_by``: ``context.Cumulative()``/``context.Rolling()``
 -----------------------------------------------------------------------------
@@ -113,7 +113,7 @@ Pandas
     ...     'value': np.random.randn(4),
     ...     'time': pd.date_range(periods=4, start='now')
     ... })
-    >>> df.sort_values('time').value.cumsum()  # doctest: +SKIP
+    >>> df.sort_values('time').value.cumsum()  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
@@ -125,7 +125,7 @@ Ibis
     ... ]
     >>> t = ibis.table(schema, name='t')
     >>> window = ibis.cumulative_window(order_by=t.time)
-    >>> t.value.sum().over(window)  # doctest: +SKIP
+    >>> t.value.sum().over(window)  # quartodoc: +SKIP # doctest: +SKIP
 
 Moving
 ~~~~~~
@@ -153,7 +153,7 @@ Pandas
     ...     'value': np.random.randn(4),
     ...     'time': pd.date_range(periods=4, start='now')
     ... })
-    >>> df.sort_values('time').value.rolling(3).sum()  # doctest: +SKIP
+    >>> df.sort_values('time').value.rolling(3).sum()  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
@@ -165,7 +165,7 @@ Ibis
     ... ]
     >>> t = ibis.table(schema, name='t')
     >>> window = ibis.trailing_window(3, order_by=t.time)
-    >>> t.value.sum().over(window)  # doctest: +SKIP
+    >>> t.value.sum().over(window)  # quartodoc: +SKIP # doctest: +SKIP
 
 
 ``group_by`` and ``order_by``: ``context.Cumulative()``/``context.Rolling()``
@@ -199,7 +199,7 @@ Pandas
     ...    drop=True
     ... ).groupby('key')
     >>> rolling = gb.value.rolling(2)
-    >>> rolling.sum()  # doctest: +SKIP
+    >>> rolling.sum()  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
@@ -211,7 +211,7 @@ Ibis
     ... ]
     >>> t = ibis.table(schema, name='t')
     >>> window = ibis.trailing_window(2, order_by=t.time, group_by=t.key)
-    >>> t.value.sum().over(window)  # doctest: +SKIP
+    >>> t.value.sum().over(window)  # quartodoc: +SKIP # doctest: +SKIP
 """
 
 from __future__ import annotations

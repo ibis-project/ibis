@@ -291,7 +291,7 @@ def analytic(input_type, output_type):
     >>>
     >>> win = ibis.window(preceding=None, following=None, group_by='key')
     >>> # add two columns "demean" and "zscore"
-    >>> table = table.mutate(  # doctest: +SKIP
+    >>> table = table.mutate(  # quartodoc: +SKIP # doctest: +SKIP
     ...     demean_and_zscore(table['v']).over(win).destructure()
     ... )
     """
@@ -335,7 +335,7 @@ def elementwise(input_type, output_type):
     ...     return date.str.slice(0, 4), date.str.slice(4, 8)
     >>>
     >>> # add two columns "year" and "monthday"
-    >>> table = table.mutate(year_monthday(table['date']).destructure())  # doctest: +SKIP
+    >>> table = table.mutate(year_monthday(table['date']).destructure())  # quartodoc: +SKIP # doctest: +SKIP
     """
     return _udf_decorator(ElementWiseVectorizedUDF, input_type, output_type)
 
@@ -371,7 +371,7 @@ def reduction(input_type, output_type):
     ...     return v.mean(), v.std()
     >>>
     >>> # create aggregation columns "mean" and "std"
-    >>> table = table.group_by('key').aggregate(  # doctest: +SKIP
+    >>> table = table.group_by('key').aggregate(  # quartodoc: +SKIP # doctest: +SKIP
     ...     mean_and_std(table['v']).destructure()
     ... )
     """

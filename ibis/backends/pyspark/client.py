@@ -94,10 +94,10 @@ class PySparkTable(ir.Table):
 
         Examples
         --------
-        >>> t.insert(table_expr)  # doctest: +SKIP
+        >>> t.insert(table_expr)  # quartodoc: +SKIP # doctest: +SKIP
 
         # Completely overwrite contents
-        >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
+        >>> t.insert(table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
         import pandas as pd
 
