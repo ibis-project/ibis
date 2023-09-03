@@ -57,7 +57,7 @@ pip install 'ibis-framework[duckdb]' # <1>
 
 Need to use Ibis with a backend that isn't currently supported? [Let us know!](https://github.com/ibis-project/ibis/discussions/new?category=q-a)
 
-{{< include /_tabsets/install.qmd >}}
+{{< include ./_tabsets/install.qmd >}}
 
 See the [backend support matrix](support_matrix.qmd) for details on operations supported. [Open a feature request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat) if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
 

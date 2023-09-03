@@ -2,7 +2,7 @@
 
 ## Prerequisites
 
-{{< include /_tabsets/install_default.qmd >}}
+{{< include ../_tabsets/install_default.qmd >}}
 
 ## Overview
 
