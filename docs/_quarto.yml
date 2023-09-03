@@ -257,7 +257,7 @@ quartodoc:
           path: expression-tables
           package: ibis.expr.types.relations
           summary:
-            name: Table Expressions
+            name: Table expressions
             desc: Table expressions form the basis for most Ibis expressions.
           contents:
             - Table
@@ -278,7 +278,7 @@ quartodoc:
           path: expression-numeric
           package: ibis.expr.types.numeric
           summary:
-            name: Numeric and Boolean Expressions
+            name: Numeric and boolean expressions
             desc: These APIs are available on numeric and boolean expressions.
           contents:
             - NumericValue
@@ -294,7 +294,7 @@ quartodoc:
           path: expression-strings
           package: ibis.expr.types.strings
           summary:
-            name: String Expressions
+            name: String expressions
             desc: All string operations are valid for both scalars and columns.
           contents:
             - StringValue
@@ -303,7 +303,7 @@ quartodoc:
           path: expression-temporal
           package: ibis.expr.types.temporal
           summary:
-            name: Temporal Expressions
+            name: Temporal expressions
             desc: Temporal operations
           contents:
             - TimestampValue
@@ -315,7 +315,7 @@ quartodoc:
         - kind: page
           path: expression-collections
           summary:
-            name: Complex Type Expressions
+            name: Complex type expressions
             desc: These APIs are available on arrays, maps and structs.
           contents:
             - name: ArrayValue
@@ -329,7 +329,7 @@ quartodoc:
           path: expression-geospatial
           package: ibis.expr.types.geospatial
           summary:
-            name: Geospatial Expressions
+            name: Geospatial expressions
             desc: Ibis supports the following geospatial expression APIs
           contents:
             - GeoSpatialValue
