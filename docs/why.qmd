@@ -68,7 +68,7 @@ Ibis helps with:
 
 ## Supported backends
 
-{{< include /_tabsets/install.qmd >}}
+{{< include ./_tabsets/install.qmd >}}
 
 See the [backend support matrix](support_matrix.qmd) for details on operations
 supported. [Open a feature
