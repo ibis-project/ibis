@@ -173,6 +173,9 @@ jobs:
       - name: checkout
         uses: actions/checkout@v3
 
+      - name: run doctest
+        run: nix develop --ignore-environment -c just doctest
+
       - name: generate api docs
         run: nix develop --ignore-environment -c just docs-apigen --verbose
 
@@ -213,6 +216,9 @@ jobs:
 
       - name: checkout
         uses: actions/checkout@v3
+
+      - name: run doctests
+        run: nix develop --ignore-environment -c just doctest
 
       - name: build api docs
         run: nix develop --ignore-environment -c just docs-apigen --verbose
