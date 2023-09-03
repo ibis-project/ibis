@@ -611,10 +611,14 @@ class Timestamp(Temporal, Parametric):
 
     @property
     def _pretty_piece(self) -> str:
-        pieces = [
-            repr(piece) for piece in (self.scale, self.timezone) if piece is not None
-        ]
-        return f"({', '.join(pieces)})" * bool(pieces)
+        if self.scale is not None and self.timezone is not None:
+            return f"('{self.timezone}', {self.scale:d})"
+        elif self.timezone is not None:
+            return f"('{self.timezone}')"
+        elif self.scale is not None:
+            return f"({self.scale:d})"
+        else:
+            return ""
 
 
 @public
