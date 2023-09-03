@@ -178,29 +178,48 @@ class GroupedTable:
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([
-        ...     ('foo', 'string'),
-        ...     ('bar', 'string'),
-        ...     ('baz', 'double'),
-        ... ], name='t')
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
         >>> t
-        UnboundTable: t
-          foo string
-          bar string
-          baz float64
-        >>> expr = (t.group_by('foo')
-        ...          .order_by(ibis.desc('bar'))
-        ...          .mutate(qux=lambda x: x.baz.lag(), qux2=t.baz.lead()))
-        >>> print(expr)
-        r0 := UnboundTable: t
-          foo string
-          bar string
-          baz float64
-        Selection[r0]
-          selections:
-            r0
-            qux:  WindowFunction(...)
-            qux2: WindowFunction(...)
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │            nan │           nan │              NULL │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
+        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
+        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
+        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> (
+        ...   t.select("species", "bill_length_mm")
+        ...    .group_by("species")
+        ...    .mutate(centered_bill_len=ibis._.bill_length_mm - ibis._.bill_length_mm.mean())
+        ... )
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ species ┃ bill_length_mm ┃ centered_bill_len ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ string  │ float64        │ float64           │
+        ├─────────┼────────────────┼───────────────────┤
+        │ Adelie  │           40.9 │          2.108609 │
+        │ Adelie  │           42.7 │          3.908609 │
+        │ Adelie  │           39.8 │          1.008609 │
+        │ Adelie  │           36.5 │         -2.291391 │
+        │ Adelie  │           36.7 │         -2.091391 │
+        │ Adelie  │           39.3 │          0.508609 │
+        │ Adelie  │           38.9 │          0.108609 │
+        │ Adelie  │           39.2 │          0.408609 │
+        │ Adelie  │           34.1 │         -4.691391 │
+        │ Adelie  │           42.0 │          3.208609 │
+        │ …       │              … │                 … │
+        └─────────┴────────────────┴───────────────────┘
 
         Returns
         -------
