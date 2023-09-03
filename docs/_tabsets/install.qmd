@@ -54,7 +54,7 @@ for installer in installers:
         print()
         print(f"```bash\n{cmd.format(extra=extra)}\n```")
         print()
-        print(f"Connect using [`ibis.{mod}.connect`](../backends/{name.lower()}.qmd#ibis.backends.{mod}.Backend.do_connect).")
+        print(f"Connect using [`ibis.{mod}.connect`](./backends/{name.lower()}.qmd#ibis.backends.{mod}.Backend.do_connect).")
         print()
 
     if name == "pip":
