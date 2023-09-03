@@ -924,10 +924,10 @@ class Backend(BaseSQLBackend):
         Examples
         --------
         >>> table = 'my_table'
-        >>> con.insert(table, table_expr)  # doctest: +SKIP
+        >>> con.insert(table, table_expr)  # quartodoc: +SKIP # doctest: +SKIP
 
         Completely overwrite contents
-        >>> con.insert(table, table_expr, overwrite=True)  # doctest: +SKIP
+        >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
         table = self.table(table_name, database=database)
         return table.insert(
@@ -956,7 +956,7 @@ class Backend(BaseSQLBackend):
         --------
         >>> table = 'my_table'
         >>> db = 'operations'
-        >>> con.drop_table(table, database=db, force=True)  # doctest: +SKIP
+        >>> con.drop_table(table, database=db, force=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
         statement = DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)
@@ -1014,7 +1014,7 @@ class Backend(BaseSQLBackend):
         >>> table = 'my_table'
         >>> db = 'operations'
         >>> pool = 'op_4GB_pool'
-        >>> con.cache_table('my_table', database=db, pool=pool)  # doctest: +SKIP
+        >>> con.cache_table('my_table', database=db, pool=pool)  # quartodoc: +SKIP # doctest: +SKIP
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._safe_exec_sql(statement)

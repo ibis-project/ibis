@@ -1667,7 +1667,7 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
 
     Ibis checks for invalid types
 
-    >>> ibis.literal('foobar', type='int64')  # doctest: +ELLIPSIS
+    >>> ibis.literal('foobar', type='int64')  # quartodoc: +EXPECTED_FAILURE
     Traceback (most recent call last):
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64

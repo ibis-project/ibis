@@ -1070,7 +1070,7 @@ def set_backend(backend: str | BaseBackend) -> None:
 
     Or as a URI
 
-    >>> ibis.set_backend("postgres://user:password@hostname:5432")  # doctest: +SKIP
+    >>> ibis.set_backend("postgres://user:password@hostname:5432")  # quartodoc: +SKIP # doctest: +SKIP
 
     Or as an existing backend instance
 

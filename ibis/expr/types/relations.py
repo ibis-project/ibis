@@ -237,7 +237,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Columns that are in the input `schema` but not in the table raise an error
 
-        >>> t.cast({"foo": "string"})
+        >>> t.cast({"foo": "string"})  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
             ...
         ibis.common.exceptions.IbisError: Cast schema has fields that are not in the table: ['foo']
@@ -1087,7 +1087,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         The only valid values of `keep` are `"first"`, `"last"` and [`None][None]
 
-        >>> t.distinct(on="species", keep="second")
+        >>> t.distinct(on="species", keep="second")  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
           ...
         ibis.common.exceptions.IbisError: Invalid value for keep: 'second' ...
@@ -3199,7 +3199,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         The number of match groups in `names_pattern` must match the length of `names_to`
 
-        >>> who.pivot_longer(
+        >>> who.pivot_longer(  # quartodoc: +EXPECTED_FAILURE
         ...     s.r["new_sp_m014":"newrel_f65"],
         ...     names_to=["diagnosis", "gender", "age"],
         ...     names_pattern="new_?(.*)_.(.*)",
@@ -3210,7 +3210,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         `names_transform` must be a mapping or callable
 
-        >>> who.pivot_longer(s.r["new_sp_m014":"newrel_f65"], names_transform="upper")
+        >>> who.pivot_longer(s.r["new_sp_m014":"newrel_f65"], names_transform="upper")  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
           ...
         ibis.common.exceptions.IbisTypeError: ... Got <class 'str'>
