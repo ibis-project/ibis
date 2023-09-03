@@ -882,6 +882,7 @@ class Value(Expr):
 
         Examples
         --------
+        >>> import ibis
         >>> t = ibis.table(dict(a="str"), name="t")
         >>> expr = t.a.length().name("len").as_table()
         >>> expected = t.select(len=t.a.length())
