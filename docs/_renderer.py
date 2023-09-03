@@ -23,21 +23,20 @@ class Renderer(MdRenderer):
         quartodoc_skip_doctest = "quartodoc: +SKIP"
 
         chunker = lambda line: line.startswith((prompt, continuation))
+        should_skip = (
+            lambda line: quartodoc_skip_doctest in line or skip_doctest in line
+        )
 
-        for first, *rest in toolz.partitionby(chunker, lines):
+        for chunk in toolz.partitionby(chunker, lines):
+            first, *rest = chunk
+
             # only attempt to execute or render code blocks that start with the
             # >>> prompt
             if first.startswith(prompt):
-                # skip execution, but render the code block as python
-                # if it's marked with skip_doctest, expect_failure or quartodoc_skip_doctest
-                if not (
-                    quartodoc_skip_doctest in first
-                    or skip_doctest in first
-                    or any(
-                        quartodoc_skip_doctest in line or skip_doctest in line
-                        for line in rest
-                    )
-                ):
+                # check whether to skip execution and if so, render the code
+                # block as `python` (not `{python}`) if it's marked with
+                # skip_doctest, expect_failure or quartodoc_skip_doctest
+                if not any(map(should_skip, chunk)):
                     start, end = "{}"
                 else:
                     start = end = ""
