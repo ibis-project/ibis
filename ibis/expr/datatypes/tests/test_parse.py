@@ -202,9 +202,10 @@ def test_parse_timestamp_with_timezone_invalid_timezone():
 @pytest.mark.parametrize("scale", range(10))
 @pytest.mark.parametrize("tz", ["UTC", "America/New_York"])
 def test_parse_timestamp_with_scale(scale, tz):
-    assert dt.parse(f"timestamp({tz!r}, {scale:d})") == dt.Timestamp(
-        timezone=tz, scale=scale
-    )
+    expected = dt.Timestamp(timezone=tz, scale=scale)
+    typestring = f"timestamp({tz!r}, {scale:d})"
+    assert dt.parse(typestring) == expected
+    assert str(expected) == typestring
 
 
 @pytest.mark.parametrize("scale", range(10))
