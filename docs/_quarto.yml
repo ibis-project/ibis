@@ -267,7 +267,7 @@ quartodoc:
           path: expression-generic
           package: ibis.expr.types.generic
           summary:
-            name: Generic Expression APIs
+            name: Generic expression APIs
             desc: These expressions are available on scalars and columns of any element type.
           contents:
             - Value
