@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class MapValue(Value):
     """A map literal or column expression.
 
-    Can be constructed with [`ibis.map()`][ibis.expr.types.map].
+    Can be constructed with [`ibis.map()`](#ibis.expr.types.map).
 
     Examples
     --------
