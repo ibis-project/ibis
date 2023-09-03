@@ -9,38 +9,31 @@
 Ibis provides a full-featured replacement for SQL
 `SELECT` queries, but expressed with Python code that is:
 
--   Type-checked and validated as you go. No more debugging cryptic
-    database errors; Ibis catches your mistakes right away.
--   Easier to write. Pythonic function calls with tab completion in
-    IPython.
--   More composable. Break complex queries down into easier-to-digest
-    pieces
--   Easier to reuse. Mix and match Ibis snippets to create expressions
-    tailored for your analysis.
+- Type-checked and validated as you go. No more debugging cryptic database
+  errors; Ibis catches your mistakes right away.
+- Easier to write. Pythonic function calls with tab completion in IPython.
+- More composable. Break complex queries down into easier-to-digest pieces
+- Easier to reuse. Mix and match Ibis snippets to create expressions tailored
+  for your analysis.
 
-We intend for all `SELECT` queries to be fully portable to Ibis.
-Coverage of other DDL statements (e.g. `CREATE TABLE` or `INSERT`) may
-vary from engine to engine.
+We intend for all `SELECT` queries to be fully portable to Ibis. Coverage of
+other DDL statements (e.g. `CREATE TABLE` or `INSERT`) may vary from engine to
+engine.
 
 ::: {.callout-note}
-If you find any SQL idioms or use cases in your work that are not represented here, please reach out so we can add more to this guide!
+If you find any SQL idioms or use cases in your work that are not represented
+here, please reach out so we can add more to this guide!
 :::
+
+## Projections: select/add/remove columns
+
+All tables in Ibis are immutable. To select a subset of a table's columns, or
+to add new columns, you must produce a new table by means of a *projection*.
 
 ```{python}
 import ibis
 
-ibis.options.sql.default_limit = None
-```
-
-## Projections: select/add/remove columns
-
-All tables in Ibis are immutable. To select a subset of a table's
-columns, or to add new columns, you must produce a new table by means of
-a *projection*.
-
-
-```{python}
-t = ibis.table([("one", "string"), ("two", "float"), ("three", "int32")], "my_data")
+t = ibis.table(dict(one="string", two="float", three="int32"), name="my_data")
 t
 ```
 
@@ -53,27 +46,23 @@ FROM my_data
 
 In Ibis, this is
 
-
 ```{python}
 proj = t["two", "one"]
 ```
 
 or
 
-
 ```{python}
-proj = t.select(["two", "one"])
+proj = t.select("two", "one")
 ```
 
 This generates the expected SQL:
-
 
 ```{python}
 ibis.to_sql(proj)
 ```
 
-What about adding new columns? To form a valid projection, all column
-expressions must be **named**. Let's look at the SQL:
+What about adding new columns?
 
 ```sql
 SELECT two, one, three * 2 AS new_col
@@ -82,13 +71,11 @@ FROM my_data
 
 The last expression is written:
 
-
 ```{python}
 new_col = (t.three * 2).name("new_col")
 ```
 
 Now, we have:
-
 
 ```{python}
 proj = t["two", "one", new_col]
@@ -97,25 +84,22 @@ ibis.to_sql(proj)
 
 ### `mutate`: Add or modify columns easily
 
-Since adding new columns or modifying existing columns is so common,
-there is a convenience method `mutate`:
-
+Since adding new columns or modifying existing columns is so common, there is
+a convenience method `mutate`:
 
 ```{python}
 mutated = t.mutate(new_col=t.three * 2)
 ```
 
-Notice that using the `name` was not necessary here because we're using
-Python keywords to provide the name. Indeed:
-
+Notice that using the `name` was not necessary here because we're using Python
+keyword arguments to provide the name:
 
 ```{python}
 ibis.to_sql(mutated)
 ```
 
-If you modify an existing column with `mutate` it will list out all the
-other columns:
-
+If you modify an existing column with `mutate` it will list out all the other
+columns:
 
 ```{python}
 mutated = t.mutate(two=t.two * 2)
@@ -124,10 +108,9 @@ ibis.to_sql(mutated)
 
 ### `SELECT *` equivalent
 
-Especially in combination with relational joins, it's convenient to be
-able to select all columns in a table using the `SELECT *` construct. To
-do this, use the table expression itself in a projection:
-
+Especially in combination with relational joins, it's convenient to be able to
+select all columns in a table using the `SELECT *` construct. To do this, use
+the table expression itself in a projection:
 
 ```{python}
 proj = t[t]
@@ -137,7 +120,6 @@ ibis.to_sql(proj)
 This is how `mutate` is implemented. The example above
 `t.mutate(new_col=t.three * 2)` can be written as a normal projection:
 
-
 ```{python}
 proj = t[t, new_col]
 ibis.to_sql(proj)
@@ -145,9 +127,8 @@ ibis.to_sql(proj)
 
 Let's consider a table we might wish to join with `t`:
 
-
 ```{python}
-t2 = ibis.table([("key", "string"), ("value", "float")], "dim_table")
+t2 = ibis.table(dict(key="string", value="float"), name="dim_table")
 ```
 
 Now let's take the SQL:
@@ -161,7 +142,6 @@ FROM my_data t0
 
 To write this with Ibis, it is:
 
-
 ```{python}
 diff = (t.two - t2.value).name("diff")
 joined = t.join(t2, t.one == t2.key)[t, diff]
@@ -169,17 +149,15 @@ joined = t.join(t2, t.one == t2.key)[t, diff]
 
 And verify the generated SQL:
 
-
 ```{python}
 ibis.to_sql(joined)
 ```
 
 ### Using functions in projections
 
-If you pass a function instead of a string or Ibis expression in any
-projection context, it will be invoked with the "parent" table as its
-argument. This can help significantly when [composing complex operations.
-Consider this SQL:
+If you pass a function instead of a string or Ibis expression in any projection
+context, it will be invoked with the "parent" table as its argument. This can
+help significantly when [composing complex operations. Consider this SQL:
 
 ```sql
 SELECT one, avg(abs(the_sum)) AS mad
@@ -193,7 +171,6 @@ GROUP BY 1
 
 This can be written as one chained expression:
 
-
 ```{python}
 expr = (
     t.group_by(["one", "three"])
@@ -203,8 +180,7 @@ expr = (
 )
 ```
 
-Indeed:
-
+Here's the SQL:
 
 ```{python}
 ibis.to_sql(expr)
@@ -213,8 +189,7 @@ ibis.to_sql(expr)
 ## Filtering / `WHERE`
 
 You can add filter clauses to a table expression either by indexing with
-`[]` (like pandas) or use the `filter` method:
-
+`[]` (similar to pandas) or use the `filter` method:
 
 ```{python}
 filtered = t[t.two > 0]
@@ -222,8 +197,7 @@ ibis.to_sql(filtered)
 ```
 
 `filter` can take a list of expressions, which must all be satisfied for
-a row to be included in the result:
-
+a row to appear in the result:
 
 ```{python}
 filtered = t.filter([t.two > 0, t.one.isin(["A", "B"])])
@@ -233,36 +207,34 @@ ibis.to_sql(filtered)
 To compose boolean expressions with `AND` or `OR`, use the respective
 `&` and `|` operators:
 
-
 ```{python}
 cond = (t.two < 0) | ((t.two > 0) | t.one.isin(["A", "B"]))
 filtered = t[cond]
 ibis.to_sql(filtered)
 ```
 
+Note the parentheses around the second expression. These are necessary due to
+operator precedence.
+
 ## Aggregation / `GROUP BY`
 
 To aggregate a table, you need:
 
--   Zero or more grouping expressions (these can be column names)
--   One or more aggregation expressions
+- Zero or more grouping expressions (these can be column names)
+- One or more aggregation expressions
 
 Let's look at the `aggregate` method on tables:
 
-
 ```{python}
-stats = [t.two.sum().name("total_two"), t.three.mean().name("avg_three")]
-agged = t.aggregate(stats)
+agged = t.aggregate(total_two=t.two.sum(), avg_three=t.three.mean())
 ```
 
 If you don't use any group expressions, the result will have a single
 row with your statistics of interest:
 
-
 ```{python}
 agged.schema()
 ```
-
 
 ```{python}
 ibis.to_sql(agged)
@@ -271,10 +243,9 @@ ibis.to_sql(agged)
 To add groupings, use either the `by` argument of `aggregate` or use the
 `group_by` construct:
 
-
 ```{python}
-agged2 = t.aggregate(stats, by="one")
-agged3 = t.group_by("one").aggregate(stats)
+agged2 = t.aggregate(total_two=t.two.sum(), avg_three=t.three.mean())
+agged3 = t.group_by("one").aggregate(total_two=t.two.sum(), avg_three=t.three.mean())
 ibis.to_sql(agged3)
 ```
 
@@ -284,26 +255,23 @@ You can use any expression (or function, like in projections) deriving
 from the table you are aggregating. The only constraint is that the
 expressions must be named. Let's look at an example:
 
-
 ```{python}
 events = ibis.table(
-    [("ts", "timestamp"), ("event_type", "int32"), ("session_id", "int64")],
+    dict(ts="timestamp", event_type="int32", session_id="int64"),
     name="web_events",
 )
 ```
 
 Suppose we wanted to total up event types by year and month:
 
-
 ```{python}
-keys = [events.ts.year().name("year"), events.ts.month().name("month")]
-
-sessions = events.session_id.nunique()
-stats = events.group_by(keys).aggregate(total=events.count(), sessions=sessions)
+stats = (
+    events.group_by(year=events.ts.year(), month=events.ts.month())
+    .aggregate(total=events.count(), sessions=events.session_id.nunique())
+)
 ```
 
 Now we have:
-
 
 ```{python}
 ibis.to_sql(stats)
@@ -315,47 +283,43 @@ In analytics is it common to compare statistics from different subsets
 of a table. Let's consider a dataset containing people's name, age,
 gender, and nationality:
 
-
 ```{python}
 pop = ibis.table(
-    [
-        ("name", "string"),
-        ("country", "string"),
-        ("gender", "string"),
-        ("age", "int16"),
-    ],
+    dict(name="string", country="string", gender="string", age="int16"),
     name="population",
 )
 ```
 
 Now, suppose you wanted to know for each country:
 
--   Average overall age
--   Average male age
--   Average female age
--   Total number of persons
+- Average overall age
+- Average male age
+- Average female age
+- Total number of persons
 
 In SQL, you may write:
 
 ```sql
-SELECT country,
-       count(*) AS num_persons,
-       AVG(age) AS avg_age
-       AVG(CASE WHEN gender = 'M'
-             THEN age
-             ELSE NULL
-           END) AS avg_male,
-       AVG(CASE WHEN gender = 'F'
-             THEN age
-             ELSE NULL
-           END) AS avg_female,
+SELECT
+  country,
+  count(*) AS num_persons,
+  AVG(age) AS avg_age
+  AVG(
+    CASE WHEN gender = 'M' THEN age
+    ELSE NULL
+    END
+  ) AS avg_male,
+  AVG(
+    CASE WHEN gender = 'F' THEN age
+    ELSE NULL
+    END
+  ) AS avg_female,
 FROM population
 GROUP BY 1
 ```
 
 Ibis makes this much simpler by giving you `where` option in aggregation
 functions:
-
 
 ```{python}
 expr = pop.group_by("country").aggregate(
@@ -366,23 +330,21 @@ expr = pop.group_by("country").aggregate(
 )
 ```
 
-This indeed generates the correct SQL. Note that SQL engines handle
-`NULL` values differently in aggregation functions, but Ibis will write
-the SQL expression that is correct for your query engine.
-
+This indeed generates the correct SQL. Note that SQL engines handle `NULL`
+values differently in aggregation functions, but Ibis will write the SQL
+expression that is correct for your query engine.
 
 ```{python}
 ibis.to_sql(expr)
 ```
 
-### `count(*)` convenience: `size()`
+### Counting rows with [`Table.count()`](../reference/expression-tables.qmd#ibis.expr.types.relations.Table.count):
 
-Computing group frequencies is so common that, like pandas, we have a
-method `size` that is a shortcut for the `count(*)` idiom:
-
+Computing group frequencies can be done by calling `count()` after calling
+`group_by()`:
 
 ```{python}
-freqs = events.group_by(keys).size()
+freqs = events.group_by(year=events.ts.year(), month=events.ts.month()).count()
 ibis.to_sql(freqs)
 ```
 
@@ -396,9 +358,8 @@ FROM table
 GROUP BY 1
 ```
 
-This is so common that, like pandas, there is a generic array method
-`value_counts` which does this for us:
-
+This is so common that, like pandas, there is a generic column method
+`value_counts` which does this:
 
 ```{python}
 expr = events.ts.year().value_counts()
@@ -407,10 +368,9 @@ ibis.to_sql(expr)
 
 ### `HAVING` clause
 
-The SQL `HAVING` clause enables you to filter the results of an
-aggregation based on some group-wise condition holding true. For
-example, suppose we wanted to limit our analysis to groups containing at
-least 1000 observations:
+The SQL `HAVING` clause enables you to filter the results of an aggregation
+based on some group-wise condition holding true. For example, suppose we wanted
+to limit our analysis to groups containing at least 1000 observations:
 
 ```sql
 SELECT one, sum(two) AS total
@@ -421,17 +381,19 @@ HAVING count(*) >= 1000
 
 With Ibis, you can do:
 
-
 ```{python}
-expr = t.group_by("one").having(t.count() >= 1000).aggregate(t.two.sum().name("total"))
+expr = (
+    t.group_by("one")
+    .having(t.count() >= 1000)
+    .aggregate(total=t.two.sum())
+)
 ibis.to_sql(expr)
 ```
 
 ## Sorting / `ORDER BY`
 
-To sort a table, use the `order_by` method along with either column names
-or expressions that indicate the sorting keys:
-
+To sort a table, use the `order_by` method along with either column names or
+expressions that indicate the sorting keys:
 
 ```{python}
 sorted = events.order_by([events.ts.year(), events.ts.month()])
@@ -439,13 +401,13 @@ sorted = events.order_by([events.ts.year(), events.ts.month()])
 ibis.to_sql(sorted)
 ```
 
-The default for sorting is in ascending order. To reverse the sort
-direction of any key, wrap it in `ibis.desc`:
-
+The default for sorting is in ascending order. To reverse the sort direction of
+any key, wrap it in `ibis.desc`:
 
 ```{python}
-sorted = events.order_by([ibis.desc("event_type"), ibis.desc(events.ts.month())]).limit(
-    100
+sorted = (
+    events.order_by([ibis.desc("event_type"), ibis.desc(events.ts.month())])
+    .limit(100)
 )
 
 ibis.to_sql(sorted)
@@ -453,10 +415,9 @@ ibis.to_sql(sorted)
 
 ## `LIMIT` and `OFFSET`
 
-This one is easy. The table `limit` function truncates a table to the
-indicates number of rows. So if you only want the first 1000 rows (which
-may not be deterministic depending on the SQL engine), you can do:
-
+The table `limit` function truncates a table to the indicates number of rows.
+So if you only want the first 1000 rows (which may not be deterministic
+depending on the SQL engine), you can do:
 
 ```{python}
 limited = t.limit(1000)
@@ -466,7 +427,6 @@ ibis.to_sql(limited)
 The `offset` option in `limit` skips rows. So if you wanted rows 11
 through 20, you could do:
 
-
 ```{python}
 limited = t.limit(10, offset=10)
 ibis.to_sql(limited)
@@ -474,28 +434,29 @@ ibis.to_sql(limited)
 
 ## Common column expressions
 
-See the full `API documentation <api>`{.interpreted-text role="ref"} for
-all of the available value methods and tools for creating value
-expressions. We mention a few common ones here as they relate to common
-SQL queries.
+See the full [API documentation](../reference/expression-generic.qmd) for all
+of the available value methods and tools for creating value expressions.
+
+We mention a few common ones here as they relate to common SQL queries.
 
 ### Type casts
 
 Ibis's type system is independent of any SQL system. You cast Ibis
 expressions from one Ibis type to another. For example:
 
-
 ```{python}
-expr = t.mutate(date=t.one.cast("timestamp"), four=t.three.cast("float32"))
+expr = t.mutate(
+    date=t.one.cast("timestamp"),
+    four=t.three.cast("float32"),
+)
 
 ibis.to_sql(expr)
 ```
 
 ### `CASE` statements
 
-SQL dialects typically support one or more kind of `CASE` statements.
-The first is the *simple case* that compares against exact values of an
-expression.
+SQL dialects typically support one or more kind of `CASE` statements. The first
+is the *simple case* that compares against exact values of an expression.
 
 ```sql
 CASE expr
@@ -505,9 +466,8 @@ CASE expr
 END
 ```
 
-Value expressions in Ibis have a `case` method that allows us to emulate
-these semantics:
-
+Value expressions in Ibis have a `case` method that allows us to emulate these
+semantics:
 
 ```{python}
 case = (
@@ -524,8 +484,8 @@ expr = t.mutate(year_group=case)
 ibis.to_sql(expr)
 ```
 
-The more general case is that of an arbitrary list of boolean
-expressions and result values:
+The more general case is that of an arbitrary list of boolean expressions and
+result values:
 
 ```sql
 CASE
@@ -538,19 +498,21 @@ END
 
 To do this, use `ibis.case`:
 
-
 ```{python}
 case = (
-    ibis.case().when(t.two < 0, t.three * 2).when(t.two > 1, t.three).else_(t.two).end()
+    ibis.case()
+    .when(t.two < 0, t.three * 2)
+    .when(t.two > 1, t.three)
+    .else_(t.two)
+    .end()
 )
 
 expr = t.mutate(cond_value=case)
 ibis.to_sql(expr)
 ```
 
-There are several places where Ibis builds cases for you in a simplified
-way. One example is the `ifelse` function:
-
+There are several places where Ibis builds cases for you in a simplified way.
+One example is the `ifelse` function:
 
 ```{python}
 switch = (t.two < 0).ifelse("Negative", "Non-Negative")
@@ -560,9 +522,7 @@ ibis.to_sql(expr)
 
 ### Using `NULL` in expressions
 
-To use `NULL` in an expression, either use the special `ibis.NA` value
-or `ibis.null()`:
-
+To use `NULL` in an expression, either use the special `ibis.NA` value:
 
 ```{python}
 pos_two = (t.two > 0).ifelse(t.two, ibis.NA)
@@ -578,14 +538,12 @@ category. Here would be some SQL to do it:
 
 ```sql
 CASE
-  WHEN upper(country) IN ('UNITED STATES', 'CANADA')
-    THEN 'North America'
+  WHEN UPPER(country) IN ('UNITED STATES', 'CANADA') THEN 'North America'
   ELSE country
 END AS refined_group
 ```
 
 The Ibis equivalent of `IN` is the `isin` method. So we can write:
-
 
 ```{python}
 refined = (
@@ -618,11 +576,10 @@ To build expressions off constant values, you must first convert the
 value (whether a Python string or number) to an Ibis expression using
 `ibis.literal`:
 
-
 ```{python}
 t3 = ibis.table(
-    [("column1", "string"), ("column2", "string"), ("column3", "float")],
-    "data",
+    dict(column1="string", column2="string", column3="float"),
+    name="data",
 )
 
 value = ibis.literal("foo")
@@ -630,7 +587,6 @@ value = ibis.literal("foo")
 
 Once you've done this, you can use the literal expression like any
 other array or scalar expression:
-
 
 ```{python}
 has_foo = value.isin([t3.column1, t3.column2])
@@ -643,7 +599,6 @@ In many other situations, you can use constants without having to use
 `ibis.literal`. For example, we could add a column containing nothing
 but the number 5 like so:
 
-
 ```{python}
 expr = t3.mutate(number5=5)
 ibis.to_sql(expr)
@@ -654,13 +609,11 @@ ibis.to_sql(expr)
 These are simple: use the `isnull` and `notnull` functions respectively,
 which yield boolean arrays:
 
-
 ```{python}
 indic = t.two.isnull().ifelse("valid", "invalid")
 expr = t.mutate(is_valid=indic)
 ibis.to_sql(expr)
 ```
-
 
 ```{python}
 agged = (
@@ -678,7 +631,6 @@ The `between` method on arrays and scalars compiles to the SQL `BETWEEN`
 keyword. The result of `between` is boolean and can be used with any
 other boolean expression:
 
-
 ```{python}
 expr = t[t.two.between(10, 50) & t.one.notnull()]
 ibis.to_sql(expr)
@@ -688,37 +640,34 @@ ibis.to_sql(expr)
 
 Ibis supports several kinds of joins between table expressions:
 
--   `inner_join`: maps to SQL `INNER JOIN`
--   `cross_join`: a cartesian product join with no keys. Equivalent to
-    `inner_join` with no join predicates
--   `left_join`: maps to SQL `LEFT OUTER JOIN`
--   `outer_join`: maps to SQL `FULL OUTER JOIN`
--   `semi_join`: maps to SQL `LEFT SEMI JOIN`. May or may not be an
-    explicit join type in your query engine.
--   `anti_join`: maps to SQL `LEFT ANTI JOIN`. May or may not be an
-    explicit join type in your query engine.
+- `inner_join`: maps to SQL `INNER JOIN`
+- `cross_join`: a cartesian product join with no keys. Equivalent to
+  `inner_join` with no join predicates
+- `left_join`: maps to SQL `LEFT OUTER JOIN`
+- `outer_join`: maps to SQL `FULL OUTER JOIN`
+- `semi_join`: maps to SQL `LEFT SEMI JOIN`. May or may not be an
+  explicit join type in your query engine.
+- `anti_join`: maps to SQL `LEFT ANTI JOIN`. May or may not be an
+  explicit join type in your query engine.
 
 The `join` table method is by default the same as `inner_join`.
 
 Let's look at a couple example tables to see how joins work in Ibis:
 
-
 ```{python}
-t1 = ibis.table([("value1", "float"), ("key1", "string"), ("key2", "string")], "table1")
-
-t2 = ibis.table([("value2", "float"), ("key3", "string"), ("key4", "string")], "table2")
+t1 = ibis.table(dict(value1="float", key1="string", key2="string"), name="table1")
+t2 = ibis.table(dict(value2="float", key3="string", key4="string"), name="table2")
 ```
 
 Let's join on one key:
-
 
 ```{python}
 joined = t1.left_join(t2, t1.key1 == t2.key3)
 ```
 
 The immediate result of a join does not yet have a set schema. That is
-determined by the next action that you take. There's several ways
-forward from here that address the spectrum of SQL use cases.
+determined by the next action that you take. There's several ways forward from
+here that address a variety of SQL use cases.
 
 ### Join + projection
 
@@ -731,9 +680,8 @@ FROM table1 t0
     ON t0.key1 = t1.key3
 ```
 
-After one or more joins, you can reference any of the joined tables in a
-projection immediately after:
-
+After one or more joins, you can reference any of the joined tables in
+a projection immediately after:
 
 ```{python}
 expr = joined[t1, t2.value2]
@@ -742,7 +690,6 @@ ibis.to_sql(expr)
 
 If you need to compute an expression that involves both tables, you can
 do that also:
-
 
 ```{python}
 expr = joined[t1.key1, (t1.value1 - t2.value2).name("diff")]
@@ -758,7 +705,7 @@ tables.
 Consider this SQL:
 
 ```sql
-SELECT t0.key1, avg(t0.value1 - t1.value2) AS avg_diff
+SELECT t0.key1, AVG(t0.value1 - t1.value2) AS avg_diff
 FROM table1 t0
   LEFT OUTER JOIN table2 t1
     ON t0.key1 = t1.key3
@@ -767,11 +714,12 @@ GROUP BY 1
 
 As you would hope, the code is as follows:
 
-
 ```{python}
 avg_diff = (t1.value1 - t2.value2).mean()
 expr = (
-    t1.left_join(t2, t1.key1 == t2.key3).group_by(t1.key1).aggregate(avg_diff=avg_diff)
+    t1.left_join(t2, t1.key1 == t2.key3)
+    .group_by(t1.key1)
+    .aggregate(avg_diff=avg_diff)
 )
 ibis.to_sql(expr)
 ```
@@ -781,7 +729,6 @@ ibis.to_sql(expr)
 If you try to compile or execute a join that has not been projected or
 aggregated, it will be *fully materialized*:
 
-
 ```{python}
 joined = t1.left_join(t2, t1.key1 == t2.key3)
 ibis.to_sql(joined)
@@ -789,12 +736,11 @@ ibis.to_sql(joined)
 
 ### Multiple joins
 
-You can join multiple tables together in succession without needing to
-address any of the above concerns.
-
+You can join multiple tables together in succession without needing to address
+any of the above concerns.
 
 ```{python}
-t3 = ibis.table([("value3", "float"), ("key5", "string")], "table3")
+t3 = ibis.table(dict(value3="float", key5="string"), name="table3")
 
 total = (t1.value1 + t2.value2 + t3.value3).sum()
 expr = (
@@ -821,7 +767,6 @@ GROUP BY 1
 The table `view` method enables you to form a *self-reference* that is
 referentially distinct in expressions. Now you can proceed normally:
 
-
 ```{python}
 t_view = t.view()
 
@@ -839,31 +784,19 @@ ibis.to_sql(expr)
 In many cases the columns being joined between two tables or table
 expressions have the same name. Consider this example:
 
-
 ```{python}
 t4 = ibis.table(
-    [
-        ("key1", "string"),
-        ("key2", "string"),
-        ("key3", "string"),
-        ("value1", "float"),
-    ],
-    "table4",
+    dict(key1="string", key2="string", key3="string", value1="float"),
+    name="table4",
 )
 
 t5 = ibis.table(
-    [
-        ("key1", "string"),
-        ("key2", "string"),
-        ("key3", "string"),
-        ("value2", "float"),
-    ],
-    "table5",
+    dict(key1="string", key2="string", key3="string", value2="float"),
+    name="table5",
 )
 ```
 
 In these case, we can specify a list of common join keys:
-
 
 ```{python}
 joined = t4.join(t5, ["key1", "key2", "key3"])
@@ -872,7 +805,6 @@ ibis.to_sql(expr)
 ```
 
 You can mix the overlapping key names with other expressions:
-
 
 ```{python}
 joined = t4.join(t5, ["key1", "key2", t4.key3.left(4) == t4.key3.left(4)])
@@ -887,7 +819,6 @@ query engines support these efficiently, some inefficiently, or some not
 at all. In the latter case, these conditions get moved by Ibis into the
 `WHERE` part of the `SELECT` query.
 
-
 ```{python}
 expr = t1.join(t2, t1.value1 < t2.value2).group_by(t1.key1).size()
 ibis.to_sql(expr)
@@ -897,7 +828,6 @@ ibis.to_sql(expr)
 
 You can also pass a list of column names instead of forming boolean
 expressions:
-
 
 ```{python}
 joined = t1.join(t2, [("key1", "key3"), ("key2", "key4")])
@@ -917,32 +847,21 @@ efficient filtering in large many-to-many relationships.
 Let's consider a web dataset involving website session / usage data and
 purchases:
 
-
 ```{python}
 events = ibis.table(
-    [
-        ("session_id", "int64"),
-        ("user_id", "int64"),
-        ("event_type", "int32"),
-        ("ts", "timestamp"),
-    ],
-    "events",
+    dict(session_id="int64", user_id="int64", event_type="int32", ts="timestamp"),
+    name="events",
 )
 
 purchases = ibis.table(
-    [
-        ("item_id", "int64"),
-        ("user_id", "int64"),
-        ("price", "float"),
-        ("ts", "timestamp"),
-    ],
-    "purchases",
+    dict(item_id="int64", user_id="int64", price="float", ts="timestamp"),
+    name="purchases",
 )
 ```
 
-Now, the key `user_id` appears with high frequency in both tables. But
-let's say you want to limit your analysis of the `events` table to only
-sessions by users who have made a purchase.
+Now, the key `user_id` appears with high frequency in both tables. But let's
+say you want to limit your analysis of the `events` table to only sessions by
+users who have made a purchase.
 
 In SQL, you can do this using the somewhat esoteric `EXISTS` construct:
 
@@ -956,16 +875,14 @@ WHERE EXISTS (
 )
 ```
 
-To describe this operation in Ibis, you compare the `user_id` columns
-and use the `any` reduction:
-
+To describe this operation in Ibis, you compare the `user_id` columns and use
+the `any` reduction:
 
 ```{python}
 cond = (events.user_id == purchases.user_id).any()
 ```
 
 This can now be used to filter `events`:
-
 
 ```{python}
 expr = events[cond]
@@ -974,7 +891,6 @@ ibis.to_sql(expr)
 
 If you negate the condition, it will instead give you only event data
 from user *that have not made a purchase*:
-
 
 ```{python}
 expr = events[-cond]
@@ -997,7 +913,6 @@ WHERE user_id IN (
 
 This is almost semantically the same as the `EXISTS` example. Indeed,
 you can write with Ibis:
-
 
 ```{python}
 cond = events.user_id.isin(purchases.user_id)
@@ -1024,7 +939,6 @@ WHERE value1 > (
 ```
 
 With Ibis, the code is simpler and more pandas-like:
-
 
 ```{python}
 expr = t1[t1.value1 > t2.value2.max()]
@@ -1053,7 +967,6 @@ whole-table average as above.
 With Ibis, the code is similar, but you add the correlated filter to the
 average statistic:
 
-
 ```{python}
 stat = t2[t1.key1 == t2.key3].value2.mean()
 expr = t1[t1.value1 > stat]
@@ -1064,8 +977,8 @@ ibis.to_sql(expr)
 
 In SQL, the `DISTINCT` keyword is used in a couple of ways:
 
--   Deduplicating identical rows in some `SELECT` statement
--   Aggregating on the distinct values of some column expression
+- Deduplicating identical rows in some `SELECT` statement
+- Aggregating on the distinct values of some column expression
 
 Ibis supports both use cases. So let's have a look. The first case is
 the simplest: call `distinct` on a table expression. First, here's the
@@ -1077,7 +990,6 @@ FROM table1
 ```
 
 And the Ibis Python code:
-
 
 ```{python}
 expr = t1.distinct()
@@ -1097,7 +1009,6 @@ GROUP BY 1
 
 In Ibis this is:
 
-
 ```{python}
 metric = events.event_type.nunique()
 expr = events.group_by("user_id").aggregate(unique_events=metric)
@@ -1110,12 +1021,11 @@ Window functions in SQL allow you to write expressions that involve
 possibly-ordered groups of a table. Each window function involves one of
 the following:
 
--   An analytic function. Most aggregate functions are valid analytic
-    functions, and there are additional ones such as `LEAD`, `LAG`,
-    `NTILE`, and others.
--   A `PARTITION BY` clause. This may be omitted.
--   An `ORDER BY` clause. This may be omitted for many functions.
--   A window frame clause. The default is to use the entire partition.
+- An analytic function. Most aggregate functions are valid analytic functions,
+  and there are additional ones such as `LEAD`, `LAG`, `NTILE`, and others.
+- A `PARTITION BY` clause. This may be omitted.
+- An `ORDER BY` clause. This may be omitted for many functions.
+- A window frame clause. The default is to use the entire partition.
 
 So you may see SQL like:
 
@@ -1133,7 +1043,6 @@ Ibis will automatically write window clauses when you use aggregate
 functions in a non-aggregate context. Suppose you wanted to subtract the
 mean of a column from itself:
 
-
 ```{python}
 expr = t.mutate(two_demean=t.two - t.two.mean())
 ibis.to_sql(expr)
@@ -1141,7 +1050,6 @@ ibis.to_sql(expr)
 
 If you use `mutate` in conjunction with `group_by`, it will add a
 `PARTITION BY` to the `OVER` specification:
-
 
 ```{python}
 expr = t.group_by("one").mutate(two_demean=t.two - t.two.mean())
@@ -1152,7 +1060,6 @@ ibis.to_sql(expr)
 For functions like `LAG` that require an ordering, we can add an
 `order_by` call:
 
-
 ```{python}
 expr = t.group_by("one").order_by(t.two).mutate(two_first_diff=t.two - t.two.lag())
 
@@ -1161,7 +1068,6 @@ ibis.to_sql(expr)
 
 For more precision, you can create a `Window` object that also includes
 a window frame clause:
-
 
 ```{python}
 w = ibis.window(group_by="one", preceding=5, following=5)
@@ -1184,13 +1090,11 @@ LIMIT 10
 
 Ibis has a special analytic expression `topk`:
 
-
 ```{python}
 expr = t1.key1.topk(10)
 ```
 
 This can be evaluated directly, yielding the above query:
-
 
 ```{python}
 ibis.to_sql(expr)
@@ -1202,7 +1106,6 @@ See `Timestamp methods <api.timestamp>`{.interpreted-text role="ref"}
 for a table of available date/time methods.
 
 For example, we can do:
-
 
 ```{python}
 expr = events.mutate(year=events.ts.year(), month=events.ts.month())
@@ -1221,7 +1124,6 @@ reconnaissance into the data if this does not work.
 Ibis has a set of interval APIs that allow you to do date/time
 arithmetic. For example:
 
-
 ```{python}
 expr = events[events.ts > (ibis.now() - ibis.interval(years=1))]
 ibis.to_sql(expr)
@@ -1238,13 +1140,12 @@ To appear.
 
 SQL dialects often support two kinds of `UNION` operations:
 
--   `UNION`: the combination of *distinct* rows from each table.
--   `UNION ALL`: the combination of all rows from each table, whether or
-    not they are distinct.
+- `UNION`: the combination of *distinct* rows from each table.
+- `UNION ALL`: the combination of all rows from each table, whether or
+  not they are distinct.
 
 The Ibis `union` function by distinct is a `UNION ALL`, and you can set
 `distinct=True` to get the normal `UNION` behavior:
-
 
 ```{python}
 expr1 = t1.limit(10)
@@ -1280,16 +1181,10 @@ WHERE t0.kind = 'foo' AND t1.kind = 'bar'
 Explicit CTEs are not necessary with Ibis. Let's look at an example
 involving joining an aggregated table on itself after filtering:
 
-
 ```{python}
 purchases = ibis.table(
-    [
-        ("region", "string"),
-        ("kind", "string"),
-        ("user", "int64"),
-        ("amount", "float"),
-    ],
-    "purchases",
+    dict(region="string", kind="string", user="int64", amount="float"),
+    name="purchases",
 )
 
 metric = purchases.amount.sum().name("total")
@@ -1304,7 +1199,6 @@ result = left.join(right, left.region == right.region)[
 ```
 
 Ibis automatically creates a CTE for `agged`:
-
 
 ```{python}
 ibis.to_sql(result)
