@@ -17,6 +17,7 @@ class Renderer(MdRenderer):
 
         prompt = ">>> "
         continuation = "... "
+
         skip_doctest = "doctest: +SKIP"
         expect_failure = "quartodoc: +EXPECTED_FAILURE"
         quartodoc_skip_doctest = "quartodoc: +SKIP"
@@ -24,7 +25,11 @@ class Renderer(MdRenderer):
         chunker = lambda line: line.startswith((prompt, continuation))
 
         for first, *rest in toolz.partitionby(chunker, lines):
+            # only attempt to execute or render code blocks that start with the
+            # >>> prompt
             if first.startswith(prompt):
+                # skip execution, but render the code block as python
+                # if it's marked with skip_doctest, expect_failure or quartodoc_skip_doctest
                 if not (
                     quartodoc_skip_doctest in first
                     or skip_doctest in first
@@ -39,11 +44,15 @@ class Renderer(MdRenderer):
 
                 result.append(f"```{start}python{end}")
 
+                # if we expect failures, don't fail the notebook execution and
+                # render the error message
                 if expect_failure in first:
                     assert (
                         start and end
                     ), "expected failure should never occur alongside a skipped doctest example"
                     result.append("#| error: true")
+
+                # remove the quartodoc markers from the rendered code
                 result.append(
                     first.replace(f"# {quartodoc_skip_doctest}", "")
                     .replace(quartodoc_skip_doctest, "")
