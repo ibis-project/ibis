@@ -185,7 +185,7 @@ def construct_time_context_aware_series(
     1    2.2
     2    3.3
     Name: value, dtype: float64
-    >>> construct_time_context_aware_series(series, df)  # doctest: +SKIP
+    >>> construct_time_context_aware_series(series, df)  # quartodoc: +SKIP # doctest: +SKIP
        time
     0  2017-01-02    1.1
     1  2017-01-03    2.2
@@ -196,14 +196,14 @@ def construct_time_context_aware_series(
     and a DateTimeIndex.
 
     >>> timed_series = construct_time_context_aware_series(series, df)
-    >>> timed_series  # doctest: +SKIP
+    >>> timed_series  # quartodoc: +SKIP # doctest: +SKIP
        time
     0  2017-01-02    1.1
     1  2017-01-03    2.2
     2  2017-01-04    3.3
     Name: value, dtype: float64
 
-    >>> construct_time_context_aware_series(timed_series, df)  # doctest: +SKIP
+    >>> construct_time_context_aware_series(timed_series, df)  # quartodoc: +SKIP # doctest: +SKIP
        time
     0  2017-01-02    1.1
     1  2017-01-03    2.2
