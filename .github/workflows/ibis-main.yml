@@ -5,20 +5,22 @@ on:
     # Skip the test suite if all changes are in the docs directory
     paths-ignore:
       - "docs/**"
-      - "mkdocs.yml"
       - "**/*.md"
+      - "**/*.qmd"
     branches:
       - master
       - "*.x.x"
+      - quarto
   pull_request:
     # Skip the test suite if all changes are in the docs directory
     paths-ignore:
       - "docs/**"
-      - "mkdocs.yml"
       - "**/*.md"
+      - "**/*.qmd"
     branches:
       - master
       - "*.x.x"
+      - quarto
   merge_group:
 
 permissions:
