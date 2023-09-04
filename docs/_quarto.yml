@@ -69,6 +69,8 @@ website:
             url: https://github.com/ibis-project/ibis
           - text: Report a bug
             url: https://github.com/ibis-project/ibis/issues/new?assignees=&labels=bug&projects=&template=bug-report.yml&title=bug
+          - text: Report a documentation issue
+            url: https://github.com/ibis-project/ibis/issues/new?assignees=&labels=docs&projects=&template=docs-issue.yml&title=docs
           - text: Submit a feature request
             url: https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat
           - text: Ask the community for help
