@@ -1,16 +1,15 @@
 from __future__ import annotations
 
-import quartodoc.ast as qast
+import quartodoc as qd
 import toolz
 from plum import dispatch
-from quartodoc import MdRenderer
 
 
-class Renderer(MdRenderer):
+class Renderer(qd.MdRenderer):
     style = "ibis"
 
     @dispatch
-    def render(self, el: qast.ExampleCode):
+    def render(self, el: qd.ast.ExampleCode) -> str:
         lines = el.value.splitlines()
 
         result = []
