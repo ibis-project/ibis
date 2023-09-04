@@ -5,22 +5,24 @@ on:
     # Skip the backend suite if all changes are docs
     paths-ignore:
       - "docs/**"
-      - "mkdocs.yml"
       - "**/*.md"
+      - "**/*.qmd"
       - "codecov.yml"
     branches:
       - master
       - "*.x.x"
+      - quarto
   pull_request:
     # Skip the backend suite if all changes are docs
     paths-ignore:
       - "docs/**"
-      - "mkdocs.yml"
       - "**/*.md"
+      - "**/*.qmd"
       - "codecov.yml"
     branches:
       - master
       - "*.x.x"
+      - quarto
   merge_group:
 
 permissions:
