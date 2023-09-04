@@ -742,15 +742,24 @@ WHERE catalog_name = :database"""
         Examples
         --------
         >>> import ibis
+        >>> import sqlite3
+        >>> ibis.options.interactive = True
+        >>> with sqlite3.connect("/tmp/sqlite.db") as con:
+        ...     _ = con.execute("DROP TABLE IF EXISTS t")
+        ...     _ = con.execute("CREATE TABLE t (a INT, b TEXT)")
+        ...     _ = con.execute("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
         >>> con = ibis.connect("duckdb://")
-        >>> t = con.read_sqlite("ci/ibis-testing-data/ibis_testing.db", table_name="diamonds")
-        >>> t.head().execute()
-                carat      cut color clarity  depth  table  price     x     y     z
-            0   0.23    Ideal     E     SI2   61.5   55.0    326  3.95  3.98  2.43
-            1   0.21  Premium     E     SI1   59.8   61.0    326  3.89  3.84  2.31
-            2   0.23     Good     E     VS1   56.9   65.0    327  4.05  4.07  2.31
-            3   0.29  Premium     I     VS2   62.4   58.0    334  4.20  4.23  2.63
-            4   0.31     Good     J     SI2   63.3   58.0    335  4.34  4.35  2.75
+        >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ a     ┃ b      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ a      │
+        │     2 │ b      │
+        │     3 │ c      │
+        └───────┴────────┘
         """
 
         if table_name is None:
@@ -781,17 +790,20 @@ WHERE catalog_name = :database"""
         all_varchar
             Set all SQLite columns to type `VARCHAR` to avoid type errors on ingestion.
 
-        Returns
-        -------
-        None
-
         Examples
         --------
         >>> import ibis
+        >>> import sqlite3
+        >>> with sqlite3.connect("/tmp/attach_sqlite.db") as con:
+        ...     _ = con.execute("DROP TABLE IF EXISTS t")
+        ...     _ = con.execute("CREATE TABLE t (a INT, b TEXT)")
+        ...     _ = con.execute("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
         >>> con = ibis.connect("duckdb://")
-        >>> con.attach_sqlite("ci/ibis-testing-data/ibis_testing.db")
         >>> con.list_tables()
-        ['functional_alltypes', 'awards_players', 'batting', 'diamonds']
+        []
+        >>> con.attach_sqlite("/tmp/attach_sqlite.db")
+        >>> con.list_tables()
+        ['t']
         """
         self._load_extensions(["sqlite"])
         with self.begin() as con:
@@ -958,16 +970,21 @@ WHERE catalog_name = :database"""
         >>> import ibis
         >>> penguins = ibis.examples.penguins.fetch()
         >>> con = ibis.get_backend(penguins)
-        >>> con.to_parquet(penguins, "penguins.parquet")
+        >>> con.to_parquet(penguins, "/tmp/penguins.parquet")
 
         Write out an expression to a hive-partitioned parquet file.
 
-        >>> import ibis
+        >>> import tempfile
         >>> penguins = ibis.examples.penguins.fetch()
         >>> con = ibis.get_backend(penguins)
-        >>> con.to_parquet(penguins, "penguins_hive_dir", partition_by="year")  # doctest: +SKIP
-        >>> # partition on multiple columns
-        >>> con.to_parquet(penguins, "penguins_hive_dir", partition_by=("year", "island"))  # doctest: +SKIP
+
+        Partition on a single column.
+
+        >>> con.to_parquet(penguins, tempfile.mkdtemp(), partition_by="year")
+
+        Partition on multiple columns.
+
+        >>> con.to_parquet(penguins, tempfile.mkdtemp(), partition_by=("year", "island"))
         """
         self._run_pre_execute_hooks(expr)
         query = self._to_sql(expr, params=params)
