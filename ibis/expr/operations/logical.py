@@ -200,12 +200,17 @@ class _UnresolvedSubquery(Value, _Negatable):
     -----
     Consider the following ibis expressions
 
-    >>> t = ibis.table(dict(a="string"))  # doctest: +SKIP
-    >>> s = ibis.table(dict(a="string"))  # doctest: +SKIP
-    >>> cond = (t.a == s.a).any()  # doctest: +SKIP
+    ```python
+    import ibis
+
+    t = ibis.table(dict(a="string"))
+    s = ibis.table(dict(a="string"))
+
+    cond = (t.a == s.a).any()
+    ```
 
     Without knowing the table to use as the outer query there are two ways to
-    turn this expression into a SQL `EXISTS` predicate depending on which of
+    turn this expression into a SQL `EXISTS` predicate, depending on which of
     `t` or `s` is filtered on.
 
     Filtering from `t`:
@@ -213,7 +218,7 @@ class _UnresolvedSubquery(Value, _Negatable):
     ```sql
     SELECT *
     FROM t
-    WHERE EXISTS (SELECT 1 WHERE t.a = s.a)
+    WHERE EXISTS (SELECT 1 FROM s WHERE t.a = s.a)
     ```
 
     Filtering from `s`:
@@ -221,10 +226,10 @@ class _UnresolvedSubquery(Value, _Negatable):
     ```sql
     SELECT *
     FROM s
-    WHERE EXISTS (SELECT 1 WHERE t.a = s.a)
+    WHERE EXISTS (SELECT 1 FROM t WHERE t.a = s.a)
     ```
 
-    Notably the subquery `(SELECT 1 WHERE t.a = s.a)` cannot stand on its own.
+    Notably the correlated subquery cannot stand on its own.
 
     The purpose of `_UnresolvedSubquery` is to capture enough information about
     an exists predicate such that it can be resolved when predicates are
