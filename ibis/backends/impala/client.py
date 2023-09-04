@@ -256,10 +256,13 @@ class ImpalaTable(ir.Table):
 
         Examples
         --------
-        >>> t.insert(table_expr)  # doctest: +SKIP
+        Append to an existing table
+
+        >>> t.insert(table_expr)  # quartodoc: +SKIP # doctest: +SKIP
 
         Completely overwrite contents
-        >>> t.insert(table_expr, overwrite=True)  # doctest: +SKIP
+
+        >>> t.insert(table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
         """
         if values is not None:
             raise NotImplementedError
