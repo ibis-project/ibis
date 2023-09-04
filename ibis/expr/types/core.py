@@ -451,17 +451,17 @@ class Expr(Immutable, Coercible):
         Write out an expression to a single parquet file.
 
         >>> import ibis
+        >>> import tempfile
         >>> penguins = ibis.examples.penguins.fetch()
-        >>> penguins.to_parquet("penguins.parquet")  # doctest: +SKIP
+        >>> penguins.to_parquet(tempfile.mktemp())
 
-        Write out an expression to a hive-partitioned parquet file.
+        Partition on a single column.
 
-        >>> import ibis
-        >>> penguins = ibis.examples.penguins.fetch()
-        >>> # partition on single column
-        >>> penguins.to_parquet("penguins_hive_dir", partition_by="year")  # doctest: +SKIP
-        >>> # partition on multiple columns
-        >>> penguins.to_parquet("penguins_hive_dir", partition_by=("year", "island"))  # doctest: +SKIP
+        >>> penguins.to_parquet(tempfile.mkdtemp(), partition_by="year")
+
+        Partition on multiple columns.
+
+        >>> penguins.to_parquet(tempfile.mkdtemp(), partition_by=("year", "island"))
 
         ::: {.callout-note}
         ## Hive-partitioned output is currently only supported when using DuckDB
