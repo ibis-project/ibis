@@ -5,9 +5,9 @@ on:
     # Skip the backend suite if all changes are in the docs directory
     paths-ignore:
       - "docs/**"
-      - "mkdocs.yml"
     branches:
       - master
+      - quarto
 
 permissions:
   # this allows extractions/setup-just to list releases for `just` at a higher
