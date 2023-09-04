@@ -865,7 +865,25 @@ def read_csv(
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.read_csv("path/to/data.csv", table_name="my_csv_table")  # doctest: +SKIP
+    >>> ibis.options.interactive = True
+    >>> lines = '''a,b
+    ... 1,d
+    ... 2,
+    ... ,f
+    ... '''
+    >>> with open("/tmp/lines.csv", mode="w") as f:
+    ...     _ = f.write(lines)
+    >>> t = ibis.read_csv("/tmp/lines.csv")
+    >>> t
+    ┏━━━━━━━┳━━━━━━━━┓
+    ┃ a     ┃ b      ┃
+    ┡━━━━━━━╇━━━━━━━━┩
+    │ int64 │ string │
+    ├───────┼────────┤
+    │     1 │ d      │
+    │     2 │ NULL   │
+    │  NULL │ f      │
+    └───────┴────────┘
     """
     from ibis.config import _default_backend
 
@@ -958,7 +976,26 @@ def read_parquet(
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.read_parquet("path/to/data.parquet", table_name="my_parquet_table")  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> ibis.options.interactive = True
+    >>> df = pd.DataFrame({"a": [1, 2, 3], "b": list("ghi")})
+    >>> df
+       a  b
+    0  1  g
+    1  2  h
+    2  3  i
+    >>> df.to_parquet("/tmp/data.parquet")
+    >>> t = ibis.read_parquet("/tmp/data.parquet")
+    >>> t
+    ┏━━━━━━━┳━━━━━━━━┓
+    ┃ a     ┃ b      ┃
+    ┡━━━━━━━╇━━━━━━━━┩
+    │ int64 │ string │
+    ├───────┼────────┤
+    │     1 │ g      │
+    │     2 │ h      │
+    │     3 │ i      │
+    └───────┴────────┘
     """
     from ibis.config import _default_backend
 
@@ -988,7 +1025,27 @@ def read_delta(
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.read_delta("path/to/delta", table_name="my_table")  # doctest: +SKIP
+    >>> import pandas as pd
+    >>> ibis.options.interactive = True
+    >>> df = pd.DataFrame({"a": [1, 2, 3], "b": list("ghi")})
+    >>> df
+       a  b
+    0  1  g
+    1  2  h
+    2  3  i
+    >>> import deltalake as dl
+    >>> dl.write_deltalake("/tmp/data.delta", df, mode="overwrite")
+    >>> t = ibis.read_delta("/tmp/data.delta")
+    >>> t
+    ┏━━━━━━━┳━━━━━━━━┓
+    ┃ a     ┃ b      ┃
+    ┡━━━━━━━╇━━━━━━━━┩
+    │ int64 │ string │
+    ├───────┼────────┤
+    │     1 │ g      │
+    │     2 │ h      │
+    │     3 │ i      │
+    └───────┴────────┘
     """
     from ibis.config import _default_backend
 
