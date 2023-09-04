@@ -6,21 +6,23 @@ on:
   push:
     paths:
       - "docs/**"
-      - "mkdocs.yml"
       - "**/*.md"
+      - "**/*.qmd"
       - "codecov.yml"
     branches:
       - master
       - "*.x.x"
+      - quarto
   pull_request:
     paths:
       - "docs/**"
-      - "mkdocs.yml"
       - "**/*.md"
+      - "**/*.qmd"
       - "codecov.yml"
     branches:
       - master
       - "*.x.x"
+      - quarto
   merge_group:
 jobs:
   test_backends:
