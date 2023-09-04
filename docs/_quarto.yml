@@ -81,8 +81,8 @@ website:
       - sidebar:reference
     right:
       - posts.qmd
-      - sidebar:contribute
       - release_notes.md
+      - sidebar:contribute
 
   sidebar:
     - id: ""
