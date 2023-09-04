@@ -15,36 +15,36 @@ subsequent computation.
 
 Without selectors this becomes quite verbose and tedious to write:
 
-```python
 >>> import ibis
->>> t = ibis.table(...)  # doctest: +SKIP
->>> t.select([t[c] for c in t.columns if t[c].type().is_numeric()])  # doctest: +SKIP
-```
+>>> t = ibis.table(dict(a="int", b="string", c="array<int>", abcd="float"))
+>>> expr = t.select([t[c] for c in t.columns if t[c].type().is_numeric()])
+>>> expr.columns
+['a', 'abcd']
 
 Compare that to the [`numeric`](#ibis.selectors.numeric) selector:
 
-```python
 >>> import ibis.selectors as s
->>> t.select(s.numeric())  # doctest: +SKIP
-```
+>>> expr = t.select(s.numeric())
+>>> expr.columns
+['a', 'abcd']
 
 When there are multiple properties to check it gets worse:
 
-```python
->>> t.select(  # doctest: +SKIP
+>>> expr = t.select(
 ...     [
 ...         t[c] for c in t.columns
-...         if t[c].type().is_numeric()
-...         if ("a" in c or "cd" in c)
+...         if t[c].type().is_numeric() or t[c].type().is_string()
+...         if ("a" in c or "b" in c or "cd" in c)
 ...     ]
 ... )
-```
+>>> expr.columns
+['a', 'b', 'abcd']
 
 Using a composition of selectors this is much less tiresome:
 
-```python
->>> t.select(s.numeric() & s.contains(("a", "cd")))  # doctest: +SKIP
-```
+>>> expr = t.select((s.numeric() | s.of_type("string")) & s.contains(("a", "b", "cd")))
+>>> expr.columns
+['a', 'b', 'abcd']
 """
 
 from __future__ import annotations
