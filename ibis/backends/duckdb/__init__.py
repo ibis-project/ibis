@@ -9,27 +9,28 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
 
-import duckdb
-import pyarrow as pa
-import sqlglot as sg
-import toolz
-from packaging.version import parse as vparse
-
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+import pyarrow as pa
+import sqlglot as sg
+import toolz
 from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseBackend
+from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.compiler import translate
-from ibis.backends.duckdb.datatypes import parse, serialize, DuckDBType
+from ibis.backends.duckdb.datatypes import serialize
 from ibis.expr.operations.relations import PandasDataFrameProxy
 from ibis.expr.operations.udf import InputType
-from ibis.formats.pyarrow import PyArrowData
 from ibis.formats.pandas import PandasData
+from ibis.formats.pyarrow import PyArrowData
+from packaging.version import parse as vparse
+
+import duckdb
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
@@ -245,7 +246,7 @@ class Backend(BaseBackend, CanCreateSchema):
         names, types, *_ = results.fetch_arrow_table()
         names = names.to_pylist()
         types = types.to_pylist()
-        return sch.Schema(dict(zip(names, map(parse, types))))
+        return sch.Schema(dict(zip(names, map(DuckDBType.from_string, types))))
 
     def list_databases(self, like: str | None = None) -> list[str]:
         result = self.raw_sql("PRAGMA database_list;")
@@ -1195,8 +1196,7 @@ class Backend(BaseBackend, CanCreateSchema):
             map(as_py, rows["column_type"]),
             map(as_py, rows["null"]),
         ):
-            ibis_type = parse(type)
-            # ibis_type = DuckDBType.from_string(type, nullable=nullable)
+            ibis_type = DuckDBType.from_string(type, nullable=nullable)
             yield name, ibis_type.copy(nullable=null.lower() == "yes")
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
