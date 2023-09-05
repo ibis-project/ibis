@@ -49,7 +49,7 @@ jobs:
           - "3.11"
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install python
         uses: actions/setup-python@v4
@@ -114,7 +114,7 @@ jobs:
           - "3.11"
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install python
         uses: actions/setup-python@v4
@@ -167,7 +167,7 @@ jobs:
           sudo apt-get install -y -q build-essential graphviz libgeos-dev libkrb5-dev freetds-dev
 
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install python
         uses: actions/setup-python@v4

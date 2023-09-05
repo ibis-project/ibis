@@ -28,10 +28,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: clone tpc-queries
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ibis-project/tpc-queries
           path: ./tpc-queries
