@@ -77,17 +77,17 @@ con = ibis.duckdb.connect()  # <1>
 
 ### `ibis.duckdb.connect`
 
-```python
-con = ibis.duckdb.connect()  # (1)
-```
-
-1. Use an ephemeral, in-memory database
+Connect to an in-memory database:
 
 ```python
-con = ibis.duckdb.connect("mydb.duckdb")  # (1)
+con = ibis.duckdb.connect()
 ```
 
-1. Connect to, or create, a local DuckDB file
+Connect to, or create, a local DuckDB file
+
+```python
+con = ibis.duckdb.connect("mydb.duckdb")
+```
 
 ::: {.callout-note}
 `ibis.duckdb.connect` is a thin wrapper around [`ibis.backends.duckdb.Backend.do_connect`](#ibis.backends.duckdb.Backend.do_connect).
