@@ -1,8 +1,5 @@
 ---
 description: "Connect to DuckDB with Ibis, the portable dataframe library"
-keywords:
-    - Python
-    - Ibis
 ---
 
 # DuckDB
