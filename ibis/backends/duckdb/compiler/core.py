@@ -75,6 +75,7 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
 
         # don't alias the root node
         if node is not op:
+            # TODO: do we want to create sqlglot tables here?
             aliases[node] = f"t{alias_index:d}"
             alias_index += 1
 

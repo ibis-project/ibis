@@ -19,7 +19,6 @@ import ibis.expr.rules as rlz
 import sqlglot as sg
 from ibis.backends.base.sql.registry import helpers
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
-from ibis.backends.duckdb.datatypes import serialize
 from packaging.version import parse as vparse
 from toolz import flip
 
@@ -36,7 +35,7 @@ def translate_val(op, **_):
 
 @translate_val.register(dt.DataType)
 def _datatype(t, **_):
-    return serialize(t)
+    return DuckDBType.from_ibis(t)
 
 
 @translate_val.register(ops.PhysicalTable)
@@ -410,9 +409,7 @@ def _interval_from_integer(op, **kw):
     arg = translate_val(op.arg, **kw)
     if op.dtype.resolution == "week":
         return sg.func("to_days", arg * 7)
-    # TODO: make less gross
-    # to_days, to_years, etc...
-    return sg.func(f"to_{op.dtype.resolution}s", arg)
+    return sg.func(f"to_{op.dtype.resolution}s", arg, dialect="duckdb")
 
 
 ### String Instruments
@@ -515,7 +512,6 @@ _simple_ops = {
     ops.ArgMin: "arg_min",
     ops.Mode: "mode",
     ops.ArgMax: "arg_max",
-    # ops.ArrayCollect: "groupArray",  # TODO
     ops.Count: "count",
     ops.CountDistinct: "list_unique",
     ops.First: "first",
@@ -539,7 +535,6 @@ _simple_ops = {
     # Other operations
     ops.Where: "if",
     ops.ArrayLength: "length",
-    ops.ArrayConcat: "list_concat",
     ops.Unnest: "unnest",
     ops.Degrees: "degrees",
     ops.Radians: "radians",
@@ -609,11 +604,12 @@ def _array_sort(op, **kw):
     sg_expr = sg.expressions.If(
         this=arg.is_(sg.expressions.Null()),
         true=sg.expressions.Null(),
-        false=sg.func("list_distinct", arg)
+        false=sg.func("list_distinct", arg, dialect="duckdb")
         + sg.expressions.If(
-            this=sg.func("list_count", arg) < sg.func("array_length", arg),
-            true=sg.func("list_value", sg.expressions.Null()),
-            false=sg.func("list_value"),
+            this=sg.func("list_count", arg, dialect="duckdb")
+            < sg.func("array_length", arg, dialect="duckdb"),
+            true=sg.func("list_value", sg.expressions.Null(), dialect="duckdb"),
+            false=sg.func("list_value", dialect="duckdb"),
         ),
     )
     # TODO: this is (I think) working but tests fail because of broken NaN / None stuff
@@ -649,6 +645,25 @@ def _in_column(op, **kw):
     return value.isin(options)
 
 
+@translate_val.register(ops.ArrayCollect)
+def _array_collect(op, **kw):
+    if op.where is not None:
+        # TODO: handle when op.where is not none
+        # probably using list_agg?
+        ...
+    return sg.func("list", translate_val(op.arg, **kw), dialect="duckdb")
+
+
+@translate_val.register(ops.ArrayConcat)
+def _array_concat(op, **kw):
+    sg_expr = sg.func(
+        "list_concat",
+        *(translate_val(arg, **kw) for arg in op.arg),
+        dialect="duckdb",
+    )
+    return sg_expr
+
+
 ### LITERALLY
 
 
@@ -659,17 +674,15 @@ def _literal(op, **kw):
     if value is None and dtype.nullable:
         if dtype.is_null():
             return sg.expressions.Null()
-        return sg.cast(
-            sg.expressions.Null(),
-            to=getattr(sg.expressions.DataType.Type, serialize(dtype)),
-        )
+        return sg.cast(sg.expressions.Null(), to=DuckDBType.from_ibis(dtype))
     if dtype.is_boolean():
-        return sg.expressions.Boolean(value)
+        return sg.expressions.Boolean(this=value)
     elif dtype.is_inet():
         com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
     elif dtype.is_string():
         return sg.expressions.Literal(this=f"{value}", is_string=True)
     elif dtype.is_decimal():
+        # TODO: make this a sqlglot expression
         precision = dtype.precision
         scale = dtype.scale
         if precision is None:
@@ -702,7 +715,6 @@ def _literal(op, **kw):
                 expression=sg.expressions.Literal(this="NaN", is_string=True),
                 to=sg.expressions.DataType.Type.FLOAT,
             )
-        # return value
         return sg.expressions.Literal(this=f"{value}", is_string=False)
     elif dtype.is_interval():
         return _interval_format(op)
@@ -751,11 +763,18 @@ def _literal(op, **kw):
         sg_expr = sg.expressions.Map(keys=keys, values=values)
         return sg_expr
     elif dtype.is_struct():
-        fields = ", ".join(
+        keys = [
+            sg.expressions.Literal(this=key, is_string=True) for key in value.keys()
+        ]
+        values = [
             _literal(ops.Literal(v, dtype=subdtype), **kw)
             for subdtype, v in zip(dtype.types, value.values())
-        )
-        return f"tuple({fields})"
+        ]
+        slices = [
+            sg.expressions.Slice(this=k, expression=v) for k, v in zip(keys, values)
+        ]
+        sg_expr = sg.expressions.Struct.from_arg_list(slices)
+        return sg_expr
     else:
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
@@ -1042,12 +1061,13 @@ def _array_column(op, **kw):
     return sg_expr
 
 
-# TODO
 @translate_val.register(ops.StructColumn)
 def _struct_column(op, **kw):
     values = translate_val(op.values, **kw)
-    struct_type = serialize(op.dtype.copy(nullable=False))
-    return f"CAST({values} AS {struct_type})"
+    struct_type = DuckDBType.from_ibis(op.dtype)
+    # TODO: this seems like a workaround
+    # but maybe it isn't
+    return sg.cast(expression=values, to=struct_type)
 
 
 @translate_val.register(ops.Clip)
@@ -1063,13 +1083,11 @@ def _clip(op, **kw):
 
 
 @translate_val.register(ops.StructField)
-def _struct_field(op, render_aliases: bool = False, **kw):
-    arg = op.arg
-    arg_dtype = arg.dtype
-    arg = translate_val(op.arg, render_aliases=render_aliases, **kw)
-    idx = arg_dtype.names.index(op.field)
-    typ = arg_dtype.types[idx]
-    return f"CAST({arg}.{idx + 1} AS {serialize(typ)})"
+def _struct_field(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    field = sg.expressions.Literal(this=f"{op.field}", is_string=True)
+    sg_expr = sg.func("struct_extract", arg, field)
+    return sg_expr
 
 
 # TODO
@@ -1263,7 +1281,6 @@ def _map_merge(op, **kw):
         return sg.func("map_concat", left, right)
     else:
         if not (_is_map_literal(op.left) and _is_map_literal(op.right)):
-            breakpoint()
             raise com.UnsupportedOperationError(
                 "Merging non-literal maps is not yet supported by DuckDB"
             )
@@ -1521,12 +1538,12 @@ def _row_number(_, **kw):
 
 @translate_val.register(ops.DenseRank)
 def _dense_rank(_, **kw):
-    return sg.func("dense_rank")
+    return sg.func("dense_rank", dialect="duckdb")
 
 
 @translate_val.register(ops.MinRank)
 def _rank(_, **kw):
-    return sg.func("rank")
+    return sg.func("rank", dialect="duckdb")
 
 
 @translate_val.register(ops.ArrayStringJoin)
@@ -1538,29 +1555,45 @@ def _array_string_join(op, **kw):
 
 @translate_val.register(ops.Argument)
 def _argument(op, **_):
-    return op.name
+    return sg.expressions.Identifier(this=op.name, quoted=False)
 
 
 @translate_val.register(ops.ArrayMap)
 def _array_map(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
-    return sg.func("list_transform", arg, f"{op.parameter}) -> {result}")
+    lamduh = sg.expressions.Lambda(
+        this=result,
+        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
+    )
+    sg_expr = sg.func("list_transform", arg, lamduh)
+    return sg_expr
 
 
 @translate_val.register(ops.ArrayFilter)
 def _array_filter(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
-    func = sg.func("list_filter", arg, f"{op.parameter} -> {result}")
-    return func
+    lamduh = sg.expressions.Lambda(
+        this=result,
+        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
+    )
+    sg_expr = sg.func("list_filter", arg, lamduh)
+    return sg_expr
+
+
+@translate_val.register(ops.ArrayIntersect)
+def _array_intersect(op, **kw):
+    return translate_val(
+        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x)), **kw
+    )
 
 
 @translate_val.register(ops.ArrayPosition)
 def _array_position(op, **kw):
     arg = translate_val(op.arg, **kw)
     el = translate_val(op.other, **kw)
-    return f"list_indexof({arg}, {el}) - 1"
+    return sg.func("list_indexof", arg, el) - 1
 
 
 @translate_val.register(ops.ArrayRemove)
@@ -1570,7 +1603,7 @@ def _array_remove(op, **kw):
 
 @translate_val.register(ops.ArrayUnion)
 def _array_union(op, **kw):
-    return translate_val(ops.ArrayDistinct(ops.ArrayConcat(op.left, op.right)), **kw)
+    return translate_val(ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right))), **kw)
 
 
 # TODO: need to do this as a an array map + struct pack -- look at existing
