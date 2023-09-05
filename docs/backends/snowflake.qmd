@@ -1,9 +1,5 @@
 ---
 description: "Install Ibis in Python and connect to Snowflake for working with in a pandas-like dataframe library"
-keywords:
-    - Python
-    - Ibis
-    - snowflake
 ---
 
 # Snowflake
