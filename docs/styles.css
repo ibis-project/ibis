@@ -1,0 +1,4 @@
+section#connection-parameters {
+    /* scroll when child contents overflow the width */
+    overflow-x: auto;
+}
