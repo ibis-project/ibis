@@ -4,11 +4,12 @@ import calendar
 import contextlib
 import functools
 import math
-from functools import partial
 import operator
+from functools import partial
 from operator import add, mul, sub
 from typing import Any, Literal, Mapping
 
+import duckdb
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
@@ -17,11 +18,14 @@ import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import sqlglot as sg
 from ibis.backends.base.sql.registry import helpers
+from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.datatypes import serialize
+from packaging.version import parse as vparse
 from toolz import flip
 
 # TODO: Ideally we can translate bottom up a la `relations.py`
 # TODO: Find a way to remove all the dialect="duckdb" kwargs
+_SUPPORTS_MAPS = vparse(duckdb.__version__) >= vparse("0.8.0")
 
 
 @functools.singledispatch
@@ -540,13 +544,11 @@ _simple_ops = {
     ops.Degrees: "degrees",
     ops.Radians: "radians",
     ops.NullIf: "nullIf",
-    ops.MapContains: "mapContains",  # TODO
-    ops.MapLength: "length",
+    ops.MapLength: "cardinality",
     ops.MapKeys: "map_keys",
     ops.MapValues: "map_values",
-    ops.MapMerge: "mapUpdate",  # TODO
     ops.ArraySort: "list_sort",
-    ops.ArrayContains: "has",
+    ops.ArrayContains: "list_contains",
     ops.FirstValue: "first_value",
     ops.LastValue: "last_value",
     ops.NTile: "ntile",
@@ -731,19 +733,23 @@ def _literal(op, **kw):
                 # is there any better way to handle it?
                 sg.cast(
                     sg.expressions.Literal(this=f"{v}", is_string=is_string),
-                    to=getattr(sg.expressions.DataType.Type, serialize(value_type)),
+                    to=DuckDBType.from_ibis(value_type),
                 )
                 for v in value
             ]
         )
         return values
     elif dtype.is_map():
+        key_type = dtype.key_type
         value_type = dtype.value_type
-        values = ", ".join(
-            f"[{k!r}, {_literal(ops.Literal(v, dtype=value_type), **kw)}]"
-            for k, v in value.items()
+        keys = sg.expressions.Array().from_arg_list(
+            [_literal(ops.Literal(k, dtype=key_type), **kw) for k in value.keys()]
         )
-        return f"map({values})"
+        values = sg.expressions.Array().from_arg_list(
+            [_literal(ops.Literal(v, dtype=value_type), **kw) for v in value.values()]
+        )
+        sg_expr = sg.expressions.Map(keys=keys, values=values)
+        return sg_expr
     elif dtype.is_struct():
         fields = ", ".join(
             _literal(ops.Literal(v, dtype=subdtype), **kw)
@@ -1030,9 +1036,10 @@ def _bit_agg(func):
 
 @translate_val.register(ops.ArrayColumn)
 def _array_column(op, **kw):
-    cols = map(partial(translate_val, **kw), op.cols)
-    args = ", ".join(map(_sql, cols))
-    return f"[{args}]"
+    sg_expr = sg.expressions.Array.from_arg_list(
+        [translate_val(col, **kw) for col in op.cols]
+    )
+    return sg_expr
 
 
 # TODO
@@ -1150,9 +1157,11 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
 # translate_val.register(ops.NotContains)(contains("NOT IN"))
 
 
-# TODO
 @translate_val.register(ops.DayOfWeekName)
 def day_of_week_name(op, **kw):
+    # day of week number is 0-indexed
+    # Sunday == 0
+    # Saturday == 6
     arg = op.arg
     nullable = arg.dtype.nullable
     empty_string = ops.Literal("", dtype=dt.String(nullable=nullable))
@@ -1198,26 +1207,78 @@ def _vararg_func(op, **kw):
     )
 
 
-# TODO
 @translate_val.register(ops.Map)
 def _map(op, **kw):
     keys = translate_val(op.keys, **kw)
     values = translate_val(op.values, **kw)
-    typ = serialize(op.dtype)
-    breakpoint()
     sg_expr = sg.expressions.Map(keys=keys, values=values)
-    breakpoint()
     return sg_expr
-    return f"CAST(({keys}, {values}) AS {typ})"
 
 
-# TODO
 @translate_val.register(ops.MapGet)
 def _map_get(op, **kw):
     arg = translate_val(op.arg, **kw)
     key = translate_val(op.key, **kw)
     default = translate_val(op.default, **kw)
-    return f"if(mapContains({arg}, {key}), {arg}[{key}], {default})"
+    sg_expr = sg.func(
+        "ifnull",
+        sg.func("element_at", arg, key),
+        default,
+        dialect="duckdb",
+    )
+    return sg_expr
+
+
+@translate_val.register(ops.MapContains)
+def _map_contains(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    key = translate_val(op.key, **kw)
+    sg_expr = sg.expressions.NEQ(
+        this=sg.func(
+            "array_length",
+            sg.func(
+                "element_at",
+                arg,
+                key,
+            ),
+        ),
+        expression=sg.expressions.Literal(this="0", is_string=False),
+    )
+    return sg_expr
+
+
+def _is_map_literal(op):
+    return isinstance(op, ops.Literal) or (
+        isinstance(op, ops.Map)
+        and isinstance(op.keys, ops.Literal)
+        and isinstance(op.values, ops.Literal)
+    )
+
+
+@translate_val.register(ops.MapMerge)
+def _map_merge(op, **kw):
+    if _SUPPORTS_MAPS:
+        left = translate_val(op.left, **kw)
+        right = translate_val(op.right, **kw)
+        return sg.func("map_concat", left, right)
+    else:
+        if not (_is_map_literal(op.left) and _is_map_literal(op.right)):
+            breakpoint()
+            raise com.UnsupportedOperationError(
+                "Merging non-literal maps is not yet supported by DuckDB"
+            )
+        left = sg.func("to_json", translate_val(op.left, **kw))
+        right = sg.func("to_json", translate_val(op.right, **kw))
+        pairs = sg.func("json_merge_patch", left, right)
+        keys = sg.func("json_keys", pairs)
+        return sg.cast(
+            expression=sg.func(
+                "map",
+                keys,
+                sg.func("json_extract_string", pairs, keys),
+            ),
+            to=DuckDBType.from_ibis(op.dtype),
+        )
 
 
 def _binary_infix(sg_expr: sg.expressions._Expression):
