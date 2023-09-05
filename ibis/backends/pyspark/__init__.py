@@ -294,7 +294,7 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
         path
             Path where to store the database data; otherwise uses Spark default
         force
-            Whether to append `IF EXISTS` to the database creation SQL
+            Whether to append `IF NOT EXISTS` to the database creation SQL
         """
         statement = CreateDatabase(name, path=path, can_exist=force)
         return self.raw_sql(statement.compile())

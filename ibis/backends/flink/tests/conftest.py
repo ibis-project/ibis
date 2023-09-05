@@ -49,3 +49,18 @@ def simple_schema():
 @pytest.fixture
 def simple_table(simple_schema):
     return ibis.table(simple_schema, name="table")
+
+
+@pytest.fixture(scope="session")
+def con(tmp_path_factory, data_dir, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
+
+
+@pytest.fixture(scope="session")
+def db(con):
+    return con.database()
+
+
+@pytest.fixture(scope="session")
+def alltypes(con):
+    return con.tables.functional_alltypes
