@@ -746,7 +746,7 @@ def test_snowflake_medium_sized_to_pandas(benchmark):
 
 
 def test_parse_many_duckdb_types(benchmark):
-    parse = pytest.importorskip("ibis.backends.duckdb.datatypes").parse
+    parse = pytest.importorskip("ibis.backends.duckdb.datatypes").DuckDBType.from_string
 
     def parse_many(types):
         list(map(parse, types))
