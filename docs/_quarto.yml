@@ -142,6 +142,7 @@ format:
       light: [flatly, theme-light.scss]
       dark: [darkly, theme-dark.scss]
     toc: true
+    css: styles.css
 
 quartodoc:
   package: ibis
