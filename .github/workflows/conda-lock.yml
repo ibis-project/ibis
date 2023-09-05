@@ -20,7 +20,7 @@ jobs:
         shell: bash -l {0}
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
           ref: ${{ github.event.client_payload.pull_request.head.ref }}
@@ -73,7 +73,7 @@ jobs:
           app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
           private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ steps.generate_pr_token.outputs.token }}
 
@@ -123,7 +123,7 @@ jobs:
           app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
           private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ steps.generate_token.outputs.token }}
           repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}

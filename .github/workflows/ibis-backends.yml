@@ -48,7 +48,7 @@ jobs:
           - "3.11"
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install python
         id: install_python
@@ -330,7 +330,7 @@ jobs:
         run: choco install sqlite
 
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: extractions/setup-just@v1
         env:
@@ -497,7 +497,7 @@ jobs:
                 - geospatial
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install libgeos for shapely
         if: matrix.backend.name == 'postgres'
@@ -585,7 +585,7 @@ jobs:
                 - snowflake-connector-python
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/setup-java@v3
         with:
@@ -645,7 +645,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install python
         uses: actions/setup-python@v4
@@ -736,7 +736,7 @@ jobs:
               - oracle
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: install libgeos for shapely
         if: ${{ matrix.backend.name == 'postgres' }}
