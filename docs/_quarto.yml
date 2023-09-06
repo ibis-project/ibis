@@ -45,6 +45,8 @@ website:
   back-to-top-navigation: true
   repo-url: https://github.com/ibis-project/ibis
   repo-actions: [edit, issue]
+  repo-branch: master
+  repo-subdir: docs
   issue-url: https://github.com/ibis-project/ibis/issues/new/choose
 
   # footer
