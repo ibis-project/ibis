@@ -292,3 +292,20 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
     result = expr.execute()
     expected = df.int_col.add(1).rename("x")
     backend.assert_series_equal(result.x, expected)
+
+
+@dot_sql_notimpl
+@dot_sql_notyet
+@dot_sql_never
+@pytest.mark.notimpl(["druid", "flink", "impala", "polars", "pyspark"])
+def test_order_by_no_projection(backend):
+    con = backend.connection
+    astronauts = con.table("astronauts")
+    expr = (
+        astronauts.group_by("name")
+        .agg(nbr_missions=_.count())
+        .order_by(_.nbr_missions.desc())
+    )
+
+    result = con.sql(ibis.to_sql(expr)).execute().name.iloc[:2]
+    assert set(result) == {"Ross, Jerry L.", "Chang-Diaz, Franklin R."}
