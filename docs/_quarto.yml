@@ -174,7 +174,7 @@ quartodoc:
             - name: case
               dynamic: true
             - name: coalesce
-              package: expr.api
+              package: ibis.expr.api
             - name: cumulative_window
               dynamic: true
             - name: date
@@ -188,15 +188,15 @@ quartodoc:
             - name: get_backend
               dynamic: true
             - name: greatest
-              package: expr.api
+              package: ibis.expr.api
             - name: ifelse
-              package: expr.api
+              package: ibis.expr.api
             - name: intersect
               dynamic: true
             - name: interval
               dynamic: true
             - name: least
-              package: expr.api
+              package: ibis.expr.api
             - name: literal
               dynamic: true
             - name: map
@@ -204,9 +204,9 @@ quartodoc:
             - name: memtable
               dynamic: true
             - name: negate
-              package: expr.api
+              package: ibis.expr.api
             - name: NA
-              package: expr.api
+              package: ibis.expr.api
             - name: now
               dynamic: true
             - name: "null"
@@ -252,7 +252,7 @@ quartodoc:
             - name: union
               dynamic: true
             - name: where
-              package: expr.api
+              package: ibis.expr.api
             - name: window
               dynamic: true
 
