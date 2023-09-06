@@ -222,13 +222,14 @@ class AlchemySelect(Select):
         if self.table_set is not None:
             helper = self.table_set_formatter_class(self, self.table_set)
             result = helper.get_result()
-            if isinstance(result, sql.selectable.Select):
-                return result.subquery()
             return result
         else:
             return None
 
     def _add_select(self, table_set):
+        if not self.select_set:
+            return table_set.element
+
         to_select = []
 
         context = self.context
@@ -373,6 +374,11 @@ class AlchemySelect(Select):
 class AlchemySelectBuilder(SelectBuilder):
     def _convert_group_by(self, exprs):
         return exprs
+
+    def _collect_SQLQueryResult(self, op, toplevel=False):
+        if toplevel:
+            self.table_set = op
+            self.select_set = []
 
 
 class AlchemySetOp(SetOp):
