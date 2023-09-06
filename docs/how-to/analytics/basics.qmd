@@ -63,7 +63,7 @@ t.join(t, t["species"] == t["species"], how="left_semi")
 
 ## Combining it all together
 
-We can use [the underscore to chain expressions together](./chain_expressions.qmd).]
+We can use [the underscore to chain expressions together](./chain_expressions.qmd).
 
 ```{python}
 t.join(t, t["species"] == t["species"], how="left_semi").filter(
