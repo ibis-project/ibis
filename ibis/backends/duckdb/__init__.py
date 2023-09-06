@@ -6,7 +6,6 @@ import ast
 import contextlib
 import os
 import warnings
-from functools import partial
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -34,7 +33,7 @@ from ibis.expr.operations.udf import InputType
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 
     import pandas as pd
     import torch
@@ -173,6 +172,7 @@ WHERE catalog_name = :database"""
         database: str | Path = ":memory:",
         read_only: bool = False,
         temp_directory: str | Path | None = None,
+        extensions: Sequence[str] | None = None,
         **config: Any,
     ) -> None:
         """Create an Ibis client connected to a DuckDB database.
@@ -186,6 +186,8 @@ WHERE catalog_name = :database"""
         temp_directory
             Directory to use for spilling to disk. Only set by default for
             in-memory connections.
+        extensions
+            A list of duckdb extensions to install/load upon connection.
         config
             DuckDB configuration parameters. See the [DuckDB configuration
             documentation](https://duckdb.org/docs/sql/configuration) for
@@ -222,6 +224,8 @@ WHERE catalog_name = :database"""
 
         @sa.event.listens_for(engine, "connect")
         def configure_connection(dbapi_connection, connection_record):
+            if extensions is not None:
+                self._sa_load_extensions(dbapi_connection, extensions)
             dbapi_connection.execute("SET TimeZone = 'UTC'")
             # the progress bar in duckdb <0.8.0 causes kernel crashes in
             # jupyterlab, fixed in https://github.com/duckdb/duckdb/pull/6831
@@ -237,31 +241,36 @@ WHERE catalog_name = :database"""
 
         super().do_connect(engine)
 
-    def _load_extensions(self, extensions):
-        extension_name = sa.column("extension_name")
-        loaded = sa.column("loaded")
-        installed = sa.column("installed")
-        aliases = sa.column("aliases")
-        query = (
-            sa.select(extension_name)
-            .select_from(sa.func.duckdb_extensions())
-            .where(
-                sa.and_(
-                    # extension isn't loaded or isn't installed
-                    sa.not_(loaded & installed),
-                    # extension is one that we're requesting, or an alias of it
-                    sa.or_(
-                        extension_name.in_(extensions),
-                        *map(partial(sa.func.array_has, aliases), extensions),
-                    ),
-                )
-            )
+    @staticmethod
+    def _sa_load_extensions(dbapi_con, extensions):
+        query = """
+        WITH exts AS (
+          SELECT extension_name AS name, aliases FROM duckdb_extensions()
+          WHERE installed AND loaded
         )
+        SELECT name FROM exts
+        UNION (SELECT UNNEST(aliases) AS name FROM exts)
+        """
+        installed = (name for (name,) in dbapi_con.sql(query).fetchall())
+        # Install and load all other extensions
+        todo = set(extensions).difference(installed)
+        for extension in todo:
+            dbapi_con.install_extension(extension)
+            dbapi_con.load_extension(extension)
+
+    def _load_extensions(self, extensions):
         with self.begin() as con:
-            c = con.connection
-            for extension in con.execute(query).scalars():
-                c.install_extension(extension)
-                c.load_extension(extension)
+            self._sa_load_extensions(con.connection, extensions)
+
+    def load_extension(self, extension: str) -> None:
+        """Install and load a duckdb extension by name or path.
+
+        Parameters
+        ----------
+        extension
+            The extension name or path.
+        """
+        self._load_extensions([extension])
 
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
