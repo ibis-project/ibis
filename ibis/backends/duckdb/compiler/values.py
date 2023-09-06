@@ -825,30 +825,19 @@ def _not_all(op, **kw):
     return translate_val(ops.Any(ops.Not(op.arg), where=op.where), **kw)
 
 
-# TODO
-def _quantile_like(func_name: str, op: ops.Node, quantile: str, **kw):
-    args = [_sql(translate_val(op.arg, **kw))]
-
-    if (where := op.where) is not None:
-        args.append(_sql(translate_val(where, **kw)))
-        func_name += "If"
-
-    return f"{func_name}({quantile})({', '.join(args)})"
-
-
 @translate_val.register(ops.Quantile)
-def _quantile(op, **kw):
-    quantile = _sql(translate_val(op.quantile, **kw))
-    return _quantile_like("quantile", op, quantile, **kw)
-
-
 @translate_val.register(ops.MultiQuantile)
-def _multi_quantile(op, **kw):
-    if not isinstance(op.quantile, ops.Literal):
-        raise TypeError("Duckdb quantile only accepts a list of Python floats")
-
-    quantile = ", ".join(map(str, op.quantile.value))
-    return _quantile_like("quantiles", op, quantile, **kw)
+def _quantile(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    quantile = translate_val(op.quantile, **kw)
+    sg_expr = sg.func("quantile_cont", arg, quantile, dialect="duckdb")
+    if op.where is not None:
+        predicate = translate_val(op.where, **kw)
+        sg_expr = sg.expressions.Filter(
+            this=sg_expr,
+            expression=sg.expressions.Where(this=predicate),
+        )
+    return sg_expr
 
 
 def _agg_variance_like(func):
