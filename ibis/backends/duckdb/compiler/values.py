@@ -502,7 +502,6 @@ _simple_ops = {
     # Unary aggregates
     # ops.ApproxMedian: "median",  # TODO
     # ops.Median: "quantileExactExclusive",  # TODO
-    ops.ApproxCountDistinct: "list_unique",
     ops.Mean: "avg",
     ops.Sum: "sum",
     ops.Max: "max",
@@ -513,7 +512,6 @@ _simple_ops = {
     ops.Mode: "mode",
     ops.ArgMax: "arg_max",
     ops.Count: "count",
-    ops.CountDistinct: "list_unique",
     ops.First: "first",
     ops.Last: "last",
     # string operations
@@ -805,6 +803,22 @@ def _array_slice_op(op, **kw):
         stop = sg.expressions.Null()
 
     return sg.func("list_slice", arg, start, stop)
+
+
+@translate_val.register(ops.CountDistinct)
+@translate_val.register(ops.ApproxCountDistinct)
+def _count_distinct(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    on = None
+    if op.where is not None:
+        on = translate_val(op.where, **kw)
+    sg_expr = sg.expressions.Count(
+        this=sg.expressions.Distinct(
+            expressions=[arg],
+            on=on,
+        )
+    )
+    return sg_expr
 
 
 @translate_val.register(ops.CountStar)
