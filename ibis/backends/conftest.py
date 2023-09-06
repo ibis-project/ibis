@@ -94,6 +94,34 @@ TEST_TABLES = {
             "notes": "string",
         }
     ),
+    "astronauts": ibis.schema(
+        {
+            "id": "int64",
+            "number": "int64",
+            "nationwide_number": "int64",
+            "name": "string",
+            "original_name": "string",
+            "sex": "string",
+            "year_of_birth": "int64",
+            "nationality": "string",
+            "military_civilian": "string",
+            "selection": "string",
+            "year_of_selection": "int64",
+            "mission_number": "int64",
+            "total_number_of_missions": "int64",
+            "occupation": "string",
+            "year_of_mission": "int64",
+            "mission_title": "string",
+            "ascend_shuttle": "string",
+            "in_orbit": "string",
+            "descend_shuttle": "string",
+            "hours_mission": "float64",
+            "total_hrs_sum": "float64",
+            "field21": "int64",
+            "eva_hrs_mission": "float64",
+            "total_eva_hrs": "float64",
+        }
+    ),
 }
 
 # We want to check for exceptions in xfail tests for two reasons:

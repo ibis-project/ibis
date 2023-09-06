@@ -17,6 +17,35 @@ CREATE TABLE functional_alltypes (
     CHECK (bool_col IN (0, 1))
 );
 
+DROP TABLE IF EXISTS astronauts;
+
+CREATE TABLE astronauts (
+    "id" BIGINT,
+    "number" BIGINT,
+    "nationwide_number" BIGINT,
+    "name" TEXT,
+    "original_name" TEXT,
+    "sex" TEXT,
+    "year_of_birth" BIGINT,
+    "nationality" TEXT,
+    "military_civilian" TEXT,
+    "selection" TEXT,
+    "year_of_selection" BIGINT,
+    "mission_number" BIGINT,
+    "total_number_of_missions" BIGINT,
+    "occupation" TEXT,
+    "year_of_mission" BIGINT,
+    "mission_title" TEXT,
+    "ascend_shuttle" TEXT,
+    "in_orbit" TEXT,
+    "descend_shuttle" TEXT,
+    "hours_mission" FLOAT,
+    "total_hrs_sum" FLOAT,
+    "field21" BIGINT,
+    "eva_hrs_mission" FLOAT,
+    "total_eva_hrs" FLOAT
+);
+
 DROP TABLE IF EXISTS awards_players;
 
 CREATE TABLE awards_players (

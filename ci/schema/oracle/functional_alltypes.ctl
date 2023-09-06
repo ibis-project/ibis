@@ -2,7 +2,7 @@ options (SKIP=1)
 load data
   infile '/opt/oracle/data/functional_alltypes.csv'
   into table "functional_alltypes"
-  fields terminated by "," optionally enclosed by '"'
+  fields csv without embedded
   TRAILING NULLCOLS
   ( "id",
   "bool_col",

@@ -45,3 +45,15 @@ FROM TABLE(
   )
 )
 PARTITIONED BY ALL TIME;
+
+REPLACE INTO "astronauts"
+OVERWRITE ALL
+SELECT *
+FROM TABLE(
+  EXTERN(
+    '{"type":"local","files":["/data/astronauts.parquet"]}',
+    '{"type":"parquet"}',
+    '[{"name":"id","type":"long"},{"name":"number","type":"long"},{"name":"nationwide_number","type":"long"},{"name":"name","type":"string"},{"name":"original_name","type":"string"},{"name":"sex","type":"string"},{"name":"year_of_birth","type":"long"},{"name":"nationality","type":"string"},{"name":"military_civilian","type":"string"},{"name":"selection","type":"string"},{"name":"year_of_selection","type":"long"},{"name":"mission_number","type":"long"},{"name":"total_number_of_missions","type":"long"},{"name":"occupation","type":"string"},{"name":"year_of_mission","type":"long"},{"name":"mission_title","type":"string"},{"name":"ascend_shuttle","type":"string"},{"name":"in_orbit","type":"string"},{"name":"descend_shuttle","type":"string"},{"name":"hours_mission","type":"double"},{"name":"total_hrs_sum","type":"double"},{"name":"field21","type":"long"},{"name":"eva_hrs_mission","type":"double"},{"name":"total_eva_hrs","type":"double"}]'
+  )
+)
+PARTITIONED BY ALL TIME;

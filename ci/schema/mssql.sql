@@ -21,6 +21,39 @@ BULK INSERT diamonds
 FROM '/data/diamonds.csv'
 WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
 
+DROP TABLE IF EXISTS astronauts;
+
+CREATE TABLE astronauts (
+    "id" BIGINT,
+    "number" BIGINT,
+    "nationwide_number" BIGINT,
+    "name" VARCHAR(MAX),
+    "original_name" VARCHAR(MAX),
+    "sex" VARCHAR(MAX),
+    "year_of_birth" BIGINT,
+    "nationality" VARCHAR(MAX),
+    "military_civilian" VARCHAR(MAX),
+    "selection" VARCHAR(MAX),
+    "year_of_selection" BIGINT,
+    "mission_number" BIGINT,
+    "total_number_of_missions" BIGINT,
+    "occupation" VARCHAR(MAX),
+    "year_of_mission" BIGINT,
+    "mission_title" VARCHAR(MAX),
+    "ascend_shuttle" VARCHAR(MAX),
+    "in_orbit" VARCHAR(MAX),
+    "descend_shuttle" VARCHAR(MAX),
+    "hours_mission" DOUBLE PRECISION,
+    "total_hrs_sum" DOUBLE PRECISION,
+    "field21" BIGINT,
+    "eva_hrs_mission" DOUBLE PRECISION,
+    "total_eva_hrs" DOUBLE PRECISION
+);
+
+BULK INSERT astronauts
+FROM '/data/astronauts.csv'
+WITH (FORMAT = 'CSV', FIELDTERMINATOR = ',', ROWTERMINATOR = '\n', FIRSTROW = 2)
+
 DROP TABLE IF EXISTS batting;
 
 CREATE TABLE batting (

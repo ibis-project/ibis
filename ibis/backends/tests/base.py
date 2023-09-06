@@ -215,6 +215,10 @@ class BackendTest(abc.ABC):
         return self.connection.table(self.default_identifier_case_fn("diamonds"))
 
     @property
+    def astronauts(self) -> ir.Table:
+        return self.connection.table(self.default_identifier_case_fn("astronauts"))
+
+    @property
     def geo(self) -> ir.Table | None:
         name = self.default_identifier_case_fn("geo")
         if name in self.connection.list_tables():

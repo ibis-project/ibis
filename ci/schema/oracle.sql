@@ -18,6 +18,35 @@ CREATE TABLE "diamonds" (
     "z" BINARY_FLOAT
 );
 
+DROP TABLE IF EXISTS "astronauts";
+
+CREATE TABLE "astronauts" (
+    "id" NUMBER(18),
+    "number" NUMBER(18),
+    "nationwide_number" NUMBER(18),
+    "name" VARCHAR2(255),
+    "original_name" VARCHAR2(255),
+    "sex" VARCHAR2(255),
+    "year_of_birth" NUMBER(18),
+    "nationality" VARCHAR2(255),
+    "military_civilian" VARCHAR2(255),
+    "selection" VARCHAR2(255),
+    "year_of_selection" NUMBER(18),
+    "mission_number" NUMBER(18),
+    "total_number_of_missions" NUMBER(18),
+    "occupation" VARCHAR2(255),
+    "year_of_mission" NUMBER(18),
+    "mission_title" VARCHAR2(255),
+    "ascend_shuttle" VARCHAR2(255),
+    "in_orbit" VARCHAR2(255),
+    "descend_shuttle" VARCHAR2(255),
+    "hours_mission" BINARY_FLOAT,
+    "total_hrs_sum" BINARY_FLOAT,
+    "field21" NUMBER(18),
+    "eva_hrs_mission" BINARY_FLOAT,
+    "total_eva_hrs" BINARY_FLOAT
+);
+
 DROP TABLE IF EXISTS "batting";
 
 CREATE TABLE "batting" (
