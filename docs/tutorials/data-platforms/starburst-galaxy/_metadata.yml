@@ -1,0 +1,5 @@
+# options specified here will apply to all tutorials in this folder
+
+# freeze computational output
+# (see https://quarto.org/docs/projects/code-execution.html#freeze)
+freeze: true
