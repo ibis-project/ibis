@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import itertools
-from typing import Any, Optional, Union
+from typing import Annotated, Any, Optional, Union
 from typing import Literal as LiteralType
 
 from public import public
@@ -14,7 +14,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.grounds import Singleton
+from ibis.common.patterns import InstanceOf  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.expr.deferred import Deferred  # noqa: TCH001
 from ibis.expr.operations.core import Named, Scalar, Unary, Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
@@ -193,7 +195,7 @@ T = TypeVar("T", bound=dt.DataType, covariant=True)
 
 @public
 class Literal(Scalar[T]):
-    value: Any
+    value: Annotated[Any, ~InstanceOf(Deferred)]
     dtype: T
 
     shape = ds.scalar

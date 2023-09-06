@@ -3,11 +3,14 @@ from __future__ import annotations
 import hypothesis as h
 import hypothesis.strategies as st
 import numpy as np
+import pytest
 
+import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.tests.strategies as its
+from ibis.common.annotations import ValidationError
 
 
 @h.given(its.null_dtype)
@@ -167,6 +170,12 @@ def test_schema_to_pandas(schema):
 def test_memtable(memtable):
     assert isinstance(memtable, ir.TableExpr)
     assert isinstance(memtable.schema(), sch.Schema)
+
+
+@h.given(its.all_dtypes())
+def test_deferred_literal(dtype):
+    with pytest.raises(ValidationError):
+        ibis.literal(ibis._.a, type=dtype)
 
 
 # TODO(kszucs): we enforce field name uniqueness in the schema, but we don't for Struct datatype
