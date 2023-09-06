@@ -949,6 +949,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             ),
             id="date-subtract-date",
             marks=[
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.3"],
+                    raises=AttributeError,
+                    reason="DayTimeIntervalType added in pyspark 3.3",
+                ),
                 pytest.mark.notimpl(["bigquery"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["druid"],

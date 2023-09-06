@@ -9,6 +9,7 @@ from functools import partial, reduce
 import pyspark
 import pyspark.sql.functions as F
 import pyspark.sql.types as pt
+from packaging.version import parse as vparse
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
 
@@ -1557,14 +1558,20 @@ def compile_date_sub(t, op, **kwargs):
     )
 
 
-@compiles(ops.DateDiff)
-def compile_date_diff(t, op, **kwargs):
-    left = t.translate(op.left, **kwargs)
-    right = t.translate(op.right, **kwargs)
+if vparse(pyspark.__version__) >= vparse("3.3"):
 
-    return F.concat(F.lit("INTERVAL '"), F.datediff(left, right), F.lit("' DAY")).cast(
-        pt.DayTimeIntervalType(pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.DAY)
-    )
+    @compiles(ops.DateDiff)
+    def compile_date_diff(t, op, **kwargs):
+        left = t.translate(op.left, **kwargs)
+        right = t.translate(op.right, **kwargs)
+
+        return F.concat(
+            F.lit("INTERVAL '"), F.datediff(left, right), F.lit("' DAY")
+        ).cast(
+            pt.DayTimeIntervalType(
+                pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.DAY
+            )
+        )
 
 
 @compiles(ops.TimestampAdd)
