@@ -236,7 +236,9 @@ return {
                 local base_name = quarto.project.offset .. "/_inv/" .. k .. "_objects"
                 json = read_inv_text_or_json(base_name)
                 prefix = pandoc.utils.stringify(v.url)
-                fixup_json(json, prefix)
+                if json ~= nil then
+                    fixup_json(json, prefix)
+                end
             end
             json = read_inv_text_or_json(quarto.project.offset .. "/objects")
             if json ~= nil then
