@@ -12,6 +12,9 @@ CREATE OR REPLACE TABLE ibis_testing.functional_alltypes ENGINE = Memory AS
 SELECT * REPLACE(CAST(timestamp_col AS Nullable(DateTime)) AS timestamp_col)
 FROM file('ibis/functional_alltypes.parquet', 'Parquet');
 
+CREATE OR REPLACE TABLE ibis_testing.astronauts ENGINE = Memory AS
+SELECT * FROM file('ibis/astronauts.parquet', 'Parquet');
+
 CREATE OR REPLACE TABLE ibis_testing.tzone (
     ts Nullable(DateTime),
     key Nullable(String),

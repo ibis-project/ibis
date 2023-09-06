@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import csv
+import io
 import sqlite3
 from typing import Any
 
@@ -34,8 +35,14 @@ class TestConf(BackendTest, RoundAwayFromZero):
         with self.connection.begin() as con:
             for table in TEST_TABLES:
                 basename = f"{table}.csv"
-                with self.data_dir.joinpath("csv", basename).open("r") as f:
-                    reader = csv.reader(f)
+                with self.data_dir.joinpath("csv", basename).open(
+                    "r", encoding="UTF-8"
+                ) as f:
+                    if basename == "astronauts.csv":
+                        input = io.StringIO(f.read().replace("\n ", " "))
+                    else:
+                        input = f
+                    reader = csv.reader(input)
                     header = next(reader)
                     assert header, f"empty header for table: `{table}`"
                     spec = ", ".join("?" * len(header))

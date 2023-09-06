@@ -22,6 +22,37 @@ CREATE TABLE diamonds (
 
 COPY diamonds FROM '/data/diamonds.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
 
+DROP TABLE IF EXISTS astronauts CASCADE;
+
+CREATE TABLE astronauts (
+    "id" BIGINT,
+    "number" BIGINT,
+    "nationwide_number" BIGINT,
+    "name" VARCHAR,
+    "original_name" VARCHAR,
+    "sex" VARCHAR,
+    "year_of_birth" BIGINT,
+    "nationality" VARCHAR,
+    "military_civilian" VARCHAR,
+    "selection" VARCHAR,
+    "year_of_selection" BIGINT,
+    "mission_number" BIGINT,
+    "total_number_of_missions" BIGINT,
+    "occupation" VARCHAR,
+    "year_of_mission" BIGINT,
+    "mission_title" VARCHAR,
+    "ascend_shuttle" VARCHAR,
+    "in_orbit" VARCHAR,
+    "descend_shuttle" VARCHAR,
+    "hours_mission" DOUBLE PRECISION,
+    "total_hrs_sum" DOUBLE PRECISION,
+    "field21" BIGINT,
+    "eva_hrs_mission" DOUBLE PRECISION,
+    "total_eva_hrs" DOUBLE PRECISION
+);
+
+COPY astronauts FROM '/data/astronauts.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
+
 DROP TABLE IF EXISTS batting CASCADE;
 
 CREATE TABLE batting (
