@@ -1196,7 +1196,7 @@ class Backend(BaseBackend, CanCreateSchema):
             map(as_py, rows["column_type"]),
             map(as_py, rows["null"]),
         ):
-            ibis_type = DuckDBType.from_string(type, nullable=nullable)
+            ibis_type = DuckDBType.from_string(type, nullable=null.lower() == "yes")
             yield name, ibis_type.copy(nullable=null.lower() == "yes")
 
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
