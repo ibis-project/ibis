@@ -449,14 +449,16 @@ def _string_find(op, **kw):
     arg = translate_val(op.arg, **kw)
     substr = translate_val(op.substr, **kw)
 
-    return f"instr({arg}, {substr}) - 1"
+    return sg.func("instr", arg, substr) - 1
 
 
 @translate_val.register(ops.RegexSearch)
 def _regex_search(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return f"regexp_matches({arg}, {pattern}, 's')"
+    return sg.func(
+        "regexp_matches", arg, pattern, sg.expressions.Literal(this="s", is_string=True)
+    )
 
 
 @translate_val.register(ops.RegexReplace)
@@ -464,7 +466,14 @@ def _regex_replace(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
     replacement = translate_val(op.replacement, **kw)
-    return sg.func("regexp_replace", arg, pattern, replacement, "g", dialect="duckdb")
+    return sg.func(
+        "regexp_replace",
+        arg,
+        pattern,
+        replacement,
+        sg.expressions.Literal(this="g", is_string=True),
+        dialect="duckdb",
+    )
 
 
 @translate_val.register(ops.RegexExtract)
@@ -473,13 +482,15 @@ def _regex_extract(op, **kw):
     pattern = translate_val(op.pattern, **kw)
     group = translate_val(op.index, **kw)
     return f"regexp_extract({arg}, {pattern}, {group})"
+    # TODO: make this work -- need to handle pattern escaping?
+    return sg.func("regexp_extract", arg, pattern, group)
 
 
 @translate_val.register(ops.Levenshtein)
 def _levenshtein(op, **kw):
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    return f"levenshtein({left}, {right})"
+    return sg.func("levenshtein", left, right)
 
 
 ### Simple Ops
@@ -1021,7 +1032,7 @@ def _exists_subquery(op, **kw):
 def _string_split(op, **kw):
     arg = translate_val(op.arg, **kw)
     delimiter = translate_val(op.delimiter, **kw)
-    return f"string_split({arg}, {delimiter})"
+    return sg.expressions.Split(this=arg, expression=delimiter)
 
 
 @translate_val.register(ops.StringJoin)
@@ -1035,7 +1046,7 @@ def _string_join(op, **kw):
 @translate_val.register(ops.StringConcat)
 def _string_concat(op, **kw):
     arg = map(partial(translate_val, **kw), op.arg)
-    return " || ".join(map(_sql, arg))
+    return sg.expressions.Concat(expressions=list(arg))
 
 
 @translate_val.register(ops.StringSQLLike)
@@ -1055,10 +1066,11 @@ def _string_ilike(op, **kw):
 @translate_val.register(ops.Capitalize)
 def _string_capitalize(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.func(
-        "concat",
-        sg.func("upper", sg.func("substr", arg, 1, 1)),
-        sg.func("lower", sg.func("substr", arg, 2)),
+    return sg.expressions.Concat(
+        expressions=[
+            sg.func("upper", sg.func("substr", arg, 1, 1)),
+            sg.func("lower", sg.func("substr", arg, 2)),
+        ]
     )
 
 
