@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import pyspark
 import pyspark.sql.types as pt
+from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -8,6 +10,10 @@ from ibis.backends.base.sql.registry import sql_type_names
 from ibis.formats import TypeMapper
 
 _sql_type_names = dict(sql_type_names, date="date")
+
+# DayTimeIntervalType introduced in Spark 3.2 (at least) but didn't show up in
+# PySpark until version 3.3
+PYSPARK_33 = vparse(pyspark.__version__) >= vparse("3.3")
 
 
 def type_to_sql_string(tval):
@@ -38,12 +44,13 @@ _from_pyspark_dtypes = {
 _to_pyspark_dtypes = {v: k for k, v in _from_pyspark_dtypes.items()}
 _to_pyspark_dtypes[dt.JSON] = pt.StringType
 
-_pyspark_interval_units = {
-    pt.DayTimeIntervalType.SECOND: "s",
-    pt.DayTimeIntervalType.MINUTE: "m",
-    pt.DayTimeIntervalType.HOUR: "h",
-    pt.DayTimeIntervalType.DAY: "D",
-}
+if PYSPARK_33:
+    _pyspark_interval_units = {
+        pt.DayTimeIntervalType.SECOND: "s",
+        pt.DayTimeIntervalType.MINUTE: "m",
+        pt.DayTimeIntervalType.HOUR: "h",
+        pt.DayTimeIntervalType.DAY: "D",
+    }
 
 
 class PySparkType(TypeMapper):
@@ -64,7 +71,7 @@ class PySparkType(TypeMapper):
             fields = {f.name: cls.to_ibis(f.dataType) for f in typ.fields}
 
             return dt.Struct(fields, nullable=nullable)
-        elif isinstance(typ, pt.DayTimeIntervalType):
+        elif PYSPARK_33 and isinstance(typ, pt.DayTimeIntervalType):
             if (
                 typ.startField == typ.endField
                 and typ.startField in _pyspark_interval_units
