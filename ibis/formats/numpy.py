@@ -80,6 +80,8 @@ class NumpyType(TypeMapper[np.dtype]):
             or dtype.is_unknown()
             or dtype.is_uuid()
             or dtype.is_geospatial()
+            or dtype.is_inet()
+            or dtype.is_macaddr()
         ):
             return np.dtype("object")
         else:

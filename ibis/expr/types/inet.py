@@ -2,34 +2,34 @@ from __future__ import annotations
 
 from public import public
 
-from ibis.expr.types.strings import StringColumn, StringScalar, StringValue
+from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
-class MACADDRValue(StringValue):
+class MACADDRValue(Value):
     pass
 
 
 @public
-class MACADDRScalar(StringScalar, MACADDRValue):
+class MACADDRScalar(Scalar, MACADDRValue):
     pass
 
 
 @public
-class MACADDRColumn(StringColumn, MACADDRValue):
+class MACADDRColumn(Column, MACADDRValue):
     pass
 
 
 @public
-class INETValue(StringValue):
+class INETValue(Value):
     pass
 
 
 @public
-class INETScalar(StringScalar, INETValue):
+class INETScalar(Scalar, INETValue):
     pass
 
 
 @public
-class INETColumn(StringColumn, INETValue):
+class INETColumn(Column, INETValue):
     pass

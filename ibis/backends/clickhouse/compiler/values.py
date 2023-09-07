@@ -451,7 +451,7 @@ def _literal(op, **kw):
     elif dtype.is_inet():
         v = str(value)
         return f"toIPv6({v!r})" if ":" in v else f"toIPv4({v!r})"
-    elif dtype.is_string():
+    elif dtype.is_string() or dtype.is_macaddr():
         quoted = value.replace("'", "''").replace("\\", "\\\\")
         return f"'{quoted}'"
     elif dtype.is_decimal():
