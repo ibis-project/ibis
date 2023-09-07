@@ -10,7 +10,7 @@ from pytest import param
 import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.duckdb.datatypes import DuckDBType
+from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
 
 @pytest.mark.parametrize(

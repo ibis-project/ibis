@@ -151,7 +151,10 @@ def _cast(op, **kw):
 @translate_val.register(ops.TryCast)
 def _try_cast(op, **kw):
     return sg.func(
-        "try_cast", translate_val(op.arg, **kw), serialize(op.to), dialect="duckdb"
+        "try_cast",
+        translate_val(op.arg, **kw),
+        DuckDBType.to_string(op.to),
+        dialect="duckdb",
     )
 
 
@@ -280,7 +283,6 @@ def _extract_time(op, **kw):
 @translate_val.register(ops.ExtractMicrosecond)
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
-    dtype = serialize(op.dtype)
 
     return f"extract('us', {arg}::TIMESTAMP) % 1000000"
 
@@ -288,7 +290,6 @@ def _extract_microsecond(op, **kw):
 @translate_val.register(ops.ExtractMillisecond)
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
-    dtype = serialize(op.dtype)
 
     return f"extract('ms', {arg}::TIMESTAMP) % 1000"
 

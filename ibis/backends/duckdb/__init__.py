@@ -23,7 +23,6 @@ from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseBackend
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.compiler import translate
-from ibis.backends.duckdb.datatypes import serialize
 from ibis.expr.operations.relations import PandasDataFrameProxy
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pandas import PandasData
@@ -144,7 +143,8 @@ class Backend(BaseBackend, CanCreateSchema):
                 code += f" AS {self.compile(obj)}"
             else:
                 serialized_schema = ", ".join(
-                    f"{name} {serialize(typ)}" for name, typ in schema.items()
+                    f"{name} {DuckDBType.to_string(typ)}"
+                    for name, typ in schema.items()
                 )
 
                 code += f" ({serialized_schema})"
