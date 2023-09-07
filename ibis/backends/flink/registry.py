@@ -616,6 +616,9 @@ operation_registry.update(
 )
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> df3c58341 (fix(flink): mark `IsNan` and `IsInf` not supported)
 
 _invalid_operations = {
     # ibis.expr.operations.strings
@@ -629,9 +632,12 @@ _invalid_operations = {
 operation_registry = {
     k: v for k, v in operation_registry.items() if k not in _invalid_operations
 }
+<<<<<<< HEAD
 =======
 =======
 del operation_registry[ops.FindInSet]
 >>>>>>> 47055eb9f (test(flink): mark `find_in_set` not yet BE-supported)
 del operation_registry[ops.Translate]
 >>>>>>> 3f7756999 (test(flink): mark `translate` not yet BE-supported)
+=======
+>>>>>>> df3c58341 (fix(flink): mark `IsNan` and `IsInf` not supported)
