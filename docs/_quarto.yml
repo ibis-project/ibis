@@ -142,13 +142,13 @@ website:
           contents:
             - reference/top_level.qmd
             - reference/expression-tables.qmd
+            - reference/selectors.qmd
             - reference/expression-generic.qmd
             - reference/expression-strings.qmd
             - reference/expression-numeric.qmd
             - reference/expression-temporal.qmd
             - reference/expression-collections.qmd
             - reference/expression-geospatial.qmd
-            - reference/selectors.qmd
 
         - section: Type system
           contents:
