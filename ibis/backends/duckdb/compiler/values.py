@@ -421,11 +421,10 @@ def _substring(op, **kw):
     # Duckdb is 1-indexed
     arg = translate_val(op.arg, **kw)
     start = translate_val(op.start, **kw)
-    arg_length = sg.expressions.Length(this=arg)
     if op.length is not None:
         length = translate_val(op.length, **kw)
     else:
-        length = arg_length
+        length = None
 
     if_pos = sg.expressions.Substring(this=arg, start=start + 1, length=length)
     if_neg = sg.expressions.Substring(this=arg, start=start, length=length)
@@ -512,7 +511,6 @@ _simple_ops = {
     # ops.ApproxMedian: "median",  # TODO
     # ops.Median: "quantileExactExclusive",  # TODO
     ops.Mean: "avg",
-    ops.Sum: "sum",
     ops.Max: "max",
     ops.Min: "min",
     ops.Any: "any_value",
@@ -520,7 +518,6 @@ _simple_ops = {
     ops.ArgMin: "arg_min",
     ops.Mode: "mode",
     ops.ArgMax: "arg_max",
-    ops.Count: "count",
     ops.First: "first",
     ops.Last: "last",
     # string operations
@@ -639,7 +636,8 @@ def _in_values(op, **kw):
     options = sg.expressions.Array().from_arg_list(
         [translate_val(x, **kw) for x in op.options]
     )
-    return sg.func("list_contains", options, value, dialect="duckdb")
+    sg_expr = sg.func("list_contains", options, value, dialect="duckdb")
+    return sg_expr
 
 
 @translate_val.register(ops.InColumn)
@@ -814,20 +812,29 @@ def _array_slice_op(op, **kw):
     return sg.func("list_slice", arg, start, stop)
 
 
+@translate_val.register(ops.Count)
+def _count(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    count_expr = sg.expressions.Count(this=arg)
+    if op.where is not None:
+        where = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=count_expr, expression=where)
+    return count_expr
+
+
 @translate_val.register(ops.CountDistinct)
 @translate_val.register(ops.ApproxCountDistinct)
 def _count_distinct(op, **kw):
     arg = translate_val(op.arg, **kw)
-    on = None
-    if op.where is not None:
-        on = translate_val(op.where, **kw)
-    sg_expr = sg.expressions.Count(
+    count_expr = sg.expressions.Count(
         this=sg.expressions.Distinct(
             expressions=[arg],
-            on=on,
         )
     )
-    return sg_expr
+    if op.where is not None:
+        where = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=count_expr, expression=where)
+    return count_expr
 
 
 @translate_val.register(ops.CountStar)
@@ -836,6 +843,28 @@ def _count_star(op, **kw):
     if (predicate := op.where) is not None:
         return sg.select(sql).where(predicate)
     return sql
+
+
+@translate_val.register(ops.Sum)
+def _sum(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    where = None
+    if op.where is not None:
+        where = translate_val(op.where, **kw)
+
+    sg_where = sg.expressions.Where(this=where)
+
+    # Handle sum(boolean comparison)
+    if isinstance(op.arg, ops.Comparison):
+        sg_count_expr = sg.expressions.Count(this=arg)
+        if where is not None:
+            return sg.expressions.Filter(this=sg_count_expr, expression=sg_where)
+        return sg_count_expr
+
+    sg_sum_expr = sg.expressions.Sum(this=arg)
+    if where is not None:
+        return sg.expressions.Filter(this=sg_sum_expr, expression=sg_where)
+    return sg_sum_expr
 
 
 @translate_val.register(ops.NotAny)
