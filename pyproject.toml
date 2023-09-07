@@ -129,15 +129,15 @@ requests = ">=2,<3"
 sqlalchemy = ">=1.4,<3"
 
 [tool.poetry.group.docs.dependencies]
-altair = ">=5.0.1,<6"
-ipykernel = ">=6.25.1,<7"
-nbclient = ">=0.8.0,<1"
-plotly = ">=5.16.1,<6"
-plotnine = ">=0.12.2,<1"
-quartodoc = ">=0.6.1,<1"
-requests = ">=2,<3"
-scikit-learn = ">=1.3,<2"
-seaborn = ">=0.12.2,<1"
+altair = { version = ">=5.0.1,<6", python = "^3.10" }
+ipykernel = { version = ">=6.25.1,<7", python = "^3.10" }
+nbclient = { version = ">=0.8.0,<1", python = "^3.10" }
+plotly = { version = ">=5.16.1,<6", python = "^3.10" }
+plotnine = { version = ">=0.12.2,<1", python = "^3.10" }
+quartodoc = { version = ">=0.6.1,<1", python = "^3.10" }
+requests = { version = ">=2,<3", python = "^3.10" }
+scikit-learn = { version = ">=1.3,<2", python = "^3.10" }
+seaborn = { version = ">=0.12.2,<1", python = "^3.10" }
 
 [tool.poetry.extras]
 # generate the `all` extra using nix run '.#gen-all-extras'

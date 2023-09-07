@@ -2442,7 +2442,6 @@ files = [
 ]
 
 [package.dependencies]
-importlib-metadata = {version = ">=4.8.3", markers = "python_version < \"3.10\""}
 jupyter-core = ">=4.12,<5.0.0 || >=5.1.0"
 python-dateutil = ">=2.8.2"
 pyzmq = ">=23.0"
@@ -2790,7 +2789,6 @@ files = [
 contourpy = ">=1.0.1"
 cycler = ">=0.10"
 fonttools = ">=4.22.0"
-importlib-resources = {version = ">=3.2.0", markers = "python_version < \"3.10\""}
 kiwisolver = ">=1.0.1"
 numpy = ">=1.20"
 packaging = ">=20.0"
@@ -3506,18 +3504,6 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
-
-[[package]]
-name = "plum-dispatch"
-version = "1.7.4"
-description = "Multiple dispatch in Python"
-category = "dev"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "plum-dispatch-1.7.4.tar.gz", hash = "sha256:1c1d15b2842b5fa98405fd3dff6fad4887bdc77b60bd200e209d76ebfe9990fe"},
-    {file = "plum_dispatch-1.7.4-py3-none-any.whl", hash = "sha256:c40dbeab269bbbf972ce0dbc078380da19ebaee1a370a2c564e1814a11bde216"},
-]
 
 [[package]]
 name = "plum-dispatch"
@@ -4676,10 +4662,7 @@ click = "*"
 griffe = "<=0.32.3"
 importlib-metadata = ">=5.1.0"
 importlib-resources = ">=5.10.2"
-plum-dispatch = [
-    {version = "<2.0.0", markers = "python_version < \"3.10\""},
-    {version = ">2.0.0", markers = "python_version >= \"3.10\""},
-]
+plum-dispatch = {version = ">2.0.0", markers = "python_version >= \"3.10\""}
 pydantic = "<2.0"
 pyyaml = "*"
 sphobjinv = ">=2.3.1"
@@ -6133,4 +6116,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "1795db7482bfb47ef860a9da7304da15a3111643700c06f9f0474f45e631c42d"
+content-hash = "60e563af5a8af6199518a35bbc8037f798f17cfee81b9cefb8d09c7509e6d70e"
