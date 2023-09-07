@@ -138,7 +138,30 @@ website:
       style: "docked"
       collapse-level: 2
       contents:
-        - auto: reference/*.qmd
+        - section: Expression API
+          contents:
+            - reference/top_level.qmd
+            - reference/expression-tables.qmd
+            - reference/expression-generic.qmd
+            - reference/expression-strings.qmd
+            - reference/expression-numeric.qmd
+            - reference/expression-temporal.qmd
+            - reference/expression-collections.qmd
+            - reference/expression-geospatial.qmd
+            - reference/selectors.qmd
+
+        - section: Type system
+          contents:
+            - reference/datatypes.qmd
+            - reference/schemas.qmd
+
+        - section: Configuration
+          contents:
+            - reference/ContextAdjustment.qmd
+            - reference/Interactive.qmd
+            - reference/Options.qmd
+            - reference/Repr.qmd
+            - reference/SQL.qmd
 
 format:
   html:
@@ -158,8 +181,8 @@ quartodoc:
     member_options:
       signature_name: short
   sections:
-    - title: Expressions
-      desc: ""
+    - title: Expression API
+      desc: "APIs for manipulating table, column and scalar expressions"
       package: ibis.expr.types
       contents:
         - kind: page
@@ -367,25 +390,33 @@ quartodoc:
             - last
             - all
 
+    - title: Type System
+      desc: "Data types and schemas"
+      package: ibis
+      contents:
         - kind: page
-          path: datatypes-schemas
-          package: ibis.expr
+          path: datatypes
+          package: ibis.expr.datatypes
           summary:
-            name: Data types and schemas
-            desc: Data types and schemas
+            name: Data types
+            desc: Data types
           contents:
-            - name: Schema
-              package: ibis.expr.schema
-            - datatypes.core
+            - core
+        - kind: page
+          path: schemas
+          package: ibis.expr.schema
+          summary:
+            name: Schemas
+            desc: Schemas
+          contents:
+            - Schema
 
-        - kind: page
-          path: config
-          package: ibis.config
-          summary:
-            name: Config
-            desc: Ibis configuration
-          contents:
-            - Options
-            - Repr
-            - SQL
-            - ContextAdjustment
+    - title: Configuration
+      desc: "Ibis configuration"
+      package: ibis.config
+      contents:
+        - ContextAdjustment
+        - Interactive
+        - Options
+        - Repr
+        - SQL

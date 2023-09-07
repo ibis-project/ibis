@@ -236,7 +236,7 @@ def schema(
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
-    """Validate and return a [`Schema`](./datatypes-schemas.qmd#ibis.expr.schema.Schema) object.
+    """Validate and return a [`Schema`](./schemas.qmd#ibis.expr.schema.Schema) object.
 
     Parameters
     ----------
@@ -344,7 +344,7 @@ def memtable(
     columns
         Optional [](`typing.Iterable`) of [](`str`) column names.
     schema
-        Optional [`Schema`](./datatypes-schemas.qmd#ibis.expr.schema.Schema).
+        Optional [`Schema`](./schemas.qmd#ibis.expr.schema.Schema).
         The functions use `data` to infer a schema if not passed.
     name
         Optional name of the table.
