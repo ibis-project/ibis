@@ -13,16 +13,19 @@ We're going to add a **`last_date`** function to ibis. `last_date` simply return
 Let's define the `last_date` operation as a function that takes any date column as input and returns a date:
 
 ```python
-import datetime
-import typing
+from __future__ import annotations
 
-def last_date(dates: typing.List[datetime.date]) -> datetime.date:
-    """Latest date"""
+from datetime import date
+
+
+def last_date(dates: list[date]) -> date:
+    """Latest date."""
 ```
 
 
 ```{python}
-from typing import Optional
+from __future__ import annotations
+
 import ibis.expr.datatypes as dt
 import ibis.expr.datashape as ds
 import ibis.expr.rules as rlz
@@ -32,9 +35,9 @@ from ibis.expr.operations import Reduction, Value
 
 class LastDate(Reduction):
     arg: Value[dt.Date, ds.Any]
-    where: Optional[Value[dt.Boolean, ds.Any]] = None
+    where: Value[dt.Boolean, ds.Any] | None = None
 
-    dtype = rlz.dtype_like('arg')
+    dtype = rlz.dtype_like("arg")
     shape = ds.scalar
 ```
 
@@ -44,13 +47,13 @@ We just defined a `LastDate` class that takes one date column as input, and retu
 
 ## Step 2: Define the API
 
-Because every reduction in ibis has the ability to filter out values during aggregation (a typical feature in databases and analytics tools), to make an expression out of ``LastDate`` we need to pass an additional argument: `where` to our `LastDate` constructor.
+Because every reduction in ibis has the ability to filter out values during aggregation, to make an expression out of `LastDate` we need to pass an additional argument `where` to our `LastDate` constructor.
+
+Additionally, reductions should be defined on `Column` classes because reductions are not always well-defined for a scalar value.
 
 
 ```{python}
-from ibis.expr.types import (
-    DateColumn,  # not DateValue! reductions are only valid on columns
-)
+from ibis.expr.types import DateColumn
 
 
 def last_date(date_column, where=None):
@@ -65,8 +68,10 @@ DateColumn.last_date = last_date
 ```{python}
 import ibis
 
+
 people = ibis.table(
-    dict(name='string', country='string', date_of_birth='date'), name='people'
+    dict(name="string", country="string", date_of_birth="date"),
+    name="people",
 )
 ```
 
@@ -77,7 +82,7 @@ people.date_of_birth.last_date()
 
 
 ```{python}
-people.date_of_birth.last_date(people.country == 'Indonesia')
+people.date_of_birth.last_date(people.country == "Indonesia")
 ```
 
 ## Step 3: Turn the Expression into SQL
@@ -90,12 +95,15 @@ import sqlalchemy as sa
 @ibis.sqlite.add_operation(LastDate)
 def _last_date(translator, expr):
     # pull out the arguments to the expression
-    arg, where = expr.op().args
+    op = expr.op()
+
+    arg = op.arg
+    where = op.where
 
     # compile the argument
     compiled_arg = translator.translate(arg)
 
-    # call the appropriate SQLite function (`max` for the latest/maximum date)
+    # call the appropriate SQLite function (`max` for the latest date)
     agg = sa.func.max(compiled_arg)
 
     # handle a non-None filter clause
@@ -110,32 +118,23 @@ Download the geography database.
 
 ```{python}
 !curl -LsS -o geography.db 'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
-```
 
-
-```{python}
-import os
-
-import ibis
-
-db_fname = 'geography.db'
-
-con = ibis.sqlite.connect(db_fname)
+con = ibis.sqlite.connect("geography.db")
 ```
 
 ### Create and execute a `bitwise_and` expression
 
 
 ```{python}
-independence = con.table('independence')
-independence
+ind = con.table("independence")
+ind
 ```
 
 Last country to gain independence in our database:
 
 
 ```{python}
-expr = independence.independence_date.last_date()
+expr = ind.independence_date.last_date()
 expr
 ```
 
@@ -144,12 +143,12 @@ expr
 ibis.to_sql(expr)
 ```
 
-Last country to gain independence from the Spanish Empire, using the `where` parameter:
+Show the last country to gain independence from the Spanish Empire, using the `where` parameter:
 
 
 ```{python}
-expr = independence.independence_date.last_date(
-    where=independence.independence_from == 'Spanish Empire'
+expr = ind.independence_date.last_date(
+    where=ind.independence_from == "Spanish Empire"
 )
 expr
 ```

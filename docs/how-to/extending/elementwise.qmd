@@ -4,7 +4,7 @@ This notebook will show you how to add a new elementwise operation to an existin
 
 We are going to add `julianday`, a function supported by the SQLite database, to the SQLite Ibis backend.
 
-The Julian day of a date, is the number of days since January 1st, 4713 BC. For more information check the [Julian day](https://en.wikipedia.org/wiki/Julian_day) wikipedia page.
+The Julian day of a date, is the number of days since January 1st, 4713 BC. For more information check the [Julian day](https://en.wikipedia.org/wiki/Julian_day) Wikipedia page.
 
 ## Step 1: Define the Operation
 
@@ -12,7 +12,7 @@ Let's define the `julianday` operation as a function that takes one string input
 
 ```python
 def julianday(date: str) -> float:
-    """Julian date"""
+    """Return the Julian day from a date."""
 ```
 
 
@@ -37,7 +37,7 @@ We just defined a `JulianDay` class that takes one argument of type string or bi
 
 Because we know the output type of the operation, to make an expression out of ``JulianDay`` we simply need to construct it and call its `ibis.expr.types.Node.to_expr` method.
 
-We still need to add a method to `StringValue` and `BinaryValue` (this needs to work on both scalars and columns).
+We still need to add a method to `StringValue` (this needs to work on both scalars and columns).
 
 When you add a method to any of the expression classes whose name matches `*Value` both the scalar and column child classes will pick it up, making it easy to define operations for both scalars and columns in one place.
 
@@ -45,7 +45,7 @@ We can do this by defining a function and assigning it to the appropriate class
 of expressions.
 
 ```{python}
-from ibis.expr.types import BinaryValue, StringValue
+from ibis.expr.types import StringValue
 
 
 def julianday(string_value):
@@ -55,13 +55,13 @@ def julianday(string_value):
 StringValue.julianday = julianday
 ```
 
-## Interlude: Create some expressions with `sha1`
+## Interlude: Create some expressions with `julianday`
 
 
 ```{python}
 import ibis
 
-t = ibis.table([('string_col', 'string')], name='t')
+t = ibis.table(dict(string_col="string"), name="t")
 
 t.string_col.julianday()
 ```
@@ -91,46 +91,39 @@ Download the geography database.
 
 ```{python}
 !curl -LsS -o geography.db 'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
-```
 
-
-```{python}
-import os
-
-db_fname = 'geography.db'
-
-con = ibis.sqlite.connect(db_fname)
+con = ibis.sqlite.connect("geography.db")
 ```
 
 ### Create and execute a `julianday` expression
 
 
 ```{python}
-independence = con.table('independence')
-independence
+ind = con.table("independence")
+ind
 ```
 
 
 ```{python}
-day = independence.independence_date.cast('string')
+day = ind.independence_date.cast("string")
 day
 ```
 
 
 ```{python}
-julianday_expr = day.julianday().name("jday")
-julianday_expr
+jday_expr = day.julianday().name("jday")
+jday_expr
 ```
 
 
 ```{python}
-ibis.to_sql(julianday_expr)
+ibis.to_sql(jday_expr)
 ```
 
 Because we've defined our operation on `StringValue`, and not just on `StringColumn` we get operations on both string scalars *and* string columns for free
 
 
 ```{python}
-jday = ibis.literal('2010-03-14').julianday()
+jday = ibis.literal("2010-03-14").julianday()
 con.execute(jday)
 ```
