@@ -53,7 +53,7 @@ missions = con.table("missions") # <2>
 You can display slices of data:
 
 ```{python}
-t = astronauts[0:5]  # <1>
+astronauts[0:5]  # <1>
 ```
 
 1. Display the first 5 rows of the `astronauts` table.
