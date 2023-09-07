@@ -846,6 +846,11 @@ def test_isnan_isinf(
             L(0).sign(),
             0,
             id="sign-zero",
+            marks=pytest.mark.broken(
+                ["flink"],
+                "An error occurred while calling z:org.apache.flink.table.runtime.arrow.ArrowUtils.collectAsPandasDataFrame.",
+                raises=Py4JError,
+            ),
         ),
         param(L(5.556).sqrt(), math.sqrt(5.556), id="sqrt"),
         param(
