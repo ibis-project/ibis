@@ -417,19 +417,28 @@ def _interval_from_integer(op, **kw):
 
 @translate_val.register(ops.Substring)
 def _substring(op, **kw):
+    # TODO: fix expr_slice_begin tests
     # Duckdb is 1-indexed
     arg = translate_val(op.arg, **kw)
     start = translate_val(op.start, **kw)
-    arg_length = f"length({arg})"
+    arg_length = sg.expressions.Length(this=arg)
     if op.length is not None:
         length = translate_val(op.length, **kw)
-        suffix = f", {length}"
     else:
-        suffix = ""
+        length = arg_length
 
-    if_pos = f"substring({arg}, {start} + 1{suffix})"
-    if_neg = f"substring({arg}, {arg_length} + {start} + 1{suffix})"
-    return f"if({start} >= 0, {if_pos}, {if_neg})"
+    if_pos = sg.expressions.Substring(this=arg, start=start + 1, length=length)
+    if_neg = sg.expressions.Substring(this=arg, start=start, length=length)
+
+    sg_expr = sg.expressions.If(
+        this=sg.expressions.GTE(
+            this=start, expression=sg.expressions.Literal(this="0", is_string=False)
+        ),
+        true=if_pos,
+        false=if_neg,
+    )
+
+    return sg_expr
 
 
 @translate_val.register(ops.StringFind)
