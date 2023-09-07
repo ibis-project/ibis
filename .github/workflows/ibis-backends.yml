@@ -165,6 +165,7 @@ jobs:
               - flink
             additional_deps:
               - apache-flink
+              - grpcio-status # FIXME(deepyaman)
             even_more_deps:
               - pandas~=1.5
         exclude:
@@ -272,6 +273,7 @@ jobs:
                 - flink
               additional_deps:
                 - apache-flink
+                - grpcio-status # FIXME(deepyaman)
               even_more_deps:
                 - pandas~=1.5
     steps:
