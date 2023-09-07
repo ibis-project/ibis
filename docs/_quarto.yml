@@ -396,12 +396,45 @@ quartodoc:
       contents:
         - kind: page
           path: datatypes
-          package: ibis.expr.datatypes
+          package: ibis.expr.datatypes.core
           summary:
             name: Data types
             desc: Data types
           contents:
-            - core
+            - Array
+            - Binary
+            - Boolean
+            - DataType
+            - Date
+            - Decimal
+            - Float16
+            - Float32
+            - Float64
+            - INET
+            - Int16
+            - Int32
+            - Int64
+            - Int8
+            - Interval
+            - JSON
+            - LineString
+            - MACADDR
+            - Map
+            - MultiLineString
+            - MultiPoint
+            - MultiPolygon
+            - "Null"
+            - Point
+            - Polygon
+            - String
+            - Struct
+            - Time
+            - Timestamp
+            - UInt16
+            - UInt32
+            - UInt64
+            - UInt8
+            - UUID
         - kind: page
           path: schemas
           package: ibis.expr.schema
