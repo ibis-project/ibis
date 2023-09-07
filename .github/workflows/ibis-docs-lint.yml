@@ -218,7 +218,7 @@ jobs:
       #     path: docs/bench
 
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: run doctests
         run: nix develop --ignore-environment -c just doctest
