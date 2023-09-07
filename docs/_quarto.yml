@@ -121,6 +121,7 @@ website:
         - auto: "how-to/input-output"
         - auto: "how-to/analytics"
         - auto: "how-to/visualization"
+        - auto: "how-to/extending"
     - id: contribute
       title: "Contribute"
       style: "docked"
