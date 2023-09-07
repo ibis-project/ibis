@@ -2,14 +2,14 @@
 
 The internals are designed to map the Ibis API to the backend.
 
-## Primary Goals
+## Primary goals
 
 1. Type safety
 1. Expressiveness
 1. Composability
 1. Familiarity
 
-## Flow of Execution
+## Flow of execution
 
 1. User writes expression
 1. Each method or function call builds a new expression
@@ -31,7 +31,7 @@ expressions in Ibis is the
 Expressions provide the user facing API, most of which is defined in
 `ibis/expr/api.py`.
 
-### Type System
+### Type system
 
 Ibis's type system consists of a set of rules for specifying the types of
 inputs to `ibis.expr.types.Node` subclasses. Upon construction of a `Node`
@@ -50,7 +50,7 @@ Examples of expression types include
 [`StringValue`](../reference/expression-strings.qmd#ibis.expr.types.strings.StringValue) and
 [`Table`](../reference/expression-tables.qmd#ibis.expr.types.relations.Table).
 
-### The `ibis.expr.types.Node` Class
+### The `ibis.expr.types.Node` class
 
 `Node` subclasses make up the core set of operations of Ibis. Each node
 corresponds to a particular operation.
@@ -97,7 +97,7 @@ t = ibis.table([('a', 'float')], name='t')
 log_1p = (1 + t.a).log()  # an Add and a Log are instantiated here
 ```
 
-### Expressions vs Operations: Why are they different?
+### Expressions vs operations: why are they different?
 
 Separating expressions from their underlying operations makes it easy to
 generically describe and validate the inputs to particular nodes. In the log
