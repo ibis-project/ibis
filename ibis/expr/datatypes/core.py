@@ -1017,7 +1017,7 @@ class UUID(DataType):
 
 
 @public
-class MACADDR(String):
+class MACADDR(DataType):
     """Media Access Control (MAC) address of a network interface."""
 
     scalar = "MACADDRScalar"
@@ -1025,7 +1025,7 @@ class MACADDR(String):
 
 
 @public
-class INET(String):
+class INET(DataType):
     """IP addresses."""
 
     scalar = "INETScalar"

@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from public import public
 
-from ibis.expr.types.strings import StringColumn, StringScalar, StringValue
+from ibis.expr.types.generic import Column, Scalar, Value
 
 
 @public
-class UUIDValue(StringValue):
+class UUIDValue(Value):
     pass
 
 
 @public
-class UUIDScalar(StringScalar, UUIDValue):
+class UUIDScalar(Scalar, UUIDValue):
     pass
 
 
 @public
-class UUIDColumn(StringColumn, UUIDValue):
+class UUIDColumn(Column, UUIDValue):
     pass

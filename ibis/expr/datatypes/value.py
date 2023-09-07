@@ -287,7 +287,7 @@ def normalize(typ, value):
             return json.dumps(value)
     elif dtype.is_binary():
         return bytes(value)
-    elif dtype.is_string():
+    elif dtype.is_string() or dtype.is_macaddr() or dtype.is_inet():
         return str(value)
     elif dtype.is_decimal():
         return normalize_decimal(value, precision=dtype.precision, scale=dtype.scale)

@@ -96,7 +96,7 @@ def literal(translator, op):
 
     if dtype.is_boolean():
         typeclass = "boolean"
-    elif dtype.is_string():
+    elif dtype.is_string() or dtype.is_inet() or dtype.is_macaddr():
         typeclass = "string"
     elif dtype.is_date():
         typeclass = "date"
