@@ -958,8 +958,8 @@ def _index_of(op, **kw):
 def _round(op, **kw):
     arg = translate_val(op.arg, **kw)
     if (digits := op.digits) is not None:
-        return f"round({arg}, {translate_val(digits, **kw)})"
-    return f"round({arg})"
+        return sg.expressions.Round(this=arg, decimals=translate_val(digits, **kw))
+    return sg.expressions.Round(this=arg)
 
 
 @translate_val.register(tuple)
