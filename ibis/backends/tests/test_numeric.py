@@ -757,7 +757,7 @@ def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     ],
 )
 @pytest.mark.notimpl(
-    ["mysql", "sqlite", "datafusion", "mssql", "oracle"],
+    ["mysql", "sqlite", "datafusion", "mssql", "oracle", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.xfail(
