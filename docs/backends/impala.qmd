@@ -1034,9 +1034,8 @@ The schema here is pretty simple (see `ibis.schema` for more):
 0    100      0 -1.401908  2.807106  8.479978  0.0848              10
 ```
 
-For functions like `parquet_file` and `delimited_file`, an HDFS
-directory must be passed (we'll add support for S3 and other filesystems
-later) and the directory must contain files all having the same schema.
+For functions like `parquet_file` and `delimited_file`, an HDFS directory must
+be passed and the directory must contain files all having the same schema.
 
 If you have Avro data, you can query it too if you have the full avro
 schema:
