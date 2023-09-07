@@ -253,14 +253,6 @@ chart = sns.barplot(
 chart.figure.set_size_inches(width / 100, height / 100)
 ```
 
-## Streamlit
-
-See [the demo](/posts/ibis-analytics/) for more.
-
-```{=html}
-<iframe class="streamlit-app-inner" width="100%" height="500" src="https://ibis-analytics.streamlit.app/?embedded=true"></iframe>
-```
-
 :::
 
 :::
