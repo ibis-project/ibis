@@ -17,5 +17,5 @@ methods = sorted(
     if value.name != "do_connect"
 )
 
-render_methods(backend, *methods, level=4)
+render_methods(backend, *methods, level=3)
 ```
