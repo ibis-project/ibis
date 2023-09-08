@@ -59,7 +59,7 @@ jobs:
           python-version: "${{ matrix.python-version }}"
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry<1.4'
+        run: python -m pip install --upgrade pip 'poetry==1.6.1'
 
       - uses: syphar/restore-pip-download-cache@v1
         with:
@@ -371,7 +371,7 @@ jobs:
           custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry<1.4'
+        run: python -m pip install --upgrade pip 'poetry==1.6.1'
 
       - uses: syphar/restore-virtualenv@v1
         with:
@@ -523,7 +523,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry<1.4'
+        run: python -m pip install --upgrade pip 'poetry==1.6.1'
 
       - name: install minimum versions
         run: poetry add --lock --optional ${{ join(matrix.backend.deps, ' ') }}
@@ -608,7 +608,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry<1.4'
+        run: python -m pip install --upgrade pip 'poetry==1.6.1'
 
       - name: remove conflicting deps
         if: matrix.pandas.conflicts != null
@@ -654,7 +654,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - run: python -m pip install --upgrade pip 'poetry<1.4'
+      - run: python -m pip install --upgrade pip 'poetry==1.6.1'
 
       - name: remove deps that are not compatible with sqlalchemy 2
         run: poetry remove snowflake-sqlalchemy
@@ -789,7 +789,7 @@ jobs:
           custom_cache_key_element: ${{ steps.install_python.outputs.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry<1.4'
+        run: python -m pip install --upgrade pip 'poetry==1.6.1'
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"

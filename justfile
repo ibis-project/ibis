@@ -10,12 +10,12 @@ clean:
 lock:
     #!/usr/bin/env bash
     version="$(poetry --version)"
-    if ! grep -qP '\(version 1\.3\.\d+\)' <<< "${version}"; then
-        >&2 echo "poetry version must be 1.3.x, got ${version}"
+    if ! grep -qP '\(version 1\.6\.1\)' <<< "${version}"; then
+        >&2 echo "poetry version must be 1.6.1, got ${version}"
         exit 1
     fi
     poetry lock --no-update
-    poetry export --extras all --with dev --with test --with docs --with quarto --without-hashes --no-ansi > requirements-dev.txt
+    poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 
 # show all backends
 @list-backends:
