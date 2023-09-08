@@ -396,8 +396,8 @@ class ArrayValue(Value):
         """
 
         @functools.wraps(func)
-        def wrapped(x):
-            return func(x.to_expr())
+        def wrapped(x, **kwargs):
+            return func(x.to_expr(), **kwargs)
 
         return ops.ArrayMap(self, func=wrapped).to_expr()
 
@@ -444,8 +444,8 @@ class ArrayValue(Value):
         """
 
         @functools.wraps(predicate)
-        def wrapped(x):
-            return predicate(x.to_expr())
+        def wrapped(x, **kwargs):
+            return predicate(x.to_expr(), **kwargs)
 
         return ops.ArrayFilter(self, func=wrapped).to_expr()
 
