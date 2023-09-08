@@ -238,11 +238,10 @@ def _string_to_timestamp(op, **kw):
 @translate_val.register(ops.ExtractEpochSeconds)
 def _extract_epoch_seconds(op, **kw):
     arg = translate_val(op.arg, **kw)
-    # TODO: do we need the TIMESTAMP cast?
     return sg.func(
         "epoch",
         sg.expressions.cast(
-            expression=sg.expressions.Literal(this=arg, is_string=True),
+            expression=arg,
             to=sg.expressions.DataType.Type.TIMESTAMP,
         ),
     )
@@ -284,21 +283,35 @@ def _extract_time(op, **kw):
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
 
-    return f"extract('us', {arg}::TIMESTAMP) % 1000000"
+    return sg.expressions.Mod(
+        this=sg.func(
+            "extract",
+            sg.expressions.Literal(this="us", is_string=True),
+            arg,
+        ),
+        expression=sg.expressions.Literal(this="1000000", is_string=False),
+    )
 
 
 @translate_val.register(ops.ExtractMillisecond)
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
 
-    return f"extract('ms', {arg}::TIMESTAMP) % 1000"
+    return sg.expressions.Mod(
+        this=sg.func(
+            "extract",
+            sg.expressions.Literal(this="ms", is_string=True),
+            arg,
+        ),
+        expression=sg.expressions.Literal(this="1000", is_string=False),
+    )
 
 
 @translate_val.register(ops.Date)
 def _date(op, **kw):
     arg = translate_val(op.arg, **kw)
 
-    return f"{arg}::DATE"
+    return sg.expressions.Date(this=arg)
 
 
 @translate_val.register(ops.DateTruncate)
@@ -736,23 +749,29 @@ def _literal(op, **kw):
     elif dtype.is_interval():
         return _interval_format(op)
     elif dtype.is_timestamp():
-        year = op.value.year
-        month = op.value.month
-        day = op.value.day
-        hour = op.value.hour
-        minute = op.value.minute
-        second = op.value.second
+        year = sg.expressions.Literal(this=f"{op.value.year}", is_string=False)
+        month = sg.expressions.Literal(this=f"{op.value.month}", is_string=False)
+        day = sg.expressions.Literal(this=f"{op.value.day}", is_string=False)
+        hour = sg.expressions.Literal(this=f"{op.value.hour}", is_string=False)
+        minute = sg.expressions.Literal(this=f"{op.value.minute}", is_string=False)
+        second = sg.expressions.Literal(this=f"{op.value.second}", is_string=False)
         if op.value.microsecond:
-            microsecond = op.value.microsecond / 1e6
+            microsecond = sg.expressions.Literal(
+                this=f"{op.value.microsecond / 1e6}", is_string=False
+            )
             second += microsecond
-        if (timezone := dtype.timezone) is not None:
-            return f"make_timestamptz({year}, {month}, {day}, {hour}, {minute}, {second}, '{timezone}')"
+        if dtype.timezone is not None:
+            timezone = sg.expressions.Literal(this=dtype.timezone, is_string=True)
+            return sg.func(
+                "make_timestamptz", year, month, day, hour, minute, second, timezone
+            )
         else:
-            return f"make_timestamp({year}, {month}, {day}, {hour}, {minute}, {second})"
+            return sg.func("make_timestamp", year, month, day, hour, minute, second)
     elif dtype.is_date():
-        return sg.expressions.DateFromParts(
-            year=op.value.year, month=op.value.month, day=op.value.day
-        )
+        year = sg.expressions.Literal(this=f"{op.value.year}", is_string=False)
+        month = sg.expressions.Literal(this=f"{op.value.month}", is_string=False)
+        day = sg.expressions.Literal(this=f"{op.value.day}", is_string=False)
+        return sg.expressions.DateFromParts(year=year, month=month, day=day)
     elif dtype.is_array():
         value_type = dtype.value_type
         is_string = isinstance(value_type, dt.String)
