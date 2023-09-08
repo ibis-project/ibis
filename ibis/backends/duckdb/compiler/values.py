@@ -187,6 +187,26 @@ def _not(op, **kw):
     return sg.expressions.Not(this=arg)
 
 
+@translate_val.register(ops.Any)
+def _any(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    any_expr = sg.expressions.AnyValue(this=arg)
+    if op.where is not None:
+        where = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=any_expr, expression=where)
+    return any_expr
+
+
+@translate_val.register(ops.All)
+def _any(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    all_expr = sg.func("bool_and", arg)
+    if op.where is not None:
+        where = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=all_expr, expression=where)
+    return all_expr
+
+
 ### Timey McTimeFace
 
 
@@ -537,8 +557,6 @@ _simple_ops = {
     ops.Mean: "avg",
     ops.Max: "max",
     ops.Min: "min",
-    ops.Any: "any_value",
-    ops.All: "min",
     ops.ArgMin: "arg_min",
     ops.Mode: "mode",
     ops.ArgMax: "arg_max",
