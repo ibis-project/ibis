@@ -1520,20 +1520,18 @@ class CallableWith(Slotted, Pattern):
         fn = annotated(self.args, self.return_, value)
 
         has_varargs = False
-        positional, keyword_only = [], []
+        positional = []
         for p in fn.__signature__.parameters.values():
             if p.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD):
                 positional.append(p)
-            elif p.kind is Parameter.KEYWORD_ONLY:
-                keyword_only.append(p)
+            elif p.kind is Parameter.KEYWORD_ONLY and p.default is Parameter.empty:
+                raise MatchError(
+                    "Callable has mandatory keyword-only arguments which cannot be specified"
+                )
             elif p.kind is Parameter.VAR_POSITIONAL:
                 has_varargs = True
 
-        if keyword_only:
-            raise MatchError(
-                "Callable has mandatory keyword-only arguments which cannot be specified"
-            )
-        elif len(positional) > len(self.args):
+        if len(positional) > len(self.args):
             # Callable has more positional arguments than expected")
             return NoMatch
         elif len(positional) < len(self.args) and not has_varargs:
