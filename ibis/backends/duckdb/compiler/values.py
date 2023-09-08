@@ -937,7 +937,28 @@ def _corr(op, **kw):
         raise com.UnsupportedOperationError(
             "DuckDB only implements `pop` correlation coefficient"
         )
-    return _aggregate(op, "corr", where=op.where, **kw)
+
+    left = translate_val(op.left, **kw)
+    if (left_type := op.left.dtype).is_boolean():
+        left = sg.cast(
+            expression=left,
+            to=DuckDBType.from_ibis(dt.Int32(nullable=left_type.nullable)),
+        )
+
+    right = translate_val(op.right, **kw)
+    if (right_type := op.right.dtype).is_boolean():
+        right = sg.cast(
+            expression=right,
+            to=DuckDBType.from_ibis(dt.Int32(nullable=right_type.nullable)),
+        )
+
+    sg_func = sg.func("corr", left, right)
+
+    if (where := op.where) is not None:
+        predicate = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=sg_func, expression=predicate)
+
+    return sg_func
 
 
 @translate_val.register(ops.Covariance)
