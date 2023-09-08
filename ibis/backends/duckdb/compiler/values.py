@@ -1145,7 +1145,7 @@ def _group_concat(op, **kw):
     arg = translate_val(op.arg, **kw)
     sep = translate_val(op.sep, **kw)
 
-    concat = sg.func("array_to_string", arg, sep, dialect="duckdb")
+    concat = sg.func("string_agg", arg, sep, dialect="duckdb")
 
     if (where := op.where) is not None:
         predicate = translate_val(where, **kw)
@@ -1583,7 +1583,6 @@ _map_interval_to_microseconds = {
 # TODO
 UNSUPPORTED_REDUCTIONS = (
     ops.ApproxMedian,
-    ops.GroupConcat,
     ops.ApproxCountDistinct,
 )
 

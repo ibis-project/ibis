@@ -1167,7 +1167,7 @@ def test_median(alltypes, df):
             id="expr",
             marks=[
                 mark.notyet(
-                    ["duckdb", "trino"],
+                    ["trino"],
                     raises=com.UnsupportedOperationError,
                 ),
                 mark.notyet(
