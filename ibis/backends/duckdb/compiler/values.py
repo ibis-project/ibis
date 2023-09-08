@@ -924,8 +924,10 @@ def _quantile(op, **kw):
 
 @translate_val.register(ops.Correlation)
 def _corr(op, **kw):
-    if op.how == "pop":
-        raise ValueError("Duckdb only implements `sample` correlation coefficient")
+    if op.how == "sample":
+        raise com.UnsupportedOperationError(
+            "DuckDB only implements `pop` correlation coefficient"
+        )
     return _aggregate(op, "corr", where=op.where, **kw)
 
 

@@ -995,6 +995,11 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
+                    ["duckdb"],
+                    raises=com.UnsupportedOperationError,
+                    reason="DuckDB only implements population correlation coefficient",
+                ),
+                pytest.mark.notyet(
                     ["impala", "mysql", "sqlite"],
                     raises=com.OperationNotDefinedError,
                 ),
