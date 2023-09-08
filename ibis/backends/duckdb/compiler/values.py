@@ -138,11 +138,12 @@ def _cast(op, **kw):
             )
 
         else:
-            return sg.expressions.Interval(this=arg, unit=suffix, dialect="duckdb")
+            return sg.expressions.Interval(this=arg, unit=suffix)
     elif isinstance(op.to, dt.Timestamp) and isinstance(op.arg.dtype, dt.Integer):
-        return sg.func("to_timestamp", arg, dialect="duckdb")
-    elif isinstance(op.to, dt.Timestamp) and (timezone := op.to.timezone) is not None:
-        return sg.func("timezone", f"'{timezone}'", arg, dialect="duckdb")
+        return sg.func("to_timestamp", arg)
+    elif isinstance(op.to, dt.Timestamp) and op.to.timezone is not None:
+        timezone = sg.expressions.Literal(this=op.to.timezone, is_string=True)
+        return sg.func("timezone", timezone, arg)
 
     to = translate_val(op.to, **kw)
     return sg.cast(expression=arg, to=to)
