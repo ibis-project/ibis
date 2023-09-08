@@ -126,3 +126,10 @@ gcloud auth login
 For any authentication problems, or information on other ways of authenticating,
 see the [`gcloud` CLI authorization
 guide](https://cloud.google.com/sdk/docs/authorizing).
+
+```{python}
+#| echo: false
+BACKEND = "BigQuery"
+```
+
+{{< include ./_templates/api.qmd >}}

@@ -174,3 +174,10 @@ methods = ("read_csv", "read_parquet", "read_json")
 backend = get_backend("snowflake")
 render_methods(backend, *methods, level=4)
 ```
+
+```{python}
+#| echo: false
+BACKEND = "Snowflake"
+```
+
+{{< include ./_templates/api.qmd >}}

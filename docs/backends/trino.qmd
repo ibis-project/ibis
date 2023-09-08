@@ -96,3 +96,10 @@ from _utils import render_do_connect
 
 render_do_connect("trino")
 ```
+
+```{python}
+#| echo: false
+BACKEND = "Trino"
+```
+
+{{< include ./_templates/api.qmd >}}

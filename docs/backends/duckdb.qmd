@@ -155,3 +155,10 @@ backend = get_backend("duckdb")
 methods = [f"read_{kind}" for kind in ("csv", "parquet", "delta", "json", "in_memory", "sqlite", "postgres")]
 render_methods(backend, *methods, level=4)
 ```
+
+```{python}
+#| echo: false
+BACKEND = "DuckDB"
+```
+
+{{< include ./_templates/api.qmd >}}

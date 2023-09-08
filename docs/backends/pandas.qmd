@@ -194,3 +194,10 @@ def add_two_with_none(x, y=None):
     y = 2.0
     return x + y
 ```
+
+```{python}
+#| echo: false
+BACKEND = "Pandas"
+```
+
+{{< include ./_templates/api.qmd >}}

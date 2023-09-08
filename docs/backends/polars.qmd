@@ -101,3 +101,10 @@ methods = ("read_csv", "read_parquet", "read_delta")
 backend = get_backend("polars")
 render_methods(backend, *methods, level=4)
 ```
+
+```{python}
+#| echo: false
+BACKEND = "Polars"
+```
+
+{{< include ./_templates/api.qmd >}}

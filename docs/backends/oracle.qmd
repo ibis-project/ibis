@@ -122,3 +122,10 @@ show parameter sec_case_sensitive_logon;
 If the returned value is `FALSE` then Ibis will _not_ connect.
 
 For more information, see this [issue](https://github.com/oracle/python-oracledb/issues/26).
+
+```{python}
+#| echo: false
+BACKEND = "Oracle"
+```
+
+{{< include ./_templates/api.qmd >}}
