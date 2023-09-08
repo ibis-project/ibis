@@ -325,6 +325,8 @@ filterwarnings = [
   "ignore:'urllib3\\.contrib\\.pyopenssl' module is deprecated and will be removed in a future release of urllib3:DeprecationWarning",
   # apache-beam
   "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
+  # pytest raises a syntax error when encountering this from *any* module, including third party modules
+  "ignore:invalid escape sequence:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
