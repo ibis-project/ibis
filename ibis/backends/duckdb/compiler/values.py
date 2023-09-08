@@ -957,6 +957,8 @@ def _aggregate(op, func, *, where=None, **kw):
 
 @translate_val.register(ops.Arbitrary)
 def _arbitrary(op, **kw):
+    if op.how == "heavy":
+        raise com.UnsupportedOperationError("how='heavy' not supported in the backend")
     functions = {
         "first": "first",
         "last": "last",
@@ -1110,21 +1112,6 @@ def _group_concat(op, **kw):
 
 
 # TODO
-def _bit_agg(func):
-    def _translate(op, **kw):
-        arg = translate_val(op.arg, **kw)
-        if not isinstance((type := op.arg.dtype), dt.UnsignedInteger):
-            nbits = type.nbytes * 8
-            arg = f"reinterpretAsUInt{nbits}({arg})"
-
-        if (where := op.where) is not None:
-            return f"{func}If({arg}, {translate_val(where, **kw)})"
-        else:
-            return f"{func}({arg})"
-
-    return _translate
-
-
 @translate_val.register(ops.ArrayColumn)
 def _array_column(op, **kw):
     sg_expr = sg.expressions.Array.from_arg_list(
@@ -1430,10 +1417,24 @@ def _xor(op, **kw):
     )
 
 
-# TODO
-translate_val.register(ops.BitAnd)(_bit_agg("groupBitAnd"))
-translate_val.register(ops.BitOr)(_bit_agg("groupBitOr"))
-translate_val.register(ops.BitXor)(_bit_agg("groupBitXor"))
+_bit_agg = {
+    ops.BitOr: "bit_or",
+    ops.BitAnd: "bit_and",
+    ops.BitXor: "bit_xor",
+}
+
+
+@translate_val.register(ops.BitAnd)
+@translate_val.register(ops.BitOr)
+@translate_val.register(ops.BitXor)
+def _bitor(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    bit_expr = sg.func(_bit_agg[type(op)], arg)
+    if op.where is not None:
+        where = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=bit_expr, expression=where)
+    return bit_expr
+
 
 translate_val.register(ops.StandardDev)(_agg_variance_like("stddev"))
 translate_val.register(ops.Variance)(_agg_variance_like("var"))
