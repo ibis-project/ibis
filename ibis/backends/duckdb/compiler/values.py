@@ -532,8 +532,8 @@ _simple_ops = {
     ops.RandomScalar: "random",
     ops.Sign: "sign",
     # Unary aggregates
-    # ops.ApproxMedian: "median",  # TODO
-    # ops.Median: "quantileExactExclusive",  # TODO
+    ops.ApproxMedian: "median",
+    ops.Median: "median",
     ops.Mean: "avg",
     ops.Max: "max",
     ops.Min: "min",
@@ -867,11 +867,20 @@ def _count_distinct(op, **kw):
     return count_expr
 
 
+# TODO: implement
+@translate_val.register(ops.CountDistinctStar)
+def _count_distinct_star(op, **kw):
+    ...
+
+
 @translate_val.register(ops.CountStar)
 def _count_star(op, **kw):
     sql = sg.expressions.Count(this=sg.expressions.Star())
     if (predicate := op.where) is not None:
-        return sg.select(sql).where(predicate)
+        return sg.expressions.Filter(
+            this=sql,
+            expression=sg.expressions.Where(this=translate_val(op.where, **kw)),
+        )
     return sql
 
 
