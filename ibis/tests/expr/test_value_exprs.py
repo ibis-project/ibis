@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import ipaddress
 import operator
 import uuid
@@ -1536,9 +1537,29 @@ def test_array_map():
     assert result_float.type() == dt.Array(dt.float64)
 
 
+def test_array_map_partial():
+    arr = ibis.array([1, 2, 3])
+
+    def add(x, y):
+        return x + y
+
+    result = arr.map(functools.partial(add, y=2))
+    assert result.type() == dt.Array(dt.int16)
+
+
 def test_array_filter():
     arr = ibis.array([1, 2, 3])
     result = arr.filter(is_negative)
+    assert result.type() == arr.type()
+
+
+def test_array_filter_partial():
+    arr = ibis.array([1, 2, 3])
+
+    def equal(x, y):
+        return x == y
+
+    result = arr.filter(functools.partial(equal, y=2))
     assert result.type() == arr.type()
 
 

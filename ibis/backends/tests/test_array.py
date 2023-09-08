@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import functools
 import os
 
 import numpy as np
@@ -527,9 +528,14 @@ def test_array_slice(backend, start, stop):
 )
 def test_array_map(backend, con, input, output):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    expected = pd.DataFrame(output)
+
     expr = t.select(a=t.a.map(lambda x: x + 1))
     result = con.execute(expr)
-    expected = pd.DataFrame(output)
+    backend.assert_frame_equal(result, expected)
+
+    expr = t.select(a=t.a.map(functools.partial(lambda x, y: x + y, y=1)))
+    result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
 
 
@@ -555,9 +561,14 @@ def test_array_map(backend, con, input, output):
 )
 def test_array_filter(backend, con, input, output):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    expected = pd.DataFrame(output)
+
     expr = t.select(a=t.a.filter(lambda x: x > 1))
     result = con.execute(expr)
-    expected = pd.DataFrame(output)
+    backend.assert_frame_equal(result, expected)
+
+    expr = t.select(a=t.a.filter(functools.partial(lambda x, y: x > y, y=1)))
+    result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
 
 

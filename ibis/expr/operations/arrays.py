@@ -80,7 +80,7 @@ class ArrayApply(Value):
 
     @attribute
     def parameter(self):
-        (name,) = self.func.__signature__.parameters.keys()
+        name = next(iter(self.func.__signature__.parameters.keys()))
         return name
 
     @attribute
