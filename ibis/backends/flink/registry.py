@@ -7,6 +7,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sql.registry import (
     fixed_arity,
     helpers,
+    unary,
     window,
 )
 from ibis.backends.base.sql.registry import (
@@ -192,6 +193,8 @@ operation_registry.update(
         ops.ExtractMinute: _extract_field("minute"),  # equivalent to MINUTE(timestamp)
         ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
         ops.Literal: _literal,
+        ops.Degrees: unary("degrees"),
+        ops.Radians: unary("radians"),
         ops.RegexSearch: fixed_arity("regexp", 2),
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Where: _filter,
