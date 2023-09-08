@@ -151,10 +151,9 @@ def _cast(op, **kw):
 
 @translate_val.register(ops.TryCast)
 def _try_cast(op, **kw):
-    return sg.func(
-        "try_cast",
-        translate_val(op.arg, **kw),
-        DuckDBType.to_string(op.to),
+    return sg.expressions.TryCast(
+        this=translate_val(op.arg, **kw),
+        to=DuckDBType.to_string(op.to),
         dialect="duckdb",
     )
 
@@ -195,13 +194,12 @@ def _not(op, **kw):
 def _to_date(op, **kw):
     arg = translate_val(op.arg, **kw)
     return sg.expressions.Date(this=arg)
-    return f"DATE {arg}"
 
 
 @translate_val.register(ops.Time)
 def _time(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"{arg}::TIME"
+    return sg.cast(expression=arg, to=sg.expressions.DataType.Type.TIME)
 
 
 @translate_val.register(ops.TimestampNow)
