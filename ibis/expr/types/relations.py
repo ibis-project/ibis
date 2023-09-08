@@ -1710,23 +1710,29 @@ class Table(Expr, _FixedTextJupyterMixin):
         import ibis.expr.analysis as an
         from ibis.selectors import Selector
 
-        exprs = list(
-            itertools.chain(
-                itertools.chain.from_iterable(
-                    util.promote_list(e.expand(self) if isinstance(e, Selector) else e)
-                    for e in exprs
-                ),
-                (
-                    self._ensure_expr(expr).name(name)
-                    for name, expr in named_exprs.items()
-                ),
+        exprs = [
+            e
+            for expr in exprs
+            for e in (
+                expr.expand(self)
+                if isinstance(expr, Selector)
+                else map(self._ensure_expr, util.promote_list(expr))
             )
+        ]
+        exprs.extend(
+            self._ensure_expr(expr).name(name) for name, expr in named_exprs.items()
         )
 
         if not exprs:
             raise com.IbisTypeError(
                 "You must select at least one column for a valid projection"
             )
+        for ex in exprs:
+            if not isinstance(ex, Expr):
+                raise com.IbisTypeError(
+                    "All arguments to `.select` must be coerceable to "
+                    f"expressions - got {type(ex)!r}"
+                )
 
         op = an.Projector(self, exprs).get_result()
 
