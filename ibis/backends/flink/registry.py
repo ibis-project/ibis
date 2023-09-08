@@ -70,6 +70,11 @@ def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
     return translate_literal(op)
 
 
+def _nullifzero(translator: ExprTranslator, op: ops.Literal) -> str:
+    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
+    return f"NULLIF({translator.translate(op.arg)}, {casted})"
+
+
 def _format_window_start(translator: ExprTranslator, boundary):
     if boundary is None:
         return "UNBOUNDED PRECEDING"
@@ -193,6 +198,7 @@ operation_registry.update(
         ops.ExtractMinute: _extract_field("minute"),  # equivalent to MINUTE(timestamp)
         ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
         ops.Literal: _literal,
+        ops.NullIfZero: _nullifzero,
         ops.Degrees: unary("degrees"),
         ops.Radians: unary("radians"),
         ops.RegexSearch: fixed_arity("regexp", 2),
