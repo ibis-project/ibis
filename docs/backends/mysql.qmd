@@ -102,3 +102,10 @@ passing a properly formatted MySQL connection URL to `ibis.connect`
 ```python
 con = ibis.connect(f"mysql://{user}:{password}@{host}:{port}/{database}")
 ```
+
+```{python}
+#| echo: false
+BACKEND = "MySQL"
+```
+
+{{< include ./_templates/api.qmd >}}

@@ -101,3 +101,10 @@ passing a properly formatted MSSQL connection URL to `ibis.connect`
 ```python
 con = ibis.connect(f"mssql://{user}:{password}@{host}:{port}")
 ```
+
+```{python}
+#| echo: false
+BACKEND = "MSSQL"
+```
+
+{{< include ./_templates/api.qmd >}}

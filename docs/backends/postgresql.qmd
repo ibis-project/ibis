@@ -102,3 +102,10 @@ passing a properly formatted Postgres connection URL to `ibis.connect`
 ```python
 con = ibis.connect(f"postgres://{user}:{password}@{host}:{port}/{database}")
 ```
+
+```{python}
+#| echo: false
+BACKEND = "Postgres"
+```
+
+{{< include ./_templates/api.qmd >}}

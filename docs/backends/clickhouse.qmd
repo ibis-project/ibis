@@ -123,3 +123,10 @@ or
 con = ibis.connect("clickhouse://play:clickhouse@play.clickhouse.com:443?secure=True")
 con.table("opensky")
 ```
+
+```{python}
+#| echo: false
+BACKEND = "ClickHouse"
+```
+
+{{< include ./_templates/api.qmd >}}

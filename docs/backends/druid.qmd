@@ -102,3 +102,10 @@ passing a properly formatted Druid connection URL to `ibis.connect`
 ```python
 con = ibis.connect("druid://localhost:8082/druid/v2/sql")
 ```
+
+```{python}
+#| echo: false
+BACKEND = "Druid"
+```
+
+{{< include ./_templates/api.qmd >}}

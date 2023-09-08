@@ -111,3 +111,10 @@ The URL can be `sqlite://` which will connect to an ephemeral in-memory database
 ```python
 con = ibis.connect("sqlite://")
 ```
+
+```{python}
+#| echo: false
+BACKEND = "SQLite"
+```
+
+{{< include ./_templates/api.qmd >}}

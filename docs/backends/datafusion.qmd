@@ -105,3 +105,10 @@ from _utils import render_methods, get_backend
 backend = get_backend("datafusion")
 render_methods(backend, "read_csv", "read_parquet", "read_delta", level=4)
 ```
+
+```{python}
+#| echo: false
+BACKEND = "DataFusion"
+```
+
+{{< include ./_templates/api.qmd >}}

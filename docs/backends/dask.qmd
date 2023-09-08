@@ -65,3 +65,10 @@ con = ibis.dask.connect()  # <1>
 1. Adjust connection parameters as needed.
 
 :::
+
+```{python}
+#| echo: false
+BACKEND = "Dask"
+```
+
+{{< include ./_templates/api.qmd >}}

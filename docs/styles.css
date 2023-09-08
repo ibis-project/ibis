@@ -1,4 +1,9 @@
-section#connection-parameters {
+section#parameters {
+    /* scroll when child contents overflow the width */
+    overflow-x: auto;
+}
+
+section#parameters-1 {
     /* scroll when child contents overflow the width */
     overflow-x: auto;
 }
