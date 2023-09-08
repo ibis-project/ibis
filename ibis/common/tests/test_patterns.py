@@ -527,7 +527,10 @@ def test_callable_with():
     def func_with_kwargs(a, b, c=1, **kwargs):
         return str(a) + b + str(c)
 
-    def func_with_mandatory_kwargs(*, c):
+    def func_with_optional_keyword_only_kwargs(a, *, c=1):
+        return a + c
+
+    def func_with_required_keyword_only_kwargs(*, c):
         return c
 
     p = CallableWith([InstanceOf(int), InstanceOf(str)])
@@ -535,7 +538,7 @@ def test_callable_with():
 
     msg = "Callable has mandatory keyword-only arguments which cannot be specified"
     with pytest.raises(MatchError, match=msg):
-        p.match(func_with_mandatory_kwargs, context={})
+        p.match(func_with_required_keyword_only_kwargs, context={})
 
     # Callable has more positional arguments than expected
     p = CallableWith([InstanceOf(int)] * 2)
@@ -555,6 +558,10 @@ def test_callable_with():
 
     with pytest.raises(ValidationError, match="2 doesn't match InstanceOf"):
         wrapped(1, 2)
+
+    p = CallableWith([InstanceOf(int)])
+    wrapped = p.match(func_with_optional_keyword_only_kwargs, context={})
+    assert wrapped(1) == 2
 
 
 def test_pattern_list():
