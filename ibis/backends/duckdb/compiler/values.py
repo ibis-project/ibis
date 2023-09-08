@@ -922,20 +922,64 @@ def _quantile(op, **kw):
     return sg_expr
 
 
-def _agg_variance_like(func):
-    variants = {"sample": f"{func}_samp", "pop": f"{func}_pop"}
-
-    def formatter(op, **kw):
-        return _aggregate(op, variants[op.how], where=op.where, **kw)
-
-    return formatter
-
-
 @translate_val.register(ops.Correlation)
 def _corr(op, **kw):
     if op.how == "pop":
         raise ValueError("Duckdb only implements `sample` correlation coefficient")
     return _aggregate(op, "corr", where=op.where, **kw)
+
+
+@translate_val.register(ops.Covariance)
+def _covariance(op, **kw):
+    _how = {"sample": "samp", "pop": "pop"}
+
+    left = translate_val(op.left, **kw)
+    if (left_type := op.left.dtype).is_boolean():
+        left = sg.cast(
+            expression=left,
+            to=DuckDBType.from_ibis(dt.Int32(nullable=left_type.nullable)),
+        )
+
+    right = translate_val(op.right, **kw)
+    if (right_type := op.right.dtype).is_boolean():
+        right = sg.cast(
+            expression=right,
+            to=DuckDBType.from_ibis(dt.Int32(nullable=right_type.nullable)),
+        )
+
+    funcname = f"covar_{_how[op.how]}"
+
+    sg_func = sg.func(funcname, left, right)
+
+    if (where := op.where) is not None:
+        predicate = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=sg_func, expression=predicate)
+
+    return sg_func
+
+
+@translate_val.register(ops.Variance)
+@translate_val.register(ops.StandardDev)
+def _variance(op, **kw):
+    _how = {"sample": "samp", "pop": "pop"}
+    _func = {ops.Variance: "var", ops.StandardDev: "stddev"}
+
+    funcname = f"{_func[type(op)]}_{_how[op.how]}"
+
+    arg = translate_val(op.arg, **kw)
+    if (arg_type := op.arg.dtype).is_boolean():
+        arg = sg.cast(
+            expression=arg,
+            to=DuckDBType.from_ibis(dt.Int32(nullable=arg_type.nullable)),
+        )
+
+    sg_func = sg.func(funcname, arg)
+
+    if (where := op.where) is not None:
+        predicate = sg.expressions.Where(this=translate_val(op.where, **kw))
+        return sg.expressions.Filter(this=sg_func, expression=predicate)
+
+    return sg_func
 
 
 def _aggregate(op, func, *, where=None, **kw):
@@ -1434,11 +1478,6 @@ def _bitor(op, **kw):
         where = sg.expressions.Where(this=translate_val(op.where, **kw))
         return sg.expressions.Filter(this=bit_expr, expression=where)
     return bit_expr
-
-
-translate_val.register(ops.StandardDev)(_agg_variance_like("stddev"))
-translate_val.register(ops.Variance)(_agg_variance_like("var"))
-translate_val.register(ops.Covariance)(_agg_variance_like("covar"))
 
 
 @translate_val.register

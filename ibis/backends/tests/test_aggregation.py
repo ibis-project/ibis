@@ -522,6 +522,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].var(ddof=0),
             id="var_pop",
             marks=[
+                mark.broken(
+                    ["duckdb"],
+                    raises=com.IbisError,
+                    reason="sqlglot mistranslates VariancePop to variance_pop instead of var_pop",
+                ),
                 mark.notimpl(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,
@@ -999,7 +1004,7 @@ def test_quantile(
                     reason="Correlation with how='sample' is not supported.",
                 ),
                 pytest.mark.notyet(
-                    ["trino", "postgres", "duckdb", "snowflake", "oracle"],
+                    ["trino", "postgres", "snowflake", "oracle"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),
