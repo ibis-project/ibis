@@ -94,12 +94,16 @@ def get_type_params(obj: Any) -> dict[str, type]:
     --------
     >>> from typing import Dict, List
     >>>
-    >>> class MyList(List[T]): ...
+    >>> class MyList(List[T]):
+    ...     ...
+    ...
     >>>
     >>> get_type_params(MyList[int])
     {'T': <class 'int'>}
     >>>
-    >>> class MyDict(Dict[T, U]): ...
+    >>> class MyDict(Dict[T, U]):
+    ...     ...
+    ...
     >>>
     >>> get_type_params(MyDict[int, str])
     {'T': <class 'int'>, 'U': <class 'str'>}
@@ -135,18 +139,18 @@ def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
     Examples
     --------
     >>> class MyStruct(Generic[T, U]):
-    ...    a: T
-    ...    b: U
+    ...     a: T
+    ...     b: U
     ...
     >>> get_bound_typevars(MyStruct[int, str])
     {~T: ('a', <class 'int'>), ~U: ('b', <class 'str'>)}
     >>>
     >>> class MyStruct(Generic[T, U]):
-    ...    a: T
+    ...     a: T
     ...
-    ...    @property
-    ...    def myprop(self) -> U:
-    ...        ...
+    ...     @property
+    ...     def myprop(self) -> U:
+    ...         ...
     ...
     >>> get_bound_typevars(MyStruct[float, bytes])
     {~T: ('a', <class 'float'>), ~U: ('myprop', <class 'bytes'>)}
@@ -183,7 +187,7 @@ def evaluate_annotations(
 
     Examples
     --------
-    >>> annots = {'a': 'dict[str, float]', 'b': 'int'}
+    >>> annots = {"a": "dict[str, float]", "b": "int"}
     >>> evaluate_annotations(annots, __name__)
     {'a': dict[str, float], 'b': <class 'int'>}
     """

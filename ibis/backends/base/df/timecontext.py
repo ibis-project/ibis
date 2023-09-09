@@ -162,16 +162,14 @@ def construct_time_context_aware_series(
     Examples
     --------
     >>> import pandas as pd
-    >>> from ibis.backends.base.df.timecontext import construct_time_context_aware_series
+    >>> from ibis.backends.base.df.timecontext import (
+    ...     construct_time_context_aware_series,
+    ... )
     >>> df = pd.DataFrame(
     ...     {
-    ...         'time': pd.Series(
-    ...             pd.date_range(
-    ...                 start='2017-01-02', periods=3
-    ...             ).values
-    ...         ),
-    ...         'id': [1,2,3],
-    ...         'value': [1.1, 2.2, 3.3],
+    ...         "time": pd.Series(pd.date_range(start="2017-01-02", periods=3).values),
+    ...         "id": [1, 2, 3],
+    ...         "value": [1.1, 2.2, 3.3],
     ...     }
     ... )
     >>> df
@@ -179,13 +177,15 @@ def construct_time_context_aware_series(
     0 2017-01-02   1    1.1
     1 2017-01-03   2    2.2
     2 2017-01-04   3    3.3
-    >>> series = df['value']
+    >>> series = df["value"]
     >>> series
     0    1.1
     1    2.2
     2    3.3
     Name: value, dtype: float64
-    >>> construct_time_context_aware_series(series, df)  # quartodoc: +SKIP # doctest: +SKIP
+    >>> construct_time_context_aware_series(
+    ...     series, df
+    ... )  # quartodoc: +SKIP # doctest: +SKIP
        time
     0  2017-01-02    1.1
     1  2017-01-03    2.2
@@ -203,7 +203,9 @@ def construct_time_context_aware_series(
     2  2017-01-04    3.3
     Name: value, dtype: float64
 
-    >>> construct_time_context_aware_series(timed_series, df)  # quartodoc: +SKIP # doctest: +SKIP
+    >>> construct_time_context_aware_series(
+    ...     timed_series, df
+    ... )  # quartodoc: +SKIP # doctest: +SKIP
        time
     0  2017-01-02    1.1
     1  2017-01-03    2.2

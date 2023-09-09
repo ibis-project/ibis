@@ -272,10 +272,10 @@ class Backend(BaseSQLBackend):
         --------
         >>> import os
         >>> import ibis
-        >>> hdfs_host = os.environ.get('IBIS_TEST_NN_HOST', 'localhost')
-        >>> hdfs_port = int(os.environ.get('IBIS_TEST_NN_PORT', 50070))
-        >>> impala_host = os.environ.get('IBIS_TEST_IMPALA_HOST', 'localhost')
-        >>> impala_port = int(os.environ.get('IBIS_TEST_IMPALA_PORT', 21050))
+        >>> hdfs_host = os.environ.get("IBIS_TEST_NN_HOST", "localhost")
+        >>> hdfs_port = int(os.environ.get("IBIS_TEST_NN_PORT", 50070))
+        >>> impala_host = os.environ.get("IBIS_TEST_IMPALA_HOST", "localhost")
+        >>> impala_port = int(os.environ.get("IBIS_TEST_IMPALA_PORT", 21050))
         >>> hdfs = ibis.impala.hdfs_connect(host=hdfs_host, port=hdfs_port)
         >>> client = ibis.impala.connect(
         ...     host=impala_host,
@@ -927,11 +927,13 @@ class Backend(BaseSQLBackend):
 
         Examples
         --------
-        >>> table = 'my_table'
+        >>> table = "my_table"
         >>> con.insert(table, table_expr)  # quartodoc: +SKIP # doctest: +SKIP
 
         Completely overwrite contents
-        >>> con.insert(table, table_expr, overwrite=True)  # quartodoc: +SKIP # doctest: +SKIP
+        >>> con.insert(
+        ...     table, table_expr, overwrite=True
+        ... )  # quartodoc: +SKIP # doctest: +SKIP
         """
         table = self.table(table_name, database=database)
         return table.insert(
@@ -958,9 +960,11 @@ class Backend(BaseSQLBackend):
 
         Examples
         --------
-        >>> table = 'my_table'
-        >>> db = 'operations'
-        >>> con.drop_table(table, database=db, force=True)  # quartodoc: +SKIP # doctest: +SKIP
+        >>> table = "my_table"
+        >>> db = "operations"
+        >>> con.drop_table(
+        ...     table, database=db, force=True
+        ... )  # quartodoc: +SKIP # doctest: +SKIP
         """
         statement = DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)
@@ -1015,10 +1019,12 @@ class Backend(BaseSQLBackend):
 
         Examples
         --------
-        >>> table = 'my_table'
-        >>> db = 'operations'
-        >>> pool = 'op_4GB_pool'
-        >>> con.cache_table('my_table', database=db, pool=pool)  # quartodoc: +SKIP # doctest: +SKIP
+        >>> table = "my_table"
+        >>> db = "operations"
+        >>> pool = "op_4GB_pool"
+        >>> con.cache_table(
+        ...     "my_table", database=db, pool=pool
+        ... )  # quartodoc: +SKIP # doctest: +SKIP
         """
         statement = ddl.CacheTable(table_name, database=database, pool=pool)
         self._safe_exec_sql(statement)

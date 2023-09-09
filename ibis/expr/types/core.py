@@ -205,9 +205,9 @@ class Expr(Immutable, Coercible):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
-        >>> f = lambda a: (a + 1).name('a')
-        >>> g = lambda a: (a * 2).name('a')
+        >>> t = ibis.table([("a", "int64"), ("b", "string")], name="t")
+        >>> f = lambda a: (a + 1).name("a")
+        >>> g = lambda a: (a * 2).name("a")
         >>> result1 = t.a.pipe(f).pipe(g)
         >>> result1
         r0 := UnboundTable: t

@@ -178,8 +178,7 @@ def parse_project_and_dataset(project: str, dataset: str = "") -> tuple[str, str
     Examples
     --------
     >>> data_project, billing_project, dataset = parse_project_and_dataset(
-    ...     'ibis-gbq',
-    ...     'foo-bar.my_dataset'
+    ...     "ibis-gbq", "foo-bar.my_dataset"
     ... )
     >>> data_project
     'foo-bar'
@@ -188,8 +187,7 @@ def parse_project_and_dataset(project: str, dataset: str = "") -> tuple[str, str
     >>> dataset
     'my_dataset'
     >>> data_project, billing_project, dataset = parse_project_and_dataset(
-    ...     'ibis-gbq',
-    ...     'my_dataset'
+    ...     "ibis-gbq", "my_dataset"
     ... )
     >>> data_project
     'ibis-gbq'
@@ -197,9 +195,7 @@ def parse_project_and_dataset(project: str, dataset: str = "") -> tuple[str, str
     'ibis-gbq'
     >>> dataset
     'my_dataset'
-    >>> data_project, billing_project, _ = parse_project_and_dataset(
-    ...     'ibis-gbq'
-    ... )
+    >>> data_project, billing_project, _ = parse_project_and_dataset("ibis-gbq")
     >>> data_project
     'ibis-gbq'
     """

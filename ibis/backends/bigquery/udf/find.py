@@ -44,7 +44,7 @@ def find_names(node: ast.AST) -> list[ast.Name]:
     Examples
     --------
     >>> import ast
-    >>> node = ast.parse('a + b')
+    >>> node = ast.parse("a + b")
     >>> names = find_names(node)
     >>> names
     [<....Name object at 0x...>, <....Name object at 0x...>]

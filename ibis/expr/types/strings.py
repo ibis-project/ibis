@@ -619,8 +619,8 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(string_col='string'))
-        >>> result = table.string_col.translate('a', 'b')
+        >>> table = ibis.table(dict(string_col="string"))
+        >>> result = table.string_col.translate("a", "b")
         """
         return ops.Translate(self, from_str, to_str).to_expr()
 
@@ -772,8 +772,8 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> table = ibis.table(dict(string_col='string'))
-        >>> result = table.string_col.find_in_set(['a', 'b'])
+        >>> table = ibis.table(dict(string_col="string"))
+        >>> result = table.string_col.find_in_set(["a", "b"])
         """
         return ops.FindInSet(self, str_list).to_expr()
 
@@ -1254,7 +1254,9 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
+        >>> url = ibis.literal(
+        ...     "https://example.com:80/docs/books/tutorial/index.html?name=networking"
+        ... )
         >>> result = url.file()  # docs/books/tutorial/index.html?name=networking
 
         Returns
@@ -1270,7 +1272,9 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
+        >>> url = ibis.literal(
+        ...     "https://example.com:80/docs/books/tutorial/index.html?name=networking"
+        ... )
         >>> result = url.path()  # docs/books/tutorial/index.html
 
         Returns
@@ -1294,9 +1298,11 @@ class StringValue(Value):
         Examples
         --------
         >>> import ibis
-        >>> url = ibis.literal("https://example.com:80/docs/books/tutorial/index.html?name=networking")
+        >>> url = ibis.literal(
+        ...     "https://example.com:80/docs/books/tutorial/index.html?name=networking"
+        ... )
         >>> result = url.query()  # name=networking
-        >>> query_name = url.query('name')  # networking
+        >>> query_name = url.query("name")  # networking
 
         Returns
         -------

@@ -25,12 +25,14 @@ Pandas
 ::
     >>> import pandas as pd
     >>> import numpy as np
-    >>> df = pd.DataFrame({
-    ...     'key': list('aabc'),
-    ...     'value': np.random.randn(4),
-    ...     'time': pd.date_range(periods=4, start='now')
-    ... })
-    >>> s = pd.Series(df.value.sum(), index=df.index, name='sum_value')
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         "key": list("aabc"),
+    ...         "value": np.random.randn(4),
+    ...         "time": pd.date_range(periods=4, start="now"),
+    ...     }
+    ... )
+    >>> s = pd.Series(df.value.sum(), index=df.index, name="sum_value")
     >>> s  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
@@ -38,9 +40,11 @@ Ibis
 ::
 
     >>> import ibis
-    >>> schema = dict(time='timestamp', key='string', value='double')
-    >>> t = ibis.table(schema, name='t')
-    >>> t[t, t.value.sum().name('sum_value')].sum_value  # quartodoc: +SKIP # doctest: +SKIP
+    >>> schema = dict(time="timestamp", key="string", value="double")
+    >>> t = ibis.table(schema, name="t")
+    >>> t[
+    ...     t, t.value.sum().name("sum_value")
+    ... ].sum_value  # quartodoc: +SKIP # doctest: +SKIP
 
 
 ``group_by``, no ``order_by``: ``context.Transform()``
@@ -62,21 +66,25 @@ Pandas
 
     >>> import pandas as pd
     >>> import numpy as np
-    >>> df = pd.DataFrame({
-    ...     'key': list('aabc'),
-    ...     'value': np.random.randn(4),
-    ...     'time': pd.date_range(periods=4, start='now')
-    ... })
-    >>> df.groupby('key').value.transform('sum')  # quartodoc: +SKIP # doctest: +SKIP
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         "key": list("aabc"),
+    ...         "value": np.random.randn(4),
+    ...         "time": pd.date_range(periods=4, start="now"),
+    ...     }
+    ... )
+    >>> df.groupby("key").value.transform("sum")  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
 ::
 
     >>> import ibis
-    >>> schema = dict(time='timestamp', key='string', value='double')
-    >>> t = ibis.table(schema, name='t')
-    >>> t.value.sum().over(ibis.window(group_by=t.key))  # quartodoc: +SKIP # doctest: +SKIP
+    >>> schema = dict(time="timestamp", key="string", value="double")
+    >>> t = ibis.table(schema, name="t")
+    >>> t.value.sum().over(
+    ...     ibis.window(group_by=t.key)
+    ... )  # quartodoc: +SKIP # doctest: +SKIP
 
 ``order_by``, no ``group_by``: ``context.Cumulative()``/``context.Rolling()``
 -----------------------------------------------------------------------------
@@ -104,20 +112,22 @@ Pandas
 
     >>> import pandas as pd
     >>> import numpy as np
-    >>> df = pd.DataFrame({
-    ...     'key': list('aabc'),
-    ...     'value': np.random.randn(4),
-    ...     'time': pd.date_range(periods=4, start='now')
-    ... })
-    >>> df.sort_values('time').value.cumsum()  # quartodoc: +SKIP # doctest: +SKIP
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         "key": list("aabc"),
+    ...         "value": np.random.randn(4),
+    ...         "time": pd.date_range(periods=4, start="now"),
+    ...     }
+    ... )
+    >>> df.sort_values("time").value.cumsum()  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
 ::
 
     >>> import ibis
-    >>> schema = dict(time='timestamp', key='string', value='double')
-    >>> t = ibis.table(schema, name='t')
+    >>> schema = dict(time="timestamp", key="string", value="double")
+    >>> t = ibis.table(schema, name="t")
     >>> window = ibis.cumulative_window(order_by=t.time)
     >>> t.value.sum().over(window)  # quartodoc: +SKIP # doctest: +SKIP
 
@@ -142,20 +152,24 @@ Pandas
 
     >>> import pandas as pd
     >>> import numpy as np
-    >>> df = pd.DataFrame({
-    ...     'key': list('aabc'),
-    ...     'value': np.random.randn(4),
-    ...     'time': pd.date_range(periods=4, start='now')
-    ... })
-    >>> df.sort_values('time').value.rolling(3).sum()  # quartodoc: +SKIP # doctest: +SKIP
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         "key": list("aabc"),
+    ...         "value": np.random.randn(4),
+    ...         "time": pd.date_range(periods=4, start="now"),
+    ...     }
+    ... )
+    >>> df.sort_values("time").value.rolling(
+    ...     3
+    ... ).sum()  # quartodoc: +SKIP # doctest: +SKIP
 
 Ibis
 
 ::
 
     >>> import ibis
-    >>> schema = dict(time='timestamp', key='string', value='double')
-    >>> t = ibis.table(schema, name='t')
+    >>> schema = dict(time="timestamp", key="string", value="double")
+    >>> t = ibis.table(schema, name="t")
     >>> window = ibis.trailing_window(3, order_by=t.time)
     >>> t.value.sum().over(window)  # quartodoc: +SKIP # doctest: +SKIP
 
@@ -181,15 +195,20 @@ Pandas
 
     >>> import pandas as pd
     >>> import numpy as np
-    >>> df = pd.DataFrame({
-    ...     'key': list('aabc'),
-    ...     'value': np.random.randn(4),
-    ...     'time': pd.date_range(periods=4, start='now')
-    ... })
-    >>> sorter = lambda df: df.sort_values('time')
-    >>> gb = df.groupby('key', group_keys=False).apply(sorter).reset_index(
-    ...    drop=True
-    ... ).groupby('key')
+    >>> df = pd.DataFrame(
+    ...     {
+    ...         "key": list("aabc"),
+    ...         "value": np.random.randn(4),
+    ...         "time": pd.date_range(periods=4, start="now"),
+    ...     }
+    ... )
+    >>> sorter = lambda df: df.sort_values("time")
+    >>> gb = (
+    ...     df.groupby("key", group_keys=False)
+    ...     .apply(sorter)
+    ...     .reset_index(drop=True)
+    ...     .groupby("key")
+    ... )
     >>> rolling = gb.value.rolling(2)
     >>> rolling.sum()  # quartodoc: +SKIP # doctest: +SKIP
 
@@ -198,8 +217,8 @@ Ibis
 ::
 
     >>> import ibis
-    >>> schema = dict(time='timestamp', key='string', value='double')
-    >>> t = ibis.table(schema, name='t')
+    >>> schema = dict(time="timestamp", key="string", value="double")
+    >>> t = ibis.table(schema, name="t")
     >>> window = ibis.trailing_window(2, order_by=t.time, group_by=t.key)
     >>> t.value.sum().over(window)  # quartodoc: +SKIP # doctest: +SKIP
 """

@@ -73,20 +73,14 @@ class Backend(BaseAlchemyBackend, AlchemyCanCreateSchema):
         >>> import os
         >>> import getpass
         >>> import ibis
-        >>> host = os.environ.get('IBIS_TEST_POSTGRES_HOST', 'localhost')
-        >>> user = os.environ.get('IBIS_TEST_POSTGRES_USER', getpass.getuser())
-        >>> password = os.environ.get('IBIS_TEST_POSTGRES_PASSWORD')
-        >>> database = os.environ.get('IBIS_TEST_POSTGRES_DATABASE',
-        ...                           'ibis_testing')
-        >>> con = connect(
-        ...     database=database,
-        ...     host=host,
-        ...     user=user,
-        ...     password=password
-        ... )
+        >>> host = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", getpass.getuser())
+        >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD")
+        >>> database = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
+        >>> con = connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
-        >>> t = con.table('functional_alltypes')
+        >>> t = con.table("functional_alltypes")
         >>> t
         PostgreSQLTable[table]
           name: functional_alltypes

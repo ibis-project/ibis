@@ -136,7 +136,9 @@ class Value(Expr):
         >>> import ibis
         >>> from ibis import _
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"numbers": [1, 2, 3, 4], "strings": ["1.0", "2", "hello", "world"]})
+        >>> t = ibis.memtable(
+        ...     {"numbers": [1, 2, 3, 4], "strings": ["1.0", "2", "hello", "world"]}
+        ... )
         >>> t
         ┏━━━━━━━━━┳━━━━━━━━━┓
         ┃ numbers ┃ strings ┃
@@ -353,15 +355,15 @@ class Value(Expr):
         Check whether a column's values are contained in a sequence
 
         >>> import ibis
-        >>> table = ibis.table(dict(string_col='string'), name="t")
-        >>> table.string_col.isin(['foo', 'bar', 'baz'])
+        >>> table = ibis.table(dict(string_col="string"), name="t")
+        >>> table.string_col.isin(["foo", "bar", "baz"])
         r0 := UnboundTable: t
           string_col string
         InValues(string_col): InValues(...)
 
         Check whether a column's values are contained in another table's column
 
-        >>> table2 = ibis.table(dict(other_string_col='string'), name="t2")
+        >>> table2 = ibis.table(dict(other_string_col="string"), name="t2")
         >>> table.string_col.isin(table2.other_string_col)
         r0 := UnboundTable: t
           string_col string
@@ -627,13 +629,15 @@ class Value(Expr):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([('string_col', 'string')], name='t')
+        >>> t = ibis.table([("string_col", "string")], name="t")
         >>> expr = t.string_col
-        >>> case_expr = (expr.case()
-        ...              .when('a', 'an a')
-        ...              .when('b', 'a b')
-        ...              .else_('null or (not a and not b)')
-        ...              .end())
+        >>> case_expr = (
+        ...     expr.case()
+        ...     .when("a", "an a")
+        ...     .when("b", "a b")
+        ...     .else_("null or (not a and not b)")
+        ...     .end()
+        ... )
         >>> case_expr
         r0 := UnboundTable: t
           string_col string
@@ -1409,7 +1413,7 @@ class Column(Value, _FixedTextJupyterMixin):
         └────────┘
         >>> t.chars.first()
         'a'
-        >>> t.chars.first(where=t.chars != 'a')
+        >>> t.chars.first(where=t.chars != "a")
         'b'
         """
         return ops.First(self, where=where).to_expr()
@@ -1435,7 +1439,7 @@ class Column(Value, _FixedTextJupyterMixin):
         └────────┘
         >>> t.chars.last()
         'd'
-        >>> t.chars.last(where=t.chars != 'd')
+        >>> t.chars.last(where=t.chars != "d")
         'c'
         """
         return ops.Last(self, where=where).to_expr()
@@ -1661,13 +1665,13 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
 
     Construct a `float64` literal from an `int`
 
-    >>> y = ibis.literal(42, type='double')
+    >>> y = ibis.literal(42, type="double")
     >>> y.type()
     Float64(nullable=True)
 
     Ibis checks for invalid types
 
-    >>> ibis.literal('foobar', type='int64')  # quartodoc: +EXPECTED_FAILURE
+    >>> ibis.literal("foobar", type="int64")  # quartodoc: +EXPECTED_FAILURE
     Traceback (most recent call last):
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64

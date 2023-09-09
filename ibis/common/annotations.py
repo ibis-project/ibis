@@ -573,6 +573,7 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
     >>> @annotated(x=instance_of(int), y=instance_of(str))
     ... def foo(x, y):
     ...     return float(x) + float(y)
+    ...
 
     3. With mixing type annotations and patterns where the latter takes precedence
 
@@ -585,6 +586,7 @@ def annotated(_1=None, _2=None, _3=None, **kwargs):
     >>> @annotated([instance_of(int), instance_of(str)], instance_of(float))
     ... def foo(x, y):
     ...     return float(x) + float(y)
+    ...
 
     Parameters
     ----------

@@ -32,7 +32,8 @@ When there are multiple properties to check it gets worse:
 
 >>> expr = t.select(
 ...     [
-...         t[c] for c in t.columns
+...         t[c]
+...         for c in t.columns
 ...         if t[c].type().is_numeric() or t[c].type().is_string()
 ...         if ("a" in c or "b" in c or "cd" in c)
 ...     ]
@@ -213,7 +214,9 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
     >>> import ibis.selectors as s
-    >>> t = ibis.table(dict(name="string", siblings="array<string>", parents="array<int64>"))
+    >>> t = ibis.table(
+    ...     dict(name="string", siblings="array<string>", parents="array<int64>")
+    ... )
     >>> expr = t.select(s.of_type(dt.Array(dt.string)))
     >>> expr.columns
     ['siblings']
@@ -327,7 +330,11 @@ def contains(
 
     >>> import ibis
     >>> import ibis.selectors as s
-    >>> t = ibis.table(dict(a="int64", b="string", c="float", d="array<int16>", ab="struct<x: int>"))
+    >>> t = ibis.table(
+    ...     dict(
+    ...         a="int64", b="string", c="float", d="array<int16>", ab="struct<x: int>"
+    ...     )
+    ... )
     >>> expr = t.select(s.contains(("a", "b")))
     >>> expr.columns
     ['a', 'b', 'ab']
@@ -467,11 +474,7 @@ def across(
     >>> from ibis import _, selectors as s
     >>> t = ibis.examples.penguins.fetch()
     >>> t.select(s.startswith("bill")).mutate(
-    ...     s.across(
-    ...         s.numeric(),
-    ...         dict(centered =_ - _.mean()),
-    ...         names = "{fn}_{col}"
-    ...     )
+    ...     s.across(s.numeric(), dict(centered=_ - _.mean()), names="{fn}_{col}")
     ... )
     ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━┓
     ┃ bill_length_mm ┃ bill_depth_mm ┃ centered_bill_length_mm ┃ … ┃

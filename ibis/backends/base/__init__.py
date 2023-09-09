@@ -175,7 +175,7 @@ class TablesAccessor(collections.abc.Mapping):
     Examples
     --------
     >>> con = ibis.sqlite.connect("example.db")
-    >>> people = con.tables['people']  # access via index
+    >>> people = con.tables["people"]  # access via index
     >>> people = con.tables.people  # access via attribute
     """
 
@@ -848,7 +848,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         Examples
         --------
         >>> con = ibis.sqlite.connect("example.db")
-        >>> people = con.tables['people']  # access via index
+        >>> people = con.tables["people"]  # access via index
         >>> people = con.tables.people  # access via attribute
         """
         return TablesAccessor(self)
@@ -1202,11 +1202,15 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
 
     Connect to a PostgreSQL server:
 
-    >>> con = ibis.connect("postgres://user:password@hostname:5432")  # quartodoc: +SKIP # doctest: +SKIP
+    >>> con = ibis.connect(
+    ...     "postgres://user:password@hostname:5432"
+    ... )  # quartodoc: +SKIP # doctest: +SKIP
 
     Connect to BigQuery:
 
-    >>> con = ibis.connect("bigquery://my-project/my-dataset")  # quartodoc: +SKIP # doctest: +SKIP
+    >>> con = ibis.connect(
+    ...     "bigquery://my-project/my-dataset"
+    ... )  # quartodoc: +SKIP # doctest: +SKIP
     """
     url = resource = str(resource)
 

@@ -144,7 +144,7 @@ class ArrayValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [[7], [3] , None]})
+        >>> t = ibis.memtable({"a": [[7], [3], None]})
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ a                    ┃
@@ -224,7 +224,7 @@ class ArrayValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [[7], [3] , None]})
+        >>> t = ibis.memtable({"a": [[7], [3], None]})
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ a                    ┃
@@ -274,7 +274,7 @@ class ArrayValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [[7, 42], [3, 3] , None]})
+        >>> t = ibis.memtable({"a": [[7, 42], [3, 3], None]})
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ a                    ┃
@@ -765,7 +765,9 @@ class ArrayValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"arr1": [[3, 2], [], None], "arr2": [[1, 3], [None], [5]]})
+        >>> t = ibis.memtable(
+        ...     {"arr1": [[3, 2], [], None], "arr2": [[1, 3], [None], [5]]}
+        ... )
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ arr1                 ┃ arr2                 ┃
@@ -816,7 +818,9 @@ class ArrayValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"arr1": [[3, 2], [], None], "arr2": [[1, 3], [None], [5]]})
+        >>> t = ibis.memtable(
+        ...     {"arr1": [[3, 2], [], None], "arr2": [[1, 3], [None], [5]]}
+        ... )
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ arr1                 ┃ arr2                 ┃
@@ -860,7 +864,9 @@ class ArrayValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"numbers": [[3, 2], [], None], "strings": [["a", "c"], None, ["e"]]})
+        >>> t = ibis.memtable(
+        ...     {"numbers": [[3, 2], [], None], "strings": [["a", "c"], None, ["e"]]}
+        ... )
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ numbers              ┃ strings              ┃
@@ -947,7 +953,7 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
 
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> t = ibis.memtable({'a': [1, 2, 3], 'b': [4, 5, 6]})
+    >>> t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
     >>> ibis.array([t.a, t.b])
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ ArrayColumn()        ┃
