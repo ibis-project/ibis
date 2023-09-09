@@ -31,10 +31,6 @@ in
       })
     ];
   });
-
-  pins = super.pins.overridePythonAttrs (attrs: {
-    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ self.setuptools ];
-  });
 } // super.lib.listToAttrs (
   map
     (name: {
