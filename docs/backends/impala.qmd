@@ -163,6 +163,26 @@ hdfs = ibis.impala.hdfs_connect(host=webhdfs_host, port=webhdfs_port)
 client = ibis.impala.connect(host=impala_host, port=impala_port, hdfs_client=hdfs)
 ```
 
+By default binary transport mode is used, however it is also possible to use HTTP.
+Depending on your configuration, additional connection arguments may need to be provided.
+For the full list of possible connection arguments please refer to
+the [`impyla`](https://github.com/cloudera/impyla) documentation.
+
+```python
+import ibis
+
+client = ibis.impala.connect(
+    host=impala_host,
+    port=impala_port,
+    username=username,
+    password=password,
+    use_ssl=True,
+    auth_mechanism='LDAP',
+    use_http_transport=True,
+    http_path='cliservice',
+)
+```
+
 All examples here use the following block of code to connect to impala
 using docker:
 
