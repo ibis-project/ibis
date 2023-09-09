@@ -1167,6 +1167,21 @@ def _get_backend_names() -> frozenset[str]:
 def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     """Connect to `resource`, inferring the backend automatically.
 
+    The general pattern for `ibis.connect` is
+
+    ```python
+    ibis.connect("backend://connection-parameters")
+    ```
+
+    With many backends that looks like
+
+    ```python
+    ibis.connect("backend://user:password@host:port/database")
+    ```
+
+    See the connection syntax for each backend for details about URL connection
+    requirements.
+
     Parameters
     ----------
     resource
@@ -1176,15 +1191,22 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
 
     Examples
     --------
-    Connect to an in-memory duckdb database:
+    Connect to an in-memory DuckDB database:
+
     >>> con = ibis.connect("duckdb://")
 
-    Connect to an on-disk sqlite database:
-    >>> con = ibis.connect("sqlite://relative/path/to/data.db")
+    Connect to an on-disk SQLite database:
+
+    >>> con = ibis.connect("sqlite://relative.db")
     >>> con = ibis.connect("sqlite:///absolute/path/to/data.db")
 
-    Connect to a postgres server:
-    >>> con = ibis.connect("postgres://user:password@hostname:5432")
+    Connect to a PostgreSQL server:
+
+    >>> con = ibis.connect("postgres://user:password@hostname:5432")  # quartodoc: +SKIP # doctest: +SKIP
+
+    Connect to BigQuery:
+
+    >>> con = ibis.connect("bigquery://my-project/my-dataset")  # quartodoc: +SKIP # doctest: +SKIP
     """
     url = resource = str(resource)
 
