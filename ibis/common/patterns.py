@@ -44,10 +44,6 @@ class CoercionError(Exception):
     ...
 
 
-class MatchError(Exception):
-    ...
-
-
 class Coercible(ABC):
     """Protocol for defining coercible types.
 
@@ -1512,7 +1508,7 @@ class CallableWith(Slotted, Pattern):
         super().__init__(args=tuple(args), return_=return_)
 
     def match(self, value, context):
-        from ibis.common.annotations import annotated
+        from ibis.common.annotations import EMPTY, annotated
 
         if not callable(value):
             return NoMatch
@@ -1520,18 +1516,20 @@ class CallableWith(Slotted, Pattern):
         fn = annotated(self.args, self.return_, value)
 
         has_varargs = False
-        positional = []
+        positional, required_positional = [], []
         for p in fn.__signature__.parameters.values():
             if p.kind in (Parameter.POSITIONAL_ONLY, Parameter.POSITIONAL_OR_KEYWORD):
                 positional.append(p)
-            elif p.kind is Parameter.KEYWORD_ONLY and p.default is Parameter.empty:
-                raise MatchError(
+                if p.default is EMPTY:
+                    required_positional.append(p)
+            elif p.kind is Parameter.KEYWORD_ONLY and p.default is EMPTY:
+                raise TypeError(
                     "Callable has mandatory keyword-only arguments which cannot be specified"
                 )
             elif p.kind is Parameter.VAR_POSITIONAL:
                 has_varargs = True
 
-        if len(positional) > len(self.args):
+        if len(required_positional) > len(self.args):
             # Callable has more positional arguments than expected")
             return NoMatch
         elif len(positional) < len(self.args) and not has_varargs:
