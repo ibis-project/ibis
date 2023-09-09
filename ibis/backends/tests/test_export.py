@@ -445,3 +445,44 @@ def test_empty_memtable(backend, con):
     table = ibis.memtable(expected)
     result = con.execute(table)
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(["dask", "flink", "impala", "pyspark"])
+def test_to_pandas_batches_empty_table(backend, con):
+    t = backend.functional_alltypes.limit(0)
+    n = t.count().execute()
+
+    assert sum(map(len, con.to_pandas_batches(t))) == n
+    assert sum(map(len, t.to_pandas_batches())) == n
+
+
+@pytest.mark.notimpl(["dask", "druid", "flink", "impala", "pyspark"])
+@pytest.mark.parametrize("n", [None, 1])
+def test_to_pandas_batches_nonempty_table(backend, con, n):
+    t = backend.functional_alltypes.limit(n)
+    n = t.count().execute()
+
+    assert sum(map(len, con.to_pandas_batches(t))) == n
+    assert sum(map(len, t.to_pandas_batches())) == n
+
+
+@pytest.mark.notimpl(["dask", "flink", "impala", "pyspark"])
+@pytest.mark.parametrize("n", [None, 0, 1, 2])
+def test_to_pandas_batches_column(backend, con, n):
+    t = backend.functional_alltypes.limit(n).timestamp_col
+    n = t.count().execute()
+
+    assert sum(map(len, con.to_pandas_batches(t))) == n
+    assert sum(map(len, t.to_pandas_batches())) == n
+
+
+@pytest.mark.notimpl(["dask", "druid", "flink", "impala", "pyspark"])
+def test_to_pandas_batches_scalar(backend, con):
+    t = backend.functional_alltypes.timestamp_col.max()
+    expected = t.execute()
+
+    result1 = list(con.to_pandas_batches(t))
+    assert result1 == [expected]
+
+    result2 = list(t.to_pandas_batches())
+    assert result2 == [expected]

@@ -22,6 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.caching import RefCountedCache
+from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
@@ -233,6 +234,49 @@ class _FileIOHandler:
             )
         else:
             return pyarrow
+
+    def to_pandas_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ) -> Iterator[pd.DataFrame | pd.Series | Any]:
+        """Execute an Ibis expression and return an iterator of pandas `DataFrame`s.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        chunk_size
+            Maximum number of rows in each returned record batch. This may have
+            no effect depending on the backend.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        Iterator[pd.DataFrame]
+            An iterator pandas `DataFrame`s
+        """
+        orig_expr = expr
+        expr = expr.as_table()
+        schema = expr.schema()
+        yield from (
+            orig_expr.__pandas_result__(
+                PandasData.convert_table(batch.to_pandas(), schema)
+            )
+            for batch in self.to_pyarrow_batches(
+                expr, params=params, limit=limit, chunk_size=chunk_size, **kwargs
+            )
+        )
 
     @util.experimental
     def to_pyarrow(
