@@ -14,7 +14,7 @@ Install Ibis and dependencies for the Apache DataFusion backend:
 
 ## `pip`
 
-Install with the Apache DataFusion extra:
+Install with the Apache `datafusion` extra:
 
 ```{.bash}
 pip install 'ibis-framework[datafusion]'

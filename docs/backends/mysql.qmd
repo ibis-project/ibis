@@ -12,7 +12,7 @@ Install Ibis and dependencies for the MySQL backend:
 
 ## `pip`
 
-Install with the MySQL extra:
+Install with the `mysql` extra:
 
 ```{.bash}
 pip install 'ibis-framework[mysql]'

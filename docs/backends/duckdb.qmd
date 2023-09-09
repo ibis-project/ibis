@@ -16,7 +16,7 @@ Install Ibis and dependencies for the DuckDB backend:
 
 ## `pip`
 
-Install with the DuckDB extra:
+Install with the `duckdb` extra:
 
 ```{.bash}
 pip install 'ibis-framework[duckdb]'

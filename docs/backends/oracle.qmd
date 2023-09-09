@@ -14,7 +14,7 @@ Install Ibis and dependencies for the Oracle backend:
 
 ## `pip`
 
-Install with the Oracle extra:
+Install with the `oracle` extra:
 
 ```{.bash}
 pip install 'ibis-framework[oracle]'

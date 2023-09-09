@@ -14,7 +14,7 @@ Install Ibis and dependencies for the Polars backend:
 
 ## `pip`
 
-Install with the Polars extra:
+Install with the `polars` extra:
 
 ```{.bash}
 pip install 'ibis-framework[polars]'
