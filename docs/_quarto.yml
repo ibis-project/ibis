@@ -202,6 +202,8 @@ quartodoc:
               dynamic: true
             - name: coalesce
               package: ibis.expr.api
+            - name: connect
+              package: ibis.backends.base
             - name: cumulative_window
               dynamic: true
             - name: date
