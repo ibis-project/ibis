@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 import re
 import sys
 from collections.abc import Callable as CallableABC
@@ -51,7 +52,6 @@ from ibis.common.patterns import (
     Length,
     ListOf,
     MappingOf,
-    MatchError,
     Never,
     Node,
     NoMatch,
@@ -537,12 +537,12 @@ def test_callable_with():
     assert p.match(10, context={}) is NoMatch
 
     msg = "Callable has mandatory keyword-only arguments which cannot be specified"
-    with pytest.raises(MatchError, match=msg):
+    with pytest.raises(TypeError, match=msg):
         p.match(func_with_required_keyword_only_kwargs, context={})
 
     # Callable has more positional arguments than expected
     p = CallableWith([InstanceOf(int)] * 2)
-    assert p.match(func_with_kwargs, context={}) is NoMatch
+    assert p.match(func_with_kwargs, context={}).__wrapped__ is func_with_kwargs
 
     # Callable has less positional arguments than expected
     p = CallableWith([InstanceOf(int)] * 4)
@@ -562,6 +562,21 @@ def test_callable_with():
     p = CallableWith([InstanceOf(int)])
     wrapped = p.match(func_with_optional_keyword_only_kwargs, context={})
     assert wrapped(1) == 2
+
+
+def test_callable_with_default_arguments():
+    def f(a: int, b: str, c: str):
+        return a + int(b) + int(c)
+
+    def g(a: int, b: str, c: str = "0"):
+        return a + int(b) + int(c)
+
+    h = functools.partial(f, c="0")
+
+    p = Pattern.from_typehint(Callable[[int, str], int])
+    assert p.match(f, {}) is NoMatch
+    assert p.match(g, {}).__wrapped__ == g
+    assert p.match(h, {}).__wrapped__ == h
 
 
 def test_pattern_list():
