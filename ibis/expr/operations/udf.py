@@ -106,7 +106,6 @@ class scalar:
         >>> @ibis.udf.scalar.python
         ... def add_one(x: int) -> int:
         ...     return x + 1
-        ...
         >>> expr = add_one(2)
         >>> con = ibis.connect("duckdb://")
         >>> con.execute(expr)
@@ -158,7 +157,6 @@ class scalar:
         >>> @ibis.udf.scalar.pandas
         ... def add_one(x: int) -> int:
         ...     return x + 1
-        ...
         >>> expr = add_one(2)
         >>> con = ibis.connect(os.environ["SNOWFLAKE_URL"])  # doctest: +SKIP
         >>> con.execute(expr)  # doctest: +SKIP
@@ -211,7 +209,6 @@ class scalar:
         >>> @ibis.udf.scalar.pyarrow
         ... def add_one(x: int) -> int:
         ...     return pc.add(x, 1)
-        ...
         >>> expr = add_one(2)
         >>> con = ibis.connect("duckdb://")
         >>> con.execute(expr)
@@ -262,7 +259,6 @@ class scalar:
         >>> @ibis.udf.scalar.builtin
         ... def hamming(a: str, b: str) -> int:
         ...     '''Compute the Hamming distance between two strings.'''
-        ...
         >>> expr = hamming("duck", "luck")
         >>> con = ibis.connect("duckdb://")
         >>> con.execute(expr)

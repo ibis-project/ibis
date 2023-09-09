@@ -185,17 +185,17 @@ def sql_like_to_regex(pattern: str, escape: str | None = None) -> str:
 
     Examples
     --------
-    >>> sql_like_to_regex('6%')  # default is to not escape anything
+    >>> sql_like_to_regex("6%")  # default is to not escape anything
     '^6.*$'
-    >>> sql_like_to_regex('6^%', escape='^')
+    >>> sql_like_to_regex("6^%", escape="^")
     '^6%$'
-    >>> sql_like_to_regex('6_')
+    >>> sql_like_to_regex("6_")
     '^6.$'
-    >>> sql_like_to_regex('6/_', escape='/')
+    >>> sql_like_to_regex("6/_", escape="/")
     '^6_$'
-    >>> sql_like_to_regex('%abc')  # any string ending with "abc"
+    >>> sql_like_to_regex("%abc")  # any string ending with "abc"
     '^.*abc$'
-    >>> sql_like_to_regex('abc%')  # any string starting with "abc"
+    >>> sql_like_to_regex("abc%")  # any string starting with "abc"
     '^abc.*$'
     """
     return f"^{''.join(_sql_like_to_regex(pattern, escape))}$"

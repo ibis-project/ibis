@@ -120,12 +120,12 @@ def coerce_to_output(
     >>> coerce_to_output(1, node)  # quartodoc: +SKIP # doctest: +SKIP
     0    1
     Name: result, dtype: int64
-    >>> coerce_to_output(1, node, [1,2,3])  # quartodoc: +SKIP # doctest: +SKIP
+    >>> coerce_to_output(1, node, [1, 2, 3])  # quartodoc: +SKIP # doctest: +SKIP
     1    1
     2    1
     3    1
     Name: result, dtype: int64
-    >>> coerce_to_output([1,2,3], node)  # quartodoc: +SKIP # doctest: +SKIP
+    >>> coerce_to_output([1, 2, 3], node)  # quartodoc: +SKIP # doctest: +SKIP
     0    [1, 2, 3]
     Name: result, dtype: object
     """

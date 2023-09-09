@@ -759,6 +759,7 @@ WHERE catalog_name = :database"""
         ...     _ = con.execute("DROP TABLE IF EXISTS t")
         ...     _ = con.execute("CREATE TABLE t (a INT, b TEXT)")
         ...     _ = con.execute("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
+        ...
         >>> con = ibis.connect("duckdb://")
         >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
         >>> t
@@ -809,6 +810,7 @@ WHERE catalog_name = :database"""
         ...     _ = con.execute("DROP TABLE IF EXISTS t")
         ...     _ = con.execute("CREATE TABLE t (a INT, b TEXT)")
         ...     _ = con.execute("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
+        ...
         >>> con = ibis.connect("duckdb://")
         >>> con.list_tables()
         []
@@ -995,7 +997,9 @@ WHERE catalog_name = :database"""
 
         Partition on multiple columns.
 
-        >>> con.to_parquet(penguins, tempfile.mkdtemp(), partition_by=("year", "island"))
+        >>> con.to_parquet(
+        ...     penguins, tempfile.mkdtemp(), partition_by=("year", "island")
+        ... )
         """
         self._run_pre_execute_hooks(expr)
         query = self._to_sql(expr, params=params)

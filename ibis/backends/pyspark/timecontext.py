@@ -59,9 +59,9 @@ def combine_time_context(
     --------
     >>> import pandas as pd
     >>> timecontexts = [
-    ...     (pd.Timestamp('20200102'), pd.Timestamp('20200103')),
-    ...     (pd.Timestamp('20200101'), pd.Timestamp('20200106')),
-    ...     (pd.Timestamp('20200109'), pd.Timestamp('20200110')),
+    ...     (pd.Timestamp("20200102"), pd.Timestamp("20200103")),
+    ...     (pd.Timestamp("20200101"), pd.Timestamp("20200106")),
+    ...     (pd.Timestamp("20200109"), pd.Timestamp("20200110")),
     ... ]
     >>> combine_time_context(timecontexts)
     (Timestamp(...), Timestamp(...))

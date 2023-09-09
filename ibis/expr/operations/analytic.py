@@ -63,10 +63,10 @@ class RowNumber(RankBase):
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table([('values', dt.int64)])
+    >>> t = ibis.table([("values", dt.int64)])
     >>> w = ibis.window(order_by=t.values)
     >>> row_num = ibis.row_number().over(w)
-    >>> result = t[t.values, row_num.name('row_num')]
+    >>> result = t[t.values, row_num.name("row_num")]
 
     Returns
     -------

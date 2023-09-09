@@ -495,8 +495,8 @@ class Call(Slotted, Builder):
         >>> from ibis.common.patterns import Call
         >>> from ibis.expr.operations import Negate
         >>>
-        >>> c = Call.namespace('ibis.expr.operations')
-        >>> x = Variable('x')
+        >>> c = Call.namespace("ibis.expr.operations")
+        >>> x = Variable("x")
         >>> pattern = c.Negate(x)
         >>> pattern
         Call(func=<class 'ibis.expr.operations.numeric.Negate'>, args=(Variable(name='x'),), kwargs=FrozenDict({}))
@@ -847,13 +847,13 @@ class GenericInstanceOf(Slotted, Pattern):
     Examples
     --------
     >>> class MyNumber(Generic[T_co]):
-    ...    value: T_co
+    ...     value: T_co
     ...
-    ...    def __init__(self, value: T_co):
-    ...        self.value = value
+    ...     def __init__(self, value: T_co):
+    ...         self.value = value
     ...
-    ...    def __eq__(self, other):
-    ...        return type(self) is type(other) and self.value == other.value
+    ...     def __eq__(self, other):
+    ...         return type(self) is type(other) and self.value == other.value
     ...
     >>> p = GenericInstanceOf(MyNumber[int])
     >>> assert p.match(MyNumber(1), {}) == MyNumber(1)
@@ -1770,6 +1770,7 @@ def pattern(obj: AnyType) -> Pattern:
     >>> @pattern
     ... def as_int(x, context):
     ...     return int(x)
+    ...
     >>>
     >>> assert as_int.match(1, {}) == 1
 
@@ -1826,7 +1827,11 @@ def match(
     >>> assert match(1, 1, context={"x": 1}) == 1
     >>> assert match(1, 2, context={"x": 1}) is NoMatch
     >>> assert match([1, int], [1, 2]) == [1, 2]
-    >>> assert match([1, int, "a" @ InstanceOf(str)], [1, 2, "three"]) == [1, 2, "three"]
+    >>> assert match([1, int, "a" @ InstanceOf(str)], [1, 2, "three"]) == [
+    ...     1,
+    ...     2,
+    ...     "three",
+    ... ]
     """
     if context is None:
         context = {}

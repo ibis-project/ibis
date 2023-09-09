@@ -65,20 +65,14 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase):
         --------
         >>> import os
         >>> import getpass
-        >>> host = os.environ.get('IBIS_TEST_MYSQL_HOST', 'localhost')
-        >>> user = os.environ.get('IBIS_TEST_MYSQL_USER', getpass.getuser())
-        >>> password = os.environ.get('IBIS_TEST_MYSQL_PASSWORD')
-        >>> database = os.environ.get('IBIS_TEST_MYSQL_DATABASE',
-        ...                           'ibis_testing')
-        >>> con = connect(
-        ...     database=database,
-        ...     host=host,
-        ...     user=user,
-        ...     password=password
-        ... )
+        >>> host = os.environ.get("IBIS_TEST_MYSQL_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_MYSQL_USER", getpass.getuser())
+        >>> password = os.environ.get("IBIS_TEST_MYSQL_PASSWORD")
+        >>> database = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
+        >>> con = connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
-        >>> t = con.table('functional_alltypes')
+        >>> t = con.table("functional_alltypes")
         >>> t
         MySQLTable[table]
           name: functional_alltypes

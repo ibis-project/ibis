@@ -48,18 +48,18 @@ def struct(
     --------
     Create a struct literal from a [](`dict`) with the type inferred
     >>> import ibis
-    >>> t = ibis.struct(dict(a=1, b='foo'))
+    >>> t = ibis.struct(dict(a=1, b="foo"))
 
     Create a struct literal from a [](`dict`) with a specified type
-    >>> t = ibis.struct(dict(a=1, b='foo'), type='struct<a: float, b: string>')
+    >>> t = ibis.struct(dict(a=1, b="foo"), type="struct<a: float, b: string>")
 
     Specify a specific type for the struct literal
-    >>> t = ibis.struct(dict(a=1, b=40), type='struct<a: float, b: int32>')
+    >>> t = ibis.struct(dict(a=1, b=40), type="struct<a: float, b: int32>")
 
     Create a struct array from multiple arrays
     >>> ibis.options.interactive = True
-    >>> t = ibis.memtable({'a': [1, 2, 3], 'b': ['foo', 'bar', 'baz']})
-    >>> ibis.struct([('a', t.a), ('b', t.b)])
+    >>> t = ibis.memtable({"a": [1, 2, 3], "b": ["foo", "bar", "baz"]})
+    >>> ibis.struct([("a", t.a), ("b", t.b)])
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ StructColumn()              ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -71,7 +71,7 @@ def struct(
     └─────────────────────────────┘
 
     Create a struct array from columns and literals
-    >>> ibis.struct([('a', t.a), ('b', 'foo')])
+    >>> ibis.struct([("a", t.a), ("b", "foo")])
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ StructColumn()              ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -103,7 +103,7 @@ class StructValue(Value):
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+    >>> t = ibis.memtable({"s": [{"a": 1, "b": "foo"}, {"a": 3, "b": None}, None]})
     >>> t
     ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ s                           ┃
@@ -127,7 +127,7 @@ class StructValue(Value):
     │     3 │
     │  NULL │
     └───────┘
-    >>> t.s['a']
+    >>> t.s["a"]
     ┏━━━━━━━┓
     ┃ a     ┃
     ┡━━━━━━━┩
@@ -166,7 +166,7 @@ class StructValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+        >>> t = ibis.memtable({"s": [{"a": 1, "b": "foo"}, {"a": 3, "b": None}, None]})
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ s                           ┃
@@ -177,7 +177,7 @@ class StructValue(Value):
         │ {'a': 3, 'b': None}         │
         │ NULL                        │
         └─────────────────────────────┘
-        >>> t.s['a']
+        >>> t.s["a"]
         ┏━━━━━━━┓
         ┃ a     ┃
         ┡━━━━━━━┩
@@ -187,7 +187,7 @@ class StructValue(Value):
         │     3 │
         │  NULL │
         └───────┘
-        >>> t.s['b']
+        >>> t.s["b"]
         ┏━━━━━━━━┓
         ┃ b      ┃
         ┡━━━━━━━━┩
@@ -197,7 +197,7 @@ class StructValue(Value):
         │ NULL   │
         │ NULL   │
         └────────┘
-        >>> t.s['foo_bar']
+        >>> t.s["foo_bar"]
         Traceback (most recent call last):
             ...
         KeyError: 'foo_bar'
@@ -226,7 +226,7 @@ class StructValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+        >>> t = ibis.memtable({"s": [{"a": 1, "b": "foo"}, {"a": 3, "b": None}, None]})
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ s                           ┃
@@ -353,7 +353,7 @@ class StructValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({'s': [{'a': 1, 'b': 'foo'}, {'a': 3, 'b': None}, None]})
+        >>> t = ibis.memtable({"s": [{"a": 1, "b": "foo"}, {"a": 3, "b": None}, None]})
         >>> t
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ s                           ┃

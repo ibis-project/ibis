@@ -205,11 +205,11 @@ def is_iterable(o: Any) -> bool:
 
     Examples
     --------
-    >>> is_iterable('1')
+    >>> is_iterable("1")
     False
-    >>> is_iterable(b'1')
+    >>> is_iterable(b"1")
     False
-    >>> is_iterable(iter('1'))
+    >>> is_iterable(iter("1"))
     True
     >>> is_iterable(i for i in range(1))
     True
@@ -254,17 +254,17 @@ def convert_unit(value, unit, to, floor: bool = True):
     Examples
     --------
     >>> one_second = 1000
-    >>> x = convert_unit(one_second, 'ms', 's')
+    >>> x = convert_unit(one_second, "ms", "s")
     >>> x
     1
     >>> one_second = 1
-    >>> x = convert_unit(one_second, 's', 'ms')
+    >>> x = convert_unit(one_second, "s", "ms")
     >>> x
     1000
-    >>> x = convert_unit(one_second, 's', 's')
+    >>> x = convert_unit(one_second, "s", "s")
     >>> x
     1
-    >>> x = convert_unit(one_second, 's', 'M')
+    >>> x = convert_unit(one_second, "s", "M")
     Traceback (most recent call last):
         ...
     ValueError: Cannot convert to or from unit ... to unit ...

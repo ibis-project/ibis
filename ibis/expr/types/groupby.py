@@ -199,9 +199,12 @@ class GroupedTable:
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> (
-        ...   t.select("species", "bill_length_mm")
-        ...    .group_by("species")
-        ...    .mutate(centered_bill_len=ibis._.bill_length_mm - ibis._.bill_length_mm.mean())
+        ...     t.select("species", "bill_length_mm")
+        ...     .group_by("species")
+        ...     .mutate(
+        ...         centered_bill_len=ibis._.bill_length_mm
+        ...         - ibis._.bill_length_mm.mean()
+        ...     )
         ... )
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
         ┃ species ┃ bill_length_mm ┃ centered_bill_len ┃

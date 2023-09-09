@@ -86,12 +86,12 @@ def find_immediate_parent_tables(input_node, keep_input=True):
     Examples
     --------
     >>> import ibis, toolz
-    >>> t = ibis.table([('a', 'int64')], name='t')
+    >>> t = ibis.table([("a", "int64")], name="t")
     >>> expr = t.mutate(foo=t.a + 1)
-    >>> result, = find_immediate_parent_tables(expr.op())
+    >>> (result,) = find_immediate_parent_tables(expr.op())
     >>> result.equals(expr.op())
     True
-    >>> result, = find_immediate_parent_tables(expr.op(), keep_input=False)
+    >>> (result,) = find_immediate_parent_tables(expr.op(), keep_input=False)
     >>> result.equals(t.op())
     True
     """
@@ -590,8 +590,8 @@ def flatten_predicate(node):
     Examples
     --------
     >>> import ibis
-    >>> t = ibis.table([('a', 'int64'), ('b', 'string')], name='t')
-    >>> filt = (t.a == 1) & (t.b == 'foo')
+    >>> t = ibis.table([("a", "int64"), ("b", "string")], name="t")
+    >>> filt = (t.a == 1) & (t.b == "foo")
     >>> predicates = flatten_predicate(filt.op())
     >>> len(predicates)
     2

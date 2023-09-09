@@ -213,10 +213,10 @@ def param(type: dt.DataType) -> ir.Scalar:
     Examples
     --------
     >>> import ibis
-    >>> start = ibis.param('date')
-    >>> end = ibis.param('date')
-    >>> schema = dict(timestamp_col='timestamp', value='double')
-    >>> t = ibis.table(schema, name='t')
+    >>> start = ibis.param("date")
+    >>> end = ibis.param("date")
+    >>> schema = dict(timestamp_col="timestamp", value="double")
+    >>> t = ibis.table(schema, name="t")
     >>> predicates = [t.timestamp_col >= start, t.timestamp_col <= end]
     >>> t.filter(predicates).value.sum()
     r0 := UnboundTable: t
@@ -256,11 +256,8 @@ def schema(
     Examples
     --------
     >>> from ibis import schema, Schema
-    >>> sc = schema([('foo', 'string'),
-    ...              ('bar', 'int64'),
-    ...              ('baz', 'boolean')])
-    >>> sc = schema(names=['foo', 'bar', 'baz'],
-    ...             types=['string', 'int64', 'boolean'])
+    >>> sc = schema([("foo", "string"), ("bar", "int64"), ("baz", "boolean")])
+    >>> sc = schema(names=["foo", "bar", "baz"], types=["string", "int64", "boolean"])
     >>> sc = schema(dict(foo="string"))
     >>> sc = schema(Schema(dict(foo="string")))  # no-op
     """
@@ -873,6 +870,7 @@ def read_csv(
     ... '''
     >>> with open("/tmp/lines.csv", mode="w") as f:
     ...     _ = f.write(lines)
+    ...
     >>> t = ibis.read_csv("/tmp/lines.csv")
     >>> t
     ┏━━━━━━━┳━━━━━━━━┓
@@ -928,6 +926,7 @@ def read_json(
     ... '''
     >>> with open("/tmp/lines.json", mode="w") as f:
     ...     _ = f.write(lines)
+    ...
     >>> t = ibis.read_json("/tmp/lines.json")
     >>> t
     ┏━━━━━━━┳━━━━━━━━┓
@@ -1070,7 +1069,9 @@ def set_backend(backend: str | BaseBackend) -> None:
 
     Or as a URI
 
-    >>> ibis.set_backend("postgres://user:password@hostname:5432")  # quartodoc: +SKIP # doctest: +SKIP
+    >>> ibis.set_backend(
+    ...     "postgres://user:password@hostname:5432"
+    ... )  # quartodoc: +SKIP # doctest: +SKIP
 
     Or as an existing backend instance
 
