@@ -6,6 +6,10 @@ code-annotations: hover
 format:
   html:
     toc: false
+    include-in-header:
+      text: |
+        <script data-goatcounter="https://ibis.goatcounter.com/count"
+                async src="//gc.zgo.at/count.js"></script>
 about:
   id: about
   template: jolla
