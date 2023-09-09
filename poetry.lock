@@ -438,6 +438,24 @@ jupyter = ["ipython (>=7.8.0)", "tokenize-rt (>=3.2.0)"]
 uvloop = ["uvloop (>=0.15.2)"]
 
 [[package]]
+name = "blackdoc"
+version = "0.3.8"
+description = "run black on documentation code snippets"
+optional = false
+python-versions = ">=3.7"
+files = [
+    {file = "blackdoc-0.3.8-py3-none-any.whl", hash = "sha256:c003a1b72d57692b343815c8b7a15e78977caba96c86060def892602b5aba083"},
+    {file = "blackdoc-0.3.8.tar.gz", hash = "sha256:3c9d5534f92557a627a31550c7faec8363b5b0929bbb0ca3f5df179a81a9d6b2"},
+]
+
+[package.dependencies]
+black = "*"
+more-itertools = "*"
+pathspec = "*"
+rich = "*"
+tomli = "*"
+
+[[package]]
 name = "cachetools"
 version = "5.3.1"
 description = "Extensible memoizing collections and decorators"
@@ -2763,6 +2781,17 @@ dev = ["notebook", "twine"]
 doc = ["numpydoc (>=0.9.1)", "sphinx (>=6.1.0)"]
 lint = ["black (>=23.1.0)", "ruff"]
 test = ["pytest-cov"]
+
+[[package]]
+name = "more-itertools"
+version = "10.1.0"
+description = "More routines for operating on iterables, beyond itertools"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "more-itertools-10.1.0.tar.gz", hash = "sha256:626c369fa0eb37bac0291bce8259b332fd59ac792fa5497b59837309cd5b114a"},
+    {file = "more_itertools-10.1.0-py3-none-any.whl", hash = "sha256:64e0735fcfdc6f3464ea133afe8ea4483b1c5fe3a3d69852e6503b43a0b222e6"},
+]
 
 [[package]]
 name = "multidict"
@@ -5907,4 +5936,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "6863640d8684a49a7647f419cbcf4a690ea0354473f0cf68f088976cbeeb1796"
+content-hash = "47b7a59be009060e1c6e528c7271624b0e31344e969b69a11be110632d2f8584"

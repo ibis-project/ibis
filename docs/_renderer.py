@@ -44,7 +44,9 @@ class Renderer(qd.MdRenderer):
 
                 # if we expect failures, don't fail the notebook execution and
                 # render the error message
-                if expect_failure in first:
+                if expect_failure in first or any(
+                    expect_failure in line for line in rest
+                ):
                     assert (
                         start and end
                     ), "expected failure should never occur alongside a skipped doctest example"

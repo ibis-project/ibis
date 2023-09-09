@@ -24,6 +24,11 @@ repos:
     rev: 23.9.1
     hooks:
       - id: black
+  - repo: https://github.com/keewis/blackdoc
+    rev: v0.3.8
+    hooks:
+      - id: blackdoc
+        exclude: ibis/examples/__init__\.py
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.5
     hooks:
