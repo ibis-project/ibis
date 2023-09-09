@@ -12,7 +12,7 @@ Install Ibis and dependencies for the MSSQL backend:
 
 ## `pip`
 
-Install with the MSSQL extra:
+Install with the `mssql` extra:
 
 ```{.bash}
 pip install 'ibis-framework[mssql]'

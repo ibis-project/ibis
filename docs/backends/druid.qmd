@@ -14,7 +14,7 @@ Install Ibis and dependencies for the Druid backend:
 
 ## `pip`
 
-Install with the Druid extra:
+Install with the `druid` extra:
 
 ```{.bash}
 pip install 'ibis-framework[druid]'

@@ -12,7 +12,7 @@ Install Ibis and dependencies for the Impala backend:
 
 ## `pip`
 
-Install with the Impala extra:
+Install with the `impala` extra:
 
 ```{.bash}
 pip install 'ibis-framework[impala]'

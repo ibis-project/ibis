@@ -12,7 +12,7 @@ Install Ibis and dependencies for the ClickHouse backend:
 
 ## `pip`
 
-Install with the ClickHouse extra:
+Install with the `clickhouse` extra:
 
 ```{.bash}
 pip install 'ibis-framework[clickhouse]'

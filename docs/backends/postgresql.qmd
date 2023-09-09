@@ -12,7 +12,7 @@ Install Ibis and dependencies for the Postgres backend:
 
 ## `pip`
 
-Install with the Postgres extra:
+Install with the `postgres` extra:
 
 ```{.bash}
 pip install 'ibis-framework[postgres]'

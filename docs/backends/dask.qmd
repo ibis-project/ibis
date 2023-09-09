@@ -12,7 +12,7 @@ Install Ibis and dependencies for the Dask backend:
 
 ## `pip`
 
-Install with the Dask extra:
+Install with the `dask` extra:
 
 ```{.bash}
 pip install 'ibis-framework[dask]'
