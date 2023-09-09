@@ -8,10 +8,10 @@ on:
       - "**/*.md"
       - "**/*.qmd"
       - "codecov.yml"
+      - ".envrc"
     branches:
       - master
       - "*.x.x"
-      - quarto
   pull_request:
     # Skip the backend suite if all changes are docs
     paths-ignore:
@@ -19,10 +19,10 @@ on:
       - "**/*.md"
       - "**/*.qmd"
       - "codecov.yml"
+      - ".envrc"
     branches:
       - master
       - "*.x.x"
-      - quarto
   merge_group:
 
 permissions:
