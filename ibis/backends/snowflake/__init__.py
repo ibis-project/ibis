@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import contextlib
+import functools
 import glob
 import inspect
 import itertools
@@ -373,6 +374,28 @@ $$""".format(
             table = schema.to_pyarrow().empty_table()
         df = table.to_pandas(timestamp_as_object=True)
         return SnowflakePandasData.convert_table(df, schema)
+
+    def to_pandas_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **_: Any,
+    ) -> Iterator[pd.DataFrame | pd.Series | Any]:
+        self._run_pre_execute_hooks(expr)
+        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
+        sql = query_ast.compile()
+        target_schema = expr.as_table().schema()
+        converter = functools.partial(
+            SnowflakePandasData.convert_table, schema=target_schema
+        )
+
+        with self.begin() as con, contextlib.closing(con.execute(sql)) as cur:
+            yield from map(
+                expr.__pandas_result__,
+                map(converter, cur.cursor.fetch_pandas_batches()),
+            )
 
     def to_pyarrow_batches(
         self,

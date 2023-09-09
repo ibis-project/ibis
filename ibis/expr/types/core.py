@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import os
 import webbrowser
-from typing import TYPE_CHECKING, Any, Mapping, NoReturn, Tuple
+from typing import TYPE_CHECKING, Any, Mapping, NoReturn, Tuple, Iterator
 
 from public import public
 from rich.jupyter import JupyterMixin
@@ -420,6 +420,44 @@ class Expr(Immutable, Coercible):
         """
         return self._find_backend(use_default=True).to_pyarrow(
             self, params=params, limit=limit, **kwargs
+        )
+
+    @experimental
+    def to_pandas_batches(
+        self,
+        *,
+        limit: int | str | None = None,
+        params: Mapping[ir.Value, Any] | None = None,
+        chunk_size: int = 1_000_000,
+        **kwargs: Any,
+    ) -> Iterator[pd.DataFrame | pd.Series | Any]:
+        """Execute expression and return an iterator of pandas DataFrames.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        chunk_size
+            Maximum number of rows in each returned batch.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        Iterator[pd.DataFrame]
+        """
+        return self._find_backend(use_default=True).to_pandas_batches(
+            self,
+            params=params,
+            limit=limit,
+            chunk_size=chunk_size,
+            **kwargs,
         )
 
     @experimental
