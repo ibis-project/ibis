@@ -98,6 +98,7 @@ trino = { version = ">=0.321,<1", optional = true, extras = ["sqlalchemy"] }
 
 [tool.poetry.group.dev.dependencies]
 black = ">=22.1.0,<24"
+blackdoc = ">=0.3.8,<1"
 codespell = { version = ">=2.2.4,<3", extras = [
   "hard-encoding-detection",
   "toml",
@@ -476,6 +477,9 @@ required-imports = ["from __future__ import annotations"]
 "ci/*.py" = ["INP001"]
 "docs/*.py" = ["INP001"]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
+
+[tool.blackdoc]
+extend_exclude = 'ibis/examples/__init__\.py'
 
 [tool.black]
 line_length = 88
