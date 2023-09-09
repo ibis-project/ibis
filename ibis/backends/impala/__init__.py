@@ -263,6 +263,10 @@ class Backend(BaseSQLBackend):
             Size of the connection pool. Typically this is not necessary to configure.
         hdfs_client
             An existing HDFS client.
+        params
+            Any additional parameters necessary to open a connection to Impala.
+            Please refer to impyla documentation for the full list of
+            possible arguments.
 
         Examples
         --------
