@@ -226,6 +226,7 @@ class Backend(BaseSQLBackend):
         kerberos_service_name: str = "impala",
         pool_size: int = 8,
         hdfs_client: fsspec.spec.AbstractFileSystem | None = None,
+        **params: Any,
     ):
         """Create an Impala `Backend` for use with Ibis.
 
@@ -262,6 +263,10 @@ class Backend(BaseSQLBackend):
             Size of the connection pool. Typically this is not necessary to configure.
         hdfs_client
             An existing HDFS client.
+        params
+            Any additional parameters necessary to open a connection to Impala.
+            Please refer to impyla documentation for the full list of
+            possible arguments.
 
         Examples
         --------
@@ -283,7 +288,6 @@ class Backend(BaseSQLBackend):
         self._temp_objects = set()
         self._hdfs = hdfs_client
 
-        params = {}
         if ca_cert is not None:
             params["ca_cert"] = str(ca_cert)
         self.con = ImpalaConnection(
