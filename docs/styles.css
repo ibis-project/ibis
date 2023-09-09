@@ -3,7 +3,7 @@ section#parameters {
     overflow-x: auto;
 }
 
-section#parameters-1 {
+section[id^="parameters-"] {
     /* scroll when child contents overflow the width */
     overflow-x: auto;
 }
