@@ -226,7 +226,7 @@ class Backend(BaseSQLBackend):
         kerberos_service_name: str = "impala",
         pool_size: int = 8,
         hdfs_client: fsspec.spec.AbstractFileSystem | None = None,
-        **params: Any
+        **params: Any,
     ):
         """Create an Impala `Backend` for use with Ibis.
 
