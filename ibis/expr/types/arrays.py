@@ -393,6 +393,36 @@ class ArrayValue(Value):
         │ [104.0]               │
         │ []                    │
         └───────────────────────┘
+
+        `.map()` also supports more complex callables like `functools.partial`
+        and lambdas with closures
+
+        >>> from functools import partial
+        >>> def add(x, y):
+        ...     return x + y
+        ...
+        >>> add2 = partial(add, y=2)
+        >>> t.a.map(add2)
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a)          ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │
+        ├──────────────────────┤
+        │ [3, None, ... +1]    │
+        │ [6]                  │
+        │ []                   │
+        └──────────────────────┘
+        >>> y = 2
+        >>> t.a.map(lambda x: x + y)
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a)          ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │
+        ├──────────────────────┤
+        │ [3, None, ... +1]    │
+        │ [6]                  │
+        │ []                   │
+        └──────────────────────┘
         """
 
         @functools.wraps(func)
@@ -432,6 +462,36 @@ class ArrayValue(Value):
         │ []                   │
         └──────────────────────┘
         >>> t.a.filter(lambda x: x > 1)
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a)       ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │
+        ├──────────────────────┤
+        │ [2]                  │
+        │ [4]                  │
+        │ []                   │
+        └──────────────────────┘
+
+        `.filter()` also supports more complex callables like `functools.partial`
+        and lambdas with closures
+
+        >>> from functools import partial
+        >>> def gt(x, y):
+        ...     return x > y
+        ...
+        >>> gt1 = partial(gt, y=1)
+        >>> t.a.filter(gt1)
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a)       ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>         │
+        ├──────────────────────┤
+        │ [2]                  │
+        │ [4]                  │
+        │ []                   │
+        └──────────────────────┘
+        >>> y = 1
+        >>> t.a.filter(lambda x: x > y)
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ ArrayFilter(a)       ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━┩
