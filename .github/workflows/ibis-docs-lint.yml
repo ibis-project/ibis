@@ -5,12 +5,10 @@ on:
     branches:
       - master
       - "*.x.x"
-      - quarto
   pull_request:
     branches:
       - master
       - "*.x.x"
-      - quarto
   merge_group:
 
 concurrency:

@@ -9,20 +9,20 @@ on:
       - "**/*.md"
       - "**/*.qmd"
       - "codecov.yml"
+      - ".envrc"
     branches:
       - master
       - "*.x.x"
-      - quarto
   pull_request:
     paths:
       - "docs/**"
       - "**/*.md"
       - "**/*.qmd"
       - "codecov.yml"
+      - ".envrc"
     branches:
       - master
       - "*.x.x"
-      - quarto
   merge_group:
 jobs:
   test_backends:

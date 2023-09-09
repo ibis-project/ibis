@@ -6,19 +6,19 @@ on:
       - "docs/**"
       - "**/*.md"
       - "**/*.qmd"
+      - ".envrc"
     branches:
       - master
       - "*.x.x"
-      - quarto
   pull_request:
     paths-ignore:
       - "docs/**"
       - "**/*.md"
       - "**/*.qmd"
+      - ".envrc"
     branches:
       - master
       - "*.x.x"
-      - quarto
   merge_group:
 
 concurrency:
