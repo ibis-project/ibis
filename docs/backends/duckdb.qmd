@@ -105,15 +105,17 @@ render_do_connect("duckdb")
 In addition to `ibis.duckdb.connect`, you can also connect to DuckDB by
 passing a properly formatted DuckDB connection URL to `ibis.connect`
 
-```{.python}
-con = ibis.connect("duckdb:///path/to/local/file")
+```{python}
+import ibis
+
+con = ibis.connect("duckdb://local.ddb")
 ```
 
-```{.python}
-con = ibis.connect("duckdb://") # (1)
-```
+Without an empty path, `ibis.connect` will connect to an ephemeral, in-memory database.
 
-1. ephemeral, in-memory database
+```{python}
+con = ibis.connect("duckdb://")
+```
 
 ## MotherDuck
 
