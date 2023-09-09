@@ -62,14 +62,14 @@ jobs:
         id: needs_pr
         run: echo "did_change=${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}" >> "$GITHUB_OUTPUT"
 
-      - uses: tibdex/github-app-token@v1
+      - uses: tibdex/github-app-token@v2
         if: fromJSON(steps.needs_pr.outputs.did_change)
         id: generate_pr_token
         with:
           app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
           private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
 
-      - uses: tibdex/github-app-token@v1
+      - uses: tibdex/github-app-token@v2
         if: fromJSON(steps.needs_pr.outputs.did_change)
         id: generate_pr_approval_token
         with:
