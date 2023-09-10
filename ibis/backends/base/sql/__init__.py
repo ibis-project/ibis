@@ -248,9 +248,18 @@ class BaseSQLBackend(BaseBackend):
         if self.supports_python_udfs:
             raise NotImplementedError(self.name)
 
-    def _define_udf_translation_rules(self, expr: ir.Expr) -> None:
-        if self.supports_python_udfs:
-            raise NotImplementedError(self.name)
+    def _gen_udf_rule(self, op: ops.ScalarUDF):
+        @self.add_operation(type(op))
+        def _(t, op):
+            func = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
+            return f"{func}({', '.join(map(t.translate, op.args))})"
+
+    def _define_udf_translation_rules(self, expr):
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            udf_node_type = type(udf_node)
+
+            if udf_node_type not in self.compiler.translator_class._registry:
+                self._gen_udf_rule(udf_node)
 
     def execute(
         self,

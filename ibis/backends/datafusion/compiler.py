@@ -597,19 +597,23 @@ def elementwise_udf(op, **kw):
 
 @translate.register(ops.ScalarUDF)
 def scalar_udf(op, **kw):
-    if (input_type := op.__input_type__) != InputType.PYARROW:
+    if (input_type := op.__input_type__) == InputType.PYARROW:
+        udf = df.udf(
+            op.__func__,
+            input_types=[PyArrowType.from_ibis(arg.dtype) for arg in op.args],
+            return_type=PyArrowType.from_ibis(op.dtype),
+            volatility="volatile",
+        )
+        args = map(partial(translate, **kw), op.args)
+        return udf(*args)
+    elif input_type == InputType.BUILTIN:
+        udf = getattr(df.functions, op.__func_name__)
+        args = map(partial(translate, **kw), op.args)
+        return udf(*args)
+    else:
         raise NotImplementedError(
             f"DataFusion only supports pyarrow UDFs: got a {input_type.name.lower()} UDF"
         )
-    udf = df.udf(
-        op.__func__,
-        input_types=[PyArrowType.from_ibis(arg.dtype) for arg in op.args],
-        return_type=PyArrowType.from_ibis(op.dtype),
-        volatility="volatile",
-    )
-    args = map(partial(translate, **kw), op.args)
-
-    return udf(*args)
 
 
 @translate.register(ops.StringConcat)

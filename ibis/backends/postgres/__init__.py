@@ -208,15 +208,15 @@ WHERE p.proname = :name
             return_annotation=return_type,
         )
         fake_func.__annotations__ = {"return": return_type, **dict(signature)}
-        op = ops.udf.scalar._opaque(fake_func, schema=schema)
+        op = ops.udf.scalar.builtin(fake_func, schema=schema)
         return op
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
         config = udf_node.__config__["kwargs"]
         func = udf_node.__func__
         func_name = func.__name__
-        schema = config.get("schema", "")
-        name = type(udf_node).__name__
+        schema = udf_node.__udf_namespace__
+        name = udf_node.__func_name__
         ident = ".".join(filter(None, [schema, name]))
         return dict(
             name=name,

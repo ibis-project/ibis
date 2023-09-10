@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
+from ibis import udf
 from ibis.backends.trino.tests.conftest import (
     TRINO_HOST,
     TRINO_PASS,
@@ -92,3 +93,14 @@ def test_con_source(source, expected):
 def test_cross_schema_table_access(con, schema, table):
     t = con.table(table, schema=schema)
     assert t.count().execute()
+
+
+def test_builtin_udf(con):
+    @udf.scalar.builtin
+    def bar(x: float, width: int) -> str:
+        """Render a single bar of length `width`, with `x` percent filled."""
+
+    expr = bar(0.25, 40)
+    result = con.execute(expr)
+    expected = "\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;202m█\x1b[38;5;202m█\x1b[38;5;202m█\x1b[38;5;208m█\x1b[38;5;208m█\x1b[38;5;208m█\x1b[0m                              "
+    assert result == expected

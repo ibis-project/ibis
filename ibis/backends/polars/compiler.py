@@ -16,6 +16,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.polars.datatypes import dtype_to_polars, schema_from_polars
+from ibis.expr.operations.udf import InputType
 
 
 def _assert_literal(op):
@@ -1164,3 +1165,12 @@ def execute_count_distinct_star(op, **kw):
     if op.where is not None:
         arg = arg.filter(translate(op.where, **kw))
     return arg.n_unique()
+
+
+@translate.register(ops.ScalarUDF)
+def execute_scalar_udf(op, **kw):
+    if op.__input_type__ == InputType.BUILTIN:
+        first, *rest = map(translate, op.args)
+        return getattr(first, op.__func_name__)(*rest)
+    else:
+        raise NotImplementedError("Only builtin scalar UDFs are supported for polars")

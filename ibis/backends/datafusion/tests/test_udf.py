@@ -5,6 +5,7 @@ import pytest
 
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis import udf
 from ibis.legacy.udf.vectorized import elementwise, reduction
 
 pytest.importorskip("datafusion")
@@ -46,3 +47,13 @@ def test_multiple_argument_udf(alltypes):
     expected = (df.smallint_col + df.int_col).astype("int64")
 
     tm.assert_series_equal(result, expected.rename("tmp"))
+
+
+def test_builtin(con):
+    @udf.scalar.builtin
+    def to_hex(a: int) -> str:
+        """Convert an integer to a hex string."""
+
+    expr = to_hex(42)
+    result = con.execute(expr)
+    assert result == "2a"

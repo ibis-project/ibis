@@ -25,10 +25,10 @@ EMPTY = inspect.Parameter.empty
 
 @enum.unique
 class InputType(enum.Enum):
-    PYTHON = enum.auto()
+    BUILTIN = enum.auto()
     PANDAS = enum.auto()
     PYARROW = enum.auto()
-    OPAQUE = enum.auto()
+    PYTHON = enum.auto()
 
 
 @public
@@ -65,7 +65,13 @@ class scalar:
 
     @util.experimental
     @staticmethod
-    def python(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
+    def python(
+        fn: Callable | None = None,
+        *args: Any,
+        name: str | None = None,
+        schema: str | None = None,
+        **kwargs: Any,
+    ) -> Callable:
         """Construct a **non-vectorized** scalar user-defined function that accepts Python scalar values as inputs.
 
         ::: {.callout-warning collapse="true"}
@@ -80,6 +86,19 @@ class scalar:
         [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)-based
         vectorized UDFs.
         :::
+
+        Parameters
+        ----------
+        fn
+            The The function to wrap.
+        args
+            Configuration arguments for the UDF.
+        name
+            The name of the UDF in the backend if different from the function name.
+        schema
+            The schema in which to create the UDF.
+        kwargs
+            Additional configuration arguments for the UDF.
 
         Examples
         --------
@@ -98,12 +117,39 @@ class scalar:
         - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
         - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)
         """
-        return _wrap(scalar._make_wrapper, InputType.PYTHON, fn, *args, **kwargs)
+        return _wrap(
+            scalar._make_wrapper,
+            InputType.PYTHON,
+            fn,
+            *args,
+            name=name,
+            schema=schema,
+            **kwargs,
+        )
 
     @util.experimental
     @staticmethod
-    def pandas(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
+    def pandas(
+        fn: Callable | None = None,
+        *args: Any,
+        name: str | None = None,
+        schema: str | None = None,
+        **kwargs: Any,
+    ) -> Callable:
         """Construct a **vectorized** scalar user-defined function that accepts pandas Series' as inputs.
+
+        Parameters
+        ----------
+        fn
+            The The function to wrap.
+        args
+            Configuration arguments for the UDF.
+        name
+            The name of the UDF in the backend if different from the function name.
+        schema
+            The schema in which to create the UDF.
+        kwargs
+            Additional configuration arguments for the UDF.
 
         Examples
         --------
@@ -124,12 +170,39 @@ class scalar:
         - [`python`](./scalar-udfs.qmd#ibis.expr.operations.scalar.python)
         - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)
         """
-        return _wrap(scalar._make_wrapper, InputType.PANDAS, fn, *args, **kwargs)
+        return _wrap(
+            scalar._make_wrapper,
+            InputType.PANDAS,
+            fn,
+            *args,
+            name=name,
+            schema=schema,
+            **kwargs,
+        )
 
     @util.experimental
     @staticmethod
-    def pyarrow(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
+    def pyarrow(
+        fn: Callable | None = None,
+        *args: Any,
+        name: str | None = None,
+        schema: str | None = None,
+        **kwargs: Any,
+    ) -> Callable:
         """Construct a **vectorized** scalar user-defined function that accepts PyArrow Arrays as input.
+
+        Parameters
+        ----------
+        fn
+            The The function to wrap.
+        args
+            Configuration arguments for the UDF.
+        name
+            The name of the UDF in the backend if different from the function name.
+        schema
+            The schema in which to create the UDF.
+        kwargs
+            Additional configuration arguments for the UDF.
 
         Examples
         --------
@@ -149,37 +222,98 @@ class scalar:
         - [`python`](./scalar-udfs.qmd#ibis.expr.operations.scalar.python)
         - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
         """
-        return _wrap(scalar._make_wrapper, InputType.PYARROW, fn, *args, **kwargs)
+        return _wrap(
+            scalar._make_wrapper,
+            InputType.PYARROW,
+            fn,
+            *args,
+            name=name,
+            schema=schema,
+            **kwargs,
+        )
+
+    @util.experimental
+    @staticmethod
+    def builtin(
+        fn: Callable | None = None,
+        *args: Any,
+        name: str | None = None,
+        schema: str | None = None,
+        **kwargs: Any,
+    ) -> Callable:
+        """Construct a scalar user-defined function that is built-in to the backend.
+
+        Parameters
+        ----------
+        fn
+            The The function to wrap.
+        args
+            Configuration arguments for the UDF.
+        name
+            The name of the UDF in the backend if different from the function name.
+        schema
+            The schema in which the builtin function resides.
+        kwargs
+            Additional configuration arguments for the UDF.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> @ibis.udf.scalar.builtin
+        ... def hamming(a: str, b: str) -> int:
+        ...     '''Compute the Hamming distance between two strings.'''
+        ...
+        >>> expr = hamming("duck", "luck")
+        >>> con = ibis.connect("duckdb://")
+        >>> con.execute(expr)
+        1
+        """
+        return _wrap(
+            scalar._make_wrapper,
+            InputType.BUILTIN,
+            fn,
+            *args,
+            name=name,
+            schema=schema,
+            **kwargs,
+        )
 
     @staticmethod
-    def _opaque(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
-        """Construct a scalar user-defined function that is defined outside of Python."""
-        return _wrap(scalar._make_wrapper, InputType.OPAQUE, fn, *args, **kwargs)
+    def _make_node(
+        fn: Callable,
+        input_type: InputType,
+        *args,
+        name: str | None = None,
+        schema: str | None = None,
+        **kwargs,
+    ) -> type[S]:
+        """Construct a scalar user-defined function that is built-in to the backend."""
 
-    @staticmethod
-    def _make_node(fn: Callable, input_type: InputType, *args, **kwargs) -> type[S]:
         annotations = typing.get_type_hints(fn)
         if (return_annotation := annotations.pop("return", None)) is None:
             raise exc.MissingReturnAnnotationError(fn)
 
         fields = {}
 
-        for name, param in inspect.signature(fn).parameters.items():
-            if (raw_dtype := annotations.get(name)) is None:
-                raise exc.MissingParameterAnnotationError(fn, name)
+        func_name = name or fn.__name__
+
+        for arg_name, param in inspect.signature(fn).parameters.items():
+            if (raw_dtype := annotations.get(arg_name)) is None:
+                raise exc.MissingParameterAnnotationError(fn, arg_name)
 
             arg = rlz.ValueOf(dt.dtype(raw_dtype))
-            fields[name] = Argument(pattern=arg, default=param.default)
+            fields[arg_name] = Argument(pattern=arg, default=param.default)
 
         fields["dtype"] = dt.dtype(return_annotation)
         fields["__input_type__"] = input_type
         # can't be just `fn` otherwise `fn` is assumed to be a method
         fields["__func__"] = property(fget=lambda _, fn=fn: fn)
         fields["__config__"] = FrozenDict(args=args, kwargs=FrozenDict(**kwargs))
-        fields["__udf_namespace__"] = kwargs.get("schema")
+        fields["__udf_namespace__"] = schema
         fields["__module__"] = fn.__module__
+        fields["__func_name__"] = func_name
 
-        return type(fn.__name__, (ScalarUDF,), fields)
+        return type(func_name, (ScalarUDF,), fields)
 
     @staticmethod
     def _make_wrapper(

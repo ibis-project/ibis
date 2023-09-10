@@ -725,9 +725,6 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 f"The given obj is of type {type(obj).__name__} ."
             )
 
-    def _compile_opaque_udf(self, udf_node: ops.ScalarUDF) -> str:
-        return None
-
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
         if self.supports_python_udfs:
             raise NotImplementedError(
@@ -746,19 +743,17 @@ class BaseAlchemyBackend(BaseSQLBackend):
                 f"The {self.name} backend does not support PyArrow-based vectorized scalar UDFs"
             )
 
-    def _define_udf_translation_rules(self, expr):
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            udf_node_type = type(udf_node)
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> str:
+        """No-op, because the function is assumed builtin."""
 
-            if udf_node_type not in self.compiler.translator_class._registry:
-
-                @self.add_operation(udf_node_type)
-                def _(t, op):
-                    generator = sa.func
-                    if (namespace := op.__udf_namespace__) is not None:
-                        generator = getattr(generator, namespace)
-                    func = getattr(generator, type(op).__name__)
-                    return func(*map(t.translate, op.args))
+    def _gen_udf_rule(self, op: ops.ScalarUDF):
+        @self.add_operation(type(op))
+        def _(t, op):
+            generator = sa.func
+            if (namespace := op.__udf_namespace__) is not None:
+                generator = getattr(generator, namespace)
+            func = getattr(generator, op.__func_name__)
+            return func(*map(t.translate, op.args))
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         with self.begin() as con:
