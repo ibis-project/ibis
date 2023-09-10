@@ -172,3 +172,28 @@ def test_udf_sql(con, argument_type):
     expr = format_t(s)
 
     con.execute(expr)
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        param(b"", 0, id="empty"),
+        param(b"\x00", 0, id="zero"),
+        param(b"\x05", 2, id="two"),
+        param(b"\x00\x08", 1, id="one"),
+        param(b"\xff\xff", 16, id="sixteen"),
+        param(b"\xff\xff\xff\xff\xff\xff\xff\xfe", 63, id="sixty-three"),
+        param(b"\xff\xff\xff\xff\xff\xff\xff\xff", 64, id="sixty-four"),
+        param(b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff", 80, id="eighty"),
+    ],
+)
+def test_builtin(con, value, expected):
+    from ibis import udf
+
+    @udf.scalar.builtin
+    def bit_count(x: bytes) -> int:
+        ...
+
+    expr = bit_count(value)
+    result = con.execute(expr)
+    assert result == expected

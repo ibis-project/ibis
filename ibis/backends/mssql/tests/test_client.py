@@ -5,6 +5,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import udf
 from ibis.backends.base.sql.alchemy.geospatial import geospatial_supported
 
 DB_TYPES = [
@@ -88,3 +89,13 @@ def test_get_schema_from_query(con, server_type, expected_type, temp_table):
     assert result_schema == expected_schema
     t = con.table(temp_table)
     assert t.schema() == expected_schema
+
+
+def test_builtin_udf(con):
+    @udf.scalar.builtin
+    def difference(a: str, b: str) -> int:
+        """Soundex difference between two strings."""
+
+    expr = difference("foo", "moo")
+    result = con.execute(expr)
+    assert result == 3

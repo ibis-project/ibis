@@ -9,7 +9,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
-from ibis import config
+from ibis import config, udf
 
 pytest.importorskip("sqlalchemy")
 
@@ -111,3 +111,14 @@ def test_table_inequality(dbpath):
 
     assert t.op() != s.op()
     assert not t.equals(s)
+
+
+def test_builtin_udf(con):
+    @udf.scalar.builtin
+    def zeroblob(n: int) -> bytes:
+        """Return a length `n` blob of zero bytes."""
+
+    n = 42
+    expr = zeroblob(n)
+    result = con.execute(expr)
+    assert result == b"\x00" * n

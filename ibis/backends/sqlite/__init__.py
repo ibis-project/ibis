@@ -224,7 +224,8 @@ class Backend(BaseAlchemyBackend, CanListDatabases):
                 )
 
                 registration_func = compile_func(udf_node)
-                registration_func(con)
+                if registration_func is not None:
+                    registration_func(con)
 
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         func = udf_node.__func__

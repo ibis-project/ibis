@@ -6,6 +6,7 @@ import pytest
 
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
+from ibis import udf
 from ibis.legacy.udf.vectorized import elementwise, reduction
 
 pytest.importorskip("polars")
@@ -48,3 +49,16 @@ def test_multiple_argument_udf(alltypes):
     expected = (df.smallint_col + df.int_col).astype("int32")
 
     tm.assert_series_equal(result, expected.rename("tmp"))
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"), [(8, 2), (27, 3), (7, 7 ** (1.0 / 3.0))]
+)
+def test_builtin(con, value, expected):
+    @udf.scalar.builtin
+    def cbrt(a: float) -> float:
+        ...
+
+    expr = cbrt(value)
+    result = con.execute(expr)
+    assert pytest.approx(result) == expected

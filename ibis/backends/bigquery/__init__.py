@@ -374,6 +374,8 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         pd.DataFrame | pd.Series | scalar
             Output from execution
         """
+        self._run_pre_execute_hooks(expr)
+
         # TODO: upstream needs to pass params to raw_sql, I think.
         kwargs.pop("timecontext", None)
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)

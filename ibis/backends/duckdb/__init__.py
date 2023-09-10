@@ -1138,7 +1138,8 @@ WHERE catalog_name = :database"""
                     con.connection.remove_function(udf_node.__class__.__name__)
 
                 registration_func = compile_func(udf_node)
-                registration_func(con)
+                if registration_func is not None:
+                    registration_func(con)
 
     def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
         func = udf_node.__func__

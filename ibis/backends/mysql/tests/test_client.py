@@ -12,6 +12,7 @@ from sqlalchemy.dialects import mysql
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import udf
 from ibis.util import gen_name
 
 MYSQL_TYPES = [
@@ -175,3 +176,13 @@ def test_enum_as_string(enum_t, expr_fn, expected):
     expr = expr_fn(enum_t.sml).name("sml")
     res = expr.execute()
     tm.assert_series_equal(res, expected)
+
+
+def test_builtin_udf(con):
+    @udf.scalar.builtin
+    def soundex(a: str) -> str:
+        """Soundex of a string."""
+
+    expr = soundex("foo")
+    result = con.execute(expr)
+    assert result == "F000"

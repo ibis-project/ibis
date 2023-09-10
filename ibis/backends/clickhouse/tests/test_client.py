@@ -9,7 +9,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis import config
+from ibis import config, udf
 from ibis.util import gen_name
 
 cc = pytest.importorskip("clickhouse_connect")
@@ -244,3 +244,21 @@ def test_truncate_table(con, engine, temp_table):
     assert len(t.execute()) == 1
     con.truncate_table(temp_table)
     assert t.execute().empty
+
+
+@udf.scalar.builtin(name="arrayJaccardIndex")
+def array_jaccard_index(a: dt.Array[dt.int64], b: dt.Array[dt.int64]) -> float:
+    ...
+
+
+@udf.scalar.builtin
+def arrayJaccardIndex(a: dt.Array[dt.int64], b: dt.Array[dt.int64]) -> float:
+    ...
+
+
+@pytest.mark.parametrize("func", [array_jaccard_index, arrayJaccardIndex])
+def test_builtin_udf(con, func):
+    expr = func([1, 2], [2, 3])
+    result = con.execute(expr)
+    expected = 1.0 / 3.0
+    assert result == expected

@@ -1,0 +1,130 @@
+---
+freeze: auto
+---
+
+# Reference built-in functions
+
+Functions that aren't exposed in ibis directly can be accessed using the
+`@ibis.udf.scalar.builtin` decorator.
+
+::: {.callout-tip}
+## [Ibis APIs](../../reference/index.qmd) may already exist for your function.
+
+Builtin scalar UDFs are designed to be an escape hatch when Ibis doesn't have
+a defined API for a built-in database function.
+
+See [the reference documentation](../../reference/index.qmd) for existing APIs.
+:::
+
+## DuckDB
+
+Ibis doesn't directly expose many of the DuckDB [text similarity
+functions](https://duckdb.org/docs/sql/functions/char.html#text-similarity-functions).
+Let's expose the `mismatches` API.
+
+```{python}
+from ibis import udf
+
+@udf.scalar.builtin
+def mismatches(left: str, right: str) -> int:
+    ...
+```
+
+The [`...`](https://docs.python.org/3/library/constants.html#Ellipsis) is
+a visual indicator that the function definition is unknown to Ibis.
+
+::: {.callout-note collapse="true"}
+## Ibis does not do anything with the function body.
+
+Ibis will not inspect the function body or otherwise inspect it. Any code you
+write in the function body **will be ignored**.
+:::
+
+We can now call this function on any ibis expression:
+
+```{python}
+import ibis
+
+con = ibis.duckdb.connect()  # <1>
+```
+
+1. Connect to an in-memory DuckDB database
+
+```{python}
+expr = mismatches("duck", "luck")
+con.execute(expr)
+```
+
+Like any other ibis expression you can inspect the SQL:
+
+```{python}
+import ibis
+
+ibis.to_sql(expr, dialect="duckdb")  # <1>
+```
+
+1. The `dialect` keyword argument must be passed, because we constructed
+   a literal expression which has no backend attached.
+
+Because built-in UDFs are ultimately Ibis expressions, they compose with the
+rest of the library:
+
+```{python}
+ibis.options.interactive = True
+
+@udf.scalar.builtin
+def jaro_winkler_similarity(a: str, b: str) -> float:
+   ...
+
+pkgs = ibis.read_parquet(
+   "https://storage.googleapis.com/ibis-tutorial-data/pypi/packages.parquet"
+)
+pandas_ish = pkgs[jaro_winkler_similarity(pkgs.name, "pandas") >= 0.9]
+pandas_ish
+```
+
+Let's count the results:
+
+```{python}
+pandas_ish.count()
+```
+
+There are a good number of packages that look similar to `pandas`!
+
+## Snowflake
+
+Similarly we can expose Snowflake's
+[`jarowinkler_similarity`](https://docs.snowflake.com/en/sql-reference/functions/jarowinkler_similarity)
+function.
+
+Let's alias it to `jw_sim` to illustrate some more of the Ibis `udf` API:
+
+```{python}
+@udf.scalar.builtin(name="jarowinkler_similarity")  # <1>
+def jw_sim(left: str, right: str) -> float:
+    ...
+```
+
+1. `target` is the name of the function in the backend. This argument is
+   required in this because the function name is different than the name of the
+   function in ibis.
+
+
+Now let's connect to Snowflake and call our `jw_sim` function:
+
+```{python}
+import os
+
+con = ibis.connect(os.environ["SNOWFLAKE_URL"])
+```
+
+```{python}
+expr = jw_sim("snow", "shoe")
+con.execute(expr)
+```
+
+And let's take a look at the SQL
+
+```{python}
+ibis.to_sql(expr, dialect="snowflake")
+```

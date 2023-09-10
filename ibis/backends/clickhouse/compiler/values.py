@@ -1443,3 +1443,10 @@ def _count_distinct_star(op: ops.CountDistinctStar, **kw: Any) -> str:
         return f"countDistinctIf(({column_list}), {translate_val(op.where, **kw)})"
     else:
         return f"countDistinct(({column_list}))"
+
+
+@translate_val.register(ops.ScalarUDF)
+def _scalar_udf(op, **kw) -> str:
+    name = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
+    args = ", ".join(translate_val(arg, **kw) for arg in op.args)
+    return f"{name}({args})"
