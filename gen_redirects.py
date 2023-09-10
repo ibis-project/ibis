@@ -11,6 +11,25 @@ TEMPLATED_REDIRECTS = {
     "/docs/{version}/install/": "/install/",
     "/docs/{version}/docs/": "/docs/",
     "/docs/{version}/backends/": "/backends/",
+    "/docs/{version}/api/": "/reference/",
+    "/docs/{version}/how_to/": "/how-to/",
+    "/backends/{version}/BigQuery/": "/backends/bigquery/",
+    "/backends/{version}/Clickhouse/": "/backends/clickhouse/",
+    "/backends/{version}/Dask/": "/backends/dask/",
+    "/backends/{version}/Datafusion/": "/backends/datafusion/",
+    "/backends/{version}/Druid/": "/backends/druid/",
+    "/backends/{version}/DuckDB/": "/backends/duckdb/",
+    "/backends/{version}/Impala/": "/backends/impala/",
+    "/backends/{version}/MSSQL/": "/backends/mssql/",
+    "/backends/{version}/MySQL/": "/backends/mysql/",
+    "/backends/{version}/Oracle/": "/backends/oracle/",
+    "/backends/{version}/Pandas/": "/backends/pandas/",
+    "/backends/{version}/Polars/": "/backends/polars/",
+    "/backends/{version}/PostgreSQL/": "/backends/postgresql/",
+    "/backends/{version}/PySpark/": "/backends/pyspark/",
+    "/backends/{version}/SQLite/": "/backends/sqlite/",
+    "/backends/{version}/Snowflake/": "/backends/snowflake/",
+    "/backends/{version}/Trino/": "/backends/trino/",
 }
 
 # Untemplated redirects
@@ -115,23 +134,23 @@ REDIRECTS = {
     "/user_guide/configuration/": "/how-to/configure/basics",
     "/user_guide/design/": "/concepts/internals",
     "/why_ibis/": "/why",
-    # TODO: "/user_guide/extending/": "/how_to/extending/",
+    "/how_to/extending/elementwise/": "/how-to/extending/elementwise",
+    "/how_to/extending/elementwise/elementwise.ipynb": "/how-to/extending/elementwise",
+    "/how_to/extending/reduction/": "/how-to/extending/reduction",
+    "/how_to/extending/reduction/reduction.ipynb": "/how-to/extending/reduction",
+    "/user_guide/extending/": "/how-to/extending/elementwise",
+    "/how_to/duckdb_register/": "/backends/duckdb#ibis.backends.duckdb.Backend.register",
+    "/how_to/sessionize": "/how-to/timeseries/sessionize",
+    "/versioning": "/concepts/versioning",
+    "/community": "/contribute/01_environment",
     # TODO: "/user_guide/self_joins/": "/how_to/self_joins/",
-    # TODO: "/how_to/extending/elementwise/"
-    # TODO: "/how_to/extending/elementwise/elementwise.ipynb"
-    # TODO: "/how_to/extending/reduction/"
-    # TODO: "/how_to/extending/reduction/reduction.ipynb"
-    # TODO: "/community/"
-    # TODO: "/how_to/duckdb_register/"
     # TODO: "/how_to/memtable-join/": "/how_to/memtable_join/",
     # TODO: "/how_to/memtable_join/"
     # TODO: "/how_to/self_joins/"
-    # TODO: "/how_to/sessionize/"
     # TODO: "/how_to/topk/"
     # TODO: "/reference/backends/base/"
     # TODO: "/reference/backends/sql/"
     # TODO: "/reference/backends/sqlalchemy/"
-    # TODO: "/versioning/":
 }
 
 # Fill in templates
