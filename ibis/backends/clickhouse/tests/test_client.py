@@ -251,12 +251,24 @@ def array_jaccard_index(a: dt.Array[dt.int64], b: dt.Array[dt.int64]) -> float:
     ...
 
 
+@udf.scalar.builtin(name="arrayJaccardIndex")
+def array_jaccard_index_no_input_types(a, b) -> float:
+    ...
+
+
 @udf.scalar.builtin
 def arrayJaccardIndex(a: dt.Array[dt.int64], b: dt.Array[dt.int64]) -> float:
     ...
 
 
-@pytest.mark.parametrize("func", [array_jaccard_index, arrayJaccardIndex])
+@pytest.mark.parametrize(
+    "func",
+    [
+        array_jaccard_index,
+        arrayJaccardIndex,
+        array_jaccard_index_no_input_types,
+    ],
+)
 def test_builtin_udf(con, func):
     expr = func([1, 2], [2, 3])
     result = con.execute(expr)

@@ -128,3 +128,44 @@ And let's take a look at the SQL
 ```{python}
 ibis.to_sql(expr, dialect="snowflake")
 ```
+
+## Input types
+
+Sometimes the input types of builtin functions are difficult to spell.
+
+Consider a function that computes the length of any array: the elements in the
+array can be floats, integers, strings and even other arrays. Spelling that
+type is difficult.
+
+Fortunately the `udf.scalar.builtin` decorator doesn't require you to specify
+input types in these cases:
+
+```{python}
+@udf.scalar.builtin(name="array_size")
+def cardinality(arr) -> int:
+   ...
+```
+
+::: {.callout-caution}
+## The return type annotation **is always required**.
+:::
+
+We can pass arrays with different element types to our `cardinality` function:
+
+```{python}
+con.execute(cardinality([1, 2, 3]))
+```
+
+```{python}
+con.execute(cardinality(["a", "b"]))
+```
+
+When you bypass input types the errors you get back are backend dependent:
+
+```{python}
+#| error: true
+con.execute(cardinality("foo"))
+```
+
+Here, Snowflake is informing us that the `ARRAY_SIZE` function does not accept
+strings as input.
