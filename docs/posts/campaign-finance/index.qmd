@@ -262,8 +262,8 @@ able to determine the election type.
 cleaned.election_type.topk(10)
 ```
 
-About 1/20 of transactions are negative. These could represent refunds, or they could be data
-entry errors. Let's simply drop them to keep it simple.
+About 1/20 of transactions are negative. These could represent refunds, or they
+could be data entry errors. Let's drop them to keep it simple.
 
 
 ```{python}

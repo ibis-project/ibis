@@ -152,8 +152,9 @@ Under this design, we now have another partition.
 Our first partition is by `event_id`.
 Within each set in that partition, we have a partition by `grouper`, where each set has up to one non-null value.
 
-Since there less than or equal to one non-null value in each group of `['event_id', 'grouper']`,
-we can simply fill values by overwriting _all_ values within the group by the max value in the group.
+Since there less than or equal to one non-null value in each group of
+`['event_id', 'grouper']`, we can fill values by overwriting _all_ values within
+the group by the max value in the group.
 
 So:
 

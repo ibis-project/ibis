@@ -16,7 +16,8 @@ t.head(3)
 
 ## Using plotnine with Ibis
 
-Refer to the [plotnine documentation](https://plotnine.readthedocs.io/). Simply pass in Ibis tables or expressions:
+Refer to the [plotnine documentation](https://plotnine.readthedocs.io/). You can
+pass in Ibis tables or expressions:
 
 ```{python}
 from plotnine import ggplot, aes, geom_bar, theme

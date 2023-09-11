@@ -16,7 +16,8 @@ t.head(3)
 
 ## Using Plotly with Ibis
 
-Refer to the [Plotly documentation](https://plotly.com/python/). Simply pass in Ibis tables or expressions:
+Refer to the [Plotly documentation](https://plotly.com/python/). You can pass in
+Ibis tables or expressions:
 
 ```{python}
 import plotly.express as px

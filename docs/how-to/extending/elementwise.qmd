@@ -2,13 +2,17 @@
 
 This notebook will show you how to add a new elementwise operation to an existing backend.
 
-We are going to add `julianday`, a function supported by the SQLite database, to the SQLite Ibis backend.
+We are going to add `julianday`, a function supported by the SQLite database, to
+the SQLite Ibis backend.
 
-The Julian day of a date, is the number of days since January 1st, 4713 BC. For more information check the [Julian day](https://en.wikipedia.org/wiki/Julian_day) Wikipedia page.
+The Julian day of a date, is the number of days since January 1st, 4713 BC. For
+more information check the [Julian
+day](https://en.wikipedia.org/wiki/Julian_day) Wikipedia page.
 
 ## Step 1: Define the Operation
 
-Let's define the `julianday` operation as a function that takes one string input argument and returns a float.
+Let's define the `julianday` operation as a function that takes one string input
+argument and returns a float.
 
 ```python
 def julianday(date: str) -> float:
@@ -31,15 +35,21 @@ class JulianDay(Value):
     shape = rlz.shape_like('arg')
 ```
 
-We just defined a `JulianDay` class that takes one argument of type string or binary, and returns a float.
+We just defined a `JulianDay` class that takes one argument of type string or
+binary, and returns a float.
 
 ## Step 2: Define the API
 
-Because we know the output type of the operation, to make an expression out of ``JulianDay`` we simply need to construct it and call its `ibis.expr.types.Node.to_expr` method.
+Because we know the output type of the operation, to make an expression out of
+``JulianDay`` we can construct it and call its `ibis.expr.types.Node.to_expr`
+method.
 
-We still need to add a method to `StringValue` (this needs to work on both scalars and columns).
+We still need to add a method to `StringValue` (this needs to work on both
+scalars and columns).
 
-When you add a method to any of the expression classes whose name matches `*Value` both the scalar and column child classes will pick it up, making it easy to define operations for both scalars and columns in one place.
+When you add a method to any of the expression classes whose name matches
+`*Value` both the scalar and column child classes will pick it up, making it
+easy to define operations for both scalars and columns in one place.
 
 We can do this by defining a function and assigning it to the appropriate class
 of expressions.
@@ -120,7 +130,9 @@ jday_expr
 ibis.to_sql(jday_expr)
 ```
 
-Because we've defined our operation on `StringValue`, and not just on `StringColumn` we get operations on both string scalars *and* string columns for free
+Because we've defined our operation on `StringValue`, and not just on
+`StringColumn` we get operations on both string scalars *and* string columns for
+free.
 
 
 ```{python}

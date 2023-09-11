@@ -16,7 +16,8 @@ t.head(3)
 
 ## Using Altair with Ibis
 
-Refer to the [Altair documentation](https://altair-viz.github.io/). Simply pass in Ibis tables or expressions:
+Refer to the [Altair documentation](https://altair-viz.github.io/). You can pass
+in Ibis tables or expressions:
 
 ```{python}
 import altair as alt
