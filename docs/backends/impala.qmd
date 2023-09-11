@@ -1300,7 +1300,7 @@ connection semantics are similar to the other access methods for working with
 secure clusters.
 
 Specifically, after authenticating yourself against Kerberos (e.g., by issuing
-the appropriate `kinit` command), simply pass `auth_mechanism='GSSAPI'` or
+the appropriate `kinit` command), pass `auth_mechanism='GSSAPI'` or
 `auth_mechanism='LDAP'` (and set `kerberos_service_name` if necessary along
 with `user` and `password` if necessary) to the
 `ibis.impala_connect(...)` method when instantiating an `ImpalaConnection`.

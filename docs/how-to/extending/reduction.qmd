@@ -1,12 +1,15 @@
 # Add a reduction operation
 
-This notebook will show you how to add a new *reduction* operation `last_date` to the existing backend SQLite.
+This notebook will show you how to add a new *reduction* operation `last_date`
+to the existing backend SQLite.
 
-A reduction operation is a function that maps $N$ rows to 1 row, for example the `sum` function.
+A reduction operation is a function that maps $N$ rows to 1 row, for example the
+`sum` function.
 
 ## Description
 
-We're going to add a **`last_date`** function to ibis. `last_date` simply returns the latest date of a list of dates.
+We're going to add a **`last_date`** function to ibis. `last_date` returns the
+latest date of a list of dates.
 
 ## Step 1: Define the Operation
 
@@ -41,15 +44,22 @@ class LastDate(Reduction):
     shape = ds.scalar
 ```
 
-We just defined a `LastDate` class that takes one date column as input, and returns a scalar output of the same type as the input. This matches both the requirements of a reduction and the specifics of the function that we want to implement.
+We just defined a `LastDate` class that takes one date column as input, and
+returns a scalar output of the same type as the input. This matches both the
+requirements of a reduction and the specifics of the function that we want to
+implement.
 
-**Note**: It is very important that you write the correct argument rules and output type here. The expression *will not work* otherwise.
+**Note**: It is very important that you write the correct argument rules and
+output type here. The expression *will not work* otherwise.
 
 ## Step 2: Define the API
 
-Because every reduction in ibis has the ability to filter out values during aggregation, to make an expression out of `LastDate` we need to pass an additional argument `where` to our `LastDate` constructor.
+Because every reduction in Ibis has the ability to filter out values during
+aggregation, to make an expression out of `LastDate` we need to pass an
+additional argument `where` to our `LastDate` constructor.
 
-Additionally, reductions should be defined on `Column` classes because reductions are not always well-defined for a scalar value.
+Additionally, reductions should be defined on `Column` classes because
+reductions are not always well-defined for a scalar value.
 
 
 ```{python}
@@ -143,7 +153,8 @@ expr
 ibis.to_sql(expr)
 ```
 
-Show the last country to gain independence from the Spanish Empire, using the `where` parameter:
+Show the last country to gain independence from the Spanish Empire, using the
+`where` parameter:
 
 
 ```{python}

@@ -225,8 +225,8 @@ subset.columns
 
 ### Modifying columns
 
-Replacing existing columns is done using the `mutate` method just like adding columns. You simply
-add a column of the same name to replace it.
+Replacing existing columns is done using the `mutate` method just like adding
+columns. You add a column of the same name to replace it.
 
 
 ```{python}
@@ -241,8 +241,8 @@ mutated
 
 ### Renaming columns
 
-In addition to replacing columns, you can simply rename them as well. This is done with the `relabel` method
-which takes a dictionary containing the name mappings.
+In addition to replacing columns, you can rename them as well. This is done with
+the `relabel` method which takes a dictionary containing the name mappings.
 
 
 ```{python}
@@ -257,9 +257,10 @@ relabeled
 
 ## Selecting rows
 
-There are several methods that can be used to select rows of data in various ways. These are described
-in the sections below. We'll use the Palmer Penguins$^1$ dataset to investigate!
-Ibis has several built-in example datasets that you can access using the `ibis.examples` module.
+There are several methods that can be used to select rows of data in various
+ways. These are described in the sections below. We'll use the Palmer
+Penguins$^1$ dataset to investigate!  Ibis has several built-in example datasets
+that you can access using the `ibis.examples` module.
 
 $^1$: Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0. https://allisonhorst.github.io/palmerpenguins/. doi: 10.5281/zenodo.3960218.
 
@@ -299,10 +300,11 @@ penguins.limit(5)
 
 ### Filtering rows
 
-In addition to simply limiting the number of rows that are returned, it is possible to filter the
-rows using expressions. Expressions are constructed very similarly to the way they are in pandas.
-Ibis expressions are constructed from operations on columns in a table which return a boolean result.
-This result is then used to filter the table.
+In addition to limiting the number of rows that are returned, it is possible to
+filter the rows using expressions. Expressions are constructed very similarly to
+the way they are in pandas.  Ibis expressions are constructed from operations on
+columns in a table which return a boolean result.  This result is then used to
+filter the table.
 
 
 ```{python}
@@ -402,10 +404,11 @@ df.sort_values(
 ).head(5)
 ```
 
-The same operation in Ibis would look like the following. Note that the index values of the
-resulting `DataFrame` start from zero and count up, whereas in the example above, they retain
-their original index value. This is simply due to the fact that rows in tables don't necessarily
-have a stable index in database backends, so the index is just generated on the result.
+The same operation in Ibis would look like the following. Note that the index
+values of the resulting `DataFrame` start from zero and count up, whereas in the
+example above, they retain their original index value. This is because rows in
+tables don't necessarily have a stable index in database backends, so the index
+is generated on the result.
 
 
 ```{python}
