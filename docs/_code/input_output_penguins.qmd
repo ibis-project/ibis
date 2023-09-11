@@ -82,7 +82,10 @@ ibis.read_parquet("penguins.parquet").head(3)  # <2>
 
 ## With other Python libraries
 
-Ibis uses [Apache Arrow](https://arrow.apache.org/) for efficient data transfer to and from other libraries. Ibis tables implement the `__dataframe__` and `__array__` protocols, so you can pass them to any library that supports.
+Ibis uses [Apache Arrow](https://arrow.apache.org/) for efficient data transfer
+to and from other libraries. Ibis tables implement the `__dataframe__` and
+`__array__` protocols, so you can pass them to any library that supports these
+protocols.
 
 ::: {.panel-tabset}
 
