@@ -155,6 +155,10 @@ website:
             - reference/datatypes.qmd
             - reference/schemas.qmd
 
+        - section: UDFs
+          contents:
+            - reference/scalar-udfs.qmd
+
         - section: Configuration
           contents:
             - reference/ContextAdjustment.qmd
@@ -445,6 +449,19 @@ quartodoc:
             desc: Schemas
           contents:
             - Schema
+
+    - title: UDFs
+      desc: "User-defined function APIs"
+      package: ibis.expr.operations.udf
+      contents:
+        - kind: page
+          path: scalar-udfs
+          package: ibis.expr.operations.udf
+          summary:
+            name: Scalar UDFs
+            desc: "Scalar UDF APIs"
+          contents:
+            - scalar
 
     - title: Configuration
       desc: "Ibis configuration"

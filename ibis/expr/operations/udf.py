@@ -54,68 +54,110 @@ def _wrap(
 S = TypeVar("S", bound=ScalarUDF)
 
 
-class ScalarUDFBuilder:
-    """Construct wrappers for user-defined functions."""
+@public
+class scalar:
+    """Scalar user-defined functions.
+
+    ::: {.callout-note}
+    ## The `scalar` class itself is **not** a public API, its methods are.
+    :::
+    """
 
     @util.experimental
-    def python(self, fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
-        """Construct a scalar user-defined function that accepts Python scalar values as inputs.
+    @staticmethod
+    def python(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
+        """Construct a **non-vectorized** scalar user-defined function that accepts Python scalar values as inputs.
+
+        ::: {.callout-warning collapse="true"}
+        ## `python` UDFs are likely to be slow
+
+        `python` UDFs are not vectorized: they are executed row by row with one
+        Python function call per row
+
+        This calling pattern tends to be **much** slower than
+        [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
+        or
+        [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)-based
+        vectorized UDFs.
+        :::
 
         Examples
         --------
-        >>> from ibis.interactive import *
-        >>> @udf.scalar.python
+        >>> import ibis
+        >>> @ibis.udf.scalar.python
         ... def add_one(x: int) -> int:
         ...     return x + 1
-        >>> @udf.scalar.python(schema="my_udfs")
-        ... def add_one(x: int) -> int:
-        ...     return x + 1
+        ...
+        >>> expr = add_one(2)
+        >>> con = ibis.connect("duckdb://")
+        >>> con.execute(expr)
+        3
+
+        See Also
+        --------
+        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
+        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)
         """
-        return _wrap(self._make_wrapper, InputType.PYTHON, fn, *args, **kwargs)
+        return _wrap(scalar._make_wrapper, InputType.PYTHON, fn, *args, **kwargs)
 
     @util.experimental
-    def pandas(self, fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
-        """Construct a vectorized scalar user-defined function that accepts pandas Series' as inputs.
+    @staticmethod
+    def pandas(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
+        """Construct a **vectorized** scalar user-defined function that accepts pandas Series' as inputs.
 
         Examples
         --------
-        >>> from ibis.interactive import *
-        >>> @udf.scalar.pandas
+        ```python
+        >>> import ibis
+        >>> @ibis.udf.scalar.pandas
         ... def add_one(x: int) -> int:
         ...     return x + 1
-        >>> @udf.scalar.pandas(schema="my_udfs")
-        ... def add_one(x: int) -> int:
-        ...     return x + 1
+        ...
+        >>> expr = add_one(2)
+        >>> con = ibis.connect(os.environ["SNOWFLAKE_URL"])  # doctest: +SKIP
+        >>> con.execute(expr)  # doctest: +SKIP
+        3
+        ```
+
+        See Also
+        --------
+        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.scalar.python)
+        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)
         """
-        return _wrap(self._make_wrapper, InputType.PANDAS, fn, *args, **kwargs)
+        return _wrap(scalar._make_wrapper, InputType.PANDAS, fn, *args, **kwargs)
 
     @util.experimental
-    def pyarrow(
-        self, fn: Callable | None = None, *args: Any, **kwargs: Any
-    ) -> Callable:
-        """Construct a vectorized scalar user-defined function that accepts PyArrow Arrays as input.
+    @staticmethod
+    def pyarrow(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
+        """Construct a **vectorized** scalar user-defined function that accepts PyArrow Arrays as input.
 
         Examples
         --------
-        >>> from ibis.interactive import *
-        >>> @udf.scalar.pyarrow
+        >>> import ibis
+        >>> import pyarrow.compute as pc
+        >>> @ibis.udf.scalar.pyarrow
         ... def add_one(x: int) -> int:
-        ...     return x + 1
-        >>> @udf.scalar.pyarrow(schema="my_udfs")
-        ... def add_one(x: int) -> int:
-        ...     return x + 1
-        """
-        return _wrap(self._make_wrapper, InputType.PYARROW, fn, *args, **kwargs)
+        ...     return pc.add(x, 1)
+        ...
+        >>> expr = add_one(2)
+        >>> con = ibis.connect("duckdb://")
+        >>> con.execute(expr)
+        3
 
-    def _opaque(
-        self, fn: Callable | None = None, *args: Any, **kwargs: Any
-    ) -> Callable:
+        See Also
+        --------
+        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.scalar.python)
+        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
+        """
+        return _wrap(scalar._make_wrapper, InputType.PYARROW, fn, *args, **kwargs)
+
+    @staticmethod
+    def _opaque(fn: Callable | None = None, *args: Any, **kwargs: Any) -> Callable:
         """Construct a scalar user-defined function that is defined outside of Python."""
-        return _wrap(self._make_wrapper, InputType.OPAQUE, fn, *args, **kwargs)
+        return _wrap(scalar._make_wrapper, InputType.OPAQUE, fn, *args, **kwargs)
 
-    def make_node(
-        self, fn: Callable, input_type: InputType, *args, **kwargs
-    ) -> type[S]:
+    @staticmethod
+    def _make_node(fn: Callable, input_type: InputType, *args, **kwargs) -> type[S]:
         annotations = typing.get_type_hints(fn)
         if (return_annotation := annotations.pop("return", None)) is None:
             raise exc.MissingReturnAnnotationError(fn)
@@ -139,19 +181,14 @@ class ScalarUDFBuilder:
 
         return type(fn.__name__, (ScalarUDF,), fields)
 
+    @staticmethod
     def _make_wrapper(
-        self, input_type: InputType, fn: Callable, *args: Any, **kwargs: Any
+        input_type: InputType, fn: Callable, *args: Any, **kwargs: Any
     ) -> Callable:
-        node = self.make_node(fn, input_type, *args, **kwargs)
+        node = scalar._make_node(fn, input_type, *args, **kwargs)
 
         @functools.wraps(fn)
         def construct(*args: Any, **kwargs: Any) -> ir.Value:
             return node(*args, **kwargs).to_expr()
 
         return construct
-
-
-scalar = ScalarUDFBuilder()
-
-
-public(scalar=scalar)

@@ -15,7 +15,7 @@ class Renderer(qd.MdRenderer):
         result = []
 
         prompt = ">>> "
-        continuation = "... "
+        continuation = "..."
 
         skip_doctest = "doctest: +SKIP"
         expect_failure = "quartodoc: +EXPECTED_FAILURE"
