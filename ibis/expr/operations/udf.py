@@ -298,10 +298,11 @@ class scalar:
         func_name = name or fn.__name__
 
         for arg_name, param in inspect.signature(fn).parameters.items():
-            if (raw_dtype := annotations.get(arg_name)) is None:
-                raise exc.MissingParameterAnnotationError(fn, arg_name)
-
-            arg = rlz.ValueOf(dt.dtype(raw_dtype))
+            if (raw_dtype := annotations.get(arg_name)) is not None:
+                dtype = dt.dtype(raw_dtype)
+            else:
+                dtype = raw_dtype
+            arg = rlz.ValueOf(dtype)
             fields[arg_name] = Argument(pattern=arg, default=param.default)
 
         fields["dtype"] = dt.dtype(return_annotation)
