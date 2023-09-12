@@ -255,12 +255,35 @@ class BaseSQLBackend(BaseBackend):
             func = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
             return f"{func}({', '.join(map(t.translate, op.args))})"
 
+    def _gen_udaf_rule(self, op: ops.AggUDF):
+        from ibis import NA
+
+        @self.add_operation(type(op))
+        def _(t, op):
+            func = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
+            args = ", ".join(
+                t.translate(
+                    ops.Where(where, arg, NA)
+                    if (where := op.where) is not None
+                    else arg
+                )
+                for name, arg in zip(op.argnames, op.args)
+                if name != "where"
+            )
+            return f"{func}({args})"
+
     def _define_udf_translation_rules(self, expr):
         for udf_node in expr.op().find(ops.ScalarUDF):
             udf_node_type = type(udf_node)
 
             if udf_node_type not in self.compiler.translator_class._registry:
                 self._gen_udf_rule(udf_node)
+
+        for udf_node in expr.op().find(ops.AggUDF):
+            udf_node_type = type(udf_node)
+
+            if udf_node_type not in self.compiler.translator_class._registry:
+                self._gen_udaf_rule(udf_node)
 
     def execute(
         self,

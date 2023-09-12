@@ -187,7 +187,7 @@ def test_udf_sql(con, argument_type):
         param(b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff", 80, id="eighty"),
     ],
 )
-def test_builtin(con, value, expected):
+def test_builtin_scalar(con, value, expected):
     from ibis import udf
 
     @udf.scalar.builtin
@@ -195,5 +195,26 @@ def test_builtin(con, value, expected):
         ...
 
     expr = bit_count(value)
+    result = con.execute(expr)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("where", "expected"),
+    [
+        param({"where": True}, list("abcdef"), id="where-true"),
+        param({"where": False}, [], id="where-false"),
+        param({}, list("abcdef"), id="where-nothing"),
+    ],
+)
+def test_builtin_agg(con, where, expected):
+    from ibis import udf
+
+    @udf.agg.builtin(name="array_concat_agg")
+    def concat_agg(x, where: bool = True) -> dt.Array[str]:
+        ...
+
+    t = ibis.memtable({"a": [list("abc"), list("def")]})
+    expr = concat_agg(t.a, **where)
     result = con.execute(expr)
     assert result == expected

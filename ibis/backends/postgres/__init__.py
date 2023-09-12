@@ -209,15 +209,12 @@ WHERE p.proname = :name
         config = udf_node.__config__["kwargs"]
         func = udf_node.__func__
         func_name = func.__name__
-        schema = udf_node.__udf_namespace__
-        name = udf_node.__func_name__
-        ident = ".".join(filter(None, [schema, name]))
         return dict(
-            name=name,
-            ident=ident,
+            name=udf_node.__func_name__,
+            ident=udf_node.__full_name__,
             signature=", ".join(
-                f"{name} {self._compile_type(arg.dtype)}"
-                for name, arg in zip(udf_node.argnames, udf_node.args)
+                f"{argname} {self._compile_type(arg.dtype)}"
+                for argname, arg in zip(udf_node.argnames, udf_node.args)
             ),
             return_type=self._compile_type(udf_node.dtype),
             language=config.get("language", "plpython3u"),
