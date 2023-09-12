@@ -162,9 +162,15 @@ REDIRECTS.update(
     }
 )
 
-# Write all redirect files
-output_dir = pathlib.Path(__file__).parent.joinpath("docs", "_output")
-output_dir.mkdir(exist_ok=True, parents=True)
 
-lines = "\n".join(f"{old} {new}" for old, new in REDIRECTS.items())
-output_dir.joinpath("_redirects").write_text(f"{lines}\n")
+def main():
+    # Write all redirect files
+    output_dir = pathlib.Path(__file__).parent.joinpath("docs", "_output")
+    output_dir.mkdir(exist_ok=True, parents=True)
+
+    lines = "\n".join(f"{old} {new}" for old, new in REDIRECTS.items())
+    output_dir.joinpath("_redirects").write_text(f"{lines}\n")
+
+
+if __name__ == "__main__":
+    main()
