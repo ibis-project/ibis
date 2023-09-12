@@ -147,17 +147,6 @@ You can store it as an environment variable to avoid having to log in again:
 ['penguins']
 ```
 
-## File Support
-
-```{python}
-#| echo: false
-#| output: asis
-from _utils import render_methods, get_backend
-backend = get_backend("duckdb")
-methods = [f"read_{kind}" for kind in ("csv", "parquet", "delta", "json", "in_memory", "sqlite", "postgres")]
-render_methods(backend, *methods, level=4)
-```
-
 ```{python}
 #| echo: false
 BACKEND = "DuckDB"

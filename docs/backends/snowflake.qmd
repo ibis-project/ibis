@@ -163,18 +163,6 @@ app.
 
 ![Snowflake Database](./images/snowflake_database.png)
 
-## File Support
-
-```{python}
-#| echo: false
-#| output: asis
-from _utils import render_methods, get_backend
-
-methods = ("read_csv", "read_parquet", "read_json")
-backend = get_backend("snowflake")
-render_methods(backend, *methods, level=4)
-```
-
 ```{python}
 #| echo: false
 BACKEND = "Snowflake"

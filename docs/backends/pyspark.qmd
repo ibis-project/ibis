@@ -94,18 +94,6 @@ from _utils import render_do_connect
 render_do_connect("pyspark")
 ```
 
-## File Support
-
-```{python}
-#| echo: false
-#| output: asis
-from _utils import render_methods, get_backend
-
-methods = ("read_csv", "read_parquet")
-backend = get_backend("pyspark")
-render_methods(backend, *methods, level=4)
-```
-
 ```{python}
 #| echo: false
 BACKEND = "PySpark"

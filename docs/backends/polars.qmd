@@ -90,18 +90,6 @@ from _utils import render_do_connect
 render_do_connect("polars")
 ```
 
-## File Support
-
-```{python}
-#| echo: false
-#| output: asis
-from _utils import render_methods, get_backend
-
-methods = ("read_csv", "read_parquet", "read_delta")
-backend = get_backend("polars")
-render_methods(backend, *methods, level=4)
-```
-
 ```{python}
 #| echo: false
 BACKEND = "Polars"
