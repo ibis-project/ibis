@@ -1,0 +1,247 @@
+---
+title: Working with arrays in Google BigQuery
+author: "Phillip Cloud"
+date: "2023-09-12"
+categories:
+    - blog
+    - bigquery
+    - arrays
+    - cloud
+---
+
+## Introduction
+
+Ibis and BigQuery have [worked well together for years](https://cloud.google.com/blog/products/data-analytics/ibis-and-bigquery-scalable-analytics-comfort-python).
+
+In Ibis 7.0.0, they work even better together with the addition of array
+functionality for BigQuery.
+
+Let's look at some examples using BigQuery's [IMDB sample
+data](https://developer.imdb.com/non-commercial-datasets/).
+
+## Basics
+
+First we'll connect to BigQuery and pluck out a table to work with.
+
+We'll start with `from ibis.interactive import *` for maximum convenience.
+
+```{python}
+from ibis.interactive import *
+
+con = ibis.connect("bigquery://ibis-gbq")  # <1>
+con.set_database("bigquery-public-data.imdb")  # <2>
+```
+
+1. Connect to the **billing** project. Compute (but not storage) is billed to
+   this project.
+2. Set the database to the project and dataset that we will use for analysis.
+
+Let's look at the tables in this dataset:
+
+```{python}
+con.list_tables()
+```
+
+Let's pull out the `name_basics` table, which contains names and metadata about
+people listed on IMDB. We'll call this `ents` (short for `entities`), and remove some
+columns we won't need:
+
+```{python}
+ents = con.tables.name_basics.drop("birth_year", "death_year")
+ents
+```
+
+### Splitting strings into arrays
+
+We can see that `known_for_titles` looks sort of like an array, so let's call
+the
+[`split`](../../reference/expression-strings.qmd#ibis.expr.types.strings.StringValue.split)
+method on that column and replace the existing column:
+
+```{python}
+ents = ents.mutate(known_for_titles=_.known_for_titles.split(","))
+ents
+```
+
+Similarly for `primary_profession`, since people involved in show business often
+have more than one responsibility on a project:
+
+```{python}
+ents = ents.mutate(primary_profession=_.primary_profession.split(","))
+```
+
+### Array length
+
+Let's see how many titles each entity is known for, and then show the five
+people with the largest number of titles they're known for:
+
+This is computed using the
+[`length`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.length)
+API on array expressions:
+
+```{python}
+(
+    ents.select("primary_name", num_titles=_.known_for_titles.length())
+    .order_by(_.num_titles.desc())
+    .limit(5)
+)
+```
+
+It seems like the length of the `known_for_titles` might be capped at five!
+
+### Index
+
+We can see the position of `"actor"` in `primary_profession`s:
+
+```{python}
+ents.primary_profession.index("actor")
+```
+
+A return value of `-1` indicates that `"actor"` is not present in the value:
+
+Let's look for entities that are not primarily actors:
+
+We can do this using the
+[`index`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.index)
+method by checking whether the position of the string `"actor"` is greater than
+zero:
+
+```{python}
+actor_index = ents.primary_profession.index("actor")
+not_primarily_actors = actor_index > 0
+not_primarily_actors.mean()  # <1>
+```
+
+1. The average of a `bool` column gives the percentage of `True` values
+
+Who are they?
+
+```{python}
+ents[not_primarily_actors]
+```
+
+It's not 100% clear whether the order of elements in `primary_profession` matters here.
+
+### Containment
+
+We can get people who are **not** actors using `contains`:
+
+```{python}
+non_actors = ents[~ents.primary_profession.contains("actor")]
+non_actors
+```
+
+### Element removal
+
+We can remove elements from arrays too.
+
+::: {.callout-note}
+## `remove()` does not mutate the underlying data
+:::
+
+Let's see who only has "actor" in the list of their primary professions:
+
+```{python}
+ents.filter(
+    [
+        _.primary_profession.length() > 0,
+        _.primary_profession.remove("actor").length() == 0,
+    ]
+)
+```
+
+### Slicing with square-bracket syntax
+
+Let's remove everyone's first profession from the list, but only if they have
+more than one profession listed:
+
+```{python}
+ents[_.primary_profession.length() > 1].mutate(
+    primary_profession=_.primary_profession[1:],
+)
+```
+
+## Set operations and sorting
+
+Treating arrays as sets is possible with the
+[`union`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.union)
+and
+[`intersect`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.intersect)
+APIs.
+
+### Union
+
+### Intersection
+
+Let's see if we can use array intersection to figure which actors share
+known-for titles and sort the result:
+
+```{python}
+left = ents.filter(_.known_for_titles.length() > 0).limit(10_000)
+right = left.view()
+shared_titles = (
+    left
+    .join(right, left.nconst != right.nconst)
+    .select(
+        s.startswith("known_for_titles"),
+        left_name="primary_name",
+        right_name="primary_name_right",
+    )
+    .filter(_.known_for_titles.intersect(_.known_for_titles_right).length() > 0)
+    .group_by(name="left_name")
+    .agg(together_with=_.right_name.collect())
+    .mutate(together_with=_.together_with.unique().sort())
+)
+shared_titles
+```
+
+## Advanced operations
+
+### `unnest`
+
+As of version 7.0.0 Ibis does not support its native `unnest` API for BigQuery,
+but we plan to add it in the future.
+
+For now, you can use `con.sql` to construct an Ibis expression from a BigQuery
+SQL string that contains `UNNEST` calls:
+
+Despite lack of native `UNNEST` support, many use cases for `UNNEST` are met by
+the
+[`filter`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.filter)
+and
+[`map`](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.map)
+operations on array expressions.
+
+### Filtering array elements
+
+Show all people who are neither editors nor actors:
+
+```{python}
+ents.mutate(
+    primary_profession=_.primary_profession.filter(
+        lambda pp: pp.isin(("actor", "editor"))
+    )
+).filter(_.primary_profession.length() > 0)
+```
+
+### Applying a function to array elements
+
+Let's normalize the case of primary_profession to upper case:
+
+```{python}
+ents.mutate(
+    primary_profession=_.primary_profession.map(lambda pp: pp.upper())
+).filter(_.primary_profession.length() > 0)
+```
+
+## Conclusion
+
+Ibis has a sizable collection of array APIs that work with many different
+backends and as of version 7.0.0, Ibis supports a much larger set of those APIs
+for BigQuery!
+
+Check out [the API
+documentation](../../reference/expression-collections.qmd#ibis.expr.types.arrays.ArrayValue)
+for the full set of available methods.
+
+Try it out, and let us know what you think.
