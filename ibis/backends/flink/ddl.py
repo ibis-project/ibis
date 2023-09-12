@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import sqlglot as sg
 
+import ibis.expr.schema as sch
 from ibis.backends.base.sql.ddl import (
     CreateTableWithSchema,
     DropObject,
@@ -12,10 +13,48 @@ from ibis.backends.base.sql.ddl import (
     _is_quoted,
     is_fully_qualified,
 )
-from ibis.backends.base.sql.registry import quote_identifier
+from ibis.backends.base.sql.registry import quote_identifier, type_to_sql_string
+from ibis.backends.flink.utils import translate_literal
 
 if TYPE_CHECKING:
-    import ibis.expr.schema as sch
+    from ibis.expr.streaming import Watermark
+
+
+def format_schema(schema):
+    elements = [
+        _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
+    ]
+    return "({})".format(",\n ".join(elements))
+
+
+def _format_schema_element(name, t):
+    return f"{quote_identifier(name, force=True)} {type_to_flink_sql_string(t)}"
+
+
+def type_to_flink_sql_string(tval):
+    if tval.is_timestamp():
+        return f"timestamp({tval.scale})"
+    else:
+        return type_to_sql_string(tval)
+
+
+def _format_watermark_strategy(watermark: Watermark) -> str:
+    if watermark.allowed_delay is None:
+        return watermark.time_col
+    return f"{watermark.time_col} - {translate_literal(watermark.allowed_delay.op())}"
+
+
+def format_schema_with_watermark(
+    schema: sch.Schema, watermark: Watermark | None = None
+) -> str:
+    elements = [
+        _format_schema_element(name, t) for name, t in zip(schema.names, schema.types)
+    ]
+    if watermark is not None:
+        elements.append(
+            f"WATERMARK FOR {watermark.time_col} AS {_format_watermark_strategy(watermark)}"
+        )
+    return "({})".format(",\n ".join(elements))
 
 
 class _CatalogAwareBaseQualifiedSQLStatement:
@@ -39,6 +78,7 @@ class CreateTableFromConnector(
         table_name: str,
         schema: sch.Schema,
         tbl_properties: dict,
+        watermark: Watermark | None = None,
         database: str | None = None,
         catalog: str | None = None,
         temp: bool = False,
@@ -56,6 +96,7 @@ class CreateTableFromConnector(
         )
         self.catalog = catalog
         self.temp = temp
+        self.watermark = watermark
 
     def _storage(self) -> str:
         return f"STORED AS {self.format}" if self.format else None
@@ -77,7 +118,26 @@ class CreateTableFromConnector(
 
     @property
     def _pieces(self):
-        yield from super()._pieces
+        if self.partition is not None:
+            main_schema = self.schema
+            part_schema = self.partition
+            if not isinstance(part_schema, sch.Schema):
+                part_fields = {name: self.schema[name] for name in part_schema}
+                part_schema = sch.Schema(part_fields)
+
+            to_delete = {name for name in self.partition if name in self.schema}
+            fields = {
+                name: dtype
+                for name, dtype in main_schema.items()
+                if name not in to_delete
+            }
+            main_schema = sch.Schema(fields)
+
+            yield format_schema_with_watermark(main_schema, self.watermark)
+            yield f"PARTITIONED BY {format_schema(part_schema)}"
+        else:
+            yield format_schema_with_watermark(self.schema, self.watermark)
+
         yield self._format_tbl_properties()
 
 

@@ -239,7 +239,8 @@ def _translate_interval(value, dtype):
     if len(nonzero_interval_segments) == 1:
         unit = next(iter(nonzero_interval_segments))
         value = nonzero_interval_segments[unit]
-        return f"'{value}' {unit.value}{format_precision(value, unit)}"
+        precision = _calculate_precision(value)
+        return f"'{value}' {unit.name}{format_precision(precision, unit)}"
 
     # YEAR TO MONTH, DAY TO SECOND
     return interval.format_as_string()
