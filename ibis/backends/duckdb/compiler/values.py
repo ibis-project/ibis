@@ -62,6 +62,227 @@ def _alias(op, render_aliases: bool = True, **kw):
     return val
 
 
+### Literals
+
+
+def _sql(obj, dialect="duckdb"):
+    try:
+        return obj.sql(dialect=dialect)
+    except AttributeError:
+        return obj
+
+
+def sg_literal(arg, is_string=True):
+    return sg.expressions.Literal(this=f"{arg}", is_string=is_string)
+
+
+@translate_val.register(ops.Literal)
+def _literal(op, **kw):
+    value = op.value
+    dtype = op.dtype
+    if value is None and dtype.nullable:
+        if dtype.is_null():
+            return sg.expressions.Null()
+        return sg.cast(sg.expressions.Null(), to=DuckDBType.from_ibis(dtype))
+    if dtype.is_boolean():
+        return sg.expressions.Boolean(this=value)
+    elif dtype.is_inet():
+        com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
+    elif dtype.is_string():
+        return sg_literal(value)
+    elif dtype.is_decimal():
+        # TODO: make this a sqlglot expression
+        precision = dtype.precision
+        scale = dtype.scale
+        if precision is None:
+            precision = 38
+        if scale is None:
+            scale = 9
+        if not 1 <= precision <= 38:
+            raise NotImplementedError(
+                f"Unsupported precision. Supported values: [1 : 38]. Current value: {precision!r}"
+            )
+
+        # TODO: handle if `value` is "Infinity"
+        # precision = sg.expressions.DataTypeParam(
+        #     this=sg.expressions.Literal(this=f"{precision}", is_string=False)
+        # )
+        # scale = sg.expressions.DataTypeParam(
+        #     this=sg.expressions.Literal(this=f"{scale}", is_string=False)
+        # )
+        # need sg.expressions.DataTypeParam to be available
+        # ...
+        return f"{value!s}::decimal({precision}, {scale})"
+    elif dtype.is_numeric():
+        if math.isinf(value):
+            return sg.expressions.cast(
+                expression=sg_literal(value),
+                to=sg.expressions.DataType.Type.FLOAT,
+            )
+        elif math.isnan(value):
+            return sg.expressions.cast(
+                expression=sg_literal("NaN"),
+                to=sg.expressions.DataType.Type.FLOAT,
+            )
+        return sg_literal(value, is_string=False)
+    elif dtype.is_interval():
+        return _interval_format(op)
+    elif dtype.is_timestamp():
+        year = sg_literal(op.value.year, is_string=False)
+        month = sg_literal(op.value.month, is_string=False)
+        day = sg_literal(op.value.day, is_string=False)
+        hour = sg_literal(op.value.hour, is_string=False)
+        minute = sg_literal(op.value.minute, is_string=False)
+        second = sg_literal(op.value.second, is_string=False)
+        if op.value.microsecond:
+            microsecond = sg_literal(op.value.microsecond / 1e6, is_string=False)
+            second += microsecond
+        if dtype.timezone is not None:
+            timezone = sg_literal(dtype.timezone, is_string=True)
+            return sg.func(
+                "make_timestamptz", year, month, day, hour, minute, second, timezone
+            )
+        else:
+            return sg.func("make_timestamp", year, month, day, hour, minute, second)
+    elif dtype.is_date():
+        year = sg_literal(op.value.year, is_string=False)
+        month = sg_literal(op.value.month, is_string=False)
+        day = sg_literal(op.value.day, is_string=False)
+        return sg.expressions.DateFromParts(year=year, month=month, day=day)
+    elif dtype.is_array():
+        value_type = dtype.value_type
+        is_string = isinstance(value_type, dt.String)
+        values = sg.expressions.Array().from_arg_list(
+            [
+                # TODO: this cast makes for frustrating output
+                # is there any better way to handle it?
+                sg.cast(
+                    sg_literal(v, is_string=is_string),
+                    to=DuckDBType.from_ibis(value_type),
+                )
+                for v in value
+            ]
+        )
+        return values
+    elif dtype.is_map():
+        key_type = dtype.key_type
+        value_type = dtype.value_type
+        keys = sg.expressions.Array().from_arg_list(
+            [_literal(ops.Literal(k, dtype=key_type), **kw) for k in value.keys()]
+        )
+        values = sg.expressions.Array().from_arg_list(
+            [_literal(ops.Literal(v, dtype=value_type), **kw) for v in value.values()]
+        )
+        sg_expr = sg.expressions.Map(keys=keys, values=values)
+        return sg_expr
+    elif dtype.is_struct():
+        keys = [sg_literal(key) for key in value.keys()]
+        values = [
+            _literal(ops.Literal(v, dtype=subdtype), **kw)
+            for subdtype, v in zip(dtype.types, value.values())
+        ]
+        slices = [
+            sg.expressions.Slice(this=k, expression=v) for k, v in zip(keys, values)
+        ]
+        sg_expr = sg.expressions.Struct.from_arg_list(slices)
+        return sg_expr
+    else:
+        raise NotImplementedError(f"Unsupported type: {dtype!r}")
+
+
+### Simple Ops
+
+_simple_ops = {
+    ops.Power: "pow",
+    # Unary operations
+    ops.IsNan: "isnan",
+    ops.IsInf: "isinf",
+    ops.Abs: "abs",
+    ops.Ceil: "ceil",
+    ops.Floor: "floor",
+    ops.Exp: "exp",
+    ops.Sqrt: "sqrt",
+    ops.Ln: "ln",
+    ops.Log2: "log2",
+    ops.Log10: "log",
+    ops.Acos: "acos",
+    ops.Asin: "asin",
+    ops.Atan: "atan",
+    ops.Atan2: "atan2",
+    ops.Cos: "cos",
+    ops.Sin: "sin",
+    ops.Tan: "tan",
+    ops.Cot: "cot",
+    ops.Pi: "pi",
+    ops.RandomScalar: "random",
+    ops.Sign: "sign",
+    # Unary aggregates
+    ops.ApproxMedian: "median",
+    ops.Median: "median",
+    ops.Mean: "avg",
+    ops.Max: "max",
+    ops.Min: "min",
+    ops.ArgMin: "arg_min",
+    ops.Mode: "mode",
+    ops.ArgMax: "arg_max",
+    ops.First: "first",
+    ops.Last: "last",
+    # string operations
+    ops.StringContains: "contains",
+    ops.StringLength: "length",
+    ops.Lowercase: "lower",
+    ops.Uppercase: "upper",
+    ops.Reverse: "reverse",
+    ops.StringReplace: "replace",
+    ops.StartsWith: "prefix",
+    ops.EndsWith: "suffix",
+    ops.LPad: "lpad",
+    ops.RPad: "rpad",
+    ops.LStrip: "ltrim",
+    ops.RStrip: "rtrim",
+    ops.Strip: "trim",
+    ops.StringAscii: "ascii",
+    ops.StrRight: "right",
+    # Other operations
+    ops.Where: "if",
+    ops.ArrayLength: "length",
+    ops.Unnest: "unnest",
+    ops.Degrees: "degrees",
+    ops.Radians: "radians",
+    ops.NullIf: "nullIf",
+    ops.MapLength: "cardinality",
+    ops.MapKeys: "map_keys",
+    ops.MapValues: "map_values",
+    ops.ArraySort: "list_sort",
+    ops.ArrayContains: "list_contains",
+    ops.FirstValue: "first_value",
+    ops.LastValue: "last_value",
+    ops.NTile: "ntile",
+    ops.Hash: "hash",
+}
+
+
+def _agg(func_name):
+    def formatter(op, **kw):
+        return _aggregate(op, func_name, where=op.where, **kw)
+
+    return formatter
+
+
+for _op, _name in _simple_ops.items():
+    assert isinstance(type(_op), type), type(_op)
+    if issubclass(_op, ops.Reduction):
+        translate_val.register(_op)(_agg(_name))
+    else:
+
+        @translate_val.register(_op)
+        def _fmt(op, _name: str = _name, **kw):
+            return sg.func(
+                _name, *map(partial(translate_val, **kw), op.args), dialect="duckdb"
+            )
+
+
+del _fmt, _name, _op
 ### Bitwise Business
 
 _bitwise_mapping = {
@@ -109,6 +330,32 @@ def _generic_log(op, **kw):
         base = translate_val(base, **kw)
         return sg.func("ln", arg) / sg.func("ln", base)
     return sg.func("ln", arg)
+
+
+@translate_val.register(ops.Clip)
+def _clip(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    if (upper := op.upper) is not None:
+        arg = f"least({translate_val(upper, **kw)}, {arg})"
+
+    if (lower := op.lower) is not None:
+        arg = f"greatest({translate_val(lower, **kw)}, {arg})"
+
+    return arg
+
+
+@translate_val.register(ops.FloorDivide)
+def _floor_divide(op, **kw):
+    new_op = ops.Floor(ops.Divide(op.left, op.right))
+    return translate_val(new_op, **kw)
+
+
+@translate_val.register(ops.Round)
+def _round(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    if (digits := op.digits) is not None:
+        return sg.expressions.Round(this=arg, decimals=translate_val(digits, **kw))
+    return sg.expressions.Round(this=arg)
 
 
 ### Dtype Dysmorphia
@@ -198,13 +445,23 @@ def _any(op, **kw):
 
 
 @translate_val.register(ops.All)
-def _any(op, **kw):
+def _all(op, **kw):
     arg = translate_val(op.arg, **kw)
     all_expr = sg.func("bool_and", arg)
     if op.where is not None:
         where = sg.expressions.Where(this=translate_val(op.where, **kw))
         return sg.expressions.Filter(this=all_expr, expression=where)
     return all_expr
+
+
+@translate_val.register(ops.NotAny)
+def _not_any(op, **kw):
+    return translate_val(ops.All(ops.Not(op.arg), where=op.where), **kw)
+
+
+@translate_val.register(ops.NotAll)
+def _not_all(op, **kw):
+    return translate_val(ops.Any(ops.Not(op.arg), where=op.where), **kw)
 
 
 ### Timey McTimeFace
@@ -216,16 +473,56 @@ def _to_date(op, **kw):
     return sg.expressions.Date(this=arg)
 
 
+@translate_val.register(ops.DateFromYMD)
+def _date_from_ymd(op, **kw):
+    y = translate_val(op.year, **kw)
+    m = translate_val(op.month, **kw)
+    d = translate_val(op.day, **kw)
+    return sg.expressions.DateFromParts(year=y, month=m, day=d)
+
+
 @translate_val.register(ops.Time)
 def _time(op, **kw):
     arg = translate_val(op.arg, **kw)
     return sg.cast(expression=arg, to=sg.expressions.DataType.Type.TIME)
 
 
+@translate_val.register(ops.TimeFromHMS)
+def _time_from_hms(op, **kw):
+    hours = translate_val(op.hours, **kw)
+    minutes = translate_val(op.minutes, **kw)
+    seconds = translate_val(op.seconds, **kw)
+    return sg.func("make_time", hours, minutes, seconds)
+
+
 @translate_val.register(ops.TimestampNow)
 def _timestamp_now(op, **kw):
     """DuckDB current timestamp defaults to timestamp + tz"""
     return sg.cast(expression=sg.func("current_timestamp"), to="TIMESTAMP")
+
+
+@translate_val.register(ops.TimestampFromUNIX)
+def _timestamp_from_unix(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    if (unit := op.unit.short) in {"ms", "us", "ns"}:
+        raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
+
+    return sg.expressions.UnixToTime(this=arg)
+
+
+@translate_val.register(ops.TimestampFromYMDHMS)
+def _timestamp_from_ymdhms(op, **kw):
+    year = translate_val(op.year, **kw)
+    month = translate_val(op.month, **kw)
+    day = translate_val(op.day, **kw)
+    hour = translate_val(op.hours, **kw)
+    minute = translate_val(op.minutes, **kw)
+    second = translate_val(op.seconds, **kw)
+
+    if (timezone := op.dtype.timezone) is not None:
+        return f"make_timestamptz({year}, {month}, {day}, {hour}, {minute}, {second}, '{timezone}')"
+    else:
+        return f"make_timestamp({year}, {month}, {day}, {hour}, {minute}, {second})"
 
 
 @translate_val.register(ops.Strftime)
@@ -237,14 +534,6 @@ def _strftime(op, **kw):
     arg = translate_val(op.arg, **kw)
     format_str = translate_val(op.format_str, **kw)
     return sg.func("strftime", arg, format_str)
-
-
-@translate_val.register(ops.TimeFromHMS)
-def _time_from_hms(op, **kw):
-    hours = translate_val(op.hours, **kw)
-    minutes = translate_val(op.minutes, **kw)
-    seconds = translate_val(op.seconds, **kw)
-    return sg.func("make_time", hours, minutes, seconds)
 
 
 @translate_val.register(ops.StringToTimestamp)
@@ -326,13 +615,6 @@ def _extract_microsecond(op, **kw):
     )
 
 
-@translate_val.register(ops.Date)
-def _date(op, **kw):
-    arg = translate_val(op.arg, **kw)
-
-    return sg.expressions.Date(this=arg)
-
-
 @translate_val.register(ops.DateTruncate)
 @translate_val.register(ops.TimestampTruncate)
 @translate_val.register(ops.TimeTruncate)
@@ -359,42 +641,42 @@ def _truncate(op, **kw):
     return f"date_trunc('{duckunit}', {arg})"
 
 
-@translate_val.register(ops.DateFromYMD)
-def _date_from_ymd(op, **kw):
-    y = translate_val(op.year, **kw)
-    m = translate_val(op.month, **kw)
-    d = translate_val(op.day, **kw)
-    return sg.expressions.DateFromParts(year=y, month=m, day=d)
-
-
 @translate_val.register(ops.DayOfWeekIndex)
 def _day_of_week_index(op, **kw):
     arg = translate_val(op.arg, **kw)
     return f"(dayofweek({arg}) + 6) % 7"
 
 
-@translate_val.register(ops.TimestampFromUNIX)
-def _timestamp_from_unix(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    if (unit := op.unit.short) in {"ms", "us", "ns"}:
-        raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
-
-    return sg.expressions.UnixToTime(this=arg)
-
-
-@translate_val.register(ops.TimestampFromYMDHMS)
-def _timestamp_from_ymdhms(op, **kw):
-    year = translate_val(op.year, **kw)
-    month = translate_val(op.month, **kw)
-    day = translate_val(op.day, **kw)
-    hour = translate_val(op.hours, **kw)
-    minute = translate_val(op.minutes, **kw)
-    second = translate_val(op.seconds, **kw)
-
-    if (timezone := op.dtype.timezone) is not None:
-        return f"make_timestamptz({year}, {month}, {day}, {hour}, {minute}, {second}, '{timezone}')"
-    else:
-        return f"make_timestamp({year}, {month}, {day}, {hour}, {minute}, {second})"
+@translate_val.register(ops.DayOfWeekName)
+def day_of_week_name(op, **kw):
+    # day of week number is 0-indexed
+    # Sunday == 0
+    # Saturday == 6
+    arg = op.arg
+    nullable = arg.dtype.nullable
+    empty_string = ops.Literal("", dtype=dt.String(nullable=nullable))
+    weekdays = range(7)
+    return translate_val(
+        ops.NullIf(
+            ops.SimpleCase(
+                base=ops.DayOfWeekIndex(arg),
+                cases=[
+                    ops.Literal(day, dtype=dt.Int8(nullable=nullable))
+                    for day in weekdays
+                ],
+                results=[
+                    ops.Literal(
+                        calendar.day_name[day],
+                        dtype=dt.String(nullable=nullable),
+                    )
+                    for day in weekdays
+                ],
+                default=empty_string,
+            ),
+            empty_string,
+        ),
+        **kw,
+    )
 
 
 ### Interval Marginalia
@@ -525,99 +807,50 @@ def _levenshtein(op, **kw):
     return sg.func("levenshtein", left, right)
 
 
-### Simple Ops
-
-_simple_ops = {
-    ops.Power: "pow",
-    # Unary operations
-    ops.IsNan: "isnan",
-    ops.IsInf: "isinf",
-    ops.Abs: "abs",
-    ops.Ceil: "ceil",
-    ops.Floor: "floor",
-    ops.Exp: "exp",
-    ops.Sqrt: "sqrt",
-    ops.Ln: "ln",
-    ops.Log2: "log2",
-    ops.Log10: "log",
-    ops.Acos: "acos",
-    ops.Asin: "asin",
-    ops.Atan: "atan",
-    ops.Atan2: "atan2",
-    ops.Cos: "cos",
-    ops.Sin: "sin",
-    ops.Tan: "tan",
-    ops.Cot: "cot",
-    ops.Pi: "pi",
-    ops.RandomScalar: "random",
-    ops.Sign: "sign",
-    # Unary aggregates
-    ops.ApproxMedian: "median",
-    ops.Median: "median",
-    ops.Mean: "avg",
-    ops.Max: "max",
-    ops.Min: "min",
-    ops.ArgMin: "arg_min",
-    ops.Mode: "mode",
-    ops.ArgMax: "arg_max",
-    ops.First: "first",
-    ops.Last: "last",
-    # string operations
-    ops.StringContains: "contains",
-    ops.StringLength: "length",
-    ops.Lowercase: "lower",
-    ops.Uppercase: "upper",
-    ops.Reverse: "reverse",
-    ops.StringReplace: "replace",
-    ops.StartsWith: "prefix",
-    ops.EndsWith: "suffix",
-    ops.LPad: "lpad",
-    ops.RPad: "rpad",
-    ops.LStrip: "ltrim",
-    ops.RStrip: "rtrim",
-    ops.Strip: "trim",
-    ops.StringAscii: "ascii",
-    ops.StrRight: "right",
-    # Other operations
-    ops.Where: "if",
-    ops.ArrayLength: "length",
-    ops.Unnest: "unnest",
-    ops.Degrees: "degrees",
-    ops.Radians: "radians",
-    ops.NullIf: "nullIf",
-    ops.MapLength: "cardinality",
-    ops.MapKeys: "map_keys",
-    ops.MapValues: "map_values",
-    ops.ArraySort: "list_sort",
-    ops.ArrayContains: "list_contains",
-    ops.FirstValue: "first_value",
-    ops.LastValue: "last_value",
-    ops.NTile: "ntile",
-    ops.Hash: "hash",
-}
+@translate_val.register(ops.StringSplit)
+def _string_split(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    delimiter = translate_val(op.delimiter, **kw)
+    return sg.expressions.Split(this=arg, expression=delimiter)
 
 
-def _agg(func_name):
-    def formatter(op, **kw):
-        return _aggregate(op, func_name, where=op.where, **kw)
-
-    return formatter
-
-
-for _op, _name in _simple_ops.items():
-    assert isinstance(type(_op), type), type(_op)
-    if issubclass(_op, ops.Reduction):
-        translate_val.register(_op)(_agg(_name))
-    else:
-
-        @translate_val.register(_op)
-        def _fmt(op, _name: str = _name, **kw):
-            return sg.func(
-                _name, *map(partial(translate_val, **kw), op.args), dialect="duckdb"
-            )
+@translate_val.register(ops.StringJoin)
+def _string_join(op, **kw):
+    arg = map(partial(translate_val, **kw), op.arg)
+    sep = translate_val(op.sep, **kw)
+    elements = ", ".join(map(_sql, arg))
+    return f"list_aggregate([{elements}], 'string_agg', {sep})"
 
 
-del _fmt, _name, _op
+@translate_val.register(ops.StringConcat)
+def _string_concat(op, **kw):
+    arg = map(partial(translate_val, **kw), op.arg)
+    return sg.expressions.Concat(expressions=list(arg))
+
+
+@translate_val.register(ops.StringSQLLike)
+def _string_like(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    pattern = translate_val(op.pattern, **kw)
+    return sg.expressions.Like(this=arg, expression=pattern)
+
+
+@translate_val.register(ops.StringSQLILike)
+def _string_ilike(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    pattern = translate_val(op.pattern, **kw)
+    return sg.expressions.Like(this=sg.func("lower", arg), expression=pattern)
+
+
+@translate_val.register(ops.Capitalize)
+def _string_capitalize(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return sg.expressions.Concat(
+        expressions=[
+            sg.func("upper", sg.func("substr", arg, 1, 1)),
+            sg.func("lower", sg.func("substr", arg, 2)),
+        ]
+    )
 
 
 ### NULL PLAYER CHARACTER
@@ -638,6 +871,18 @@ def _if_null(op, **kw):
     arg = translate_val(op.arg, **kw)
     ifnull = translate_val(op.ifnull_expr, **kw)
     return sg.func("ifnull", arg, ifnull, dialect="duckdb")
+
+
+@translate_val.register(ops.NullIfZero)
+def _null_if_zero(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return sg.func("nullif", arg, 0, dialect="duckdb")
+
+
+@translate_val.register(ops.ZeroIfNull)
+def _zero_if_null(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    return sg.func("ifnull", arg, 0, dialect="duckdb")
 
 
 ### Definitely Not Tensors
@@ -711,130 +956,6 @@ def _array_concat(op, **kw):
     return sg_expr
 
 
-### LITERALLY
-
-
-@translate_val.register(ops.Literal)
-def _literal(op, **kw):
-    value = op.value
-    dtype = op.dtype
-    if value is None and dtype.nullable:
-        if dtype.is_null():
-            return sg.expressions.Null()
-        return sg.cast(sg.expressions.Null(), to=DuckDBType.from_ibis(dtype))
-    if dtype.is_boolean():
-        return sg.expressions.Boolean(this=value)
-    elif dtype.is_inet():
-        com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
-    elif dtype.is_string():
-        return sg.expressions.Literal(this=f"{value}", is_string=True)
-    elif dtype.is_decimal():
-        # TODO: make this a sqlglot expression
-        precision = dtype.precision
-        scale = dtype.scale
-        if precision is None:
-            precision = 38
-        if scale is None:
-            scale = 9
-        if not 1 <= precision <= 38:
-            raise NotImplementedError(
-                f"Unsupported precision. Supported values: [1 : 38]. Current value: {precision!r}"
-            )
-
-        # TODO: handle if `value` is "Infinity"
-        # precision = sg.expressions.DataTypeParam(
-        #     this=sg.expressions.Literal(this=f"{precision}", is_string=False)
-        # )
-        # scale = sg.expressions.DataTypeParam(
-        #     this=sg.expressions.Literal(this=f"{scale}", is_string=False)
-        # )
-        # need sg.expressions.DataTypeParam to be available
-        # ...
-        return f"{value!s}::decimal({precision}, {scale})"
-    elif dtype.is_numeric():
-        if math.isinf(value):
-            return sg.expressions.cast(
-                expression=sg.expressions.Literal(this=value, is_string=True),
-                to=sg.expressions.DataType.Type.FLOAT,
-            )
-        elif math.isnan(value):
-            return sg.expressions.cast(
-                expression=sg.expressions.Literal(this="NaN", is_string=True),
-                to=sg.expressions.DataType.Type.FLOAT,
-            )
-        return sg.expressions.Literal(this=f"{value}", is_string=False)
-    elif dtype.is_interval():
-        return _interval_format(op)
-    elif dtype.is_timestamp():
-        year = sg.expressions.Literal(this=f"{op.value.year}", is_string=False)
-        month = sg.expressions.Literal(this=f"{op.value.month}", is_string=False)
-        day = sg.expressions.Literal(this=f"{op.value.day}", is_string=False)
-        hour = sg.expressions.Literal(this=f"{op.value.hour}", is_string=False)
-        minute = sg.expressions.Literal(this=f"{op.value.minute}", is_string=False)
-        second = sg.expressions.Literal(this=f"{op.value.second}", is_string=False)
-        if op.value.microsecond:
-            microsecond = sg.expressions.Literal(
-                this=f"{op.value.microsecond / 1e6}", is_string=False
-            )
-            second += microsecond
-        if dtype.timezone is not None:
-            timezone = sg.expressions.Literal(this=dtype.timezone, is_string=True)
-            return sg.func(
-                "make_timestamptz", year, month, day, hour, minute, second, timezone
-            )
-        else:
-            return sg.func("make_timestamp", year, month, day, hour, minute, second)
-    elif dtype.is_date():
-        year = sg.expressions.Literal(this=f"{op.value.year}", is_string=False)
-        month = sg.expressions.Literal(this=f"{op.value.month}", is_string=False)
-        day = sg.expressions.Literal(this=f"{op.value.day}", is_string=False)
-        return sg.expressions.DateFromParts(year=year, month=month, day=day)
-    elif dtype.is_array():
-        value_type = dtype.value_type
-        is_string = isinstance(value_type, dt.String)
-        values = sg.expressions.Array().from_arg_list(
-            [
-                # TODO: this cast makes for frustrating output
-                # is there any better way to handle it?
-                sg.cast(
-                    sg.expressions.Literal(this=f"{v}", is_string=is_string),
-                    to=DuckDBType.from_ibis(value_type),
-                )
-                for v in value
-            ]
-        )
-        return values
-    elif dtype.is_map():
-        key_type = dtype.key_type
-        value_type = dtype.value_type
-        keys = sg.expressions.Array().from_arg_list(
-            [_literal(ops.Literal(k, dtype=key_type), **kw) for k in value.keys()]
-        )
-        values = sg.expressions.Array().from_arg_list(
-            [_literal(ops.Literal(v, dtype=value_type), **kw) for v in value.values()]
-        )
-        sg_expr = sg.expressions.Map(keys=keys, values=values)
-        return sg_expr
-    elif dtype.is_struct():
-        keys = [
-            sg.expressions.Literal(this=key, is_string=True) for key in value.keys()
-        ]
-        values = [
-            _literal(ops.Literal(v, dtype=subdtype), **kw)
-            for subdtype, v in zip(dtype.types, value.values())
-        ]
-        slices = [
-            sg.expressions.Slice(this=k, expression=v) for k, v in zip(keys, values)
-        ]
-        sg_expr = sg.expressions.Struct.from_arg_list(slices)
-        return sg_expr
-    else:
-        raise NotImplementedError(f"Unsupported type: {dtype!r}")
-
-
-### BELOW HERE BE DRAGONS
-
-
 # # TODO
 # @translate_val.register(ops.ArrayRepeat)
 # def _array_repeat_op(op, **kw):
@@ -873,6 +994,74 @@ def _array_slice_op(op, **kw):
         stop = _neg_idx_to_pos(arg, translate_val(stop, **kw))
 
     return sg.func("list_slice", arg, start + 1, stop)
+
+
+@translate_val.register(ops.ArrayStringJoin)
+def _array_string_join(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    sep = translate_val(op.sep, **kw)
+    return f"list_aggregate({arg}, 'string_agg', {sep})"
+
+
+@translate_val.register(ops.ArrayMap)
+def _array_map(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    result = translate_val(op.result, **kw)
+    lamduh = sg.expressions.Lambda(
+        this=result,
+        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
+    )
+    sg_expr = sg.func("list_transform", arg, lamduh)
+    return sg_expr
+
+
+@translate_val.register(ops.ArrayFilter)
+def _array_filter(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    result = translate_val(op.result, **kw)
+    lamduh = sg.expressions.Lambda(
+        this=result,
+        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
+    )
+    sg_expr = sg.func("list_filter", arg, lamduh)
+    return sg_expr
+
+
+@translate_val.register(ops.ArrayIntersect)
+def _array_intersect(op, **kw):
+    return translate_val(
+        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x)), **kw
+    )
+
+
+@translate_val.register(ops.ArrayPosition)
+def _array_position(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    el = translate_val(op.other, **kw)
+    return sg.func("list_indexof", arg, el) - 1
+
+
+@translate_val.register(ops.ArrayRemove)
+def _array_remove(op, **kw):
+    return translate_val(ops.ArrayFilter(op.arg, flip(ops.NotEquals, op.other)), **kw)
+
+
+@translate_val.register(ops.ArrayUnion)
+def _array_union(op, **kw):
+    return translate_val(ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right))), **kw)
+
+
+# TODO: need to do this as a an array map + struct pack -- look at existing
+# alchemy backend implementation
+@translate_val.register(ops.ArrayZip)
+def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
+    zipped = sg.expressions.ArrayJoin().from_arg_list(
+        [translate_val(arg, **kw) for arg in op.arg]
+    )
+    return zipped
+
+
+### Counting
 
 
 @translate_val.register(ops.Count)
@@ -939,14 +1128,22 @@ def _sum(op, **kw):
     return sg_sum_expr
 
 
-@translate_val.register(ops.NotAny)
-def _not_any(op, **kw):
-    return translate_val(ops.All(ops.Not(op.arg), where=op.where), **kw)
+# TODO
+@translate_val.register(ops.NthValue)
+def _nth_value(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    nth = translate_val(op.nth, **kw)
+    return f"nth_value({arg}, ({nth}) + 1)"
 
 
-@translate_val.register(ops.NotAll)
-def _not_all(op, **kw):
-    return translate_val(ops.Any(ops.Not(op.arg), where=op.where), **kw)
+@translate_val.register(ops.Repeat)
+def _repeat(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    times = translate_val(op.times, **kw)
+    return f"repeat({arg}, {times})"
+
+
+### Stats
 
 
 @translate_val.register(ops.Quantile)
@@ -1083,25 +1280,10 @@ def _index_of(op, **kw):
     return f"list_indexof([{values}], {needle}) - 1"
 
 
-@translate_val.register(ops.Round)
-def _round(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    if (digits := op.digits) is not None:
-        return sg.expressions.Round(this=arg, decimals=translate_val(digits, **kw))
-    return sg.expressions.Round(this=arg)
-
-
 @translate_val.register(tuple)
 def _node_list(op, punct="()", **kw):
     values = ", ".join(map(_sql, map(partial(translate_val, **kw), op)))
     return f"{punct[0]}{values}{punct[1]}"
-
-
-def _sql(obj, dialect="duckdb"):
-    try:
-        return obj.sql(dialect=dialect)
-    except AttributeError:
-        return obj
 
 
 @translate_val.register(ops.SimpleCase)
@@ -1157,52 +1339,6 @@ def _exists_subquery(op, **kw):
     return f"{prefix}EXISTS ({subq})"
 
 
-@translate_val.register(ops.StringSplit)
-def _string_split(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    delimiter = translate_val(op.delimiter, **kw)
-    return sg.expressions.Split(this=arg, expression=delimiter)
-
-
-@translate_val.register(ops.StringJoin)
-def _string_join(op, **kw):
-    arg = map(partial(translate_val, **kw), op.arg)
-    sep = translate_val(op.sep, **kw)
-    elements = ", ".join(map(_sql, arg))
-    return f"list_aggregate([{elements}], 'string_agg', {sep})"
-
-
-@translate_val.register(ops.StringConcat)
-def _string_concat(op, **kw):
-    arg = map(partial(translate_val, **kw), op.arg)
-    return sg.expressions.Concat(expressions=list(arg))
-
-
-@translate_val.register(ops.StringSQLLike)
-def _string_like(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    pattern = translate_val(op.pattern, **kw)
-    return sg.expressions.Like(this=arg, expression=pattern)
-
-
-@translate_val.register(ops.StringSQLILike)
-def _string_ilike(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    pattern = translate_val(op.pattern, **kw)
-    return sg.expressions.Like(this=sg.func("lower", arg), expression=pattern)
-
-
-@translate_val.register(ops.Capitalize)
-def _string_capitalize(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    return sg.expressions.Concat(
-        expressions=[
-            sg.func("upper", sg.func("substr", arg, 1, 1)),
-            sg.func("lower", sg.func("substr", arg, 2)),
-        ]
-    )
-
-
 @translate_val.register(ops.GroupConcat)
 def _group_concat(op, **kw):
     arg = translate_val(op.arg, **kw)
@@ -1238,57 +1374,12 @@ def _struct_column(op, **kw):
     return sg.cast(expression=values, to=struct_type)
 
 
-@translate_val.register(ops.Clip)
-def _clip(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    if (upper := op.upper) is not None:
-        arg = f"least({translate_val(upper, **kw)}, {arg})"
-
-    if (lower := op.lower) is not None:
-        arg = f"greatest({translate_val(lower, **kw)}, {arg})"
-
-    return arg
-
-
 @translate_val.register(ops.StructField)
 def _struct_field(op, **kw):
     arg = translate_val(op.arg, **kw)
     field = sg.expressions.Literal(this=f"{op.field}", is_string=True)
     sg_expr = sg.func("struct_extract", arg, field)
     return sg_expr
-
-
-# TODO
-@translate_val.register(ops.NthValue)
-def _nth_value(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    nth = translate_val(op.nth, **kw)
-    return f"nth_value({arg}, ({nth}) + 1)"
-
-
-@translate_val.register(ops.Repeat)
-def _repeat(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    times = translate_val(op.times, **kw)
-    return f"repeat({arg}, {times})"
-
-
-@translate_val.register(ops.NullIfZero)
-def _null_if_zero(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    return sg.func("nullif", arg, 0, dialect="duckdb")
-
-
-@translate_val.register(ops.ZeroIfNull)
-def _zero_if_null(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    return sg.func("ifnull", arg, 0, dialect="duckdb")
-
-
-@translate_val.register(ops.FloorDivide)
-def _floor_divide(op, **kw):
-    new_op = ops.Floor(ops.Divide(op.left, op.right))
-    return translate_val(new_op, **kw)
 
 
 @translate_val.register(ops.ScalarParameter)
@@ -1341,40 +1432,6 @@ def contains(op_string: Literal["IN", "NOT IN"]) -> str:
 # TODO
 # translate_val.register(ops.Contains)(contains("IN"))
 # translate_val.register(ops.NotContains)(contains("NOT IN"))
-
-
-@translate_val.register(ops.DayOfWeekName)
-def day_of_week_name(op, **kw):
-    # day of week number is 0-indexed
-    # Sunday == 0
-    # Saturday == 6
-    arg = op.arg
-    nullable = arg.dtype.nullable
-    empty_string = ops.Literal("", dtype=dt.String(nullable=nullable))
-    weekdays = range(7)
-    return translate_val(
-        ops.NullIf(
-            ops.SimpleCase(
-                base=ops.DayOfWeekIndex(arg),
-                cases=[
-                    ops.Literal(day, dtype=dt.Int8(nullable=nullable))
-                    for day in weekdays
-                ],
-                results=[
-                    ops.Literal(
-                        calendar.day_name[day],
-                        dtype=dt.String(nullable=nullable),
-                    )
-                    for day in weekdays
-                ],
-                default=empty_string,
-            ),
-            empty_string,
-        ),
-        **kw,
-    )
-
-
 @translate_val.register(ops.IdenticalTo)
 def _identical_to(op, **kw):
     left = translate_val(op.left, **kw)
@@ -1514,21 +1571,6 @@ for _op, _sym in _binary_infix_ops.items():
 del _op, _sym
 
 
-@translate_val.register(ops.Xor)
-def _xor(op, **kw):
-    # TODO: is this really the best way to do this?
-    left = translate_val(op.left, **kw)
-    right = translate_val(op.right, **kw)
-    return sg.expressions.And(
-        this=sg.expressions.Paren(this=sg.expressions.Or(this=left, expression=right)),
-        expression=sg.expressions.Paren(
-            this=sg.expressions.Not(
-                this=sg.expressions.And(this=left, expression=right)
-            )
-        ),
-    )
-
-
 _bit_agg = {
     ops.BitOr: "bit_or",
     ops.BitAnd: "bit_and",
@@ -1548,12 +1590,47 @@ def _bitor(op, **kw):
     return bit_expr
 
 
+@translate_val.register(ops.Xor)
+def _xor(op, **kw):
+    # TODO: is this really the best way to do this?
+    left = translate_val(op.left, **kw)
+    right = translate_val(op.right, **kw)
+    return sg.expressions.And(
+        this=sg.expressions.Paren(this=sg.expressions.Or(this=left, expression=right)),
+        expression=sg.expressions.Paren(
+            this=sg.expressions.Not(
+                this=sg.expressions.And(this=left, expression=right)
+            )
+        ),
+    )
+
+
+### Ordering
+
+
+@translate_val.register(ops.RowNumber)
+def _row_number(_, **kw):
+    return sg.expressions.RowNumber()
+
+
+@translate_val.register(ops.DenseRank)
+def _dense_rank(_, **kw):
+    return sg.func("dense_rank", dialect="duckdb")
+
+
+@translate_val.register(ops.MinRank)
+def _rank(_, **kw):
+    return sg.func("rank", dialect="duckdb")
+
+
 @translate_val.register
 def _sort_key(op: ops.SortKey, **kw):
     arg = translate_val(op.expr, **kw)
     direction = "ASC" if op.ascending else "DESC"
     return f"{_sql(arg)} {direction}"
 
+
+### Window functions
 
 _cumulative_to_reduction = {
     ops.CumulativeSum: ops.Sum,
@@ -1710,86 +1787,6 @@ shift_like(ops.Lag, "lag")
 shift_like(ops.Lead, "lead")
 
 
-@translate_val.register(ops.RowNumber)
-def _row_number(_, **kw):
-    return sg.expressions.RowNumber()
-
-
-@translate_val.register(ops.DenseRank)
-def _dense_rank(_, **kw):
-    return sg.func("dense_rank", dialect="duckdb")
-
-
-@translate_val.register(ops.MinRank)
-def _rank(_, **kw):
-    return sg.func("rank", dialect="duckdb")
-
-
-@translate_val.register(ops.ArrayStringJoin)
-def _array_string_join(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    sep = translate_val(op.sep, **kw)
-    return f"list_aggregate({arg}, 'string_agg', {sep})"
-
-
 @translate_val.register(ops.Argument)
 def _argument(op, **_):
     return sg.expressions.Identifier(this=op.name, quoted=False)
-
-
-@translate_val.register(ops.ArrayMap)
-def _array_map(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    result = translate_val(op.result, **kw)
-    lamduh = sg.expressions.Lambda(
-        this=result,
-        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
-    )
-    sg_expr = sg.func("list_transform", arg, lamduh)
-    return sg_expr
-
-
-@translate_val.register(ops.ArrayFilter)
-def _array_filter(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    result = translate_val(op.result, **kw)
-    lamduh = sg.expressions.Lambda(
-        this=result,
-        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
-    )
-    sg_expr = sg.func("list_filter", arg, lamduh)
-    return sg_expr
-
-
-@translate_val.register(ops.ArrayIntersect)
-def _array_intersect(op, **kw):
-    return translate_val(
-        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x)), **kw
-    )
-
-
-@translate_val.register(ops.ArrayPosition)
-def _array_position(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    el = translate_val(op.other, **kw)
-    return sg.func("list_indexof", arg, el) - 1
-
-
-@translate_val.register(ops.ArrayRemove)
-def _array_remove(op, **kw):
-    return translate_val(ops.ArrayFilter(op.arg, flip(ops.NotEquals, op.other)), **kw)
-
-
-@translate_val.register(ops.ArrayUnion)
-def _array_union(op, **kw):
-    return translate_val(ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right))), **kw)
-
-
-# TODO: need to do this as a an array map + struct pack -- look at existing
-# alchemy backend implementation
-@translate_val.register(ops.ArrayZip)
-def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
-    zipped = sg.expressions.ArrayJoin().from_arg_list(
-        [translate_val(arg, **kw) for arg in op.arg]
-    )
-    return zipped
