@@ -62,6 +62,9 @@ class Backend(BaseAlchemyBackend):
         # workaround a broken pydruid `has_table` implementation
         engine.dialect.has_table = self._has_table
 
+        # don't double percent signs
+        engine.dialect.identifier_preparer._double_percents = False
+
     @staticmethod
     def _new_sa_metadata():
         meta = sa.MetaData()
