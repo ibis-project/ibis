@@ -1051,3 +1051,26 @@ def test_levenshtein(con, right):
     expr = left.levenshtein(right)
     result = con.execute(expr)
     assert result == 3
+
+
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["mssql"],
+    reason="doesn't allow boolean expressions in select statements",
+    raises=sa.exc.OperationalError,
+)
+@pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError)
+@pytest.mark.broken(
+    ["oracle"],
+    reason="sqlalchemy converts True to 1, which cannot be used in CASE WHEN statement",
+    raises=sa.exc.DatabaseError,
+)
+@pytest.mark.parametrize(
+    "expr",
+    [
+        param(ibis.case().when(True, "%").end(), id="case"),
+        param(ibis.ifelse(True, "%", ibis.NA), id="ifelse"),
+    ],
+)
+def test_no_conditional_percent_escape(con, expr):
+    assert con.execute(expr) == "%"
