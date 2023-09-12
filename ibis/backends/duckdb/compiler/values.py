@@ -113,15 +113,10 @@ def _literal(op, **kw):
                 to=sg.expressions.DataType.Type.FLOAT,
             )
 
-        precision = sg.expressions.DataTypeParam(
-            this=sg_literal(precision, is_string=False)
+        dtype = dt.Decimal(precision=precision, scale=scale, nullable=dtype.nullable)
+        sg_expr = sg.cast(
+            sg_literal(value, is_string=False), to=DuckDBType.from_ibis(dtype)
         )
-        scale = sg.expressions.DataTypeParam(this=sg_literal(scale, is_string=False))
-        cast_to = sg.expressions.DataType(
-            this=sg.expressions.DataType.Type.DECIMAL,
-            expressions=[precision, scale],
-        )
-        sg_expr = sg.cast(sg_literal(value, is_string=False), to=cast_to)
         return sg_expr
     elif dtype.is_numeric():
         if math.isinf(value):
