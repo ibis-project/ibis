@@ -104,6 +104,8 @@ class Backend(BaseBackend, CanCreateSchema):
         return self.raw_sql("SELECT current_schema()")
 
     def raw_sql(self, query: str, **kwargs: Any) -> Any:
+        if isinstance(query, sg.Expression):
+            query = query.sql(dialect="duckdb")
         return self.con.execute(query, **kwargs)
 
     def create_table(
@@ -222,7 +224,7 @@ class Backend(BaseBackend, CanCreateSchema):
             # This is a hack to get around nested quoting of table name
             # e.g. '"main._ibis_temp_table_2"'
             return name
-        return sg.table(name, db=db).sql(dialect="duckdb")
+        return sg.table(name, db=db)  # .sql(dialect="duckdb")
 
     def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
@@ -241,7 +243,9 @@ class Backend(BaseBackend, CanCreateSchema):
             Ibis schema
         """
         qualified_name = self._fully_qualified_name(table_name, database)
-        query = f"DESCRIBE {qualified_name}"
+        if isinstance(qualified_name, str):
+            qualified_name = sg.expressions.Identifier(this=qualified_name, quoted=True)
+        query = sg.expressions.Describe(this=qualified_name)
         results = self.raw_sql(query)
         names, types, *_ = results.fetch_arrow_table()
         names = names.to_pylist()
@@ -344,10 +348,18 @@ class Backend(BaseBackend, CanCreateSchema):
 
         import duckdb
 
-        self.con = duckdb.connect(str(database))
+        self.con = duckdb.connect(str(database), config=config)
 
-        # TODO: disable progress bar for < 0.8.0
-        # TODO: set timezone to UTC
+        # Load any pre-specified extensions
+        if extensions is not None:
+            self._load_extensions(extensions)
+
+        # Default timezone
+        self.con.execute("SET TimeZone = 'UTC'")
+        # the progress bar in duckdb <0.8.0 causes kernel crashes in
+        # jupyterlab, fixed in https://github.com/duckdb/duckdb/pull/6831
+        if vparse(duckdb.__version__) < vparse("0.8.0"):
+            self.con.execute("SET enable_progress_bar = false")
 
         self._record_batch_readers_consumed = {}
 
@@ -548,7 +560,7 @@ class Backend(BaseBackend, CanCreateSchema):
         else:
             try:
                 return self.read_in_memory(source, table_name=table_name, **kwargs)
-            except sa.exc.ProgrammingError:
+            except (duckdb.InvalidInputException, NameError):
                 self._register_failure()
 
         if first.startswith(("parquet://", "parq://")) or first.endswith(
@@ -580,10 +592,17 @@ class Backend(BaseBackend, CanCreateSchema):
         )
 
     def _compile_temp_view(self, table_name, source):
-        raw_source = source.compile(
-            dialect=self.con.dialect, compile_kwargs=dict(literal_binds=True)
+        return sg.expressions.Create(
+            this=sg.expressions.Identifier(
+                this=table_name, quoted=True
+            ),  # CREATE ... 'table_name'
+            kind="VIEW",  # VIEW
+            replace=True,  # OR REPLACE
+            properties=sg.expressions.Properties(
+                expressions=[sg.expressions.TemporaryProperty()]  # TEMPORARY
+            ),
+            expression=source,  # AS ...
         )
-        return f'CREATE OR REPLACE TEMPORARY VIEW "{table_name}" AS {raw_source}'
 
     @util.experimental
     def read_json(
@@ -619,16 +638,16 @@ class Backend(BaseBackend, CanCreateSchema):
         if not table_name:
             table_name = util.gen_name("read_json")
 
-        source = sa.select(sa.literal_column("*")).select_from(
-            sa.func.read_json_auto(
-                sa.func.list_value(*normalize_filenames(source_list)),
-                _format_kwargs(kwargs),
-            )
-        )
-        view = self._compile_temp_view(table_name, source)
-        with self.begin() as con:
-            con.exec_driver_sql(view)
+        options = [f"{key}={val}" for key, val in kwargs.items()]
 
+        sg_view_expr = self._compile_temp_view(
+            table_name,
+            sg.select("*").from_(
+                sg.func("read_json_auto", normalize_filenames(source_list), *options)
+            ),
+        )
+
+        self.raw_sql(sg_view_expr)
         return self.table(table_name)
 
     def read_csv(
@@ -671,11 +690,20 @@ class Backend(BaseBackend, CanCreateSchema):
 
         kwargs.setdefault("header", True)
         kwargs["auto_detect"] = kwargs.pop("auto_detect", "columns" not in kwargs)
-        options = ", " + ",".join([f"{key}={val}" for key, val in kwargs.items()])
+        # TODO: clean this up
+        # We want to _usually_ quote arguments but if we quote `columns` it messes
+        # up DuckDB's struct parsing.
+        options = [
+            f'{key}="{val}"' if key != "columns" else f"{key}={val}"
+            for key, val in kwargs.items()
+        ]
 
-        sql = f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_csv({source_list}{options})"
+        sg_view_expr = self._compile_temp_view(
+            table_name,
+            sg.select("*").from_(sg.func("read_csv", source_list, *options)),
+        )
 
-        self.raw_sql(sql)
+        self.raw_sql(sg_view_expr)
         return self.table(table_name)
 
     def read_parquet(
@@ -710,12 +738,10 @@ class Backend(BaseBackend, CanCreateSchema):
         # Default to using the native duckdb parquet reader
         # If that fails because of auth issues, fall back to ingesting via
         # pyarrow dataset
-        self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
-        # except sa.exc.OperationalError as e:
-        #     if isinstance(e.orig, duckdb.IOException):
-        #         self._read_parquet_pyarrow_dataset(source_list, table_name, **kwargs)
-        #     else:
-        #         raise e
+        try:
+            self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
+        except duckdb.IOException:
+            self._read_parquet_pyarrow_dataset(source_list, table_name, **kwargs)
 
         return self.table(table_name)
 
@@ -728,13 +754,18 @@ class Backend(BaseBackend, CanCreateSchema):
         ):
             self._load_extensions(["httpfs"])
 
-        options = ""
         if kw := kwargs:
-            options = ", " + ",".join([f"{key}={val}" for key, val in kw.items()])
+            options = [f"{key}={val}" for key, val in kwargs.items()]
+            pq_func = sg.func("read_parquet", source_list, *options)
+        else:
+            pq_func = sg.func("read_parquet", source_list)
 
-        sql = f"CREATE OR REPLACE VIEW {table_name} AS SELECT * FROM read_parquet({source_list}{options})"
+        sg_view_expr = self._compile_temp_view(
+            table_name,
+            sg.select("*").from_(pq_func),
+        )
 
-        self.raw_sql(sql)
+        self.raw_sql(sg_view_expr)
 
     def _read_parquet_pyarrow_dataset(
         self, source_list: str | Iterable[str], table_name: str, **kwargs: Any
@@ -746,12 +777,11 @@ class Backend(BaseBackend, CanCreateSchema):
         # We don't create a view since DuckDB special cases Arrow Datasets
         # so if we also create a view we end up with both a "lazy table"
         # and a view with the same name
-        with self.begin() as con:
-            # DuckDB normally auto-detects Arrow Datasets that are defined
-            # in local variables but the `dataset` variable won't be local
-            # by the time we execute against this so we register it
-            # explicitly.
-            con.connection.register(table_name, dataset)
+        self.con.register(table_name, dataset)
+        # DuckDB normally auto-detects Arrow Datasets that are defined
+        # in local variables but the `dataset` variable won't be local
+        # by the time we execute against this so we register it
+        # explicitly.
 
     def read_in_memory(
         self,
@@ -774,8 +804,7 @@ class Backend(BaseBackend, CanCreateSchema):
             The just-registered table
         """
         table_name = table_name or util.gen_name("read_in_memory")
-        with self.begin() as con:
-            con.connection.register(table_name, source)
+        self.con.register(table_name, source)
 
         if isinstance(source, pa.RecordBatchReader):
             # Ensure the reader isn't marked as started, in case the name is
@@ -851,12 +880,14 @@ class Backend(BaseBackend, CanCreateSchema):
                 "`table_name` is required when registering a postgres table"
             )
         self._load_extensions(["postgres_scanner"])
-        source = sa.select(sa.literal_column("*")).select_from(
-            sa.func.postgres_scan_pushdown(uri, schema, table_name)
+
+        sg_view_expr = self._compile_temp_view(
+            table_name,
+            sg.select("*").from_(
+                sg.func("postgres_scan_pushdown", uri, schema, table_name)
+            ),
         )
-        view = self._compile_temp_view(table_name, source)
-        with self.begin() as con:
-            con.exec_driver_sql(view)
+        self.raw_sql(sg_view_expr)
 
         return self.table(table_name)
 
@@ -903,12 +934,15 @@ class Backend(BaseBackend, CanCreateSchema):
             raise ValueError("`table_name` is required when registering a sqlite table")
         self._load_extensions(["sqlite"])
 
-        source = sa.select(sa.literal_column("*")).select_from(
-            sa.func.sqlite_scan(str(path), table_name)
+        sg_view_expr = self._compile_temp_view(
+            table_name,
+            sg.select("*").from_(
+                sg.func(
+                    "sqlite_scan", sg.to_identifier(str(path), quoted=True), table_name
+                )
+            ),
         )
-        view = self._compile_temp_view(table_name, source)
-        with self.begin() as con:
-            con.exec_driver_sql(view)
+        self.raw_sql(sg_view_expr)
 
         return self.table(table_name)
 
@@ -943,10 +977,9 @@ class Backend(BaseBackend, CanCreateSchema):
         >>> con.list_tables()
         ['t']
         """
-        self._load_extensions(["sqlite"])
-        with self.begin() as con:
-            con.execute(sa.text(f"SET GLOBAL sqlite_all_varchar={all_varchar}"))
-            con.execute(sa.text(f"CALL sqlite_attach('{path}', overwrite={overwrite})"))
+        self.load_extension("sqlite")
+        self.raw_sql(f"SET GLOBAL sqlite_all_varchar={all_varchar}")
+        self.raw_sql(f"CALL sqlite_attach('{path}', overwrite={overwrite})")
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         # Warn for any tables depending on RecordBatchReaders that have already
