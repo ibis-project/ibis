@@ -293,26 +293,24 @@ class scalar:
         if (return_annotation := annotations.pop("return", None)) is None:
             raise exc.MissingReturnAnnotationError(fn)
 
-        fields = {}
+        func_name = name if name is not None else fn.__name__
 
-        func_name = name or fn.__name__
-
-        for arg_name, param in inspect.signature(fn).parameters.items():
-            if (raw_dtype := annotations.get(arg_name)) is not None:
-                dtype = dt.dtype(raw_dtype)
-            else:
-                dtype = raw_dtype
-            arg = rlz.ValueOf(dtype)
-            fields[arg_name] = Argument(pattern=arg, default=param.default)
-
-        fields["dtype"] = dt.dtype(return_annotation)
-        fields["__input_type__"] = input_type
-        # can't be just `fn` otherwise `fn` is assumed to be a method
-        fields["__func__"] = property(fget=lambda _, fn=fn: fn)
-        fields["__config__"] = FrozenDict(args=args, kwargs=FrozenDict(**kwargs))
-        fields["__udf_namespace__"] = schema
-        fields["__module__"] = fn.__module__
-        fields["__func_name__"] = func_name
+        fields = {
+            arg_name: Argument(
+                pattern=rlz.ValueOf(annotations.get(arg_name)), default=param.default
+            )
+            for arg_name, param in inspect.signature(fn).parameters.items()
+        } | {
+            "dtype": dt.dtype(return_annotation),
+            "__input_type__": input_type,
+            # must wrap `fn` in a `property` otherwise `fn` is assumed to be a
+            # method
+            "__func__": property(fget=lambda _, fn=fn: fn),
+            "__config__": FrozenDict(args=args, kwargs=FrozenDict(**kwargs)),
+            "__udf_namespace__": schema,
+            "__module__": fn.__module__,
+            "__func_name__": func_name,
+        }
 
         return type(func_name, (ScalarUDF,), fields)
 
