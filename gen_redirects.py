@@ -143,11 +143,11 @@ REDIRECTS = {
     "/user_guide/extending/": "/how-to/extending/elementwise",
     "/versioning": "/concepts/versioning",
     "/why_ibis/": "/why",
-    # TODO: "/user_guide/self_joins/": "/how_to/self_joins/",
+    "/how_to/self_joins/": "/tutorials/ibis-for-sql-users#self-joins",
+    "/user_guide/self_joins/": "/tutorials/ibis-for-sql-users#self-joins",
+    "/how_to/topk/": "/tutorials/ibis-for-sql-users#top-k-operations",
     # TODO: "/how_to/memtable-join/": "/how_to/memtable_join/",
     # TODO: "/how_to/memtable_join/"
-    # TODO: "/how_to/self_joins/"
-    # TODO: "/how_to/topk/"
     # TODO: "/reference/backends/base/"
     # TODO: "/reference/backends/sql/"
     # TODO: "/reference/backends/sqlalchemy/"
