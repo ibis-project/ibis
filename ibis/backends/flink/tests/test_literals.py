@@ -51,6 +51,7 @@ def test_string_literals(value, expected):
         param(
             ibis.interval(months=50), "INTERVAL '04-02' YEAR TO MONTH", id="50months"
         ),
+        param(ibis.interval(seconds=5), "INTERVAL '5' SECOND", id="5seconds"),
     ],
 )
 def test_translate_interval_literal(value, expected):

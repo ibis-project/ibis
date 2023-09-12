@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from pyflink.table import TableEnvironment
 
     import ibis.expr.types as ir
+    from ibis.expr.streaming import Watermark
 
 
 class Backend(BaseBackend, CanCreateDatabase):
@@ -255,6 +256,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         database: str | None = None,
         catalog: str | None = None,
         tbl_properties: dict | None = None,
+        watermark: Watermark | None = None,
         temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
@@ -289,6 +291,8 @@ class Backend(BaseBackend, CanCreateDatabase):
             Table properties used to create a table source/sink. The properties
             are usually used to find and create the underlying connector. Accepts
             dictionary of key-value pairs (key1=val1, key2=val2, ...).
+        watermark
+            Watermark strategy for the table, only applicable on sources.
         temp
             Whether a table is temporary or not
         overwrite
@@ -331,6 +335,7 @@ class Backend(BaseBackend, CanCreateDatabase):
                 table_name=name,
                 schema=schema,
                 tbl_properties=tbl_properties,
+                watermark=watermark,
                 temp=temp,
                 database=database,
                 catalog=catalog,

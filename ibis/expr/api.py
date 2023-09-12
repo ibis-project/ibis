@@ -22,6 +22,7 @@ from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred
 from ibis.expr.schema import Schema
 from ibis.expr.sql import parse_sql, show_sql, to_sql
+from ibis.expr.streaming import Watermark
 from ibis.expr.types import (
     DateValue,
     Expr,
@@ -157,6 +158,7 @@ __all__ = (
     "trailing_range_window",
     "trailing_window",
     "union",
+    "watermark",
     "where",
     "window",
     "preceding",
@@ -1496,9 +1498,9 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True):
 
     Parameters
     ----------
-    table:
+    table
         A table expression
-    *rest:
+    *rest
         Additional table expressions
     distinct
         Only diff distinct rows not occurring in the calling table
@@ -1542,6 +1544,24 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True):
     └───────┘
     """
     return table.difference(*rest, distinct=distinct) if rest else table
+
+
+def watermark(time_col: str, allowed_delay: ir.IntervalScalar) -> Watermark:
+    """Return a watermark object.
+
+    Parameters
+    ----------
+    time_col
+        The timestamp column that will be used to generate watermarks in event time processing.
+    allowed_delay
+        Length of time that events are allowed to be late.
+
+    Returns
+    -------
+    Watermark
+        A watermark object.
+    """
+    return Watermark(time_col=time_col, allowed_delay=allowed_delay)
 
 
 e = ops.E().to_expr()
