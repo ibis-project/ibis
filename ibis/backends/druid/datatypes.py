@@ -54,6 +54,11 @@ def _smallint(element, compiler, **kw):
     return "SMALLINT"
 
 
+@compiles(DruidString, "druid")
+def _string(element, compiler, **kw):
+    return "VARCHAR"
+
+
 class DruidType(AlchemyType):
     dialect = "hive"
 

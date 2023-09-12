@@ -1059,7 +1059,6 @@ def test_levenshtein(con, right):
     reason="doesn't allow boolean expressions in select statements",
     raises=sa.exc.OperationalError,
 )
-@pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError)
 @pytest.mark.broken(
     ["oracle"],
     reason="sqlalchemy converts True to 1, which cannot be used in CASE WHEN statement",
