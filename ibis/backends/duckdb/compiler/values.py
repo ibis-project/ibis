@@ -124,7 +124,10 @@ def _literal(op, **kw):
                 expression=sg_literal("NaN"),
                 to=sg.expressions.DataType.Type.FLOAT,
             )
-        return sg_literal(value, is_string=False)
+        return sg.cast(
+            sg_literal(value, is_string=False),
+            to=DuckDBType.from_ibis(dtype),
+        )
     elif dtype.is_interval():
         return _interval_format(op)
     elif dtype.is_timestamp():
