@@ -113,7 +113,7 @@ def test_table_inequality(dbpath):
     assert not t.equals(s)
 
 
-def test_builtin_udf(con):
+def test_builtin_scalar_udf(con):
     @udf.scalar.builtin
     def zeroblob(n: int) -> bytes:
         """Return a length `n` blob of zero bytes."""
@@ -122,3 +122,13 @@ def test_builtin_udf(con):
     expr = zeroblob(n)
     result = con.execute(expr)
     assert result == b"\x00" * n
+
+
+def test_builtin_agg_udf(con):
+    @udf.agg.builtin
+    def total(x) -> float:
+        """Totally total."""
+
+    expr = total(con.tables.functional_alltypes.limit(2).select(n=ibis.NA).n)
+    result = con.execute(expr)
+    assert result == 0.0

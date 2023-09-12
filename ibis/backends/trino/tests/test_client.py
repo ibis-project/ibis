@@ -95,7 +95,7 @@ def test_cross_schema_table_access(con, schema, table):
     assert t.count().execute()
 
 
-def test_builtin_udf(con):
+def test_builtin_scalar_udf(con):
     @udf.scalar.builtin
     def bar(x: float, width: int) -> str:
         """Render a single bar of length `width`, with `x` percent filled."""
@@ -103,4 +103,21 @@ def test_builtin_udf(con):
     expr = bar(0.25, 40)
     result = con.execute(expr)
     expected = "\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;202m█\x1b[38;5;202m█\x1b[38;5;202m█\x1b[38;5;208m█\x1b[38;5;208m█\x1b[38;5;208m█\x1b[0m                              "
+    assert result == expected
+
+
+def test_builtin_agg_udf(con):
+    @udf.agg.builtin
+    def geometric_mean(x) -> float:
+        """Geometric mean of a series of numbers."""
+
+    t = con.table("diamonds")
+    expr = geometric_mean(t.price)
+    result = expr.execute()
+
+    with con.begin() as c:
+        expected = c.exec_driver_sql(
+            "SELECT GEOMETRIC_MEAN(price) FROM diamonds"
+        ).scalar()
+
     assert result == expected

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from datetime import date
 from operator import methodcaller
 
@@ -178,7 +179,7 @@ def test_enum_as_string(enum_t, expr_fn, expected):
     tm.assert_series_equal(res, expected)
 
 
-def test_builtin_udf(con):
+def test_builtin_scalar_udf(con):
     @udf.scalar.builtin
     def soundex(a: str) -> str:
         """Soundex of a string."""
@@ -186,3 +187,15 @@ def test_builtin_udf(con):
     expr = soundex("foo")
     result = con.execute(expr)
     assert result == "F000"
+
+
+def test_builtin_agg_udf(con):
+    @udf.agg.builtin
+    def json_arrayagg(a) -> str:
+        """Glom together some JSON."""
+
+    ft = con.tables.functional_alltypes[:5]
+    expr = json_arrayagg(ft.string_col)
+    result = expr.execute()
+    expected = json.dumps(list(map(str, range(5))), separators=",:")
+    assert result == expected
