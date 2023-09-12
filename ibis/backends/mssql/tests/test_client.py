@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import sqlalchemy as sa
 from pytest import param
 
 import ibis
@@ -91,7 +92,7 @@ def test_get_schema_from_query(con, server_type, expected_type, temp_table):
     assert t.schema() == expected_schema
 
 
-def test_builtin_udf(con):
+def test_builtin_scalar_udf(con):
     @udf.scalar.builtin
     def difference(a: str, b: str) -> int:
         """Soundex difference between two strings."""
@@ -99,3 +100,29 @@ def test_builtin_udf(con):
     expr = difference("foo", "moo")
     result = con.execute(expr)
     assert result == 3
+
+
+def test_builtin_agg_udf(con):
+    @udf.agg.builtin
+    def count_big(x) -> int:
+        """The biggest of counts."""
+
+    ft = con.tables.functional_alltypes
+    expr = count_big(ft.id)
+    assert expr.execute() == ft.count().execute()
+
+
+def test_builtin_agg_udf_filtered(con):
+    @udf.agg.builtin
+    def count_big(x, where: bool = True) -> int:
+        """The biggest of counts."""
+
+    ft = con.tables.functional_alltypes
+    expr = count_big(ft.id)
+    with pytest.raises(
+        sa.exc.OperationalError, match="An expression of non-boolean type specified"
+    ):
+        assert expr.execute()
+
+    expr = count_big(ft.id, where=ft.id == 1)
+    assert expr.execute() == ft[ft.id == 1].count().execute()
