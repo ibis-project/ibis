@@ -140,15 +140,22 @@ jobs:
           comment-on-alert: true
           alert-threshold: "300%"
 
-      - name: checkout gh-pages
-        run: git checkout gh-pages
-
-      - name: upload benchmark data
-        uses: actions/upload-artifact@v3
+      - uses: google-github-actions/auth@v1
         with:
-          name: bench
-          path: ./bench
-          if-no-files-found: error
+          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - uses: google-github-actions/setup-gcloud@v1
+
+      - name: show gcloud info
+        run: gcloud info
+
+      - name: copy benchmark data to gcs
+        run: |
+          # remove whitespace and compress
+          jq -rcM < ./benchmarks/output.json | gzip -c > output.json.gz
+
+          timestamp="$(date --iso-8601=ns --utc | tr ','  '.')"
+          gsutil cp output.json.gz "gs://ibis-benchmark-data/ci/${timestamp}.json.gz"
 
   docs_pr:
     runs-on: ubuntu-latest
@@ -190,10 +197,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     concurrency: docs-${{ github.repository }}
-    # needs:
-    #   # wait on benchmarks to prevent a race condition when pushing to the
-    #   # gh-pages branch
-    #   - benchmarks
     steps:
       - name: install nix
         uses: cachix/install-nix-action@v23
@@ -207,13 +210,6 @@ jobs:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community,poetry2nix
-
-      # TODO(cpcloud): what to do with this?
-      # - name: download benchmark data
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: bench
-      #     path: docs/bench
 
       - name: checkout
         uses: actions/checkout@v4
