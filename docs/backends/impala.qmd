@@ -304,9 +304,7 @@ You can use the `create_table` method either on a database or client
 object.
 
 ```python
-schema = ibis.schema([('foo', 'string'),
-                      ('year', 'int32'),
-                      ('month', 'int16')])
+schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
 db.create_table(name, schema=schema)
 ```
@@ -316,9 +314,7 @@ You can force a particular path with the `location` option.
 
 ```python
 from getpass import getuser
-schema = ibis.schema([('foo', 'string'),
-                      ('year', 'int32'),
-                      ('month', 'int16')])
+schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
 location = '/home/{}/new-table-data'.format(getuser())
 db.create_table(name, schema=schema, location=location)
@@ -353,9 +349,7 @@ To create an empty partitioned table, include a list of columns to be
 used as the partition keys.
 
 ```python
-schema = ibis.schema([('foo', 'string'),
-                      ('year', 'int32'),
-                      ('month', 'int16')])
+schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
 db.create_table(name, schema=schema, partition=['year', 'month'])
 ```
@@ -389,9 +383,7 @@ specific, you can either use a dict with the partition key names and
 values, or pass a list of the partition values:
 
 ```python
-schema = ibis.schema([('foo', 'string'),
-                      ('year', 'int32'),
-                      ('month', 'int16')])
+schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
 db.create_table(name, schema=schema, partition=['year', 'month'])
 
@@ -1028,12 +1020,8 @@ $ rm -rf csv-files/
 The schema here is pretty simple (see `ibis.schema` for more):
 
 ```python
->>> schema = ibis.schema([('foo', 'string'),
-...                       ('bar', 'double'),
-...                       ('baz', 'int32')])
-
->>> table = con.delimited_file('/__ibis/ibis-testing-data/csv',
-...                            schema)
+>>> schema = ibis.schema(dict(foo='string', bar='double', baz='int32'))
+>>> table = con.delimited_file('/__ibis/ibis-testing-data/csv', schema)
 >>> table.limit(10)
           foo       bar  baz
 0  63IEbRheTh  0.679389    6
