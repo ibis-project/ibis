@@ -493,10 +493,13 @@ class Backend(BaseBackend, CanCreateSchema):
             raise exc.UnsupportedOperationError(
                 "DuckDB cannot create a schema in another database."
             )
-        # name = self._quote(name)
-        if_not_exists = "IF NOT EXISTS " * force
-        with self.begin() as con:
-            con.exec_driver_sql(f"CREATE SCHEMA {if_not_exists}{name}")
+
+        name = sg.to_identifier(database, quoted=True)
+        return sg.expressions.Create(
+            this=name,
+            kind="SCHEMA",
+            replace=force,
+        )
 
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
@@ -505,10 +508,13 @@ class Backend(BaseBackend, CanCreateSchema):
             raise exc.UnsupportedOperationError(
                 "DuckDB cannot drop a schema in another database."
             )
-        # name = self._quote(name)
-        if_exists = "IF EXISTS " * force
-        with self.begin() as con:
-            con.exec_driver_sql(f"DROP SCHEMA {if_exists}{name}")
+
+        name = sg.to_identifier(database, quoted=True)
+        return sg.expressions.Drop(
+            this=name,
+            kind="SCHEMA",
+            replace=force,
+        )
 
     def sql(
         self,
