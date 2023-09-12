@@ -115,8 +115,10 @@ REDIRECTS = {
     "/how_to/extending/reduction/": "/how-to/extending/reduction",
     "/how_to/extending/reduction/reduction.ipynb": "/how-to/extending/reduction",
     "/how_to/ffill_bfill_w_window/": "/posts/ffill-and-bfill-using-ibis",
+    "/how_to/self_joins/": "/tutorials/ibis-for-sql-users#self-joins",
     "/how_to/sessionize": "/how-to/timeseries/sessionize",
     "/how_to/streamlit/": "/how-to/visualization/streamlit",
+    "/how_to/topk/": "/tutorials/ibis-for-sql-users#top-k-operations",
     "/ibis-for-dplyr-users/": "/tutorial/ibis-for-dplyr-users/",
     "/ibis-for-pandas-users/": "/tutorial/ibis-for-pandas-users/",
     "/ibis-for-sql-programmers/": "/tutorial/ibis-for-sql-users/",
@@ -141,11 +143,9 @@ REDIRECTS = {
     "/user_guide/configuration/": "/how-to/configure/basics",
     "/user_guide/design/": "/concepts/internals",
     "/user_guide/extending/": "/how-to/extending/elementwise",
+    "/user_guide/self_joins/": "/tutorials/ibis-for-sql-users#self-joins",
     "/versioning": "/concepts/versioning",
     "/why_ibis/": "/why",
-    "/how_to/self_joins/": "/tutorials/ibis-for-sql-users#self-joins",
-    "/user_guide/self_joins/": "/tutorials/ibis-for-sql-users#self-joins",
-    "/how_to/topk/": "/tutorials/ibis-for-sql-users#top-k-operations",
     # TODO: "/how_to/memtable-join/": "/how_to/memtable_join/",
     # TODO: "/how_to/memtable_join/"
     # TODO: "/reference/backends/base/"
