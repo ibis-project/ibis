@@ -102,17 +102,27 @@ def _literal(op, **kw):
             raise NotImplementedError(
                 f"Unsupported precision. Supported values: [1 : 38]. Current value: {precision!r}"
             )
+        if math.isinf(value):
+            return sg.expressions.cast(
+                expression=sg_literal(value),
+                to=sg.expressions.DataType.Type.FLOAT,
+            )
+        elif math.isnan(value):
+            return sg.expressions.cast(
+                expression=sg_literal("NaN"),
+                to=sg.expressions.DataType.Type.FLOAT,
+            )
 
-        # TODO: handle if `value` is "Infinity"
-        # precision = sg.expressions.DataTypeParam(
-        #     this=sg.expressions.Literal(this=f"{precision}", is_string=False)
-        # )
-        # scale = sg.expressions.DataTypeParam(
-        #     this=sg.expressions.Literal(this=f"{scale}", is_string=False)
-        # )
-        # need sg.expressions.DataTypeParam to be available
-        # ...
-        return f"{value!s}::decimal({precision}, {scale})"
+        precision = sg.expressions.DataTypeParam(
+            this=sg_literal(precision, is_string=False)
+        )
+        scale = sg.expressions.DataTypeParam(this=sg_literal(scale, is_string=False))
+        cast_to = sg.expressions.DataType(
+            this=sg.expressions.DataType.Type.DECIMAL,
+            expressions=[precision, scale],
+        )
+        sg_expr = sg.cast(sg_literal(value, is_string=False), to=cast_to)
+        return sg_expr
     elif dtype.is_numeric():
         if math.isinf(value):
             return sg.expressions.cast(

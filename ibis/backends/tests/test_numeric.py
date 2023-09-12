@@ -409,13 +409,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pandas": decimal.Decimal("Infinity"),
                 "dask": decimal.Decimal("Infinity"),
                 "impala": float("inf"),
+                "duckdb": float("inf"),
             },
             {
                 "bigquery": "FLOAT64",
                 "snowflake": "VARCHAR",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
-                "duckdb": "DECIMAL(18,3)",
+                "duckdb": "FLOAT",
                 "postgres": "numeric",
                 "impala": "DOUBLE",
             },
@@ -423,11 +424,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.broken(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
-                    raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ["duckdb"],
-                    "Unsupported precision. Supported values: [1 : 38]. Current value: None",
                     raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
@@ -489,6 +485,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pandas": decimal.Decimal("-Infinity"),
                 "dask": decimal.Decimal("-Infinity"),
                 "impala": float("-inf"),
+                "duckdb": float("-inf"),
             },
             {
                 "bigquery": "FLOAT64",
@@ -498,16 +495,12 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
                 "impala": "DOUBLE",
+                "duckdb": "FLOAT",
             },
             marks=[
                 pytest.mark.broken(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
-                    raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ["duckdb"],
-                    "Unsupported precision. Supported values: [1 : 38]. Current value: None",
                     raises=NotImplementedError,
                 ),
                 pytest.mark.broken(
@@ -569,6 +562,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pandas": decimal.Decimal("NaN"),
                 "dask": decimal.Decimal("NaN"),
                 "impala": float("nan"),
+                "duckdb": float("nan"),
             },
             {
                 "bigquery": "FLOAT64",
@@ -578,16 +572,13 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
                 "impala": "DOUBLE",
+                "duckdb": "FLOAT",
             },
             marks=[
                 pytest.mark.broken(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
-                ),
-                pytest.mark.broken(
-                    ["duckdb"],
-                    "Unsupported precision. Supported values: [1 : 38]. Current value: None",
                 ),
                 pytest.mark.broken(
                     ["trino"],
