@@ -28,8 +28,10 @@ chart = (
     .encode(
         x="species",
         y="count",
+        tooltip=["species", "count"],
     )
     .properties(width=600, height=400)
+    .interactive()
 )
 chart
 ```
