@@ -755,6 +755,24 @@ class BaseAlchemyBackend(BaseSQLBackend):
             func = getattr(generator, op.__func_name__)
             return func(*map(t.translate, op.args))
 
+    def _gen_udaf_rule(self, op: ops.AggUDF):
+        from ibis import NA
+
+        @self.add_operation(type(op))
+        def _(t, op):
+            args = (arg for name, arg in zip(op.argnames, op.args) if name != "where")
+            generator = sa.func
+            if (namespace := op.__udf_namespace__) is not None:
+                generator = getattr(generator, namespace)
+            func = getattr(generator, op.__func_name__)
+
+            if (where := op.where) is None:
+                return func(*map(t.translate, args))
+            elif t._has_reduction_filter_syntax:
+                return func(*map(t.translate, args)).filter(t.translate(where))
+            else:
+                return func(*(t.translate(ops.Where(where, arg, NA)) for arg in args))
+
     def _register_udfs(self, expr: ir.Expr) -> None:
         with self.begin() as con:
             for udf_node in expr.op().find(ops.ScalarUDF):

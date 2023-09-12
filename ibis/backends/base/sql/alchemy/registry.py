@@ -359,7 +359,7 @@ def _window_function(t, window):
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause
     if isinstance(func, t._require_order_by) and not window.frame.order_by:
-        order_by = t.translate(func.arg)  # .args[0])
+        order_by = t.translate(func.args[0])
     else:
         order_by = [t.translate(arg) for arg in window.frame.order_by]
 

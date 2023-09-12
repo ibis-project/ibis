@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import pandas.testing as tm
 import pytest
 from pytest import param
 
+import ibis.expr.datatypes as dt
 from ibis import udf
 
 
@@ -34,7 +36,7 @@ def compress_bytes(data: bytes, method: str) -> bytes:
         param(jarowinkler_similarity, ("snow", "show"), id="jarowinkler_similarity"),
     ],
 )
-def test_builtin(con, func, args):
+def test_builtin_scalar_udf(con, func, args):
     expr = func(*args)
 
     query = f"SELECT {func.__name__}({', '.join(map(repr, args))})"
@@ -59,3 +61,34 @@ def test_compress(con, func, pyargs, snowargs):
         expected = c.exec_driver_sql(query).scalar()
 
     assert con.execute(expr) == expected
+
+
+@udf.agg.builtin
+def minhash(x, y) -> dt.json:
+    ...
+
+
+@udf.agg.builtin
+def approximate_jaccard_index(a) -> float:
+    ...
+
+
+def test_builtin_agg_udf(con):
+    ft = con.tables.FUNCTIONAL_ALLTYPES.limit(2)
+    ft = ft.select(mh=minhash(100, ft.string_col).over(group_by=ft.date_string_col))
+    expr = ft.agg(aji=approximate_jaccard_index(ft.mh))
+
+    result = expr.execute()
+    query = """
+    SELECT approximate_jaccard_index("mh") AS "aji"
+    FROM (
+        SELECT minhash(100, "string_col") OVER (PARTITION BY "date_string_col") AS "mh"
+        FROM (
+            SELECT * FROM "FUNCTIONAL_ALLTYPES" LIMIT 2
+        )
+    )
+    """
+    with con.begin() as c:
+        expected = c.exec_driver_sql(query).cursor.fetch_pandas_all()
+
+    tm.assert_frame_equal(result, expected)
