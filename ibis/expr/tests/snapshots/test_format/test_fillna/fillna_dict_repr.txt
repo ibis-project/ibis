@@ -1,0 +1,7 @@
+r0 := UnboundTable: t
+  a int64
+  b string
+
+FillNa[r0]
+  replacements:
+    a: 3

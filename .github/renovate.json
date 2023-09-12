@@ -1,0 +1,102 @@
+{
+  "rangeStrategy": "widen",
+  "extends": ["config:base", ":enablePreCommit"],
+  "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
+  "semanticCommits": "enabled",
+  "lockFileMaintenance": { "enabled": true },
+  "enabledManagers": [
+    "docker-compose",
+    "dockerfile",
+    "github-actions",
+    "poetry"
+  ],
+  "automerge": false,
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "matchManagers": ["docker-compose", "dockerfile", "github-actions"],
+      "automerge": true,
+      "autoApprove": true
+    },
+    {
+      "matchPackagePrefixes": ["clickhouse"],
+      "addLabels": ["clickhouse"]
+    },
+    {
+      "matchPackagePatterns": ["dask"],
+      "addLabels": ["dask"]
+    },
+    {
+      "matchPackagePatterns": ["datafusion"],
+      "addLabels": ["datafusion"]
+    },
+    {
+      "matchPackagePatterns": [
+        "db-dtypes",
+        "google-cloud-bigquery",
+        "google-cloud-bigquery-storage",
+        "pydata-google-auth"
+      ],
+      "addLabels": ["bigquery"]
+    },
+    {
+      "matchPackagePatterns": ["duckdb", "duckdb-engine"],
+      "addLabels": ["duckdb"]
+    },
+    {
+      "matchPackagePatterns": ["fsspec", "impyla"],
+      "addLabels": ["impala"]
+    },
+    {
+      "matchPackagePatterns": ["oracledb"],
+      "addLabels": ["oracle"]
+    },
+    {
+      "matchPackagePatterns": ["polars"],
+      "addLabels": ["polars"]
+    },
+    {
+      "matchPackagePatterns": ["psycopg2"],
+      "addLabels": ["postgres"]
+    },
+    {
+      "matchPackagePatterns": ["pydruid"],
+      "addLabels": ["druid"]
+    },
+    {
+      "matchPackagePatterns": ["pymssql"],
+      "addLabels": ["mssql"]
+    },
+    {
+      "matchPackagePatterns": ["pymssql"],
+      "addLabels": ["mssql"]
+    },
+    {
+      "matchPackagePatterns": ["pyspark"],
+      "addLabels": ["pyspark"]
+    },
+    {
+      "matchPackagePatterns": [
+        "snowflake-connector-python",
+        "snowflake-sqlalchemy"
+      ],
+      "addLabels": ["snowflake"]
+    },
+    {
+      "matchPackagePatterns": ["trino"],
+      "addLabels": ["trino"]
+    },
+    {
+      "matchDepTypes": ["dev"],
+      "addLabels": ["developer-tools"]
+    },
+    {
+      "matchDepTypes": ["test"],
+      "addLabels": ["tests"]
+    },
+    {
+      "matchDepTypes": ["docs"],
+      "addLabels": ["docs"]
+    }
+  ]
+}

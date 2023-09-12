@@ -1,0 +1,284 @@
+---
+title: Ibis v6.0.0
+author: "Ibis team"
+date: "2023-07-03"
+categories:
+    - release
+    - blog
+---
+## Overview
+
+Ibis 6.0.0 adds the Oracle backend, revamped UDF support, and many new features. This release also includes a number of refactors, bug fixes, and performance improvements. You can view the full changelog in [the release notes](../../../release_notes.md).
+
+If you're new to Ibis, see [how to install](../../../install.qmd) and [the getting started tutorial](../../../tutorials/getting_started.qmd).
+
+To follow along with this blog, ensure you're on `'ibis-framework>=6,<7'`. First, we'll setup Ibis and fetch some sample data to use.
+
+
+```{python}
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+ibis.options.repr.interactive.max_rows = 3
+
+```
+
+Now, fetch the penguins dataset.
+
+```{python}
+t = ibis.examples.penguins.fetch()
+t
+```
+
+## Breaking changes
+
+### Join duplicate column names
+
+Previously when joining tables with duplicate column names, `_x` and `_y` suffixes would be appended by default to the left and right tables respectively. You could override this with the `suffix` argument, which is now removed in favor of `lname` and `rname` arguments. The default is changed to no suffix for the left table and `_right` for the right table.
+
+```{python}
+t.join(t, "island").select(s.startswith("species"))
+```
+
+To replicate the previous behavior:
+
+
+```{python}
+t.join(t, "island", lname="{name}_x", rname="{name}_y").select(
+    s.startswith("species")
+)
+```
+
+### `.count()` column names no longer named `count` automatically
+
+Columns created with the `.count()` aggregation are no longer automatically named `count`. This is to follow convention with other aggregations and reduce the likelihood of name collisions.
+
+
+```{python}
+t.group_by("species").agg(ibis._.species.count())
+```
+
+To reproduce the old behavior, you can rename the column to `count` with:
+
+
+```python
+t.group_by("species").agg(count=ibis._.species.count())
+```
+
+## Backends
+
+### Oracle
+
+The Oracle backend was added! See the [Voltron Data blog](https://voltrondata.com/resources/ibis-6-0-oracle-backend-support) for more details.
+
+```python
+ibis.connect(f"oracle://user:password@host")
+```
+
+### DuckDB
+
+There were various DuckDB improvements, but one notable new feature is the ability to attach to a SQLite database through DuckDB. This allows you to run OLAP queries via DuckDB significantly faster on source data from SQLite.
+
+First we'll create a DuckDB connection and show it has no tables:
+
+```{python}
+duckdb_con = ibis.connect("duckdb://")
+duckdb_con.list_tables()
+```
+
+Then create a SQLite database with a table:
+
+
+```{python}
+sqlite_con = ibis.connect("sqlite://penguins.db")
+sqlite_con.create_table("penguins", t.to_pandas(), overwrite=True)
+```
+
+And attach it:
+
+```{python}
+duckdb_con.attach_sqlite("./penguins.db")
+duckdb_con.list_tables()
+```
+
+#### MotherDuck support!
+
+MotherDuck launched recently and is now supported in Ibis!
+
+Simply connect with the DuckDB backend using `md:` or `motherduck:` as the database.
+
+
+```python
+ibis.connect("duckdb://md:")
+```
+
+### Polars
+
+The Polars backend received many improvements from community members [@alexander-beedie](https://github.com/alexander-beedie) and [@mesejo](https://github.com/mesejo), with plenty of operations now supported.
+
+Some additions in this version include:
+
+- `any` and `all` reductions
+- `argmin` and `argmax`
+- `identical_to`
+- `corr`
+- support for `.sql()`
+
+Give it a try by setting your backend to Polars with `ibis.set_backend("polars")`.
+
+## Functionality
+
+### UDFs
+
+User-defined functions (UDFs) have been revamped with a new syntax and new backends added. To get started, import the decorator:
+
+
+```{python}
+from ibis import udf
+```
+
+Define a UDF:
+
+
+```{python}
+@udf.scalar.python
+def num_vowels(s: str, include_y: bool = False) -> int:
+    return sum(map(s.lower().count, "aeiou" + ("y" * include_y)))
+```
+
+And call it:
+
+
+```{python}
+num_vowels(t[:1].species.execute()[0])
+```
+
+```{python}
+t.group_by(num_vowels=num_vowels(t.species)).agg(
+    num_vowels_island_count=t.island.count()
+)
+```
+
+```{python}
+t.filter(num_vowels(t.species) < 4)
+```
+
+### `to_torch` API
+
+A new `to_torch` output method was added. Combined with UDFs, this brings powerful ML capabilities into Ibis. See a complete example in the [Ibis + DuckDB + PyTorch blog](../torch).
+
+
+```{python}
+import torch
+
+torch.set_printoptions(threshold=10)
+```
+
+
+```{python}
+t.select(s.numeric()).to_torch()
+```
+
+### Array zip support
+
+A new zip operation was added on array data types, allowing you to zip together multiple arrays.
+
+```{python}
+arrays = ibis.memtable(
+    {"numbers": [[3, 2], [], None], "strings": [["a", "c"], None, ["e"]]}
+)
+arrays
+```
+
+```{python}
+arrays.numbers.zip(arrays.strings)
+```
+
+```{python}
+arrays.numbers.zip(arrays.strings).unnest()
+```
+
+### Try cast support
+
+A new `try_cast()` operation was added that allows you to cast a column to a type, but return null if the cast fails.
+
+
+```{python}
+ibis.literal("a").try_cast("int")
+```
+
+```python
+ibis.literal(0).try_cast("float")
+```
+
+### `__dataframe__` support
+
+Ibis now supports the [dataframe interchange protocol](https://data-apis.org/dataframe-protocol/latest/index.html), allowing Ibis expressions to be used in any framework that supports it. Adoption of the protocol is still in its early stages, but we expect this to enable Ibis to be used in many new places going forward.
+
+
+```{python}
+t.__dataframe__()
+```
+
+### Streamlit experimental connection interface
+
+A new experimental connection interface was added for Streamlit. See [how-to write a Streamlit app with Ibis](../../../how-to/visualization/streamlit.qmd).
+
+### SQL dialect parameter
+
+In SQL methods, you can now pass the `dialect` parameter to specify the SQL dialect used. This leverages [`sqlglot`](https://github.com/tobymao/sqlglot) under the hood.
+
+
+```{python}
+bigquery_sql = """
+SELECT
+  t0.`species`,
+  COUNT(t0.`species`) AS `count`,
+  CAST(COUNT(DISTINCT t0.`island`) AS FLOAT64) AS `islands`
+FROM penguins AS t0
+GROUP BY
+  1
+"""
+
+duckdb_con.sql(bigquery_sql, dialect="bigquery")
+```
+
+### Delta Lake read/write support for some backends
+
+[Delta Lake tables](https://delta-io) are supported through the [`deltalake` package](https://github.com/delta-io/delta-rs) with `read_delta()` implemented for DuckDB, Polars, and DataFusion.
+
+
+```{python}
+t.to_delta("penguins.delta", mode="overwrite")
+```
+
+
+```{python}
+t = ibis.read_delta("penguins.delta")
+t
+```
+
+### Selectors
+
+Some minor selectors improvements were added including the ability to use abstract type names and lists of strings.
+
+```{python}
+t.select(s.of_type("string"))
+```
+
+```{python}
+t.agg(s.across(["species", "island"], ibis._.count()))
+```
+
+## Refactors
+
+Several internal refactors that shouldn't affect normal usage were made. See [the release notes](../../release_notes.md) for more details.
+
+## Wrapping up
+
+Ibis v6.0.0 brings exciting new features that enable future support for ML and streaming workloads.
+
+As always, try Ibis by [installing](../../install.qmd) and [getting started](../../tutorials/getting_started.qmd).
+
+If you run into any issues or find support is lacking for your backend, [open an issue](https://github.com/ibis-project/issues/new/choose) or [discussion](https://github.com/ibis-project/discussions/new/choose) and let us know!

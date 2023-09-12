@@ -1,0 +1,234 @@
+# Basic operations
+
+In this tutorial, we will perform basic operations on demo data in Starburst Galaxy.
+
+## Prerequisites
+
+This tutorial assumes you have [completed the setup and connected to a database with the `astronauts` and `missions` demo data](0_setup.qmd), including setup of a Python environment with Ibis and the Trino backend installed.
+
+```{python}
+# | code-fold: true
+
+import os # <1>
+import ibis # <1>
+from dotenv import load_dotenv # <1>
+
+ibis.options.interactive = True # <2>
+
+load_dotenv() # <3>
+
+user = os.getenv("USERNAME") # <4>
+password = os.getenv("PASSWORD") # <4>
+host = os.getenv("HOSTNAME") # <4>
+port = os.getenv("PORTNUMBER") # <4>
+catalog = "sample" # <5>
+schema = "demo" # <5>
+
+con = ibis.trino.connect( # <6>
+    user=user, password=password, host=host, port=port, database=catalog, schema=schema # <6>
+) # <6>
+con # <7>
+```
+
+1. Import necessary libraries.
+2. Use Ibis in interactive mode.
+3. Load environment variables.
+4. Load secrets from environment variables.
+5. Use the sample demo data.
+6. Connect to Starburst Galaxy.
+7. Display the connection object.
+
+## Load tables
+
+Once you have a connection, you can assign tables to variables.
+
+```{python}
+astronauts = con.table("astronauts") # <1>
+missions = con.table("missions") # <2>
+```
+
+1. Create `astonauts` variable.
+2. Create `missions` variable.
+
+You can display slices of data:
+
+```{python}
+astronauts[0:5]  # <1>
+```
+
+1. Display the first 5 rows of the `astronauts` table.
+
+```{python}
+missions[0:5]  # <1>
+```
+
+1. Display the first 5 rows of the `missions` table.
+
+## Table schemas
+
+You can view the schemas of the tables:
+
+```{python}
+astronauts.schema()  # <1>
+```
+
+1. Display the schema of the `astronauts` table.
+
+```{python}
+missions.schema()  # <1>
+```
+
+1. Display the schema of the `missions` table.
+
+## Selecting columns
+
+With Ibis, you can run SQL-like queries on your tables. For example, you can select specific columns from a table:
+
+```{python}
+t = astronauts.select("name", "nationality", "mission_title", "mission_number", "hours_mission")  # <1>
+t.head(3) # <2>
+```
+
+1. Select specific columns from the `astronauts` table.
+2. Display the results.
+
+And from the `missions` table:
+
+```{python}
+t = missions.select("company_name", "status_rocket", "cost", "status_mission")  # <1>
+t.head(3) # <2>
+```
+
+1. Select specific columns from the `missions` table.
+2. Display the results.
+
+You can also apply filters to your queries:
+
+```{python}
+t = astronauts.filter(~astronauts["nationality"].like("U.S.%"))  # <1>
+t.head(3) # <2>
+```
+
+1. Filter `astronauts` table by nationality.
+2. Display the results.
+
+And in the `missions` table:
+
+```{python}
+t = missions.filter(missions["status_mission"] == "Failure")  # <1>
+t.head(3) # <2>
+```
+
+1. Filter `missions` table by mission status.
+2. Display the results.
+
+## Mutating columns
+
+```{python}
+t = missions.mutate(date=ibis.coalesce(ibis._["date"], None)) # <1>
+t = t.order_by(t["date"].asc()) # <2>
+t.head(3) # <3>
+```
+
+1. Mutate the `date` column.
+2. Order the results by the `date` column.
+3. Display the results.
+
+## Aggregating and grouping results
+
+Ibis also supports aggregate functions and grouping. For example, you can count the number of rows in a table and group the results by a specific column:
+
+```{python}
+t = astronauts.filter(~astronauts["nationality"].like("U.S.%")).agg(  # <1>
+    [
+        ibis._.count().name("number_trips"),  # <2>
+        ibis._["hours_mission"].max().name("longest_time"),  # <2>
+        ibis._["hours_mission"].min().name("shortest_time"),  # <2>
+    ]
+)
+t.head(3)  # <3>
+```
+
+1. Filter the `astronauts` table.
+2. Aggregate the results.
+3. Display the results.
+
+You can add a group by:
+
+```{python}
+t = (
+    astronauts.filter(~astronauts["nationality"].like("U.S.%")) # <1>
+    .group_by("nationality") # <2>
+    .agg( # <3>
+        [  # <3>
+            ibis._.count().name("number_trips"),  # <3>
+            ibis._["hours_mission"].max().name("longest_time"),   # <3>
+            ibis._["hours_mission"].min().name("shortest_time"), # <3>
+        ] # <3>
+    ) # <3>
+)
+t.head(3) # <4>
+```
+
+1. Filter the `astronauts` table.
+2. Group by `nationality`.
+3. Aggregate the results.
+4. Display the results.
+
+And order the results by 'number_trips' and 'longest_time' in descending order:
+
+```{python}
+t = (
+    astronauts.filter(~astronauts["nationality"].like("U.S.%")) # <1>
+    .group_by("nationality") # <2>
+    .agg( # <3>
+        [  # <3>
+            ibis._.count().name("number_trips"),  # <3>
+            ibis._["hours_mission"].max().name("longest_time"),   # <3>
+            ibis._["hours_mission"].min().name("shortest_time"), # <3>
+        ] # <3>
+    ) # <3>
+    .order_by([ibis.desc("number_trips"), ibis.desc("longest_time")]) # <4>
+)
+t.head(3) # <5>
+```
+
+1. Filter the `astronauts` table.
+2. Group by `nationality`.
+3. Aggregate the results.
+4. Order the result.
+5. Display the results.
+
+For the `missions` table, you can group by 'company_name' and 'status_rocket', and then sum the 'cost':
+
+```{python}
+t = (
+    missions.filter(missions["status_mission"] == "Failure") # <1>
+    .group_by(["company_name", "status_rocket"])  # <2>
+    .agg(ibis._["cost"].sum().name("cost")) # <3>
+    .order_by(ibis.desc("cost")) # <4>
+)
+t.head(3) # <5>
+```
+
+1. Filter the `missions` table.
+2. Group by `company_name` and `status_rocket`.
+3. Aggregate the results.
+4. Order the results.
+5. Display the results.
+
+## Writing tables
+
+Finally, let's write a table back to Starburst Galaxy.
+
+::: {.callout-warning}
+You cannot write to the sample catalog; uncomment the code and write to a catalog you have write access to.
+:::
+
+```{python}
+#con.create_table("t", t, overwrite=True)
+```
+
+## Next steps
+
+Now that you've connected to Starburst Galaxy and learned the basics, you can query your own data. See the rest of the Ibis documentation or [Starburst Galaxy documentation](https://docs.starburst.io/starburst-galaxy). You can [open an issue](https://github.com/ibis-project/ibis/issues/new/choose) if you run into one!

@@ -1,0 +1,17 @@
+r0 := UnboundTable: t1
+  a int64
+  b float64
+
+r1 := UnboundTable: t2
+  a int64
+  b float64
+
+r2 := InnerJoin[r0, r1] r0.a == r1.a
+
+r3 := Selection[r2]
+  selections:
+    a:       r0.a
+    b:       r0.b
+    b_right: r1.b
+
+CountStar(): CountStar(r3)

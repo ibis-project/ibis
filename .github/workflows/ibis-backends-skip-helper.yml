@@ -1,0 +1,43 @@
+# This job intentionally collides with the Backend job in `ibis-backends.yml`
+# that would be skipped because the paths are ignored.  This is so the
+# `Backends` job isn't stuck in "expected" forever when it should be skipped
+name: Backends
+on:
+  push:
+    paths:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - "codecov.yml"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - "codecov.yml"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  merge_group:
+jobs:
+  test_backends:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
+  test_backends_min_version:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
+  backends:
+    # this job exists so that we can use a single job from this workflow to gate merging
+    runs-on: ubuntu-latest
+    needs:
+      - test_backends_min_version
+      - test_backends
+    steps:
+      - run: exit 0

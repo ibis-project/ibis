@@ -1,0 +1,33 @@
+# Plotly + Ibis
+
+If you don't have data to visualize, you can load an example table:
+
+
+```{python}
+# | code-fold: true
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+t.head(3)
+```
+
+## Using Plotly with Ibis
+
+Refer to the [Plotly documentation](https://plotly.com/python/). You can pass in
+Ibis tables or expressions:
+
+```{python}
+import plotly.express as px
+
+chart = px.bar(
+    t.group_by("species").agg(count=ibis._.count()).to_pandas(),
+    x="species",
+    y="count",
+    width=600,
+    height=400,
+)
+chart
+```

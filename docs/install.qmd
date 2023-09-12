@@ -1,0 +1,10 @@
+---
+hide:
+  - toc
+  - navigation
+  - footer
+---
+
+# Installation
+
+{{< include ./_tabsets/install.qmd >}}

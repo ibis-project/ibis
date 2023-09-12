@@ -1,0 +1,81 @@
+from __future__ import annotations
+
+import pytest
+
+import ibis
+import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
+import ibis.expr.types as ir
+from ibis.common.annotations import ValidationError
+
+
+@pytest.fixture
+def table():
+    return ibis.table(
+        [
+            ("a", "int8"),
+            ("b", "string"),
+            ("c", "bool"),
+        ],
+        name="test",
+    )
+
+
+@pytest.mark.parametrize(
+    ("klass", "output_type"),
+    [
+        (ops.ElementWiseVectorizedUDF, ir.IntegerColumn),
+        (ops.ReductionVectorizedUDF, ir.IntegerScalar),
+        (ops.AnalyticVectorizedUDF, ir.IntegerColumn),
+    ],
+)
+def test_vectorized_udf_operations(table, klass, output_type):
+    udf = klass(
+        func=lambda a, b, c: a,
+        func_args=[table.a, table.b, table.c],
+        input_type=[dt.int8(), dt.string(), dt.boolean()],
+        return_type=dt.int8(),
+    )
+    assert udf.func_args[0] == table.a.op()
+    assert udf.func_args[1] == table.b.op()
+    assert udf.func_args[2] == table.c.op()
+    assert udf.input_type == (dt.int8(), dt.string(), dt.boolean())
+    assert udf.return_type == dt.int8()
+
+    assert isinstance(udf.to_expr(), output_type)
+
+    with pytest.raises(ValidationError):
+        # wrong function type
+        klass(
+            func=1,
+            func_args=[ibis.literal(1), table.b, table.c],
+            input_type=[dt.int8(), dt.string(), dt.boolean()],
+            return_type=dt.int8(),
+        )
+
+    with pytest.raises(ValidationError):
+        # scalar type instead of column type
+        klass(
+            func=lambda a, b, c: a,
+            func_args=[ibis.literal(1), table.b, table.c],
+            input_type=[dt.int8(), dt.string(), dt.boolean()],
+            return_type=dt.int8(),
+        )
+
+    with pytest.raises(ValidationError):
+        # wrong input type
+        klass(
+            func=lambda a, b, c: a,
+            func_args=[ibis.literal(1), table.b, table.c],
+            input_type="int8",
+            return_type=dt.int8(),
+        )
+
+    with pytest.raises(ValidationError):
+        # wrong return type
+        klass(
+            func=lambda a, b, c: a,
+            func_args=[ibis.literal(1), table.b, table.c],
+            input_type=[dt.int8(), dt.string(), dt.boolean()],
+            return_type=table,
+        )

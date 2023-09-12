@@ -1,0 +1,4 @@
+Literal(1, 4) has failed due to the following errors:
+  `dtype`: 4 is not coercible to a DataType
+
+Expected signature: Literal(value: Annotated[Any, Not(pattern=InstanceOf(type=<class 'Deferred'>))], dtype: DataType)

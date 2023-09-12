@@ -1,0 +1,111 @@
+# PostgreSQL
+
+[https://www.postgresql.org](https://www.postgresql.org)
+
+![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-Postgres tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Postgres tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
+
+## Install
+
+Install Ibis and dependencies for the Postgres backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install with the `postgres` extra:
+
+```{.bash}
+pip install 'ibis-framework[postgres]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.postgres.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `conda`
+
+Install for Postgres:
+
+```{.bash}
+conda install -c conda-forge ibis-postgres
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.postgres.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `mamba`
+
+Install for Postgres:
+
+```{.bash}
+mamba install -c conda-forge ibis-postgres
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.postgres.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+:::
+
+## Connect
+
+### `ibis.postgres.connect`
+
+```python
+con = ibis.postgres.connect(
+    user="username",
+    password="password",
+    host="hostname",
+    port=5432,
+    database="database",
+)
+```
+
+::: {.callout-note}
+`ibis.postgres.connect` is a thin wrapper around [`ibis.backends.postgres.Backend.do_connect`](#ibis.backends.postgres.Backend.do_connect).
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("postgres")
+```
+
+### `ibis.connect` URL format
+
+In addition to `ibis.postgres.connect`, you can also connect to Postgres by
+passing a properly formatted Postgres connection URL to `ibis.connect`
+
+```python
+con = ibis.connect(f"postgres://{user}:{password}@{host}:{port}/{database}")
+```
+
+```{python}
+#| echo: false
+BACKEND = "Postgres"
+```
+
+{{< include ./_templates/api.qmd >}}

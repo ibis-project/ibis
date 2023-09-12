@@ -1,0 +1,460 @@
+version: "3.4"
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:23.8.2.7-alpine
+    ports:
+      - 8123:8123
+      - 9000:9000
+    healthcheck:
+      interval: 1s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8123 && nc -z 127.0.0.1 9000
+      timeout: 10s
+    volumes:
+      - clickhouse:/var/lib/clickhouse/user_files/ibis
+    networks:
+      - clickhouse
+
+  impala:
+    depends_on:
+      - impala-postgres
+      - kudu
+    environment:
+      PGPASSWORD: postgres
+    healthcheck:
+      interval: 5s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 21050 && nc -z 127.0.0.1 50070
+      timeout: 10s
+    hostname: localhost
+    image: ibisproject/impala:latest
+    ports:
+      - 9020:9020
+      - 50070:50070
+      - 50075:50075
+      - 8020:8020
+      - 8042:8042
+      - 9083:9083
+      - 21000:21000
+      - 21050:21050
+      - 25000:25000
+      - 25010:25010
+      - 25020:25020
+    networks:
+      - impala
+
+  impala-postgres:
+    user: postgres
+    hostname: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      interval: 1s
+      retries: 30
+      test:
+        - CMD
+        - pg_isready
+      timeout: 5s
+    image: postgres:13.12-alpine
+    networks:
+      - impala
+
+  kudu:
+    cap_add:
+      - SYS_TIME
+    depends_on:
+      - kudu-tserver
+    environment:
+      KUDU_MASTER: "true"
+    image: ibisproject/kudu:latest
+    ports:
+      - 7051:7051
+      - 8051:8051
+    networks:
+      - impala
+    healthcheck:
+      interval: 5s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - kudu cluster ksck kudu:7051
+      timeout: 10s
+
+  kudu-tserver:
+    cap_add:
+      - SYS_TIME
+    environment:
+      KUDU_MASTER: "false"
+    image: ibisproject/kudu:latest
+    ports:
+      - 7050:7050
+      - 8050:8050
+    networks:
+      - impala
+    healthcheck:
+      interval: 5s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - kudu cluster ksck kudu:7051
+      timeout: 10s
+
+  mysql:
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_DATABASE: ibis_testing
+      MYSQL_PASSWORD: ibis
+      MYSQL_USER: ibis
+    healthcheck:
+      interval: 1s
+      retries: 30
+      test:
+        - CMD
+        - mariadb-admin
+        - ping
+      timeout: 5s
+    image: mariadb:10.11.5
+    ports:
+      - 3306:3306
+    networks:
+      - mysql
+    volumes:
+      - mysql:/data
+      - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
+
+  postgres:
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ibis_testing
+      POSTGRES_USER: postgres
+    build: ./docker/postgres
+    image: ibis-postgres
+    healthcheck:
+      interval: 1s
+      retries: 30
+      test:
+        - CMD
+        - pg_isready
+      timeout: 5s
+    ports:
+      - 5432:5432
+    networks:
+      - postgres
+    volumes:
+      - postgres:/data
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      MSSQL_SA_PASSWORD: 1bis_Testing!
+      ACCEPT_EULA: "Y"
+    healthcheck:
+      interval: 1s
+      retries: 30
+      test:
+        - CMD-SHELL
+        - /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "IF DB_ID('ibis_testing') IS NULL BEGIN CREATE DATABASE [ibis_testing] END"
+      timeout: 10s
+    ports:
+      - 1433:1433
+    volumes:
+      - mssql:/data
+    networks:
+      - mssql
+
+  trino-postgres:
+    user: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ibis_testing
+      POSTGRES_USER: postgres
+    healthcheck:
+      interval: 1s
+      retries: 30
+      test:
+        - CMD
+        - pg_isready
+      timeout: 5s
+    build: ./docker/postgres
+    image: ibis-postgres
+    ports:
+      - 5433:5432
+    networks:
+      - trino
+    volumes:
+      - trino-postgres:/data
+
+  hive-metastore-mariadb:
+    image: mariadb:10.11.5
+    environment:
+      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
+      MYSQL_USER: admin
+      MYSQL_PASSWORD: admin
+      MYSQL_DATABASE: metastore_db
+    healthcheck:
+      interval: 1s
+      retries: 30
+      test:
+        - CMD
+        - mariadb-admin
+        - ping
+      timeout: 5s
+    networks:
+      - trino
+
+  hive-metastore-minio:
+    image: minio/minio:latest
+    environment:
+      - MINIO_ACCESS_KEY=accesskey
+      - MINIO_SECRET_KEY=secretkey
+    entrypoint: sh
+    command: -c 'mkdir -p /data/warehouse && /opt/bin/minio server /data'
+    networks:
+      - trino
+
+  hive-metastore:
+    build: ./docker/trino
+    image: ibis-hive-metastore
+    depends_on:
+      - hive-metastore-mariadb
+      - hive-metastore-minio
+    networks:
+      - trino
+
+  trino:
+    depends_on:
+      - trino-postgres
+      - hive-metastore
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - trino --output-format null --execute 'show schemas in postgresql; show schemas in hive; show schemas in memory'
+      timeout: 30s
+    image: trinodb/trino:426
+    ports:
+      - 8080:8080
+    networks:
+      - trino
+    volumes:
+      - $PWD/docker/trino/catalog/postgresql.properties:/etc/trino/catalog/postgresql.properties:ro
+      - $PWD/docker/trino/catalog/memory.properties:/etc/trino/catalog/memory.properties:ro
+      - $PWD/docker/trino/catalog/hive.properties:/etc/trino/catalog/hive.properties:ro
+      - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
+
+  druid-postgres:
+    image: postgres:15.4-alpine
+    container_name: druid-postgres
+    environment:
+      - POSTGRES_PASSWORD=FoolishPassword
+      - POSTGRES_USER=druid
+      - POSTGRES_DB=druid
+    healthcheck:
+      interval: 1s
+      retries: 30
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 5432
+    networks:
+      - druid
+
+  # Need 3.5 or later for container nodes
+  druid-zookeeper:
+    hostname: zookeeper
+    container_name: zookeeper
+    image: zookeeper:3.9
+    environment:
+      - ZOO_MY_ID=1
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 2181
+    networks:
+      - druid
+
+  druid-coordinator:
+    image: apache/druid:26.0.0
+    hostname: coordinator
+    container_name: coordinator
+    volumes:
+      - druid:/opt/shared
+      - coordinator_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+    command:
+      - coordinator
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8081
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid-broker:
+    image: apache/druid:26.0.0
+    hostname: broker
+    container_name: broker
+    volumes:
+      - broker_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+    command:
+      - broker
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8082
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid-historical:
+    image: apache/druid:26.0.0
+    hostname: historical
+    container_name: historical
+    volumes:
+      - druid:/opt/shared
+      - historical_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+    command:
+      - historical
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8083
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid-middlemanager:
+    image: apache/druid:26.0.0
+    hostname: middlemanager
+    container_name: middlemanager
+    volumes:
+      - druid:/opt/shared
+      - middle_var:/opt/druid/var
+      - druid-data:/data
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+    command:
+      - middleManager
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8091
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  druid:
+    image: apache/druid:26.0.0
+    hostname: router
+    container_name: router
+    volumes:
+      - router_var:/opt/druid/var
+    depends_on:
+      - druid-zookeeper
+      - druid-postgres
+      - druid-coordinator
+      - druid-middlemanager
+      - druid-historical
+      - druid-broker
+    ports:
+      - "8888:8888"
+    command:
+      - router
+    healthcheck:
+      interval: 10s
+      retries: 9
+      timeout: 90s
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 8888
+    env_file:
+      - ./docker/druid/environment
+    networks:
+      - druid
+
+  oracle:
+    image: gvenzl/oracle-free:23
+    environment:
+      ORACLE_PASSWORD: ibis
+      ORACLE_DATABASE: IBIS_TESTING
+      APP_USER: ibis
+      APP_USER_PASSWORD: ibis
+    ports:
+      - 1521:1521
+    healthcheck:
+      interval: 5s
+      retries: 10
+      test:
+        - CMD-SHELL
+        - ./healthcheck.sh
+      timeout: 30s
+    restart: on-failure
+    networks:
+      - oracle
+    volumes:
+      - oracle:/opt/oracle/data
+
+networks:
+  impala:
+  mysql:
+  mssql:
+  clickhouse:
+  postgres:
+  trino:
+  druid:
+  oracle:
+
+volumes:
+  broker_var:
+  coordinator_var:
+  druid:
+  historical_var:
+  middle_var:
+  router_var:
+  # test data volumes
+  clickhouse:
+  druid-data:
+  mssql:
+  mysql:
+  oracle:
+  postgres:
+  trino-postgres:

@@ -1,0 +1,151 @@
+ci:
+  autofix_commit_msg: "style: auto fixes from pre-commit.ci hooks"
+  autofix_prs: false
+  autoupdate_commit_msg: "chore(deps): pre-commit.ci autoupdate"
+  skip:
+    - actionlint-system
+    - deadnix
+    - just
+    - nixpkgs-fmt
+    - prettier
+    - ruff
+    - shellcheck
+    - shfmt
+    - statix
+    - taplo
+default_stages:
+  - commit
+repos:
+  - repo: https://github.com/rhysd/actionlint
+    rev: v1.6.25
+    hooks:
+      - id: actionlint-system
+  - repo: https://github.com/psf/black
+    rev: 23.9.1
+    hooks:
+      - id: black
+  - repo: https://github.com/keewis/blackdoc
+    rev: v0.3.8
+    hooks:
+      - id: blackdoc
+        exclude: ibis/examples/__init__\.py
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.5
+    hooks:
+      - id: codespell
+        additional_dependencies:
+          - tomli
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff
+        description: "Run 'ruff' for extremely fast Python linting"
+        entry: ruff
+        language: system
+        types_or:
+          - python
+          - pyi
+        args: ["check", "--force-exclude", "--show-source", "--fix"]
+        require_serial: true
+        minimum_pre_commit_version: "2.9.2"
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.32.0
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=700"]
+      - id: check-case-conflict
+      - id: check-executables-have-shebangs
+      - id: check-merge-conflict
+      - id: check-shebang-scripts-are-executable
+      - id: check-vcs-permalinks
+      - id: destroyed-symlinks
+      - id: detect-aws-credentials
+        args: ["--allow-missing-credentials"]
+      - id: detect-private-key
+      - id: end-of-file-fixer
+        exclude: (.+/snapshots/.+)|(.*docs/_freeze/.+\.json)|(.+\.excalidraw)
+      - id: fix-byte-order-marker
+      - id: mixed-line-ending
+      - id: trailing-whitespace
+        args: ["--markdown-linebreak-ext=md"]
+        exclude: .+/snapshots/.+
+  - repo: meta
+    hooks:
+      - id: check-hooks-apply
+      - id: check-useless-excludes
+  - repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        language: system
+        entry: prettier
+        args: ["--write"]
+        types_or:
+          - javascript
+          - json
+          - markdown
+          - yaml
+      - id: taplo
+        name: taplo
+        language: system
+        entry: taplo
+        args: ["fmt"]
+        types:
+          - toml
+      - id: shellcheck
+        name: shellcheck
+        language: system
+        entry: shellcheck
+        types_or:
+          - sh
+          - shell
+          - ash
+          - bash
+          - bats
+          - dash
+          - ksh
+      - id: shfmt
+        name: shfmt
+        language: system
+        entry: shfmt
+        args: ["-i", "2", "-sr", "-s"]
+        types_or:
+          - sh
+          - shell
+          - ash
+          - bash
+          - bats
+          - dash
+          - ksh
+      - id: just
+        name: just
+        language: system
+        entry: just
+        args: ["--fmt", "--unstable"]
+        files: ^justfile$
+        pass_filenames: false
+      - id: nixpkgs-fmt
+        name: nixpkgs-fmt
+        language: system
+        entry: nixpkgs-fmt
+        types:
+          - nix
+      - id: statix
+        name: statix
+        language: system
+        entry: statix
+        args: ["fix"]
+        pass_filenames: false
+        types:
+          - nix
+      - id: deadnix
+        name: deadnix
+        language: system
+        entry: deadnix
+        args: ["--edit", "--fail"]
+        types:
+          - nix

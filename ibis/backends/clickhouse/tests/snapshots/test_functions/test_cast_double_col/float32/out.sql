@@ -1,0 +1,1 @@
+CAST(double_col AS Nullable(Float32))

@@ -1,0 +1,1 @@
+log(double_col)

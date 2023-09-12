@@ -1,0 +1,15 @@
+name: Assign Issue
+permissions:
+  issues: write
+on:
+  issue_comment:
+    types:
+      - created
+jobs:
+  assign_issue:
+    runs-on: ubuntu-latest
+    if: github.event.comment.body == '/take'
+    steps:
+      - uses: pozil/auto-assign-issue@v1.12.0
+        with:
+          assignees: ${{ github.event.comment.user.login }}

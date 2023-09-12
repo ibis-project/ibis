@@ -1,0 +1,1 @@
+CAST(timestamp_col AS DATETIME)

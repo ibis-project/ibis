@@ -1,0 +1,366 @@
+---
+title: Ibis v6.1.0
+author: "Ibis team"
+date: "2023-08-02"
+categories:
+    - release
+    - blog
+---
+
+## Overview
+
+Ibis 6.1.0 is a minor release that includes new features, backend improvements, bug fixes, documentation improvements, and refactors. We are excited to see further adoption of the dataframe interchange protocol enabling visualization and other libraries to be used more easily with Ibis.
+
+You can view the full changelog in [the release notes](../../release_notes.md).
+
+If you're new to Ibis, see [how to install](../../install.qmd) and [the getting started tutorial](../../tutorials/getting_started.qmd).
+
+To follow along with this blog, ensure you're on `'ibis-framework>=6.1,<7'`. First, we\'ll setup Ibis and fetch some
+sample data to use.
+
+```{python}
+import ibis
+import ibis.selectors as s
+
+ibis.__version__
+```
+
+```{python}
+# interactive mode for demo purposes
+ibis.options.interactive = True
+```
+
+```{python}
+t = ibis.examples.penguins.fetch()
+t = t.mutate(year=t["year"].cast("str"))
+t.limit(3)
+```
+
+## Ecosystem integrations
+
+With the introduction of `__dataframe__` support in v6.0.0 and efficiency improvements in this release, Ibis now works with [Altair](https://altair-viz.github.io/index.html), [Plotly](https://plotly.com/python/), [plotnine](https://plotnine.readthedocs.io/en/stable/), and any other visualization library that implements the protocol. This enables passing Ibis tables directly to visualization libraries without a `.to_pandas()` or `to_pyarrow()` call for any of the 15+ backends supported, with data efficiently transferred through Apache Arrow.
+
+```{python}
+#| code-fold: true
+width = 640  # <1>
+height = 480  # <1>
+```
+
+1. Set the width and height of the plots.
+
+```{python}
+grouped = (  # <1>
+    t.group_by("species")
+    .aggregate(count=ibis._.count())
+    .order_by(ibis.desc("count"))
+)  # <1>
+grouped  # <2>
+```
+
+1. Setup data to plot.
+2. Display the table.
+
+::: {.panel-tabset}
+
+## Altair
+
+```{.bash}
+pip install altair
+```
+
+```{python}
+import altair as alt  # <1>
+
+chart = (
+    alt.Chart(grouped)
+    .mark_bar()
+    .encode(
+        x="species",
+        y="count",
+    )
+    .properties(width=width, height=height)
+)
+chart
+```
+
+## Plotly
+
+```{.bash}
+pip install plotly
+```
+
+```{python}
+import plotly.express as px  # <1>
+
+px.bar(
+    grouped.to_pandas(),
+    x="species",
+    y="count",
+    width=width,
+    height=height,
+)
+```
+
+## plotnine
+
+```{.bash}
+pip install plotnine
+```
+```{python}
+from plotnine import ggplot, aes, geom_bar, theme
+
+(
+    ggplot(
+        grouped,
+        aes(x="species", y="count"),
+    )
+    + geom_bar(stat="identity")
+    + theme(figure_size=(width / 100, height / 100))
+)
+```
+
+:::
+
+A more modular, composable, and scalable way of working with data is taking shape with `__dataframe__` and `__array__` support in Ibis and increasingly the Python data ecosystem. Let\'s combine the above with PCA after some preprocessing in Ibis to visualize all numeric columns in 2D.
+
+```{python}
+import ibis.selectors as s  # <1>
+
+
+def transform(t):  # <2>
+    t = t.mutate(  # <2>
+        s.across(s.numeric(), {"zscore": lambda x: (x - x.mean()) / x.std()})  # <2>
+    ).dropna()  # <2>
+    return t  # <2>
+
+
+f = transform(t)  # <3>
+f  # <4>
+```
+
+1. Import the selectors module.
+2. Define a function to transform the table for code reuse (compute z-scores on numeric columns).
+3. Apply the function to the table and assign it to a new variable.
+4. Display the transformed table.
+
+```bash
+pip install scikit-learn
+```
+
+```{python}
+import plotly.express as px  # <1>
+from sklearn.decomposition import PCA  # <1>
+
+X = f.select(s.contains("zscore"))  # <2>
+
+n_components = 3  # <3>
+pca = PCA(n_components=n_components).fit(X)  # <3>
+
+t_pca = ibis.memtable(pca.transform(X)).relabel(  # <4>
+    {"col0": "pc1", "col1": "pc2", "col2": "pc3"}  # <4>
+)  # <4>
+
+f = f.mutate(row_number=ibis.row_number().over()).join(  # <5>
+    t_pca.mutate(row_number=ibis.row_number().over()), "row_number"  # <5>
+)  # <5>
+
+px.scatter_3d(  # <6>
+    f.to_pandas(),  # <6>
+    x="pc1",  # <6>
+    y="pc2",  # <6>
+    z="pc3",  # <6>
+    color="species",  # <6>
+)  # <6>
+```
+
+1. Import data science libraries
+2. Select "features" (numeric columns) as X
+3. Compute PCA
+4. Create a table from the PCA results
+5. Join the PCA results to the original table
+6. Plot the results
+
+## Backends
+
+Numerous backends received improvements. See the [release notes](../../release_notes.md) for more details.
+
+::: {.panel-tabset}
+
+## DataFusion
+
+The DataFusion backend (and a few others) received several improvements from community member [\@mesejo](https://github.com/mesejo) with memtables and many new operations now supported. Some highlights include:
+
+```{python}
+url = ibis.literal("https://ibis-project.org/concepts/why_ibis")
+con = ibis.datafusion.connect()
+
+con.execute(url.host())
+```
+
+```{python}
+con.execute(url.path())
+```
+
+```{python}
+con.execute(ibis.literal("aaabbbaaa").re_search("bbb"))
+```
+
+```{python}
+con.execute(ibis.literal(5.56).ln())
+```
+
+```{python}
+con.execute(ibis.literal(5.56).log10())
+```
+
+```{python}
+con.execute(ibis.literal(5.56).radians())
+```
+
+## BigQuery
+
+Some remaining gaps in `CREATE TABLE` DDL options for BigQuery have been filled in, including the ability to pass in `overwrite=True` for table creation.
+
+## PySpark
+
+The PySpark backend now supports reading/writing Delta Lake tables. Your PySpark session must be configured to use the Delta Lake package and you must have the `delta` package installed in your environment.
+
+```python
+t = ibis.read_delta("/path/to/delta")
+
+...
+
+t.to_delta("/path/to/delta", mode="overwrite")
+```
+
+## Trino
+
+The `.sql` API is now supported in Trino, enabling you to chain Ibis and SQL together.
+
+## SQLite
+
+Scalar Python UDFs are now supported in SQLite.
+
+Additionally, URL parsing has been added:
+
+```{python}
+con = ibis.sqlite.connect()
+
+con.execute(url.host())
+```
+
+```{python}
+con.execute(url.path())
+```
+
+## pandas
+
+URL parsing support was added.
+
+```{python}
+con = ibis.pandas.connect()
+
+con.execute(url.host())
+```
+
+```{python}
+con.execute(url.path())
+```
+
+:::
+
+## Functionality
+
+Various new features and were added.
+
+### `.nunique()` supported on tables
+
+You can now call `.nunique()` on tables to get the number of unique
+rows.
+
+```{python}
+# how many unique rows are there? equivalent to `.count()` in this case
+t.nunique()
+```
+
+```{python}
+# how many unique species/island/year combinations are there?
+t.select("species", "island", "year").nunique()
+```
+
+### `to_sql` returns a `str` type
+
+The `ibis.expr.sql.SQLString` type resulting from `to_sql` is now a proper `str` subclass, enabling use without casting to `str` first.
+
+```{python}
+type(ibis.to_sql(t))
+```
+
+```{python}
+issubclass(type(ibis.to_sql(t)), str)
+```
+
+### Allow mixing literals and columns in `ibis.array` {#allow-mixing-literals-and-columns-in-ibisarray}
+
+Note that arrays must still be of a single type.
+
+```{python}
+ibis.array([t["species"], "hello"])
+```
+
+```{python}
+ibis.array([t["flipper_length_mm"], 42])
+```
+
+### Array `concat` and `repeat` methods
+
+You can still use `+` or `*` in typical Python fashion, with new and more explicit `concat` and `repeat` methods added in this release.
+
+```{python}
+a = ibis.array([1, 2, 3])
+b = ibis.array([4, 5])
+
+c = a.concat(b)
+c
+```
+
+```{python}
+c = a + b
+c
+```
+
+```{python}
+b.repeat(2)
+```
+
+```{python}
+b * 2
+```
+
+### Support boolean literals in the join API
+
+This allows for joins with boolean predicates.
+
+```{python}
+t.join(t, True)
+```
+
+```{python}
+t.join(t, False)
+```
+
+```{python}
+t.join(t, False, how="outer")
+```
+
+## Refactors
+
+Several internal refactors that shouldn\'t affect normal usage were made. See [the release notes](../../release_notes.md) for more details.
+
+## Wrapping up
+
+Ibis v6.1.0 brings exciting enhancements to the library that enable broader ecosystem adoption of Python standards.
+
+As always, try Ibis by [installing](../../install.qmd) and [getting started](../../tutorials/getting_started.qmd).
+
+If you run into any issues or find support is lacking for your backend, [open an issue](https://github.com/ibis-project/issues/new/choose) or [discussion](https://github.com/ibis-project/discussions/new/choose) and let us know!

@@ -1,0 +1,130 @@
+# Editor temporary/working/backup files
+.#*
+*\#*\#
+[#]*#
+*~
+*$
+*.bak
+*flymake*
+*.kdev4
+*.log
+*.swp
+*.swo
+*.pdb
+.idea
+.vscode
+
+# Compiled source
+*.a
+*.dll
+*.o
+*.py[ocd]
+*.so
+.build_cache_dir
+MANIFEST
+
+# Generated sources
+*.c
+*.cpp
+*.cmake
+# Python files
+
+# setup.py working directory
+build
+# setup.py dist directory
+dist
+# Egg metadata
+*.egg-info
+# coverage
+.coverage
+coverage.xml
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# OS generated files
+.directory
+.gdb_history
+.DS_Store?
+Icon?
+
+# documentation files
+*.org
+
+# Ibis testing data
+ci/ibis-testing-data*
+ci/ibis_testing.db
+
+# UDF testing generated files
+ci/udf/CMakeCache.txt
+ci/udf/CMakeFiles/
+ci/udf/Makefile
+.cache/
+
+# test data
+scripts/ibis-testing*
+ibis_testing*
+.tox/
+.ipynb_checkpoints/
+.pytest_cache
+.mypy_cache
+
+# nix generated files
+.direnv
+result
+result-*
+
+# generated mkdocs website
+.benchmarks
+
+# tutorial data
+geography.db
+
+# build artifacts
+ci/udf/.ninja_deps
+ci/udf/.ninja_log
+ci/udf/build.ninja
+
+# coverage
+junit.xml
+
+# spark generated files
+spark-warehouse
+
+# bytecode
+__pycache__
+
+# ctags
+tags
+
+# macos junk
+.DS_Store
+
+# profiling data
+prof/
+
+# hypothesis generated files
+.hypothesis
+
+# r junk
+.RData
+.Rhistory
+
+# coverage files
+.coverage*
+
+# quarto generated files
+.local
+
+# lang server generated
+.null-ls*
+
+# generated examples data
+ibis/examples/data
+ibis/examples/descriptions

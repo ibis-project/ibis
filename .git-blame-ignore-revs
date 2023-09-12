@@ -1,0 +1,21 @@
+5332737fefbef3eac1063d93034d7ce87ba1c01b # convert imports to absolute
+bb025103420741836cf594aa8163962d03b71b7b # convert imports to absolute
+5c0895a3cf4b5b96af1b8e5d8630f6a595af2002 # refactor(ir): rename ir.ListExpr -> ir.ValueList
+20e3f8d39077829e5c9463e7654408ce27a292d8 # refactor(ir): keep ir.Column instead of both ir.Column and ir.AnyColumn
+1fb3a21ab745ecfc915b17b36b57657080ac0344 # refactor(ir): keep ir.Scalar instead of both ir.Scalar and ir.AnyScalar
+2aecdc910a4f55e5af9b595b52a900a2409c8c52 # refactor(ir): keep ir.Value instead of both ir.Value and ir.AnyValue
+ecc9d173a889ed9b56228ff62a09e5e0fa97d427 # refactor(ir): reorganize ir.Scalar and ir.Column methods
+bcd0091c6d38de2615dd52e4438f3ffe32454396 # refactor(ir): rename ir.ColumnExpr -> ir.Column
+64416c25aaa91cc9dfc2ab26f72b3766b9bcf9f4 # refactor(ir): rename ir.ScalarExpr -> ir.Scalar
+7901860b279cc15ea6ed40a16bc9aa333c0c0879 # refactor(ir): rename ir.ValueExpr -> ir.Value
+fa1387ac8d6af8989cccd88ba4bf04d496b5ef3a # refactor(ir): rename ir.ExistsExpr -> ir.Exists
+37ee8323e84d94551e2cd390f6dca36b6e1d2b60 # refactor(ir): rename ir.TopKExpr -> ir.TopK
+e284a966b7bb32061c2756f9ed0dbc676ae07201 # refactor(ir): rename ir.AnalyticExpr -> ir.Analytic
+8a3326e73723ccfc15f6636d5664ad7c76abaa56 # refactor(ir): rename ir.TableExpr -> ir.Table
+cd31389542561a94d9d0207e09c9c906c3831fe9 # refactor(ir): rename ops.AnalyticOp -> ops.Analytic
+6ecaaed58c0a4e7cf38c1f04c7c2527f9587af90 # refactor(ir): rename ops.WindowOp -> ops.Window
+96b5b584b47e67840faa1ea32a3beaa73065039a # refactor(ir): rename ops.BinaryOp -> ops.Binary
+2673ac391c89b73fb97bb646eeef898b4d48fe30 # refactor(ir): rename ops.UnaryOp -> ops.Unary
+4803894dcff2afced4a1fc651d40b235c862791a # refactor(ir): rename ops.ValueOp -> ops.Value
+d36af084837d4d469efce060268295eec43139fb # style: format to the black default line length
+45b07de8e1989cdd0983bd2a06da4506427cdbd1 # style: don't skip string normalization using Black

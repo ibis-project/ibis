@@ -1,0 +1,3 @@
+::: {.callout-warning}
+Note that the `ibis-framework` package is _not_ the same as the `ibis` package in PyPI. These two libraries cannot coexist in the same Python environment, as they are both imported with the `ibis` module name.
+:::

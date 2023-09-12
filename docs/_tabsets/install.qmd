@@ -1,0 +1,68 @@
+You can install Ibis and a supported backend with `pip`, `conda`, `mamba`, or `pixi`.
+
+::: {.panel-tabset}
+
+```{python}
+#| echo: false
+#| output: asis
+
+backends = [
+    {"name": "BigQuery", "module": "bigquery"},
+    {"name": "ClickHouse", "module": "clickhouse"},
+    {"name": "Dask", "module": "dask"},
+    {"name": "DataFusion", "module": "datafusion"},
+    {"name": "Druid", "module": "druid"},
+    {"name": "DuckDB", "module": "duckdb"},
+    {"name": "Impala", "module": "impala"},
+    {"name": "MSSQL", "module": "mssql"},
+    {"name": "MySQL", "module": "mysql"},
+    {"name": "Oracle", "module": "oracle"},
+    {"name": "pandas", "module": "pandas"},
+    {"name": "Polars", "module": "polars"},
+    {"name": "PostgreSQL", "module": "postgres"},
+    {"name": "PySpark", "module": "pyspark"},
+    {"name": "Snowflake", "module": "snowflake"},
+    {"name": "SQLite", "module": "sqlite"},
+    {"name": "Trino", "module": "trino"},
+]
+
+installers = [
+    {"name": "pip", "line": "Install with the `{extra}` extra:", "cmd": "pip install 'ibis-framework[{extra}]'"},
+    {"name": "conda", "line": "Install the `ibis-{extra}` package:", "cmd": "conda install -c conda-forge ibis-{extra}"},
+    {"name": "mamba", "line": "Install the `ibis-{extra}` package:", "cmd": "mamba install -c conda-forge ibis-{extra}"},
+    {"name": "pixi", "line": "Add the `ibis-{extra}` package:", "cmd": "pixi add ibis-{extra}"},
+]
+
+for installer in installers:
+    name = installer["name"]
+    cmd = installer["cmd"]
+    line = installer["line"]
+
+    print(f"## `{name}`")
+
+    print("::: {.panel-tabset}")
+    print()
+
+    for backend in backends:
+        name = backend["name"]
+        mod = backend["module"]
+        extra = backend.get("extra", mod)
+
+        print(f"## {name}")
+        print()
+        print(line.format(extra=extra))
+        print()
+        print(f"```bash\n{cmd.format(extra=extra)}\n```")
+        print()
+        print(f"Connect using [`ibis.{mod}.connect`](./backends/{name.lower()}.qmd#ibis.{mod}.connect).")
+        print()
+
+    if name == "pip":
+        print("{{< include /_callouts/pypi_warning.qmd >}}")
+
+    print()
+    print(":::")
+    print()
+```
+
+:::

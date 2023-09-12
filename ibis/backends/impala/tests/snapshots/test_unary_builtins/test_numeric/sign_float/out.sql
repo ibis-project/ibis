@@ -1,0 +1,1 @@
+sign(`float_col`)

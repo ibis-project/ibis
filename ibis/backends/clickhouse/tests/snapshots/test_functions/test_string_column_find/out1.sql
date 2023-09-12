@@ -1,0 +1,1 @@
+locate(string_col, 'a') - 1

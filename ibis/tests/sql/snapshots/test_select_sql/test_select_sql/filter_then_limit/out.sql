@@ -1,0 +1,4 @@
+SELECT t0.*
+FROM star1 t0
+WHERE t0.`f` > 0
+LIMIT 10

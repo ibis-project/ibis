@@ -1,0 +1,78 @@
+# Basic analytics
+
+Assuming you have a table:
+
+{{< include /_code/setup_penguins.qmd >}}
+
+You can perform basic analytics by selecting, grouping, aggregating, filtering, sorting, mutating, and joining data.
+
+## Selecting
+
+Use the `.select()` method to select columns:
+```{python}
+t.select("species", "island", "year")
+```
+
+## Filtering
+
+Use the `.filter()` method to filter rows:
+```{python}
+t.filter(t["species"] != "Adelie")
+```
+
+## Aggregating
+
+Use the `.aggregate()` method to aggregate data:
+```{python}
+t.aggregate(avg_bill_length=t["bill_length_mm"].mean())
+```
+
+## Grouping
+
+Use the `.group_by()` method to group data:
+
+```{python}
+t.group_by(["species", "island"]).aggregate(avg_bill_length=t["bill_length_mm"].mean())
+```
+
+## Ordering
+
+Use the `order_by()` method to order data:
+
+```{python}
+t.order_by(t["bill_length_mm"].desc())
+```
+
+## Mutating
+
+Use the `.mutate()` method to create new columns:
+
+```{python}
+t.mutate(bill_length_cm=t["bill_length_mm"] / 10).relocate(
+    t.columns[0:2], "bill_length_cm"
+)
+```
+
+## Joining
+
+Use the `.join()` method to join data:
+
+```{python}
+t.join(t, t["species"] == t["species"], how="left_semi")
+```
+
+## Combining it all together
+
+We can use [the underscore to chain expressions together](./chain_expressions.qmd).
+
+```{python}
+t.join(t, t["species"] == t["species"], how="left_semi").filter(
+    ibis._["species"] != "Adelie"
+).group_by(["species", "island"]).aggregate(
+    avg_bill_length=ibis._["bill_length_mm"].mean()
+).order_by(
+    ibis._["avg_bill_length"].desc()
+)
+```
+
+Since we've turned on interactive mode here, this executes the query and displays the result.

@@ -1,0 +1,1 @@
+lower(`string_col`)

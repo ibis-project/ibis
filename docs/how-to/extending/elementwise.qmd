@@ -1,0 +1,141 @@
+# Add an elementwise operation
+
+This notebook will show you how to add a new elementwise operation to an existing backend.
+
+We are going to add `julianday`, a function supported by the SQLite database, to
+the SQLite Ibis backend.
+
+The Julian day of a date, is the number of days since January 1st, 4713 BC. For
+more information check the [Julian
+day](https://en.wikipedia.org/wiki/Julian_day) Wikipedia page.
+
+## Step 1: Define the Operation
+
+Let's define the `julianday` operation as a function that takes one string input
+argument and returns a float.
+
+```python
+def julianday(date: str) -> float:
+    """Return the Julian day from a date."""
+```
+
+
+```{python}
+import ibis.expr.datatypes as dt
+import ibis.expr.rules as rlz
+import ibis.expr.datashape as ds
+
+from ibis.expr.operations import Value
+
+
+class JulianDay(Value):
+    arg: Value[dt.String, ds.Any]
+
+    dtype = dt.float32
+    shape = rlz.shape_like('arg')
+```
+
+We just defined a `JulianDay` class that takes one argument of type string or
+binary, and returns a float.
+
+## Step 2: Define the API
+
+Because we know the output type of the operation, to make an expression out of
+``JulianDay`` we can construct it and call its `ibis.expr.types.Node.to_expr`
+method.
+
+We still need to add a method to `StringValue` (this needs to work on both
+scalars and columns).
+
+When you add a method to any of the expression classes whose name matches
+`*Value` both the scalar and column child classes will pick it up, making it
+easy to define operations for both scalars and columns in one place.
+
+We can do this by defining a function and assigning it to the appropriate class
+of expressions.
+
+```{python}
+from ibis.expr.types import StringValue
+
+
+def julianday(string_value):
+    return JulianDay(string_value).to_expr()
+
+
+StringValue.julianday = julianday
+```
+
+## Interlude: Create some expressions with `julianday`
+
+
+```{python}
+import ibis
+
+t = ibis.table(dict(string_col="string"), name="t")
+
+t.string_col.julianday()
+```
+
+## Step 3: Turn the Expression into SQL
+
+
+```{python}
+import sqlalchemy as sa
+
+
+@ibis.sqlite.add_operation(JulianDay)
+def _julianday(translator, expr):
+    # pull out the arguments to the expression
+    (arg,) = expr.args
+
+    # compile the argument
+    compiled_arg = translator.translate(arg)
+
+    # return a SQLAlchemy expression that calls into the SQLite julianday function
+    return sa.func.julianday(compiled_arg)
+```
+
+## Step 4: Putting it all Together
+
+Download the geography database.
+
+```{python}
+!curl -LsS -o geography.db 'https://storage.googleapis.com/ibis-tutorial-data/geography.db'
+
+con = ibis.sqlite.connect("geography.db")
+```
+
+### Create and execute a `julianday` expression
+
+
+```{python}
+ind = con.table("independence")
+ind
+```
+
+
+```{python}
+day = ind.independence_date.cast("string")
+day
+```
+
+
+```{python}
+jday_expr = day.julianday().name("jday")
+jday_expr
+```
+
+
+```{python}
+ibis.to_sql(jday_expr)
+```
+
+Because we've defined our operation on `StringValue`, and not just on
+`StringColumn` we get operations on both string scalars *and* string columns for
+free.
+
+
+```{python}
+jday = ibis.literal("2010-03-14").julianday()
+con.execute(jday)
+```

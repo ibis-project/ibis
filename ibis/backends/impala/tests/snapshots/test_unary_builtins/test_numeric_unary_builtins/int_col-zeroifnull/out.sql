@@ -1,0 +1,1 @@
+zeroifnull(`int_col`)

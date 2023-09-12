@@ -1,0 +1,20 @@
+r0 := UnboundTable: t
+  a int64
+
+r1 := Selection[r0]
+  predicates:
+    r0.a < 42
+    r0.a >= 42
+
+r2 := Selection[r1]
+  selections:
+    r1
+    x: r1.a + 42
+
+r3 := Aggregation[r2]
+  metrics:
+    y: Sum(r2.a)
+  by:
+    x: r2.x
+
+Limit[r3, n=10]

@@ -1,0 +1,1 @@
+floor(`double_col`)

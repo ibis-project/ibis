@@ -1,0 +1,53 @@
+---
+title: "Migrating Ibis documentation to Quarto"
+author: "Cody"
+date: "2023-09-01"
+categories:
+    - blog
+draft: true
+---
+
+## Overview
+
+In this blog post, we will explore the process of migrating the Ibis documentation from Mkdocs to Quarto and how this migration will enhance the experience for Ibis users. Quarto is a powerful tool for reading, writing, and generating contextual content, while Ibis is a Python dataframe library known for its familiar syntax and support for various backends.
+
+The decision to migrate the Ibis documentation to Quarto was driven by the desire to provide users with a more interactive and engaging experience. Quarto offers advanced features that will enable Ibis users to leverage the full potential of the Ibis library and enhance their data analysis workflows.
+
+## Benefits for Ibis users
+
+The migration to Quarto brings several benefits for Ibis users:
+
+### Interactive data analysis
+
+Quarto seamlessly integrates with Jupyter notebooks, allowing Ibis users to embed interactive data analysis and visualization directly into the documentation. This integration enables users to explore and analyze datasets effortlessly, making data-driven decisions faster and more informed.
+
+### Advanced publishing features
+
+Quarto offers a wide range of output formats, from traditional PDF and HTML to more modern formats such as ePub and Reveal.js presentations. This flexibility in publishing options allows Ibis users to share their insights and findings in a format that best suits their needs and the preferences of their audience.
+
+### Improved collaboration and documentation workflow
+
+Quarto's support for collaborative editing streamlines the documentation workflow for Ibis users. Multiple team members can work seamlessly together on blog posts and other documentation, enhancing collaboration and productivity. This feature enables Ibis users to create high-quality content efficiently and effectively.
+
+## Migration process
+
+To migrate the Ibis documentation to Quarto, a carefully planned and executed process was followed. Here are the key steps taken:
+
+1. **Evaluation of Quarto features:** The features and capabilities offered by Quarto were thoroughly explored to ensure that they align with the documentation requirements of Ibis users. Quarto's ability to support scientific publishing, integration with Jupyter notebooks, and advanced publishing options proved to be essential for enhancing the Ibis user experience.
+
+2. **Adaptation of content:** The content from the Mkdocs format was translated to fit the Quarto format while preserving the overall structure and readability. This process involved manual translation and adjustments to ensure the best results and a seamless transition for Ibis users.
+
+3. **Refactoring of styling and layout:** Quarto uses a different styling and layout system compared to Mkdocs. The styling and layout of the Ibis documentation were refactored to match the Quarto format. This involved updating CSS styles, reorganizing content sections, and adapting the navigation structure.
+
+## The future of Ibis documentation
+
+With the migration to Quarto, Ibis aims to provide users with informative, visually appealing, and interactive documentation that enhances their understanding of data analysis and the Ibis ecosystem. The enhanced features of Quarto will enable Ibis users to leverage the full potential of the Ibis library and create more impactful data analysis workflows.
+
+We invite Ibis users to explore the new documentation format and stay tuned for more exciting content as we continue our journey with Quarto.
+
+Thank you!
+
+## Additional resources
+
+- [Quarto FAQ](https://quarto.org/docs/faq/)
+- [Getting started with Ibis](../../tutorials/getting_started.qmd)

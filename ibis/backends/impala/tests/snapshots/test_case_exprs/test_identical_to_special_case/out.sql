@@ -1,0 +1,1 @@
+SELECT TRUE AS `tmp`

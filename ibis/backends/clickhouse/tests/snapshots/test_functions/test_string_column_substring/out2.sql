@@ -1,0 +1,1 @@
+if(0 >= 0, substring(string_col, 0 + 1, 3), substring(string_col, length(string_col) + 0 + 1, 3))

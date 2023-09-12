@@ -1,0 +1,3 @@
+Literal(1, Int8(nullable=True), dtype=Int16(nullable=True)) multiple values for argument 'dtype'
+
+Expected signature: Literal(value: Annotated[Any, Not(pattern=InstanceOf(type=<class 'Deferred'>))], dtype: DataType)

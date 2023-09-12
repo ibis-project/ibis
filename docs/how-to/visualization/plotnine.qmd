@@ -1,0 +1,34 @@
+# plotnine + Ibis
+
+If you don't have data to visualize, you can load an example table:
+
+
+```{python}
+# | code-fold: true
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+t.head(3)
+```
+
+## Using plotnine with Ibis
+
+Refer to the [plotnine documentation](https://plotnine.readthedocs.io/). You can
+pass in Ibis tables or expressions:
+
+```{python}
+from plotnine import ggplot, aes, geom_bar, theme
+
+chart = (
+    ggplot(
+        t.group_by("species").agg(count=ibis._.count()),
+        aes(x="species", y="count"),
+    )
+    + geom_bar(stat="identity")
+    + theme(figure_size=(6, 4))
+)
+chart
+```

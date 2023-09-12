@@ -1,0 +1,504 @@
+---
+execute:
+  freeze: auto
+---
+# Tutorial: Ibis for dplyr users
+
+[R](https://www.r-project.org/) users familiar with
+[dplyr](https://dplyr.tidyverse.org/), [tidyr](https://tidyr.tidyverse.org/),
+and other packages in the [Tidyverse](https://www.tidyverse.org/) are likely to
+find Ibis familiar.
+
+In fact, some Ibis features were even inspired by similar features in the
+[Tidyverse](https://www.tidyverse.org/).
+
+However, due to differences between Python and R and the design and goals of
+Ibis itself, you may notice some big differences right away:
+
+- **No pipe:** The handy [magrittr pipe](https://magrittr.tidyverse.org/)
+  (`%>%`) or R's newer native pipe (`|>`) don't exist in Python so you instead
+  have to chain sequences of operations together with a period (`.`). The `.`
+  in Python is analogous to R's `$` which lets you access attributes and
+  methods on objects.
+- **No unquoted column names:** Non-standard evaluation is common in R but not
+  present in Python. To reference a column in Ibis, you can pass a string,
+  property on a table (e.g., `tbl.some_column`), or you can make use of
+  [selectors](../reference/selectors.qmd).
+- **Ibis is lazy by default:** Similar to
+  [dbplyr](https://dbplyr.tidyverse.org/) and its `collect()` method, Ibis does
+  not evaluate our queries until we call `.to_pandas()`. For the purposes of
+  this document, we set `ibis.options.interactive = True` which limits results
+  to 10 rows, executes automatically, and prints a nicely-formatted table.
+
+Using the same example data and similar operations as in [Introduction to
+dplyr](https://dplyr.tidyverse.org/articles/dplyr.html), below you will find
+some examples of the more common dplyr and tidyr operations and their Ibis
+equivalents.
+
+## Loading Ibis
+
+To start using dplyr in R we would run:
+
+```{r}
+library(dplyr)
+```
+
+To load Ibis:
+
+
+```{python}
+import ibis
+```
+
+And then also load and alias some helpers to make our code more concise:
+
+
+```{python}
+import ibis.selectors as s
+from ibis import _
+```
+
+Last, as mentioned above, to get Ibis to automatically execute our queries and
+show the results in a nicely-formatted table, we run:
+
+
+```{python}
+ibis.options.interactive = True
+```
+
+## Loading example data
+
+In R, datasets are typically lazily loaded with packages. For instance, the
+`starwars` dataset is packaged with dplyr, but is not loaded in memory before
+you start using it. Ibis provides many datasets in the `ibis.examples` module.
+So to be able to use the `starwars` dataset, you can use:
+
+
+```{python}
+starwars = ibis.examples.starwars.fetch()
+```
+
+Similar to dplyr, if we evaluate the name of a table, we get a nicely-formatted
+table:
+
+
+```{python}
+starwars
+```
+
+In addition to printing a nicely-formatted table and automatically executing,
+setting `ibis.options.interactive` to `True` also causes our query to be
+limited to 10 rows. To get Ibis to give us all rows, we can directly call
+`to_pandas` and save the result as a pandas DataFrame:
+
+
+```{python}
+starwars_df = starwars.to_pandas()
+```
+
+Which then gives us all of the data as a pandas DataFrame:
+
+
+```{python}
+starwars_df
+```
+
+Directly calling `to_pandas` and saving the result to a variable is useful for
+passing the results of Ibis table expressions to other packages (e.g.,
+[`matplotlib`](https://matplotlib.org/).
+
+## Inspecting the dataset with `head()`
+
+Just like in R, you can use `head()` to inspect the beginning of a dataset. You
+can also specify the number of rows you want to get back by using the parameter
+`n` (default `n = 5`).
+
+In R:
+
+```{r}
+head(starwars) # or starwars |> head()
+```
+
+With Ibis:
+
+
+```{python}
+starwars.head(6)
+```
+
+There is no `tail()` in Ibis because most databases do not support this
+operation.
+
+Another method you can use to limit the number of rows returned by a query is
+`limit()` which also takes the `n` parameter.
+
+
+```{python}
+starwars.limit(3)
+```
+
+## Filtering rows with `filter()`
+
+Ibis, like dplyr, has `filter` to select rows based on conditions.
+
+With dplyr:
+
+```{r}
+starwars |>
+  filter(skin_color == "light")
+```
+
+In Ibis:
+
+
+```{python}
+starwars.filter(_.skin_color == "light")
+```
+
+In dplyr, you can specify multiple conditions separated with `,` that are then
+combined with the `&` operator:
+
+```{r}
+starwars |>
+  filter(skin_color == "light", eye_color == "brown")
+```
+
+In Ibis, you can do the same by putting multiple conditions in a list:
+
+
+```{python}
+starwars.filter([_.skin_color == "light", _.eye_color == "brown"])
+```
+
+In previous code, we used the `_` helper we imported earlier. The `_` is
+shorthand for the table returned by the previous step in the chained sequence
+of operations (in this case, `starwars`). We could have also written the more
+verbose form,
+
+```{python}
+starwars.filter([starwars.skin_color == "light", starwars.eye_color == "brown"])
+```
+
+If you want to combine multiple conditions, in dplyr, you could do:
+
+```{r}
+starwars |>
+  filter(
+      (skin_color == "light" & eye_color == "brown") |
+       species == "Droid"
+  )
+```
+
+In Ibis, this would be:
+
+```{python}
+starwars.filter(
+    ((_.skin_color == "light") & (_.eye_color == "brown")) |
+    (_.species == "Droid")
+)
+```
+
+## Sorting your data with `order_by()`
+
+To sort a column, dplyr has the verb `arrange`. For instance, to sort the
+column `height` using dplyr:
+
+```{r}
+starwars |>
+   arrange(height)
+```
+
+Ibis has the `order_by` method, so to perform the same operation:
+
+
+```{python}
+starwars.order_by(_.height)
+```
+
+You might notice that while dplyr puts missing values at the end, Ibis places
+them at the top. This behavior can actually vary from backend to backend and is
+something to be aware of when using Ibis.
+
+If you want to order using multiple variables, you can pass them as a list:
+
+
+```{python}
+starwars.order_by([_.height, _.mass]) # or starwars.order_by(["height", "mass"])
+```
+
+To order a column in descending order, there are two ways to do it. Note that
+missing values remain at the top.
+
+
+```{python}
+starwars.order_by(_.height.desc()) # or: starwars.order_by(ibis.desc("height"))
+```
+
+## Selecting columns with `select()`
+
+Ibis, like dplyr, has a `select` method to include or exclude columns:
+
+With dplyr:
+
+```{r}
+starwars |>
+    select(hair_color)
+```
+
+In Ibis:
+
+
+```{python}
+starwars.select(_.hair_color)
+```
+
+Note: A common pitfall to be aware of when referencing column names in Ibis is
+when column names collide with built-in methods on the Ibis Table object, such
+as `count`. In this situation, you will have to reference `count` like
+`table["count"]` or `_["count"]`.
+
+dplyr also allows selecting more than one column at a time:
+
+```{r}
+starwars |>
+    select(hair_color, skin_color, eye_color)
+```
+
+In Ibis, we can either quote the names:
+
+
+```{python}
+starwars.select("hair_color", "skin_color", "eye_color")
+```
+
+Or use the `_` helper:
+
+
+```{python}
+starwars.select(_.hair_color, _.skin_color, _.eye_color)
+```
+
+To select columns by name based on a condition, dplyr has helpers such as:
+
+- `starts_with()`: Starts with a prefix.
+- `ends_with()`: Ends with a suffix.
+- `contains()`: Contains a literal string.
+
+These and many more [selectors](../reference/selectors.qmd) are available in
+Ibis as well, with slightly different names:
+
+
+```{python}
+starwars.select(s.startswith("h"))
+```
+
+
+```{python}
+starwars.select(s.endswith("color"))
+```
+
+
+```{python}
+starwars.select(s.contains("world"))
+```
+
+See the Ibis [Column Selectors](../reference/selectors.qmd) documentation for
+the full list of selectors in Ibis.
+
+## Renaming columns with `rename()`
+
+Ibis allows you to rename columns using `rename()` which provides similar
+functionality to `rename()` in dplyr.
+
+In dplyr:
+
+```{r}
+starwars |>
+    rename("home_world" = "homeworld")
+```
+
+In Ibis, use `rename` and pass a `dict` of name mappings:
+
+
+```{python}
+starwars.rename(home_world="homeworld")
+```
+
+## Add new columns with `mutate()`
+
+Ibis, like dplyr, uses the `mutate` verb to add columns.
+
+In dplyr,
+
+```{r}
+starwars |>
+    mutate(height_m = height / 100) |>
+    select(name, height_m)
+```
+
+In Ibis:
+
+
+```{python}
+(
+    starwars
+        .mutate(height_m = _.height / 100)
+        .select("name", "height_m")
+)
+```
+
+A big difference between dplyr's `mutate` and Ibis' `mutate` is that, in Ibis,
+you have to chain separate `mutate` calls together when you reference
+newly-created columns in the same `mutate` whereas in dplyr, you can put them
+all in the same call. This makes Ibis' `mutate` more similar to `transform` in
+base R.
+
+In dplyr, we only need one `mutate` call:
+
+```{r}
+starwars %>%
+  mutate(
+    height_m = height / 100,
+    BMI = mass / (height_m^2)
+  ) %>%
+  select(BMI, everything())
+  ```
+
+In Ibis, for `BMI` to reference `height_m`, it needs to be in a separate `mutate` call:
+
+
+```{python}
+(starwars
+    .mutate(
+        height_m = _.height / 100
+    )
+    .mutate(
+        BMI = _.mass / (_.height_m**2)
+    )
+    .select("BMI", ~s.matches("BMI"))
+)
+```
+
+## Summarize values with `aggregate()`
+
+To summarize tables, dplyr has the verbs `summarise`/`summarize`:
+
+In dplyr:
+
+```{r}
+starwars %>%
+    summarise(height = mean(height, na.rm = TRUE))
+```
+
+In Ibis, the corresponding verb is `aggregate`:
+
+
+```{python}
+starwars.aggregate(height = _.height.mean())
+```
+
+**Note**: Throughout this guide, where dplyr uses R generics, Ibis uses Python
+methods.  In the previous code cell, `aggregate` is a method on a _table_ and
+`mean` is a method on a _column_.  If you want to perform aggregations on
+multiple columns, you can call the method that you want on the column you want
+to apply it to.
+
+## Join tables with `left_join()`
+
+To demonstrate how to do joins with Ibis, we'll load two more example datasets
+that also come from the example datasets included in dplyr:
+
+
+```{python}
+band_members = ibis.examples.band_members.fetch()
+band_instruments = ibis.examples.band_instruments.fetch()
+```
+
+In dplyr, we can perform a left join of these two tables like:
+
+```{r}
+band_members |>
+    left_join(band_instruments)
+```
+
+In Ibis:
+
+```{python}
+band_members.left_join(band_instruments, "name")
+```
+
+There are two main differences between Ibis and dplyr here:
+
+- Ibis requires us to explicitly specify our join key ("name", in this example)
+  whereas in dplyr, if the join key is missing, we get the natural join of the
+  two tables which joins across all shared column names
+- Ibis keeps columns for join keys from each table whereas dplyr does not by
+  default
+
+To replicate the result we'd get by default in dplyr but using Ibis, we need to
+incorporate two other verbs we've already seen in this tutorial:
+
+
+```{python}
+(
+    band_members
+        .left_join(band_instruments, "name")
+        .select(~s.contains("_right"))
+)
+```
+
+## Pivot data with `pivot_wider()` and `pivot_longer()`
+
+dplyr users are likely to be familiar with the `pivot_wider` and `pivot_longer`
+functions from the [tidyr](https://tidyr.tidyverse.org) package which convert
+tables between wide and long formats, respectively.
+
+`pivot_longer` in dplyr + tidyr:
+
+```{r}
+library(tidyr)
+
+starwars_colors <-
+    starwars |>
+        select(name, matches("color")) |>
+        pivot_longer(matches("color"), names_to = "attribute", values_to = "color")
+```
+
+In Ibis:
+
+
+```{python}
+starwars_colors = (
+    starwars
+        .select("name", s.matches("color"))
+        .pivot_longer(s.matches("color"), names_to="attribute", values_to="color")
+)
+
+starwars_colors
+```
+
+And `pivot_wider`:
+
+```{r}
+starwars_colors |>
+    pivot_wider(names_from = "attribute", values_from = "color")
+```
+
+In Ibis:
+
+
+```{python}
+(
+    starwars_colors.
+        pivot_wider(names_from="attribute", values_from="color")
+)
+```
+
+## Next Steps
+
+Now that you've gotten an introduction to the common differences between dplyr
+and Ibis, head over to [Getting started with ibis](./getting_started.qmd) for a
+full introduction. If you're familiar with SQL, check out [Ibis for SQL
+users](./ibis-for-sql-users.qmd). If you're
+familiar with pandas, take a look at [Ibis for pandas
+users](./ibis-for-pandas-users.qmd)

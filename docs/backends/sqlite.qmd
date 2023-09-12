@@ -1,0 +1,120 @@
+# SQLite
+
+[https://www.sqlite.org](https://www.sqlite.org)
+
+![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-SQLite tables | CSV | JSON | pandas | Parquet | Postgres | PyArrow-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-SQLite tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
+
+## Install
+
+Install Ibis and dependencies for the SQLite backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install with the `sqlite` extra:
+
+```{.bash}
+pip install 'ibis-framework[sqlite]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.sqlite.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `conda`
+
+Install for SQLite:
+
+```{.bash}
+conda install -c conda-forge ibis-sqlite
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.sqlite.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `mamba`
+
+Install for SQLite:
+
+```{.bash}
+mamba install -c conda-forge ibis-sqlite
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.sqlite.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+:::
+
+
+## Connect
+
+### `ibis.sqlite.connect`
+
+Use an ephemeral, in-memory database.
+
+```python
+con = ibis.sqlite.connect()
+```
+
+Connect to, or create, a local SQLite file
+
+```python
+con = ibis.sqlite.connect("mydb.sqlite")
+```
+
+::: {.callout-note}
+`ibis.sqlite.connect` is a thin wrapper around [`ibis.backends.sqlite.Backend.do_connect`](#ibis.backends.sqlite.Backend.do_connect).
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("sqlite")
+```
+
+### `ibis.connect` URL format
+
+In addition to `ibis.sqlite.connect`, you can also connect to SQLite by
+passing a properly formatted SQLite connection URL to `ibis.connect`:
+
+```python
+con = ibis.connect("sqlite:///path/to/local/file")
+```
+
+The URL can be `sqlite://` which will connect to an ephemeral in-memory database:
+
+```python
+con = ibis.connect("sqlite://")
+```
+
+```{python}
+#| echo: false
+BACKEND = "SQLite"
+```
+
+{{< include ./_templates/api.qmd >}}

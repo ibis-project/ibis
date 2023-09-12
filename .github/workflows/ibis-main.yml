@@ -1,0 +1,206 @@
+name: Ibis
+
+on:
+  push:
+    # Skip the test suite if all changes are in the docs directory
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  pull_request:
+    # Skip the test suite if all changes are in the docs directory
+    paths-ignore:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  merge_group:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+env:
+  FORCE_COLOR: "1"
+
+jobs:
+  test_core:
+    name: Test ${{ matrix.os }} python-${{ matrix.python-version }}
+    env:
+      SQLALCHEMY_WARN_20: "1"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install python
+        uses: actions/setup-python@v4
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: no-backends-${{ steps.install_python.outputs.python-version }}
+
+      - run: python -m pip install --upgrade pip 'poetry==1.6.1'
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: core
+
+      - name: install ${{ matrix.os }} system dependencies
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update -y -q
+          sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev
+
+      - name: install ${{ matrix.os }} system dependencies
+        if: matrix.os == 'windows-latest'
+        run: choco install graphviz
+
+      - name: install ibis
+        run: poetry install --without dev --without docs --extras visualization
+
+      - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: run all core tests and run benchmarks once parallel
+        if: matrix.os != 'windows-latest'
+        run: just ci-check -m "'core or benchmark'" -n auto
+
+      - name: run all core tests and run benchmarks once serial
+        if: matrix.os == 'windows-latest'
+        run: just ci-check -m "'core or benchmark'"
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
+
+  test_shapely_duckdb_import:
+    name: Test shapely and duckdb import
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.11"
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install python
+        uses: actions/setup-python@v4
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: shapely-duckdb
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: shapely-duckdb-${{ steps.install_python.outputs.python-version }}
+
+      - name: install ${{ matrix.os }} system dependencies
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update -y -q
+          sudo apt-get install -y -q build-essential libgeos-dev
+
+      - run: python -m pip install --upgrade pip 'poetry==1.6.1'
+
+      - name: install ibis
+        # install duckdb and geospatial because of https://github.com/ibis-project/ibis/issues/4856
+        run: poetry install --without dev --without docs --without test --extras duckdb --extras geospatial
+
+      - name: check shapely and duckdb imports
+        run: poetry run python -c 'import shapely.geometry, duckdb'
+
+  test_doctests:
+    name: Doctests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.11"
+    steps:
+      - name: install system dependencies
+        run: |
+          set -euo pipefail
+
+          sudo apt-get update -y -q
+          sudo apt-get install -y -q build-essential graphviz libgeos-dev libkrb5-dev freetds-dev
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install python
+        uses: actions/setup-python@v4
+        id: install_python
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: doctests-${{ steps.install_python.outputs.python-version }}
+
+      - run: python -m pip install --upgrade pip 'poetry==1.6.1'
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: poetry.lock
+          custom_cache_key_element: doctests
+
+      - name: install ibis with all extras
+        run: poetry install --without dev --without docs --extras all
+
+      - uses: extractions/setup-just@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: run doctests
+        run: just doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          flags: core,doctests,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}

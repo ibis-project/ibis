@@ -1,0 +1,135 @@
+# BigQuery
+
+[https://cloud.google.com/bigquery](https://cloud.google.com/bigquery)
+
+![](https://img.shields.io/badge/memtables-fallback-yellow?style=flat-square) ![](https://img.shields.io/badge/inputs-BigQuery tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-BigQuery tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
+
+## Install
+
+Install Ibis and dependencies for the BigQuery backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install with the `bigquery` extra:
+
+```{.bash}
+pip install 'ibis-framework[bigquery]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.bigquery.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `conda`
+
+Install for BigQuery:
+
+```{.bash}
+conda install -c conda-forge ibis-bigquery
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.bigquery.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `mamba`
+
+Install for BigQuery:
+
+```{.bash}
+mamba install -c conda-forge ibis-bigquery
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.bigquery.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+:::
+
+## Connect
+
+### `ibis.bigquery.connect`
+
+```python
+con = ibis.bigquery.connect(
+    project_id="ibis-bq-project",
+    dataset_id="testing",
+)
+```
+
+::: {.callout-note}
+
+`ibis.bigquery.connect` is a thin wrapper around [`ibis.backends.bigquery.Backend.do_connect`](#ibis.backends.bigquery.Backend.do_connect).
+
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("bigquery")
+```
+
+### `ibis.connect` URL format
+
+In addition to `ibis.bigquery.connect`, you can also connect to BigQuery by
+passing a properly formatted BigQuery connection URL to `ibis.connect`
+
+```python
+con = ibis.connect(f"bigquery://{project_id}/{dataset_id}")
+```
+
+::: {.callout-note}
+This assumes you have already authenticated via the `gcloud` CLI.
+:::
+
+### Finding your `project_id` and `dataset_id`
+
+Log in to the [Google Cloud Console](https://console.cloud.google.com/bigquery)
+to see which `project_id`s and `dataset_id`s are available to use.
+
+![bigquery_ids](./images/bigquery_connect.png)
+
+### BigQuery Authentication
+
+The simplest way to authenticate with the BigQuery backend is to use [Google's `gcloud` CLI tool](https://cloud.google.com/sdk/docs/install).
+
+Once you have `gcloud` installed, you can authenticate to BigQuery (and other Google Cloud services) by running
+
+```sh
+gcloud auth login
+```
+
+For any authentication problems, or information on other ways of authenticating,
+see the [`gcloud` CLI authorization
+guide](https://cloud.google.com/sdk/docs/authorizing).
+
+```{python}
+#| echo: false
+BACKEND = "BigQuery"
+```
+
+{{< include ./_templates/api.qmd >}}

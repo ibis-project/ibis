@@ -1,0 +1,3 @@
+SELECT t0.*,
+       avg(t0.`float_col`) OVER (ORDER BY UNIX_MICROS(t0.`timestamp_col`) ASC RANGE BETWEEN 60000000 PRECEDING AND EXTRACT(MINUTE from INTERVAL 0 MINUTE) * 60000000 FOLLOWING) AS `win_avg`
+FROM functional_alltypes t0

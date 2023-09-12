@@ -1,0 +1,18 @@
+# Basic input/output
+
+If you don't have your own data, you can load example data from the `ibis.examples` module:
+
+```{python}
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+```
+
+## Overview
+
+Ibis is typically used with a backend that already contains tables, but can import and export data in various formats.
+
+{{< include /_code/input_output_penguins.qmd >}}

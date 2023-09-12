@@ -1,0 +1,46 @@
+name: Feature Request
+description: Suggest an idea for ibis
+title: "feat: "
+labels: ["feature"]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to fill out a feature request!
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: If so, please describe the problem.
+      placeholder: "I am frustated by ..."
+    validations:
+      required: false
+  - type: textarea
+    id: request
+    attributes:
+      label: Describe the solution you'd like
+      description: Also discuss any alternatives you may have considered if applicable.
+      placeholder: "I'd like ..."
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: What version of ibis are you running?
+      placeholder: "Ex: 3.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: backends
+    attributes:
+      label: What backend(s) are you using, if any?
+      placeholder: "Ex: DuckDB"
+    validations:
+      required: false
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Code of Conduct
+      description: By submitting this issue, you agree to follow our [Code of Conduct](https://github.com/ibis-project/ibis/blob/master/CODE_OF_CONDUCT.md)
+      options:
+        - label: I agree to follow this project's Code of Conduct
+          required: true

@@ -1,0 +1,91 @@
+name: Check Generated Files
+
+on:
+  push:
+    paths:
+      - README.md
+      - poetry.lock
+      - pyproject.toml
+      - requirements-dev.txt
+  pull_request:
+    paths:
+      - README.md
+      - poetry.lock
+      - pyproject.toml
+      - requirements-dev.txt
+  merge_group:
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  check_setuptools_install:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install python
+        uses: actions/setup-python@v4
+        id: install_python
+        with:
+          python-version: "3.11"
+
+      - name: update apt-get
+        run: sudo apt-get update -y -q
+
+      - name: install system dependencies
+        run: sudo apt-get install -y -q build-essential graphviz libgeos-dev libkrb5-dev krb5-config freetds-dev
+
+      - name: install poetry
+        run: pip install 'poetry==1.6.1'
+
+      - name: check consistency with pyproject.toml
+        run: poetry lock --check
+
+      - name: check that the `all` extra matches the current lock file
+        run: |
+          set -euo pipefail
+
+          js="$(mktemp --suffix=.pyproject.json)"
+          docker run --rm -i sclevine/yj -tj < pyproject.toml > "$js"
+
+          old="$(mktemp --suffix=.old)"
+          jq -rM '.tool.poetry.extras.all | unique | sort' < "$js" > "$old"
+
+          new="$(mktemp --suffix=.new)"
+          jq -rM '.tool.poetry.extras | with_entries(select(.key != "all")) | [.[]] | add | unique | sort' < "$js" > "$new"
+
+          diff --unified "$old" "$new"
+
+      - name: generate requirements-dev.txt
+        run: poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
+
+      - name: check requirements-dev.txt
+        run: git diff --exit-code requirements-dev.txt
+
+      - uses: syphar/restore-virtualenv@v1
+        with:
+          requirement_files: requirements-dev.txt
+          custom_cache_key_element: check-setuptools-install
+
+      - uses: syphar/restore-pip-download-cache@v1
+        with:
+          requirement_files: requirements-dev.txt
+          custom_cache_key_element: check-setuptools-install-${{ steps.install_python.outputs.python-version }}
+
+      - name: install using requirements-dev.txt
+        run: pip install -r requirements-dev.txt
+
+      - name: install ibis in development mode
+        run: pip install -e .
+
+      - name: run tests
+        run: pytest -m core --cov-report=xml:coverage.xml --cov=ibis
+
+      - name: upload code coverage
+        if: success()
+        uses: codecov/codecov-action@v3
+        with:
+          flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}

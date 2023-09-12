@@ -1,0 +1,9 @@
+r0 := UnboundTable: foo
+  job     string
+  dept_id string
+  year    int32
+  y       float64
+
+r1 := SelfReference[r0]
+
+Equals(dept_id, dept_id): r0.dept_id == r1.dept_id

@@ -1,0 +1,1405 @@
+{
+  "Aids2": {
+    "description": "Australian AIDS Survival Data"
+  },
+  "Aids2_raw": {
+    "description": "Australian AIDS Survival Data"
+  },
+  "Alfalfa": {
+    "description": "Split-Plot Experiment on Varieties of Alfalfa"
+  },
+  "Alfalfa_raw": {
+    "description": "Split-Plot Experiment on Varieties of Alfalfa"
+  },
+  "AllstarFull": {
+    "description": "AllstarFull table"
+  },
+  "AllstarFull_raw": {
+    "description": "AllstarFull table"
+  },
+  "Appearances": {
+    "description": "Appearances table"
+  },
+  "Appearances_raw": {
+    "description": "Appearances table"
+  },
+  "Assay": {
+    "description": "Bioassay on Cell Culture Plate"
+  },
+  "Assay_raw": {
+    "description": "Bioassay on Cell Culture Plate"
+  },
+  "AwardsManagers": {
+    "description": "AwardsManagers table"
+  },
+  "AwardsManagers_raw": {
+    "description": "AwardsManagers table"
+  },
+  "AwardsPlayers": {
+    "description": "AwardsPlayers table"
+  },
+  "AwardsPlayers_raw": {
+    "description": "AwardsPlayers table"
+  },
+  "AwardsShareManagers": {
+    "description": "AwardsShareManagers table"
+  },
+  "AwardsShareManagers_raw": {
+    "description": "AwardsShareManagers table"
+  },
+  "AwardsSharePlayers": {
+    "description": "AwardsSharePlayers table"
+  },
+  "AwardsSharePlayers_raw": {
+    "description": "AwardsSharePlayers table"
+  },
+  "BOD": {
+    "description": "Biochemical Oxygen Demand"
+  },
+  "BOD_raw": {
+    "description": "Biochemical Oxygen Demand"
+  },
+  "Batting": {
+    "description": "Batting table"
+  },
+  "BattingPost": {
+    "description": "BattingPost table"
+  },
+  "BattingPost_raw": {
+    "description": "BattingPost table"
+  },
+  "Batting_raw": {
+    "description": "Batting table"
+  },
+  "BodyWeight": {
+    "description": "Rat weight over time for different diets"
+  },
+  "BodyWeight_raw": {
+    "description": "Rat weight over time for different diets"
+  },
+  "Boston": {
+    "description": "Housing Values in Suburbs of Boston"
+  },
+  "CO2": {
+    "description": "Carbon Dioxide Uptake in Grass Plants"
+  },
+  "CO2_raw": {
+    "description": "Carbon Dioxide Uptake in Grass Plants"
+  },
+  "Cars93": {
+    "description": "Data from 93 Cars on Sale in the USA in 1993"
+  },
+  "Cars93_raw": {
+    "description": "Data from 93 Cars on Sale in the USA in 1993"
+  },
+  "Cefamandole": {
+    "description": "Pharmacokinetics of Cefamandole"
+  },
+  "Cefamandole_raw": {
+    "description": "Pharmacokinetics of Cefamandole"
+  },
+  "ChickWeight": {
+    "description": "Weight versus age of chicks on different diets"
+  },
+  "ChickWeight_raw": {
+    "description": "Weight versus age of chicks on different diets"
+  },
+  "CollegePlaying": {
+    "description": "CollegePlaying table"
+  },
+  "CollegePlaying_raw": {
+    "description": "CollegePlaying table"
+  },
+  "Cushings": {
+    "description": "Diagnostic Tests on Patients with Cushing's Syndrome"
+  },
+  "Cushings_raw": {
+    "description": "Diagnostic Tests on Patients with Cushing's Syndrome"
+  },
+  "DNase": {
+    "description": "Elisa assay of DNase"
+  },
+  "DNase_raw": {
+    "description": "Elisa assay of DNase"
+  },
+  "Dialyzer": {
+    "description": "High-Flux Hemodialyzer"
+  },
+  "Dialyzer_raw": {
+    "description": "High-Flux Hemodialyzer"
+  },
+  "Earthquake": {
+    "description": "Earthquake Intensity"
+  },
+  "Earthquake_raw": {
+    "description": "Earthquake Intensity"
+  },
+  "Fatigue": {
+    "description": "Cracks caused by metal fatigue"
+  },
+  "Fatigue_raw": {
+    "description": "Cracks caused by metal fatigue"
+  },
+  "Fielding": {
+    "description": "Fielding table"
+  },
+  "FieldingOF": {
+    "description": "FieldingOF table"
+  },
+  "FieldingOF_raw": {
+    "description": "FieldingOF table"
+  },
+  "FieldingOFsplit": {
+    "description": "FieldingOFsplit table"
+  },
+  "FieldingOFsplit_raw": {
+    "description": "FieldingOFsplit table"
+  },
+  "FieldingPost": {
+    "description": "FieldingPost data"
+  },
+  "FieldingPost_raw": {
+    "description": "FieldingPost data"
+  },
+  "Fielding_raw": {
+    "description": "Fielding table"
+  },
+  "Formaldehyde": {
+    "description": "Determination of Formaldehyde"
+  },
+  "GAGurine": {
+    "description": "Level of GAG in Urine of Children"
+  },
+  "GAGurine_raw": {
+    "description": "Level of GAG in Urine of Children"
+  },
+  "Gasoline": {
+    "description": "Refinery yield of gasoline"
+  },
+  "Gasoline_raw": {
+    "description": "Refinery yield of gasoline"
+  },
+  "Glucose": {
+    "description": "Glucose levels over time"
+  },
+  "Glucose2": {
+    "description": "Glucose Levels Following Alcohol Ingestion"
+  },
+  "Glucose2_raw": {
+    "description": "Glucose Levels Following Alcohol Ingestion"
+  },
+  "Glucose_raw": {
+    "description": "Glucose levels over time"
+  },
+  "Gun": {
+    "description": "Methods for firing naval guns"
+  },
+  "Gun_raw": {
+    "description": "Methods for firing naval guns"
+  },
+  "HallOfFame": {
+    "description": "Hall of Fame Voting Data"
+  },
+  "HallOfFame_raw": {
+    "description": "Hall of Fame Voting Data"
+  },
+  "HomeGames": {
+    "description": "HomeGames table"
+  },
+  "HomeGames_raw": {
+    "description": "HomeGames table"
+  },
+  "IGF": {
+    "description": "Radioimmunoassay of IGF-I Protein"
+  },
+  "IGF_raw": {
+    "description": "Radioimmunoassay of IGF-I Protein"
+  },
+  "Indometh": {
+    "description": "Pharmacokinetics of Indomethacin"
+  },
+  "Indometh_raw": {
+    "description": "Pharmacokinetics of Indomethacin"
+  },
+  "InsectSprays": {
+    "description": "Effectiveness of Insect Sprays"
+  },
+  "Insurance": {
+    "description": "Numbers of Car Insurance claims"
+  },
+  "Insurance_raw": {
+    "description": "Numbers of Car Insurance claims"
+  },
+  "LahmanData": {
+    "description": "Lahman Datasets"
+  },
+  "LifeCycleSavings": {
+    "description": "Intercountry Life-Cycle Savings Data"
+  },
+  "Loblolly": {
+    "description": "Growth of Loblolly pine trees"
+  },
+  "Loblolly_raw": {
+    "description": "Growth of Loblolly pine trees"
+  },
+  "Machines": {
+    "description": "Productivity Scores for Machines and Workers"
+  },
+  "Machines_raw": {
+    "description": "Productivity Scores for Machines and Workers"
+  },
+  "Managers": {
+    "description": "Managers table"
+  },
+  "ManagersHalf": {
+    "description": "ManagersHalf table"
+  },
+  "ManagersHalf_raw": {
+    "description": "ManagersHalf table"
+  },
+  "Managers_raw": {
+    "description": "Managers table"
+  },
+  "MathAchSchool": {
+    "description": "School demographic data for MathAchieve"
+  },
+  "MathAchSchool_raw": {
+    "description": "School demographic data for MathAchieve"
+  },
+  "MathAchieve": {
+    "description": "Mathematics achievement scores"
+  },
+  "MathAchieve_raw": {
+    "description": "Mathematics achievement scores"
+  },
+  "Meat": {
+    "description": "Tenderness of meat"
+  },
+  "Meat_raw": {
+    "description": "Tenderness of meat"
+  },
+  "Milk": {
+    "description": "Protein content of cows' milk"
+  },
+  "Milk_raw": {
+    "description": "Protein content of cows' milk"
+  },
+  "Nitrendipene": {
+    "description": "Assay of nitrendipene"
+  },
+  "Nitrendipene_raw": {
+    "description": "Assay of nitrendipene"
+  },
+  "OME": {
+    "description": "Tests of Auditory Perception in Children with OME"
+  },
+  "OME_raw": {
+    "description": "Tests of Auditory Perception in Children with OME"
+  },
+  "Orange": {
+    "description": "Growth of Orange Trees"
+  },
+  "Orange_raw": {
+    "description": "Growth of Orange Trees"
+  },
+  "OrchardSprays": {
+    "description": "Potency of Orchard Sprays"
+  },
+  "Orthodont": {
+    "description": "Growth curve data on an orthdontic measurement"
+  },
+  "Orthodont_raw": {
+    "description": "Growth curve data on an orthdontic measurement"
+  },
+  "Ovary": {
+    "description": "Counts of Ovarian Follicles"
+  },
+  "Ovary_raw": {
+    "description": "Counts of Ovarian Follicles"
+  },
+  "Oxboys": {
+    "description": "Heights of Boys in Oxford"
+  },
+  "Oxboys_raw": {
+    "description": "Heights of Boys in Oxford"
+  },
+  "Oxide": {
+    "description": "Variability in Semiconductor Manufacturing"
+  },
+  "Oxide_raw": {
+    "description": "Variability in Semiconductor Manufacturing"
+  },
+  "PBG": {
+    "description": "Effect of Phenylbiguanide on Blood Pressure"
+  },
+  "PBG_raw": {
+    "description": "Effect of Phenylbiguanide on Blood Pressure"
+  },
+  "Parks": {
+    "description": "Parks table"
+  },
+  "Parks_raw": {
+    "description": "Parks table"
+  },
+  "People": {
+    "description": "People table"
+  },
+  "People_raw": {
+    "description": "People table"
+  },
+  "Phenobarb": {
+    "description": "Phenobarbitol Kinetics"
+  },
+  "Phenobarb_raw": {
+    "description": "Phenobarbitol Kinetics"
+  },
+  "Pima_te": {
+    "description": "Diabetes in Pima Indian Women"
+  },
+  "Pima_tr": {
+    "description": "Diabetes in Pima Indian Women"
+  },
+  "Pima_tr2": {
+    "description": "Diabetes in Pima Indian Women"
+  },
+  "Pitching": {
+    "description": "Pitching table"
+  },
+  "PitchingPost": {
+    "description": "PitchingPost table"
+  },
+  "PitchingPost_raw": {
+    "description": "PitchingPost table"
+  },
+  "Pitching_raw": {
+    "description": "Pitching table"
+  },
+  "Pixel": {
+    "description": "X-ray pixel intensities over time"
+  },
+  "Pixel_raw": {
+    "description": "X-ray pixel intensities over time"
+  },
+  "PlantGrowth": {
+    "description": "Results from an Experiment on Plant Growth"
+  },
+  "Puromycin": {
+    "description": "Reaction Velocity of an Enzymatic Reaction"
+  },
+  "Quinidine": {
+    "description": "Quinidine Kinetics"
+  },
+  "Quinidine_raw": {
+    "description": "Quinidine Kinetics"
+  },
+  "Rabbit": {
+    "description": "Blood Pressure in Rabbits"
+  },
+  "Rabbit_raw": {
+    "description": "Blood Pressure in Rabbits"
+  },
+  "Rail": {
+    "description": "Evaluation of Stress in Railway Rails"
+  },
+  "Rail_raw": {
+    "description": "Evaluation of Stress in Railway Rails"
+  },
+  "RatPupWeight": {
+    "description": "The weight of rat pups"
+  },
+  "RatPupWeight_raw": {
+    "description": "The weight of rat pups"
+  },
+  "Relaxin": {
+    "description": "Assay for Relaxin"
+  },
+  "Relaxin_raw": {
+    "description": "Assay for Relaxin"
+  },
+  "Remifentanil": {
+    "description": "Pharmacokinetics of Remifentanil"
+  },
+  "Remifentanil_raw": {
+    "description": "Pharmacokinetics of Remifentanil"
+  },
+  "Rubber": {
+    "description": "Accelerated Testing of Tyre Rubber"
+  },
+  "Salaries": {
+    "description": "Salaries table"
+  },
+  "Salaries_raw": {
+    "description": "Salaries table"
+  },
+  "Schools": {
+    "description": "Schools table"
+  },
+  "Schools_raw": {
+    "description": "Schools table"
+  },
+  "SeriesPost": {
+    "description": "SeriesPost table"
+  },
+  "SeriesPost_raw": {
+    "description": "SeriesPost table"
+  },
+  "Sitka": {
+    "description": "Growth Curves for Sitka Spruce Trees in 1988"
+  },
+  "Sitka89": {
+    "description": "Growth Curves for Sitka Spruce Trees in 1989"
+  },
+  "Sitka89_raw": {
+    "description": "Growth Curves for Sitka Spruce Trees in 1989"
+  },
+  "Sitka_raw": {
+    "description": "Growth Curves for Sitka Spruce Trees in 1988"
+  },
+  "Skye": {
+    "description": "AFM Compositions of Aphyric Skye Lavas"
+  },
+  "Skye_raw": {
+    "description": "AFM Compositions of Aphyric Skye Lavas"
+  },
+  "Soybean": {
+    "description": "Growth of soybean plants"
+  },
+  "Soybean_raw": {
+    "description": "Growth of soybean plants"
+  },
+  "Spruce": {
+    "description": "Growth of Spruce Trees"
+  },
+  "Spruce_raw": {
+    "description": "Growth of Spruce Trees"
+  },
+  "Teams": {
+    "description": "Teams table"
+  },
+  "TeamsFranchises": {
+    "description": "TeamFranchises table"
+  },
+  "TeamsFranchises_raw": {
+    "description": "TeamFranchises table"
+  },
+  "TeamsHalf": {
+    "description": "TeamsHalf table"
+  },
+  "TeamsHalf_raw": {
+    "description": "TeamsHalf table"
+  },
+  "Teams_raw": {
+    "description": "Teams table"
+  },
+  "Tetracycline1": {
+    "description": "Pharmacokinetics of tetracycline"
+  },
+  "Tetracycline1_raw": {
+    "description": "Pharmacokinetics of tetracycline"
+  },
+  "Tetracycline2": {
+    "description": "Pharmacokinetics of tetracycline"
+  },
+  "Tetracycline2_raw": {
+    "description": "Pharmacokinetics of tetracycline"
+  },
+  "Theoph": {
+    "description": "Pharmacokinetics of Theophylline"
+  },
+  "Theoph_raw": {
+    "description": "Pharmacokinetics of Theophylline"
+  },
+  "ToothGrowth": {
+    "description": "The Effect of Vitamin C on Tooth Growth in Guinea Pigs"
+  },
+  "Traffic": {
+    "description": "Effect of Swedish Speed Limits on Accidents"
+  },
+  "USArrests": {
+    "description": "Violent Crime Rates by US State"
+  },
+  "USArrests_raw": {
+    "description": "Violent Crime Rates by US State"
+  },
+  "USJudgeRatings": {
+    "description": "Lawyers' Ratings of State Judges in the US Superior Court"
+  },
+  "USJudgeRatings_raw": {
+    "description": "Lawyers' Ratings of State Judges in the US Superior Court"
+  },
+  "USMortality": {
+    "description": "Mortality Rates in US by Cause and Gender"
+  },
+  "USMortality_raw": {
+    "description": "Mortality Rates in US by Cause and Gender"
+  },
+  "USRegionalMortality": {
+    "description": "Mortality Rates in US by Cause and Gender"
+  },
+  "USRegionalMortality_raw": {
+    "description": "Mortality Rates in US by Cause and Gender"
+  },
+  "USSouthPolygon": {
+    "description": "Polygon for County Map of US South States: Alabama, Georgia, and South Carolina"
+  },
+  "UScereal": {
+    "description": "Nutritional and Marketing Information on US Cereals"
+  },
+  "UScrime": {
+    "description": "The Effect of Punishment Regimes on Crime Rates"
+  },
+  "UScrime_raw": {
+    "description": "The Effect of Punishment Regimes on Crime Rates"
+  },
+  "VA": {
+    "description": "Veteran's Administration Lung Cancer Trial"
+  },
+  "VA_raw": {
+    "description": "Veteran's Administration Lung Cancer Trial"
+  },
+  "Wafer": {
+    "description": "Modeling of Analog MOS Circuits"
+  },
+  "Wafer_raw": {
+    "description": "Modeling of Analog MOS Circuits"
+  },
+  "Wheat": {
+    "description": "Yields by growing conditions"
+  },
+  "Wheat2": {
+    "description": "Wheat Yield Trials"
+  },
+  "Wheat2_raw": {
+    "description": "Wheat Yield Trials"
+  },
+  "Wheat_raw": {
+    "description": "Yields by growing conditions"
+  },
+  "acme": {
+    "description": "Monthly Excess Returns"
+  },
+  "agriculture": {
+    "description": "European Union Agricultural Workforces"
+  },
+  "aids": {
+    "description": "Delay in AIDS Reporting in England and Wales"
+  },
+  "aircondit": {
+    "description": "Failures of Air-conditioning Equipment"
+  },
+  "aircondit7": {
+    "description": "Failures of Air-conditioning Equipment"
+  },
+  "airquality": {
+    "description": "New York Air Quality Measurements"
+  },
+  "airquality_raw": {
+    "description": "New York Air Quality Measurements"
+  },
+  "amis": {
+    "description": "Car Speeding and Warning Signs"
+  },
+  "aml": {
+    "description": "Remission Times for Acute Myelogenous Leukaemia"
+  },
+  "animals": {
+    "description": "Attributes of Animals"
+  },
+  "anorexia": {
+    "description": "Anorexia Data on Weight Change"
+  },
+  "anorexia_raw": {
+    "description": "Anorexia Data on Weight Change"
+  },
+  "anscombe": {
+    "description": "Anscombe's Quartet of 'Identical' Simple Linear Regressions"
+  },
+  "attenu": {
+    "description": "The Joyner-Boore Attenuation Data"
+  },
+  "attitude": {
+    "description": "The Chatterjee-Price Attitude Data"
+  },
+  "bacteria": {
+    "description": "Presence of Bacteria after Drug Treatments"
+  },
+  "bacteria_raw": {
+    "description": "Presence of Bacteria after Drug Treatments"
+  },
+  "band_instruments": {
+    "description": "Band membership"
+  },
+  "band_instruments2": {
+    "description": "Band membership"
+  },
+  "band_members": {
+    "description": "Band membership"
+  },
+  "barley": {
+    "description": "Yield data from a Minnesota barley trial"
+  },
+  "battingLabels": {
+    "description": "Variable Labels"
+  },
+  "bdf": {
+    "description": "Language scores"
+  },
+  "bdf_raw": {
+    "description": "Language scores"
+  },
+  "beav1": {
+    "description": "Body Temperature Series of Beaver 1"
+  },
+  "beav2": {
+    "description": "Body Temperature Series of Beaver 2"
+  },
+  "bigcity": {
+    "description": "Population of U.S. Cities"
+  },
+  "billboard": {
+    "description": "Song rankings for Billboard top 100 in the year 2000"
+  },
+  "billboard_raw": {
+    "description": "Song rankings for Billboard top 100 in the year 2000"
+  },
+  "biopsy": {
+    "description": "Biopsy Data on Breast Cancer Patients"
+  },
+  "biopsy_raw": {
+    "description": "Biopsy Data on Breast Cancer Patients"
+  },
+  "birthwt": {
+    "description": "Risk Factors Associated with Low Infant Birth Weight"
+  },
+  "brambles": {
+    "description": "Spatial Location of Bramble Canes"
+  },
+  "breslow": {
+    "description": "Smoking Deaths Among Doctors"
+  },
+  "cabbages": {
+    "description": "Data from a cabbage field trial"
+  },
+  "cabbages_raw": {
+    "description": "Data from a cabbage field trial"
+  },
+  "caith": {
+    "description": "Colours of Eyes and Hair of People in Caithness"
+  },
+  "calcium": {
+    "description": "Calcium Uptake Data"
+  },
+  "cancer": {
+    "description": "NCCTG Lung Cancer Data"
+  },
+  "cancer_raw": {
+    "description": "NCCTG Lung Cancer Data"
+  },
+  "cane": {
+    "description": "Sugar-cane Disease Data"
+  },
+  "capability": {
+    "description": "Simulated Manufacturing Process Data"
+  },
+  "car90": {
+    "description": "Automobile Data from 'Consumer Reports' 1990"
+  },
+  "car90_raw": {
+    "description": "Automobile Data from 'Consumer Reports' 1990"
+  },
+  "car_test_frame": {
+    "description": "Automobile Data from 'Consumer Reports' 1990"
+  },
+  "car_test_frame_raw": {
+    "description": "Automobile Data from 'Consumer Reports' 1990"
+  },
+  "cars": {
+    "description": "Speed and Stopping Distances of Cars"
+  },
+  "cats": {
+    "description": "Anatomical Data from Domestic Cats"
+  },
+  "catsM": {
+    "description": "Weight Data for Domestic Cats"
+  },
+  "catsM_raw": {
+    "description": "Weight Data for Domestic Cats"
+  },
+  "cats_raw": {
+    "description": "Anatomical Data from Domestic Cats"
+  },
+  "cav": {
+    "description": "Position of Muscle Caveolae"
+  },
+  "cd4": {
+    "description": "CD4 Counts for HIV-Positive Patients"
+  },
+  "cement": {
+    "description": "Heat Evolved by Setting Cements"
+  },
+  "cgd": {
+    "description": "Chronic Granulotamous Disease data"
+  },
+  "cgd_raw": {
+    "description": "Chronic Granulotamous Disease data"
+  },
+  "channing": {
+    "description": "Channing House Data"
+  },
+  "chickwts": {
+    "description": "Chicken Weights by Feed Type"
+  },
+  "city": {
+    "description": "Population of U.S. Cities"
+  },
+  "claridge": {
+    "description": "Genetic Links to Left-handedness"
+  },
+  "cloth": {
+    "description": "Number of Flaws in Cloth"
+  },
+  "cms_patient_care": {
+    "description": "Data from the Centers for Medicare & Medicaid Services"
+  },
+  "cms_patient_experience": {
+    "description": "Data from the Centers for Medicare & Medicaid Services"
+  },
+  "co_transfer": {
+    "description": "Carbon Monoxide Transfer"
+  },
+  "coal": {
+    "description": "Dates of Coal Mining Disasters"
+  },
+  "construction": {
+    "description": "Completed construction in the US in 2018"
+  },
+  "construction_raw": {
+    "description": "Completed construction in the US in 2018"
+  },
+  "coop": {
+    "description": "Co-operative Trial in Analytical Chemistry"
+  },
+  "coop_raw": {
+    "description": "Co-operative Trial in Analytical Chemistry"
+  },
+  "cpus": {
+    "description": "Performance of Computer CPUs"
+  },
+  "crabs": {
+    "description": "Morphological Measurements on Leptograpsus Crabs"
+  },
+  "crabs_raw": {
+    "description": "Morphological Measurements on Leptograpsus Crabs"
+  },
+  "cu_summary": {
+    "description": "Automobile Data from 'Consumer Reports' 1990"
+  },
+  "cu_summary_raw": {
+    "description": "Automobile Data from 'Consumer Reports' 1990"
+  },
+  "darwin": {
+    "description": "Darwin's Plant Height Differences"
+  },
+  "diabetic": {
+    "description": "Ddiabetic retinopathy"
+  },
+  "diamonds": {
+    "description": "Prices of over 50,000 round cut diamonds"
+  },
+  "dogs": {
+    "description": "Cardiac Data for Domestic Dogs"
+  },
+  "downs_bc": {
+    "description": "Incidence of Down's Syndrome in British Columbia"
+  },
+  "ducks": {
+    "description": "Behavioral and Plumage Characteristics of Hybrid Ducks"
+  },
+  "eagles": {
+    "description": "Foraging Ecology of Bald Eagles"
+  },
+  "eagles_raw": {
+    "description": "Foraging Ecology of Bald Eagles"
+  },
+  "economics": {
+    "description": "US economic time series"
+  },
+  "economics_long": {
+    "description": "US economic time series"
+  },
+  "environmental": {
+    "description": "Atmospheric environmental conditions in New York City"
+  },
+  "epil": {
+    "description": "Seizure Counts for Epileptics"
+  },
+  "epil_raw": {
+    "description": "Seizure Counts for Epileptics"
+  },
+  "ergoStool": {
+    "description": "Ergometrics experiment with stool types"
+  },
+  "ergoStool_raw": {
+    "description": "Ergometrics experiment with stool types"
+  },
+  "esoph": {
+    "description": "Smoking, Alcohol and (O)esophageal Cancer"
+  },
+  "ethanol": {
+    "description": "Engine exhaust fumes from burning ethanol"
+  },
+  "ethanol_raw": {
+    "description": "Engine exhaust fumes from burning ethanol"
+  },
+  "faithful": {
+    "description": "Old Faithful Geyser Data"
+  },
+  "faithfuld": {
+    "description": "2d density estimate of Old Faithful data"
+  },
+  "farms": {
+    "description": "Ecological Factors in Farm Management"
+  },
+  "farms_raw": {
+    "description": "Ecological Factors in Farm Management"
+  },
+  "fgl": {
+    "description": "Measurements of Forensic Glass Fragments"
+  },
+  "fgl_raw": {
+    "description": "Measurements of Forensic Glass Fragments"
+  },
+  "fieldingLabels": {
+    "description": "Variable Labels"
+  },
+  "fir": {
+    "description": "Counts of Balsam-fir Seedlings"
+  },
+  "fish_encounters": {
+    "description": "Fish encounters"
+  },
+  "flchain": {
+    "description": "Assay of serum free light chain for 7874 subjects."
+  },
+  "flchain_raw": {
+    "description": "Assay of serum free light chain for 7874 subjects."
+  },
+  "flower": {
+    "description": "Flower Characteristics"
+  },
+  "flower_raw": {
+    "description": "Flower Characteristics"
+  },
+  "forbes": {
+    "description": "Forbes' Data on Boiling Points in the Alps"
+  },
+  "freeny": {
+    "description": "Freeny's Revenue Data"
+  },
+  "freeny_raw": {
+    "description": "Freeny's Revenue Data"
+  },
+  "frets": {
+    "description": "Head Dimensions in Brothers"
+  },
+  "gehan": {
+    "description": "Remission Times of Leukaemia Patients"
+  },
+  "genotype": {
+    "description": "Rat Genotype Data"
+  },
+  "genotype_raw": {
+    "description": "Rat Genotype Data"
+  },
+  "geyser": {
+    "description": "Old Faithful Geyser Data"
+  },
+  "gilgais": {
+    "description": "Line Transect of Soil in Gilgai Territory"
+  },
+  "gilgais_raw": {
+    "description": "Line Transect of Soil in Gilgai Territory"
+  },
+  "grav": {
+    "description": "Acceleration Due to Gravity"
+  },
+  "gravity": {
+    "description": "Acceleration Due to Gravity"
+  },
+  "gss_cat": {
+    "description": "A sample of categorical variables from the General Social survey"
+  },
+  "heart": {
+    "description": "Stanford Heart Transplant data"
+  },
+  "heights": {
+    "description": "Height and income data."
+  },
+  "hills": {
+    "description": "Record Times in Scottish Hill Races"
+  },
+  "hirose": {
+    "description": "Failure Time of PET Film"
+  },
+  "household": {
+    "description": "Household data"
+  },
+  "housing": {
+    "description": "Frequency Table from a Copenhagen Housing Conditions Survey"
+  },
+  "housing_raw": {
+    "description": "Frequency Table from a Copenhagen Housing Conditions Survey"
+  },
+  "imdb_name_basics": {
+    "description": "Contains the following information for names:\n* nconst (string) - alphanumeric unique identifier of the name/person\n* primaryName (string) - name by which the person is most often credited\n* birthYear - in YYYY format\n* deathYear - in YYYY format if applicable, else '\\N'\n* primaryProfession (array of strings) - the top-3 professions of the person\n* knownForTitles (array of tconsts) - titles the person is known for"
+  },
+  "imdb_title_akas": {
+    "description": "Contains the following information for titles:\n* titleId (string) - a tconst, an alphanumeric unique identifier of the title\n* ordering (integer) - a number to uniquely identify rows for a given titleId\n* title (string) - the localized title\n* region (string) - the region for this version of the title\n* language (string) - the language of the title\n* types (array) - Enumerated set of attributes for this alternative title. One or more of the following: \"alternative\", \"dvd\", \"festival\", \"tv\", \"video\", \"working\", \"original\", \"imdbDisplay\". New values may be added in the future without warning\n* attributes (array) - Additional terms to describe this alternative title, not enumerated\n* isOriginalTitle (boolean) - 0: not original title; 1: original title"
+  },
+  "imdb_title_basics": {
+    "description": "Contains the following information for titles:\n* tconst (string) - alphanumeric unique identifier of the title\n* titleType (string) - the type/format of the title (e.g. movie, short, tvseries, tvepisode, video, etc)\n* primaryTitle (string) - the more popular title / the title used by the filmmakers on promotional materials at the point of release\n* originalTitle (string) - original title, in the original language\n* isAdult (boolean) - 0: non-adult title; 1: adult title\n* startYear (YYYY) - represents the release year of a title. In the case of TV Series, it is the series start year\n* endYear (YYYY) - TV Series end year. '\\N' for all other title types\n* runtimeMinutes - primary runtime of the title, in minutes\n* genres (string array) - includes up to three genres associated with the title"
+  },
+  "imdb_title_crew": {
+    "description": "Contains the director and writer information for all the titles in IMDb. Fields include:\n* tconst (string) - alphanumeric unique identifier of the title\n* directors (array of nconsts) - director(s) of the given title\n* writers (array of nconsts) - writer(s) of the given title"
+  },
+  "imdb_title_episode": {
+    "description": "Contains the tv episode information. Fields include:\n* tconst (string) - alphanumeric identifier of episode\n* parentTconst (string) - alphanumeric identifier of the parent TV Series\n* seasonNumber (integer) - season number the episode belongs to\n* episodeNumber (integer) - episode number of the tconst in the TV series"
+  },
+  "imdb_title_principals": {
+    "description": "Contains the principal cast/crew for titles\n* tconst (string) - alphanumeric unique identifier of the title\n* ordering (integer) - a number to uniquely identify rows for a given titleId\n* nconst (string) - alphanumeric unique identifier of the name/person\n* category (string) - the category of job that person was in\n* job (string) - the specific job title if applicable, else '\\N'\n* characters (string) - the name of the character played if applicable, else '\\N'"
+  },
+  "imdb_title_ratings": {
+    "description": "Contains the IMDb rating and votes information for titles\n* tconst (string) - alphanumeric unique identifier of the title\n* averageRating - weighted average of all the individual user ratings\n* numVotes - number of votes the title has received"
+  },
+  "immer": {
+    "description": "Yields from a Barley Field Trial"
+  },
+  "immer_raw": {
+    "description": "Yields from a Barley Field Trial"
+  },
+  "infert": {
+    "description": "Infertility after Spontaneous and Induced Abortion"
+  },
+  "infert_raw": {
+    "description": "Infertility after Spontaneous and Induced Abortion"
+  },
+  "iris": {
+    "description": "Edgar Anderson's Iris Data"
+  },
+  "iris_raw": {
+    "description": "Edgar Anderson's Iris Data"
+  },
+  "islay": {
+    "description": "Jura Quartzite Azimuths on Islay"
+  },
+  "kyphosis": {
+    "description": "Data on Children who have had Corrective Spinal Surgery"
+  },
+  "kyphosis_raw": {
+    "description": "Data on Children who have had Corrective Spinal Surgery"
+  },
+  "lakers": {
+    "description": "Lakers 2008-2009 basketball data set"
+  },
+  "leuk": {
+    "description": "Survival Times and White Blood Counts for Leukaemia Patients"
+  },
+  "logan": {
+    "description": "Data from the 1972-78 GSS data used by Logan"
+  },
+  "longley": {
+    "description": "Longley's Economic Regression Data"
+  },
+  "longley_raw": {
+    "description": "Longley's Economic Regression Data"
+  },
+  "luv_colours": {
+    "description": "'colors()' in Luv space"
+  },
+  "luv_colours_raw": {
+    "description": "'colors()' in Luv space"
+  },
+  "mammals": {
+    "description": "Brain and Body Weights for 62 Species of Land Mammals"
+  },
+  "mcycle": {
+    "description": "Data from a Simulated Motorcycle Accident"
+  },
+  "melanoma": {
+    "description": "Melanoma skin cancer incidence"
+  },
+  "menarche": {
+    "description": "Age of Menarche in Warsaw"
+  },
+  "menarche_raw": {
+    "description": "Age of Menarche in Warsaw"
+  },
+  "michelson": {
+    "description": "Michelson's Speed of Light Data"
+  },
+  "michelson_raw": {
+    "description": "Michelson's Speed of Light Data"
+  },
+  "midwest": {
+    "description": "Midwest demographics"
+  },
+  "midwest_raw": {
+    "description": "Midwest demographics"
+  },
+  "minn38": {
+    "description": "Minnesota High School Graduates of 1938"
+  },
+  "ml_latest_small_links": {},
+  "ml_latest_small_movies": {},
+  "ml_latest_small_ratings": {},
+  "ml_latest_small_tags": {},
+  "morley": {
+    "description": "Michelson Speed of Light Data"
+  },
+  "morley_raw": {
+    "description": "Michelson Speed of Light Data"
+  },
+  "motor": {
+    "description": "Data from a Simulated Motorcycle Accident"
+  },
+  "motors": {
+    "description": "Accelerated Life Testing of Motorettes"
+  },
+  "mpg": {
+    "description": "Fuel economy data from 1999 to 2008 for 38 popular models of cars"
+  },
+  "msleep": {
+    "description": "An updated and expanded version of the mammals sleep dataset"
+  },
+  "mtcars": {
+    "description": "Motor Trend Car Road Tests"
+  },
+  "muscle": {
+    "description": "Effect of Calcium Chloride on Muscle Contraction in Rat Hearts"
+  },
+  "muscle_raw": {
+    "description": "Effect of Calcium Chloride on Muscle Contraction in Rat Hearts"
+  },
+  "nitrofen": {
+    "description": "Toxicity of Nitrofen in Aquatic Systems"
+  },
+  "nlschools": {
+    "description": "Eighth-Grade Pupils in the Netherlands"
+  },
+  "nlschools_raw": {
+    "description": "Eighth-Grade Pupils in the Netherlands"
+  },
+  "nodal": {
+    "description": "Nodal Involvement in Prostate Cancer"
+  },
+  "npk": {
+    "description": "Classical N, P, K Factorial Experiment"
+  },
+  "npk_raw": {
+    "description": "Classical N, P, K Factorial Experiment"
+  },
+  "npr1": {
+    "description": "US Naval Petroleum Reserve No. 1 data"
+  },
+  "nuclear": {
+    "description": "Nuclear Power Station Construction Data"
+  },
+  "nuclear_raw": {
+    "description": "Nuclear Power Station Construction Data"
+  },
+  "nwtco": {
+    "description": "Data from the National Wilm's Tumor Study"
+  },
+  "nwtco_raw": {
+    "description": "Data from the National Wilm's Tumor Study"
+  },
+  "oats": {
+    "description": "Data from an Oats Field Trial"
+  },
+  "oats_raw": {
+    "description": "Data from an Oats Field Trial"
+  },
+  "painters": {
+    "description": "The Painter's Data of de Piles"
+  },
+  "painters_raw": {
+    "description": "The Painter's Data of de Piles"
+  },
+  "paulsen": {
+    "description": "Neurotransmission in Guinea Pig Brains"
+  },
+  "pbc": {
+    "description": "Mayo Clinic Primary Biliary Cholangitis Data"
+  },
+  "pbc_raw": {
+    "description": "Mayo Clinic Primary Biliary Cholangitis Data"
+  },
+  "penguins": {
+    "description": "Size measurements for adult foraging penguins near Palmer Station, Antarctica"
+  },
+  "penguins_raw": {
+    "description": "Penguin size, clutch, and blood isotope data for foraging adults near Palmer Station, Antarctica"
+  },
+  "penguins_raw_raw": {
+    "description": "Penguin size, clutch, and blood isotope data for foraging adults near Palmer Station, Antarctica"
+  },
+  "petrol": {
+    "description": "N. L. Prater's Petrol Refinery Data"
+  },
+  "petrol_raw": {
+    "description": "N. L. Prater's Petrol Refinery Data"
+  },
+  "pitchingLabels": {
+    "description": "Variable Labels"
+  },
+  "plantTraits": {
+    "description": "Plant Species Traits Data"
+  },
+  "pluton": {
+    "description": "Isotopic Composition Plutonium Batches"
+  },
+  "pluton_raw": {
+    "description": "Isotopic Composition Plutonium Batches"
+  },
+  "poisons": {
+    "description": "Animal Survival Times"
+  },
+  "polar": {
+    "description": "Pole Positions of New Caledonian Laterites"
+  },
+  "population": {
+    "description": "World Health Organization TB data"
+  },
+  "presidential": {
+    "description": "Terms of 12 presidents from Eisenhower to Trump"
+  },
+  "pressure": {
+    "description": "Vapor Pressure of Mercury as a Function of Temperature"
+  },
+  "quakes": {
+    "description": "Locations of Earthquakes off Fiji"
+  },
+  "quine": {
+    "description": "Absenteeism from School in Rural New South Wales"
+  },
+  "quine_raw": {
+    "description": "Absenteeism from School in Rural New South Wales"
+  },
+  "randu": {
+    "description": "Random Numbers from Congruential Generator RANDU"
+  },
+  "relig_income": {
+    "description": "Pew religion and income survey"
+  },
+  "relig_income_raw": {
+    "description": "Pew religion and income survey"
+  },
+  "remission": {
+    "description": "Cancer Remission and Cell Activity"
+  },
+  "remission_raw": {
+    "description": "Cancer Remission and Cell Activity"
+  },
+  "retinopathy": {
+    "description": "Diabetic Retinopathy"
+  },
+  "rhDNase": {
+    "description": "rhDNASE data set"
+  },
+  "rhDNase_raw": {
+    "description": "rhDNASE data set"
+  },
+  "road": {
+    "description": "Road Accident Deaths in US States"
+  },
+  "rock": {
+    "description": "Measurements on Petroleum Rock Samples"
+  },
+  "rotifer": {
+    "description": "Numbers of Rotifers by Fluid Density"
+  },
+  "rotifer_raw": {
+    "description": "Numbers of Rotifers by Fluid Density"
+  },
+  "ruspini": {
+    "description": "Ruspini Data"
+  },
+  "salinity": {
+    "description": "Water Salinity and River Discharge"
+  },
+  "seals": {
+    "description": "Vector field of seal movements"
+  },
+  "ships": {
+    "description": "Ships Damage Data"
+  },
+  "shuttle": {
+    "description": "Space Shuttle Autolander Problem"
+  },
+  "singer": {
+    "description": "Heights of New York Choral Society singers"
+  },
+  "singer_raw": {
+    "description": "Heights of New York Choral Society singers"
+  },
+  "sleep": {
+    "description": "Student's Sleep Data"
+  },
+  "sleep_raw": {
+    "description": "Student's Sleep Data"
+  },
+  "smiths": {
+    "description": "Some data about the Smith family"
+  },
+  "snails": {
+    "description": "Snail Mortality Data"
+  },
+  "snails_raw": {
+    "description": "Snail Mortality Data"
+  },
+  "solder": {
+    "description": "Data from a soldering experiment"
+  },
+  "solder_raw": {
+    "description": "Data from a soldering experiment"
+  },
+  "stackloss": {
+    "description": "Brownlee's Stack Loss Plant Data"
+  },
+  "stackloss_raw": {
+    "description": "Brownlee's Stack Loss Plant Data"
+  },
+  "stagec": {
+    "description": "Stage C Prostate Cancer"
+  },
+  "starwars": {
+    "description": "Starwars characters"
+  },
+  "steam": {
+    "description": "The Saturated Steam Pressure Data"
+  },
+  "steam_raw": {
+    "description": "The Saturated Steam Pressure Data"
+  },
+  "stormer": {
+    "description": "The Stormer Viscometer Data"
+  },
+  "stormer_raw": {
+    "description": "The Stormer Viscometer Data"
+  },
+  "storms": {
+    "description": "Storm tracks data"
+  },
+  "survey": {
+    "description": "Student Survey Data"
+  },
+  "survey_raw": {
+    "description": "Student Survey Data"
+  },
+  "survival": {
+    "description": "Survival of Rats after Radiation Doses"
+  },
+  "swiss": {
+    "description": "Swiss Fertility and Socioeconomic Indicators (1888) Data"
+  },
+  "swiss_raw": {
+    "description": "Swiss Fertility and Socioeconomic Indicators (1888) Data"
+  },
+  "synth_te": {
+    "description": "Synthetic Classification Problem"
+  },
+  "synth_tr": {
+    "description": "Synthetic Classification Problem"
+  },
+  "tau": {
+    "description": "Tau Particle Decay Modes"
+  },
+  "tobin": {
+    "description": "Tobin's Tobit data"
+  },
+  "topo": {
+    "description": "Spatial Topographic Data"
+  },
+  "transplant": {
+    "description": "Liver transplant waiting list"
+  },
+  "trees": {
+    "description": "Diameter, Height and Volume for Black Cherry Trees"
+  },
+  "trees_raw": {
+    "description": "Diameter, Height and Volume for Black Cherry Trees"
+  },
+  "tuna": {
+    "description": "Tuna Sighting Data"
+  },
+  "txhousing": {
+    "description": "Housing sales in TX"
+  },
+  "udca": {
+    "description": "Data from a trial of usrodeoxycholic acid"
+  },
+  "udca_raw": {
+    "description": "Data from a trial of usrodeoxycholic acid"
+  },
+  "urine": {
+    "description": "Urine Analysis Data"
+  },
+  "us_rent_income": {
+    "description": "US rent and income data"
+  },
+  "us_rent_income_raw": {
+    "description": "US rent and income data"
+  },
+  "votes_repub": {
+    "description": "Votes for Republican Candidate in Presidential Elections"
+  },
+  "votes_repub_raw": {
+    "description": "Votes for Republican Candidate in Presidential Elections"
+  },
+  "waders": {
+    "description": "Counts of Waders at 15 Sites in South Africa"
+  },
+  "waders_raw": {
+    "description": "Counts of Waders at 15 Sites in South Africa"
+  },
+  "warpbreaks": {
+    "description": "The Number of Breaks in Yarn during Weaving"
+  },
+  "whiteside": {
+    "description": "House Insulation: Whiteside's Data"
+  },
+  "whiteside_raw": {
+    "description": "House Insulation: Whiteside's Data"
+  },
+  "who": {
+    "description": "World Health Organization TB data"
+  },
+  "who2": {
+    "description": "World Health Organization TB data"
+  },
+  "women": {
+    "description": "Average Heights and Weights for American Women"
+  },
+  "world_bank_pop": {
+    "description": "Population data from the world bank"
+  },
+  "world_bank_pop_raw": {
+    "description": "Population data from the world bank"
+  },
+  "wowah_data_raw": {},
+  "wowah_location_coords_raw": {},
+  "wowah_locations_raw": {},
+  "wowah_zones_raw": {},
+  "wtloss": {
+    "description": "Weight Loss Data from an Obese Patient"
+  },
+  "wtloss_raw": {
+    "description": "Weight Loss Data from an Obese Patient"
+  },
+  "xclara": {
+    "description": "Bivariate Data Set with 3 Clusters"
+  },
+  "xclara_raw": {
+    "description": "Bivariate Data Set with 3 Clusters"
+  }
+}

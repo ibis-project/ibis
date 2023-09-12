@@ -1,0 +1,1 @@
+CAST(string_col AS Nullable(Int16))

@@ -1,0 +1,1 @@
+CAST(`g` AS timestamp)

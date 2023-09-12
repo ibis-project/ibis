@@ -1,0 +1,1 @@
+appx_median(`double_col`)

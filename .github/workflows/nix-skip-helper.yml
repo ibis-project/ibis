@@ -1,0 +1,43 @@
+# This job intentionally collides with the Nix job in `nix.yml`
+# that would be skipped because the paths are ignored.  This is so the `Nix`
+# job isn't stuck in "expected" forever when it should be skipped
+name: Nix
+
+on:
+  push:
+    paths:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  merge_group:
+
+jobs:
+  nix:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+        include:
+          - os: macos-latest
+            python-version: "3.10"
+    steps:
+      - run: echo "No build required"

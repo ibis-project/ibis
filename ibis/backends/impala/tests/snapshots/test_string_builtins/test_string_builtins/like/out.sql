@@ -1,0 +1,1 @@
+`string_col` LIKE 'foo%'

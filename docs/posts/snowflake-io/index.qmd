@@ -1,0 +1,128 @@
+---
+title: "Icy IO: loading local files with Snowflake"
+author: "Phillip Cloud"
+date: "2023-08-31"
+categories:
+    - blog
+    - snowflake
+    - io
+    - productivity
+---
+## Loading files without Ibis
+
+{{< video https://www.youtube.com/embed/KFz4pbCqtQU >}}
+
+It can be challenging to load local files into Snowflake from Python.
+
+Here's how to load a CSV file into Snowflake without Ibis.
+
+```sql
+CREATE TEMP STAGE load_csv_stage; -- <1>
+
+CREATE TEMP FILE FORMAT load_csv_format -- <2>
+TYPE = CSV PARSE_HEADER = TRUE; -- <2>
+
+PUT 'file:///path/to/my.csv' @load_csv_stage; -- <3>
+
+CREATE TEMP TABLE my_table -- <4>
+USING TEMPLATE ( -- <5>
+    SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
+    FROM TABLE(
+        INFER_SCHEMA( -- <6>
+            LOCATION => '@load_csv_stage',
+            FILE_FORMAT => 'load_csv_format'
+        ) -- <6>
+    )
+); -- <4>
+
+COPY INTO my_table -- <7>
+FROM @load_csv_stage
+FILE_FORMAT = (TYPE = CSV SKIP_HEADER = 1); -- <7>
+```
+
+1. **Creates a temporary [stage](https://docs.snowflake.com/en/sql-reference/sql/create-stage) in Snowflake.** Stages are locations in Snowflake that hold files. They can be used to store raw files to load into tables. `TEMP` stages are only accessible to the current session and will be dropped when the session ends.
+2. **A [file format](https://docs.snowflake.com/en/sql-reference/sql/create-file-format) is a set of instructions for how to interpret a file.** File formats are where you specify [parsing](https://docs.snowflake.com/sql-reference/sql/create-file-format#type-csv) and some loading options for your files.
+3. **[`PUT`](https://docs.snowflake.com/en/sql-reference/sql/put) copies a file or glob pattern** matching one or more files to a stage.
+4. **Creates a temporary table** with schema inferred using Snowflake's [`INFER_SCHEMA`](https://docs.snowflake.com/en/sql-reference/functions/infer_schema) [table function](https://docs.snowflake.com/en/sql-reference/functions-table).
+5. **[`USING TEMPLATE`](https://docs.snowflake.com/sql-reference/sql/create-table#create-table-using-template) is a Snowflake-specific syntax** that allows you to specify a set of column definitions computed from staged files.
+6. **[`INFER_SCHEMA`](https://docs.snowflake.com/en/sql-reference/functions/infer_schema)** is a powerful feature of Snowflake that allows you to load files without having to compute the schema in client code.
+7. **[`COPY INTO`](https://docs.snowflake.com/en/sql-reference/sql/copy-into-table) loads the staged data** into the created temporary table.
+
+Snowflake provides the full set of primitives required to achieve this, but
+composing them together can be challenging. Some users struggle to remember the
+sequence of steps.
+
+## Loading files with Ibis
+
+Let's take a look at how ibis turns the above process into a **single line** of Python.
+
+```{python}
+#| echo: false
+!rm -f diamonds.csv diamonds.parquet diamonds.json diamonds.ndjson
+!ln -sf ../../../ci/ibis-testing-data/csv/diamonds.csv diamonds.csv
+!ln -sf ../../../ci/ibis-testing-data/parquet/diamonds.parquet diamonds.parquet
+```
+
+First, we connect to snowflake:
+
+```{python}
+import os
+from ibis.interactive import *
+
+con = ibis.connect(os.environ["SNOWFLAKE_URL"])
+```
+
+### `read_csv`
+
+Loading CSV files is now a single line of familiar Python code:
+
+```{python}
+diamonds = con.read_csv("diamonds.csv")
+diamonds
+```
+
+### `read_parquet`
+
+Similarly, loading Parquet files is now a single line of code:
+
+```{python}
+diamonds = con.read_parquet("diamonds.parquet")
+diamonds
+```
+
+```{python}
+#| echo: false
+df = diamonds.to_pandas()
+df.to_json("diamonds.ndjson", lines=True, orient="records")
+df.to_json("diamonds.json", orient="records")
+```
+
+### `read_json`
+
+Lastly, loading JSON files is now -- surprise 🥳 -- a single line of code!
+
+Line delimited JSON is supported:
+
+```{python}
+diamonds = con.read_json("diamonds.ndjson")
+diamonds
+```
+
+As well as strict JSON arrays of objects:
+
+```{python}
+diamonds = con.read_json("diamonds.json")
+diamonds
+```
+
+## Conclusion
+
+Ibis 7.0.0 adds support for
+[`read_csv`](../../backends/snowflake.qmd#ibis.backends.snowflake.Backend.read_csv),
+[`read_parquet`](../../backends/snowflake.qmd#ibis.backends.snowflake.Backend.read_parquet)
+and
+[`read_json`](../../backends/snowflake.qmd#ibis.backends.snowflake.Backend.read_json)
+to the Snowflake backend.
+
+We think you'll enjoy the increase in productivity these new features bring to the
+Snowflake backend and we'd love to hear your feedback!

@@ -1,0 +1,158 @@
+name: Generate Conda Lockfiles
+
+on:
+  schedule:
+    # At minute 00:30 on Sunday
+    - cron: "30 0 * * SUN"
+  workflow_dispatch:
+
+jobs:
+  condalock:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.9"
+          - "3.10"
+          - "3.11"
+    defaults:
+      run:
+        shell: bash -l {0}
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
+
+      - uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniconda-version: latest
+          activate-environment: conda-lock
+          channels: conda-forge
+          channel-priority: strict
+          python-version: "3.11"
+          condarc-file: ci/conda-lock/condarc
+
+      - name: install conda libmamba solver
+        run: conda install -n base conda-libmamba-solver
+
+      - name: set solver to libmamba
+        run: conda config --set solver libmamba
+
+      - name: install conda-lock
+        run: conda install conda-lock=1.4
+
+      - name: generate lock file
+        run: ./ci/conda-lock/generate.sh "${{ matrix.python-version }}"
+
+      - name: create conda environment
+        run: conda create --name ibis${{ matrix.python-version }} --file conda-lock/linux-64-${{ matrix.python-version }}.lock
+
+      - name: upload conda lock files
+        uses: actions/upload-artifact@v3
+        with:
+          name: conda-lock-files-${{ github.run_attempt }}
+          path: conda-lock/*-${{ matrix.python-version }}.lock
+
+  condalock_pr:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    needs:
+      - condalock
+    steps:
+      - uses: tibdex/github-app-token@v2
+        id: generate_pr_token
+        with:
+          app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
+          private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
+
+      - uses: tibdex/github-app-token@v2
+        id: generate_pr_approval_token
+        with:
+          app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
+          private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate_pr_token.outputs.token }}
+
+      - name: download conda lock files
+        uses: actions/download-artifact@v3
+        with:
+          name: conda-lock-files-${{ github.run_attempt }}
+          path: conda-lock
+
+      - uses: peter-evans/create-pull-request@v5
+        id: create_pr
+        with:
+          token: ${{ steps.generate_pr_token.outputs.token }}
+          commit-message: "chore(conda-lock): relock"
+          branch: "create-pull-request/conda-relock"
+          delete-branch: true
+          add-paths: conda-lock/*.lock
+          committer: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
+          author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
+          title: "chore(conda-lock): relock"
+          body: "Relock conda-lock environment files"
+          labels: |
+            dependencies
+
+      - uses: juliangruber/approve-pull-request-action@v2.0.4
+        if: steps.create_pr.outputs.pull-request-operation == 'created'
+        with:
+          github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
+          number: ${{ steps.create_pr.outputs.pull-request-number }}
+
+      - uses: peter-evans/enable-pull-request-automerge@v3
+        if: steps.create_pr.outputs.pull-request-operation == 'created'
+        with:
+          token: ${{ steps.generate_pr_token.outputs.token }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          merge-method: rebase
+
+  condalock_push:
+    if: github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    needs:
+      - condalock
+    steps:
+      - uses: tibdex/github-app-token@v2
+        id: generate_token
+        with:
+          app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
+          private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate_token.outputs.token }}
+          repository: ${{ github.event.client_payload.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.client_payload.pull_request.head.ref }}
+
+      - name: download conda lock files
+        uses: actions/download-artifact@v3
+        with:
+          name: conda-lock-files-${{ github.run_attempt }}
+          path: conda-lock
+
+      - name: Configure git info
+        run: |
+          set -euo pipefail
+
+          git config --global user.name 'ibis-squawk-bot[bot]'
+          git config --global user.email 'ibis-squawk-bot[bot]@users.noreply.github.com'
+
+      - name: commit lock files and push to PR
+        run: |
+          set -euo pipefail
+
+          git add conda-lock/*.lock
+
+          if git commit -m 'chore(conda-lock): relock'; then
+            # pull in case another commit happened in the meantime
+            #
+            # `ours` is actually the *other* changeset, not the current branch, per
+            # https://stackoverflow.com/a/3443225/564538
+            git pull --rebase -s recursive -X ours
+            git push
+          fi

@@ -1,0 +1,102 @@
+# PySpark
+
+[https://spark.apache.org/docs/latest/api/python](https://spark.apache.org/docs/latest/api/python)
+
+![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-PySpark SQL tables | CSV | Delta Lake | Parquet-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-PySpark SQL tables | Delta Lake | pandas | PyArrow-orange?style=flat-square)
+
+## Install
+
+Install Ibis and dependencies for the PySpark backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install with the `pyspark` extra:
+
+```{.bash}
+pip install 'ibis-framework[pyspark]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.pyspark.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `conda`
+
+Install for PySpark:
+
+```{.bash}
+conda install -c conda-forge ibis-pyspark
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.pyspark.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `mamba`
+
+Install for PySpark:
+
+```{.bash}
+mamba install -c conda-forge ibis-pyspark
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.pyspark.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+:::
+
+
+
+## Connect
+
+### `ibis.pyspark.connect`
+
+```python
+con = ibis.pyspark.connect(session=session)
+```
+
+::: {.callout-note}
+`ibis.pyspark.connect` is a thin wrapper around [`ibis.backends.pyspark.Backend.do_connect`](#ibis.backends.pyspark.Backend.do_connect).
+:::
+
+::: {.callout-note}
+The `pyspark` backend does not create `SparkSession` objects, you must create a `SparkSession` and pass that to `ibis.pyspark.connect`.
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("pyspark")
+```
+
+```{python}
+#| echo: false
+BACKEND = "PySpark"
+```
+
+{{< include ./_templates/api.qmd >}}

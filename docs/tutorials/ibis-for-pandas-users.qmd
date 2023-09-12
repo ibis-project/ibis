@@ -1,0 +1,702 @@
+# Tutorial: Ibis for pandas users
+
+## Prerequisites
+
+{{< include ../_tabsets/install_default.qmd >}}
+
+## Overview
+
+Much of the syntax and many of the operations in Ibis are inspired
+by the pandas `DataFrame` but the primary domain of Ibis is
+SQL so there are some differences in how they operate.
+
+For one thing, SQL (and therefore Ibis) makes no guarantees about row order,
+which is a key assumption that numpy/pandas users are used to. So two columns
+can't be deterministically "lined up" unless they are actually part of the same Table.
+An outcome of this is that you can't index into Columns by position
+(`column.head(5)` or `column[3:5]`). You can only index into Tables
+(`table.head(5)` or `table[3:5]`). So if you want the first 5 rows of a column,
+you have to do `table.head(5).my_column`, `table.my_column.head(5)` will not work.
+
+Another difference between Ibis tables and pandas `DataFrame`s are that many
+of the pandas `DataFrame` operations do in-place operations (they are "mutable"),
+whereas Ibis table operations always return a new table expression ("immutable").
+
+Finally, Ibis table expressions are lazy, meaning
+that as you build up a table expression, no computation is actually performed
+until you call an action method such as `to_pandas`. Only then does Ibis
+compile the table expression into SQL and send it to the backend.
+(Note that we'll be using Ibis' interactive mode to automatically execute queries at
+the end of each cell in this notebook. If you are using similar code in a program,
+you will have to add `.to_pandas()` to each operation that you want to evaluate.)
+
+
+```{python}
+import ibis
+import pandas as pd
+
+ibis.options.interactive = True
+```
+
+We'll be using the DuckDB backend in Ibis in the examples below. First we'll create a simple `DataFrame`.
+
+
+```{python}
+df = pd.DataFrame(
+    [["a", 1, 2], ["b", 3, 4]],
+    columns=["one", "two", "three"],
+    index=[5, 6],
+)
+df
+```
+
+Now we can create an Ibis table from the above `DataFrame`.
+
+Note that the index from the pandas `DataFrame` is dropped.
+Ibis has no notion of an index: If you want to use the index,
+you will need to turn it into a column.
+
+
+```{python}
+t = ibis.memtable(df, name="t")
+t
+```
+
+## Data types
+
+The data types of columns in pandas are accessed using the `dtypes` attribute. This returns
+a `Series` object.
+
+
+```{python}
+df.dtypes
+```
+
+In Ibis, you use the `schema` method which returns an `ibis.Schema` object.
+
+
+```{python}
+t.schema()
+```
+
+It is possible to convert the schema information to pandas data types using the `to_pandas` method, if needed.
+
+
+```{python}
+t.schema().to_pandas()
+```
+
+## Table layout
+
+In pandas, the layout of the table is contained in the `shape` attribute which contains the number
+of rows and number of columns in a tuple. The number of columns in an Ibis table can be gotten
+from the length of the schema.
+
+
+```{python}
+len(t.schema())
+```
+
+To get the number of rows of a table, you use the `count` method.
+
+
+```{python}
+t.count()
+```
+
+To mimic pandas' behavior, you would use the following code. Note that you need to use the `to_pandas` method
+after `count` to evaluate the expression returned by `count`.
+
+
+```{python}
+(t.count().to_pandas(), len(t.schema()))
+```
+
+
+```{python}
+df.shape
+```
+
+## Subsetting columns
+
+Selecting columns is very similar to in pandas. In fact, you can use the same syntax.
+
+
+```{python}
+t[["one", "two"]]
+```
+
+However, since row-level indexing is not supported in Ibis, the inner list is not necessary.
+
+
+```{python}
+t["one", "two"]
+```
+
+## Selecting columns
+
+Selecting columns is done using the same syntax as in pandas `DataFrames`. You can use either
+the indexing syntax or attribute syntax.
+
+
+```{python}
+t["one"]
+```
+
+or:
+
+
+```{python}
+t.one
+```
+
+## Adding, removing, and modifying columns
+
+Modifying the columns of an Ibis table is a bit different than doing the same operations in
+a pandas `DataFrame`. This is primarily due to the fact that in-place operations are not
+supported on Ibis tables. Each time you do a column modification to a table, a new table
+expression is returned.
+
+### Adding columns
+
+Adding columns is done through the `mutate` method.
+
+
+```{python}
+mutated = t.mutate(new_col=t.three * 2)
+mutated
+```
+
+Notice that the original table object remains unchanged. Only the `mutated` object that was returned
+contains the new column.
+
+
+```{python}
+t
+```
+
+It is also possible to create a column in isolation. This is similar to a `Series` in pandas.
+Note that the name of the column by default is a representation of the expression:
+
+
+```{python}
+unnamed = t.three * 2
+unnamed
+```
+
+To get a version with a specific name, you can use the `name` method:
+
+
+```{python}
+new_col = unnamed.name("new_col")
+new_col
+```
+
+You can then add this column to the table using a projection.
+
+
+```{python}
+proj = t["one", "two", new_col]
+proj
+```
+
+### Removing columns
+
+Removing a column is done using the `drop` method.
+
+
+```{python}
+t.columns
+```
+
+
+```{python}
+subset = t.drop("one", "two")
+subset.columns
+```
+
+It is also possible to drop columns by selecting the columns you want to remain.
+
+
+```{python}
+subset = t["two", "three"]
+subset.columns
+```
+
+### Modifying columns
+
+Replacing existing columns is done using the `mutate` method just like adding
+columns. You add a column of the same name to replace it.
+
+
+```{python}
+t
+```
+
+
+```{python}
+mutated = t.mutate(two=t.two * 2)
+mutated
+```
+
+### Renaming columns
+
+In addition to replacing columns, you can rename them as well. This is done with
+the `relabel` method which takes a dictionary containing the name mappings.
+
+
+```{python}
+relabeled = t.relabel(
+    dict(
+        one="a",
+        two="b",
+    )
+)
+relabeled
+```
+
+## Selecting rows
+
+There are several methods that can be used to select rows of data in various
+ways. These are described in the sections below. We'll use the Palmer
+Penguins$^1$ dataset to investigate!  Ibis has several built-in example datasets
+that you can access using the `ibis.examples` module.
+
+$^1$: Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0. https://allisonhorst.github.io/palmerpenguins/. doi: 10.5281/zenodo.3960218.
+
+
+```{python}
+penguins = ibis.examples.penguins.fetch()
+```
+
+
+```{python}
+penguins
+```
+
+### Head, tail and limit
+
+The `head` method works the same ways as in pandas. Note that some Ibis backends may not have an
+inherent ordering of their rows and using `head` may not return deterministic results. In those
+cases, you can use sorting before calling `head` to ensure a stable result.
+
+
+```{python}
+penguins.head(5)
+```
+
+However, the tail method is not implemented since it is not supported in all databases.
+It is possible to emulate the `tail` method if you use sorting in your table to do a
+reverse sort then use the `head` method to retrieve the "top" rows.
+
+Another way to limit the number of retrieved rows is using the `limit` method. The following will return
+the same result as `head(5)`. This is often used in conjunction with other filtering techniques that we
+will cover later.
+
+
+```{python}
+penguins.limit(5)
+```
+
+### Filtering rows
+
+In addition to limiting the number of rows that are returned, it is possible to
+filter the rows using expressions. Expressions are constructed very similarly to
+the way they are in pandas.  Ibis expressions are constructed from operations on
+columns in a table which return a boolean result.  This result is then used to
+filter the table.
+
+
+```{python}
+expr = penguins.bill_length_mm > 37.0
+expr
+```
+
+We can evaluate the value counts to see how many rows we will expect to get back after filtering.
+
+
+```{python}
+expr.value_counts()
+```
+
+Now we apply the filter to the table. Since there are 6 True values in the expression, we should
+get 6 rows back.
+
+
+```{python}
+filtered = penguins[expr]
+filtered
+```
+
+Of course, the filtering expression can be applied inline as well.
+
+
+```{python}
+filtered = penguins[penguins.bill_length_mm > 37.0]
+filtered
+```
+
+Multiple filtering expressions can be combined into a single expression or chained onto existing
+table expressions.
+
+
+```{python}
+filtered = penguins[(penguins.bill_length_mm > 37.0) & (penguins.bill_depth_mm > 18.0)]
+filtered
+```
+
+The code above will return the same rows as the code below.
+
+
+```{python}
+filtered = penguins[penguins.bill_length_mm > 37.0][penguins.bill_depth_mm > 18.0]
+filtered
+```
+
+Aggregation has not been discussed yet, but aggregate values can be used in expressions
+to return things such as all of the rows in a data set where the value in a column
+is greater than the mean.
+
+
+```{python}
+filtered = penguins[penguins.bill_length_mm > penguins.bill_length_mm.mean()]
+filtered
+```
+
+### Modifying rows
+
+Sometimes you want to modify the values in a column based on some condition.
+In pandas, you would do something like `df.loc[condition] = new_value`.
+In Ibis though, remember that all expressions are immutable, so you need to
+create a new table expression with the modified values. You do this using the
+`ifelse` method on boolean columns:
+
+
+```{python}
+long_billed_penguins = penguins.bill_length_mm > 37.0
+species_modified = long_billed_penguins.ifelse("wide", penguins.species)
+penguins.mutate(species_modified=species_modified)
+```
+
+## Sorting rows
+
+Sorting rows in Ibis uses a somewhat different API than in pandas. In pandas, you would use the
+`sort_values` method to order rows by values in specified columns. Ibis uses a method called
+`order_by`. To specify ascending or descending orders, pandas uses an `ascending=` argument
+to `sort_values` that indicates the order for each sorting column. Ibis allows you to tag the
+column name in the `order_by` list as ascending or descending by wrapping it with `ibis.asc` or
+`ibis.desc`.
+
+First, let's ask Ibis for a pandas `DataFrame` version of the penguin data:
+
+
+```{python}
+df = penguins.to_pandas()
+```
+
+Here is an example of sorting a `DataFrame` using two sort keys. One key is sorting in ascending
+order and the other is in descending order.
+
+
+```{python}
+df.sort_values(
+    ["bill_length_mm", "bill_depth_mm"], ascending=[True, False], na_position="first"
+).head(5)
+```
+
+The same operation in Ibis would look like the following. Note that the index
+values of the resulting `DataFrame` start from zero and count up, whereas in the
+example above, they retain their original index value. This is because rows in
+tables don't necessarily have a stable index in database backends, so the index
+is generated on the result.
+
+
+```{python}
+sorted = penguins.order_by(["bill_length_mm", ibis.desc("bill_depth_mm")]).head(5)
+sorted
+```
+
+## Aggregation
+
+Aggregation in pandas is typically done by computing columns based on an aggregate function.
+
+
+```{python}
+stats = [df.bill_depth_mm.sum(), df.bill_length_mm.mean()]
+pd.DataFrame([stats], columns=["total_bill_depth", "avg.bill_length"])
+```
+
+In Ibis, you construct aggregate expressions then apply them to the table using the `aggregate` method.
+
+
+```{python}
+stats = [
+    penguins.bill_depth_mm.sum().name("total_bill_width"),
+    penguins.bill_length_mm.mean().name("avg_bill_length"),
+]
+agged = penguins.aggregate(stats)
+agged
+```
+
+You can also combine both operations into one and pass the aggregate expressions using keyword parameters.
+
+
+```{python}
+agged = penguins.aggregate(
+    total_bill_depth=penguins.bill_depth_mm.sum(),
+    avg_bill_length=penguins.bill_length_mm.mean(),
+)
+agged
+```
+
+## Group by
+
+Using a similar API as above, aggregations can also be
+done across groupings using the `by=` parameter.
+
+
+```{python}
+agged = penguins.aggregate(
+    by="species",
+    total_bill_depth=penguins.bill_depth_mm.sum(),
+    avg_bill_length=penguins.bill_length_mm.mean(),
+)
+agged
+```
+
+Alternatively, by groups can be computed using a grouped table.
+
+
+```{python}
+agged = penguins.group_by("species").aggregate(
+    total_bill_depth=penguins.bill_depth_mm.sum(),
+    avg_bill_length=penguins.bill_length_mm.mean(),
+)
+agged
+```
+
+You can group over multiple columns too, and rename them if you want.
+
+If you only need to aggregate over a single column, then you don't
+need to use the `.aggregate()` method.
+
+
+```{python}
+penguins.group_by(["species", "sex"], location="island").body_mass_g.approx_median()
+```
+
+Instead of aggregating after a group by, you can also transform
+the table so that the output table has the same number of rows
+as the input table. This is analogous to the `groupby().transform()`
+pattern in pandas. You can pass complex expressions to compute per-group:
+
+
+```{python}
+# Calculate how much the mass of each penguin deviates from the mean
+penguins.group_by(["species", "sex"]).mutate(
+    # This column isn't needed, but it makes it easier to see what's going on
+    mass_mean=penguins.body_mass_g.mean(),
+    mass_deviation=penguins.body_mass_g - penguins.body_mass_g.mean(),
+)
+```
+
+## NULL values
+
+Ibis has first-class support for `NULL` values. In pandas and numpy, `NULL` values are
+represented by `NaN`. This can be confusing when working with numeric data,
+since `NaN` is also a valid floating point value (along with `+/-inf`).
+
+In Ibis, we try to be more precise: All data types are nullable, and we use
+`ibis.NA` to represent `NULL` values, and all datatypes have a `.isnull()` method.
+For floating point values, we use different values for `NaN` and `+/-inf`, and there
+are the additional methods `.isnan()` and `.isinf()`.
+
+### Dropping rows with `NULL`s
+
+Both pandas and Ibis allow you to drop rows from a table based on whether a set of columns
+contains a `NULL` value. This method is called `dropna` in both packages. The common set
+of parameters in the two are `subset=` and `how=`. The `subset=` parameter indicates which
+columns to inspect for `NULL` values. The `how=` parameter specifies whether 'any' or 'all'
+of the specified columns must be `NULL` in order for the row to be dropped.
+
+
+```{python}
+no_null_peng = penguins.dropna(["bill_depth_mm", "bill_length_mm"], how="any")
+```
+
+### Filling `NULL` values
+
+Both pandas and Ibis allow you to fill `NULL` values in a table. In Ibis, the replacement value can only
+be a scalar value of a dictionary of values. If it is a dictionary, the keys of the dictionary specify
+the column name for the value to apply to.
+
+
+```{python}
+no_null_peng = penguins.fillna(dict(bill_depth_mm=0, bill_length_mm=0))
+```
+
+### Replacing `NULL`s
+
+Both pandas and Ibis have `fillna` methods which allow you to specify a replacement value
+for `NULL` values.
+
+
+```{python}
+bill_length_no_nulls = penguins.bill_length_mm.fillna(0)
+```
+
+## Type casts
+
+Type casting in pandas is done using the `astype` method on columns.
+
+
+```{python}
+df.bill_depth_mm.astype(str)
+```
+
+In Ibis, you cast the column type using the `cast` method.
+
+
+```{python}
+penguins.bill_depth_mm.cast("int")
+```
+
+Casted columns can be assigned back to the table using the `mutate` method described earlier.
+
+
+```{python}
+casted = penguins.mutate(
+    bill_depth_mm=penguins.bill_depth_mm.cast("int"),
+    bill_length_mm=penguins.bill_length_mm.cast("int"),
+)
+casted.schema()
+```
+
+## Set membership
+
+pandas set membership uses the `in` and `not in` operators such as `'a' in df.species`. Ibis uses
+`isin` and `notin` methods. In addition to testing membership in a set, these methods allow you to
+specify an else case to assign a value when the value isn't in the set.
+
+
+```{python}
+penguins.species.value_counts()
+```
+
+
+```{python}
+refined = penguins.species.isin(["Adelie", "Chinstrap"])
+refined.value_counts()
+```
+
+## Merging tables
+
+While pandas uses the `merge` method to combine data from multiple `DataFrames`, Ibis uses the
+`join` method. They both have similar capabilities.
+
+The biggest difference between Ibis' `join` method and pandas' `merge` method is that pandas only
+accepts column names or index levels to join on, whereas Ibis can merge on expressions.
+
+Here are some examples of merging using pandas.
+
+
+```{python}
+df_left = pd.DataFrame(
+    [
+        ["a", 1, 2],
+        ["b", 3, 4],
+        ["c", 4, 6],
+    ],
+    columns=["name", "x", "y"],
+)
+
+df_right = pd.DataFrame(
+    [
+        ["a", 100, 200],
+        ["m", 300, 400],
+        ["n", 400, 600],
+    ],
+    columns=["name", "x_100", "y_100"],
+)
+```
+
+
+```{python}
+df_left.merge(df_right, on="name")
+```
+
+
+```{python}
+df_left.merge(df_right, on="name", how="outer")
+```
+
+We can now convert `DataFrames` to Ibis tables to do `join`s.
+
+
+```{python}
+t_left = ibis.memtable(df_left, name="t_left")
+t_right = ibis.memtable(df_right, name="t_right")
+```
+
+
+```{python}
+t_left.join(t_right, t_left.name == t_right.name)
+```
+
+Below is an outer join where missing values are filled with `NaN`.
+
+
+```{python}
+t_left.join(t_right, t_left.name == t_right.name, how="outer")
+```
+
+## Concatenating tables
+
+Concatenating `DataFrame`s in pandas is done with the `concat` top-level function. It takes multiple `DataFrames`
+and concatenates the rows of one `DataFrame` to the next. If the columns are mis-matched, it extends the
+list of columns to include the full set of columns and inserts `NaN`s and `None`s into the missing values.
+
+Concatenating tables in Ibis can only be done on tables with matching schemas. The concatenation is done
+using the top-level `union` function or the `union` method on a table.
+
+We'll demonstrate a pandas `concat` first.
+
+
+```{python}
+df_1 = pd.DataFrame(
+    [
+        ["a", 1, 2],
+        ["b", 3, 4],
+        ["c", 4, 6],
+    ],
+    columns=["name", "x", "y"],
+)
+
+df_2 = pd.DataFrame(
+    [
+        ["a", 100, 200],
+        ["m", 300, 400],
+        ["n", 400, 600],
+    ],
+    columns=["name", "x", "y"],
+)
+```
+
+
+```{python}
+pd.concat([df_1, df_2])
+```
+
+Now we can convert the `DataFrame`s to Ibis tables and combine the tables using a union.
+
+
+```{python}
+t_1 = ibis.memtable(df_1, name="t_1")
+t_2 = ibis.memtable(df_2, name="t_2")
+```
+
+
+```{python}
+unioned = ibis.union(t_1, t_2)
+unioned
+```

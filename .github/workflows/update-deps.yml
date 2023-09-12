@@ -1,0 +1,113 @@
+name: Update Nix Flakes
+on:
+  schedule:
+    # run every 3 days at midnight
+    - cron: "0 0 * * */3"
+  workflow_dispatch:
+
+jobs:
+  get-flakes:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.get-flakes.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v23
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+      - name: generate flake matrix
+        id: get-flakes
+        run: |
+          set -euo pipefail
+
+          flakes="$(nix flake metadata --json | jq -rcM '.locks.nodes.root.inputs | {flake: keys}')"
+          echo "matrix=${flakes}" >> "$GITHUB_OUTPUT"
+
+  flake-update:
+    runs-on: ubuntu-latest
+    needs:
+      - get-flakes
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.get-flakes.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v23
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v12
+        with:
+          name: ibis
+          extraPullNames: nix-community,poetry2nix
+
+      - uses: cpcloud/flake-dep-info-action@v2.0.11
+        id: get_current_commit
+        with:
+          input: ${{ matrix.flake }}
+
+      - name: update ${{ matrix.flake }}
+        run: nix flake lock --update-input ${{ matrix.flake }}
+
+      - uses: cpcloud/flake-dep-info-action@v2.0.11
+        id: get_new_commit
+        with:
+          input: ${{ matrix.flake }}
+
+      - name: create an output indicating whether a PR is needed
+        id: needs_pr
+        run: echo "did_change=${{ steps.get_current_commit.outputs.rev != steps.get_new_commit.outputs.rev }}" >> "$GITHUB_OUTPUT"
+
+      - uses: tibdex/github-app-token@v2
+        if: fromJSON(steps.needs_pr.outputs.did_change)
+        id: generate_pr_token
+        with:
+          app_id: ${{ secrets.SQUAWK_BOT_APP_ID }}
+          private_key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
+
+      - uses: tibdex/github-app-token@v2
+        if: fromJSON(steps.needs_pr.outputs.did_change)
+        id: generate_pr_approval_token
+        with:
+          app_id: ${{ secrets.PR_APPROVAL_BOT_APP_ID }}
+          private_key: ${{ secrets.PR_APPROVAL_BOT_APP_PRIVATE_KEY }}
+
+      - uses: cpcloud/compare-commits-action@v5.0.36
+        if: fromJSON(steps.needs_pr.outputs.did_change)
+        id: compare_commits
+        with:
+          token: ${{ steps.generate_pr_token.outputs.token }}
+          owner: ${{ steps.get_new_commit.outputs.owner }}
+          repo: ${{ steps.get_new_commit.outputs.repo }}
+          basehead: ${{ steps.get_current_commit.outputs.rev }}...${{ steps.get_new_commit.outputs.rev }}
+          include-merge-commits: false
+
+      - uses: peter-evans/create-pull-request@v5
+        if: fromJSON(steps.needs_pr.outputs.did_change)
+        id: create_pr
+        with:
+          token: ${{ steps.generate_pr_token.outputs.token }}
+          commit-message: "chore(flake/${{ matrix.flake }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
+          branch: "create-pull-request/update-${{ matrix.flake }}"
+          delete-branch: true
+          author: "ibis-squawk-bot[bot] <ibis-squawk-bot[bot]@users.noreply.github.com>"
+          title: "chore(flake/${{ matrix.flake }}): `${{ steps.get_current_commit.outputs.short-rev }}` -> `${{ steps.get_new_commit.outputs.short-rev }}`"
+          body: ${{ steps.compare_commits.outputs.differences }}
+          labels: dependencies,nix
+
+      - uses: juliangruber/approve-pull-request-action@v2.0.4
+        if: fromJSON(steps.needs_pr.outputs.did_change)
+        with:
+          github-token: ${{ steps.generate_pr_approval_token.outputs.token }}
+          number: ${{ steps.create_pr.outputs.pull-request-number }}
+
+      - uses: peter-evans/enable-pull-request-automerge@v3
+        if: fromJSON(steps.needs_pr.outputs.did_change)
+        with:
+          token: ${{ steps.generate_pr_token.outputs.token }}
+          pull-request-number: ${{ steps.create_pr.outputs.pull-request-number }}
+          merge-method: rebase

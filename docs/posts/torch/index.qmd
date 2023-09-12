@@ -1,0 +1,180 @@
+---
+title: "Ibis on &#x1F525;: Supercharge Your Workflow with DuckDB and PyTorch"
+author: "Phillip Cloud"
+date: "2023-06-27"
+categories:
+    - blog
+    - case study
+    - machine learning
+    - ecosystem
+    - new feature
+---
+In this blog post we show how to leverage ecosystem tools to build an end-to-end ML pipeline using Ibis, DuckDB and PyTorch.
+
+Check out the live stream of this notebook below!
+
+{{< video https://www.youtube.com/embed/L4_deAdStKs >}}
+
+Let's get started!
+
+
+```{python}
+import ibis
+import ibis.expr.datatypes as dt
+
+from ibis import _, selectors as s, udf
+
+ibis.options.interactive = True
+```
+
+## Define a Function to Clean Inputs
+
+Let's define a function to clean the data in a few different ways:
+
+- Remove outliers (Z-score based)
+- Remove negative trip distances and negative fare amounts
+- Cast inputs to `float32`, since that's what PyTorch wants
+
+We use a function here to ensure that we can run the same code on the test data set before prediction.
+
+
+```{python}
+def clean_input(path):
+    return (
+        # load parquet
+        ibis.read_parquet(path)
+        # compute fare_amount_zscore and trip_distance_zscore
+        .mutate(s.across(["fare_amount", "trip_distance"], dict(zscore=(_ - _.mean()) / _.std())))
+        # filter out negative trip distance and bizarre transactions
+        .filter([_.trip_distance > 0.0, _.fare_amount >= 0.0])
+        # keep values that within 2 standard deviations
+        .filter(s.if_all(s.endswith("_zscore"), _.abs() <= 2))
+        # drop columns that aren't necessary for further analysis
+        .drop(s.endswith("_zscore"))
+        # select the columns we care about
+        .select(s.across(["fare_amount", "trip_distance"], _.cast("float32")))
+    )
+```
+
+
+```{python}
+training_data = clean_input("https://storage.googleapis.com/ibis-tutorial-data/nyctaxi/yellow/yellow_tripdata_2016-01.parquet")
+training_data
+```
+
+## Execute the Query and Convert to Torch Tensors
+
+New in Ibis 6.0 is the `to_torch` method, which executes a query and returns the results as a dictionary of `torch.Tensor`s keyed by column names.
+
+We'll use that to get our input data for training.
+
+
+```{python}
+import torch
+
+torch_training_data: dict[str, torch.Tensor] = training_data.to_torch()
+torch_training_data
+```
+
+## Train the Model
+
+Let's assume for now we don't have access to the model code. Maybe your co-worker wrote the model or it's part of an API that you don't control. Either way, it's a black box to us.
+
+The API looks like this:
+
+```{python}
+import pyarrow
+
+
+class PredictCabFare:
+    def __init__(self, data: dict[str, torch.Tensor]) -> None:
+        """Initialize the model with training data."""
+
+    def train(self) -> None:
+        """Train the model."""
+
+    def __call__(self, input: pyarrow.ChunkedArray) -> pyarrow.Array:
+        """Invoke the trained model on unseen input."""
+```
+
+
+```{python}
+from model import PredictCabFare
+
+
+model = PredictCabFare(torch_training_data)
+model.train()
+```
+
+## Define an Ibis UDF that predicts fares
+
+Now we get to the meaty part: defining an Ibis UDF (user-defined function) that invokes our model on unseen data!
+
+
+```{python}
+from ibis.expr.operations import udf
+
+
+@udf.scalar.pyarrow
+def predict_fare(distance: dt.float64) -> dt.float32:
+    return model(distance)
+```
+
+Let's run our UDF
+
+```{python}
+prediction = (
+    clean_input("https://storage.googleapis.com/ibis-tutorial-data/nyctaxi/yellow/yellow_tripdata_2016-02.parquet")
+    .limit(10_000)
+    .mutate(predicted_fare=lambda t: predict_fare(t.trip_distance.cast("float32")))
+)
+prediction
+```
+
+## Prepare the Data for Plotting
+
+Here we [tidy up our data](https://r4ds.had.co.nz/tidy-data.html) to make it easier to adjust plotting style based on the data.
+
+In this case, we're interested in visually distinguishing the model's **predicted** fare amount from the **actual** fare amount so we
+pivot the data into a [longer form](https://r4ds.had.co.nz/tidy-data.html#longer) which adds a string column `metric`
+that indicates the kind of fare a given row contains.
+
+
+```{python}
+pivoted_prediction = prediction.pivot_longer(
+    s.contains("fare"),
+    values_to="fare",
+    names_to="metric",
+)
+pivoted_prediction
+```
+
+## Plot the Results
+
+There are a bunch of strange and interesting data points and observations that don't have an obvious explanation:
+
+- There seem to be a good number of \\$50-ish rides regardless of distance. What's going on there?
+- What's going on with the extreme outliers? For instance, the 50 mile ride that only cost about \\$60 or the 25 mile ride that cost about \\$140.
+
+```{python}
+from plotnine import aes, ggtitle, ggplot, geom_point, xlab, ylab
+
+(
+    ggplot(pivoted_prediction, aes(x="trip_distance", y="fare", color="metric"))
+    + geom_point()
+    + xlab("Trip Distance")
+    + ylab("Fare")
+    + ggtitle("Predicted Fare vs Actual Fare by Trip Distance")
+)
+```
+
+# Appendix: `model.py`
+
+
+```{python}
+#| echo: false
+#| output: asis
+
+with open("model.py", mode="r") as f:
+    print(f"```python\n{f.read()}\n```")
+```

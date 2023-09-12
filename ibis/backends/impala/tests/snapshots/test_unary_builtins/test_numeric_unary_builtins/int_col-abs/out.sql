@@ -1,0 +1,1 @@
+abs(`int_col`)

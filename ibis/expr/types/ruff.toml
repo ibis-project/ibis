@@ -1,0 +1,5 @@
+select = ["D102"]
+show-source = true
+
+[per-file-ignores]
+"dataframe_interchange.py" = ["D102"]

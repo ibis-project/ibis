@@ -1,0 +1,22 @@
+r0 := DatabaseTable: test2
+  key   string
+  value float64
+
+r1 := DatabaseTable: test1
+  c int32
+  f float64
+  g string
+
+r2 := Selection[r1]
+  predicates:
+    r1.f > 0
+
+r3 := InnerJoin[r0, r2] r2.g == r0.key
+
+Aggregation[r3]
+  metrics:
+    foo: Mean(r2.f - r0.value)
+    bar: Sum(r2.f)
+  by:
+    g:   r2.g
+    key: r0.key

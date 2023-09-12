@@ -1,0 +1,6 @@
+tabWidth = 2
+semi = true
+singleQuote = false
+arrowParens = "avoid"
+useTabs = false
+trailingComma = "all"

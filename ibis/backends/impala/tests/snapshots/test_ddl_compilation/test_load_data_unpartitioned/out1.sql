@@ -1,0 +1,1 @@
+LOAD DATA INPATH '/path/to/data' INTO TABLE `foo`.`functional_alltypes`

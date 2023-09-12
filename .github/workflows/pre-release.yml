@@ -1,0 +1,63 @@
+name: PyPI Pre-Release
+
+on:
+  schedule:
+    # weekly on Sunday
+    - cron: "0 0 * * 0"
+
+  # as needed by clicking through the github actions UI
+  workflow_dispatch:
+
+# we do not want more than one pre-release workflow executing at the same time, ever
+concurrency:
+  group: pre-release
+  # cancelling in the middle of a release would create incomplete releases
+  # so cancel-in-progress is false
+  cancel-in-progress: false
+
+jobs:
+  pre-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: upgrade pip
+        run: python -m pip install --upgrade pip
+
+      - name: install poetry
+        run: python -m pip install 'poetry==1.6.1' poetry-dynamic-versioning
+
+      - name: compute ibis version
+        id: get_version
+        run: echo "value=$(poetry version)" >> "$GITHUB_OUTPUT"
+
+      - name: run some poetry sanity checks
+        run: poetry check
+        if: contains(steps.get_version.outputs.value, '.dev')
+
+      - name: build wheel and source dist
+        run: poetry build
+        if: contains(steps.get_version.outputs.value, '.dev')
+
+      - name: add test pypi index
+        if: contains(steps.get_version.outputs.value, '.dev')
+        run: poetry config repositories.test-pypi https://test.pypi.org/legacy/
+
+      - name: publish pre-release wheel to test pypi index
+        if: contains(steps.get_version.outputs.value, '.dev')
+        run: poetry publish -r test-pypi
+        env:
+          POETRY_PYPI_TOKEN_TEST_PYPI: ${{ secrets.TEST_PYPI_TOKEN }}
+
+      - name: publish pre-release wheel to pypi
+        if: contains(steps.get_version.outputs.value, '.dev')
+        run: poetry publish
+        env:
+          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}

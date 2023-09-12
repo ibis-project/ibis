@@ -1,0 +1,580 @@
+---
+title: "Exploring campaign finance data"
+author: "Nick Crews"
+date: "2023-03-24"
+categories:
+    - blog
+    - data engineering
+    - case study
+    - duckdb
+    - performance
+---
+Hi! My name is [Nick Crews](https://www.linkedin.com/in/nicholas-b-crews/),
+and I'm a data engineer that looks at public campaign finance data.
+
+In this post, I'll walk through how I use Ibis to explore public campaign contribution
+data from the Federal Election Commission (FEC). We'll do some loading,
+cleaning, featurizing, and visualization. There will be filtering, sorting, grouping,
+and aggregation.
+
+## Downloading The Data
+
+```{python}
+from pathlib import Path
+from zipfile import ZipFile
+from urllib.request import urlretrieve
+
+# Download and unzip the 2018 individual contributions data
+url = "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2018/indiv18.zip"
+zip_path = Path("indiv18.zip")
+csv_path = Path("indiv18.csv")
+
+if not zip_path.exists():
+    urlretrieve(url, zip_path)
+
+if not csv_path.exists():
+    with ZipFile(zip_path) as zip_file, csv_path.open("w") as csv_file:
+        for line in zip_file.open("itcont.txt"):
+            csv_file.write(line.decode())
+```
+
+## Loading the data
+
+Now that we have our raw data in a .csv format, let's load it into Ibis,
+using the duckdb backend.
+
+Note that a 4.3 GB .csv would be near the limit of what pandas could
+handle on my laptop with 16GB of RAM. In pandas, typically every time
+you perform a transformation on the data, a copy of the data is made.
+I could only do a few transformations before I ran out of memory.
+
+With Ibis, this problem is solved in two different ways.
+
+First, because they are designed to work with very large datasets,
+many (all?) SQL backends support out of core operations.
+The data lives on disk, and are only loaded in a streaming fashion
+when needed, and then written back to disk as the operation is performed.
+
+Second, unless you explicitly ask for it, Ibis makes use of lazy
+evaluation. This means that when you ask for a result, the
+result is not persisted in memory. Only the original source
+data is persisted. Everything else is derived from this on the fly.
+
+
+```{python}
+import ibis
+from ibis import _
+
+ibis.options.interactive = True
+
+# The raw .csv file doesn't have column names, so we will add them in the next step.
+raw = ibis.read_csv(csv_path)
+raw
+```
+
+```{python}
+# For a more comprehesive description of the columns and their meaning, see
+# https://www.fec.gov/campaign-finance-data/contributions-individuals-file-description/
+columns = {
+    "CMTE_ID": "keep",  # Committee ID
+    "AMNDT_IND": "drop",  # Amendment indicator. A = amendment, N = new, T = termination
+    "RPT_TP": "drop",  # Report type (monthly, quarterly, etc)
+    "TRANSACTION_PGI": "keep",  # Primary/general indicator
+    "IMAGE_NUM": "drop",  # Image number
+    "TRANSACTION_TP": "drop",  # Transaction type
+    "ENTITY_TP": "keep",  # Entity type
+    "NAME": "drop",  # Contributor name
+    "CITY": "keep",  # Contributor city
+    "STATE": "keep",  # Contributor state
+    "ZIP_CODE": "drop",  # Contributor zip code
+    "EMPLOYER": "drop",  # Contributor employer
+    "OCCUPATION": "drop",  # Contributor occupation
+    "TRANSACTION_DT": "keep",  # Transaction date
+    "TRANSACTION_AMT": "keep",  # Transaction amount
+    # Other ID. For individual contributions will be null. For contributions from
+    # other FEC committees, will be the committee ID of the other committee.
+    "OTHER_ID": "drop",
+    "TRAN_ID": "drop",  # Transaction ID
+    "FILE_NUM": "drop",  # File number, unique number assigned to each report filed with the FEC
+    "MEMO_CD": "drop",  # Memo code
+    "MEMO_TEXT": "drop",  # Memo text
+    "SUB_ID": "drop",  # Submission ID. Unique number assigned to each transaction.
+}
+
+renaming = {old: new for old, new in zip(raw.columns, columns.keys())}
+to_keep = [k for k, v in columns.items() if v == "keep"]
+kept = raw.relabel(renaming)[to_keep]
+kept
+```
+
+```{python}
+# 21 million rows
+kept.count()
+```
+
+Huh, what's up with those timings? Previewing the head only took a fraction of a second,
+but finding the number of rows took 10 seconds.
+
+That's because duckdb is scanning the .csv file on the fly every time we access it.
+So we only have to read the first few lines to get that preview,
+but we have to read the whole file to get the number of rows.
+
+Note that this isn't a feature of Ibis, but a feature of Duckdb. This what I think is
+one of the strengths of Ibis: Ibis itself doesn't have to implement any of the
+optimimizations or features of the backends. Those backends can focus on what they do
+best, and Ibis can get those things for free.
+
+So, let's tell duckdb to actually read in the file to its native format so later accesses
+will be faster. This will be a ~20 seconds that we'll only have to pay once.
+
+
+```{python}
+kept = kept.cache()
+kept
+```
+
+Look, now accessing it only takes a fraction of a second!
+
+
+```{python}
+kept.count()
+```
+
+### Committees Data
+
+The contributions only list an opaque `CMTE_ID` column. We want to know which actual
+committee this is. Let's load the committees table so we can lookup from
+committee ID to committee name.
+
+
+```{python}
+def read_committees():
+    committees_url = "https://cg-519a459a-0ea3-42c2-b7bc-fa1143481f74.s3-us-gov-west-1.amazonaws.com/bulk-downloads/2018/committee_summary_2018.csv"
+    # This just creates a view, it doesn't actually fetch the data yet
+    tmp = ibis.read_csv(committees_url)
+    tmp = tmp["CMTE_ID", "CMTE_NM"]
+    # The raw table contains multiple rows for each committee id, so lets pick
+    # an arbitrary row for each committee id as the representative name.
+    deduped = tmp.group_by("CMTE_ID").agg(CMTE_NM=_.CMTE_NM.arbitrary())
+    return deduped
+
+
+comms = read_committees().cache()
+comms
+```
+
+Now add the committee name to the contributions table:
+
+
+```{python}
+together = kept.left_join(comms, "CMTE_ID").drop("CMTE_ID", "CMTE_ID_right")
+together
+```
+
+## Cleaning
+
+First, let's drop any contributions that don't have a committee name. There are only 6 of them.
+
+
+```{python}
+# We can do this fearlessly, no .copy() needed, because
+# everything in Ibis is immutable. If we did this in pandas,
+# we might start modifying the original DataFrame accidentally!
+cleaned = together
+
+has_name = cleaned.CMTE_NM.notnull()
+cleaned = cleaned[has_name]
+has_name.value_counts()
+```
+
+Let's look at the `ENTITY_TP` column. This represents the type of entity that
+made the contribution:
+
+
+```{python}
+together.ENTITY_TP.value_counts()
+```
+
+
+We only care about contributions from individuals.
+
+Once we filter on this column, the contents of it are irrelevant, so let's drop it.
+
+
+```{python}
+cleaned = together[_.ENTITY_TP == "IND"].drop("ENTITY_TP")
+```
+
+It looks like the `TRANSACTION_DT` column was a raw string like "MMDDYYYY",
+so let's convert that to a proper date type.
+
+
+```{python}
+from ibis.expr.types import StringValue, DateValue
+
+
+def mmddyyyy_to_date(val: StringValue) -> DateValue:
+    return val.cast(str).lpad(8, "0").to_timestamp("%m%d%Y").date()
+
+
+cleaned = cleaned.mutate(date=mmddyyyy_to_date(_.TRANSACTION_DT)).drop("TRANSACTION_DT")
+cleaned
+```
+
+The `TRANSACTION_PGI` column represents the type (primary, general, etc) of election,
+and the year. But it seems to be not very consistent:
+
+
+```{python}
+cleaned.TRANSACTION_PGI.topk(10)
+```
+
+```{python}
+def get_election_type(pgi: StringValue) -> StringValue:
+    """Use the first letter of the TRANSACTION_PGI column to determine the election type
+
+    If the first letter is not one of the known election stage, then return null.
+    """
+    election_types = {
+        "P": "primary",
+        "G": "general",
+        "O": "other",
+        "C": "convention",
+        "R": "runoff",
+        "S": "special",
+        "E": "recount",
+    }
+    first_letter = pgi[0]
+    return first_letter.substitute(election_types, else_=ibis.NA)
+
+
+cleaned = cleaned.mutate(election_type=get_election_type(_.TRANSACTION_PGI)).drop(
+    "TRANSACTION_PGI"
+)
+cleaned
+```
+
+That worked well! There are 0 nulls in the resulting column, so we always were
+able to determine the election type.
+
+
+```{python}
+cleaned.election_type.topk(10)
+```
+
+About 1/20 of transactions are negative. These could represent refunds, or they
+could be data entry errors. Let's drop them to keep it simple.
+
+
+```{python}
+above_zero = cleaned.TRANSACTION_AMT > 0
+cleaned = cleaned[above_zero]
+above_zero.value_counts()
+```
+
+## Adding Features
+
+Now that the data is cleaned up to a usable format, let's add some features.
+
+First, it's useful to categorize donations by size, placing them into buckets
+of small, medium, large, etc.
+
+
+```{python}
+edges = [
+    10,
+    50,
+    100,
+    500,
+    1000,
+    5000,
+]
+labels = [
+    "<10",
+    "10-50",
+    "50-100",
+    "100-500",
+    "500-1000",
+    "1000-5000",
+    "5000+",
+]
+
+
+def bucketize(vals, edges, str_labels):
+    # Uses Ibis's .bucket() method to create a categorical column
+    int_labels = vals.bucket(edges, include_under=True, include_over=True)
+    # Map the integer labels to the string labels
+    int_to_str = {str(i): s for i, s in enumerate(str_labels)}
+    return int_labels.cast(str).substitute(int_to_str)
+
+
+featured = cleaned.mutate(amount_bucket=bucketize(_.TRANSACTION_AMT, edges, labels))
+featured
+```
+
+## Analysis
+
+### By donation size
+
+One thing we can look at is the donation breakdown by size:
+- Are most donations small or large?
+- Where do politicians/committees get most of their money from? Large or small donations?
+
+We also will compare performance of Ibis vs pandas during this groupby.
+
+
+```{python}
+def summary_by(table, by):
+    return table.group_by(by).agg(
+        n_donations=_.count(),
+        total_amount=_.TRANSACTION_AMT.sum(),
+        mean_amount=_.TRANSACTION_AMT.mean(),
+        median_amount=_.TRANSACTION_AMT.approx_median(),
+    )
+
+
+def summary_by_pandas(df, by):
+    return df.groupby(by, as_index=False).agg(
+        n_donations=("election_type", "count"),
+        total_amount=("TRANSACTION_AMT", "sum"),
+        mean_amount=("TRANSACTION_AMT", "mean"),
+        median_amount=("TRANSACTION_AMT", "median"),
+    )
+
+
+# persist the input data so the following timings of the group_by are accurate.
+subset = featured["election_type", "amount_bucket", "TRANSACTION_AMT"]
+subset = subset.cache()
+pandas_subset = subset.execute()
+```
+
+Let's take a look at what we are actually computing:
+
+
+```{python}
+by_type_and_bucket = summary_by(subset, ["election_type", "amount_bucket"])
+by_type_and_bucket
+```
+
+OK, now let's do our timings.
+
+One interesting thing to pay attention to here is the execution time for the following
+groupby. Before, we could get away with lazy execution: because we only wanted to preview
+the first few rows, we only had to compute the first few rows, so all our previews were
+very fast.
+
+But now, as soon as we do a groupby, we have to actually go through the whole dataset
+in order to compute the aggregate per group. So this is going to be slower. BUT,
+duckdb is still quite fast. It only takes milliseconds to groupby-agg all 20 million rows!
+
+
+```{python}
+%timeit summary_by(subset, ["election_type", "amount_bucket"]).execute()  # .execute() so we actually fetch the data
+```
+
+Now let's try the same thing in pandas:
+
+
+```{python}
+%timeit summary_by_pandas(pandas_subset, ["election_type", "amount_bucket"])
+```
+
+It takes about 4 seconds, which is about 10 times slower than duckdb.
+At this scale, it again doesn't matter,
+but you could imagine with a dataset much larger than this, it would matter.
+
+Let's also think about memory usage:
+
+
+```{python}
+pandas_subset.memory_usage(deep=True).sum() / 1e9  # GB
+```
+
+The source dataframe is couple gigabytes, so probably during the groupby,
+the peak memory usage is going to be a bit higher than this. You could use a profiler
+such as [FIL](https://github.com/pythonspeed/filprofiler) if you wanted an exact number,
+I was too lazy to use that here.
+
+Again, this works on my laptop at this dataset size, but much larger than this and I'd
+start having problems. Duckdb on the other hand is designed around working out of core
+so it should scale to datasets into the hundreds of gigabytes, much larger than your
+computer's RAM.
+
+### Back to analysis
+
+OK, let's plot the result of that groupby.
+
+Surprise! (Or maybe not...) Most donations are small. But most of the money comes
+from donations larger than $1000.
+
+Well if that's the case, why do politicians spend so much time soliciting small
+donations? One explanation is that they can use the number of donations
+as a marketing pitch, to show how popular they are, and thus how viable of a
+candidate they are.
+
+This also might explain whose interests are being served by our politicians.
+
+
+```{python}
+import altair as alt
+
+# Do some bookkeeping so the buckets are displayed smallest to largest on the charts
+bucket_col = alt.Column("amount_bucket:N", sort=labels)
+
+n_by_bucket = (
+    alt.Chart(by_type_and_bucket.execute())
+    .mark_bar()
+    .encode(
+        x=bucket_col,
+        y="n_donations:Q",
+        color="election_type:N",
+    )
+)
+total_by_bucket = (
+    alt.Chart(by_type_and_bucket.execute())
+    .mark_bar()
+    .encode(
+        x=bucket_col,
+        y="total_amount:Q",
+        color="election_type:N",
+    )
+)
+n_by_bucket | total_by_bucket
+```
+
+### By election stage
+
+Let's look at how donations break down by election stage. Do people donate
+differently for primary elections vs general elections?
+
+Let's ignore everything but primary and general elections, since they are the
+most common, and arguably the most important.
+
+
+```{python}
+gb2 = by_type_and_bucket[_.election_type.isin(("primary", "general"))]
+n_donations_per_election_type = _.n_donations.sum().over(group_by="election_type")
+frac = _.n_donations / n_donations_per_election_type
+gb2 = gb2.mutate(frac_n_donations_per_election_type=frac)
+gb2
+```
+
+It looks like primary elections get a larger proportion of small donations.
+
+
+```{python}
+alt.Chart(gb2.execute()).mark_bar().encode(
+    x="election_type:O",
+    y="frac_n_donations_per_election_type:Q",
+    color=bucket_col,
+)
+```
+
+### By recipient
+
+Let's look at the top players. Who gets the most donations?
+
+Far and away it is ActBlue, which acts as a conduit for donations to Democratic
+interests.
+
+Beto O'Rourke is the top individual politician, hats off to him!
+
+
+```{python}
+by_recip = summary_by(featured, "CMTE_NM")
+by_recip
+```
+
+```{python}
+top_recip = by_recip.order_by(ibis.desc("n_donations")).head(10)
+alt.Chart(top_recip.execute()).mark_bar().encode(
+    x=alt.X("CMTE_NM:O", sort="-y"),
+    y="n_donations:Q",
+)
+```
+
+### By Location
+
+Where are the largest donations coming from?
+
+
+```{python}
+f2 = featured.mutate(loc=_.CITY + ", " + _.STATE).drop("CITY", "STATE")
+by_loc = summary_by(f2, "loc")
+# Drop the places with a small number of donations so we're
+# resistant to outliers for the mean
+by_loc = by_loc[_.n_donations > 1000]
+by_loc
+```
+
+
+```{python}
+def top_by(col):
+    top = by_loc.order_by(ibis.desc(col)).head(10)
+    return (
+        alt.Chart(top.execute())
+        .mark_bar()
+        .encode(
+            x=alt.X('loc:O', sort="-y"),
+            y=col,
+        )
+    )
+
+
+top_by("n_donations") | top_by("total_amount") | top_by("mean_amount") | top_by(
+    "median_amount"
+)
+```
+
+### By month
+
+When do the donations come in?
+
+
+```{python}
+by_month = summary_by(featured, _.date.month().name("month_int"))
+# Sorta hacky, .substritute doesn't work to change dtypes (yet?)
+# so we cast to string and then do our mapping
+month_map = {
+    "1": "Jan",
+    "2": "Feb",
+    "3": "Mar",
+    "4": "Apr",
+    "5": "May",
+    "6": "Jun",
+    "7": "Jul",
+    "8": "Aug",
+    "9": "Sep",
+    "10": "Oct",
+    "11": "Nov",
+    "12": "Dec",
+}
+by_month = by_month.mutate(month_str=_.month_int.cast(str).substitute(month_map))
+by_month
+```
+
+```{python}
+months_in_order = list(month_map.values())
+alt.Chart(by_month.execute()).mark_bar().encode(
+    x=alt.X("month_str:O", sort=months_in_order),
+    y="n_donations:Q",
+)
+```
+
+## Conclusion
+
+Thanks for following along! I hope you've learned something about Ibis, and
+maybe even about campaign finance.
+
+Ibis is a great tool for exploring data. I now find myself reaching for it
+when in the past I would have reached for pandas.
+
+Some of the highlights for me:
+
+- Fast, lazy execution, a great display format, and good type hinting/editor support for a great REPL experience.
+- Very well thought-out API and semantics (e.g. `isinstance(val, NumericValue)`?? That's beautiful!)
+- Fast and fairly complete string support, since I work with a lot of text data.
+- Extremely responsive maintainers. Sometimes I've submitted multiple feature requests and bug reports in a single day, and a PR has been merged by the next day.
+- Escape hatch to SQL. I didn't have to use that here, but if something isn't supported, you can always fall back to SQL.
+
+Check out [The Ibis Website](https://ibis-project.org/) for more information.

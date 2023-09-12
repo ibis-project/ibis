@@ -1,0 +1,272 @@
+# Tutorial: getting started
+
+This is a quick tour of some basic commands and usage patterns, just to get your flippers wet.
+
+## Install Ibis
+
+{{< include ../_tabsets/install_default.qmd >}}
+
+## Create a database file
+
+Ibis can work with several file types, but at its core it connects to existing
+databases and interacts with the data there. We'll analyze the _Palmer penguins_ [^1]
+dataset with [DuckDB](https://duckdb.org) to get the hang of this.
+
+```{python}
+import ibis
+
+con = ibis.connect("duckdb://penguins.ddb")
+con.create_table(
+    "penguins", ibis.examples.penguins.fetch().to_pyarrow(), overwrite=True
+)
+```
+
+You can now see the example dataset copied over to the database:
+
+```{python}
+con = ibis.connect("duckdb://penguins.ddb")
+con.list_tables()
+```
+
+There's one table, called `penguins`. We can ask Ibis to give us an object that we can interact with.
+
+```{python}
+penguins = con.table("penguins")
+penguins
+```
+
+Ibis is lazily evaluated, so instead of seeing the data, we see the schema of the table, instead. To peek at the data, we can call `head` and then `to_pandas` to get the first few rows of the table as a pandas DataFrame.
+
+```{python}
+penguins.head().to_pandas()
+```
+
+`to_pandas` takes the existing lazy table expression and evaluates it. If we leave it off, you'll see the Ibis representation of the table expression that `to_pandas` will evaluate (when you're ready!).
+
+```{python}
+penguins.head()
+```
+
+::: {.callout-note}
+Ibis returns results as a pandas DataFrame using `to_pandas`, but isn't using pandas to perform any of the computation. The query is executed by the backend (DuckDB in this case). Only when `to_pandas` is called does Ibis then pull back the results and convert them into a DataFrame.
+:::
+
+## Interactive mode
+
+For the rest of this intro, we'll turn on interactive mode, which partially executes queries to give users a preview of the results. There is a small difference in the way the output is formatted, but otherwise this is the same as calling `to_pandas` on the table expression with a limit of 10 result rows returned.
+
+```{python}
+ibis.options.interactive = True
+penguins.head()
+```
+
+## Common operations
+
+Ibis has a collection of useful table methods to manipulate and query the data in a table (or tables).
+
+### filter
+
+`filter` allows you to select rows based on a condition or set of conditions.
+
+We can filter so we only have penguins of the species Adelie:
+
+```{python}
+penguins.filter(penguins.species == "Adelie")
+```
+
+Or filter for Adelie penguins that reside on the island of Torgersen:
+
+```{python}
+penguins.filter((penguins.island == "Torgersen") & (penguins.species == "Adelie"))
+```
+
+You can use any boolean comparison in a filter (although if you try to do something like use `<` on a string, Ibis will yell at you).
+
+### select
+
+Your data analysis might not require all the columns present in a given table. `select` lets you pick out only those columns that you want to work with.
+
+To select a column you can use the name of the column as a string:
+
+```{python}
+penguins.select("species", "island", "year")
+```
+
+Or you can use column objects directly (this can be convenient when paired with tab-completion):
+
+```{python}
+penguins.select(penguins.species, penguins.island, penguins.year)
+```
+
+Or you can mix-and-match:
+
+```{python}
+penguins.select("species", "island", penguins.year)
+```
+
+### mutate
+
+`mutate` lets you add new columns to your table, derived from the values of existing columns.
+
+```{python}
+penguins.mutate(bill_length_cm=penguins.bill_length_mm / 10)
+```
+
+Notice that the table is a little too wide to display all the columns now (depending on your screen-size). `bill_length` is now present in millimeters AND centimeters. Use a `select` to trim down the number of columns we're looking at.
+
+```{python}
+penguins.mutate(bill_length_cm=penguins.bill_length_mm / 10).select(
+    "species",
+    "island",
+    "bill_depth_mm",
+    "flipper_length_mm",
+    "body_mass_g",
+    "sex",
+    "year",
+    "bill_length_cm",
+)
+```
+
+### selectors
+
+Typing out ALL of the column names _except_ one is a little annoying. Instead of doing that again, we can use a `selector` to quickly select or deselect groups of columns.
+
+```{python}
+import ibis.selectors as s
+
+penguins.mutate(bill_length_cm=penguins.bill_length_mm / 10).select(
+    ~s.matches("bill_length_mm")
+    # match every column except `bill_length_mm`
+)
+```
+
+You can also use a `selector` alongside a column name.
+
+```{python}
+penguins.select("island", s.numeric())
+```
+
+You can read more about [`selectors`](../posts/selectors) in the docs!
+
+### order_by
+
+`order_by` arranges the values of one or more columns in ascending or descending order.
+
+By default, `ibis` sorts in ascending order:
+
+```{python}
+penguins.order_by(penguins.flipper_length_mm).select(
+    "species", "island", "flipper_length_mm"
+)
+```
+
+You can sort in descending order using the `desc` method of a column:
+
+```{python}
+penguins.order_by(penguins.flipper_length_mm.desc()).select(
+    "species", "island", "flipper_length_mm"
+)
+```
+
+Or you can use `ibis.desc`
+
+```{python}
+penguins.order_by(ibis.desc("flipper_length_mm")).select(
+    "species", "island", "flipper_length_mm"
+)
+```
+
+### aggregates
+
+Ibis has several aggregate functions available to help summarize data.
+
+`mean`, `max`, `min`, `count`, `sum` (the list goes on).
+
+To aggregate an entire column, call the corresponding method on that column.
+
+```{python}
+penguins.flipper_length_mm.mean()
+```
+
+You can compute multiple aggregates at once using the `aggregate` method:
+
+```{python}
+penguins.aggregate([penguins.flipper_length_mm.mean(), penguins.bill_depth_mm.max()])
+```
+
+But `aggregate` _really_ shines when it's paired with `group_by`.
+
+### group_by
+
+`group_by` creates groupings of rows that have the same value for one or more columns.
+
+But it doesn't do much on its own -- you can pair it with `aggregate` to get a result.
+
+```{python}
+penguins.group_by("species").aggregate()
+```
+
+We grouped by the `species` column and handed it an "empty" aggregate command. The result of that is a column of the unique values in the `species` column.
+
+If we add a second column to the `group_by`, we'll get each unique pairing of the values in those columns.
+
+```{python}
+penguins.group_by(["species", "island"]).aggregate()
+```
+
+Now, if we add an aggregation function to that, we start to really open things up.
+
+```{python}
+penguins.group_by(["species", "island"]).aggregate(penguins.bill_length_mm.mean())
+```
+
+By adding that `mean` to the `aggregate`, we now have a concise way to calculate aggregates over each of the distinct groups in the `group_by`. And we can calculate as many aggregates as we need.
+
+```{python}
+penguins.group_by(["species", "island"]).aggregate(
+    [penguins.bill_length_mm.mean(), penguins.flipper_length_mm.max()]
+)
+```
+
+If we need more specific groups, we can add to the `group_by`.
+
+```{python}
+penguins.group_by(["species", "island", "sex"]).aggregate(
+    [penguins.bill_length_mm.mean(), penguins.flipper_length_mm.max()]
+)
+```
+
+## Chaining it all together
+
+We've already chained some Ibis calls together. We used `mutate` to create a new column and then `select` to only view a subset of the new table. We were just chaining `group_by` with `aggregate`.
+
+There's nothing stopping us from putting all of these concepts together to ask questions of the data.
+
+How about:
+
+- What was the largest female penguin (by body mass) on each island in the year 2008?
+
+```{python}
+penguins.filter((penguins.sex == "female") & (penguins.year == 2008)).group_by(
+    ["island"]
+).aggregate(penguins.body_mass_g.max())
+```
+
+- What about the largest male penguin (by body mass) on each island for each year of data collection?
+
+```{python}
+penguins.filter(penguins.sex == "male").group_by(["island", "year"]).aggregate(
+    penguins.body_mass_g.max().name("max_body_mass")
+).order_by(["year", "max_body_mass"])
+```
+
+## Learn more
+
+That's all for this quick-start guide. If you want to learn more, check out the [examples repository](https://github.com/ibis-project/ibis-examples).
+
+[^1]:
+    Horst AM, Hill AP, Gorman KB (2020).
+    palmerpenguins: Palmer Archipelago (Antarctica) penguin data.
+    R package version 0.1.0.
+    https://allisonhorst.github.io/palmerpenguins/.
+    doi: 10.5281/zenodo.3960218.

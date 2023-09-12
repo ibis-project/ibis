@@ -1,0 +1,3 @@
+Literal(1) missing a required argument: 'dtype'
+
+Expected signature: Literal(value: Annotated[Any, Not(pattern=InstanceOf(type=<class 'Deferred'>))], dtype: DataType)

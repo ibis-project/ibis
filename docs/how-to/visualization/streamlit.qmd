@@ -1,0 +1,18 @@
+# Streamlit + Ibis
+
+Ibis supports the [streamlit `experimental_connection` interface](https://blog.streamlit.io/introducing-st-experimental_connection/), making it easier than ever to combine the powers of both tools!
+
+Check out the example application below that shows the top N ingredients from a corpus of recipes using [the ClickHouse backend](../../backends/clickhouse.qmd)!
+
+<div class="streamlit-app">
+  <iframe class="streamlit-app-inner" src="https://ibis-example.streamlit.app/?embedded=true" width="100%" height=600></iframe>
+</div>
+
+And here's the source code for the application:
+
+```{python}
+#| echo: false
+#| output: asis
+with open("example_streamlit_app/example_streamlit_app.py", mode="r") as f:
+    print(f"```python\n{f.read()}\n```")
+```

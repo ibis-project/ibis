@@ -1,0 +1,84 @@
+---
+title: "Why Ibis?"
+---
+
+Ibis is the portable Python dataframe library.
+
+If you've had issues with scaling data transformation code in Python, need to
+work with data in multiple data platforms, find yourself translating between
+other Python dataframe APIs, or just want a great Python dataframe experience,
+Ibis is for you.
+
+## Portability
+
+You can reuse the same code across different backends.
+
+Most Python dataframes are tightly coupled to their execution engine. And many
+databases only support SQL, with no Python API. Ibis solves this problem by
+providing a common API for data manipulation in Python, and compiling that API
+into the backend's native language. This means you can learn a single API and
+use it across any supported backend (execution engine).
+
+![](./portability.png)
+
+While portability with Ibis isn't perfect, commonalities across backends and
+SQL dialects combined with years of engineering effort produce a full-featured
+and robust framework for data manipulation in Python.
+
+In the long-term, we aim for a standard query plan Intermediate Representation
+(IR) like [Substrait](https://substrait.io) to simplify this further.
+
+## Ecosystem
+
+Ibis is part of a larger ecosystem of Python data tools.
+
+It is designed to work well with other tools in this ecosystem, and we continue
+to make it easier to use Ibis with other tools over time.
+
+### Local experience
+
+Out of the box, Ibis offers a great local experience for working with many file
+formats.
+
+DuckDB is the default backend, with Polars and DataFusion as two other great
+local options. Many of the backends can run locally but require more setup than
+a pip installation.
+
+### Scaling up and out
+
+After prototyping on a local backend, directly scale in the cloud.
+
+You can prototype on DuckDB and deploy with MotherDuck. You can scale from any
+Python client with Ibis installed to whatever your backend supports.
+
+## Use cases
+
+You can use Ibis at any stage of your data workflow.
+
+Use the same framework for local exploration on a few files or production
+workloads on the most advanced data platforms.
+
+Ibis helps with:
+
+- data catalog exploration
+- exploratory data analysis
+- transforming data
+- visualizing data
+- data science and machine learning
+
+## Supported backends
+
+{{< include ./_tabsets/install.qmd >}}
+
+See the [backend support matrix](support_matrix.qmd) for details on operations
+supported. [Open a feature
+request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat)
+if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
+
+## Community
+
+Community discussions primarily take place on [GitHub](https://github.com/ibis-project/ibis/discussions).
+
+## Getting started
+
+If you're interested in trying Ibis we recommend the [getting started tutorial](./tutorials/getting_started.qmd).

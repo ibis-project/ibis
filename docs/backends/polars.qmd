@@ -1,0 +1,98 @@
+# Polars
+
+[https://www.pola.rs](https://www.pola.rs)
+
+{{< include /_callouts/experimental_backend.qmd >}}
+
+![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-CSV | Delta Lake | pandas | Parquet-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-CSV | pandas | Delta Lake | Parquet | PyArrow-orange?style=flat-square)
+
+## Install
+
+Install Ibis and dependencies for the Polars backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install with the `polars` extra:
+
+```{.bash}
+pip install 'ibis-framework[polars]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.polars.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `conda`
+
+Install for Polars:
+
+```{.bash}
+conda install -c conda-forge ibis-polars
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.polars.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+## `mamba`
+
+Install for Polars:
+
+```{.bash}
+mamba install -c conda-forge ibis-polars
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.polars.connect()  # <1>
+```
+
+1. Adjust connection parameters as needed.
+
+:::
+
+## Connect
+
+### `ibis.polars.connect`
+
+```python
+con = ibis.polars.connect()
+```
+
+::: {.callout-note}
+`ibis.polars.connect` is a thin wrapper around [`ibis.backends.polars.Backend.do_connect`](#ibis.backends.polars.Backend.do_connect).
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("polars")
+```
+
+```{python}
+#| echo: false
+BACKEND = "Polars"
+```
+
+{{< include ./_templates/api.qmd >}}

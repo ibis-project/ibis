@@ -1,0 +1,16 @@
+r0 := UnboundTable: t1
+  a int64
+  b float64
+
+r1 := UnboundTable: t2
+  a int64
+  b float64
+
+r2 := Union[r0, r1, distinct=False]
+
+r3 := Selection[r2]
+  selections:
+    a: r2.a
+    b: r2.b
+
+CountStar(): CountStar(r3)

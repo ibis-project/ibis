@@ -1,0 +1,1 @@
+sqrt(`double_col`)

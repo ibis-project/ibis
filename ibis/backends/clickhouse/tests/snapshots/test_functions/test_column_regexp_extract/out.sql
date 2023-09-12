@@ -1,0 +1,1 @@
+if(notEmpty(extractGroups(CAST(string_col AS String), '([\\d]+)')[3 + 1]), extractGroups(CAST(string_col AS String), '([\\d]+)')[3 + 1], NULL)

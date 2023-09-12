@@ -1,0 +1,1 @@
+CAST(`a` AS string)

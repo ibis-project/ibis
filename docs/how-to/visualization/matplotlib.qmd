@@ -1,0 +1,42 @@
+# matplotlib + Ibis
+
+If you don't have data to visualize, you can load an example table:
+
+```{python}
+# | code-fold: true
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+t.head(3)
+```
+
+## Using matplotlib with Ibis
+
+Refer to the [matplotlib documentation](https://matplotlib.org/). matplotlib has not implemented the dataframe interchange protocol so it is recommended to call to_pandas() on the Ibis table before plotting.
+
+```{python}
+import matplotlib.pyplot as plt
+
+grouped = t.group_by("species").aggregate(count=ibis._.count())
+grouped = grouped.mutate(row_number=ibis.row_number().over()).select(
+    "row_number",
+    (
+        ~s.c("row_number") & s.all()
+    ),  # see https://github.com/ibis-project/ibis/issues/6803
+)
+grouped
+```
+
+```{python}
+# https://stackoverflow.com/questions/9101497/matplotlib-bar-graph-x-axis-wont-plot-string-values
+plt.figure(figsize=(6, 4))
+plt.bar(grouped["row_number"].to_pandas(), grouped["count"].to_pandas())
+plt.title("Penguin species counts")
+plt.xlabel("Species")
+plt.xticks(grouped["row_number"].to_pandas(), grouped["species"].to_pandas())
+plt.ylabel("Count")
+plt.show()
+```

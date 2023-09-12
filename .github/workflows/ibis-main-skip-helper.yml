@@ -1,0 +1,37 @@
+# This job intentionally collides with the Ibis job in `ibis-main.yml`
+# that would be skipped because the paths are ignored.  This is so the `Ibis`
+# job isn't stuck in "expected" forever when it should be skipped
+name: Ibis
+on:
+  push:
+    paths:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  pull_request:
+    paths:
+      - "docs/**"
+      - "**/*.md"
+      - "**/*.qmd"
+      - ".envrc"
+    branches:
+      - master
+      - "*.x.x"
+  merge_group:
+jobs:
+  test_core:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
+  test_shapely_duckdb_import:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
+  test_doctests:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"

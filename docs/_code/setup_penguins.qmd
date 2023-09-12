@@ -1,0 +1,14 @@
+```{python}
+import ibis  # <1>
+import ibis.selectors as s  # <1>
+
+ibis.options.interactive = True  # <2>
+
+t = ibis.examples.penguins.fetch()  # <3>
+t.head(3)  # <4>
+```
+
+1. Ensure you install Ibis first.
+2. Use interactive mode for exploratory data analysis (EDA) or demos.
+3. Load a dataset from the built-in examples.
+4. Display the table.

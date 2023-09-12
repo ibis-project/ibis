@@ -1,0 +1,1 @@
+sqrt(`int_col`)

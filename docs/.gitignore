@@ -1,0 +1,27 @@
+.quarto
+_output
+
+*.ddb
+
+site_libs
+
+*.csv
+*.parquet
+*.delta
+*.zip
+*.db
+diamonds.json
+*.ndjson
+reference/
+objects.json
+*support_matrix.csv
+
+# generated notebooks and files
+*.ipynb
+*_files
+
+# inventories
+_inv
+objects.txt
+
+/.quarto/

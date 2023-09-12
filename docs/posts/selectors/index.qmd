@@ -1,0 +1,192 @@
+---
+title: "Maximizing productivity with selectors"
+author: Phillip Cloud
+date: 2023-02-27
+categories:
+    - blog
+    - new feature
+    - productivity
+    - duckdb
+---
+
+Before Ibis 5.0 it's been challenging to concisely express whole-table
+operations with ibis. Happily this is no longer the case in ibis 5.0.
+
+Let's jump right in!
+
+We'll look at selectors examples using the [`palmerpenguins` data
+set](https://allisonhorst.github.io/palmerpenguins/) with the [DuckDB
+backend](../../backends/duckdb.qmd).
+
+## Setup
+
+```{python}
+from ibis.interactive import *
+
+t = ex.penguins.fetch()
+t
+```
+
+## Examples
+
+### Normalization
+
+Let's say you want to compute the
+[z-score](https://en.wikipedia.org/wiki/Standard_score) of every numeric column
+and replace the existing data with that normalized value. Here's how you'd do
+that with selectors:
+
+```{python}
+t.mutate(s.across(s.numeric(), (_ - _.mean()) / _.std()))
+```
+
+### What's Up With the `year` Column?
+
+Whoops, looks like we included `year` in our normalization because it's an
+`int64` column (and therefore numeric) but normalizing the year doesn't make
+sense.
+
+We can exclude `year` from the normalization using another selector:
+
+```{python}
+t.mutate(s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std()))
+```
+
+`c` is short for "column" and the `~` means "negate". Combining those we get "not the year column"!
+
+Pretty neat right?
+
+### Composable Group By
+
+The power of this approach comes in when you want the grouped version. Perhaps
+we think some of these columns vary by species.
+
+With selectors, all you need to do is slap a `.group_by("species")` onto `t`:
+
+```{python}
+t.group_by("species").mutate(
+    s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+)
+```
+
+Since ibis translates this into a run-of-the-mill selection as if you had
+called `select` or `mutate` without selectors, nothing special is needed for a
+backend to work with these new constructs.
+
+Let's look at some more examples.
+
+### Min-max Normalization
+
+Grouped min/max normalization? Easy:
+
+```{python}
+t.group_by("species").mutate(
+    s.across(s.numeric() & ~s.c("year"), (_ - _.min()) / (_.max() - _.min()))
+)
+```
+
+### Casting and Munging
+
+How about casting every column whose name ends with any of the strings `"mm"`
+or `"g"` to a `float32`? No problem!
+
+```{python}
+t.mutate(s.across(s.endswith(("mm", "g")), _.cast("float32")))
+```
+
+We can make all string columns have the same case too!
+
+```{python}
+t.mutate(s.across(s.of_type("string"), _.lower()))
+```
+
+### Multiple Computations per Column
+
+What if I want to compute multiple things? Heck yeah!
+
+```{python}
+t.group_by("sex").mutate(
+    s.across(
+        s.numeric() & ~s.c("year"),
+        dict(centered=_ - _.mean(), zscore=(_ - _.mean()) / _.std()),
+    )
+).select("sex", s.endswith(("_centered", "_zscore")))
+```
+
+Don't like the naming convention?
+
+Pass a function to make your own name!
+
+```{python}
+t.select(s.startswith("bill")).mutate(
+    s.across(
+        s.all(),
+        dict(x=_ - _.mean(), y=_.max()),
+        names=lambda col, fn: f"{col}_{fn}_improved",
+    )
+)
+```
+
+Don't like lambda functions? We support a format string too!
+
+```{python}
+t.select(s.startswith("bill")).mutate(
+    s.across(
+        s.all(),
+        func=dict(x=_ - _.mean(), y=_.max()),
+        names="{col}_{fn}_improved",
+    )
+).head(2)
+```
+
+### Working with other Ibis APIs
+
+We've seen lots of mutate use, but selectors also work with `.agg`:
+
+```{python}
+t.group_by("year").agg(s.across(s.numeric() & ~s.c("year"), _.mean())).order_by("year")
+```
+
+Naturally, selectors work in grouping keys too, for even more convenience:
+
+```{python}
+t.group_by(~s.numeric() | s.c("year")).mutate(
+    s.across(s.numeric() & ~s.c("year"), dict(centered=_ - _.mean(), std=_.std()))
+).select("species", s.endswith(("_centered", "_std")))
+```
+
+### Filtering Selectors
+
+You can also express complex filters more concisely.
+
+Let's say we only want to keep rows where all the bill size z-score related
+columns' absolute values are greater than 2.
+
+```{python}
+t.drop("year").group_by("species").mutate(
+    s.across(s.numeric(), dict(zscore=(_ - _.mean()) / _.std()))
+).filter(s.if_all(s.startswith("bill") & s.endswith("_zscore"), _.abs() > 2))
+```
+
+### Bonus: Generated SQL
+
+The SQL for that last expression is pretty gnarly:
+
+```{python}
+ibis.to_sql(
+    t.drop("year")
+    .group_by("species")
+    .mutate(s.across(s.numeric(), dict(zscore=(_ - _.mean()) / _.std())))
+    .filter(s.if_all(s.startswith("bill") & s.endswith("_zscore"), _.abs() > 2))
+)
+```
+
+Good thing you didn't have to write that by hand!
+
+## Summary
+
+This blog post illustrates the ability to apply computations to many columns at
+once and the power of ibis as a composable, expressive library for analytics.
+
+- [Get involved!](../../contribute/index.md)
+- [Report issues!](https://github.com/ibis-project/ibis/issues/new/choose)

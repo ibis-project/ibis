@@ -1,0 +1,68 @@
+# Work with multiple backends
+
+You can work with multiple backends by creating and using separate connections.
+
+## Local example
+
+We'll use some of the local backends to demonstrate, but this applies to any backends.
+
+```{python}
+import ibis
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+t.to_parquet("penguins.parquet")
+t.head(3)
+```
+
+You can create a connection or several:
+
+```{python}
+ddb_con = ibis.duckdb.connect()
+ddb_con2 = ibis.duckdb.connect()
+```
+
+You can use the connection to create a table:
+
+```{python}
+ddb_con.read_parquet("penguins.parquet")
+```
+
+```{python}
+ddb_con2.read_parquet("penguins.parquet")
+```
+
+Or different backends:
+
+```{python}
+pl_con = ibis.polars.connect()
+pl_con2 = ibis.polars.connect()
+```
+
+```{python}
+pl_con.read_parquet("penguins.parquet")
+```
+
+```{python}
+pl_con2.read_parquet("penguins.parquet")
+```
+
+Or a different backend:
+
+```{python}
+df_con = ibis.datafusion.connect()
+df_con2 = ibis.datafusion.connect()
+```
+
+```{python}
+df_con.read_parquet("penguins.parquet")
+```
+
+```{python}
+df_con2.read_parquet("penguins.parquet")
+```
+
+## Next steps
+
+After connecting to multiple backends, use them like normal! You can check out [input and output formats, including other Python dataframes](./basics.qmd) for more information on how to get data in and out of backends.

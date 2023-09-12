@@ -1,0 +1,1 @@
+smallint_col

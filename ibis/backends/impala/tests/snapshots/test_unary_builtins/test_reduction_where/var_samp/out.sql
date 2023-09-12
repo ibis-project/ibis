@@ -1,0 +1,1 @@
+var_samp(if(`bigint_col` < 70, `double_col`, NULL))

@@ -1,0 +1,1 @@
+ndv(`int_col`)

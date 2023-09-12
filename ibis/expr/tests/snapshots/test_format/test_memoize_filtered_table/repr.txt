@@ -1,0 +1,18 @@
+r0 := UnboundTable: airlines
+  dest     string
+  origin   string
+  arrdelay int32
+
+r1 := Aggregation[r0]
+  metrics:
+    Mean(arrdelay): Mean(r0.arrdelay)
+  by:
+    dest: r0.dest
+  predicates:
+    InValues(value=r0.dest, options=['ORD', 'JFK', 'SFO'])
+
+r2 := Selection[r1]
+  sort_keys:
+    desc r1.Mean(arrdelay)
+
+Limit[r2, n=10]

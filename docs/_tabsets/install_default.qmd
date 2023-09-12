@@ -1,0 +1,31 @@
+We recommend starting with the default (DuckDB) backend for a performant, fully-featured local experience. You can install Ibis with `pip`, `conda`, `mamba`, or `pixi`.
+
+::: {.panel-tabset}
+
+## Using `pip`
+
+```bash
+pip install 'ibis-framework[duckdb]'
+```
+
+{{< include /_callouts/pypi_warning.qmd >}}
+
+## Using `conda`
+
+```bash
+conda install -c conda-forge ibis-duckdb
+```
+
+## Using `mamba`
+
+```bash
+mamba install -c conda-forge ibis-duckdb
+```
+
+## Using `pixi`
+
+```bash
+pixi add ibis-duckdb
+```
+
+:::

@@ -1,0 +1,1 @@
+CAST(int_col AS DATETIME)
