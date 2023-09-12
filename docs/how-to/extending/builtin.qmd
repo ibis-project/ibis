@@ -4,11 +4,14 @@ freeze: auto
 
 # Reference built-in functions
 
+
+## Scalar functions
+
 Functions that aren't exposed in ibis directly can be accessed using the
 `@ibis.udf.scalar.builtin` decorator.
 
 ::: {.callout-tip}
-## [Ibis APIs](../../reference/index.qmd) may already exist for your function.
+### [Ibis APIs](../../reference/index.qmd) may already exist for your function.
 
 Builtin scalar UDFs are designed to be an escape hatch when Ibis doesn't have
 a defined API for a built-in database function.
@@ -16,7 +19,7 @@ a defined API for a built-in database function.
 See [the reference documentation](../../reference/index.qmd) for existing APIs.
 :::
 
-## DuckDB
+### DuckDB
 
 Ibis doesn't directly expose many of the DuckDB [text similarity
 functions](https://duckdb.org/docs/sql/functions/char.html#text-similarity-functions).
@@ -34,9 +37,9 @@ The [`...`](https://docs.python.org/3/library/constants.html#Ellipsis) is
 a visual indicator that the function definition is unknown to Ibis.
 
 ::: {.callout-note collapse="true"}
-## Ibis does not do anything with the function body.
+### Ibis does not do anything with the function body.
 
-Ibis will not inspect the function body or otherwise inspect it. Any code you
+Ibis will not execute the function body or otherwise inspect it. Any code you
 write in the function body **will be ignored**.
 :::
 
@@ -91,7 +94,7 @@ pandas_ish.count()
 
 There are a good number of packages that look similar to `pandas`!
 
-## Snowflake
+### Snowflake
 
 Similarly we can expose Snowflake's
 [`jarowinkler_similarity`](https://docs.snowflake.com/en/sql-reference/functions/jarowinkler_similarity)
@@ -129,7 +132,7 @@ And let's take a look at the SQL
 ibis.to_sql(expr, dialect="snowflake")
 ```
 
-## Input types
+### Input types
 
 Sometimes the input types of builtin functions are difficult to spell.
 
@@ -169,3 +172,98 @@ con.execute(cardinality("foo"))
 
 Here, Snowflake is informing us that the `ARRAY_SIZE` function does not accept
 strings as input.
+
+
+## Aggregate functions
+
+Aggregate functions that aren't exposed in ibis directly can be accessed using
+the `@ibis.udf.agg.builtin` decorator.
+
+::: {.callout-tip}
+### [Ibis APIs](../../reference/index.qmd) may already exist for your function.
+
+Builtin aggregate UDFs are designed to be an escape hatch when Ibis doesn't have
+a defined API for a built-in database function.
+
+See [the reference documentation](../../reference/index.qmd) for existing APIs.
+:::
+
+Let's the use the DuckDB backend to demonstrate how to access an aggregate
+function that isn't exposed in ibis:
+[`kurtosis`](https://en.wikipedia.org/wiki/Kurtosis).
+
+### DuckDB
+
+First, define the builtin aggregate function:
+
+```{python}
+@udf.agg.builtin
+def kurtosis(x: float) -> float:  # <1>
+   ...
+```
+
+1. Both the input and return type annotations indicate the **element** type of
+   the input, not the shape (column or scalar). Aggregations can only be called
+   on column expressions.
+
+One of the powerful features of this API is that you can define your UD(A)Fs at
+any point during your analysis. You don't need to connect to the database to
+define your functions.
+
+Let's compute the kurtosis of the number of votes across all movies:
+
+```{python}
+from ibis import _
+
+expr = (
+   ibis.examples.imdb_title_ratings.fetch()
+   .rename("snake_case")
+   .agg(kurt=lambda t: kurtosis(t.num_votes))
+)
+expr
+```
+
+Since this is an aggregate function, it has the same capabilities as other,
+builtin aggregates like `sum`: it can be used in a group by as well as in
+a window function expression.
+
+Let's compute kurtosis for all the different types of productions (shorts,
+movies, TV, etc):
+
+```{python}
+basics = (
+   ibis.examples.imdb_title_basics.fetch()
+   .rename("snake_case")
+   .filter(_.is_adult == 0)
+)
+ratings = ibis.examples.imdb_title_ratings.fetch().rename("snake_case")
+
+basics_ratings = ratings.join(basics, "tconst")
+
+expr = (
+   basics_ratings.group_by("title_type")
+   .agg(kurt=lambda t: kurtosis(t.num_votes))
+   .order_by(_.kurt.desc())
+   .head()
+)
+expr
+```
+
+Similarly for window functions:
+
+```{python}
+expr = (
+   basics_ratings.mutate(
+      kurt=lambda t: kurtosis(t.num_votes).over(group_by="title_type")
+   )
+   .relocate("kurt", after="tconst")
+   .filter(
+      [
+         _.original_title.lower().contains("godfather"),
+         _.title_type == "movie",
+         _.genres.contains("Crime") & _.genres.contains("Drama"),
+      ]
+   )
+)
+expr
+```
