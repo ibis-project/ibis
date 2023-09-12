@@ -1,26 +1,27 @@
 from __future__ import annotations
 
 import calendar
-import contextlib
 import functools
 import math
-import operator
 from functools import partial
-from operator import add, mul, sub
-from typing import Any, Literal, Mapping
+from typing import TYPE_CHECKING, Any, Literal
 
 import duckdb
+import sqlglot as sg
+from packaging.version import parse as vparse
+from toolz import flip
+
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-import sqlglot as sg
 from ibis.backends.base.sql.registry import helpers
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
-from packaging.version import parse as vparse
-from toolz import flip
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 # TODO: Ideally we can translate bottom up a la `relations.py`
 # TODO: Find a way to remove all the dialect="duckdb" kwargs
@@ -88,6 +89,7 @@ def _literal(op, **kw):
         return sg.expressions.Boolean(this=value)
     elif dtype.is_inet():
         com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
+        return None
     elif dtype.is_string():
         return sg_literal(value)
     elif dtype.is_decimal():
@@ -505,7 +507,7 @@ def _time_from_hms(op, **kw):
 
 @translate_val.register(ops.TimestampNow)
 def _timestamp_now(op, **kw):
-    """DuckDB current timestamp defaults to timestamp + tz"""
+    """DuckDB current timestamp defaults to timestamp + tz."""
     return sg.cast(expression=sg.func("current_timestamp"), to="TIMESTAMP")
 
 
@@ -1109,7 +1111,7 @@ def _count_star(op, **kw):
     if (predicate := op.where) is not None:
         return sg.expressions.Filter(
             this=sql,
-            expression=sg.expressions.Where(this=translate_val(op.where, **kw)),
+            expression=sg.expressions.Where(this=translate_val(predicate, **kw)),
         )
     return sql
 
@@ -1193,7 +1195,7 @@ def _corr(op, **kw):
     sg_func = sg.func("corr", left, right)
 
     if (where := op.where) is not None:
-        predicate = sg.expressions.Where(this=translate_val(op.where, **kw))
+        predicate = sg.expressions.Where(this=translate_val(where, **kw))
         return sg.expressions.Filter(this=sg_func, expression=predicate)
 
     return sg_func
@@ -1222,7 +1224,7 @@ def _covariance(op, **kw):
     sg_func = sg.func(funcname, left, right)
 
     if (where := op.where) is not None:
-        predicate = sg.expressions.Where(this=translate_val(op.where, **kw))
+        predicate = sg.expressions.Where(this=translate_val(where, **kw))
         return sg.expressions.Filter(this=sg_func, expression=predicate)
 
     return sg_func
@@ -1246,7 +1248,7 @@ def _variance(op, **kw):
     sg_func = sg.func(funcname, arg)
 
     if (where := op.where) is not None:
-        predicate = sg.expressions.Where(this=translate_val(op.where, **kw))
+        predicate = sg.expressions.Where(this=translate_val(where, **kw))
         return sg.expressions.Filter(this=sg_func, expression=predicate)
 
     return sg_func
@@ -1334,7 +1336,7 @@ def _table_array_view(op, *, cache, **kw):
 def _exists_subquery(op, **kw):
     from ibis.backends.duckdb.compiler.relations import translate_rel
 
-    if not "table" in kw:
+    if "table" not in kw:
         kw["table"] = translate_rel(op.foreign_table.table, **kw)
     foreign_table = translate_rel(op.foreign_table, **kw)
     predicates = translate_val(op.predicates, **kw)
@@ -1543,8 +1545,6 @@ def _binary_infix(sg_expr: sg.expressions._Expression):
 
     return formatter
 
-
-import operator
 
 _binary_infix_ops = {
     # Binary operations

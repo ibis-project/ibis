@@ -11,6 +11,7 @@ from ibis.conftest import SANDBOXED
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from typing import Any
 
     from ibis.backends.base import BaseBackend
 

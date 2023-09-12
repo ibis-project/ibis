@@ -7,7 +7,13 @@ import contextlib
 import os
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable, Iterator, Mapping, MutableMapping
+from typing import TYPE_CHECKING, Any
+
+import duckdb
+import pyarrow as pa
+import sqlglot as sg
+import toolz
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.common.exceptions as exc
@@ -15,9 +21,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
-import pyarrow as pa
-import sqlglot as sg
-import toolz
 from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseBackend
@@ -26,16 +29,14 @@ from ibis.backends.duckdb.compiler import translate
 from ibis.expr.operations.relations import PandasDataFrameProxy
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pandas import PandasData
-from ibis.formats.pyarrow import PyArrowData
-from packaging.version import parse as vparse
-
-import duckdb
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
-    import ibis.expr.operations as ops
+
     import pandas as pd
     import torch
+
+    from ibis.common.typing import SupportsSchema
 
 
 def normalize_filenames(source_list):
@@ -43,22 +44,6 @@ def normalize_filenames(source_list):
     source_list = util.promote_list(source_list)
 
     return list(map(util.normalize_filename, source_list))
-
-
-def _format_kwargs(kwargs: Mapping[str, Any]):
-    bindparams, pieces = [], []
-    for name, value in kwargs.items():
-        bindparam = sa.bindparam(name, value)
-        if isinstance(paramtype := bindparam.type, sa.String):
-            # special case strings to avoid double escaping backslashes
-            pieces.append(f"{name} = '{value!s}'")
-        elif not isinstance(paramtype, sa.types.NullType):
-            bindparams.append(bindparam)
-            pieces.append(f"{name} = :{name}")
-        else:  # fallback to string strategy
-            pieces.append(f"{name} = {value!r}")
-
-    return sa.text(", ".join(pieces)).bindparams(*bindparams)
 
 
 _UDF_INPUT_TYPE_MAPPING = {
@@ -481,7 +466,7 @@ class Backend(BaseBackend, CanCreateSchema):
             raise exc.IbisError(e)
 
         # TODO: should we do this in arrow?
-        # also wth is pandas doing with dates?
+        # also what is pandas doing with dates?
         pandas_df = result.fetch_df()
         result = PandasData.convert_table(pandas_df, schema)
         if isinstance(expr, ir.Table):
@@ -515,7 +500,7 @@ class Backend(BaseBackend, CanCreateSchema):
         installed = (name for (name,) in self.con.sql(query).fetchall())
         # Install and load all other extensions
         todo = set(extensions).difference(installed)
-        for extension in extensions:
+        for extension in todo:
             self.con.install_extension(extension)
             self.con.load_extension(extension)
 
@@ -793,7 +778,7 @@ class Backend(BaseBackend, CanCreateSchema):
         ):
             self._load_extensions(["httpfs"])
 
-        if kw := kwargs:
+        if kwargs:
             options = [f"{key}={val}" for key, val in kwargs.items()]
             pq_func = sg.func("read_parquet", source_list, *options)
         else:

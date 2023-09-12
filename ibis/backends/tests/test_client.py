@@ -1243,9 +1243,6 @@ def test_persist_expression_repeated_cache(alltypes):
             assert not nested_cached_table.to_pandas().empty
 
 
-@mark.broken(
-    "duckdb", reason="table name has `main` prepended, breaking the match check"
-)
 @mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
