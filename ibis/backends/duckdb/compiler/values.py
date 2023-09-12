@@ -1456,7 +1456,10 @@ def _binary_infix(sg_expr: sg.expressions._Expression):
         left = translate_val(op.left, **kw)
         right = translate_val(op.right, **kw)
 
-        return sg_expr(this=left, expression=right)
+        return sg_expr(
+            this=sg.expressions.Paren(this=left),
+            expression=sg.expressions.Paren(this=right),
+        )
 
     return formatter
 
