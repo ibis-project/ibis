@@ -847,17 +847,32 @@ def _literal(op, **kw):
 #     return query.subquery()
 
 
+def _neg_idx_to_pos(array, idx):
+    return sg.expressions.If(
+        this=sg.expressions.LT(this=idx, expression=sg_literal(0, is_string=False)),
+        true=sg.func("len", array) + idx,
+        false=idx,
+    )
+
+
 @translate_val.register(ops.ArraySlice)
 def _array_slice_op(op, **kw):
     arg = translate_val(op.arg, **kw)
-    start = translate_val(op.start, **kw)
 
-    if (stop := op.stop) is not None:
-        stop = translate_val(stop, **kw)
+    arg_length = sg.func("len", arg)
+
+    if (start := op.start) is None:
+        start = sg_literal(0, is_string=False)
     else:
-        stop = sg.expressions.Null()
+        start = translate_val(op.start, **kw)
+        start = sg.func("least", arg_length, _neg_idx_to_pos(arg, start))
 
-    return sg.func("list_slice", arg, start, stop)
+    if (stop := op.stop) is None:
+        stop = sg.expressions.Null()
+    else:
+        stop = _neg_idx_to_pos(arg, translate_val(stop, **kw))
+
+    return sg.func("list_slice", arg, start + 1, stop)
 
 
 @translate_val.register(ops.Count)
