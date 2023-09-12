@@ -4,10 +4,8 @@ import operator
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
-import duckdb
 import numpy as np
 import sqlalchemy as sa
-from packaging.version import parse as vparse
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
 from toolz.curried import flip
@@ -22,9 +20,6 @@ from ibis.backends.base.sql.alchemy.registry import (
     geospatial_functions,
     reduction,
     try_cast,
-)
-from ibis.backends.base.sql.alchemy.registry import (
-    _translate_case as _base_translate_case,
 )
 from ibis.backends.postgres.registry import (
     _array_index,
@@ -43,8 +38,6 @@ operation_registry = {
     op: operation_registry[op]
     for op in operation_registry.keys() - geospatial_functions.keys()
 }
-
-_SUPPORTS_MAPS = vparse(duckdb.__version__) >= vparse("0.8.0")
 
 
 def _round(t, op):
@@ -221,26 +214,6 @@ def _struct_column(t, op):
     return struct_pack(
         dict(zip(op.names, map(t.translate, op.values))),
         type=t.get_sqla_type(op.dtype),
-    )
-
-
-def _simple_case(t, op):
-    return _translate_case(t, op, value=t.translate(op.base))
-
-
-def _searched_case(t, op):
-    return _translate_case(t, op, value=None)
-
-
-def _translate_case(t, op, *, value):
-    return sa.literal_column(
-        str(
-            _base_translate_case(t, op, value=value).compile(
-                dialect=sa.dialects.registry.load("duckdb")(),
-                compile_kwargs=dict(literal_binds=True),
-            )
-        ),
-        type_=t.get_sqla_type(op.dtype),
     )
 
 
@@ -460,8 +433,6 @@ operation_registry.update(
         ops.ArrayStringJoin: fixed_arity(
             lambda sep, arr: sa.func.array_aggr(arr, sa.text("'string_agg'"), sep), 2
         ),
-        ops.SearchedCase: _searched_case,
-        ops.SimpleCase: _simple_case,
         ops.StartsWith: fixed_arity(sa.func.prefix, 2),
         ops.EndsWith: fixed_arity(sa.func.suffix, 2),
         ops.Argument: lambda _, op: sa.literal_column(op.name),
@@ -477,11 +448,9 @@ operation_registry.update(
             lambda arg, key: sa.func.array_length(sa.func.element_at(arg, key)) != 0, 2
         ),
         ops.MapLength: unary(sa.func.cardinality),
-        ops.MapKeys: unary(sa.func.map_keys) if _SUPPORTS_MAPS else _map_keys,
-        ops.MapValues: unary(sa.func.map_values) if _SUPPORTS_MAPS else _map_values,
-        ops.MapMerge: (
-            fixed_arity(sa.func.map_concat, 2) if _SUPPORTS_MAPS else _map_merge
-        ),
+        ops.MapKeys: unary(sa.func.map_keys),
+        ops.MapValues: unary(sa.func.map_values),
+        ops.MapMerge: fixed_arity(sa.func.map_concat, 2),
         ops.Hash: unary(sa.func.hash),
         ops.Median: reduction(sa.func.median),
         ops.First: reduction(sa.func.first),
