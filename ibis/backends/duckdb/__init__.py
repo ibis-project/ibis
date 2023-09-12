@@ -118,41 +118,61 @@ class Backend(BaseBackend, CanCreateSchema):
         temp: bool = False,
         overwrite: bool = False,
     ):
-        tmp = "TEMP " * temp
-        replace = "OR REPLACE" * overwrite
-
         if temp and overwrite:
             raise exc.IbisInputError("Cannot specify both temp and overwrite")
-
-        if not temp:
-            table = self._fully_qualified_name(name, database)
-        else:
-            table = name
-            database = None
-        code = f"CREATE {replace}{tmp}TABLE {table}"
 
         if obj is None and schema is None:
             raise exc.IbisError("The schema or obj parameter is required")
 
+        table_identifier = sg.to_identifier(name, quoted=True)
+        create_expr = sg.expressions.Create(
+            kind="TABLE",  # TABLE
+            replace=overwrite,  # OR REPLACE
+        )
+
+        if temp:
+            create_expr.args["properties"] = sg.expressions.Properties(
+                expressions=[sg.expressions.TemporaryProperty()]  # TEMPORARY
+            )
+
         if obj is not None and not isinstance(obj, ir.Expr):
+            # pd.DataFrame or pa.Table
             obj = ibis.memtable(obj, schema=schema)
             self._register_in_memory_table(obj.op())
-            code += f" AS {self.compile(obj)}"
-        else:
+            create_expr.args["expression"] = self.compile(obj)  # AS ...
+            create_expr.args["this"] = table_identifier  # t0
+        elif obj is not None:
+            self._register_in_memory_tables(obj)
             # If both `obj` and `schema` are specified, `obj` overrides `schema`
             # DuckDB doesn't support `create table (schema) AS select * ...`
-            if obj is not None:
-                code += f" AS {self.compile(obj)}"
-            else:
-                serialized_schema = ", ".join(
-                    f"{name} {DuckDBType.to_string(typ)}"
-                    for name, typ in schema.items()
-                )
-
-                code += f" ({serialized_schema})"
+            create_expr.args["expression"] = self.compile(obj)  # AS ...
+            create_expr.args["this"] = table_identifier  # t0
+        else:
+            # Schema -> Table -> [ColumnDefs]
+            schema_expr = sg.expressions.Schema(
+                this=sg.expressions.Table(this=table_identifier),
+                expressions=[
+                    sg.expressions.ColumnDef(
+                        this=sg.to_identifier(key, quoted=False),
+                        kind=DuckDBType.from_ibis(typ),
+                    )
+                    if typ.nullable
+                    else sg.expressions.ColumnDef(
+                        this=sg.to_identifier(key, quoted=False),
+                        kind=DuckDBType.from_ibis(typ),
+                        constraints=[
+                            sg.expressions.ColumnConstraint(
+                                kind=sg.expressions.NotNullColumnConstraint()
+                            )
+                        ],
+                    )
+                    for key, typ in schema.items()
+                ],
+            )
+            create_expr.args["this"] = schema_expr
 
         # create the table
-        self.raw_sql(code)
+        self.raw_sql(create_expr)
 
         return self.table(name, database=database)
 
@@ -247,10 +267,23 @@ class Backend(BaseBackend, CanCreateSchema):
             qualified_name = sg.expressions.Identifier(this=qualified_name, quoted=True)
         query = sg.expressions.Describe(this=qualified_name)
         results = self.raw_sql(query)
-        names, types, *_ = results.fetch_arrow_table()
+        names, types, nulls, *_ = results.fetch_arrow_table()
         names = names.to_pylist()
         types = types.to_pylist()
-        return sch.Schema(dict(zip(names, map(DuckDBType.from_string, types))))
+        # TODO: remove code crime
+        # DuckDB gives back "YES", "NO" for nullability
+        nulls = [bool(null[:-2]) for null in nulls.to_pylist()]
+        return sch.Schema(
+            dict(
+                zip(
+                    names,
+                    (
+                        DuckDBType.from_string(typ, nullable=null)
+                        for typ, null in zip(types, nulls)
+                    ),
+                )
+            )
+        )
 
     def list_databases(self, like: str | None = None) -> list[str]:
         result = self.raw_sql("PRAGMA database_list;")
