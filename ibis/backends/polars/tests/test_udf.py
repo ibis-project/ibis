@@ -54,7 +54,7 @@ def test_multiple_argument_udf(alltypes):
 @pytest.mark.parametrize(
     ("value", "expected"), [(8, 2), (27, 3), (7, 7 ** (1.0 / 3.0))]
 )
-def test_builtin(con, value, expected):
+def test_builtin_scalar_udf(con, value, expected):
     @udf.scalar.builtin
     def cbrt(a: float) -> float:
         ...
@@ -105,3 +105,18 @@ def test_multiple_argument_scalar_udf(alltypes, func):
     expected = (df.smallint_col + df.int_col).astype("int64")
 
     tm.assert_series_equal(result, expected.rename("tmp"))
+
+
+def test_builtin_agg_udf(con):
+    @udf.agg.builtin
+    def approx_n_unique(a, where: bool = True) -> int:
+        ...
+
+    ft = con.tables.functional_alltypes
+    expr = approx_n_unique(ft.string_col)
+    result = con.execute(expr)
+    assert result == 10
+
+    expr = approx_n_unique(ft.string_col, where=ft.string_col == "1")
+    result = con.execute(expr)
+    assert result == 1
