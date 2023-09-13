@@ -219,6 +219,7 @@ operation_registry.update(
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Window: _window,
         # Binary operations
+        ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
     }
 )
