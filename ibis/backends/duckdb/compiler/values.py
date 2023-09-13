@@ -957,8 +957,11 @@ def _array_collect(op, **kw):
 @translate_val.register(ops.ArrayConcat)
 def _array_concat(op, **kw):
     sg_expr = sg.func(
-        "list_concat",
-        *(translate_val(arg, **kw) for arg in op.arg),
+        "flatten",
+        sg.func(
+            "list_value",
+            *(translate_val(arg, **kw) for arg in op.arg),
+        ),
         dialect="duckdb",
     )
     return sg_expr
@@ -1066,14 +1069,33 @@ def _array_union(op, **kw):
     return translate_val(ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right))), **kw)
 
 
-# TODO: need to do this as a an array map + struct pack -- look at existing
-# alchemy backend implementation
 @translate_val.register(ops.ArrayZip)
 def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
-    zipped = sg.expressions.ArrayJoin().from_arg_list(
-        [translate_val(arg, **kw) for arg in op.arg]
+    i = sg.to_identifier("i", quoted=False)
+    args = [translate_val(arg, **kw) for arg in op.arg]
+    result = sg.expressions.Struct(
+        expressions=[
+            sg.expressions.Slice(
+                this=sg_literal(name),
+                expression=sg.func("list_extract", arg, i),
+            )
+            for name, arg in zip(op.dtype.value_type.names, args)
+        ]
     )
-    return zipped
+    lamduh = sg.expressions.Lambda(this=result, expressions=[i])
+    sg_expr = sg.func(
+        "list_transform",
+        sg.func(
+            "range",
+            sg_literal(1, is_string=False),
+            # DuckDB Range is not inclusive of upper bound
+            sg.func("greatest", *[sg.func("len", arg) for arg in args]) + 1,
+        ),
+        lamduh,
+        dialect="duckdb",
+    )
+
+    return sg_expr
 
 
 ### Counting
