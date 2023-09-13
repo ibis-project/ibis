@@ -7,18 +7,17 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 
 import duckdb
-import sqlglot as sg
-from packaging.version import parse as vparse
-from toolz import flip
-
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
+import sqlglot as sg
 from ibis.backends.base.sql.registry import helpers
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
+from packaging.version import parse as vparse
+from toolz import flip
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -345,6 +344,7 @@ def _generic_log(op, **kw):
 @translate_val.register(ops.Clip)
 def _clip(op, **kw):
     arg = translate_val(op.arg, **kw)
+    # TODO expressionize
     if (upper := op.upper) is not None:
         arg = f"least({translate_val(upper, **kw)}, {arg})"
 
@@ -805,9 +805,7 @@ def _regex_extract(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
     group = translate_val(op.index, **kw)
-    return f"regexp_extract({arg}, {pattern}, {group})"
-    # TODO: make this work -- need to handle pattern escaping?
-    return sg.func("regexp_extract", arg, pattern, group)
+    return sg.func("regexp_extract", arg, pattern, group, dialect="duckdb")
 
 
 @translate_val.register(ops.Levenshtein)
@@ -980,9 +978,15 @@ def _array_repeat_op(op, **kw):
 
 
 def _neg_idx_to_pos(array, idx):
+    arg_length = sg.func("len", array)
     return sg.expressions.If(
         this=sg.expressions.LT(this=idx, expression=sg_literal(0, is_string=False)),
-        true=sg.func("len", array) + idx,
+        # Need to have the greatest here to handle the case where
+        # abs(neg_index) > arg_length
+        # e.g. where the magnitude of the negative index is greater than the
+        # length of the array
+        # You cannot index a[:-3] if a = [1, 2]
+        true=arg_length + sg.func("greatest", idx, -1 * arg_length),
         false=idx,
     )
 
@@ -1020,7 +1024,7 @@ def _array_map(op, **kw):
     result = translate_val(op.result, **kw)
     lamduh = sg.expressions.Lambda(
         this=result,
-        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
+        expressions=[sg.to_identifier(f"{op.parameter}", quoted=False)],
     )
     sg_expr = sg.func("list_transform", arg, lamduh)
     return sg_expr
