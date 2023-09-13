@@ -966,16 +966,17 @@ def _array_concat(op, **kw):
     return sg_expr
 
 
-# # TODO
-# @translate_val.register(ops.ArrayRepeat)
-# def _array_repeat_op(op, **kw):
-#     arg = translate_val(op.arg, **kw)
-#     times = translate_val(op.times, **kw)
-#     from_ = f"(SELECT {arg} AS arr FROM system.numbers LIMIT {times})"
-#     query = sg.parse_one(
-#         f"SELECT arrayFlatten(groupArray(arr)) FROM {from_}", read="duckdb"
-#     )
-#     return query.subquery()
+@translate_val.register(ops.ArrayRepeat)
+def _array_repeat_op(op, **kw):
+    arg = translate_val(op.arg, **kw)
+    times = translate_val(op.times, **kw)
+    sg_expr = sg.func(
+        "flatten",
+        sg.select(
+            sg.func("array", sg.select(arg).from_(sg.func("range", times)))
+        ).subquery(),
+    )
+    return sg_expr
 
 
 def _neg_idx_to_pos(array, idx):
