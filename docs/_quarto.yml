@@ -351,8 +351,8 @@ quartodoc:
         - kind: page
           path: expression-collections
           summary:
-            name: Complex type expressions
-            desc: These APIs are available on arrays, maps and structs.
+            name: Collection expressions
+            desc: Arrays, maps and structs.
           contents:
             - name: ArrayValue
               package: ibis.expr.types.arrays
