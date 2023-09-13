@@ -3,7 +3,7 @@ from __future__ import annotations
 import pathlib
 
 # Versions for templated redirects
-VERSIONS = ["latest", "dev", "4.1.0", "4.0.0", "3.2.0", "3.1.0"]
+VERSIONS = ["latest", "dev", "4.1.0", "4.0.0", "3.2.0", "3.1.0", "3.0.2"]
 
 # Templated redirects
 TEMPLATED_REDIRECTS = {
@@ -27,6 +27,23 @@ TEMPLATED_REDIRECTS = {
     "/docs/{version}/": "/",
     "/docs/{version}/api/": "/reference/",
     "/docs/{version}/backends/": "/backends/",
+    "/docs/{version}/backends/BigQuery/": "/backends/bigquery/",
+    "/docs/{version}/backends/Clickhouse/": "/backends/clickhouse/",
+    "/docs/{version}/backends/Dask/": "/backends/dask/",
+    "/docs/{version}/backends/Datafusion/": "/backends/datafusion/",
+    "/docs/{version}/backends/Druid/": "/backends/druid/",
+    "/docs/{version}/backends/DuckDB/": "/backends/duckdb/",
+    "/docs/{version}/backends/Impala/": "/backends/impala/",
+    "/docs/{version}/backends/MSSQL/": "/backends/mssql/",
+    "/docs/{version}/backends/MySQL/": "/backends/mysql/",
+    "/docs/{version}/backends/Oracle/": "/backends/oracle/",
+    "/docs/{version}/backends/Pandas/": "/backends/pandas/",
+    "/docs/{version}/backends/Polars/": "/backends/polars/",
+    "/docs/{version}/backends/PostgreSQL/": "/backends/postgresql/",
+    "/docs/{version}/backends/PySpark/": "/backends/pyspark/",
+    "/docs/{version}/backends/SQLite/": "/backends/sqlite/",
+    "/docs/{version}/backends/Snowflake/": "/backends/snowflake/",
+    "/docs/{version}/backends/Trino/": "/backends/trino/",
     "/docs/{version}/docs/": "/docs/",
     "/docs/{version}/how_to/": "/how-to/",
     "/docs/{version}/install/": "/install/",
