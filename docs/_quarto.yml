@@ -194,7 +194,7 @@ quartodoc:
           path: top_level
           summary:
             name: Top-level APIs
-            desc: These methods and objects are available directly on the `ibis` module.
+            desc: Methods and objects available directly on the `ibis` module.
           contents:
             - name: and_
               dynamic: true
@@ -294,7 +294,7 @@ quartodoc:
           package: ibis.expr.types.relations
           summary:
             name: Table expressions
-            desc: Table expressions form the basis for most Ibis expressions.
+            desc: Tables are one of the core data structures in Ibis.
           contents:
             - Table
             - GroupedTable
@@ -304,7 +304,7 @@ quartodoc:
           package: ibis.expr.types.generic
           summary:
             name: Generic expressions
-            desc: These expressions are available on scalars and columns of any element type.
+            desc: Scalars and columns of any element type.
           contents:
             - Value
             - Column
@@ -314,8 +314,8 @@ quartodoc:
           path: expression-numeric
           package: ibis.expr.types.numeric
           summary:
-            name: Numeric and boolean expressions
-            desc: These APIs are available on numeric and boolean expressions.
+            name: Numeric and Boolean expressions
+            desc: Integer, floating point, decimal, and boolean expressions.
           contents:
             - NumericValue
             - NumericColumn
@@ -340,7 +340,7 @@ quartodoc:
           package: ibis.expr.types.temporal
           summary:
             name: Temporal expressions
-            desc: Temporal operations
+            desc: Dates, times, timestamps and intervals.
           contents:
             - TimestampValue
             - DateValue
@@ -366,7 +366,7 @@ quartodoc:
           package: ibis.expr.types.geospatial
           summary:
             name: Geospatial expressions
-            desc: Ibis supports the following geospatial expression APIs
+            desc: Points, Polygons, LineStrings, and other geospatial types.
           contents:
             - GeoSpatialValue
             - GeoSpatialColumn
@@ -374,7 +374,7 @@ quartodoc:
         - kind: page
           summary:
             name: Column selectors
-            desc: Convenient column selectors
+            desc: Choose Table columns based on dtype, regex, and other criteria
           path: selectors
           package: ibis.selectors
           contents:
@@ -405,7 +405,7 @@ quartodoc:
           package: ibis.expr.datatypes.core
           summary:
             name: Data types
-            desc: Data types
+            desc: Scalar and column data types
           contents:
             - Array
             - Binary
@@ -446,7 +446,7 @@ quartodoc:
           package: ibis.expr.schema
           summary:
             name: Schemas
-            desc: Schemas
+            desc: Table Schemas
           contents:
             - Schema
 
@@ -459,7 +459,7 @@ quartodoc:
           package: ibis.expr.operations.udf
           summary:
             name: Scalar UDFs
-            desc: "Scalar UDF APIs"
+            desc: "Scalar user-defined function APIs"
           contents:
             - scalar
 
