@@ -28,7 +28,7 @@ from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.compiler import translate
 from ibis.expr.operations.relations import PandasDataFrameProxy
 from ibis.expr.operations.udf import InputType
-from ibis.formats.pandas import PandasData
+from ibis.backends.duckdb.datatypes import DuckDBPandasData
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
@@ -255,9 +255,10 @@ class Backend(BaseBackend, CanCreateSchema):
         names, types, nulls, *_ = results.fetch_arrow_table()
         names = names.to_pylist()
         types = types.to_pylist()
-        # TODO: remove code crime
         # DuckDB gives back "YES", "NO" for nullability
-        nulls = [bool(null[:-2]) for null in nulls.to_pylist()]
+        # TODO: remove code crime
+        # nulls = [bool(null[:-2]) for null in nulls.to_pylist()]
+        nulls = [null == "YES" for null in nulls.to_pylist()]
         return sch.Schema(
             dict(
                 zip(
@@ -467,13 +468,9 @@ class Backend(BaseBackend, CanCreateSchema):
 
         # TODO: should we do this in arrow?
         # also what is pandas doing with dates?
-        # TODO: converting to arrow -> pandas
-        # makes map tests pass because of how the map results
-        # are parsed out of DucKDB.
-        # This is stupid and we should fix it.
-        pandas_df = result.arrow().to_pandas()
-        # pandas_df = result.fetch_df()
-        result = PandasData.convert_table(pandas_df, schema)
+
+        pandas_df = result.fetch_df()
+        result = DuckDBPandasData.convert_table(pandas_df, schema)
         if isinstance(expr, ir.Table):
             return result
         elif isinstance(expr, ir.Column):
