@@ -1401,6 +1401,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
         "pandas",
         "pyspark",
         "polars",
+        "flink",
     ],
     reason="Not SQLAlchemy backends",
 )
