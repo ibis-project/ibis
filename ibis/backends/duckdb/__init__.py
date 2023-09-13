@@ -467,7 +467,12 @@ class Backend(BaseBackend, CanCreateSchema):
 
         # TODO: should we do this in arrow?
         # also what is pandas doing with dates?
-        pandas_df = result.fetch_df()
+        # TODO: converting to arrow -> pandas
+        # makes map tests pass because of how the map results
+        # are parsed out of DucKDB.
+        # This is stupid and we should fix it.
+        pandas_df = result.arrow().to_pandas()
+        # pandas_df = result.fetch_df()
         result = PandasData.convert_table(pandas_df, schema)
         if isinstance(expr, ir.Table):
             return result

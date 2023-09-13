@@ -1475,7 +1475,7 @@ def _map_get(op, **kw):
     default = translate_val(op.default, **kw)
     sg_expr = sg.func(
         "ifnull",
-        sg.func("element_at", arg, key),
+        sg.func("list_extract", sg.func("element_at", arg, key), 1),
         default,
         dialect="duckdb",
     )
