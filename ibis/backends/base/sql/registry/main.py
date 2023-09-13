@@ -227,7 +227,7 @@ binary_infix_ops = {
     ops.And: binary_infix.binary_infix_op("AND"),
     ops.Or: binary_infix.binary_infix_op("OR"),
     ops.Xor: binary_infix.xor,
-    # bitwise operations
+    # Bitwise operations
     ops.BitwiseAnd: fixed_arity("bitand", 2),
     ops.BitwiseOr: fixed_arity("bitor", 2),
     ops.BitwiseXor: fixed_arity("bitxor", 2),
@@ -235,7 +235,6 @@ binary_infix_ops = {
     ops.BitwiseRightShift: fixed_arity("shiftright", 2),
     ops.BitwiseNot: unary("bitnot"),
 }
-
 
 operation_registry = {
     ops.Alias: alias,
@@ -289,7 +288,7 @@ operation_registry = {
     ops.Count: aggregate.reduction("count"),
     ops.CountStar: count_star,
     ops.CountDistinct: aggregate.count_distinct,
-    # string operations
+    # String operations
     ops.StringConcat: concat,
     ops.StringLength: unary("length"),
     ops.StringAscii: unary("ascii"),
