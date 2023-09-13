@@ -303,7 +303,7 @@ quartodoc:
           path: expression-generic
           package: ibis.expr.types.generic
           summary:
-            name: Generic expression APIs
+            name: Generic expressions
             desc: These expressions are available on scalars and columns of any element type.
           contents:
             - Value
