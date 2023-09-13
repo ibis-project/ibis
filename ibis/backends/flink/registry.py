@@ -185,6 +185,12 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
         return result
 
 
+def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
+    left = translator.translate(op.left)
+    right = translator.translate(op.right)
+    return f"FLOOR(({left}) / ({right}))"
+
+
 operation_registry.update(
     {
         # Unary operations
@@ -212,5 +218,7 @@ operation_registry.update(
         ops.Where: _filter,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Window: _window,
+        # Binary operations
+        ops.FloorDivide: _floor_divide,
     }
 )
