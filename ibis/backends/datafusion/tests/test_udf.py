@@ -3,6 +3,7 @@ from __future__ import annotations
 import pandas.testing as tm
 import pytest
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import udf
@@ -49,7 +50,7 @@ def test_multiple_argument_udf(alltypes):
     tm.assert_series_equal(result, expected.rename("tmp"))
 
 
-def test_builtin(con):
+def test_builtin_scalar_udf(con):
     @udf.scalar.builtin
     def to_hex(a: int) -> str:
         """Convert an integer to a hex string."""
@@ -57,3 +58,23 @@ def test_builtin(con):
     expr = to_hex(42)
     result = con.execute(expr)
     assert result == "2a"
+
+
+def test_builtin_agg_udf(con):
+    @udf.agg.builtin
+    def median(a: float) -> float:
+        """Median of a column."""
+
+    expr = median(con.tables.batting.G)
+    result = con.execute(expr)
+    assert result == con.tables.batting.G.execute().median()
+
+
+def test_builtin_agg_udf_filtered(con):
+    @udf.agg.builtin
+    def median(a: float, where: bool = True) -> float:
+        """Median of a column."""
+
+    expr = median(con.tables.batting.G)
+    with pytest.raises(exc.OperationNotDefinedError, match="No translation rule for"):
+        con.execute(expr)

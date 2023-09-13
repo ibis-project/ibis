@@ -13,6 +13,7 @@ import pyarrow.compute as pc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis import NA
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
 
@@ -614,6 +615,22 @@ def scalar_udf(op, **kw):
         raise NotImplementedError(
             f"DataFusion only supports pyarrow UDFs: got a {input_type.name.lower()} UDF"
         )
+
+
+@translate.register(ops.AggUDF)
+def agg_udf(op, **kw):
+    func = getattr(df.functions, op.__func_name__)
+    where = op.where
+    args = (
+        # DataFusion doesn't expose case statements or ifelse or anything like
+        # it so this will fail if `where` is in the function's signature.
+        #
+        # Filtering aggregates are not yet possible.
+        translate(arg if where is None else ops.Where(where, arg, NA), **kw)
+        for argname, arg in zip(op.argnames, op.args)
+        if argname != "where"
+    )
+    return func(*args)
 
 
 @translate.register(ops.StringConcat)
