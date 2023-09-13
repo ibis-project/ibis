@@ -1202,3 +1202,12 @@ def execute_scalar_udf(op, **kw):
         raise NotImplementedError(
             f"UDF input type {input_type} not supported for Polars"
         )
+
+
+@translate.register(ops.AggUDF)
+def execute_agg_udf(op, **kw):
+    args = (arg for name, arg in zip(op.argnames, op.args) if name != "where")
+    first, *rest = map(partial(translate, **kw), args)
+    if (where := op.where) is not None:
+        first = first.filter(translate(where, **kw))
+    return getattr(first, op.__func_name__)(*rest)
