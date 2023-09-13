@@ -1143,7 +1143,6 @@ def test_backend_specific_numerics(backend, con, df, alltypes, expr_fn, expected
     backend.assert_series_equal(result, expected)
 
 
-# marks=pytest.mark.notimpl(["datafusion"]),
 @pytest.mark.parametrize(
     "op",
     [
