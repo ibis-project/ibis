@@ -269,8 +269,33 @@ def arrayJaccardIndex(a: dt.Array[dt.int64], b: dt.Array[dt.int64]) -> float:
         array_jaccard_index_no_input_types,
     ],
 )
-def test_builtin_udf(con, func):
+def test_builtin_scalar_udf(con, func):
     expr = func([1, 2], [2, 3])
     result = con.execute(expr)
     expected = 1.0 / 3.0
+    assert result == expected
+
+
+@udf.agg.builtin
+def entropy(a) -> float:
+    ...
+
+
+@udf.agg.builtin(name="sumKahan")
+def sum_kahan(a: float) -> float:
+    ...
+
+
+@pytest.mark.parametrize("func", [entropy, sum_kahan])
+def test_builtin_agg_udf(con, func):
+    t = ibis.memtable(pd.DataFrame({"a": list(map(float, range(10)))}))
+
+    expr = func(t.a)
+    result = con.execute(expr)
+
+    table_name = gen_name("agg_udf_test")
+    expected = con.con.query_df(
+        f"SELECT {expr.op().__func_name__}(a) FROM {table_name}",
+        external_data=con._normalize_external_tables({table_name: t.op()}),
+    ).squeeze()
     assert result == expected

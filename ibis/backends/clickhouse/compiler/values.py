@@ -1447,6 +1447,18 @@ def _count_distinct_star(op: ops.CountDistinctStar, **kw: Any) -> str:
 
 @translate_val.register(ops.ScalarUDF)
 def _scalar_udf(op, **kw) -> str:
-    name = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
     args = ", ".join(translate_val(arg, **kw) for arg in op.args)
-    return f"{name}({args})"
+    return f"{op.__full_name__}({args})"
+
+
+@translate_val.register(ops.AggUDF)
+def _agg_udf(op, **kw) -> str:
+    args = [arg for name, arg in zip(op.argnames, op.args) if name != "where"]
+
+    func = op.__full_name__
+
+    if (where := op.where) is not None:
+        func += "If"
+        args.append(where)
+
+    return f"{func}({', '.join(_sql(translate_val(arg, **kw)) for arg in args)})"
