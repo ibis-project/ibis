@@ -15,6 +15,7 @@ from packaging.version import parse as vparse
 
 import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.base import _get_backend_names
 from ibis.backends.pandas.udf import udf
@@ -809,3 +810,93 @@ def test_ibis_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
 
     expr = con.sql(sql)
     benchmark(expr.to_pyarrow)
+
+
+@pytest.fixture
+def diffs():
+    return ibis.table(
+        {
+            "id": "int64",
+            "validation_name": "string",
+            "difference": "float64",
+            "pct_difference": "float64",
+            "pct_threshold": "float64",
+            "validation_status": "string",
+        },
+        name="diffs",
+    )
+
+
+@pytest.fixture
+def srcs():
+    return ibis.table(
+        {
+            "id": "int64",
+            "validation_name": "string",
+            "validation_type": "string",
+            "aggregation_type": "string",
+            "table_name": "string",
+            "column_name": "string",
+            "primary_keys": "string",
+            "num_random_rows": "string",
+            "agg_value": "float64",
+        },
+        name="srcs",
+    )
+
+
+@pytest.fixture
+def nrels():
+    return 300
+
+
+def make_big_union(t, nrels):
+    return ibis.union(*[t] * nrels)
+
+
+@pytest.fixture
+def src(srcs, nrels):
+    return make_big_union(srcs, nrels)
+
+
+@pytest.fixture
+def diff(diffs, nrels):
+    return make_big_union(diffs, nrels)
+
+
+def test_big_eq_expr(benchmark, src, diff):
+    benchmark(ops.core.Node.equals, src.op(), diff.op())
+
+
+def test_big_join_expr(benchmark, src, diff):
+    benchmark(ir.Table.join, src, diff, ["validation_name"], how="outer")
+
+
+def test_big_join_execute(benchmark, nrels):
+    pytest.importorskip("duckdb")
+    pytest.importorskip("duckdb_engine")
+
+    con = ibis.duckdb.connect()
+
+    # cache to avoid a request-per-union operand
+    src = make_big_union(
+        con.read_csv(
+            "https://github.com/ibis-project/ibis/files/12580336/source_pivot.csv"
+        )
+        .rename(id="column0")
+        .cache(),
+        nrels,
+    )
+
+    diff = make_big_union(
+        con.read_csv(
+            "https://github.com/ibis-project/ibis/files/12580340/differences_pivot.csv"
+        )
+        .rename(id="column0")
+        .cache(),
+        nrels,
+    )
+
+    expr = src.join(diff, ["validation_name"], how="outer")
+    t = benchmark.pedantic(expr.to_pyarrow, rounds=1, iterations=1, warmup_rounds=1)
+    assert len(t)
