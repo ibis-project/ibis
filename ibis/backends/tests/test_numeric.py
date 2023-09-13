@@ -1196,6 +1196,11 @@ def test_mod(backend, alltypes, df):
     reason="bigquery doesn't support floating modulus",
     raises=GoogleBadRequest,
 )
+@pytest.mark.notyet(
+    ["flink"],
+    "Cannot apply '%' to arguments of type '<DOUBLE> % <SMALLINT>'. Supported form(s): '<EXACT_NUMERIC> % <EXACT_NUMERIC>",
+    raises=Py4JError,
+)
 def test_floating_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.double_col, alltypes.smallint_col + 1).name("tmp")
 
