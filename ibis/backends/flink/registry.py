@@ -187,23 +187,30 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
 
 operation_registry.update(
     {
-        ops.CountStar: _count_star,
-        ops.ExtractYear: _extract_field("year"),  # equivalent to YEAR(date)
-        ops.ExtractQuarter: _extract_field("quarter"),  # equivalent to QUARTER(date)
-        ops.ExtractMonth: _extract_field("month"),  # equivalent to MONTH(date)
-        ops.ExtractWeekOfYear: _extract_field("week"),  # equivalent to WEEK(date)
-        ops.ExtractDayOfYear: _extract_field("doy"),  # equivalent to DAYOFYEAR(date)
-        ops.ExtractDay: _extract_field("day"),  # equivalent to DAYOFMONTH(date)
-        ops.ExtractHour: _extract_field("hour"),  # equivalent to HOUR(timestamp)
-        ops.ExtractMinute: _extract_field("minute"),  # equivalent to MINUTE(timestamp)
-        ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
-        ops.Literal: _literal,
+        # Unary operations
         ops.NullIfZero: _nullifzero,
         ops.Degrees: unary("degrees"),
         ops.Radians: unary("radians"),
+        # Unary aggregates
+        ops.CountStar: _count_star,
+        # String operations
+        ops.StringLength: unary("char_length"),
+        ops.StrRight: fixed_arity("right", 2),
         ops.RegexSearch: fixed_arity("regexp", 2),
-        ops.TimestampFromUNIX: _timestamp_from_unix,
+        # Timestamp operations
+        ops.ExtractYear: _extract_field("year"),  # equivalent to YEAR(date)
+        ops.ExtractMonth: _extract_field("month"),  # equivalent to MONTH(date)
+        ops.ExtractDay: _extract_field("day"),  # equivalent to DAYOFMONTH(date)
+        ops.ExtractQuarter: _extract_field("quarter"),  # equivalent to QUARTER(date)
+        ops.ExtractWeekOfYear: _extract_field("week"),  # equivalent to WEEK(date)
+        ops.ExtractDayOfYear: _extract_field("doy"),  # equivalent to DAYOFYEAR(date)
+        ops.ExtractHour: _extract_field("hour"),  # equivalent to HOUR(timestamp)
+        ops.ExtractMinute: _extract_field("minute"),  # equivalent to MINUTE(timestamp)
+        ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
+        # Other operations
+        ops.Literal: _literal,
         ops.Where: _filter,
+        ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Window: _window,
     }
 )
