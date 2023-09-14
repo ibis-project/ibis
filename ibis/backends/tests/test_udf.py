@@ -17,7 +17,6 @@ no_python_udfs = mark.notimpl(
         "mysql",
         "oracle",
         "pandas",
-        "polars",
         "pyspark",
         "trino",
     ]
@@ -51,6 +50,7 @@ def test_udf(batting):
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
+@mark.notimpl(["polars"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(
     ["sqlite"],
@@ -80,6 +80,7 @@ def test_map_udf(batting):
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
+@mark.notimpl(["polars"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
 def test_map_merge_udf(batting):
@@ -149,7 +150,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pandas,
             marks=[
                 mark.notyet(
-                    ["duckdb", "datafusion", "sqlite"],
+                    ["duckdb", "datafusion", "polars", "sqlite"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pandas UDFs",
                 ),
