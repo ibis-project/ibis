@@ -196,21 +196,15 @@ quartodoc:
             name: Top-level APIs
             desc: Methods and objects available directly on the `ibis` module.
           contents:
-            - name: array
-              dynamic: true
             - name: connect
               package: ibis.backends.base
             - name: dtype
               dynamic: true
             - name: get_backend
               dynamic: true
-            - name: map
-              dynamic: true
             - name: schema
               dynamic: true
             - name: set_backend
-              dynamic: true
-            - name: struct
               dynamic: true
 
         - kind: page
@@ -376,16 +370,23 @@ quartodoc:
 
         - kind: page
           path: expression-collections
+          package: ibis
           summary:
             name: Collection expressions
             desc: Arrays, maps and structs.
           contents:
             - name: ArrayValue
               package: ibis.expr.types.arrays
-            - name: StructValue
-              package: ibis.expr.types.structs
             - name: MapValue
               package: ibis.expr.types.maps
+            - name: StructValue
+              package: ibis.expr.types.structs
+            - name: array
+              dynamic: true
+            - name: map
+              dynamic: true
+            - name: struct
+              dynamic: true
 
         - kind: page
           path: expression-geospatial
