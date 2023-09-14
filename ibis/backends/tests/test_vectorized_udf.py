@@ -41,16 +41,27 @@ def add_one(s):
     return s + 1
 
 
-def create_add_one_udf(result_formatter):
-    return elementwise(input_type=[dt.double], output_type=dt.double)(
-        _format_udf_return_type(add_one, result_formatter)
+def create_add_one_udf(result_formatter, id):
+    @elementwise(input_type=[dt.double], output_type=dt.double)
+    def add_one_legacy(s):
+        return result_formatter(add_one(s))
+
+    @ibis.udf.scalar.pandas
+    def add_one_udf(s: float) -> float:
+        return result_formatter(add_one(s))
+
+    yield param(add_one_legacy, id=f"add_one_legacy_{id}")
+    yield param(
+        add_one_udf,
+        marks=[pytest.mark.notimpl(["pandas", "dask"])],
+        id=f"add_one_modern_{id}",
     )
 
 
 add_one_udfs = [
-    create_add_one_udf(result_formatter=lambda v: v),  # pd.Series,
-    create_add_one_udf(result_formatter=lambda v: np.array(v)),  # np.array,
-    create_add_one_udf(result_formatter=lambda v: list(v)),  # list,
+    *create_add_one_udf(result_formatter=lambda v: v, id="series"),
+    *create_add_one_udf(result_formatter=lambda v: np.array(v), id="array"),
+    *create_add_one_udf(result_formatter=lambda v: list(v), id="list"),
 ]
 
 
@@ -239,20 +250,34 @@ def quantiles(series, *, quantiles):
     return series.quantile(quantiles)
 
 
-def test_elementwise_udf(udf_backend, udf_alltypes, udf_df):
-    add_one_udf = create_add_one_udf(result_formatter=lambda v: v)
-    result = add_one_udf(udf_alltypes["double_col"]).execute()
-    expected = add_one_udf.func(udf_df["double_col"])
+@pytest.mark.parametrize(
+    "udf", create_add_one_udf(result_formatter=lambda v: v, id="series")
+)
+def test_elementwise_udf(udf_backend, udf_alltypes, udf_df, udf):
+    expr = udf(udf_alltypes["double_col"])
+    result = expr.execute()
+
+    expected_func = getattr(expr.op(), "__func__", getattr(udf, "func", None))
+    assert (
+        expected_func is not None
+    ), f"neither __func__ nor func attributes found on {udf} or expr object"
+
+    expected = expected_func(udf_df["double_col"])
     udf_backend.assert_series_equal(result, expected, check_names=False)
 
 
 @pytest.mark.parametrize("udf", add_one_udfs)
 def test_elementwise_udf_mutate(udf_backend, udf_alltypes, udf_df, udf):
-    expr = udf_alltypes.mutate(incremented=udf(udf_alltypes["double_col"]))
+    udf_expr = udf(udf_alltypes["double_col"])
+    expr = udf_alltypes.mutate(incremented=udf_expr)
     result = expr.execute()
 
-    expected = udf_df.assign(incremented=udf.func(udf_df["double_col"]))
+    expected_func = getattr(udf_expr.op(), "__func__", getattr(udf, "func", None))
+    assert (
+        expected_func is not None
+    ), f"neither __func__ nor func attributes found on {udf} or expr object"
 
+    expected = udf_df.assign(incremented=expected_func(udf_df["double_col"]))
     udf_backend.assert_series_equal(result["incremented"], expected["incremented"])
 
 
@@ -275,7 +300,7 @@ def test_analytic_udf_mutate(udf_backend, udf_alltypes, udf_df, udf):
     udf_backend.assert_series_equal(result["zscore"], expected["zscore"])
 
 
-def test_reduction_udf(udf_backend, udf_alltypes, udf_df):
+def test_reduction_udf(udf_alltypes, udf_df):
     result = calc_mean(udf_alltypes["double_col"]).execute()
     expected = udf_df["double_col"].mean()
     assert result == expected
@@ -306,7 +331,7 @@ def test_reduction_udf_on_empty_data(udf_backend, udf_alltypes):
     udf_backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-def test_output_type_in_list_invalid(udf_backend, udf_alltypes, udf_df):
+def test_output_type_in_list_invalid():
     # Test that an error is raised if UDF output type is wrapped in a list
 
     with pytest.raises(
@@ -315,7 +340,7 @@ def test_output_type_in_list_invalid(udf_backend, udf_alltypes, udf_df):
     ):
 
         @elementwise(input_type=[dt.double], output_type=[dt.double])
-        def add_one(s):
+        def _(s):
             return s + 1
 
 
@@ -423,14 +448,14 @@ def test_valid_args_and_kwargs(udf_backend, udf_alltypes, udf_df):
     udf_backend.assert_frame_equal(result, expected)
 
 
-def test_invalid_kwargs(udf_backend, udf_alltypes):
+def test_invalid_kwargs():
     # Test that defining a UDF with a non-column argument that is not a
     # keyword argument raises an error
 
     with pytest.raises(TypeError, match=".*must be defined as keyword only.*"):
 
         @elementwise(input_type=[dt.double], output_type=dt.double)
-        def foo1(v, amount):
+        def _(v, _):
             return v + 1
 
 
@@ -494,9 +519,7 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
 @pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
 @pytest.mark.parametrize("method", ["destructure", "unpack"])
 @pytest.mark.skip("dask")
-def test_elementwise_udf_destructure_exact_once(
-    udf_backend, udf_alltypes, method, tmp_path
-):
+def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
     @elementwise(
         input_type=[dt.double],
         output_type=dt.Struct({"col1": dt.double, "col2": dt.double}),
@@ -541,7 +564,7 @@ def test_elementwise_udf_multiple_overwrite_destruct(udf_backend, udf_alltypes):
     udf_backend.assert_frame_equal(result, expected, check_like=True)
 
 
-def test_elementwise_udf_named_destruct(udf_backend, udf_alltypes):
+def test_elementwise_udf_named_destruct(udf_alltypes):
     """Test error when assigning name to a destruct column."""
 
     add_one_struct_udf = create_add_one_struct_udf(

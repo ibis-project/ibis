@@ -17,13 +17,13 @@ no_python_udfs = mark.notimpl(
         "mysql",
         "oracle",
         "pandas",
-        "pyspark",
         "trino",
     ]
 )
 
 
 @no_python_udfs
+@mark.notimpl(["pyspark"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 def test_udf(batting):
     @udf.scalar.python
@@ -47,6 +47,7 @@ def test_udf(batting):
 
 
 @no_python_udfs
+@mark.notimpl(["pyspark"])
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
@@ -77,6 +78,7 @@ def test_map_udf(batting):
 
 
 @no_python_udfs
+@mark.notimpl(["pyspark"])
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
@@ -160,7 +162,7 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pyarrow,
             marks=[
                 mark.notyet(
-                    ["snowflake", "sqlite"],
+                    ["snowflake", "sqlite", "pyspark"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pyarrow UDFs",
                 )

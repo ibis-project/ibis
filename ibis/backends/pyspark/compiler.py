@@ -9,6 +9,7 @@ from functools import partial, reduce
 import pyspark
 import pyspark.sql.functions as F
 import pyspark.sql.types as pt
+import toolz
 from packaging.version import parse as vparse
 from pyspark.sql import Window
 from pyspark.sql.functions import PandasUDFType, pandas_udf
@@ -28,6 +29,7 @@ from ibis.backends.pyspark.timecontext import (
 )
 from ibis.common.collections import frozendict
 from ibis.config import options
+from ibis.expr.operations.udf import InputType
 from ibis.util import any_of, guid
 
 
@@ -71,8 +73,12 @@ class PySparkExprTranslator:
         pyspark.sql.DataFrame
             translated PySpark DataFrame or Column object
         """
-
-        if (
+        # TODO(cpcloud): remove the udf instance checking when going to sqlglot
+        if isinstance(op, ops.ScalarUDF):
+            formatter = compile_scalar_udf
+            result = formatter(self, op, scope=scope, timecontext=timecontext, **kwargs)
+            return result
+        elif (
             not isinstance(op, ops.ScalarParameter)
             and (result := scope.get_value(op, timecontext)) is not None
         ):
@@ -1798,6 +1804,21 @@ def compile_reduction_udf(t, op, *, aggcontext=None, **kwargs):
     else:
         src_table = t.translate(op.func_args[0].table, **kwargs)
         return src_table.agg(col)
+
+
+# NB: this is intentionally not using @compiles because @compiles doesn't
+# handle subclasses of operations
+def compile_scalar_udf(t, op, **kwargs):
+    if op.__input_type__ != InputType.PANDAS:
+        raise NotImplementedError("Only Pandas UDFs are support in the PySpark backend")
+
+    import pandas as pd
+
+    make_series = partial(pd.Series, dtype=op.dtype.to_pandas())
+    func = toolz.compose(make_series, op.__func__)
+    spark_dtype = PySparkType.from_ibis(op.dtype)
+    spark_udf = pandas_udf(func, spark_dtype, PandasUDFType.SCALAR)
+    return spark_udf(*map(partial(t.translate, **kwargs), op.args))
 
 
 @compiles(ops.SearchedCase)
