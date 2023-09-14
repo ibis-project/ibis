@@ -13,7 +13,7 @@ from ibis.backends.base.sql.registry import (
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
-from ibis.backends.flink.utils import translate_literal
+from ibis.backends.flink.utils import _to_pyflink_types, translate_literal
 from ibis.common.temporal import TimestampUnit
 
 if TYPE_CHECKING:
@@ -185,6 +185,20 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
         return result
 
 
+def _clip(translator: ExprTranslator, op: ops.Node) -> str:
+    arg = translator.translate(op.arg)
+
+    if op.upper is not None:
+        upper = translator.translate(op.upper)
+        arg = f"IF({arg} > {upper}, {upper}, {arg})"
+
+    if op.lower is not None:
+        lower = translator.translate(op.lower)
+        arg = f"IF({arg} < {lower}, {lower}, {arg})"
+
+    return f"CAST({arg} AS {_to_pyflink_types[type(op.dtype)]!s})"
+
+
 def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
     left = translator.translate(op.left)
     right = translator.translate(op.right)
@@ -219,6 +233,7 @@ operation_registry.update(
         ops.Where: _filter,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Window: _window,
+        ops.Clip: _clip,
         # Binary operations
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
