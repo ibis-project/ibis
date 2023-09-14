@@ -1504,6 +1504,11 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     raises=sa.exc.ProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
 )
+@pytest.mark.never(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="Flink does not support 'MIN' or 'MAX' operation without specifying window.",
+)
 def test_histogram(con, alltypes):
     n = 10
     hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
