@@ -198,11 +198,7 @@ quartodoc:
           contents:
             - name: connect
               package: ibis.backends.base
-            - name: dtype
-              dynamic: true
             - name: get_backend
-              dynamic: true
-            - name: schema
               dynamic: true
             - name: set_backend
               dynamic: true
@@ -434,6 +430,9 @@ quartodoc:
             name: Data types
             desc: Scalar and column data types
           contents:
+            - name: dtype
+              package: ibis
+              dynamic: true
             - Array
             - Binary
             - Boolean
@@ -475,6 +474,9 @@ quartodoc:
             name: Schemas
             desc: Table Schemas
           contents:
+            - name: schema
+              package: ibis
+              dynamic: true
             - Schema
 
     - title: UDFs
