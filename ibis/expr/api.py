@@ -1779,15 +1779,17 @@ ifelse = _deferred(ir.BooleanValue.ifelse)
 
 Parameters
 ----------
+condition : ir.BooleanValue
+    A boolean expression
 true_expr : ir.Value
-    Expression to return if `self` evaluates to `True`
+    Expression to return if `condition` evaluates to `True`
 false_expr : ir.Value
-    Expression to return if `self` evaluates to `False` or `NULL`
+    Expression to return if `condition` evaluates to `False` or `NULL`
 
 Returns
 -------
 Value : ir.Value
-    The value of `true_expr` if `arg` is `True` else `false_expr`
+    The value of `true_expr` if `condition` is `True` else `false_expr`
 
 Examples
 --------
