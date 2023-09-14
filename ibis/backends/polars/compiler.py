@@ -1167,10 +1167,37 @@ def execute_count_distinct_star(op, **kw):
     return arg.n_unique()
 
 
+_UDF_INVOKERS = {
+    # Convert polars series into a list
+    #   -> map the function element by element
+    #   -> convert back to a polars series
+    InputType.PYTHON: lambda func, dtype, args: pl.Series(
+        map(func, *(arg.to_list() for arg in args)),
+        dtype=dtype_to_polars(dtype),
+    ),
+    # Convert polars series into a pyarrow array
+    #  -> invoke the function on the pyarrow array
+    #  -> cast the result to match the ibis dtype
+    #  -> convert back to a polars series
+    InputType.PYARROW: lambda func, dtype, args: pl.from_arrow(
+        func(*(arg.to_arrow() for arg in args)).cast(dtype.to_pyarrow()),
+    ),
+}
+
+
 @translate.register(ops.ScalarUDF)
 def execute_scalar_udf(op, **kw):
-    if op.__input_type__ == InputType.BUILTIN:
+    if (input_type := op.__input_type__) in (InputType.PYARROW, InputType.PYTHON):
+        dtype = op.dtype
+        return pl.map_batches(
+            exprs=[translate(arg, **kw) for arg in op.args],
+            function=partial(_UDF_INVOKERS[input_type], op.__func__, dtype),
+            return_dtype=dtype_to_polars(dtype),
+        )
+    elif input_type == InputType.BUILTIN:
         first, *rest = map(translate, op.args)
         return getattr(first, op.__func_name__)(*rest)
     else:
-        raise NotImplementedError("Only builtin scalar UDFs are supported for polars")
+        raise NotImplementedError(
+            f"UDF input type {input_type} not supported for Polars"
+        )

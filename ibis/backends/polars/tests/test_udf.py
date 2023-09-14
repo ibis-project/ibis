@@ -62,3 +62,46 @@ def test_builtin(con, value, expected):
     expr = cbrt(value)
     result = con.execute(expr)
     assert pytest.approx(result) == expected
+
+
+@udf.scalar.pyarrow
+def string_length(x: str) -> int:
+    return pc.cast(pc.multiply(pc.utf8_length(x), 2), target_type="int64")
+
+
+@udf.scalar.python
+def string_length_python(x: str) -> int:
+    return len(x) * 2
+
+
+@udf.scalar.pyarrow
+def add(x: int, y: int) -> int:
+    return pc.add(x, y)
+
+
+@udf.scalar.python
+def add_python(x: int, y: int) -> int:
+    return x + y
+
+
+@pytest.mark.parametrize("func", [string_length, string_length_python])
+def test_scalar_udf(alltypes, func):
+    data_string_col = alltypes.date_string_col.execute()
+    expected = data_string_col.str.len() * 2
+
+    expr = func(alltypes.date_string_col)
+    assert isinstance(expr, ir.Column)
+
+    result = expr.execute()
+    tm.assert_series_equal(result, expected, check_names=False)
+
+
+@pytest.mark.parametrize("func", [add, add_python])
+def test_multiple_argument_scalar_udf(alltypes, func):
+    expr = func(alltypes.smallint_col, alltypes.int_col).name("tmp")
+    result = expr.execute()
+
+    df = alltypes[["smallint_col", "int_col"]].execute()
+    expected = (df.smallint_col + df.int_col).astype("int64")
+
+    tm.assert_series_equal(result, expected.rename("tmp"))
