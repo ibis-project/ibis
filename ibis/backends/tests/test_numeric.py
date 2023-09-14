@@ -1529,6 +1529,11 @@ pyspark_no_bitshift = pytest.mark.notyet(
     reason="pyspark doesn't implement bitshift operators",
     raises=com.OperationNotDefinedError,
 )
+flink_no_bitwise = pytest.mark.notyet(
+    ["flink"],
+    reason="Flink doesn't implement bitwise operators",
+    raises=Py4JError,
+)
 
 
 @pytest.mark.parametrize("op", [and_, or_, xor])
@@ -1542,6 +1547,7 @@ pyspark_no_bitshift = pytest.mark.notyet(
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = con.execute(expr)
@@ -1579,6 +1585,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
 @pyspark_no_bitshift
+@flink_no_bitwise
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
     expr = op(left_fn(alltypes), right_fn(alltypes)).name("tmp")
     result = expr.execute()
@@ -1609,6 +1616,7 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_scalars(con, op, left, right):
     expr = op(left, right)
     result = con.execute(expr)
@@ -1618,6 +1626,7 @@ def test_bitwise_scalars(con, op, left, right):
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_not_scalar(con):
     expr = ~L(2)
     result = con.execute(expr)
@@ -1627,6 +1636,7 @@ def test_bitwise_not_scalar(con):
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@flink_no_bitwise
 def test_bitwise_not_col(backend, alltypes, df):
     expr = (~alltypes.int_col).name("tmp")
     result = expr.execute()
