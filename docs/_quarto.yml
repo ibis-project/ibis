@@ -200,37 +200,17 @@ quartodoc:
               dynamic: true
             - name: connect
               package: ibis.backends.base
-            - name: cumulative_window
-              dynamic: true
             - name: date
-              dynamic: true
-            - name: difference
               dynamic: true
             - name: dtype
               dynamic: true
             - name: get_backend
               dynamic: true
-            - name: intersect
-              dynamic: true
             - name: interval
               dynamic: true
             - name: map
               dynamic: true
-            - name: memtable
-              dynamic: true
             - name: now
-              dynamic: true
-            - name: range_window
-              dynamic: true
-            - name: read_csv
-              dynamic: true
-            - name: read_delta
-              dynamic: true
-            - name: read_json
-              dynamic: true
-            - name: read_parquet
-              dynamic: true
-            - name: row_number
               dynamic: true
             - name: schema
               dynamic: true
@@ -238,19 +218,9 @@ quartodoc:
               dynamic: true
             - name: struct
               dynamic: true
-            - name: table
-              dynamic: true
             - name: time
               dynamic: true
             - name: timestamp
-              dynamic: true
-            - name: trailing_range_window
-              dynamic: true
-            - name: trailing_window
-              dynamic: true
-            - name: union
-              dynamic: true
-            - name: window
               dynamic: true
 
         - kind: page
@@ -262,6 +232,51 @@ quartodoc:
           contents:
             - Table
             - GroupedTable
+            - name: read_csv
+              package: ibis
+              dynamic: true
+            - name: read_delta
+              package: ibis
+              dynamic: true
+            - name: read_json
+              package: ibis
+              dynamic: true
+            - name: read_parquet
+              package: ibis
+              dynamic: true
+            - name: memtable
+              package: ibis
+              dynamic: true
+            - name: table
+              package: ibis
+              dynamic: true
+            - name: difference
+              package: ibis
+              dynamic: true
+            - name: intersect
+              package: ibis
+              dynamic: true
+            - name: union
+              package: ibis
+              dynamic: true
+            - name: row_number
+              package: ibis
+              dynamic: true
+            - name: window
+              package: ibis
+              dynamic: true
+            - name: cumulative_window
+              package: ibis
+              dynamic: true
+            - name: range_window
+              package: ibis
+              dynamic: true
+            - name: trailing_range_window
+              package: ibis
+              dynamic: true
+            - name: trailing_window
+              package: ibis
+              dynamic: true
 
         - kind: page
           path: expression-generic
