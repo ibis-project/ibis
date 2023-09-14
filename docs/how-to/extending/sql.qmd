@@ -1,0 +1,188 @@
+# Using SQL strings with Ibis
+
+While Ibis goes to great lengths to help you avoid the problems associated with
+hand-building raw SQL strings, there are few use cases where you may need to
+use SQL strings in your Ibis code:
+
+- You're porting a large amount of existing code and need to get it working
+  quickly without rewriting it all to ibis expressions
+- You need to access functionality that isn't yet available in a public Ibis
+  API
+- You need to access functionality that may never exist in Ibis, such as
+  extremely backend-specific DDL.
+- You're in a flow state and you can't be bothered to figure out how the SQL
+  your brain generates is spelled in Ibis.
+
+For these situations and others, Ibis has you covered.
+
+## Setup
+
+We'll use DuckDB to illustrate the concepts here, but the ideas and code
+generalize to other SQL backends.
+
+```{python}
+import ibis
+from ibis import _
+
+ibis.options.interactive = True
+
+con = ibis.connect("duckdb://")  # <1>
+
+t = ibis.examples.penguins.fetch(backend=con, table_name="penguins")  # <2>
+```
+
+1. Connect to an in-memory DuckDB database
+2. Read in the `penguins` example with our DuckDB database, and name it `penguins`
+
+## `Table.sql`
+
+At the highest level there's the `Table.sql` method. This method allows you to
+run arbitrary `SELECT` statements against a table expression:
+
+```{python}
+t.sql("SELECT * FROM penguins")
+```
+
+Now, `SELECT *` on a table expressions is not particularly useful and in fact
+is a bit wasteful: there's no need to reselect a table expression.
+
+The real power of `Table.sql` is composing it with other ibis expressions:
+
+```{python}
+(
+   t.sql(
+      """
+      SELECT
+        species,
+        island,
+        mad(bill_length_mm) AS bill_mad
+      FROM penguins
+      GROUP BY 1, 2
+      """
+   )
+   .filter(_.bill_mad > 2)
+   .order_by(_.bill_mad.desc())
+)
+```
+
+This method is powerful and you can mix and match Ibis expressions as you like:
+
+```{python}
+(
+   t.sql(
+      """
+      SELECT
+        species,
+        island,
+        mad(bill_length_mm) AS bill_mad
+      FROM penguins
+      GROUP BY 1, 2
+      """
+   )
+   .filter(_.bill_mad > 2)
+   .alias("big_bills")  # note the alias call for subsequent '.sql' calls
+   .sql("SELECT * FROM big_bills ORDER BY 3 DESC")
+)
+```
+
+### Working with different SQL dialects
+
+You can also pass SQL strings from SQL dialects that do not match the backend
+you're using by passing a dialect name to the `dialect` argument of `.sql`.
+
+For example, here's MySQL syntax running against DuckDB (note the use of
+backticks for quoting).
+
+```{python}
+(
+   t.sql(
+      """
+      SELECT
+        `species`,
+        `island`,
+        mad(`bill_length_mm`) AS bill_mad
+      FROM `penguins`
+      GROUP BY 1, 2
+      """,
+      dialect="mysql",
+   )
+   .filter(_.bill_mad > 2)
+   .alias("big_bills")  # note the alias call for subsequent '.sql' calls
+   .sql("SELECT * FROM big_bills ORDER BY 3 DESC")  # <1>
+)
+```
+
+1. By default the dialect is the backend's native dialect.
+
+This feature is useful if you're porting existing SQL from one backend to
+another.
+
+## `Backend.sql`
+
+There's also the `Backend.sql` method, which can handle arbitrary `SELECT`
+statements as well and return's an Ibis table expression.
+
+The main difference with `Table.sql` is that `Backend.sql` **can only refer to
+tables that already exist in the database**, because the API is defined on
+`Backend` instances.
+
+After the `Backend.sql` call, however, you're able to mix and match similar
+to `Table.sql`:
+
+```{python}
+(
+   con.sql(
+      """
+      SELECT
+        species,
+        island,
+        mad(bill_length_mm) AS bill_mad
+      FROM penguins
+      GROUP BY 1, 2
+      """
+   )
+   .filter(_.bill_mad > 2)
+   .alias("big_bills")  # note the alias call for subsequent '.sql' calls
+   .sql("SELECT * FROM big_bills ORDER BY 3 DESC")
+)
+```
+
+::: {.callout-tip}
+## `Backend.sql` also supports the `dialect` argument.
+:::
+
+## `Backend.raw_sql`
+
+At the lowest level there's `Backend.raw_sql` which is for those situations
+where you need to run arbitrary SQL--like a `CREATE` statement--that cannot be
+modeled as a table expression.
+
+`Backend.raw_sql` accepts a SQL string, executes it and returns the cursor associated
+with the SQL statement's execution.
+
+::: {.callout-caution}
+## You **must** close the cursor returned from `raw_sql` to avoid leaking resources
+
+Failure to do results in variety of errors and hard-to-debug behaviors.
+
+The easiest way to do this is to use a context manager:
+
+```{python}
+from contextlib import closing
+
+with closing(con.raw_sql("CREATE TEMP TABLE my_table AS SELECT * FROM RANGE(10)")) as c:
+    ...  # do something with c if necessary
+```
+:::
+
+Here's an example:
+
+```{python}
+cur = con.raw_sql("CREATE TEMP TABLE t AS SELECT * FROM RANGE(10)")
+cur.close()  # <1>
+```
+
+1. Only needed if you're not using a context manager **and** the query returns
+   rows. In this case `CREATE` doesn't return any rows, so the `close()` isn't
+   strictly necessary. However, it's good practice to always close cursors,
+   even if those `close()` call isn't strictly required.
