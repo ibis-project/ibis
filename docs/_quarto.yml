@@ -140,7 +140,7 @@ website:
       contents:
         - section: Expression API
           contents:
-            - reference/top_level.qmd
+            - reference/connection.qmd
             - reference/expression-tables.qmd
             - reference/selectors.qmd
             - reference/expression-generic.qmd
@@ -191,10 +191,10 @@ quartodoc:
       contents:
         - kind: page
           package: ibis
-          path: top_level
+          path: connection
           summary:
-            name: Top-level APIs
-            desc: Methods and objects available directly on the `ibis` module.
+            name: Connection API
+            desc: Create and manage backend connections.
           contents:
             - name: connect
               package: ibis.backends.base
