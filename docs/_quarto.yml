@@ -198,19 +198,11 @@ quartodoc:
           contents:
             - name: array
               dynamic: true
-            - name: asc
-              dynamic: true
-            - name: case
-              dynamic: true
-            - name: coalesce
-              package: ibis.expr.api
             - name: connect
               package: ibis.backends.base
             - name: cumulative_window
               dynamic: true
             - name: date
-              dynamic: true
-            - name: desc
               dynamic: true
             - name: difference
               dynamic: true
@@ -218,33 +210,15 @@ quartodoc:
               dynamic: true
             - name: get_backend
               dynamic: true
-            - name: greatest
-              package: ibis.expr.api
-            - name: ifelse
-              package: ibis.expr.api
             - name: intersect
               dynamic: true
             - name: interval
-              dynamic: true
-            - name: least
-              package: ibis.expr.api
-            - name: literal
               dynamic: true
             - name: map
               dynamic: true
             - name: memtable
               dynamic: true
-            - name: NA
-              package: ibis.expr.api
             - name: now
-              dynamic: true
-            - name: "null"
-              dynamic: true
-            - name: param
-              dynamic: true
-            - name: show_sql
-              dynamic: true
-            - name: to_sql
               dynamic: true
             - name: range_window
               dynamic: true
@@ -299,6 +273,40 @@ quartodoc:
             - Value
             - Column
             - Scalar
+            - name: literal
+              package: ibis.expr.api
+              dynamic: true
+            - name: param
+              package: ibis
+              dynamic: true
+            - name: NA
+              package: ibis.expr.api
+            - name: "null"
+              package: ibis
+              dynamic: true
+            - name: coalesce
+              package: ibis.expr.api
+            - name: least
+              package: ibis.expr.api
+            - name: greatest
+              package: ibis.expr.api
+            - name: asc
+              package: ibis
+              dynamic: true
+            - name: desc
+              package: ibis
+              dynamic: true
+            - name: ifelse
+              package: ibis.expr.api
+            - name: case
+              package: ibis
+              dynamic: true
+            - name: show_sql
+              package: ibis
+              dynamic: true
+            - name: to_sql
+              package: ibis
+              dynamic: true
 
         - kind: page
           path: expression-numeric
