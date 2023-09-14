@@ -39,10 +39,7 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
 def _extract_field(sql_attr: str) -> str:
     def extract_field_formatter(translator: ExprTranslator, op: ops.Node) -> str:
         arg = translator.translate(op.args[0])
-        if sql_attr == "epochseconds":
-            return f"UNIX_SECONDS({arg})"
-        else:
-            return f"EXTRACT({sql_attr} from {arg})"
+        return f"EXTRACT({sql_attr} from {arg})"
 
     return extract_field_formatter
 
