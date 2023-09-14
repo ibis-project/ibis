@@ -190,83 +190,68 @@ quartodoc:
   sections:
     - title: Expression API
       desc: "APIs for manipulating table, column and scalar expressions"
-      package: ibis.expr.types
       contents:
         - kind: page
           path: expression-tables
-          package: ibis.expr.types.relations
           summary:
             name: Table expressions
             desc: Tables are one of the core data structures in Ibis.
           contents:
-            - Table
-            - GroupedTable
+            - name: Table
+              package: ibis.expr.types.relations
+            - name: GroupedTable
+              package: ibis.expr.types.relations
             - name: read_csv
-              package: ibis
               dynamic: true
             - name: read_delta
-              package: ibis
               dynamic: true
             - name: read_json
-              package: ibis
               dynamic: true
             - name: read_parquet
-              package: ibis
               dynamic: true
             - name: memtable
-              package: ibis
               dynamic: true
             - name: table
-              package: ibis
               dynamic: true
             - name: difference
-              package: ibis
               dynamic: true
             - name: intersect
-              package: ibis
               dynamic: true
             - name: union
-              package: ibis
               dynamic: true
             - name: row_number
-              package: ibis
               dynamic: true
             - name: window
-              package: ibis
               dynamic: true
             - name: cumulative_window
-              package: ibis
               dynamic: true
             - name: range_window
-              package: ibis
               dynamic: true
             - name: trailing_range_window
-              package: ibis
               dynamic: true
             - name: trailing_window
-              package: ibis
               dynamic: true
 
         - kind: page
           path: expression-generic
-          package: ibis.expr.types.generic
           summary:
             name: Generic expressions
             desc: Scalars and columns of any element type.
           contents:
-            - Value
-            - Column
-            - Scalar
+            - name: Value
+              package: ibis.expr.types.generic
+            - name: Column
+              package: ibis.expr.types.generic
+            - name: Scalar
+              package: ibis.expr.types.generic
             - name: literal
               package: ibis.expr.api
               dynamic: true
             - name: param
-              package: ibis
               dynamic: true
             - name: NA
               package: ibis.expr.api
             - name: "null"
-              package: ibis
               dynamic: true
             - name: coalesce
               package: ibis.expr.api
@@ -275,21 +260,16 @@ quartodoc:
             - name: greatest
               package: ibis.expr.api
             - name: asc
-              package: ibis
               dynamic: true
             - name: desc
-              package: ibis
               dynamic: true
             - name: ifelse
               package: ibis.expr.api
             - name: case
-              package: ibis
               dynamic: true
             - name: show_sql
-              package: ibis
               dynamic: true
             - name: to_sql
-              package: ibis
               dynamic: true
 
         - kind: page
@@ -314,13 +294,10 @@ quartodoc:
               package: ibis.expr.types.logical
             - name: and_
               dynamic: true
-              package: ibis
             - name: or_
               dynamic: true
-              package: ibis
             - name: random
               dynamic: true
-              package: ibis
 
         - kind: page
           path: expression-strings
@@ -416,7 +393,6 @@ quartodoc:
 
     - title: Type System
       desc: "Data types and schemas"
-      package: ibis
       contents:
         - kind: page
           path: datatypes
@@ -464,20 +440,18 @@ quartodoc:
             - UUID
         - kind: page
           path: schemas
-          package: ibis.expr.schema
           summary:
             name: Schemas
             desc: Table Schemas
           contents:
             - name: schema
-              package: ibis
               dynamic: true
-            - Schema
+            - name: Schema
+              package: ibis.expr.schema
 
     - title: Connection APIs
       contents:
         - kind: page
-          package: ibis
           path: connection
           summary:
             name: Top-level connection APIs
@@ -496,7 +470,6 @@ quartodoc:
       contents:
         - kind: page
           path: scalar-udfs
-          package: ibis.expr.operations.udf
           summary:
             name: Scalar UDFs
             desc: "Scalar user-defined function APIs"
