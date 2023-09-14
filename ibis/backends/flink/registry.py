@@ -195,6 +195,7 @@ operation_registry.update(
     {
         # Unary operations
         ops.NullIfZero: _nullifzero,
+        ops.RandomScalar: lambda *_: "rand()",
         ops.Degrees: unary("degrees"),
         ops.Radians: unary("radians"),
         # Unary aggregates
