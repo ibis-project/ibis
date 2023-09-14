@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import base64
-import datetime
+import contextlib
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
+import sqlglot as sg
 from multipledispatch import Dispatcher
 
 import ibis
@@ -17,11 +17,11 @@ from ibis import util
 from ibis.backends.base.sql.registry import (
     fixed_arity,
     helpers,
-    literal,
     operation_registry,
     reduction,
     unary,
 )
+from ibis.backends.base.sql.registry.literal import _string_literal_format
 from ibis.backends.base.sql.registry.main import table_array_view
 from ibis.backends.bigquery.datatypes import BigQueryType
 from ibis.common.temporal import DateUnit, IntervalUnit, TimeUnit
@@ -313,12 +313,6 @@ def _string_substring(translator, op):
     return f"IF({start} >= 0, {if_pos}, {if_neg})"
 
 
-def _array_literal_format(op):
-    values = ["NULL" if element is None else repr(element) for element in op.value]
-    joined_values = ", ".join(values)
-    return f"[{joined_values}]"
-
-
 def _log(translator, op):
     arg, base = op.args
     arg_formatted = translator.translate(arg)
@@ -330,58 +324,65 @@ def _log(translator, op):
     return f"log({arg_formatted}, {base_formatted})"
 
 
-def _literal(translator, op):
+def _sg_literal(val) -> str:
+    return sg.exp.Literal(this=str(val), is_string=isinstance(val, str)).sql(
+        dialect="bigquery"
+    )
+
+
+def _literal(t, op):
     dtype = op.dtype
     value = op.value
 
     if value is None:
+        if not dtype.is_null():
+            return f"CAST(NULL AS {BigQueryType.from_ibis(dtype)})"
         return "NULL"
-
-    if dtype.is_decimal():
+    elif dtype.is_boolean():
+        return str(value).upper()
+    elif dtype.is_string() or dtype.is_inet() or dtype.is_macaddr():
+        return _string_literal_format(t, op)
+    elif dtype.is_decimal():
         if value.is_nan():
             return "CAST('NaN' AS FLOAT64)"
-        if value.is_infinite():
+        elif value.is_infinite():
             prefix = "-" * value.is_signed()
             return f"CAST('{prefix}inf' AS FLOAT64)"
         else:
             return f"{BigQueryType.from_ibis(dtype)} '{value}'"
     elif dtype.is_uuid():
-        return translator.translate(ops.Literal(str(value), dtype=dt.str))
-
-    if isinstance(dtype, dt.Numeric):
+        return _sg_literal(str(value))
+    elif dtype.is_numeric():
         if not np.isfinite(value):
             return f"CAST({str(value)!r} AS FLOAT64)"
-
-    # special case literal timestamp, date, and time scalars
-    if isinstance(op, ops.Literal):
-        if isinstance(dtype, dt.Date):
-            if isinstance(value, datetime.datetime):
-                raw_value = value.date()
-            else:
-                raw_value = value
-            return f"DATE '{raw_value}'"
-        elif isinstance(dtype, dt.Timestamp):
-            return f"TIMESTAMP '{value}'"
-        elif isinstance(dtype, dt.Time):
-            # TODO: define extractors on TimeValue expressions
-            return f"TIME '{value}'"
-        elif isinstance(dtype, dt.Binary):
-            return "FROM_BASE64('{}')".format(
-                base64.b64encode(value).decode(encoding="utf-8")
-            )
-        elif dtype.is_struct():
-            cols = (
-                f"{translator.translate(ops.Literal(value[name], dtype=type_))} AS {name}"
-                for name, type_ in zip(dtype.names, dtype.types)
-            )
-            return "STRUCT({})".format(", ".join(cols))
-
-    try:
-        return literal(translator, op)
-    except NotImplementedError:
-        if isinstance(dtype, dt.Array):
-            return _array_literal_format(op)
-        raise NotImplementedError(f"Unsupported type: {dtype!r}")
+        return _sg_literal(value)
+    elif dtype.is_date():
+        with contextlib.suppress(AttributeError):
+            value = value.date()
+        return f"DATE {_sg_literal(str(value))}"
+    elif dtype.is_timestamp():
+        return f"TIMESTAMP {_sg_literal(str(value))}"
+    elif dtype.is_time():
+        # TODO: define extractors on TimeValue expressions
+        return f"TIME {_sg_literal(str(value))}"
+    elif dtype.is_binary():
+        return repr(value)
+    elif dtype.is_struct():
+        cols = ", ".join(
+            f"{t.translate(ops.Literal(value[name], dtype=typ))} AS `{name}`"
+            for name, typ in dtype.items()
+        )
+        return f"STRUCT({cols})"
+    elif dtype.is_array():
+        val_type = dtype.value_type
+        values = ", ".join(
+            t.translate(ops.Literal(element, dtype=val_type)) for element in value
+        )
+        return f"[{values}]"
+    elif dtype.is_interval():
+        return f"INTERVAL {value} {dtype.resolution.upper()}"
+    else:
+        raise NotImplementedError(f"Unsupported type for BigQuery literal: {dtype}")
 
 
 def _arbitrary(translator, op):

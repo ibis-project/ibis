@@ -1,1 +1,1 @@
-SELECT sha256(FROM_BASE64('dGVzdA==')) AS `tmp`
+SELECT sha256(b'test') AS `tmp`

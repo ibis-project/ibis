@@ -1,1 +1,1 @@
-SELECT sha1(FROM_BASE64('dGVzdA==')) AS `tmp`
+SELECT sha1(b'test') AS `tmp`
