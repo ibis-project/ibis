@@ -1170,13 +1170,13 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     The general pattern for `ibis.connect` is
 
     ```python
-    ibis.connect("backend://connection-parameters")
+    con = ibis.connect("backend://connection-parameters")
     ```
 
     With many backends that looks like
 
     ```python
-    ibis.connect("backend://user:password@host:port/database")
+    con = ibis.connect("backend://user:password@host:port/database")
     ```
 
     See the connection syntax for each backend for details about URL connection
@@ -1193,6 +1193,7 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     --------
     Connect to an in-memory DuckDB database:
 
+    >>> import ibis
     >>> con = ibis.connect("duckdb://")
 
     Connect to an on-disk SQLite database:
