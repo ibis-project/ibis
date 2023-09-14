@@ -1806,38 +1806,8 @@ Examples
 │ no                            │
 └───────────────────────────────┘
 """
+# Deprecated, use ifelse instead: https://github.com/ibis-project/ibis/issues/7147
 where = _deferred(ir.BooleanValue.ifelse)
-"""Construct a ternary conditional expression.
-
-Parameters
-----------
-true_expr : ir.Value
-    Expression to return if `self` evaluates to `True`
-false_expr : ir.Value
-    Expression to return if `self` evaluates to `False` or `NULL`
-
-Returns
--------
-Value : ir.Value
-    The value of `true_expr` if `arg` is `True` else `false_expr`
-
-Examples
---------
->>> import ibis
->>> ibis.options.interactive = True
->>> t = ibis.memtable({"is_person": [True, False, True, None]})
->>> ibis.where(t.is_person, "yes", "no")
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Where(is_person, 'yes', 'no') ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ string                        │
-├───────────────────────────────┤
-│ yes                           │
-│ no                            │
-│ yes                           │
-│ no                            │
-└───────────────────────────────┘
-"""
 coalesce = _deferred(ir.Value.coalesce)
 greatest = _deferred(ir.Value.greatest)
 least = _deferred(ir.Value.least)

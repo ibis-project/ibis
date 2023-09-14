@@ -284,8 +284,6 @@ quartodoc:
               dynamic: true
             - name: union
               dynamic: true
-            - name: where
-              package: ibis.expr.api
             - name: window
               dynamic: true
 
