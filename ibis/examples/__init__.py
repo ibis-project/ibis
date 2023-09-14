@@ -38,7 +38,7 @@ class Example(Concrete):
         name = self.name
 
         if table_name is None:
-            table_name = ibis.util.gen_name(f"examples_{name}")
+            table_name = name
 
         board = _get_board()
 

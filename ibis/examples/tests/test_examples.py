@@ -65,8 +65,11 @@ def test_examples(example, example_con):
 
     assert example in repr(ex)
 
-    df = ex.fetch(backend=example_con).limit(1).execute()
-    assert len(df) == 1
+    t = ex.fetch(backend=example_con)
+    assert t.op().name == example
+
+    n = t.limit(1).count().execute()
+    assert n == 1
 
 
 def test_non_example():
