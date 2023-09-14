@@ -200,27 +200,17 @@ quartodoc:
               dynamic: true
             - name: connect
               package: ibis.backends.base
-            - name: date
-              dynamic: true
             - name: dtype
               dynamic: true
             - name: get_backend
               dynamic: true
-            - name: interval
-              dynamic: true
             - name: map
-              dynamic: true
-            - name: now
               dynamic: true
             - name: schema
               dynamic: true
             - name: set_backend
               dynamic: true
             - name: struct
-              dynamic: true
-            - name: time
-              dynamic: true
-            - name: timestamp
               dynamic: true
 
         - kind: page
@@ -368,6 +358,21 @@ quartodoc:
             - TimeValue
             - IntervalValue
             - DayOfWeek
+            - name: now
+              package: ibis
+              dynamic: true
+            - name: date
+              package: ibis
+              dynamic: true
+            - name: time
+              package: ibis
+              dynamic: true
+            - name: timestamp
+              package: ibis
+              dynamic: true
+            - name: interval
+              package: ibis
+              dynamic: true
 
         - kind: page
           path: expression-collections
