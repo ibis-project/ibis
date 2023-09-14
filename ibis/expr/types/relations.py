@@ -830,7 +830,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`ibis.difference`](./top_level.qmd#ibis.difference)
+        [`ibis.difference`](./expression-tables.qmd#ibis.difference)
 
         Returns
         -------
@@ -1345,7 +1345,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`ibis.union`](./top_level.qmd#ibis.union)
+        [`ibis.union`](./expression-tables.qmd#ibis.union)
 
         Examples
         --------
@@ -1419,7 +1419,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         See Also
         --------
-        [`ibis.intersect`](./top_level.qmd#ibis.intersect)
+        [`ibis.intersect`](./expression-tables.qmd#ibis.intersect)
 
         Examples
         --------
