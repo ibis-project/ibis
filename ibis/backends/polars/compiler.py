@@ -1187,7 +1187,8 @@ _UDF_INVOKERS = {
 
 @translate.register(ops.ScalarUDF)
 def execute_scalar_udf(op, **kw):
-    if (input_type := op.__input_type__) in (InputType.PYARROW, InputType.PYTHON):
+    input_type = op.__input_type__
+    if input_type in _UDF_INVOKERS:
         dtype = op.dtype
         return pl.map_batches(
             exprs=[translate(arg, **kw) for arg in op.args],
