@@ -21,6 +21,12 @@ class Renderer(qd.MdRenderer):
         expect_failure = "quartodoc: +EXPECTED_FAILURE"
         quartodoc_skip_doctest = "quartodoc: +SKIP"
 
+        # Avoid needing this boilerplate in every example and docstring
+        prelude_lines = [
+            ">>> import ibis",
+            ">>> ibis.options.interactive = True",
+        ]
+
         chunker = lambda line: line.startswith((prompt, continuation))
         should_skip = (
             lambda line: quartodoc_skip_doctest in line or skip_doctest in line
@@ -52,6 +58,7 @@ class Renderer(qd.MdRenderer):
                     ), "expected failure should never occur alongside a skipped doctest example"
                     result.append("#| error: true")
 
+                result.extend(prelude_lines)
                 # remove the quartodoc markers from the rendered code
                 result.append(
                     first.replace(f"# {quartodoc_skip_doctest}", "")
