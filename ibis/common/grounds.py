@@ -217,7 +217,7 @@ class Concrete(Immutable, Comparable, Annotable):
         return self.__precomputed_hash__
 
     def __equals__(self, other) -> bool:
-        return self.__args__ == other.__args__
+        return hash(self) == hash(other) and self.__args__ == other.__args__
 
     @property
     def args(self):
