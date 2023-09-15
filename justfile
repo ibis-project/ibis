@@ -156,3 +156,7 @@ docs-build-all:
     just docs-apigen --verbose
     just docs-render
     just checklinks docs/_output --offline --no-progress
+
+# open chat
+chat *args:
+    zulip-term {{ args }}

@@ -128,3 +128,6 @@ prof/
 # generated examples data
 ibis/examples/data
 ibis/examples/descriptions
+
+# chat
+*zuliprc*
