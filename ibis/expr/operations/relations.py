@@ -269,7 +269,7 @@ class Join(Relation):
 
     @property
     def schema(self):
-        # TODO(kszucs): use `return self.lefts.chema | self.right.schema` instead which
+        # TODO(kszucs): use `return self.left.schema | self.right.schema` instead which
         # eliminates unnecessary projection over the join, but currently breaks the
         # pandas backend
         left, right = self.left.schema, self.right.schema
@@ -310,14 +310,14 @@ class AnyLeftJoin(Join):
 
 @public
 class LeftSemiJoin(Join):
-    @property
+    @attribute
     def schema(self):
         return self.left.schema
 
 
 @public
 class LeftAntiJoin(Join):
-    @property
+    @attribute
     def schema(self):
         return self.left.schema
 
@@ -345,7 +345,9 @@ class SetOp(Relation):
     distinct: bool = False
 
     def __init__(self, left, right, **kwargs):
-        if left.schema != right.schema:
+        # convert to dictionary first, to get key-unordered comparison
+        # semantics
+        if dict(left.schema) != dict(right.schema):
             raise com.RelationError("Table schemas must be equal for set operations")
         elif left.schema.names != right.schema.names:
             # rewrite so that both sides have the columns in the same order making it
@@ -354,7 +356,7 @@ class SetOp(Relation):
             right = Selection(right, cols)
         super().__init__(left=left, right=right, **kwargs)
 
-    @property
+    @attribute
     def schema(self):
         return self.left.schema
 
@@ -380,7 +382,7 @@ class Limit(Relation):
     n: UnionType[int, Scalar[dt.Integer], None] = None
     offset: UnionType[int, Scalar[dt.Integer]] = 0
 
-    @property
+    @attribute
     def schema(self):
         return self.table.schema
 
@@ -395,7 +397,7 @@ class SelfReference(Relation):
             return f"{name}_ref"
         return util.gen_name("self_ref")
 
-    @property
+    @attribute
     def schema(self):
         return self.table.schema
 
@@ -489,7 +491,7 @@ class DummyTable(Relation):
     # TODO(kszucs): verify that it has at least one element: Length(at_least=1)
     values: VarTuple[Value[dt.Any, ds.Scalar]]
 
-    @property
+    @attribute
     def schema(self):
         return Schema({op.name: op.dtype for op in self.values})
 
@@ -572,7 +574,7 @@ class Distinct(Relation):
 
     table: Relation
 
-    @property
+    @attribute
     def schema(self):
         return self.table.schema
 
@@ -587,7 +589,7 @@ class FillNa(Relation):
     table: Relation
     replacements: UnionType[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
 
-    @property
+    @attribute
     def schema(self):
         return self.table.schema
 
@@ -600,7 +602,7 @@ class DropNa(Relation):
     how: Literal["any", "all"]
     subset: Optional[VarTuple[Column[dt.Any]]] = None
 
-    @property
+    @attribute
     def schema(self):
         return self.table.schema
 
@@ -612,7 +614,7 @@ class View(PhysicalTable):
     child: Relation
     name: str
 
-    @property
+    @attribute
     def schema(self):
         return self.child.schema
 
