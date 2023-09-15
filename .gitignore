@@ -111,3 +111,6 @@ prof/
 ibis/examples/data
 ibis/examples/descriptions
 .coverage*
+
+# zulip config
+.zuliprc

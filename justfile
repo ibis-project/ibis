@@ -127,3 +127,8 @@ decouple *args:
 # profile something
 profile +args:
     pyinstrument {{ args }}
+
+# open zulip chat
+# use ibis-project.zulipchat.com when connecting the first time
+chat:
+    @zulip-term --color-depth 24bit -c ./.zuliprc
