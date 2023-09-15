@@ -4,6 +4,7 @@ import sqlalchemy as sa
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
+from ibis.backends.base.sql.alchemy.query_builder import _AlchemyTableSetFormatter
 from ibis.backends.trino.datatypes import TrinoType
 from ibis.backends.trino.registry import operation_registry
 
@@ -47,7 +48,30 @@ def _rewrite_string_contains(op):
     return ops.GreaterEqual(ops.StringFind(op.haystack, op.needle), 0)
 
 
+class TrinoTableSetFormatter(_AlchemyTableSetFormatter):
+    def _format_in_memory_table(self, op, ref_op, translator):
+        if not op.data:
+            return sa.select(
+                *(
+                    translator.translate(ops.Literal(None, dtype=type_)).label(name)
+                    for name, type_ in op.schema.items()
+                )
+            ).limit(0)
+
+        op_schema = list(op.schema.items())
+        rows = [
+            tuple(
+                translator.translate(ops.Literal(col, dtype=type_)).label(name)
+                for col, (name, type_) in zip(row, op_schema)
+            )
+            for row in ref_op.data.to_frame().itertuples(index=False)
+        ]
+        columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
+        return sa.values(*columns, name=ref_op.name).data(rows)
+
+
 class TrinoSQLCompiler(AlchemyCompiler):
     cheap_in_memory_tables = False
     translator_class = TrinoSQLExprTranslator
     null_limit = sa.literal_column("ALL")
+    table_set_formatter_class = TrinoTableSetFormatter

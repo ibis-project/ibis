@@ -47,9 +47,6 @@ array_literal = param(
             raises=NotImplementedError,
             reason="backends hasn't implemented array literals",
         ),
-        mark.notimpl(
-            ["trino"], reason="Cannot render array literals", raises=sa.exc.CompileError
-        ),
     ],
     id="array_literal",
 )

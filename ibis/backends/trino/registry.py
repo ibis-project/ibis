@@ -6,6 +6,7 @@ from typing import Literal
 import sqlalchemy as sa
 import toolz
 from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.expression import FunctionElement
 from trino.sqlalchemy.datatype import DOUBLE
 
 import ibis
@@ -35,15 +36,32 @@ def _array(t, elements):
     return t.translate(ibis.array(elements).op())
 
 
+class make_array(FunctionElement):
+    pass
+
+
+@compiles(make_array, "trino")
+def compile_make_array(element, compiler, **kw):
+    return f"ARRAY[{compiler.process(element.clauses, **kw)}]"
+
+
 def _literal(t, op):
     value = op.value
     dtype = op.dtype
 
     if value is None:
         return sa.null()
-
-    if dtype.is_struct():
-        return sa.cast(sa.func.row(*value.values()), t.get_sqla_type(dtype))
+    elif dtype.is_struct():
+        elements = (
+            t.translate(ops.Literal(element, dtype=field_type))
+            for element, field_type in zip(value.values(), dtype.types)
+        )
+        return sa.cast(sa.func.row(*elements), t.get_sqla_type(dtype))
+    elif dtype.is_array():
+        value_type = dtype.value_type
+        return make_array(
+            *(t.translate(ops.Literal(element, dtype=value_type)) for element in value)
+        )
     elif dtype.is_map():
         return sa.func.map(_array(t, value.keys()), _array(t, value.values()))
     elif dtype.is_float64():
@@ -184,8 +202,13 @@ def _unnest(t, op):
     row_type = op.arg.dtype.value_type
     names = getattr(row_type, "names", (name,))
     rd = sa.func.unnest(t.translate(arg)).table_valued(*names).render_derived()
-    # wrap in a row column so that we can return a single column from this rule
-    if len(names) == 1:
+    # when unnesting a single column, unwrap the single ROW field access that
+    # would otherwise be generated, but keep the ROW if the array's element
+    # type is struct
+    if not row_type.is_struct():
+        assert (
+            len(names) == 1
+        ), f"got non-struct dtype {row_type} with more than one name: {len(names)}"
         return rd.c[0]
     row = sa.func.row(*(rd.c[name] for name in names))
     return sa.cast(row, t.get_sqla_type(row_type))

@@ -9,6 +9,7 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
+import sqlglot as sg
 import toolz
 from packaging.version import parse as parse_version
 from pytest import param
@@ -35,6 +36,11 @@ try:
     from google.api_core.exceptions import BadRequest
 except ImportError:
     BadRequest = None
+
+try:
+    from pyspark.sql.utils import AnalysisException as PySparkAnalysisException
+except ImportError:
+    PySparkAnalysisException = None
 
 pytestmark = [
     pytest.mark.never(
@@ -125,7 +131,7 @@ def test_array_concat_variadic(con):
 @pytest.mark.notyet(
     ["postgres", "trino"],
     raises=sa.exc.ProgrammingError,
-    reason="postgres can't infer the type of an empty array",
+    reason="backend can't infer the type of an empty array",
 )
 def test_array_concat_some_empty(con):
     left = ibis.literal([])
@@ -759,3 +765,46 @@ def test_zip(backend):
     s = res.execute()
     assert len(s[0][0]) == len(res.type().value_type)
     assert len(x[0]) == len(s[0])
+
+
+@unnest
+@pytest.mark.broken(
+    ["clickhouse"],
+    raises=sg.ParseError,
+    reason="we might be generating incorrect code here",
+)
+@pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+    reason="polars unnest cannot be compiled outside of a projection",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    reason="pyspark doesn't seem to support field selection on explode",
+    raises=PySparkAnalysisException,
+)
+def test_array_of_struct_unnest(con):
+    jobs = ibis.memtable(
+        {
+            "steps": [
+                [
+                    {"status": "success"},
+                    {"status": "success"},
+                    {"status": None},
+                    {"status": "failure"},
+                ],
+                [
+                    {"status": None},
+                    {"status": "success"},
+                ],
+            ]
+        },
+        schema=dict(steps="array<struct<status: string>>"),
+    )
+    expr = jobs.limit(1).steps.unnest().status
+    res = con.execute(expr)
+    value = res.iat[0]
+    # `value` can be `None` because the order of results is arbitrary; observed
+    # in the wild with the trino backend
+    assert value is None or isinstance(value, str)
