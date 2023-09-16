@@ -892,7 +892,6 @@ def _array_sort(op, **kw):
             false=sg.func("list_value", dialect="duckdb"),
         ),
     )
-    # TODO: this is (I think) working but tests fail because of broken NaN / None stuff
     return sg_expr
 
 
@@ -1108,7 +1107,6 @@ def _sum(op, **kw):
     return _apply_agg_filter(sg.exp.Sum(this=arg), where=op.where, **kw)
 
 
-# TODO
 @translate_val.register(ops.NthValue)
 def _nth_value(op, **kw):
     arg = translate_val(op.arg, **kw)
@@ -1287,11 +1285,9 @@ def _group_concat(op, **kw):
     return _apply_agg_filter(concat, where=op.where, **kw)
 
 
-# TODO
 @translate_val.register(ops.ArrayColumn)
 def _array_column(op, **kw):
-    sg_expr = sg.exp.Array.from_arg_list([translate_val(col, **kw) for col in op.cols])
-    return sg_expr
+    return sg.exp.Array.from_arg_list([translate_val(col, **kw) for col in op.cols])
 
 
 @translate_val.register(ops.StructColumn)
