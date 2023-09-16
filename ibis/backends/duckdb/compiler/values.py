@@ -83,11 +83,10 @@ def _literal(op, **kw):
         if dtype.is_null():
             return sg.exp.Null()
         return sg.cast(sg.exp.Null(), to=DuckDBType.from_ibis(dtype))
-    if dtype.is_boolean():
+    elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
     elif dtype.is_inet():
-        com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
-        return None
+        return sg.exp.Literal(this=str(value), is_string=True)
     elif dtype.is_string():
         return sg_literal(value)
     elif dtype.is_decimal():
@@ -192,6 +191,11 @@ def _literal(op, **kw):
         slices = [sg.exp.Slice(this=k, expression=v) for k, v in zip(keys, values)]
         sg_expr = sg.exp.Struct.from_arg_list(slices)
         return sg_expr
+    elif dtype.is_uuid():
+        return sg.cast(
+            sg.exp.Literal(this=str(value), is_string=True),
+            to=sg.exp.DataType.Type.UUID,
+        )
     else:
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
