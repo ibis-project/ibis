@@ -21,7 +21,6 @@ from ibis.backends.base.sqlglot.datatypes import DuckDBType
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-# TODO: Ideally we can translate bottom up a la `relations.py`
 # TODO: Find a way to remove all the dialect="duckdb" kwargs
 
 
