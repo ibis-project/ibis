@@ -1352,7 +1352,7 @@ def _scalar_param(op, params: Mapping[ops.Node, Any], **kw):
     if isinstance(dtype, dt.Struct):
         literal = ibis.struct(raw_value, type=dtype)
     elif isinstance(dtype, dt.Map):
-        literal = ibis.map(raw_value, type=dtype)
+        literal = ibis.map(raw_value)
     else:
         literal = ibis.literal(raw_value, type=dtype)
     return translate_val(literal.op(), **kw)
@@ -1750,4 +1750,5 @@ def _rowid(op, *, aliases, **_) -> str:
 
 @translate_val.register(ops.ScalarUDF)
 def _scalar_udf(op, **kw) -> str:
-    return sg.func(op.__full_name__, *(translate_val(arg, **kw) for arg in op.args))
+    funcname = op.__class__.__name__
+    return sg.func(funcname, *(translate_val(arg, **kw) for arg in op.args))
