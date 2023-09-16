@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import ast
-import contextlib
 import os
 import warnings
 from pathlib import Path
@@ -26,9 +25,9 @@ from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql import BaseBackend
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 from ibis.backends.duckdb.compiler import translate
+from ibis.backends.duckdb.datatypes import DuckDBPandasData
 from ibis.expr.operations.relations import PandasDataFrameProxy
 from ibis.expr.operations.udf import InputType
-from ibis.backends.duckdb.datatypes import DuckDBPandasData
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
@@ -1244,7 +1243,7 @@ class Backend(BaseBackend, CanCreateSchema):
                 for name, col in zip(table.column_names, table.columns)
             }
         )
-        return PandasData.convert_table(df, schema)
+        return DuckDBPandasData.convert_table(df, schema)
 
     def _metadata(self, query: str) -> Iterator[tuple[str, dt.DataType]]:
         rows = self.raw_sql(f"DESCRIBE {query}").fetch_arrow_table()
@@ -1302,9 +1301,7 @@ class Backend(BaseBackend, CanCreateSchema):
             except duckdb.NotImplementedException:
                 _register(name, data.to_pyarrow(schema))
 
-    def _get_temp_view_definition(
-        self, name: str, definition: sa.sql.compiler.Compiled
-    ) -> str:
+    def _get_temp_view_definition(self, name: str, definition) -> str:
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
     def _register_udfs(self, expr: ir.Expr) -> None:
@@ -1346,7 +1343,7 @@ class Backend(BaseBackend, CanCreateSchema):
     def _compile_pandas_udf(self, _: ops.ScalarUDF) -> None:
         raise NotImplementedError("duckdb doesn't support pandas UDFs")
 
-    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
+    def _get_compiled_statement(self, view, definition):
         # TODO: remove this once duckdb supports CTAS prepared statements
         return super()._get_compiled_statement(
             view, definition, compile_kwargs={"literal_binds": True}
