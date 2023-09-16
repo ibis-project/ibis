@@ -945,11 +945,10 @@ def _in_column(op, **kw):
 
 @translate_val.register(ops.ArrayCollect)
 def _array_collect(op, **kw):
-    if op.where is not None:
-        # TODO: handle when op.where is not none
-        # probably using list_agg?
-        ...
-    return sg.func("list", translate_val(op.arg, **kw), dialect="duckdb")
+    agg = sg.func("list", translate_val(op.arg, **kw), dialect="duckdb")
+    if (where := op.where) is not None:
+        return sg.exp.Filter(this=agg, expression=translate_val(where, **kw))
+    return agg
 
 
 @translate_val.register(ops.ArrayConcat)
