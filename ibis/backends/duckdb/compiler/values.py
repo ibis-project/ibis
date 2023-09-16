@@ -828,7 +828,7 @@ def _string_like(op, **kw):
 def _string_ilike(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return sg.exp.Like(this=sg.func("lower", arg), expression=pattern)
+    return sg.exp.ILike(this=arg, expression=pattern)
 
 
 @translate_val.register(ops.Capitalize)
