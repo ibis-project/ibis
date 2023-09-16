@@ -1659,6 +1659,16 @@ def _rank(_, **kw):
     return sg.func("rank", dialect="duckdb")
 
 
+@translate_val.register(ops.PercentRank)
+def _percent_rank(_, **kw):
+    return sg.func("percent_rank", dialect="duckdb")
+
+
+@translate_val.register(ops.CumeDist)
+def _cume_dist(_, **kw):
+    return sg.func("percent_rank", dialect="duckdb")
+
+
 @translate_val.register
 def _sort_key(op: ops.SortKey, **kw):
     arg = translate_val(op.expr, **kw)
