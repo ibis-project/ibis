@@ -1489,7 +1489,6 @@ _binary_infix_ops = {
     ops.Less: sg.exp.LT,
     ops.Equals: sg.exp.EQ,
     ops.NotEquals: sg.exp.NEQ,
-    ops.Xor: sg.exp.Xor,
     # Boolean comparisons
     ops.And: sg.exp.And,
     ops.Or: sg.exp.Or,
