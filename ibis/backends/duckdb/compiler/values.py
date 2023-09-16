@@ -6,9 +6,7 @@ import math
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 
-import duckdb
 import sqlglot as sg
-from packaging.version import parse as vparse
 from toolz import flip
 
 import ibis
@@ -25,7 +23,6 @@ if TYPE_CHECKING:
 
 # TODO: Ideally we can translate bottom up a la `relations.py`
 # TODO: Find a way to remove all the dialect="duckdb" kwargs
-_SUPPORTS_MAPS = vparse(duckdb.__version__) >= vparse("0.8.0")
 
 
 @functools.singledispatch
@@ -1538,27 +1535,9 @@ def _is_map_literal(op):
 
 @translate_val.register(ops.MapMerge)
 def _map_merge(op, **kw):
-    if _SUPPORTS_MAPS:
-        left = translate_val(op.left, **kw)
-        right = translate_val(op.right, **kw)
-        return sg.func("map_concat", left, right)
-    else:
-        if not (_is_map_literal(op.left) and _is_map_literal(op.right)):
-            raise com.UnsupportedOperationError(
-                "Merging non-literal maps is not yet supported by DuckDB"
-            )
-        left = sg.func("to_json", translate_val(op.left, **kw))
-        right = sg.func("to_json", translate_val(op.right, **kw))
-        pairs = sg.func("json_merge_patch", left, right)
-        keys = sg.func("json_keys", pairs)
-        return sg.cast(
-            expression=sg.func(
-                "map",
-                keys,
-                sg.func("json_extract_string", pairs, keys),
-            ),
-            to=DuckDBType.from_ibis(op.dtype),
-        )
+    left = translate_val(op.left, **kw)
+    right = translate_val(op.right, **kw)
+    return sg.func("map_concat", left, right)
 
 
 def _binary_infix(sg_expr: sg.expressions._Expression):
