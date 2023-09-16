@@ -804,10 +804,11 @@ def _string_split(op, **kw):
 
 @translate_val.register(ops.StringJoin)
 def _string_join(op, **kw):
-    arg = map(partial(translate_val, **kw), op.arg)
+    elements = list(map(partial(translate_val, **kw), op.arg))
     sep = translate_val(op.sep, **kw)
-    elements = ", ".join(map(_sql, arg))
-    return f"list_aggregate([{elements}], 'string_agg', {sep})"
+    return sg.func(
+        "list_aggr", sg.exp.Array(expressions=elements), sg_literal("string_agg"), sep
+    )
 
 
 @translate_val.register(ops.StringConcat)
