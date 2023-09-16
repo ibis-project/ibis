@@ -1145,14 +1145,14 @@ def _sum(op, **kw):
 def _nth_value(op, **kw):
     arg = translate_val(op.arg, **kw)
     nth = translate_val(op.nth, **kw)
-    return f"nth_value({arg}, ({nth}) + 1)"
+    return sg.func("nth_value", arg, nth + 1)
 
 
 @translate_val.register(ops.Repeat)
 def _repeat(op, **kw):
     arg = translate_val(op.arg, **kw)
     times = translate_val(op.times, **kw)
-    return f"repeat({arg}, {times})"
+    return sg.func("repeat", arg, times)
 
 
 ### Stats
@@ -1243,10 +1243,13 @@ def _arbitrary(op, **kw):
 
 @translate_val.register(ops.FindInSet)
 def _index_of(op, **kw):
-    values = map(partial(translate_val, **kw), op.values)
-    values = ", ".join(map(_sql, values))
     needle = translate_val(op.needle, **kw)
-    return f"list_indexof([{values}], {needle}) - 1"
+    return (
+        sg.func(
+            "list_indexof", list(map(partial(translate_val, **kw), op.values)), needle
+        )
+        - 1
+    )
 
 
 @translate_val.register(tuple)
@@ -1719,8 +1722,7 @@ def shift_like(op_class, name):
             offset_fmt = translate_val(offset, **kw)
             pieces.append(offset_fmt)
 
-        res = f"{name}({', '.join(map(_sql, pieces))})"
-        return res
+        return sg.func(name, *pieces)
 
     return formatter
 
