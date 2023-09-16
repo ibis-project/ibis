@@ -587,7 +587,9 @@ class FillNa(Relation):
     """Fill null values in the table."""
 
     table: Relation
-    replacements: UnionType[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
+    replacements: UnionType[
+        Value[dt.Numeric | dt.String], FrozenDict[str, Value[dt.Any]]
+    ]
 
     @attribute
     def schema(self):
