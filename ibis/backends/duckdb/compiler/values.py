@@ -724,8 +724,6 @@ def _interval_from_integer(op, **kw):
 
 @translate_val.register(ops.Substring)
 def _substring(op, **kw):
-    # TODO: fix expr_slice_begin tests
-    # Duckdb is 1-indexed
     arg = translate_val(op.arg, **kw)
     start = translate_val(op.start, **kw)
     if op.length is not None:
