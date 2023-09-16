@@ -346,12 +346,11 @@ def _generic_log(op, **kw):
 @translate_val.register(ops.Clip)
 def _clip(op, **kw):
     arg = translate_val(op.arg, **kw)
-    # TODO expressionize
     if (upper := op.upper) is not None:
-        arg = f"least({translate_val(upper, **kw)}, {arg})"
+        arg = sg.exp.Least.from_arg_list(translate_val(upper, **kw), arg)
 
     if (lower := op.lower) is not None:
-        arg = f"greatest({translate_val(lower, **kw)}, {arg})"
+        arg = sg.exp.Greatest.from_arg_list(translate_val(lower, **kw), arg)
 
     return arg
 
