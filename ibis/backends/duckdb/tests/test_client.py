@@ -55,3 +55,31 @@ def test_load_extension(ext_directory):
         """
     ).fetchall()
     assert all(loaded for (loaded,) in results)
+
+
+def test_insert(con):
+    import pandas as pd
+
+    name = ibis.util.guid()
+
+    t = con.create_table(name, schema=ibis.schema({"a": "int64"}))
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}))
+    assert t.count().execute() == 2
+
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}))
+    assert t.count().execute() == 4
+
+    con.insert(name, obj=pd.DataFrame({"a": [1, 2]}), overwrite=True)
+    assert t.count().execute() == 2
+
+    con.insert(name, t)
+    assert t.count().execute() == 4
+
+    con.insert(name, [{"a": 1}, {"a": 2}], overwrite=True)
+    assert t.count().execute() == 2
+
+    con.insert(name, [(1,), (2,)])
+    assert t.count().execute() == 4
+
+    con.insert(name, {"a": [1, 2]}, overwrite=True)
+    assert t.count().execute() == 2

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import duckdb
+import pandas as pd
 import pyarrow as pa
 import sqlglot as sg
 import toolz
@@ -33,7 +34,6 @@ from ibis.expr.operations.udf import InputType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping, Sequence
 
-    import pandas as pd
     import torch
 
     from ibis.common.typing import SupportsSchema
@@ -1341,22 +1341,46 @@ class Backend(BaseBackend, CanCreateSchema):
             view, definition, compile_kwargs={"literal_binds": True}
         )
 
-    def _insert_dataframe(
-        self, table_name: str, df: pd.DataFrame, overwrite: bool
+    def insert(
+        self,
+        table_name: str,
+        obj: pd.DataFrame | ir.Table | list | dict,
+        database: str | None = None,
+        overwrite: bool = False,
     ) -> None:
-        # TODO: reimplement
-        ...
-        # columns = list(df.columns)
-        # t = sa.table(table_name, *map(sa.column, columns))
+        """Insert data into a table.
 
-        # table_name = self._quote(table_name)
+        Parameters
+        ----------
+        table_name
+            The name of the table to which data needs will be inserted
+        obj
+            The source data or expression to insert
+        database
+            Name of the attached database that the table is located in.
+        overwrite
+            If `True` then replace existing contents of table
 
-        # # the table name df here matters, and *must* match the input variable's
-        # # name because duckdb will look up this name in the outer scope of the
-        # # insert call and pull in that variable's data to scan
-        # source = sa.table("df", *map(sa.column, columns))
+        Raises
+        ------
+        NotImplementedError
+            If inserting data from a different database
+        ValueError
+            If the type of `obj` isn't supported
+        """
+        con = self.con
 
-        # with self.begin() as con:
-        #     if overwrite:
-        #         con.execute(t.delete())
-        #     con.execute(t.insert().from_select(columns, sa.select(source)))
+        table = sg.table(table_name, db=database)
+
+        if overwrite:
+            con.execute(f"TRUNCATE TABLE {table.sql('duckdb')}")
+
+        if isinstance(obj, ir.Table):
+            query = sg.exp.insert(
+                expression=self.compile(obj), into=table, dialect="duckdb"
+            )
+            con.execute(query.sql("duckdb"))
+        elif isinstance(obj, pd.DataFrame):
+            con.append(table_name, obj)
+        else:
+            con.append(table_name, pd.DataFrame(obj))
