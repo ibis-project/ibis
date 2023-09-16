@@ -1344,9 +1344,9 @@ def _struct_column(op, **kw):
 @translate_val.register(ops.StructField)
 def _struct_field(op, **kw):
     arg = translate_val(op.arg, **kw)
-    field = sg.expressions.Literal(this=f"{op.field}", is_string=True)
-    sg_expr = sg.func("struct_extract", arg, field)
-    return sg_expr
+    return sg.exp.StructExtract(
+        this=arg, expression=sg.exp.Literal(this=op.field, is_string=True)
+    )
 
 
 @translate_val.register(ops.ScalarParameter)
