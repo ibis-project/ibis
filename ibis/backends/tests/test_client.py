@@ -1032,9 +1032,9 @@ def test_has_operation_no_geo(con, op):
         for name, obj in sorted(inspect.getmembers(builtins), key=itemgetter(0))
         for backend in sorted(ALL_BACKENDS)
         # filter out builtins that are types, except for tuples on ClickHouse
-        # because tuples are used to represent lists of expressions
+        # and duckdb because tuples are used to represent lists of expressions
         if isinstance(obj, type)
-        if (obj != tuple or backend != "clickhouse")
+        if (obj != tuple or backend not in ("clickhouse", "duckdb"))
         if (backend != "pyspark" or vparse(pd.__version__) < vparse("2"))
     ],
 )
