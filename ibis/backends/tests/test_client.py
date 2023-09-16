@@ -903,7 +903,7 @@ def test_default_backend():
     rx = """\
 SELECT
   SUM\\((\\w+)\\.a\\) AS ".+"
-FROM \\w+ AS \\1"""
+FROM "\\w+" AS \\1"""
     assert re.match(rx, sql) is not None
 
 
