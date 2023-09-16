@@ -1843,3 +1843,14 @@ def _json_getitem(op, **kw):
     return sg.exp.JSONExtract(
         this=translate_val(op.arg, **kw), expression=translate_val(op.index, **kw)
     )
+
+
+@translate_val.register(ops.RowID)
+def _rowid(op, *, aliases, **_) -> str:
+    table = op.table
+    return sg.column(op.name, (aliases or {}).get(table, table.name))
+
+
+@translate_val.register(ops.ScalarUDF)
+def _scalar_udf(op, **kw) -> str:
+    return sg.func(op.__full_name__, *(translate_val(arg, **kw) for arg in op.args))
