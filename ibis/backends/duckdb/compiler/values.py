@@ -77,11 +77,12 @@ def sg_literal(arg, is_string=True):
 def _literal(op, **kw):
     value = op.value
     dtype = op.dtype
+    sg_type = DuckDBType.from_ibis(dtype)
 
     if value is None and dtype.nullable:
         if dtype.is_null():
             return sg.exp.Null()
-        return sg.cast(sg.exp.Null(), to=DuckDBType.from_ibis(dtype))
+        return sg.cast(sg.exp.Null(), to=sg_type)
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
     elif dtype.is_inet():
@@ -101,36 +102,19 @@ def _literal(op, **kw):
                 f"Unsupported precision. Supported values: [1 : 38]. Current value: {precision!r}"
             )
         if math.isinf(value):
-            return sg.exp.cast(
-                expression=sg_literal(value),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
+            return sg.exp.cast(expression=sg_literal(value), to=sg_type)
         elif math.isnan(value):
-            return sg.exp.cast(
-                expression=sg_literal("NaN"),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
+            return sg.exp.cast(expression=sg_literal("NaN"), to=sg_type)
 
         dtype = dt.Decimal(precision=precision, scale=scale, nullable=dtype.nullable)
-        sg_expr = sg.cast(
-            sg_literal(value, is_string=False), to=DuckDBType.from_ibis(dtype)
-        )
+        sg_expr = sg.cast(sg_literal(value, is_string=False), to=sg_type)
         return sg_expr
     elif dtype.is_numeric():
         if math.isinf(value):
-            return sg.exp.cast(
-                expression=sg_literal(value),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
+            return sg.exp.cast(expression=sg_literal(value), to=sg_type)
         elif math.isnan(value):
-            return sg.exp.cast(
-                expression=sg_literal("NaN"),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
-        return sg.cast(
-            sg_literal(value, is_string=False),
-            to=DuckDBType.from_ibis(dtype),
-        )
+            return sg.exp.cast(expression=sg_literal("NaN"), to=sg_type)
+        return sg.cast(sg_literal(value, is_string=False), sg_type)
     elif dtype.is_interval():
         return _interval_format(op)
     elif dtype.is_timestamp():
@@ -157,17 +141,8 @@ def _literal(op, **kw):
         return sg.exp.DateFromParts(year=year, month=month, day=day)
     elif dtype.is_array():
         value_type = dtype.value_type
-        is_string = isinstance(value_type, dt.String)
-        values = sg.exp.Array().from_arg_list(
-            [
-                # TODO: this cast makes for frustrating output
-                # is there any better way to handle it?
-                sg.cast(
-                    sg_literal(v, is_string=is_string),
-                    to=DuckDBType.from_ibis(value_type),
-                )
-                for v in value
-            ]
+        values = sg.exp.Array.from_arg_list(
+            [_literal(ops.Literal(v, dtype=value_type), **kw) for v in value]
         )
         return values
     elif dtype.is_map():
@@ -191,10 +166,7 @@ def _literal(op, **kw):
         sg_expr = sg.exp.Struct.from_arg_list(slices)
         return sg_expr
     elif dtype.is_uuid():
-        return sg.cast(
-            sg.exp.Literal(this=str(value), is_string=True),
-            to=sg.exp.DataType.Type.UUID,
-        )
+        return sg.cast(sg.exp.Literal(this=str(value), is_string=True), to=sg_type)
     else:
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
