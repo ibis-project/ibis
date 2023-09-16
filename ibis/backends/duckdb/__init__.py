@@ -72,10 +72,6 @@ class Backend(BaseBackend, CanCreateSchema):
         # TODO:
         ...
 
-    def _register_udfs(self, expr):
-        # TODO:
-        ...
-
     @property
     def current_database(self) -> str:
         return self.raw_sql("SELECT CURRENT_DATABASE()").arrow()[0][0].as_py()
@@ -1302,37 +1298,36 @@ class Backend(BaseBackend, CanCreateSchema):
         yield f"CREATE OR REPLACE TEMPORARY VIEW {name} AS {definition}"
 
     def _register_udfs(self, expr: ir.Expr) -> None:
-        ...
-        # import ibis.expr.operations as ops
+        import ibis.expr.operations as ops
 
-        # with self.begin() as con:
-        #     for udf_node in expr.op().find(ops.ScalarUDF):
-        #         compile_func = getattr(
-        #             self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-        #         )
-        #         with contextlib.suppress(duckdb.InvalidInputException):
-        #             con.connection.remove_function(udf_node.__class__.__name__)
+        con = self.con
 
-        #         registration_func = compile_func(udf_node)
-        #         registration_func(con)
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            compile_func = getattr(
+                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            with contextlib.suppress(duckdb.InvalidInputException):
+                con.remove_function(udf_node.__class__.__name__)
+
+            registration_func = compile_func(udf_node)
+            registration_func(con)
 
     def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
-        ...
-        # func = udf_node.__func__
-        # name = func.__name__
-        # input_types = [DuckDBType.to_string(arg.dtype) for arg in udf_node.args]
-        # output_type = DuckDBType.to_string(udf_node.dtype)
+        func = udf_node.__func__
+        name = func.__name__
+        input_types = [DuckDBType.to_string(arg.dtype) for arg in udf_node.args]
+        output_type = DuckDBType.to_string(udf_node.dtype)
 
-        # def register_udf(con):
-        #     return con.connection.create_function(
-        #         name,
-        #         func,
-        #         input_types,
-        #         output_type,
-        #         type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
-        #     )
+        def register_udf(con):
+            return con.create_function(
+                name,
+                func,
+                input_types,
+                output_type,
+                type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+            )
 
-        # return register_udf
+        return register_udf
 
     _compile_python_udf = _compile_udf
     _compile_pyarrow_udf = _compile_udf
