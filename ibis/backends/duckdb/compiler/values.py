@@ -1525,7 +1525,7 @@ def _bitor(op, **kw):
 
 @translate_val.register(ops.Xor)
 def _xor(op, **kw):
-    # TODO: is this really the best way to do this?
+    # https://github.com/tobymao/sqlglot/issues/2238
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
     return sg.exp.And(
