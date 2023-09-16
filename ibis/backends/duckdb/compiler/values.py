@@ -1253,9 +1253,8 @@ def _index_of(op, **kw):
 
 
 @translate_val.register(tuple)
-def _node_list(op, punct="()", **kw):
-    values = ", ".join(map(_sql, map(partial(translate_val, **kw), op)))
-    return f"{punct[0]}{values}{punct[1]}"
+def _node_list(op, **kw):
+    return sg.exp.Tuple(expressions=list(map(partial(translate_val, **kw), op)))
 
 
 @translate_val.register(ops.SimpleCase)
