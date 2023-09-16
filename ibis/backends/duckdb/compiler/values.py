@@ -1127,10 +1127,14 @@ def _count_distinct(op, **kw):
     return _apply_agg_filter(count_expr, where=op.where, **kw)
 
 
-# TODO: implement
 @translate_val.register(ops.CountDistinctStar)
 def _count_distinct_star(op, **kw):
-    ...
+    # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)
+    #
+    # this turns the expression into COUNT(DISTINCT (a, b, c, ...))
+    row = sg.exp.Tuple(expressions=list(map(sg.column, op.arg.schema.keys())))
+    expr = sg.exp.Count(this=sg.exp.Distinct(expressions=[row]))
+    return _apply_agg_filter(expr, where=op.where, **kw)
 
 
 @translate_val.register(ops.CountStar)
