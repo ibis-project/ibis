@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import contextlib
 import os
 import warnings
 from pathlib import Path
@@ -87,8 +88,8 @@ class Backend(BaseBackend, CanCreateSchema):
     def current_schema(self) -> str:
         return self.raw_sql("SELECT current_schema()")
 
-    def raw_sql(self, query: str, **kwargs: Any) -> Any:
-        if isinstance(query, sg.Expression):
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
+        with contextlib.suppress(AttributeError):
             query = query.sql(dialect="duckdb")
         return self.con.execute(query, **kwargs)
 
