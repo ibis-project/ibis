@@ -19,6 +19,12 @@
       "autoApprove": true
     },
     {
+      "matchManagers": ["docker-compose"],
+      "matchPackagePatterns": ["postgres"],
+      "matchCurrentVersion": "/^13\\..+$/",
+      "allowedVersions": "/^13\\..+$/"
+    },
+    {
       "matchPackagePrefixes": ["clickhouse"],
       "addLabels": ["clickhouse"]
     },
