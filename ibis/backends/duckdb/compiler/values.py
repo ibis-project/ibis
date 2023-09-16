@@ -71,19 +71,20 @@ def _sql(obj, dialect="duckdb"):
 
 
 def sg_literal(arg, is_string=True):
-    return sg.expressions.Literal(this=f"{arg}", is_string=is_string)
+    return sg.exp.Literal(this=f"{arg}", is_string=is_string)
 
 
 @translate_val.register(ops.Literal)
 def _literal(op, **kw):
     value = op.value
     dtype = op.dtype
+
     if value is None and dtype.nullable:
         if dtype.is_null():
-            return sg.expressions.Null()
-        return sg.cast(sg.expressions.Null(), to=DuckDBType.from_ibis(dtype))
+            return sg.exp.Null()
+        return sg.cast(sg.exp.Null(), to=DuckDBType.from_ibis(dtype))
     if dtype.is_boolean():
-        return sg.expressions.Boolean(this=value)
+        return sg.exp.Boolean(this=value)
     elif dtype.is_inet():
         com.UnsupportedOperationError("DuckDB doesn't support an explicit inet dtype")
         return None
@@ -102,14 +103,14 @@ def _literal(op, **kw):
                 f"Unsupported precision. Supported values: [1 : 38]. Current value: {precision!r}"
             )
         if math.isinf(value):
-            return sg.expressions.cast(
+            return sg.exp.cast(
                 expression=sg_literal(value),
-                to=sg.expressions.DataType.Type.FLOAT,
+                to=sg.exp.DataType.Type.FLOAT,
             )
         elif math.isnan(value):
-            return sg.expressions.cast(
+            return sg.exp.cast(
                 expression=sg_literal("NaN"),
-                to=sg.expressions.DataType.Type.FLOAT,
+                to=sg.exp.DataType.Type.FLOAT,
             )
 
         dtype = dt.Decimal(precision=precision, scale=scale, nullable=dtype.nullable)
@@ -119,14 +120,14 @@ def _literal(op, **kw):
         return sg_expr
     elif dtype.is_numeric():
         if math.isinf(value):
-            return sg.expressions.cast(
+            return sg.exp.cast(
                 expression=sg_literal(value),
-                to=sg.expressions.DataType.Type.FLOAT,
+                to=sg.exp.DataType.Type.FLOAT,
             )
         elif math.isnan(value):
-            return sg.expressions.cast(
+            return sg.exp.cast(
                 expression=sg_literal("NaN"),
-                to=sg.expressions.DataType.Type.FLOAT,
+                to=sg.exp.DataType.Type.FLOAT,
             )
         return sg.cast(
             sg_literal(value, is_string=False),
@@ -155,11 +156,11 @@ def _literal(op, **kw):
         year = sg_literal(op.value.year, is_string=False)
         month = sg_literal(op.value.month, is_string=False)
         day = sg_literal(op.value.day, is_string=False)
-        return sg.expressions.DateFromParts(year=year, month=month, day=day)
+        return sg.exp.DateFromParts(year=year, month=month, day=day)
     elif dtype.is_array():
         value_type = dtype.value_type
         is_string = isinstance(value_type, dt.String)
-        values = sg.expressions.Array().from_arg_list(
+        values = sg.exp.Array().from_arg_list(
             [
                 # TODO: this cast makes for frustrating output
                 # is there any better way to handle it?
@@ -174,13 +175,13 @@ def _literal(op, **kw):
     elif dtype.is_map():
         key_type = dtype.key_type
         value_type = dtype.value_type
-        keys = sg.expressions.Array().from_arg_list(
+        keys = sg.exp.Array().from_arg_list(
             [_literal(ops.Literal(k, dtype=key_type), **kw) for k in value.keys()]
         )
-        values = sg.expressions.Array().from_arg_list(
+        values = sg.exp.Array().from_arg_list(
             [_literal(ops.Literal(v, dtype=value_type), **kw) for v in value.values()]
         )
-        sg_expr = sg.expressions.Map(keys=keys, values=values)
+        sg_expr = sg.exp.Map(keys=keys, values=values)
         return sg_expr
     elif dtype.is_struct():
         keys = [sg_literal(key) for key in value.keys()]
@@ -188,10 +189,8 @@ def _literal(op, **kw):
             _literal(ops.Literal(v, dtype=subdtype), **kw)
             for subdtype, v in zip(dtype.types, value.values())
         ]
-        slices = [
-            sg.expressions.Slice(this=k, expression=v) for k, v in zip(keys, values)
-        ]
-        sg_expr = sg.expressions.Struct.from_arg_list(slices)
+        slices = [sg.exp.Slice(this=k, expression=v) for k, v in zip(keys, values)]
+        sg_expr = sg.exp.Struct.from_arg_list(slices)
         return sg_expr
     else:
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
@@ -294,11 +293,11 @@ del _fmt, _name, _op
 ### Bitwise Business
 
 _bitwise_mapping = {
-    ops.BitwiseLeftShift: sg.expressions.BitwiseLeftShift,
-    ops.BitwiseRightShift: sg.expressions.BitwiseRightShift,
-    ops.BitwiseAnd: sg.expressions.BitwiseAnd,
-    ops.BitwiseOr: sg.expressions.BitwiseOr,
-    ops.BitwiseXor: sg.expressions.BitwiseXor,
+    ops.BitwiseLeftShift: sg.exp.BitwiseLeftShift,
+    ops.BitwiseRightShift: sg.exp.BitwiseRightShift,
+    ops.BitwiseAnd: sg.exp.BitwiseAnd,
+    ops.BitwiseOr: sg.exp.BitwiseOr,
+    ops.BitwiseXor: sg.exp.BitwiseXor,
 }
 
 
@@ -319,7 +318,7 @@ def _bitwise_binary(op, **kw):
 def _bitwise_not(op, **kw):
     value = translate_val(op.arg, **kw)
 
-    return sg.expressions.BitwiseNot(this=value)
+    return sg.exp.BitwiseNot(this=value)
 
 
 ### Mathematical Calisthenics
@@ -363,8 +362,8 @@ def _floor_divide(op, **kw):
 def _round(op, **kw):
     arg = translate_val(op.arg, **kw)
     if (digits := op.digits) is not None:
-        return sg.expressions.Round(this=arg, decimals=translate_val(digits, **kw))
-    return sg.expressions.Round(this=arg)
+        return sg.exp.Round(this=arg, decimals=translate_val(digits, **kw))
+    return sg.exp.Round(this=arg)
 
 
 ### Dtype Dysmorphia
@@ -394,11 +393,11 @@ def _cast(op, **kw):
             )
 
         else:
-            return sg.expressions.Interval(this=arg, unit=suffix)
+            return sg.exp.Interval(this=arg, unit=suffix)
     elif isinstance(op.to, dt.Timestamp) and isinstance(op.arg.dtype, dt.Integer):
         return sg.func("to_timestamp", arg)
     elif isinstance(op.to, dt.Timestamp) and op.to.timezone is not None:
-        timezone = sg.expressions.Literal(this=op.to.timezone, is_string=True)
+        timezone = sg.exp.Literal(this=op.to.timezone, is_string=True)
         return sg.func("timezone", timezone, arg)
 
     to = translate_val(op.to, **kw)
@@ -407,7 +406,7 @@ def _cast(op, **kw):
 
 @translate_val.register(ops.TryCast)
 def _try_cast(op, **kw):
-    return sg.expressions.TryCast(
+    return sg.exp.TryCast(
         this=translate_val(op.arg, **kw),
         to=DuckDBType.to_string(op.to),
         dialect="duckdb",
@@ -428,19 +427,19 @@ def _between(op, **kw):
     arg = translate_val(op.arg, **kw)
     lower_bound = translate_val(op.lower_bound, **kw)
     upper_bound = translate_val(op.upper_bound, **kw)
-    return sg.expressions.Between(this=arg, low=lower_bound, high=upper_bound)
+    return sg.exp.Between(this=arg, low=lower_bound, high=upper_bound)
 
 
 @translate_val.register(ops.Negate)
 def _negate(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.expressions.Neg(this=arg)
+    return sg.exp.Neg(this=arg)
 
 
 @translate_val.register(ops.Not)
 def _not(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.expressions.Not(this=arg)
+    return sg.exp.Not(this=arg)
 
 
 def _apply_agg_filter(expr, *, where, **kw):
@@ -491,7 +490,7 @@ def _not_all(op, **kw):
 @translate_val.register(ops.Date)
 def _to_date(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.expressions.Date(this=arg)
+    return sg.exp.Date(this=arg)
 
 
 @translate_val.register(ops.DateFromYMD)
@@ -499,13 +498,13 @@ def _date_from_ymd(op, **kw):
     y = translate_val(op.year, **kw)
     m = translate_val(op.month, **kw)
     d = translate_val(op.day, **kw)
-    return sg.expressions.DateFromParts(year=y, month=m, day=d)
+    return sg.exp.DateFromParts(year=y, month=m, day=d)
 
 
 @translate_val.register(ops.Time)
 def _time(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.cast(expression=arg, to=sg.expressions.DataType.Type.TIME)
+    return sg.cast(expression=arg, to=sg.exp.DataType.Type.TIME)
 
 
 @translate_val.register(ops.TimeFromHMS)
@@ -528,7 +527,7 @@ def _timestamp_from_unix(op, **kw):
     if (unit := op.unit.short) in {"ms", "us", "ns"}:
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
-    return sg.expressions.UnixToTime(this=arg)
+    return sg.exp.UnixToTime(this=arg)
 
 
 @translate_val.register(ops.TimestampFromYMDHMS)
@@ -569,9 +568,9 @@ def _extract_epoch_seconds(op, **kw):
     arg = translate_val(op.arg, **kw)
     return sg.func(
         "epoch",
-        sg.expressions.cast(
+        sg.exp.cast(
             expression=arg,
-            to=sg.expressions.DataType.Type.TIMESTAMP,
+            to=sg.exp.DataType.Type.TIMESTAMP,
         ),
     )
 
@@ -601,9 +600,7 @@ _extract_mapping = {
 def _extract_time(op, **kw):
     part = _extract_mapping[type(op)]
     timestamp = translate_val(op.arg, **kw)
-    return sg.func(
-        "extract", sg.expressions.Literal(this=part, is_string=True), timestamp
-    )
+    return sg.func("extract", sg.exp.Literal(this=part, is_string=True), timestamp)
 
 
 # DuckDB extracts subminute microseconds and milliseconds
@@ -612,13 +609,13 @@ def _extract_time(op, **kw):
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
 
-    return sg.expressions.Mod(
+    return sg.exp.Mod(
         this=sg.func(
             "extract",
-            sg.expressions.Literal(this="us", is_string=True),
+            sg.exp.Literal(this="us", is_string=True),
             arg,
         ),
-        expression=sg.expressions.Literal(this="1000000", is_string=False),
+        expression=sg.exp.Literal(this="1000000", is_string=False),
     )
 
 
@@ -626,13 +623,13 @@ def _extract_microsecond(op, **kw):
 def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
 
-    return sg.expressions.Mod(
+    return sg.exp.Mod(
         this=sg.func(
             "extract",
-            sg.expressions.Literal(this="ms", is_string=True),
+            sg.exp.Literal(this="ms", is_string=True),
             arg,
         ),
-        expression=sg.expressions.Literal(this="1000", is_string=False),
+        expression=sg.exp.Literal(this="1000", is_string=False),
     )
 
 
@@ -704,9 +701,9 @@ def day_of_week_name(op, **kw):
 
 
 _interval_mapping = {
-    ops.IntervalAdd: sg.expressions.Add,
-    ops.IntervalSubtract: sg.expressions.Sub,
-    ops.IntervalMultiply: sg.expressions.Mul,
+    ops.IntervalAdd: sg.exp.Add,
+    ops.IntervalSubtract: sg.exp.Sub,
+    ops.IntervalMultiply: sg.exp.Mul,
 }
 
 
@@ -728,8 +725,8 @@ def _interval_format(op):
             "Duckdb doesn't support nanosecond interval resolutions"
         )
 
-    return sg.expressions.Interval(
-        this=sg.expressions.Literal(this=op.value, is_string=False),
+    return sg.exp.Interval(
+        this=sg.exp.Literal(this=op.value, is_string=False),
         unit=dtype.resolution.upper(),
     )
 
@@ -762,12 +759,12 @@ def _substring(op, **kw):
     else:
         length = None
 
-    if_pos = sg.expressions.Substring(this=arg, start=start + 1, length=length)
-    if_neg = sg.expressions.Substring(this=arg, start=start, length=length)
+    if_pos = sg.exp.Substring(this=arg, start=start + 1, length=length)
+    if_neg = sg.exp.Substring(this=arg, start=start, length=length)
 
-    sg_expr = sg.expressions.If(
-        this=sg.expressions.GTE(
-            this=start, expression=sg.expressions.Literal(this="0", is_string=False)
+    sg_expr = sg.exp.If(
+        this=sg.exp.GTE(
+            this=start, expression=sg.exp.Literal(this="0", is_string=False)
         ),
         true=if_pos,
         false=if_neg,
@@ -792,7 +789,7 @@ def _regex_search(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
     return sg.func(
-        "regexp_matches", arg, pattern, sg.expressions.Literal(this="s", is_string=True)
+        "regexp_matches", arg, pattern, sg.exp.Literal(this="s", is_string=True)
     )
 
 
@@ -806,7 +803,7 @@ def _regex_replace(op, **kw):
         arg,
         pattern,
         replacement,
-        sg.expressions.Literal(this="g", is_string=True),
+        sg.exp.Literal(this="g", is_string=True),
         dialect="duckdb",
     )
 
@@ -830,7 +827,7 @@ def _levenshtein(op, **kw):
 def _string_split(op, **kw):
     arg = translate_val(op.arg, **kw)
     delimiter = translate_val(op.delimiter, **kw)
-    return sg.expressions.Split(this=arg, expression=delimiter)
+    return sg.exp.Split(this=arg, expression=delimiter)
 
 
 @translate_val.register(ops.StringJoin)
@@ -844,27 +841,27 @@ def _string_join(op, **kw):
 @translate_val.register(ops.StringConcat)
 def _string_concat(op, **kw):
     arg = map(partial(translate_val, **kw), op.arg)
-    return sg.expressions.Concat(expressions=list(arg))
+    return sg.exp.Concat(expressions=list(arg))
 
 
 @translate_val.register(ops.StringSQLLike)
 def _string_like(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return sg.expressions.Like(this=arg, expression=pattern)
+    return sg.exp.Like(this=arg, expression=pattern)
 
 
 @translate_val.register(ops.StringSQLILike)
 def _string_ilike(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return sg.expressions.Like(this=sg.func("lower", arg), expression=pattern)
+    return sg.exp.Like(this=sg.func("lower", arg), expression=pattern)
 
 
 @translate_val.register(ops.Capitalize)
 def _string_capitalize(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.expressions.Concat(
+    return sg.exp.Concat(
         expressions=[
             sg.func("upper", sg.func("substr", arg, 1, 1)),
             sg.func("lower", sg.func("substr", arg, 2)),
@@ -876,13 +873,13 @@ def _string_capitalize(op, **kw):
 @translate_val.register(ops.IsNull)
 def _is_null(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return arg.is_(sg.expressions.null())
+    return arg.is_(sg.exp.null())
 
 
 @translate_val.register(ops.NotNull)
 def _is_not_null(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return arg.is_(sg.not_(sg.expressions.null()))
+    return arg.is_(sg.not_(sg.exp.null()))
 
 
 @translate_val.register(ops.IfNull)
@@ -911,14 +908,14 @@ def _zero_if_null(op, **kw):
 def _array_sort(op, **kw):
     arg = translate_val(op.arg, **kw)
 
-    sg_expr = sg.expressions.If(
-        this=arg.is_(sg.expressions.Null()),
-        true=sg.expressions.Null(),
+    sg_expr = sg.exp.If(
+        this=arg.is_(sg.exp.Null()),
+        true=sg.exp.Null(),
         false=sg.func("list_distinct", arg, dialect="duckdb")
-        + sg.expressions.If(
+        + sg.exp.If(
             this=sg.func("list_count", arg, dialect="duckdb")
             < sg.func("array_length", arg, dialect="duckdb"),
-            true=sg.func("list_value", sg.expressions.Null(), dialect="duckdb"),
+            true=sg.func("list_value", sg.exp.Null(), dialect="duckdb"),
             false=sg.func("list_value", dialect="duckdb"),
         ),
     )
@@ -939,9 +936,7 @@ def _in_values(op, **kw):
     if not op.options:
         return False
     value = translate_val(op.value, **kw)
-    options = sg.expressions.Array().from_arg_list(
-        [translate_val(x, **kw) for x in op.options]
-    )
+    options = sg.exp.Array().from_arg_list([translate_val(x, **kw) for x in op.options])
     sg_expr = sg.func("list_contains", options, value, dialect="duckdb")
     return sg_expr
 
@@ -990,8 +985,8 @@ def _array_repeat_op(op, **kw):
 
 def _neg_idx_to_pos(array, idx):
     arg_length = sg.func("len", array)
-    return sg.expressions.If(
-        this=sg.expressions.LT(this=idx, expression=sg_literal(0, is_string=False)),
+    return sg.exp.If(
+        this=sg.exp.LT(this=idx, expression=sg_literal(0, is_string=False)),
         # Need to have the greatest here to handle the case where
         # abs(neg_index) > arg_length
         # e.g. where the magnitude of the negative index is greater than the
@@ -1015,7 +1010,7 @@ def _array_slice_op(op, **kw):
         start = sg.func("least", arg_length, _neg_idx_to_pos(arg, start))
 
     if (stop := op.stop) is None:
-        stop = sg.expressions.Null()
+        stop = sg.exp.Null()
     else:
         stop = _neg_idx_to_pos(arg, translate_val(stop, **kw))
 
@@ -1033,7 +1028,7 @@ def _array_string_join(op, **kw):
 def _array_map(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
-    lamduh = sg.expressions.Lambda(
+    lamduh = sg.exp.Lambda(
         this=result,
         expressions=[sg.to_identifier(f"{op.parameter}", quoted=False)],
     )
@@ -1045,9 +1040,9 @@ def _array_map(op, **kw):
 def _array_filter(op, **kw):
     arg = translate_val(op.arg, **kw)
     result = translate_val(op.result, **kw)
-    lamduh = sg.expressions.Lambda(
+    lamduh = sg.exp.Lambda(
         this=result,
-        expressions=[sg.expressions.Identifier(this=f"{op.parameter}", quoted=False)],
+        expressions=[sg.exp.Identifier(this=f"{op.parameter}", quoted=False)],
     )
     sg_expr = sg.func("list_filter", arg, lamduh)
     return sg_expr
@@ -1081,16 +1076,16 @@ def _array_union(op, **kw):
 def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
     i = sg.to_identifier("i", quoted=False)
     args = [translate_val(arg, **kw) for arg in op.arg]
-    result = sg.expressions.Struct(
+    result = sg.exp.Struct(
         expressions=[
-            sg.expressions.Slice(
+            sg.exp.Slice(
                 this=sg_literal(name),
                 expression=sg.func("list_extract", arg, i),
             )
             for name, arg in zip(op.dtype.value_type.names, args)
         ]
     )
-    lamduh = sg.expressions.Lambda(this=result, expressions=[i])
+    lamduh = sg.exp.Lambda(this=result, expressions=[i])
     sg_expr = sg.func(
         "list_transform",
         sg.func(
@@ -1112,7 +1107,7 @@ def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
 @translate_val.register(ops.CountDistinct)
 def _count_distinct(op, **kw):
     arg = translate_val(op.arg, **kw)
-    count_expr = sg.expressions.Count(this=sg.expressions.Distinct(expressions=[arg]))
+    count_expr = sg.exp.Count(this=sg.exp.Distinct(expressions=[arg]))
     return _apply_agg_filter(count_expr, where=op.where, **kw)
 
 
@@ -1128,7 +1123,7 @@ def _count_distinct_star(op, **kw):
 
 @translate_val.register(ops.CountStar)
 def _count_star(op, **kw):
-    sql = sg.expressions.Count(this=sg.expressions.Star())
+    sql = sg.exp.Count(this=sg.exp.Star())
     return _apply_agg_filter(sql, where=op.where, **kw)
 
 
@@ -1137,7 +1132,7 @@ def _sum(op, **kw):
     arg = translate_val(
         ops.Cast(arg, to=op.dtype) if (arg := op.arg).dtype.is_boolean() else arg, **kw
     )
-    return _apply_agg_filter(sg.expressions.Sum(this=arg), where=op.where, **kw)
+    return _apply_agg_filter(sg.exp.Sum(this=arg), where=op.where, **kw)
 
 
 # TODO
@@ -1260,10 +1255,10 @@ def _node_list(op, **kw):
 @translate_val.register(ops.SimpleCase)
 @translate_val.register(ops.SearchedCase)
 def _case(op, **kw):
-    case = sg.expressions.Case()
+    case = sg.exp.Case()
 
     if (base := getattr(op, "base", None)) is not None:
-        case = sg.expressions.Case(this=translate_val(base, **kw))
+        case = sg.exp.Case(this=translate_val(base, **kw))
 
     for when, then in zip(op.cases, op.results):
         case = case.when(
@@ -1322,9 +1317,7 @@ def _group_concat(op, **kw):
 # TODO
 @translate_val.register(ops.ArrayColumn)
 def _array_column(op, **kw):
-    sg_expr = sg.expressions.Array.from_arg_list(
-        [translate_val(col, **kw) for col in op.cols]
-    )
+    sg_expr = sg.exp.Array.from_arg_list([translate_val(col, **kw) for col in op.cols])
     return sg_expr
 
 
@@ -1421,7 +1414,7 @@ def _vararg_func(op, **kw):
 def _map(op, **kw):
     keys = translate_val(op.keys, **kw)
     values = translate_val(op.values, **kw)
-    sg_expr = sg.expressions.Map(keys=keys, values=values)
+    sg_expr = sg.exp.Map(keys=keys, values=values)
     return sg_expr
 
 
@@ -1443,7 +1436,7 @@ def _map_get(op, **kw):
 def _map_contains(op, **kw):
     arg = translate_val(op.arg, **kw)
     key = translate_val(op.key, **kw)
-    sg_expr = sg.expressions.NEQ(
+    sg_expr = sg.exp.NEQ(
         this=sg.func(
             "array_length",
             sg.func(
@@ -1452,7 +1445,7 @@ def _map_contains(op, **kw):
                 key,
             ),
         ),
-        expression=sg.expressions.Literal(this="0", is_string=False),
+        expression=sg.exp.Literal(this="0", is_string=False),
     )
     return sg_expr
 
@@ -1472,14 +1465,14 @@ def _map_merge(op, **kw):
     return sg.func("map_concat", left, right)
 
 
-def _binary_infix(sg_expr: sg.expressions._Expression):
+def _binary_infix(sg_expr: sg.exp._Expression):
     def formatter(op, **kw):
         left = translate_val(op.left, **kw)
         right = translate_val(op.right, **kw)
 
         return sg_expr(
-            this=sg.expressions.Paren(this=left),
-            expression=sg.expressions.Paren(this=right),
+            this=sg.exp.Paren(this=left),
+            expression=sg.exp.Paren(this=right),
         )
 
     return formatter
@@ -1487,28 +1480,28 @@ def _binary_infix(sg_expr: sg.expressions._Expression):
 
 _binary_infix_ops = {
     # Binary operations
-    ops.Add: sg.expressions.Add,
-    ops.Subtract: sg.expressions.Sub,
-    ops.Multiply: sg.expressions.Mul,
-    ops.Divide: sg.expressions.Div,
-    ops.Modulus: sg.expressions.Mod,
+    ops.Add: sg.exp.Add,
+    ops.Subtract: sg.exp.Sub,
+    ops.Multiply: sg.exp.Mul,
+    ops.Divide: sg.exp.Div,
+    ops.Modulus: sg.exp.Mod,
     # Comparisons
-    ops.GreaterEqual: sg.expressions.GTE,
-    ops.Greater: sg.expressions.GT,
-    ops.LessEqual: sg.expressions.LTE,
-    ops.Less: sg.expressions.LT,
-    ops.Equals: sg.expressions.EQ,
-    ops.NotEquals: sg.expressions.NEQ,
-    ops.Xor: sg.expressions.Xor,
+    ops.GreaterEqual: sg.exp.GTE,
+    ops.Greater: sg.exp.GT,
+    ops.LessEqual: sg.exp.LTE,
+    ops.Less: sg.exp.LT,
+    ops.Equals: sg.exp.EQ,
+    ops.NotEquals: sg.exp.NEQ,
+    ops.Xor: sg.exp.Xor,
     # Boolean comparisons
-    ops.And: sg.expressions.And,
-    ops.Or: sg.expressions.Or,
-    ops.DateAdd: sg.expressions.Add,
-    ops.DateSub: sg.expressions.Sub,
-    ops.DateDiff: sg.expressions.Sub,
-    ops.TimestampAdd: sg.expressions.Add,
-    ops.TimestampSub: sg.expressions.Sub,
-    ops.TimestampDiff: sg.expressions.Sub,
+    ops.And: sg.exp.And,
+    ops.Or: sg.exp.Or,
+    ops.DateAdd: sg.exp.Add,
+    ops.DateSub: sg.exp.Sub,
+    ops.DateDiff: sg.exp.Sub,
+    ops.TimestampAdd: sg.exp.Add,
+    ops.TimestampSub: sg.exp.Sub,
+    ops.TimestampDiff: sg.exp.Sub,
 }
 
 
@@ -1539,12 +1532,10 @@ def _xor(op, **kw):
     # TODO: is this really the best way to do this?
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    return sg.expressions.And(
-        this=sg.expressions.Paren(this=sg.expressions.Or(this=left, expression=right)),
-        expression=sg.expressions.Paren(
-            this=sg.expressions.Not(
-                this=sg.expressions.And(this=left, expression=right)
-            )
+    return sg.exp.And(
+        this=sg.exp.Paren(this=sg.exp.Or(this=left, expression=right)),
+        expression=sg.exp.Paren(
+            this=sg.exp.Not(this=sg.exp.And(this=left, expression=right))
         ),
     )
 
@@ -1554,7 +1545,7 @@ def _xor(op, **kw):
 
 @translate_val.register(ops.RowNumber)
 def _row_number(_, **kw):
-    return sg.expressions.RowNumber()
+    return sg.exp.RowNumber()
 
 
 @translate_val.register(ops.DenseRank)
@@ -1736,7 +1727,7 @@ shift_like(ops.Lead, "lead")
 
 @translate_val.register(ops.Argument)
 def _argument(op, **_):
-    return sg.expressions.Identifier(this=op.name, quoted=False)
+    return sg.exp.Identifier(this=op.name, quoted=False)
 
 
 @translate_val.register(ops.JSONGetItem)
