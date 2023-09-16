@@ -1525,10 +1525,15 @@ def _bitor(op, **kw):
 
 @translate_val.register(ops.Xor)
 def _xor(op, **kw):
-    left = translate_val(ops.Cast(op.left, to=dt.int8), **kw)
-    right = translate_val(ops.Cast(op.right, to=dt.int8), **kw)
-    arg = sg.func("xor", left, right)
-    return sg.cast(arg, to=DuckDBType.from_ibis(dt.boolean))
+    # TODO: is this really the best way to do this?
+    left = translate_val(op.left, **kw)
+    right = translate_val(op.right, **kw)
+    return sg.exp.And(
+        this=sg.exp.Paren(this=sg.exp.Or(this=left, expression=right)),
+        expression=sg.exp.Paren(
+            this=sg.exp.Not(this=sg.exp.And(this=left, expression=right))
+        ),
+    )
 
 
 ### Ordering
