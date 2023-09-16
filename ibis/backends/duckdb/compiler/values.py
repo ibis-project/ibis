@@ -7,17 +7,18 @@ from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
 
 import duckdb
+import sqlglot as sg
+from packaging.version import parse as vparse
+from toolz import flip
+
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-import sqlglot as sg
 from ibis.backends.base.sql.registry import helpers
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
-from packaging.version import parse as vparse
-from toolz import flip
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -1825,3 +1826,10 @@ shift_like(ops.Lead, "lead")
 @translate_val.register(ops.Argument)
 def _argument(op, **_):
     return sg.expressions.Identifier(this=op.name, quoted=False)
+
+
+@translate_val.register(ops.JSONGetItem)
+def _json_getitem(op, **kw):
+    return sg.exp.JSONExtract(
+        this=translate_val(op.arg, **kw), expression=translate_val(op.index, **kw)
+    )
