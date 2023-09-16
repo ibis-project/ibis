@@ -78,15 +78,11 @@ class Backend(BaseBackend, CanCreateSchema):
 
     @property
     def current_database(self) -> str:
-        return (
-            self.raw_sql("PRAGMA database_size; CALL pragma_database_size();")
-            .arrow()["database_name"]
-            .to_pylist()[0]
-        )
+        return self.raw_sql("SELECT CURRENT_DATABASE()").arrow()[0][0].as_py()
 
     @property
     def current_schema(self) -> str:
-        return self.raw_sql("SELECT current_schema()")
+        return self.raw_sql("SELECT CURRENT_SCHEMA()").arrow()[0][0].as_py()
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
