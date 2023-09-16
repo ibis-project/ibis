@@ -224,7 +224,7 @@ _simple_ops = {
     ops.RandomScalar: "random",
     ops.Sign: "sign",
     # Unary aggregates
-    ops.ApproxMedian: "median",
+    ops.ApproxCountDistinct: "approx_count_distinct",
     ops.Median: "median",
     ops.Mean: "avg",
     ops.Max: "max",
@@ -234,6 +234,7 @@ _simple_ops = {
     ops.ArgMax: "arg_max",
     ops.First: "first",
     ops.Last: "last",
+    ops.Count: "count",
     # string operations
     ops.StringContains: "contains",
     ops.StringLength: "length",
@@ -1108,22 +1109,10 @@ def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
 ### Counting
 
 
-@translate_val.register(ops.Count)
-def _count(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    count_expr = sg.expressions.Count(this=arg)
-    return _apply_agg_filter(count_expr, where=op.where, **kw)
-
-
 @translate_val.register(ops.CountDistinct)
-@translate_val.register(ops.ApproxCountDistinct)
 def _count_distinct(op, **kw):
     arg = translate_val(op.arg, **kw)
-    count_expr = sg.expressions.Count(
-        this=sg.expressions.Distinct(
-            expressions=[arg],
-        )
-    )
+    count_expr = sg.expressions.Count(this=sg.expressions.Distinct(expressions=[arg]))
     return _apply_agg_filter(count_expr, where=op.where, **kw)
 
 
@@ -1682,21 +1671,15 @@ _map_interval_to_microseconds = {
 }
 
 
-# TODO
-UNSUPPORTED_REDUCTIONS = (
-    ops.ApproxMedian,
-    ops.ApproxCountDistinct,
-)
+@translate_val.register(ops.ApproxMedian)
+def _approx_median(op, **kw):
+    expr = sg.func("approx_quantile", "0.5", translate_val(op.arg))
+    return _apply_agg_filter(expr, where=op.where, **kw)
 
 
 # TODO
 @translate_val.register(ops.WindowFunction)
 def _window(op: ops.WindowFunction, **kw: Any):
-    if isinstance(op.func, UNSUPPORTED_REDUCTIONS):
-        raise com.UnsupportedOperationError(
-            f"{type(op.func)} is not supported in window functions"
-        )
-
     if isinstance(op.func, ops.CumulativeOp):
         arg = cumulative_to_window(op.func, op.frame)
         return translate_val(arg, **kw)
