@@ -1330,11 +1330,15 @@ def _array_column(op, **kw):
 
 @translate_val.register(ops.StructColumn)
 def _struct_column(op, **kw):
-    values = translate_val(op.values, **kw)
-    struct_type = DuckDBType.from_ibis(op.dtype)
-    # TODO: this seems like a workaround
-    # but maybe it isn't
-    return sg.cast(expression=values, to=struct_type)
+    return sg.exp.Struct(
+        expressions=[
+            sg.exp.Slice(
+                this=sg.exp.Literal(this=name, is_string=True),
+                expression=translate_val(value, **kw),
+            )
+            for name, value in zip(op.names, op.values)
+        ]
+    )
 
 
 @translate_val.register(ops.StructField)
