@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from collections.abc import Mapping
 from functools import partial
 
 import sqlglot as sg
@@ -234,3 +235,28 @@ def _dropna(op: ops.DropNa, *, table, **kw):
         return table.where(predicate, dialect="duckdb")
     except AttributeError:
         return sg.select("*").from_(table).where(predicate, dialect="duckdb")
+
+
+@translate_rel.register
+def _fillna(op: ops.FillNa, *, table, **kw):
+    replacements = op.replacements
+    if isinstance(replacements, Mapping):
+        mapping = replacements
+    else:
+        mapping = {
+            name: replacements for name, dtype in op.schema.items() if dtype.nullable
+        }
+    exprs = [
+        (
+            sg.alias(
+                sg.exp.Coalesce(
+                    this=sg.column(col), expressions=[translate_val(alt, **kw)]
+                ),
+                col,
+            )
+            if (alt := mapping.get(col)) is not None
+            else sg.column(col)
+        )
+        for col in op.schema.keys()
+    ]
+    return sg.select(*exprs).from_(table)

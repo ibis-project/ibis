@@ -1752,3 +1752,14 @@ def _rowid(op, *, aliases, **_) -> str:
 def _scalar_udf(op, **kw) -> str:
     funcname = op.__class__.__name__
     return sg.func(funcname, *(translate_val(arg, **kw) for arg in op.args))
+
+
+@translate_val.register(int)
+@translate_val.register(float)
+def _int_float(val, **kw):
+    return sg.exp.Literal(this=str(val), is_string=False)
+
+
+@translate_val.register(str)
+def _str(val, **kw):
+    return sg.exp.Literal(this=val, is_string=True)
