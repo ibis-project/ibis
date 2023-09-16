@@ -4,7 +4,7 @@ import calendar
 import functools
 import math
 from functools import partial
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 from toolz import flip
@@ -14,8 +14,6 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.rules as rlz
-from ibis.backends.base.sql.registry import helpers
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
 if TYPE_CHECKING:
@@ -934,11 +932,13 @@ def _array_index_op(op, **kw):
 @translate_val.register(ops.InValues)
 def _in_values(op, **kw):
     if not op.options:
-        return False
+        return sg.exp.FALSE
+
     value = translate_val(op.value, **kw)
-    options = sg.exp.Array().from_arg_list([translate_val(x, **kw) for x in op.options])
-    sg_expr = sg.func("list_contains", options, value, dialect="duckdb")
-    return sg_expr
+    return sg.exp.In(
+        this=value,
+        expressions=[translate_val(opt, **kw) for opt in op.options],
+    )
 
 
 @translate_val.register(ops.InColumn)
@@ -1236,14 +1236,10 @@ def _arbitrary(op, **kw):
 
 
 @translate_val.register(ops.FindInSet)
-def _index_of(op, **kw):
+def _index_of(op: ops.FindInSet, **kw):
     needle = translate_val(op.needle, **kw)
-    return (
-        sg.func(
-            "list_indexof", list(map(partial(translate_val, **kw), op.values)), needle
-        )
-        - 1
-    )
+    args = sg.exp.Array(expressions=list(map(partial(translate_val, **kw), op.values)))
+    return sg.func("list_indexof", args, needle) - 1
 
 
 @translate_val.register(tuple)
@@ -1352,43 +1348,6 @@ def _scalar_param(op, params: Mapping[ops.Node, Any], **kw):
     return translate_val(literal.op(), **kw)
 
 
-# TODO
-def contains(op_string: Literal["IN", "NOT IN"]) -> str:
-    def tr(op, *, cache, **kw):
-        from ibis.backends.duckdb.compiler import translate
-
-        value = op.value
-        options = op.options
-        if isinstance(options, tuple) and not options:
-            return {"NOT IN": "TRUE", "IN": "FALSE"}[op_string]
-
-        left_arg = translate_val(value, **kw)
-        if helpers.needs_parens(value):
-            left_arg = helpers.parenthesize(left_arg)
-
-        # special case non-foreign isin/notin expressions
-        if (
-            not isinstance(options, tuple)
-            and options.output_shape is rlz.Shape.COLUMNAR
-        ):
-            # this will fail to execute if there's a correlation, but it's too
-            # annoying to detect so we let it through to enable the
-            # uncorrelated use case (pandas-style `.isin`)
-            subquery = translate(options.to_expr().as_table().op(), {})
-            right_arg = f"({_sql(subquery)})"
-        else:
-            right_arg = _sql(translate_val(options, cache=cache, **kw))
-
-        # we explicitly do NOT parenthesize the right side because it doesn't
-        # make sense to do so for Sequence operations
-        return f"{left_arg} {op_string} {right_arg}"
-
-    return tr
-
-
-# TODO
-# translate_val.register(ops.Contains)(contains("IN"))
-# translate_val.register(ops.NotContains)(contains("NOT IN"))
 @translate_val.register(ops.IdenticalTo)
 def _identical_to(op, **kw):
     left = translate_val(op.left, **kw)
