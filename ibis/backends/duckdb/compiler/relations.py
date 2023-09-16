@@ -176,13 +176,29 @@ def _set_op(op: ops.SetOp, *, left, right, **_):
 
 
 @translate_rel.register
-def _limit(op: ops.Limit, *, table, **kw):
-    n = op.n
-    limited = sg.select("*").from_(table).limit(n)
+def _limit(op: ops.Limit, *, table, n, offset, **kw):
+    result = sg.select("*").from_(table)
 
-    if offset := op.offset:
-        limited = limited.offset(offset)
-    return limited
+    if isinstance(n, int):
+        result = result.limit(n)
+    elif n is not None:
+        limit = translate_val(n, **kw)
+        # TODO: calling `.sql` is a workaround for sqlglot not supporting
+        # scalar subqueries in limits
+        limit = sg.select(limit).from_(table).subquery().sql(dialect="duckdb")
+        result = result.limit(limit)
+
+    assert offset is not None, "offset is None"
+
+    if not isinstance(offset, int):
+        skip = translate_val(offset, **kw)
+        skip = sg.select(skip).from_(table).subquery().sql(dialect="duckdb")
+    elif not offset:
+        return result
+    else:
+        skip = offset
+
+    return result.offset(skip)
 
 
 @translate_rel.register
