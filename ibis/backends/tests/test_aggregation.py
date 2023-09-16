@@ -522,11 +522,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.double_col[where].var(ddof=0),
             id="var_pop",
             marks=[
-                mark.broken(
-                    ["duckdb"],
-                    raises=com.IbisError,
-                    reason="sqlglot mistranslates VariancePop to variance_pop instead of var_pop",
-                ),
                 mark.notimpl(
                     ["druid"],
                     raises=sa.exc.ProgrammingError,

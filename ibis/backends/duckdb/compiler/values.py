@@ -442,24 +442,36 @@ def _not(op, **kw):
     return sg.expressions.Not(this=arg)
 
 
+def _apply_agg_filter(expr, *, where, **kw):
+    if where is not None:
+        return sg.exp.Filter(
+            this=expr, expression=sg.exp.Where(this=translate_val(where, **kw))
+        )
+    return expr
+
+
+def _aggregate(op, func, *, where, **kw):
+    args = [
+        translate_val(arg, **kw)
+        for argname, arg in zip(op.argnames, op.args)
+        if argname not in ("where", "how")
+    ]
+    agg = sg.func(func, *args, dialect="duckdb")
+    return _apply_agg_filter(agg, where=op.where, **kw)
+
+
 @translate_val.register(ops.Any)
 def _any(op, **kw):
     arg = translate_val(op.arg, **kw)
-    any_expr = sg.expressions.AnyValue(this=arg)
-    if op.where is not None:
-        where = sg.expressions.Where(this=translate_val(op.where, **kw))
-        return sg.expressions.Filter(this=any_expr, expression=where)
-    return any_expr
+    any_expr = sg.func("bool_or", arg)
+    return _apply_agg_filter(any_expr, where=op.where, **kw)
 
 
 @translate_val.register(ops.All)
 def _all(op, **kw):
     arg = translate_val(op.arg, **kw)
     all_expr = sg.func("bool_and", arg)
-    if op.where is not None:
-        where = sg.expressions.Where(this=translate_val(op.where, **kw))
-        return sg.expressions.Filter(this=all_expr, expression=where)
-    return all_expr
+    return _apply_agg_filter(all_expr, where=op.where, **kw)
 
 
 @translate_val.register(ops.NotAny)
@@ -946,9 +958,7 @@ def _in_column(op, **kw):
 @translate_val.register(ops.ArrayCollect)
 def _array_collect(op, **kw):
     agg = sg.func("list", translate_val(op.arg, **kw), dialect="duckdb")
-    if (where := op.where) is not None:
-        return sg.exp.Filter(this=agg, expression=translate_val(where, **kw))
-    return agg
+    return _apply_agg_filter(agg, where=op.where, **kw)
 
 
 @translate_val.register(ops.ArrayConcat)
@@ -1102,10 +1112,7 @@ def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
 def _count(op, **kw):
     arg = translate_val(op.arg, **kw)
     count_expr = sg.expressions.Count(this=arg)
-    if op.where is not None:
-        where = sg.expressions.Where(this=translate_val(op.where, **kw))
-        return sg.expressions.Filter(this=count_expr, expression=where)
-    return count_expr
+    return _apply_agg_filter(count_expr, where=op.where, **kw)
 
 
 @translate_val.register(ops.CountDistinct)
@@ -1117,10 +1124,7 @@ def _count_distinct(op, **kw):
             expressions=[arg],
         )
     )
-    if op.where is not None:
-        where = sg.expressions.Where(this=translate_val(op.where, **kw))
-        return sg.expressions.Filter(this=count_expr, expression=where)
-    return count_expr
+    return _apply_agg_filter(count_expr, where=op.where, **kw)
 
 
 # TODO: implement
@@ -1132,34 +1136,15 @@ def _count_distinct_star(op, **kw):
 @translate_val.register(ops.CountStar)
 def _count_star(op, **kw):
     sql = sg.expressions.Count(this=sg.expressions.Star())
-    if (predicate := op.where) is not None:
-        return sg.expressions.Filter(
-            this=sql,
-            expression=sg.expressions.Where(this=translate_val(predicate, **kw)),
-        )
-    return sql
+    return _apply_agg_filter(sql, where=op.where, **kw)
 
 
 @translate_val.register(ops.Sum)
 def _sum(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    where = None
-    if op.where is not None:
-        where = translate_val(op.where, **kw)
-
-    sg_where = sg.expressions.Where(this=where)
-
-    # Handle sum(boolean comparison)
-    if isinstance(op.arg, ops.Comparison):
-        sg_count_expr = sg.expressions.Count(this=arg)
-        if where is not None:
-            return sg.expressions.Filter(this=sg_count_expr, expression=sg_where)
-        return sg_count_expr
-
-    sg_sum_expr = sg.expressions.Sum(this=arg)
-    if where is not None:
-        return sg.expressions.Filter(this=sg_sum_expr, expression=sg_where)
-    return sg_sum_expr
+    arg = translate_val(
+        ops.Cast(arg, to=op.dtype) if (arg := op.arg).dtype.is_boolean() else arg, **kw
+    )
+    return _apply_agg_filter(sg.expressions.Sum(this=arg), where=op.where, **kw)
 
 
 # TODO
@@ -1186,13 +1171,7 @@ def _quantile(op, **kw):
     arg = translate_val(op.arg, **kw)
     quantile = translate_val(op.quantile, **kw)
     sg_expr = sg.func("quantile_cont", arg, quantile, dialect="duckdb")
-    if op.where is not None:
-        predicate = translate_val(op.where, **kw)
-        sg_expr = sg.expressions.Filter(
-            this=sg_expr,
-            expression=sg.expressions.Where(this=predicate),
-        )
-    return sg_expr
+    return _apply_agg_filter(sg_expr, where=op.where, **kw)
 
 
 @translate_val.register(ops.Correlation)
@@ -1217,12 +1196,7 @@ def _corr(op, **kw):
         )
 
     sg_func = sg.func("corr", left, right)
-
-    if (where := op.where) is not None:
-        predicate = sg.expressions.Where(this=translate_val(where, **kw))
-        return sg.expressions.Filter(this=sg_func, expression=predicate)
-
-    return sg_func
+    return _apply_agg_filter(sg_func, where=op.where, **kw)
 
 
 @translate_val.register(ops.Covariance)
@@ -1243,15 +1217,8 @@ def _covariance(op, **kw):
             to=DuckDBType.from_ibis(dt.Int32(nullable=right_type.nullable)),
         )
 
-    funcname = f"covar_{_how[op.how]}"
-
-    sg_func = sg.func(funcname, left, right)
-
-    if (where := op.where) is not None:
-        predicate = sg.expressions.Where(this=translate_val(where, **kw))
-        return sg.expressions.Filter(this=sg_func, expression=predicate)
-
-    return sg_func
+    sg_func = sg.func(f"covar_{_how[op.how]}", left, right)
+    return _apply_agg_filter(sg_func, where=op.where, **kw)
 
 
 @translate_val.register(ops.Variance)
@@ -1260,39 +1227,14 @@ def _variance(op, **kw):
     _how = {"sample": "samp", "pop": "pop"}
     _func = {ops.Variance: "var", ops.StandardDev: "stddev"}
 
-    funcname = f"{_func[type(op)]}_{_how[op.how]}"
+    arg = op.arg
+    if (arg_dtype := arg.dtype).is_boolean():
+        arg = ops.Cast(arg, to=dt.Int32(nullable=arg_dtype))
 
-    arg = translate_val(op.arg, **kw)
-    if (arg_type := op.arg.dtype).is_boolean():
-        arg = sg.cast(
-            expression=arg,
-            to=DuckDBType.from_ibis(dt.Int32(nullable=arg_type.nullable)),
-        )
+    arg = translate_val(arg, **kw)
 
-    sg_func = sg.func(funcname, arg)
-
-    if (where := op.where) is not None:
-        predicate = sg.expressions.Where(this=translate_val(where, **kw))
-        return sg.expressions.Filter(this=sg_func, expression=predicate)
-
-    return sg_func
-
-
-def _aggregate(op, func, *, where=None, **kw):
-    args = [
-        translate_val(arg, **kw)
-        for argname, arg in zip(op.argnames, op.args)
-        if argname not in ("where", "how")
-    ]
-    if where is not None:
-        predicate = translate_val(where, **kw)
-        return sg.expressions.Filter(
-            this=sg.func(func, *args, dialect="duckdb"),
-            expression=sg.expressions.Where(this=predicate),
-        )
-
-    res = sg.func(func, *args)
-    return res
+    sg_func = sg.func(f"{_func[type(op)]}_{_how[op.how]}", arg)
+    return _apply_agg_filter(sg_func, where=op.where, **kw)
 
 
 @translate_val.register(ops.Arbitrary)
@@ -1379,15 +1321,7 @@ def _group_concat(op, **kw):
     sep = translate_val(op.sep, **kw)
 
     concat = sg.func("string_agg", arg, sep, dialect="duckdb")
-
-    if (where := op.where) is not None:
-        predicate = translate_val(where, **kw)
-        return sg.expressions.Filter(
-            this=concat,
-            expression=sg.expressions.Where(this=predicate),
-        )
-
-    return concat
+    return _apply_agg_filter(concat, where=op.where, **kw)
 
 
 # TODO
@@ -1598,10 +1532,7 @@ _bit_agg = {
 def _bitor(op, **kw):
     arg = translate_val(op.arg, **kw)
     bit_expr = sg.func(_bit_agg[type(op)], arg)
-    if op.where is not None:
-        where = sg.expressions.Where(this=translate_val(op.where, **kw))
-        return sg.expressions.Filter(this=bit_expr, expression=where)
-    return bit_expr
+    return _apply_agg_filter(bit_expr, where=op.where, **kw)
 
 
 @translate_val.register(ops.Xor)
