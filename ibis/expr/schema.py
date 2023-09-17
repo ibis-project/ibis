@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Iterator, Mapping
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
@@ -10,10 +10,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Coercible
-from ibis.util import deprecated, indent
-
-if TYPE_CHECKING:
-    import pandas as pd
+from ibis.util import indent
 
 
 class Schema(Concrete, Coercible, MapSet):
@@ -206,15 +203,6 @@ class Schema(Concrete, Coercible, MapSet):
         'b'
         """
         return self.names[i]
-
-    @deprecated(
-        as_of="6.0",
-        instead="use ibis.formats.pandas.PandasConverter.convert_frame() instead",
-    )
-    def apply_to(self, df: pd.DataFrame) -> pd.DataFrame:
-        from ibis.formats.pandas import PandasData
-
-        return PandasData.convert_table(df, self)
 
 
 @lazy_singledispatch
