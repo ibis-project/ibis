@@ -365,8 +365,6 @@ def _cast(op, **kw):
         )
     elif to.is_timestamp() and op.arg.dtype.is_integer():
         return sg.func("to_timestamp", arg)
-    elif to.is_timestamp() and (tz := to.timezone) is not None:
-        return sg.func("timezone", sg_literal(tz), arg)
 
     return sg.cast(expression=arg, to=translate_val(to, **kw))
 
