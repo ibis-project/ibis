@@ -190,6 +190,13 @@ _simple_ops = {
     ops.First: "first",
     ops.Last: "last",
     ops.Count: "count",
+    ops.All: "bool_and",
+    ops.Any: "bool_or",
+    ops.ArrayCollect: "list",
+    ops.GroupConcat: "string_agg",
+    ops.BitOr: "bit_or",
+    ops.BitAnd: "bit_and",
+    ops.BitXor: "bit_xor",
     # string operations
     ops.StringContains: "contains",
     ops.StringLength: "length",
@@ -222,6 +229,13 @@ _simple_ops = {
     ops.LastValue: "last_value",
     ops.NTile: "ntile",
     ops.Hash: "hash",
+    ops.TimeFromHMS: "make_time",
+    ops.StringToTimestamp: "strptime",
+    ops.Levenshtein: "levenshtein",
+    ops.Repeat: "repeat",
+    ops.Map: "map",
+    ops.MapMerge: "map_concat",
+    ops.JSONGetItem: "json_extract",
 }
 
 
@@ -412,20 +426,6 @@ def _aggregate(op, func, *, where, **kw):
     return _apply_agg_filter(agg, where=where, **kw)
 
 
-@translate_val.register(ops.Any)
-def _any(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    any_expr = sg.func("bool_or", arg)
-    return _apply_agg_filter(any_expr, where=op.where, **kw)
-
-
-@translate_val.register(ops.All)
-def _all(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    all_expr = sg.func("bool_and", arg)
-    return _apply_agg_filter(all_expr, where=op.where, **kw)
-
-
 @translate_val.register(ops.NotAny)
 def _not_any(op, **kw):
     return translate_val(ops.All(ops.Not(op.arg), where=op.where), **kw)
@@ -459,14 +459,6 @@ def _time(op, **kw):
     return sg.cast(expression=arg, to=sg.exp.DataType.Type.TIME)
 
 
-@translate_val.register(ops.TimeFromHMS)
-def _time_from_hms(op, **kw):
-    hours = translate_val(op.hours, **kw)
-    minutes = translate_val(op.minutes, **kw)
-    seconds = translate_val(op.seconds, **kw)
-    return sg.func("make_time", hours, minutes, seconds)
-
-
 @translate_val.register(ops.TimestampNow)
 def _timestamp_now(op, **kw):
     """DuckDB current timestamp defaults to timestamp + tz."""
@@ -491,10 +483,13 @@ def _timestamp_from_ymdhms(op, **kw):
     minute = translate_val(op.minutes, **kw)
     second = translate_val(op.seconds, **kw)
 
+    args = [year, month, day, hour, minute, second]
+
+    func = "make_timestamp"
     if (timezone := op.dtype.timezone) is not None:
-        return f"make_timestamptz({year}, {month}, {day}, {hour}, {minute}, {second}, '{timezone}')"
-    else:
-        return f"make_timestamp({year}, {month}, {day}, {hour}, {minute}, {second})"
+        func += "tz"
+        args.append(sg.exp.Literal(this=timezone, is_string=True))
+    return sg.func(func, *args)
 
 
 @translate_val.register(ops.Strftime)
@@ -506,13 +501,6 @@ def _strftime(op, **kw):
     arg = translate_val(op.arg, **kw)
     format_str = translate_val(op.format_str, **kw)
     return sg.func("strftime", arg, format_str)
-
-
-@translate_val.register(ops.StringToTimestamp)
-def _string_to_timestamp(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    format_str = translate_val(op.format_str, **kw)
-    return sg.func("strptime", arg, format_str)
 
 
 @translate_val.register(ops.ExtractEpochSeconds)
@@ -608,13 +596,13 @@ def _truncate(op, **kw):
     except KeyError:
         raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-    return f"date_trunc('{duckunit}', {arg})"
+    return sg.func("date_trunc", duckunit, arg)
 
 
 @translate_val.register(ops.DayOfWeekIndex)
 def _day_of_week_index(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return f"(dayofweek({arg}) + 6) % 7"
+    return (sg.func("dayofweek", arg) + 6) % 7
 
 
 @translate_val.register(ops.DayOfWeekName)
@@ -763,13 +751,6 @@ def _regex_extract(op, **kw):
     return sg.func("regexp_extract", arg, pattern, group, dialect="duckdb")
 
 
-@translate_val.register(ops.Levenshtein)
-def _levenshtein(op, **kw):
-    left = translate_val(op.left, **kw)
-    right = translate_val(op.right, **kw)
-    return sg.func("levenshtein", left, right)
-
-
 @translate_val.register(ops.StringSplit)
 def _string_split(op, **kw):
     arg = translate_val(op.arg, **kw)
@@ -869,8 +850,8 @@ def _array_sort(op, **kw):
 def _array_index_op(op, **kw):
     arg = translate_val(op.arg, **kw)
     index = translate_val(op.index, **kw)
-    correct_idx = f"if({index} >= 0, {index} + 1, {index})"
-    return f"array_extract({arg}, {correct_idx})"
+    correct_idx = sg.func("if", index >= 0, index + 1, index)
+    return sg.func("list_extract", arg, correct_idx)
 
 
 @translate_val.register(ops.InValues)
@@ -892,12 +873,6 @@ def _in_column(op, **kw):
     value = translate_val(op.value, **kw)
     options = translate(op.options.to_expr().as_table().op(), {})
     return value.isin(options)
-
-
-@translate_val.register(ops.ArrayCollect)
-def _array_collect(op, **kw):
-    agg = sg.func("list", translate_val(op.arg, **kw))
-    return _apply_agg_filter(agg, where=op.where, **kw)
 
 
 @translate_val.register(ops.ArrayConcat)
@@ -958,7 +933,7 @@ def _array_slice_op(op, **kw):
 def _array_string_join(op, **kw):
     arg = translate_val(op.arg, **kw)
     sep = translate_val(op.sep, **kw)
-    return f"list_aggregate({arg}, 'string_agg', {sep})"
+    return sg.func("list_aggr", arg, sg_literal("string_agg"), sep)
 
 
 @translate_val.register(ops.ArrayMap)
@@ -1055,8 +1030,7 @@ def _count_distinct_star(op, **kw):
 
 @translate_val.register(ops.CountStar)
 def _count_star(op, **kw):
-    sql = sg.exp.Count(this=sg.exp.Star())
-    return _apply_agg_filter(sql, where=op.where, **kw)
+    return _apply_agg_filter(sg.exp.Count(this=sg.exp.Star()), where=op.where, **kw)
 
 
 @translate_val.register(ops.Sum)
@@ -1072,13 +1046,6 @@ def _nth_value(op, **kw):
     arg = translate_val(op.arg, **kw)
     nth = translate_val(op.nth, **kw)
     return sg.func("nth_value", arg, nth + 1)
-
-
-@translate_val.register(ops.Repeat)
-def _repeat(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    times = translate_val(op.times, **kw)
-    return sg.func("repeat", arg, times)
 
 
 ### Stats
@@ -1228,24 +1195,15 @@ def _exists_subquery(op, **kw):
     return f"{prefix}EXISTS ({subq})"
 
 
-@translate_val.register(ops.GroupConcat)
-def _group_concat(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    sep = translate_val(op.sep, **kw)
-
-    concat = sg.func("string_agg", arg, sep)
-    return _apply_agg_filter(concat, where=op.where, **kw)
-
-
 @translate_val.register(ops.ArrayColumn)
 def _array_column(op, **kw):
-    return sg.exp.Array.from_arg_list([translate_val(col, **kw) for col in op.cols])
+    return sg.exp.Array(expressions=[translate_val(col, **kw) for col in op.cols])
 
 
 @translate_val.register(ops.StructColumn)
 def _struct_column(op, **kw):
-    return sg.exp.Struct(
-        expressions=[
+    return sg.exp.Struct.from_arg_list(
+        [
             sg.exp.Slice(
                 this=sg.exp.Literal(this=name, is_string=True),
                 expression=translate_val(value, **kw),
@@ -1292,13 +1250,6 @@ def _vararg_func(op, **kw):
     )
 
 
-@translate_val.register(ops.Map)
-def _map(op, **kw):
-    keys = translate_val(op.keys, **kw)
-    values = translate_val(op.values, **kw)
-    return sg.exp.Map(keys=keys, values=values)
-
-
 @translate_val.register(ops.MapGet)
 def _map_get(op, **kw):
     arg = translate_val(op.arg, **kw)
@@ -1324,21 +1275,6 @@ def _map_contains(op, **kw):
         ),
         expression=sg.exp.Literal(this="0", is_string=False),
     )
-
-
-def _is_map_literal(op):
-    return isinstance(op, ops.Literal) or (
-        isinstance(op, ops.Map)
-        and isinstance(op.keys, ops.Literal)
-        and isinstance(op.values, ops.Literal)
-    )
-
-
-@translate_val.register(ops.MapMerge)
-def _map_merge(op, **kw):
-    left = translate_val(op.left, **kw)
-    right = translate_val(op.right, **kw)
-    return sg.func("map_concat", left, right)
 
 
 def _binary_infix(sg_expr: sg.exp._Expression):
@@ -1384,22 +1320,6 @@ for _op, _sym in _binary_infix_ops.items():
     translate_val.register(_op)(_binary_infix(_sym))
 
 del _op, _sym
-
-
-_bit_agg = {
-    ops.BitOr: "bit_or",
-    ops.BitAnd: "bit_and",
-    ops.BitXor: "bit_xor",
-}
-
-
-@translate_val.register(ops.BitAnd)
-@translate_val.register(ops.BitOr)
-@translate_val.register(ops.BitXor)
-def _bitor(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    bit_expr = sg.func(_bit_agg[type(op)], arg)
-    return _apply_agg_filter(bit_expr, where=op.where, **kw)
 
 
 @translate_val.register(ops.Xor)
@@ -1604,14 +1524,7 @@ shift_like(ops.Lead, "lead")
 
 @translate_val.register(ops.Argument)
 def _argument(op, **_):
-    return sg.exp.Identifier(this=op.name, quoted=False)
-
-
-@translate_val.register(ops.JSONGetItem)
-def _json_getitem(op, **kw):
-    return sg.exp.JSONExtract(
-        this=translate_val(op.arg, **kw), expression=translate_val(op.index, **kw)
-    )
+    return sg.to_identifier(op.name)
 
 
 @translate_val.register(ops.RowID)
