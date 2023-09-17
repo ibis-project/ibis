@@ -341,46 +341,40 @@ def _round(op, **kw):
 ### Dtype Dysmorphia
 
 
-_interval_cast_suffixes = {
-    "s": "Second",
-    "m": "Minute",
-    "h": "Hour",
-    "D": "Day",
-    "W": "Week",
-    "M": "Month",
-    "Q": "Quarter",
-    "Y": "Year",
+_interval_suffixes = {
+    "ms": "milliseconds",
+    "us": "microseconds",
+    "s": "seconds",
+    "m": "minutes",
+    "h": "hours",
+    "D": "days",
+    "M": "months",
+    "Y": "years",
 }
 
 
 @translate_val.register(ops.Cast)
 def _cast(op, **kw):
     arg = translate_val(op.arg, **kw)
+    to = op.to
 
-    if isinstance(op.to, dt.Interval):
-        suffix = _interval_cast_suffixes[op.to.unit.short]
-        if isinstance(op.arg, ops.TableColumn):
-            return (
-                f"INTERVAL (i) {suffix} FROM (SELECT {arg.name} FROM {arg.table}) t(i)"
-            )
-
-        else:
-            return sg.exp.Interval(this=arg, unit=suffix)
-    elif isinstance(op.to, dt.Timestamp) and isinstance(op.arg.dtype, dt.Integer):
+    if to.is_interval():
+        return sg.func(
+            f"to_{_interval_suffixes[to.unit.short]}",
+            sg.cast(arg, to=DuckDBType.from_ibis(dt.int32)),
+        )
+    elif to.is_timestamp() and op.arg.dtype.is_integer():
         return sg.func("to_timestamp", arg)
-    elif isinstance(op.to, dt.Timestamp) and op.to.timezone is not None:
-        timezone = sg.exp.Literal(this=op.to.timezone, is_string=True)
-        return sg.func("timezone", timezone, arg)
+    elif to.is_timestamp() and (tz := to.timezone) is not None:
+        return sg.func("timezone", sg_literal(tz), arg)
 
-    to = translate_val(op.to, **kw)
-    return sg.cast(expression=arg, to=to)
+    return sg.cast(expression=arg, to=translate_val(to, **kw))
 
 
 @translate_val.register(ops.TryCast)
 def _try_cast(op, **kw):
     return sg.exp.TryCast(
-        this=translate_val(op.arg, **kw),
-        to=DuckDBType.to_string(op.to),
+        this=translate_val(op.arg, **kw), to=DuckDBType.from_ibis(op.to)
     )
 
 
