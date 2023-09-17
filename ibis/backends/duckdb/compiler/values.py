@@ -244,17 +244,20 @@ _simple_ops = {
 }
 
 
-def _agg(func_name):
-    def formatter(op, **kw):
-        return _aggregate(op, func_name, where=op.where, **kw)
-
-    return formatter
+def _aggregate(op, func, **kw):
+    args = [
+        translate_val(arg, **kw)
+        for argname, arg in zip(op.argnames, op.args)
+        if argname not in ("where", "how")
+    ]
+    agg = sg.func(func, *args)
+    return _apply_agg_filter(agg, where=op.where, **kw)
 
 
 for _op, _name in _simple_ops.items():
     assert isinstance(type(_op), type), type(_op)
     if issubclass(_op, ops.Reduction):
-        translate_val.register(_op)(_agg(_name))
+        translate_val.register(_op)(partial(_aggregate, func=_name))
     else:
 
         @translate_val.register(_op)
@@ -405,16 +408,6 @@ def _apply_agg_filter(expr, *, where, **kw):
             this=expr, expression=sg.exp.Where(this=translate_val(where, **kw))
         )
     return expr
-
-
-def _aggregate(op, func, **kw):
-    args = [
-        translate_val(arg, **kw)
-        for argname, arg in zip(op.argnames, op.args)
-        if argname not in ("where", "how")
-    ]
-    agg = sg.func(func, *args)
-    return _apply_agg_filter(agg, where=op.where, **kw)
 
 
 @translate_val.register(ops.NotAny)
