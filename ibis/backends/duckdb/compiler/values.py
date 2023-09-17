@@ -1342,12 +1342,11 @@ def _xor(op, **kw):
     # https://github.com/tobymao/sqlglot/issues/2238
     left = translate_val(op.left, **kw)
     right = translate_val(op.right, **kw)
-    return sg.exp.And(
-        this=sg.exp.Paren(this=sg.exp.Or(this=left, expression=right)),
-        expression=sg.exp.Paren(
-            this=sg.exp.Not(this=sg.exp.And(this=left, expression=right))
-        ),
+    result = sg.exp.And(
+        this=sg.exp.Or(this=left, expression=right),
+        expression=sg.exp.Not(this=sg.exp.And(this=left, expression=right)),
     )
+    return result
 
 
 ### Ordering
