@@ -24,8 +24,10 @@ def _dummy(op: ops.DummyTable, **kw):
     return sg.select(*map(partial(translate_val, **kw), op.values))
 
 
-@translate_rel.register(ops.PhysicalTable)
-def _physical_table(op: ops.PhysicalTable, **_):
+@translate_rel.register(ops.DatabaseTable)
+@translate_rel.register(ops.UnboundTable)
+@translate_rel.register(ops.InMemoryTable)
+def _physical_table(op, **_):
     return sg.expressions.Table(this=sg.to_identifier(op.name, quoted=True))
 
 
