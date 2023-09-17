@@ -1582,7 +1582,9 @@ _map_interval_to_microseconds = {
 
 @translate_val.register(ops.ApproxMedian)
 def _approx_median(op, **kw):
-    expr = sg.func("approx_quantile", "0.5", translate_val(op.arg))
+    expr = sg.func(
+        "approx_quantile", translate_val(op.arg, **kw), sg_literal(0.5, is_string=False)
+    )
     return _apply_agg_filter(expr, where=op.where, **kw)
 
 
