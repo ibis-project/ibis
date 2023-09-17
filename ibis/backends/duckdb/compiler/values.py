@@ -843,9 +843,9 @@ def _array_sort(op, **kw):
         true=NULL,
         false=sg.func("list_distinct", arg)
         + sg.exp.If(
-            this=sg.func("list_count", arg) < sg.func("array_length", arg),
-            true=sg.func("list_value", NULL),
-            false=sg.func("list_value"),
+            this=sg.func("list_count", arg) < sg.func("len", arg),
+            true=sg.exp.Array.from_arg_list([NULL]),
+            false=sg.exp.Array.from_arg_list([]),
         ),
     )
 
@@ -883,7 +883,7 @@ def _in_column(op, **kw):
 def _array_concat(op, **kw):
     return sg.func(
         "flatten",
-        sg.func("list_value", *(translate_val(arg, **kw) for arg in op.arg)),
+        sg.exp.Array.from_arg_list([translate_val(arg, **kw) for arg in op.arg]),
     )
 
 
