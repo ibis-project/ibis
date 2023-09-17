@@ -933,6 +933,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=ValidationError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'TimestampScalar'",
                 ),
+                pytest.mark.broken(
+                    ["duckdb"],
+                    raises=AssertionError,
+                    reason="duckdb returns dateoffsets",
+                ),
             ],
         ),
         param(
@@ -1972,7 +1977,9 @@ INTERVAL_BACKEND_TYPES = {
     raises=(NotImplementedError, AttributeError),
 )
 @pytest.mark.broken(
-    ["bigquery"], reason="BigQuery returns DateOffset arrays", raises=AssertionError
+    ["bigquery", "duckdb"],
+    reason="BigQuery returns DateOffset arrays",
+    raises=AssertionError,
 )
 @pytest.mark.xfail_version(
     datafusion=["datafusion<31"],
