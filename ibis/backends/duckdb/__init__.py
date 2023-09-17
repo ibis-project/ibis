@@ -460,17 +460,11 @@ class Backend(BaseBackend, CanCreateSchema):
 
         # TODO: should we do this in arrow?
         # also what is pandas doing with dates?
+        # 🡅 is because of https://github.com/duckdb/duckdb/issues/8539
 
         pandas_df = result.fetch_df()
         result = DuckDBPandasData.convert_table(pandas_df, schema)
-        if isinstance(expr, ir.Table):
-            return result
-        elif isinstance(expr, ir.Column):
-            return result.iloc[:, 0]
-        elif isinstance(expr, ir.Scalar):
-            return result.iat[0, 0]
-        else:
-            raise ValueError
+        return expr.__pandas_result__(result)
 
     def load_extension(self, extension: str) -> None:
         """Install and load a duckdb extension by name or path.
