@@ -1296,7 +1296,8 @@ class Backend(BaseBackend, CanCreateSchema):
                 con.remove_function(udf_node.__class__.__name__)
 
             registration_func = compile_func(udf_node)
-            registration_func(con)
+            if registration_func is not None:
+                registration_func(con)
 
     def _compile_udf(self, udf_node: ops.ScalarUDF) -> None:
         func = udf_node.__func__
@@ -1317,6 +1318,9 @@ class Backend(BaseBackend, CanCreateSchema):
 
     _compile_python_udf = _compile_udf
     _compile_pyarrow_udf = _compile_udf
+
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
+        """No op."""
 
     def _compile_pandas_udf(self, _: ops.ScalarUDF) -> None:
         raise NotImplementedError("duckdb doesn't support pandas UDFs")

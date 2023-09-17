@@ -1511,3 +1511,8 @@ def _rowid(op, *, aliases, **_) -> str:
 def _scalar_udf(op, **kw) -> str:
     funcname = op.__class__.__name__
     return sg.func(funcname, *(translate_val(arg, **kw) for arg in op.args))
+
+
+@translate_val.register(ops.AggUDF)
+def _scalar_udf(op, **kw) -> str:
+    return _aggregate(op, op.__class__.__name__, where=op.where, **kw)
