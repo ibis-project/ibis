@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 from collections.abc import Mapping
 from functools import partial
+from typing import Any
 
 import sqlglot as sg
 
@@ -248,3 +249,21 @@ def _fillna(op: ops.FillNa, *, table, **kw):
         for col in op.schema.keys()
     ]
     return sg.select(*exprs).from_(table)
+
+
+@translate_rel.register
+def _view(op: ops.View, *, child, name: str, **_):
+    # TODO: find a better way to do this
+    backend = op.child.to_expr()._find_backend()
+    temp_view_src = backend._compile_temp_view(
+        table_name=name, source=sg.select("*").from_(child)
+    )
+    backend.con.execute(temp_view_src.sql("duckdb"))
+    return sg.table(name)
+
+
+@translate_rel.register
+def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
+    table = sg.table(op.name)
+    src = sg.parse_one(query, read="duckdb")
+    return sg.select("*").from_(table).with_(table, as_=src)
