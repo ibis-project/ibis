@@ -761,7 +761,7 @@ def _regex_extract(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
     group = translate_val(op.index, **kw)
-    return sg.func("regexp_extract", arg, pattern, group)
+    return sg.func("regexp_extract", arg, pattern, group, dialect="duckdb")
 
 
 @translate_val.register(ops.Levenshtein)
