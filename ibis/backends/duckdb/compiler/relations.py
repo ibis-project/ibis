@@ -20,7 +20,7 @@ def translate_rel(op: ops.TableNode, **_):
 
 @translate_rel.register(ops.DummyTable)
 def _dummy(op: ops.DummyTable, **kw):
-    return sg.select(*map(partial(translate_val, **kw), op.values), dialect="duckdb")
+    return sg.select(*map(partial(translate_val, **kw), op.values))
 
 
 @translate_rel.register(ops.PhysicalTable)
@@ -43,9 +43,7 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
         from_ = join = None
     tr_val = partial(translate_val, needs_alias=needs_alias, **kw)
     selections = tuple(map(tr_val, op.selections)) or "*"
-    sel = sg.select(*selections, dialect="duckdb").from_(
-        from_ if from_ is not None else table, dialect="duckdb"
-    )
+    sel = sg.select(*selections).from_(from_ if from_ is not None else table)
 
     if join is not None:
         sel = sel.join(join)
@@ -55,15 +53,12 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
             sel = sg.select("*").from_(sel.subquery(kw["aliases"][op.table]))
         res = functools.reduce(
             lambda left, right: left.and_(right),
-            (
-                sg.condition(tr_val(predicate), dialect="duckdb")
-                for predicate in predicates
-            ),
+            (sg.condition(tr_val(predicate)) for predicate in predicates),
         )
-        sel = sel.where(res, dialect="duckdb")
+        sel = sel.where(res)
 
     if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val, sort_keys), dialect="duckdb")
+        sel = sel.order_by(*map(tr_val, sort_keys))
 
     return sel
 
@@ -79,16 +74,16 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
     sel = sg.select(*selections).from_(table)
 
     if group_keys := op.by:
-        sel = sel.group_by(*map(tr_val_no_alias, group_keys), dialect="duckdb")
+        sel = sel.group_by(*map(tr_val_no_alias, group_keys))
 
     if predicates := op.predicates:
-        sel = sel.where(*map(tr_val_no_alias, predicates), dialect="duckdb")
+        sel = sel.where(*map(tr_val_no_alias, predicates))
 
     if having := op.having:
-        sel = sel.having(*map(tr_val_no_alias, having), dialect="duckdb")
+        sel = sel.having(*map(tr_val_no_alias, having))
 
     if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val_no_alias, sort_keys), dialect="duckdb")
+        sel = sel.order_by(*map(tr_val_no_alias, sort_keys))
 
     return sel
 
@@ -111,16 +106,13 @@ def _join(op: ops.Join, *, left, right, **kw):
     if predicates:
         on = functools.reduce(
             lambda left, right: left.and_(right),
-            (
-                sg.condition(translate_val(predicate, **kw), dialect="duckdb")
-                for predicate in predicates
-            ),
+            (sg.condition(translate_val(predicate, **kw)) for predicate in predicates),
         )
     else:
         on = None
     join_type = _JOIN_TYPES[type(op)]
     try:
-        return left.join(right, join_type=join_type, on=on, dialect="duckdb")
+        return left.join(right, join_type=join_type, on=on)
     except AttributeError:
         select_args = [f"{left.alias_or_name}.*"]
 
@@ -130,9 +122,7 @@ def _join(op: ops.Join, *, left, right, **kw):
         if not isinstance(op, (ops.LeftSemiJoin, ops.LeftAntiJoin)):
             select_args.append(f"{right.alias_or_name}.*")
         return (
-            sg.select(*select_args, dialect="duckdb")
-            .from_(left, dialect="duckdb")
-            .join(right, join_type=join_type, on=on, dialect="duckdb")
+            sg.select(*select_args).from_(left).join(right, join_type=join_type, on=on)
         )
 
 
@@ -230,9 +220,9 @@ def _dropna(op: ops.DropNa, *, table, **kw):
     tr_val = partial(translate_val, **kw)
     predicate = tr_val(raw_predicate)
     try:
-        return table.where(predicate, dialect="duckdb")
+        return table.where(predicate)
     except AttributeError:
-        return sg.select("*").from_(table).where(predicate, dialect="duckdb")
+        return sg.select("*").from_(table).where(predicate)
 
 
 @translate_rel.register

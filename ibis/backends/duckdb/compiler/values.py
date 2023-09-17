@@ -19,8 +19,6 @@ from ibis.backends.base.sqlglot.datatypes import DuckDBType
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
-# TODO: Find a way to remove all the dialect="duckdb" kwargs
-
 
 @functools.singledispatch
 def translate_val(op, **_):
@@ -53,16 +51,16 @@ def _column(op, *, aliases, **_):
 def _alias(op, render_aliases: bool = True, **kw):
     val = translate_val(op.arg, render_aliases=render_aliases, **kw)
     if render_aliases:
-        return sg.alias(val, op.name, dialect="duckdb")
+        return sg.alias(val, op.name)
     return val
 
 
 ### Literals
 
 
-def _sql(obj, dialect="duckdb"):
+def _sql(obj):
     try:
-        return obj.sql(dialect=dialect)
+        return obj.sql(dialect="duckdb")
     except AttributeError:
         return obj
 
@@ -285,9 +283,7 @@ for _op, _name in _simple_ops.items():
 
         @translate_val.register(_op)
         def _fmt(op, _name: str = _name, **kw):
-            return sg.func(
-                _name, *map(partial(translate_val, **kw), op.args), dialect="duckdb"
-            )
+            return sg.func(_name, *map(partial(translate_val, **kw), op.args))
 
 
 del _fmt, _name, _op
@@ -416,7 +412,7 @@ def _try_cast(op, **kw):
 @translate_val.register(ops.TypeOf)
 def _type_of(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.func("typeof", arg, dialect="duckdb")
+    return sg.func("typeof", arg)
 
 
 ### Comparator Conundrums
@@ -456,7 +452,7 @@ def _aggregate(op, func, *, where, **kw):
         for argname, arg in zip(op.argnames, op.args)
         if argname not in ("where", "how")
     ]
-    agg = sg.func(func, *args, dialect="duckdb")
+    agg = sg.func(func, *args)
     return _apply_agg_filter(agg, where=op.where, **kw)
 
 
@@ -742,7 +738,7 @@ def _interval_from_integer(op, **kw):
     arg = translate_val(op.arg, **kw)
     if op.dtype.resolution == "week":
         return sg.func("to_days", arg * 7)
-    return sg.func(f"to_{op.dtype.resolution}s", arg, dialect="duckdb")
+    return sg.func(f"to_{op.dtype.resolution}s", arg)
 
 
 ### String Instruments
@@ -811,7 +807,7 @@ def _regex_extract(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
     group = translate_val(op.index, **kw)
-    return sg.func("regexp_extract", arg, pattern, group, dialect="duckdb")
+    return sg.func("regexp_extract", arg, pattern, group)
 
 
 @translate_val.register(ops.Levenshtein)
@@ -885,19 +881,19 @@ def _is_not_null(op, **kw):
 def _if_null(op, **kw):
     arg = translate_val(op.arg, **kw)
     ifnull = translate_val(op.ifnull_expr, **kw)
-    return sg.func("ifnull", arg, ifnull, dialect="duckdb")
+    return sg.func("ifnull", arg, ifnull)
 
 
 @translate_val.register(ops.NullIfZero)
 def _null_if_zero(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.func("nullif", arg, 0, dialect="duckdb")
+    return sg.func("nullif", arg, 0)
 
 
 @translate_val.register(ops.ZeroIfNull)
 def _zero_if_null(op, **kw):
     arg = translate_val(op.arg, **kw)
-    return sg.func("ifnull", arg, 0, dialect="duckdb")
+    return sg.func("ifnull", arg, 0)
 
 
 ### Definitely Not Tensors
@@ -910,12 +906,11 @@ def _array_sort(op, **kw):
     sg_expr = sg.exp.If(
         this=arg.is_(sg.exp.Null()),
         true=sg.exp.Null(),
-        false=sg.func("list_distinct", arg, dialect="duckdb")
+        false=sg.func("list_distinct", arg)
         + sg.exp.If(
-            this=sg.func("list_count", arg, dialect="duckdb")
-            < sg.func("array_length", arg, dialect="duckdb"),
-            true=sg.func("list_value", sg.exp.Null(), dialect="duckdb"),
-            false=sg.func("list_value", dialect="duckdb"),
+            this=sg.func("list_count", arg) < sg.func("array_length", arg),
+            true=sg.func("list_value", sg.exp.Null()),
+            false=sg.func("list_value"),
         ),
     )
     return sg_expr
@@ -953,7 +948,7 @@ def _in_column(op, **kw):
 
 @translate_val.register(ops.ArrayCollect)
 def _array_collect(op, **kw):
-    agg = sg.func("list", translate_val(op.arg, **kw), dialect="duckdb")
+    agg = sg.func("list", translate_val(op.arg, **kw))
     return _apply_agg_filter(agg, where=op.where, **kw)
 
 
@@ -1157,7 +1152,7 @@ def _repeat(op, **kw):
 def _quantile(op, **kw):
     arg = translate_val(op.arg, **kw)
     quantile = translate_val(op.quantile, **kw)
-    sg_expr = sg.func("quantile_cont", arg, quantile, dialect="duckdb")
+    sg_expr = sg.func("quantile_cont", arg, quantile)
     return _apply_agg_filter(sg_expr, where=op.where, **kw)
 
 
@@ -1291,11 +1286,7 @@ def _exists_subquery(op, **kw):
         kw["table"] = translate_rel(op.foreign_table.table, **kw)
     foreign_table = translate_rel(op.foreign_table, **kw)
     predicates = translate_val(op.predicates, **kw)
-    subq = (
-        sg.select(1)
-        .from_(foreign_table, dialect="duckdb")
-        .where(sg.condition(predicates), dialect="duckdb")
-    )
+    subq = sg.select(1).from_(foreign_table).where(sg.condition(predicates))
     prefix = "NOT " * isinstance(op, ops.NotExistsSubquery)
     return f"{prefix}EXISTS ({subq})"
 
@@ -1305,7 +1296,7 @@ def _group_concat(op, **kw):
     arg = translate_val(op.arg, **kw)
     sep = translate_val(op.sep, **kw)
 
-    concat = sg.func("string_agg", arg, sep, dialect="duckdb")
+    concat = sg.func("string_agg", arg, sep)
     return _apply_agg_filter(concat, where=op.where, **kw)
 
 
@@ -1505,22 +1496,22 @@ def _row_number(_, **kw):
 
 @translate_val.register(ops.DenseRank)
 def _dense_rank(_, **kw):
-    return sg.func("dense_rank", dialect="duckdb")
+    return sg.func("dense_rank")
 
 
 @translate_val.register(ops.MinRank)
 def _rank(_, **kw):
-    return sg.func("rank", dialect="duckdb")
+    return sg.func("rank")
 
 
 @translate_val.register(ops.PercentRank)
 def _percent_rank(_, **kw):
-    return sg.func("percent_rank", dialect="duckdb")
+    return sg.func("percent_rank")
 
 
 @translate_val.register(ops.CumeDist)
 def _cume_dist(_, **kw):
-    return sg.func("percent_rank", dialect="duckdb")
+    return sg.func("percent_rank")
 
 
 @translate_val.register
