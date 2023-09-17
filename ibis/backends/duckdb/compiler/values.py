@@ -1392,18 +1392,6 @@ def cumulative_to_window(func, frame):
     return new_expr.op()
 
 
-_FRAME_CLAUSE_NOT_ALLOWED = (
-    ops.Lag,
-    ops.Lead,
-    ops.DenseRank,
-    ops.MinRank,
-    ops.NTile,
-    ops.PercentRank,
-    ops.CumeDist,
-    ops.RowNumber,
-)
-
-
 # TODO
 _map_interval_to_microseconds = {
     "W": 604800000000,
