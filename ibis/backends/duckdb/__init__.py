@@ -654,14 +654,13 @@ class Backend(BaseBackend, CanCreateSchema):
 
         options = [f"{key}={val}" for key, val in kwargs.items()]
 
-        sg_view_expr = self._compile_temp_view(
+        self._create_temp_view(
             table_name,
             sg.select("*").from_(
                 sg.func("read_json_auto", normalize_filenames(source_list), *options)
             ),
         )
 
-        self.raw_sql(sg_view_expr)
         return self.table(table_name)
 
     def read_csv(
@@ -712,12 +711,11 @@ class Backend(BaseBackend, CanCreateSchema):
             for key, val in kwargs.items()
         ]
 
-        sg_view_expr = self._compile_temp_view(
+        self._create_temp_view(
             table_name,
             sg.select("*").from_(sg.func("read_csv", source_list, *options)),
         )
 
-        self.raw_sql(sg_view_expr)
         return self.table(table_name)
 
     def read_parquet(
@@ -774,12 +772,10 @@ class Backend(BaseBackend, CanCreateSchema):
         else:
             pq_func = sg.func("read_parquet", source_list)
 
-        sg_view_expr = self._compile_temp_view(
+        self._create_temp_view(
             table_name,
             sg.select("*").from_(pq_func),
         )
-
-        self.raw_sql(sg_view_expr)
 
     def _read_parquet_pyarrow_dataset(
         self, source_list: str | Iterable[str], table_name: str, **kwargs: Any
@@ -895,13 +891,12 @@ class Backend(BaseBackend, CanCreateSchema):
             )
         self._load_extensions(["postgres_scanner"])
 
-        sg_view_expr = self._compile_temp_view(
+        self._create_temp_view(
             table_name,
             sg.select("*").from_(
                 sg.func("postgres_scan_pushdown", uri, schema, table_name)
             ),
         )
-        self.raw_sql(sg_view_expr)
 
         return self.table(table_name)
 
@@ -948,7 +943,7 @@ class Backend(BaseBackend, CanCreateSchema):
             raise ValueError("`table_name` is required when registering a sqlite table")
         self._load_extensions(["sqlite"])
 
-        sg_view_expr = self._compile_temp_view(
+        self._create_temp_view(
             table_name,
             sg.select("*").from_(
                 sg.func(
@@ -956,7 +951,6 @@ class Backend(BaseBackend, CanCreateSchema):
                 )
             ),
         )
-        self.raw_sql(sg_view_expr)
 
         return self.table(table_name)
 
