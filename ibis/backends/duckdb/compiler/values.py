@@ -407,14 +407,14 @@ def _apply_agg_filter(expr, *, where, **kw):
     return expr
 
 
-def _aggregate(op, func, *, where, **kw):
+def _aggregate(op, func, **kw):
     args = [
         translate_val(arg, **kw)
         for argname, arg in zip(op.argnames, op.args)
         if argname not in ("where", "how")
     ]
     agg = sg.func(func, *args)
-    return _apply_agg_filter(agg, where=where, **kw)
+    return _apply_agg_filter(agg, where=op.where, **kw)
 
 
 @translate_val.register(ops.NotAny)
@@ -1133,7 +1133,7 @@ def _arbitrary(op, **kw):
         "first": "first",
         "last": "last",
     }
-    return _aggregate(op, functions[op.how], where=op.where, **kw)
+    return _aggregate(op, functions[op.how], **kw)
 
 
 @translate_val.register(ops.FindInSet)
@@ -1515,4 +1515,4 @@ def _scalar_udf(op, **kw) -> str:
 
 @translate_val.register(ops.AggUDF)
 def _scalar_udf(op, **kw) -> str:
-    return _aggregate(op, op.__class__.__name__, where=op.where, **kw)
+    return _aggregate(op, op.__class__.__name__, **kw)
