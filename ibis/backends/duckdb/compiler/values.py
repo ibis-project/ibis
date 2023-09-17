@@ -596,7 +596,7 @@ def _truncate(op, **kw):
     except KeyError:
         raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-    return sg.func("date_trunc", duckunit, arg)
+    return sg.func("date_trunc", sg_literal(duckunit), arg)
 
 
 @translate_val.register(ops.DayOfWeekIndex)
