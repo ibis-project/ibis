@@ -439,11 +439,7 @@ class Backend(BaseBackend, CanCreateSchema):
         util.log(sql)
 
     def execute(
-        self,
-        expr: ir.Expr,
-        limit: str | None = "default",
-        external_tables: Mapping[str, pd.DataFrame] | None = None,
-        **kwargs: Any,
+        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
     ) -> Any:
         """Execute an expression."""
 
