@@ -1366,8 +1366,7 @@ def _cume_dist(_, **kw):
 @translate_val.register
 def _sort_key(op: ops.SortKey, **kw):
     arg = translate_val(op.expr, **kw)
-    direction = "ASC" if op.ascending else "DESC"
-    return f"{_sql(arg)} {direction}"
+    return sg.exp.Ordered(this=arg, desc=not op.ascending)
 
 
 ### Window functions
