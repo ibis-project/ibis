@@ -113,8 +113,7 @@ class PandasData(DataMapper):
 
         # return data with the schema's columns which may be different than the
         # input columns
-        df.columns = schema.names
-        return df
+        return df.loc[:, list(schema.names)]
 
     @classmethod
     def convert_column(cls, obj, dtype):
