@@ -1389,64 +1389,16 @@ def cumulative_to_window(func, frame):
     return new_expr.op()
 
 
-def format_window_boundary(boundary, **kw):
-    value = translate_val(boundary.value, **kw)
-    if boundary.preceding:
-        return f"{value} PRECEDING"
-    else:
-        return f"{value} FOLLOWING"
-
-
-# TODO
-def format_window_frame(func, frame, **kw):
-    components = []
-
-    if frame.how == "rows" and frame.max_lookback is not None:
-        raise NotImplementedError(
-            "Rows with max lookback is not implemented for the Duckdb backend."
-        )
-
-    if frame.group_by:
-        partition_args = ", ".join(
-            map(_sql, map(partial(translate_val, **kw), frame.group_by))
-        )
-        components.append(f"PARTITION BY {partition_args}")
-
-    if frame.order_by:
-        order_args = ", ".join(
-            map(_sql, map(partial(translate_val, **kw), frame.order_by))
-        )
-        components.append(f"ORDER BY {order_args}")
-
-    frame_clause_not_allowed = (
-        ops.Lag,
-        ops.Lead,
-        ops.DenseRank,
-        ops.MinRank,
-        ops.NTile,
-        ops.PercentRank,
-        ops.CumeDist,
-        ops.RowNumber,
-    )
-
-    if frame.start is None and frame.end is None:
-        # no-op, default is full sample
-        pass
-    elif not isinstance(func, frame_clause_not_allowed):
-        if frame.start is None:
-            start = "UNBOUNDED PRECEDING"
-        else:
-            start = format_window_boundary(frame.start, **kw)
-
-        if frame.end is None:
-            end = "UNBOUNDED FOLLOWING"
-        else:
-            end = format_window_boundary(frame.end, **kw)
-
-        frame = f"{frame.how.upper()} BETWEEN {start} AND {end}"
-        components.append(frame)
-
-    return f"OVER ({' '.join(components)})"
+_FRAME_CLAUSE_NOT_ALLOWED = (
+    ops.Lag,
+    ops.Lead,
+    ops.DenseRank,
+    ops.MinRank,
+    ops.NTile,
+    ops.PercentRank,
+    ops.CumeDist,
+    ops.RowNumber,
+)
 
 
 # TODO
@@ -1477,15 +1429,46 @@ def _window(op: ops.WindowFunction, **kw: Any):
         arg = cumulative_to_window(op.func, op.frame)
         return translate_val(arg, **kw)
 
-    window_formatted = format_window_frame(op, op.frame, **kw)
-    func = op.func.__window_op__
-    func_formatted = translate_val(func, **kw)
-    result = f"{func_formatted} {window_formatted}"
+    func = op.func
+    frame = op.frame
+    tr_val = partial(translate_val, **kw)
 
+    if frame.start is None:
+        start = "UNBOUNDED"
+    else:
+        start = tr_val(frame.start.value, **kw)
+
+    if frame.end is None:
+        end = "UNBOUNDED"
+    else:
+        end = tr_val(frame.end.value, **kw)
+
+    spec = sg.exp.WindowSpec(
+        kind=frame.how,
+        start=start,
+        start_side="preceding",
+        end=end,
+        end_side="following",
+        over="OVER",
+    )
+
+    if frame.group_by:
+        partition_by = list(map(tr_val, frame.group_by))
+    else:
+        partition_by = None
+
+    if frame.order_by:
+        order = sg.exp.Order(expressions=list(map(tr_val, frame.order_by)))
+    else:
+        order = None
+
+    this = tr_val(func, **kw)
+    window = sg.exp.Window(this=this, partition_by=partition_by, order=order, spec=spec)
+
+    # preserve zero-based indexing
     if isinstance(func, ops.RankBase):
-        return f"({result} - 1)"
-
-    return result
+        return window - 1
+    return window
 
 
 def shift_like(op_class, name):
