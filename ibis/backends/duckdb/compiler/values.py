@@ -1422,7 +1422,6 @@ def _approx_median(op, **kw):
     return _apply_agg_filter(expr, where=op.where, **kw)
 
 
-# TODO
 @translate_val.register(ops.WindowFunction)
 def _window(op: ops.WindowFunction, **kw: Any):
     if isinstance(op.func, ops.CumulativeOp):
