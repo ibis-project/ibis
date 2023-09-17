@@ -24,10 +24,10 @@ try:
     import duckdb
 
     DuckDBConversionException = duckdb.ConversionException
+    DuckDBParserException = duckdb.ParserException
 except ImportError:
     duckdb = None
-    DuckDBConversionException = None
-
+    DuckDBConversionException = DuckDBParserException = None
 
 try:
     import clickhouse_connect as cc
@@ -385,9 +385,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=ImpalaHiveServer2Error,
                 ),
                 pytest.mark.broken(
-                    ["duckdb"],
-                    "Unsupported precision.",
-                    raises=NotImplementedError,
+                    ["duckdb"], "Unsupported precision.", raises=DuckDBParserException
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.notyet(
