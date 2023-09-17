@@ -454,32 +454,11 @@ class Backend(BaseBackend, CanCreateSchema):
         self._log(sql)
 
         try:
-            result = self.con.execute(sql)
+            cur = self.con.execute(sql)
         except duckdb.CatalogException as e:
             raise exc.IbisError(e)
 
-        import pyarrow.types as pat
-
-        table = result.fetch_arrow_table()
-
-        df = pd.DataFrame(
-            {
-                name: (
-                    col.to_pylist()
-                    if (
-                        pat.is_nested(col.type)
-                        or
-                        # pyarrow / duckdb type null literals columns as int32?
-                        # but calling `to_pylist()` will render it as None
-                        col.null_count
-                    )
-                    else col.to_pandas(timestamp_as_object=True)
-                )
-                for name, col in zip(table.column_names, table.columns)
-            }
-        )
-
-        result = DuckDBPandasData.convert_table(df, schema)
+        result = self.fetch_from_cursor(cur, schema)
         return expr.__pandas_result__(result)
 
     def load_extension(self, extension: str) -> None:
@@ -1228,7 +1207,7 @@ class Backend(BaseBackend, CanCreateSchema):
         import pandas as pd
         import pyarrow.types as pat
 
-        table = cursor.cursor.fetch_arrow_table()
+        table = cursor.fetch_arrow_table()
 
         df = pd.DataFrame(
             {
