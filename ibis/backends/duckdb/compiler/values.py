@@ -1415,13 +1415,15 @@ def _approx_median(op, **kw):
 
 @translate_val.register(ops.WindowFunction)
 def _window(op: ops.WindowFunction, **kw: Any):
-    if isinstance(op.func, ops.CumulativeOp):
-        arg = cumulative_to_window(op.func, op.frame)
-        return translate_val(arg, **kw)
-
     func = op.func
     frame = op.frame
+
+    if isinstance(func, ops.CumulativeOp):
+        arg = cumulative_to_window(func, op.frame)
+        return translate_val(arg, **kw)
+
     tr_val = partial(translate_val, **kw)
+    this = tr_val(func, **kw)
 
     if frame.start is None:
         start = "UNBOUNDED"
@@ -1447,12 +1449,16 @@ def _window(op: ops.WindowFunction, **kw: Any):
     else:
         partition_by = None
 
-    if frame.order_by:
-        order = sg.exp.Order(expressions=list(map(tr_val, frame.order_by)))
+    order_bys = list(map(tr_val, frame.order_by))
+
+    if isinstance(func, ops.Analytic) and not isinstance(func, ops.ShiftBase):
+        order_bys.extend(tr_val(ops.SortKey(arg, ascending=True)) for arg in func.args)
+
+    if order_bys:
+        order = sg.exp.Order(expressions=order_bys)
     else:
         order = None
 
-    this = tr_val(func, **kw)
     window = sg.exp.Window(this=this, partition_by=partition_by, order=order, spec=spec)
 
     # preserve zero-based indexing
