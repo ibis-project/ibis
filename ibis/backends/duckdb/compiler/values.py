@@ -20,6 +20,9 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
 
+NULL = sg.exp.Null()
+
+
 @functools.singledispatch
 def translate_val(op, **_):
     """Translate a value expression into sqlglot."""
@@ -76,7 +79,7 @@ def _literal(op, **kw):
     sg_type = DuckDBType.from_ibis(dtype)
 
     if value is None and dtype.nullable:
-        null = sg.exp.Null()
+        null = NULL
         return null if dtype.is_null() else sg.cast(null, to=sg_type)
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
@@ -359,7 +362,6 @@ def _try_cast(op, **kw):
     return sg.exp.TryCast(
         this=translate_val(op.arg, **kw),
         to=DuckDBType.to_string(op.to),
-        dialect="duckdb",
     )
 
 
@@ -407,7 +409,7 @@ def _aggregate(op, func, *, where, **kw):
         if argname not in ("where", "how")
     ]
     agg = sg.func(func, *args)
-    return _apply_agg_filter(agg, where=op.where, **kw)
+    return _apply_agg_filter(agg, where=where, **kw)
 
 
 @translate_val.register(ops.Any)
@@ -710,15 +712,13 @@ def _substring(op, **kw):
     if_pos = sg.exp.Substring(this=arg, start=start + 1, length=length)
     if_neg = sg.exp.Substring(this=arg, start=start, length=length)
 
-    sg_expr = sg.exp.If(
+    return sg.exp.If(
         this=sg.exp.GTE(
             this=start, expression=sg.exp.Literal(this="0", is_string=False)
         ),
         true=if_pos,
         false=if_neg,
     )
-
-    return sg_expr
 
 
 @translate_val.register(ops.StringFind)
@@ -752,7 +752,6 @@ def _regex_replace(op, **kw):
         pattern,
         replacement,
         sg.exp.Literal(this="g", is_string=True),
-        dialect="duckdb",
     )
 
 
@@ -789,8 +788,7 @@ def _string_join(op, **kw):
 
 @translate_val.register(ops.StringConcat)
 def _string_concat(op, **kw):
-    arg = map(partial(translate_val, **kw), op.arg)
-    return sg.exp.Concat(expressions=list(arg))
+    return sg.exp.Concat(expressions=list(map(partial(translate_val, **kw), op.arg)))
 
 
 @translate_val.register(ops.StringSQLLike)
@@ -821,14 +819,12 @@ def _string_capitalize(op, **kw):
 ### NULL PLAYER CHARACTER
 @translate_val.register(ops.IsNull)
 def _is_null(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    return arg.is_(sg.exp.null())
+    return translate_val(op.arg, **kw).is_(sg.exp.null())
 
 
 @translate_val.register(ops.NotNull)
 def _is_not_null(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    return arg.is_(sg.not_(sg.exp.null()))
+    return translate_val(op.arg, **kw).is_(sg.not_(sg.exp.null()))
 
 
 @translate_val.register(ops.IfNull)
@@ -857,17 +853,16 @@ def _zero_if_null(op, **kw):
 def _array_sort(op, **kw):
     arg = translate_val(op.arg, **kw)
 
-    sg_expr = sg.exp.If(
-        this=arg.is_(sg.exp.Null()),
-        true=sg.exp.Null(),
+    return sg.exp.If(
+        this=arg.is_(NULL),
+        true=NULL,
         false=sg.func("list_distinct", arg)
         + sg.exp.If(
             this=sg.func("list_count", arg) < sg.func("array_length", arg),
-            true=sg.func("list_value", sg.exp.Null()),
+            true=sg.func("list_value", NULL),
             false=sg.func("list_value"),
         ),
     )
-    return sg_expr
 
 
 @translate_val.register(ops.ArrayIndex)
@@ -907,28 +902,22 @@ def _array_collect(op, **kw):
 
 @translate_val.register(ops.ArrayConcat)
 def _array_concat(op, **kw):
-    sg_expr = sg.func(
+    return sg.func(
         "flatten",
-        sg.func(
-            "list_value",
-            *(translate_val(arg, **kw) for arg in op.arg),
-        ),
-        dialect="duckdb",
+        sg.func("list_value", *(translate_val(arg, **kw) for arg in op.arg)),
     )
-    return sg_expr
 
 
 @translate_val.register(ops.ArrayRepeat)
 def _array_repeat_op(op, **kw):
     arg = translate_val(op.arg, **kw)
     times = translate_val(op.times, **kw)
-    sg_expr = sg.func(
+    return sg.func(
         "flatten",
         sg.select(
             sg.func("array", sg.select(arg).from_(sg.func("range", times)))
         ).subquery(),
     )
-    return sg_expr
 
 
 def _neg_idx_to_pos(array, idx):
@@ -958,7 +947,7 @@ def _array_slice_op(op, **kw):
         start = sg.func("least", arg_length, _neg_idx_to_pos(arg, start))
 
     if (stop := op.stop) is None:
-        stop = sg.exp.Null()
+        stop = NULL
     else:
         stop = _neg_idx_to_pos(arg, translate_val(stop, **kw))
 
@@ -980,8 +969,7 @@ def _array_map(op, **kw):
         this=result,
         expressions=[sg.to_identifier(f"{op.parameter}", quoted=False)],
     )
-    sg_expr = sg.func("list_transform", arg, lamduh)
-    return sg_expr
+    return sg.func("list_transform", arg, lamduh)
 
 
 @translate_val.register(ops.ArrayFilter)
@@ -992,8 +980,7 @@ def _array_filter(op, **kw):
         this=result,
         expressions=[sg.exp.Identifier(this=f"{op.parameter}", quoted=False)],
     )
-    sg_expr = sg.func("list_filter", arg, lamduh)
-    return sg_expr
+    return sg.func("list_filter", arg, lamduh)
 
 
 @translate_val.register(ops.ArrayIntersect)
@@ -1034,7 +1021,7 @@ def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
         ]
     )
     lamduh = sg.exp.Lambda(this=result, expressions=[i])
-    sg_expr = sg.func(
+    return sg.func(
         "list_transform",
         sg.func(
             "range",
@@ -1043,10 +1030,7 @@ def _array_zip(op: ops.ArrayZip, **kw: Any) -> str:
             sg.func("greatest", *[sg.func("len", arg) for arg in args]) + 1,
         ),
         lamduh,
-        dialect="duckdb",
     )
-
-    return sg_expr
 
 
 ### Counting
@@ -1304,9 +1288,7 @@ def _identical_to(op, **kw):
 @translate_val.register(ops.Coalesce)
 def _vararg_func(op, **kw):
     return sg.func(
-        f"{op.__class__.__name__.lower()}",
-        *map(partial(translate_val, **kw), op.arg),
-        dialect="duckdb",
+        f"{op.__class__.__name__.lower()}", *map(partial(translate_val, **kw), op.arg)
     )
 
 
@@ -1314,8 +1296,7 @@ def _vararg_func(op, **kw):
 def _map(op, **kw):
     keys = translate_val(op.keys, **kw)
     values = translate_val(op.values, **kw)
-    sg_expr = sg.exp.Map(keys=keys, values=values)
-    return sg_expr
+    return sg.exp.Map(keys=keys, values=values)
 
 
 @translate_val.register(ops.MapGet)
@@ -1323,20 +1304,16 @@ def _map_get(op, **kw):
     arg = translate_val(op.arg, **kw)
     key = translate_val(op.key, **kw)
     default = translate_val(op.default, **kw)
-    sg_expr = sg.func(
-        "ifnull",
-        sg.func("list_extract", sg.func("element_at", arg, key), 1),
-        default,
-        dialect="duckdb",
+    return sg.func(
+        "ifnull", sg.func("list_extract", sg.func("element_at", arg, key), 1), default
     )
-    return sg_expr
 
 
 @translate_val.register(ops.MapContains)
 def _map_contains(op, **kw):
     arg = translate_val(op.arg, **kw)
     key = translate_val(op.key, **kw)
-    sg_expr = sg.exp.NEQ(
+    return sg.exp.NEQ(
         this=sg.func(
             "array_length",
             sg.func(
@@ -1347,7 +1324,6 @@ def _map_contains(op, **kw):
         ),
         expression=sg.exp.Literal(this="0", is_string=False),
     )
-    return sg_expr
 
 
 def _is_map_literal(op):
