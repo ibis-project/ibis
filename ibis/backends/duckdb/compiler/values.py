@@ -76,6 +76,10 @@ def sg_literal(arg, is_string=True):
 def _literal(op, **kw):
     value = op.value
     dtype = op.dtype
+
+    if dtype.is_interval() and value is not None:
+        return _interval_format(op)
+
     sg_type = DuckDBType.from_ibis(dtype)
 
     if value is None and dtype.nullable:
