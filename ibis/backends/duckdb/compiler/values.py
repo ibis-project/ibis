@@ -81,7 +81,7 @@ def _literal(op, **kw):
         return sg.cast(sg.exp.Null(), to=sg_type)
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
-    elif dtype.is_inet():
+    elif dtype.is_inet() or dtype.is_macaddr():
         return sg.exp.Literal(this=str(value), is_string=True)
     elif dtype.is_string():
         return sg_literal(value)
