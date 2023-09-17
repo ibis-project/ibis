@@ -1180,19 +1180,22 @@ def _table_array_view(op, *, cache, **kw):
         return res.subquery()
 
 
-# TODO
 @translate_val.register(ops.ExistsSubquery)
-@translate_val.register(ops.NotExistsSubquery)
 def _exists_subquery(op, **kw):
-    from ibis.backends.duckdb.compiler.relations import translate_rel
+    from ibis.backends.clickhouse.compiler import translate
 
-    if "table" not in kw:
-        kw["table"] = translate_rel(op.foreign_table.table, **kw)
-    foreign_table = translate_rel(op.foreign_table, **kw)
+    foreign_table = translate(op.foreign_table, {})
     predicates = translate_val(op.predicates, **kw)
-    subq = sg.select(1).from_(foreign_table).where(sg.condition(predicates))
-    prefix = "NOT " * isinstance(op, ops.NotExistsSubquery)
-    return f"{prefix}EXISTS ({subq})"
+    return sg.exp.Exists(
+        this=sg.select(1)
+        .from_(foreign_table.subquery())
+        .where(sg.condition(predicates))
+    )
+
+
+@translate_val.register(ops.NotExistsSubquery)
+def _not_exists_subquery(op, **kw):
+    return sg.not_(_exists_subquery(op, **kw))
 
 
 @translate_val.register(ops.ArrayColumn)
