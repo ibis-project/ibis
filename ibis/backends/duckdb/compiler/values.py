@@ -76,14 +76,11 @@ def _literal(op, **kw):
     sg_type = DuckDBType.from_ibis(dtype)
 
     if value is None and dtype.nullable:
-        if dtype.is_null():
-            return sg.exp.Null()
-        return sg.cast(sg.exp.Null(), to=sg_type)
+        null = sg.exp.Null()
+        return null if dtype.is_null() else sg.cast(null, to=sg_type)
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
-    elif dtype.is_inet() or dtype.is_macaddr():
-        return sg.exp.Literal(this=str(value), is_string=True)
-    elif dtype.is_string():
+    elif dtype.is_string() or dtype.is_inet() or dtype.is_macaddr():
         return sg_literal(value)
     elif dtype.is_decimal():
         # TODO: make this a sqlglot expression
@@ -98,93 +95,68 @@ def _literal(op, **kw):
                 f"Unsupported precision. Supported values: [1 : 38]. Current value: {precision!r}"
             )
         if math.isinf(value):
-            return sg.exp.cast(
-                expression=sg_literal(value),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
+            return sg.cast(expression=sg_literal(value), to=sg.exp.DataType.Type.FLOAT)
         elif math.isnan(value):
-            return sg.exp.cast(
-                expression=sg_literal("NaN"),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
-
-        dtype = dt.Decimal(precision=precision, scale=scale, nullable=dtype.nullable)
-        sg_expr = sg.cast(sg_literal(value, is_string=False), to=sg_type)
-        return sg_expr
+            return sg.cast(expression=sg_literal("NaN"), to=sg.exp.DataType.Type.FLOAT)
+        return sg.cast(sg_literal(value, is_string=False), to=sg_type)
     elif dtype.is_numeric():
         if math.isinf(value):
-            return sg.exp.cast(
-                expression=sg_literal(value),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
+            return sg.cast(expression=sg_literal(value), to=sg.exp.DataType.Type.FLOAT)
         elif math.isnan(value):
-            return sg.exp.cast(
-                expression=sg_literal("NaN"),
-                to=sg.exp.DataType.Type.FLOAT,
-            )
+            return sg.cast(expression=sg_literal("NaN"), to=sg.exp.DataType.Type.FLOAT)
         return sg.cast(sg_literal(value, is_string=False), to=sg_type)
     elif dtype.is_interval():
         return _interval_format(op)
     elif dtype.is_timestamp():
-        year = sg_literal(op.value.year, is_string=False)
-        month = sg_literal(op.value.month, is_string=False)
-        day = sg_literal(op.value.day, is_string=False)
-        hour = sg_literal(op.value.hour, is_string=False)
-        minute = sg_literal(op.value.minute, is_string=False)
-        second = sg_literal(op.value.second, is_string=False)
-        if op.value.microsecond:
-            microsecond = sg_literal(op.value.microsecond / 1e6, is_string=False)
+        year = sg_literal(value.year, is_string=False)
+        month = sg_literal(value.month, is_string=False)
+        day = sg_literal(value.day, is_string=False)
+        hour = sg_literal(value.hour, is_string=False)
+        minute = sg_literal(value.minute, is_string=False)
+        second = sg_literal(value.second, is_string=False)
+        if us := value.microsecond:
+            microsecond = sg_literal(us / 1e6, is_string=False)
             second += microsecond
-        if dtype.timezone is not None:
-            timezone = sg_literal(dtype.timezone, is_string=True)
+        if (tz := dtype.timezone) is not None:
+            timezone = sg_literal(tz, is_string=True)
             return sg.func(
                 "make_timestamptz", year, month, day, hour, minute, second, timezone
             )
         else:
             return sg.func("make_timestamp", year, month, day, hour, minute, second)
     elif dtype.is_date():
-        year = sg_literal(op.value.year, is_string=False)
-        month = sg_literal(op.value.month, is_string=False)
-        day = sg_literal(op.value.day, is_string=False)
+        year = sg_literal(value.year, is_string=False)
+        month = sg_literal(value.month, is_string=False)
+        day = sg_literal(value.day, is_string=False)
         return sg.exp.DateFromParts(year=year, month=month, day=day)
     elif dtype.is_array():
-        value_type = dtype.value_type
-        is_string = isinstance(value_type, dt.String)
-        values = sg.exp.Array().from_arg_list(
-            [
-                # TODO: this cast makes for frustrating output
-                # is there any better way to handle it?
-                sg.cast(sg_literal(v, is_string=is_string), to=sg_type)
-                for v in value
-            ]
+        is_string = dtype.value_type.is_string()
+        return sg.exp.Array.from_arg_list(
+            [sg.cast(sg_literal(v, is_string=is_string), to=sg_type) for v in value]
         )
-        return values
     elif dtype.is_map():
         key_type = dtype.key_type
         value_type = dtype.value_type
-        keys = sg.exp.Array().from_arg_list(
+        keys = sg.exp.Array.from_arg_list(
             [_literal(ops.Literal(k, dtype=key_type), **kw) for k in value.keys()]
         )
-        values = sg.exp.Array().from_arg_list(
+        values = sg.exp.Array.from_arg_list(
             [_literal(ops.Literal(v, dtype=value_type), **kw) for v in value.values()]
         )
-        sg_expr = sg.exp.Map(keys=keys, values=values)
-        return sg_expr
+        return sg.exp.Map(keys=keys, values=values)
     elif dtype.is_struct():
-        keys = [sg_literal(key) for key in value.keys()]
+        keys = list(map(sg_literal, value.keys()))
         values = [
-            _literal(ops.Literal(v, dtype=subdtype), **kw)
-            for subdtype, v in zip(dtype.types, value.values())
+            _literal(ops.Literal(v, dtype=field_dtype), **kw)
+            for field_dtype, v in zip(dtype.types, value.values())
         ]
-        slices = [sg.exp.Slice(this=k, expression=v) for k, v in zip(keys, values)]
-        sg_expr = sg.exp.Struct.from_arg_list(slices)
-        return sg_expr
+        return sg.exp.Struct.from_arg_list(
+            [sg.exp.Slice(this=k, expression=v) for k, v in zip(keys, values)]
+        )
     elif dtype.is_uuid():
-        return sg.cast(sg_literal(value, is_string=True), to=sg_type)
+        return sg.cast(sg_literal(value), to=sg_type)
     elif dtype.is_binary():
-        bytestring = "".join(map("\\x{:02x}".format, value))
-        lit = sg_literal(bytestring)
-        return sg.cast(lit, to=sg_type)
+        return sg.cast(sg_literal("".join(map("\\x{:02x}".format, value))), to=sg_type)
     else:
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
