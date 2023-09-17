@@ -1211,9 +1211,13 @@ def _struct_column(op, **kw):
     )
 
 
+def _unwrap_alias(op):
+    return op.arg if isinstance(op, ops.Alias) else op
+
+
 @translate_val.register(ops.StructField)
 def _struct_field(op, **kw):
-    arg = translate_val(op.arg, **kw)
+    arg = translate_val(_unwrap_alias(op.arg), **kw)
     return sg.exp.StructExtract(
         this=arg, expression=sg.exp.Literal(this=op.field, is_string=True)
     )
