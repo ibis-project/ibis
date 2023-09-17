@@ -95,15 +95,13 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
 
 _JOIN_TYPES = {
     ops.InnerJoin: "INNER",
-    ops.AnyInnerJoin: "ANY",
-    ops.LeftJoin: "LEFT OUTER",
-    ops.AnyLeftJoin: "LEFT ANY",
-    ops.RightJoin: "RIGHT OUTER",
-    ops.OuterJoin: "FULL OUTER",
+    ops.LeftJoin: "LEFT",
+    ops.RightJoin: "RIGHT",
+    ops.OuterJoin: "FULL",
     ops.CrossJoin: "CROSS",
-    ops.LeftSemiJoin: "LEFT SEMI",
-    ops.LeftAntiJoin: "LEFT ANTI",
-    ops.AsOfJoin: "LEFT ASOF",
+    ops.LeftSemiJoin: "SEMI",
+    ops.LeftAntiJoin: "ANTI",
+    ops.AsOfJoin: "ASOF",
 }
 
 
