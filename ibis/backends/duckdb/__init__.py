@@ -458,12 +458,27 @@ class Backend(BaseBackend, CanCreateSchema):
         except duckdb.CatalogException as e:
             raise exc.IbisError(e)
 
-        # TODO: should we do this in arrow?
-        # also what is pandas doing with dates?
-        # 🡅 is because of https://github.com/duckdb/duckdb/issues/8539
+        import pyarrow.types as pat
 
-        t = result.arrow()
-        df = t.to_pandas(date_as_object=True, timestamp_as_object=True)
+        table = result.fetch_arrow_table()
+
+        df = pd.DataFrame(
+            {
+                name: (
+                    col.to_pylist()
+                    if (
+                        pat.is_nested(col.type)
+                        or
+                        # pyarrow / duckdb type null literals columns as int32?
+                        # but calling `to_pylist()` will render it as None
+                        col.null_count
+                    )
+                    else col.to_pandas(timestamp_as_object=True)
+                )
+                for name, col in zip(table.column_names, table.columns)
+            }
+        )
+
         result = DuckDBPandasData.convert_table(df, schema)
         return expr.__pandas_result__(result)
 
