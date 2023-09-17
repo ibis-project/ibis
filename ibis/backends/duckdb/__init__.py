@@ -462,8 +462,9 @@ class Backend(BaseBackend, CanCreateSchema):
         # also what is pandas doing with dates?
         # 🡅 is because of https://github.com/duckdb/duckdb/issues/8539
 
-        pandas_df = result.fetch_df()
-        result = DuckDBPandasData.convert_table(pandas_df, schema)
+        t = result.arrow()
+        df = t.to_pandas(date_as_object=True, timestamp_as_object=True)
+        result = DuckDBPandasData.convert_table(df, schema)
         return expr.__pandas_result__(result)
 
     def load_extension(self, extension: str) -> None:
