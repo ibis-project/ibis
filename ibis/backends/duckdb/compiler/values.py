@@ -465,13 +465,24 @@ def _timestamp_now(op, **kw):
     return sg.cast(expression=sg.func("current_timestamp"), to="TIMESTAMP")
 
 
+_POWERS_OF_TEN = {
+    "s": 0,
+    "ms": 3,
+    "us": 6,
+    "ns": 9,
+}
+
+
 @translate_val.register(ops.TimestampFromUNIX)
 def _timestamp_from_unix(op, **kw):
     arg = translate_val(op.arg, **kw)
-    if (unit := op.unit.short) in {"ms", "us", "ns"}:
+    unit = op.unit.short
+    if unit == "ms":
+        return sg.func("epoch_ms", arg)
+    elif unit == "s":
+        return sg.exp.UnixToTime(this=arg)
+    else:
         raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
-
-    return sg.exp.UnixToTime(this=arg)
 
 
 @translate_val.register(ops.TimestampFromYMDHMS)
