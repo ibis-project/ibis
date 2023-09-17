@@ -1441,7 +1441,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     reason="PySpark backend does not support timestamp from unix time with unit us. Supported unit is s.",
                 ),
                 pytest.mark.notimpl(
-                    ["mssql", "clickhouse"],
+                    ["mssql", "clickhouse", "duckdb"],
                     raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
