@@ -1190,7 +1190,7 @@ def _table_array_view(op, *, cache, **kw):
 
 @translate_val.register(ops.ExistsSubquery)
 def _exists_subquery(op, **kw):
-    from ibis.backends.clickhouse.compiler import translate
+    from ibis.backends.duckdb.compiler import translate
 
     foreign_table = translate(op.foreign_table, {})
     predicates = translate_val(op.predicates, **kw)
