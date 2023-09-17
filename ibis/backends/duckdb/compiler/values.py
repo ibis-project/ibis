@@ -1444,7 +1444,7 @@ def _window(op: ops.WindowFunction, **kw: Any):
         end = tr_val(frame.end.value, **kw)
 
     spec = sg.exp.WindowSpec(
-        kind=frame.how,
+        kind=frame.how.upper(),
         start=start,
         start_side="preceding",
         end=end,
