@@ -102,14 +102,14 @@ class Backend(BaseBackend, CanCreateSchema):
             raise exc.IbisError("The schema or obj parameter is required")
 
         table_identifier = sg.to_identifier(name, quoted=True)
-        create_expr = sg.expressions.Create(
+        create_expr = sg.exp.Create(
             kind="TABLE",  # TABLE
             replace=overwrite,  # OR REPLACE
         )
 
         if temp:
-            create_expr.args["properties"] = sg.expressions.Properties(
-                expressions=[sg.expressions.TemporaryProperty()]  # TEMPORARY
+            create_expr.args["properties"] = sg.exp.Properties(
+                expressions=[sg.exp.TemporaryProperty()]  # TEMPORARY
             )
 
         if obj is not None and not isinstance(obj, ir.Expr):
@@ -126,20 +126,20 @@ class Backend(BaseBackend, CanCreateSchema):
             create_expr.args["this"] = table_identifier  # t0
         else:
             # Schema -> Table -> [ColumnDefs]
-            schema_expr = sg.expressions.Schema(
-                this=sg.expressions.Table(this=table_identifier),
+            schema_expr = sg.exp.Schema(
+                this=sg.exp.Table(this=table_identifier),
                 expressions=[
-                    sg.expressions.ColumnDef(
+                    sg.exp.ColumnDef(
                         this=sg.to_identifier(key, quoted=False),
                         kind=DuckDBType.from_ibis(typ),
                     )
                     if typ.nullable
-                    else sg.expressions.ColumnDef(
+                    else sg.exp.ColumnDef(
                         this=sg.to_identifier(key, quoted=False),
                         kind=DuckDBType.from_ibis(typ),
                         constraints=[
-                            sg.expressions.ColumnConstraint(
-                                kind=sg.expressions.NotNullColumnConstraint()
+                            sg.exp.ColumnConstraint(
+                                kind=sg.exp.NotNullColumnConstraint()
                             )
                         ],
                     )
@@ -241,8 +241,8 @@ class Backend(BaseBackend, CanCreateSchema):
         """
         qualified_name = self._fully_qualified_name(table_name, database)
         if isinstance(qualified_name, str):
-            qualified_name = sg.expressions.Identifier(this=qualified_name, quoted=True)
-        query = sg.expressions.Describe(this=qualified_name)
+            qualified_name = sg.exp.Identifier(this=qualified_name, quoted=True)
+        query = sg.exp.Describe(this=qualified_name)
         results = self.raw_sql(query)
         names, types, nulls, *_ = results.fetch_arrow_table()
         names = names.to_pylist()
@@ -497,7 +497,7 @@ class Backend(BaseBackend, CanCreateSchema):
             )
 
         name = sg.to_identifier(database, quoted=True)
-        return sg.expressions.Create(
+        return sg.exp.Create(
             this=name,
             kind="SCHEMA",
             replace=force,
@@ -512,7 +512,7 @@ class Backend(BaseBackend, CanCreateSchema):
             )
 
         name = sg.to_identifier(database, quoted=True)
-        return sg.expressions.Drop(
+        return sg.exp.Drop(
             this=name,
             kind="SCHEMA",
             replace=force,
