@@ -267,5 +267,4 @@ def _view(op: ops.View, *, child, name: str, **_):
 @translate_rel.register
 def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
     table = sg.table(op.name)
-    src = sg.parse_one(query, read="duckdb")
-    return sg.select("*").from_(table).with_(table, as_=src)
+    return sg.select("*").from_(table).with_(table, as_=query, dialect="duckdb")
