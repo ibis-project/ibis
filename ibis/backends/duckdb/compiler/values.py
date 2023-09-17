@@ -1360,7 +1360,7 @@ def _percent_rank(_, **kw):
 
 @translate_val.register(ops.CumeDist)
 def _cume_dist(_, **kw):
-    return sg.func("percent_rank")
+    return sg.func("cume_dist")
 
 
 @translate_val.register
