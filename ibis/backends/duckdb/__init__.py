@@ -373,6 +373,7 @@ class Backend(BaseBackend, CanCreateSchema):
             self.con.execute("SET enable_progress_bar = false")
 
         self._record_batch_readers_consumed = {}
+        self._temp_views: set[str] = set()
 
     def _from_url(self, url: str, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
@@ -598,18 +599,24 @@ class Backend(BaseBackend, CanCreateSchema):
             f"please call one of {msg} directly"
         )
 
-    def _compile_temp_view(self, table_name, source):
-        return sg.expressions.Create(
-            this=sg.expressions.Identifier(
+    def _create_temp_view(self, table_name, source):
+        if table_name not in self._temp_views and table_name in self.list_tables():
+            raise ValueError(
+                f"{table_name} already exists as a non-temporary table or view"
+            )
+        src = sg.exp.Create(
+            this=sg.exp.Identifier(
                 this=table_name, quoted=True
             ),  # CREATE ... 'table_name'
             kind="VIEW",  # VIEW
             replace=True,  # OR REPLACE
-            properties=sg.expressions.Properties(
-                expressions=[sg.expressions.TemporaryProperty()]  # TEMPORARY
+            properties=sg.exp.Properties(
+                expressions=[sg.exp.TemporaryProperty()]  # TEMPORARY
             ),
             expression=source,  # AS ...
         )
+        self.raw_sql(src.sql("duckdb"))
+        self._temp_views.add(table_name)
 
     @util.experimental
     def read_json(

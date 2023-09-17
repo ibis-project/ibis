@@ -257,10 +257,7 @@ def _fillna(op: ops.FillNa, *, table, **kw):
 def _view(op: ops.View, *, child, name: str, **_):
     # TODO: find a better way to do this
     backend = op.child.to_expr()._find_backend()
-    temp_view_src = backend._compile_temp_view(
-        table_name=name, source=sg.select("*").from_(child)
-    )
-    backend.con.execute(temp_view_src.sql("duckdb"))
+    backend._create_temp_view(table_name=name, source=sg.select("*").from_(child))
     return sg.table(name)
 
 
