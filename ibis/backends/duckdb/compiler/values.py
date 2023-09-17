@@ -3,6 +3,7 @@ from __future__ import annotations
 import calendar
 import functools
 import math
+import string
 from functools import partial
 from typing import TYPE_CHECKING, Any
 
@@ -212,9 +213,6 @@ _simple_ops = {
     ops.EndsWith: "suffix",
     ops.LPad: "lpad",
     ops.RPad: "rpad",
-    ops.LStrip: "ltrim",
-    ops.RStrip: "rtrim",
-    ops.Strip: "trim",
     ops.StringAscii: "ascii",
     ops.StrRight: "right",
     # Other operations
@@ -681,6 +679,21 @@ def _interval_from_integer(op, **kw):
 
 
 ### String Instruments
+
+
+@translate_val.register(ops.Strip)
+def _strip(op, **kw):
+    return sg.func("trim", translate_val(op.arg, **kw), sg_literal(string.whitespace))
+
+
+@translate_val.register(ops.RStrip)
+def _rstrip(op, **kw):
+    return sg.func("rtrim", translate_val(op.arg, **kw), sg_literal(string.whitespace))
+
+
+@translate_val.register(ops.LStrip)
+def _lstrip(op, **kw):
+    return sg.func("ltrim", translate_val(op.arg, **kw), sg_literal(string.whitespace))
 
 
 @translate_val.register(ops.Substring)
