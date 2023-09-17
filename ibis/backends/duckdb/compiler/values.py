@@ -82,28 +82,16 @@ def _literal(op, **kw):
         return sg.exp.Boolean(this=value)
     elif dtype.is_string() or dtype.is_inet() or dtype.is_macaddr():
         return sg_literal(value)
-    elif dtype.is_decimal():
-        # TODO: make this a sqlglot expression
-        precision = dtype.precision
-        scale = dtype.scale
-        if precision is None:
-            precision = 38
-        if scale is None:
-            scale = 9
-        if not 1 <= precision <= 38:
-            raise NotImplementedError(
-                f"Unsupported precision. Supported values: [1 : 38]. Current value: {precision!r}"
-            )
-        if math.isinf(value):
-            return sg.cast(expression=sg_literal(value), to=sg.exp.DataType.Type.FLOAT)
-        elif math.isnan(value):
-            return sg.cast(expression=sg_literal("NaN"), to=sg.exp.DataType.Type.FLOAT)
-        return sg.cast(sg_literal(value, is_string=False), to=sg_type)
     elif dtype.is_numeric():
-        if math.isinf(value):
-            return sg.cast(expression=sg_literal(value), to=sg.exp.DataType.Type.FLOAT)
-        elif math.isnan(value):
-            return sg.cast(expression=sg_literal("NaN"), to=sg.exp.DataType.Type.FLOAT)
+        # cast non finite values to float because that's the behavior of
+        # duckdb when a mixed decimal/float operation is performed
+        #
+        # float will be upcast to double if necessary by duckdb
+        if not math.isfinite(value):
+            return sg.cast(
+                sg_literal(value),
+                to=sg.exp.DataType.Type.FLOAT if dtype.is_decimal() else sg_type,
+            )
         return sg.cast(sg_literal(value, is_string=False), to=sg_type)
     elif dtype.is_interval():
         return _interval_format(op)
