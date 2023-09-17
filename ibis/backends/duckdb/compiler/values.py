@@ -130,9 +130,9 @@ def _literal(op, **kw):
         day = sg_literal(value.day, is_string=False)
         return sg.exp.DateFromParts(year=year, month=month, day=day)
     elif dtype.is_array():
-        is_string = dtype.value_type.is_string()
+        value_type = dtype.value_type
         return sg.exp.Array.from_arg_list(
-            [sg.cast(sg_literal(v, is_string=is_string), to=sg_type) for v in value]
+            [_literal(ops.Literal(v, dtype=value_type), **kw) for v in value]
         )
     elif dtype.is_map():
         key_type = dtype.key_type
