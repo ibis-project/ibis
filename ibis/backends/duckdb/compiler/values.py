@@ -240,6 +240,7 @@ _simple_ops = {
     ops.Map: "map",
     ops.MapMerge: "map_concat",
     ops.JSONGetItem: "json_extract",
+    ops.TypeOf: "typeof",
 }
 
 
@@ -381,12 +382,6 @@ def _try_cast(op, **kw):
         this=translate_val(op.arg, **kw),
         to=DuckDBType.to_string(op.to),
     )
-
-
-@translate_val.register(ops.TypeOf)
-def _type_of(op, **kw):
-    arg = translate_val(op.arg, **kw)
-    return sg.func("typeof", arg)
 
 
 ### Comparator Conundrums
