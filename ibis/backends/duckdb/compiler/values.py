@@ -221,7 +221,7 @@ _simple_ops = {
     ops.Unnest: "unnest",
     ops.Degrees: "degrees",
     ops.Radians: "radians",
-    ops.NullIf: "nullIf",
+    ops.NullIf: "nullif",
     ops.MapLength: "cardinality",
     ops.MapKeys: "map_keys",
     ops.MapValues: "map_values",
@@ -885,10 +885,10 @@ def _in_column(op, **kw):
 
 @translate_val.register(ops.ArrayConcat)
 def _array_concat(op, **kw):
-    return sg.func(
-        "flatten",
-        sg.exp.Array.from_arg_list([translate_val(arg, **kw) for arg in op.arg]),
-    )
+    result, *rest = map(partial(translate_val, **kw), op.arg)
+    for arg in rest:
+        result = sg.func("list_concat", result, arg)
+    return result
 
 
 @translate_val.register(ops.ArrayRepeat)
