@@ -892,11 +892,10 @@ def _in_values(op, **kw):
 
 @translate_val.register(ops.InColumn)
 def _in_column(op, **kw):
+    from ibis.backends.duckdb.compiler import translate
+
     value = translate_val(op.value, **kw)
-    options = translate_val(ops.TableArrayView(op.options.to_expr().as_table()), **kw)
-    # TODO: fix?
-    # if not isinstance(options, sa.sql.Selectable):
-    #     options = sg.select(options)
+    options = translate(op.options.to_expr().as_table().op(), {})
     return value.isin(options)
 
 
