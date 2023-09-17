@@ -1444,20 +1444,14 @@ def _window(op: ops.WindowFunction, **kw: Any):
         over="OVER",
     )
 
-    if frame.group_by:
-        partition_by = list(map(tr_val, frame.group_by))
-    else:
-        partition_by = None
+    partition_by = list(map(tr_val, frame.group_by)) or None
 
     order_bys = list(map(tr_val, frame.order_by))
 
     if isinstance(func, ops.Analytic) and not isinstance(func, ops.ShiftBase):
-        order_bys.extend(tr_val(ops.SortKey(arg, ascending=True)) for arg in func.args)
+        order_bys.extend(map(tr_val, func.args))
 
-    if order_bys:
-        order = sg.exp.Order(expressions=order_bys)
-    else:
-        order = None
+    order = sg.exp.Order(expressions=order_bys) if order_bys else None
 
     window = sg.exp.Window(this=this, partition_by=partition_by, order=order, spec=spec)
 
