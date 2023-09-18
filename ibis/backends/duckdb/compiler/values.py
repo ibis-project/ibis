@@ -1477,7 +1477,7 @@ def shift_like(op_class, name):
         default = op.default
 
         arg_fmt = translate_val(arg, **kw)
-        pieces = [arg_fmt]
+        args = [arg_fmt]
 
         if default is not None:
             if offset is None:
@@ -1487,13 +1487,13 @@ def shift_like(op_class, name):
 
             default_fmt = translate_val(default, **kw)
 
-            pieces.append(offset_fmt)
-            pieces.append(default_fmt)
+            args.append(offset_fmt)
+            args.append(default_fmt)
         elif offset is not None:
             offset_fmt = translate_val(offset, **kw)
-            pieces.append(offset_fmt)
+            args.append(offset_fmt)
 
-        return sg.func(name, *pieces)
+        return sg.func(name, *args)
 
     return formatter
 
