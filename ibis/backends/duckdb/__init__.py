@@ -176,10 +176,6 @@ class Backend(BaseBackend, CanCreateSchema):
     def _clean_up_cached_table(self, op):
         self.drop_table(op.name)
 
-    def list_schemas(self):
-        out = self.raw_sql("SELECT current_schemas(True) as schemas").arrow()
-        return list(set(out["schemas"].to_pylist()[0]))
-
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
@@ -237,26 +233,69 @@ class Backend(BaseBackend, CanCreateSchema):
         )
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        result = self.raw_sql("PRAGMA database_list;")
-        results = result.fetch_arrow_table()
+        col = "catalog_name"
+        query = sg.select(sg.exp.Distinct(expressions=[sg.column(col)])).from_(
+            sg.table("schemata", db="information_schema")
+        )
+        result = self.raw_sql(query)
+        dbs = result.fetch_arrow_table()[col]
+        return self._filter_with_like(dbs.to_pylist(), like)
 
-        if results:
-            _, databases, *_ = results
-            databases = databases.to_pylist()
-        else:
-            databases = []
-        return self._filter_with_like(databases, like)
+    def list_schemas(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        col = "schema_name"
+        query = sg.select(sg.exp.Distinct(expressions=[sg.column(col)])).from_(
+            sg.table("schemata", db="information_schema")
+        )
 
-    def list_tables(self, like: str | None = None) -> list[str]:
-        result = self.raw_sql("PRAGMA show_tables;")
-        results = result.fetch_arrow_table()
+        if database is not None:
+            query = query.where(
+                sg.condition(
+                    sg.exp.EQ(
+                        this=sg.column("catalog_name"),
+                        expression=sg.exp.Literal(this=database, is_string=True),
+                    )
+                )
+            )
 
-        if results:
-            tables, *_ = results
-            tables = tables.to_pylist()
-        else:
-            tables = []
-        return self._filter_with_like(tables, like)
+        out = self.raw_sql(query).arrow()
+        return self._filter_with_like(out[col].to_pylist(), like=like)
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        col = "table_name"
+        query = sg.select(sg.exp.Distinct(expressions=[sg.column(col)])).from_(
+            sg.table("tables", db="information_schema")
+        )
+
+        conditions = []
+
+        if database is not None:
+            conditions.append(
+                sg.exp.EQ(
+                    this=sg.column("table_catalog"),
+                    expression=sg.exp.Literal(this=database, is_string=True),
+                )
+            )
+
+        if schema is not None:
+            conditions.append(
+                sg.exp.EQ(
+                    this=sg.column("table_schema"),
+                    expression=sg.exp.Literal(this=schema, is_string=True),
+                )
+            )
+
+        if conditions:
+            query = query.where(sg.condition(sg.and_(*conditions)))
+
+        out = self.raw_sql(query).arrow()
+        return self._filter_with_like(out["table_name"].to_pylist(), like)
 
     @classmethod
     def has_operation(cls, operation: type[ops.Value]) -> bool:
