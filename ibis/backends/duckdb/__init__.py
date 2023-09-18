@@ -65,7 +65,7 @@ class Backend(BaseBackend, CanCreateSchema):
     supports_create_or_replace = True
 
     def _define_udf_translation_rules(self, expr):
-        """No-op: the rules are defined in the compiler."""
+        """No-op: UDF translation rules are defined in the compiler."""
 
     @property
     def current_database(self) -> str:
