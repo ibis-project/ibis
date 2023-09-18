@@ -15,6 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.base.sqlglot import unalias
 from ibis.backends.base.sqlglot.datatypes import DuckDBType
 
 if TYPE_CHECKING:
@@ -1223,13 +1224,9 @@ def _struct_column(op, **kw):
     )
 
 
-def _unwrap_alias(op):
-    return op.arg if isinstance(op, ops.Alias) else op
-
-
 @translate_val.register(ops.StructField)
 def _struct_field(op, **kw):
-    arg = translate_val(_unwrap_alias(op.arg), **kw)
+    arg = translate_val(unalias(op.arg), **kw)
     return sg.exp.StructExtract(
         this=arg, expression=sg.exp.Literal(this=op.field, is_string=True)
     )

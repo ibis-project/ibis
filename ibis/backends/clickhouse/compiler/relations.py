@@ -7,7 +7,12 @@ import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+<<<<<<< HEAD
 from ibis.backends.base.sqlglot import FALSE, NULL, STAR
+=======
+from ibis.backends.base.sqlglot import unalias
+from ibis.backends.clickhouse.compiler.values import translate_val
+>>>>>>> 4ae077d66 (chore: factor out unaliasing)
 
 
 @functools.singledispatch
@@ -85,6 +90,7 @@ def _selection(
 
 
 @translate_rel.register(ops.Aggregation)
+<<<<<<< HEAD
 def _aggregation(
     op: ops.Aggregation, *, table, metrics, by, having, predicates, sort_keys, **_
 ):
@@ -104,6 +110,27 @@ def _aggregation(
 
     if sort_keys:
         sel = sel.order_by(*sort_keys)
+=======
+def _aggregation(op: ops.Aggregation, *, table, **kw):
+    tr_val = partial(translate_val, **kw)
+
+    by = tuple(map(tr_val, op.by))
+    metrics = tuple(map(tr_val, op.metrics))
+    selections = (by + metrics) or "*"
+    sel = sg.select(*selections).from_(table)
+
+    if group_keys := op.by:
+        sel = sel.group_by(*map(tr_val, map(unalias, group_keys)), dialect="clickhouse")
+
+    if predicates := op.predicates:
+        sel = sel.where(*map(tr_val, map(unalias, predicates)), dialect="clickhouse")
+
+    if having := op.having:
+        sel = sel.having(*map(tr_val, map(unalias, having)), dialect="clickhouse")
+
+    if sort_keys := op.sort_keys:
+        sel = sel.order_by(*map(tr_val, map(unalias, sort_keys)), dialect="clickhouse")
+>>>>>>> 4ae077d66 (chore: factor out unaliasing)
 
     return sel
 
