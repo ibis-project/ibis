@@ -330,13 +330,29 @@ def fillna(op, **kw):
     table = translate(op.table, **kw)
 
     columns = []
+
+    repls = op.replacements
+
+    if isinstance(repls, Mapping):
+
+        def get_replacement(name):
+            repl = repls.get(name)
+            if repl is not None:
+                _assert_literal(repl)
+                return repl.value
+            else:
+                return None
+
+    else:
+        _assert_literal(repls)
+        value = repls.value
+
+        def get_replacement(_):
+            return value
+
     for name, dtype in op.table.schema.items():
         column = pl.col(name)
-        if isinstance(op.replacements, Mapping):
-            value = op.replacements.get(name)
-        else:
-            _assert_literal(op.replacements)
-            value = op.replacements.value
+        value = get_replacement(name)
 
         if value is not None:
             if dtype.is_floating():
