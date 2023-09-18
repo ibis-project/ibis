@@ -192,7 +192,7 @@ def test_geo_spatial_unops(geotable, expr_fn, expected):
             marks=pytest.mark.notimpl(["postgres"]),
         ),
         param(
-            lambda t: t.geo_polygon.contains(ibis.geo_point(30, 10)),
+            lambda t: t.geo_polygon.contains(ibis.literal(30).point(10)),
             [True, False, False, False, False],
             id="point",
             marks=pytest.mark.notimpl(["postgres"]),
