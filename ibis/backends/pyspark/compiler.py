@@ -381,12 +381,12 @@ def compile_literal(t, op, *, raw=False, **kwargs):
     if value is None:
         return F.lit(None)
 
-    if raw:
-        return value
-
     if dtype.is_interval():
         # execute returns a Timedelta and value is nanoseconds
         return execute(op).value
+
+    if raw:
+        return value
 
     if isinstance(value, collections.abc.Set):
         # Don't wrap set with F.lit
