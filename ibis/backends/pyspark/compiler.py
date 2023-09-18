@@ -1771,11 +1771,11 @@ def compile_dropna_table(t, op, **kwargs):
 @compiles(ops.FillNa)
 def compile_fillna_table(t, op, **kwargs):
     table = t.translate(op.table, **kwargs)
-    raw_replacements = op.replacements
+    repls = op.replacements
     replacements = (
-        dict(raw_replacements)
-        if isinstance(raw_replacements, frozendict)
-        else raw_replacements.value
+        {name: t.translate(value, **kwargs) for name, value in repls.items()}
+        if isinstance(repls, frozendict)
+        else repls.value
     )
     return table.fillna(replacements)
 
