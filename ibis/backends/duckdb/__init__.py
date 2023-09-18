@@ -1378,6 +1378,7 @@ class Backend(BaseBackend, CanCreateSchema):
             con.execute(f"TRUNCATE TABLE {table.sql('duckdb')}")
 
         if isinstance(obj, ir.Table):
+            self._run_pre_execute_hooks(obj)
             query = sg.exp.insert(
                 expression=self.compile(obj), into=table, dialect="duckdb"
             )
