@@ -14,7 +14,6 @@ import pandas as pd
 import pyarrow as pa
 import sqlglot as sg
 import toolz
-from packaging.version import parse as vparse
 
 import ibis
 import ibis.common.exceptions as exc
@@ -367,10 +366,6 @@ class Backend(BaseBackend, CanCreateSchema):
 
         # Default timezone
         self.con.execute("SET TimeZone = 'UTC'")
-        # the progress bar in duckdb <0.8.0 causes kernel crashes in
-        # jupyterlab, fixed in https://github.com/duckdb/duckdb/pull/6831
-        if vparse(duckdb.__version__) < vparse("0.8.0"):
-            self.con.execute("SET enable_progress_bar = false")
 
         self._record_batch_readers_consumed = {}
         self._temp_views: set[str] = set()
@@ -641,10 +636,6 @@ class Backend(BaseBackend, CanCreateSchema):
         Table
             An ibis table expression
         """
-        if (version := vparse(self.version)) < vparse("0.7.0"):
-            raise exc.IbisError(
-                f"`read_json` requires duckdb >= 0.7.0, duckdb {version} is installed"
-            )
         if not table_name:
             table_name = util.gen_name("read_json")
 
@@ -1036,24 +1027,17 @@ class Backend(BaseBackend, CanCreateSchema):
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
 
-        # handle the argument name change in duckdb 0.8.0
-        fetch_record_batch = (
-            (lambda cur: cur.fetch_record_batch(rows_per_batch=chunk_size))
-            if vparse(duckdb.__version__) >= vparse("0.8.0")
-            else (lambda cur: cur.fetch_record_batch(chunk_size=chunk_size))
-        )
-
-        def batch_producer(table):
-            yield from fetch_record_batch(table)
+        def batch_producer(cur):
+            yield from cur.fetch_record_batch(rows_per_batch=chunk_size)
 
         # TODO: check that this is still handled correctly
         # batch_producer keeps the `self.con` member alive long enough to
         # exhaust the record batch reader, even if the backend or connection
         # have gone out of scope in the caller
-        table = self.raw_sql(sql)
+        result = self.raw_sql(sql)
 
         return pa.RecordBatchReader.from_batches(
-            expr.as_table().schema().to_pyarrow(), batch_producer(table)
+            expr.as_table().schema().to_pyarrow(), batch_producer(result)
         )
 
     def to_pyarrow(
