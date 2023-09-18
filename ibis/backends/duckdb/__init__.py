@@ -72,11 +72,13 @@ class Backend(BaseBackend, CanCreateSchema):
 
     @property
     def current_database(self) -> str:
-        return self.raw_sql("SELECT CURRENT_DATABASE()").arrow()[0][0].as_py()
+        (db,) = self.raw_sql("SELECT CURRENT_DATABASE()").fetchone()
+        return db
 
     @property
     def current_schema(self) -> str:
-        return self.raw_sql("SELECT CURRENT_SCHEMA()").arrow()[0][0].as_py()
+        (schema,) = self.raw_sql("SELECT CURRENT_SCHEMA()").fetchone()
+        return schema
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
