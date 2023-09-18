@@ -1773,7 +1773,7 @@ def compile_fillna_table(t, op, **kwargs):
     table = t.translate(op.table, **kwargs)
     repls = op.replacements
     replacements = (
-        {name: t.translate(value, **kwargs) for name, value in repls.items()}
+        {name: t.translate(value, raw=True, **kwargs) for name, value in repls.items()}
         if isinstance(repls, frozendict)
         else repls.value
     )
