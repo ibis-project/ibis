@@ -502,7 +502,7 @@ def _apply_schema(op: ops.Node, result: pd.DataFrame | pd.Series):
         return PandasData.convert_table(df, op.schema)
     elif isinstance(result, pd.Series):
         schema = op.to_expr().as_table().schema()
-        df = PandasData.convert_table(result.to_frame(), schema)
+        df = PandasData.convert_table(result.to_frame(name=schema.names[0]), schema)
         return df.iloc[:, 0].reset_index(drop=True)
     else:
         return result
