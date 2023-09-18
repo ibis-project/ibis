@@ -1180,12 +1180,9 @@ def _table_array_view(op, *, cache, **kw):
     try:
         return cache[table]
     except KeyError:
-        from ibis.backends.duckdb.compiler.relations import translate_rel
+        from ibis.backends.duckdb.compiler import translate
 
-        # ignore the top level table, so that we can compile its dependencies
-        (leaf,) = an.find_immediate_parent_tables(table, keep_input=False)
-        res = translate_rel(table, table=cache[leaf], cache=cache, **kw)
-        return res.subquery()
+        return translate(table, {})
 
 
 @translate_val.register(ops.ExistsSubquery)
