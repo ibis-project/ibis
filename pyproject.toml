@@ -299,6 +299,7 @@ filterwarnings = [
   # sqlalchemy
   "ignore:Class ST_.+ will not make use of SQL compilation caching:",
   "ignore:UserDefinedType Geometry:",
+  'ignore:Dialect .+ does \*not\* support Decimal:',
   # google
   "ignore:Deprecated call to `pkg_resources\\.declare_namespace\\('.*'\\):DeprecationWarning",
   # pyspark on python 3.11
