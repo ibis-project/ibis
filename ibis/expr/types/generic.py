@@ -976,9 +976,9 @@ class Scalar(Value):
         from ibis.expr.analysis import find_first_base_table
 
         op = self.op()
+        table = find_first_base_table(op)
         name = op.name
         op = ops.Alias(op, name)
-        table = find_first_base_table(op)
         if table is not None:
             return table.to_expr().aggregate([self.name(name)])
         else:
