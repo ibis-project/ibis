@@ -1190,11 +1190,14 @@ def _exists_subquery(op, **kw):
     from ibis.backends.duckdb.compiler import translate
 
     foreign_table = translate(op.foreign_table, {})
+
+    # only construct a subquery if we cannot refer to the table directly
+    if isinstance(foreign_table, sg.exp.Select):
+        foreign_table = foreign_table.subquery()
+
     predicates = translate_val(op.predicates, **kw)
     return sg.exp.Exists(
-        this=sg.select(1)
-        .from_(foreign_table.subquery())
-        .where(sg.condition(predicates))
+        this=sg.select(1).from_(foreign_table).where(sg.condition(predicates))
     )
 
 
