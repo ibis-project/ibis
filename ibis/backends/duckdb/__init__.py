@@ -6,6 +6,7 @@ import ast
 import contextlib
 import os
 import warnings
+from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -43,6 +44,14 @@ def normalize_filenames(source_list):
     source_list = util.promote_list(source_list)
 
     return list(map(util.normalize_filename, source_list))
+
+
+def strlit(s: str) -> sg.exp.Literal:
+    return sg.exp.Literal(this=s, is_string=True)
+
+
+def eq(left, right) -> sg.exp.EQ:
+    return sg.exp.EQ(this=left, expression=right)
 
 
 _UDF_INPUT_TYPE_MAPPING = {
@@ -194,14 +203,18 @@ class Backend(BaseBackend, CanCreateSchema):
         schema = self.get_schema(name, database=database)
         return ops.DatabaseTable(name, schema, self, namespace=database).to_expr()
 
-    def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
-        """Return a Schema object for the indicated table and database.
+    def get_schema(
+        self, table_name: str, schema: str | None = None, database: str | None = None
+    ) -> sch.Schema:
+        """Compute the schema of a `table`.
 
         Parameters
         ----------
         table_name
             May **not** be fully qualified. Use `database` if you want to
             qualify the identifier.
+        schema
+            Schema name
         database
             Database name
 
@@ -210,26 +223,45 @@ class Backend(BaseBackend, CanCreateSchema):
         sch.Schema
             Ibis schema
         """
-        qualified_name = sg.table(table_name, database).sql(self.name)
-        query = sg.exp.Describe(this=qualified_name)
-        results = self.raw_sql(query)
-        names, types, nulls, *_ = results.fetch_arrow_table()
-        names = names.to_pylist()
-        types = types.to_pylist()
-        # DuckDB gives back "YES", "NO" for nullability
-        # TODO: remove code crime
-        # nulls = [bool(null[:-2]) for null in nulls.to_pylist()]
-        nulls = [null == "YES" for null in nulls.to_pylist()]
-        return sch.Schema(
-            dict(
-                zip(
-                    names,
-                    (
-                        DuckDBType.from_string(typ, nullable=null)
-                        for typ, null in zip(types, nulls)
-                    ),
-                )
+        conditions = [eq(sg.column("table_name"), strlit(table_name))]
+
+        if database is not None:
+            conditions.append(eq(sg.column("table_catalog"), strlit(database)))
+
+        if schema is not None:
+            conditions.append(eq(sg.column("table_schema"), strlit(schema)))
+
+        query = (
+            sg.select(
+                "column_name",
+                "data_type",
+                sg.alias(eq(sg.column("is_nullable"), strlit("YES")), "nullable"),
+                # see https://github.com/tobymao/sqlglot/issues/2253 for why
+                # this column is included
+                "ordinal_position",
             )
+            .from_(sg.table("columns", db="information_schema"))
+            .where(sg.and_(*conditions))
+        )
+
+        result = self.raw_sql(query)
+        meta = result.arrow()
+
+        if not meta:
+            raise exc.IbisError(f"Table not found: {table_name!r}")
+
+        names = meta["column_name"].to_pylist()
+        types = meta["data_type"].to_pylist()
+        nullables = meta["nullable"].to_pylist()
+        pos = meta["ordinal_position"].to_pylist()
+
+        return sch.Schema(
+            {
+                name: DuckDBType.from_string(typ, nullable=nullable)
+                for _, name, typ, nullable in sorted(
+                    zip(pos, names, types, nullables), key=itemgetter(0)
+                )
+            }
         )
 
     def list_databases(self, like: str | None = None) -> list[str]:
@@ -250,14 +282,7 @@ class Backend(BaseBackend, CanCreateSchema):
         )
 
         if database is not None:
-            query = query.where(
-                sg.condition(
-                    sg.exp.EQ(
-                        this=sg.column("catalog_name"),
-                        expression=sg.exp.Literal(this=database, is_string=True),
-                    )
-                )
-            )
+            query = query.where(eq(sg.column("catalog_name"), strlit(database)))
 
         out = self.raw_sql(query).arrow()
         return self._filter_with_like(out[col].to_pylist(), like=like)
@@ -276,23 +301,13 @@ class Backend(BaseBackend, CanCreateSchema):
         conditions = []
 
         if database is not None:
-            conditions.append(
-                sg.exp.EQ(
-                    this=sg.column("table_catalog"),
-                    expression=sg.exp.Literal(this=database, is_string=True),
-                )
-            )
+            conditions.append(eq(sg.column("table_catalog"), strlit(database)))
 
         if schema is not None:
-            conditions.append(
-                sg.exp.EQ(
-                    this=sg.column("table_schema"),
-                    expression=sg.exp.Literal(this=schema, is_string=True),
-                )
-            )
+            conditions.append(eq(sg.column("table_schema"), strlit(schema)))
 
         if conditions:
-            query = query.where(sg.condition(sg.and_(*conditions)))
+            query = query.where(sg.and_(*conditions))
 
         out = self.raw_sql(query).arrow()
         return self._filter_with_like(out["table_name"].to_pylist(), like)
