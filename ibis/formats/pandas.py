@@ -111,9 +111,7 @@ class PandasData(DataMapper):
         for name, dtype in schema.items():
             df[name] = cls.convert_column(df[name], dtype)
 
-        # return data with the schema's columns which may be different than the
-        # input columns
-        return df.loc[:, list(schema.names)]
+        return df
 
     @classmethod
     def convert_column(cls, obj, dtype):
