@@ -58,22 +58,17 @@ test +backends:
 doctest *args:
     #!/usr/bin/env bash
 
-    if [ -z "{{ args }}" ]; then
-        # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
-        args=($(
-          find \
-            ibis \
-            -wholename '*.py' \
-            -and -not -wholename '*test*.py' \
-            -and -not -wholename '*__init__*' \
-            -and -not -wholename '*gen_*.py' \
-            -and -not -wholename '*ibis/expr/selectors.py' \
-            -and -not -wholename '*ibis/backends/flink/*' # FIXME(deepyaman)
-        ))
-    else
-        args=({{ args }})
-    fi
-    pytest --doctest-modules "${args[@]}"
+    # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
+    pytest --doctest-modules {{ args }} $(
+      find \
+        ibis \
+        -wholename '*.py' \
+        -and -not -wholename '*test*.py' \
+        -and -not -wholename '*__init__*' \
+        -and -not -wholename '*gen_*.py' \
+        -and -not -wholename '*ibis/expr/selectors.py' \
+        -and -not -wholename '*ibis/backends/flink/*' # FIXME(deepyaman)
+    )
 
 # download testing data
 download-data owner="ibis-project" repo="testing-data" rev="master":
