@@ -451,7 +451,7 @@ class Backend(BaseBackend, CanCreateSchema):
         return sql.sql(dialect="duckdb", pretty=True)
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        return str(self.compile(expr, **kwargs))
+        return self.compile(expr, **kwargs)
 
     def _log(self, sql: str) -> None:
         """Log `sql`.
