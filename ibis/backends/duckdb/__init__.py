@@ -1383,7 +1383,8 @@ class Backend(BaseBackend, CanCreateSchema):
                 expression=self.compile(obj), into=table, dialect="duckdb"
             )
             con.execute(query.sql("duckdb"))
-        elif isinstance(obj, pd.DataFrame):
-            con.append(table_name, obj)
         else:
-            con.append(table_name, pd.DataFrame(obj))
+            con.append(
+                table_name,
+                obj if isinstance(obj, pd.DataFrame) else pd.DataFrame(obj),
+            )
