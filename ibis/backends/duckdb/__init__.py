@@ -51,18 +51,6 @@ _UDF_INPUT_TYPE_MAPPING = {
 }
 
 
-class DuckDBTable(ir.Table):
-    """References a physical table in DuckDB."""
-
-    @property
-    def _client(self):
-        return self.op().source
-
-    @property
-    def name(self):
-        return self.op().name
-
-
 class Backend(BaseBackend, CanCreateSchema):
     name = "duckdb"
     supports_create_or_replace = True
@@ -209,7 +197,7 @@ class Backend(BaseBackend, CanCreateSchema):
         """
         schema = self.get_schema(name, database=database)
         qname = self._fully_qualified_name(name, database)
-        return DuckDBTable(ops.DatabaseTable(qname, schema, self))
+        return ops.DatabaseTable(qname, schema, self).to_expr()
 
     def _fully_qualified_name(self, name: str, database: str | None) -> str:
         return name
