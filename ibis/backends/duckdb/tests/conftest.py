@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
 class TestConf(BackendTest, RoundAwayFromZero):
     supports_map = True
-    deps = "duckdb", "duckdb_engine"
+    deps = ("duckdb",)
     stateful = False
     supports_tpch = True
 
