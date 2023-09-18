@@ -39,6 +39,6 @@ Notable changes include removing intermediate expressions, improving the testing
 ## Additional Changes
 
 As mentioned previously, additional functionality, bugfixes, and more have been included in the latest 4.0 release.
-To stay up to date and learn more about recent changes: check out the project's homepage at [ibis-project.org](https://ibis-project.org), follow [@IbisData](https://twitter.com/IbisData) on Twitter, find the source code and community on [GitHub](https://github.com/ibis-project/ibis), and join the discussion on [Gitter](https://gitter.im/ibis-dev/Lobby).
+To stay up to date and learn more about recent changes: check out the project's homepage at [ibis-project.org](https://ibis-project.org), follow [@IbisData](https://twitter.com/IbisData) on Twitter, find the source code and community on [GitHub](https://github.com/ibis-project/ibis), and join the discussion on [Zulip](https://ibis-project.zulipchat.com).
 
 As always, try Ibis by [installing](../../install.qmd) it today.
