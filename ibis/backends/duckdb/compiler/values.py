@@ -1520,5 +1520,5 @@ def _scalar_udf(op, **kw) -> str:
 
 
 @translate_val.register(ops.AggUDF)
-def _scalar_udf(op, **kw) -> str:
+def _agg_udf(op, **kw) -> str:
     return _aggregate(op, op.__class__.__name__, **kw)
