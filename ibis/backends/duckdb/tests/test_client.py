@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import duckdb
 import pytest
-import sqlalchemy as sa
 
 import ibis
 from ibis.conftest import LINUX, SANDBOXED
@@ -21,7 +20,7 @@ def ext_directory(tmpdir_factory):
 @pytest.mark.xfail(
     LINUX and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
-    raises=sa.exc.OperationalError,
+    raises=duckdb.IOException,
 )
 @pytest.mark.xdist_group(name="duckdb-extensions")
 def test_connect_extensions(ext_directory):
