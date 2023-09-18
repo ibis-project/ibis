@@ -372,6 +372,7 @@ $$""".format(
         if (table := cursor.cursor.fetch_arrow_all()) is None:
             table = schema.to_pyarrow().empty_table()
         df = table.to_pandas(timestamp_as_object=True)
+        df.columns = list(schema.names)
         return SnowflakePandasData.convert_table(df, schema)
 
     def to_pyarrow_batches(
