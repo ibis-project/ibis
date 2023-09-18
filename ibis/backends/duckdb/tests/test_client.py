@@ -83,3 +83,10 @@ def test_insert(con):
 
     con.insert(name, {"a": [1, 2]}, overwrite=True)
     assert t.count().execute() == 2
+
+
+def test_to_other_sql(con, snapshot):
+    t = con.table("functional_alltypes")
+
+    sql = ibis.to_sql(t, dialect="snowflake")
+    snapshot.assert_match(sql, "out.sql")

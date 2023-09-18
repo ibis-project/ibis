@@ -376,6 +376,6 @@ def to_sql(expr: ir.Expr, dialect: str | None = None, **kwargs) -> SQLString:
         else:
             read = write = getattr(backend, "_sqlglot_dialect", dialect)
 
-    sql = backend._to_sql(expr, **kwargs)
+    sql = backend._to_sql(expr.unbind(), **kwargs)
     (pretty,) = sg.transpile(sql, read=read, write=write, pretty=True)
     return SQLString(pretty)
