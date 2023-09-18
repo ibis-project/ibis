@@ -62,13 +62,6 @@ def _alias(op, render_aliases: bool = True, **kw):
 ### Literals
 
 
-def _sql(obj):
-    try:
-        return obj.sql(dialect="duckdb")
-    except AttributeError:
-        return obj
-
-
 def sg_literal(arg, is_string=True):
     return sg.exp.Literal(this=f"{arg}", is_string=is_string)
 
