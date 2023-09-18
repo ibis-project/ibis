@@ -1340,13 +1340,11 @@ del _op, _sym
 @translate_val.register(ops.Xor)
 def _xor(op, **kw):
     # https://github.com/tobymao/sqlglot/issues/2238
-    left = translate_val(op.left, **kw)
-    right = translate_val(op.right, **kw)
-    result = sg.exp.And(
-        this=sg.exp.Or(this=left, expression=right),
-        expression=sg.exp.Not(this=sg.exp.And(this=left, expression=right)),
+    left = translate_val(op.left, **kw).sql("duckdb")
+    right = translate_val(op.right, **kw).sql("duckdb")
+    return sg.parse_one(
+        f"({left} OR {right}) AND NOT ({left} AND {right})", read="duckdb"
     )
-    return result
 
 
 ### Ordering
