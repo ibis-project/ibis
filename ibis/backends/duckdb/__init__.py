@@ -393,7 +393,7 @@ class Backend(BaseBackend, CanCreateSchema):
             self._load_extensions(extensions)
 
         # Default timezone
-        self.con.execute("SET TimeZone = 'UTC'")
+        self.raw_sql("SET TimeZone = 'UTC'")
 
         self._record_batch_readers_consumed = {}
         self._temp_views: set[str] = set()
@@ -1370,21 +1370,19 @@ class Backend(BaseBackend, CanCreateSchema):
         ValueError
             If the type of `obj` isn't supported
         """
-        con = self.con
-
         table = sg.table(table_name, db=database)
 
         if overwrite:
-            con.execute(f"TRUNCATE TABLE {table.sql('duckdb')}")
+            self.raw_sql(f"TRUNCATE TABLE {table.sql('duckdb')}")
 
         if isinstance(obj, ir.Table):
             self._run_pre_execute_hooks(obj)
             query = sg.exp.insert(
                 expression=self.compile(obj), into=table, dialect="duckdb"
             )
-            con.execute(query.sql("duckdb"))
+            self.raw_sql(query)
         else:
-            con.append(
+            self.con.append(
                 table_name,
                 obj if isinstance(obj, pd.DataFrame) else pd.DataFrame(obj),
             )
