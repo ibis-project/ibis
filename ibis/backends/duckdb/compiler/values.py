@@ -100,8 +100,8 @@ def _literal(op, **kw):
                 to=sg.exp.DataType.Type.FLOAT if dtype.is_decimal() else sg_type,
             )
         return sg.cast(sg_literal(value, is_string=False), to=sg_type)
-    elif dtype.is_interval():
-        return _interval_format(op)
+    elif dtype.is_time():
+        return sg.cast(sg_literal(value), to=sg_type)
     elif dtype.is_timestamp():
         year = sg_literal(value.year, is_string=False)
         month = sg_literal(value.month, is_string=False)
