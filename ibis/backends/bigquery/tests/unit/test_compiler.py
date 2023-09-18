@@ -300,7 +300,7 @@ def test_set_operation(operation, keywords, snapshot):
 
 def test_geospatial_point(snapshot):
     t = ibis.table([("lon", "float64"), ("lat", "float64")], name="t")
-    expr = ibis.geo_point(t.lon, t.lat).name("tmp")
+    expr = t.lon.point(t.lat).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
