@@ -149,7 +149,7 @@ class Backend(BaseBackend, CanCreateSchema):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        qualname = self._fully_qualified_name(name, database)
+        qualname = sg.table(name, db=database).sql(self.name)
         replace = "OR REPLACE " * overwrite
         query = self.compile(obj)
         code = f"CREATE {replace}VIEW {qualname} AS {query}"
@@ -160,13 +160,13 @@ class Backend(BaseBackend, CanCreateSchema):
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        ident = self._fully_qualified_name(name, database)
+        ident = sg.table(name, db=database).sql(self.name)
         self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")
 
     def drop_view(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
-        name = self._fully_qualified_name(name, database)
+        name = sg.table(name, db=database).sql(self.name)
         if_exists = "IF EXISTS " * force
         self.raw_sql(f"DROP VIEW {if_exists}{name}")
 
@@ -196,20 +196,7 @@ class Backend(BaseBackend, CanCreateSchema):
             Table expression
         """
         schema = self.get_schema(name, database=database)
-        qname = self._fully_qualified_name(name, database)
-        return ops.DatabaseTable(qname, schema, self).to_expr()
-
-    def _fully_qualified_name(self, name: str, database: str | None) -> str:
-        return name
-        # TODO: make this less bad
-        # calls to here from `drop_table` already have `main` prepended to the table name
-        # so what's the more robust way to deduplicate that identifier?
-        db = database or self.current_database
-        if name.startswith(db):
-            # This is a hack to get around nested quoting of table name
-            # e.g. '"main._ibis_temp_table_2"'
-            return name
-        return sg.table(name, db=db)  # .sql(dialect="duckdb")
+        return ops.DatabaseTable(name, schema, self, namespace=database).to_expr()
 
     def get_schema(self, table_name: str, database: str | None = None) -> sch.Schema:
         """Return a Schema object for the indicated table and database.
@@ -227,9 +214,7 @@ class Backend(BaseBackend, CanCreateSchema):
         sch.Schema
             Ibis schema
         """
-        qualified_name = self._fully_qualified_name(table_name, database)
-        if isinstance(qualified_name, str):
-            qualified_name = sg.exp.Identifier(this=qualified_name, quoted=True)
+        qualified_name = sg.table(table_name, database).sql(self.name)
         query = sg.exp.Describe(this=qualified_name)
         results = self.raw_sql(query)
         names, types, nulls, *_ = results.fetch_arrow_table()
