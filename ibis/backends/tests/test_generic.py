@@ -61,6 +61,7 @@ NULL_BACKEND_TYPES = {
 
 
 @pytest.mark.broken(["impala", "bigquery"], "assert nan is None")
+@pytest.mark.broken(["flink"], "The runtime does not support untyped `NULL` values.")
 def test_null_literal(con, backend):
     expr = ibis.null()
     result = con.execute(expr)
