@@ -47,8 +47,7 @@ def _val_table_node(op, *, aliases, needs_alias=False, **_):
 
 @translate_val.register(ops.TableColumn)
 def _column(op, *, aliases, **_):
-    table_name = (aliases or {}).get(op.table)
-    return sg.column(op.name, table=table_name)
+    return sg.column(op.name, table=aliases.get(op.table))
 
 
 @translate_val.register(ops.Alias)
@@ -1511,7 +1510,7 @@ def _argument(op, **_):
 @translate_val.register(ops.RowID)
 def _rowid(op, *, aliases, **_) -> str:
     table = op.table
-    return sg.column(op.name, (aliases or {}).get(table, table.name))
+    return sg.column(op.name, aliases.get(table, table.name))
 
 
 @translate_val.register(ops.ScalarUDF)
