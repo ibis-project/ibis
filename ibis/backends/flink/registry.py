@@ -205,6 +205,7 @@ def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
 operation_registry.update(
     {
         # Unary operations
+        ops.IfNull: fixed_arity("ifnull", 2),
         ops.NullIfZero: _nullifzero,
         ops.RandomScalar: lambda *_: "rand()",
         ops.Degrees: unary("degrees"),
