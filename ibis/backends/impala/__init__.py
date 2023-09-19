@@ -348,10 +348,11 @@ class Backend(BaseSQLBackend):
             tables = [row[0] for row in cursor.fetchall()]
         return self._filter_with_like(tables)
 
-    def fetch_from_cursor(self, cursor, schema):
+    def fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         batches = cursor.fetchall(columnar=True)
         names = [name for name, *_ in cursor.description]
         df = _column_batches_to_dataframe(names, batches)
+        df.columns = list(schema.names)
         if schema:
             return PandasData.convert_table(df, schema)
         return df
