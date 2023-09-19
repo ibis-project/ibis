@@ -56,7 +56,7 @@ website:
     right:
       - icon: github
         href: https://github.com/ibis-project
-      - icon: slack
+      - icon: zulip
         href: https://ibis-project.zulipchat.com
       - icon: rss
         href: https://ibis-project.org/posts.xml
