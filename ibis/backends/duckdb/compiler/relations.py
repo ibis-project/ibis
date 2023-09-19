@@ -65,7 +65,7 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, aliases, **kw):
 @translate_rel.register(ops.Aggregation)
 def _aggregation(op: ops.Aggregation, *, table, **kw):
     tr_val = partial(translate_val, **kw)
-    tr_val_no_alias = partial(translate_val, render_aliases=False, **kw)
+    tr_val_no_alias = partial(translate_val, **kw)
 
     by = tuple(map(tr_val, op.by))
     metrics = tuple(map(tr_val, op.metrics))
