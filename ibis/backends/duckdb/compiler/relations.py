@@ -76,8 +76,15 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
     selections = (by + metrics) or "*"
     sel = sg.select(*selections).from_(table)
 
-    if group_keys := op.by:
-        sel = sel.group_by(*map(tr_val_no_alias, group_keys))
+    if op.by:
+        # avoids translation of group by keys twice and makes the output more
+        # concise
+        sel = sel.group_by(
+            *(
+                sg.exp.Literal(this=str(key), is_string=False)
+                for key in range(1, len(op.by) + 1)
+            )
+        )
 
     if predicates := op.predicates:
         sel = sel.where(*map(tr_val_no_alias, predicates))
