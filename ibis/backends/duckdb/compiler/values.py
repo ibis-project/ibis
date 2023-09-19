@@ -472,7 +472,7 @@ def _timestamp_from_ymdhms(op, **kw):
     func = "make_timestamp"
     if (timezone := op.dtype.timezone) is not None:
         func += "tz"
-        args.append(sg.exp.Literal(this=timezone, is_string=True))
+        args.append(sg_literal(timezone))
     return sg.func(func, *args)
 
 
@@ -524,7 +524,7 @@ _extract_mapping = {
 def _extract_time(op, **kw):
     part = _extract_mapping[type(op)]
     timestamp = translate_val(op.arg, **kw)
-    return sg.func("extract", sg.exp.Literal(this=part, is_string=True), timestamp)
+    return sg.func("extract", sg_literal(part), timestamp)
 
 
 # DuckDB extracts subminute microseconds and milliseconds
@@ -534,12 +534,8 @@ def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
 
     return sg.exp.Mod(
-        this=sg.func(
-            "extract",
-            sg.exp.Literal(this="us", is_string=True),
-            arg,
-        ),
-        expression=sg.exp.Literal(this="1000000", is_string=False),
+        this=sg.func("extract", sg_literal("us"), arg),
+        expression=sg_literal(1_000_000, is_string=False),
     )
 
 
@@ -548,12 +544,8 @@ def _extract_microsecond(op, **kw):
     arg = translate_val(op.arg, **kw)
 
     return sg.exp.Mod(
-        this=sg.func(
-            "extract",
-            sg.exp.Literal(this="ms", is_string=True),
-            arg,
-        ),
-        expression=sg.exp.Literal(this="1000", is_string=False),
+        this=sg.func("extract", sg_literal("ms"), arg),
+        expression=sg_literal(1_000, is_string=False),
     )
 
 
@@ -650,8 +642,7 @@ def _interval_format(op):
         )
 
     return sg.exp.Interval(
-        this=sg.exp.Literal(this=op.value, is_string=False),
-        unit=dtype.resolution.upper(),
+        this=sg_literal(op.value, is_string=False), unit=dtype.resolution.upper()
     )
 
 
@@ -700,9 +691,7 @@ def _substring(op, **kw):
     if_neg = sg.exp.Substring(this=arg, start=start, length=length)
 
     return sg.exp.If(
-        this=sg.exp.GTE(
-            this=start, expression=sg.exp.Literal(this="0", is_string=False)
-        ),
+        this=sg.exp.GTE(this=start, expression=sg_literal(0, is_string=False)),
         true=if_pos,
         false=if_neg,
     )
@@ -723,9 +712,7 @@ def _string_find(op, **kw):
 def _regex_search(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
-    return sg.func(
-        "regexp_matches", arg, pattern, sg.exp.Literal(this="s", is_string=True)
-    )
+    return sg.func("regexp_matches", arg, pattern, sg_literal("s"))
 
 
 @translate_val.register(ops.RegexReplace)
@@ -733,13 +720,7 @@ def _regex_replace(op, **kw):
     arg = translate_val(op.arg, **kw)
     pattern = translate_val(op.pattern, **kw)
     replacement = translate_val(op.replacement, **kw)
-    return sg.func(
-        "regexp_replace",
-        arg,
-        pattern,
-        replacement,
-        sg.exp.Literal(this="g", is_string=True),
-    )
+    return sg.func("regexp_replace", arg, pattern, replacement, sg_literal("g"))
 
 
 @translate_val.register(ops.RegexExtract)
@@ -1204,10 +1185,7 @@ def _array_column(op, **kw):
 def _struct_column(op, **kw):
     return sg.exp.Struct.from_arg_list(
         [
-            sg.exp.Slice(
-                this=sg.exp.Literal(this=name, is_string=True),
-                expression=translate_val(value, **kw),
-            )
+            sg.exp.Slice(this=sg_literal(name), expression=translate_val(value, **kw))
             for name, value in zip(op.names, op.values)
         ]
     )
@@ -1216,9 +1194,7 @@ def _struct_column(op, **kw):
 @translate_val.register(ops.StructField)
 def _struct_field(op, **kw):
     arg = translate_val(unalias(op.arg), **kw)
-    return sg.exp.StructExtract(
-        this=arg, expression=sg.exp.Literal(this=op.field, is_string=True)
-    )
+    return sg.exp.StructExtract(this=arg, expression=sg_literal(op.field))
 
 
 @translate_val.register(ops.ScalarParameter)
@@ -1265,15 +1241,8 @@ def _map_contains(op, **kw):
     arg = translate_val(op.arg, **kw)
     key = translate_val(op.key, **kw)
     return sg.exp.NEQ(
-        this=sg.func(
-            "array_length",
-            sg.func(
-                "element_at",
-                arg,
-                key,
-            ),
-        ),
-        expression=sg.exp.Literal(this="0", is_string=False),
+        this=sg.func("array_length", sg.func("element_at", arg, key)),
+        expression=sg_literal(0, is_string=False),
     )
 
 
