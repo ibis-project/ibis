@@ -27,6 +27,9 @@ env:
 jobs:
   test_backends:
     name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}
+    # only a single bigquery or snowflake run at a time, otherwise test data is
+    # clobbered by concurrent runs
+    concurrency: ${{ matrix.backend.name }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -39,6 +42,11 @@ jobs:
             title: BigQuery
           - name: snowflake
             title: Snowflake
+          - name: snowflake
+            title: Snowflake with nanoarrow
+            deps:
+              - snowflake-connector-python[pandas]@3.3.0b1
+              - --optional
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -50,13 +58,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - uses: syphar/restore-virtualenv@v1
+        if: matrix.backend.deps == null
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
 
-      - run: python -m pip install --upgrade pip 'poetry==1.6.1'
+      - name: upgrade pip and install poetry
+        run: python -m pip install --upgrade pip 'poetry==1.6.1'
+
+      - name: install a prerelease version of `snowflake-connector-python`
+        if: matrix.backend.deps != null
+        run: poetry add ${{ join(matrix.backend.deps, ' ') }}
 
       - uses: syphar/restore-pip-download-cache@v1
+        if: matrix.backend.deps == null
         with:
           requirement_files: poetry.lock
           custom_cache_key_element: ${{ matrix.backend.name }}-${{ steps.install_python.outputs.python-version }}
