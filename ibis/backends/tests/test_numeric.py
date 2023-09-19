@@ -1267,7 +1267,7 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.notyet(["mssql"], raises=sa.exc.OperationalError)
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
 @pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
-@pytest.mark.notyet(["datafusion"], raises=Exception)
+@pytest.mark.xfail_version(datafusion=["datafusion<31"], raises=Exception)
 @pytest.mark.parametrize("denominator", [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
