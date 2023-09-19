@@ -58,10 +58,13 @@ def check_eq(left, right, how, **kwargs):
             # TODO: mysql will likely never support full outer join
             # syntax, but we might be able to work around that using
             # LEFT JOIN UNION RIGHT JOIN
-            marks=pytest.mark.notimpl(
-                ["mysql", "datafusion"]
-                + (["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39")))
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["mysql"]
+                    + ["sqlite"] * (vparse(sqlite3.sqlite_version) < vparse("3.39"))
+                ),
+                pytest.mark.xfail_version(datafusion=["datafusion<31"]),
+            ],
         ),
     ],
 )

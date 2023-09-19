@@ -1586,8 +1586,8 @@ def test_string_to_timestamp(alltypes, fmt):
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
-@pytest.mark.broken(
-    ["datafusion"],
+@pytest.mark.xfail_version(
+    datafusion=["datafusion<31"],
     raises=Exception,
     reason="Exception: Arrow error: Cast error: Cannot cast string to value of Date64 type",
 )
@@ -1968,11 +1968,6 @@ INTERVAL_BACKEND_TYPES = {
     raises=TypeError,
 )
 @pytest.mark.broken(
-    ["datafusion"],
-    'Exception: This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
-    raises=Exception,
-)
-@pytest.mark.broken(
     ["mysql"],
     "The backend implementation is broken. "
     "If SQLAlchemy < 2 is installed, test fails with the following exception:"
@@ -1984,8 +1979,8 @@ INTERVAL_BACKEND_TYPES = {
 @pytest.mark.broken(
     ["bigquery"], reason="BigQuery returns DateOffset arrays", raises=AssertionError
 )
-@pytest.mark.notimpl(
-    ["datafusion"],
+@pytest.mark.xfail_version(
+    datafusion=["datafusion<31"],
     raises=Exception,
     reason='This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
 )
@@ -2081,8 +2076,8 @@ def test_timestamp_column_from_ymdhms(con, alltypes, df):
     ),
 )
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
-@pytest.mark.notimpl(
-    ["datafusion"],
+@pytest.mark.xfail_version(
+    datafusion=["datafusion<31"],
     raises=Exception,
     reason="Arrow error: Cast error: Cannot cast string '2022-02-24' to value of Date64 type",
 )
@@ -2104,8 +2099,8 @@ def test_date_scalar_from_iso(con):
     reason="java.lang.UnsupportedOperationException: class org.apache.calcite.sql.SqlIdentifier: STRING",
 )
 @pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
-@pytest.mark.notimpl(
-    ["datafusion"],
+@pytest.mark.xfail_version(
+    datafusion=["datafusion<31"],
     raises=Exception,
     reason="Arrow error: Cast error: Cannot cast string '2010-11-13' to value of Date64 type",
 )
@@ -2252,8 +2247,8 @@ def build_date_col(t):
     raises=sa.exc.CompileError,
     reason='No literal value renderer is available for literal value "datetime.date(2010, 11, 1)" with datatype DATE',
 )
-@pytest.mark.notimpl(
-    ["datafusion"],
+@pytest.mark.xfail_version(
+    datafusion=["datafusion<31"],
     raises=Exception,
     reason="Arrow error: Cast error: Cannot cast string '2010-11-01' to value of Date64 type",
 )
