@@ -1261,9 +1261,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
     ],
 )
-@pytest.mark.notyet(
-    ["datafusion", "duckdb", "mysql", "pyspark", "sqlite"], raises=AssertionError
-)
+@pytest.mark.notyet(["duckdb", "mysql", "pyspark", "sqlite"], raises=AssertionError)
 @pytest.mark.notyet(["mssql"], raises=sa.exc.OperationalError)
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
 @pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
