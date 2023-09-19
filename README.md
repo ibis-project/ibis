@@ -187,6 +187,6 @@ Ibis is an open source project and welcomes contributions from anyone in the com
 - We care about keeping the community welcoming for all. Check out [the code of conduct](https://github.com/ibis-project/ibis/blob/master/docs/CODE_OF_CONDUCT.md).
 - The Ibis project is open sourced under the [Apache License](https://github.com/ibis-project/ibis/blob/master/LICENSE.txt).
 
-Join our community by interacting on GitHub or chatting with us on [Zulip](https://ibis-project.zulipchat.com).
+Join our community by interacting on GitHub or chatting with us on [Zulip](https://ibis-project.zulipchat.com/join/ldd2gyoqkbsqli3dzlb463u4).
 
 For more information visit https://ibis-project.org/.
