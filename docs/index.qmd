@@ -24,9 +24,9 @@ about:
     - icon: github
       text: GitHub
       href: https://github.com/ibis-project
-    - icon: slack
-      text: Zulip
+    - icon: zulip
       href: https://ibis-project.zulipchat.com
+      text: Chat
     - icon: rss
       text: RSS
       href: https://ibis-project.org/posts.xml

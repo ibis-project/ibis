@@ -7,3 +7,10 @@ section[id^="parameters-"] {
     /* scroll when child contents overflow the width */
     overflow-x: auto;
 }
+
+.bi-zulip::before {
+  display: inline-block;
+  content: url("./zulip.svg");
+  vertical-align: -.125em;
+  width: 1em;
+}
