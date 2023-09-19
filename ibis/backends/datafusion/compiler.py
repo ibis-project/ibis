@@ -371,7 +371,9 @@ def mul(op, **kw):
 
 @translate.register(ops.Divide)
 def div(op, **kw):
-    return translate(op.left, **kw) / translate(op.right, **kw)
+    left = translate(ops.Cast(op.left, to=dt.float64), **kw)
+    right = translate(ops.Cast(op.right, to=dt.float64), **kw)
+    return left / right
 
 
 @translate.register(ops.FloorDivide)
