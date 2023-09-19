@@ -1188,10 +1188,8 @@ def _exists_subquery(op, **kw):
     if isinstance(foreign_table, sg.exp.Select):
         foreign_table = foreign_table.subquery()
 
-    predicates = translate_val(op.predicates, **kw)
-    return sg.exp.Exists(
-        this=sg.select(1).from_(foreign_table).where(sg.condition(predicates))
-    )
+    predicate = sg.and_(*map(partial(translate_val, **kw), op.predicates))
+    return sg.exp.Exists(this=sg.select(1).from_(foreign_table).where(predicate))
 
 
 @translate_val.register(ops.NotExistsSubquery)

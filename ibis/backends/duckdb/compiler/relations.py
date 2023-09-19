@@ -54,11 +54,7 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
     if predicates := op.predicates:
         if join is not None:
             sel = sg.select("*").from_(sel.subquery(kw["aliases"][op.table]))
-        res = functools.reduce(
-            lambda left, right: left.and_(right),
-            (sg.condition(tr_val(predicate)) for predicate in predicates),
-        )
-        sel = sel.where(res)
+        sel = sel.where(sg.and_(*map(tr_val, predicates)))
 
     if sort_keys := op.sort_keys:
         sel = sel.order_by(*map(tr_val, sort_keys))
@@ -82,6 +78,7 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
         sel = sel.group_by(
             *(
                 sg.exp.Literal(this=str(key), is_string=False)
+                # keys are refer
                 for key in range(1, len(op.by) + 1)
             )
         )
@@ -113,13 +110,9 @@ _JOIN_TYPES = {
 @translate_rel.register
 def _join(op: ops.Join, *, left, right, **kw):
     predicates = op.predicates
-    if predicates:
-        on = functools.reduce(
-            lambda left, right: left.and_(right),
-            (sg.condition(translate_val(predicate, **kw)) for predicate in predicates),
-        )
-    else:
-        on = None
+
+    on = sg.and_(*map(partial(translate_val, **kw), predicates)) if predicates else None
+
     join_type = _JOIN_TYPES[type(op)]
     try:
         return left.join(right, join_type=join_type, on=on)
