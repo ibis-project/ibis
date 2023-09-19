@@ -10,6 +10,7 @@ import sqlglot as sg
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.backends.base.sqlglot import unalias
 from ibis.backends.duckdb.compiler.values import translate_val
 
 
@@ -54,10 +55,10 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, aliases, **kw):
     if predicates := op.predicates:
         if join is not None:
             sel = sg.select("*").from_(sel.subquery(aliases[op.table]))
-        sel = sel.where(sg.and_(*map(tr_val, predicates)))
+        sel = sel.where(sg.and_(*map(tr_val, map(unalias, predicates))))
 
     if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val, sort_keys))
+        sel = sel.order_by(*map(tr_val, map(unalias, sort_keys)))
 
     return sel
 
@@ -65,7 +66,6 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, aliases, **kw):
 @translate_rel.register(ops.Aggregation)
 def _aggregation(op: ops.Aggregation, *, table, **kw):
     tr_val = partial(translate_val, **kw)
-    tr_val_no_alias = partial(translate_val, **kw)
 
     by = tuple(map(tr_val, op.by))
     metrics = tuple(map(tr_val, op.metrics))
@@ -84,13 +84,13 @@ def _aggregation(op: ops.Aggregation, *, table, **kw):
         )
 
     if predicates := op.predicates:
-        sel = sel.where(*map(tr_val_no_alias, predicates))
+        sel = sel.where(*map(tr_val, map(unalias, predicates)))
 
     if having := op.having:
-        sel = sel.having(*map(tr_val_no_alias, having))
+        sel = sel.having(*map(tr_val, map(unalias, having)))
 
     if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val_no_alias, sort_keys))
+        sel = sel.order_by(*map(tr_val, map(unalias, sort_keys)))
 
     return sel
 
@@ -111,7 +111,11 @@ _JOIN_TYPES = {
 def _join(op: ops.Join, *, left, right, **kw):
     predicates = op.predicates
 
-    on = sg.and_(*map(partial(translate_val, **kw), predicates)) if predicates else None
+    on = (
+        sg.and_(*map(partial(translate_val, **kw), map(unalias, predicates)))
+        if predicates
+        else None
+    )
 
     join_type = _JOIN_TYPES[type(op)]
     try:
@@ -220,9 +224,9 @@ def _dropna(op: ops.DropNa, *, table, **kw):
     tr_val = partial(translate_val, **kw)
     predicate = tr_val(raw_predicate)
     try:
-        return table.where(predicate)
+        return table.where(unalias(predicate))
     except AttributeError:
-        return sg.select("*").from_(table).where(predicate)
+        return sg.select("*").from_(table).where(unalias(predicate))
 
 
 @translate_rel.register

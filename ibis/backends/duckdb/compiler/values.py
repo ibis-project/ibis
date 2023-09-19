@@ -394,7 +394,7 @@ def _not(op, **kw):
 def _apply_agg_filter(expr, *, where, **kw):
     if where is not None:
         return sg.exp.Filter(
-            this=expr, expression=sg.exp.Where(this=translate_val(where, **kw))
+            this=expr, expression=sg.exp.Where(this=translate_val(unalias(where), **kw))
         )
     return expr
 
@@ -870,7 +870,7 @@ def _array_repeat_op(op, **kw):
     return sg.func(
         "flatten",
         sg.select(
-            sg.func("array", sg.select(arg).from_(sg.func("range", times)))
+            sg.func("array", sg.select(arg).from_(sg.func("range", unalias(times))))
         ).subquery(),
     )
 
@@ -1167,7 +1167,7 @@ def _exists_subquery(op, **kw):
     if isinstance(foreign_table, sg.exp.Select):
         foreign_table = foreign_table.subquery()
 
-    predicate = sg.and_(*map(partial(translate_val, **kw), op.predicates))
+    predicate = sg.and_(*map(partial(translate_val, **kw), map(unalias, op.predicates)))
     return sg.exp.Exists(this=sg.select(1).from_(foreign_table).where(predicate))
 
 
