@@ -352,8 +352,8 @@ class Backend(BaseSQLBackend):
         batches = cursor.fetchall(columnar=True)
         names = [name for name, *_ in cursor.description]
         df = _column_batches_to_dataframe(names, batches)
-        df.columns = list(schema.names)
         if schema:
+            df.columns = list(schema.names)
             return PandasData.convert_table(df, schema)
         return df
 
