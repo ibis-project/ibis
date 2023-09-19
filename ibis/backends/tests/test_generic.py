@@ -81,6 +81,7 @@ BOOLEAN_BACKEND_TYPE = {
     "trino": "boolean",
     "duckdb": "BOOLEAN",
     "postgres": "boolean",
+    "flink": "BOOLEAN NOT NULL",
 }
 
 
