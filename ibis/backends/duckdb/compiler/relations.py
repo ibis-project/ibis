@@ -32,7 +32,7 @@ def _physical_table(op, **_):
 
 
 @translate_rel.register(ops.Selection)
-def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
+def _selection(op: ops.Selection, *, table, needs_alias=False, aliases, **kw):
     # needs_alias should never be true here in explicitly, but it may get
     # passed via a (recursive) call to translate_val
     assert not needs_alias, "needs_alias is True"
@@ -44,7 +44,7 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
         (join,) = args["joins"]
     else:
         from_ = join = None
-    tr_val = partial(translate_val, needs_alias=needs_alias, **kw)
+    tr_val = partial(translate_val, needs_alias=needs_alias, aliases=aliases, **kw)
     selections = tuple(map(tr_val, op.selections)) or "*"
     sel = sg.select(*selections).from_(from_ if from_ is not None else table)
 
@@ -53,7 +53,7 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
 
     if predicates := op.predicates:
         if join is not None:
-            sel = sg.select("*").from_(sel.subquery(kw["aliases"][op.table]))
+            sel = sg.select("*").from_(sel.subquery(aliases[op.table]))
         sel = sel.where(sg.and_(*map(tr_val, predicates)))
 
     if sort_keys := op.sort_keys:
