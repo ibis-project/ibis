@@ -67,6 +67,11 @@ def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
     return translate_literal(op)
 
 
+def _zeroifnull(translator: ExprTranslator, op: ops.Literal) -> str:
+    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
+    return f"COALESCE({translator.translate(op.arg)}, {casted})"
+
+
 def _nullifzero(translator: ExprTranslator, op: ops.Literal) -> str:
     casted = translate_literal(ops.Literal("0", dtype=op.dtype))
     return f"NULLIF({translator.translate(op.arg)}, {casted})"
@@ -206,6 +211,7 @@ operation_registry.update(
     {
         # Unary operations
         ops.IfNull: fixed_arity("ifnull", 2),
+        ops.ZeroIfNull: _zeroifnull,
         ops.NullIfZero: _nullifzero,
         ops.RandomScalar: lambda *_: "rand()",
         ops.Degrees: unary("degrees"),
