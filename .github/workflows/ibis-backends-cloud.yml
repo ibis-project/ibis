@@ -29,7 +29,9 @@ jobs:
     name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}
     # only a single bigquery or snowflake run at a time, otherwise test data is
     # clobbered by concurrent runs
-    concurrency: ${{ matrix.backend.name }}
+    concurrency:
+      group: ${{ matrix.backend.name }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
