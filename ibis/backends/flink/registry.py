@@ -81,11 +81,15 @@ def _timestamp_diff(translator: ExprTranslator, op: ops.Node) -> str:
 def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
     arg, unit = op.args
 
+    numeric = helpers.quote_identifier(arg.name, force=True)
     if unit == TimestampUnit.MILLISECOND:
-        return f"TO_TIMESTAMP_LTZ({helpers.quote_identifier(arg.name, force=True)}, 3)"
+        precision = 3
     elif unit == TimestampUnit.SECOND:
-        return f"TO_TIMESTAMP_LTZ({helpers.quote_identifier(arg.name, force=True)}, 0)"
-    raise ValueError(f"{unit!r} unit is not supported!")
+        precision = 0
+    else:
+        raise ValueError(f"{unit!r} unit is not supported!")
+
+    return f"TO_TIMESTAMP_LTZ({numeric}, {precision})"
 
 
 def _format_window_start(translator: ExprTranslator, boundary):
