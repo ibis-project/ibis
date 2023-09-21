@@ -182,6 +182,8 @@ class NumericValue(Value):
     ) -> NumericValue:
         """Trim values outside of `lower` and `upper` bounds.
 
+        `NULL` values are preserved and are not replaced with bounds.
+
         Parameters
         ----------
         lower
@@ -198,20 +200,23 @@ class NumericValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"values": range(8)})
+        >>> t = ibis.memtable(
+        ...     {"values": [None, 2, 3, None, 5, None, None, 8]},
+        ...     schema=dict(values="int"),
+        ... )
         >>> t.values.clip(lower=3, upper=6)
         ┏━━━━━━━━━━━━━━━━━━━━┓
         ┃ Clip(values, 3, 6) ┃
         ┡━━━━━━━━━━━━━━━━━━━━┩
         │ int64              │
         ├────────────────────┤
+        │               NULL │
         │                  3 │
         │                  3 │
-        │                  3 │
-        │                  3 │
-        │                  4 │
+        │               NULL │
         │                  5 │
-        │                  6 │
+        │               NULL │
+        │               NULL │
         │                  6 │
         └────────────────────┘
         """

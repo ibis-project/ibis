@@ -1364,10 +1364,12 @@ def test_random(con):
 @pytest.mark.parametrize(
     ("ibis_func", "pandas_func"),
     [
-        (lambda x: x.clip(lower=0), lambda x: x.clip(lower=0)),
-        (lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0)),
-        (lambda x: x.clip(upper=0), lambda x: x.clip(upper=0)),
-        pytest.param(
+        param(lambda x: x.clip(lower=0), lambda x: x.clip(lower=0), id="lower-int"),
+        param(
+            lambda x: x.clip(lower=0.0), lambda x: x.clip(lower=0.0), id="lower-float"
+        ),
+        param(lambda x: x.clip(upper=0), lambda x: x.clip(upper=0), id="upper-int"),
+        param(
             lambda x: x.clip(lower=x - 1, upper=x + 1),
             lambda x: x.clip(lower=x - 1, upper=x + 1),
             marks=pytest.mark.notimpl(
@@ -1375,14 +1377,27 @@ def test_random(con):
                 raises=com.UnsupportedArgumentError,
                 reason="Polars does not support columnar argument Subtract(int_col, 1)",
             ),
+            id="lower-upper-expr",
         ),
-        (
+        param(
             lambda x: x.clip(lower=0, upper=1),
             lambda x: x.clip(lower=0, upper=1),
+            id="lower-upper-int",
         ),
-        (
+        param(
             lambda x: x.clip(lower=0, upper=1.0),
             lambda x: x.clip(lower=0, upper=1.0),
+            id="lower-upper-float",
+        ),
+        param(
+            lambda x: x.nullif(1).clip(lower=0),
+            lambda x: x.where(x != 1).clip(lower=0),
+            id="null-lower",
+        ),
+        param(
+            lambda x: x.nullif(1).clip(upper=0),
+            lambda x: x.where(x != 1).clip(upper=0),
+            id="null-upper",
         ),
     ],
 )

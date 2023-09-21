@@ -207,11 +207,11 @@ def _clip(translator: ExprTranslator, op: ops.Node) -> str:
 
     if op.upper is not None:
         upper = translator.translate(op.upper)
-        arg = f"IF({arg} > {upper}, {upper}, {arg})"
+        arg = f"IF({arg} > {upper} AND {arg} IS NOT NULL, {upper}, {arg})"
 
     if op.lower is not None:
         lower = translator.translate(op.lower)
-        arg = f"IF({arg} < {lower}, {lower}, {arg})"
+        arg = f"IF({arg} < {lower} AND {arg} IS NOT NULL, {lower}, {arg})"
 
     return f"CAST({arg} AS {_to_pyflink_types[type(op.dtype)]!s})"
 
