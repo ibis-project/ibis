@@ -68,6 +68,12 @@ def _filter(translator: ExprTranslator, op: ops.Node) -> str:
     return f"CASE WHEN {bool_expr} THEN {true_expr} ELSE {false_null_expr} END"
 
 
+def _timestamp_diff(translator: ExprTranslator, op: ops.Node) -> str:
+    left = translator.translate(op.left)
+    right = translator.translate(op.right)
+    return f"timestampdiff(second, {left}, {right})"
+
+
 def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
     return translate_literal(op)
 
@@ -241,6 +247,7 @@ operation_registry.update(
         # Other operations
         ops.Literal: _literal,
         ops.Where: _filter,
+        ops.TimestampDiff: _timestamp_diff,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Window: _window,
         ops.Clip: _clip,
