@@ -36,6 +36,11 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
     raise ValueError(f"{unit!r} unit is not supported!")
 
 
+def _date(translator: ExprTranslator, op: ops.Node) -> str:
+    (arg,) = op.args
+    return f"CAST({translator.translate(arg)} AS DATE)"
+
+
 def _extract_field(sql_attr: str) -> str:
     def extract_field_formatter(translator: ExprTranslator, op: ops.Node) -> str:
         arg = translator.translate(op.args[0])
@@ -223,6 +228,7 @@ operation_registry.update(
         ops.StrRight: fixed_arity("right", 2),
         ops.RegexSearch: fixed_arity("regexp", 2),
         # Timestamp operations
+        ops.Date: _date,
         ops.ExtractYear: _extract_field("year"),  # equivalent to YEAR(date)
         ops.ExtractMonth: _extract_field("month"),  # equivalent to MONTH(date)
         ops.ExtractDay: _extract_field("day"),  # equivalent to DAYOFMONTH(date)
