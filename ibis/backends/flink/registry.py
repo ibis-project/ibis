@@ -22,18 +22,18 @@ if TYPE_CHECKING:
 operation_registry = base_operation_registry.copy()
 
 
+def _zeroifnull(translator: ExprTranslator, op: ops.Literal) -> str:
+    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
+    return f"COALESCE({translator.translate(op.arg)}, {casted})"
+
+
+def _nullifzero(translator: ExprTranslator, op: ops.Literal) -> str:
+    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
+    return f"NULLIF({translator.translate(op.arg)}, {casted})"
+
+
 def _count_star(translator: ExprTranslator, op: ops.Node) -> str:
     return "count(*)"
-
-
-def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
-    arg, unit = op.args
-
-    if unit == TimestampUnit.MILLISECOND:
-        return f"TO_TIMESTAMP_LTZ({helpers.quote_identifier(arg.name, force=True)}, 3)"
-    elif unit == TimestampUnit.SECOND:
-        return f"TO_TIMESTAMP_LTZ({helpers.quote_identifier(arg.name, force=True)}, 0)"
-    raise ValueError(f"{unit!r} unit is not supported!")
 
 
 def _date(translator: ExprTranslator, op: ops.Node) -> str:
@@ -47,6 +47,10 @@ def _extract_field(sql_attr: str) -> str:
         return f"EXTRACT({sql_attr} from {arg})"
 
     return extract_field_formatter
+
+
+def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
+    return translate_literal(op)
 
 
 def _filter(translator: ExprTranslator, op: ops.Node) -> str:
@@ -74,18 +78,14 @@ def _timestamp_diff(translator: ExprTranslator, op: ops.Node) -> str:
     return f"timestampdiff(second, {left}, {right})"
 
 
-def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
-    return translate_literal(op)
+def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
+    arg, unit = op.args
 
-
-def _zeroifnull(translator: ExprTranslator, op: ops.Literal) -> str:
-    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
-    return f"COALESCE({translator.translate(op.arg)}, {casted})"
-
-
-def _nullifzero(translator: ExprTranslator, op: ops.Literal) -> str:
-    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
-    return f"NULLIF({translator.translate(op.arg)}, {casted})"
+    if unit == TimestampUnit.MILLISECOND:
+        return f"TO_TIMESTAMP_LTZ({helpers.quote_identifier(arg.name, force=True)}, 3)"
+    elif unit == TimestampUnit.SECOND:
+        return f"TO_TIMESTAMP_LTZ({helpers.quote_identifier(arg.name, force=True)}, 0)"
+    raise ValueError(f"{unit!r} unit is not supported!")
 
 
 def _format_window_start(translator: ExprTranslator, boundary):
