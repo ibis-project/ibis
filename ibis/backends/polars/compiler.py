@@ -629,16 +629,22 @@ def degrees(op, **kw):
 def clip(op, **kw):
     arg = translate(op.arg, **kw)
 
-    if op.lower is not None and op.upper is not None:
-        _assert_literal(op.lower)
+    def clipper(arg, expr):
+        return pl.when(arg.is_null()).then(arg).otherwise(expr)
+
+    lower = op.lower
+    upper = op.upper
+
+    if lower is not None and upper is not None:
+        _assert_literal(lower)
+        _assert_literal(upper)
+        return clipper(arg, arg.clip(lower.value, upper.value))
+    elif lower is not None:
+        _assert_literal(lower)
+        return clipper(arg, arg.clip_min(lower.value))
+    elif upper is not None:
         _assert_literal(op.upper)
-        return arg.clip(op.lower.value, op.upper.value)
-    elif op.lower is not None:
-        _assert_literal(op.lower)
-        return arg.clip_min(op.lower.value)
-    elif op.upper is not None:
-        _assert_literal(op.upper)
-        return arg.clip_max(op.upper.value)
+        return clipper(arg, arg.clip_max(upper.value))
     else:
         raise com.TranslationError("No lower or upper bound specified")
 

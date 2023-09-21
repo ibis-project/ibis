@@ -761,10 +761,10 @@ def _struct_column(op, **kw):
 def _clip(op, **kw):
     arg = translate_val(op.arg, **kw)
     if (upper := op.upper) is not None:
-        arg = f"least({translate_val(upper, **kw)}, {arg})"
+        arg = f"if(isNull({arg}), NULL, least({translate_val(upper, **kw)}, {arg}))"
 
     if (lower := op.lower) is not None:
-        arg = f"greatest({translate_val(lower, **kw)}, {arg})"
+        arg = f"if(isNull({arg}), NULL, greatest({translate_val(lower, **kw)}, {arg}))"
 
     return arg
 

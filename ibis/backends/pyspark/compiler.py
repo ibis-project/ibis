@@ -775,11 +775,11 @@ def compile_clip(t, op, **kwargs):
 
     def column_min(value, limit):
         """Return values greater than or equal to `limit`."""
-        return F.when(value < limit, limit).otherwise(value)
+        return F.when((value < limit) & ~F.isnull(value), limit).otherwise(value)
 
     def column_max(value, limit):
         """Return values less than or equal to `limit`."""
-        return F.when(value > limit, limit).otherwise(value)
+        return F.when((value > limit) & ~F.isnull(value), limit).otherwise(value)
 
     def clip(column, lower_value, upper_value):
         return column_max(column_min(column, F.lit(lower_value)), F.lit(upper_value))

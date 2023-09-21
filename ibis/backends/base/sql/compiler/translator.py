@@ -368,12 +368,23 @@ def _rewrite_string_contains(op):
 
 @rewrites(ops.Clip)
 def _rewrite_clip(op):
-    arg = ops.Cast(op.arg, op.dtype)
+    dtype = op.dtype
+    arg = ops.Cast(op.arg, dtype)
+
+    arg_is_null = ops.IsNull(arg)
 
     if (upper := op.upper) is not None:
-        arg = ops.Least((arg, ops.Cast(upper, op.dtype)))
+        clipped_lower = ops.Least((arg, ops.Cast(upper, dtype)))
+        if dtype.nullable:
+            arg = ops.Where(arg_is_null, arg, clipped_lower)
+        else:
+            arg = clipped_lower
 
     if (lower := op.lower) is not None:
-        arg = ops.Greatest((arg, ops.Cast(lower, op.dtype)))
+        clipped_upper = ops.Greatest((arg, ops.Cast(lower, dtype)))
+        if dtype.nullable:
+            arg = ops.Where(arg_is_null, arg, clipped_upper)
+        else:
+            arg = clipped_upper
 
     return arg
