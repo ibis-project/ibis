@@ -1,12 +1,10 @@
-CREATE TEMPORARY FUNCTION my_len_0(s STRING)
+CREATE TEMPORARY FUNCTION my_len_0(
+    s STRING
+)
 RETURNS FLOAT64
 DETERMINISTIC
-LANGUAGE js AS """
-'use strict';
-function my_len(s) {
-    return s.length;
-}
-return my_len(s);
-""";
+LANGUAGE js AS
+'\n\'use strict\';\nfunction my_len(s) {\n    return s.length;\n}\nreturn my_len(s);\n';
 
-SELECT my_len_0('abcd') AS `my_len_0_'abcd'`
+SELECT
+  my_len_0('abcd') AS `my_len_0_'abcd'`

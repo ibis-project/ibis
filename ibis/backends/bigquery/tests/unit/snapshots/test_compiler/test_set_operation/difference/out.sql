@@ -1,8 +1,11 @@
-SELECT t0.`a`
+SELECT
+  t0.`a`
 FROM (
-  SELECT t1.*
-  FROM t0 t1
+  SELECT
+    t1.*
+  FROM t0 AS t1
   EXCEPT DISTINCT
-  SELECT t1.*
-  FROM t1 t1
-) t0
+  SELECT
+    t1.*
+  FROM t1 AS t1
+) AS t0

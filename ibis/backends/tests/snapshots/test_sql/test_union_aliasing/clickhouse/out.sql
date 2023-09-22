@@ -18,8 +18,8 @@ FROM (
         FROM (
           SELECT
             *,
-            first_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years) AS earliest_degrees,
-            last_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years) AS latest_degrees
+            first_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC) AS earliest_degrees,
+            last_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC) AS latest_degrees
           FROM (
             SELECT
               t1.field_of_study,
@@ -63,8 +63,8 @@ FROM (
           FROM (
             SELECT
               *,
-              first_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years) AS earliest_degrees,
-              last_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years) AS latest_degrees
+              first_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC) AS earliest_degrees,
+              last_value(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC) AS latest_degrees
             FROM (
               SELECT
                 t1.field_of_study,
@@ -88,7 +88,7 @@ FROM (
         t5.diff < 0
     ) AS t7
     ORDER BY
-      t7.diff
+      t7.diff ASC
   ) AS t9
   LIMIT 10
 ) AS t11

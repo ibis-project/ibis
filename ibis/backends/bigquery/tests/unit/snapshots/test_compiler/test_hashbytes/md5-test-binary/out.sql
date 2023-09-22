@@ -1,1 +1,2 @@
-SELECT md5(b'test') AS `tmp`
+SELECT
+  MD5(b'test') AS `tmp`
