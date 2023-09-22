@@ -10,6 +10,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import _
 from ibis.common.temporal import IntervalUnit
 from ibis.expr import api
 from ibis.tests.util import assert_equal
@@ -809,7 +810,30 @@ def test_time_truncate(table, operand, unit):
     assert isinstance(expr.op(), ops.TimeTruncate)
 
 
+def test_date_literal():
+    expr = ibis.date(2022, 2, 4)
+    sol = ops.DateFromYMD(2022, 2, 4).to_expr()
+    assert expr.equals(sol)
+
+    expr = ibis.date("2022-02-04")
+    sol = ibis.literal("2022-02-04", type=dt.date)
+    assert expr.equals(sol)
+
+
+def test_date_expression():
+    t = ibis.table({"x": "int", "y": "int", "z": "int", "s": "string"})
+    deferred = ibis.date(_.x, _.y, _.z)
+    expr = ibis.date(t.x, t.y, t.z)
+    assert isinstance(expr.op(), ops.DateFromYMD)
+    assert deferred.resolve(t).equals(expr)
+    assert repr(deferred) == "date(_.x, _.y, _.z)"
+
+    deferred = ibis.date(_.s)
+    expr = ibis.date(t.s)
+    assert deferred.resolve(t).equals(expr)
+    assert repr(deferred) == "date(_.s)"
+
+
 def test_date_time_literals():
-    assert ibis.date(2022, 2, 4).type() == dt.date
     assert ibis.time(16, 20, 00).type() == dt.time
     assert ibis.timestamp(2022, 2, 4, 16, 20, 00).type() == dt.timestamp
