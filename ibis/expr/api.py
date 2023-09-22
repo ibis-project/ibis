@@ -650,16 +650,16 @@ def timestamp(value, *args, timezone: str | None = None) -> ir.TimestampScalar:
 
 @overload
 def date(
-    year: int | ir.IntegerValue | Deferred,
+    value_or_year: int | ir.IntegerValue | Deferred,
     month: int | ir.IntegerValue | Deferred,
-    day: int | ir.IntegerValu | Deferred,
+    day: int | ir.IntegerValue | Deferred,
     /,
 ) -> DateValue:
     ...
 
 
 @overload
-def date(value: Any, /) -> DateValue:
+def date(value_or_year: Any, /) -> DateValue:
     ...
 
 
@@ -698,27 +698,18 @@ def date(value_or_year, month=None, day=None, /):
 
     Create a date column from year, month, and day
 
-    >>> t = ibis.examples.airquality.fetch()
-    >>> ibis.date(1973, t.month, t.day).name("date")
+    >>> t = ibis.memtable({"y": [2001, 2002], "m": [1, 3], "d": [2, 4]})
+    >>> ibis.date(t.y, t.m, t.d).name("date")
     ┏━━━━━━━━━━━━┓
     ┃ date       ┃
     ┡━━━━━━━━━━━━┩
     │ date       │
     ├────────────┤
-    │ 1973-05-01 │
-    │ 1973-05-02 │
-    │ 1973-05-03 │
-    │ 1973-05-04 │
-    │ 1973-05-05 │
-    │ 1973-05-06 │
-    │ 1973-05-07 │
-    │ 1973-05-08 │
-    │ 1973-05-09 │
-    │ 1973-05-10 │
-    │ …          │
+    │ 2001-01-02 │
+    │ 2002-03-04 │
     └────────────┘
     """
-    is_ymd = month is not None and day is not None
+    is_ymd = month is not None or day is not None
     args = (value_or_year, month, day)
 
     if any(isinstance(a, Deferred) for a in args):
@@ -736,39 +727,83 @@ def date(value_or_year, month=None, day=None, /):
         return literal(value_or_year, type=dt.date)
 
 
-def time(value, *args) -> TimeValue:
+@overload
+def time(
+    value_or_hour: int | ir.IntegerValue | Deferred,
+    minute: int | ir.IntegerValue | Deferred,
+    second: int | ir.IntegerValue | Deferred,
+    /,
+) -> TimeValue:
+    ...
+
+
+@overload
+def time(value_or_hour: Any, /) -> TimeValue:
+    ...
+
+
+def time(value_or_hour, minute=None, second=None, /):
     """Return a time literal if `value` is coercible to a time.
 
     Parameters
     ----------
-    value
-        Time string
-    args
-        Minutes, seconds if `value` is an hour
+    value_or_hour
+        Either a string value or `datetime.time` to coerce to a time, or
+        an integral value representing the time hour component.
+    minute
+        The time minute component; required if `value_or_hour` is an hour.
+    second
+        The time second component; required if `value_or_hour` is an hour.
 
     Returns
     -------
-    TimeScalar
+    TimeValue
         A time expression
 
     Examples
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> ibis.time("00:00:00")
-    datetime.time(0, 0)
-    >>> ibis.time(12, 15, 30)
-    datetime.time(12, 15, 30)
+
+    Create a time scalar from a string
+
+    >>> ibis.time("01:02:03")
+    datetime.time(1, 2, 3)
+
+    Create a time scalar from hour, minute, and second
+
+    >>> ibis.time(1, 2, 3)
+    datetime.time(1, 2, 3)
+
+    Create a time column from hour, minute, and second
+
+    >>> t = ibis.memtable({"h": [1, 4], "m": [2, 5], "s": [3, 6]})
+    >>> ibis.time(t.h, t.m, t.s).name("time")
+    ┏━━━━━━━━━━┓
+    ┃ time     ┃
+    ┡━━━━━━━━━━┩
+    │ time     │
+    ├──────────┤
+    │ 01:02:03 │
+    │ 04:05:06 │
+    └──────────┘
     """
-    if isinstance(value, (numbers.Real, ir.IntegerValue)):
-        hours, mins, secs = value, *args
-        return ops.TimeFromHMS(hours, mins, secs).to_expr()
-    elif isinstance(value, ir.StringValue):
-        return value.cast(dt.time)
-    elif isinstance(value, Deferred):
-        return value.time()
+    is_hms = minute is not None or second is not None
+    args = (value_or_hour, minute, second)
+
+    if any(isinstance(a, Deferred) for a in args):
+        return (
+            deferred_apply(time, *args)
+            if is_hms
+            else deferred_apply(time, value_or_hour)
+        )
+
+    if is_hms:
+        return ops.TimeFromHMS(value_or_hour, minute, second).to_expr()
+    elif isinstance(value_or_hour, ir.StringValue):
+        return value_or_hour.cast(dt.time)
     else:
-        return literal(value, type=dt.time)
+        return literal(value_or_hour, type=dt.time)
 
 
 def interval(

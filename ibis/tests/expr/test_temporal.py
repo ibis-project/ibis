@@ -834,6 +834,29 @@ def test_date_expression():
     assert repr(deferred) == "date(_.s)"
 
 
-def test_date_time_literals():
-    assert ibis.time(16, 20, 00).type() == dt.time
+def test_time_literal():
+    expr = ibis.time(1, 2, 3)
+    sol = ops.TimeFromHMS(1, 2, 3).to_expr()
+    assert expr.equals(sol)
+
+    expr = ibis.time("01:02:03")
+    sol = ibis.literal("01:02:03", type=dt.time)
+    assert expr.equals(sol)
+
+
+def test_time_expression():
+    t = ibis.table({"x": "int", "y": "int", "z": "int", "s": "string"})
+    deferred = ibis.time(_.x, _.y, _.z)
+    expr = ibis.time(t.x, t.y, t.z)
+    assert isinstance(expr.op(), ops.TimeFromHMS)
+    assert deferred.resolve(t).equals(expr)
+    assert repr(deferred) == "time(_.x, _.y, _.z)"
+
+    deferred = ibis.time(_.s)
+    expr = ibis.time(t.s)
+    assert deferred.resolve(t).equals(expr)
+    assert repr(deferred) == "time(_.s)"
+
+
+def test_timestamp_literals():
     assert ibis.timestamp(2022, 2, 4, 16, 20, 00).type() == dt.timestamp
