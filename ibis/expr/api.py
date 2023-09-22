@@ -6,7 +6,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeVar
+from typing import TYPE_CHECKING, Any, NamedTuple, TypeVar, overload
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -19,7 +19,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.decompile import decompile
-from ibis.expr.deferred import Deferred
+from ibis.expr.deferred import Deferred, deferred_apply
 from ibis.expr.schema import Schema
 from ibis.expr.sql import parse_sql, show_sql, to_sql
 from ibis.expr.streaming import Watermark
@@ -648,30 +648,92 @@ def timestamp(value, *args, timezone: str | None = None) -> ir.TimestampScalar:
         return literal(value, type=dt.Timestamp(timezone=timezone))
 
 
-def date(value, *args) -> DateValue:
-    """Return a date literal if `value` is coercible to a date.
+@overload
+def date(
+    year: int | ir.IntegerValue | Deferred,
+    month: int | ir.IntegerValue | Deferred,
+    day: int | ir.IntegerValu | Deferred,
+    /,
+) -> DateValue:
+    ...
+
+
+@overload
+def date(value: Any, /) -> DateValue:
+    ...
+
+
+def date(value_or_year, month=None, day=None, /):
+    """Construct a date scalar or column.
 
     Parameters
     ----------
-    value
-        Date string, datetime object or numeric value
-    args
-        Month and day if `value` is a year
+    value_or_year
+        Either a string value or `datetime.date` to coerce to a date, or
+        an integral value representing the date year component.
+    month
+        The date month component; required if `value_or_year` is a year.
+    day
+        The date day component; required if `value_or_year` is a year.
 
     Returns
     -------
-    DateScalar
+    DateValue
         A date expression
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+
+    Create a date scalar from a string
+
+    >>> ibis.date("2023-01-02")
+    Timestamp('2023-01-02 00:00:00')
+
+    Create a date scalar from year, month, and day
+
+    >>> ibis.date(2023, 1, 2)
+    Timestamp('2023-01-02 00:00:00')
+
+    Create a date column from year, month, and day
+
+    >>> t = ibis.examples.airquality.fetch()
+    >>> ibis.date(1973, t.month, t.day).name("date")
+    ┏━━━━━━━━━━━━┓
+    ┃ date       ┃
+    ┡━━━━━━━━━━━━┩
+    │ date       │
+    ├────────────┤
+    │ 1973-05-01 │
+    │ 1973-05-02 │
+    │ 1973-05-03 │
+    │ 1973-05-04 │
+    │ 1973-05-05 │
+    │ 1973-05-06 │
+    │ 1973-05-07 │
+    │ 1973-05-08 │
+    │ 1973-05-09 │
+    │ 1973-05-10 │
+    │ …          │
+    └────────────┘
     """
-    if isinstance(value, (numbers.Real, ir.IntegerValue)):
-        year, month, day = value, *args
-        return ops.DateFromYMD(year, month, day).to_expr()
-    elif isinstance(value, ir.StringValue):
-        return value.cast(dt.date)
-    elif isinstance(value, Deferred):
-        return value.date()
+    is_ymd = month is not None and day is not None
+    args = (value_or_year, month, day)
+
+    if any(isinstance(a, Deferred) for a in args):
+        return (
+            deferred_apply(date, *args)
+            if is_ymd
+            else deferred_apply(date, value_or_year)
+        )
+
+    if is_ymd:
+        return ops.DateFromYMD(value_or_year, month, day).to_expr()
+    elif isinstance(value_or_year, ir.StringValue):
+        return value_or_year.cast(dt.date)
     else:
-        return literal(value, type=dt.date)
+        return literal(value_or_year, type=dt.date)
 
 
 def time(value, *args) -> TimeValue:
