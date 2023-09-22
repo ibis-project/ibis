@@ -183,5 +183,5 @@ def test_timestamp_field_access_on_time_failure(
 
 @pytest.mark.parametrize("value", [42, np.int64(42), np.int8(-42)])
 def test_integer_timestamp_fails(value):
-    with pytest.raises(TypeError, match=r"Use ibis\.literal\(-?\d+\)\.to_timestamp"):
+    with pytest.raises(TypeError, match=r"Use ibis\.literal\(\.\.\.\)\.to_timestamp"):
         ibis.timestamp(value)

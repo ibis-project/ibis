@@ -1566,15 +1566,7 @@ def test_array_filter_partial():
 @pytest.mark.parametrize(
     ("func", "expected_type"),
     [
-        param(
-            ibis.timestamp,
-            dt.timestamp,
-            id="timestamp",
-            marks=pytest.mark.xfail(
-                raises=NotImplementedError,
-                reason=("`ibis.timestamp` isn't implemented for expression inputs"),
-            ),
-        ),
+        param(ibis.timestamp, dt.timestamp, id="timestamp"),
         param(ibis.date, dt.date, id="date"),
         param(ibis.time, dt.time, id="time"),
         param(ibis.coalesce, dt.timestamp, id="coalesce"),

@@ -860,3 +860,32 @@ def test_time_expression():
 
 def test_timestamp_literals():
     assert ibis.timestamp(2022, 2, 4, 16, 20, 00).type() == dt.timestamp
+
+
+def test_timestamp_literal():
+    expr = ibis.timestamp(2022, 2, 4, 16, 20, 0)
+    sol = ops.TimestampFromYMDHMS(2022, 2, 4, 16, 20, 0).to_expr()
+    assert expr.equals(sol)
+
+    expr = ibis.timestamp("2022-02-04T01:02:03")
+    sol = ibis.literal("2022-02-04T01:02:03", type=dt.timestamp)
+    assert expr.equals(sol)
+
+    expr = ibis.timestamp("2022-02-04T01:02:03Z")
+    sol = ibis.literal("2022-02-04T01:02:03", type=dt.Timestamp(timezone="UTC"))
+    assert expr.equals(sol)
+
+
+def test_timestamp_expression():
+    t = ibis.table(dict.fromkeys("abcdef", "int"))
+    deferred = ibis.timestamp(_.a, _.b, _.c, _.d, _.e, _.f)
+    expr = ibis.timestamp(t.a, t.b, t.c, t.d, t.e, t.f)
+    assert isinstance(expr.op(), ops.TimestampFromYMDHMS)
+    assert deferred.resolve(t).equals(expr)
+    assert repr(deferred) == "timestamp(_.a, _.b, _.c, _.d, _.e, _.f)"
+
+    t2 = ibis.table({"s": "string"})
+    deferred = ibis.timestamp(_.s, timezone="UTC")
+    expr = ibis.timestamp(t2.s, timezone="UTC")
+    assert deferred.resolve(t2).equals(expr)
+    assert repr(deferred) == "timestamp(_.s, timezone='UTC')"

@@ -19,7 +19,7 @@ from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.decompile import decompile
-from ibis.expr.deferred import Deferred, deferred_apply
+from ibis.expr.deferred import Deferred, deferrable
 from ibis.expr.schema import Schema
 from ibis.expr.sql import parse_sql, show_sql, to_sql
 from ibis.expr.streaming import Watermark
@@ -27,6 +27,7 @@ from ibis.expr.types import (
     DateValue,
     Expr,
     Table,
+    TimestampValue,
     TimeValue,
     array,
     literal,
@@ -606,43 +607,102 @@ def random() -> ir.FloatingScalar:
     return ops.RandomScalar().to_expr()
 
 
-def timestamp(value, *args, timezone: str | None = None) -> ir.TimestampScalar:
-    """Return a timestamp literal if `value` is coercible to a timestamp.
+@overload
+def timestamp(
+    value_or_year: int | ir.IntegerValue | Deferred,
+    month: int | ir.IntegerValue | Deferred,
+    day: int | ir.IntegerValue | Deferred,
+    hour: int | ir.IntegerValue | Deferred,
+    minute: int | ir.IntegerValue | Deferred,
+    second: int | ir.IntegerValue | Deferred,
+    /,
+    timezone: str | None = None,
+) -> TimestampValue:
+    ...
+
+
+@overload
+def timestamp(value_or_year: Any, /, timezone: str | None = None) -> TimestampValue:
+    ...
+
+
+@deferrable
+def timestamp(
+    value_or_year,
+    month=None,
+    day=None,
+    hour=None,
+    minute=None,
+    second=None,
+    /,
+    timezone=None,
+):
+    """Construct a timestamp scalar or column.
 
     Parameters
     ----------
-    value
-        Timestamp string, datetime object or numeric value
-    args
-        Additional arguments if `value` is numeric
+    value_or_year
+        Either a string value or `datetime.datetime` to coerce to a timestamp,
+        or an integral value representing the timestamp year component.
+    month
+        The timestamp month component; required if `value_or_year` is a year.
+    day
+        The timestamp day component; required if `value_or_year` is a year.
+    hour
+        The timestamp hour component; required if `value_or_year` is a year.
+    minute
+        The timestamp minute component; required if `value_or_year` is a year.
+    second
+        The timestamp second component; required if `value_or_year` is a year.
     timezone
-        Timezone name
+        The timezone name, or none for a timezone-naive timestamp.
 
     Returns
     -------
-    TimestampScalar
+    TimestampValue
         A timestamp expression
 
     Examples
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> ibis.timestamp("2021-01-01 00:00:00")
-    Timestamp('2021-01-01 00:00:00')
+
+    Create a timestamp scalar from a string
+
+    >>> ibis.timestamp("2023-01-02T03:04:05")
+    Timestamp('2023-01-02 03:04:05')
+
+    Create a timestamp scalar from components
+
+    >>> ibis.timestamp(2023, 1, 2, 3, 4, 5)
+    Timestamp('2023-01-02 03:04:05')
+
+    Create a timestamp column from components
+
+    >>> t = ibis.memtable({"y": [2001, 2002], "m": [1, 4], "d": [2, 5], "h": [3, 6]})
+    >>> ibis.timestamp(t.y, t.m, t.d, t.h, 0, 0).name("timestamp")
+    ┏━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ timestamp           ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━┩
+    │ timestamp           │
+    ├─────────────────────┤
+    │ 2001-01-02 03:00:00 │
+    │ 2002-04-05 06:00:00 │
+    └─────────────────────┘
     """
-    if isinstance(value, (numbers.Real, ir.IntegerValue)):
-        if timezone:
+    args = (value_or_year, month, day, hour, minute, second)
+    is_ymdhms = any(a is not None for a in args[1:])
+
+    if is_ymdhms:
+        if timezone is not None:
             raise NotImplementedError("timestamp timezone not implemented")
-        if not args:
-            raise TypeError(f"Use ibis.literal({value}).to_timestamp() instead")
-        return ops.TimestampFromYMDHMS(value, *args).to_expr()
-    elif isinstance(value, (Deferred, ir.Expr)):
-        # TODO(kszucs): could call .cast(dt.timestamp) for certain value expressions
-        raise NotImplementedError(
-            "`ibis.timestamp` isn't implemented for expression inputs"
-        )
+        return ops.TimestampFromYMDHMS(*args).to_expr()
+    elif isinstance(value_or_year, (numbers.Real, ir.IntegerValue)):
+        raise TypeError("Use ibis.literal(...).to_timestamp() instead")
+    elif isinstance(value_or_year, ir.Expr):
+        return value_or_year.cast(dt.Timestamp(timezone=timezone))
     else:
-        value = normalize_datetime(value)
+        value = normalize_datetime(value_or_year)
         tzinfo = normalize_timezone(timezone or value.tzinfo)
         timezone = tzinfo.tzname(value) if tzinfo is not None else None
         return literal(value, type=dt.Timestamp(timezone=timezone))
@@ -663,6 +723,7 @@ def date(value_or_year: Any, /) -> DateValue:
     ...
 
 
+@deferrable
 def date(value_or_year, month=None, day=None, /):
     """Construct a date scalar or column.
 
@@ -709,19 +770,9 @@ def date(value_or_year, month=None, day=None, /):
     │ 2002-03-04 │
     └────────────┘
     """
-    is_ymd = month is not None or day is not None
-    args = (value_or_year, month, day)
-
-    if any(isinstance(a, Deferred) for a in args):
-        return (
-            deferred_apply(date, *args)
-            if is_ymd
-            else deferred_apply(date, value_or_year)
-        )
-
-    if is_ymd:
+    if month is not None or day is not None:
         return ops.DateFromYMD(value_or_year, month, day).to_expr()
-    elif isinstance(value_or_year, ir.StringValue):
+    elif isinstance(value_or_year, ir.Expr):
         return value_or_year.cast(dt.date)
     else:
         return literal(value_or_year, type=dt.date)
@@ -742,6 +793,7 @@ def time(value_or_hour: Any, /) -> TimeValue:
     ...
 
 
+@deferrable
 def time(value_or_hour, minute=None, second=None, /):
     """Return a time literal if `value` is coercible to a time.
 
@@ -788,19 +840,9 @@ def time(value_or_hour, minute=None, second=None, /):
     │ 04:05:06 │
     └──────────┘
     """
-    is_hms = minute is not None or second is not None
-    args = (value_or_hour, minute, second)
-
-    if any(isinstance(a, Deferred) for a in args):
-        return (
-            deferred_apply(time, *args)
-            if is_hms
-            else deferred_apply(time, value_or_hour)
-        )
-
-    if is_hms:
+    if minute is not None or second is not None:
         return ops.TimeFromHMS(value_or_hour, minute, second).to_expr()
-    elif isinstance(value_or_hour, ir.StringValue):
+    elif isinstance(value_or_hour, ir.Expr):
         return value_or_hour.cast(dt.time)
     else:
         return literal(value_or_hour, type=dt.time)
