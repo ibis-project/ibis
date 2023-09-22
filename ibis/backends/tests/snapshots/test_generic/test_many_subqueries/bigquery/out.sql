@@ -2,7 +2,7 @@ WITH t0 AS (
   SELECT
     t5.*,
     (
-      row_number() OVER (ORDER BY t5.`street`) - 1
+      row_number() OVER (ORDER BY t5.`street` ASC) - 1
     ) AS `key`
   FROM data AS t5
 ), t1 AS (
@@ -20,7 +20,7 @@ WITH t0 AS (
   SELECT
     t2.`street`,
     (
-      row_number() OVER (ORDER BY t2.`street`) - 1
+      row_number() OVER (ORDER BY t2.`street` ASC) - 1
     ) AS `key`
   FROM t2
 ), t4 AS (

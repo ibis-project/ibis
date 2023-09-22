@@ -248,20 +248,15 @@ def test_exists_table_different_project(con):
     assert "foobar" not in con.list_tables(database=database)
 
 
-def test_multiple_project_queries(con):
+def test_multiple_project_queries(con, snapshot):
     so = con.table("posts_questions", database="bigquery-public-data.stackoverflow")
     trips = con.table("trips", database="nyc-tlc.yellow")
     join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
     result = join.compile()
-    expected = """\
-SELECT t0.`title`
-FROM `bigquery-public-data.stackoverflow.posts_questions` t0
-  INNER JOIN `nyc-tlc.yellow.trips` t1
-    ON t0.`tags` = t1.`rate_code`"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
-def test_multiple_project_queries_database_api(con):
+def test_multiple_project_queries_database_api(con, snapshot):
     stackoverflow = con.database("bigquery-public-data.stackoverflow")
     posts_questions = stackoverflow.posts_questions
     yellow = con.database("nyc-tlc.yellow")
@@ -269,12 +264,7 @@ def test_multiple_project_queries_database_api(con):
     predicate = posts_questions.tags == trips.rate_code
     join = posts_questions.join(trips, predicate)[[posts_questions.title]]
     result = join.compile()
-    expected = """\
-SELECT t0.`title`
-FROM `bigquery-public-data.stackoverflow.posts_questions` t0
-  INNER JOIN `nyc-tlc.yellow.trips` t1
-    ON t0.`tags` = t1.`rate_code`"""
-    assert result == expected
+    snapshot.assert_match(result, "out.sql")
 
 
 def test_multiple_project_queries_execute(con):

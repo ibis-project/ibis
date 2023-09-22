@@ -1,1 +1,2 @@
-SELECT sha512(b'test') AS `tmp`
+SELECT
+  SHA512(b'test') AS `tmp`

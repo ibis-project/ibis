@@ -1,3 +1,4 @@
-SELECT t0.*,
-       avg(t0.`float_col`) OVER (ORDER BY UNIX_MICROS(t0.`timestamp_col`) ASC RANGE BETWEEN 1 PRECEDING AND EXTRACT(MICROSECOND from INTERVAL 0 MICROSECOND) * 1 FOLLOWING) AS `win_avg`
-FROM functional_alltypes t0
+SELECT
+  t0.*,
+  avg(t0.`float_col`) OVER (ORDER BY UNIX_MICROS(t0.`timestamp_col`) ASC RANGE BETWEEN 1 PRECEDING AND EXTRACT(MICROSECOND FROM INTERVAL '0' MICROSECOND) * 1 FOLLOWING) AS `win_avg`
+FROM functional_alltypes AS t0
