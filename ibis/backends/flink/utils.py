@@ -247,6 +247,9 @@ def _translate_interval(value, dtype):
 
 
 _to_pyflink_types = {
+    dt.String: DataTypes.STRING(),
+    dt.Boolean: DataTypes.BOOLEAN(),
+    dt.Binary: DataTypes.BYTES(),
     dt.Int8: DataTypes.TINYINT(),
     dt.Int16: DataTypes.SMALLINT(),
     dt.Int32: DataTypes.INT(),
@@ -258,6 +261,9 @@ _to_pyflink_types = {
     dt.Float16: DataTypes.FLOAT(),
     dt.Float32: DataTypes.FLOAT(),
     dt.Float64: DataTypes.DOUBLE(),
+    dt.Date: DataTypes.DATE(),
+    dt.Time: DataTypes.TIME(),
+    dt.Timestamp: DataTypes.TIMESTAMP(),
 }
 
 
@@ -266,7 +272,9 @@ def translate_literal(op: ops.Literal) -> str:
     dtype = op.dtype
 
     if value is None:
-        return "NULL"
+        if dtype.is_null():
+            return "NULL"
+        return f"CAST(NULL AS {_to_pyflink_types[type(dtype)]!s})"
 
     if dtype.is_boolean():
         # TODO(chloeh13q): Flink supports a third boolean called "UNKNOWN"
