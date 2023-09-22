@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import functools
+import inspect
 import operator
-from typing import Any, Callable, NoReturn
+from typing import Any, Callable, NoReturn, TypeVar
 
 _BINARY_OPS: dict[str, Callable[[Any, Any], Any]] = {
     "+": operator.add,
@@ -273,6 +275,35 @@ def _resolve(expr: Deferred, param: Any) -> Any:
     if isinstance(expr, Deferred):
         return expr._resolve(param)
     return expr
+
+
+F = TypeVar("F", bound=Callable)
+
+
+def deferrable(func: F) -> F:
+    """Wrap a top-level expr function to support deferred arguments.
+
+    When a deferrable function is called, if any of the direct args or kwargs
+    is a `Deferred` value, then the result is also `Deferred`. Otherwise the
+    function is called directly.
+    """
+    # Parse the signature of func so we can validate deferred calls eagerly,
+    # erroring for invalid/missing arguments at call time not resolve time.
+    sig = inspect.signature(func)
+
+    @functools.wraps(func)
+    def inner(*args, **kwargs):
+        is_deferred = any(isinstance(a, Deferred) for a in args) or any(
+            isinstance(v, Deferred) for v in kwargs.values()
+        )
+        if is_deferred:
+            # Try to bind the arguments now, raising a nice error
+            # immediately if the function was called incorrectly
+            sig.bind(*args, **kwargs)
+            return deferred_apply(func, *args, **kwargs)
+        return func(*args, **kwargs)
+
+    return inner
 
 
 def deferred_apply(func: Callable, *args: Any, **kwargs: Any) -> Deferred:

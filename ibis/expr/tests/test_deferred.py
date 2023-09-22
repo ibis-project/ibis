@@ -8,7 +8,7 @@ from pytest import param
 
 import ibis
 from ibis import _
-from ibis.expr.deferred import deferred_apply
+from ibis.expr.deferred import deferrable, deferred_apply
 
 
 @pytest.fixture
@@ -195,3 +195,27 @@ def test_deferred_is_not_iterable(obj):
 
     with pytest.raises(TypeError, match="is not an iterator"):
         next(obj)
+
+
+def test_deferrable(table):
+    @deferrable
+    def f(a, b, c=3):
+        return a + b + c
+
+    assert f(table.a, table.b).equals(table.a + table.b + 3)
+    assert f(table.a, table.b, c=4).equals(table.a + table.b + 4)
+
+    expr = f(_.a, _.b)
+    sol = table.a + table.b + 3
+    res = expr.resolve(table)
+    assert res.equals(sol)
+    assert repr(expr) == "f(_.a, _.b)"
+
+    expr = f(1, 2, c=_.a)
+    sol = 3 + table.a
+    res = expr.resolve(table)
+    assert res.equals(sol)
+    assert repr(expr) == "f(1, 2, c=_.a)"
+
+    with pytest.raises(TypeError, match="unknown"):
+        f(_.a, _.b, unknown=3)  # invalid calls caught at call time
