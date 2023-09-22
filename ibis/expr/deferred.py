@@ -220,7 +220,10 @@ class DeferredCall(Deferred):
     def __repr__(self) -> str:
         params = [repr(a) for a in self._args]
         params.extend(f"{k}={v!r}" for k, v in self._kwargs.items())
-        return f"{self._func!r}({', '.join(params)})"
+        # Repr directly wrapped functions as their name, fallback to repr for
+        # deferred objects or callables without __name__ otherwise
+        func = getattr(self._func, "__name__", "") or repr(self._func)
+        return f"{func}({', '.join(params)})"
 
     def _resolve(self, param: Any) -> Any:
         func = _resolve(self._func, param)

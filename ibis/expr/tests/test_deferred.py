@@ -8,6 +8,7 @@ from pytest import param
 
 import ibis
 from ibis import _
+from ibis.expr.deferred import deferred_apply
 
 
 @pytest.fixture
@@ -98,6 +99,19 @@ def test_method_kwargs(table):
     res = expr.resolve(table)
     assert res.equals(table.a.log(base=table.b))
     assert repr(expr) == "_.a.log(base=_.b)"
+
+
+def test_deferred_apply(table):
+    expr = deferred_apply(operator.add, _.a, 2)
+    res = expr.resolve(table)
+    assert res.equals(table.a + 2)
+    assert repr(expr) == "add(_.a, 2)"
+
+    func = lambda a, b: a + b
+    expr = deferred_apply(func, _.a, 2)
+    res = expr.resolve(table)
+    assert res.equals(table.a + 2)
+    assert func.__name__ in repr(expr)
 
 
 @pytest.mark.parametrize(
