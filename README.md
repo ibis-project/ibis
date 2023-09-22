@@ -1,6 +1,7 @@
 # Ibis
 
 [![Documentation Status](https://img.shields.io/badge/docs-docs.ibis--project.org-blue.svg)](http://ibis-project.org)
+[![Project Chat](https://img.shields.io/badge/zulip-join_chat-purple.svg?logo=zulip)](https://ibis-project.zulipchat.com)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/ibis-framework/badges/version.svg)](https://anaconda.org/conda-forge/ibis-framework)
 [![PyPI](https://img.shields.io/pypi/v/ibis-framework.svg)](https://pypi.org/project/ibis-framework)
 [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amaster)
@@ -187,6 +188,6 @@ Ibis is an open source project and welcomes contributions from anyone in the com
 - We care about keeping the community welcoming for all. Check out [the code of conduct](https://github.com/ibis-project/ibis/blob/master/docs/CODE_OF_CONDUCT.md).
 - The Ibis project is open sourced under the [Apache License](https://github.com/ibis-project/ibis/blob/master/LICENSE.txt).
 
-Join our community by interacting on GitHub or chatting with us on [Zulip](https://ibis-project.zulipchat.com/join/ldd2gyoqkbsqli3dzlb463u4).
+Join our community by interacting on GitHub or chatting with us on [Zulip](https://ibis-project.zulipchat.com/).
 
 For more information visit https://ibis-project.org/.
