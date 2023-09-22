@@ -160,6 +160,14 @@ for manager, params in managers.items():
 |                                **Windows** |         {{< fa ban >}}[^unlikely]         |         {{< fa ban >}}          |         {{< fa ban >}}          |
 
 1.  [Install `nix`](https://nixos.org/download.html)
+1.  Configure `nix`
+
+    Edit/create your `nix.conf` file (`$XDG_CONFIG_HOME/nix/nix.conf`) and add the line
+
+    ```sh
+    experimental-features = nix-command flakes
+    ```
+
 1.  Install `gh`:
 
     ::: {.panel-tabset}
