@@ -399,10 +399,7 @@ def test_timestamp_accepts_date_literals(alltypes):
     expr = alltypes.mutate(param=p)
     params = {p: date_string}
     result = to_sql(expr, params=params)
-    expected = """\
-SELECT t\\d+\\.\\*, @param_\\d+ AS `param`
-FROM functional_alltypes t\\d+"""
-    assert re.match(expected, result) is not None
+    assert re.search(r"@param_\d+ AS `param`", result) is not None
 
 
 @pytest.mark.parametrize("distinct", [True, False])
@@ -587,13 +584,47 @@ def test_scalar_param_scope(alltypes):
     t = alltypes
     param = ibis.param("timestamp")
     result = to_sql(t.mutate(param=param), params={param: "2017-01-01"})
-    expected = """\
-SELECT t\\d+\\.\\*, @param_\\d+ AS `param`
-FROM functional_alltypes t\\d+"""
-    assert re.match(expected, result) is not None
+    assert re.search(r"@param_\d+ AS `param`", result) is not None
 
 
 def test_cast_float_to_int(alltypes, snapshot):
     expr = alltypes.double_col.cast("int64")
     result = to_sql(expr)
     snapshot.assert_match(result, "out.sql")
+
+
+def test_unnest(snapshot):
+    table = ibis.table(
+        dict(
+            rowindex="int",
+            repeated_struct_col=dt.Array(
+                dt.Struct(
+                    dict(
+                        nested_struct_col=dt.Array(
+                            dt.Struct(
+                                dict(
+                                    doubly_nested_array="array<int>",
+                                    doubly_nested_field="string",
+                                )
+                            )
+                        )
+                    )
+                )
+            ),
+        ),
+        name="array_test",
+    )
+    repeated_struct_col = table.repeated_struct_col
+
+    # Works as expected :-)
+    result = ibis.bigquery.compile(
+        table.select("rowindex", repeated_struct_col.unnest())
+    )
+    snapshot.assert_match(result, "out_one_unnest.sql")
+
+    result = ibis.bigquery.compile(
+        table.select(
+            "rowindex", level_one=repeated_struct_col.unnest().nested_struct_col
+        ).select(level_two=lambda t: t.level_one.unnest())
+    )
+    snapshot.assert_match(result, "out_two_unnests.sql")

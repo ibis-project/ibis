@@ -12,6 +12,7 @@ import google.cloud.bigquery as bq
 import google.cloud.bigquery_storage_v1 as bqstorage
 import pandas as pd
 import pydata_google_auth
+import sqlglot as sg
 from pydata_google_auth import cache
 
 import ibis
@@ -72,6 +73,17 @@ def _create_client_info_gapic(application_name):
     from google.api_core.gapic_v1.client_info import ClientInfo
 
     return ClientInfo(user_agent=_create_user_agent(application_name))
+
+
+def _anonymous_unnest_to_explode(node: sg.exp.Expression):
+    """Convert `ANONYMOUS` `unnest` function calls to `EXPLODE` calls.
+
+    This allows us to generate DuckDB-like `UNNEST` calls and let sqlglot do
+    the work of transforming those into the correct BigQuery SQL.
+    """
+    if isinstance(node, sg.exp.Anonymous) and node.this.lower() == "unnest":
+        return sg.exp.Explode(this=node.expressions[0])
+    return node
 
 
 class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
@@ -313,6 +325,42 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         query.result()  # blocks until finished
         return BigQueryCursor(query)
 
+    def compile(
+        self,
+        expr: ir.Expr,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **_,
+    ) -> Any:
+        """Compile an Ibis expression.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression
+        limit
+            For expressions yielding result sets; retrieve at most this number
+            of values/rows. Overrides any limit already set on the expression.
+        params
+            Named unbound parameters
+
+        Returns
+        -------
+        Any
+            The output of compilation. The type of this value depends on the
+            backend.
+        """
+
+        self._define_udf_translation_rules(expr)
+        sql = self.compiler.to_ast_ensure_limit(expr, limit, params=params).compile()
+
+        return ";\n\n".join(
+            query.transform(_anonymous_unnest_to_explode).sql(
+                dialect="bigquery", pretty=True
+            )
+            for query in sg.parse(sql, read="bigquery")
+        )
+
     def raw_sql(self, query: str, results=False, params=None):
         query_parameters = [
             bigquery_param(
@@ -378,8 +426,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
 
         # TODO: upstream needs to pass params to raw_sql, I think.
         kwargs.pop("timecontext", None)
-        query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
-        sql = query_ast.compile()
+        sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         cursor = self.raw_sql(sql, params=params, **kwargs)
 

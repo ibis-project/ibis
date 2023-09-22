@@ -149,14 +149,7 @@ def test_isin_bug(con, snapshot):
     ["sqlite", "mysql", "druid", "impala", "mssql"], reason="no unnest support upstream"
 )
 @pytest.mark.notimpl(
-    ["bigquery", "oracle"],
-    reason="unnest not yet implemented",
-    raises=exc.OperationNotDefinedError,
-)
-@pytest.mark.xfail_version(
-    duckdb=["sqlglot<=11.4.5"],
-    raises=sg.ParseError,
-    reason="https://github.com/tobymao/sqlglot/pull/1379 not in the installed version of sqlglot",
+    ["oracle"], reason="unnest not yet implemented", raises=exc.OperationNotDefinedError
 )
 @pytest.mark.parametrize("backend_name", _get_backends_to_test())
 def test_union_aliasing(backend_name, snapshot):

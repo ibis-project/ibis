@@ -1262,11 +1262,6 @@ def test_topk_op(alltypes, df):
     ],
 )
 @mark.broken(
-    ["bigquery"],
-    raises=GoogleBadRequest,
-    reason='400 Syntax error: Expected keyword JOIN but got identifier "SEMI"',
-)
-@mark.broken(
     ["druid"],
     raises=sa.exc.ProgrammingError,
     reason=(

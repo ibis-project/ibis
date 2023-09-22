@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import functools
-import os
 
 import numpy as np
 import pandas as pd
@@ -11,7 +10,6 @@ import pytest
 import sqlalchemy as sa
 import sqlglot as sg
 import toolz
-from packaging.version import parse as parse_version
 from pytest import param
 
 import ibis
@@ -185,20 +183,6 @@ def test_array_index(con, idx):
     assert result == arr[idx]
 
 
-duckdb_0_4_0 = pytest.mark.xfail(
-    (
-        # nixpkgs is patched to include the fix, so we pass these tests
-        # inside the nix-shell or when they run under `nix build`
-        (not any(key.startswith("NIX_") for key in os.environ))
-        and (
-            parse_version(getattr(duckdb, "__version__", "0.0.0"))
-            == parse_version("0.4.0")
-        )
-    ),
-    reason="DuckDB array support is broken in 0.4.0 without nix",
-)
-
-
 builtin_array = toolz.compose(
     # these will almost certainly never be supported
     pytest.mark.never(
@@ -211,16 +195,6 @@ builtin_array = toolz.compose(
     ),
     # someone just needs to implement these
     pytest.mark.notimpl(["datafusion"], raises=Exception),
-    duckdb_0_4_0,
-)
-
-unnest = toolz.compose(
-    builtin_array,
-    pytest.mark.notyet(
-        ["bigquery"],
-        reason="doesn't support unnest in SELECT position",
-        raises=com.OperationNotDefinedError,
-    ),
 )
 
 
@@ -354,7 +328,12 @@ def test_array_discovery_snowflake(backend):
     assert t.schema() == expected
 
 
-@unnest
+@builtin_array
+@pytest.mark.notyet(
+    ["bigquery"],
+    reason="BigQuery doesn't support casting array<T> to array<U>",
+    raises=BadRequest,
+)
 @pytest.mark.notimpl(["dask"], raises=ValueError)
 def test_unnest_simple(backend):
     array_types = backend.array_types
@@ -370,7 +349,7 @@ def test_unnest_simple(backend):
     tm.assert_series_equal(result, expected)
 
 
-@unnest
+@builtin_array
 @pytest.mark.notimpl("dask", raises=com.OperationNotDefinedError)
 def test_unnest_complex(backend):
     array_types = backend.array_types
@@ -396,7 +375,7 @@ def test_unnest_complex(backend):
     tm.assert_frame_equal(result, expected)
 
 
-@unnest
+@builtin_array
 @pytest.mark.never(
     "pyspark",
     reason="pyspark throws away nulls in collect_list",
@@ -426,7 +405,7 @@ def test_unnest_idempotent(backend):
     tm.assert_frame_equal(result, expected)
 
 
-@unnest
+@builtin_array
 @pytest.mark.notimpl("dask", raises=ValueError)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
@@ -452,7 +431,7 @@ def test_unnest_no_nulls(backend):
     tm.assert_frame_equal(result, expected)
 
 
-@unnest
+@builtin_array
 @pytest.mark.notimpl("dask", raises=ValueError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
@@ -720,7 +699,6 @@ def test_array_intersect(con):
         assert lhs == rhs, f"row {i:d} differs"
 
 
-@unnest
 @builtin_array
 @pytest.mark.notimpl(
     ["clickhouse"],
@@ -767,7 +745,7 @@ def test_zip(backend):
     assert len(x[0]) == len(s[0])
 
 
-@unnest
+@builtin_array
 @pytest.mark.broken(
     ["clickhouse"],
     raises=sg.ParseError,
