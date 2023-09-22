@@ -903,6 +903,7 @@ OPERATION_REGISTRY = {
     ops.TableColumn: table_column,
     ops.CountDistinctStar: _count_distinct_star,
     ops.Argument: lambda _, op: op.name,
+    ops.Unnest: unary("UNNEST"),
 }
 
 _invalid_operations = {

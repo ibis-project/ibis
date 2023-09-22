@@ -122,7 +122,7 @@ def test_mutating_join(backend, batting, awards_players, how):
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
-@pytest.mark.notimpl(["bigquery", "dask", "druid"])
+@pytest.mark.notimpl(["dask", "druid"])
 def test_filtering_join(backend, batting, awards_players, how):
     left = batting[batting.yearID == 2015]
     right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
@@ -181,7 +181,7 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
     assert not expr.limit(5).execute().empty
 
 
-@pytest.mark.notimpl(["bigquery", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
 @pytest.mark.broken(
     ["polars"],

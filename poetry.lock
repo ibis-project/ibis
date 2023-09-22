@@ -5236,17 +5236,17 @@ sqlalchemy = ">=1.0.0"
 
 [[package]]
 name = "sqlglot"
-version = "18.0.0"
+version = "18.7.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
-python-versions = "*"
+python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-18.0.0-py3-none-any.whl", hash = "sha256:ed3edbde98bdfd5752ca765c788fcc9bdc7342a19cbd3058120175e93eec32f3"},
-    {file = "sqlglot-18.0.0.tar.gz", hash = "sha256:7bd8eeabaf0474a20840df96657c7cf27f82a3e3784a8b3d9fb243105aae7142"},
+    {file = "sqlglot-18.7.0-py3-none-any.whl", hash = "sha256:8dc40beb466324d9aa977ce5e994ffbc983998cb3e78381ea18bd418b29d9101"},
+    {file = "sqlglot-18.7.0.tar.gz", hash = "sha256:8c6858d004c348758f6961058fec8f607f54324e1035fb00f8be989643851ecc"},
 ]
 
 [package.extras]
-dev = ["autoflake", "black", "duckdb (>=0.6)", "isort", "mypy (>=0.990)", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil"]
+dev = ["autoflake", "black", "duckdb (>=0.6)", "isort", "mypy (>=0.990)", "pandas", "pdoc", "pre-commit", "pyspark", "python-dateutil", "types-python-dateutil"]
 
 [[package]]
 name = "stack-data"
@@ -5940,4 +5940,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "6394b3556597b3b270cb1e84c78d1c2a79c8bbcc667b9c825ed5ff2e12e83568"
+content-hash = "59096eef883d4a14e45ada357c46efea88931925b75f5d04564581a6bc0b42f0"
