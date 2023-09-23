@@ -6,9 +6,41 @@ import functools
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.compiler import Compiler, Select, SelectBuilder
+from ibis.backends.base.sql.compiler import (
+    Compiler,
+    Select,
+    SelectBuilder,
+    TableSetFormatter,
+)
 from ibis.backends.flink.translator import FlinkExprTranslator
 from ibis.backends.flink.utils import translate_literal
+
+
+class FlinkTableSetFormatter(TableSetFormatter):
+    def _format_in_memory_table(self, op):
+        names = op.schema.names
+        raw_rows = []
+        for row in op.data.to_frame().itertuples(index=False):
+            raw_row = []
+            for val, name in zip(row, names):
+                lit = ops.Literal(val, dtype=op.schema[name])
+                raw_row.append(self._translate(lit))
+            raw_rows.append(", ".join(raw_row))
+        rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
+        return f"(VALUES {rows})"
+
+    def _format_table(self, op) -> str:
+        result = super()._format_table(op)
+
+        ref_op = op
+        if isinstance(op, ops.SelfReference):
+            ref_op = op.table
+
+        if isinstance(ref_op, ops.InMemoryTable):
+            names = op.schema.names
+            result += f"({', '.join(self._quote_identifier(name) for name in names)})"
+
+        return result
 
 
 class FlinkSelectBuilder(SelectBuilder):
@@ -39,10 +71,12 @@ class FlinkSelect(Select):
 
 
 class FlinkCompiler(Compiler):
+    translator_class = FlinkExprTranslator
+    table_set_formatter_class = FlinkTableSetFormatter
     select_builder_class = FlinkSelectBuilder
     select_class = FlinkSelect
+
     cheap_in_memory_tables = True
-    translator_class = FlinkExprTranslator
 
 
 def translate(op: ops.TableNode) -> str:
