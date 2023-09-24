@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from abc import ABCMeta, abstractmethod
-from collections.abc import Hashable
+import collections.abc
+from abc import abstractmethod
 from typing import TYPE_CHECKING, Any
 from weakref import WeakValueDictionary
 
 from ibis.common.caching import WeakCache
-from ibis.common.collections import FrozenDict
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-class BaseMeta(ABCMeta):
+class BaseMeta(type):
     """Base metaclass for many of the ibis core classes.
 
     This metaclass enforces the subclasses to define a `__slots__` attribute and
@@ -51,6 +50,35 @@ class BaseMeta(ABCMeta):
         return cls.__create__(*args, **kwargs)
 
 
+class AbstractMeta(BaseMeta):
+    """Metaclass to support abstract methods without extending `abc.ABCMeta`.
+
+    Provide a reduced feature set compared to `abc.ABCMeta` (no way to register
+    virtual subclasses) but avoids expensive instance checks by enforcing explicit
+    subclassing.
+    """
+
+    __slots__ = ()
+
+    def __new__(metacls, clsname, bases, dct, **kwargs):
+        cls = super().__new__(metacls, clsname, bases, dct, **kwargs)
+
+        # calculate abstract methods
+        abstracts = {
+            name
+            for name, value in dct.items()
+            if getattr(value, "__isabstractmethod__", False)
+        }
+        for parent in bases:
+            for name in getattr(parent, "__abstractmethods__", set()):
+                value = getattr(cls, name, None)
+                if getattr(value, "__isabstractmethod__", False):
+                    abstracts.add(name)
+
+        cls.__abstractmethods__ = frozenset(abstracts)
+        return cls
+
+
 class Base(metaclass=BaseMeta):
     """Base class for many of the ibis core classes.
 
@@ -61,6 +89,13 @@ class Base(metaclass=BaseMeta):
 
     __slots__ = ("__weakref__",)
     __create__ = classmethod(type.__call__)  # type: ignore
+
+
+class Abstract(Base, metaclass=AbstractMeta):
+    """Base class for abstract classes.
+
+    Extend the `Base` class with support for abstract methods and properties.
+    """
 
 
 class Immutable(Base):
@@ -86,7 +121,7 @@ class Singleton(Base):
 
     @classmethod
     def __create__(cls, *args, **kwargs):
-        key = (cls, args, FrozenDict(kwargs))
+        key = (cls, args, tuple(kwargs.items()))
         try:
             return cls.__instances__[key]
         except KeyError:
@@ -106,7 +141,14 @@ class Final(Base):
         raise TypeError(f"Cannot inherit from final class {cls}")
 
 
-class Comparable(Base):
+@collections.abc.Hashable.register
+class Hashable(Abstract):
+    @abstractmethod
+    def __hash__(self) -> int:
+        ...
+
+
+class Comparable(Abstract):
     """Enable quick equality comparisons.
 
     The subclasses must implement the `__equals__` method that returns a boolean
@@ -159,8 +201,6 @@ class Slotted(Base):
 
     The class is mostly used to reduce boilerplate code.
     """
-
-    __slots__ = ()
 
     def __init__(self, **kwargs) -> None:
         for name, value in kwargs.items():

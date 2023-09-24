@@ -19,6 +19,8 @@ from ibis.common.patterns import InstanceOf, TupleOf
 
 
 class MyNode(Node):
+    __slots__ = ("name", "children")
+
     def __init__(self, name, children):
         self.name = name
         self.children = children

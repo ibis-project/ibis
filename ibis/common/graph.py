@@ -3,9 +3,10 @@ from __future__ import annotations
 
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Hashable, Iterable, Iterator, KeysView, Sequence
+from collections.abc import Iterable, Iterator, KeysView, Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
+from ibis.common.bases import Hashable
 from ibis.common.collections import frozendict
 from ibis.common.patterns import NoMatch, pattern
 from ibis.util import experimental

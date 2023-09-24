@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime
 import numbers
-from abc import ABCMeta
 from decimal import Decimal
 from enum import Enum, EnumMeta
 
@@ -12,15 +11,16 @@ import pytz
 from public import public
 
 from ibis import util
+from ibis.common.bases import AbstractMeta
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.patterns import Coercible, CoercionError
 
 
-class ABCEnumMeta(EnumMeta, ABCMeta):
+class AbstractEnumMeta(EnumMeta, AbstractMeta):
     pass
 
 
-class Unit(Coercible, Enum, metaclass=ABCEnumMeta):
+class Unit(Coercible, Enum, metaclass=AbstractEnumMeta):
     @classmethod
     def __coerce__(cls, value):
         if isinstance(value, cls):

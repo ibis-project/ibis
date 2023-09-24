@@ -2,12 +2,21 @@ from __future__ import annotations
 
 import copy
 import weakref
+from abc import ABCMeta, abstractmethod
 
 import pytest
 
+from ibis.common.bases import (
+    Abstract,
+    AbstractMeta,
+    Base,
+    BaseMeta,
+    Comparable,
+    Final,
+    Immutable,
+    Singleton,
+)
 from ibis.common.caching import WeakCache
-from ibis.common.collections import frozendict
-from ibis.common.grounds import Base, Comparable, Final, Immutable, Singleton
 
 
 def test_bases_are_based_on_base():
@@ -15,6 +24,43 @@ def test_bases_are_based_on_base():
     assert issubclass(Final, Base)
     assert issubclass(Immutable, Base)
     assert issubclass(Singleton, Base)
+    assert issubclass(Abstract, Base)
+
+
+def test_abstract():
+    class Foo(Abstract):
+        @abstractmethod
+        def foo(self):
+            ...
+
+        @property
+        @abstractmethod
+        def bar(self):
+            ...
+
+    assert not issubclass(type(Foo), ABCMeta)
+    assert issubclass(type(Foo), AbstractMeta)
+    assert issubclass(type(Foo), BaseMeta)
+    assert Foo.__abstractmethods__ == frozenset({"foo", "bar"})
+
+    with pytest.raises(TypeError, match="Can't instantiate abstract class .*Foo.*"):
+        Foo()
+
+    class Bar(Foo):
+        def foo(self):
+            return 1
+
+        @property
+        def bar(self):
+            return 2
+
+    bar = Bar()
+    assert bar.foo() == 1
+    assert bar.bar == 2
+    assert isinstance(bar, Foo)
+    assert isinstance(bar, Abstract)
+    assert isinstance(bar, Base)
+    assert Bar.__abstractmethods__ == frozenset()
 
 
 def test_immutable():
@@ -180,7 +226,7 @@ def test_singleton_basics():
     assert one is only
 
     assert len(OneAndOnly.__instances__) == 1
-    key = (OneAndOnly, (), frozendict())
+    key = (OneAndOnly, (), ())
     assert OneAndOnly.__instances__[key] is one
 
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 from itertools import chain
 
 import toolz
@@ -10,16 +9,14 @@ import ibis.expr.operations as ops
 from ibis import util
 
 
-class DML(abc.ABC):
-    @abc.abstractmethod
+class DML:
     def compile(self):
-        pass
+        raise NotImplementedError()
 
 
-class DDL(abc.ABC):
-    @abc.abstractmethod
+class DDL:
     def compile(self):
-        pass
+        raise NotImplementedError()
 
 
 class QueryAST:

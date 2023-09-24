@@ -4,7 +4,7 @@ import copy
 import pickle
 import sys
 import weakref
-from collections.abc import Mapping, Sequence
+from abc import ABCMeta
 from typing import Callable, Generic, Optional, TypeVar, Union
 
 import pytest
@@ -20,8 +20,11 @@ from ibis.common.annotations import (
     varargs,
     varkwargs,
 )
+from ibis.common.collections import Mapping, Sequence
 from ibis.common.grounds import (
+    Abstract,
     Annotable,
+    AnnotableMeta,
     Base,
     Comparable,
     Concrete,
@@ -220,6 +223,9 @@ class MyValue(Annotable, Generic[J, F]):
 def test_annotable():
     class Between(BetweenSimple):
         pass
+
+    assert not issubclass(type(Between), ABCMeta)
+    assert type(Between) is AnnotableMeta
 
     argnames = ("value", "lower", "upper")
     signature = BetweenSimple.__signature__
@@ -952,6 +958,7 @@ def test_concrete():
         Immutable,
         Comparable,
         Annotable,
+        Abstract,
         Base,
         object,
     )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Generic, Optional
 
 from public import public
@@ -10,6 +10,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis import util
+from ibis.common.bases import Abstract
 from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Coercible, CoercionError
@@ -38,8 +39,9 @@ class Node(Concrete, Traversable):
     __repr__ = object.__repr__
 
 
+# TODO(kszucs): remove this mixin
 @public
-class Named(ABC):
+class Named(Abstract):
     __slots__: VarTuple[str] = tuple()
 
     @property
