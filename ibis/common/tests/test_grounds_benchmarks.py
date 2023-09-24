@@ -4,7 +4,7 @@ import pytest
 
 from ibis.common.annotations import attribute
 from ibis.common.collections import frozendict
-from ibis.common.grounds import Concrete
+from ibis.common.grounds import Annotable, Concrete
 
 pytestmark = pytest.mark.benchmark
 
@@ -30,3 +30,14 @@ class MyObject(Concrete):
 
 def test_concrete_construction(benchmark):
     benchmark(MyObject, 1, "2", c=(3, 4), d=frozendict(e=5, f=6))
+
+
+def test_concrete_isinstance(benchmark):
+    def check(obj):
+        for _ in range(100):
+            assert isinstance(obj, MyObject)
+            assert isinstance(obj, Concrete)
+            assert isinstance(obj, Annotable)
+
+    obj = MyObject(1, "2", c=(3, 4), d=frozendict(e=5, f=6))
+    benchmark(check, obj)

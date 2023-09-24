@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from bidict import bidict
 
-from ibis.common.collections import FrozenDict
 from ibis.common.exceptions import IbisError
 
 if TYPE_CHECKING:
@@ -21,7 +20,7 @@ def memoize(func: Callable) -> Callable:
 
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
-        key = (args, FrozenDict(kwargs))
+        key = (args, tuple(kwargs.items()))
         try:
             return cache[key]
         except KeyError:

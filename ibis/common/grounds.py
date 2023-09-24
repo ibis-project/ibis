@@ -18,6 +18,8 @@ from ibis.common.annotations import (
     Signature,
 )
 from ibis.common.bases import (  # noqa: F401
+    Abstract,
+    AbstractMeta,
     Base,
     BaseMeta,
     Comparable,
@@ -30,7 +32,7 @@ from ibis.common.patterns import Pattern
 from ibis.common.typing import evaluate_annotations
 
 
-class AnnotableMeta(BaseMeta):
+class AnnotableMeta(AbstractMeta):
     """Metaclass to turn class annotations into a validatable function signature."""
 
     __slots__ = ()
@@ -97,7 +99,7 @@ class AnnotableMeta(BaseMeta):
 
 
 @dataclass_transform()
-class Annotable(Base, metaclass=AnnotableMeta):
+class Annotable(Abstract, metaclass=AnnotableMeta):
     """Base class for objects with custom validation rules."""
 
     __signature__: ClassVar[Signature]

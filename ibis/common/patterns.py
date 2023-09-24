@@ -4,8 +4,8 @@ import math
 import numbers
 import operator
 import sys
-from abc import ABC, abstractmethod
-from collections.abc import Callable, Hashable, Mapping, Sequence
+from abc import abstractmethod
+from collections.abc import Callable, Mapping, Sequence
 from enum import Enum
 from inspect import Parameter
 from itertools import chain
@@ -23,8 +23,8 @@ from typing import Any as AnyType
 import toolz
 from typing_extensions import GenericMeta, Self, get_args, get_origin
 
+from ibis.common.bases import Abstract, Hashable, Singleton
 from ibis.common.bases import FrozenSlotted as Slotted
-from ibis.common.bases import Singleton
 from ibis.common.collections import FrozenDict, RewindableIterator, frozendict
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.typing import (
@@ -45,15 +45,13 @@ class CoercionError(Exception):
     ...
 
 
-class Coercible(ABC):
+class Coercible(Abstract):
     """Protocol for defining coercible types.
 
     Coercible types define a special ``__coerce__`` method that accepts an object
     with an instance of the type. Used in conjunction with the ``coerced_to``
     pattern to coerce arguments to a specific type.
     """
-
-    __slots__ = ()
 
     @classmethod
     @abstractmethod
@@ -74,8 +72,6 @@ class Pattern(Hashable):
     Patterns are used to match values against a given condition. They are extensively
     used by other core components of Ibis to validate and/or coerce user inputs.
     """
-
-    __slots__ = ()
 
     @classmethod
     def from_typehint(cls, annot: type, allow_coercion: bool = True) -> Pattern:
@@ -320,8 +316,6 @@ class Builder(Hashable):
     replace pattern, the builder is called with the context and the result
     of the builder is used as the replacement value.
     """
-
-    __slots__ = ()
 
     @abstractmethod
     def __eq__(self, other):
@@ -982,6 +976,8 @@ class GenericCoercedTo(Slotted, Pattern):
     >>> T = TypeVar("T", covariant=True)
     >>>
     >>> class MyNumber(Coercible, Generic[T]):
+    ...     __slots__ = ("value",)
+    ...
     ...     def __init__(self, value):
     ...         self.value = value
     ...

@@ -13,6 +13,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
+from ibis.common.bases import Abstract
 from ibis.common.grounds import Singleton
 from ibis.common.patterns import InstanceOf  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
@@ -328,7 +329,7 @@ class SearchedCase(Value):
         return rlz.highest_precedence_dtype(exprs)
 
 
-class _Negatable(abc.ABC):
+class _Negatable(Abstract):
     @abc.abstractmethod
     def negate(self):  # pragma: no cover
         ...

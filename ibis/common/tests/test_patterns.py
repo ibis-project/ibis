@@ -86,6 +86,8 @@ class Double(Pattern):
 
 
 class Min(Pattern):
+    __slots__ = ("min",)
+
     def __init__(self, min):
         self.min = min
 
@@ -340,9 +342,11 @@ def test_generic_coerced_to():
             ...
 
     class Literal(Value[T, Scalar]):
+        __slots__ = ("_value", "_dtype")
+
         def __init__(self, value, dtype):
-            self.value = value
-            self.dtype = dtype
+            self._value = value
+            self._dtype = dtype
 
         def dtype(self) -> T:
             return self.dtype
@@ -353,8 +357,8 @@ def test_generic_coerced_to():
         def __eq__(self, other):
             return (
                 type(self) == type(other)
-                and self.value == other.value
-                and self.dtype == other.dtype
+                and self._value == other._value
+                and self._dtype == other._dtype
             )
 
     p = Pattern.from_typehint(Literal[String])
@@ -1017,6 +1021,8 @@ def test_pattern_from_typehint_disable_coercion():
 
 
 class PlusOne(Coercible):
+    __slots__ = ("value",)
+
     def __init__(self, value):
         self.value = value
 
@@ -1132,6 +1138,7 @@ class Term(GraphNode):
 
 
 class Lit(Term):
+    __slots__ = ("value",)
     __argnames__ = ("value",)
     __match_args__ = ("value",)
 
@@ -1144,6 +1151,7 @@ class Lit(Term):
 
 
 class Binary(Term):
+    __slots__ = ("left", "right")
     __argnames__ = ("left", "right")
     __match_args__ = ("left", "right")
 

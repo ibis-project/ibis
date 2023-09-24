@@ -1,17 +1,161 @@
 from __future__ import annotations
 
-from collections.abc import Hashable, Iterator, Mapping
+import collections.abc
+from abc import abstractmethod
 from itertools import tee
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from public import public
+
+from ibis.common.bases import Abstract, Hashable
 
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-K = TypeVar("K", bound=Hashable)
+K = TypeVar("K", bound=collections.abc.Hashable)
 V = TypeVar("V")
+
+
+# The following classes provide an alternative to the `collections.abc` module
+# which can be used with `ibis.common.bases` without metaclass conflicts but
+# remains compatible with the `collections.abc` module. The main advantage is
+# faster `isinstance` checks.
+
+
+@collections.abc.Iterable.register
+class Iterable(Abstract, Generic[V]):
+    """Iterable abstract base class for quicker isinstance checks."""
+
+    @abstractmethod
+    def __iter__(self):
+        ...
+
+
+@collections.abc.Reversible.register
+class Reversible(Iterable[V]):
+    """Reverse iterable abstract base class for quicker isinstance checks."""
+
+    @abstractmethod
+    def __reversed__(self):
+        ...
+
+
+@collections.abc.Iterator.register
+class Iterator(Iterable[V]):
+    """Iterator abstract base class for quicker isinstance checks."""
+
+    @abstractmethod
+    def __next__(self):
+        ...
+
+    def __iter__(self):
+        return self
+
+
+@collections.abc.Sized.register
+class Sized(Abstract):
+    """Sized abstract base class for quicker isinstance checks."""
+
+    @abstractmethod
+    def __len__(self):
+        ...
+
+
+@collections.abc.Container.register
+class Container(Abstract, Generic[V]):
+    """Container abstract base class for quicker isinstance checks."""
+
+    @abstractmethod
+    def __contains__(self, x):
+        ...
+
+
+@collections.abc.Collection.register
+class Collection(Sized, Iterable[V], Container[V]):
+    """Collection abstract base class for quicker isinstance checks."""
+
+
+@collections.abc.Sequence.register
+class Sequence(Reversible[V], Collection[V]):
+    """Sequence abstract base class for quicker isinstance checks."""
+
+    @abstractmethod
+    def __getitem__(self, index):
+        ...
+
+    def __iter__(self):
+        i = 0
+        try:
+            while True:
+                yield self[i]
+                i += 1
+        except IndexError:
+            return
+
+    def __contains__(self, value):
+        return any(v is value or v == value for v in self)
+
+    def __reversed__(self):
+        for i in reversed(range(len(self))):
+            yield self[i]
+
+    def index(self, value, start=0, stop=None):
+        if start is not None and start < 0:
+            start = max(len(self) + start, 0)
+        if stop is not None and stop < 0:
+            stop += len(self)
+
+        i = start
+        while stop is None or i < stop:
+            try:
+                v = self[i]
+            except IndexError:
+                break
+            if v is value or v == value:
+                return i
+            i += 1
+        raise ValueError
+
+    def count(self, value):
+        return sum(1 for v in self if v is value or v == value)
+
+
+@collections.abc.Mapping.register
+class Mapping(Collection[K], Generic[K, V]):
+    """Mapping abstract base class for quicker isinstance checks."""
+
+    @abstractmethod
+    def __getitem__(self, key):
+        ...
+
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+
+    def __contains__(self, key):
+        try:
+            self[key]
+        except KeyError:
+            return False
+        else:
+            return True
+
+    def keys(self):
+        return collections.abc.KeysView(self)
+
+    def items(self):
+        return collections.abc.ItemsView(self)
+
+    def values(self):
+        return collections.abc.ValuesView(self)
+
+    def __eq__(self, other):
+        if not isinstance(other, collections.abc.Mapping):
+            return NotImplemented
+        return dict(self.items()) == dict(other.items())
 
 
 @public
@@ -30,6 +174,8 @@ class MapSet(Mapping[K, V]):
     --------
     >>> from ibis.common.collections import MapSet
     >>> class MyMap(MapSet):
+    ...     __slots__ = ("_data",)
+    ...
     ...     def __init__(self, *args, **kwargs):
     ...         self._data = dict(*args, **kwargs)
     ...
@@ -59,7 +205,7 @@ class MapSet(Mapping[K, V]):
     MyMap({'a': 1, 'b': 2, 'c': 3})
     """
 
-    def _check_conflict(self, other: Mapping) -> set[K]:
+    def _check_conflict(self, other: collections.abc.Mapping) -> set[K]:
         # Check if there are conflicting key-value pairs between self and other.
         # A key-value pair is conflicting if the key is the same but the value is
         # different.
@@ -72,58 +218,58 @@ class MapSet(Mapping[K, V]):
                 )
         return common_keys
 
-    def __ge__(self, other: Mapping) -> bool:
-        if not isinstance(other, Mapping):
+    def __ge__(self, other: collections.abc.Mapping) -> bool:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         common_keys = self._check_conflict(other)
         return other.keys() == common_keys
 
-    def __gt__(self, other: Mapping) -> bool:
-        if not isinstance(other, Mapping):
+    def __gt__(self, other: collections.abc.Mapping) -> bool:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         return len(self) > len(other) and self.__ge__(other)
 
-    def __le__(self, other: Mapping) -> bool:
-        if not isinstance(other, Mapping):
+    def __le__(self, other: collections.abc.Mapping) -> bool:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         common_keys = self._check_conflict(other)
         return self.keys() == common_keys
 
-    def __lt__(self, other: Mapping) -> bool:
-        if not isinstance(other, Mapping):
+    def __lt__(self, other: collections.abc.Mapping) -> bool:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         return len(self) < len(other) and self.__le__(other)
 
-    def __and__(self, other: Mapping) -> Self:
-        if not isinstance(other, Mapping):
+    def __and__(self, other: collections.abc.Mapping) -> Self:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         common_keys = self._check_conflict(other)
         intersection = {k: v for k, v in self.items() if k in common_keys}
         return self.__class__(intersection)
 
-    def __sub__(self, other: Mapping) -> Self:
-        if not isinstance(other, Mapping):
+    def __sub__(self, other: collections.abc.Mapping) -> Self:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         common_keys = self._check_conflict(other)
         difference = {k: v for k, v in self.items() if k not in common_keys}
         return self.__class__(difference)
 
-    def __rsub__(self, other: Self) -> Self:
-        if not isinstance(other, Mapping):
+    def __rsub__(self, other: collections.abc.Mapping) -> Self:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         common_keys = self._check_conflict(other)
         difference = {k: v for k, v in other.items() if k not in common_keys}
         return self.__class__(difference)
 
-    def __or__(self, other: Mapping) -> Self:
-        if not isinstance(other, Mapping):
+    def __or__(self, other: collections.abc.Mapping) -> Self:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         self._check_conflict(other)
         union = {**self, **other}
         return self.__class__(union)
 
-    def __xor__(self, other: Mapping) -> Self:
-        if not isinstance(other, Mapping):
+    def __xor__(self, other: collections.abc.Mapping) -> Self:
+        if not isinstance(other, collections.abc.Mapping):
             return NotImplemented
         left = self - other
         right = other - self
@@ -131,7 +277,7 @@ class MapSet(Mapping[K, V]):
         union = {**left, **right}
         return self.__class__(union)
 
-    def isdisjoint(self, other: Mapping) -> bool:
+    def isdisjoint(self, other: collections.abc.Mapping) -> bool:
         common_keys = self._check_conflict(other)
         return not common_keys
 
@@ -175,7 +321,7 @@ class FrozenDict(Mapping[K, V], Hashable):
         return self.__precomputed_hash__
 
 
-class RewindableIterator(Iterator):
+class RewindableIterator(Iterator[V]):
     """Iterator that can be rewound to a checkpoint.
 
     Examples
@@ -198,6 +344,8 @@ class RewindableIterator(Iterator):
     >>> next(it)
     4
     """
+
+    __slots__ = ("_iterator", "_checkpoint")
 
     def __init__(self, iterable):
         self._iterator = iter(iterable)
