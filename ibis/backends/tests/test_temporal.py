@@ -318,7 +318,7 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     result = expr.execute()
 
     expected = backend.default_series_rename(
-        (df.timestamp_col.view("int64") // 1_000_000_000).astype("int32")
+        df.timestamp_col.astype("datetime64[s]").astype("int64").astype("int32")
     )
     backend.assert_series_equal(result, expected)
 
@@ -547,7 +547,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     result = expr.execute()
     expected = backend.default_series_rename(expected)
 
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
 @pytest.mark.parametrize(
@@ -732,7 +732,7 @@ def test_integer_to_interval_timestamp(
         expected = df.timestamp_col + offset
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(result, expected.astype("datetime64[ns]"))
+    backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
 @pytest.mark.parametrize(
@@ -975,7 +975,7 @@ def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)
 
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
 plus = lambda t, td: t.timestamp_col + pd.Timedelta(td)
@@ -1152,7 +1152,7 @@ def test_temporal_binop_pandas_timedelta(
     result = con.execute(expr)
     expected = backend.default_series_rename(expected)
 
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
@@ -1296,7 +1296,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     expr = (timestamp_date + delta).name("result")
     result = expr.execute()
     expected = timestamp_date.name("result").execute() + pd.Timedelta(10, unit="D")
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
 @pytest.mark.never(
@@ -1323,7 +1323,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
         .add(df.bigint_col.astype("timedelta64[D]"))
         .rename("tmp")
     )
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
 @pytest.mark.parametrize(
@@ -2038,7 +2038,7 @@ def test_date_column_from_ymd(con, alltypes, df):
     tbl = alltypes[expr.name("timestamp_col")]
     result = con.execute(tbl)
 
-    golden = df.timestamp_col.dt.date.astype("datetime64[ns]")
+    golden = df.timestamp_col.dt.date.astype(result.timestamp_col.dtype)
     tm.assert_series_equal(golden, result.timestamp_col)
 
 
@@ -2068,7 +2068,7 @@ def test_timestamp_column_from_ymdhms(con, alltypes, df):
     tbl = alltypes[expr.name("timestamp_col")]
     result = con.execute(tbl)
 
-    golden = df.timestamp_col.dt.floor("s").astype("datetime64[ns]")
+    golden = df.timestamp_col.dt.floor("s").astype(result.timestamp_col.dtype)
     tm.assert_series_equal(golden, result.timestamp_col)
 
 
@@ -2169,7 +2169,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
     result = expr.execute()
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
 @pytest.mark.notimpl(

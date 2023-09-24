@@ -67,11 +67,7 @@ def execute_extract_microsecond_series(op, data, **kwargs):
 
 @execute_node.register(ops.ExtractEpochSeconds, (datetime.datetime, pd.Series))
 def execute_epoch_seconds(op, data, **kwargs):
-    # older versions of dask do not have a view method, so use astype
-    # instead
-    convert = getattr(data, "view", data.astype)
-    series = convert(np.int64)
-    return (series // 1_000_000_000).astype(np.int32)
+    return data.astype("datetime64[s]").astype("int64").astype("int32")
 
 
 @execute_node.register(
