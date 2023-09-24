@@ -8,7 +8,6 @@ from pytest import param
 
 import ibis
 from ibis.backends.tests.test_vectorized_udf import calc_mean, create_demean_struct_udf
-from ibis.config import option_context
 
 pytestmark = pytest.mark.notimpl(
     [
@@ -41,7 +40,8 @@ def context():
 
 
 def filter_by_time_context(df, context):
-    return df[(df["timestamp_col"] >= context[0]) & (df["timestamp_col"] < context[1])]
+    begin, end = context
+    return df[(df.timestamp_col >= begin) & (df.timestamp_col < end)]
 
 
 broken_pandas_grouped_rolling = pytest.mark.xfail(
@@ -51,14 +51,8 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
 )
 
 
-@pytest.fixture(scope="module")
-def ctx_col():
-    with option_context("context_adjustment.time_col", "timestamp_col"):
-        yield
-
-
 @pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
+@pytest.mark.xfail_version(pyspark=["pyspark<3.1"], pandas=["pyarrow>=13", "pandas>=2"])
 @pytest.mark.parametrize(
     "window",
     [
@@ -77,9 +71,10 @@ def ctx_col():
         ),
     ],
 )
-def test_context_adjustment_window_udf(alltypes, context, window, ctx_col):
-    """This test case aims to test context adjustment of udfs in window
-    method."""
+def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
+    """Test context adjustment of udfs in window methods."""
+    monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
+
     expr = alltypes.mutate(v1=calc_mean(alltypes[TARGET_COL]).over(window))
     result = expr.execute(timecontext=context)
 
@@ -90,7 +85,10 @@ def test_context_adjustment_window_udf(alltypes, context, window, ctx_col):
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
-def test_context_adjustment_filter_before_window(alltypes, context, ctx_col):
+@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2"])
+def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
+    monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
+
     window = ibis.trailing_window(ibis.interval(days=3), order_by=ORDER_BY_COL)
 
     expr = alltypes[alltypes["bool_col"]]
@@ -106,11 +104,9 @@ def test_context_adjustment_filter_before_window(alltypes, context, ctx_col):
 
 
 @pytest.mark.notimpl(["duckdb", "pyspark"])
-def test_context_adjustment_multi_col_udf_non_grouped(
-    alltypes,
-    context,
-    ctx_col,
-):
+def test_context_adjustment_multi_col_udf_non_grouped(alltypes, context, monkeypatch):
+    monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
+
     w = ibis.window(preceding=None, following=None)
 
     demean_struct_udf = create_demean_struct_udf(

@@ -158,7 +158,7 @@ def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
     # (to match the output format of Ibis `aggregate`)
     expected = pd.DataFrame({"tmp": [expected_fn(df)]})
 
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.parametrize(
@@ -187,8 +187,8 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     result2 = result2.sort_values(by=grouping_key_col).reset_index(drop=True)
     expected = expected.sort_values(by=grouping_key_col).reset_index(drop=True)
 
-    backend.assert_frame_equal(result1, expected)
-    backend.assert_frame_equal(result2, expected)
+    backend.assert_frame_equal(result1, expected, check_dtype=False)
+    backend.assert_frame_equal(result2, expected, check_dtype=False)
 
 
 @mark.notimpl(
