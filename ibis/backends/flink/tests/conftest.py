@@ -70,13 +70,9 @@ def simple_table(simple_schema):
 
 @pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
-<<<<<<< HEAD
     return TestConfForStreaming.load_data(
         data_dir, tmp_path_factory, worker_id
     ).connection
-=======
-    return TestConfForStreamingMode.load_data(data_dir, tmp_path_factory, worker_id).connection
->>>>>>> ccb760b81 (+class TestConfForStreamingMode(TestConf):)
 
 
 @pytest.fixture(scope="session")
