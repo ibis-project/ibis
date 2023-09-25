@@ -7,6 +7,7 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 from ibis.backends.tests.test_vectorized_udf import calc_mean, create_demean_struct_udf
 
 pytestmark = pytest.mark.notimpl(
@@ -54,6 +55,11 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
 @pytest.mark.notimpl(["dask", "duckdb"])
 @pytest.mark.xfail_version(
     pyspark=["pyspark<3.1"], pandas=["pyarrow>=13", "pandas>=2.1"]
+)
+@pytest.mark.notimpl(
+    ["flask"],
+    raises=com.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.vectorized.ReductionVectorizedUDF'>",
 )
 @pytest.mark.parametrize(
     "window",
