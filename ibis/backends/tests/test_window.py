@@ -671,7 +671,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     reason="Window operations are unsupported in the dask backend",
                 ),
                 pytest.mark.broken(
-                    ["bigquery", "impala"],
+                    ["bigquery", "flink", "impala"],
                     reason="default window semantics are different",
                     raises=AssertionError,
                 ),
@@ -682,6 +682,12 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             False,
             id="unordered-mean",
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                ),
+            ],
         ),
         param(
             lambda _, win: ibis.ntile(7).over(win),
@@ -710,6 +716,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "flink",
                         "impala",
                         "mssql",
                         "mysql",
@@ -751,6 +758,10 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                ),
             ],
         ),
         # Analytic ops
@@ -776,6 +787,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     ["pyspark"],
                     raises=AnalysisException,
                     reason="pyspark requires ORDER BY",
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Flink engine does not support generic ...",
                 ),
                 pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
@@ -811,6 +827,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     raises=AnalysisException,
                     reason="pyspark requires ORDER BY",
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Flink engine does not support generic ...",
+                ),
                 pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
                     ["snowflake"],
@@ -830,6 +851,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "flink",
                         "impala",
                         "mssql",
                         "mysql",
@@ -859,23 +881,29 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda df: df.double_col.transform(calc_zscore.func),
             False,
             id="unordered-zscore_udf",
-            marks=pytest.mark.notimpl(
-                [
-                    "bigquery",
-                    "clickhouse",
-                    "duckdb",
-                    "impala",
-                    "mssql",
-                    "mysql",
-                    "oracle",
-                    "postgres",
-                    "pyspark",
-                    "sqlite",
-                    "snowflake",
-                    "trino",
-                ],
-                raises=com.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "duckdb",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "oracle",
+                        "postgres",
+                        "pyspark",
+                        "sqlite",
+                        "snowflake",
+                        "trino",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                ),
+            ]
         ),
     ],
 )
