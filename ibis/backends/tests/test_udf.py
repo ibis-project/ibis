@@ -4,6 +4,7 @@ import pandas.testing as tm
 import sqlalchemy as sa
 from pytest import mark, param
 
+import ibis.common.exceptions as com
 from ibis import _, udf
 
 no_python_udfs = mark.notimpl(
@@ -25,6 +26,7 @@ no_python_udfs = mark.notimpl(
 @no_python_udfs
 @mark.notimpl(["pyspark"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
+@mark.notyet(["flink"], raises=com.OperationNotDefinedError)
 def test_udf(batting):
     @udf.scalar.python
     def num_vowels(s: str, include_y: bool = False) -> int:
