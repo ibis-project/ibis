@@ -615,6 +615,7 @@ def test_grouped_unbounded_window(
 @pytest.mark.broken(["snowflake"], raises=AssertionError)
 @pytest.mark.broken(["dask", "pandas", "mssql"], raises=AssertionError)
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError)
 def test_simple_ungrouped_unbound_following_window(
     backend, alltypes, ibis_method, pandas_fn
 ):
