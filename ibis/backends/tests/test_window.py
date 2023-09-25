@@ -630,6 +630,11 @@ def test_simple_ungrouped_unbound_following_window(
 
 
 @pytest.mark.notimpl(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="OVER RANGE FOLLOWING windows are not supported in Flink yet",
+)
+@pytest.mark.notimpl(
     ["pandas", "dask"],
     raises=NotImplementedError,
     reason="support scalar sorting keys are not yet implemented",
