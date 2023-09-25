@@ -8,6 +8,7 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
+from py4j.protocol import Py4JJavaError
 from pytest import param
 
 import ibis
@@ -99,7 +100,10 @@ def calc_zscore(s):
             lambda t, win: t.float_col.lag().over(win),
             lambda t: t.float_col.shift(1),
             id="lag",
-            marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+            marks=[
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
+            ]
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -112,6 +116,7 @@ def calc_zscore(s):
                     raises=AssertionError,
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
             ],
         ),
         param(
@@ -203,6 +208,7 @@ def calc_zscore(s):
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
