@@ -15,9 +15,13 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw: Any):
+        """Flink backend is created in batch mode by default. This is to
+        comply with the assumption that the tests under ibis/ibis/backends/tests/
+        are for batch (storage or processing) backends.
+        """
         from pyflink.table import EnvironmentSettings, TableEnvironment
 
-        env_settings = EnvironmentSettings.in_streaming_mode()
+        env_settings = EnvironmentSettings.in_batch_mode()
         table_env = TableEnvironment.create(env_settings)
         return ibis.flink.connect(table_env, **kw)
 
@@ -27,6 +31,19 @@ class TestConf(BackendTest, RoundAwayFromZero):
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
             self.connection.create_table(table_name, pd.read_parquet(path))
+
+
+class TestConfForStreaming(TestConf):
+    @staticmethod
+    def connect(*, tmpdir, worker_id, **kw: Any):
+        """Flink backend is created in streaming mode here. To be used
+        in the tests under ibis/ibis/backends/flink/tests/.
+        """
+        from pyflink.table import EnvironmentSettings, TableEnvironment
+
+        env_settings = EnvironmentSettings.in_streaming_mode()
+        table_env = TableEnvironment.create(env_settings)
+        return ibis.flink.connect(table_env, **kw)
 
 
 @pytest.fixture
@@ -53,7 +70,9 @@ def simple_table(simple_schema):
 
 @pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
-    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
+    return TestConfForStreaming.load_data(
+        data_dir, tmp_path_factory, worker_id
+    ).connection
 
 
 @pytest.fixture(scope="session")
