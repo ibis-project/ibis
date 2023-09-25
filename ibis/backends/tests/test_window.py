@@ -791,7 +791,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
-                    reason="Flink engine does not support generic ...",
+                    reason="Flink engine does not support generic window clause with no order by",
                 ),
                 pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
@@ -830,7 +830,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
-                    reason="Flink engine does not support generic ...",
+                    reason="Flink engine does not support generic window clause with no order by",
                 ),
                 pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
                 pytest.mark.notyet(
@@ -944,6 +944,11 @@ def test_ungrouped_unbounded_window(
     ["pandas"],
     raises=NotImplementedError,
     reason="The pandas backend only implements range windows with temporal ordering keys",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="Data Type mismatch between ORDER BY and RANGE clause",
 )
 @pytest.mark.notyet(
     ["clickhouse"],
