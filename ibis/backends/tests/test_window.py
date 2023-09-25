@@ -543,6 +543,7 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "flink",
                         "impala",
                         "mssql",
                         "mysql",
@@ -566,7 +567,11 @@ def test_grouped_bounded_preceding_window(backend, alltypes, df, window_fn):
             id="ordered",
             marks=pytest.mark.notimpl(["dask"], raises=NotImplementedError),
         ),
-        param(False, id="unordered"),
+        param(
+            False,
+            id="unordered",
+            marks=pytest.mark.notimpl(["flink"], raises=com.UnsupportedOperationError),
+        ),
     ],
 )
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
