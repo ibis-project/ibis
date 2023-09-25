@@ -19,6 +19,7 @@ SQLALCHEMY2 = vparse(sqlalchemy.__version__) >= vparse("2")
 UUID_BACKEND_TYPE = {
     "bigquery": "STRING",
     "duckdb": "UUID",
+    "flink": "CHAR(36) NOT NULL",
     "sqlite": "text",
     "snowflake": "VARCHAR",
     "trino": "varchar(32)" if SQLALCHEMY2 else "uuid",
@@ -29,6 +30,7 @@ UUID_EXPECTED_VALUES = {
     "pandas": TEST_UUID,
     "bigquery": TEST_UUID,
     "duckdb": TEST_UUID,
+    "flink": str(TEST_UUID),
     "sqlite": TEST_UUID,
     "snowflake": TEST_UUID,
     "trino": TEST_UUID,
