@@ -389,6 +389,7 @@ def test_grouped_bounded_expanding_window(
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "flink",
                         "impala",
                         "mssql",
                         "mysql",
