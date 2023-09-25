@@ -1083,7 +1083,7 @@ def test_mutate_window_filter(backend, alltypes, df):
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["datafusion"],
+    ["datafusion", "flink"],
     raises=Exception,
     reason="KeyError: \"Table with name win doesn't exist.",
 )
