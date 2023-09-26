@@ -5,6 +5,7 @@ import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
+from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.common.exceptions as com
@@ -97,7 +98,16 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
 def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
 
+@pytest.mark.broken(
+    # TODO (mehmet): Check with the team.
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="Cannot cast org.apache.flink.table.data.TimestampData to java.lang.Long",
+)
+def test_context_adjustment_filter_before_window(alltypes, context, ctx_col):
     window = ibis.trailing_window(ibis.interval(days=3), order_by=ORDER_BY_COL)
+    # This works.
+    # window = ibis.trailing_window(3, order_by="id")
 
     expr = alltypes[alltypes["bool_col"]]
     expr = expr.mutate(v1=expr[TARGET_COL].count().over(window))
