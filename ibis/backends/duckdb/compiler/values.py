@@ -82,39 +82,36 @@ def _literal(op, *, value, dtype, **kw):
         #
         # float will be upcast to double if necessary by duckdb
         if not math.isfinite(value):
-            return cast(lit(str(value)), to=dt.float32 if dtype.is_decimal() else dtype)
-        return cast(lit(value), dtype)
+            return cast(str(value), to=dt.float32 if dtype.is_decimal() else dtype)
+        return cast(value, dtype)
     elif dtype.is_time():
-        return cast(lit(value), dtype)
+        return cast(value, dtype)
     elif dtype.is_timestamp():
-        year = lit(value.year)
-        month = lit(value.month)
-        day = lit(value.day)
-        hour = lit(value.hour)
-        minute = lit(value.minute)
-        second = lit(value.second)
+        year = value.year
+        month = value.month
+        day = value.day
+        hour = value.hour
+        minute = value.minute
+        second = value.second
         if us := value.microsecond:
-            microsecond = lit(us / 1e6)
-            second += microsecond
+            second += us / 1e6
         if (tz := dtype.timezone) is not None:
-            timezone = lit(tz)
-            return f.make_timestamptz(year, month, day, hour, minute, second, timezone)
+            return f.make_timestamptz(year, month, day, hour, minute, second, tz)
         else:
             return f.make_timestamp(year, month, day, hour, minute, second)
     elif dtype.is_date():
-        year = lit(value.year)
-        month = lit(value.month)
-        day = lit(value.day)
-        return sg.exp.DateFromParts(year=year, month=month, day=day)
+        return sg.exp.DateFromParts(
+            year=lit(value.year), month=lit(value.month), day=lit(value.day)
+        )
     elif dtype.is_array():
         value_type = dtype.value_type
-        return sg.exp.Array.from_arg_list(
-            [
+        return f.array(
+            *(
                 _literal(
                     ops.Literal(v, dtype=value_type), value=v, dtype=value_type, **kw
                 )
                 for v in value
-            ]
+            )
         )
     elif dtype.is_map():
         key_type = dtype.key_type
@@ -146,9 +143,9 @@ def _literal(op, *, value, dtype, **kw):
             [sg.exp.Slice(this=k, expression=v) for k, v in zip(keys, values)]
         )
     elif dtype.is_uuid():
-        return cast(lit(str(value)), dtype)
+        return cast(str(value), dtype)
     elif dtype.is_binary():
-        return cast(lit("".join(map("\\x{:02x}".format, value))), dtype)
+        return cast("".join(map("\\x{:02x}".format, value)), dtype)
     else:
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
@@ -974,7 +971,7 @@ def _map_get(op, *, arg, key, default, **_):
 
 @translate_val.register(ops.MapContains)
 def _map_contains(op, *, arg, key, **_):
-    return f.len(f.element_at(arg, key)).neq(lit(0))
+    return f.len(f.element_at(arg, key)).neq(0)
 
 
 def _binary_infix(sg_expr: sg.exp._Expression):
