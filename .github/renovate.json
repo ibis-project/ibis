@@ -50,11 +50,11 @@
       "addLabels": ["duckdb"]
     },
     {
-      "matchPackagePatterns": ["fsspec", "impyla"],
+      "matchPackagePatterns": ["fsspec", "impyla", "impala", "kudu"],
       "addLabels": ["impala"]
     },
     {
-      "matchPackagePatterns": ["oracledb"],
+      "matchPackagePatterns": ["oracledb", "oracle-free"],
       "addLabels": ["oracle"]
     },
     {
@@ -62,19 +62,19 @@
       "addLabels": ["polars"]
     },
     {
-      "matchPackagePatterns": ["psycopg2"],
+      "matchPackagePatterns": ["psycopg2", "postgres"],
       "addLabels": ["postgres"]
     },
     {
-      "matchPackagePatterns": ["pydruid"],
+      "matchPackagePatterns": ["pydruid", "zookeeper", "druid"],
       "addLabels": ["druid"]
     },
     {
-      "matchPackagePatterns": ["pymssql"],
-      "addLabels": ["mssql"]
+      "matchPackagePatterns": ["pymysql", "mariadb"],
+      "addLabels": ["mysql"]
     },
     {
-      "matchPackagePatterns": ["pymssql"],
+      "matchPackagePatterns": ["pymssql", "mssql"],
       "addLabels": ["mssql"]
     },
     {
@@ -89,7 +89,7 @@
       "addLabels": ["snowflake"]
     },
     {
-      "matchPackagePatterns": ["trino"],
+      "matchPackagePatterns": ["trino", "minio"],
       "addLabels": ["trino"]
     },
     {
