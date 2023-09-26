@@ -39,7 +39,6 @@ from ibis.common.patterns import (
     Contains,
     DictOf,
     EqualTo,
-    Factory,
     FrozenDictOf,
     Function,
     GenericInstanceOf,
@@ -70,10 +69,8 @@ from ibis.common.patterns import (
     TypeOf,
     Variable,
     _,
-    builder,
     match,
     pattern,
-    replace,
 )
 
 
@@ -124,11 +121,8 @@ def test_nothing():
 
 def test_just():
     p = Just(1)
-    assert p.build({}) == 1
-    assert p.build({"a": 1}) == 1
-
-    # unwrap subsequently nested Just instances
-    assert Just(p) == p
+    assert p.make({}) == 1
+    assert p.make({"a": 1}) == 1
 
 
 def test_min():
@@ -151,7 +145,7 @@ def test_any():
 def test_variable():
     p = Variable("other")
     context = {p: 10}
-    assert p.build(context) == 10
+    assert p.make(context) == 10
 
 
 def test_pattern_factory_wraps_variable_with_capture():
@@ -750,15 +744,6 @@ def test_replace_in_nested_object_pattern():
     assert h1.b.b == 3
 
 
-def test_replace_decorator():
-    @replace(int)
-    def sub(value, ctx):
-        return value - 1
-
-    assert match(sub, 1) == 0
-    assert match(sub, 2) == 1
-
-
 def test_matching_sequence_pattern():
     assert match([], []) == []
     assert match([], [1]) is NoMatch
@@ -1213,57 +1198,3 @@ def test_node():
     )
     result = six.replace(pat)
     assert result == Mul(two, Add(Lit(101), two))
-
-
-def test_factory():
-    f = Factory(lambda x, ctx: x + 1)
-    assert f.build({_: 1}) == 2
-    assert f.build({_: 2}) == 3
-
-    def fn(x, ctx):
-        assert ctx == {_: 10, "a": 5}
-        assert x == 10
-        return -1
-
-    f = Factory(fn)
-    assert f.build({_: 10, "a": 5}) == -1
-
-
-def test_call():
-    def fn(a, b, c=1):
-        return a + b + c
-
-    c = Call(fn, 1, 2, c=3)
-    assert c.build({}) == 6
-
-    c = Call(fn, Just(-1), Just(-2))
-    assert c.build({}) == -2
-
-    c = Call(dict, a=1, b=2)
-    assert c.build({}) == {"a": 1, "b": 2}
-
-
-def test_builder():
-    def fn(x, ctx):
-        return x + 1
-
-    assert builder(1) == Just(1)
-    assert builder(Just(1)) == Just(1)
-    assert builder(Just(Just(1))) == Just(1)
-    assert builder(fn) == Factory(fn)
-
-    b = builder((1, 2, 3))
-    assert b.args == (Just(1), Just(2), Just(3))
-    assert b.build({}) == (1, 2, 3)
-
-    b = builder([1, 2, 3])
-    assert b.args == (Just(1), Just(2), Just(3))
-    assert b.build({}) == [1, 2, 3]
-
-    b = builder({"a": 1, "b": 2})
-    assert b.kwargs == {"a": Just(1), "b": Just(2)}
-    assert b.build({}) == {"a": 1, "b": 2}
-
-    b = builder(FrozenDict({"a": 1, "b": 2, "c": 3}))
-    assert b.kwargs == {"a": Just(1), "b": Just(2), "c": Just(3)}
-    assert b.build({}) == FrozenDict({"a": 1, "b": 2, "c": 3})

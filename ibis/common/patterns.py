@@ -328,7 +328,7 @@ class Builder(Hashable):
         ...
 
     @abstractmethod
-    def build(self, context: dict):
+    def make(self, context: dict):
         """Construct a new object from the context.
 
         Parameters
@@ -341,6 +341,36 @@ class Builder(Hashable):
         -------
         The constructed object.
         """
+
+
+def builder(obj):
+    """Convert an object to a builder.
+
+    It encapsulates:
+        - callable objects into a `Factory` builder
+        - non-callable objects into a `Just` builder
+
+    Parameters
+    ----------
+    obj
+        The object to convert to a builder.
+
+    Returns
+    -------
+    The builder instance.
+    """
+    # TODO(kszucs): the replacer object must be handled differently from patterns
+    # basically a replacer is just a lazy way to construct objects from the context
+    # we should have a separate base class for replacers like Variable, Function,
+    # Just, Apply and Call. Something like Replacer with a specific method e.g.
+    # apply() could work
+    if isinstance(obj, Builder):
+        return obj
+    elif callable(obj):
+        # not function but something else
+        return Factory(obj)
+    else:
+        return Just(obj)
 
 
 class Variable(Slotted, Builder):
@@ -358,7 +388,7 @@ class Variable(Slotted, Builder):
     def __init__(self, name):
         super().__init__(name=name)
 
-    def build(self, context):
+    def make(self, context):
         return context[self]
 
     def __getattr__(self, name):
@@ -380,17 +410,11 @@ class Just(Slotted, Builder):
     __slots__ = ("value",)
     value: AnyType
 
-    @classmethod
-    def __create__(cls, value):
-        if isinstance(value, Just):
-            return value
-        return super().__create__(value)
-
     def __init__(self, value):
         assert not isinstance(value, (Pattern, Builder))
         super().__init__(value=value)
 
-    def build(self, context):
+    def make(self, context):
         return self.value
 
 
@@ -416,7 +440,7 @@ class Factory(Slotted, Builder):
         assert callable(func)
         super().__init__(func=func)
 
-    def build(self, context):
+    def make(self, context):
         value = context[_]
         return self.func(value, context)
 
@@ -447,9 +471,9 @@ class Call(Slotted, Builder):
         kwargs = frozendict({k: builder(v) for k, v in kwargs.items()})
         super().__init__(func=func, args=args, kwargs=kwargs)
 
-    def build(self, context):
-        args = tuple(arg.build(context) for arg in self.args)
-        kwargs = {k: v.build(context) for k, v in self.kwargs.items()}
+    def make(self, context):
+        args = tuple(arg.make(context) for arg in self.args)
+        kwargs = {k: v.make(context) for k, v in self.kwargs.items()}
         return self.func(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
@@ -476,7 +500,7 @@ class Call(Slotted, Builder):
         >>> pattern = c.Negate(x)
         >>> pattern
         Call(func=<class 'ibis.expr.operations.numeric.Negate'>, args=(Variable(name='x'),), kwargs=FrozenDict({}))
-        >>> pattern.build({x: 5})
+        >>> pattern.make({x: 5})
         <ibis.expr.operations.numeric.Negate object at 0x...>
         """
         return Namespace(cls, module)
@@ -573,16 +597,7 @@ class Replace(Slotted, Pattern):
         # use the `_` reserved variable to record the value being replaced
         # in the context, so that it can be used in the replacer pattern
         context[_] = value
-        return self.builder.build(context)
-
-
-def replace(matcher):
-    """More convenient syntax for replacing a value with the output of a function."""
-
-    def decorator(replacer):
-        return Replace(matcher, replacer)
-
-    return decorator
+        return self.builder.make(context)
 
 
 class Check(Slotted, Pattern):
@@ -1164,31 +1179,6 @@ class Length(Slotted, Pattern):
         return value
 
 
-class Between(Slotted, Pattern):
-    """Match a value between two bounds.
-
-    Parameters
-    ----------
-    lower
-        The lower bound.
-    upper
-        The upper bound.
-    """
-
-    __slots__ = ("lower", "upper")
-    lower: float
-    upper: float
-
-    def __init__(self, lower: float = -math.inf, upper: float = math.inf):
-        super().__init__(lower=lower, upper=upper)
-
-    def match(self, value, context):
-        if self.lower <= value <= self.upper:
-            return value
-        else:
-            return NoMatch
-
-
 class Contains(Slotted, Pattern):
     """Pattern that matches if a value contains a given value.
 
@@ -1261,8 +1251,7 @@ class SequenceOf(Slotted, Pattern):
     item: Pattern
     type: type
 
-    @classmethod
-    def __create__(
+    def __new__(
         cls,
         item,
         type: type = tuple,
@@ -1279,7 +1268,8 @@ class SequenceOf(Slotted, Pattern):
             return GenericSequenceOf(
                 item, type=type, exactly=exactly, at_least=at_least, at_most=at_most
             )
-        return super().__create__(item, type=type)
+        else:
+            return super().__new__(cls)
 
     def __init__(self, item, type=tuple):
         super().__init__(item=pattern(item), type=type)
@@ -1325,8 +1315,7 @@ class GenericSequenceOf(Slotted, Pattern):
     type: Pattern
     length: Length
 
-    @classmethod
-    def __create__(
+    def __new__(
         cls,
         item: Pattern,
         type: type = tuple,
@@ -1342,7 +1331,7 @@ class GenericSequenceOf(Slotted, Pattern):
         ):
             return SequenceOf(item, type=type)
         else:
-            return super().__create__(item, type, exactly, at_least, at_most)
+            return super().__new__(cls)
 
     def __init__(
         self,
@@ -1387,11 +1376,11 @@ class TupleOf(Slotted, Pattern):
     __slots__ = ("fields",)
     fields: tuple[Pattern, ...]
 
-    @classmethod
-    def __create__(cls, fields):
-        if not isinstance(fields, tuple):
+    def __new__(cls, fields):
+        if isinstance(fields, tuple):
+            return super().__new__(cls)
+        else:
             return SequenceOf(fields, tuple)
-        return super().__create__(fields)
 
     def __init__(self, fields):
         fields = tuple(map(pattern, fields))
@@ -1505,11 +1494,11 @@ class Object(Slotted, Pattern):
     args: tuple[Pattern, ...]
     kwargs: FrozenDict[str, Pattern]
 
-    @classmethod
-    def __create__(cls, type, *args, **kwargs):
+    def __new__(cls, type, *args, **kwargs):
         if not args and not kwargs:
             return InstanceOf(type)
-        return super().__create__(type, *args, **kwargs)
+        else:
+            return super().__new__(cls)
 
     def __init__(self, type, *args, **kwargs):
         type = pattern(type)
@@ -1719,47 +1708,29 @@ class PatternMapping(Slotted, Pattern):
         return dict(zip(keys, values))
 
 
-class Topmost(Slotted, Pattern):
-    """Traverse the value tree topmost first and match the first value that matches."""
+class Between(Slotted, Pattern):
+    """Match a value between two bounds.
 
-    __slots__ = ("pattern", "filter")
-    pattern: Pattern
-    filter: AnyType
+    Parameters
+    ----------
+    lower
+        The lower bound.
+    upper
+        The upper bound.
+    """
 
-    def __init__(self, searcher, filter=None):
-        super().__init__(pattern=pattern(searcher), filter=filter)
+    __slots__ = ("lower", "upper")
+    lower: float
+    upper: float
 
-    def match(self, value, context):
-        result = self.pattern.match(value, context)
-        if result is not NoMatch:
-            return result
-
-        for child in value.__children__(self.filter):
-            result = self.match(child, context)
-            if result is not NoMatch:
-                return result
-
-        return NoMatch
-
-
-class Innermost(Slotted, Pattern):
-    # matches items in the innermost layer first, but all matches belong to the same layer
-    """Traverse the value tree innermost first and match the first value that matches."""
-
-    __slots__ = ("pattern", "filter")
-    pattern: Pattern
-    filter: AnyType
-
-    def __init__(self, searcher, filter=None):
-        super().__init__(pattern=pattern(searcher), filter=filter)
+    def __init__(self, lower: float = -math.inf, upper: float = math.inf):
+        super().__init__(lower=lower, upper=upper)
 
     def match(self, value, context):
-        for child in value.__children__(self.filter):
-            result = self.match(child, context)
-            if result is not NoMatch:
-                return result
-
-        return self.pattern.match(value, context)
+        if self.lower <= value <= self.upper:
+            return value
+        else:
+            return NoMatch
 
 
 def NoneOf(*args) -> Pattern:
@@ -1780,39 +1751,6 @@ def DictOf(key_pattern, value_pattern):
 def FrozenDictOf(key_pattern, value_pattern):
     """Match a frozendict with keys and values matching the given patterns."""
     return MappingOf(key_pattern, value_pattern, type=frozendict)
-
-
-def builder(obj):
-    """Convert an object to a builder.
-
-    It encapsulates:
-        - callable objects into a `Factory` builder
-        - non-callable objects into a `Just` builder
-
-    Parameters
-    ----------
-    obj
-        The object to convert to a builder.
-
-    Returns
-    -------
-    The builder instance.
-    """
-    if isinstance(obj, Builder):
-        # already a builder, no need to convert
-        return obj
-    elif callable(obj):
-        # the callable builds the substitution
-        return Factory(obj)
-    elif isinstance(obj, Sequence):
-        # allow nesting builder patterns in tuples/lists
-        return Call(lambda *args: type(obj)(args), *obj)
-    elif isinstance(obj, Mapping):
-        # allow nesting builder patterns in dicts
-        return Call(type(obj), **obj)
-    else:
-        # the object is used as a constant value
-        return Just(obj)
 
 
 def pattern(obj: AnyType) -> Pattern:
@@ -1901,6 +1839,49 @@ def match(
     pat = pattern(pat)
     result = pat.match(value, context)
     return NoMatch if result is NoMatch else result
+
+
+class Topmost(Slotted, Pattern):
+    """Traverse the value tree topmost first and match the first value that matches."""
+
+    __slots__ = ("pattern", "filter")
+    pattern: Pattern
+    filter: AnyType
+
+    def __init__(self, searcher, filter=None):
+        super().__init__(pattern=pattern(searcher), filter=filter)
+
+    def match(self, value, context):
+        result = self.pattern.match(value, context)
+        if result is not NoMatch:
+            return result
+
+        for child in value.__children__(self.filter):
+            result = self.match(child, context)
+            if result is not NoMatch:
+                return result
+
+        return NoMatch
+
+
+class Innermost(Slotted, Pattern):
+    # matches items in the innermost layer first, but all matches belong to the same layer
+    """Traverse the value tree innermost first and match the first value that matches."""
+
+    __slots__ = ("pattern", "filter")
+    pattern: Pattern
+    filter: AnyType
+
+    def __init__(self, searcher, filter=None):
+        super().__init__(pattern=pattern(searcher), filter=filter)
+
+    def match(self, value, context):
+        for child in value.__children__(self.filter):
+            result = self.match(child, context)
+            if result is not NoMatch:
+                return result
+
+        return self.pattern.match(value, context)
 
 
 IsTruish = Check(lambda x: bool(x))
