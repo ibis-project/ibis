@@ -124,9 +124,13 @@ def test_context_adjustment_filter_before_window(alltypes, context, ctx_col, fun
 
 
 @pytest.mark.notimpl(["duckdb", "pyspark"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.structs.StructField'>",
+)
 def test_context_adjustment_multi_col_udf_non_grouped(alltypes, context, monkeypatch):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
-
     w = ibis.window(preceding=None, following=None)
 
     demean_struct_udf = create_demean_struct_udf(
