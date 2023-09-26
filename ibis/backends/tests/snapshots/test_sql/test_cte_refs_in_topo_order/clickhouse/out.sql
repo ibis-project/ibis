@@ -8,7 +8,7 @@ FROM (
       *
     FROM leaf AS t0
     WHERE
-      1
+      TRUE
   ) AS t1
   INNER JOIN (
     SELECT
@@ -18,7 +18,7 @@ FROM (
         *
       FROM leaf AS t0
       WHERE
-        1
+        TRUE
     ) AS t1
   ) AS t2
     ON t1.key = t2.key
@@ -31,7 +31,7 @@ INNER JOIN (
       *
     FROM leaf AS t0
     WHERE
-      1
+      TRUE
   ) AS t1
   INNER JOIN (
     SELECT
@@ -41,7 +41,7 @@ INNER JOIN (
         *
       FROM leaf AS t0
       WHERE
-        1
+        TRUE
     ) AS t1
   ) AS t2
     ON t1.key = t2.key

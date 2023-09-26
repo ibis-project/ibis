@@ -4,9 +4,7 @@ SELECT
 FROM (
   SELECT
     t4.street,
-    (
-      row_number() OVER (ORDER BY t4.street ASC) - 1
-    ) AS key
+    ROW_NUMBER() OVER (ORDER BY t4.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
   FROM (
     SELECT
       t1.street,
@@ -14,9 +12,7 @@ FROM (
     FROM (
       SELECT
         t0.*,
-        (
-          row_number() OVER (ORDER BY t0.street ASC) - 1
-        ) AS key
+        ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
       FROM data AS t0
     ) AS t1
     INNER JOIN (
@@ -25,9 +21,7 @@ FROM (
       FROM (
         SELECT
           t0.*,
-          (
-            row_number() OVER (ORDER BY t0.street ASC) - 1
-          ) AS key
+          ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
         FROM data AS t0
       ) AS t1
     ) AS t2
@@ -40,9 +34,7 @@ INNER JOIN (
   FROM (
     SELECT
       t4.street,
-      (
-        row_number() OVER (ORDER BY t4.street ASC) - 1
-      ) AS key
+      ROW_NUMBER() OVER (ORDER BY t4.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
     FROM (
       SELECT
         t1.street,
@@ -50,9 +42,7 @@ INNER JOIN (
       FROM (
         SELECT
           t0.*,
-          (
-            row_number() OVER (ORDER BY t0.street ASC) - 1
-          ) AS key
+          ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
         FROM data AS t0
       ) AS t1
       INNER JOIN (
@@ -61,9 +51,7 @@ INNER JOIN (
         FROM (
           SELECT
             t0.*,
-            (
-              row_number() OVER (ORDER BY t0.street ASC) - 1
-            ) AS key
+            ROW_NUMBER() OVER (ORDER BY t0.street ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) - 1 AS key
           FROM data AS t0
         ) AS t1
       ) AS t2

@@ -3,7 +3,7 @@ SELECT
 FROM (
   SELECT
     t0.string_col,
-    count(*) AS count
+    COUNT(*) AS count
   FROM functional_alltypes AS t0
   GROUP BY
     t0.string_col

@@ -1,0 +1,2 @@
+SELECT
+  'I can''t'

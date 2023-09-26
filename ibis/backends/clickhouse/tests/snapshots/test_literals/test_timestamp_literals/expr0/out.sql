@@ -1,0 +1,2 @@
+SELECT
+  toDateTime('2015-01-01T12:34:56')
