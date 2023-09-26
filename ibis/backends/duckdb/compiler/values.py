@@ -36,13 +36,8 @@ def translate_val(op, **_):
     raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
-@translate_val.register(dt.DataType)
-def _datatype(t, **_):
-    return DuckDBType.from_ibis(t)
-
-
 @translate_val.register(ops.PhysicalTable)
-def _val_physical_table(op, *, aliases, **kw):
+def _val_physical_table(op, *, aliases, **_):
     return f"{aliases.get(op, op.name)}.*"
 
 
@@ -52,8 +47,8 @@ def _val_table_node(op, *, aliases, **_):
 
 
 @translate_val.register(ops.TableColumn)
-def _column(op, *, aliases, **_):
-    return sg.column(op.name, table=aliases.get(op.table))
+def _column(op, *, table, name, **_):
+    return sg.column(name, table=table.alias_or_name)
 
 
 @translate_val.register(ops.Alias)
@@ -342,7 +337,7 @@ _interval_suffixes = {
 
 
 @translate_val.register(ops.Cast)
-def _cast(op, *, arg, to, **kw):
+def _cast(op, *, arg, to, **_):
     if to.is_interval():
         return f[f"to_{_interval_suffixes[to.unit.short]}"](
             sg.cast(arg, to=DuckDBType.from_ibis(dt.int32))
