@@ -44,6 +44,8 @@ from ibis.common.patterns import (
     Function,
     GenericInstanceOf,
     GenericSequenceOf,
+    Getattr,
+    Getitem,
     Innermost,
     InstanceOf,
     IsIn,
@@ -154,6 +156,17 @@ def test_variable():
     p = Variable("other")
     context = {p: 10}
     assert p.build(context) == 10
+
+
+def test_variable_getattr():
+    v = Variable("v")
+    p = v.copy
+    assert p == Getattr(v, "copy")
+    assert p.build({v: [1, 2, 3]})() == [1, 2, 3]
+
+    p = v.copy()
+    assert p == Call(Getattr(v, "copy"))
+    assert p.build({v: [1, 2, 3]}) == [1, 2, 3]
 
 
 def test_pattern_factory_wraps_variable_with_capture():
@@ -1249,6 +1262,18 @@ def test_call():
 
     c = Call(dict, a=1, b=2)
     assert c.build({}) == {"a": 1, "b": 2}
+
+
+def test_getattr():
+    v = Variable("v")
+    b = Getattr(v, "b")
+    assert b.build({v: Foo(1, 2)}) == 2
+
+
+def test_getitem():
+    v = Variable("v")
+    b = Getitem(v, 1)
+    assert b.build({v: [1, 2, 3]}) == 2
 
 
 def test_builder():
