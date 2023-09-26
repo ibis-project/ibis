@@ -1,2 +1,2 @@
 SELECT
-  'I can''t'
+  'I can''t' AS """I can't"""
