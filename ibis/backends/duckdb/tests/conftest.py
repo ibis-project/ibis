@@ -19,6 +19,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_map = True
     deps = "duckdb", "duckdb_engine"
     stateful = False
+    supports_tpch = True
 
     def preload(self):
         if not SANDBOXED:
@@ -44,6 +45,10 @@ class TestConf(BackendTest, RoundAwayFromZero):
         return ibis.duckdb.connect(
             extension_directory=str(tmpdir.mktemp(f"{worker_id}_exts")), **kw
         )
+
+    def load_tpch(self) -> None:
+        with self.connection.begin() as con:
+            con.exec_driver_sql("CALL dbgen(sf=0.1)")
 
 
 @pytest.fixture(scope="session")

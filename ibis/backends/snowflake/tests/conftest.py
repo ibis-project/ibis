@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 import pyarrow.parquet as pq
 import pytest
 import sqlalchemy as sa
+import sqlglot as sg
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
@@ -65,6 +66,32 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_map = True
     default_identifier_case_fn = staticmethod(str.upper)
     deps = ("snowflake.connector", "snowflake.sqlalchemy")
+    supports_tpch = True
+
+    def load_tpch(self) -> None:
+        """No-op, snowflake already defines these in `SNOWFLAKE_SAMPLE_DATA`."""
+
+    def _tpch_table(self, name: str):
+        t = self.connection.table(
+            self.default_identifier_case_fn(name),
+            schema="SNOWFLAKE_SAMPLE_DATA.TPCH_SF1",
+        )
+        return t.rename("snake_case")
+
+    def _transform_tpch_sql(self, parsed):
+        def add_catalog_and_schema(node):
+            if isinstance(node, sg.exp.Table):
+                return node.__class__(
+                    db="TPCH_SF1",
+                    catalog="SNOWFLAKE_SAMPLE_DATA",
+                    **{
+                        k: v for k, v in node.args.items() if k not in ("db", "catalog")
+                    },
+                )
+            return node
+
+        result = parsed.transform(add_catalog_and_schema)
+        return result
 
     def _load_data(self, **_: Any) -> None:
         """Load test data into a Snowflake backend instance."""

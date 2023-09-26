@@ -361,6 +361,7 @@ markers = [
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",
   "trino: Trino tests",
+  "tpch: TPC-H tests",
 ]
 
 [tool.pydeps]

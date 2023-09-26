@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 import pytest
+import sqlglot as sg
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
@@ -52,8 +53,62 @@ class TestConf(BackendTest, RoundAwayFromZero):
     returned_timestamp_unit = "s"
     supports_structs = True
     supports_map = True
+    supports_tpch = True
     service_name = "trino"
     deps = ("sqlalchemy", "trino.sqlalchemy")
+
+    _tpch_data_schema = "tpch.sf1"
+    _tpch_query_schema = "hive.ibis_sf1"
+
+    def _transform_tpch_sql(self, parsed):
+        def add_catalog_and_schema(node):
+            if isinstance(node, sg.exp.Table):
+                catalog, db = self._tpch_query_schema.split(".")
+                return node.__class__(
+                    db=db,
+                    catalog=catalog,
+                    **{
+                        k: v for k, v in node.args.items() if k not in ("db", "catalog")
+                    },
+                )
+            return node
+
+        result = parsed.transform(add_catalog_and_schema)
+        return result
+
+    def load_tpch(self) -> None:
+        """Create views of data in the TPC-H catalog that ships with Trino.
+
+        This method create relations that have column names prefixed with the
+        first one (or two in the case of partsupp -> ps) character table name
+        to match the DuckDB TPC-H query conventions.
+        """
+        con = self.connection
+        query_schema = self._tpch_query_schema
+        data_schema = self._tpch_data_schema
+        database, schema = query_schema.split(".")
+
+        tables = con.list_tables(database=self._tpch_data_schema)
+        con.create_schema(schema, database=database, force=True)
+
+        prefixes = {"partsupp": "ps"}
+        with con.begin() as c:
+            for table in tables:
+                prefix = prefixes.get(table, table[0])
+
+                t = con.table(table, schema=data_schema)
+                new_t = t.rename(**{f"{prefix}_{old}": old for old in t.columns})
+
+                sql = ibis.to_sql(new_t, dialect="trino")
+                c.exec_driver_sql(
+                    f"CREATE OR REPLACE VIEW {query_schema}.{table} AS {sql}"
+                )
+
+    def _tpch_table(self, name: str):
+        return self.connection.table(
+            self.default_identifier_case_fn(name),
+            schema=self._tpch_query_schema,
+        )
 
     @classmethod
     def load_data(cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any) -> None:

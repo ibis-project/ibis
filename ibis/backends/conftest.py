@@ -404,6 +404,11 @@ def pytest_runtest_call(item):
 
     backend = next(iter(backend))
 
+    if tpch_markers := list(item.iter_markers(name="tpch")):
+        assert len(tpch_markers) == 1
+        # TODO: there has to be a better way than hacking `_fixtureinfo`
+        item._fixtureinfo.argnames += ("backend", "snapshot")
+
     # Ibis hasn't exposed existing functionality
     # This xfails so that you know when it starts to pass
     for marker in item.iter_markers(name="notimpl"):

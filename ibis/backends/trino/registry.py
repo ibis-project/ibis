@@ -68,6 +68,8 @@ def _literal(t, op):
         return sa.literal(float(value), type_=DOUBLE())
     elif dtype.is_integer():
         return sa.literal(int(value), type_=t.get_sqla_type(dtype))
+    elif dtype.is_date():
+        return sa.cast(sa.literal(str(value)), t.get_sqla_type(dtype))
     return _alchemy_literal(t, op)
 
 
