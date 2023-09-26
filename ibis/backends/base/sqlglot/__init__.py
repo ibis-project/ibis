@@ -7,6 +7,7 @@ import sqlglot as sg
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
+    import ibis.expr.operations as ops
     from ibis.backends.base.sqlglot.datatypes import SqlglotType
 
 
@@ -67,3 +68,14 @@ def make_cast(
         return sg.cast(arg, to=converter.from_ibis(to))
 
     return cast
+
+
+def unalias(op: ops.Value) -> ops.Value:
+    """Unwrap `Alias` objects.
+
+    Necessary when rendering `WHERE`, `GROUP BY` and `ORDER BY` and other
+    clauses.
+    """
+    import ibis.expr.operations as ops
+
+    return op.arg if isinstance(op, ops.Alias) else op
