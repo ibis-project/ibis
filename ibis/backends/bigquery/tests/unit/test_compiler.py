@@ -628,3 +628,9 @@ def test_unnest(snapshot):
         ).select(level_two=lambda t: t.level_one.unnest())
     )
     snapshot.assert_match(result, "out_two_unnests.sql")
+
+
+def test_compile_in_memory_table(snapshot):
+    t = ibis.memtable({"Column One": [1, 2, 3]})
+    result = ibis.bigquery.compile(t)
+    snapshot.assert_match(result, "out.sql")
