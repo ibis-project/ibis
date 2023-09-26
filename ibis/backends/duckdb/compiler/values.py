@@ -8,7 +8,6 @@ from functools import partial
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
-from toolz import flip
 
 import ibis
 import ibis.common.exceptions as com
@@ -919,10 +918,10 @@ def _array_string_join(op, **kw):
 @translate_val.register(ops.ArrayMap)
 def _array_map(op, **kw):
     arg = translate_val(op.arg, **kw)
-    result = translate_val(op.result, **kw)
+    result = translate_val(op.body, **kw)
     lamduh = sg.exp.Lambda(
         this=result,
-        expressions=[sg.to_identifier(f"{op.parameter}", quoted=False)],
+        expressions=[sg.to_identifier(op.param, quoted=False)],
     )
     return sg.func("list_transform", arg, lamduh)
 
@@ -930,19 +929,20 @@ def _array_map(op, **kw):
 @translate_val.register(ops.ArrayFilter)
 def _array_filter(op, **kw):
     arg = translate_val(op.arg, **kw)
-    result = translate_val(op.result, **kw)
+    result = translate_val(op.body, **kw)
     lamduh = sg.exp.Lambda(
         this=result,
-        expressions=[sg.exp.Identifier(this=f"{op.parameter}", quoted=False)],
+        expressions=[sg.to_identifier(op.param, quoted=False)],
     )
     return sg.func("list_filter", arg, lamduh)
 
 
 @translate_val.register(ops.ArrayIntersect)
 def _array_intersect(op, **kw):
-    return translate_val(
-        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x)), **kw
-    )
+    param = "x"
+    x = ops.Argument(name=param, shape=op.left.shape, dtype=op.left.dtype.value_type)
+    body = ops.ArrayContains(op.right, x)
+    return translate_val(ops.ArrayFilter(arg=op.left, body=body, param=param), **kw)
 
 
 @translate_val.register(ops.ArrayPosition)
@@ -954,7 +954,11 @@ def _array_position(op, **kw):
 
 @translate_val.register(ops.ArrayRemove)
 def _array_remove(op, **kw):
-    return translate_val(ops.ArrayFilter(op.arg, flip(ops.NotEquals, op.other)), **kw)
+    param = "x"
+    arg = op.arg
+    x = ops.Argument(name=param, shape=arg.shape, dtype=arg.dtype.value_type)
+    body = ops.NotEquals(x, op.other)
+    return translate_val(ops.ArrayFilter(arg=arg, body=body, param=param), **kw)
 
 
 @translate_val.register(ops.ArrayUnion)
