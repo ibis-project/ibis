@@ -1,12 +1,10 @@
 SELECT
-  t0.l_shipmode,
-  t0.high_line_count,
-  t0.low_line_count
+  *
 FROM (
   SELECT
-    t2.l_shipmode AS l_shipmode,
+    t2.l_shipmode,
     SUM(
-      CASE t1.o_orderpriority
+      CASE t2.o_orderpriority
         WHEN '1-URGENT'
         THEN CAST(1 AS TINYINT)
         WHEN '2-HIGH'
@@ -15,7 +13,7 @@ FROM (
       END
     ) AS high_line_count,
     SUM(
-      CASE t1.o_orderpriority
+      CASE t2.o_orderpriority
         WHEN '1-URGENT'
         THEN CAST(0 AS TINYINT)
         WHEN '2-HIGH'
@@ -23,17 +21,42 @@ FROM (
         ELSE CAST(1 AS TINYINT)
       END
     ) AS low_line_count
-  FROM main.orders AS t1
-  JOIN main.lineitem AS t2
-    ON t1.o_orderkey = t2.l_orderkey
+  FROM (
+    SELECT
+      t0.*,
+      t1.*
+    FROM "orders" AS t0
+    INNER JOIN "lineitem" AS t1
+      ON (
+        t0.o_orderkey
+      ) = (
+        t1.l_orderkey
+      )
+  ) AS t2
   WHERE
     t2.l_shipmode IN ('MAIL', 'SHIP')
-    AND t2.l_commitdate < t2.l_receiptdate
-    AND t2.l_shipdate < t2.l_commitdate
-    AND t2.l_receiptdate >= CAST('1994-01-01' AS DATE)
-    AND t2.l_receiptdate < CAST('1995-01-01' AS DATE)
+    AND (
+      t2.l_commitdate
+    ) < (
+      t2.l_receiptdate
+    )
+    AND (
+      t2.l_shipdate
+    ) < (
+      t2.l_commitdate
+    )
+    AND (
+      t2.l_receiptdate
+    ) >= (
+      MAKE_DATE(1994, 1, 1)
+    )
+    AND (
+      t2.l_receiptdate
+    ) < (
+      MAKE_DATE(1995, 1, 1)
+    )
   GROUP BY
     1
-) AS t0
+) AS t3
 ORDER BY
-  t0.l_shipmode ASC
+  t3.l_shipmode ASC
