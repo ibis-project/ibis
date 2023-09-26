@@ -1014,11 +1014,6 @@ def test_quantile(
                 pytest.mark.notyet(
                     ["mysql", "impala", "sqlite"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notyet(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                    reason="ORA-61804: boolean data type is invalid for an arithmetic function",
-                ),
             ],
         ),
         param(
@@ -1047,11 +1042,6 @@ def test_quantile(
                     ["pyspark"],
                     raises=ValueError,
                     reason="PySpark only implements sample correlation",
-                ),
-                pytest.mark.notyet(
-                    ["oracle"],
-                    raises=sa.exc.DatabaseError,
-                    reason="ORA-61804: boolean data type is invalid for an arithmetic function",
                 ),
             ],
         ),
