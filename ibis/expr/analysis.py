@@ -793,3 +793,13 @@ def find_toplevel_aggs(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
         )
 
     return g.traverse(finder, nodes, filter=ops.Node)
+
+
+def cumulative_to_window(
+    func: ops.Cumulative, frame: ops.WindowFrame
+) -> ops.WindowFunction:
+    klass = getattr(ops, func.__class__.__name__.replace("Cumulative", ""))
+    new_op = klass(*func.args)
+    new_frame = frame.copy(start=None, end=0)
+    new_expr = windowize_function(new_op.to_expr(), frame=new_frame)
+    return new_expr.op()

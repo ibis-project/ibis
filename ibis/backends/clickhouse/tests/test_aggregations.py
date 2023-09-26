@@ -15,20 +15,20 @@ pytest.importorskip("clickhouse_connect")
 @pytest.mark.parametrize(
     "reduction", ["sum", "count", "mean", "max", "min", "std", "var"]
 )
-def test_reduction_where(alltypes, translate, reduction, snapshot):
+def test_reduction_where(alltypes, reduction, snapshot):
     method = getattr(alltypes.double_col, reduction)
     cond = alltypes.bigint_col < 70
     expr = method(where=cond)
 
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    snapshot.assert_match(expr.compile(), "out.sql")
 
 
 @pytest.mark.parametrize("method", ["var", "std"])
-def test_std_var_pop(con, alltypes, method, translate, snapshot):
+def test_std_var_pop(con, alltypes, method, snapshot):
     cond = alltypes.bigint_col < 70
     col = alltypes.double_col
     expr = getattr(col, method)(where=cond, how="pop")
-    snapshot.assert_match(translate(expr.op()), "out.sql")
+    snapshot.assert_match(expr.compile(), "out.sql")
     assert isinstance(con.execute(expr), float)
 
 
@@ -130,7 +130,7 @@ def test_reduction_invalid_where(alltypes, reduction):
         ),
     ],
 )
-def test_aggregations(alltypes, df, func, pandas_func, translate):
+def test_aggregations(alltypes, df, func, pandas_func):
     table = alltypes.limit(100)
     count = table.count().execute()
     df = df.head(int(count))

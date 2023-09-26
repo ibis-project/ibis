@@ -223,7 +223,7 @@ def test_non_equijoin(alltypes):
     ("left_key", "right_key"), [("playerID", "playerID"), ("playerID", "awardID")]
 )
 def test_simple_joins(
-    con, batting, awards_players, join_type, left_key, right_key, snapshot
+    batting, awards_players, join_type, left_key, right_key, snapshot
 ):
     t1, t2 = batting, awards_players
     pred = [t1[left_key] == t2[right_key]]
@@ -268,10 +268,10 @@ def test_where_with_between(con, alltypes, snapshot):
     con.execute(expr)
 
 
-def test_where_use_if(con, alltypes, translate, snapshot):
+def test_where_use_if(con, alltypes, snapshot):
     expr = ibis.where(alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col)
 
-    result = translate(expr.op())
+    result = expr.compile()
     snapshot.assert_match(result, "out.sql")
     con.execute(expr)
 
