@@ -48,8 +48,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         )
 
     def load_tpch(self) -> None:
-        with self.connection.begin() as con:
-            con.exec_driver_sql("CALL dbgen(sf=0.1)")
+        self.connection.raw_sql("CALL dbgen(sf=0.1)")
 
     def _load_data(self, **_: Any) -> None:
         """Load test data into a backend."""
