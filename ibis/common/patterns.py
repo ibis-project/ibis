@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import numbers
-import operator
 import sys
 from abc import abstractmethod
 from collections.abc import Callable, Mapping, Sequence
@@ -336,6 +335,15 @@ class Builder(Hashable):
         The constructed object.
         """
 
+    def __getattr__(self, name):
+        return Getattr(self, name)
+
+    def __getitem__(self, name):
+        return Getitem(self, name)
+
+    def __call__(self, *args, **kwargs):
+        return Call(self, *args, **kwargs)
+
 
 class Variable(Slotted, Builder):
     """Retrieve a value from the context.
@@ -354,12 +362,6 @@ class Variable(Slotted, Builder):
 
     def build(self, context):
         return context[self]
-
-    def __getattr__(self, name):
-        return Call(operator.attrgetter(name), self)
-
-    def __getitem__(self, name):
-        return Call(operator.itemgetter(name), self)
 
 
 class Just(Slotted, Builder):
@@ -415,6 +417,28 @@ class Factory(Slotted, Builder):
         return self.func(value, context)
 
 
+class Getattr(Slotted, Builder):
+    __slots__ = ("instance", "name")
+
+    def __init__(self, instance, name):
+        super().__init__(instance=builder(instance), name=name)
+
+    def build(self, context):
+        instance = self.instance.build(context)
+        return getattr(instance, self.name)
+
+
+class Getitem(Slotted, Builder):
+    __slots__ = ("instance", "name")
+
+    def __init__(self, instance, name):
+        super().__init__(instance=builder(instance), name=name)
+
+    def build(self, context):
+        instance = self.instance.build(context)
+        return instance[self.name]
+
+
 class Call(Slotted, Builder):
     """Pattern that calls a function with the given arguments.
 
@@ -431,20 +455,21 @@ class Call(Slotted, Builder):
     """
 
     __slots__ = ("func", "args", "kwargs")
-    func: Callable
-    args: tuple
-    kwargs: FrozenDict
+    func: Builder
+    args: tuple[Builder, ...]
+    kwargs: FrozenDict[str, Builder]
 
     def __init__(self, func, *args, **kwargs):
-        assert callable(func)
+        func = func if isinstance(func, Builder) else Just(func)
         args = tuple(map(builder, args))
         kwargs = frozendict({k: builder(v) for k, v in kwargs.items()})
         super().__init__(func=func, args=args, kwargs=kwargs)
 
     def build(self, context):
+        func = self.func.build(context)
         args = tuple(arg.build(context) for arg in self.args)
         kwargs = {k: v.build(context) for k, v in self.kwargs.items()}
-        return self.func(*args, **kwargs)
+        return func(*args, **kwargs)
 
     def __call__(self, *args, **kwargs):
         if self.args or self.kwargs:
@@ -469,7 +494,7 @@ class Call(Slotted, Builder):
         >>> x = Variable("x")
         >>> pattern = c.Negate(x)
         >>> pattern
-        Call(func=<class 'ibis.expr.operations.numeric.Negate'>, args=(Variable(name='x'),), kwargs=FrozenDict({}))
+        Call(func=Just(value=<class 'ibis.expr.operations.numeric.Negate'>), args=(Variable(name='x'),), kwargs=FrozenDict({}))
         >>> pattern.build({x: 5})
         <ibis.expr.operations.numeric.Negate object at 0x...>
         """
