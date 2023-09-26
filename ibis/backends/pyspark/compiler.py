@@ -1702,7 +1702,7 @@ def compile_array_filter(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
     return F.filter(
         src_column,
-        lambda x: t.translate(op.result, arg_columns={op.parameter: x}, **kwargs),
+        lambda x: t.translate(op.body, arg_columns={op.param: x}, **kwargs),
     )
 
 
@@ -1711,7 +1711,7 @@ def compile_array_map(t, op, **kwargs):
     src_column = t.translate(op.arg, **kwargs)
     return F.transform(
         src_column,
-        lambda x: t.translate(op.result, arg_columns={op.parameter: x}, **kwargs),
+        lambda x: t.translate(op.body, arg_columns={op.param: x}, **kwargs),
     )
 
 

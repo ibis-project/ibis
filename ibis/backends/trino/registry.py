@@ -236,9 +236,7 @@ def compiles_list_apply(element, compiler, **kw):
 
 def _array_map(t, op):
     return array_map(
-        t.translate(op.arg),
-        sa.literal_column(f"({op.parameter})"),
-        t.translate(op.result),
+        t.translate(op.arg), sa.literal_column(f"({op.param})"), t.translate(op.body)
     )
 
 
@@ -250,9 +248,7 @@ def compiles_list_filter(element, compiler, **kw):
 
 def _array_filter(t, op):
     return array_filter(
-        t.translate(op.arg),
-        sa.literal_column(f"({op.parameter})"),
-        t.translate(op.result),
+        t.translate(op.arg), sa.literal_column(f"({op.param})"), t.translate(op.body)
     )
 
 
@@ -313,8 +309,9 @@ def _try_cast(t, op):
 
 
 def _array_intersect(t, op):
+    x = ops.Argument(name="x", shape=op.left.shape, dtype=op.left.dtype.value_type)
     return t.translate(
-        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x))
+        ops.ArrayFilter(op.left, param="x", body=ops.ArrayContains(op.right, x))
     )
 
 

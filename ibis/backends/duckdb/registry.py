@@ -8,7 +8,6 @@ import numpy as np
 import sqlalchemy as sa
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql.functions import GenericFunction
-from toolz.curried import flip
 
 import ibis.expr.operations as ops
 from ibis.backends.base.sql import alchemy
@@ -225,9 +224,7 @@ def compiles_list_apply(element, compiler, **kw):
 
 def _array_map(t, op):
     return array_map(
-        t.translate(op.arg),
-        sa.literal_column(f"({op.parameter})"),
-        t.translate(op.result),
+        t.translate(op.arg), sa.literal_column(f"({op.param})"), t.translate(op.body)
     )
 
 
@@ -239,15 +236,19 @@ def compiles_list_filter(element, compiler, **kw):
 
 def _array_filter(t, op):
     return array_filter(
-        t.translate(op.arg),
-        sa.literal_column(f"({op.parameter})"),
-        t.translate(op.result),
+        t.translate(op.arg), sa.literal_column(f"({op.param})"), t.translate(op.body)
     )
 
 
 def _array_intersect(t, op):
+    name = "x"
+    parameter = ops.Argument(
+        name=name, shape=op.left.shape, dtype=op.left.dtype.value_type
+    )
     return t.translate(
-        ops.ArrayFilter(op.left, func=lambda x: ops.ArrayContains(op.right, x))
+        ops.ArrayFilter(
+            op.left, param=name, body=ops.ArrayContains(op.right, parameter)
+        )
     )
 
 
@@ -372,7 +373,17 @@ operation_registry.update(
         ),
         ops.ArraySort: fixed_arity(sa.func.list_sort, 1),
         ops.ArrayRemove: lambda t, op: _array_filter(
-            t, ops.ArrayFilter(op.arg, flip(ops.NotEquals, op.other))
+            t,
+            ops.ArrayFilter(
+                op.arg,
+                param="x",
+                body=ops.NotEquals(
+                    ops.Argument(
+                        name="x", shape=op.arg.shape, dtype=op.arg.dtype.value_type
+                    ),
+                    op.other,
+                ),
+            ),
         ),
         ops.ArrayUnion: lambda t, op: t.translate(
             ops.ArrayDistinct(ops.ArrayConcat((op.left, op.right)))

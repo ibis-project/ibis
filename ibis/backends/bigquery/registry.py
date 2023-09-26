@@ -214,14 +214,15 @@ def _array_zip(translator, op):
 
 def _array_map(translator, op):
     arg = translator.translate(op.arg)
-    result = translator.translate(op.result)
-    return f"ARRAY(SELECT {result} FROM UNNEST({arg}) {op.parameter})"
+    result = translator.translate(op.body)
+    param = op.param
+    return f"ARRAY(SELECT {result} FROM UNNEST({arg}) {param})"
 
 
 def _array_filter(translator, op):
     arg = translator.translate(op.arg)
-    result = translator.translate(op.result)
-    param = op.parameter
+    result = translator.translate(op.body)
+    param = op.param
     return f"ARRAY(SELECT {param} FROM UNNEST({arg}) {param} WHERE {result})"
 
 

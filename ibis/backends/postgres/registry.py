@@ -574,26 +574,26 @@ def _array_map(t, op):
     return sa.func.array(
         # this translates to the function call, with column names the same as
         # the parameter names in the lambda
-        sa.select(t.translate(op.result))
+        sa.select(t.translate(op.body))
         .select_from(
             # unnest the input array
             sa.func.unnest(t.translate(op.arg))
             # name the columns of the result the same as the lambda parameter
             # so that we can reference them as such in the outer query
-            .table_valued(op.parameter).render_derived()
+            .table_valued(op.param).render_derived()
         )
         .scalar_subquery()
     )
 
 
 def _array_filter(t, op):
-    param = op.parameter
+    param = op.param
     return sa.func.array(
         sa.select(sa.column(param, type_=t.get_sqla_type(op.arg.dtype.value_type)))
         .select_from(
             sa.func.unnest(t.translate(op.arg)).table_valued(param).render_derived()
         )
-        .where(t.translate(op.result))
+        .where(t.translate(op.body))
         .scalar_subquery()
     )
 
