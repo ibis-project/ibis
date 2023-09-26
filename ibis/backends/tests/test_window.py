@@ -891,8 +891,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "dask", "datafusion", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["pyspark"], raises=AnalysisException)
 @pytest.mark.notyet(
