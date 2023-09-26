@@ -2,16 +2,13 @@ from __future__ import annotations
 
 import functools
 from collections.abc import Mapping
-from functools import partial
 from typing import Any
 
 import sqlglot as sg
 
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import unalias
-from ibis.backends.duckdb.compiler.values import translate_val
+from ibis.backends.base.sqlglot import FALSE, NULL, STAR, lit
 
 
 @functools.singledispatch
@@ -21,23 +18,41 @@ def translate_rel(op: ops.TableNode, **_):
 
 
 @translate_rel.register(ops.DummyTable)
-def _dummy(op: ops.DummyTable, **kw):
-    return sg.select(*map(partial(translate_val, **kw), op.values))
+def _dummy(op: ops.DummyTable, *, values, **_):
+    return sg.select(*values)
 
 
-@translate_rel.register(ops.DatabaseTable)
 @translate_rel.register(ops.UnboundTable)
 @translate_rel.register(ops.InMemoryTable)
 def _physical_table(op, **_):
     return sg.expressions.Table(this=sg.to_identifier(op.name, quoted=True))
 
 
-@translate_rel.register(ops.Selection)
-def _selection(op: ops.Selection, *, table, needs_alias=False, aliases, **kw):
+@translate_rel.register(ops.DatabaseTable)
+def _database_table(op, *, name, namespace, **_):
+    try:
+        db, catalog = namespace.split(".")
+    except AttributeError:
+        db = catalog = None
+    return sg.table(name, db=db, catalog=catalog)
+
+
+def replace_tables_with_star_selection(node, alias=None):
+    if isinstance(node, (sg.exp.Subquery, sg.exp.Table, sg.exp.CTE)):
+        return sg.exp.Column(
+            this=STAR,
+            table=sg.to_identifier(alias if alias is not None else node.alias_or_name),
+        )
+    return node
+
+
+@translate_rel.register
+def _selection(
+    op: ops.Selection, *, table, selections, predicates, sort_keys, aliases, **_
+):
     # needs_alias should never be true here in explicitly, but it may get
     # passed via a (recursive) call to translate_val
-    assert not needs_alias, "needs_alias is True"
-    if needs_alias := isinstance(op.table, ops.Join) and not isinstance(
+    if isinstance(op.table, ops.Join) and not isinstance(
         op.table, (ops.LeftSemiJoin, ops.LeftAntiJoin)
     ):
         args = table.this.args
@@ -45,52 +60,54 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, aliases, **kw):
         (join,) = args["joins"]
     else:
         from_ = join = None
-    tr_val = partial(translate_val, needs_alias=needs_alias, aliases=aliases, **kw)
-    selections = tuple(map(tr_val, op.selections)) or "*"
+
+    selections = tuple(
+        replace_tables_with_star_selection(
+            node,
+            # replace the table name with the alias if the table is **not** a
+            # join, because we may be selecting from a subquery or an aliased
+            # table; otherwise we'll select from the _unaliased_ table or the
+            # _child_ table, which may have a different alias than the one we
+            # generated for the input table
+            table.alias_or_name if from_ is None and join is None else None,
+        )
+        for node in selections
+    ) or (STAR,)
+
     sel = sg.select(*selections).from_(from_ if from_ is not None else table)
 
     if join is not None:
         sel = sel.join(join)
 
-    if predicates := op.predicates:
+    if predicates:
         if join is not None:
-            sel = sg.select("*").from_(sel.subquery(aliases[op.table]))
-        sel = sel.where(sg.and_(*map(tr_val, map(unalias, predicates))))
+            sel = sg.select(STAR).from_(sel.subquery(aliases[op.table]))
+        sel = sel.where(*predicates)
 
-    if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val, map(unalias, sort_keys)))
+    if sort_keys:
+        sel = sel.order_by(*sort_keys)
 
     return sel
 
 
 @translate_rel.register(ops.Aggregation)
-def _aggregation(op: ops.Aggregation, *, table, **kw):
-    tr_val = partial(translate_val, **kw)
-
-    by = tuple(map(tr_val, op.by))
-    metrics = tuple(map(tr_val, op.metrics))
-    selections = (by + metrics) or "*"
+def _aggregation(
+    op: ops.Aggregation, *, table, metrics, by, having, predicates, sort_keys, **_
+):
+    selections = (by + metrics) or (STAR,)
     sel = sg.select(*selections).from_(table)
 
-    if op.by:
-        # avoids translation of group by keys twice and makes the output more
-        # concise
-        sel = sel.group_by(
-            *(
-                sg.exp.Literal(this=str(key), is_string=False)
-                # keys are refer
-                for key in range(1, len(op.by) + 1)
-            )
-        )
+    if by:
+        sel = sel.group_by(*map(lit, range(1, len(by) + 1)))
 
-    if predicates := op.predicates:
-        sel = sel.where(*map(tr_val, map(unalias, predicates)))
+    if predicates:
+        sel = sel.where(*predicates)
 
-    if having := op.having:
-        sel = sel.having(*map(tr_val, map(unalias, having)))
+    if having:
+        sel = sel.having(*having)
 
-    if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val, map(unalias, sort_keys)))
+    if sort_keys:
+        sel = sel.order_by(*sort_keys)
 
     return sel
 
@@ -108,14 +125,8 @@ _JOIN_TYPES = {
 
 
 @translate_rel.register
-def _join(op: ops.Join, *, left, right, **kw):
-    predicates = op.predicates
-
-    on = (
-        sg.and_(*map(partial(translate_val, **kw), map(unalias, predicates)))
-        if predicates
-        else None
-    )
+def _join(op: ops.Join, *, left, right, predicates, **_):
+    on = sg.and_(*predicates) if predicates else None
 
     join_type = _JOIN_TYPES[type(op)]
     try:
@@ -175,7 +186,7 @@ def _limit(op: ops.Limit, *, table, n, offset, **kw):
     if isinstance(n, int):
         result = result.limit(n)
     elif n is not None:
-        limit = translate_val(n, **kw)
+        limit = n
         # TODO: calling `.sql` is a workaround for sqlglot not supporting
         # scalar subqueries in limits
         limit = sg.select(limit).from_(table).subquery().sql(dialect="duckdb")
@@ -184,7 +195,7 @@ def _limit(op: ops.Limit, *, table, n, offset, **kw):
     assert offset is not None, "offset is None"
 
     if not isinstance(offset, int):
-        skip = translate_val(offset, **kw)
+        skip = offset
         skip = sg.select(skip).from_(table).subquery().sql(dialect="duckdb")
     elif not offset:
         return result
@@ -196,42 +207,35 @@ def _limit(op: ops.Limit, *, table, n, offset, **kw):
 
 @translate_rel.register
 def _distinct(_: ops.Distinct, *, table, **kw):
-    return sg.select("*").distinct().from_(table)
+    return sg.select(STAR).distinct().from_(table)
 
 
 @translate_rel.register(ops.DropNa)
-def _dropna(op: ops.DropNa, *, table, **kw):
-    how = op.how
+def _dropna(op: ops.DropNa, *, table, how, subset, **_):
+    if subset is None:
+        subset = [sg.column(name, table=table) for name in op.table.schema.names]
 
-    if op.subset is None:
-        columns = [ops.TableColumn(op.table, name) for name in op.table.schema.names]
-    else:
-        columns = op.subset
-
-    if columns:
-        raw_predicate = functools.reduce(
-            ops.And if how == "any" else ops.Or,
-            map(ops.NotNull, columns),
+    if subset:
+        predicate = functools.reduce(
+            sg.and_ if how == "any" else sg.or_,
+            (sg.not_(col.is_(NULL)) for col in subset),
         )
     elif how == "all":
-        raw_predicate = ops.Literal(False, dtype=dt.bool)
+        predicate = FALSE
     else:
-        raw_predicate = None
+        predicate = None
 
-    if not raw_predicate:
+    if predicate is None:
         return table
 
-    tr_val = partial(translate_val, **kw)
-    predicate = tr_val(raw_predicate)
     try:
-        return table.where(unalias(predicate))
+        return table.where(predicate)
     except AttributeError:
-        return sg.select("*").from_(table).where(unalias(predicate))
+        return sg.select(STAR).from_(table).where(predicate)
 
 
 @translate_rel.register
-def _fillna(op: ops.FillNa, *, table, **kw):
-    replacements = op.replacements
+def _fillna(op: ops.FillNa, *, table, replacements, **_):
     if isinstance(replacements, Mapping):
         mapping = replacements
     else:
@@ -240,12 +244,7 @@ def _fillna(op: ops.FillNa, *, table, **kw):
         }
     exprs = [
         (
-            sg.alias(
-                sg.exp.Coalesce(
-                    this=sg.column(col), expressions=[translate_val(alt, **kw)]
-                ),
-                col,
-            )
+            sg.alias(sg.exp.Coalesce(this=sg.column(col), expressions=[alt]), col)
             if (alt := mapping.get(col)) is not None
             else sg.column(col)
         )
@@ -258,11 +257,11 @@ def _fillna(op: ops.FillNa, *, table, **kw):
 def _view(op: ops.View, *, child, name: str, **_):
     # TODO: find a way to do this without creating a temporary view
     backend = op.child.to_expr()._find_backend()
-    backend._create_temp_view(table_name=name, source=sg.select("*").from_(child))
+    backend._create_temp_view(table_name=name, source=sg.select(STAR).from_(child))
     return sg.table(name)
 
 
 @translate_rel.register
 def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
     table = sg.table(op.name)
-    return sg.select("*").from_(table).with_(table, as_=query, dialect="duckdb")
+    return sg.select(STAR).from_(table).with_(table, as_=query, dialect="duckdb")
