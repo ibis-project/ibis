@@ -22,9 +22,7 @@ FROM (
     ) AS t1
   ) AS t2
     ON (
-      t1.key
-    ) = (
-      t2.key
+      t1.key = t2.key
     )
 ) AS t4
 INNER JOIN (
@@ -49,13 +47,9 @@ INNER JOIN (
     ) AS t1
   ) AS t2
     ON (
-      t1.key
-    ) = (
-      t2.key
+      t1.key = t2.key
     )
 ) AS t5
   ON (
-    t4.key
-  ) = (
-    t5.key
+    t4.key = t5.key
   )

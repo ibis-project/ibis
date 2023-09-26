@@ -13,22 +13,20 @@ FROM (
         FIRST(t4.diff) AS diff
       FROM (
         SELECT
-          *,
+          t3.*,
           (
-            t3.latest_degrees
-          ) - (
-            t3.earliest_degrees
+            t3.latest_degrees - t3.earliest_degrees
           ) AS diff
         FROM (
           SELECT
-            *,
-            FIRST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED preceding AND UNBOUNDED following) AS earliest_degrees,
-            LAST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED preceding AND UNBOUNDED following) AS latest_degrees
+            t2.*,
+            FIRST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS earliest_degrees,
+            LAST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS latest_degrees
           FROM (
             SELECT
               t1.field_of_study,
-              STRUCT_EXTRACT(t1.__pivoted__, 'years') AS years,
-              STRUCT_EXTRACT(t1.__pivoted__, 'degrees') AS degrees
+              t1.__pivoted__['years'] AS years,
+              t1.__pivoted__['degrees'] AS degrees
             FROM (
               SELECT
                 t0.field_of_study,
@@ -62,22 +60,20 @@ FROM (
           FIRST(t4.diff) AS diff
         FROM (
           SELECT
-            *,
+            t3.*,
             (
-              t3.latest_degrees
-            ) - (
-              t3.earliest_degrees
+              t3.latest_degrees - t3.earliest_degrees
             ) AS diff
           FROM (
             SELECT
-              *,
-              FIRST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED preceding AND UNBOUNDED following) AS earliest_degrees,
-              LAST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED preceding AND UNBOUNDED following) AS latest_degrees
+              t2.*,
+              FIRST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS earliest_degrees,
+              LAST(t2.degrees) OVER (PARTITION BY t2.field_of_study ORDER BY t2.years ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS latest_degrees
             FROM (
               SELECT
                 t1.field_of_study,
-                STRUCT_EXTRACT(t1.__pivoted__, 'years') AS years,
-                STRUCT_EXTRACT(t1.__pivoted__, 'degrees') AS degrees
+                t1.__pivoted__['years'] AS years,
+                t1.__pivoted__['degrees'] AS degrees
               FROM (
                 SELECT
                   t0.field_of_study,
@@ -94,9 +90,7 @@ FROM (
       ) AS t5
       WHERE
         (
-          t5.diff
-        ) < (
-          CAST(0 AS TINYINT)
+          t5.diff < CAST(0 AS TINYINT)
         )
     ) AS t7
     ORDER BY

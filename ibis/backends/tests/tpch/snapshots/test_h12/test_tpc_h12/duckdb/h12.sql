@@ -28,32 +28,22 @@ FROM (
     FROM "orders" AS t0
     INNER JOIN "lineitem" AS t1
       ON (
-        t0.o_orderkey
-      ) = (
-        t1.l_orderkey
+        t0.o_orderkey = t1.l_orderkey
       )
   ) AS t2
   WHERE
     t2.l_shipmode IN ('MAIL', 'SHIP')
     AND (
-      t2.l_commitdate
-    ) < (
-      t2.l_receiptdate
+      t2.l_commitdate < t2.l_receiptdate
     )
     AND (
-      t2.l_shipdate
-    ) < (
-      t2.l_commitdate
+      t2.l_shipdate < t2.l_commitdate
     )
     AND (
-      t2.l_receiptdate
-    ) >= (
-      MAKE_DATE(1994, 1, 1)
+      t2.l_receiptdate >= MAKE_DATE(1994, 1, 1)
     )
     AND (
-      t2.l_receiptdate
-    ) < (
-      MAKE_DATE(1995, 1, 1)
+      t2.l_receiptdate < MAKE_DATE(1995, 1, 1)
     )
   GROUP BY
     1

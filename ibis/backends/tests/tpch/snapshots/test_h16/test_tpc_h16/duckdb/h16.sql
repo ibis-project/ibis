@@ -2,10 +2,10 @@ SELECT
   *
 FROM (
   SELECT
-    t2.p_brand,
-    t2.p_type,
-    t2.p_size,
-    COUNT(DISTINCT t2.ps_suppkey) AS supplier_cnt
+    t3.p_brand,
+    t3.p_type,
+    t3.p_size,
+    COUNT(DISTINCT t3.ps_suppkey) AS supplier_cnt
   FROM (
     SELECT
       t0.*,
@@ -13,37 +13,33 @@ FROM (
     FROM "partsupp" AS t0
     INNER JOIN "part" AS t1
       ON (
-        t1.p_partkey
-      ) = (
-        t0.ps_partkey
+        t1.p_partkey = t0.ps_partkey
       )
-  ) AS t2
+  ) AS t3
   WHERE
     (
-      t2.p_brand
-    ) <> (
-      'Brand#45'
+      t3.p_brand <> 'Brand#45'
     )
-    AND NOT t2.p_type LIKE 'MEDIUM POLISHED%'
-    AND t2.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
-    AND NOT t2.ps_suppkey IN (
+    AND NOT t3.p_type LIKE 'MEDIUM POLISHED%'
+    AND t3.p_size IN (CAST(49 AS TINYINT), CAST(14 AS TINYINT), CAST(23 AS TINYINT), CAST(45 AS TINYINT), CAST(19 AS TINYINT), CAST(3 AS TINYINT), CAST(36 AS TINYINT), CAST(9 AS TINYINT))
+    AND NOT t3.ps_suppkey IN (
       SELECT
-        t1.s_suppkey
+        t4.s_suppkey
       FROM (
         SELECT
           *
-        FROM "supplier" AS t0
+        FROM "supplier" AS t2
         WHERE
-          t0.s_comment LIKE '%Customer%Complaints%'
-      ) AS t1
+          t2.s_comment LIKE '%Customer%Complaints%'
+      ) AS t4
     )
   GROUP BY
     1,
     2,
     3
-) AS t3
+) AS t6
 ORDER BY
-  t3.supplier_cnt DESC,
-  t3.p_brand ASC,
-  t3.p_type ASC,
-  t3.p_size ASC
+  t6.supplier_cnt DESC,
+  t6.p_brand ASC,
+  t6.p_type ASC,
+  t6.p_size ASC
