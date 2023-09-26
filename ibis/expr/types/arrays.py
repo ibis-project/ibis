@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Iterable
-import functools
+import inspect
 from public import public
 
 import ibis.expr.operations as ops
@@ -384,15 +384,15 @@ class ArrayValue(Value):
         │ []                   │
         └──────────────────────┘
         >>> t.a.map(lambda x: (x + 100).cast("float"))
-        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a)           ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<float64>        │
-        ├───────────────────────┤
-        │ [101.0, None, ... +1] │
-        │ [104.0]               │
-        │ []                    │
-        └───────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Cast(Add(x, 100), float64)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<float64>                          │
+        ├─────────────────────────────────────────┤
+        │ [101.0, None, ... +1]                   │
+        │ [104.0]                                 │
+        │ []                                      │
+        └─────────────────────────────────────────┘
 
         `.map()` also supports more complex callables like `functools.partial`
         and lambdas with closures
@@ -403,33 +403,32 @@ class ArrayValue(Value):
         ...
         >>> add2 = partial(add, y=2)
         >>> t.a.map(add2)
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a)          ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [3, None, ... +1]    │
-        │ [6]                  │
-        │ []                   │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Add(x, 2)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>           │
+        ├────────────────────────┤
+        │ [3, None, ... +1]      │
+        │ [6]                    │
+        │ []                     │
+        └────────────────────────┘
         >>> y = 2
         >>> t.a.map(lambda x: x + y)
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a)          ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [3, None, ... +1]    │
-        │ [6]                  │
-        │ []                   │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Add(x, 2)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>           │
+        ├────────────────────────┤
+        │ [3, None, ... +1]      │
+        │ [6]                    │
+        │ []                     │
+        └────────────────────────┘
         """
-
-        @functools.wraps(func)
-        def wrapped(x, **kwargs):
-            return func(x.to_expr(), **kwargs)
-
-        return ops.ArrayMap(self, func=wrapped).to_expr()
+        param = next(iter(inspect.signature(func).parameters.keys()))
+        parameter = ops.Argument(
+            name=param, shape=self.op().shape, dtype=self.type().value_type
+        ).to_expr()
+        return ops.ArrayMap(self, param=param, body=func(parameter)).to_expr()
 
     def filter(
         self, predicate: Callable[[ir.Value], bool | ir.BooleanValue]
@@ -462,15 +461,15 @@ class ArrayValue(Value):
         │ []                   │
         └──────────────────────┘
         >>> t.a.filter(lambda x: x > 1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a)       ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [2]                  │
-        │ [4]                  │
-        │ []                   │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                  │
+        ├───────────────────────────────┤
+        │ [2]                           │
+        │ [4]                           │
+        │ []                            │
+        └───────────────────────────────┘
 
         `.filter()` also supports more complex callables like `functools.partial`
         and lambdas with closures
@@ -481,33 +480,32 @@ class ArrayValue(Value):
         ...
         >>> gt1 = partial(gt, y=1)
         >>> t.a.filter(gt1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a)       ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [2]                  │
-        │ [4]                  │
-        │ []                   │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                  │
+        ├───────────────────────────────┤
+        │ [2]                           │
+        │ [4]                           │
+        │ []                            │
+        └───────────────────────────────┘
         >>> y = 1
         >>> t.a.filter(lambda x: x > y)
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a)       ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [2]                  │
-        │ [4]                  │
-        │ []                   │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                  │
+        ├───────────────────────────────┤
+        │ [2]                           │
+        │ [4]                           │
+        │ []                            │
+        └───────────────────────────────┘
         """
-
-        @functools.wraps(predicate)
-        def wrapped(x, **kwargs):
-            return predicate(x.to_expr(), **kwargs)
-
-        return ops.ArrayFilter(self, func=wrapped).to_expr()
+        param = next(iter(inspect.signature(predicate).parameters.keys()))
+        parameter = ops.Argument(
+            name=param, shape=self.op().shape, dtype=self.type().value_type
+        ).to_expr()
+        return ops.ArrayFilter(self, param=param, body=predicate(parameter)).to_expr()
 
     def contains(self, other: ir.Value) -> ir.BooleanValue:
         """Return whether the array contains `other`.
@@ -983,7 +981,7 @@ def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayVa
     │ [3, 42]              │
     └──────────────────────┘
     """
-    if any(isinstance(value, Column) for value in values):
+    if any(isinstance(value, Value) for value in values):
         return ops.ArrayColumn(values).to_expr()
     else:
         try:
