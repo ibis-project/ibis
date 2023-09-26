@@ -1,0 +1,258 @@
+---
+title: LLMs and data
+author: "Cody Peterson"
+date: "2023-09-27"
+freeze: auto
+categories:
+    - blog
+    - ai
+    - llm
+---
+
+## Introduction
+
+While large-language models (LLMs) have been around for years, recent versions
+and innovations have made it possible to create instruction-following,
+conversational bots that can perform tasks on behalf of the user. The
+thought of using natural language to transform and analyze data is appealing.
+
+## Approaches
+
+When discussed internally at Voltron Data, we identified three distinct
+approaches to applying LLMs to data analytics that can be implemented today:
+
+1. LLM writes SQL
+2. LLM writes a subroutine (Python UDF or another language)
+3. Use LLM in a subroutine
+
+While these three approaches are not an exhaustive list of how LLMs can be
+applied to data, they can be easily understood and implemented with
+Ibis and [Marvin](https://www.askmarvin.ai/welcome/what_is_marvin/), an AI
+engineering framework for building natural language interfaces. Together with
+these two open-source tools, we can build a natural language interface for
+data analytics that supports 18+ backends. But first, let's demonstrate the
+three approaches in code.
+
+### Approach 1: LLM writes SQL
+
+State of the art (SoTA) LLMs are decent at generating SQL out of the box. We can
+be clever to handle errors, retries, and more, but in its simplest form:
+
+```{python}
+# | code-fold: true
+import ibis  # <1>
+import marvin  # <1>
+
+from dotenv import load_dotenv  # <1>
+
+load_dotenv()  # <2>
+
+con = ibis.connect("duckdb://penguins.ddb")  # <3>
+t = ibis.examples.penguins.fetch()  # <3>
+t = con.create_table("penguins", t.to_pyarrow(), overwrite=True)  # <3>
+```
+
+1. Import the libraries we need.
+2. Load the environment variable to setup Marvin to call our OpenAI account.
+3. Setup the demo datain an Ibis backend.
+
+```{python}
+import ibis  # <1>
+import marvin  # <1>
+
+from ibis.expr.schema import Schema  # <1>
+from ibis.expr.types.relations import Table  # <1>
+
+ibis.options.interactive = True  # <2>
+marvin.settings.llm_model = "openai/gpt-4"  # <2>
+
+con = ibis.connect("duckdb://penguins.ddb")  # <3>
+t = con.table("penguins")  # <3>
+```
+
+1. Import Ibis and Marvin.
+2. Configure Ibis (interactive) and Marvin (GPT-4).
+3. Connect to the data and load a table into a variable.
+
+```{python}
+@marvin.ai_fn  # <1>
+def _generate_sql_select(
+    text: str, table_name: str, table_schema: Schema
+) -> str:  # <1>
+    """Generate SQL SELECT from text."""  # <1>
+
+
+def sql_from_text(text: str, t: Table) -> Table:  # <2>
+    """Run SQL from text."""  # <2>
+    return t.sql(_generate_sql_select(text, t.get_name(), t.schema()).strip(";"))  # <2>
+```
+
+1. A non-deterministic, LLM-powered AI function.
+2. A deterministic, human-authored function that calls the AI function.
+
+```{python}
+t2 = sql_from_text("the unique combination of species and islands", t)
+t2
+```
+
+```{python}
+t3 = sql_from_text(
+    "the unique combination of species and islands, with their counts, ordered from highest to lowest, and name that column just 'count'",
+    t,
+)
+t3
+```
+
+This works well-enough for simple cases and can be expanded to handle complex
+ones. In many scenarios, it may be easier to express a query in English or
+another language than to write it in SQL, especially if working across multiple
+SQL dialects.
+
+### Approach 2: LLM writes a subroutine
+
+If more complex logic needs to be expressed, SoTA LLMs are also decent at
+writing Python and a number of other programming languages. Many data platforms
+support user-defined functions (UDFs) in Python or some other language. We'll
+stick to scalar Python UDFs via DuckDB to demonstrate the concept:
+
+```{python}
+@marvin.ai_fn  # <1>
+def _generate_python_function(text: str) -> str:  # <1>
+    """Generate a simple, typed, correct Python function from text."""  # <1>
+
+
+def create_udf_from_text(text: str) -> str:  # <2>
+    """Create a UDF from text."""  # <2>
+    return f"""
+import ibis
+
+@ibis.udf.scalar.python
+{_generate_python_function(text)}
+""".strip()  # <2>
+```
+
+1. A non-deterministic, LLM-powered AI function.
+2. A deterministic, human-authored function that calls the AI function.
+
+```{python}
+udf = create_udf_from_text(
+    "a function named count_vowels that given an input string, returns an int w/ the number of vowels (y_included as a boolean option defaulted to False)"
+)
+print(udf)
+exec(udf)
+```
+
+```{python}
+t4 = t3.mutate(
+    species_vowel_count=count_vowels(t3.species),
+    island_vowel_count=count_vowels(t3.island),
+)
+t4
+```
+
+In this case, there's no reason not to have a human in the loop
+reviewing the output code and committing it for production use. This could be
+useful for quick prototyping or, given a box of tools in the form of UDFs,
+working through a natural language interface.
+
+### Approach 3: Use LLM in a subroutine
+
+We can also call the LLM once-per-row in the table via a subroutine. For variety,
+we'll use an [AI model](https://www.askmarvin.ai/components/ai_model/) instead
+of an [AI function](https://www.askmarvin.ai/components/ai_function/):
+
+```{python}
+from pydantic import BaseModel, Field  # <1>
+
+# save some money and avoid rate limiting
+marvin.settings.llm_model = "openai/gpt-3.5-turbo-16k"  # <2>
+
+
+@marvin.ai_model  # <3>
+class VowelCounter(BaseModel):  # <3>
+    """Count vowels in a string."""  # <3>
+
+    include_y: bool = Field(False, description="Include 'y' as a vowel.")  # <3>
+    # num_a: int = Field(..., description="The number of 'a' vowels.") # <3>
+    # num_e: int = Field(..., description="The number of 'e' vowels.") # <3>
+    # num_i: int = Field(..., description="The number of 'i' vowels.") # <3>
+    # num_o: int = Field(..., description="The number of 'o' vowels.") # <3>
+    # num_u: int = Field(..., description="The number of 'u' vowels.") # <3>
+    # num_y: int = Field(..., description="The number of 'y' vowels.") # <3>
+    num_total: int = Field(..., description="The total number of vowels.")  # <3>
+
+
+VowelCounter("hello world")  # <4>
+```
+
+1. Additional imports for Pydantic.
+2. Configure Marvin to use a cheaper model.
+3. A non-deterministic, LLM-powered AI model.
+4. Call the AI model on some text.
+
+Then we'll have the LLM write the UDF, just to be fancy:
+
+```{python}
+udf = create_udf_from_text(
+    "a function named count_vowels_ai that given an input string, calls VowelCounter on it and returns the num_total attribute of that result"
+)
+print(udf)
+exec(udf)
+```
+
+```{python}
+t5 = t3.mutate(
+    species_vowel_count=count_vowels_ai(t3.species),
+    island_vowel_count=count_vowels_ai(t3.island),
+)
+t5
+```
+
+Notice that in this UDF, unlike in the previous example, a LLM is being
+called (possibly several times) for each row in the table. This is a very expensive
+operation and we'll need to be careful about how we use it in practice.
+
+## Summary
+
+To summarize this post:
+
+```{python}
+from rich import print
+
+with open("index.qmd", "r") as f:
+    self_text = f.read()
+
+
+@marvin.ai_model
+class Summary(BaseModel):
+    """Summary of text."""
+
+    summary_line: str = Field(..., description="The one-line summary of the text.")
+    summary_paragraph: str = Field(
+        ..., description="The one-paragraph summary of the text."
+    )
+    conclusion: str = Field(
+        ..., description="The conclusion the reader should draw from the text."
+    )
+    key_points: list[str] = Field(..., description="The key points of the text.")
+    critiques: list[str] = Field(
+        ..., description="Professional, fair critiques of the text."
+    )
+    suggested_improvements: list[str] = Field(
+        ..., description="Suggested improvements for the text."
+    )
+    sentiment: float = Field(..., description="The sentiment of the text.")
+    sentiment_label: str = Field(..., description="The sentiment label of the text.")
+    author_bias: str = Field(..., description="The author bias of the text.")
+
+
+print(Summary(self_text))
+```
+
+## Next steps
+
+You can get involved with [Ibis
+Birdbrain](https://github.com/ibis-project/ibis-birdbrain), our open-source data
+& AI project for building next-generation natural language interfaces to data.
+
+## Discussions
