@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import google.cloud.bigquery as bq
+import sqlglot as sg
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -76,7 +77,10 @@ class BigQueryType(TypeMapper):
         elif dtype.is_array():
             return f"ARRAY<{cls.from_ibis(dtype.value_type)}>"
         elif dtype.is_struct():
-            fields = (f"{k} {cls.from_ibis(v)}" for k, v in dtype.fields.items())
+            fields = (
+                f"{sg.to_identifier(k).sql('bigquery')} {cls.from_ibis(v)}"
+                for k, v in dtype.fields.items()
+            )
             return "STRUCT<{}>".format(", ".join(fields))
         elif dtype.is_json():
             return "JSON"
