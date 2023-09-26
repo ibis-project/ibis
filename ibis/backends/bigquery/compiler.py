@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from functools import partial
 
+import sqlglot as sg
 import toolz
 
 import ibis.common.graph as lin
@@ -66,7 +67,6 @@ def find_bigquery_udf(op):
 
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
-_EXACT_NAME_REGEX = re.compile(f"^{_NAME_REGEX.pattern}$")
 
 
 class BigQueryExprTranslator(sql_compiler.ExprTranslator):
@@ -125,9 +125,7 @@ def _rewrite_notany(op):
 
 class BigQueryTableSetFormatter(sql_compiler.TableSetFormatter):
     def _quote_identifier(self, name):
-        if _EXACT_NAME_REGEX.match(name) is not None:
-            return name
-        return f"`{name}`"
+        return sg.to_identifier(name).sql("bigquery")
 
     def _format_in_memory_table(self, op):
         import ibis
