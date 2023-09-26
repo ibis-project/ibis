@@ -80,7 +80,7 @@ def test_null_literal(con, backend):
 
 BOOLEAN_BACKEND_TYPE = {
     "bigquery": "BOOL",
-    "clickhouse": "UInt8",
+    "clickhouse": "Bool",
     "impala": "BOOLEAN",
     "snowflake": "BOOLEAN",
     "sqlite": "integer",

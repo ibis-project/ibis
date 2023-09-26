@@ -1044,7 +1044,7 @@ def test_simple_math_functions_columns(
                     ["datafusion"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(
-                    ["clickhouse", "datafusion"],
+                    ["datafusion"],
                     raises=ValueError,
                     reason="Base greatest(9000, t0.bigint_col) for logarithm not supported!",
                 ),

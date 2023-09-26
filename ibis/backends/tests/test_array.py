@@ -8,7 +8,6 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
-import sqlglot as sg
 import toolz
 from pytest import param
 
@@ -746,10 +745,10 @@ def test_zip(backend):
 
 
 @builtin_array
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["clickhouse"],
-    raises=sg.ParseError,
-    reason="we might be generating incorrect code here",
+    raises=ClickhouseDatabaseError,
+    reason="https://github.com/ClickHouse/ClickHouse/issues/41112",
 )
 @pytest.mark.notimpl(["postgres"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(

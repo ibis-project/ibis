@@ -120,20 +120,3 @@ def alltypes(con):
 @pytest.fixture(scope="session")
 def df(alltypes):
     return alltypes.execute()
-
-
-@pytest.fixture
-def translate():
-    from ibis.backends.clickhouse.compiler.values import translate_val
-
-    def t(*args, **kwargs):
-        cache = kwargs.pop("cache", {})
-        # we don't care about table aliases for the purposes of testing
-        # individual function calls/expressions
-        res = translate_val(*args, aliases={}, cache=cache, **kwargs)
-        try:
-            return res.sql(dialect="clickhouse")
-        except AttributeError:
-            return res
-
-    return t

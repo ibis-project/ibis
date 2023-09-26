@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -54,25 +53,14 @@ def test_string_temporal_compare(con, op, left, right, type):
 
 
 @pytest.mark.parametrize(
-    ("op", "expected"),
-    [
-        (lambda a, b: a + b, "int_col + tinyint_col"),
-        (lambda a, b: a - b, "int_col - tinyint_col"),
-        (lambda a, b: a * b, "int_col * tinyint_col"),
-        (lambda a, b: a / b, "int_col / tinyint_col"),
-        (lambda a, b: a**b, "pow(int_col, tinyint_col)"),
-        (lambda a, b: a < b, "int_col < tinyint_col"),
-        (lambda a, b: a <= b, "int_col <= tinyint_col"),
-        (lambda a, b: a > b, "int_col > tinyint_col"),
-        (lambda a, b: a >= b, "int_col >= tinyint_col"),
-        (lambda a, b: a == b, "int_col = tinyint_col"),
-        (lambda a, b: a != b, "int_col != tinyint_col"),
-    ],
+    "op",
+    ["add", "sub", "mul", "truediv", "pow", "lt", "le", "gt", "ge", "eq", "ne"],
 )
-def test_binary_infix_operators(con, alltypes, translate, op, expected):
+def test_binary_infix_operators(con, alltypes, op, snapshot):
+    func = getattr(operator, op)
     a, b = alltypes.int_col, alltypes.tinyint_col
-    expr = op(a, b)
-    assert translate(expr.op()) == expected
+    expr = func(a, b)
+    snapshot.assert_match(expr.compile(), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -83,32 +71,26 @@ def test_binary_infix_operators(con, alltypes, translate, op, expected):
 
 
 @pytest.mark.parametrize(
-    ("op", "expected"),
+    "op",
     [
-        (
-            lambda a, b, c: (a + b) + c,
-            "(int_col + tinyint_col) + double_col",
-        ),
-        (lambda a, _, c: a.log() + c, "log(int_col) + double_col"),
-        (
-            lambda a, b, c: (b + (-(a + c))),
-            "tinyint_col + (-(int_col + double_col))",
-        ),
+        lambda a, b, c: (a + b) + c,
+        lambda a, _, c: a.log() + c,
+        lambda a, b, c: (b + (-(a + c))),
     ],
 )
-def test_binary_infix_parenthesization(con, alltypes, translate, op, expected):
+def test_binary_infix_parenthesization(con, alltypes, op, snapshot):
     a = alltypes.int_col
     b = alltypes.tinyint_col
     c = alltypes.double_col
 
     expr = op(a, b, c)
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(expr.compile(), "out.sql")
     assert len(con.execute(expr))
 
 
-def test_between(con, alltypes, translate):
+def test_between(con, alltypes, snapshot):
     expr = alltypes.int_col.between(0, 10)
-    assert translate(expr.op()) == "int_col BETWEEN 0 AND 10"
+    snapshot.assert_match(expr.compile(), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -145,35 +127,25 @@ def test_string_temporal_compare_between_datetimes(con, left, right):
 
 
 @pytest.mark.parametrize("container", [list, tuple, set])
-def test_field_in_literals(con, alltypes, df, translate, container):
+def test_field_in_literals(con, alltypes, df, container):
     values = {"1", "2", "3", "5", "7"}
     foobar = container(values)
-    expected = tuple(values)
 
     expr = alltypes.string_col.isin(foobar)
     result_col = con.execute(expr.name("result"))
     expected_col = df.string_col.isin(foobar).rename("result")
-    assert translate(expr.op()) == f"string_col IN {expected}"
     tm.assert_series_equal(result_col, expected_col)
 
     expr = alltypes.string_col.notin(foobar)
     result_col = con.execute(expr.name("result"))
-    expected_col = (~df.string_col.isin(foobar)).rename("result")
-    assert translate(expr.op()) == f"NOT string_col IN {expected}"
+    expected_col = ~df.string_col.isin(foobar).rename("result")
     tm.assert_series_equal(result_col, expected_col)
 
 
-@pytest.mark.parametrize(
-    ("column", "operator"),
-    [
-        param("int_col", "-", id="int_col"),
-        param("float_col", "-", id="float_col"),
-        param("bool_col", "NOT ", id="bool_col"),
-    ],
-)
-def test_negate(con, alltypes, translate, column, operator):
+@pytest.mark.parametrize("column", ["int_col", "float_col", "bool_col"])
+def test_negate(con, alltypes, column, snapshot):
     expr = -alltypes[column]
-    assert translate(expr.op()) == f"{operator}{column}"
+    snapshot.assert_match(expr.compile(), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -218,7 +190,7 @@ def test_negate_literal(con):
         ),
     ],
 )
-def test_ifelse(alltypes, df, op, pandas_op, translate):
+def test_ifelse(alltypes, df, op, pandas_op):
     expr = op(alltypes)
     result = expr.execute()
     result.name = None
@@ -227,18 +199,17 @@ def test_ifelse(alltypes, df, op, pandas_op, translate):
     tm.assert_series_equal(result, expected)
 
 
-def test_simple_case(con, alltypes, translate):
+def test_simple_case(con, alltypes, snapshot):
     t = alltypes
     expr = (
         t.string_col.case().when("foo", "bar").when("baz", "qux").else_("default").end()
     )
 
-    expected = """CASE string_col WHEN 'foo' THEN 'bar' WHEN 'baz' THEN 'qux' ELSE 'default' END"""
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(expr.compile(), "out.sql")
     assert len(con.execute(expr))
 
 
-def test_search_case(con, alltypes, translate):
+def test_search_case(con, alltypes, snapshot):
     t = alltypes
     expr = (
         ibis.case()
@@ -248,8 +219,7 @@ def test_search_case(con, alltypes, translate):
         .end()
     )
 
-    expected = """CASE WHEN float_col > 0 THEN int_col * 2 WHEN float_col < 0 THEN int_col ELSE 0 END"""
-    assert translate(expr.op()) == expected
+    snapshot.assert_match(expr.compile(), "out.sql")
     assert len(con.execute(expr))
 
 
@@ -263,15 +233,16 @@ def test_search_case(con, alltypes, translate):
     ],
 )
 @pytest.mark.parametrize(
-    "ids",
+    "gen_idx",
     [
         lambda arr: range(len(arr)),
         lambda arr: range(-len(arr), 0),
     ],
+    ids=["positive", "negative"],
 )
-def test_array_index(con, arr, ids):
+def test_array_index(con, arr, gen_idx):
     expr = L(arr)
-    for i in ids(arr):
+    for i in gen_idx(arr):
         el_expr = expr[i]
         el = con.execute(el_expr)
         assert el == arr[i]

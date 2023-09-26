@@ -414,8 +414,10 @@ class Backend(BaseBackend, CanCreateDatabase):
             Table expression
         """
         schema = self.get_schema(name, database=database)
-        qname = self._fully_qualified_name(name, database)
-        return ops.DatabaseTable(qname, schema, self).to_expr()
+        op = ops.DatabaseTable(
+            name=name, schema=schema, source=self, namespace=database
+        )
+        return op.to_expr()
 
     def insert(
         self,

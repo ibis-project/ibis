@@ -602,7 +602,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     reason="Window operations are unsupported in the dask backend",
                 ),
                 pytest.mark.broken(
-                    ["bigquery", "clickhouse", "impala"],
+                    ["bigquery", "impala"],
                     reason="default window semantics are different",
                     raises=AssertionError,
                 ),
@@ -705,9 +705,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             lambda df: df.float_col.shift(-1),
             True,
             id="ordered-lead",
-            marks=[
-                pytest.mark.notimpl(["clickhouse"], raises=AssertionError),
-            ],
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -952,9 +949,6 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["clickhouse"], reason="clickhouse returns incorrect results", raises=AssertionError
-)
 def test_mutate_window_filter(backend, alltypes, df):
     t = alltypes
     win = ibis.window(order_by=[t.id])

@@ -29,6 +29,13 @@ try:
 except ImportError:
     ComputeError = None
 
+try:
+    from clickhouse_connect.driver.exceptions import (
+        DatabaseError as ClickhouseDatabaseError,
+    )
+except ImportError:
+    ClickhouseDatabaseError = None
+
 
 @reduction(input_type=[dt.double], output_type=dt.double)
 def mean_udf(s):
@@ -1436,7 +1443,8 @@ def test_grouped_case(backend, con):
     reason="Dask and Pandas do not windowize this operation correctly",
     raises=AssertionError,
 )
-@pytest.mark.notyet(["clickhouse", "impala"], raises=com.UnsupportedOperationError)
+@pytest.mark.notyet(["impala"], raises=com.UnsupportedOperationError)
+@pytest.mark.notyet(["clickhouse"], raises=ClickhouseDatabaseError)
 @pytest.mark.notyet(["druid", "trino", "snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notyet("mysql", raises=sa.exc.NotSupportedError)
 @pytest.mark.notyet("oracle", raises=sa.exc.DatabaseError)

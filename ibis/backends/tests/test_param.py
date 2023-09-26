@@ -92,9 +92,7 @@ def test_scalar_param_struct(con):
     assert result == value["a"]
 
 
-@pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "impala", "pyspark", "polars", "druid", "oracle"]
-)
+@pytest.mark.notimpl(["datafusion", "impala", "pyspark", "polars", "druid", "oracle"])
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement map types",

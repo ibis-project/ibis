@@ -1,14 +1,13 @@
 from __future__ import annotations
 
 import functools
-from functools import partial
+from typing import Any
 
 import sqlglot as sg
 
 import ibis.common.exceptions as com
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.clickhouse.compiler.values import translate_val
+from ibis.backends.base.sqlglot import FALSE, NULL, STAR
 
 
 @functools.singledispatch
@@ -17,24 +16,37 @@ def translate_rel(op: ops.TableNode, **_):
     raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
-@translate_rel.register(ops.DummyTable)
-def _dummy(op: ops.DummyTable, **kw):
-    return sg.select(
-        *map(partial(translate_val, **kw), op.values), dialect="clickhouse"
-    )
+@translate_rel.register
+def _dummy(op: ops.DummyTable, *, values, **_):
+    return sg.select(*values)
 
 
-@translate_rel.register(ops.PhysicalTable)
+@translate_rel.register
 def _physical_table(op: ops.PhysicalTable, **_):
-    return sg.parse_one(op.name, into=sg.exp.Table)
+    return sg.table(op.name)
 
 
-@translate_rel.register(ops.Selection)
-def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
+@translate_rel.register
+def _database_table(op: ops.DatabaseTable, *, name, namespace, **_):
+    return sg.table(name, db=namespace)
+
+
+def replace_tables_with_star_selection(node, alias=None):
+    if isinstance(node, (sg.exp.Subquery, sg.exp.Table, sg.exp.CTE)):
+        return sg.exp.Column(
+            this=STAR,
+            table=sg.to_identifier(alias if alias is not None else node.alias_or_name),
+        )
+    return node
+
+
+@translate_rel.register
+def _selection(
+    op: ops.Selection, *, table, selections, predicates, sort_keys, aliases, **_
+):
     # needs_alias should never be true here in explicitly, but it may get
     # passed via a (recursive) call to translate_val
-    assert not needs_alias, "needs_alias is True"
-    if needs_alias := isinstance(op.table, ops.Join) and not isinstance(
+    if isinstance(op.table, ops.Join) and not isinstance(
         op.table, (ops.LeftSemiJoin, ops.LeftAntiJoin)
     ):
         args = table.this.args
@@ -42,54 +54,56 @@ def _selection(op: ops.Selection, *, table, needs_alias=False, **kw):
         (join,) = args["joins"]
     else:
         from_ = join = None
-    tr_val = partial(translate_val, needs_alias=needs_alias, **kw)
-    selections = tuple(map(tr_val, op.selections)) or "*"
-    sel = sg.select(*selections, dialect="clickhouse").from_(
-        from_ if from_ is not None else table, dialect="clickhouse"
-    )
+
+    selections = tuple(
+        replace_tables_with_star_selection(
+            node,
+            # replace the table name with the alias if the table is **not** a
+            # join, because we may be selecting from a subquery or an aliased
+            # table; otherwise we'll select from the _unaliased_ table or the
+            # _child_ table, which may have a different alias than the one we
+            # generated for the input table
+            table.alias_or_name if from_ is None and join is None else None,
+        )
+        for node in selections
+    ) or (STAR,)
+
+    sel = sg.select(*selections).from_(from_ if from_ is not None else table)
 
     if join is not None:
         sel = sel.join(join)
 
-    if predicates := op.predicates:
+    if predicates:
         if join is not None:
-            sel = sg.select("*").from_(sel.subquery(kw["aliases"][op.table]))
-        res = functools.reduce(
-            lambda left, right: left.and_(right),
-            (
-                sg.condition(tr_val(predicate), dialect="clickhouse")
-                for predicate in predicates
-            ),
-        )
-        sel = sel.where(res, dialect="clickhouse")
+            sel = sg.select(STAR).from_(sel.subquery(aliases[op.table]))
+        sel = sel.where(*predicates)
 
-    if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val, sort_keys), dialect="clickhouse")
+    if sort_keys:
+        sel = sel.order_by(*sort_keys)
 
     return sel
 
 
 @translate_rel.register(ops.Aggregation)
-def _aggregation(op: ops.Aggregation, *, table, **kw):
-    tr_val = partial(translate_val, **kw)
-    tr_val_no_alias = partial(translate_val, render_aliases=False, **kw)
-
-    by = tuple(map(tr_val, op.by))
-    metrics = tuple(map(tr_val, op.metrics))
-    selections = (by + metrics) or "*"
+def _aggregation(
+    op: ops.Aggregation, *, table, metrics, by, having, predicates, sort_keys, **_
+):
+    selections = (by + metrics) or (STAR,)
     sel = sg.select(*selections).from_(table)
 
-    if group_keys := op.by:
-        sel = sel.group_by(*map(tr_val_no_alias, group_keys), dialect="clickhouse")
+    if by:
+        sel = sel.group_by(
+            *(key.this if isinstance(key, sg.exp.Alias) else key for key in by)
+        )
 
-    if predicates := op.predicates:
-        sel = sel.where(*map(tr_val_no_alias, predicates), dialect="clickhouse")
+    if predicates:
+        sel = sel.where(*predicates)
 
-    if having := op.having:
-        sel = sel.having(*map(tr_val_no_alias, having), dialect="clickhouse")
+    if having:
+        sel = sel.having(*having)
 
-    if sort_keys := op.sort_keys:
-        sel = sel.order_by(*map(tr_val_no_alias, sort_keys), dialect="clickhouse")
+    if sort_keys:
+        sel = sel.order_by(*sort_keys)
 
     return sel
 
@@ -109,20 +123,11 @@ _JOIN_TYPES = {
 
 
 @translate_rel.register
-def _join(op: ops.Join, *, left, right, **kw):
-    predicates = op.predicates
-    if predicates:
-        on = functools.reduce(
-            lambda left, right: left.and_(right),
-            (
-                sg.condition(translate_val(predicate, **kw), dialect="clickhouse")
-                for predicate in predicates
-            ),
-        )
-    else:
-        on = None
+def _join(op: ops.Join, *, left, right, predicates, **_):
+    on = sg.and_(*predicates) if predicates else None
     join_type = _JOIN_TYPES[type(op)]
     try:
+        # dialect must be passed to allow clickhouse's ANY/LEFT ANY/ASOF joins
         return left.join(right, join_type=join_type, on=on, dialect="clickhouse")
     except AttributeError:
         select_args = [f"{left.alias_or_name}.*"]
@@ -133,23 +138,20 @@ def _join(op: ops.Join, *, left, right, **kw):
         if not isinstance(op, (ops.LeftSemiJoin, ops.LeftAntiJoin)):
             select_args.append(f"{right.alias_or_name}.*")
         return (
-            sg.select(*select_args, dialect="clickhouse")
-            .from_(left, dialect="clickhouse")
+            sg.select(*select_args)
+            .from_(left)
             .join(right, join_type=join_type, on=on, dialect="clickhouse")
         )
 
 
 @translate_rel.register
-def _self_ref(op: ops.SelfReference, *, table, aliases, **kw):
-    if (name := aliases.get(op)) is None:
-        return table
-    return sg.alias(table, name)
+def _self_ref(op: ops.SelfReference, *, table, aliases, **_):
+    return sg.alias(table, op.name)
 
 
 @translate_rel.register
-def _query(op: ops.SQLQueryResult, *, aliases, **_):
-    res = sg.parse_one(op.query, read="clickhouse")
-    return res.subquery(aliases.get(op, "_"))
+def _query(op: ops.SQLQueryResult, *, query, aliases, **_):
+    return sg.parse_one(query, read="clickhouse").subquery(aliases.get(op))
 
 
 _SET_OP_FUNC = {
@@ -160,71 +162,73 @@ _SET_OP_FUNC = {
 
 
 @translate_rel.register
-def _set_op(op: ops.SetOp, *, left, right, **_):
-    dialect = "clickhouse"
-
+def _set_op(op: ops.SetOp, *, left, right, distinct: bool = False, **_):
     if isinstance(left, sg.exp.Table):
-        left = sg.select("*", dialect=dialect).from_(left, dialect=dialect)
+        left = sg.select(STAR).from_(left)
 
     if isinstance(right, sg.exp.Table):
-        right = sg.select("*", dialect=dialect).from_(right, dialect=dialect)
+        right = sg.select(STAR).from_(right)
 
-    return _SET_OP_FUNC[type(op)](
-        left.args.get("this", left),
-        right.args.get("this", right),
-        distinct=op.distinct,
-        dialect=dialect,
-    )
+    func = _SET_OP_FUNC[type(op)]
+
+    left = left.args.get("this", left)
+    right = right.args.get("this", right)
+
+    return func(left, right, distinct=distinct)
 
 
 @translate_rel.register
-def _limit(op: ops.Limit, *, table, **kw):
-    result = sg.select("*").from_(table)
+def _limit(op: ops.Limit, *, table, n, offset, **_):
+    result = sg.select(STAR).from_(table)
 
-    if (limit := op.n) is not None:
-        if not isinstance(limit, int):
-            limit = f"(SELECT {translate_val(limit, **kw)} FROM {table})"
+    if n is not None:
+        if not isinstance(n, int):
+            limit = sg.select(n).from_(table).subquery()
+        else:
+            limit = n
         result = result.limit(limit)
 
-    if not isinstance(offset := op.offset, int):
-        offset = f"(SELECT {translate_val(offset, **kw)} FROM {table})"
+    if not isinstance(offset, int):
+        return result.offset(
+            sg.select(offset).from_(table).subquery().sql("clickhouse")
+        )
 
-    if offset != 0:
-        return result.offset(offset)
-    else:
-        return result
+    return result.offset(offset) if offset != 0 else result
 
 
 @translate_rel.register
-def _distinct(_: ops.Distinct, *, table, **kw):
-    return sg.select("*").distinct().from_(table)
+def _distinct(op: ops.Distinct, *, table, **_):
+    return sg.select(STAR).distinct().from_(table)
 
 
-@translate_rel.register(ops.DropNa)
-def _dropna(op: ops.DropNa, *, table, **kw):
-    how = op.how
+@translate_rel.register
+def _dropna(op: ops.DropNa, *, table, how, subset=None, aliases, **_):
+    colnames = op.schema.names
+    alias = aliases[op.table]
 
-    if op.subset is None:
-        columns = [ops.TableColumn(op.table, name) for name in op.table.schema.names]
+    if subset is None:
+        columns = [sg.column(name, table=alias) for name in colnames]
     else:
-        columns = op.subset
+        columns = subset
 
     if columns:
-        raw_predicate = functools.reduce(
-            ops.And if how == "any" else ops.Or,
-            map(ops.NotNull, columns),
-        )
+        func = sg.and_ if how == "any" else sg.or_
+        predicate = func(*(sg.not_(col.is_(NULL)) for col in columns))
     elif how == "all":
-        raw_predicate = ops.Literal(False, dtype=dt.bool)
+        predicate = FALSE
     else:
-        raw_predicate = None
+        predicate = None
 
-    if not raw_predicate:
+    if predicate is None:
         return table
 
-    tr_val = partial(translate_val, **kw)
-    predicate = tr_val(raw_predicate)
     try:
-        return table.where(predicate, dialect="clickhouse")
+        return table.where(predicate)
     except AttributeError:
-        return sg.select("*").from_(table).where(predicate, dialect="clickhouse")
+        return sg.select(STAR).from_(table).where(predicate)
+
+
+@translate_rel.register
+def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
+    table = sg.table(op.name)
+    return sg.select(STAR).from_(table).with_(table, as_=query, dialect="clickhouse")
