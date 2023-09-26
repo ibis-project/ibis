@@ -155,12 +155,21 @@ def translate(
         c.ExistsSubquery(x, y)
     )
 
+    add_order_by_to_window_funcs = p.WindowFunction(
+        p.PercentRank(x) | p.RankBase(x) | p.CumeDist(x),
+        (
+            p.WindowFrame(..., order_by=())
+            >> (lambda op, ctx: op.copy(order_by=(ctx[x],)))
+        ),
+    )
+
     op = op.replace(
         replace_literals
         | replace_cumulative_ops
         | replace_in_column_with_table_array_view
         | replace_empty_in_values_with_false
         | replace_notexists_subquery_with_not_exists
+        | add_order_by_to_window_funcs
     )
     # apply translate rules in topological order
     results = op.map(fn, filter=(ops.TableNode, ops.Value))
