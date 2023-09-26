@@ -1029,7 +1029,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=ValidationError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
@@ -1115,7 +1115,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["sqlite"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="CalciteContextException: No match found for function signature date_sub(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
@@ -1132,7 +1132,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'date'",
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
@@ -1149,7 +1149,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'date'",
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="CalciteContextException: No match found for function signature date_sub(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
@@ -1263,6 +1263,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+                ),
             ],
         ),
         param(
@@ -1273,6 +1278,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=AssertionError,
                     reason="alltypes.timestamp_col is represented as string",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -1285,6 +1295,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=AssertionError,
                     reason="alltypes.timestamp_col is represented as string",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+                ),
             ],
         ),
         param(
@@ -1295,6 +1310,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=AssertionError,
                     reason="alltypes.timestamp_col is represented as string",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_sub(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -1307,6 +1327,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=AssertionError,
                     reason="alltypes.timestamp_col is represented as string",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+                ),
             ],
         ),
         param(
@@ -1317,6 +1342,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=AssertionError,
                     reason="alltypes.timestamp_col is represented as string",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -1339,6 +1369,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_sub(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+                ),
             ],
         ),
         param(
@@ -1349,6 +1384,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -1361,6 +1401,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_sub(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+                ),
             ],
         ),
         param(
@@ -1371,6 +1416,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -1383,6 +1433,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+                ),
             ],
         ),
         param(
@@ -1393,6 +1448,11 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     ["druid"],
                     raises=TypeError,
                     reason="unsupported operand type(s) for -: 'StringColumn' and 'Timedelta'",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
