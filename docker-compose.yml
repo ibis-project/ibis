@@ -412,7 +412,7 @@ services:
       - druid
 
   oracle:
-    image: gvenzl/oracle-free:23.2-slim
+    image: gvenzl/oracle-free:23.3-slim
     environment:
       ORACLE_PASSWORD: ibis
       ORACLE_DATABASE: IBIS_TESTING
