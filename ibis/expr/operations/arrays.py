@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable, Optional
+from typing import Optional
 
 from public import public
 
@@ -9,7 +9,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.core import Argument, Unary, Value
+from ibis.expr.operations.core import Unary, Value
 
 
 @public
@@ -75,41 +75,26 @@ class ArrayRepeat(Value):
     shape = rlz.shape_like("args")
 
 
-class ArrayApply(Value):
-    arg: Value[dt.Array]
-
-    @attribute
-    def parameter(self):
-        name = next(iter(self.func.__signature__.parameters.keys()))
-        return name
-
-    @attribute
-    def result(self):
-        arg = Argument(
-            name=self.parameter,
-            shape=self.arg.shape,
-            dtype=self.arg.dtype.value_type,
-        )
-        return self.func(arg)
-
-    @attribute
-    def shape(self):
-        return self.arg.shape
-
-
 @public
-class ArrayMap(ArrayApply):
-    func: Callable[[Value], Value]
+class ArrayMap(Value):
+    arg: Value[dt.Array]
+    body: Value
+    param: str
+
+    shape = rlz.shape_like("arg")
 
     @attribute
     def dtype(self) -> dt.DataType:
-        return dt.Array(self.result.dtype)
+        return dt.Array(self.body.dtype)
 
 
 @public
-class ArrayFilter(ArrayApply):
-    func: Callable[[Value], Value[dt.Boolean]]
+class ArrayFilter(Value):
+    arg: Value[dt.Array]
+    body: Value[dt.Boolean]
+    param: str
 
+    shape = rlz.shape_like("arg")
     dtype = rlz.dtype_like("arg")
 
 
