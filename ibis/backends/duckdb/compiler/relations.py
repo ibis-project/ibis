@@ -213,7 +213,9 @@ def _distinct(_: ops.Distinct, *, table, **kw):
 @translate_rel.register(ops.DropNa)
 def _dropna(op: ops.DropNa, *, table, how, subset, **_):
     if subset is None:
-        subset = [sg.column(name, table=table) for name in op.table.schema.names]
+        subset = [
+            sg.column(name, table=table.alias_or_name) for name in op.table.schema.names
+        ]
 
     if subset:
         predicate = functools.reduce(

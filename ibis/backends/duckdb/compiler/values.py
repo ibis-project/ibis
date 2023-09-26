@@ -74,14 +74,14 @@ def _literal(op, *, value, dtype, **kw):
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
     elif dtype.is_string() or dtype.is_inet() or dtype.is_macaddr():
-        return lit(value)
+        return lit(str(value))
     elif dtype.is_numeric():
         # cast non finite values to float because that's the behavior of
         # duckdb when a mixed decimal/float operation is performed
         #
         # float will be upcast to double if necessary by duckdb
         if not math.isfinite(value):
-            return cast(lit(value), to=dt.float32 if dtype.is_decimal() else dtype)
+            return cast(lit(str(value)), to=dt.float32 if dtype.is_decimal() else dtype)
         return cast(lit(value), dtype)
     elif dtype.is_time():
         return cast(lit(value), dtype)
@@ -97,11 +97,9 @@ def _literal(op, *, value, dtype, **kw):
             second += microsecond
         if (tz := dtype.timezone) is not None:
             timezone = lit(tz)
-            return sg.func(
-                "make_timestamptz", year, month, day, hour, minute, second, timezone
-            )
+            return f.make_timestamptz(year, month, day, hour, minute, second, timezone)
         else:
-            return sg.func("make_timestamp", year, month, day, hour, minute, second)
+            return f.make_timestamp(year, month, day, hour, minute, second)
     elif dtype.is_date():
         year = lit(value.year)
         month = lit(value.month)
@@ -120,19 +118,19 @@ def _literal(op, *, value, dtype, **kw):
     elif dtype.is_map():
         key_type = dtype.key_type
         value_type = dtype.value_type
-        keys = sg.exp.Array.from_arg_list(
-            [
+        keys = f.array(
+            *(
                 _literal(ops.Literal(k, dtype=key_type), value=k, dtype=key_type, **kw)
                 for k in value.keys()
-            ]
+            )
         )
-        values = sg.exp.Array.from_arg_list(
-            [
+        values = f.array(
+            *(
                 _literal(
                     ops.Literal(v, dtype=value_type), value=v, dtype=value_type, **kw
                 )
                 for v in value.values()
-            ]
+            )
         )
         return sg.exp.Map(keys=keys, values=values)
     elif dtype.is_struct():
@@ -305,7 +303,7 @@ def _clip(op, *, arg, lower, upper, **_):
         arg = if_(arg.is_(NULL), arg, f.least(upper, arg))
 
     if lower is not None:
-        arg = if_(arg.is_(NULL), arg, f.greatest(upper, arg))
+        arg = if_(arg.is_(NULL), arg, f.greatest(lower, arg))
 
     return arg
 
@@ -701,8 +699,8 @@ def _array_sort(op, *, arg, **_):
 
 @translate_val.register(ops.ArrayIndex)
 def _array_index_op(op, *, arg, index, **_):
-    correct_idx = sg.func("if", index >= 0, index + 1, index)
-    return f.list_element(arg, correct_idx)
+    correct_idx = if_(index >= 0, index + 1, index)
+    return f.list_extract(arg, correct_idx)
 
 
 @translate_val.register(ops.InValues)
@@ -726,7 +724,7 @@ def _array_concat(op, *, arg, **_):
 @translate_val.register(ops.ArrayRepeat)
 def _array_repeat_op(op, *, arg, times, **_):
     return f.flatten(
-        sg.select(sg.func("array", sg.select(arg).from_(f.range(times)))).subquery(),
+        sg.select(f.array(sg.select(arg).from_(f.range(times)))).subquery()
     )
 
 
@@ -739,7 +737,7 @@ def _neg_idx_to_pos(array, idx):
         # e.g. where the magnitude of the negative index is greater than the
         # length of the array
         # You cannot index a[:-3] if a = [1, 2]
-        true=arg_length + sg.func("greatest", idx, -1 * arg_length),
+        true=arg_length + f.greatest(idx, -1 * arg_length),
         false=idx,
     )
 
@@ -941,7 +939,7 @@ def _table_array_view(op, *, table, **_):
 
 @translate_val.register(ops.ExistsSubquery)
 def _exists_subquery(op, *, foreign_table, predicates, **_):
-    subq = sg.select(1).from_(foreign_table).where(sg.condition(predicates)).subquery()
+    subq = sg.select(1).from_(foreign_table).where(sg.and_(*predicates)).subquery()
     return f.exists(subq)
 
 
@@ -962,7 +960,8 @@ def _struct_column(op, *, names, values, **_):
 
 @translate_val.register(ops.StructField)
 def _struct_field(op, *, arg, field, **_):
-    return sg.exp.StructExtract(this=arg, expression=lit(field))
+    val = arg.this if isinstance(op.arg, ops.Alias) else arg
+    return val[lit(field)]
 
 
 @translate_val.register(ops.IdenticalTo)
@@ -1047,22 +1046,22 @@ def _row_number(_, **kw):
 
 @translate_val.register(ops.DenseRank)
 def _dense_rank(_, **kw):
-    return sg.func("dense_rank")
+    return f.dense_rank()
 
 
 @translate_val.register(ops.MinRank)
 def _rank(_, **kw):
-    return sg.func("rank")
+    return f.rank()
 
 
 @translate_val.register(ops.PercentRank)
 def _percent_rank(_, **kw):
-    return sg.func("percent_rank")
+    return f.percent_rank()
 
 
 @translate_val.register(ops.CumeDist)
 def _cume_dist(_, **kw):
-    return sg.func("cume_dist")
+    return f.cume_dist()
 
 
 @translate_val.register
@@ -1169,7 +1168,7 @@ def shift_like(op_class, name):
         elif offset is not None:
             args.append(offset)
 
-        return sg.func(name, *args)
+        return f[name](*args)
 
     return formatter
 
