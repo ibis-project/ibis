@@ -3,6 +3,7 @@ from __future__ import annotations
 import calendar
 import functools
 import math
+import operator
 import string
 from functools import partial
 from typing import Any
@@ -10,7 +11,6 @@ from typing import Any
 import sqlglot as sg
 
 import ibis.common.exceptions as com
-import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sqlglot import NULL, STAR, AggGen, FuncGen, lit, make_cast
@@ -66,11 +66,17 @@ def _alias(op, *, arg, name, **_):
 
 @translate_val.register(ops.Literal)
 def _literal(op, *, value, dtype, **kw):
-    if dtype.is_interval() and value is not None:
-        return _interval_format(op)
+    if value is None:
+        if dtype.nullable:
+            return NULL if dtype.is_null() else cast(NULL, dtype)
+        raise NotImplementedError(f"Unsupported NULL for non-nullable type: {dtype!r}")
+    elif dtype.is_interval():
+        if dtype.unit.short == "ns":
+            raise com.UnsupportedOperationError(
+                "Duckdb doesn't support nanosecond interval resolutions"
+            )
 
-    if value is None and dtype.nullable:
-        return NULL if dtype.is_null() else cast(NULL, dtype)
+        return sg.exp.Interval(this=lit(value), unit=dtype.resolution.upper())
     elif dtype.is_boolean():
         return sg.exp.Boolean(this=value)
     elif dtype.is_string() or dtype.is_inet() or dtype.is_macaddr():
@@ -430,7 +436,7 @@ def _timestamp_from_ymdhms(op, *, year, month, day, hours, minutes, seconds, **_
     func = "make_timestamp"
     if (timezone := op.dtype.timezone) is not None:
         func += "tz"
-        args.append(lit(timezone))
+        args.append(timezone)
     return f[func](*args)
 
 
@@ -479,12 +485,12 @@ def _extract_time(op, *, arg, **_):
 # so we have to finesse it a little bit
 @translate_val.register(ops.ExtractMicrosecond)
 def _extract_microsecond(op, *, arg, **_):
-    return sg.exp.Mod(this=f.extract("us", arg), expression=lit(1_000_000))
+    return f.mod(f.extract("us", arg), 1_000_000)
 
 
 @translate_val.register(ops.ExtractMillisecond)
 def _extract_microsecond(op, *, arg, **_):
-    return sg.exp.Mod(this=f.extract("ms", arg), expression=lit(1_000))
+    return f.mod(f.extract("ms", arg), 1_000)
 
 
 @translate_val.register(ops.DateTruncate)
@@ -533,9 +539,9 @@ def day_of_week_name(op, *, arg, **_):
 
 
 _interval_mapping = {
-    ops.IntervalAdd: sg.exp.Add,
-    ops.IntervalSubtract: sg.exp.Sub,
-    ops.IntervalMultiply: sg.exp.Mul,
+    ops.IntervalAdd: operator.add,
+    ops.IntervalSubtract: operator.sub,
+    ops.IntervalMultiply: operator.mul,
 }
 
 
@@ -543,18 +549,8 @@ _interval_mapping = {
 @translate_val.register(ops.IntervalSubtract)
 @translate_val.register(ops.IntervalMultiply)
 def _interval_binary(op, *, left, right, **_):
-    sg_expr = _interval_mapping[type(op)]
-    return sg_expr(this=left, expression=right)
-
-
-def _interval_format(op):
-    dtype = op.dtype
-    if dtype.unit.short == "ns":
-        raise com.UnsupportedOperationError(
-            "Duckdb doesn't support nanosecond interval resolutions"
-        )
-
-    return sg.exp.Interval(this=lit(op.value), unit=dtype.resolution.upper())
+    func = _interval_mapping[type(op)]
+    return func(left, right)
 
 
 @translate_val.register(ops.IntervalFromInteger)
@@ -983,7 +979,7 @@ def _map_get(op, *, arg, key, default, **_):
 
 @translate_val.register(ops.MapContains)
 def _map_contains(op, *, arg, key, **_):
-    return sg.exp.NEQ(this=f.array_length(f.element_at(arg, key)), expression=lit(0))
+    return f.len(f.element_at(arg, key)).neq(lit(0))
 
 
 def _binary_infix(sg_expr: sg.exp._Expression):
@@ -1026,17 +1022,7 @@ for _op, _sym in _binary_infix_ops.items():
 del _op, _sym
 
 
-# @translate_val.register(ops.Xor)
-# def _xor(op, **kw):
-#     # https://github.com/tobymao/sqlglot/issues/2238
-#     left = translate_val(op.left, **kw).sql("duckdb")
-#     right = translate_val(op.right, **kw).sql("duckdb")
-#     return sg.parse_one(
-#         f"({left} OR {right}) AND NOT ({left} AND {right})", read="duckdb"
-#     )
-
-
-### Ordering
+### Ordering and window functions
 
 
 @translate_val.register(ops.RowNumber)
@@ -1069,42 +1055,9 @@ def _sort_key(op: ops.SortKey, *, expr, ascending: bool, **_):
     return sg.exp.Ordered(this=expr, desc=not ascending)
 
 
-### Window functions
-
-_cumulative_to_reduction = {
-    ops.CumulativeSum: ops.Sum,
-    ops.CumulativeMin: ops.Min,
-    ops.CumulativeMax: ops.Max,
-    ops.CumulativeMean: ops.Mean,
-    ops.CumulativeAny: ops.Any,
-    ops.CumulativeAll: ops.All,
-}
-
-
-def cumulative_to_window(func, frame):
-    klass = _cumulative_to_reduction[type(func)]
-    new_op = klass(*func.args)
-    new_frame = frame.copy(start=None, end=0)
-    new_expr = an.windowize_function(new_op.to_expr(), frame=new_frame)
-    return new_expr.op()
-
-
-# TODO
-_map_interval_to_microseconds = {
-    "W": 604800000000,
-    "D": 86400000000,
-    "h": 3600000000,
-    "m": 60000000,
-    "s": 1000000,
-    "ms": 1000,
-    "us": 1,
-    "ns": 0.001,
-}
-
-
 @translate_val.register(ops.ApproxMedian)
 def _approx_median(op, *, arg, where, **_):
-    return agg.approx_quantile(arg, lit(0.5), where=where)
+    return agg.approx_quantile(arg, 0.5, where=where)
 
 
 @translate_val.register(ops.WindowBoundary)
@@ -1161,7 +1114,7 @@ def shift_like(op_class, name):
 
         if default is not None:
             if offset is None:
-                offset = lit(1)
+                offset = 1
 
             args.append(offset)
             args.append(default)
