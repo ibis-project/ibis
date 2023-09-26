@@ -1,6 +1,6 @@
 SELECT
   t0.key,
-  sum((
+  SUM((
     (
       t0.value + 1
     ) + 2
