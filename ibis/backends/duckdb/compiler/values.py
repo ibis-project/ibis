@@ -307,10 +307,18 @@ def _generic_log(op, **kw):
 def _clip(op, **kw):
     arg = translate_val(op.arg, **kw)
     if (upper := op.upper) is not None:
-        arg = sg.exp.Least.from_arg_list([translate_val(upper, **kw), arg])
+        arg = sg.exp.If(
+            this=arg.is_(NULL),
+            true=sg.exp.NULL,
+            false=sg.exp.Least.from_arg_list([translate_val(upper, **kw), arg]),
+        )
 
     if (lower := op.lower) is not None:
-        arg = sg.exp.Greatest.from_arg_list([translate_val(lower, **kw), arg])
+        arg = sg.exp.If(
+            this=arg.is_(NULL),
+            true=sg.exp.NULL,
+            false=sg.exp.Greatest.from_arg_list([translate_val(lower, **kw), arg]),
+        )
 
     return arg
 

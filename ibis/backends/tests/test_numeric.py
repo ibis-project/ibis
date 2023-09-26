@@ -1386,7 +1386,8 @@ def test_random(con):
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     result = ibis_func(alltypes.int_col).execute()
-    expected = pandas_func(df.int_col).astype(result.dtype)
+    raw_expected = pandas_func(df.int_col)
+    expected = raw_expected.astype(result.dtype)
     # Names won't match in the PySpark backend since PySpark
     # gives 'tmp' name when executing a Column
     backend.assert_series_equal(result, expected, check_names=False)
