@@ -12,6 +12,7 @@ import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
 from pytest import param
+from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.common.exceptions as com
@@ -68,7 +69,12 @@ except ImportError:
         param(
             lambda c: c.cast("date"),
             id="cast",
-            marks=pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType),
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink", "impala"],
+                    raises=com.UnsupportedBackendType,
+                ),
+            ]
         ),
     ],
 )
@@ -226,6 +232,11 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=com.UnsupportedOperationError,
                     reason="PySpark backend does not support extracting milliseconds.",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="SQL parse failed. Encountered 'TIMESTAMP'. Was expecting one of: CENTURY, DAY, DECADE, ...",
+                ),
             ],
         ),
         param(
@@ -236,6 +247,11 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                 pytest.mark.notimpl(
                     ["druid", "oracle"], raises=com.OperationNotDefinedError
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="No match found for function signature pmod(<NUMERIC>, <NUMERIC>)"
+                ),
             ],
         ),
         param(
@@ -245,6 +261,11 @@ def test_timestamp_extract(backend, alltypes, df, attr):
             marks=[
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="No match found for function signature dayname(<TIMESTAMP>)",
                 ),
             ],
         ),
@@ -271,6 +292,11 @@ def test_timestamp_extract_literal(con, func, expected):
     raises=(ImpalaHiveServer2Error, ImpalaOperationalError),
     reason="Impala backend does not support extracting microseconds.",
 )
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="SQL parse failed. Encountered 'TIMESTAMP'. Was expecting one of: CENTURY, DAY, DECADE, ...",
+)
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_microseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.microsecond().name("microsecond")
@@ -293,6 +319,11 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     reason="PySpark backend does not support extracting milliseconds.",
 )
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="SQL parse failed. Encountered 'TIMESTAMP'. Was expecting one of: CENTURY, DAY, DECADE, ...",
+)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
     result = expr.execute()
@@ -316,6 +347,10 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
 @pytest.mark.xfail_version(
     pyspark=["pandas<2.1"],
     reason="test was adjusted to work with pandas 2.1 output; pyspark doesn't support pandas 2",
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="CalciteContextException: Cannot apply 'UNIX_TIMESTAMP' to arguments of type 'UNIX_TIMESTAMP(<TIMESTAMP(9)>)'. Supported form(s): 'UNIX_TIMESTAMP()'",
 )
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name("tmp")
@@ -358,7 +393,12 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
-                )
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                ),
             ],
         ),
         param(
@@ -368,7 +408,12 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
-                )
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                ),
             ],
         ),
         param(
@@ -378,7 +423,12 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
-                )
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                ),
             ],
         ),
         param(
@@ -392,6 +442,11 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                ),
             ],
         ),
         param(
@@ -403,6 +458,11 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                ),
             ],
         ),
         param(
@@ -413,6 +473,11 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
                 ),
             ],
         ),
@@ -426,6 +491,11 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                    reason="<IntervalUnit.SECOND: 's'> unit is not supported in timestamp truncate",
                 ),
             ],
         ),
@@ -441,6 +511,11 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                    reason="<IntervalUnit.MILLISECOND: 'ms'> unit is not supported in timestamp truncate",
+                ),
             ],
         ),
         param(
@@ -454,6 +529,11 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                    reason="<IntervalUnit.MICROSECOND: 'us'> unit is not supported in timestamp truncate",
                 ),
             ],
         ),
@@ -480,6 +560,11 @@ PANDAS_UNITS = {
                     ["polars"],
                     raises=PolarsPanicException,
                     reason="attempt to calculate the remainder with a divisor of zero",
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.UnsupportedOperationError,
+                    reason="<IntervalUnit.NANOSECOND: 'ns'> unit is not supported in timestamp truncate",
                 ),
             ],
         ),
