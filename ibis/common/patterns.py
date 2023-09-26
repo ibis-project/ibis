@@ -1800,12 +1800,12 @@ def builder(obj):
     elif callable(obj):
         # the callable builds the substitution
         return Factory(obj)
-    elif isinstance(obj, Sequence):
-        # allow nesting builder patterns in tuples/lists
-        return Call(lambda *args: type(obj)(args), *obj)
     elif isinstance(obj, Mapping):
         # allow nesting builder patterns in dicts
         return Call(type(obj), **obj)
+    elif is_iterable(obj):
+        # allow nesting builder patterns in tuples/lists
+        return Call(lambda *args: type(obj)(args), *obj)
     else:
         # the object is used as a constant value
         return Just(obj)

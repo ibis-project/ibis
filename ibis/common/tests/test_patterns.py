@@ -1260,6 +1260,15 @@ def test_builder():
     assert builder(Just(Just(1))) == Just(1)
     assert builder(fn) == Factory(fn)
 
+    b = builder(())
+    assert b.build({}) == ()
+
+    b = builder([])
+    assert b.build({}) == []
+
+    b = builder({})
+    assert b.build({}) == {}
+
     b = builder((1, 2, 3))
     assert b.args == (Just(1), Just(2), Just(3))
     assert b.build({}) == (1, 2, 3)
@@ -1275,3 +1284,14 @@ def test_builder():
     b = builder(FrozenDict({"a": 1, "b": 2, "c": 3}))
     assert b.kwargs == {"a": Just(1), "b": Just(2), "c": Just(3)}
     assert b.build({}) == FrozenDict({"a": 1, "b": 2, "c": 3})
+
+
+def test_builder_supports_string_arguments():
+    # builder() is applied on all arguments of Call() except the first one and
+    # sequences are transparently handled, the check far sequences was incorrect
+    # for strings causing infinite recursion
+    b = builder("3.14")
+    assert b.build({}) == "3.14"
+
+    c = Call(float, "1.1")
+    assert c.build({}) == 1.1
