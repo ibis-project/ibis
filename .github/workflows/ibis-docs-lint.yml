@@ -137,8 +137,7 @@ jobs:
           output-file-path: .benchmarks/output.json
           benchmark-data-dir-path: ./bench
           auto-push: false
-          comment-on-alert: true
-          alert-threshold: "300%"
+          comment-on-alert: false
 
       - uses: google-github-actions/auth@v1
         with:
@@ -152,7 +151,7 @@ jobs:
       - name: copy benchmark data to gcs
         run: |
           # remove whitespace and compress
-          jq -rcM < ./benchmarks/output.json | gzip -c > output.json.gz
+          jq -rcM < ./.benchmarks/output.json | gzip -c > output.json.gz
 
           timestamp="$(date --iso-8601=ns --utc | tr ','  '.')"
           gsutil cp output.json.gz "gs://ibis-benchmark-data/ci/${timestamp}.json.gz"
