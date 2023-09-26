@@ -12,6 +12,7 @@ import pandas as pd
 import sqlalchemy as sa
 import toolz
 from trino.sqlalchemy.datatype import ROW as _ROW
+from trino.sqlalchemy.dialect import TrinoDialect
 
 import ibis
 import ibis.common.exceptions as com
@@ -328,7 +329,10 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
                     for name, typ in (schema or table.schema()).items()
                 )
             )
-            compiled = select.compile(compile_kwargs=dict(literal_binds=True))
+
+            compiled = select.compile(
+                dialect=TrinoDialect(), compile_kwargs=dict(literal_binds=True)
+            )
 
             create_stmt += f" AS {compiled}"
 

@@ -141,6 +141,8 @@ def _literal(t, op):
         return sa.func.map(
             sa.func.list_value(*value.keys()), sa.func.list_value(*value.values())
         )
+    elif dtype.is_date():
+        return sa.cast(sa.literal(str(value)), sqla_type)
     else:
         return sa.cast(sa.literal(value), sqla_type)
 

@@ -85,6 +85,7 @@ class BackendTest(abc.ABC):
     default_identifier_case_fn = staticmethod(toolz.identity)
     stateful = True
     service_name = None
+    supports_tpch = False
 
     @property
     @abc.abstractmethod
@@ -123,6 +124,9 @@ class BackendTest(abc.ABC):
     def connect(*, tmpdir, worker_id, **kw: Any):
         """Return a connection with data loaded from `data_dir`."""
 
+    def _transform_tpch_sql(self, parsed):
+        return parsed
+
     def _load_data(self, **_: Any) -> None:
         """Load test data into a backend."""
         with self.connection.begin() as con:
@@ -132,6 +136,9 @@ class BackendTest(abc.ABC):
     def stateless_load(self, **kw):
         self.preload()
         self._load_data(**kw)
+
+        if self.supports_tpch:
+            self.load_tpch()
 
     def stateful_load(self, fn, **kw):
         if not fn.exists():
@@ -267,6 +274,43 @@ class BackendTest(abc.ABC):
 
     def make_context(self, params: Mapping[ir.Value, Any] | None = None):
         return self.api.compiler.make_context(params=params)
+
+    @property
+    def customer(self):
+        return self._tpch_table("customer")
+
+    @property
+    def lineitem(self):
+        return self._tpch_table("lineitem")
+
+    @property
+    def nation(self):
+        return self._tpch_table("nation")
+
+    @property
+    def orders(self):
+        return self._tpch_table("orders")
+
+    @property
+    def part(self):
+        return self._tpch_table("part")
+
+    @property
+    def partsupp(self):
+        return self._tpch_table("partsupp")
+
+    @property
+    def region(self):
+        return self._tpch_table("region")
+
+    @property
+    def supplier(self):
+        return self._tpch_table("supplier")
+
+    def _tpch_table(self, name: str):
+        if not self.supports_tpch:
+            pytest.skip(f"{self.name()} backend does not support testing TPC-H")
+        return self.connection.table(self.default_identifier_case_fn(name))
 
 
 class ServiceBackendTest(BackendTest):
