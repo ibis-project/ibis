@@ -571,9 +571,9 @@ def test_left_binary_op_gb(t, df, opname, argfunc):
         param(lambda _: None, id="none"),
     ],
 )
-def test_where_series(t, df, left_f, right_f):
+def test_ifelse_series(t, df, left_f, right_f):
     col_expr = t["plain_int64"]
-    result = ibis.where(
+    result = ibis.ifelse(
         col_expr > col_expr.mean(), left_f(col_expr), right_f(col_expr)
     ).execute()
 
@@ -598,16 +598,16 @@ def test_where_series(t, df, left_f, right_f):
         param(False, lambda df: pd.Series(np.repeat(3.0, len(df))), id="false"),
     ],
 )
-def test_where_scalar(t, df, cond, expected_func):
-    expr = ibis.where(cond, t["plain_int64"], 3.0)
+def test_ifelse_scalar(t, df, cond, expected_func):
+    expr = ibis.ifelse(cond, t["plain_int64"], 3.0)
     result = expr.execute()
     expected = expected_func(df)
     tm.assert_series_equal(result, expected)
 
 
-def test_where_long(batting, batting_df):
+def test_ifelse_long(batting, batting_df):
     col_expr = batting["AB"]
-    result = ibis.where(col_expr > col_expr.mean(), col_expr, 0.0).execute()
+    result = ibis.ifelse(col_expr > col_expr.mean(), col_expr, 0.0).execute()
 
     series = batting_df["AB"]
     expected = series.where(series > series.mean(), other=0.0).astype("float64")

@@ -8,7 +8,6 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.common.annotations import ValidationError
-from ibis.expr import api
 
 
 def test_type_metadata(lineitem):
@@ -19,7 +18,7 @@ def test_type_metadata(lineitem):
 
 
 def test_cast_scalar_to_decimal():
-    val = api.literal("1.2345")
+    val = ibis.literal("1.2345")
 
     casted = val.cast("decimal(15,5)")
     assert isinstance(casted, ir.DecimalScalar)
@@ -90,19 +89,19 @@ def test_decimal_aggregate_function_type(lineitem, func):
     assert result.type() == col.type()
 
 
-def test_where(lineitem):
+def test_ifelse(lineitem):
     table = lineitem
 
     q = table.l_quantity
-    expr = api.where(table.l_discount > 0, q * table.l_discount, api.null())
+    expr = ibis.ifelse(table.l_discount > 0, q * table.l_discount, ibis.null())
 
     assert isinstance(expr, ir.DecimalColumn)
 
-    expr = api.where(table.l_discount > 0, (q * table.l_discount).sum(), api.null())
+    expr = ibis.ifelse(table.l_discount > 0, (q * table.l_discount).sum(), ibis.null())
     assert isinstance(expr, ir.DecimalColumn)
 
-    expr = api.where(
-        table.l_discount.sum() > 0, (q * table.l_discount).sum(), api.null()
+    expr = ibis.ifelse(
+        table.l_discount.sum() > 0, (q * table.l_discount).sum(), ibis.null()
     )
     assert isinstance(expr, ir.DecimalScalar)
 

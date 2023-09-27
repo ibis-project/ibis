@@ -268,8 +268,8 @@ def test_where_with_between(con, alltypes, snapshot):
     con.execute(expr)
 
 
-def test_where_use_if(con, alltypes, snapshot):
-    expr = ibis.where(alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col)
+def test_ifelse_use_if(con, alltypes, snapshot):
+    expr = ibis.ifelse(alltypes.float_col > 0, alltypes.int_col, alltypes.bigint_col)
 
     result = expr.compile()
     snapshot.assert_match(result, "out.sql")

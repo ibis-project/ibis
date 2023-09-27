@@ -1808,8 +1808,29 @@ Examples
 │ no                            │
 └───────────────────────────────┘
 """
-# Deprecated, use ifelse instead: https://github.com/ibis-project/ibis/issues/7147
-where = _deferred(ir.BooleanValue.ifelse)
+
+
+@util.deprecated(instead="use `ibis.ifelse` instead", as_of="7.0")
+def where(cond, true_expr, false_expr) -> ir.Value:
+    """Construct a ternary conditional expression.
+
+    Parameters
+    ----------
+    cond : ir.Value
+        Boolean conditional expression
+    true_expr : ir.Value
+        Expression to return if `cond` evaluates to `True`
+    false_expr : ir.Value
+        Expression to return if `cond` evaluates to `False` or `NULL`
+
+    Returns
+    -------
+    Value : ir.Value
+        The value of `true_expr` if `arg` is `True` else `false_expr`
+    """
+    return ifelse(cond, true_expr, false_expr)
+
+
 coalesce = _deferred(ir.Value.coalesce)
 greatest = _deferred(ir.Value.greatest)
 least = _deferred(ir.Value.least)

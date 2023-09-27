@@ -698,12 +698,16 @@ def test_zeroifnull_column(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion"])
-def test_where_select(backend, alltypes, df):
+def test_ifelse_select(backend, alltypes, df):
     table = alltypes
     table = table.select(
         [
             "int_col",
-            (ibis.where(table["int_col"] == 0, 42, -1).cast("int64").name("where_col")),
+            (
+                ibis.ifelse(table["int_col"] == 0, 42, -1)
+                .cast("int64")
+                .name("where_col")
+            ),
         ]
     )
 
@@ -718,8 +722,8 @@ def test_where_select(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion"])
-def test_where_column(backend, alltypes, df):
-    expr = ibis.where(alltypes["int_col"] == 0, 42, -1).cast("int64").name("where_col")
+def test_ifelse_column(backend, alltypes, df):
+    expr = ibis.ifelse(alltypes["int_col"] == 0, 42, -1).cast("int64").name("where_col")
     result = expr.execute()
 
     expected = pd.Series(

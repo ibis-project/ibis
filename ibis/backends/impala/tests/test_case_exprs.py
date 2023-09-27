@@ -52,8 +52,8 @@ def test_search_case(search_case, snapshot):
     snapshot.assert_match(result, "out.sql")
 
 
-def test_where_use_if(table, snapshot):
-    expr = ibis.where(table.f > 0, table.e, table.a)
+def test_ifelse_use_if(table, snapshot):
+    expr = ibis.ifelse(table.f > 0, table.e, table.a)
     assert isinstance(expr, ir.FloatingValue)
 
     result = translate(expr)
