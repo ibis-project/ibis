@@ -3898,6 +3898,33 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├───────┼───────┼────────┼────────┤
         │     1 │     1 │ a      │ a      │
         └───────┴───────┴────────┴────────┘
+
+        When there are duplicate **renames** in a call to relocate, the
+        last one is preserved
+
+        >>> t.relocate(e="d", f="d")
+        ┏━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ f      ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ string │ int64 │ string │ int64 │
+        ├────────┼───────┼────────┼───────┤
+        │ a      │     1 │ a      │     1 │
+        └────────┴───────┴────────┴───────┘
+
+        However, if there are duplicates that are **not** part of a rename, the
+        order specified in the relocate call is preserved
+
+        >>> t.relocate(
+        ...     "b",
+        ...     s.of_type("string"),  # "b" is a string column, so the selector matches
+        ... )
+        ┏━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ b      ┃ d      ┃ a     ┃ c     ┃
+        ┡━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ string │ string │ int64 │ int64 │
+        ├────────┼────────┼───────┼───────┤
+        │ a      │ a      │     1 │     1 │
+        └────────┴────────┴───────┴───────┘
         """
         import ibis.selectors as s
 
@@ -3917,11 +3944,13 @@ class Table(Expr, _FixedTextJupyterMixin):
             zip(kwargs.keys(), map(s._to_selector, kwargs.values())),
         ):
             for pos in sel.positions(self):
-                if pos in sels:
-                    # make sure the last duplicate column wins by reinserting
-                    # the position if it already exists
+                renamed = name is not None
+                if pos in sels and renamed:
+                    # **only when renaming**: make sure the last duplicate
+                    # column wins by reinserting the position if it already
+                    # exists
                     del sels[pos]
-                sels[pos] = name if name is not None else table_columns[pos]
+                sels[pos] = name if renamed else table_columns[pos]
 
         ncols = len(table_columns)
 
