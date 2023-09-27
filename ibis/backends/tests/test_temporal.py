@@ -1258,6 +1258,12 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     raises=BaseException,  # pyo3_runtime.PanicException is not a subclass of Exception
     reason="failed to determine supertype of datetime[ns, UTC] and datetime[ns]",
 )
+@pytest.mark.never(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    # perhaps we should consider disallowing this in ibis as well
+    reason="BigQuery doesn't support comparing DATETIME and TIMESTAMP; numpy doesn't support timezones",
+)
 def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name):
     ts = np.datetime64("2010-03-02 00:00:00.000123")
 
@@ -2214,11 +2220,6 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
     raises=pd.errors.OutOfBoundsDatetime,
-)
-@pytest.mark.notimpl(
-    ["bigquery"],
-    reason="bigquery returns a datetime with a timezone",
-    raises=AssertionError,
 )
 def test_big_timestamp(con):
     # TODO: test with a timezone
