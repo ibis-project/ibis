@@ -477,7 +477,6 @@ quartodoc:
             - Schema
 
     - title: Connection APIs
-      package: ibis.expr.operations.udf
       contents:
         - kind: page
           package: ibis
