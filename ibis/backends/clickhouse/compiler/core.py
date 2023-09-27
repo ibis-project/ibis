@@ -28,7 +28,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.clickhouse.compiler.relations import translate_rel
 from ibis.backends.clickhouse.compiler.values import translate_val
-from ibis.common.patterns import Call
+from ibis.common.patterns import Call, _
 from ibis.expr.analysis import c, p, x, y
 
 if TYPE_CHECKING:
@@ -100,25 +100,24 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
 
     # replace the right side of InColumn into a scalar subquery for sql
     # backends
-    replace_in_column_with_table_array_view = p.InColumn(x, y) >> c.InColumn(
-        x,
-        c.TableArrayView(
+    replace_in_column_with_table_array_view = p.InColumn(..., y) >> _.copy(
+        options=c.TableArrayView(
             c.Selection(table=a.find_first_base_table(y), selections=(y,))
         ),
     )
 
     # replace any checks against an empty right side of the IN operation with
     # `False`
-    replace_empty_in_values_with_false = p.InValues(x, ()) >> c.Literal(
+    replace_empty_in_values_with_false = p.InValues(..., ()) >> c.Literal(
         False, dtype="bool"
     )
 
     # replace `NotExistsSubquery` with `Not(ExistsSubquery)`
     #
     # this allows to avoid having another rule to negate ExistsSubquery
-    replace_notexists_subquery_with_not_exists = p.NotExistsSubquery(
-        x, predicates=y
-    ) >> c.Not(c.ExistsSubquery(x, predicates=y))
+    replace_notexists_subquery_with_not_exists = p.NotExistsSubquery(...) >> c.Not(
+        c.ExistsSubquery(...)
+    )
 
     # clickhouse-specific rewrite to turn notany/notall into equivalent
     # already-defined operations
