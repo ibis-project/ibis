@@ -105,7 +105,7 @@ def _literal(_, op):
 
 def _group_concat(t, op):
     if op.where is not None:
-        arg = t.translate(ops.Where(op.where, op.arg, ibis.NA))
+        arg = t.translate(ops.IfElse(op.where, op.arg, ibis.NA))
     else:
         arg = t.translate(op.arg)
     sep = t.translate(op.sep)
@@ -172,7 +172,7 @@ operation_registry.update(
         ops.Literal: _literal,
         ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         # static checks are not happy with using "if" as a property
-        ops.Where: fixed_arity(getattr(sa.func, "if"), 3),
+        ops.IfElse: fixed_arity(getattr(sa.func, "if"), 3),
         # strings
         ops.StringFind: _string_find,
         ops.FindInSet: (

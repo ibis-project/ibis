@@ -39,7 +39,7 @@ def variance_reduction(func_name, suffix=None):
         func = getattr(sa.func, f"{func_name}{suffix[op.how]}")
 
         if op.where is not None:
-            arg = ops.Where(op.where, arg, None)
+            arg = ops.IfElse(op.where, arg, None)
 
         return func(t.translate(arg))
 
@@ -478,7 +478,7 @@ def _count_star(t, op):
     if t._has_reduction_filter_syntax:
         return sa.func.count().filter(t.translate(where))
 
-    return sa.func.count(t.translate(ops.Where(where, 1, None)))
+    return sa.func.count(t.translate(ops.IfElse(where, 1, None)))
 
 
 def _count_distinct_star(t, op):
@@ -502,7 +502,7 @@ def _count_distinct_star(t, op):
             "filter with more than one column"
         )
 
-    return sa.func.count(t.translate(ops.Where(op.where, sa.distinct(*cols), None)))
+    return sa.func.count(t.translate(ops.IfElse(op.where, sa.distinct(*cols), None)))
 
 
 def _extract(fmt: str):
@@ -652,7 +652,7 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.IdenticalTo: fixed_arity(
         sa.sql.expression.ColumnElement.is_not_distinct_from, 2
     ),
-    ops.Where: fixed_arity(
+    ops.IfElse: fixed_arity(
         lambda predicate, value_if_true, value_if_false: sa.case(
             (predicate, value_if_true),
             else_=value_if_false,

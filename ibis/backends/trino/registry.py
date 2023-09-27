@@ -216,7 +216,7 @@ def _unnest(t, op):
     return sa.cast(row, t.get_sqla_type(row_type))
 
 
-def _where(t, op):
+def _ifelse(t, op):
     return if_(
         t.translate(op.bool_expr),
         t.translate(op.true_expr),
@@ -321,7 +321,7 @@ operation_registry.update(
     {
         # conditional expressions
         # static checks are not happy with using "if" as a property
-        ops.Where: _where,
+        ops.IfElse: _ifelse,
         # boolean reductions
         ops.Any: reduction(sa.func.bool_or),
         ops.All: reduction(sa.func.bool_and),

@@ -18,8 +18,8 @@ operation_registry.update(sqlalchemy_window_functions_registry)
 
 def _sign(t, op):
     arg = op.arg
-    cond1 = ops.Where(ops.Greater(arg, 0), 1, -1)
-    cond2 = ops.Where(ops.Equals(arg, 0), 0, cond1)
+    cond1 = ops.IfElse(ops.Greater(arg, 0), 1, -1)
+    cond2 = ops.IfElse(ops.Equals(arg, 0), 0, cond1)
     return t.translate(cond2)
 
 

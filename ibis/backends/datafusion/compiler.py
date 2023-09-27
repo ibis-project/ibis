@@ -628,7 +628,7 @@ def agg_udf(op, **kw):
         # it so this will fail if `where` is in the function's signature.
         #
         # Filtering aggregates are not yet possible.
-        translate(arg if where is None else ops.Where(where, arg, NA), **kw)
+        translate(arg if where is None else ops.IfElse(where, arg, NA), **kw)
         for argname, arg in zip(op.argnames, op.args)
         if argname != "where"
     )

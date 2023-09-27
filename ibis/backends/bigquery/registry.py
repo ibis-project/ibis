@@ -391,7 +391,7 @@ def _arbitrary(translator, op):
     arg, how, where = op.args
 
     if where is not None:
-        arg = ops.Where(where, arg, ibis.NA)
+        arg = ops.IfElse(where, arg, ibis.NA)
 
     if how != "first":
         raise com.UnsupportedOperationError(
@@ -406,7 +406,7 @@ def _first(translator, op):
     where = op.where
 
     if where is not None:
-        arg = ops.Where(where, arg, ibis.NA)
+        arg = ops.IfElse(where, arg, ibis.NA)
 
     arg = translator.translate(arg)
     return f"ARRAY_AGG({arg} IGNORE NULLS)[SAFE_OFFSET(0)]"
@@ -417,7 +417,7 @@ def _last(translator, op):
     where = op.where
 
     if where is not None:
-        arg = ops.Where(where, arg, ibis.NA)
+        arg = ops.IfElse(where, arg, ibis.NA)
 
     arg = translator.translate(arg)
     return f"ARRAY_REVERSE(ARRAY_AGG({arg} IGNORE NULLS))[SAFE_OFFSET(0)]"
@@ -574,7 +574,7 @@ def compiles_approx(translator, op):
     where = op.where
 
     if where is not None:
-        arg = ops.Where(where, arg, ibis.NA)
+        arg = ops.IfElse(where, arg, ibis.NA)
 
     return f"APPROX_QUANTILES({translator.translate(arg)}, 2)[OFFSET(1)]"
 
@@ -585,8 +585,8 @@ def compiles_covar_corr(func):
         right = op.right
 
         if (where := op.where) is not None:
-            left = ops.Where(where, left, None)
-            right = ops.Where(where, right, None)
+            left = ops.IfElse(where, left, None)
+            right = ops.IfElse(where, right, None)
 
         left = translator.translate(
             ops.Cast(left, dt.int64) if left.dtype.is_boolean() else left
@@ -648,7 +648,7 @@ def _zeroifnull(t, op):
 def _array_agg(t, op):
     arg = op.arg
     if (where := op.where) is not None:
-        arg = ops.Where(where, arg, ibis.NA)
+        arg = ops.IfElse(where, arg, ibis.NA)
     return f"ARRAY_AGG({t.translate(arg)} IGNORE NULLS)"
 
 
@@ -656,7 +656,7 @@ def _arg_min_max(sort_dir: Literal["ASC", "DESC"]):
     def translate(t, op: ops.ArgMin | ops.ArgMax) -> str:
         arg = op.arg
         if (where := op.where) is not None:
-            arg = ops.Where(where, arg, None)
+            arg = ops.IfElse(where, arg, None)
         arg = t.translate(arg)
         key = t.translate(op.key)
         return f"ARRAY_AGG({arg} IGNORE NULLS ORDER BY {key} {sort_dir} LIMIT 1)[SAFE_OFFSET(0)]"

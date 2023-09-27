@@ -347,7 +347,7 @@ operation_registry = {
     ops.Coalesce: varargs("coalesce"),
     ops.Greatest: varargs("greatest"),
     ops.Least: varargs("least"),
-    ops.Where: fixed_arity("if", 3),
+    ops.IfElse: fixed_arity("if", 3),
     ops.Between: between,
     ops.InValues: binary_infix.in_values,
     ops.InColumn: binary_infix.in_column,
