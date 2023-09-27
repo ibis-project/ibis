@@ -24,10 +24,10 @@ def _reduction(func, cast_type="int32"):
                 nullable = arg.dtype.nullable
                 arg = ops.Cast(arg, dt.dtype(cast_type)(nullable=nullable))
             else:
-                arg = ops.Where(arg, 1, 0)
+                arg = ops.IfElse(arg, 1, 0)
 
         if where is not None:
-            arg = ops.Where(where, arg, None)
+            arg = ops.IfElse(where, arg, None)
         return func(t.translate(arg))
 
     return reduction_compiler
@@ -117,7 +117,7 @@ operation_registry.update(
         ops.Min: _reduction(sa.func.min),
         ops.Sum: _reduction(sa.func.sum),
         ops.Mean: _reduction(sa.func.avg, "float64"),
-        ops.Where: fixed_arity(sa.func.iif, 3),
+        ops.IfElse: fixed_arity(sa.func.iif, 3),
         # string methods
         ops.Capitalize: unary(
             lambda arg: sa.func.concat(

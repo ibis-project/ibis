@@ -1268,10 +1268,10 @@ def pd_where(cond, true, false):
         return false
 
 
-@execute_node.register(ops.Where, (pd.Series, *boolean_types), pd.Series, pd.Series)
-@execute_node.register(ops.Where, (pd.Series, *boolean_types), pd.Series, simple_types)
-@execute_node.register(ops.Where, (pd.Series, *boolean_types), simple_types, pd.Series)
-@execute_node.register(ops.Where, (pd.Series, *boolean_types), type(None), type(None))
+@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), pd.Series, pd.Series)
+@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), pd.Series, simple_types)
+@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), simple_types, pd.Series)
+@execute_node.register(ops.IfElse, (pd.Series, *boolean_types), type(None), type(None))
 def execute_node_where(op, cond, true, false, **kwargs):
     return pd_where(cond, true, false)
 
@@ -1281,9 +1281,9 @@ def execute_node_where(op, cond, true, false, **kwargs):
 # promotion.
 for typ in (str, *scalar_types):
     for cond_typ in (pd.Series, *boolean_types):
-        execute_node.register(ops.Where, cond_typ, typ, typ)(execute_node_where)
-        execute_node.register(ops.Where, cond_typ, type(None), typ)(execute_node_where)
-        execute_node.register(ops.Where, cond_typ, typ, type(None))(execute_node_where)
+        execute_node.register(ops.IfElse, cond_typ, typ, typ)(execute_node_where)
+        execute_node.register(ops.IfElse, cond_typ, type(None), typ)(execute_node_where)
+        execute_node.register(ops.IfElse, cond_typ, typ, type(None))(execute_node_where)
 
 
 @execute_node.register(ops.DatabaseTable, PandasBackend)

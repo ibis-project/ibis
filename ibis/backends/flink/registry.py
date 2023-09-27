@@ -241,7 +241,7 @@ operation_registry.update(
         ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
         # Other operations
         ops.Literal: _literal,
-        ops.Where: _filter,
+        ops.IfElse: _filter,
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampFromUNIX: _timestamp_from_unix,
         ops.Window: _window,

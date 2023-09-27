@@ -120,7 +120,7 @@ class AlchemyExprTranslator(ExprTranslator):
                 return sa_func(*sa_args).filter(self.translate(where))
             else:
                 sa_args = tuple(
-                    self.translate(ops.Where(where, arg, None)) for arg in argtuple
+                    self.translate(ops.IfElse(where, arg, None)) for arg in argtuple
                 )
         else:
             sa_args = tuple(map(self.translate, argtuple))
@@ -135,7 +135,7 @@ rewrites = AlchemyExprTranslator.rewrites
 def _nullifzero(op):
     arg = op.arg
     condition = ops.Equals(arg, ops.Literal(0, dtype=op.arg.dtype))
-    return ops.Where(condition, ibis.NA, arg)
+    return ops.IfElse(condition, ibis.NA, arg)
 
 
 # TODO This was previously implemented with the legacy `@compiles` decorator.

@@ -385,8 +385,8 @@ def nullifzero(op, **kw):
     return pl.when(arg == 0).then(None).otherwise(arg)
 
 
-@translate.register(ops.Where)
-def where(op, **kw):
+@translate.register(ops.IfElse)
+def ifelse(op, **kw):
     bool_expr = translate(op.bool_expr, **kw)
     true_expr = translate(op.true_expr, **kw)
     false_null_expr = translate(op.false_null_expr, **kw)
@@ -739,8 +739,8 @@ def correlation(op, **kw):
         y = ops.Cast(y, dt.Int32(nullable=y_type.nullable))
 
     if (where := op.where) is not None:
-        x = ops.Where(where, x, None)
-        y = ops.Where(where, y, None)
+        x = ops.IfElse(where, x, None)
+        y = ops.IfElse(where, y, None)
 
     return pl.corr(translate(x, **kw), translate(y, **kw))
 
@@ -1105,7 +1105,7 @@ def execute_hash(op, **kw):
 def execute_not_all(op, **kw):
     arg = op.arg
     if (op_where := op.where) is not None:
-        arg = ops.Where(op_where, arg, None)
+        arg = ops.IfElse(op_where, arg, None)
 
     return translate(arg, **kw).all().is_not()
 
@@ -1114,7 +1114,7 @@ def execute_not_all(op, **kw):
 def execute_not_any(op, **kw):
     arg = op.arg
     if (op_where := op.where) is not None:
-        arg = ops.Where(op_where, arg, None)
+        arg = ops.IfElse(op_where, arg, None)
 
     return translate(arg, **kw).any().is_not()
 
@@ -1124,8 +1124,8 @@ def _arg_min_max(op, func, **kw):
     arg = op.arg
 
     if (op_where := op.where) is not None:
-        key = ops.Where(op_where, key, None)
-        arg = ops.Where(op_where, arg, None)
+        key = ops.IfElse(op_where, key, None)
+        arg = ops.IfElse(op_where, arg, None)
 
     translate_arg = translate(arg, **kw)
     translate_key = translate(key, **kw)

@@ -263,7 +263,7 @@ class BaseSQLBackend(BaseBackend):
             func = ".".join(filter(None, (op.__udf_namespace__, op.__func_name__)))
             args = ", ".join(
                 t.translate(
-                    ops.Where(where, arg, NA)
+                    ops.IfElse(where, arg, NA)
                     if (where := op.where) is not None
                     else arg
                 )

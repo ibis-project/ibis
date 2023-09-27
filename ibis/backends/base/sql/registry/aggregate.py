@@ -8,7 +8,7 @@ import ibis.expr.operations as ops
 
 def _reduction_format(translator, func_name, where, arg, *args):
     if where is not None:
-        arg = ops.Where(where, arg, ibis.NA)
+        arg = ops.IfElse(where, arg, ibis.NA)
 
     return "{}({})".format(
         func_name,
@@ -38,7 +38,7 @@ def variance_like(func_name):
 
 def count_distinct(translator, op):
     if op.where is not None:
-        arg_formatted = translator.translate(ops.Where(op.where, op.arg, None))
+        arg_formatted = translator.translate(ops.IfElse(op.where, op.arg, None))
     else:
         arg_formatted = translator.translate(op.arg)
     return f"count(DISTINCT {arg_formatted})"

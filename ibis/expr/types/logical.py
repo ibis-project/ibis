@@ -36,21 +36,21 @@ class BooleanValue(NumericValue):
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"is_person": [True, False, True, None]})
         >>> t.is_person.ifelse("yes", "no")
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ Where(is_person, 'yes', 'no') ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                        │
-        ├───────────────────────────────┤
-        │ yes                           │
-        │ no                            │
-        │ yes                           │
-        │ no                            │
-        └───────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ IfElse(is_person, 'yes', 'no') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                         │
+        ├────────────────────────────────┤
+        │ yes                            │
+        │ no                             │
+        │ yes                            │
+        │ no                             │
+        └────────────────────────────────┘
         """
         # Result will be the result of promotion of true/false exprs. These
         # might be conflicting types; same type resolution as case expressions
         # must be used.
-        return ops.Where(self, true_expr, false_expr).to_expr()
+        return ops.IfElse(self, true_expr, false_expr).to_expr()
 
     def __and__(self, other: BooleanValue) -> BooleanValue:
         """Construct a binary AND conditional expression with `self` and `other`.

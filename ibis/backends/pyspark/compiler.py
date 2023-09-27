@@ -1924,8 +1924,8 @@ def compile_zero_if_null(t, op, **kwargs):
     return F.when(result, F.lit(0)).otherwise(col)
 
 
-@compiles(ops.Where)
-def compile_where(t, op, **kwargs):
+@compiles(ops.IfElse)
+def compile_ifelse(t, op, **kwargs):
     return F.when(
         t.translate(op.bool_expr, **kwargs),
         t.translate(op.true_expr, **kwargs),

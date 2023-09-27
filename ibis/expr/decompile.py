@@ -238,8 +238,8 @@ def between(op, arg, lower_bound, upper_bound):
     return f"{arg}.between({lower_bound}, {upper_bound})"
 
 
-@translate.register(ops.Where)
-def where(op, bool_expr, true_expr, false_null_expr):
+@translate.register(ops.IfElse)
+def ifelse(op, bool_expr, true_expr, false_null_expr):
     return f"{bool_expr}.ifelse({true_expr}, {false_null_expr})"
 
 

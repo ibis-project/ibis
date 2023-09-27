@@ -248,7 +248,7 @@ def _mode(t, op):
         sa_arg = ops.Cast(op.arg, to=dt.int32)
 
     if op.where is not None:
-        sa_arg = ops.Where(op.where, sa_arg, None)
+        sa_arg = ops.IfElse(op.where, sa_arg, None)
 
     return sa.func._ibis_sqlite_mode(t.translate(sa_arg))
 
@@ -423,7 +423,7 @@ operation_registry.update(
         # sqlite doesn't implement a native xor operator
         ops.BitwiseXor: fixed_arity(sa.func._ibis_sqlite_xor, 2),
         ops.BitwiseNot: unary(sa.func._ibis_sqlite_inv),
-        ops.Where: fixed_arity(sa.func.iif, 3),
+        ops.IfElse: fixed_arity(sa.func.iif, 3),
         ops.Pi: fixed_arity(sa.func._ibis_sqlite_pi, 0),
         ops.E: fixed_arity(sa.func._ibis_sqlite_e, 0),
         ops.TypeOf: unary(sa.func.typeof),

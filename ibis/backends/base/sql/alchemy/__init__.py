@@ -771,7 +771,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             elif t._has_reduction_filter_syntax:
                 return func(*map(t.translate, args)).filter(t.translate(where))
             else:
-                return func(*(t.translate(ops.Where(where, arg, NA)) for arg in args))
+                return func(*(t.translate(ops.IfElse(where, arg, NA)) for arg in args))
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         with self.begin() as con:

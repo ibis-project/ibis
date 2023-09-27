@@ -324,7 +324,7 @@ operation_registry.update(
         ops.Round: _round,
         ops.Modulus: fixed_arity(sa.func.mod, 2),
         ops.Mode: reduction(sa.func.mode),
-        ops.Where: fixed_arity(sa.func.iff, 3),
+        ops.IfElse: fixed_arity(sa.func.iff, 3),
         # numbers
         ops.RandomScalar: fixed_arity(
             lambda: sa.func.uniform(

@@ -425,7 +425,7 @@ def _covar(t, op):
 def _mode(t, op):
     arg = op.arg
     if (where := op.where) is not None:
-        arg = ops.Where(where, arg, None)
+        arg = ops.IfElse(where, arg, None)
     return sa.func.mode().within_group(t.translate(arg))
 
 
@@ -437,7 +437,7 @@ def _quantile(t, op):
         )
     arg = op.arg
     if (where := op.where) is not None:
-        arg = ops.Where(where, arg, None)
+        arg = ops.IfElse(where, arg, None)
     return sa.func.percentile_cont(t.translate(op.quantile)).within_group(
         t.translate(arg)
     )
@@ -446,7 +446,7 @@ def _quantile(t, op):
 def _median(t, op):
     arg = op.arg
     if (where := op.where) is not None:
-        arg = ops.Where(where, arg, None)
+        arg = ops.IfElse(where, arg, None)
 
     return sa.func.percentile_cont(0.5).within_group(t.translate(arg))
 
@@ -469,8 +469,8 @@ def _binary_variance_reduction(func):
             return result
         else:
             if (where := op.where) is not None:
-                x = ops.Where(where, x, None)
-                y = ops.Where(where, y, None)
+                x = ops.IfElse(where, x, None)
+                y = ops.IfElse(where, y, None)
             return func(t.translate(x), t.translate(y))
 
     return variance_compiler

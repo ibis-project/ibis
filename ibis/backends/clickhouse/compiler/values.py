@@ -792,7 +792,7 @@ _simple_ops = {
     ops.E: "e",
     # for more than 2 args this should be arrayGreatest|Least(array([]))
     # because clickhouse"s greatest and least doesn"t support varargs
-    ops.Where: "if",
+    ops.IfElse: "if",
     ops.ArrayLength: "length",
     ops.Unnest: "arrayJoin",
     ops.Degrees: "degrees",

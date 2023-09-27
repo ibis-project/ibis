@@ -376,14 +376,14 @@ def _rewrite_clip(op):
     if (upper := op.upper) is not None:
         clipped_lower = ops.Least((arg, ops.Cast(upper, dtype)))
         if dtype.nullable:
-            arg = ops.Where(arg_is_null, arg, clipped_lower)
+            arg = ops.IfElse(arg_is_null, arg, clipped_lower)
         else:
             arg = clipped_lower
 
     if (lower := op.lower) is not None:
         clipped_upper = ops.Greatest((arg, ops.Cast(lower, dtype)))
         if dtype.nullable:
-            arg = ops.Where(arg_is_null, arg, clipped_upper)
+            arg = ops.IfElse(arg_is_null, arg, clipped_upper)
         else:
             arg = clipped_upper
 

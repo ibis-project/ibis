@@ -150,7 +150,7 @@ class InColumn(Value):
 
 
 @public
-class Where(Value):
+class IfElse(Value):
     """Ternary case expression, equivalent to.
 
     bool_expr.case().when(True, true_expr).else_(false_or_null_expr)
