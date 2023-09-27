@@ -60,11 +60,11 @@ if TYPE_CHECKING:
 a = Call.namespace(an)
 
 
-def _translate_node(node, *args, **kwargs):
+def _translate_node(node, *args, aliases, **kwargs):
     if isinstance(node, ops.Value):
         return translate_val(node, *args, **kwargs)
     assert isinstance(node, ops.TableNode)
-    return translate_rel(node, *args, **kwargs)
+    return translate_rel(node, *args, aliases=aliases, **kwargs)
 
 
 def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expression:

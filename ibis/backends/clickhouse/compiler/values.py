@@ -188,7 +188,7 @@ translate_val.register(ops.MultiQuantile)(_quantile("quantiles"))
 def _agg_variance_like(func):
     variants = {"sample": f"{func}Samp", "pop": f"{func}Pop"}
 
-    def formatter(op, *, how, where=None, aliases, **kw):
+    def formatter(op, *, how, where=None, **kw):
         funcname = variants[how]
         return agg[funcname](*kw.values(), where=where)
 
@@ -856,13 +856,13 @@ for _op, _name in _simple_ops.items():
     if issubclass(_op, ops.Reduction):
 
         @translate_val.register(_op)
-        def _fmt(op, _name: str = _name, *, where=None, aliases, **kw):
+        def _fmt(_, _name: str = _name, *, where=None, **kw):
             return agg[_name](*kw.values(), where=where)
 
     else:
 
         @translate_val.register(_op)
-        def _fmt(op, _name: str = _name, *, aliases, **kw):
+        def _fmt(_, _name: str = _name, **kw):
             return f[_name](*kw.values())
 
 
@@ -1078,10 +1078,10 @@ def _count_distinct_star(op: ops.CountDistinctStar, *, where=None, **_: Any) -> 
 
 
 @translate_val.register(ops.ScalarUDF)
-def _scalar_udf(op, *, aliases, **kw) -> str:
+def _scalar_udf(op, **kw) -> str:
     return f[op.__full_name__](*kw.values())
 
 
 @translate_val.register(ops.AggUDF)
-def _agg_udf(op, *, where=None, aliases, **kw) -> str:
+def _agg_udf(op, *, where, **kw) -> str:
     return agg[op.__full_name__](*kw.values(), where=where)
