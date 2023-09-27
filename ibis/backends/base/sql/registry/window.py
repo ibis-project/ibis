@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import ibis.common.exceptions as com
-import ibis.expr.analysis as an
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
@@ -14,32 +13,6 @@ _map_interval_to_microseconds = {
     "ms": 1000,
     "us": 1,
 }
-
-
-_cumulative_to_reduction = {
-    ops.CumulativeSum: ops.Sum,
-    ops.CumulativeMin: ops.Min,
-    ops.CumulativeMax: ops.Max,
-    ops.CumulativeMean: ops.Mean,
-    ops.CumulativeAny: ops.Any,
-    ops.CumulativeAll: ops.All,
-}
-
-
-def cumulative_to_window(translator, func, frame):
-    klass = _cumulative_to_reduction[type(func)]
-    func = klass(*func.args)
-
-    try:
-        rule = translator._rewrites[type(func)]
-    except KeyError:
-        pass
-    else:
-        func = rule(func)
-
-    frame = frame.copy(start=None, end=0)
-    expr = an.windowize_function(func.to_expr(), frame)
-    return expr.op()
 
 
 def interval_boundary_to_integer(boundary):
@@ -128,10 +101,6 @@ def window(translator, op):
         raise com.UnsupportedOperationError(
             f"{type(func)} is not supported in window functions"
         )
-
-    if isinstance(func, ops.CumulativeOp):
-        arg = cumulative_to_window(translator, func, op.frame)
-        return translator.translate(arg)
 
     # Some analytic functions need to have the expression of interest in
     # the ORDER BY part of the window clause

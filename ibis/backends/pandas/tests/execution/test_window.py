@@ -239,8 +239,8 @@ def test_batting_approx_median(players, players_df):
 
 @pytest.mark.parametrize("op", ["sum", "mean", "min", "max"])
 def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
-    ibis_method = methodcaller(f"cum{op}")
-    expr = ibis_method(batting.order_by([batting.yearID]).G)
+    ibis_method = methodcaller(f"cum{op}", order_by=batting.yearID)
+    expr = ibis_method(batting.G)
     result = expr.execute().astype("float64")
 
     pandas_method = methodcaller(op)

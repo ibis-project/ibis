@@ -4,12 +4,7 @@ from typing import TYPE_CHECKING
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sql.registry import (
-    fixed_arity,
-    helpers,
-    unary,
-    window,
-)
+from ibis.backends.base.sql.registry import fixed_arity, helpers, unary
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
@@ -180,10 +175,6 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
         raise com.UnsupportedOperationError(
             f"{type(func)} is not supported in window functions"
         )
-
-    if isinstance(func, ops.CumulativeOp):
-        arg = window.cumulative_to_window(translator, func, op.frame)
-        return translator.translate(arg)
 
     if isinstance(frame, ops.RowsWindowFrame):
         if frame.max_lookback is not None:

@@ -14,7 +14,6 @@ from ibis.backends.base.sql.registry.main import (
     unary,
 )
 from ibis.backends.base.sql.registry.window import (
-    cumulative_to_window,
     format_window_frame,
     time_range_to_range_window,
 )
@@ -30,7 +29,6 @@ __all__ = (
     "type_to_sql_string",
     "reduction",
     "unary",
-    "cumulative_to_window",
     "format_window_frame",
     "time_range_to_range_window",
 )

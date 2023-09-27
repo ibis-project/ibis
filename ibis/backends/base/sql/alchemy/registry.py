@@ -311,29 +311,6 @@ def _endswith(t, op):
     return t.translate(op.arg).endswith(t.translate(op.end))
 
 
-_cumulative_to_reduction = {
-    ops.CumulativeSum: ops.Sum,
-    ops.CumulativeMin: ops.Min,
-    ops.CumulativeMax: ops.Max,
-    ops.CumulativeMean: ops.Mean,
-    ops.CumulativeAny: ops.Any,
-    ops.CumulativeAll: ops.All,
-}
-
-
-def _cumulative_to_window(translator, op, frame):
-    klass = _cumulative_to_reduction[type(op)]
-    new_op = klass(*op.args)
-    new_expr = new_op.to_expr().name(op.name)
-    new_frame = frame.copy(start=None, end=0)
-
-    if type(new_op) in translator._rewrites:
-        new_expr = translator._rewrites[type(new_op)](new_expr)
-
-    # TODO(kszucs): rewrite to receive and return an ops.Node
-    return an.windowize_function(new_expr, frame=new_frame)
-
-
 def _translate_window_boundary(boundary):
     if boundary is None:
         return None
@@ -349,10 +326,6 @@ def _translate_window_boundary(boundary):
 
 def _window_function(t, window):
     func = window.func.__window_op__
-
-    if isinstance(func, ops.CumulativeOp):
-        func = _cumulative_to_window(t, func, window.frame).op()
-        return t.translate(func)
 
     reduction = t.translate(func)
 
@@ -717,12 +690,6 @@ sqlalchemy_window_functions_registry = {
     ops.CumeDist: unary(lambda _: sa.func.cume_dist()),
     ops.NthValue: _nth_value,
     ops.WindowFunction: _window_function,
-    ops.CumulativeMax: unary(sa.func.max),
-    ops.CumulativeMin: unary(sa.func.min),
-    ops.CumulativeSum: unary(sa.func.sum),
-    ops.CumulativeMean: unary(sa.func.avg),
-    ops.CumulativeAny: unary(sa.func.bool_or),
-    ops.CumulativeAll: unary(sa.func.bool_and),
 }
 
 geospatial_functions = {

@@ -246,12 +246,6 @@ operation_registry.update(
 )
 
 _invalid_operations = {
-    ops.CumulativeAll,
-    ops.CumulativeAny,
-    ops.CumulativeMax,
-    ops.CumulativeMean,
-    ops.CumulativeMin,
-    ops.CumulativeSum,
     ops.NTile,
 }
 

@@ -7,7 +7,6 @@ from public import public
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Column, Scalar, Value
 
 
@@ -76,71 +75,6 @@ class RowNumber(RankBase):
 
 
 @public
-class Cumulative(Analytic):
-    pass
-
-
-@public
-class CumulativeSum(Cumulative):
-    """Cumulative sum.
-
-    Requires an ordering window.
-    """
-
-    arg: Column[dt.Numeric]
-
-    @attribute
-    def dtype(self):
-        return dt.higher_precedence(self.arg.dtype.largest, dt.int64)
-
-
-@public
-class CumulativeMean(Cumulative):
-    """Cumulative mean.
-
-    Requires an order window.
-    """
-
-    arg: Column[dt.Numeric]
-
-    @attribute
-    def dtype(self):
-        return dt.higher_precedence(self.arg.dtype.largest, dt.float64)
-
-
-@public
-class CumulativeMax(Cumulative):
-    arg: Column[dt.Any]
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
-class CumulativeMin(Cumulative):
-    """Cumulative min.
-
-    Requires an order window.
-    """
-
-    arg: Column[dt.Any]
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
-class CumulativeAny(Cumulative):
-    arg: Column[dt.Boolean]
-    dtype = rlz.dtype_like("arg")
-
-
-@public
-class CumulativeAll(Cumulative):
-    arg: Column[dt.Boolean]
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
 class PercentRank(Analytic):
     arg: Column[dt.Any]
 
@@ -190,4 +124,4 @@ class NthValue(Analytic):
     dtype = rlz.dtype_like("arg")
 
 
-public(AnalyticOp=Analytic, CumulativeOp=Cumulative)
+public(AnalyticOp=Analytic)

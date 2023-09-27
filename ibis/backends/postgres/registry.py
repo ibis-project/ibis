@@ -689,8 +689,6 @@ operation_registry.update(
             lambda arg: sa.func.trim(sa.func.to_char(arg, "Day")), 1
         ),
         ops.TimeFromHMS: fixed_arity(sa.func.make_time, 3),
-        ops.CumulativeAll: unary(sa.func.bool_and),
-        ops.CumulativeAny: unary(sa.func.bool_or),
         # array operations
         ops.ArrayLength: unary(sa.func.cardinality),
         ops.ArrayCollect: reduction(sa.func.array_agg),

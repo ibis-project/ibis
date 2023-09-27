@@ -475,9 +475,6 @@ operation_registry.update(
 
 _invalid_operations = {
     # ibis.expr.operations.analytic
-    ops.CumulativeAll,
-    ops.CumulativeAny,
-    ops.CumulativeOp,
     ops.NTile,
     # ibis.expr.operations.strings
     ops.Translate,

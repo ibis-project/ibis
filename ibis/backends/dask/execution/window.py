@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import operator
-import re
 from typing import TYPE_CHECKING, Any, Callable, NoReturn
 
 import dask.dataframe as dd
@@ -125,7 +124,6 @@ def get_aggcontext_window(
             output_type=output_type,
         )
     elif frame.start is not None:
-        assert not isinstance(operand, ops.CumulativeOp)
         if isinstance(frame, ops.RowsWindowFrame):
             max_lookback = frame.max_lookback
         else:
@@ -359,27 +357,6 @@ def execute_window_op(
         result.divisions = root_data.divisions
 
     return result
-
-
-@execute_node.register(
-    (ops.CumulativeSum, ops.CumulativeMax, ops.CumulativeMin),
-    (dd.Series, ddgb.SeriesGroupBy),
-)
-def execute_series_cumulative_sum_min_max(op, data, **kwargs):
-    typename = type(op).__name__
-    method_name = (
-        re.match(r"^Cumulative([A-Za-z_][A-Za-z0-9_]*)$", typename).group(1).lower()
-    )
-    method = getattr(data, f"cum{method_name}")
-    return method()
-
-
-@execute_node.register(ops.CumulativeMean, (dd.Series, ddgb.SeriesGroupBy))
-def execute_series_cumulative_mean(op, data, **kwargs):
-    # TODO: Doesn't handle the case where we've grouped/sorted by. Handling
-    # this here would probably require a refactor.
-    # Dask equivalent of Pandas DataFrame.rolling
-    return data.rolling(window=len(data), min_periods=1).mean()
 
 
 @execute_node.register(

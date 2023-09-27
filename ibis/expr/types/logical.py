@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis
 import ibis.expr.operations as ops
 from ibis.expr.types.core import _binop
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
@@ -359,7 +360,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         return ops.NotAll(self, where=where).to_expr()
 
-    def cumany(self) -> BooleanColumn:
+    def cumany(self, *, where=None, group_by=None, order_by=None) -> BooleanColumn:
         """Accumulate the `any` aggregate.
 
         Returns
@@ -373,32 +374,33 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"arr": [1, 2, 3, 4]})
         >>> ((t.arr > 1) | (t.arr >= 1)).cumany()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ CumulativeAny(Or(Greater(arr, 1), GreaterEqual(arr, 1))) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                                                  │
-        ├──────────────────────────────────────────────────────────┤
-        │ True                                                     │
-        │ True                                                     │
-        │ True                                                     │
-        │ True                                                     │
-        └──────────────────────────────────────────────────────────┘
-
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Any(Or(Greater(arr, 1), GreaterEqual(arr, 1))) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                                        │
+        ├────────────────────────────────────────────────┤
+        │ True                                           │
+        │ True                                           │
+        │ True                                           │
+        │ True                                           │
+        └────────────────────────────────────────────────┘
         >>> ((t.arr > 1) & (t.arr >= 1)).cumany()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ CumulativeAny(And(Greater(arr, 1), GreaterEqual(arr, 1))) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                                                   │
-        ├───────────────────────────────────────────────────────────┤
-        │ False                                                     │
-        │ True                                                      │
-        │ True                                                      │
-        │ True                                                      │
-        └───────────────────────────────────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Any(And(Greater(arr, 1), GreaterEqual(arr, 1))) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                                         │
+        ├─────────────────────────────────────────────────┤
+        │ False                                           │
+        │ True                                            │
+        │ True                                            │
+        │ True                                            │
+        └─────────────────────────────────────────────────┘
         """
-        return ops.CumulativeAny(self).to_expr()
+        return self.any(where=where).over(
+            ibis.cumulative_window(group_by=group_by, order_by=order_by)
+        )
 
-    def cumall(self) -> BooleanColumn:
+    def cumall(self, *, where=None, group_by=None, order_by=None) -> BooleanColumn:
         """Accumulate the `all` aggregate.
 
         Returns
@@ -412,27 +414,28 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"arr": [1, 2, 3, 4]})
         >>> ((t.arr > 1) & (t.arr >= 1)).cumall()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ CumulativeAll(And(Greater(arr, 1), GreaterEqual(arr, 1))) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                                                   │
-        ├───────────────────────────────────────────────────────────┤
-        │ False                                                     │
-        │ False                                                     │
-        │ False                                                     │
-        │ False                                                     │
-        └───────────────────────────────────────────────────────────┘
-
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ All(And(Greater(arr, 1), GreaterEqual(arr, 1))) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                                         │
+        ├─────────────────────────────────────────────────┤
+        │ False                                           │
+        │ False                                           │
+        │ False                                           │
+        │ False                                           │
+        └─────────────────────────────────────────────────┘
         >>> ((t.arr > 0) & (t.arr >= 1)).cumall()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ CumulativeAll(And(Greater(arr, 0), GreaterEqual(arr, 1))) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                                                   │
-        ├───────────────────────────────────────────────────────────┤
-        │ True                                                      │
-        │ True                                                      │
-        │ True                                                      │
-        │ True                                                      │
-        └───────────────────────────────────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ All(And(Greater(arr, 0), GreaterEqual(arr, 1))) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                                         │
+        ├─────────────────────────────────────────────────┤
+        │ True                                            │
+        │ True                                            │
+        │ True                                            │
+        │ True                                            │
+        └─────────────────────────────────────────────────┘
         """
-        return ops.CumulativeAll(self).to_expr()
+        return self.all(where=where).over(
+            ibis.cumulative_window(group_by=group_by, order_by=order_by)
+        )
