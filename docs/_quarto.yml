@@ -140,7 +140,6 @@ website:
       contents:
         - section: Expression API
           contents:
-            - reference/connection.qmd
             - reference/expression-tables.qmd
             - reference/selectors.qmd
             - reference/expression-generic.qmd
@@ -158,6 +157,10 @@ website:
         - section: UDFs
           contents:
             - reference/scalar-udfs.qmd
+
+        - section: Connection APIs
+          contents:
+            - reference/connection.qmd
 
         - section: Configuration
           contents:
@@ -189,20 +192,6 @@ quartodoc:
       desc: "APIs for manipulating table, column and scalar expressions"
       package: ibis.expr.types
       contents:
-        - kind: page
-          package: ibis
-          path: connection
-          summary:
-            name: Connection API
-            desc: Create and manage backend connections.
-          contents:
-            - name: connect
-              package: ibis.backends.base
-            - name: get_backend
-              dynamic: true
-            - name: set_backend
-              dynamic: true
-
         - kind: page
           path: expression-tables
           package: ibis.expr.types.relations
@@ -305,27 +294,35 @@ quartodoc:
 
         - kind: page
           path: expression-numeric
-          package: ibis.expr.types.numeric
           summary:
             name: Numeric and Boolean expressions
             desc: Integer, floating point, decimal, and boolean expressions.
           contents:
-            - NumericValue
-            - NumericColumn
-            - IntegerValue
-            - IntegerColumn
-            - FloatingValue
-            - DecimalValue
+            - name: NumericValue
+              package: ibis.expr.types.numeric
+            - name: NumericColumn
+              package: ibis.expr.types.numeric
+            - name: IntegerValue
+              package: ibis.expr.types.numeric
+            - name: IntegerColumn
+              package: ibis.expr.types.numeric
+            - name: FloatingValue
+              package: ibis.expr.types.numeric
+            - name: DecimalValue
+              package: ibis.expr.types.numeric
             - name: BooleanValue
               package: ibis.expr.types.logical
             - name: and_
               dynamic: true
+              package: ibis
             - name: or_
               dynamic: true
+              package: ibis
             - name: negate
               package: ibis.expr.api
             - name: random
               dynamic: true
+              package: ibis
 
         - kind: page
           path: expression-strings
@@ -478,6 +475,23 @@ quartodoc:
               package: ibis
               dynamic: true
             - Schema
+
+    - title: Connection APIs
+      package: ibis.expr.operations.udf
+      contents:
+        - kind: page
+          package: ibis
+          path: connection
+          summary:
+            name: Top-level connection APIs
+            desc: Create and manage backend connections.
+          contents:
+            - name: connect
+              package: ibis.backends.base
+            - name: get_backend
+              dynamic: true
+            - name: set_backend
+              dynamic: true
 
     - title: UDFs
       desc: "User-defined function APIs"
