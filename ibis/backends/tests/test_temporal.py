@@ -1751,6 +1751,11 @@ def test_interval_add_cast_column(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'strftime'",
                 ),
+                pytest.mark.notimpl(
+                    ["flask"],
+                    raises=AttributeError,
+                    reason="'StringConcat' object has no attribute 'value'",
+                ),
             ],
             id="column_format_str",
         ),
