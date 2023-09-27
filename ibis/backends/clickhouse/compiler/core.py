@@ -91,13 +91,6 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         lambda op, ctx: ops.Literal(value=params[op], dtype=ctx[x])
     )
 
-    # rewrite cumulative functions to window functions, so that we don't have
-    # to think about handling them in the compiler, we need only compile window
-    # functions
-    replace_cumulative_ops = p.WindowFunction(
-        x @ p.Cumulative, y
-    ) >> a.cumulative_to_window(x, y)
-
     # replace the right side of InColumn into a scalar subquery for sql
     # backends
     replace_in_column_with_table_array_view = p.InColumn(..., y) >> _.copy(
@@ -126,7 +119,6 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
 
     op = op.replace(
         replace_literals
-        | replace_cumulative_ops
         | replace_in_column_with_table_array_view
         | replace_empty_in_values_with_false
         | replace_notexists_subquery_with_not_exists

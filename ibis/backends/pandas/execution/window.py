@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import operator
-import re
 from typing import TYPE_CHECKING, Any, Callable, NoReturn
 
 import numpy as np
@@ -175,7 +174,6 @@ def get_aggcontext_window(
             output_type=output_type,
         )
     elif frame.start is not None:
-        assert not isinstance(operand, ops.CumulativeOp)
         if isinstance(frame, ops.RowsWindowFrame):
             max_lookback = frame.max_lookback
         else:
@@ -400,51 +398,6 @@ def execute_window_op(
     # trim data to original time context
     result = trim_window_result(result, timecontext)
     return result
-
-
-@execute_node.register(
-    (ops.CumulativeSum, ops.CumulativeMax, ops.CumulativeMin),
-    (pd.Series, SeriesGroupBy),
-)
-def execute_series_cumulative_sum_min_max(op, data, **kwargs):
-    typename = type(op).__name__
-    method_name = (
-        re.match(r"^Cumulative([A-Za-z_][A-Za-z0-9_]*)$", typename).group(1).lower()
-    )
-    method = getattr(data, f"cum{method_name}")
-    return method()
-
-
-@execute_node.register(ops.CumulativeMean, (pd.Series, SeriesGroupBy))
-def execute_series_cumulative_mean(op, data, **kwargs):
-    # TODO: Doesn't handle the case where we've grouped/sorted by. Handling
-    # this here would probably require a refactor.
-    return data.expanding().mean()
-
-
-@execute_node.register(ops.CumulativeOp, (pd.Series, SeriesGroupBy))
-def execute_series_cumulative_op(op, data, aggcontext=None, **kwargs):
-    assert aggcontext is not None, f"aggcontext is none in {type(op)} operation"
-    typename = type(op).__name__
-    match = re.match(r"^Cumulative([A-Za-z_][A-Za-z0-9_]*)$", typename)
-    if match is None:
-        raise ValueError(f"Unknown operation {typename}")
-
-    try:
-        (operation_name,) = match.groups()
-    except ValueError:
-        raise ValueError(f"More than one operation name found in {typename} class")
-
-    dtype = op.to_expr().type().to_pandas()
-    assert isinstance(aggcontext, agg_ctx.Cumulative), f"Got {type()}"
-    result = aggcontext.agg(data, operation_name.lower())
-
-    # all expanding window operations are required to be int64 or float64, so
-    # we need to cast back to preserve the type of the operation
-    try:
-        return result.astype(dtype)
-    except TypeError:
-        return result
 
 
 def post_lead_lag(result, default):

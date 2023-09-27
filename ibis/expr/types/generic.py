@@ -1515,13 +1515,17 @@ class Column(Value, _FixedTextJupyterMixin):
         """Return the cumulative distribution over a window."""
         return ops.CumeDist(self).to_expr()
 
-    def cummin(self) -> Column:
+    def cummin(self, *, where=None, group_by=None, order_by=None) -> Column:
         """Return the cumulative min over a window."""
-        return ops.CumulativeMin(self).to_expr()
+        return self.min(where=where).over(
+            ibis.cumulative_window(group_by=group_by, order_by=order_by)
+        )
 
-    def cummax(self) -> Column:
+    def cummax(self, *, where=None, group_by=None, order_by=None) -> Column:
         """Return the cumulative max over a window."""
-        return ops.CumulativeMax(self).to_expr()
+        return self.max(where=where).over(
+            ibis.cumulative_window(group_by=group_by, order_by=order_by)
+        )
 
     def lag(
         self,

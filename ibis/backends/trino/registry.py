@@ -507,8 +507,6 @@ operation_registry.update(
 )
 
 _invalid_operations = {
-    # ibis.expr.operations.analytic
-    ops.CumulativeOp,
     ops.NTile,
     # ibis.expr.operations.reductions
     ops.MultiQuantile,

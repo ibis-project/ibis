@@ -230,8 +230,8 @@ def test_batting_quantile(players, players_df):
 
 @pytest.mark.parametrize("op", ["sum", "min", "max", "mean"])
 def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
-    ibis_method = methodcaller(f"cum{op}")
-    expr = ibis_method(batting.order_by([batting.yearID]).G)
+    ibis_method = methodcaller(f"cum{op}", order_by=batting.yearID)
+    expr = ibis_method(batting.G)
     result = expr.execute().astype("float64")
 
     pandas_method = methodcaller(op)
@@ -239,9 +239,9 @@ def test_batting_specific_cumulative(batting, batting_df, op, sort_kind):
         batting_df[["G", "yearID"]]
         .sort_values("yearID", kind=sort_kind)
         .G.rolling(len(batting_df), min_periods=1)
-    ).reset_index(drop=True)
-    expected = expected.compute()
-    tm.assert_series_equal(result, expected.rename(f"Cumulative{op.capitalize()}(G)"))
+    )
+    expected = expected.compute().sort_index().reset_index(drop=True)
+    tm.assert_series_equal(result, expected.rename(f"{op.capitalize()}(G)"))
 
 
 def test_batting_cumulative(batting, batting_df, sort_kind):
@@ -271,7 +271,7 @@ def test_batting_cumulative_partitioned(batting, batting_df, sort_kind):
     order_by = "yearID"
 
     t = batting
-    expr = t.G.sum().over(ibis.cumulative_window(order_by=order_by, group_by=group_by))
+    expr = t.G.cumsum(order_by=order_by, group_by=group_by)
     expr = t.mutate(cumulative=expr)
     result = expr.execute()
 

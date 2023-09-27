@@ -611,25 +611,21 @@ def compile_count_distinct_star(t, op, aggcontext=None, **kwargs):
 
 
 @compiles(ops.Max)
-@compiles(ops.CumulativeMax)
 def compile_max(t, op, **kwargs):
     return compile_aggregator(t, op, fn=F.max, **kwargs)
 
 
 @compiles(ops.Min)
-@compiles(ops.CumulativeMin)
 def compile_min(t, op, **kwargs):
     return compile_aggregator(t, op, fn=F.min, **kwargs)
 
 
 @compiles(ops.Mean)
-@compiles(ops.CumulativeMean)
 def compile_mean(t, op, **kwargs):
     return compile_aggregator(t, op, fn=F.mean, **kwargs)
 
 
 @compiles(ops.Sum)
-@compiles(ops.CumulativeSum)
 def compile_sum(t, op, **kwargs):
     return compile_aggregator(t, op, fn=F.sum, **kwargs)
 
