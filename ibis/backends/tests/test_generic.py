@@ -337,7 +337,8 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     ]
 )
 @pytest.mark.never(
-    ["flink"], "Flink engine does not support generic window clause with no order by"
+    ["flink"],
+    reason="Flink engine does not support generic window clause with no order by",
 )
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
@@ -985,7 +986,9 @@ def test_many_subqueries(con, snapshot):
     snapshot.assert_match(str(ibis.to_sql(t3, dialect=con.name)), "out.sql")
 
 
-@pytest.mark.notimpl(["dask", "pandas", "oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["dask", "pandas", "oracle", "flink"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
     ["datafusion", "impala", "mssql", "mysql", "sqlite"],
