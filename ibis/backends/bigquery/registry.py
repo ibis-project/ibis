@@ -362,7 +362,8 @@ def _literal(t, op):
             value = value.date()
         return f"DATE {_sg_literal(str(value))}"
     elif dtype.is_timestamp():
-        return f"TIMESTAMP {_sg_literal(str(value))}"
+        typename = "DATETIME" if dtype.timezone is None else "TIMESTAMP"
+        return f"{typename} {_sg_literal(str(value))}"
     elif dtype.is_time():
         # TODO: define extractors on TimeValue expressions
         return f"TIME {_sg_literal(str(value))}"
