@@ -16,6 +16,7 @@ import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.annotations import Argument
 from ibis.common.collections import FrozenDict
+from ibis.expr.deferred import deferrable
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -50,11 +51,13 @@ def _wrap(
     **kwargs: Any,
 ) -> Callable:
     """Wrap a function `fn` with `wrapper`, allowing zero arguments when used as part of a decorator."""
-    if fn is None:
-        return lambda fn: functools.update_wrapper(
-            wrapper(input_type, fn, *args, **kwargs), fn
+
+    def wrap(fn):
+        return functools.update_wrapper(
+            deferrable(wrapper(input_type, fn, *args, **kwargs)), fn
         )
-    return functools.update_wrapper(wrapper(input_type, fn, *args, **kwargs), fn)
+
+    return wrap(fn) if fn is not None else wrap
 
 
 S = TypeVar("S", bound=ops.Value)

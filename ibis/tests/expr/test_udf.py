@@ -6,7 +6,9 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import _
 from ibis.common.annotations import ValidationError
+from ibis.expr.deferred import Deferred
 
 
 @pytest.fixture
@@ -79,3 +81,24 @@ def test_vectorized_udf_operations(table, klass, output_type):
             input_type=[dt.int8(), dt.string(), dt.boolean()],
             return_type=table,
         )
+
+
+@pytest.mark.parametrize(
+    "dec",
+    [
+        pytest.param(ibis.udf.scalar.builtin, id="scalar-builtin"),
+        pytest.param(ibis.udf.scalar.pandas, id="scalar-pandas"),
+        pytest.param(ibis.udf.scalar.pyarrow, id="scalar-pyarrow"),
+        pytest.param(ibis.udf.scalar.python, id="scalar-python"),
+        pytest.param(ibis.udf.agg.builtin, id="agg-builtin"),
+    ],
+)
+def test_udf_deferred(dec, table):
+    @dec
+    def myfunc(x: int) -> int:
+        ...
+
+    expr = myfunc(_.a)
+    assert isinstance(expr, Deferred)
+    assert repr(expr) == "myfunc(_.a)"
+    assert expr.resolve(table).equals(myfunc(table.a))
