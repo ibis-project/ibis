@@ -269,7 +269,17 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         import ibis.expr.analysis as an
 
-        return an._make_any(self, ops.Any, where=where)
+        tables = an.find_immediate_parent_tables(self.op())
+
+        if len(tables) > 1:
+            op = ops.UnresolvedExistsSubquery(
+                tables=[t.to_expr() for t in tables],
+                predicates=an.find_predicates(self.op(), flatten=True),
+            )
+        else:
+            op = ops.Any(self, where=self._bind_reduction_filter(where))
+
+        return op.to_expr()
 
     def notany(self, where: BooleanValue | None = None) -> BooleanValue:
         """Return whether no elements are `True`.
@@ -297,9 +307,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> (t.arr == None).notany(where=t.arr != None)
         True
         """
-        import ibis.expr.analysis as an
-
-        return an._make_any(self, ops.NotAny, where=where)
+        return ~self.any(where=where)
 
     def all(self, where: BooleanValue | None = None) -> BooleanScalar:
         """Return whether all elements are `True`.
@@ -358,7 +366,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> (t.arr == 2).notall(where=t.arr >= 2)
         True
         """
-        return ops.NotAll(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ~self.all(where=where)
 
     def cumany(self, *, where=None, group_by=None, order_by=None) -> BooleanColumn:
         """Accumulate the `any` aggregate.

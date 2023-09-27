@@ -10,7 +10,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.expr.operations.core import Column, Value
-from ibis.expr.operations.generic import _Negatable
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
@@ -327,40 +326,14 @@ class ArrayCollect(Filterable, Reduction):
 
 
 @public
-class All(Filterable, Reduction, _Negatable):
+class All(Filterable, Reduction):
     arg: Column[dt.Boolean]
 
     dtype = dt.boolean
-
-    def negate(self):
-        return NotAll(self.arg)
 
 
 @public
-class NotAll(Filterable, Reduction, _Negatable):
+class Any(Filterable, Reduction):
     arg: Column[dt.Boolean]
 
     dtype = dt.boolean
-
-    def negate(self) -> Any:
-        return All(*self.args)
-
-
-@public
-class Any(Filterable, Reduction, _Negatable):
-    arg: Column[dt.Boolean]
-
-    dtype = dt.boolean
-
-    def negate(self) -> NotAny:
-        return NotAny(*self.args)
-
-
-@public
-class NotAny(Filterable, Reduction, _Negatable):
-    arg: Column[dt.Boolean]
-
-    dtype = dt.boolean
-
-    def negate(self) -> Any:
-        return Any(*self.args)

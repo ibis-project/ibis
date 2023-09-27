@@ -847,38 +847,6 @@ def execute_any_all_series_group_by(op, data, mask, aggcontext=None, **kwargs):
         return result
 
 
-@execute_node.register((ops.NotAny, ops.NotAll), pd.Series, (pd.Series, type(None)))
-def execute_notany_notall_series(op, data, mask, aggcontext=None, **kwargs):
-    name = type(op).__name__.lower()[len("Not") :]
-    if mask is not None:
-        data = data.loc[mask]
-    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~aggcontext.agg(data, name)
-    else:
-        method = operator.methodcaller(name)
-        result = aggcontext.agg(data, lambda data: ~method(data))
-    try:
-        return result.astype(bool)
-    except TypeError:
-        return result
-
-
-@execute_node.register((ops.NotAny, ops.NotAll), SeriesGroupBy, type(None))
-def execute_notany_notall_series_group_by(op, data, mask, aggcontext=None, **kwargs):
-    name = type(op).__name__.lower()[len("Not") :]
-    if mask is not None:
-        data = data.obj.loc[mask].groupby(get_grouping(data.grouper.groupings))
-    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~aggcontext.agg(data, name)
-    else:
-        method = operator.methodcaller(name)
-        result = aggcontext.agg(data, lambda data: ~method(data))
-    try:
-        return result.astype(bool)
-    except TypeError:
-        return result
-
-
 @execute_node.register(ops.CountStar, pd.DataFrame, type(None))
 def execute_count_star_frame(op, data, _, **kwargs):
     return len(data)

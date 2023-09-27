@@ -2,10 +2,7 @@
 
 - ops.Aggregation
 - ops.Any
-- ops.NotAny
 - ops.All
-- ops.NotAll
-
 """
 
 from __future__ import annotations
@@ -131,34 +128,4 @@ def execute_any_all_series_group_by(op, data, mask, aggcontext=None, **kwargs):
         # Note this branch is not currently hit in the dask backend but is
         # here for future scaffolding.
         result = aggcontext.agg(data, operator.methodcaller(name))
-    return result
-
-
-@execute_node.register((ops.NotAny, ops.NotAll), dd.Series, (dd.Series, type(None)))
-def execute_notany_series(op, data, mask, aggcontext=None, **kwargs):
-    if mask is not None:
-        data = data.loc[mask]
-
-    name = type(op).__name__[len("Not") :].lower()
-    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~aggcontext.agg(data, name)
-    else:
-        # Note this branch is not currently hit in the dask backend but is
-        # here for future scaffolding.
-        method = operator.methodcaller(name)
-        result = aggcontext.agg(data, lambda data: ~method(data))
-    return result
-
-
-@execute_node.register((ops.NotAny, ops.NotAll), ddgb.SeriesGroupBy, type(None))
-def execute_notany_series_group_by(op, data, mask, aggcontext=None, **kwargs):
-    name = type(op).__name__[len("Not") :].lower()
-    if isinstance(aggcontext, (agg_ctx.Summarize, agg_ctx.Transform)):
-        result = ~aggcontext.agg(data, name)
-    else:
-        # Note this branch is not currently hit in the dask backend but is
-        # here for future scaffolding.
-        method = operator.methodcaller(name)
-        result = aggcontext.agg(data, lambda data: ~method(data))
-
     return result

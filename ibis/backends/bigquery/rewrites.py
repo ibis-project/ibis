@@ -29,6 +29,4 @@ REWRITES = {
     ops.Mean: bq_mean,
     ops.Any: toolz.identity,
     ops.All: toolz.identity,
-    ops.NotAny: toolz.identity,
-    ops.NotAll: toolz.identity,
 }

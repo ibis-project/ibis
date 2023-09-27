@@ -210,7 +210,7 @@ def calc_zscore(s):
             id="cumnotany",
             marks=[
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
             ],
         ),
@@ -239,7 +239,7 @@ def calc_zscore(s):
             id="cumnotall",
             marks=[
                 pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
-                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.broken(["oracle"], raises=sa.exc.DatabaseError),
             ],
         ),

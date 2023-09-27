@@ -158,9 +158,6 @@ def _exists_subquery(t, op):
     sub_ctx = ctx.subcontext()
     clause = ctx.compiler.to_sql(filtered, sub_ctx, exists=True)
 
-    if isinstance(op, ops.NotExistsSubquery):
-        clause = sa.not_(clause)
-
     return clause
 
 
@@ -563,7 +560,6 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
     ops.ExistsSubquery: _exists_subquery,
-    ops.NotExistsSubquery: _exists_subquery,
     # miscellaneous varargs
     ops.Least: varargs(sa.func.least),
     ops.Greatest: varargs(sa.func.greatest),

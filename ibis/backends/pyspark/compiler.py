@@ -554,19 +554,9 @@ def compile_any(t, op, *, aggcontext=None, **kwargs):
     return compile_aggregator(t, op, fn=F.max, aggcontext=aggcontext, **kwargs)
 
 
-@compiles(ops.NotAny)
-def compile_notany(t, op, *args, aggcontext=None, **kwargs):
-    return ~compile_any(t, op, *args, aggcontext=aggcontext, **kwargs)
-
-
 @compiles(ops.All)
 def compile_all(t, op, *args, **kwargs):
     return compile_aggregator(t, op, *args, fn=F.min, **kwargs)
-
-
-@compiles(ops.NotAll)
-def compile_notall(t, op, *, aggcontext=None, **kwargs):
-    return ~compile_all(t, op, aggcontext=aggcontext, **kwargs)
 
 
 @compiles(ops.Count)
@@ -1235,19 +1225,9 @@ def compile_window_function(t, op, **kwargs):
         else:
             pyspark_window = pyspark_window.rowsBetween(win_start, win_end)
 
-    orig_func = func
-    if isinstance(orig_func, (ops.NotAll, ops.NotAny)):
-        # For NotAll and NotAny, negation must be applied after .over(window)
-        # Here we rewrite node to be its negation, and negate it back after
-        # translation and window operation
-        func = func.negate()
-    else:
-        func = orig_func
     result = t.translate(func, **kwargs, aggcontext=aggcontext).over(pyspark_window)
 
-    if isinstance(orig_func, (ops.NotAll, ops.NotAny)):
-        return ~result
-    elif isinstance(func, ops.RankBase):
+    if isinstance(func, ops.RankBase):
         # result must be cast to long type for Rank / RowNumber
         return result.astype("long") - 1
     else:

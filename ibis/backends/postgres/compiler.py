@@ -29,8 +29,6 @@ rewrites = PostgreSQLExprTranslator.rewrites
 
 @rewrites(ops.Any)
 @rewrites(ops.All)
-@rewrites(ops.NotAny)
-@rewrites(ops.NotAll)
 def _any_all_no_op(expr):
     return expr
 

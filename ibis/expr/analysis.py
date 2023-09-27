@@ -625,12 +625,6 @@ def is_reduction(node):
     return any(g.traverse(predicate, node))
 
 
-_ANY_OP_MAPPING = {
-    ops.Any: ops.UnresolvedExistsSubquery,
-    ops.NotAny: ops.UnresolvedNotExistsSubquery,
-}
-
-
 def find_predicates(node, flatten=True):
     # TODO(kszucs): consider to remove flatten argument and compose with
     # flatten_predicates instead
@@ -663,28 +657,6 @@ def find_subqueries(node: ops.Node, min_dependents=1) -> tuple[ops.Node, ...]:
     )
 
 
-# TODO(kszucs): move to types/logical.py
-def _make_any(
-    expr,
-    any_op_class: type[ops.Any] | type[ops.NotAny],
-    *,
-    where: ir.BooleanValue | None = None,
-):
-    assert isinstance(expr, ir.Expr), type(expr)
-
-    tables = find_immediate_parent_tables(expr.op())
-    predicates = find_predicates(expr.op(), flatten=True)
-
-    if len(tables) > 1:
-        op = _ANY_OP_MAPPING[any_op_class](
-            tables=[t.to_expr() for t in tables],
-            predicates=predicates,
-        )
-    else:
-        op = any_op_class(expr, where=expr._bind_reduction_filter(where))
-    return op.to_expr()
-
-
 # TODO(kszucs): use substitute instead
 @functools.singledispatch
 def _rewrite_filter(op, **kwargs):
@@ -708,7 +680,6 @@ def _rewrite_filter_reduction(op, name: str | None = None, **kwargs):
 @_rewrite_filter.register(ops.TableColumn)
 @_rewrite_filter.register(ops.Literal)
 @_rewrite_filter.register(ops.ExistsSubquery)
-@_rewrite_filter.register(ops.NotExistsSubquery)
 @_rewrite_filter.register(ops.WindowFunction)
 def _rewrite_filter_subqueries(op, **kwargs):
     """Don't rewrite any of these operations in filters."""

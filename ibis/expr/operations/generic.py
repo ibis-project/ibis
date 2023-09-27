@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import itertools
 from typing import Annotated, Any, Optional, Union
 from typing import Literal as LiteralType
@@ -13,7 +12,6 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.common.bases import Abstract
 from ibis.common.deferred import Deferred  # noqa: TCH001
 from ibis.common.grounds import Singleton
 from ibis.common.patterns import InstanceOf, Length  # noqa: TCH001
@@ -313,9 +311,3 @@ class SearchedCase(Value):
     def dtype(self):
         exprs = [*self.results, self.default]
         return rlz.highest_precedence_dtype(exprs)
-
-
-class _Negatable(Abstract):
-    @abc.abstractmethod
-    def negate(self):  # pragma: no cover
-        ...

@@ -1058,24 +1058,6 @@ def execute_hash(op, **kw):
     return translate(op.arg, **kw).hash()
 
 
-@translate.register(ops.NotAll)
-def execute_not_all(op, **kw):
-    arg = op.arg
-    if (op_where := op.where) is not None:
-        arg = ops.IfElse(op_where, arg, None)
-
-    return translate(arg, **kw).all().not_()
-
-
-@translate.register(ops.NotAny)
-def execute_not_any(op, **kw):
-    arg = op.arg
-    if (op_where := op.where) is not None:
-        arg = ops.IfElse(op_where, arg, None)
-
-    return translate(arg, **kw).any().not_()
-
-
 def _arg_min_max(op, func, **kw):
     key = op.key
     arg = op.arg
