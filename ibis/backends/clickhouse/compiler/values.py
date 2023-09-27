@@ -26,7 +26,7 @@ sg.dialects.clickhouse.ClickHouse.Generator.TRANSFORMS.update(
 )
 
 
-def _aggregate(funcname, *args, where=None):
+def _aggregate(funcname, *args, where):
     has_filter = where is not None
     func = f[funcname + "If" * has_filter]
     args += (where,) * has_filter
@@ -127,7 +127,7 @@ def _array_repeat_op(op, *, arg, times, **_):
 
 
 @translate_val.register(ops.ArraySlice)
-def _array_slice_op(op, *, arg, start, stop=None, **_):
+def _array_slice_op(op, *, arg, start, stop, **_):
     start = _parenthesize(op.start, start)
     start_correct = if_(start < 0, start, start + 1)
 
@@ -144,14 +144,14 @@ def _array_slice_op(op, *, arg, start, stop=None, **_):
 
 
 @translate_val.register(ops.CountStar)
-def _count_star(op, *, arg, where=None, **_):
+def _count_star(op, *, where, **_):
     if where is not None:
         return f.countIf(where)
     return sg.exp.Count(this=STAR)
 
 
 def _quantile(func):
-    def _compile(op, *, arg, quantile, where=None, **_):
+    def _compile(op, *, arg, quantile, where, **_):
         funcname = func
         args = [arg]
 
@@ -173,7 +173,7 @@ translate_val.register(ops.MultiQuantile)(_quantile("quantiles"))
 def _agg_variance_like(func):
     variants = {"sample": f"{func}Samp", "pop": f"{func}Pop"}
 
-    def formatter(op, *, how, where=None, **kw):
+    def formatter(_, *, how, where, **kw):
         funcname = variants[how]
         return agg[funcname](*kw.values(), where=where)
 
@@ -181,14 +181,14 @@ def _agg_variance_like(func):
 
 
 @translate_val.register(ops.Correlation)
-def _corr(op, *, left, right, how, where=None, **_):
+def _corr(op, *, left, right, how, where, **_):
     if how == "pop":
         raise ValueError("ClickHouse only implements `sample` correlation coefficient")
     return agg.corr(left, right, where=where)
 
 
 @translate_val.register(ops.Arbitrary)
-def _arbitrary(op, *, arg, how, where=None, **_):
+def _arbitrary(op, *, arg, how, where, **_):
     if how == "first":
         return agg.any(arg, where=where)
     elif how == "last":
@@ -199,7 +199,7 @@ def _arbitrary(op, *, arg, how, where=None, **_):
 
 
 @translate_val.register(ops.Substring)
-def _substring(op, *, arg, start, length=None, **_):
+def _substring(op, *, arg, start, length, **_):
     # Clickhouse is 1-indexed
     suffix = (length,) * (length is not None)
     if_pos = f.substring(arg, start + 1, *suffix)
@@ -208,7 +208,7 @@ def _substring(op, *, arg, start, length=None, **_):
 
 
 @translate_val.register(ops.StringFind)
-def _string_find(op, *, arg, substr, start=None, end=None, **_):
+def _string_find(op, *, arg, substr, start, end, **_):
     if end is not None:
         raise com.UnsupportedOperationError("String find doesn't support end argument")
 
@@ -224,7 +224,7 @@ def _regex_search(op, *, arg, pattern, **_):
 
 
 @translate_val.register(ops.RegexExtract)
-def _regex_extract(op, *, arg, pattern, index=None, **_):
+def _regex_extract(op, *, arg, pattern, index, **_):
     arg = cast(arg, dt.String(nullable=False))
 
     pattern = f.concat("(", pattern, ")")
@@ -287,7 +287,7 @@ def _hash_bytes(op, *, arg, how, **_):
 
 
 @translate_val.register(ops.Log)
-def _log(op, *, arg, base=None, **_):
+def _log(op, *, arg, base, **_):
     if base is None:
         return f.ln(arg)
     elif str(base) in ("2", "10"):
@@ -516,7 +516,7 @@ def _string_capitalize(op, *, arg, **_):
 
 
 @translate_val.register(ops.GroupConcat)
-def _group_concat(op, *, arg, sep, where=None, **_):
+def _group_concat(op, *, arg, sep, where, **_):
     call = agg.groupArray(arg, where=where)
     return if_(f.empty(call), NULL, f.arrayStringConcat(call, sep))
 
@@ -533,7 +533,7 @@ def _cotangent(op, *, arg, **_):
 
 
 def _bit_agg(func: str):
-    def _translate(op, *, arg, where=None, **_):
+    def _translate(op, *, arg, where, **_):
         if not (dtype := op.arg.dtype).is_unsigned_integer():
             nbits = dtype.nbytes * 8
             arg = f[f"reinterpretAsUInt{nbits}"](arg)
@@ -592,15 +592,6 @@ def _zero_if_null(op, *, arg, **_):
     return f.ifNull(arg, 0)
 
 
-_NUM_WEEKDAYS = 7
-
-
-@translate_val.register(ops.DayOfWeekIndex)
-def _day_of_week_index(op, *, arg, **_):
-    weekdays = _NUM_WEEKDAYS
-    return (((f.toDayOfWeek(arg) - 1) % weekdays) + weekdays) % weekdays
-
-
 @translate_val.register(ops.FloorDivide)
 def _floor_divide(op, *, left, right, **_):
     return f.floor(left / right)
@@ -619,6 +610,15 @@ def _in_values(op, *, value, options, **_):
 @translate_val.register(ops.InColumn)
 def _in_column(op, *, value, options, **_):
     return value.isin(options.this if isinstance(options, sg.exp.Subquery) else options)
+
+
+_NUM_WEEKDAYS = 7
+
+
+@translate_val.register(ops.DayOfWeekIndex)
+def _day_of_week_index(op, *, arg, **_):
+    weekdays = _NUM_WEEKDAYS
+    return (((f.toDayOfWeek(arg) - 1) % weekdays) + weekdays) % weekdays
 
 
 @translate_val.register(ops.DayOfWeekName)
@@ -659,7 +659,7 @@ def _map(op, *, keys, values, **_):
 
 
 @translate_val.register(ops.MapGet)
-def _map_get(op, *, arg, key, default=None, **_):
+def _map_get(op, *, arg, key, default, **_):
     return if_(f.mapContains(arg, key), arg[key], default)
 
 
@@ -685,15 +685,15 @@ _binary_infix_ops = {
     ops.Divide: operator.truediv,
     ops.Modulus: operator.mod,
     # Comparisons
-    ops.Equals: lambda x, y: x.eq(y),
-    ops.NotEquals: lambda x, y: x.neq(y),
+    ops.Equals: sg.exp.Condition.eq,
+    ops.NotEquals: sg.exp.Condition.neq,
     ops.GreaterEqual: operator.ge,
     ops.Greater: operator.gt,
     ops.LessEqual: operator.le,
     ops.Less: operator.lt,
     # Boolean comparisons
-    ops.And: sg.and_,
-    ops.Or: sg.or_,
+    ops.And: operator.and_,
+    ops.Or: operator.or_,
     ops.Xor: f.xor,
     ops.DateAdd: operator.add,
     ops.DateSub: operator.sub,
@@ -828,7 +828,7 @@ for _op, _name in _simple_ops.items():
     if issubclass(_op, ops.Reduction):
 
         @translate_val.register(_op)
-        def _fmt(_, _name: str = _name, *, where=None, **kw):
+        def _fmt(_, _name: str = _name, *, where, **kw):
             return agg[_name](*kw.values(), where=where)
 
     else:
@@ -876,8 +876,14 @@ def _window_boundary(op, *, value, preceding, **_):
     return {"value": value, "side": "preceding" if preceding else "following"}
 
 
-@translate_val.register(ops.WindowFrame)
-def _window_frame(op, *, group_by, order_by, start=None, end=None, **_):
+@translate_val.register(ops.RowsWindowFrame)
+@translate_val.register(ops.RangeWindowFrame)
+def _window_frame(op, *, group_by, order_by, start, end, max_lookback=None, **_):
+    if max_lookback is not None:
+        raise NotImplementedError(
+            "`max_lookback` is not supported in the DuckDB backend"
+        )
+
     if start is None:
         start = {}
 
@@ -918,7 +924,7 @@ def _window(op: ops.WindowFunction, *, func, frame, **_: Any):
 
 def shift_like(op_class, func):
     @translate_val.register(op_class)
-    def formatter(op, *, arg, offset=None, default=None, **_):
+    def formatter(op, *, arg, offset, default, **_):
         args = [arg]
 
         if default is not None:
@@ -980,7 +986,7 @@ def _extract_path(op, *, arg, **_):
 
 
 @translate_val.register(ops.ExtractQuery)
-def _extract_query(op, *, arg, key=None, **_):
+def _extract_query(op, *, arg, key, **_):
     if key is not None:
         input = f.extractURLParameter(arg, key)
     else:
@@ -1040,7 +1046,7 @@ def _array_zip(op: ops.ArrayZip, *, arg, **_: Any) -> str:
 
 
 @translate_val.register(ops.CountDistinctStar)
-def _count_distinct_star(op: ops.CountDistinctStar, *, where=None, **_: Any) -> str:
+def _count_distinct_star(op: ops.CountDistinctStar, *, where, **_: Any) -> str:
     columns = f.tuple(*map(sg.column, op.arg.schema.names))
 
     if where is not None:
