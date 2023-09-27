@@ -1662,6 +1662,11 @@ def test_interval_add_cast_scalar(backend, alltypes):
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'date'",
 )
+@pytest.mark.notimpl(
+    ["flask"],
+    raises=Py4JJavaError,
+    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+)
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
