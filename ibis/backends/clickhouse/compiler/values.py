@@ -155,16 +155,6 @@ def _count_star(op, *, arg, where=None, **_):
     return sg.exp.Count(this=STAR)
 
 
-@translate_val.register(ops.NotAny)
-def _not_any(op, *, arg, where=None, **_):
-    return agg.min(sg.not_(arg), where=where)
-
-
-@translate_val.register(ops.NotAll)
-def _not_all(op, *, arg, where=None, **_):
-    return agg.max(sg.not_(arg), where=where)
-
-
 def _quantile(func):
     def _compile(op, *, arg, quantile, where=None, **_):
         funcname = func

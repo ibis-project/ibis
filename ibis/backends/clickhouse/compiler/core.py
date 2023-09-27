@@ -148,12 +148,17 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         x, predicates=y
     ) >> c.Not(c.ExistsSubquery(x, predicates=y))
 
+    replace_notany_with_min_not = p.NotAny(x, where=y) >> c.Min(c.Not(x), where=y)
+    replace_notall_with_max_not = p.NotAll(x, where=y) >> c.Max(c.Not(x), where=y)
+
     op = op.replace(
         replace_literals
         | replace_cumulative_ops
         | replace_in_column_with_table_array_view
         | replace_empty_in_values_with_false
         | replace_notexists_subquery_with_not_exists
+        | replace_notany_with_min_not
+        | replace_notall_with_max_not
     )
     # apply translate rules in topological order
     results = op.map(fn, filter=(ops.TableNode, ops.Value))
