@@ -1265,15 +1265,29 @@ def test_call():
 
 
 def test_getattr():
+    class MyType:
+        def __init__(self, a, b):
+            self.a = a
+            self.b = b
+
+        def __hash__(self):
+            return hash((type(self), self.a, self.b))
+
     v = Variable("v")
     b = Getattr(v, "b")
-    assert b.build({v: Foo(1, 2)}) == 2
+    assert b.build({v: MyType(1, 2)}) == 2
+
+    b = Getattr(MyType(1, 2), "a")
+    assert b.build({}) == 1
 
 
 def test_getitem():
     v = Variable("v")
     b = Getitem(v, 1)
     assert b.build({v: [1, 2, 3]}) == 2
+
+    b = Getitem(FrozenDict(a=1, b=2), "a")
+    assert b.build({}) == 1
 
 
 def test_builder():
