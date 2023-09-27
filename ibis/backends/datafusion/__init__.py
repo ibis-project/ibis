@@ -60,7 +60,7 @@ class Backend(BaseBackend, CanCreateDatabase, CanCreateSchema):
         >>> ibis.datafusion.connect(config)
         """
         if isinstance(config, SessionContext):
-            self._context = config
+            (self._context, config) = (config, None)
         else:
             if SessionConfig is not None:
                 df_config = SessionConfig().with_information_schema(True)
