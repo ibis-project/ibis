@@ -41,9 +41,7 @@ def replace_tables_with_star_selection(node, alias=None):
 
 
 @translate_rel.register
-def _selection(
-    op: ops.Selection, *, table, selections, predicates, sort_keys, aliases, **_
-):
+def _selection(op: ops.Selection, *, table, selections, predicates, sort_keys, **_):
     # needs_alias should never be true here in explicitly, but it may get
     # passed via a (recursive) call to translate_val
     if isinstance(op.table, ops.Join) and not isinstance(
@@ -55,6 +53,7 @@ def _selection(
     else:
         from_ = join = None
 
+    alias = table.alias_or_name
     selections = tuple(
         replace_tables_with_star_selection(
             node,
@@ -63,7 +62,7 @@ def _selection(
             # table; otherwise we'll select from the _unaliased_ table or the
             # _child_ table, which may have a different alias than the one we
             # generated for the input table
-            table.alias_or_name if from_ is None and join is None else None,
+            alias if from_ is None and join is None else None,
         )
         for node in selections
     ) or (STAR,)
@@ -75,7 +74,7 @@ def _selection(
 
     if predicates:
         if join is not None:
-            sel = sg.select(STAR).from_(sel.subquery(aliases[op.table]))
+            sel = sg.select(STAR).from_(sel.subquery(alias))
         sel = sel.where(*predicates)
 
     if sort_keys:
@@ -145,13 +144,13 @@ def _join(op: ops.Join, *, left, right, predicates, **_):
 
 
 @translate_rel.register
-def _self_ref(op: ops.SelfReference, *, table, aliases, **_):
+def _self_ref(op: ops.SelfReference, *, table, **_):
     return sg.alias(table, op.name)
 
 
 @translate_rel.register
-def _query(op: ops.SQLQueryResult, *, query, aliases, **_):
-    return sg.parse_one(query, read="clickhouse").subquery(aliases.get(op))
+def _query(op: ops.SQLQueryResult, *, query, **_):
+    return sg.parse_one(query, read="clickhouse").subquery()
 
 
 _SET_OP_FUNC = {
@@ -202,9 +201,9 @@ def _distinct(op: ops.Distinct, *, table, **_):
 
 
 @translate_rel.register
-def _dropna(op: ops.DropNa, *, table, how, subset=None, aliases, **_):
+def _dropna(op: ops.DropNa, *, table, how, subset, **_):
     colnames = op.schema.names
-    alias = aliases[op.table]
+    alias = table.alias_or_name
 
     if subset is None:
         columns = [sg.column(name, table=alias) for name in colnames]
