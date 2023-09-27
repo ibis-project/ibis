@@ -219,3 +219,18 @@ def test_deferrable(table):
 
     with pytest.raises(TypeError, match="unknown"):
         f(_.a, _.b, unknown=3)  # invalid calls caught at call time
+
+
+@pytest.mark.parametrize(
+    "f, sol",
+    [
+        (lambda t: _.x + t.a, "(_.x + <column[int64]>)"),
+        (lambda t: _.x + t.a.sum(), "(_.x + <scalar[int64]>)"),
+        (lambda t: ibis.date(_.x, 2, t.a), "date(_.x, 2, <column[int64]>)"),
+    ],
+)
+def test_repr_deferred_with_exprs(f, sol):
+    t = ibis.table({"a": "int64"})
+    expr = f(t)
+    res = repr(expr)
+    assert res == sol

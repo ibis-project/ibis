@@ -32,6 +32,17 @@ _UNARY_OPS: dict[str, Callable[[Any], Any]] = {
 }
 
 
+def _repr(x: Any) -> str:
+    """A helper for nicely repring deferred expressions."""
+    import ibis.expr.types as ir
+
+    if isinstance(x, ir.Column):
+        return f"<column[{x.type()}]>"
+    elif isinstance(x, ir.Scalar):
+        return f"<scalar[{x.type()}]>"
+    return repr(x)
+
+
 class Deferred:
     """A deferred expression."""
 
@@ -184,7 +195,7 @@ class DeferredAttr(Deferred):
         self._attr = attr
 
     def __repr__(self) -> str:
-        return f"{self._value!r}.{self._attr}"
+        return f"{_repr(self._value)}.{self._attr}"
 
     def _resolve(self, param: Any) -> Any:
         obj = _resolve(self._value, param)
@@ -201,7 +212,7 @@ class DeferredItem(Deferred):
         self._key = key
 
     def __repr__(self) -> str:
-        return f"{self._value!r}[{self._key!r}]"
+        return f"{_repr(self._value)}[{_repr(self._key)}]"
 
     def _resolve(self, param: Any) -> Any:
         obj = _resolve(self._value, param)
@@ -220,8 +231,8 @@ class DeferredCall(Deferred):
         self._kwargs = kwargs
 
     def __repr__(self) -> str:
-        params = [repr(a) for a in self._args]
-        params.extend(f"{k}={v!r}" for k, v in self._kwargs.items())
+        params = [_repr(a) for a in self._args]
+        params.extend(f"{k}={_repr(v)}" for k, v in self._kwargs.items())
         # Repr directly wrapped functions as their name, fallback to repr for
         # deferred objects or callables without __name__ otherwise
         func = getattr(self._func, "__name__", "") or repr(self._func)
@@ -246,7 +257,7 @@ class DeferredBinaryOp(Deferred):
         self._right = right
 
     def __repr__(self) -> str:
-        return f"({self._left!r} {self._symbol} {self._right!r})"
+        return f"({_repr(self._left)} {self._symbol} {_repr(self._right)})"
 
     def _resolve(self, param: Any) -> Any:
         left = _resolve(self._left, param)
@@ -264,7 +275,7 @@ class DeferredUnaryOp(Deferred):
         self._value = value
 
     def __repr__(self) -> str:
-        return f"{self._symbol}{self._value!r}"
+        return f"{self._symbol}{_repr(self._value)}"
 
     def _resolve(self, param: Any) -> Any:
         value = _resolve(self._value, param)
