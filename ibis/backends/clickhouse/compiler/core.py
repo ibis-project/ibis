@@ -18,6 +18,7 @@ result caching, and iteration are all handled by
 
 from __future__ import annotations
 
+import itertools
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -60,29 +61,24 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         A sqlglot expression
     """
 
-    alias_index = 0
-    aliases = {}
+    gen_alias_index = itertools.count()
 
     def fn(node, _, **kwargs):
-        nonlocal alias_index
-
         result = _translate_node(node, **kwargs)
 
-        if not isinstance(node, ops.TableNode):
+        # don't alias root nodes or value ops
+        if node is op or isinstance(node, ops.Value):
             return result
 
-        # don't alias the root node
-        if node is not op:
-            aliases[node] = f"t{alias_index:d}"
-            alias_index += 1
+        assert isinstance(node, ops.TableNode)
 
-        if alias := aliases.get(node):
-            try:
-                return result.subquery(alias=alias)
-            except AttributeError:
-                return sg.alias(result, alias=alias)
-        else:
-            return result
+        alias_index = next(gen_alias_index)
+        alias = f"t{alias_index:d}"
+
+        try:
+            return result.subquery(alias)
+        except AttributeError:
+            return sg.alias(result, alias)
 
     # substitute parameters immediately to avoid having to define a
     # ScalarParameter translation rule
