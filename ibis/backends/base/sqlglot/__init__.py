@@ -49,6 +49,9 @@ class FuncGen:
     def exists(self, query):
         return sg.exp.Exists(this=query)
 
+    def concat(self, *args):
+        return sg.exp.Concat.from_arg_list(list(map(_to_sqlglot, args)))
+
 
 def lit(val):
     return sg.exp.Literal(this=str(val), is_string=isinstance(val, str))
