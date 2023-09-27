@@ -19,6 +19,12 @@ def test_move_blocks():
     assert t.relocate(s.of_type("string"), after=s.numeric()).columns == list("xyab")
 
 
+def test_duplicates_not_renamed():
+    t = ibis.table(dict(x="int", y="int"))
+    assert t.relocate("y", s.numeric()).columns == list("yx")
+    assert t.relocate("y", s.numeric(), "y").columns == list("yx")
+
+
 def test_keep_non_contiguous_variables():
     t = ibis.table(dict.fromkeys("abcde", "int"))
     assert t.relocate("b", after=s.c("a", "c", "e")).columns == list("acdeb")
