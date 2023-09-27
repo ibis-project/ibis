@@ -1469,14 +1469,14 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
 @pytest.mark.parametrize(
     ("expr_fn", "expected_type"),
     [
-        (lambda t: ibis.where(t.a == 1, t.b, ibis.NA), dt.string),
-        (lambda t: ibis.where(t.a == 1, t.b, t.a.cast("string")), dt.string),
+        (lambda t: ibis.ifelse(t.a == 1, t.b, ibis.NA), dt.string),
+        (lambda t: ibis.ifelse(t.a == 1, t.b, t.a.cast("string")), dt.string),
         (
-            lambda t: ibis.where(t.a == 1, t.b, t.a.cast("!string")),
+            lambda t: ibis.ifelse(t.a == 1, t.b, t.a.cast("!string")),
             dt.string.copy(nullable=False),
         ),
-        (lambda _: ibis.where(True, ibis.NA, ibis.NA), dt.null),
-        (lambda _: ibis.where(False, ibis.NA, ibis.NA), dt.null),
+        (lambda _: ibis.ifelse(True, ibis.NA, ibis.NA), dt.null),
+        (lambda _: ibis.ifelse(False, ibis.NA, ibis.NA), dt.null),
     ],
 )
 def test_non_null_with_null_precedence(expr_fn, expected_type):
@@ -1572,14 +1572,11 @@ def test_array_filter_partial():
         param(ibis.coalesce, dt.timestamp, id="coalesce"),
         param(ibis.greatest, dt.timestamp, id="greatest"),
         param(ibis.least, dt.timestamp, id="least"),
-    ]
-    + [
         param(
-            lambda ts, func=func: func(ts.notnull(), ts, ts - ibis.interval(days=1)),
+            lambda ts: ibis.ifelse(ts.notnull(), ts, ts - ibis.interval(days=1)),
             dt.timestamp,
-            id=func.__name__,
-        )
-        for func in (ibis.ifelse, ibis.where)
+            id="ifelse",
+        ),
     ],
 )
 def test_deferred_function_call(func, expected_type):
