@@ -114,8 +114,8 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
     # only to be used in the one place it would be needed: the ScalarParameter
     # `translate_val` rule
     params = {param.op(): value for param, value in params.items()}
-    replace_literals = p.ScalarParameter >> (
-        lambda op, _: ops.Literal(value=params[op], dtype=op.dtype)
+    replace_literals = p.ScalarParameter(dtype=x) >> (
+        lambda op, ctx: ops.Literal(value=params[op], dtype=ctx[x])
     )
 
     # rewrite cumulative functions to window functions, so that we don't have
@@ -127,15 +127,11 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
 
     # replace the right side of InColumn into a scalar subquery for sql
     # backends
-    replace_in_column_with_table_array_view = p.InColumn >> (
-        lambda op, _: op.__class__(
-            op.value,
-            ops.TableArrayView(
-                ops.Selection(
-                    table=an.find_first_base_table(op.options), selections=(op.options,)
-                )
-            ),
-        )
+    replace_in_column_with_table_array_view = p.InColumn(x, y) >> c.InColumn(
+        x,
+        c.TableArrayView(
+            c.Selection(table=a.find_first_base_table(y), selections=(y,))
+        ),
     )
 
     # replace any checks against an empty right side of the IN operation with
@@ -144,10 +140,14 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         False, dtype="bool"
     )
 
+    # replace `NotExistsSubquery` with `Not(ExistsSubquery)`
+    #
+    # this allows to avoid having another rule to negate ExistsSubquery
     replace_notexists_subquery_with_not_exists = p.NotExistsSubquery(
         x, predicates=y
     ) >> c.Not(c.ExistsSubquery(x, predicates=y))
 
+    # clickhouse-specific rewrite
     replace_notany_with_min_not = p.NotAny(x, where=y) >> c.Min(c.Not(x), where=y)
     replace_notall_with_max_not = p.NotAll(x, where=y) >> c.Max(c.Not(x), where=y)
 
