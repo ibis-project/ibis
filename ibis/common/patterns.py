@@ -421,7 +421,8 @@ class Getattr(Slotted, Builder):
     __slots__ = ("instance", "name")
 
     def __init__(self, instance, name):
-        super().__init__(instance=builder(instance), name=name)
+        instance = instance if isinstance(instance, Builder) else Just(instance)
+        super().__init__(instance=instance, name=name)
 
     def build(self, context):
         instance = self.instance.build(context)
@@ -432,7 +433,8 @@ class Getitem(Slotted, Builder):
     __slots__ = ("instance", "name")
 
     def __init__(self, instance, name):
-        super().__init__(instance=builder(instance), name=name)
+        instance = instance if isinstance(instance, Builder) else Just(instance)
+        super().__init__(instance=instance, name=name)
 
     def build(self, context):
         instance = self.instance.build(context)
