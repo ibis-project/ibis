@@ -1097,6 +1097,11 @@ def test_pivot_wider(backend):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't implement ops.WindowFunction",
 )
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement deduplication",
+)
 def test_distinct_on_keep(backend, on, keep):
     from ibis import _
 
@@ -1161,6 +1166,11 @@ def test_distinct_on_keep(backend, on, keep):
     ["pyspark"],
     raises=com.UnsupportedOperationError,
     reason="backend doesn't support `having` filters",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't implement deduplication",
 )
 def test_distinct_on_keep_is_none(backend, on):
     from ibis import _
