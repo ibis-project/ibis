@@ -45,11 +45,6 @@ def translate_val(op, **_):
     raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
 
 
-@translate_val.register(dt.DataType)
-def _datatype(t, **_):
-    return ClickhouseType.from_ibis(t)
-
-
 @translate_val.register(ops.TableColumn)
 def _column(op, *, table, name, **_):
     return sg.column(name, table=table.alias_or_name)
@@ -81,7 +76,7 @@ def _cast(op, *, arg, to, **_):
     result = cast(arg, to)
     if (timezone := getattr(to, "timezone", None)) is not None:
         return f.toTimeZone(result, timezone)
-    return cast(arg, to)
+    return result
 
 
 @translate_val.register(ops.TryCast)
@@ -140,7 +135,7 @@ def _array_slice_op(op, *, arg, start, stop=None, **_):
         stop = _parenthesize(op.stop, stop)
 
         neg_start = f.length(arg) + start
-        diff = lambda v: f.greatest(-lit(0), stop - v)
+        diff = lambda v: f.greatest(0, stop - v)
 
         length = if_(stop < 0, stop, if_(start < 0, diff(neg_start), diff(start)))
         return f.arraySlice(arg, start_correct, length)
@@ -192,15 +187,6 @@ def _corr(op, *, left, right, how, where=None, **_):
     return agg.corr(left, right, where=where)
 
 
-@translate_val.register(ops.Xor)
-def _xor(op, *, left, right, **_):
-    left = _parenthesize(op.left, left)
-    right = _parenthesize(op.right, right)
-    # clickhouse has xor but sqlglot's compilation of this function is broken
-    # in 17.6.0
-    return f.xor(left, right)
-
-
 @translate_val.register(ops.Arbitrary)
 def _arbitrary(op, *, arg, how, where=None, **_):
     if how == "first":
@@ -243,10 +229,10 @@ def _regex_extract(op, *, arg, pattern, index=None, **_):
 
     pattern = f.concat("(", pattern, ")")
 
-    if index is not None:
-        index += 1
-    else:
-        index = 1
+    if index is None:
+        index = 0
+
+    index += 1
 
     then = f.extractGroups(arg, pattern)[index]
 
@@ -532,12 +518,7 @@ def _string_capitalize(op, *, arg, **_):
 @translate_val.register(ops.GroupConcat)
 def _group_concat(op, *, arg, sep, where=None, **_):
     call = agg.groupArray(arg, where=where)
-
-    return (
-        sg.exp.Case()
-        .when(f.empty(call), then=NULL)
-        .else_(f.arrayStringConcat(call, sep))
-    )
+    return if_(f.empty(call), NULL, f.arrayStringConcat(call, sep))
 
 
 @translate_val.register(ops.StrRight)
@@ -713,6 +694,7 @@ _binary_infix_ops = {
     # Boolean comparisons
     ops.And: sg.and_,
     ops.Or: sg.or_,
+    ops.Xor: f.xor,
     ops.DateAdd: operator.add,
     ops.DateSub: operator.sub,
     ops.DateDiff: operator.sub,
@@ -1040,7 +1022,7 @@ def _array_position(op, *, arg, other, **_):
 
 @translate_val.register(ops.ArrayRemove)
 def _array_remove(op, *, arg, other, **_):
-    x = sg.to_identifier("__arg__")
+    x = sg.to_identifier("x")
     body = x.neq(other)
     return f.arrayFilter(sg.exp.Lambda(this=body, expressions=[x]), arg)
 
