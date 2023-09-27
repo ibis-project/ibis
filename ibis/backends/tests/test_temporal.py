@@ -1636,6 +1636,11 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'date'",
 )
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="SqlParseException: Incorrect syntax near the keyword 'INTERVAL'",
+)
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
