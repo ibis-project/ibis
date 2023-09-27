@@ -212,7 +212,6 @@ def test_coalesce(con, expr, expected):
 
 # TODO(dask) - identicalTo - #2553
 @pytest.mark.notimpl(["clickhouse", "datafusion", "dask", "pyspark", "mssql", "druid"])
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -242,7 +241,6 @@ def test_identical_to(backend, alltypes, sorted_df):
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid"])
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
 def test_isin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by("id")
     expr = sorted_alltypes[
@@ -267,7 +265,6 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid"])
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
 def test_notin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by("id")
     expr = sorted_alltypes[
@@ -287,33 +284,21 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
             lambda t: t["bool_col"],
             lambda df: df["bool_col"],
             id="no_op",
-            marks=pytest.mark.broken(
-                ["flink"], "Sort on a non-time-attribute field is not supported."
-            ),
         ),
         param(
             lambda t: ~t["bool_col"],
             lambda df: ~df["bool_col"],
             id="negate",
-            marks=pytest.mark.broken(
-                ["flink"], "Sort on a non-time-attribute field is not supported."
-            ),
         ),
         param(
             lambda t: t.bool_col & t.bool_col,
             lambda df: df.bool_col & df.bool_col,
             id="and",
-            marks=pytest.mark.broken(
-                ["flink"], "Sort on a non-time-attribute field is not supported."
-            ),
         ),
         param(
             lambda t: t.bool_col | t.bool_col,
             lambda df: df.bool_col | df.bool_col,
             id="or",
-            marks=pytest.mark.broken(
-                ["flink"], "Sort on a non-time-attribute field is not supported."
-            ),
         ),
         param(
             lambda t: t.bool_col ^ t.bool_col,
@@ -351,7 +336,9 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "oracle",
     ]
 )
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
+@pytest.mark.never(
+    ["flink"], "Flink engine does not support generic window clause with no order by"
+)
 def test_filter_with_window_op(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     table = sorted_alltypes
@@ -563,7 +550,6 @@ def test_select_sort_sort(alltypes):
     ],
 )
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
 def test_order_by(backend, alltypes, df, key, df_kwargs):
     result = alltypes.filter(_.id < 100).order_by(key).execute()
     expected = df.loc[df.id < 100].sort_values(**df_kwargs)
@@ -587,7 +573,6 @@ def test_order_by_random(alltypes):
     reason="Druid only supports trivial unions",
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
 def test_table_info(alltypes):
     expr = alltypes.info()
     df = expr.execute()
@@ -667,7 +652,6 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
         ),
     ],
 )
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
 def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
     expr = alltypes[ibis_op].order_by("id")
     expected = df[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
@@ -881,7 +865,6 @@ def test_typeof(backend, con):
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "pyspark", "druid"])
 @pytest.mark.notyet(["dask", "mssql"], reason="not supported by the backend")
-@pytest.mark.broken(["flink"], "Sort on a non-time-attribute field is not supported.")
 def test_isin_uncorrelated(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
