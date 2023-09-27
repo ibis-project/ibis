@@ -2,41 +2,18 @@
 
 The compiler is built with a few `singledispatch` functions:
 
-    1. `translate` for table expressions
-    1. `translate` for table nodes
-    1. `translate_rel`
-    1. `translate_val`
+    1. `translate_rel` for compiling `ops.TableNode`s
+    1. `translate_val` for compiling `ops.Value`s
 
 ## `translate`
-
-### Expression Implementation
-
-The table expression implementation of `translate` is a pass through to the
-node implementation.
 
 ### Node Implementation
 
 There's a single `ops.Node` implementation for `ops.TableNode`s instances.
 
-This function:
-
-    1. Topologically sorts the expression graph.
-    1. Seeds the compilation cache with in-degree-zero table names.
-    1. Iterates though nodes with at least one in-degree and places the result
-       in the compilation cache. The cache is used to construct `ops.TableNode`
-       keyword arguments to the current translation rule.
-
-## `translate_rel`
-
-Translates a table operation given already-translated table inputs.
-
-If a table node needs to translate value expressions, for example, an
-`ops.Aggregation` that rule is responsible for calling `translate_val`.
-
-## `translate_val`
-
-Recurses top-down and translates the arguments of the value expression and uses
-those as input to construct the output.
+This function compiles each node in topological order. The topological sorting,
+result caching, and iteration are all handled by
+`ibis.expr.operations.core.Node.map`.
 """
 
 from __future__ import annotations
@@ -60,11 +37,11 @@ if TYPE_CHECKING:
 a = Call.namespace(an)
 
 
-def _translate_node(node, *args, **kwargs):
+def _translate_node(node, **kwargs):
     if isinstance(node, ops.Value):
-        return translate_val(node, *args, **kwargs)
+        return translate_val(node, **kwargs)
     assert isinstance(node, ops.TableNode)
-    return translate_rel(node, *args, **kwargs)
+    return translate_rel(node, **kwargs)
 
 
 def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expression:
@@ -147,7 +124,8 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         x, predicates=y
     ) >> c.Not(c.ExistsSubquery(x, predicates=y))
 
-    # clickhouse-specific rewrite
+    # clickhouse-specific rewrite to turn notany/notall into equivalent
+    # already-defined operations
     replace_notany_with_min_not = p.NotAny(x, where=y) >> c.Min(c.Not(x), where=y)
     replace_notall_with_max_not = p.NotAll(x, where=y) >> c.Max(c.Not(x), where=y)
 
