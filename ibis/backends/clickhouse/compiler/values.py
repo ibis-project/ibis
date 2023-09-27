@@ -881,7 +881,7 @@ def _window_boundary(op, *, value, preceding, **_):
 def _window_frame(op, *, group_by, order_by, start, end, max_lookback=None, **_):
     if max_lookback is not None:
         raise NotImplementedError(
-            "`max_lookback` is not supported in the DuckDB backend"
+            "`max_lookback` is not supported in the ClickHouse backend"
         )
 
     if start is None:
