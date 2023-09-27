@@ -101,18 +101,6 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         False, dtype="bool"
     )
 
-    # replace `NotExistsSubquery` with `Not(ExistsSubquery)`
-    #
-    # this allows to avoid having another rule to negate ExistsSubquery
-    replace_notexists_subquery_with_not_exists = p.NotExistsSubquery(...) >> c.Not(
-        c.ExistsSubquery(...)
-    )
-
-    # clickhouse-specific rewrite to turn notany/notall into equivalent
-    # already-defined operations
-    replace_notany_with_min_not = p.NotAny(x, where=y) >> c.Min(c.Not(x), where=y)
-    replace_notall_with_max_not = p.NotAll(x, where=y) >> c.Max(c.Not(x), where=y)
-
     # subtract one from ranking functions to convert from 1-indexed to 0-indexed
     subtract_one_from_ranking_functions = p.WindowFunction(
         p.RankBase | p.NTile
@@ -124,9 +112,6 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         replace_literals
         | replace_in_column_with_table_array_view
         | replace_empty_in_values_with_false
-        | replace_notexists_subquery_with_not_exists
-        | replace_notany_with_min_not
-        | replace_notall_with_max_not
         | subtract_one_from_ranking_functions
         | add_one_to_nth_value_input
     )

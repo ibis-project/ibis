@@ -1260,71 +1260,19 @@ def t2():
     return ibis.table([("key1", "string"), ("key2", "string")], "bar")
 
 
-@pytest.mark.parametrize(
-    ("func", "expected_type"),
-    [
-        param(
-            lambda t1, t2: (t1.key1 == t2.key1).any(),
-            ops.UnresolvedExistsSubquery,
-            id="exists",
-        ),
-        param(
-            lambda t1, t2: -(t1.key1 == t2.key1).any(),
-            ops.UnresolvedNotExistsSubquery,
-            id="not_exists",
-        ),
-        param(
-            lambda t1, t2: -(-(t1.key1 == t2.key1).any()),  # noqa: B002
-            ops.UnresolvedExistsSubquery,
-            id="not_not_exists",
-        ),
-    ],
-)
-def test_unresolved_existence_predicate(t1, t2, func, expected_type):
-    expr = func(t1, t2)
+def test_unresolved_existence_predicate(t1, t2):
+    expr = (t1.key1 == t2.key1).any()
     assert isinstance(expr, ir.BooleanColumn)
-
-    op = expr.op()
-    assert isinstance(op, expected_type)
+    assert isinstance(expr.op(), ops.UnresolvedExistsSubquery)
 
 
-@pytest.mark.parametrize(
-    ("func", "expected_type", "expected_negated_type"),
-    [
-        param(
-            lambda t1, t2: t1[(t1.key1 == t2.key1).any()],
-            ops.ExistsSubquery,
-            ops.NotExistsSubquery,
-            id="exists",
-        ),
-        param(
-            lambda t1, t2: t1[-(t1.key1 == t2.key1).any()],
-            ops.NotExistsSubquery,
-            ops.ExistsSubquery,
-            id="not_exists",
-        ),
-        param(
-            lambda t1, t2: t1[-(-(t1.key1 == t2.key1).any())],  # noqa: B002
-            ops.ExistsSubquery,
-            ops.NotExistsSubquery,
-            id="not_not_exists",
-        ),
-    ],
-)
-def test_resolve_existence_predicate(
-    t1,
-    t2,
-    func,
-    expected_type,
-    expected_negated_type,
-):
-    expr = func(t1, t2)
+def test_resolve_existence_predicate(t1, t2):
+    expr = t1[(t1.key1 == t2.key1).any()]
     op = expr.op()
     assert isinstance(op, ops.Selection)
 
     pred = op.predicates[0].to_expr()
-    assert isinstance(pred.op(), expected_type)
-    assert isinstance((-pred).op(), expected_negated_type)
+    assert isinstance(pred.op(), ops.ExistsSubquery)
 
 
 def test_aggregate_metrics(table):

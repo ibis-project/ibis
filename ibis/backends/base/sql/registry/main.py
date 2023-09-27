@@ -161,8 +161,7 @@ def exists_subquery(translator, op):
 
     subquery = ctx.get_compiled_expr(node)
 
-    prefix = "NOT " * isinstance(op, ops.NotExistsSubquery)
-    return f"{prefix}EXISTS (\n{util.indent(subquery, ctx.indent)}\n)"
+    return f"EXISTS (\n{util.indent(subquery, ctx.indent)}\n)"
 
 
 # XXX this is not added to operation_registry, but looks like impala is
@@ -350,7 +349,6 @@ operation_registry = {
     ops.TimestampDiff: timestamp.timestamp_diff,
     ops.TimestampFromUNIX: timestamp.timestamp_from_unix,
     ops.ExistsSubquery: exists_subquery,
-    ops.NotExistsSubquery: exists_subquery,
     # RowNumber, and rank functions starts with 0 in Ibis-land
     ops.RowNumber: lambda *_: "row_number()",
     ops.DenseRank: lambda *_: "dense_rank()",

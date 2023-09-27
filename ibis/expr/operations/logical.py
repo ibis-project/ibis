@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import abc
-
 from public import public
 
 import ibis.expr.datashape as ds
@@ -11,7 +9,6 @@ from ibis.common.annotations import ValidationError, attribute
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Binary, Column, Unary, Value
-from ibis.expr.operations.generic import _Negatable
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 
@@ -170,30 +167,16 @@ class IfElse(Value):
 
 
 @public
-class ExistsSubquery(Value, _Negatable):
+class ExistsSubquery(Value):
     foreign_table: Relation
     predicates: VarTuple[Value[dt.Boolean]]
 
     dtype = dt.boolean
     shape = ds.columnar
-
-    def negate(self) -> NotExistsSubquery:
-        return NotExistsSubquery(*self.args)
 
 
 @public
-class NotExistsSubquery(Value, _Negatable):
-    foreign_table: Relation
-    predicates: VarTuple[Value[dt.Boolean]]
-
-    dtype = dt.boolean
-    shape = ds.columnar
-
-    def negate(self) -> ExistsSubquery:
-        return ExistsSubquery(*self.args)
-
-
-class _UnresolvedSubquery(Value, _Negatable):
+class UnresolvedExistsSubquery(Value):
     """An exists subquery whose outer leaf table is unknown.
 
     Notes
@@ -231,8 +214,8 @@ class _UnresolvedSubquery(Value, _Negatable):
 
     Notably the correlated subquery cannot stand on its own.
 
-    The purpose of `_UnresolvedSubquery` is to capture enough information about
-    an exists predicate such that it can be resolved when predicates are
+    The purpose of `UnresolvedExistsSubquery` is to capture enough information
+    about an exists predicate such that it can be resolved when predicates are
     resolved against the outer leaf table when `Selection`s are constructed.
     """
 
@@ -242,36 +225,10 @@ class _UnresolvedSubquery(Value, _Negatable):
     dtype = dt.boolean
     shape = ds.columnar
 
-    @abc.abstractmethod
-    def _resolve(
-        self, table
-    ) -> type[ExistsSubquery] | type[NotExistsSubquery]:  # pragma: no cover
-        ...
-
-
-@public
-class UnresolvedExistsSubquery(_UnresolvedSubquery):
-    def negate(self) -> UnresolvedNotExistsSubquery:
-        return UnresolvedNotExistsSubquery(*self.args)
-
-    def _resolve(self, table) -> ExistsSubquery:
+    def resolve(self, table) -> ExistsSubquery:
         from ibis.expr.operations.relations import TableNode
 
         assert isinstance(table, TableNode)
 
         (foreign_table,) = (t for t in self.tables if t != table)
         return ExistsSubquery(foreign_table, self.predicates).to_expr()
-
-
-@public
-class UnresolvedNotExistsSubquery(_UnresolvedSubquery):
-    def negate(self) -> UnresolvedExistsSubquery:
-        return UnresolvedExistsSubquery(*self.args)
-
-    def _resolve(self, table) -> NotExistsSubquery:
-        from ibis.expr.operations.relations import TableNode
-
-        assert isinstance(table, TableNode)
-
-        (foreign_table,) = (t for t in self.tables if t != table)
-        return NotExistsSubquery(foreign_table, self.predicates).to_expr()

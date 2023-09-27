@@ -4161,8 +4161,9 @@ class CachedTable(Table):
 def _resolve_predicates(
     table: Table, predicates
 ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
-    import ibis.expr.analysis as an
     import ibis.expr.types as ir
+    from ibis.expr.analysis import p, flatten_predicate
+    from ibis.common.deferred import _, Attr, Call
 
     # TODO(kszucs): clean this up, too much flattening and resolving happens here
     predicates = [
@@ -4173,14 +4174,15 @@ def _resolve_predicates(
         )
         for pred in util.promote_list(preds)
     ]
-    predicates = an.flatten_predicate(predicates)
+    predicates = flatten_predicate(predicates)
 
-    resolved_predicates = []
-    for pred in predicates:
-        if isinstance(pred, ops.logical._UnresolvedSubquery):
-            resolved_predicates.append(pred._resolve(table.op()))
-        else:
-            resolved_predicates.append(pred)
+    # _.resolve is actually a non-deferred method, so it won't dispatch to
+    # the matched UnresolvedExistsSubquery.resolve() method
+    # TODO(kszucs): remove Deferred.resolve() method
+    replacement = Call(Attr(_, "resolve"), table.op())
+    resolved_predicates = [
+        pred.replace(p.UnresolvedExistsSubquery >> replacement) for pred in predicates
+    ]
 
     return resolved_predicates
 

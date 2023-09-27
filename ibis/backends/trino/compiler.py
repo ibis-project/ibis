@@ -36,8 +36,6 @@ rewrites = TrinoSQLExprTranslator.rewrites
 
 @rewrites(ops.Any)
 @rewrites(ops.All)
-@rewrites(ops.NotAny)
-@rewrites(ops.NotAll)
 @rewrites(ops.StringContains)
 def _no_op(expr):
     return expr
