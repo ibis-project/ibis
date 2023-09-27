@@ -988,7 +988,7 @@ def test_memtable_construct(backend, con, monkeypatch):
 @pytest.mark.notimpl(
     ["pyspark"], reason="pyspark doesn't generate SQL", raises=NotImplementedError
 )
-@pytest.mark.notimpl(["druid"], reason="no sqlglot dialect", raises=ValueError)
+@pytest.mark.notimpl(["druid", "flink"], reason="no sqlglot dialect", raises=ValueError)
 def test_many_subqueries(con, snapshot):
     def query(t, group_cols):
         t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
