@@ -144,9 +144,9 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         False, dtype="bool"
     )
 
-    replace_notexists_subquery_with_not_exists = p.NotExistsSubquery(x) >> c.Not(
-        c.ExistsSubquery(x)
-    )
+    replace_notexists_subquery_with_not_exists = p.NotExistsSubquery(
+        x, predicates=y
+    ) >> c.Not(c.ExistsSubquery(x, predicates=y))
 
     op = op.replace(
         replace_literals
