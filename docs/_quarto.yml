@@ -196,8 +196,6 @@ quartodoc:
             name: Top-level APIs
             desc: Methods and objects available directly on the `ibis` module.
           contents:
-            - name: and_
-              dynamic: true
             - name: array
               dynamic: true
             - name: asc
@@ -236,23 +234,17 @@ quartodoc:
               dynamic: true
             - name: memtable
               dynamic: true
-            - name: negate
-              package: ibis.expr.api
             - name: NA
               package: ibis.expr.api
             - name: now
               dynamic: true
             - name: "null"
               dynamic: true
-            - name: or_
-              dynamic: true
             - name: param
               dynamic: true
             - name: show_sql
               dynamic: true
             - name: to_sql
-              dynamic: true
-            - name: random
               dynamic: true
             - name: range_window
               dynamic: true
@@ -323,6 +315,14 @@ quartodoc:
             - DecimalValue
             - name: BooleanValue
               package: ibis.expr.types.logical
+            - name: and_
+              dynamic: true
+            - name: or_
+              dynamic: true
+            - name: negate
+              package: ibis.expr.api
+            - name: random
+              dynamic: true
 
         - kind: page
           path: expression-strings
