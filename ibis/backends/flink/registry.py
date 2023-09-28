@@ -262,8 +262,8 @@ operation_registry.update(
         ops.ExtractHour: _extract_field("hour"),  # equivalent to HOUR(timestamp)
         ops.ExtractMinute: _extract_field("minute"),  # equivalent to MINUTE(timestamp)
         ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
-        ops.ExtractMillisecond: _extract_field("microsecond"),
         ops.ExtractMillisecond: _extract_field("millisecond"),
+        ops.ExtractMicrosecond: _extract_field("microsecond"),
         # Other operations
         ops.Literal: _literal,
         ops.TryCast: _try_cast,
