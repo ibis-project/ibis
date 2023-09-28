@@ -18,6 +18,7 @@ import pytest
 import ibis
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import _
 from ibis.tests.util import assert_equal
 
 
@@ -206,3 +207,15 @@ def test_floats(sql_table, function):
 
     expr = function(5.5, 5)
     assert isinstance(expr, ir.FloatingScalar)
+
+
+def test_deferred(sql_table, function):
+    expr = function(None, _.v3, 2)
+    res = expr.resolve(sql_table)
+    sol = function(None, sql_table.v3, 2)
+    assert res.equals(sol)
+
+
+def test_no_arguments_errors(function):
+    with pytest.raises(ValueError, match="at least one argument"):
+        function()
