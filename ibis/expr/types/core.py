@@ -444,7 +444,7 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
-            Maximum number of rows in each returned batch.
+            Maximum number of rows in each returned `DataFrame``.
         kwargs
             Keyword arguments
 
