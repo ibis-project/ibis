@@ -232,11 +232,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                     raises=com.UnsupportedOperationError,
                     reason="PySpark backend does not support extracting milliseconds.",
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="SQL parse failed. Encountered 'TIMESTAMP'. Was expecting one of: CENTURY, DAY, DECADE, ...",
-                ),
             ],
         ),
         param(
