@@ -1859,8 +1859,6 @@ def coalesce(*args: Any) -> ir.Value:
     >>> ibis.coalesce(None, 4, 5)
     4
     """
-    if not args:
-        raise ValueError("Must provide at least one argument")
     return ops.Coalesce(args).to_expr()
 
 
@@ -1885,8 +1883,6 @@ def greatest(*args: Any) -> ir.Value:
     >>> ibis.greatest(None, 4, 5)
     5
     """
-    if not args:
-        raise ValueError("Must provide at least one argument")
     return ops.Greatest(args).to_expr()
 
 
@@ -1911,8 +1907,6 @@ def least(*args: Any) -> ir.Value:
     >>> ibis.least(None, 4, 5)
     4
     """
-    if not args:
-        raise ValueError("Must provide at least one argument")
     return ops.Least(args).to_expr()
 
 
