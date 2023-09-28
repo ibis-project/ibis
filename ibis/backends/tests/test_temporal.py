@@ -257,10 +257,14 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                 pytest.mark.notimpl(
                     ["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="No match found for function signature dayname(<TIMESTAMP>)",
+                    reason=(
+                        "SqlValidatorException: No match found for function signature dayname(<TIMESTAMP>)"
+                        "`day_of_week_name` is not supported in Flink"
+                        "Ref: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/table/functions/systemfunctions/#temporal-functions"
+                    ),
                 ),
             ],
         ),
@@ -2000,7 +2004,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     raises=AttributeError,
     reason="StringColumn' object has no attribute 'day_of_week'",
 )
-@pytest.mark.notimpl(
+@pytest.mark.never(
     ["flink"],
     raises=Py4JJavaError,
     reason=(
