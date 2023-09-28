@@ -150,6 +150,7 @@ def test_any():
     p = Any()
     assert p.match(1, context={}) == 1
     assert p.match("foo", context={}) == "foo"
+    assert p.describe() == "matching Any()"
 
 
 def test_variable():

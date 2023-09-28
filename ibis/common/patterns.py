@@ -236,7 +236,7 @@ class Pattern(Hashable):
         return self.match(value, context) is not NoMatch
 
     def describe(self, plural=False):
-        return "matching {self!r}"
+        return f"matching {self!r}"
 
     @abstractmethod
     def __eq__(self, other: Pattern) -> bool:
