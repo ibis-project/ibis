@@ -224,6 +224,13 @@ def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
     return f"FLOOR(({left}) / ({right}))"
 
 
+def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
+    """Convert timestamp to day-of-week integer."""
+    arg = op.args[0]
+    arg_ = translator.translate(arg)
+    return f"MOD(DAYOFWEEK({arg_}) + 5, 7)"
+
+
 operation_registry.update(
     {
         # Unary operations
@@ -260,5 +267,7 @@ operation_registry.update(
         # Binary operations
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
+        # Temporal functions
+        ops.DayOfWeekIndex: _day_of_week_index,
     }
 )
