@@ -1903,10 +1903,13 @@ def test_integer_to_timestamp(backend, con, unit):
                     ),
                     raises=sa.exc.ProgrammingError,
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.never(
                     ["flink"],
                     raises=com.OperationNotDefinedError,
-                    reason="No translation rule for <class 'ibis.expr.operations.temporal.StringToTimestamp'>",
+                    reason=(
+                        "datetime formatting style not supported"
+                        "Test failed with; ValueError: NaTType does not support strftime"
+                    ),
                 ),
             ],
         ),
@@ -1938,11 +1941,6 @@ def test_integer_to_timestamp(backend, con, unit):
                     ["duckdb"],
                     reason="datetime formatting style not supported",
                     raises=DuckDBInvalidInputException,
-                ),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=com.OperationNotDefinedError,
-                    reason="No translation rule for <class 'ibis.expr.operations.temporal.StringToTimestamp'>",
                 ),
             ],
         ),
@@ -2010,7 +2008,11 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
 @pytest.mark.notimpl(
     ["flink"],
     raises=Py4JJavaError,
-    reason="CalciteContextException: From line 1, column 8 to line 1, column 49: No match found for function signature pmod(<NUMERIC>, <NUMERIC>)",
+    reason=(
+        "SqlValidatorException: No match found for function signature dayname(<TIMESTAMP>)"
+        "`day_of_week_name` is not supported in Flink"
+        "Ref: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/table/functions/systemfunctions/#temporal-functions"
+    )
 )
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week

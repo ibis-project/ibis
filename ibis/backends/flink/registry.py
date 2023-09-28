@@ -231,6 +231,12 @@ def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
     return f"MOD(DAYOFWEEK({arg_}) + 5, 7)"
 
 
+def _string_to_timestamp(translator, op):
+    arg_ = translator.translate(op.arg)
+    format_string = translator.translate(op.format_str)
+    return f"TO_TIMESTAMP({arg_}, {format_string})"
+
+
 operation_registry.update(
     {
         # Unary operations
@@ -269,5 +275,6 @@ operation_registry.update(
         ops.FloorDivide: _floor_divide,
         # Temporal functions
         ops.DayOfWeekIndex: _day_of_week_index,
+        ops.StringToTimestamp: _string_to_timestamp,
     }
 )
