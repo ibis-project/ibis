@@ -286,11 +286,6 @@ def test_timestamp_extract_literal(con, func, expected):
     raises=(ImpalaHiveServer2Error, ImpalaOperationalError),
     reason="Impala backend does not support extracting microseconds.",
 )
-@pytest.mark.broken(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="SQL parse failed. Encountered 'TIMESTAMP'. Was expecting one of: CENTURY, DAY, DECADE, ...",
-)
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_microseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.microsecond().name("microsecond")
