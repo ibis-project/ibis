@@ -224,17 +224,20 @@ def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
     return f"FLOOR(({left}) / ({right}))"
 
 
+def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node):
+    arg = translator.translate(op.arg)
+    return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
+
+
 def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
-    """Convert timestamp to day-of-week integer."""
-    arg = op.args[0]
-    arg_ = translator.translate(arg)
-    return f"MOD(DAYOFWEEK({arg_}) + 5, 7)"
+    arg = translator.translate(op.args[0])
+    return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
 
 
-def _string_to_timestamp(translator, op):
-    arg_ = translator.translate(op.arg)
+def _string_to_timestamp(translator: ExprTranslator, op: ops.Node):
+    arg = translator.translate(op.arg)
     format_string = translator.translate(op.format_str)
-    return f"TO_TIMESTAMP({arg_}, {format_string})"
+    return f"TO_TIMESTAMP({arg}, {format_string})"
 
 
 operation_registry.update(
@@ -253,6 +256,7 @@ operation_registry.update(
         ops.RegexSearch: fixed_arity("regexp", 2),
         # Timestamp operations
         ops.Date: _date,
+        ops.ExtractEpochSeconds: extract_epoch_seconds,
         ops.ExtractYear: _extract_field("year"),  # equivalent to YEAR(date)
         ops.ExtractMonth: _extract_field("month"),  # equivalent to MONTH(date)
         ops.ExtractDay: _extract_field("day"),  # equivalent to DAYOFMONTH(date)
