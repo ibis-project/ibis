@@ -242,11 +242,6 @@ def test_timestamp_extract(backend, alltypes, df, attr):
                 pytest.mark.notimpl(
                     ["druid", "oracle"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="No match found for function signature pmod(<NUMERIC>, <NUMERIC>)"
-                ),
             ],
         ),
         param(
