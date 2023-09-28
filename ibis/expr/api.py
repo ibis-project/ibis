@@ -6,7 +6,7 @@ import datetime
 import functools
 import numbers
 import operator
-from typing import TYPE_CHECKING, Any, NamedTuple, TypeVar, overload
+from typing import TYPE_CHECKING, Any, NamedTuple, overload
 
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
@@ -184,31 +184,7 @@ Examples
 True
 """
 
-T = TypeVar("T")
-
 negate = ir.NumericValue.negate
-
-
-def _deferred(fn):
-    @functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if isinstance(self, Deferred):
-            method = getattr(self, fn.__name__)
-            return method(*args, **kwargs)
-        return fn(self, *args, **kwargs)
-
-    return wrapper
-
-
-def _geo_deprecated(fn):
-    """Deprecate the top-level geo function."""
-    fn = _deferred(fn)
-    name = fn.__name__
-    qualname = fn.__qualname__
-    fn.__module__ = "ibis.expr.api"
-    fn.__qualname__ = fn.__name__ = f"geo_{name}"
-    dec = util.deprecated(instead=f"use the `{qualname}` method instead", as_of="7.0")
-    return dec(fn)
 
 
 def param(type: dt.DataType) -> ir.Scalar:
@@ -1719,7 +1695,25 @@ def watermark(time_col: str, allowed_delay: ir.IntervalScalar) -> Watermark:
 e = ops.E().to_expr()
 pi = ops.Pi().to_expr()
 
-# geo_* methods are all deprecated
+
+def _geo_deprecated(fn):
+    """Deprecate the top-level geo function."""
+
+    @functools.wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        if isinstance(self, Deferred):
+            method = getattr(self, fn.__name__)
+            return method(*args, **kwargs)
+        return fn(self, *args, **kwargs)
+
+    wrapper.__module__ = "ibis.expr.api"
+    wrapper.__qualname__ = wrapper.__name__ = f"geo_{fn.__name__}"
+    dec = util.deprecated(
+        instead=f"use the `{fn.__qualname__}` method instead", as_of="7.0"
+    )
+    return dec(wrapper)
+
+
 geo_area = _geo_deprecated(ir.GeoSpatialValue.area)
 geo_as_binary = _geo_deprecated(ir.GeoSpatialValue.as_binary)
 geo_as_ewkb = _geo_deprecated(ir.GeoSpatialValue.as_ewkb)
