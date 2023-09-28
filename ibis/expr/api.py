@@ -1838,9 +1838,83 @@ def where(cond, true_expr, false_expr) -> ir.Value:
     return ifelse(cond, true_expr, false_expr)
 
 
-coalesce = _deferred(ir.Value.coalesce)
-greatest = _deferred(ir.Value.greatest)
-least = _deferred(ir.Value.least)
+@deferrable
+def coalesce(*args: Any) -> ir.Value:
+    """Return the first non-null value from `args`.
+
+    Parameters
+    ----------
+    args
+        Arguments from which to choose the first non-null value
+
+    Returns
+    -------
+    Value
+        Coalesced expression
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> ibis.coalesce(None, 4, 5)
+    4
+    """
+    if not args:
+        raise ValueError("Must provide at least one argument")
+    return ops.Coalesce(args).to_expr()
+
+
+@deferrable
+def greatest(*args: Any) -> ir.Value:
+    """Compute the largest value among the supplied arguments.
+
+    Parameters
+    ----------
+    args
+        Arguments to choose from
+
+    Returns
+    -------
+    Value
+        Maximum of the passed arguments
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> ibis.greatest(None, 4, 5)
+    5
+    """
+    if not args:
+        raise ValueError("Must provide at least one argument")
+    return ops.Greatest(args).to_expr()
+
+
+@deferrable
+def least(*args: Any) -> ir.Value:
+    """Compute the smallest value among the supplied arguments.
+
+    Parameters
+    ----------
+    args
+        Arguments to choose from
+
+    Returns
+    -------
+    Value
+        Minimum of the passed arguments
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> ibis.least(None, 4, 5)
+    4
+    """
+    if not args:
+        raise ValueError("Must provide at least one argument")
+    return ops.Least(args).to_expr()
+
 
 aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
