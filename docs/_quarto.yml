@@ -318,8 +318,6 @@ quartodoc:
             - name: or_
               dynamic: true
               package: ibis
-            - name: negate
-              package: ibis.expr.api
             - name: random
               dynamic: true
               package: ibis

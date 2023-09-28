@@ -1084,10 +1084,8 @@ def test_nullable_column_propagated():
 def test_interval_negate(base_expr):
     expr = -base_expr
     expr2 = base_expr.negate()
-    expr3 = ibis.negate(base_expr)
     assert isinstance(expr.op(), ops.Negate)
     assert expr.equals(expr2)
-    assert expr.equals(expr3)
 
 
 def test_large_timestamp():
