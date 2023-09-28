@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Literal, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
+import ibis
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -13,8 +14,8 @@ from ibis.common.annotations import annotated
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.deferred import Deferred  # noqa: TCH001
-from ibis.expr.operations.core import Value  # noqa: TCH001
+from ibis.expr.deferred import Deferred
+from ibis.expr.deferred import _resolve as resolve
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.types.relations import bind_expr
 
@@ -26,56 +27,82 @@ class Builder(Concrete):
     pass
 
 
-class CaseBuilder(Builder):
-    results: VarTuple[Value] = ()
-    default: Optional[ops.Value] = None
+class DeferredCase(Deferred):
+    """A deferred case statement."""
 
-    def type(self):
-        return rlz.highest_precedence_dtype(self.results)
+    __slots__ = ("_builder",)
+    _builder: SearchedCaseBuilder
 
-    def when(self, case_expr, result_expr) -> Self:
-        """Add a new case-result pair.
+    def __init__(self, builder: SearchedCaseBuilder):
+        self._builder = builder
+
+    def __repr__(self) -> str:
+        return "<case>"
+
+    def _resolve(self, param) -> Any:
+        cases = tuple(resolve(c, param) for c in self._builder.cases)
+        results = tuple(resolve(r, param) for r in self._builder.results)
+        default = resolve(self._builder.default, param)
+        return self._builder.copy(cases=cases, results=results, default=default).end()
+
+
+class SearchedCaseBuilder(Builder):
+    """A case builder, used for constructing `ibis.case()` expressions."""
+
+    cases: VarTuple[Union[Deferred, ops.Value[dt.Boolean, ds.Any]]] = ()
+    results: VarTuple[Union[Deferred, ops.Value]] = ()
+    default: Optional[Union[None, Deferred, ops.Value]] = None
+
+    def when(self, case_expr: Any, result_expr: Any) -> Self:
+        """Add a new condition and result to the `CASE` expression.
 
         Parameters
         ----------
         case_expr
-            Expression to equality-compare with base expression. Must be
-            comparable with the base.
+            Predicate expression to use for this case.
         result_expr
             Value when the case predicate evaluates to true.
         """
-        cases = self.cases + (case_expr,)
-        results = self.results + (result_expr,)
-        return self.copy(cases=cases, results=results)
+        return self.copy(
+            cases=self.cases + (case_expr,), results=self.results + (result_expr,)
+        )
 
-    def else_(self, result_expr) -> Self:
-        """Construct an `ELSE` expression."""
+    def else_(self, result_expr: Any) -> Self:
+        """Add a default value for the `CASE` expression.
+
+        Parameters
+        ----------
+        result_expr
+            Value to use when all case predicates evaluate to false.
+        """
         return self.copy(default=result_expr)
 
-    def end(self) -> ir.Value:
-        default = self.default
-        if default is None:
-            default = ir.null().cast(self.type())
+    def end(self) -> ir.Value | Deferred:
+        """Finish the `CASE` expression."""
+        if (
+            isinstance(self.default, Deferred)
+            or any(isinstance(c, Deferred) for c in self.cases)
+            or any(isinstance(r, Deferred) for r in self.results)
+        ):
+            return DeferredCase(self)
 
-        kwargs = dict(zip(self.__argnames__, self.__args__))
-        kwargs["default"] = default
-
-        return self.__type__(**kwargs).to_expr()
-
-
-class SearchedCaseBuilder(CaseBuilder):
-    __type__ = ops.SearchedCase
-    cases: VarTuple[Value[dt.Boolean, ds.Any]] = ()
+        if (default := self.default) is None:
+            default = ibis.null().cast(rlz.highest_precedence_dtype(self.results))
+        return ops.SearchedCase(
+            cases=self.cases, results=self.results, default=default
+        ).to_expr()
 
 
-class SimpleCaseBuilder(CaseBuilder):
-    __type__ = ops.SimpleCase
+class SimpleCaseBuilder(Builder):
+    """A case builder, used for constructing `Column.case()` expressions."""
+
     base: ops.Value
-    cases: VarTuple[Value] = ()
+    cases: VarTuple[ops.Value] = ()
+    results: VarTuple[ops.Value] = ()
+    default: Optional[Union[None, ops.Value]] = None
 
-    @annotated
-    def when(self, case_expr: Value, result_expr: Value):
-        """Add a new case-result pair.
+    def when(self, case_expr: Any, result_expr: Any) -> Self:
+        """Add a new condition and result to the `CASE` expression.
 
         Parameters
         ----------
@@ -85,12 +112,37 @@ class SimpleCaseBuilder(CaseBuilder):
         result_expr
             Value when the case predicate evaluates to true.
         """
-        if not rlz.comparable(self.base, case_expr):
+        if not isinstance(case_expr, ir.Value):
+            case_expr = ibis.literal(case_expr)
+        if not isinstance(result_expr, ir.Value):
+            result_expr = ibis.literal(result_expr)
+
+        if not rlz.comparable(self.base, case_expr.op()):
             raise TypeError(
                 f"Base expression {rlz._arg_type_error_format(self.base)} and "
                 f"case {rlz._arg_type_error_format(case_expr)} are not comparable"
             )
-        return super().when(case_expr, result_expr)
+        return self.copy(
+            cases=self.cases + (case_expr,), results=self.results + (result_expr,)
+        )
+
+    def else_(self, result_expr: Any) -> Self:
+        """Add a default value for the `CASE` expression.
+
+        Parameters
+        ----------
+        result_expr
+            Value to use when all case predicates evaluate to false.
+        """
+        return self.copy(default=result_expr)
+
+    def end(self) -> ir.Value:
+        """Finish the `CASE` expression."""
+        if (default := self.default) is None:
+            default = ibis.null().cast(rlz.highest_precedence_dtype(self.results))
+        return ops.SimpleCase(
+            cases=self.cases, results=self.results, default=default, base=self.base
+        ).to_expr()
 
 
 RowsWindowBoundary = ops.WindowBoundary[dt.Integer]
@@ -112,9 +164,9 @@ class WindowBuilder(Builder):
     how: Literal["rows", "range"] = "rows"
     start: Optional[RangeWindowBoundary] = None
     end: Optional[RangeWindowBoundary] = None
-    groupings: VarTuple[Union[str, Deferred, Value]] = ()
-    orderings: VarTuple[Union[str, Deferred, Value]] = ()
-    max_lookback: Optional[Value[dt.Interval]] = None
+    groupings: VarTuple[Union[str, Deferred, ops.Value]] = ()
+    orderings: VarTuple[Union[str, Deferred, ops.Value]] = ()
+    max_lookback: Optional[ops.Value[dt.Interval]] = None
 
     def _maybe_cast_boundary(self, boundary, dtype):
         if boundary.dtype == dtype:

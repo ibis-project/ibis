@@ -956,16 +956,40 @@ def case() -> bl.SearchedCaseBuilder:
     """Begin constructing a case expression.
 
     Use the `.when` method on the resulting object followed by `.end` to create a
-    complete case.
+    complete case expression.
 
     Examples
     --------
     >>> import ibis
-    >>> cond1 = ibis.literal(1) == 1
-    >>> cond2 = ibis.literal(2) == 1
-    >>> expr = ibis.case().when(cond1, 3).when(cond2, 4).end()
-    >>> expr
-    SearchedCase(...)
+    >>> from ibis import _
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable(
+    ...     {
+    ...         "left": [1, 2, 3, 4],
+    ...         "symbol": ["+", "-", "*", "/"],
+    ...         "right": [5, 6, 7, 8],
+    ...     }
+    ... )
+    >>> t.mutate(
+    ...     result=(
+    ...         ibis.case()
+    ...         .when(_.symbol == "+", _.left + _.right)
+    ...         .when(_.symbol == "-", _.left - _.right)
+    ...         .when(_.symbol == "*", _.left * _.right)
+    ...         .when(_.symbol == "/", _.left / _.right)
+    ...         .end()
+    ...     )
+    ... )
+    ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━┓
+    ┃ left  ┃ symbol ┃ right ┃ result  ┃
+    ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━┩
+    │ int64 │ string │ int64 │ float64 │
+    ├───────┼────────┼───────┼─────────┤
+    │     1 │ +      │     5 │     6.0 │
+    │     2 │ -      │     6 │    -4.0 │
+    │     3 │ *      │     7 │    21.0 │
+    │     4 │ /      │     8 │     0.5 │
+    └───────┴────────┴───────┴─────────┘
 
     Returns
     -------

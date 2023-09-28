@@ -67,29 +67,57 @@ def test_simple_case_expr(table):
 
 
 def test_multiple_case_expr(table):
-    case1 = table.a == 5
-    case2 = table.b == 128
-    case3 = table.c == 1000
-
-    result1 = table.f
-    result2 = table.b * 2
-    result3 = table.e
-
-    default = table.d
-
     expr = (
         ibis.case()
-        .when(case1, result1)
-        .when(case2, result2)
-        .when(case3, result3)
-        .else_(default)
+        .when(table.a == 5, table.f)
+        .when(table.b == 128, table.b * 2)
+        .when(table.c == 1000, table.e)
+        .else_(table.d)
         .end()
     )
+
+    # deferred cases
+    deferred = (
+        ibis.case()
+        .when(_.a == 5, table.f)
+        .when(_.b == 128, table.b * 2)
+        .when(_.c == 1000, table.e)
+        .else_(table.d)
+        .end()
+    )
+    expr2 = deferred.resolve(table)
+
+    # deferred results
+    expr3 = (
+        ibis.case()
+        .when(table.a == 5, _.f)
+        .when(table.b == 128, _.b * 2)
+        .when(table.c == 1000, _.e)
+        .else_(table.d)
+        .end()
+        .resolve(table)
+    )
+
+    # deferred default
+    expr4 = (
+        ibis.case()
+        .when(table.a == 5, table.f)
+        .when(table.b == 128, table.b * 2)
+        .when(table.c == 1000, table.e)
+        .else_(_.d)
+        .end()
+        .resolve(table)
+    )
+
+    assert repr(deferred) == "<case>"
+    assert expr.equals(expr2)
+    assert expr.equals(expr3)
+    assert expr.equals(expr4)
 
     op = expr.op()
     assert isinstance(expr, ir.FloatingColumn)
     assert isinstance(op, ops.SearchedCase)
-    assert op.default == default.op()
+    assert op.default == table.d.op()
 
 
 def test_pickle_multiple_case_node(table):
