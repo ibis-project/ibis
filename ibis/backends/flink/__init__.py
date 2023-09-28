@@ -3,9 +3,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
-import pyflink.version
 import sqlglot as sg
-from pyflink.table.types import create_arrow_schema
 
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
@@ -217,6 +215,8 @@ class Backend(BaseBackend, CanCreateDatabase):
         sch.Schema
             Ibis schema
         """
+        from pyflink.table.types import create_arrow_schema
+
         qualified_name = self._fully_qualified_name(table_name, catalog, database)
         table = self._table_env.from_path(qualified_name)
         schema = table.get_schema()
@@ -226,6 +226,8 @@ class Backend(BaseBackend, CanCreateDatabase):
 
     @property
     def version(self) -> str:
+        import pyflink.version
+
         return pyflink.version.__version__
 
     def compile(

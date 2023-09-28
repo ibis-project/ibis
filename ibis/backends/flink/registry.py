@@ -8,7 +8,6 @@ from ibis.backends.base.sql.registry import fixed_arity, helpers, unary
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
-from ibis.backends.flink.utils import _to_pyflink_types, translate_literal
 from ibis.common.temporal import TimestampUnit
 
 if TYPE_CHECKING:
@@ -18,11 +17,15 @@ operation_registry = base_operation_registry.copy()
 
 
 def _zeroifnull(translator: ExprTranslator, op: ops.Literal) -> str:
+    from ibis.backends.flink.utils import translate_literal
+
     casted = translate_literal(ops.Literal("0", dtype=op.dtype))
     return f"COALESCE({translator.translate(op.arg)}, {casted})"
 
 
 def _nullifzero(translator: ExprTranslator, op: ops.Literal) -> str:
+    from ibis.backends.flink.utils import translate_literal
+
     casted = translate_literal(ops.Literal("0", dtype=op.dtype))
     return f"NULLIF({translator.translate(op.arg)}, {casted})"
 
@@ -45,6 +48,8 @@ def _extract_field(sql_attr: str) -> str:
 
 
 def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
+    from ibis.backends.flink.utils import translate_literal
+
     return translate_literal(op)
 
 
@@ -194,6 +199,8 @@ def _window(translator: ExprTranslator, op: ops.Node) -> str:
 
 
 def _clip(translator: ExprTranslator, op: ops.Node) -> str:
+    from ibis.backends.flink.utils import _to_pyflink_types
+
     arg = translator.translate(op.arg)
 
     if op.upper is not None:

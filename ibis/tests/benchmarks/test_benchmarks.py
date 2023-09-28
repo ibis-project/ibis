@@ -193,7 +193,7 @@ def test_compile(benchmark, module, expr_fn, t, base, large_expr):
         expr = expr_fn(t, base, large_expr)
         try:
             benchmark(mod.compile, expr)
-        except sa.exc.NoSuchModuleError as e:
+        except (sa.exc.NoSuchModuleError, ImportError) as e:  # delayed imports
             pytest.skip(str(e))
 
 
