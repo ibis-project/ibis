@@ -249,14 +249,14 @@ class _FileIOHandler:
         Parameters
         ----------
         expr
-            Ibis expression to execute
+            Ibis expression to execute.
         params
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
         chunk_size
-            Maximum number of rows in each returned record batch. This may have
+            Maximum number of rows in each returned `DataFrame` batch. This may have
             no effect depending on the backend.
         kwargs
             Keyword arguments
@@ -264,7 +264,7 @@ class _FileIOHandler:
         Returns
         -------
         Iterator[pd.DataFrame]
-            An iterator pandas `DataFrame`s
+            An iterator of pandas `DataFrame`s.
         """
         orig_expr = expr
         expr = expr.as_table()
