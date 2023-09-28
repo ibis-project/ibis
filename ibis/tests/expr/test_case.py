@@ -4,13 +4,44 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import _
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
 
-def test_ifelse(table):
+def test_ifelse_method(table):
     bools = table.g.isnull()
     result = bools.ifelse("foo", "bar")
     assert isinstance(result, ir.StringColumn)
+
+
+def test_ifelse_function_literals():
+    res = ibis.ifelse(True, 1, 2)
+    sol = ibis.literal(True, type="bool").ifelse(1, 2)
+    assert res.equals(sol)
+
+    # condition is explicitly cast to bool
+    res = ibis.ifelse(1, 1, 2)
+    sol = ibis.literal(1, type="bool").ifelse(1, 2)
+    assert res.equals(sol)
+
+
+def test_ifelse_function_exprs(table):
+    res = ibis.ifelse(table.g.isnull(), 1, table.a)
+    sol = table.g.isnull().ifelse(1, table.a)
+    assert res.equals(sol)
+
+    # condition is cast if not already bool
+    res = ibis.ifelse(table.a, 1, table.b)
+    sol = table.a.cast("bool").ifelse(1, table.b)
+    assert res.equals(sol)
+
+
+def test_ifelse_function_deferred(table):
+    expr = ibis.ifelse(_.g.isnull(), _.a, 2)
+    assert repr(expr) == "ifelse(_.g.isnull(), _.a, 2)"
+    res = expr.resolve(table)
+    sol = table.g.isnull().ifelse(table.a, 2)
+    assert res.equals(sol)
 
 
 def test_simple_case_expr(table):
