@@ -171,6 +171,13 @@ __all__ = (
 dtype = dt.dtype
 infer_dtype = dt.infer
 infer_schema = sch.infer
+aggregate = ir.Table.aggregate
+cross_join = ir.Table.cross_join
+join = ir.Table.join
+asof_join = ir.Table.asof_join
+
+e = ops.E().to_expr()
+pi = ops.Pi().to_expr()
 
 
 NA = null()
@@ -182,6 +189,36 @@ Examples
 >>> my_null = ibis.NA
 >>> my_null.isnull()
 True
+"""
+
+
+_ = deferred = Deferred()
+"""Deferred expression object.
+
+Use this object to refer to a previous table expression in a chain of
+expressions.
+
+::: {.callout-note}
+## `_` may conflict with other idioms in Python
+
+See https://github.com/ibis-project/ibis/issues/4704 for details.
+
+Use `from ibis import deferred as <NAME>` to assign a different name to
+the deferred object builder.
+
+Another option is to use `ibis._` directly.
+:::
+
+Examples
+--------
+>>> from ibis import _
+>>> t = ibis.table(dict(key="int", value="float"), name="t")
+>>> expr = t.group_by(key=_.key - 1).agg(total=_.value.sum())
+>>> expr.schema()
+ibis.Schema {
+  key    int64
+  total  float64
+}
 """
 
 
@@ -1690,10 +1727,6 @@ def watermark(time_col: str, allowed_delay: ir.IntervalScalar) -> Watermark:
     return Watermark(time_col=time_col, allowed_delay=allowed_delay)
 
 
-e = ops.E().to_expr()
-pi = ops.Pi().to_expr()
-
-
 def _wrap_deprecated(fn, prefix=""):
     """Deprecate the top-level geo function."""
 
@@ -1901,38 +1934,3 @@ def least(*args: Any) -> ir.Value:
     4
     """
     return ops.Least(args).to_expr()
-
-
-aggregate = ir.Table.aggregate
-cross_join = ir.Table.cross_join
-join = ir.Table.join
-asof_join = ir.Table.asof_join
-
-_ = deferred = Deferred()
-"""Deferred expression object.
-
-Use this object to refer to a previous table expression in a chain of
-expressions.
-
-::: {.callout-note}
-## `_` may conflict with other idioms in Python
-
-See https://github.com/ibis-project/ibis/issues/4704 for details.
-
-Use `from ibis import deferred as <NAME>` to assign a different name to
-the deferred object builder.
-
-Another option is to use `ibis._` directly.
-:::
-
-Examples
---------
->>> from ibis import _
->>> t = ibis.table(dict(key="int", value="float"), name="t")
->>> expr = t.group_by(key=_.key - 1).agg(total=_.value.sum())
->>> expr.schema()
-ibis.Schema {
-  key    int64
-  total  float64
-}
-"""
