@@ -13,7 +13,6 @@ from ibis.backends.base.sql.compiler import (
     TableSetFormatter,
 )
 from ibis.backends.flink.translator import FlinkExprTranslator
-from ibis.backends.flink.utils import translate_literal
 
 
 class FlinkTableSetFormatter(TableSetFormatter):
@@ -90,6 +89,8 @@ def translate_op(op: ops.TableNode) -> str:
 
 @translate_op.register(ops.Literal)
 def _literal(op: ops.Literal) -> str:
+    from ibis.backends.flink.utils import translate_literal
+
     return translate_literal(op)
 
 

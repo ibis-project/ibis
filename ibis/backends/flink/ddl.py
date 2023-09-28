@@ -14,7 +14,6 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.backends.base.sql.registry import quote_identifier, type_to_sql_string
-from ibis.backends.flink.utils import translate_literal
 
 if TYPE_CHECKING:
     from ibis.expr.streaming import Watermark
@@ -39,6 +38,8 @@ def type_to_flink_sql_string(tval):
 
 
 def _format_watermark_strategy(watermark: Watermark) -> str:
+    from ibis.backends.flink.utils import translate_literal
+
     if watermark.allowed_delay is None:
         return watermark.time_col
     return f"{watermark.time_col} - {translate_literal(watermark.allowed_delay.op())}"
