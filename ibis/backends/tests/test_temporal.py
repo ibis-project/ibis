@@ -308,11 +308,6 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
     reason="PySpark backend does not support extracting milliseconds.",
 )
 @pytest.mark.broken(["sqlite"], raises=AssertionError)
-@pytest.mark.broken(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="SQL parse failed. Encountered 'TIMESTAMP'. Was expecting one of: CENTURY, DAY, DECADE, ...",
-)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
     result = expr.execute()
