@@ -15,7 +15,7 @@ import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.bases import Abstract
 from ibis.common.grounds import Singleton
-from ibis.common.patterns import InstanceOf  # noqa: TCH001
+from ibis.common.patterns import InstanceOf, Length  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.deferred import Deferred  # noqa: TCH001
 from ibis.expr.operations.core import Named, Scalar, Unary, Value
@@ -169,7 +169,7 @@ class NullIf(Value):
 
 @public
 class Coalesce(Value):
-    arg: VarTuple[Value]
+    arg: Annotated[VarTuple[Value], Length(at_least=1)]
 
     shape = rlz.shape_like("arg")
     dtype = rlz.dtype_like("arg")
@@ -177,7 +177,7 @@ class Coalesce(Value):
 
 @public
 class Greatest(Value):
-    arg: VarTuple[Value]
+    arg: Annotated[VarTuple[Value], Length(at_least=1)]
 
     shape = rlz.shape_like("arg")
     dtype = rlz.dtype_like("arg")
@@ -185,7 +185,7 @@ class Greatest(Value):
 
 @public
 class Least(Value):
-    arg: VarTuple[Value]
+    arg: Annotated[VarTuple[Value], Length(at_least=1)]
 
     shape = rlz.shape_like("arg")
     dtype = rlz.dtype_like("arg")
