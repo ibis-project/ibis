@@ -1788,7 +1788,16 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
 @pytest.mark.parametrize(
     "unit",
     [
-        "s",
+        param(
+            "s",
+            marks=[
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: Column '1523613251' not found in any table",
+                ),
+            ],
+        ),
         param(
             "ms",
             marks=[
@@ -1801,6 +1810,11 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     ["clickhouse"],
                     raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: Column '1523613251872' not found in any table",
                 ),
             ],
         ),
@@ -1817,6 +1831,11 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     raises=com.UnsupportedOperationError,
                     reason="`us` unit is not supported!",
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=ValueError,
+                    reason="<TimestampUnit.MICROSECOND: 'us'> unit is not supported!",
+                ),
             ],
         ),
         param(
@@ -1831,6 +1850,11 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     ["duckdb", "mssql", "clickhouse"],
                     raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=ValueError,
+                    reason="<TimestampUnit.MICROSECOND: 'us'> unit is not supported!",
                 ),
             ],
         ),
@@ -1879,6 +1903,11 @@ def test_integer_to_timestamp(backend, con, unit):
                     ),
                     raises=sa.exc.ProgrammingError,
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.OperationNotDefinedError,
+                    reason="No translation rule for <class 'ibis.expr.operations.temporal.StringToTimestamp'>",
+                ),
             ],
         ),
         param(
@@ -1909,6 +1938,11 @@ def test_integer_to_timestamp(backend, con, unit):
                     ["duckdb"],
                     reason="datetime formatting style not supported",
                     raises=DuckDBInvalidInputException,
+                ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=com.OperationNotDefinedError,
+                    reason="No translation rule for <class 'ibis.expr.operations.temporal.StringToTimestamp'>",
                 ),
             ],
         ),
@@ -1952,7 +1986,7 @@ def test_string_to_timestamp(alltypes, fmt):
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
+@pytest.mark.notimpl(["flink", "impala"], raises=com.UnsupportedBackendType)
 @pytest.mark.xfail_version(
     datafusion=["datafusion<31"],
     raises=Exception,
@@ -1972,6 +2006,11 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
     ["druid"],
     raises=AttributeError,
     reason="StringColumn' object has no attribute 'day_of_week'",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="CalciteContextException: From line 1, column 8 to line 1, column 49: No match found for function signature pmod(<NUMERIC>, <NUMERIC>)",
 )
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
@@ -1999,7 +2038,21 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
             lambda s: day_name(s.dt).str.len().sum(),
             id="day_of_week_full_name",
-            marks=[pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)],
+            marks=[
+                pytest.mark.notimpl(
+                    ["mssql"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.never(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason=(
+                        "SqlValidatorException: No match found for function signature dayname(<TIMESTAMP>)"
+                        "`day_of_week_name` is not supported in Flink"
+                        "Ref: https://nightlies.apache.org/flink/flink-docs-release-1.13/docs/dev/table/functions/systemfunctions/#temporal-functions"
+                    ),
+                ),
+            ],
         ),
     ],
 )
