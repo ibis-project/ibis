@@ -1531,7 +1531,7 @@ def trailing_range_window(preceding, order_by, group_by=None):
     )
 
 
-def union(table: ir.Table, *rest: ir.Table, distinct: bool = False):
+def union(table: ir.Table, *rest: ir.Table, distinct: bool = False) -> ir.Table:
     """Compute the set union of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -1599,7 +1599,7 @@ def union(table: ir.Table, *rest: ir.Table, distinct: bool = False):
     return table.union(*rest, distinct=distinct) if rest else table
 
 
-def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True):
+def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Table:
     """Compute the set intersection of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -1654,7 +1654,7 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True):
     return table.intersect(*rest, distinct=distinct) if rest else table
 
 
-def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True):
+def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Table:
     """Compute the set difference of multiple table expressions.
 
     The input tables must have identical schemas.
