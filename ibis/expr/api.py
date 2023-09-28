@@ -1774,40 +1774,47 @@ geo_y_max = _geo_deprecated(ir.GeoSpatialValue.y_max)
 geo_y_min = _geo_deprecated(ir.GeoSpatialValue.y_min)
 geo_unary_union = _geo_deprecated(ir.GeoSpatialColumn.unary_union)
 
-ifelse = _deferred(ir.BooleanValue.ifelse)
-"""Construct a ternary conditional expression.
 
-Parameters
-----------
-condition : ir.BooleanValue
-    A boolean expression
-true_expr : ir.Value
-    Expression to return if `condition` evaluates to `True`
-false_expr : ir.Value
-    Expression to return if `condition` evaluates to `False` or `NULL`
+@deferrable
+def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
+    """Construct a ternary conditional expression.
 
-Returns
--------
-Value : ir.Value
-    The value of `true_expr` if `condition` is `True` else `false_expr`
+    Parameters
+    ----------
+    condition
+        A boolean expression
+    true_expr
+        Expression to return if `condition` evaluates to `True`
+    false_expr
+        Expression to return if `condition` evaluates to `False` or `NULL`
 
-Examples
---------
->>> import ibis
->>> ibis.options.interactive = True
->>> t = ibis.memtable({"is_person": [True, False, True, None]})
->>> ibis.ifelse(t.is_person, "yes", "no")
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ IfElse(is_person, 'yes', 'no') ┃
-┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ string                         │
-├────────────────────────────────┤
-│ yes                            │
-│ no                             │
-│ yes                            │
-│ no                             │
-└────────────────────────────────┘
-"""
+    Returns
+    -------
+    Value : ir.Value
+        The value of `true_expr` if `condition` is `True` else `false_expr`
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({"condition": [True, False, True, None]})
+    >>> ibis.ifelse(t.condition, "yes", "no")
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ IfElse(condition, 'yes', 'no') ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ string                         │
+    ├────────────────────────────────┤
+    │ yes                            │
+    │ no                             │
+    │ yes                            │
+    │ no                             │
+    └────────────────────────────────┘
+    """
+    if not isinstance(condition, ir.Value):
+        condition = literal(condition, type="bool")
+    elif not condition.type().is_boolean():
+        condition = condition.cast("bool")
+    return condition.ifelse(true_expr, false_expr)
 
 
 @util.deprecated(instead="use `ibis.ifelse` instead", as_of="7.0")
@@ -1816,11 +1823,11 @@ def where(cond, true_expr, false_expr) -> ir.Value:
 
     Parameters
     ----------
-    cond : ir.Value
+    cond
         Boolean conditional expression
-    true_expr : ir.Value
+    true_expr
         Expression to return if `cond` evaluates to `True`
-    false_expr : ir.Value
+    false_expr
         Expression to return if `cond` evaluates to `False` or `NULL`
 
     Returns
