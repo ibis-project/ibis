@@ -1841,7 +1841,6 @@ def where(cond, true_expr, false_expr) -> ir.Value:
 coalesce = _deferred(ir.Value.coalesce)
 greatest = _deferred(ir.Value.greatest)
 least = _deferred(ir.Value.least)
-category_label = _deferred(ir.IntegerColumn.label)
 
 aggregate = ir.Table.aggregate
 cross_join = ir.Table.cross_join
