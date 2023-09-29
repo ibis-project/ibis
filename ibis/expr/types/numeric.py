@@ -755,47 +755,6 @@ class NumericScalar(Scalar, NumericValue):
 
 @public
 class NumericColumn(Column, NumericValue):
-    def median(self, where: ir.BooleanValue | None = None) -> NumericScalar:
-        """Return the median of the column.
-
-        Parameters
-        ----------
-        where
-            Optional boolean expression. If given, only the values where
-            `where` evaluates to true will be considered for the median.
-
-        Returns
-        -------
-        NumericScalar
-            Median of the column
-        """
-        return ops.Median(self, where=self._bind_reduction_filter(where)).to_expr()
-
-    def quantile(
-        self,
-        quantile: Sequence[NumericValue | float],
-        where: ir.BooleanValue | None = None,
-    ) -> NumericScalar:
-        """Return value at the given quantile.
-
-        Parameters
-        ----------
-        quantile
-            `0 <= quantile <= 1`, the quantile(s) to compute
-        where
-            Boolean filter for input values
-
-        Returns
-        -------
-        NumericScalar
-            Quantile of the input
-        """
-        if isinstance(quantile, collections.abc.Sequence):
-            op = ops.MultiQuantile
-        else:
-            op = ops.Quantile
-        return op(self, quantile, where=self._bind_reduction_filter(where)).to_expr()
-
     def std(
         self,
         where: ir.BooleanValue | None = None,

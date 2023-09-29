@@ -489,8 +489,16 @@ operation_registry.update(
         ops.JSONGetItem: fixed_arity(_json_get_item, 2),
         ops.RowID: lambda *_: sa.literal_column("rowid"),
         ops.StringToTimestamp: _strptime,
-        ops.Quantile: reduction(sa.func.quantile_cont),
-        ops.MultiQuantile: reduction(sa.func.quantile_cont),
+        ops.Quantile: lambda t, op: (
+            reduction(sa.func.quantile_cont)(t, op)
+            if op.arg.dtype.is_numeric()
+            else reduction(sa.func.quantile_disc)(t, op)
+        ),
+        ops.MultiQuantile: lambda t, op: (
+            reduction(sa.func.quantile_cont)(t, op)
+            if op.arg.dtype.is_numeric()
+            else reduction(sa.func.quantile_disc)(t, op)
+        ),
         ops.TypeOf: unary(sa.func.typeof),
         ops.IntervalAdd: fixed_arity(operator.add, 2),
         ops.IntervalSubtract: fixed_arity(operator.sub, 2),

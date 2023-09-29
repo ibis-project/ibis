@@ -457,9 +457,11 @@ def _quantile(t, op):
     arg = op.arg
     if (where := op.where) is not None:
         arg = ops.IfElse(where, arg, None)
-    return sa.func.percentile_cont(t.translate(op.quantile)).within_group(
-        t.translate(arg)
-    )
+    if arg.dtype.is_numeric():
+        func = sa.func.percentile_cont
+    else:
+        func = sa.func.percentile_disc
+    return func(t.translate(op.quantile)).within_group(t.translate(arg))
 
 
 def _median(t, op):
@@ -467,7 +469,11 @@ def _median(t, op):
     if (where := op.where) is not None:
         arg = ops.IfElse(where, arg, None)
 
-    return sa.func.percentile_cont(0.5).within_group(t.translate(arg))
+    if arg.dtype.is_numeric():
+        func = sa.func.percentile_cont
+    else:
+        func = sa.func.percentile_disc
+    return func(0.5).within_group(t.translate(arg))
 
 
 def _binary_variance_reduction(func):
