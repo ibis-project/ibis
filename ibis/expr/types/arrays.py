@@ -7,6 +7,7 @@ from public import public
 import ibis.expr.operations as ops
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import V
+from ibis.expr.deferred import deferrable
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
@@ -913,6 +914,7 @@ class ArrayColumn(Column, ArrayValue):
 
 
 @public
+@deferrable
 def array(values: Iterable[V], type: str | dt.DataType | None = None) -> ArrayValue:
     """Create an array expression.
 
