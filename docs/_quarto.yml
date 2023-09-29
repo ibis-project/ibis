@@ -200,7 +200,7 @@ quartodoc:
             - name: Table
               package: ibis.expr.types.relations
             - name: GroupedTable
-              package: ibis.expr.types.relations
+              package: ibis.expr.types.groupby
             - name: read_csv
               dynamic: true
             - name: read_delta
