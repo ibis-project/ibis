@@ -13,7 +13,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import OperationNotDefinedError
 
 dd = pytest.importorskip("dask.dataframe")
@@ -179,7 +178,6 @@ def test_quantile_list(t, df, ibis_func, dask_func, column):
     ],
 )
 def test_quantile_scalar(t, df, ibis_func, dask_func):
-    # TODO - interpolation
     result = ibis_func(t.float64_with_zeros).compile()
     expected = dask_func(df.float64_with_zeros)
     assert result.compute() == expected.compute()
@@ -196,8 +194,6 @@ def test_quantile_scalar(t, df, ibis_func, dask_func):
         (lambda x: x.clip(), ValueError),
         # out of range on quantile
         (lambda x: x.quantile(5.0), ValueError),
-        # invalid interpolation arg
-        (lambda x: x.quantile(0.5, interpolation="foo"), ValidationError),
     ],
 )
 def test_arraylike_functions_transform_errors(t, df, ibis_func, exc):
