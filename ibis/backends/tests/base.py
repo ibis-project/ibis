@@ -146,7 +146,9 @@ class BackendTest(abc.ABC):
             fn.touch()
 
     @classmethod
-    def load_data(cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any) -> None:
+    def load_data(
+        cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
+    ) -> BackendTest:
         """Load testdata from `data_dir`."""
         # handling for multi-processes pytest
 
