@@ -185,8 +185,7 @@ quartodoc:
   render_interlinks: true
   renderer: _renderer.py
   options:
-    member_options:
-      signature_name: short
+    signature_name: full
   sections:
     - title: Expression API
       desc: "APIs for manipulating table, column and scalar expressions"
