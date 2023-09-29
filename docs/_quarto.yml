@@ -245,26 +245,26 @@ quartodoc:
             - name: Scalar
               package: ibis.expr.types.generic
             - name: literal
-              package: ibis.expr.api
               dynamic: true
             - name: param
               dynamic: true
             - name: NA
+              # Ideally exposed under `ibis` but that doesn't seem to work??
               package: ibis.expr.api
             - name: "null"
               dynamic: true
             - name: coalesce
-              package: ibis.expr.api
+              dynamic: true
             - name: least
-              package: ibis.expr.api
+              dynamic: true
             - name: greatest
-              package: ibis.expr.api
+              dynamic: true
             - name: asc
               dynamic: true
             - name: desc
               dynamic: true
             - name: ifelse
-              package: ibis.expr.api
+              dynamic: true
             - name: case
               dynamic: true
             - name: show_sql
@@ -458,7 +458,7 @@ quartodoc:
             desc: Create and manage backend connections.
           contents:
             - name: connect
-              package: ibis.backends.base
+              dynamic: true
             - name: get_backend
               dynamic: true
             - name: set_backend
