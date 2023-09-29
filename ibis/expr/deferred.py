@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 import operator
-from typing import Any, Callable, NoReturn, TypeVar
+from typing import Any, Callable, NoReturn, TypeVar, overload
 
 _BINARY_OPS: dict[str, Callable[[Any, Any], Any]] = {
     "+": operator.add,
@@ -86,7 +86,7 @@ class Deferred:
         return DeferredItem(self, key)
 
     def __call__(self, *args: Any, **kwargs: Any) -> Deferred:
-        return DeferredCall(self, *args, **kwargs)
+        return DeferredCall(self, args, kwargs)
 
     def __add__(self, other: Any) -> Deferred:
         return DeferredBinaryOp("+", self, other)
@@ -220,17 +220,28 @@ class DeferredItem(Deferred):
 
 
 class DeferredCall(Deferred):
-    __slots__ = ("_func", "_args", "_kwargs")
+    __slots__ = ("_func", "_args", "_kwargs", "_repr")
     _func: Callable
     _args: tuple[Any, ...]
     _kwargs: dict[str, Any]
+    _repr: str | None
 
-    def __init__(self, func: Any, *args: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        func: Any,
+        args: tuple | None = None,
+        kwargs: dict | None = None,
+        repr: str | None = None,
+    ) -> None:
         self._func = func
-        self._args = args
-        self._kwargs = kwargs
+        self._args = args or ()
+        self._kwargs = kwargs or {}
+        self._repr = repr
 
     def __repr__(self) -> str:
+        if self._repr is not None:
+            return self._repr
+
         params = [_repr(a) for a in self._args]
         params.extend(f"{k}={_repr(v)}" for k, v in self._kwargs.items())
         # Repr directly wrapped functions as their name, fallback to repr for
@@ -282,56 +293,73 @@ class DeferredUnaryOp(Deferred):
         return _UNARY_OPS[self._symbol](value)
 
 
-def _resolve(expr: Deferred, param: Any) -> Any:
+def _resolve(expr: Any, param: Any) -> Any:
     if isinstance(expr, Deferred):
         return expr._resolve(param)
-    return expr
+    elif (typ := type(expr)) in (tuple, list, set):
+        return typ(_resolve(e, param) for e in expr)
+    elif typ is dict:
+        return {k: _resolve(v, param) for k, v in expr.items()}
+    else:
+        return expr
+
+
+def _contains_deferred(obj: Any) -> bool:
+    if isinstance(obj, Deferred):
+        return True
+    elif (typ := type(obj)) in (tuple, list, set):
+        return any(_contains_deferred(o) for o in obj)
+    elif typ is dict:
+        return any(_contains_deferred(o) for o in obj.values())
+    return False
 
 
 F = TypeVar("F", bound=Callable)
 
 
+@overload
+def deferrable(*, repr: str | None = None) -> Callable[[F], F]:
+    ...
+
+
+@overload
 def deferrable(func: F) -> F:
+    ...
+
+
+def deferrable(func=None, *, repr=None):
     """Wrap a top-level expr function to support deferred arguments.
 
-    When a deferrable function is called, if any of the direct args or kwargs
-    is a `Deferred` value, then the result is also `Deferred`. Otherwise the
-    function is called directly.
-    """
-    # Parse the signature of func so we can validate deferred calls eagerly,
-    # erroring for invalid/missing arguments at call time not resolve time.
-    sig = inspect.signature(func)
-
-    @functools.wraps(func)
-    def inner(*args, **kwargs):
-        is_deferred = any(isinstance(a, Deferred) for a in args) or any(
-            isinstance(v, Deferred) for v in kwargs.values()
-        )
-        if is_deferred:
-            # Try to bind the arguments now, raising a nice error
-            # immediately if the function was called incorrectly
-            sig.bind(*args, **kwargs)
-            return deferred_apply(func, *args, **kwargs)
-        return func(*args, **kwargs)
-
-    return inner
-
-
-def deferred_apply(func: Callable, *args: Any, **kwargs: Any) -> Deferred:
-    """Construct a deferred call from a callable and arguments.
+    When a deferrable function is called, the args & kwargs are traversed to
+    look for `Deferred` values (through builtin collections like
+    `list`/`tuple`/`set`/`dict`). If any `Deferred` arguments are found, then
+    the result is also `Deferred`. Otherwise the function is called directly.
 
     Parameters
     ----------
     func
-        The callable to defer
-    args
-        Positional arguments, possibly composed of deferred expressions.
-    kwargs
-        Keyword arguments, possible composed of deferred expressions.
-
-    Returns
-    -------
-    expr
-        A deferred expression representing the call.
+        A callable to make deferrable
+    repr
+        An optional fixed string to use when repr-ing the deferred expression,
+        instead of the usual. This is useful for complex deferred expressions
+        where the arguments don't necessarily make sense to be user facing
+        in the repr.
     """
-    return DeferredCall(func, *args, **kwargs)
+
+    def wrapper(func):
+        # Parse the signature of func so we can validate deferred calls eagerly,
+        # erroring for invalid/missing arguments at call time not resolve time.
+        sig = inspect.signature(func)
+
+        @functools.wraps(func)
+        def inner(*args, **kwargs):
+            if _contains_deferred((args, kwargs)):
+                # Try to bind the arguments now, raising a nice error
+                # immediately if the function was called incorrectly
+                sig.bind(*args, **kwargs)
+                return DeferredCall(func, args, kwargs, repr=repr)
+            return func(*args, **kwargs)
+
+        return inner  # type: ignore
+
+    return wrapper if func is None else wrapper(func)
