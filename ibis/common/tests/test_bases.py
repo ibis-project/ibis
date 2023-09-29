@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import pickle
 import weakref
 from abc import ABCMeta, abstractmethod
 
@@ -11,8 +12,10 @@ from ibis.common.bases import (
     AbstractMeta,
     Comparable,
     Final,
+    FrozenSlotted,
     Immutable,
     Singleton,
+    Slotted,
 )
 from ibis.common.caching import WeakCache
 
@@ -258,3 +261,55 @@ def test_final():
 
         class B(A):
             pass
+
+
+class MyObj(Slotted):
+    __slots__ = ("a", "b")
+
+    def __init__(self, a, b):
+        super().__init__(a=a, b=b)
+
+
+def test_slotted():
+    obj = MyObj(1, 2)
+    assert obj.a == 1
+    assert obj.b == 2
+    assert obj.__slots__ == ("a", "b")
+    with pytest.raises(AttributeError):
+        obj.c = 3
+
+    obj2 = MyObj(1, 2)
+    assert obj == obj2
+    assert obj is not obj2
+
+    obj3 = MyObj(1, 3)
+    assert obj != obj3
+
+    assert pickle.loads(pickle.dumps(obj)) == obj
+
+
+class MyFrozenObj(FrozenSlotted):
+    __slots__ = ("a", "b")
+
+    def __init__(self, a, b):
+        super().__init__(a=a, b=b)
+
+
+def test_frozen_slotted():
+    obj = MyFrozenObj(1, 2)
+    assert obj.a == 1
+    assert obj.b == 2
+    assert obj.__slots__ == ("a", "b")
+    with pytest.raises(AttributeError):
+        obj.b = 3
+    with pytest.raises(AttributeError):
+        obj.c = 3
+
+    obj2 = MyFrozenObj(1, 2)
+    assert obj == obj2
+    assert obj is not obj2
+    assert hash(obj) == hash(obj2)
+
+    restored = pickle.loads(pickle.dumps(obj))
+    assert restored == obj
+    assert hash(restored) == hash(obj)
