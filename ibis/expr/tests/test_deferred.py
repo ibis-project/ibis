@@ -8,7 +8,7 @@ from pytest import param
 
 import ibis
 from ibis import _
-from ibis.expr.deferred import deferrable, deferred_apply
+from ibis.expr.deferred import DeferredCall, deferrable
 
 
 @pytest.fixture
@@ -101,17 +101,21 @@ def test_method_kwargs(table):
     assert repr(expr) == "_.a.log(base=_.b)"
 
 
-def test_deferred_apply(table):
-    expr = deferred_apply(operator.add, _.a, 2)
+def test_deferred_call(table):
+    expr = DeferredCall(operator.add, (_.a, 2))
     res = expr.resolve(table)
     assert res.equals(table.a + 2)
     assert repr(expr) == "add(_.a, 2)"
 
     func = lambda a, b: a + b
-    expr = deferred_apply(func, _.a, 2)
+    expr = DeferredCall(func, kwargs=dict(a=_.a, b=2))
     res = expr.resolve(table)
     assert res.equals(table.a + 2)
     assert func.__name__ in repr(expr)
+    assert "a=_.a, b=2" in repr(expr)
+
+    expr = DeferredCall(operator.add, (_.a, 2), repr="<test>")
+    assert repr(expr) == "<test>"
 
 
 @pytest.mark.parametrize(
@@ -219,6 +223,37 @@ def test_deferrable(table):
 
     with pytest.raises(TypeError, match="unknown"):
         f(_.a, _.b, unknown=3)  # invalid calls caught at call time
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        param(lambda: ([1, _], [1, 2]), id="list"),
+        param(lambda: ((1, _), (1, 2)), id="tuple"),
+        param(lambda: ({1, _}, {1, 2}), id="set"),
+        param(lambda: ({"x": 1, "y": _}, {"x": 1, "y": 2}), id="dict"),
+        param(lambda: ({"x": 1, "y": [_, 3]}, {"x": 1, "y": [2, 3]}), id="nested"),
+    ],
+)
+def test_deferrable_nested_args(case):
+    arg, sol = case()
+
+    @deferrable
+    def identity(x):
+        return x
+
+    expr = identity(arg)
+    assert expr.resolve(2) == sol
+    assert identity(sol) is sol
+    assert repr(expr) == f"identity({arg!r})"
+
+
+def test_deferrable_repr():
+    @deferrable(repr="<test>")
+    def myfunc(x):
+        return x + 1
+
+    assert repr(myfunc(_.a)) == "<test>"
 
 
 @pytest.mark.parametrize(

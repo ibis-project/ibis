@@ -541,7 +541,7 @@ class Value(Expr):
             if table := an.find_first_base_table(self.op()):
                 return bind(table)
             else:
-                return de.deferred_apply(bind, _)
+                return de.DeferredCall(bind, (_,))
         else:
             return ops.WindowFunction(self, window).to_expr()
 
