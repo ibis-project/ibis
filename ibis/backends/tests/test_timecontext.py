@@ -52,7 +52,9 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.xfail_version(pyspark=["pyspark<3.1"], pandas=["pyarrow>=13", "pandas>=2"])
+@pytest.mark.xfail_version(
+    pyspark=["pyspark<3.1"], pandas=["pyarrow>=13", "pandas>=2.1"]
+)
 @pytest.mark.parametrize(
     "window",
     [
@@ -85,7 +87,7 @@ def test_context_adjustment_window_udf(alltypes, context, window, monkeypatch):
 
 
 @pytest.mark.notimpl(["dask", "duckdb"])
-@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2"])
+@pytest.mark.xfail_version(pandas=["pyarrow>=13", "pandas>=2.1"])
 def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch):
     monkeypatch.setattr(ibis.options.context_adjustment, "time_col", "timestamp_col")
 
