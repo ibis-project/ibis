@@ -9,6 +9,7 @@ from public import public
 import ibis.expr.operations as ops
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 from ibis.expr.types.typing import V
+from ibis.expr.deferred import deferrable
 
 if TYPE_CHECKING:
     import ibis.expr.datatypes as dt
@@ -16,6 +17,7 @@ if TYPE_CHECKING:
 
 
 @public
+@deferrable
 def struct(
     value: Iterable[tuple[str, V]] | Mapping[str, V],
     type: str | dt.DataType | None = None,
