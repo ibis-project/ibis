@@ -1590,6 +1590,10 @@ def test_deferred_function_call(func, expected_type):
         param(
             lambda: (ibis.map({"x": 1, "y": _}), ibis.map({"x": 1, "y": 2})), id="map"
         ),
+        param(
+            lambda: (ibis.struct({"x": 1, "y": _}), ibis.struct({"x": 1, "y": 2})),
+            id="struct",
+        ),
     ],
 )
 def test_deferred_nested_types(case):
