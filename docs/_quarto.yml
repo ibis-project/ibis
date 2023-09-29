@@ -110,8 +110,8 @@ website:
       style: "docked"
       collapse-level: 2
       contents:
-        - support_matrix.qmd
         - auto: backends/*.qmd
+        - support_matrix.qmd
     - id: how-to
       title: "How-to"
       style: "docked"
