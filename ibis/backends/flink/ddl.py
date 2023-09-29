@@ -8,9 +8,11 @@ import ibis.expr.schema as sch
 from ibis.backends.base.sql.ddl import (
     CreateTableWithSchema,
     DropObject,
+    InsertSelect,
     _CreateDDL,
     _format_properties,
     _is_quoted,
+    format_partition,
     is_fully_qualified,
 )
 from ibis.backends.base.sql.registry import quote_identifier, type_to_sql_string
@@ -211,3 +213,38 @@ class DropDatabase(_DatabaseObject, DropObject):
         super().__init__(must_exist=must_exist)
         self.name = name
         self.catalog = catalog
+
+
+class InsertSelect(_CatalogAwareBaseQualifiedSQLStatement, InsertSelect):
+    def __init__(
+        self,
+        table_name,
+        select_expr,
+        database: str | None = None,
+        catalog: str | None = None,
+        partition=None,
+        partition_schema=None,
+        overwrite=False,
+    ):
+        super().__init__(
+            table_name, select_expr, database, partition, partition_schema, overwrite
+        )
+        self.catalog = catalog
+
+    def compile(self):
+        if self.overwrite:
+            cmd = "INSERT OVERWRITE"
+        else:
+            cmd = "INSERT INTO"
+
+        if self.partition is not None:
+            part = format_partition(self.partition, self.partition_schema)
+            partition = f" {part} "
+        else:
+            partition = ""
+
+        select_query = self.select.compile()
+        scoped_name = self._get_scoped_name(
+            self.table_name, self.database, self.catalog
+        )
+        return f"{cmd} {scoped_name}{partition}\n{select_query}"
