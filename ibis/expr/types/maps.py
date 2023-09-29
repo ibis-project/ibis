@@ -7,6 +7,7 @@ from public import public
 import ibis.expr.operations as ops
 from ibis.expr.types.arrays import ArrayColumn
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.expr.deferred import deferrable
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -425,6 +426,7 @@ class MapColumn(Column, MapValue):
 
 
 @public
+@deferrable
 def map(
     keys: Iterable[Any] | Mapping[Any, Any] | ArrayColumn,
     values: Iterable[Any] | ArrayColumn | None = None,

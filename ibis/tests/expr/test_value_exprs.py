@@ -1584,7 +1584,13 @@ def test_deferred_function_call(func, expected_type):
 
 
 @pytest.mark.parametrize(
-    "case", [param(lambda: (ibis.array([1, _]), ibis.array([1, 2])), id="array")]
+    "case",
+    [
+        param(lambda: (ibis.array([1, _]), ibis.array([1, 2])), id="array"),
+        param(
+            lambda: (ibis.map({"x": 1, "y": _}), ibis.map({"x": 1, "y": 2})), id="map"
+        ),
+    ],
 )
 def test_deferred_nested_types(case):
     expr, sol = case()
