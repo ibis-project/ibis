@@ -9,8 +9,6 @@ import pytest
 from ibis.common.bases import (
     Abstract,
     AbstractMeta,
-    Base,
-    BaseMeta,
     Comparable,
     Final,
     Immutable,
@@ -19,12 +17,11 @@ from ibis.common.bases import (
 from ibis.common.caching import WeakCache
 
 
-def test_bases_are_based_on_base():
-    assert issubclass(Comparable, Base)
-    assert issubclass(Final, Base)
-    assert issubclass(Immutable, Base)
-    assert issubclass(Singleton, Base)
-    assert issubclass(Abstract, Base)
+def test_classes_are_based_on_abstract():
+    assert issubclass(Comparable, Abstract)
+    assert issubclass(Final, Abstract)
+    assert issubclass(Immutable, Abstract)
+    assert issubclass(Singleton, Abstract)
 
 
 def test_abstract():
@@ -40,7 +37,6 @@ def test_abstract():
 
     assert not issubclass(type(Foo), ABCMeta)
     assert issubclass(type(Foo), AbstractMeta)
-    assert issubclass(type(Foo), BaseMeta)
     assert Foo.__abstractmethods__ == frozenset({"foo", "bar"})
 
     with pytest.raises(TypeError, match="Can't instantiate abstract class .*Foo.*"):
@@ -59,7 +55,6 @@ def test_abstract():
     assert bar.bar == 2
     assert isinstance(bar, Foo)
     assert isinstance(bar, Abstract)
-    assert isinstance(bar, Base)
     assert Bar.__abstractmethods__ == frozenset()
 
 
