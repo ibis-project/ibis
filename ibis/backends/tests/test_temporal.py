@@ -383,10 +383,13 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -398,10 +401,13 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -413,10 +419,13 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -431,10 +440,13 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -447,10 +459,13 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -463,10 +478,13 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<TIMESTAMP>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -481,7 +499,7 @@ PANDAS_UNITS = {
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.notimpl(
+                pytest.mark.never(
                     ["flink"],
                     raises=com.UnsupportedOperationError,
                     reason="<IntervalUnit.SECOND: 's'> unit is not supported in timestamp truncate",
@@ -587,30 +605,39 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
         param(
             "Y",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
         param(
             "M",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
         param(
             "D",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -623,10 +650,13 @@ def test_timestamp_truncate(backend, alltypes, df, unit):
                     reason="Unsupported truncate unit W",
                 ),
                 pytest.mark.broken(["impala", "sqlite"], raises=AssertionError),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)",
+                    reason=(
+                        "CalciteContextException: No match found for function signature trunc(<DATE>, <CHARACTER>)"
+                        "Timestamp truncation is not supported in Flink"
+                    ),
                 ),
             ],
         ),
@@ -726,17 +756,15 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
                 ),
-<<<<<<< HEAD
                 pytest.mark.notyet(
                     ["trino"],
                     raises=com.UnsupportedOperationError,
                     reason="month not implemented",
-=======
+                ),
                 pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_YEAR_MONTH>)",
->>>>>>> 7bc497b8f ([skip ci] Cleared test_date_truncate, test_integer_to_interval_date)
                 ),
             ],
         ),
@@ -760,17 +788,15 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
                 ),
-<<<<<<< HEAD
                 pytest.mark.notyet(
                     ["trino"],
                     raises=com.UnsupportedOperationError,
                     reason="week not implemented",
-=======
+                ),
                 pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="ParseException: Encountered 'WEEK'. Was expecting one of: DAY, DAYS, HOUR",
->>>>>>> 7bc497b8f ([skip ci] Cleared test_date_truncate, test_integer_to_interval_date)
                 ),
             ],
         ),
@@ -783,11 +809,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
-                ),
             ],
         ),
         param(
@@ -798,11 +819,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     ["pyspark"],
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -815,11 +831,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
-                ),
             ],
         ),
         param(
@@ -830,11 +841,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     ["pyspark"],
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
-                ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -853,7 +859,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="ParseException: Encountered 'MILLISECOND'. Was expecting one of: DAY, DAYS, HOUR",
+                    reason="ParseException: Encountered 'MILLISECOND'. Was expecting one of: DAY, DAYS, HOUR, ...",
                 ),
             ],
         ),
@@ -869,17 +875,15 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedArgumentError,
                     reason="Interval unit \"us\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
                 ),
-<<<<<<< HEAD
                 pytest.mark.notimpl(
                     ["trino"],
                     raises=AssertionError,
                     reason="we're dropping microseconds to ensure results consistent with pandas",
-=======
+                ),
                 pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="ParseException: Encountered 'MICROSECOND'. Was expecting one of: DAY, DAYS, HOUR",
->>>>>>> 7bc497b8f ([skip ci] Cleared test_date_truncate, test_integer_to_interval_date)
                 ),
             ],
         ),
@@ -910,6 +914,7 @@ def test_integer_to_interval_timestamp(
         warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
         result = con.execute(expr)
         offset = df.int_col.apply(convert_to_offset)
+        print(f"offset= {offset}")
         expected = df.timestamp_col + offset
 
     expected = backend.default_series_rename(expected)
@@ -1172,15 +1177,14 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     reason="duckdb 0.8.0 returns DateOffset columns",
                 ),
                 pytest.mark.broken(
-<<<<<<< HEAD
                     ["trino"],
                     raises=AssertionError,
                     reason="doesn't match pandas results, unclear what the issue is, perhaps timezones",
-=======
+                ),
+                pytest.mark.broken(
                     ["flink"],
                     raises=AssertionError,
                     reason="numpy array are different",
->>>>>>> 7bc497b8f ([skip ci] Cleared test_date_truncate, test_integer_to_interval_date)
                 ),
             ],
         ),

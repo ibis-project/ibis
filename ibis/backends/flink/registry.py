@@ -229,6 +229,20 @@ def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node):
     return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
 
 
+def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
+    from ibis.expr.operations.temporal import IntervalFromInteger
+
+    table_column = op.left
+    interval: IntervalFromInteger = op.right
+
+    table_column_translated = translator.translate(table_column)
+    interval_translated = translator.translate(interval)
+
+    interval_unit, interval_value = interval.unit.name, interval.arg
+    interval_value_translated = translator.translate(interval.arg)
+
+    return f"TIMESTAMPADD({interval_unit}, {interval_value_translated}, {table_column_translated})"
+
 def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
     arg = translator.translate(op.args[0])
     return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
@@ -280,6 +294,7 @@ operation_registry.update(
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
         # Temporal functions
+        ops.TimestampAdd: _timestamp_add,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.StringToTimestamp: _string_to_timestamp,
     }
