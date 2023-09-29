@@ -224,9 +224,37 @@ def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
     return f"FLOOR(({left}) / ({right}))"
 
 
-def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node):
+def _array_index(translator: ExprTranslator, op: ops.arrays.ArrayIndex):
+    table_column = op.arg
+    index = op.index
+
+    table_column_translated = translator.translate(table_column)
+    index_translated = translator.translate(index)
+
+    return f"{table_column_translated} '[' {index_translated} ']'"
+
+
+def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
+    arg = translator.translate(op.args[0])
+    return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
+
+
+def _date_add(translator: ExprTranslator, op: ops.temporal.DateAdd) -> str:
+    date, interval = op.left, op.right
+    date_translated = translator.translate(date)
+    interval_translated = translator.translate(interval)
+    return f"{date_translated} + {interval_translated}"
+
+
+def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
     arg = translator.translate(op.arg)
     return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
+
+
+def _string_to_timestamp(translator: ExprTranslator, op: ops.Node) -> str:
+    arg = translator.translate(op.arg)
+    format_string = translator.translate(op.format_str)
+    return f"TO_TIMESTAMP({arg}, {format_string})"
 
 
 def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
@@ -239,19 +267,9 @@ def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) ->
     interval_translated = translator.translate(interval)
 
     interval_unit, interval_value = interval.unit.name, interval.arg
-    interval_value_translated = translator.translate(interval.arg)
+    interval_value_translated = translator.translate(interval_value)
 
     return f"TIMESTAMPADD({interval_unit}, {interval_value_translated}, {table_column_translated})"
-
-def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
-    arg = translator.translate(op.args[0])
-    return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
-
-
-def _string_to_timestamp(translator: ExprTranslator, op: ops.Node):
-    arg = translator.translate(op.arg)
-    format_string = translator.translate(op.format_str)
-    return f"TO_TIMESTAMP({arg}, {format_string})"
 
 
 operation_registry.update(
@@ -294,8 +312,10 @@ operation_registry.update(
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
         # Temporal functions
-        ops.TimestampAdd: _timestamp_add,
+        ops.ArrayIndex: _array_index,
+        ops.DateAdd: _date_add,
         ops.DayOfWeekIndex: _day_of_week_index,
+        ops.TimestampAdd: _timestamp_add,
         ops.StringToTimestamp: _string_to_timestamp,
     }
 )

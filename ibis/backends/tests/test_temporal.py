@@ -970,12 +970,14 @@ def test_integer_to_interval_timestamp(
     raises=(com.UnsupportedOperationError, com.OperationNotDefinedError),
     reason="Handling unsupported op error for DateAdd with weeks",
 )
-@pytest.mark.notimpl(
+@pytest.mark.never(
     [
         "flink",
     ],
-    raises=com.UnsupportedBackendType,
-    reason="ibis.common.exceptions.UnsupportedBackendType: date",
+    raises=com.OperationNotDefinedError,
+    reason=(
+        "No translation rule for <class 'ibis.expr.operations.strings.StringSplit'>"
+    ),
 )
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
@@ -983,6 +985,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     month, day, year = array[0], array[1], array[2]
     date_col = ibis.literal("-").join(["20" + year, month, day]).cast("date")
     expr = (date_col + interval).name("tmp")
+
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
         result = con.execute(expr)
