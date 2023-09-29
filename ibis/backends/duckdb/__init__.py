@@ -16,7 +16,6 @@ import duckdb
 import pyarrow as pa
 import sqlalchemy as sa
 import toolz
-from packaging.version import parse as vparse
 
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
@@ -227,10 +226,6 @@ WHERE catalog_name = :database"""
             if extensions is not None:
                 self._sa_load_extensions(dbapi_connection, extensions)
             dbapi_connection.execute("SET TimeZone = 'UTC'")
-            # the progress bar in duckdb <0.8.0 causes kernel crashes in
-            # jupyterlab, fixed in https://github.com/duckdb/duckdb/pull/6831
-            if vparse(duckdb.__version__) < vparse("0.8.0"):
-                dbapi_connection.execute("SET enable_progress_bar = false")
 
         self._record_batch_readers_consumed = {}
 
@@ -395,10 +390,6 @@ WHERE catalog_name = :database"""
         Table
             An ibis table expression
         """
-        if (version := vparse(self.version)) < vparse("0.7.0"):
-            raise exc.IbisError(
-                f"`read_json` requires duckdb >= 0.7.0, duckdb {version} is installed"
-            )
         if not table_name:
             table_name = util.gen_name("read_json")
 
@@ -874,16 +865,9 @@ WHERE catalog_name = :database"""
         query_ast = self.compiler.to_ast_ensure_limit(expr, limit, params=params)
         sql = query_ast.compile()
 
-        # handle the argument name change in duckdb 0.8.0
-        fetch_record_batch = (
-            (lambda cur: cur.fetch_record_batch(rows_per_batch=chunk_size))
-            if vparse(duckdb.__version__) >= vparse("0.8.0")
-            else (lambda cur: cur.fetch_record_batch(chunk_size=chunk_size))
-        )
-
         def batch_producer(con):
             with con.begin() as c, contextlib.closing(c.execute(sql)) as cur:
-                yield from fetch_record_batch(cur.cursor)
+                yield from cur.cursor.fetch_record_batch(rows_per_batch=chunk_size)
 
         # batch_producer keeps the `self.con` member alive long enough to
         # exhaust the record batch reader, even if the backend or connection

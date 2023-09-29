@@ -5921,7 +5921,7 @@ datafusion = ["datafusion"]
 decompiler = ["black"]
 deltalake = ["deltalake"]
 druid = ["pydruid", "sqlalchemy"]
-duckdb = ["duckdb", "duckdb-engine", "packaging", "sqlalchemy", "sqlalchemy-views"]
+duckdb = ["duckdb", "duckdb-engine", "sqlalchemy", "sqlalchemy-views"]
 flink = []
 geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
@@ -5940,4 +5940,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "59096eef883d4a14e45ada357c46efea88931925b75f5d04564581a6bc0b42f0"
+content-hash = "9711e7c4b107306be01969b748cd676a4085c34c7b72423a304796ba3053b98d"

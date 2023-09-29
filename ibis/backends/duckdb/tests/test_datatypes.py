@@ -3,7 +3,6 @@ from __future__ import annotations
 import duckdb_engine
 import pytest
 import sqlalchemy as sa
-import sqlglot as sg
 from packaging.version import parse as vparse
 from pytest import param
 
@@ -63,11 +62,6 @@ def test_parser(typ, expected):
 
 
 @pytest.mark.parametrize("uint_type", ["uint8", "uint16", "uint32", "uint64"])
-@pytest.mark.xfail(
-    vparse(sg.__version__) < vparse("11.3.4"),
-    raises=sg.ParseError,
-    reason="sqlglot version doesn't support duckdb unsigned integer types",
-)
 def test_cast_uints(uint_type, snapshot):
     import ibis
 
