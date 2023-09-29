@@ -155,8 +155,11 @@ def test_simple_case_null_else(table):
 
 def test_multiple_case_null_else(table):
     expr = ibis.case().when(table.g == "foo", "bar").end()
-    op = expr.op()
+    expr2 = ibis.case().when(table.g == "foo", _).end().resolve("bar")
 
+    assert expr.equals(expr2)
+
+    op = expr.op()
     assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default.to_expr(), ir.Value)
     assert isinstance(op.default, ops.Cast)

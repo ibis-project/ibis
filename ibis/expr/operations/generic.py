@@ -316,6 +316,8 @@ class SearchedCase(Value):
 
     def __init__(self, cases, results, default):
         assert len(cases) == len(results)
+        if default.dtype.is_null():
+            default = Cast(default, rlz.highest_precedence_dtype(results))
         super().__init__(cases=cases, results=results, default=default)
 
     @attribute
