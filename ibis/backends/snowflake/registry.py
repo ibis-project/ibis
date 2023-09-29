@@ -339,6 +339,33 @@ def _timestamp_range(t, op):
     )
 
 
+def _quantile(t, op):
+    arg = op.arg
+    if (where := op.where) is not None:
+        arg = ops.IfElse(where, arg, None)
+    if arg.dtype.is_numeric():
+        func = sa.func.percentile_cont
+    else:
+        func = sa.func.percentile_disc
+    return sa.cast(
+        func(t.translate(op.quantile)).within_group(t.translate(arg)),
+        t.get_sqla_type(op.dtype),
+    )
+
+
+def _median(t, op):
+    arg = op.arg
+    if (where := op.where) is not None:
+        arg = ops.IfElse(where, arg, None)
+
+    if arg.dtype.is_numeric():
+        return sa.func.median(t.translate(arg))
+    return sa.cast(
+        sa.func.percentile_disc(0.5).within_group(t.translate(arg)),
+        t.get_sqla_type(op.dtype),
+    )
+
+
 _TIMESTAMP_UNITS_TO_SCALE = {"s": 0, "ms": 3, "us": 6, "ns": 9}
 
 _SF_POS_INF = sa.func.to_double("Inf")
@@ -542,7 +569,8 @@ operation_registry.update(
         ops.GroupConcat: _group_concat,
         ops.Hash: unary(sa.func.hash),
         ops.ApproxMedian: reduction(lambda x: sa.func.approx_percentile(x, 0.5)),
-        ops.Median: reduction(sa.func.median),
+        ops.Quantile: _quantile,
+        ops.Median: _median,
         ops.TableColumn: _table_column,
         ops.Levenshtein: fixed_arity(sa.func.editdistance, 2),
         ops.TimeDelta: fixed_arity(

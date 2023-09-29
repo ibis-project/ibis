@@ -1571,6 +1571,48 @@ class Column(Value, _FixedTextJupyterMixin):
             self, key=key, where=self._bind_reduction_filter(where)
         ).to_expr()
 
+    def median(self, where: ir.BooleanValue | None = None) -> Scalar:
+        """Return the median of the column.
+
+        Parameters
+        ----------
+        where
+            Optional boolean expression. If given, only the values where
+            `where` evaluates to true will be considered for the median.
+
+        Returns
+        -------
+        Scalar
+            Median of the column
+        """
+        return ops.Median(self, where=where).to_expr()
+
+    def quantile(
+        self,
+        quantile: float | ir.NumericValue | Sequence[ir.NumericValue | float],
+        where: ir.BooleanValue | None = None,
+    ) -> Scalar:
+        """Return value at the given quantile.
+
+        Parameters
+        ----------
+        quantile
+            `0 <= quantile <= 1`, or an array of such values
+            indicating the quantile or quantiles to compute
+        where
+            Boolean filter for input values
+
+        Returns
+        -------
+        Scalar
+            Quantile of the input
+        """
+        if isinstance(quantile, Sequence):
+            op = ops.MultiQuantile
+        else:
+            op = ops.Quantile
+        return op(self, quantile, where=where).to_expr()
+
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of distinct rows in an expression.
 

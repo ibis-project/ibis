@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import date
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -24,11 +26,6 @@ except ImportError:
     GoogleBadRequest = None
 
 try:
-    from polars.exceptions import ComputeError
-except ImportError:
-    ComputeError = None
-
-try:
     from clickhouse_connect.driver.exceptions import (
         DatabaseError as ClickhouseDatabaseError,
     )
@@ -39,7 +36,6 @@ try:
     from py4j.protocol import Py4JError
 except ImportError:
     Py4JError = None
-
 
 try:
     from pyexasol.exceptions import ExaQueryError
@@ -1208,6 +1204,62 @@ def test_median(alltypes, df):
     result = expr.execute()
     expected = df.double_col.median()
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notyet(
+    ["impala", "mysql", "mssql", "druid", "pyspark", "trino"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickhouseDatabaseError,
+    reason="doesn't support median of strings",
+)
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=sa.exc.DatabaseError,
+    reason="doesn't support median of strings",
+)
+@pytest.mark.notyet(["dask"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=sa.exc.ProgrammingError,
+    reason="doesn't support median of strings",
+)
+@pytest.mark.broken(["polars"], raises=AssertionError, reason="incorrect results")
+@pytest.mark.notimpl(
+    ["pandas"], raises=TypeError, reason="results aren't correctly typed"
+)
+def test_string_median(alltypes):
+    expr = alltypes.select(col=ibis.literal("a")).limit(5).col.median()
+    result = expr.execute()
+    assert result == "a"
+
+
+@pytest.mark.notimpl(
+    ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notyet(
+    ["impala", "mysql", "mssql", "druid", "pyspark", "trino"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["snowflake"],
+    raises=sa.exc.ProgrammingError,
+    reason="doesn't support median of dates",
+)
+@pytest.mark.notyet(["dask"], raises=NotImplementedError)
+@pytest.mark.broken(["polars"], raises=AssertionError, reason="incorrect results")
+@pytest.mark.broken(
+    ["pandas"], raises=AssertionError, reason="possibly incorrect results"
+)
+def test_date_median(alltypes):
+    expr = alltypes.timestamp_col.date().median()
+    result = expr.execute()
+    assert result == date(2009, 12, 31)
 
 
 @pytest.mark.parametrize(
