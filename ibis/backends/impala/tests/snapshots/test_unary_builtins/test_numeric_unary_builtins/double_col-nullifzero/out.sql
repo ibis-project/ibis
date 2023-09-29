@@ -1,1 +1,1 @@
-nullifzero(`double_col`)
+nullif(`double_col`, 0)

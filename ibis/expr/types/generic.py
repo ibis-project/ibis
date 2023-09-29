@@ -278,7 +278,7 @@ class Value(Expr):
         Value
             `self` filled with `fill_value` where it is `NA`
         """
-        return ops.IfNull(self, fill_value).to_expr()
+        return ops.Coalesce((self, fill_value)).to_expr()
 
     def nullif(self, null_if_expr: Value) -> Value:
         """Set values to null if they equal the values `null_if_expr`.

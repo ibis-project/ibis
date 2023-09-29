@@ -11,6 +11,7 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis import util
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
@@ -480,13 +481,15 @@ class NumericValue(Value):
         """
         return ops.Sqrt(self).to_expr()
 
+    @util.deprecated(instead="use nullif(0)", as_of="7.0", removed_in="8.0")
     def nullifzero(self) -> NumericValue:
         """Return `NULL` if an expression is zero."""
-        return ops.NullIfZero(self).to_expr()
+        return self.nullif(0)
 
+    @util.deprecated(instead="use fillna(0)", as_of="7.0", removed_in="8.0")
     def zeroifnull(self) -> NumericValue:
         """Return zero if an expression is `NULL`."""
-        return ops.ZeroIfNull(self).to_expr()
+        return self.fillna(0)
 
     def acos(self) -> NumericValue:
         """Compute the arc cosine of `self`.

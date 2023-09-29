@@ -93,7 +93,8 @@ def test_timestamp_truncate(con, unit, snapshot):
 
 @pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
 def test_nullifzero(con, value, expected):
-    result = con.execute(L(value).nullifzero())
+    with pytest.warns(FutureWarning):
+        result = con.execute(L(value).nullifzero())
     if expected is None:
         assert pd.isnull(result)
     else:
@@ -226,7 +227,7 @@ def test_string_contains(con, op, value, expected):
 
 
 def test_re_replace(con):
-    expr1 = L("Hello, World!").re_replace(".", "\\0\\0")
+    expr1 = L("Hello, World!").re_replace(".", r"\0\0")
     expr2 = L("Hello, World!").re_replace("^", "here: ")
 
     assert con.execute(expr1) == "HHeelllloo,,  WWoorrlldd!!"

@@ -1,1 +1,1 @@
-isnull(`l_extendedprice`, 0.0)
+coalesce(`l_extendedprice`, 0.0)

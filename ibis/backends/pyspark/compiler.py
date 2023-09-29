@@ -730,7 +730,17 @@ def compile_last(t, op, **kwargs):
 @compiles(ops.Coalesce)
 def compile_coalesce(t, op, **kwargs):
     kwargs["raw"] = False  # override to force column literals
-    src_columns = [t.translate(col, **kwargs) for col in op.arg]
+
+    src_columns = []
+
+    for arg in op.arg:
+        col = t.translate(arg, **kwargs)
+
+        if arg.dtype.is_floating():
+            col = F.when(F.isnan(col), F.lit(None)).otherwise(col)
+
+        src_columns.append(col)
+
     if len(src_columns) == 1:
         return src_columns[0]
     else:
@@ -1714,17 +1724,6 @@ def compile_array_map(t, op, **kwargs):
 # --------------------------- Null Operations -----------------------------
 
 
-@compiles(ops.IfNull)
-def compile_if_null(t, op, **kwargs):
-    arg = op.arg
-    col = t.translate(arg, **kwargs)
-    ifnull_col = t.translate(op.ifnull_expr, **kwargs)
-    result = F.isnull(col)
-    if arg.dtype.is_floating():
-        result |= F.isnan(col)
-    return F.when(result, ifnull_col).otherwise(col)
-
-
 @compiles(ops.NullIf)
 def compile_null_if(t, op, **kwargs):
     col = t.translate(op.arg, **kwargs)
@@ -1873,12 +1872,6 @@ def compile_unnest(t, op, **kwargs):
     return F.explode(column)
 
 
-@compiles(ops.NullIfZero)
-def compile_null_if_zero(t, op, **kwargs):
-    arg = t.translate(op.arg, **kwargs)
-    return F.when(arg == 0, F.lit(None)).otherwise(arg)
-
-
 @compiles(ops.Acos)
 @compiles(ops.Asin)
 @compiles(ops.Atan)
@@ -1912,16 +1905,6 @@ def compile_degrees(t, op, **kwargs):
 @compiles(ops.Radians)
 def compile_radians(t, op, **kwargs):
     return F.radians(t.translate(op.arg, **kwargs))
-
-
-@compiles(ops.ZeroIfNull)
-def compile_zero_if_null(t, op, **kwargs):
-    arg = op.arg
-    col = t.translate(arg, **kwargs)
-    result = F.isnull(col)
-    if arg.dtype.is_floating():
-        result |= F.isnan(col)
-    return F.when(result, F.lit(0)).otherwise(col)
 
 
 @compiles(ops.IfElse)

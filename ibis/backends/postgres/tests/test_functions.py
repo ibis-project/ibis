@@ -198,7 +198,8 @@ def test_typeof(con, value, expected):
 
 @pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
 def test_nullifzero(con, value, expected):
-    assert con.execute(L(value).nullifzero()) == expected
+    with pytest.warns(FutureWarning):
+        assert con.execute(L(value).nullifzero()) == expected
 
 
 @pytest.mark.parametrize(("value", "expected"), [("foo_bar", 7), ("", 0)])
@@ -419,7 +420,7 @@ def test_numeric_builtins_work(alltypes, df):
     expr = alltypes.double_col.fillna(0)
     result = expr.execute()
     expected = df.double_col.fillna(0)
-    expected.name = "IfNull(double_col, 0)"
+    expected.name = "Coalesce()"
     tm.assert_series_equal(result, expected)
 
 

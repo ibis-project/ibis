@@ -1,1 +1,1 @@
-nullifzero(`int_col`)
+nullif(`int_col`, 0)

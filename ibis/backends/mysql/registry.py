@@ -170,7 +170,6 @@ def compiles_mysql_trim(element, compiler, **kw):
 operation_registry.update(
     {
         ops.Literal: _literal,
-        ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         # static checks are not happy with using "if" as a property
         ops.IfElse: fixed_arity(getattr(sa.func, "if"), 3),
         # strings

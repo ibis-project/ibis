@@ -1,1 +1,1 @@
-isnull(`l_quantity`, 0)
+coalesce(`l_quantity`, 0)

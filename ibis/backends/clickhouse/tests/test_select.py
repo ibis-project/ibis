@@ -389,7 +389,7 @@ def test_count_name(snapshot):
     t = ibis.table(dict(a="string", b="bool"), name="t")
 
     expr = t.group_by(t.a).agg(
-        A=t.count(where=~t.b).zeroifnull(), B=t.count(where=t.b).zeroifnull()
+        A=t.count(where=~t.b).fillna(0), B=t.count(where=t.b).fillna(0)
     )
 
     ibis.show_sql(expr, dialect="clickhouse")

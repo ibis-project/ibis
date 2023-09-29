@@ -1,1 +1,1 @@
-zeroifnull(`int_col`)
+coalesce(`int_col`, 0)

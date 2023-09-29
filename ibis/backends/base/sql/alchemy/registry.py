@@ -405,14 +405,6 @@ def reduction(sa_func):
     return compile_expr
 
 
-def _zero_if_null(t, op):
-    sa_arg = t.translate(op.arg)
-    return sa.case(
-        (sa_arg.is_(None), sa.cast(0, t.get_sqla_type(op.dtype))),
-        else_=sa_arg,
-    )
-
-
 def _substring(t, op):
     sa_arg = t.translate(op.arg)
     sa_start = t.translate(op.start) + 1
@@ -632,7 +624,6 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ),
     ops.Degrees: unary(sa.func.degrees),
     ops.Radians: unary(sa.func.radians),
-    ops.ZeroIfNull: _zero_if_null,
     ops.RandomScalar: fixed_arity(sa.func.random, 0),
     # Binary arithmetic
     ops.Add: fixed_arity(operator.add, 2),

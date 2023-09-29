@@ -605,8 +605,6 @@ operation_registry.update(
         ops.IsInf: fixed_arity(
             lambda arg: sa.or_(arg == float("inf"), arg == float("-inf")), 1
         ),
-        # null handling
-        ops.IfNull: fixed_arity(sa.func.coalesce, 2),
         # boolean reductions
         ops.Any: reduction(sa.func.bool_or),
         ops.All: reduction(sa.func.bool_and),

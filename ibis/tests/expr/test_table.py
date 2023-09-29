@@ -1538,12 +1538,12 @@ def test_mutate_chain():
 
     # we can't fuse these correctly yet
     assert isinstance(a, ops.Alias)
-    assert isinstance(a.arg, ops.IfNull)
+    assert isinstance(a.arg, ops.Coalesce)
     assert isinstance(b, ops.TableColumn)
 
     expr = b.table.selections[1]
     assert isinstance(expr, ops.Alias)
-    assert isinstance(expr.arg, ops.IfNull)
+    assert isinstance(expr.arg, ops.Coalesce)
 
 
 # TODO(kszucs): move this test case to ibis/tests/sql since it requires the

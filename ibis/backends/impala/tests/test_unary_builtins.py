@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.types as ir
@@ -14,27 +15,33 @@ def table(mockcon):
 
 
 @pytest.mark.parametrize(
-    "ibis_name",
+    "method",
     [
-        "abs",
-        "ceil",
-        "floor",
-        "exp",
-        "sqrt",
-        "log",
-        "approx_median",
-        "approx_nunique",
-        "ln",
-        "log2",
-        "log10",
-        "nullifzero",
-        "zeroifnull",
+        param(lambda x: x.abs(), id="abs"),
+        param(lambda x: x.ceil(), id="ceil"),
+        param(lambda x: x.floor(), id="floor"),
+        param(lambda x: x.exp(), id="exp"),
+        param(lambda x: x.sqrt(), id="sqrt"),
+        param(lambda x: x.log(), id="log"),
+        param(lambda x: x.approx_median(), id="approx_median"),
+        param(lambda x: x.approx_nunique(), id="approx_nunique"),
+        param(lambda x: x.ln(), id="ln"),
+        param(lambda x: x.log2(), id="log2"),
+        param(lambda x: x.log10(), id="log10"),
+        param(
+            lambda x: pytest.warns(FutureWarning, lambda y: y.nullifzero(), x),
+            id="nullifzero",
+        ),
+        param(
+            lambda x: pytest.warns(FutureWarning, lambda y: y.zeroifnull(), x),
+            id="zeroifnull",
+        ),
     ],
 )
 @pytest.mark.parametrize("cname", ["double_col", "int_col"])
-def test_numeric_unary_builtins(ibis_name, cname, table, snapshot):
-    method = getattr(table[cname], ibis_name)
-    expr = method()
+def test_numeric_unary_builtins(method, cname, table, snapshot):
+    col = table[cname]
+    expr = method(col)
 
     result = translate(expr)
     snapshot.assert_match(result, "out.sql")

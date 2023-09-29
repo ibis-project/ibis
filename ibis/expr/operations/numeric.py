@@ -71,30 +71,6 @@ class Negate(Unary):
 
 
 @public
-class NullIfZero(Unary):
-    """Set values to NULL if they are equal to zero.
-
-    Commonly used in cases where divide-by-zero would produce an overflow or
-    infinity.
-
-    Equivalent to
-
-    ```python
-    (value == 0).ifelse(ibis.NA, value)
-    ```
-
-    Returns
-    -------
-    NumericValue
-        The input if not zero otherwise `NULL`.
-    """
-
-    arg: SoftNumeric
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
 class IsNan(Unary):
     arg: Value[dt.Floating]
 

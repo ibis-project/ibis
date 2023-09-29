@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import contextlib
 import datetime
 import decimal
+import functools
 import numbers
 from operator import methodcaller
 
@@ -41,7 +43,6 @@ from ibis.backends.pandas.core import (
 from ibis.backends.pandas.execution import constants
 from ibis.backends.pandas.execution.generic import (
     _execute_binary_op_impl,
-    coalesce,
     compute_row_reduction,
     execute_between,
     execute_cast_series_array,
@@ -62,18 +63,15 @@ from ibis.backends.pandas.execution.generic import (
     execute_node_dropna_dataframe,
     execute_node_fillna_dataframe_dict,
     execute_node_fillna_dataframe_scalar,
-    execute_node_ifnull_series,
     execute_node_nullif_scalar_series,
     execute_node_nullif_series,
     execute_node_self_reference_dataframe,
-    execute_null_if_zero_series,
     execute_searched_case,
     execute_series_clip,
     execute_series_isnull,
     execute_series_notnnull,
     execute_sort_key_series,
     execute_table_column_df_or_df_groupby,
-    execute_zero_if_null_series,
 )
 
 # Many dask and pandas functions are functionally equivalent, so we just add
@@ -116,7 +114,6 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
         ((dd.DataFrame, type(None)), execute_count_distinct_star_frame),
         ((dd.DataFrame, dd.Series), execute_count_distinct_star_frame_filter),
     ],
-    ops.NullIfZero: [((dd.Series,), execute_null_if_zero_series)],
     ops.Between: [
         (
             (
@@ -151,22 +148,11 @@ DASK_DISPATCH_TYPES: TypeRegistrationDict = {
     ops.SelfReference: [((dd.DataFrame,), execute_node_self_reference_dataframe)],
     ops.InValues: [((dd.Series, tuple), execute_node_column_in_values)],
     ops.InColumn: [((dd.Series, dd.Series), execute_node_column_in_column)],
-    ops.IfNull: [
-        ((dd.Series, simple_types), execute_node_ifnull_series),
-        ((dd.Series, dd.Series), execute_node_ifnull_series),
-    ],
     ops.NullIf: [
         ((dd.Series, (dd.Series, *simple_types)), execute_node_nullif_series),
         ((simple_types, dd.Series), execute_node_nullif_scalar_series),
     ],
     ops.Distinct: [((dd.DataFrame,), execute_distinct_dataframe)],
-    ops.ZeroIfNull: [
-        ((dd.Series,), execute_zero_if_null_series),
-        (
-            (type(None), type(pd.NA), np.floating, float),
-            execute_zero_if_null_series,
-        ),
-    ],
 }
 
 register_types_to_dispatcher(execute_node, DASK_DISPATCH_TYPES)
@@ -462,18 +448,6 @@ def execute_union_dataframe_dataframe(
     return result.drop_duplicates() if distinct else result
 
 
-@execute_node.register(ops.IfNull, simple_types, dd.Series)
-def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
-    return (
-        replacement
-        if isnull(value)
-        else dd.from_pandas(
-            pd.Series(value, index=replacement.index),
-            npartitions=replacement.npartitions,
-        )
-    )
-
-
 @execute_node.register(ops.NullIf, simple_types, dd.Series)
 def execute_node_nullif_scalar_series(op, value, series, **kwargs):
     return series.where(series != value)
@@ -555,6 +529,15 @@ def execute_node_greatest_list(op, values, **kwargs):
 def execute_node_least_list(op, values, **kwargs):
     values = [execute(arg, **kwargs) for arg in values]
     return compute_row_reduction(np.minimum.reduce, values, axis=0)
+
+
+def coalesce(values):
+    def reducer(a1, a2):
+        with contextlib.suppress(AttributeError):
+            a1 = a1.compute()
+        return np.where(pd.isnull(a1), a2, a1)
+
+    return functools.reduce(reducer, values)
 
 
 @execute_node.register(ops.Coalesce, tuple)

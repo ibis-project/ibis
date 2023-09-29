@@ -104,18 +104,8 @@ def test_boolean_literal(con, backend):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        param(
-            ibis.NA.fillna(5),
-            5,
-            marks=pytest.mark.notimpl(["mssql", "druid", "oracle"]),
-            id="na_fillna",
-        ),
-        param(
-            ibis.literal(5).fillna(10),
-            5,
-            marks=pytest.mark.notimpl(["mssql", "druid", "oracle"]),
-            id="non_na_fillna",
-        ),
+        param(ibis.NA.fillna(5), 5, id="na_fillna"),
+        param(ibis.literal(5).fillna(10), 5, id="non_na_fillna"),
         param(ibis.literal(5).nullif(5), None, id="nullif_null"),
         param(ibis.literal(10).nullif(5), 10, id="nullif_not_null"),
     ],
@@ -180,6 +170,9 @@ def test_isna(backend, alltypes, col, filt):
                     "polars",
                     "trino",
                     "datafusion",
+                    "mssql",
+                    "druid",
+                    "oracle",
                 ],
                 reason="NaN != NULL for these backends",
             ),
@@ -187,7 +180,6 @@ def test_isna(backend, alltypes, col, filt):
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "druid", "oracle"])
 def test_column_fillna(backend, alltypes, value):
     table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
     pd_table = table.execute()
@@ -427,12 +419,20 @@ def test_table_fillna_invalid(alltypes):
 @pytest.mark.parametrize(
     "replacements",
     [
-        {"int_col": 20},
-        {"double_col": -1, "string_col": "missing"},
-        {"double_col": -1.5, "string_col": "missing"},
+        param({"int_col": 20}, id="int"),
+        param(
+            {"double_col": -1, "string_col": "missing"},
+            id="double-int-str",
+            marks=[pytest.mark.notimpl(["druid", "oracle"])],
+        ),
+        param(
+            {"double_col": -1.5, "string_col": "missing"},
+            id="double-str",
+            marks=[pytest.mark.notimpl(["druid"])],
+        ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse", "druid", "oracle"])
+@pytest.mark.notimpl(["datafusion", "clickhouse"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -447,7 +447,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "mssql", "clickhouse", "druid", "oracle"])
+@pytest.mark.notimpl(["datafusion", "clickhouse", "druid", "oracle"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -686,12 +686,15 @@ def test_logical_negation_column(backend, alltypes, df, op):
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
 )
 def test_zeroifnull_literals(con, dtype, zero, expected):
-    assert con.execute(ibis.NA.cast(dtype).zeroifnull()) == zero
-    assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
+    with pytest.warns(FutureWarning):
+        assert con.execute(ibis.NA.cast(dtype).zeroifnull()) == zero
+    with pytest.warns(FutureWarning):
+        assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
 
 
 def test_zeroifnull_column(backend, alltypes, df):
-    expr = alltypes.int_col.nullif(1).zeroifnull().name("tmp")
+    with pytest.warns(FutureWarning):
+        expr = alltypes.int_col.nullif(1).zeroifnull().name("tmp")
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)

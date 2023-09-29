@@ -285,10 +285,7 @@ def execute_series_atan2(_, y, x, **kwargs):
     return np.arctan2(y, x)
 
 
-@execute_node.register(
-    (ops.Cos, ops.Sin, ops.Tan),
-    (pd.Series, *numeric_types),
-)
+@execute_node.register((ops.Cos, ops.Sin, ops.Tan), (pd.Series, *numeric_types))
 def execute_series_trig(op, data, **kwargs):
     function = getattr(np, type(op).__name__.lower())
     return call_numpy_ufunc(function, op, data, **kwargs)
@@ -1081,11 +1078,6 @@ def execute_not_series(op, data, **kwargs):
     return ~data
 
 
-@execute_node.register(ops.NullIfZero, pd.Series)
-def execute_null_if_zero_series(op, data, **kwargs):
-    return data.where(data != 0, np.nan)
-
-
 @execute_node.register(ops.StringSplit, pd.Series, (pd.Series, str))
 def execute_string_split(op, data, delimiter, **kwargs):
     # Doing the iteration using `map` is much faster than doing the iteration
@@ -1329,24 +1321,6 @@ def execute_node_fillna_dataframe_dict(op, df, **kwargs):
     return df.fillna(dict(op.replacements))
 
 
-@execute_node.register(ops.IfNull, pd.Series, simple_types)
-@execute_node.register(ops.IfNull, pd.Series, pd.Series)
-def execute_node_ifnull_series(op, value, replacement, **kwargs):
-    return value.fillna(replacement)
-
-
-@execute_node.register(ops.IfNull, simple_types, pd.Series)
-def execute_node_ifnull_scalar_series(op, value, replacement, **kwargs):
-    return (
-        replacement if pd.isnull(value) else pd.Series(value, index=replacement.index)
-    )
-
-
-@execute_node.register(ops.IfNull, simple_types, simple_types)
-def execute_node_if_scalars(op, value, replacement, **kwargs):
-    return replacement if pd.isnull(value) else value
-
-
 @execute_node.register(ops.NullIf, simple_types, simple_types)
 def execute_node_nullif_scalars(op, value1, value2, **kwargs):
     return np.nan if value1 == value2 else value1
@@ -1505,22 +1479,6 @@ def execute_table_array_view(op, _, **kwargs):
     return execute(op.table).squeeze()
 
 
-@execute_node.register(ops.ZeroIfNull, pd.Series)
-def execute_zero_if_null_series(op, data, **kwargs):
-    zero = op.arg.dtype.to_pandas().type(0)
-    return data.replace({np.nan: zero, None: zero, pd.NA: zero})
-
-
 @execute_node.register(ops.InMemoryTable)
 def execute_in_memory_table(op, **kwargs):
     return op.data.to_frame()
-
-
-@execute_node.register(
-    ops.ZeroIfNull,
-    (type(None), type(pd.NA), numbers.Real, np.integer, np.floating),
-)
-def execute_zero_if_null_scalar(op, data, **kwargs):
-    if data is None or pd.isna(data) or math.isnan(data) or np.isnan(data):
-        return op.arg.dtype.to_pandas().type(0)
-    return data

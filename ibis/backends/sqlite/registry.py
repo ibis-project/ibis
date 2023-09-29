@@ -309,7 +309,6 @@ operation_registry.update(
         ),
         ops.Least: varargs(sa.func.min),
         ops.Greatest: varargs(sa.func.max),
-        ops.IfNull: fixed_arity(sa.func.ifnull, 2),
         ops.DateFromYMD: fixed_arity(
             lambda y, m, d: sa.func.date(sa.func.printf("%04d-%02d-%02d", y, m, d)), 3
         ),

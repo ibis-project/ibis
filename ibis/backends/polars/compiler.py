@@ -359,30 +359,11 @@ def identical_to(op, **kw):
     return left.eq_missing(right)
 
 
-@translate.register(ops.IfNull)
-def ifnull(op, **kw):
-    arg = translate(op.arg, **kw)
-    value = translate(op.ifnull_expr, **kw)
-    return arg.fill_null(value)
-
-
-@translate.register(ops.ZeroIfNull)
-def zeroifnull(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.fill_null(0)
-
-
 @translate.register(ops.NullIf)
 def nullif(op, **kw):
     arg = translate(op.arg, **kw)
     null_if_expr = translate(op.null_if_expr, **kw)
     return pl.when(arg == null_if_expr).then(None).otherwise(arg)
-
-
-@translate.register(ops.NullIfZero)
-def nullifzero(op, **kw):
-    arg = translate(op.arg, **kw)
-    return pl.when(arg == 0).then(None).otherwise(arg)
 
 
 @translate.register(ops.IfElse)

@@ -64,16 +64,6 @@ def negate(translator, op):
         return f"-{formatted_arg}"
 
 
-def ifnull_workaround(translator, op):
-    a, b = op.args
-
-    # work around per #345, #360
-    if isinstance(a, ir.DecimalValue) and isinstance(b, ir.IntegerValue):
-        b = b.cast(a.type())
-
-    return helpers.format_call(translator, "isnull", a, b)
-
-
 def sign(translator, op):
     translated_arg = translator.translate(op.arg)
     dtype = op.dtype
@@ -245,10 +235,7 @@ operation_registry = {
     ops.Not: not_,
     ops.IsNan: unary("is_nan"),
     ops.IsInf: unary("is_inf"),
-    ops.IfNull: ifnull_workaround,
     ops.NullIf: fixed_arity("nullif", 2),
-    ops.ZeroIfNull: unary("zeroifnull"),
-    ops.NullIfZero: unary("nullifzero"),
     ops.Abs: unary("abs"),
     ops.BaseConvert: fixed_arity("conv", 3),
     ops.Ceil: unary("ceil"),
