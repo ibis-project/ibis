@@ -231,3 +231,12 @@ def _dropna(op: ops.DropNa, *, table, how, subset, **_):
 def _sql_string_view(op: ops.SQLStringView, query: str, **_: Any):
     table = sg.table(op.name)
     return sg.select(STAR).from_(table).with_(table, as_=query, dialect="clickhouse")
+
+
+@translate_rel.register
+def _view(op: ops.View, *, child, name: str, **_):
+    # TODO: find a way to do this without creating a temporary view
+    backend = op.child.to_expr()._find_backend()
+    source = sg.select(STAR).from_(child)
+    backend._create_temp_view(table_name=name, source=source)
+    return sg.table(name)

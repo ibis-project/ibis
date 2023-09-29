@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+import atexit
 import glob
 import json
 from contextlib import closing, suppress
@@ -167,6 +168,7 @@ class Backend(BaseBackend, CanCreateDatabase):
             compress=compression,
             **kwargs,
         )
+        self._temp_views = set()
 
     @property
     def version(self) -> str:
@@ -733,3 +735,27 @@ class Backend(BaseBackend, CanCreateDatabase):
 
     def _clean_up_cached_table(self, op):
         self.drop_table(op.name)
+
+    def _create_temp_view(self, table_name, source):
+        if table_name not in self._temp_views and table_name in self.list_tables():
+            raise ValueError(
+                f"{table_name} already exists as a non-temporary table or view"
+            )
+        src = sg.exp.Create(
+            this=sg.table(table_name),  # CREATE ... 'table_name'
+            kind="VIEW",  # VIEW
+            replace=True,  # OR REPLACE
+            expression=source,  # AS ...
+        )
+        self.raw_sql(src.sql(dialect=self.name, pretty=True))
+        self._temp_views.add(table_name)
+        self._register_temp_view_cleanup(table_name)
+
+    def _register_temp_view_cleanup(self, name: str) -> None:
+        def drop(self, name: str, query: str):
+            self.raw_sql(query)
+            self._temp_views.discard(name)
+
+        src = sg.exp.Drop(this=sg.table(name), kind="VIEW", exists=True)
+        query = src.sql(self.name, pretty=True)
+        atexit.register(drop, self, name=name, query=query)

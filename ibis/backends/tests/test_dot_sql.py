@@ -14,9 +14,7 @@ try:
 except ImportError:
     PolarsComputeError = None
 
-table_dot_sql_notimpl = pytest.mark.notimpl(
-    ["bigquery", "clickhouse", "impala", "druid"]
-)
+table_dot_sql_notimpl = pytest.mark.notimpl(["bigquery", "impala", "druid"])
 dot_sql_notimpl = pytest.mark.notimpl(["datafusion"])
 dot_sql_notyet = pytest.mark.notyet(
     ["snowflake", "oracle"],
@@ -151,11 +149,11 @@ def test_table_dot_sql_with_join(backend, con):
             """
             SELECT
                 l.fancy_af AS yas,
-                r.s
+                r.s AS s
             FROM awesome_t AS l
             LEFT JOIN ft AS r
             ON l.s = r.s
-            """
+            """  # clickhouse needs the r.s AS s, otherwise the column name is returned as r.s
         )
         .order_by(["s", "yas"])
     )
@@ -250,7 +248,6 @@ no_sqlglot_dialect = sorted(
         *no_sqlglot_dialect,
     ],
 )
-@pytest.mark.broken(["clickhouse"], raises=DatabaseError)
 @pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 @table_dot_sql_notimpl
 @dot_sql_notimpl
