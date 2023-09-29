@@ -64,10 +64,11 @@ def test_multiple_backends(mocker):
 
 
 def test_no_import_pandas():
-    script = """\
+    script = """
 import ibis
 import sys
 
-assert "pandas" not in sys.modules"""
+assert "pandas" not in sys.modules
+"""
 
-    subprocess.check_call([sys.executable], text=script)
+    subprocess.run([sys.executable, "-c", script], check=True)
