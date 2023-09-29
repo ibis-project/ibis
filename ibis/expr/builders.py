@@ -14,8 +14,7 @@ from ibis.common.annotations import annotated
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.deferred import Deferred
-from ibis.expr.deferred import _resolve as resolve
+from ibis.expr.deferred import Deferred, deferrable
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.types.relations import bind_expr
 
@@ -27,23 +26,14 @@ class Builder(Concrete):
     pass
 
 
-class DeferredCase(Deferred):
-    """A deferred case statement."""
+@deferrable(repr="<case>")
+def _finish_searched_case(cases, results, default) -> ir.Value:
+    """Finish constructing a SearchedCase expression.
 
-    __slots__ = ("_builder",)
-    _builder: SearchedCaseBuilder
-
-    def __init__(self, builder: SearchedCaseBuilder):
-        self._builder = builder
-
-    def __repr__(self) -> str:
-        return "<case>"
-
-    def _resolve(self, param) -> Any:
-        cases = tuple(resolve(c, param) for c in self._builder.cases)
-        results = tuple(resolve(r, param) for r in self._builder.results)
-        default = resolve(self._builder.default, param)
-        return self._builder.copy(cases=cases, results=results, default=default).end()
+    This is split out into a separate function to allow for deferred arguments
+    to resolve.
+    """
+    return ops.SearchedCase(cases=cases, results=results, default=default).to_expr()
 
 
 class SearchedCaseBuilder(Builder):
@@ -79,18 +69,7 @@ class SearchedCaseBuilder(Builder):
 
     def end(self) -> ir.Value | Deferred:
         """Finish the `CASE` expression."""
-        if (
-            isinstance(self.default, Deferred)
-            or any(isinstance(c, Deferred) for c in self.cases)
-            or any(isinstance(r, Deferred) for r in self.results)
-        ):
-            return DeferredCase(self)
-
-        if (default := self.default) is None:
-            default = ibis.null().cast(rlz.highest_precedence_dtype(self.results))
-        return ops.SearchedCase(
-            cases=self.cases, results=self.results, default=default
-        ).to_expr()
+        return _finish_searched_case(self.cases, self.results, self.default)
 
 
 class SimpleCaseBuilder(Builder):
