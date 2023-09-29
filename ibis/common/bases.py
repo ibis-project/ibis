@@ -195,6 +195,13 @@ class Slotted(Abstract):
             return NotImplemented
         return all(getattr(self, n) == getattr(other, n) for n in self.__slots__)
 
+    def __getstate__(self):
+        return {k: getattr(self, k) for k in self.__slots__}
+
+    def __setstate__(self, state):
+        for name, value in state.items():
+            object.__setattr__(self, name, value)
+
     def __repr__(self):
         fields = {k: getattr(self, k) for k in self.__slots__}
         fieldstring = ", ".join(f"{k}={v!r}" for k, v in fields.items())
@@ -219,6 +226,12 @@ class FrozenSlotted(Slotted, Immutable, Hashable):
         for name, value in kwargs.items():
             object.__setattr__(self, name, value)
         hashvalue = hash(tuple(kwargs.values()))
+        object.__setattr__(self, "__precomputed_hash__", hashvalue)
+
+    def __setstate__(self, state):
+        for name, value in state.items():
+            object.__setattr__(self, name, value)
+        hashvalue = hash(tuple(state.values()))
         object.__setattr__(self, "__precomputed_hash__", hashvalue)
 
     def __hash__(self) -> int:
