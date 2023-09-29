@@ -16,7 +16,6 @@ import ibis.expr.datatypes as dt
 from ibis.backends.pandas.execution import execute
 from ibis.backends.pandas.tests.conftest import TestConf as tm
 from ibis.backends.pandas.udf import udf
-from ibis.common.annotations import ValidationError
 
 
 @pytest.mark.parametrize(
@@ -130,10 +129,7 @@ def test_round_decimal_with_negative_places(t):
     [
         (lambda x: x.quantile(0), lambda x: x.quantile(0)),
         (lambda x: x.quantile(1), lambda x: x.quantile(1)),
-        (
-            lambda x: x.quantile(0.5, interpolation="linear"),
-            lambda x: x.quantile(0.5, interpolation="linear"),
-        ),
+        (lambda x: x.quantile(0.5), lambda x: x.quantile(0.5)),
     ],
 )
 def test_quantile(t, df, ibis_func, pandas_func):
@@ -172,8 +168,6 @@ def test_quantile_multi(t, df, ibis_func, pandas_func, column):
         (lambda x: x.clip(), ValueError),
         # out of range on quantile
         (lambda x: x.quantile(5.0), ValueError),
-        # invalid interpolation arg
-        (lambda x: x.quantile(0.5, interpolation="foo"), ValidationError),
     ],
 )
 def test_arraylike_functions_transform_errors(t, ibis_func, exc):

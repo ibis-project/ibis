@@ -112,47 +112,37 @@ def execute_series_natural_log(op, data, **kwargs):
     return np.log(data)
 
 
-@execute_node.register(
-    ops.Quantile, dd.Series, numeric_types, type(None), (dd.Series, type(None))
-)
-def execute_series_quantile(op, data, quantile, _, mask, **kwargs):
+@execute_node.register(ops.Quantile, dd.Series, numeric_types, (dd.Series, type(None)))
+def execute_series_quantile(op, data, quantile, mask, **_):
     if mask is not None:
         data = data.loc[mask]
     return data.quantile(q=quantile)
 
 
-@execute_node.register(
-    ops.Quantile, ddgb.SeriesGroupBy, numeric_types, type(None), type(None)
-)
-def execute_series_quantile_group_by(op, data, quantile, *_, **kwargs):
+@execute_node.register(ops.Quantile, ddgb.SeriesGroupBy, numeric_types, type(None))
+def execute_series_quantile_group_by(op, data, quantile, mask, **_):
     raise NotImplementedError(
         "Quantile not implemented for Dask SeriesGroupBy, Dask #9824"
     )
 
 
 @execute_node.register(
-    ops.MultiQuantile, dd.Series, collections.abc.Sequence, type(None), type(None)
+    ops.MultiQuantile, dd.Series, collections.abc.Sequence, type(None)
 )
-def execute_series_quantile_sequence(_, data, quantile, **kwargs):
+def execute_series_quantile_sequence(op, data, quantile, mask, **_):
     return list(data.quantile(q=quantile))
 
 
 # TODO - aggregations - #2553
 @execute_node.register(
-    ops.MultiQuantile,
-    ddgb.SeriesGroupBy,
-    collections.abc.Sequence,
-    (str, type(None)),
-    type(None),
+    ops.MultiQuantile, ddgb.SeriesGroupBy, collections.abc.Sequence, type(None)
 )
-def execute_series_quantile_groupby(
-    op, data, quantile, interpolation, _, aggcontext=None, **kwargs
-):
-    def q(x, quantile, interpolation):
-        result = x.quantile(quantile, interpolation=interpolation).tolist()
+def execute_series_quantile_groupby(op, data, quantile, mask, aggcontext=None, **_):
+    def q(x, quantile):
+        result = x.quantile(quantile).tolist()
         return [result for _ in range(len(x))]
 
-    return aggcontext.agg(data, q, quantile, interpolation or "linear")
+    return aggcontext.agg(data, q, quantile)
 
 
 @execute_node.register(ops.Round, dd.Series, (dd.Series, np.integer, type(None), int))

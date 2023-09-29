@@ -825,20 +825,19 @@ def test_round(t, df):
     reason="MultiQuantile is not implemented for the dask backend",
 )
 def test_quantile_group_by(batting, batting_df):
-    def q_fun(x, quantile, interpolation):
-        res = x.quantile(quantile, interpolation=interpolation).tolist()
+    def q_fun(x, quantile):
+        res = x.quantile(quantile).tolist()
         return [res for _ in range(len(x))]
 
     frac = 0.2
-    intp = "linear"
     result = (
         batting.group_by("teamID")
-        .mutate(res=lambda x: x.RBI.quantile([frac, 1 - frac], intp))
+        .mutate(res=lambda x: x.RBI.quantile([frac, 1 - frac]))
         .res.compile()
     )
     expected = (
         batting_df.groupby("teamID")
-        .RBI.transform(q_fun, quantile=[frac, 1 - frac], interpolation=intp)
+        .RBI.transform(q_fun, quantile=[frac, 1 - frac])
         .rename("res")
     )
     tm.assert_series_equal(result.compute(), expected.compute(), check_index=False)

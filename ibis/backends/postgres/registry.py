@@ -7,7 +7,6 @@ import operator
 import platform
 import re
 import string
-import warnings
 
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql as pg
@@ -430,11 +429,6 @@ def _mode(t, op):
 
 
 def _quantile(t, op):
-    if op.interpolation is not None:
-        warnings.warn(
-            f"`{t.__module__.rsplit(',', 1)[0]}` backend does not support the "
-            "`interpolation` argument"
-        )
     arg = op.arg
     if (where := op.where) is not None:
         arg = ops.IfElse(where, arg, None)

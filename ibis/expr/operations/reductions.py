@@ -186,9 +186,6 @@ class Median(Filterable, Reduction):
 class Quantile(Filterable, Reduction):
     arg: Value
     quantile: Value[dt.Numeric]
-    interpolation: Optional[
-        Literal["linear", "lower", "higher", "midpoint", "nearest"]
-    ] = None
 
     dtype = dt.float64
 
@@ -197,9 +194,6 @@ class Quantile(Filterable, Reduction):
 class MultiQuantile(Filterable, Reduction):
     arg: Value
     quantile: Value[dt.Array[dt.Float64]]
-    interpolation: Optional[
-        Literal["linear", "lower", "higher", "midpoint", "nearest"]
-    ] = None
 
     dtype = dt.Array(dt.float64)
 

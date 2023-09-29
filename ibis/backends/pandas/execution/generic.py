@@ -354,37 +354,28 @@ def execute_series_clip(op, data, lower, upper, **kwargs):
     ops.Quantile,
     pd.Series,
     (np.ndarray, *numeric_types),
-    type(None),
     (pd.Series, type(None)),
 )
-def execute_series_quantile(op, data, quantile, _, mask, aggcontext=None, **kwargs):
+def execute_series_quantile(op, data, quantile, mask, aggcontext=None, **_):
     return aggcontext.agg(
         data if mask is None else data.loc[mask],
         "quantile",
         q=quantile,
-        interpolation=op.interpolation or "linear",
     )
 
 
-@execute_node.register(
-    ops.Quantile, pd.Series, (np.ndarray, *numeric_types), type(None)
-)
-def execute_series_quantile_default(op, data, quantile, _, aggcontext=None, **kwargs):
-    return aggcontext.agg(
-        data, "quantile", q=quantile, interpolation=op.interpolation or "linear"
-    )
+@execute_node.register(ops.Quantile, pd.Series, (np.ndarray, *numeric_types))
+def execute_series_quantile_default(op, data, quantile, aggcontext=None, **_):
+    return aggcontext.agg(data, "quantile", q=quantile)
 
 
 @execute_node.register(
     ops.Quantile,
     SeriesGroupBy,
     (np.ndarray, *numeric_types),
-    type(None),
     (SeriesGroupBy, type(None)),
 )
-def execute_series_group_by_quantile(
-    op, data, quantile, _, mask, aggcontext=None, **kwargs
-):
+def execute_series_group_by_quantile(op, data, quantile, mask, aggcontext=None, **_):
     return aggcontext.agg(
         data,
         (
@@ -393,7 +384,6 @@ def execute_series_group_by_quantile(
             else functools.partial(_filtered_reduction, mask.obj, pd.Series.quantile)
         ),
         q=quantile,
-        interpolation=op.interpolation or "linear",
     )
 
 
@@ -401,19 +391,11 @@ def execute_series_group_by_quantile(
     ops.MultiQuantile,
     pd.Series,
     (np.ndarray, *numeric_types),
-    type(None),
     (pd.Series, type(None)),
 )
-def execute_series_quantile_multi(
-    op, data, quantile, _, mask, aggcontext=None, **kwargs
-):
+def execute_series_quantile_multi(op, data, quantile, mask, aggcontext=None, **_):
     return np.array(
-        aggcontext.agg(
-            data if mask is None else data.loc[mask],
-            "quantile",
-            q=quantile,
-            interpolation=op.interpolation or "linear",
-        )
+        aggcontext.agg(data if mask is None else data.loc[mask], "quantile", q=quantile)
     )
 
 
@@ -421,33 +403,31 @@ def execute_series_quantile_multi(
     ops.MultiQuantile,
     SeriesGroupBy,
     np.ndarray,
-    type(None),
     (SeriesGroupBy, type(None)),
 )
 def execute_series_quantile_multi_groupby(
-    op, data, quantile, _, mask, aggcontext=None, **kwargs
+    op, data, quantile, mask, aggcontext=None, **kwargs
 ):
-    def q(x, quantile, interpolation):
-        result = x.quantile(quantile, interpolation=interpolation).tolist()
+    def q(x, quantile):
+        result = x.quantile(quantile).tolist()
         return [result for _ in range(len(x))]
 
     return aggcontext.agg(
         data,
         q if mask is None else functools.partial(_filtered_reduction, mask.obj, q),
         quantile,
-        op.interpolation or "linear",
     )
 
 
-@execute_node.register(ops.MultiQuantile, SeriesGroupBy, np.ndarray, type(None))
+@execute_node.register(ops.MultiQuantile, SeriesGroupBy, np.ndarray)
 def execute_series_quantile_multi_groupby_default(
-    op, data, quantile, _, aggcontext=None, **kwargs
+    op, data, quantile, aggcontext=None, **_
 ):
-    def q(x, quantile, interpolation):
-        result = x.quantile(quantile, interpolation=interpolation).tolist()
+    def q(x, quantile):
+        result = x.quantile(quantile).tolist()
         return [result for _ in range(len(x))]
 
-    return aggcontext.agg(data, q, quantile, op.interpolation or "linear")
+    return aggcontext.agg(data, q, quantile)
 
 
 @execute_node.register(ops.Cast, type(None), dt.DataType)
