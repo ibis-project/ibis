@@ -13,12 +13,16 @@ if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-class BaseMeta(type):
+class AbstractMeta(type):
     """Base metaclass for many of the ibis core classes.
 
-    This metaclass enforces the subclasses to define a `__slots__` attribute and
-    provides a `__create__` classmethod that can be used to change the class
-    instantiation behavior.
+    Enforce the subclasses to define a `__slots__` attribute and provide a
+    `__create__` classmethod to change the instantiation behavior of the class.
+
+    Support abstract methods without extending `abc.ABCMeta`. While it provides
+    a reduced feature set compared to `abc.ABCMeta` (no way to register virtual
+    subclasses) but avoids expensive instance checks by enforcing explicit
+    subclassing.
     """
 
     __slots__ = ()
@@ -26,7 +30,26 @@ class BaseMeta(type):
     def __new__(metacls, clsname, bases, dct, **kwargs):
         # enforce slot definitions
         dct.setdefault("__slots__", ())
-        return super().__new__(metacls, clsname, bases, dct, **kwargs)
+
+        # construct the class object
+        cls = super().__new__(metacls, clsname, bases, dct, **kwargs)
+
+        # calculate abstract methods existing in the class
+        abstracts = {
+            name
+            for name, value in dct.items()
+            if getattr(value, "__isabstractmethod__", False)
+        }
+        for parent in bases:
+            for name in getattr(parent, "__abstractmethods__", set()):
+                value = getattr(cls, name, None)
+                if getattr(value, "__isabstractmethod__", False):
+                    abstracts.add(name)
+
+        # set the abstract methods for the class
+        cls.__abstractmethods__ = frozenset(abstracts)
+
+        return cls
 
     def __call__(cls, *args, **kwargs):
         """Create a new instance of the class.
@@ -50,55 +73,14 @@ class BaseMeta(type):
         return cls.__create__(*args, **kwargs)
 
 
-class AbstractMeta(BaseMeta):
-    """Metaclass to support abstract methods without extending `abc.ABCMeta`.
-
-    Provide a reduced feature set compared to `abc.ABCMeta` (no way to register
-    virtual subclasses) but avoids expensive instance checks by enforcing explicit
-    subclassing.
-    """
-
-    __slots__ = ()
-
-    def __new__(metacls, clsname, bases, dct, **kwargs):
-        cls = super().__new__(metacls, clsname, bases, dct, **kwargs)
-
-        # calculate abstract methods
-        abstracts = {
-            name
-            for name, value in dct.items()
-            if getattr(value, "__isabstractmethod__", False)
-        }
-        for parent in bases:
-            for name in getattr(parent, "__abstractmethods__", set()):
-                value = getattr(cls, name, None)
-                if getattr(value, "__isabstractmethod__", False):
-                    abstracts.add(name)
-
-        cls.__abstractmethods__ = frozenset(abstracts)
-        return cls
-
-
-class Base(metaclass=BaseMeta):
-    """Base class for many of the ibis core classes.
-
-    This class enforces the subclasses to define a `__slots__` attribute and
-    provides a `__create__` classmethod that can be used to change the class
-    instantiation behavior. Also enables weak references for the subclasses.
-    """
+class Abstract(metaclass=AbstractMeta):
+    """Base class for many of the ibis core classes, see `AbstractMeta`."""
 
     __slots__ = ("__weakref__",)
     __create__ = classmethod(type.__call__)  # type: ignore
 
 
-class Abstract(Base, metaclass=AbstractMeta):
-    """Base class for abstract classes.
-
-    Extend the `Base` class with support for abstract methods and properties.
-    """
-
-
-class Immutable(Base):
+class Immutable(Abstract):
     """Prohibit attribute assignment on the instance."""
 
     def __copy__(self):
@@ -114,7 +96,7 @@ class Immutable(Base):
         )
 
 
-class Singleton(Base):
+class Singleton(Abstract):
     """Cache instances of the class based on instantiation arguments."""
 
     __instances__: Mapping[Any, Self] = WeakValueDictionary()
@@ -130,7 +112,7 @@ class Singleton(Base):
             return instance
 
 
-class Final(Base):
+class Final(Abstract):
     """Prohibit subclassing."""
 
     def __init_subclass__(cls, **kwargs):
@@ -196,7 +178,7 @@ class Comparable(Abstract):
         return result
 
 
-class Slotted(Base):
+class Slotted(Abstract):
     """A lightweight alternative to `ibis.common.grounds.Annotable`.
 
     The class is mostly used to reduce boilerplate code.

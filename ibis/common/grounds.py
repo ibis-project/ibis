@@ -20,8 +20,6 @@ from ibis.common.annotations import (
 from ibis.common.bases import (  # noqa: F401
     Abstract,
     AbstractMeta,
-    Base,
-    BaseMeta,
     Comparable,
     Final,
     Immutable,

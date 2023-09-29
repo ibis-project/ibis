@@ -25,7 +25,6 @@ from ibis.common.grounds import (
     Abstract,
     Annotable,
     AnnotableMeta,
-    Base,
     Comparable,
     Concrete,
     Immutable,
@@ -959,7 +958,6 @@ def test_concrete():
         Comparable,
         Annotable,
         Abstract,
-        Base,
         object,
     )
 
