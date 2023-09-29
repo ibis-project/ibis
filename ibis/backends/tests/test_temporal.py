@@ -974,14 +974,14 @@ def test_integer_to_interval_timestamp(
     [
         "flink",
     ],
-    raises=com.OperationNotDefinedError,
-    reason="No translation rule for <class 'ibis.expr.operations.arrays.ArrayIndex'>",
+    raises=com.UnsupportedBackendType,
+    reason="ibis.common.exceptions.UnsupportedBackendType: date",
 )
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
     array = alltypes.date_string_col.split("/")
     month, day, year = array[0], array[1], array[2]
-    date_col = expr = ibis.literal("-").join(["20" + year, month, day]).cast("date")
+    date_col = ibis.literal("-").join(["20" + year, month, day]).cast("date")
     expr = (date_col + interval).name("tmp")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=pd.errors.PerformanceWarning)
