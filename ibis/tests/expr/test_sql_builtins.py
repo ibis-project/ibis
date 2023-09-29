@@ -83,10 +83,13 @@ def test_group_concat(functional_alltypes):
 
 
 def test_zeroifnull(functional_alltypes):
-    dresult = functional_alltypes.double_col.zeroifnull()
-    iresult = functional_alltypes.int_col.zeroifnull()
+    with pytest.warns(FutureWarning):
+        dresult = functional_alltypes.double_col.zeroifnull()
 
-    assert type(dresult.op()) == ops.ZeroIfNull
+    with pytest.warns(FutureWarning):
+        iresult = functional_alltypes.int_col.zeroifnull()
+
+    assert type(dresult.op()) == ops.Coalesce
     assert type(dresult) == ir.FloatingColumn
 
     # Impala upconverts all ints to bigint. Hmm.
@@ -97,7 +100,7 @@ def test_fillna(functional_alltypes):
     result = functional_alltypes.double_col.fillna(5)
     assert isinstance(result, ir.FloatingColumn)
 
-    assert isinstance(result.op(), ops.IfNull)
+    assert isinstance(result.op(), ops.Coalesce)
 
     result = functional_alltypes.bool_col.fillna(True)
     assert isinstance(result, ir.BooleanColumn)

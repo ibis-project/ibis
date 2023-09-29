@@ -1,1 +1,1 @@
-zeroifnull(`double_col`)
+coalesce(`double_col`, 0)

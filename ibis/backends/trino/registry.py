@@ -432,8 +432,6 @@ operation_registry.update(
             sa.func.row(*map(t.translate, op.values)), t.get_sqla_type(op.dtype)
         ),
         ops.Literal: _literal,
-        ops.IfNull: fixed_arity(sa.func.coalesce, 2),
-        ops.ZeroIfNull: unary(lambda value: sa.func.coalesce(value, 0)),
         ops.IsNan: unary(sa.func.is_nan),
         ops.IsInf: unary(sa.func.is_infinite),
         ops.Log: fixed_arity(lambda arg, base: sa.func.log(base, arg), 2),

@@ -635,16 +635,6 @@ def _is_inf(t, op):
     return f"IS_INF({t.translate(op.arg)})"
 
 
-def _nullifzero(t, op):
-    casted = bigquery_cast("0", op.dtype)
-    return f"NULLIF({t.translate(op.arg)}, {casted})"
-
-
-def _zeroifnull(t, op):
-    casted = bigquery_cast("0", op.dtype)
-    return f"COALESCE({t.translate(op.arg)}, {casted})"
-
-
 def _array_agg(t, op):
     arg = op.arg
     if (where := op.where) is not None:
@@ -753,10 +743,7 @@ OPERATION_REGISTRY = {
     # Logical
     ops.Any: reduction("LOGICAL_OR"),
     ops.All: reduction("LOGICAL_AND"),
-    ops.IfNull: fixed_arity("IFNULL", 2),
     ops.NullIf: fixed_arity("NULLIF", 2),
-    ops.NullIfZero: _nullifzero,
-    ops.ZeroIfNull: _zeroifnull,
     # Reductions
     ops.ApproxMedian: compiles_approx,
     ops.Covariance: _covar,

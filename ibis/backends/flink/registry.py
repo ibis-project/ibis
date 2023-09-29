@@ -8,26 +8,13 @@ from ibis.backends.base.sql.registry import fixed_arity, helpers, unary
 from ibis.backends.base.sql.registry import (
     operation_registry as base_operation_registry,
 )
+from ibis.backends.base.sql.registry.main import varargs
 from ibis.common.temporal import TimestampUnit
 
 if TYPE_CHECKING:
     from ibis.backends.base.sql.compiler import ExprTranslator
 
 operation_registry = base_operation_registry.copy()
-
-
-def _zeroifnull(translator: ExprTranslator, op: ops.Literal) -> str:
-    from ibis.backends.flink.utils import translate_literal
-
-    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
-    return f"COALESCE({translator.translate(op.arg)}, {casted})"
-
-
-def _nullifzero(translator: ExprTranslator, op: ops.Literal) -> str:
-    from ibis.backends.flink.utils import translate_literal
-
-    casted = translate_literal(ops.Literal("0", dtype=op.dtype))
-    return f"NULLIF({translator.translate(op.arg)}, {casted})"
 
 
 def _count_star(translator: ExprTranslator, op: ops.Node) -> str:
@@ -223,9 +210,8 @@ def _floor_divide(translator: ExprTranslator, op: ops.Node) -> str:
 operation_registry.update(
     {
         # Unary operations
-        ops.IfNull: fixed_arity("ifnull", 2),
-        ops.ZeroIfNull: _zeroifnull,
-        ops.NullIfZero: _nullifzero,
+        ops.Coalesce: varargs("coalesce"),
+        ops.NullIf: fixed_arity("nullif", 2),
         ops.RandomScalar: lambda *_: "rand()",
         ops.Degrees: unary("degrees"),
         ops.Radians: unary("radians"),

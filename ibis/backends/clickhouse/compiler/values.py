@@ -582,16 +582,6 @@ def _repeat(op, *, arg, times, **_):
     return f.repeat(arg, f.accurateCast(times, "UInt64"))
 
 
-@translate_val.register(ops.NullIfZero)
-def _null_if_zero(op, *, arg, **_):
-    return f.nullIf(arg, 0)
-
-
-@translate_val.register(ops.ZeroIfNull)
-def _zero_if_null(op, *, arg, **_):
-    return f.ifNull(arg, 0)
-
-
 @translate_val.register(ops.FloorDivide)
 def _floor_divide(op, *, left, right, **_):
     return f.floor(left / right)
@@ -800,7 +790,6 @@ _simple_ops = {
     ops.Strftime: "formatDateTime",
     ops.IsNull: "isNull",
     ops.NotNull: "isNotNull",
-    ops.IfNull: "ifNull",
     ops.NullIf: "nullIf",
     ops.MapContains: "mapContains",
     ops.MapLength: "length",

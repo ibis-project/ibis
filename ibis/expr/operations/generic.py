@@ -141,22 +141,6 @@ class NotNull(Unary):
 
 
 @public
-class ZeroIfNull(Unary):
-    dtype = rlz.dtype_like("arg")
-
-
-@public
-class IfNull(Value):
-    """Set values to ifnull_expr if they are equal to NULL."""
-
-    arg: Value
-    ifnull_expr: Value
-
-    dtype = rlz.dtype_like("args")
-    shape = rlz.shape_like("args")
-
-
-@public
 class NullIf(Value):
     """Set values to NULL if they equal the null_if_expr."""
 

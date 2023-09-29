@@ -6,7 +6,6 @@ import operator
 import sqlalchemy as sa
 from sqlalchemy.engine.default import DefaultDialect
 
-import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.datatypes import AlchemyType
@@ -129,13 +128,6 @@ class AlchemyExprTranslator(ExprTranslator):
 
 
 rewrites = AlchemyExprTranslator.rewrites
-
-
-@rewrites(ops.NullIfZero)
-def _nullifzero(op):
-    arg = op.arg
-    condition = ops.Equals(arg, ops.Literal(0, dtype=op.arg.dtype))
-    return ops.IfElse(condition, ibis.NA, arg)
 
 
 # TODO This was previously implemented with the legacy `@compiles` decorator.

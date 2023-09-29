@@ -931,7 +931,7 @@ def test_trig_functions_literals(con, expr, expected):
 )
 def test_trig_functions_columns(backend, expr, alltypes, df, expected_fn):
     dc_max = df.double_col.max()
-    expr = alltypes.mutate(dc=(_.double_col / dc_max).nullifzero()).select(tmp=expr)
+    expr = alltypes.mutate(dc=(_.double_col / dc_max).nullif(0)).select(tmp=expr)
     result = expr.tmp.to_pandas()
     expected = expected_fn((df.double_col / dc_max).replace(0.0, np.nan)).rename("tmp")
     backend.assert_series_equal(result, expected)
