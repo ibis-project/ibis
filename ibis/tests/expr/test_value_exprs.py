@@ -1583,6 +1583,14 @@ def test_deferred_function_call(func, expected_type):
     assert expr["col"].type() == expected_type
 
 
+@pytest.mark.parametrize(
+    "case", [param(lambda: (ibis.array([1, _]), ibis.array([1, 2])), id="array")]
+)
+def test_deferred_nested_types(case):
+    expr, sol = case()
+    assert expr.resolve(2).equals(sol)
+
+
 def test_numpy_ufuncs_dont_cast_columns():
     t = ibis.table(dict.fromkeys("abcd", "int"))
 
