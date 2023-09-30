@@ -185,7 +185,7 @@ quartodoc:
   render_interlinks: true
   renderer: _renderer.py
   options:
-    signature_name: full
+    signature_name: short
   sections:
     - title: Expression API
       desc: "APIs for manipulating table, column and scalar expressions"
@@ -202,34 +202,49 @@ quartodoc:
               package: ibis.expr.types.groupby
             - name: read_csv
               dynamic: true
+              signature_name: full
             - name: read_delta
               dynamic: true
+              signature_name: full
             - name: read_json
               dynamic: true
+              signature_name: full
             - name: read_parquet
               dynamic: true
+              signature_name: full
             - name: memtable
               dynamic: true
+              signature_name: full
             - name: table
               dynamic: true
+              signature_name: full
             - name: difference
               dynamic: true
+              signature_name: full
             - name: intersect
               dynamic: true
+              signature_name: full
             - name: union
               dynamic: true
+              signature_name: full
             - name: row_number
               dynamic: true
+              signature_name: full
             - name: window
               dynamic: true
+              signature_name: full
             - name: cumulative_window
               dynamic: true
+              signature_name: full
             - name: range_window
               dynamic: true
+              signature_name: full
             - name: trailing_range_window
               dynamic: true
+              signature_name: full
             - name: trailing_window
               dynamic: true
+              signature_name: full
 
         - kind: page
           path: expression-generic
@@ -245,31 +260,44 @@ quartodoc:
               package: ibis.expr.types.generic
             - name: literal
               dynamic: true
+              signature_name: full
             - name: param
               dynamic: true
+              signature_name: full
             - name: NA
               # Ideally exposed under `ibis` but that doesn't seem to work??
               package: ibis.expr.api
+              signature_name: full
             - name: "null"
               dynamic: true
+              signature_name: full
             - name: coalesce
               dynamic: true
+              signature_name: full
             - name: least
               dynamic: true
+              signature_name: full
             - name: greatest
               dynamic: true
+              signature_name: full
             - name: asc
               dynamic: true
+              signature_name: full
             - name: desc
               dynamic: true
+              signature_name: full
             - name: ifelse
               dynamic: true
+              signature_name: full
             - name: case
               dynamic: true
+              signature_name: full
             - name: show_sql
               dynamic: true
+              signature_name: full
             - name: to_sql
               dynamic: true
+              signature_name: full
 
         - kind: page
           path: expression-numeric
@@ -293,10 +321,13 @@ quartodoc:
               package: ibis.expr.types.logical
             - name: and_
               dynamic: true
+              signature_name: full
             - name: or_
               dynamic: true
+              signature_name: full
             - name: random
               dynamic: true
+              signature_name: full
 
         - kind: page
           path: expression-strings
@@ -322,18 +353,23 @@ quartodoc:
             - name: now
               package: ibis
               dynamic: true
+              signature_name: full
             - name: date
               package: ibis
               dynamic: true
+              signature_name: full
             - name: time
               package: ibis
               dynamic: true
+              signature_name: full
             - name: timestamp
               package: ibis
               dynamic: true
+              signature_name: full
             - name: interval
               package: ibis
               dynamic: true
+              signature_name: full
 
         - kind: page
           path: expression-collections
@@ -350,10 +386,13 @@ quartodoc:
               package: ibis.expr.types.structs
             - name: array
               dynamic: true
+              signature_name: full
             - name: map
               dynamic: true
+              signature_name: full
             - name: struct
               dynamic: true
+              signature_name: full
 
         - kind: page
           path: expression-geospatial
@@ -403,6 +442,7 @@ quartodoc:
             - name: dtype
               package: ibis
               dynamic: true
+              signature_name: full
             - Array
             - Binary
             - Boolean
@@ -445,6 +485,7 @@ quartodoc:
           contents:
             - name: schema
               dynamic: true
+              signature_name: full
             - name: Schema
               package: ibis.expr.schema
 
@@ -458,10 +499,13 @@ quartodoc:
           contents:
             - name: connect
               dynamic: true
+              signature_name: full
             - name: get_backend
               dynamic: true
+              signature_name: full
             - name: set_backend
               dynamic: true
+              signature_name: full
 
     - title: UDFs
       desc: "User-defined function APIs"
