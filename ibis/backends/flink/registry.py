@@ -39,6 +39,13 @@ def _extract_field(sql_attr: str) -> str:
     return extract_field_formatter
 
 
+def _interval_add(translator: ExprTranslator, op: ops.temporal.IntervalSubtract) -> str:
+    interval_left, interval_right = op.left, op.right
+    interval_left_translated = translator.translate(interval_left)
+    interval_right_translated = translator.translate(interval_right)
+    return f"{interval_left_translated} + {interval_right_translated}"
+
+
 def _interval_subtract(translator: ExprTranslator, op: ops.temporal.IntervalSubtract) -> str:
     interval_left, interval_right = op.left, op.right
     interval_left_translated = translator.translate(interval_left)
@@ -304,6 +311,7 @@ operation_registry.update(
         ops.ExtractMillisecond: _extract_field("millisecond"),
         ops.ExtractMicrosecond: _extract_field("microsecond"),
         # Other operations
+        ops.IntervalAdd: _interval_add,
         ops.IntervalSubtract: _interval_subtract,
         ops.Literal: _literal,
         ops.TryCast: _try_cast,
