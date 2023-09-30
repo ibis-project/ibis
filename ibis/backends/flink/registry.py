@@ -260,6 +260,13 @@ def _date_add(translator: ExprTranslator, op: ops.temporal.DateAdd) -> str:
     return f"{date_translated} + {interval_translated}"
 
 
+def _date_sub(translator: ExprTranslator, op: ops.temporal.DateSub) -> str:
+    date, interval = op.left, op.right
+    date_translated = translator.translate(date)
+    interval_translated = translator.translate(interval)
+    return f"{date_translated} - {interval_translated}"
+
+
 def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
     arg = translator.translate(op.arg)
     return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
@@ -272,14 +279,21 @@ def _string_to_timestamp(translator: ExprTranslator, op: ops.Node) -> str:
 
 
 def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
-    from ibis.expr.operations.temporal import IntervalFromInteger
-
     table_column = op.left
-    interval: IntervalFromInteger = op.right
+    interval = op.right
 
     table_column_translated = translator.translate(table_column)
     interval_translated = translator.translate(interval)
     return f"{table_column_translated} + {interval_translated}"
+
+
+def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
+    table_column = op.left
+    interval = op.right
+
+    table_column_translated = translator.translate(table_column)
+    interval_translated = translator.translate(interval)
+    return f"{table_column_translated} - {interval_translated}"
 
 
 operation_registry.update(
@@ -326,8 +340,10 @@ operation_registry.update(
         # Temporal functions
         ops.ArrayIndex: _array_index,
         ops.DateAdd: _date_add,
+        ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.TimestampAdd: _timestamp_add,
+        ops.TimestampSub: _timestamp_sub,
         ops.StringToTimestamp: _string_to_timestamp,
     }
 )
