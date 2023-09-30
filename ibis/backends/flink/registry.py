@@ -39,6 +39,13 @@ def _extract_field(sql_attr: str) -> str:
     return extract_field_formatter
 
 
+def _interval_subtract(translator: ExprTranslator, op: ops.temporal.IntervalSubtract) -> str:
+    interval_left, interval_right = op.left, op.right
+    interval_left_translated = translator.translate(interval_left)
+    interval_right_translated = translator.translate(interval_right)
+    return f"{interval_left_translated} - {interval_right_translated}"
+
+
 def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
     from ibis.backends.flink.utils import translate_literal
 
@@ -265,11 +272,7 @@ def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) ->
 
     table_column_translated = translator.translate(table_column)
     interval_translated = translator.translate(interval)
-
-    interval_unit, interval_value = interval.unit.name, interval.arg
-    interval_value_translated = translator.translate(interval_value)
-
-    return f"TIMESTAMPADD({interval_unit}, {interval_value_translated}, {table_column_translated})"
+    return f"{table_column_translated} + {interval_translated}"
 
 
 operation_registry.update(
@@ -301,6 +304,7 @@ operation_registry.update(
         ops.ExtractMillisecond: _extract_field("millisecond"),
         ops.ExtractMicrosecond: _extract_field("microsecond"),
         # Other operations
+        ops.IntervalSubtract: _interval_subtract,
         ops.Literal: _literal,
         ops.TryCast: _try_cast,
         ops.IfElse: _filter,
