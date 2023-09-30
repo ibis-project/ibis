@@ -4,6 +4,13 @@
 
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-Impala tables-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-Impala tables | CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 
+::: {.callout-warning}
+## The Impala backend is in maintenance-only mode
+
+Feature requests are unlikely to be accepted for Impala backend, due to the
+maintenance burden of the components involved.
+:::
+
 ## Install
 
 Install Ibis and dependencies for the Impala backend:
