@@ -1026,11 +1026,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=ValidationError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
-                ),
             ],
         ),
         param(
@@ -1059,11 +1054,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=ValidationError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=com.OperationNotDefinedError,
-                    reason="No translation rule for <class 'ibis.expr.operations.temporal.IntervalSubtract'>",
-                ),
             ],
         ),
         param(
@@ -1091,11 +1081,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=ValidationError,
                     reason="alltypes.timestamp_col is represented as string",
                 ),
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=com.OperationNotDefinedError,
-                    reason="No translation rule for <class 'ibis.expr.operations.temporal.IntervalAdd'>",
-                ),
             ],
         ),
         param(
@@ -1112,11 +1097,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["sqlite"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_sub(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
-                ),
             ],
         ),
         param(
@@ -1129,11 +1109,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'date'",
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
-                ),
             ],
         ),
         param(
@@ -1145,11 +1120,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["druid"],
                     raises=AttributeError,
                     reason="'StringColumn' object has no attribute 'date'",
-                ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature date_sub(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
                 ),
             ],
         ),
@@ -1186,8 +1156,8 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 ),
                 pytest.mark.broken(
                     ["flink"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: Cannot apply 'UNIX_TIMESTAMP' to arguments of type 'UNIX_TIMESTAMP(<TIMESTAMP(9)>)'. Supported form(s): 'UNIX_TIMESTAMP()'",
                 ),
             ],
         ),
@@ -1213,8 +1183,8 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 ),
                 pytest.mark.broken(
                     ["flink"],
-                    raises=Py4JJavaError,
-                    reason="CalciteContextException: No match found for function signature datediff(<TIMESTAMP>, <TIMESTAMP>)",
+                    raises=com.UnsupportedOperationError,
+                    reason="DATE_DIFF is not supported in Flink",
                 ),
             ],
         ),

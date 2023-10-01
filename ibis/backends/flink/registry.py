@@ -260,6 +260,12 @@ def _date_add(translator: ExprTranslator, op: ops.temporal.DateAdd) -> str:
     return f"{date_translated} + {interval_translated}"
 
 
+def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
+    raise com.UnsupportedOperationError(
+        "DATE_DIFF is not supported in Flink."
+    )
+
+
 def _date_sub(translator: ExprTranslator, op: ops.temporal.DateSub) -> str:
     date, interval = op.left, op.right
     date_translated = translator.translate(date)
@@ -285,6 +291,15 @@ def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) ->
     table_column_translated = translator.translate(table_column)
     interval_translated = translator.translate(interval)
     return f"{table_column_translated} + {interval_translated}"
+
+
+def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
+    timestamp_left = op.left
+    timestamp_right = op.right
+
+    timestamp_left_translated = translator.translate(timestamp_left)
+    timestamp_right_translated = translator.translate(timestamp_right)
+    return f"{timestamp_left_translated} - {timestamp_right_translated}"
 
 
 def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
@@ -330,8 +345,11 @@ operation_registry.update(
         ops.Literal: _literal,
         ops.TryCast: _try_cast,
         ops.IfElse: _filter,
+        ops.Where: _filter,
+        ops.TimestampAdd: _timestamp_add,
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampFromUNIX: _timestamp_from_unix,
+        ops.TimestampSub: _timestamp_sub,
         ops.Window: _window,
         ops.Clip: _clip,
         # Binary operations
@@ -340,10 +358,9 @@ operation_registry.update(
         # Temporal functions
         ops.ArrayIndex: _array_index,
         ops.DateAdd: _date_add,
+        ops.DateDiff: _date_diff,
         ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
-        ops.TimestampAdd: _timestamp_add,
-        ops.TimestampSub: _timestamp_sub,
         ops.StringToTimestamp: _string_to_timestamp,
     }
 )
