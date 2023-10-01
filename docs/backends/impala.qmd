@@ -7,7 +7,7 @@
 ::: {.callout-warning}
 ## The Impala backend is in maintenance-only mode
 
-Feature requests are unlikely to be accepted for Impala backend, due to the
+Feature requests are unlikely to be accepted for the Impala backend, due to the
 maintenance burden of the components involved.
 :::
 
