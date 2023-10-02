@@ -82,6 +82,8 @@ def _interval_from_integer(t, op):
 def _literal(_, op):
     dtype = op.dtype
     value = op.value
+    if value is None:
+        return sa.null()
     if dtype.is_interval():
         if dtype.unit.short in {"ms", "ns"}:
             raise com.UnsupportedOperationError(
