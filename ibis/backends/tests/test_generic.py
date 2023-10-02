@@ -28,13 +28,6 @@ except ImportError:
     DuckDBConversionException = None
 
 try:
-    import trino
-
-    TrinoUserError = trino.exceptions.TrinoUserError
-except ImportError:
-    TrinoUserError = None
-
-try:
     import clickhouse_connect as cc
 
     ClickhouseDriverDatabaseError = cc.driver.exceptions.DatabaseError
@@ -1225,13 +1218,27 @@ def test_hash_consistent(backend, alltypes):
             "int",
             None,
             marks=[
+                pytest.mark.never(["clickhouse"], reason="casts to 1672531200"),
                 pytest.mark.notyet(
-                    ["clickhouse"], reason="clickhouse casts this to 1686156304"
+                    ["trino"],
+                    raises=sa.exc.ProgrammingError,
+                    reason="raises TrinoUserError",
                 ),
-                pytest.mark.notyet(["trino"], reason="trino raises a TrinoUserError"),
+                pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+            ],
+        ),
+        param(
+            datetime.datetime(2023, 1, 1),
+            "int",
+            1672531200,
+            marks=[
+                pytest.mark.notyet(["duckdb"], reason="casts to None"),
                 pytest.mark.notyet(
-                    ["polars"], reason="polars casts this to 1686157562300325000"
+                    ["trino"],
+                    raises=sa.exc.ProgrammingError,
+                    reason="raises TrinoUserError",
                 ),
+                pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
             ],
         ),
     ],
@@ -1296,7 +1303,11 @@ def test_try_cast_table(con):
                 pytest.mark.notyet(
                     ["clickhouse"], reason="clickhouse casts this to to a number"
                 ),
-                pytest.mark.notyet(["trino"], reason="trino raises a TrinoUserError"),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=sa.exc.ProgrammingError,
+                    reason="raises TrinoUserError",
+                ),
                 pytest.mark.notyet(["polars"], reason="polars casts this to a number"),
             ],
         ),
