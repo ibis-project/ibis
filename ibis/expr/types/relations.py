@@ -677,7 +677,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     @property
     def columns(self) -> list[str]:
-        """The list of columns in this table.
+        """The list of column names in this table.
 
         Examples
         --------
