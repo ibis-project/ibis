@@ -1556,7 +1556,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 @pytest.mark.broken(
     ["flink"],
     raises=Py4JJavaError,
-    reason="SqlParseException: Incorrect syntax near the keyword 'INTERVAL'",
+    reason="ParseException: Encountered '+ INTERVAL CAST'",
 )
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
