@@ -966,6 +966,15 @@ def case() -> bl.SearchedCaseBuilder:
     Use the `.when` method on the resulting object followed by `.end` to create a
     complete case expression.
 
+    Returns
+    -------
+    SearchedCaseBuilder
+        A builder object to use for constructing a case expression.
+
+    See Also
+    --------
+    [`Value.case()`](./expression-generic.qmd#ibis.expr.types.generic.Value.case)
+
     Examples
     --------
     >>> import ibis
@@ -998,11 +1007,6 @@ def case() -> bl.SearchedCaseBuilder:
     │     3 │ *      │     7 │    21.0 │
     │     4 │ /      │     8 │     0.5 │
     └───────┴────────┴───────┴─────────┘
-
-    Returns
-    -------
-    SearchedCaseBuilder
-        A builder object to use for constructing a case expression.
     """
     return bl.SearchedCaseBuilder()
 
