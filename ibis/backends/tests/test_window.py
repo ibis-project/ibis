@@ -103,7 +103,7 @@ def calc_zscore(s):
             marks=[
                 pytest.mark.notimpl(["dask"], raises=NotImplementedError),
                 pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
-            ]
+            ],
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -903,7 +903,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     ["flink"],
                     raises=com.UnsupportedOperationError,
                 ),
-            ]
+            ],
         ),
     ],
 )

@@ -104,7 +104,9 @@ def test_context_adjustment_filter_before_window(alltypes, context, monkeypatch)
     raises=Py4JJavaError,
     reason="Cannot cast org.apache.flink.table.data.TimestampData to java.lang.Long",
 )
-def test_context_adjustment_filter_before_window(alltypes, context, ctx_col, functional_alltypes_w_watermark):
+def test_context_adjustment_filter_before_window(
+    alltypes, context, ctx_col, functional_alltypes_w_watermark
+):
     window = ibis.trailing_window(ibis.interval(days=3), order_by=ORDER_BY_COL)
     # Note(mehmet): Works.
     # window = ibis.trailing_window(3, order_by="id")

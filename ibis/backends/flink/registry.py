@@ -46,7 +46,9 @@ def _interval_add(translator: ExprTranslator, op: ops.temporal.IntervalSubtract)
     return f"{interval_left_translated} + {interval_right_translated}"
 
 
-def _interval_subtract(translator: ExprTranslator, op: ops.temporal.IntervalSubtract) -> str:
+def _interval_subtract(
+    translator: ExprTranslator, op: ops.temporal.IntervalSubtract
+) -> str:
     interval_left, interval_right = op.left, op.right
     interval_left_translated = translator.translate(interval_left)
     interval_right_translated = translator.translate(interval_right)
@@ -88,6 +90,7 @@ def _filter(translator: ExprTranslator, op: ops.Node) -> str:
     # COUNT(DISTINCT) FILTER (WHERE flag = 'app') AS app_uv
     # ```
     return f"CASE WHEN {bool_expr} THEN {true_expr} ELSE {false_null_expr} END"
+
 
 def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
     table_column = op.left
@@ -136,7 +139,9 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
     return f"TO_TIMESTAMP_LTZ({numeric}, {precision})"
 
 
-def _timestamp_from_ymdhms(translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS) -> str:
+def _timestamp_from_ymdhms(
+    translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
+) -> str:
     year, month, day = op.year.value, op.month.value, op.day.value
     hours, minutes, seconds = op.hours.value, op.minutes.value, op.seconds.value
 
@@ -295,9 +300,7 @@ def _date_add(translator: ExprTranslator, op: ops.temporal.DateAdd) -> str:
 
 
 def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
-    raise com.UnsupportedOperationError(
-        "DATE_DIFF is not supported in Flink."
-    )
+    raise com.UnsupportedOperationError("DATE_DIFF is not supported in Flink.")
 
 
 def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> str:
@@ -318,7 +321,9 @@ def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
     return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
 
 
-def _string_to_timestamp(translator: ExprTranslator, op: ops.temporal.StringToTimestamp) -> str:
+def _string_to_timestamp(
+    translator: ExprTranslator, op: ops.temporal.StringToTimestamp
+) -> str:
     arg = translator.translate(op.arg)
     format_string = translator.translate(op.format_str)
     return f"TO_TIMESTAMP({arg}, {format_string})"
@@ -328,12 +333,12 @@ def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
     from ibis.expr.datatypes.core import Timestamp
 
     arg, to = op.arg, op.to
-
     if isinstance(to, Timestamp) and to.timezone:
         arg_translated = translator.translate(arg)
         return f"CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}')"
 
     from ibis.backends.base.sql.registry.main import cast
+
     cast(translator=translator, op=op)
 
 
