@@ -110,6 +110,14 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
     return f"TO_TIMESTAMP_LTZ({numeric}, {precision})"
 
 
+def _timestamp_from_ymdhms(translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS) -> str:
+    year, month, day = op.year.value, op.month.value, op.day.value
+    hours, minutes, seconds = op.hours.value, op.minutes.value, op.seconds.value
+
+    date_string = f"{year}-{month}-{day} {hours}:{minutes}:{seconds}"
+    return f"CAST('{date_string}' AS TIMESTAMP)"
+
+
 def _format_window_start(translator: ExprTranslator, boundary):
     if boundary is None:
         return "UNBOUNDED PRECEDING"
@@ -267,12 +275,7 @@ def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
 
 
 def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> str:
-    # from ibis.expr.operations.generic import Literal
     year, month, day = op.year, op.month, op.day
-    # year_translated = translator.translate(year)
-    # month_translated = translator.translate(month)
-    # day_translated = translator.translate(day)
-
     date_string = f"{year.value}-{month.value}-{day.value}"
     return f"CAST('{date_string}' AS DATE)"
 
@@ -289,7 +292,7 @@ def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
     return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
 
 
-def _string_to_timestamp(translator: ExprTranslator, op: ops.Node) -> str:
+def _string_to_timestamp(translator: ExprTranslator, op: ops.temporal.StringToTimestamp) -> str:
     arg = translator.translate(op.arg)
     format_string = translator.translate(op.format_str)
     return f"TO_TIMESTAMP({arg}, {format_string})"
@@ -360,6 +363,7 @@ operation_registry.update(
         ops.TimestampAdd: _timestamp_add,
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampFromUNIX: _timestamp_from_unix,
+        ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
         ops.TimestampSub: _timestamp_sub,
         ops.Window: _window,
         ops.Clip: _clip,

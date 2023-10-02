@@ -2077,6 +2077,7 @@ TIMESTAMP_BACKEND_TYPES = {
     "trino": "timestamp(3)",
     "duckdb": "TIMESTAMP",
     "postgres": "timestamp without time zone",
+    "flink": "TIMESTAMP(6) NOT NULL",
 }
 
 
