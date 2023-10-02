@@ -2140,18 +2140,19 @@ def test_timestamp_literal(con, backend):
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904: MAKE TIMESTAMP invalid"
 )
 @pytest.mark.parametrize(
-    ("timezone", "expected"),
+    ("timezone", "expected", "expected_for_flink"),
     [
         param(
             "Europe/London",
             "2022-02-04 16:20:00GMT",
+            "2022-02-04 16:20:00",
             id="name",
             marks=[pytest.mark.broken(["mssql"], raises=TypeError)],
         ),
         param(
             "PST8PDT",
-            "2022-02-04 08:20:00PST",
-            # The time zone for Berkeley, California.
+            "2022-02-04 08:20:00PST", # The time zone for Berkeley, California.
+            "2022-02-04 08:20:00",
             id="iso",
             marks=[pytest.mark.broken(["mssql"], raises=TypeError)],
         ),
@@ -2170,12 +2171,14 @@ def test_timestamp_literal(con, backend):
         "<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
     ),
 )
-def test_timestamp_with_timezone_literal(con, backend, timezone, expected):
+def test_timestamp_with_timezone_literal(request, con, backend, timezone, expected, expected_for_flink):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
     result = con.execute(expr)
     if not isinstance(result, str):
         result = result.strftime("%Y-%m-%d %H:%M:%S%Z")
-    assert result == expected
+
+    print(f"request.node.name= {request.node.name}")
+    assert result == (expected if "flink" not in request.node.name else expected_for_flink)
 
 
 TIME_BACKEND_TYPES = {

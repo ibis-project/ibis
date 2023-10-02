@@ -89,11 +89,37 @@ def _filter(translator: ExprTranslator, op: ops.Node) -> str:
     # ```
     return f"CASE WHEN {bool_expr} THEN {true_expr} ELSE {false_null_expr} END"
 
+def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
+    table_column = op.left
+    interval = op.right
 
-def _timestamp_diff(translator: ExprTranslator, op: ops.Node) -> str:
-    left = translator.translate(op.left)
-    right = translator.translate(op.right)
-    return f"timestampdiff(second, {left}, {right})"
+    table_column_translated = translator.translate(table_column)
+    interval_translated = translator.translate(interval)
+    return f"{table_column_translated} + {interval_translated}"
+
+
+def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
+    timestamp_left = op.left
+    timestamp_right = op.right
+
+    timestamp_left_translated = translator.translate(timestamp_left)
+    timestamp_right_translated = translator.translate(timestamp_right)
+    return f"{timestamp_left_translated} - {timestamp_right_translated}"
+
+
+def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
+    table_column = op.left
+    interval = op.right
+
+    table_column_translated = translator.translate(table_column)
+    interval_translated = translator.translate(interval)
+    return f"{table_column_translated} - {interval_translated}"
+
+
+# def _timestamp_diff(translator: ExprTranslator, op: ops.Node) -> str:
+#     left = translator.translate(op.left)
+#     right = translator.translate(op.right)
+#     return f"timestampdiff(second, {left}, {right})"
 
 
 def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
@@ -298,31 +324,17 @@ def _string_to_timestamp(translator: ExprTranslator, op: ops.temporal.StringToTi
     return f"TO_TIMESTAMP({arg}, {format_string})"
 
 
-def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
-    table_column = op.left
-    interval = op.right
+def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
+    from ibis.expr.datatypes.core import Timestamp
 
-    table_column_translated = translator.translate(table_column)
-    interval_translated = translator.translate(interval)
-    return f"{table_column_translated} + {interval_translated}"
+    arg, to = op.arg, op.to
 
+    if isinstance(to, Timestamp) and to.timezone:
+        arg_translated = translator.translate(arg)
+        return f"CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}')"
 
-def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
-    timestamp_left = op.left
-    timestamp_right = op.right
-
-    timestamp_left_translated = translator.translate(timestamp_left)
-    timestamp_right_translated = translator.translate(timestamp_right)
-    return f"{timestamp_left_translated} - {timestamp_right_translated}"
-
-
-def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
-    table_column = op.left
-    interval = op.right
-
-    table_column_translated = translator.translate(table_column)
-    interval_translated = translator.translate(interval)
-    return f"{table_column_translated} - {interval_translated}"
+    from ibis.backends.base.sql.registry.main import cast
+    cast(translator=translator, op=op)
 
 
 operation_registry.update(
@@ -378,5 +390,6 @@ operation_registry.update(
         ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.StringToTimestamp: _string_to_timestamp,
+        ops.Cast: _cast,
     }
 )
