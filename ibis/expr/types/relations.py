@@ -695,7 +695,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         return list(self.schema().names)
 
     def schema(self) -> sch.Schema:
-        """Return the schema for this table.
+        """Return the [Schema](./schemas.qmd#ibis.expr.schema.Schema) for this table.
 
         Returns
         -------
