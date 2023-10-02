@@ -392,9 +392,9 @@ class Value(Expr):
         Parameters
         ----------
         lower
-            Lower bound
+            Lower bound, inclusive
         upper
-            Upper bound
+            Upper bound, inclusive
 
         Returns
         -------
