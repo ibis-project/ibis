@@ -7,7 +7,9 @@ codecov:
 comment: false
 
 ignore:
-  - "docs/**"
+  - "docs/**/*"
+  - "ibis/backends/bigquery/**/*"
+  - "ibis/backends/snowflake/**/*"
 
 coverage:
   status:
