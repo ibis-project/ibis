@@ -884,7 +884,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 pytest.mark.broken(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="ParseException: Encountered 'MICROSECOND'. Was expecting one of: DAY, DAYS, HOUR",
+                    reason="ParseException: Encountered 'MICROSECOND'. Was expecting one of: DAY, DAYS, HOUR, ...",
                 ),
             ],
         ),
@@ -1155,10 +1155,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=AssertionError,
                     reason="doesn't match pandas results, unclear what the issue is, perhaps timezones",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="CalciteContextException: Cannot apply 'UNIX_TIMESTAMP' to arguments of type 'UNIX_TIMESTAMP(<TIMESTAMP(9)>)'. Supported form(s): 'UNIX_TIMESTAMP()'",
+                    reason=(
+                        "CalciteContextException: Cannot apply '-' to arguments of type '<TIMESTAMP(9)> - <TIMESTAMP(0)>'."
+                    ),
                 ),
             ],
         ),
