@@ -23,6 +23,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, CanCreateDatabase
+from ibis.backends.base.sqlglot import STAR, C, F, lit
 from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 
@@ -176,12 +177,14 @@ class Backend(BaseBackend, CanCreateDatabase):
 
     @property
     def current_database(self) -> str:
-        with closing(self.raw_sql("SELECT currentDatabase()")) as result:
+        with closing(self.raw_sql(sg.select(F.currentDatabase()))) as result:
             [(db,)] = result.result_rows
         return db
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        with closing(self.raw_sql("SELECT name FROM system.databases")) as result:
+        with closing(
+            self.raw_sql(sg.select(C.name).from_(sg.table("databases", db="system")))
+        ) as result:
             results = result.result_columns
 
         if results:
@@ -193,14 +196,14 @@ class Backend(BaseBackend, CanCreateDatabase):
     def list_tables(
         self, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        query = "SELECT name FROM system.tables WHERE"
+        query = sg.select(C.name).from_(sg.table("tables", db="system"))
 
         if database is None:
-            database = "currentDatabase()"
+            database = F.currentDatabase()
         else:
-            database = f"'{database}'"
+            database = lit(database)
 
-        query += f" database = {database} OR is_temporary"
+        query = query.where(C.database.eq(database).or_(C.is_temporary))
 
         with closing(self.raw_sql(query)) as result:
             results = result.result_columns
@@ -377,7 +380,10 @@ class Backend(BaseBackend, CanCreateDatabase):
         # in single column conversion and whole table conversion
         return expr.__pandas_result__(table.__pandas_result__(df))
 
-    def compile(self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any):
+    def _to_sqlglot(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
+    ):
+        """Compile an Ibis expression to a sqlglot object."""
         table_expr = expr.as_table()
 
         if limit == "default":
@@ -392,13 +398,21 @@ class Backend(BaseBackend, CanCreateDatabase):
         assert not isinstance(sql, sg.exp.Subquery)
 
         if isinstance(sql, sg.exp.Table):
-            sql = sg.select("*").from_(sql)
+            sql = sg.select(STAR).from_(sql)
 
         assert not isinstance(sql, sg.exp.Subquery)
-        return sql.sql(dialect="clickhouse", pretty=True)
+        return sql
+
+    def compile(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+    ):
+        """Compile an Ibis expression to a ClickHouse SQL string."""
+        return self._to_sqlglot(expr, limit=limit, params=params, **kwargs).sql(
+            dialect=self.name, pretty=True
+        )
 
     def _to_sql(self, expr: ir.Expr, **kwargs) -> str:
-        return str(self.compile(expr, **kwargs))
+        return self.compile(expr, **kwargs)
 
     def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
@@ -444,7 +458,7 @@ class Backend(BaseBackend, CanCreateDatabase):
 
     def raw_sql(
         self,
-        query: str,
+        query: str | sg.exp.Expression,
         external_tables: Mapping[str, pd.DataFrame] | None = None,
         **kwargs,
     ) -> Any:
@@ -467,6 +481,8 @@ class Backend(BaseBackend, CanCreateDatabase):
         """
         external_tables = toolz.valmap(_to_memtable, external_tables or {})
         external_data = self._normalize_external_tables(external_tables)
+        with suppress(AttributeError):
+            query = query.sql(dialect=self.name, pretty=True)
         self._log(query)
         return self.con.query(query, external_data=external_data, **kwargs)
 
@@ -501,8 +517,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         sch.Schema
             Ibis schema
         """
-        qualified_name = self._fully_qualified_name(table_name, database)
-        query = f"DESCRIBE {qualified_name}"
+        query = sg.exp.Describe(this=sg.table(table_name, db=database))
         with closing(self.raw_sql(query)) as results:
             names, types, *_ = results.result_columns
         return sch.Schema(dict(zip(names, map(ClickhouseType.from_string, types))))
@@ -528,34 +543,39 @@ class Backend(BaseBackend, CanCreateDatabase):
     def create_database(
         self, name: str, *, force: bool = False, engine: str = "Atomic"
     ) -> None:
-        if_not_exists = "IF NOT EXISTS " * force
-        with closing(
-            self.raw_sql(f"CREATE DATABASE {if_not_exists}{name} ENGINE = {engine}")
-        ):
+        src = sg.exp.Create(
+            this=sg.to_identifier(name),
+            kind="DATABASE",
+            exists=force,
+            properties=sg.exp.Properties(
+                expressions=[sg.exp.EngineProperty(this=sg.to_identifier(engine))]
+            ),
+        )
+        with closing(self.raw_sql(src)):
             pass
 
     def drop_database(self, name: str, *, force: bool = False) -> None:
-        if_exists = "IF EXISTS " * force
-        with closing(self.raw_sql(f"DROP DATABASE {if_exists}{name}")):
+        src = sg.exp.Drop(this=sg.to_identifier(name), kind="DATABASE", exists=force)
+        with closing(self.raw_sql(src)):
             pass
 
     def truncate_table(self, name: str, database: str | None = None) -> None:
-        ident = self._fully_qualified_name(name, database)
+        ident = sg.table(name, db=database).sql(self.name)
         with closing(self.raw_sql(f"TRUNCATE TABLE {ident}")):
             pass
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        ident = self._fully_qualified_name(name, database)
-        with closing(self.raw_sql(f"DROP TABLE {'IF EXISTS ' * force}{ident}")):
+        src = sg.exp.Drop(this=sg.table(name, db=database), kind="TABLE", exists=force)
+        with closing(self.raw_sql(src)):
             pass
 
     def read_parquet(
         self,
         path: str | Path,
         table_name: str | None = None,
-        engine: str = "File(Native)",
+        engine: str = "MergeTree",
         **kwargs: Any,
     ) -> ir.Table:
         import pyarrow.dataset as ds
@@ -583,7 +603,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         self,
         path: str | Path,
         table_name: str | None = None,
-        engine: str = "File(Native)",
+        engine: str = "MergeTree",
         **kwargs: Any,
     ) -> ir.Table:
         import pyarrow.dataset as ds
@@ -611,7 +631,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         temp: bool = False,
         overwrite: bool = False,
         # backend specific arguments
-        engine: str = "File(Native)",
+        engine: str = "MergeTree",
         order_by: Iterable[str] | None = None,
         partition_by: Iterable[str] | None = None,
         sample_by: str | None = None,
@@ -636,7 +656,9 @@ class Backend(BaseBackend, CanCreateDatabase):
             Whether to overwrite the table
         engine
             The table engine to use. See [ClickHouse's `CREATE TABLE` documentation](https://clickhouse.com/docs/en/sql-reference/statements/create/table)
-            for specifics.
+            for specifics. Defaults to [`MergeTree`](https://clickhouse.com/docs/en/engines/table-engines/mergetree-family/mergetree)
+            with `ORDER BY tuple()` because `MergeTree` is the most
+            feature-complete engine.
         order_by
             String column names to order by. Required for some table engines like `MergeTree`.
         partition_by
@@ -681,6 +703,10 @@ class Backend(BaseBackend, CanCreateDatabase):
 
         if order_by is not None:
             code += f" ORDER BY {', '.join(util.promote_list(order_by))}"
+        elif engine == "MergeTree":
+            # empty tuple to indicate no specific order when engine is
+            # MergeTree
+            code += " ORDER BY tuple()"
 
         if partition_by is not None:
             code += f" PARTITION BY {', '.join(util.promote_list(partition_by))}"
@@ -713,21 +739,22 @@ class Backend(BaseBackend, CanCreateDatabase):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        qualname = self._fully_qualified_name(name, database)
-        replace = "OR REPLACE " * overwrite
-        query = self.compile(obj)
-        code = f"CREATE {replace}VIEW {qualname} AS {query}"
+        src = sg.exp.Create(
+            this=sg.table(name, db=database),
+            kind="VIEW",
+            replace=overwrite,
+            expression=self._to_sqlglot(obj),
+        )
         external_tables = self._collect_in_memory_tables(obj)
-        with closing(self.raw_sql(code, external_tables=external_tables)):
+        with closing(self.raw_sql(src, external_tables=external_tables)):
             pass
         return self.table(name, database=database)
 
     def drop_view(
         self, name: str, *, database: str | None = None, force: bool = False
     ) -> None:
-        name = self._fully_qualified_name(name, database)
-        if_exists = "IF EXISTS " * force
-        with closing(self.raw_sql(f"DROP VIEW {if_exists}{name}")):
+        src = sg.exp.Drop(this=sg.table(name, db=database), kind="VIEW", exists=force)
+        with closing(self.raw_sql(src)):
             pass
 
     def _load_into_cache(self, name, expr):
@@ -742,12 +769,9 @@ class Backend(BaseBackend, CanCreateDatabase):
                 f"{table_name} already exists as a non-temporary table or view"
             )
         src = sg.exp.Create(
-            this=sg.table(table_name),  # CREATE ... 'table_name'
-            kind="VIEW",  # VIEW
-            replace=True,  # OR REPLACE
-            expression=source,  # AS ...
+            this=sg.table(table_name), kind="VIEW", replace=True, expression=source
         )
-        self.raw_sql(src.sql(dialect=self.name, pretty=True))
+        self.raw_sql(src)
         self._temp_views.add(table_name)
         self._register_temp_view_cleanup(table_name)
 
@@ -756,6 +780,5 @@ class Backend(BaseBackend, CanCreateDatabase):
             self.raw_sql(query)
             self._temp_views.discard(name)
 
-        src = sg.exp.Drop(this=sg.table(name), kind="VIEW", exists=True)
-        query = src.sql(self.name, pretty=True)
+        query = sg.exp.Drop(this=sg.table(name), kind="VIEW", exists=True)
         atexit.register(drop, self, name=name, query=query)

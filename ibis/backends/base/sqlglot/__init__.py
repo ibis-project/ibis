@@ -52,11 +52,30 @@ class FuncGen:
     def concat(self, *args):
         return sg.exp.Concat.from_arg_list(list(map(_to_sqlglot, args)))
 
+    def map(self, keys, values):
+        return sg.exp.Map(keys=keys, values=values)
+
+
+class ColGen:
+    __slots__ = ()
+
+    def __getattr__(self, name: str) -> sg.exp.Column:
+        return sg.column(name)
+
+    def __getitem__(self, key: str) -> sg.exp.Column:
+        return sg.column(key)
+
 
 def lit(val):
     return sg.exp.Literal(this=str(val), is_string=isinstance(val, str))
 
 
+def interval(value, *, unit):
+    return sg.exp.Interval(this=_to_sqlglot(value), unit=sg.exp.var(unit))
+
+
+F = FuncGen()
+C = ColGen()
 NULL = sg.exp.NULL
 FALSE = sg.exp.FALSE
 TRUE = sg.exp.TRUE
