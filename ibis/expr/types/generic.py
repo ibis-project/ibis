@@ -78,7 +78,7 @@ class Value(Expr):
         """
         return ops.Hash(self).to_expr()
 
-    def cast(self, target_type: dt.DataType) -> Value:
+    def cast(self, target_type: Any) -> Value:
         """Cast expression to indicated data type.
 
         Similar to `pandas.Series.astype`.
@@ -86,22 +86,89 @@ class Value(Expr):
         Parameters
         ----------
         target_type
-            Type to cast to
+            Type to cast to. Anything accepted by [`ibis.dtype()`](./datatypes.qmd#ibis.dtype)
 
         Returns
         -------
         Value
             Casted expression
 
+        See Also
+        --------
+        [`Value.try_cast()`](./expression-generic.qmd#ibis.expr.types.generic.Value.try_cast)
+        [`ibis.dtype()`](./datatypes.qmd#ibis.dtype)
+
         Examples
         --------
         >>> import ibis
-        >>> ibis.options.interactive = False
-        >>> t = ibis.table(dict(a="int64"), name="t")
-        >>> t.a.cast("float")
-        r0 := UnboundTable: t
-          a int64
-        Cast(a, float64): Cast(r0.a, to=float64)
+        >>> ibis.options.interactive = True
+        >>> x = ibis.examples.penguins.fetch()["bill_depth_mm"]
+        >>> x
+        ┏━━━━━━━━━━━━━━━┓
+        ┃ bill_depth_mm ┃
+        ┡━━━━━━━━━━━━━━━┩
+        │ float64       │
+        ├───────────────┤
+        │          18.7 │
+        │          17.4 │
+        │          18.0 │
+        │           nan │
+        │          19.3 │
+        │          20.6 │
+        │          17.8 │
+        │          19.6 │
+        │          18.1 │
+        │          20.2 │
+        │             … │
+        └───────────────┘
+
+        python's built-in types can be used
+
+        >>> x.cast(int)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Cast(bill_depth_mm, int64) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64                      │
+        ├────────────────────────────┤
+        │                         19 │
+        │                         17 │
+        │                         18 │
+        │                       NULL │
+        │                         19 │
+        │                         21 │
+        │                         18 │
+        │                         20 │
+        │                         18 │
+        │                         20 │
+        │                          … │
+        └────────────────────────────┘
+
+        or string names
+
+        >>> x.cast("uint16")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Cast(bill_depth_mm, uint16) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ uint16                      │
+        ├─────────────────────────────┤
+        │                          19 │
+        │                          17 │
+        │                          18 │
+        │                        NULL │
+        │                          19 │
+        │                          21 │
+        │                          18 │
+        │                          20 │
+        │                          18 │
+        │                          20 │
+        │                           … │
+        └─────────────────────────────┘
+
+        If you make an illegal cast, you won't know until the backend actually
+        executes it. Consider [`.try_cast()`](#ibis.expr.types.generic.Value.try_cast).
+
+        >>> ibis.literal("a string").cast("int64")  # doctest: +SKIP
+        <error>
         """
         op = ops.Cast(self, to=target_type)
 
@@ -117,7 +184,7 @@ class Value(Expr):
 
         return op.to_expr()
 
-    def try_cast(self, target_type: dt.DataType) -> Value:
+    def try_cast(self, target_type: Any) -> Value:
         """Try cast expression to indicated data type.
         If the cast fails for a row, the value is returned
         as null or NaN depending on target_type and backend behavior.
@@ -125,12 +192,17 @@ class Value(Expr):
         Parameters
         ----------
         target_type
-            Type to try cast to
+            Type to try cast to. Anything accepted by [`ibis.dtype()`](./datatypes.qmd#ibis.dtype)
 
         Returns
         -------
         Value
             Casted expression
+
+        See Also
+        --------
+        [`Value.cast()`](./expression-generic.qmd#ibis.expr.types.generic.Value.cast)
+        [`ibis.dtype()`](./datatypes.qmd#ibis.dtype)
 
         Examples
         --------
