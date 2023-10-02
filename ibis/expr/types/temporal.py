@@ -291,7 +291,7 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
         ... 2016-02-01T00:55:11,2016-02-01T01:24:34
         ... 2016-02-01T00:11:13,2016-02-01T00:16:59'''
         >>> with open("/tmp/triptimes.csv", "w") as f:
-        ...     _ = f.write(data)
+        ...     nbytes = f.write(data)  # nbytes is unused
         ...
         >>> taxi = ibis.read_csv("/tmp/triptimes.csv")
         >>> ride_duration = (
@@ -591,7 +591,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         ... 2016-02-01T00:55:11,2016-02-01T01:24:34
         ... 2016-02-01T00:11:13,2016-02-01T00:16:59'''
         >>> with open("/tmp/triptimes.csv", "w") as f:
-        ...     _ = f.write(data)
+        ...     nbytes = f.write(data)  # nbytes is unused
         ...
         >>> taxi = ibis.read_csv("/tmp/triptimes.csv")
         >>> ride_duration = taxi.tpep_dropoff_datetime.delta(

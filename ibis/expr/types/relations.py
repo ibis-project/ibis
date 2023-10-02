@@ -2379,7 +2379,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     {"name": "c", "pos": {"lat": 10.3, "lon": 30.1}}
         ... '''
         >>> with open("/tmp/lines.json", "w") as f:
-        ...     _ = f.write(lines)
+        ...     nbytes = f.write(lines)  # nbytes is unused
         ...
         >>> t = ibis.read_json("/tmp/lines.json")
         >>> t

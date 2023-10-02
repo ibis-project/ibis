@@ -747,10 +747,13 @@ WHERE catalog_name = :database"""
         >>> import sqlite3
         >>> ibis.options.interactive = True
         >>> with sqlite3.connect("/tmp/sqlite.db") as con:
-        ...     _ = con.execute("DROP TABLE IF EXISTS t")
-        ...     _ = con.execute("CREATE TABLE t (a INT, b TEXT)")
-        ...     _ = con.execute("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
+        ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
+        ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
+        ...     con.execute(
+        ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
+        ...     )  # doctest: +ELLIPSIS
         ...
+        <...>
         >>> con = ibis.connect("duckdb://")
         >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
         >>> t
@@ -798,10 +801,13 @@ WHERE catalog_name = :database"""
         >>> import ibis
         >>> import sqlite3
         >>> with sqlite3.connect("/tmp/attach_sqlite.db") as con:
-        ...     _ = con.execute("DROP TABLE IF EXISTS t")
-        ...     _ = con.execute("CREATE TABLE t (a INT, b TEXT)")
-        ...     _ = con.execute("INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')")
+        ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
+        ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
+        ...     con.execute(
+        ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
+        ...     )  # doctest: +ELLIPSIS
         ...
+        <...>
         >>> con = ibis.connect("duckdb://")
         >>> con.list_tables()
         []
