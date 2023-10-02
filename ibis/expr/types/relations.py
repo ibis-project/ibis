@@ -172,6 +172,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     def cast(self, schema: SupportsSchema) -> Table:
         """Cast the columns of a table.
 
+        Similar to `pandas.DataFrame.astype`.
+
         ::: {.callout-note}
         ## If you need to cast columns to a single type, use [selectors](./selectors.qmd).
         :::
@@ -727,6 +729,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         **key_exprs: str | ir.Value | Iterable[str] | Iterable[ir.Value],
     ) -> GroupedTable:
         """Create a grouped table expression.
+
+        Similar to SQL's GROUP BY statement, or pandas .groupby() method.
 
         Parameters
         ----------
