@@ -26,11 +26,11 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-    import ibis.selectors as s
     import ibis.expr.types as ir
+    import ibis.selectors as s
     from ibis.common.typing import SupportsSchema
-    from ibis.selectors import IfAnyAll, Selector
     from ibis.expr.types.groupby import GroupedTable
+    from ibis.selectors import IfAnyAll, Selector
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
 
@@ -1651,6 +1651,21 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │           36.7 │
         └───────────┴────────────────┘
 
+        In that simple case, you could also just use python's indexing syntax
+
+        >>> t[["island", "bill_length_mm"]].head()
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ float64        │
+        ├───────────┼────────────────┤
+        │ Torgersen │           39.1 │
+        │ Torgersen │           39.5 │
+        │ Torgersen │           40.3 │
+        │ Torgersen │            nan │
+        │ Torgersen │           36.7 │
+        └───────────┴────────────────┘
+
         Projection by zero-indexed column position
 
         >>> t.select(0, 4).head()
@@ -1669,6 +1684,23 @@ class Table(Expr, _FixedTextJupyterMixin):
         Projection with renaming and compute in one call
 
         >>> t.select(next_year=t.year + 1).head()
+        ┏━━━━━━━━━━━┓
+        ┃ next_year ┃
+        ┡━━━━━━━━━━━┩
+        │ int64     │
+        ├───────────┤
+        │      2008 │
+        │      2008 │
+        │      2008 │
+        │      2008 │
+        │      2008 │
+        └───────────┘
+
+        You can do the same thing with a named expression, and using the
+        deferred API
+
+        >>> from ibis import _
+        >>> t.select((_.year + 1).name("next_year")).head()
         ┏━━━━━━━━━━━┓
         ┃ next_year ┃
         ┡━━━━━━━━━━━┩
@@ -3688,8 +3720,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┴──────────┴──────────┴──────────┘
         """
         import pandas as pd
-        import ibis.selectors as s
+
         import ibis.expr.analysis as an
+        import ibis.selectors as s
         from ibis import _
 
         orig_names_from = util.promote_list(names_from)
