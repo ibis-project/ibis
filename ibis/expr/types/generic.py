@@ -703,29 +703,78 @@ class Value(Expr):
         """Create a SimpleCaseBuilder to chain multiple if-else statements.
 
         Add new search expressions with the `.when()` method. These must be
-        comparable with this column expression. Conclude by calling `.end()`
+        comparable with this column expression. Conclude by calling `.end()`.
 
         Returns
         -------
         SimpleCaseBuilder
             A case builder
 
+        See Also
+        --------
+        [`Value.substitute()`](./expression-generic.qmd#ibis.expr.types.generic.Value.substitute)
+        [`ibis.cases()`](./expression-generic.qmd#ibis.expr.types.generic.Value.cases)
+        [`ibis.case()`](./expression-generic.qmd#ibis.case)
+
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([("string_col", "string")], name="t")
-        >>> expr = t.string_col
-        >>> case_expr = (
-        ...     expr.case()
-        ...     .when("a", "an a")
-        ...     .when("b", "a b")
-        ...     .else_("null or (not a and not b)")
-        ...     .end()
-        ... )
-        >>> case_expr
-        r0 := UnboundTable: t
-          string_col string
-        SimpleCase(...)
+        >>> ibis.options.interactive = True
+        >>> x = ibis.examples.penguins.fetch().head(5)["sex"]
+        >>> x
+        ┏━━━━━━━━┓
+        ┃ sex    ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ male   │
+        │ female │
+        │ female │
+        │ NULL   │
+        │ female │
+        └────────┘
+        >>> x.case().when("male", "M").when("female", "F").else_("U").end()
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ SimpleCase(sex, 'U') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string               │
+        ├──────────────────────┤
+        │ M                    │
+        │ F                    │
+        │ F                    │
+        │ U                    │
+        │ F                    │
+        └──────────────────────┘
+
+        Cases not given result in the ELSE case
+
+        >>> x.case().when("male", "M").else_("OTHER").end()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ SimpleCase(sex, 'OTHER') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                   │
+        ├──────────────────────────┤
+        │ M                        │
+        │ OTHER                    │
+        │ OTHER                    │
+        │ OTHER                    │
+        │ OTHER                    │
+        └──────────────────────────┘
+
+        If you don't supply an ELSE, then NULL is used
+
+        >>> x.case().when("male", "M").end()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ SimpleCase(sex, Cast(None, string)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                              │
+        ├─────────────────────────────────────┤
+        │ M                                   │
+        │ NULL                                │
+        │ NULL                                │
+        │ NULL                                │
+        │ NULL                                │
+        └─────────────────────────────────────┘
         """
         import ibis.expr.builders as bl
 
@@ -749,6 +798,12 @@ class Value(Expr):
         -------
         Value
             Value expression
+
+        See Also
+        --------
+        [`Value.substitute()`](./expression-generic.qmd#ibis.expr.types.generic.Value.substitute)
+        [`ibis.cases()`](./expression-generic.qmd#ibis.expr.types.generic.Value.cases)
+        [`ibis.case()`](./expression-generic.qmd#ibis.case)
 
         Examples
         --------
