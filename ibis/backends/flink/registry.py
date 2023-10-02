@@ -266,6 +266,17 @@ def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
     )
 
 
+def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> str:
+    # from ibis.expr.operations.generic import Literal
+    year, month, day = op.year, op.month, op.day
+    # year_translated = translator.translate(year)
+    # month_translated = translator.translate(month)
+    # day_translated = translator.translate(day)
+
+    date_string = f"{year.value}-{month.value}-{day.value}"
+    return f"CAST('{date_string}' AS DATE)"
+
+
 def _date_sub(translator: ExprTranslator, op: ops.temporal.DateSub) -> str:
     date, interval = op.left, op.right
     date_translated = translator.translate(date)
@@ -359,6 +370,7 @@ operation_registry.update(
         ops.ArrayIndex: _array_index,
         ops.DateAdd: _date_add,
         ops.DateDiff: _date_diff,
+        ops.DateFromYMD: _date_from_ymd,
         ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.StringToTimestamp: _string_to_timestamp,

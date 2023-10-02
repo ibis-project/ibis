@@ -1582,7 +1582,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
 @pytest.mark.notimpl(
     ["flask"],
     raises=Py4JJavaError,
-    reason="CalciteContextException: No match found for function signature date_add(<TIMESTAMP>, <INTERVAL_DAY_TIME>)",
+    reason="org.apache.flink.table.planner.codegen.CodeGenException: Interval expression type expected",
 )
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
@@ -2033,6 +2033,7 @@ DATE_BACKEND_TYPES = {
     "trino": "date",
     "duckdb": "DATE",
     "postgres": "date",
+    "flink": "DATE NOT NULL",
 }
 
 
