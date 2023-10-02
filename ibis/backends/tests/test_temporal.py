@@ -2400,3 +2400,62 @@ def test_timestamp_precision_output(con, ts, scale, unit):
     result = con.execute(expr)
     expected = pd.Timestamp(ts).floor(unit)
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "datafusion",
+        "druid",
+        "flink",
+        "impala",
+        "oracle",
+        "pandas",
+        "polars",
+        "pyspark",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["postgres"],
+    reason="postgres doesn't have any easy way to accurately compute the delta in specific units",
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize(
+    ("start", "end", "unit", "expected"),
+    [
+        param(
+            ibis.time("01:58:00"),
+            ibis.time("23:59:59"),
+            "hour",
+            22,
+            id="time",
+            marks=[
+                pytest.mark.notimpl(
+                    ["clickhouse"],
+                    raises=NotImplementedError,
+                    reason="time types not yet implemented in ibis for the clickhouse backend",
+                )
+            ],
+        ),
+        param(ibis.date("1992-09-30"), ibis.date("1992-10-01"), "day", 1, id="date"),
+        param(
+            ibis.timestamp("1992-09-30 23:59:59"),
+            ibis.timestamp("1992-10-01 01:58:00"),
+            "hour",
+            2,
+            id="timestamp",
+            marks=[
+                pytest.mark.notimpl(
+                    ["mysql"],
+                    raises=com.OperationNotDefinedError,
+                    reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
+                )
+            ],
+        ),
+    ],
+)
+def test_delta(con, start, end, unit, expected):
+    expr = end.delta(start, unit)
+    assert con.execute(expr) == expected

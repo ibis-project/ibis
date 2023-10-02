@@ -253,6 +253,67 @@ class TimeValue(_TimeComponentMixin, TemporalValue):
 
     rsub = __rsub__
 
+    def delta(
+        self, other: datetime.time | Value[dt.Time], part: str
+    ) -> ir.IntegerValue:
+        """Compute the number of `part`s between two times.
+
+        ::: {.callout-note}
+        ## The order of operands matches standard subtraction
+
+        The second argument is subtracted from the first.
+        :::
+
+        Parameters
+        ----------
+        other
+            A time expression
+        part
+            The unit of time to compute the difference in
+
+        Returns
+        -------
+        IntegerValue
+            The number of `part`s between `self` and `other`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> start = ibis.time("01:58:00")
+        >>> end = ibis.time("23:59:59")
+        >>> end.delta(start, "hour")
+        22
+        >>> data = '''tpep_pickup_datetime,tpep_dropoff_datetime
+        ... 2016-02-01T00:23:56,2016-02-01T00:42:28
+        ... 2016-02-01T00:12:14,2016-02-01T00:21:41
+        ... 2016-02-01T00:43:24,2016-02-01T00:46:14
+        ... 2016-02-01T00:55:11,2016-02-01T01:24:34
+        ... 2016-02-01T00:11:13,2016-02-01T00:16:59'''
+        >>> with open("/tmp/triptimes.csv", "w") as f:
+        ...     _ = f.write(data)
+        ...
+        >>> taxi = ibis.read_csv("/tmp/triptimes.csv")
+        >>> ride_duration = (
+        ...     taxi.tpep_dropoff_datetime.time()
+        ...     .delta(taxi.tpep_pickup_datetime.time(), "minute")
+        ...     .name("ride_minutes")
+        ... )
+        >>> ride_duration
+        ┏━━━━━━━━━━━━━━┓
+        ┃ ride_minutes ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ int64        │
+        ├──────────────┤
+        │           19 │
+        │            9 │
+        │            3 │
+        │           29 │
+        │            5 │
+        └──────────────┘
+        """
+        return ops.TimeDelta(left=self, right=other, part=part).to_expr()
+
 
 @public
 class TimeScalar(TemporalScalar, TimeValue):
@@ -337,6 +398,62 @@ class DateValue(TemporalValue, _DateComponentMixin):
         return _binop(op, other, self)
 
     rsub = __rsub__
+
+    def delta(
+        self, other: datetime.date | Value[dt.Date], part: str
+    ) -> ir.IntegerValue:
+        """Compute the number of `part`s between two dates.
+
+        ::: {.callout-note}
+        ## The order of operands matches standard subtraction
+
+        The second argument is subtracted from the first.
+        :::
+
+        Parameters
+        ----------
+        other
+            A date expression
+        part
+            The unit of time to compute the difference in
+
+        Returns
+        -------
+        IntegerValue
+            The number of `part`s between `self` and `other`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> start = ibis.date("1992-09-30")
+        >>> end = ibis.date("1992-10-01")
+        >>> end.delta(start, "day")
+        1
+        >>> prez = ibis.examples.presidential.fetch()
+        >>> prez.mutate(
+        ...     years_in_office=prez.end.delta(prez.start, "year"),
+        ...     hours_in_office=prez.end.delta(prez.start, "hour"),
+        ... ).drop("party")
+        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+        ┃ name       ┃ start      ┃ end        ┃ years_in_office ┃ hours_in_office ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+        │ string     │ date       │ date       │ int64           │ int64           │
+        ├────────────┼────────────┼────────────┼─────────────────┼─────────────────┤
+        │ Eisenhower │ 1953-01-20 │ 1961-01-20 │               8 │           70128 │
+        │ Kennedy    │ 1961-01-20 │ 1963-11-22 │               2 │           24864 │
+        │ Johnson    │ 1963-11-22 │ 1969-01-20 │               6 │           45264 │
+        │ Nixon      │ 1969-01-20 │ 1974-08-09 │               5 │           48648 │
+        │ Ford       │ 1974-08-09 │ 1977-01-20 │               3 │           21480 │
+        │ Carter     │ 1977-01-20 │ 1981-01-20 │               4 │           35064 │
+        │ Reagan     │ 1981-01-20 │ 1989-01-20 │               8 │           70128 │
+        │ Bush       │ 1989-01-20 │ 1993-01-20 │               4 │           35064 │
+        │ Clinton    │ 1993-01-20 │ 2001-01-20 │               8 │           70128 │
+        │ Bush       │ 2001-01-20 │ 2009-01-20 │               8 │           70128 │
+        │ …          │ …          │ …          │               … │               … │
+        └────────────┴────────────┴────────────┴─────────────────┴─────────────────┘
+        """
+        return ops.DateDelta(left=self, right=other, part=part).to_expr()
 
 
 @public
@@ -435,6 +552,65 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, TemporalValue):
         return _binop(op, other, self)
 
     rsub = __rsub__
+
+    def delta(
+        self, other: datetime.datetime | Value[dt.Timestamp], part: str
+    ) -> ir.IntegerValue:
+        """Compute the number of `part`s between two timestamps.
+
+        ::: {.callout-note}
+        ## The order of operands matches standard subtraction
+
+        The second argument is subtracted from the first.
+        :::
+
+        Parameters
+        ----------
+        other
+            A timestamp expression
+        part
+            The unit of time to compute the difference in
+
+        Returns
+        -------
+        IntegerValue
+            The number of `part`s between `self` and `other`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> start = ibis.time("01:58:00")
+        >>> end = ibis.time("23:59:59")
+        >>> end.delta(start, "hour")
+        22
+        >>> data = '''tpep_pickup_datetime,tpep_dropoff_datetime
+        ... 2016-02-01T00:23:56,2016-02-01T00:42:28
+        ... 2016-02-01T00:12:14,2016-02-01T00:21:41
+        ... 2016-02-01T00:43:24,2016-02-01T00:46:14
+        ... 2016-02-01T00:55:11,2016-02-01T01:24:34
+        ... 2016-02-01T00:11:13,2016-02-01T00:16:59'''
+        >>> with open("/tmp/triptimes.csv", "w") as f:
+        ...     _ = f.write(data)
+        ...
+        >>> taxi = ibis.read_csv("/tmp/triptimes.csv")
+        >>> ride_duration = taxi.tpep_dropoff_datetime.delta(
+        ...     taxi.tpep_pickup_datetime, "minute"
+        ... ).name("ride_minutes")
+        >>> ride_duration
+        ┏━━━━━━━━━━━━━━┓
+        ┃ ride_minutes ┃
+        ┡━━━━━━━━━━━━━━┩
+        │ int64        │
+        ├──────────────┤
+        │           19 │
+        │            9 │
+        │            3 │
+        │           29 │
+        │            5 │
+        └──────────────┘
+        """
+        return ops.TimestampDelta(left=self, right=other, part=part).to_expr()
 
 
 @public

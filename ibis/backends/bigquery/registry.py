@@ -736,6 +736,34 @@ def _count_distinct_star(t, op):
     )
 
 
+def _time_delta(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return f"TIME_DIFF({left}, {right}, {op.part.value.upper()})"
+
+
+def _date_delta(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return f"DATE_DIFF({left}, {right}, {op.part.value.upper()})"
+
+
+def _timestamp_delta(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    left_tz = op.left.dtype.timezone
+    right_tz = op.right.dtype.timezone
+    args = f"{left}, {right}, {op.part.value.upper()}"
+    if left_tz is None and right_tz is None:
+        return f"DATETIME_DIFF({args})"
+    elif left_tz is not None and right_tz is not None:
+        return f"TIMESTAMP_DIFF({args})"
+    else:
+        raise NotImplementedError(
+            "timestamp difference with mixed timezone/timezoneless values is not implemented"
+        )
+
+
 OPERATION_REGISTRY = {
     **operation_registry,
     # Literal
@@ -893,6 +921,9 @@ OPERATION_REGISTRY = {
     ops.CountDistinctStar: _count_distinct_star,
     ops.Argument: lambda _, op: op.name,
     ops.Unnest: unary("UNNEST"),
+    ops.TimeDelta: _time_delta,
+    ops.DateDelta: _date_delta,
+    ops.TimestampDelta: _timestamp_delta,
 }
 
 _invalid_operations = {

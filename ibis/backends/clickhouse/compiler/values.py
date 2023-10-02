@@ -1052,3 +1052,9 @@ def _scalar_udf(op, **kw) -> str:
 @translate_val.register(ops.AggUDF)
 def _agg_udf(op, *, where, **kw) -> str:
     return agg[op.__full_name__](*kw.values(), where=where)
+
+
+@translate_val.register(ops.DateDelta)
+@translate_val.register(ops.TimestampDelta)
+def _delta(op, *, part, left, right, **_):
+    return sg.exp.DateDiff(this=left, expression=right, unit=part)

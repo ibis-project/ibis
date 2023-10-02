@@ -326,6 +326,11 @@ def _try_cast(t, op):
     return try_cast(arg, type_=to)
 
 
+_temporal_delta = fixed_arity(
+    lambda part, start, end: sa.func.date_diff(part, end, start), 3
+)
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -469,6 +474,9 @@ operation_registry.update(
         ops.First: reduction(sa.func.first),
         ops.Last: reduction(sa.func.last),
         ops.ArrayIntersect: _array_intersect,
+        ops.TimeDelta: _temporal_delta,
+        ops.DateDelta: _temporal_delta,
+        ops.TimestampDelta: _temporal_delta,
     }
 )
 
