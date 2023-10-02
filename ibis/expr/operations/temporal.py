@@ -349,4 +349,28 @@ class BetweenTime(Between):
     upper_bound: Value[dt.Time | dt.String]
 
 
+class TemporalDelta(Value):
+    part: Value[dt.String]
+    shape = rlz.shape_like("args")
+    dtype = dt.int64
+
+
+@public
+class TimeDelta(TemporalDelta):
+    left: Value[dt.Time]
+    right: Value[dt.Time]
+
+
+@public
+class DateDelta(TemporalDelta):
+    left: Value[dt.Date]
+    right: Value[dt.Date]
+
+
+@public
+class TimestampDelta(TemporalDelta):
+    left: Value[dt.Timestamp]
+    right: Value[dt.Timestamp]
+
+
 public(ExtractTimestampField=ExtractTemporalField)

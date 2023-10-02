@@ -80,23 +80,27 @@ def _interval_from_integer(t, op):
 
 
 def _literal(_, op):
-    if op.dtype.is_interval():
-        if op.dtype.unit.short in {"ms", "ns"}:
+    dtype = op.dtype
+    value = op.value
+    if dtype.is_interval():
+        if dtype.unit.short in {"ms", "ns"}:
             raise com.UnsupportedOperationError(
-                "MySQL does not allow operation "
-                f"with INTERVAL offset {op.dtype.unit}"
+                f"MySQL does not allow operation with INTERVAL offset {dtype.unit}"
             )
-        text_unit = op.dtype.resolution.upper()
+        text_unit = dtype.resolution.upper()
         sa_text = sa.text(f"INTERVAL :value {text_unit}")
-        return sa_text.bindparams(value=op.value)
-    elif op.dtype.is_binary():
+        return sa_text.bindparams(value=value)
+    elif dtype.is_binary():
         # the cast to BINARY is necessary here, otherwise the data come back as
         # Python strings
         #
         # This lets the database handle encoding rather than ibis
-        return sa.cast(sa.literal(op.value), type_=sa.BINARY())
+        return sa.cast(sa.literal(value), type_=sa.BINARY())
+    elif dtype.is_time():
+        return sa.func.maketime(
+            value.hour, value.minute, value.second + value.microsecond / 1e6
+        )
     else:
-        value = op.value
         with contextlib.suppress(AttributeError):
             value = value.to_pydatetime()
 
@@ -165,6 +169,13 @@ def compiles_mysql_trim(element, compiler, **kw):
     return functools.reduce(
         lambda arg, char: f"TRIM({side} '{char}' FROM {arg})", string.whitespace, arg
     )
+
+
+def _temporal_delta(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    part = sa.literal_column(op.part.value.upper())
+    return sa.func.timestampdiff(part, right, left)
 
 
 operation_registry.update(
@@ -242,6 +253,8 @@ operation_registry.update(
         ops.Strip: unary(lambda arg: _mysql_trim(arg, "both")),
         ops.LStrip: unary(lambda arg: _mysql_trim(arg, "leading")),
         ops.RStrip: unary(lambda arg: _mysql_trim(arg, "trailing")),
+        ops.TimeDelta: _temporal_delta,
+        ops.DateDelta: _temporal_delta,
     }
 )
 

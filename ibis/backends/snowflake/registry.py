@@ -59,6 +59,9 @@ def _literal(t, op):
             return sa.func.timestamp_from_parts(*args)
     elif dtype.is_date():
         return sa.func.date_from_parts(value.year, value.month, value.day)
+    elif dtype.is_time():
+        nanos = value.microsecond * 1_000
+        return sa.func.time_from_parts(value.hour, value.minute, value.second, nanos)
     elif dtype.is_array():
         return sa.func.array_construct(*value)
     elif dtype.is_map() or dtype.is_struct():
@@ -461,6 +464,15 @@ operation_registry.update(
         ops.Levenshtein: fixed_arity(sa.func.editdistance, 2),
         ops.ArraySort: unary(sa.func.ibis_udfs.public.array_sort),
         ops.ArrayRepeat: fixed_arity(sa.func.ibis_udfs.public.array_repeat, 2),
+        ops.TimeDelta: fixed_arity(
+            lambda part, left, right: sa.func.timediff(part, right, left), 3
+        ),
+        ops.DateDelta: fixed_arity(
+            lambda part, left, right: sa.func.datediff(part, right, left), 3
+        ),
+        ops.TimestampDelta: fixed_arity(
+            lambda part, left, right: sa.func.timestampdiff(part, right, left), 3
+        ),
     }
 )
 

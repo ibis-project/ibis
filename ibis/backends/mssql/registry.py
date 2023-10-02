@@ -106,6 +106,12 @@ def _timestamp_truncate(t, op):
     return sa.func.datetrunc(sa.text(_truncate_precisions[unit]), arg)
 
 
+def _temporal_delta(t, op):
+    left = t.translate(op.left)
+    right = t.translate(op.right)
+    return sa.func.datediff(sa.literal_column(op.part.value.upper()), right, left)
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -197,6 +203,9 @@ operation_registry.update(
         ops.ExtractMicrosecond: fixed_arity(
             lambda arg: sa.func.datepart(sa.literal_column("microsecond"), arg), 1
         ),
+        ops.TimeDelta: _temporal_delta,
+        ops.DateDelta: _temporal_delta,
+        ops.TimestampDelta: _temporal_delta,
     }
 )
 

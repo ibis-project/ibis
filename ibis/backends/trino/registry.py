@@ -317,6 +317,13 @@ def _array_intersect(t, op):
     )
 
 
+_temporal_delta = fixed_arity(
+    lambda part, left, right: sa.func.date_diff(
+        part, sa.func.date_trunc(part, right), sa.func.date_trunc(part, left)
+    ),
+    3,
+)
+
 operation_registry.update(
     {
         # conditional expressions
@@ -503,6 +510,11 @@ operation_registry.update(
         ),
         ops.Levenshtein: fixed_arity(sa.func.levenshtein_distance, 2),
         ops.ArrayIntersect: _array_intersect,
+        # trino truncates _after_ the delta, whereas many other backends
+        # truncates each operand
+        ops.TimeDelta: _temporal_delta,
+        ops.DateDelta: _temporal_delta,
+        ops.TimestampDelta: _temporal_delta,
     }
 )
 
