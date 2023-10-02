@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class Schema(Concrete, Coercible, MapSet):
-    """An object for holding table schema information."""
+    """An ordered mapping of str -> [datatype](./datatypes.qmd), used to hold a [Table](./expression-tables.qmd#ibis.expr.tables.Table)'s schema."""
 
     fields: FrozenDict[str, dt.DataType]
     """A mapping of [](`str`) to

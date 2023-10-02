@@ -82,6 +82,8 @@ class Value(Expr):
     def cast(self, target_type: dt.DataType) -> Value:
         """Cast expression to indicated data type.
 
+        Similar to `pandas.Series.astype`.
+
         Parameters
         ----------
         target_type
@@ -877,7 +879,7 @@ class Value(Expr):
         return ops.SortKey(self, ascending=False).to_expr()
 
     def as_table(self) -> ir.Table:
-        """Promote the expression to a table.
+        """Promote the expression to a [Table](./expression-tables.qmd#ibis.expr.types.Table).
 
         Returns
         -------
