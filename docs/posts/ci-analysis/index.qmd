@@ -119,7 +119,7 @@ We also need to compute when the last job for a given `run_id` started and when 
 run_id_win = ibis.window(group_by=_.run_id)
 jobs = jobs.select(
     _.run_id,
-    job_duration=_.completed_at.cast("int") - _.started_at.cast("int"),
+    job_duration=_.completed_at.delta(_.started_at, "microsecond"),
     last_job_started_at=_.started_at.max().over(run_id_win),
     last_job_completed_at=_.completed_at.max().over(run_id_win),
 )
@@ -184,10 +184,8 @@ stats = joined.select(
     _.job_duration,
     has_poetry=_.started_date > POETRY_MERGED_DATE,
     has_team=_.started_date > TEAMIZATION_DATE,
-    queueing_time=_.last_job_started_at.cast("int")
-    - _.run_started_at.cast("int"),
-    workflow_duration=_.last_job_completed_at.cast("int")
-    - _.run_started_at.cast("int"),
+    queueing_time=_.last_job_started_at.delta(_.run_started_at, "microsecond"),
+    workflow_duration=_.last_job_completed_at.delta(_.run_started_at, "microsecond"),
 )
 stats
 ```
