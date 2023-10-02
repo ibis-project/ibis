@@ -104,6 +104,39 @@ def _regular_join_method(
 
 @public
 class Table(Expr, _FixedTextJupyterMixin):
+    """An immutable and lazy dataframe.
+
+    Analogous to a SQL table or a pandas DataFrame. A table expression contains
+    an [ordered set of named columns](./schemas.qmd#ibis.expr.schema.Schema),
+    each with a single known type. Unless explicitly ordered with an
+    [`.order_by()`](./expression-tables#ibis.expr.types.relations.Table.order_by),
+    the order of rows is undefined.
+
+    Table immutability means that the data underlying an Ibis `Table` cannot be modified: every
+    method on a Table returns a new Table with those changes. Laziness
+    means that an Ibis `Table` expression does not run your computation every time you call one of its methods.
+    Instead, it is a symbolic expression that represents a set of operations
+    to be performed, which typically is translated into a SQL query. That
+    SQL query is then executed on a backend, where the data actually lives.
+    The result (now small enough to be manageable) can then be materialized back
+    into python as a pandas/pyarrow/python DataFrame/Column/scalar.
+
+    You will not create Table objects directly. Instead, you will create one
+
+    - from a pandas DataFrame, pyarrow table, Polars table, or raw python dicts/lists
+      with [`ibis.memtable(df)`](./expression-tables.qmd#ibis.memtable)
+    - from an existing table in a data platform with
+      [`connection.table("name")`](./expression-tables.qmd#ibis.backends.duckdb.Backend.table)
+    - from a file or URL, into a specific backend with
+      [`connection.read_csv/parsquet/json("path/to/file")`](../backends/duckdb.qmd#ibis.backends.duckdb.Backend.read_csv)
+      (only some backends, typically local ones, support this)
+    - from a file or URL, into the default backend with
+       [`ibis.read_csv/read_json/read_parquet("path/to/file")`](./expression-tables.qmd#ibis.read_csv)
+
+    See the [user guide](https://ibis-project.org/how-to/input-output/basics) for more
+    info.
+    """
+
     # Higher than numpy & dask objects
     __array_priority__ = 20
 
