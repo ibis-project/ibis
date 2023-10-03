@@ -1502,6 +1502,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=HiveServer2Error,
 )
 @pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+@pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 def test_dynamic_table_slice(backend, slc, expected_count_fn):
     t = backend.functional_alltypes
 
@@ -1545,6 +1546,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     raises=AssertionError,
     reason="https://github.com/duckdb/duckdb/issues/8412",
 )
+@pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 def test_dynamic_table_slice_with_computed_offset(backend):
     t = backend.functional_alltypes
 
