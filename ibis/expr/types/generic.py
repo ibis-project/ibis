@@ -11,7 +11,6 @@ import ibis.expr.operations as ops
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 
-
 if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
@@ -177,6 +176,7 @@ class Value(Expr):
     def coalesce(self, *args: Value) -> Value:
         """Return the first non-null value from `args`.
 
+
         Parameters
         ----------
         args
@@ -186,6 +186,11 @@ class Value(Expr):
         -------
         Value
             Coalesced expression
+
+        See Also
+        --------
+        [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
+        [`Value.fillna()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fillna)
 
         Examples
         --------
@@ -244,6 +249,11 @@ class Value(Expr):
         ----------
         fill_value
             Value with which to replace `NA` values in `self`
+
+        See Also
+        --------
+        [`Value.coalesce()`](./expression-generic.qmd#ibis.expr.types.generic.Value.coalesce)
+        [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
 
         Examples
         --------
