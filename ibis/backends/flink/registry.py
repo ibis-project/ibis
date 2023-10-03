@@ -39,20 +39,32 @@ def _extract_field(sql_attr: str) -> str:
     return extract_field_formatter
 
 
+def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
+    from ibis.expr.datatypes.core import Timestamp
+
+    arg, to = op.arg, op.to
+    if isinstance(to, Timestamp) and to.timezone:
+        arg_translated = translator.translate(arg)
+        return f"CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}')"
+
+    from ibis.backends.base.sql.registry.main import cast
+
+    return cast(translator=translator, op=op)
+
+
+def _left_op_right(translator: ExprTranslator, op_node: ops.Node, op_sign: str) -> str:
+    """Utility to be used in operators that perform '{op.left} {op_sign} {op.right}'."""
+    return f"{translator.translate(op_node.left)} {op_sign} {translator.translate(op_node.right)}"
+
+
 def _interval_add(translator: ExprTranslator, op: ops.temporal.IntervalSubtract) -> str:
-    interval_left, interval_right = op.left, op.right
-    interval_left_translated = translator.translate(interval_left)
-    interval_right_translated = translator.translate(interval_right)
-    return f"{interval_left_translated} + {interval_right_translated}"
+    return _left_op_right(translator=translator, op_node=op, op_sign="+")
 
 
 def _interval_subtract(
     translator: ExprTranslator, op: ops.temporal.IntervalSubtract
 ) -> str:
-    interval_left, interval_right = op.left, op.right
-    interval_left_translated = translator.translate(interval_left)
-    interval_right_translated = translator.translate(interval_right)
-    return f"{interval_left_translated} - {interval_right_translated}"
+    return _left_op_right(translator=translator, op_node=op, op_sign="-")
 
 
 def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
@@ -93,21 +105,11 @@ def _filter(translator: ExprTranslator, op: ops.Node) -> str:
 
 
 def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
-    table_column = op.left
-    interval = op.right
-
-    table_column_translated = translator.translate(table_column)
-    interval_translated = translator.translate(interval)
-    return f"{table_column_translated} + {interval_translated}"
+    return _left_op_right(translator=translator, op_node=op, op_sign="+")
 
 
 def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
-    timestamp_left = op.left
-    timestamp_right = op.right
-
-    timestamp_left_translated = translator.translate(timestamp_left)
-    timestamp_right_translated = translator.translate(timestamp_right)
-    return f"{timestamp_left_translated} - {timestamp_right_translated}"
+    return _left_op_right(translator=translator, op_node=op, op_sign="-")
 
 
 def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
@@ -117,12 +119,6 @@ def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) ->
     table_column_translated = translator.translate(table_column)
     interval_translated = translator.translate(interval)
     return f"{table_column_translated} - {interval_translated}"
-
-
-# def _timestamp_diff(translator: ExprTranslator, op: ops.Node) -> str:
-#     left = translator.translate(op.left)
-#     right = translator.translate(op.right)
-#     return f"timestampdiff(second, {left}, {right})"
 
 
 def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
@@ -293,10 +289,7 @@ def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
 
 
 def _date_add(translator: ExprTranslator, op: ops.temporal.DateAdd) -> str:
-    date, interval = op.left, op.right
-    date_translated = translator.translate(date)
-    interval_translated = translator.translate(interval)
-    return f"{date_translated} + {interval_translated}"
+    return _left_op_right(translator=translator, op_node=op, op_sign="+")
 
 
 def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
@@ -310,10 +303,7 @@ def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> 
 
 
 def _date_sub(translator: ExprTranslator, op: ops.temporal.DateSub) -> str:
-    date, interval = op.left, op.right
-    date_translated = translator.translate(date)
-    interval_translated = translator.translate(interval)
-    return f"{date_translated} - {interval_translated}"
+    return _left_op_right(translator=translator, op_node=op, op_sign="-")
 
 
 def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
@@ -327,19 +317,6 @@ def _string_to_timestamp(
     arg = translator.translate(op.arg)
     format_string = translator.translate(op.format_str)
     return f"TO_TIMESTAMP({arg}, {format_string})"
-
-
-def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
-    from ibis.expr.datatypes.core import Timestamp
-
-    arg, to = op.arg, op.to
-    if isinstance(to, Timestamp) and to.timezone:
-        arg_translated = translator.translate(arg)
-        return f"CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}')"
-
-    from ibis.backends.base.sql.registry.main import cast
-
-    cast(translator=translator, op=op)
 
 
 operation_registry.update(
@@ -371,12 +348,12 @@ operation_registry.update(
         ops.ExtractMillisecond: _extract_field("millisecond"),
         ops.ExtractMicrosecond: _extract_field("microsecond"),
         # Other operations
+        ops.Cast: _cast,
         ops.IntervalAdd: _interval_add,
         ops.IntervalSubtract: _interval_subtract,
         ops.Literal: _literal,
         ops.TryCast: _try_cast,
         ops.IfElse: _filter,
-        ops.Where: _filter,
         ops.TimestampAdd: _timestamp_add,
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampFromUNIX: _timestamp_from_unix,
@@ -395,6 +372,5 @@ operation_registry.update(
         ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.StringToTimestamp: _string_to_timestamp,
-        ops.Cast: _cast,
     }
 )
