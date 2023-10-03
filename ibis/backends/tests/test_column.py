@@ -22,6 +22,7 @@ import ibis.common.exceptions as com
         "snowflake",
         "trino",
         "druid",
+        "flink",
     ],
     raises=com.OperationNotDefinedError,
 )

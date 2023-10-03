@@ -35,13 +35,20 @@ limit = [
                     "datafusion",
                     "pandas",
                     "pyspark",
+                    "flink",
                 ]
             ),
         ],
     ),
 ]
 
-no_limit = [param(None, id="nolimit")]
+no_limit = [
+    param(
+        None,
+        id="nolimit",
+        marks=[pytest.mark.notimpl(["flink"])],
+    )
+]
 
 limit_no_limit = limit + no_limit
 
@@ -105,7 +112,7 @@ def test_scalar_to_pyarrow_scalar(limit, awards_players):
     assert isinstance(scalar, pa.Scalar)
 
 
-@pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(["druid", "flink"])
 def test_table_to_pyarrow_table_schema(awards_players):
     table = awards_players.to_pyarrow()
     assert isinstance(table, pa.Table)
@@ -124,6 +131,7 @@ def test_table_to_pyarrow_table_schema(awards_players):
     assert table.schema == expected_schema
 
 
+@pytest.mark.notimpl(["flink"])
 def test_column_to_pyarrow_table_schema(awards_players):
     expr = awards_players.awardID
     array = expr.to_pyarrow()
@@ -131,7 +139,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == pa.string() or array.type == pa.large_string()
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -146,7 +154,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -163,7 +171,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion"])
+@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
 @pytest.mark.broken(
     ["pyspark"], raises=AssertionError, reason="chunk_size isn't respected"
 )
@@ -183,6 +191,7 @@ def test_to_pyarrow_batches_borked_types(batting):
         util.consume(batch_reader)
 
 
+@pytest.mark.notimpl(["flink"])
 def test_to_pyarrow_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     table = con.to_pyarrow(expr)
@@ -190,6 +199,7 @@ def test_to_pyarrow_memtable(con):
     assert len(table) == 3
 
 
+@pytest.mark.notimpl(["flink"])
 def test_to_pyarrow_batches_memtable(con):
     expr = ibis.memtable({"x": [1, 2, 3]})
     n = 0
@@ -200,6 +210,7 @@ def test_to_pyarrow_batches_memtable(con):
     assert n == 3
 
 
+@pytest.mark.notimpl(["flink"])
 def test_table_to_parquet(tmp_path, backend, awards_players):
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet)
@@ -229,7 +240,7 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     ],
     reason="no partitioning support",
 )
-@pytest.mark.notimpl(["druid"], reason="No to_parquet support")
+@pytest.mark.notimpl(["druid", "flink"], reason="No to_parquet support")
 def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     outparquet = tmp_path / "outhive.parquet"
     awards_players.to_parquet(outparquet, partition_by="yearID")
@@ -253,6 +264,9 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     backend.assert_frame_equal(reingest.to_pandas(), awards_players.to_pandas())
 
 
+@pytest.mark.notimpl(
+    ["flink"], reason="No support for exporting files"
+)
 @pytest.mark.parametrize("ftype", ["csv", "parquet"])
 def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     """
@@ -273,6 +287,7 @@ def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     assert outfile.is_file()
 
 
+@pytest.mark.notimpl(["flink"])
 def test_table_to_csv(tmp_path, backend, awards_players):
     outcsv = tmp_path / "out.csv"
 
@@ -293,7 +308,10 @@ def test_table_to_csv(tmp_path, backend, awards_players):
             dt.Decimal(38, 9),
             pa.Decimal128Type,
             id="decimal128",
-            marks=[pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError)],
+            marks=[
+                pytest.mark.notyet(["druid"], raises=sa.exc.ProgrammingError),
+                pytest.mark.notyet(["flink"], raises=NotImplementedError),
+            ],
         ),
         param(
             dt.Decimal(76, 38),
@@ -307,11 +325,7 @@ def test_table_to_csv(tmp_path, backend, awards_players):
                 ),
                 pytest.mark.notyet(["oracle"], raises=sa.exc.DatabaseError),
                 pytest.mark.notyet(["mssql", "mysql"], raises=sa.exc.OperationalError),
-                pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=AnalysisException,
-                    reason="precision is out of range",
-                ),
+                pytest.mark.notyet(["flink"], raises=NotImplementedError),
             ],
         ),
     ],
@@ -338,6 +352,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "bigquery",
         "dask",
         "trino",
+        "flink",
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
@@ -374,6 +389,7 @@ def test_roundtrip_delta(con, alltypes, tmp_path, monkeypatch):
     ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
 )
 @pytest.mark.notimpl(["mssql"], raises=pa.ArrowTypeError)
+@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_arrow_timestamp_with_time_zone(alltypes):
     t = alltypes.select(
         tz=alltypes.timestamp_col.cast(
@@ -392,7 +408,7 @@ def test_arrow_timestamp_with_time_zone(alltypes):
     assert batch.schema.types == expected
 
 
-@pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(["druid", "flink"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
@@ -413,6 +429,7 @@ def test_to_torch(alltypes):
         non_numeric.to_torch()
 
 
+@pytest.mark.notimpl(["flink"])
 def test_empty_memtable(backend, con):
     expected = pd.DataFrame({"a": []})
     table = ibis.memtable(expected)

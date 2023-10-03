@@ -19,6 +19,7 @@ MACADDR_BACKEND_TYPE = {
     "trino": "varchar(17)",
     "impala": "STRING",
     "postgres": "text",
+    "flink": "CHAR(17) NOT NULL",
 }
 
 
@@ -54,6 +55,7 @@ def test_macaddr_literal(con, backend):
                 "dask": "127.0.0.1",
                 "mssql": "127.0.0.1",
                 "datafusion": "127.0.0.1",
+                "flink": "127.0.0.1",
             },
             {
                 "bigquery": "STRING",
@@ -64,6 +66,7 @@ def test_macaddr_literal(con, backend):
                 "trino": "varchar(9)",
                 "impala": "STRING",
                 "postgres": "text",
+                "flink": "CHAR(9) NOT NULL",
             },
             id="ipv4",
         ),
@@ -84,6 +87,7 @@ def test_macaddr_literal(con, backend):
                 "dask": "2001:db8::1",
                 "mssql": "2001:db8::1",
                 "datafusion": "2001:db8::1",
+                "flink": "2001:db8::1",
             },
             {
                 "bigquery": "STRING",
@@ -94,6 +98,7 @@ def test_macaddr_literal(con, backend):
                 "trino": "varchar(11)",
                 "impala": "STRING",
                 "postgres": "text",
+                "flink": "CHAR(11) NOT NULL",
             },
             id="ipv6",
         ),
