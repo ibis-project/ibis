@@ -35,7 +35,7 @@ class BigQueryUnion(sql_compiler.Union):
 
     @classmethod
     def keyword(cls, distinct):
-        """Use disctinct UNION if distinct is True."""
+        """Use distinct UNION if distinct is True."""
         return "UNION DISTINCT" if distinct else "UNION ALL"
 
 

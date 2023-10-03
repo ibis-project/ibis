@@ -99,7 +99,7 @@ trino = { version = ">=0.321,<1", optional = true, extras = ["sqlalchemy"] }
 [tool.poetry.group.dev.dependencies]
 black = ">=22.1.0,<24"
 blackdoc = ">=0.3.8,<1"
-codespell = { version = ">=2.2.4,<3", extras = [
+codespell = { version = ">=2.2.6,<3", extras = [
   "hard-encoding-detection",
   "toml",
 ] }
@@ -367,10 +367,9 @@ no_dot = true
 show_deps = true
 
 [tool.codespell]
-# notebooks are skipped because there's no straightforward way to ignore base64
-# encoded strings
-skip = "*.lock,.direnv,.git,docs/_freeze/**/html.json"
-ignore-regex = '\b(DOUB|i[if]f|I[IF]F|lamduh|AFE)\b'
+# local codespell matches `./docs`, pre-commit codespell matches `docs`
+skip = "*.lock,.direnv,.git,./docs/_freeze,docs/_freeze/**"
+ignore-regex = '\b(i[if]f|I[IF]F|AFE)\b'
 builtin = "clear,rare,names"
 
 [tool.ruff]
