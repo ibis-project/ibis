@@ -1194,7 +1194,7 @@ def test_distinct_on_keep_is_none(backend, on):
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres"])
+@pytest.mark.notimpl(["dask", "pandas", "postgres", "flink"])
 @pytest.mark.notyet(
     [
         "sqlite",
