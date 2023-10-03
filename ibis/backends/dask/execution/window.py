@@ -282,7 +282,7 @@ def execute_window_op(
     if frame.group_by:
         if frame.order_by:
             raise NotImplementedError("Grouped and order windows not supported yet")
-            # TODO finish implementeing grouped/order windows.
+            # TODO finish implementing grouped/order windows.
         else:
             if len(grouping_keys) == 1 and isinstance(grouping_keys[0], dd.Series):
                 # Dask will raise an exception about not supporting multiple Series in group by key

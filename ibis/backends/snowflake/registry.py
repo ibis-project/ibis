@@ -479,7 +479,7 @@ operation_registry.update(
 _invalid_operations = {
     # ibis.expr.operations.analytic
     ops.NTile,
-    # ibis.expr.operarions.array
+    # ibis.expr.operations.array
     ops.ArrayMap,
     ops.ArrayFilter,
     # ibis.expr.operations.reductions

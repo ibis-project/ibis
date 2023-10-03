@@ -307,7 +307,7 @@ class Variable(Slotted):
         return subst[self.name]
 
 
-# Pattern corresponsds to a selection which is flattened to a join of selections
+# Pattern corresponds to a selection which is flattened to a join of selections
 class Pattern(Slotted):
     """A non-ground term, tree of enodes possibly containing variables.
 
