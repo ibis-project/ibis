@@ -499,6 +499,10 @@ def desc(expr: ir.Column | str) -> ir.Value:
     expr
         The expression or column name to use for sorting
 
+    See Also
+    --------
+    [`Value.desc()`](./expression-generic.qmd#ibis.expr.types.generic.Value.desc)
+
     Examples
     --------
     >>> import ibis
@@ -532,6 +536,10 @@ def asc(expr: ir.Column | str) -> ir.Value:
     ----------
     expr
         The expression or column name to use for sorting
+
+    See Also
+    --------
+    [`Value.asc()`](./expression-generic.qmd#ibis.expr.types.generic.Value.asc)
 
     Examples
     --------
@@ -1843,6 +1851,10 @@ def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
     Value : ir.Value
         The value of `true_expr` if `condition` is `True` else `false_expr`
 
+    See Also
+    --------
+    [`BooleanValue.ifelse()`](./expression-numeric.qmd#ibis.expr.types.logical.BooleanValue.ifelse)
+
     Examples
     --------
     >>> import ibis
@@ -1901,6 +1913,11 @@ def coalesce(*args: Any) -> ir.Value:
     -------
     Value
         Coalesced expression
+
+    See Also
+    --------
+    [`Value.coalesce()`](#ibis.expr.types.generic.Value.coalesce)
+    [`Value.fillna()`](#ibis.expr.types.generic.Value.fillna)
 
     Examples
     --------
