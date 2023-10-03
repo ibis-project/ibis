@@ -40,6 +40,18 @@ def _literal(translator: ExprTranslator, op: ops.Literal) -> str:
     return translate_literal(op)
 
 
+def _try_cast(translator: ExprTranslator, op: ops.Node) -> str:
+    arg_formatted = translator.translate(op.arg)
+
+    if op.arg.dtype.is_temporal() and op.to.is_numeric():
+        # The cast from TIMESTAMP type to NUMERIC type is not allowed.
+        # It's recommended to use UNIX_TIMESTAMP(CAST(timestamp_col AS STRING)) instead.
+        return f"UNIX_TIMESTAMP(TRY_CAST({arg_formatted} AS STRING))"
+    else:
+        sql_type = helpers.type_to_sql_string(op.to)
+        return f"TRY_CAST({arg_formatted} AS {sql_type})"
+
+
 def _filter(translator: ExprTranslator, op: ops.Node) -> str:
     bool_expr = translator.translate(op.bool_expr)
     true_expr = translator.translate(op.true_expr)
@@ -234,6 +246,7 @@ operation_registry.update(
         ops.ExtractSecond: _extract_field("second"),  # equivalent to SECOND(timestamp)
         # Other operations
         ops.Literal: _literal,
+        ops.TryCast: _try_cast,
         ops.IfElse: _filter,
         ops.TimestampDiff: _timestamp_diff,
         ops.TimestampFromUNIX: _timestamp_from_unix,
