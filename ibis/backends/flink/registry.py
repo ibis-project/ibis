@@ -45,7 +45,7 @@ def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
     arg, to = op.arg, op.to
     if isinstance(to, Timestamp) and to.timezone:
         arg_translated = translator.translate(arg)
-        return f"CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}')"
+        return f"TO_TIMESTAMP(CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}'))"
 
     from ibis.backends.base.sql.registry.main import cast
 

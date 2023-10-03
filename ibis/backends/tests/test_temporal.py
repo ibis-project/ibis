@@ -2180,7 +2180,6 @@ def test_timestamp_with_timezone_literal(
     if not isinstance(result, str):
         result = result.strftime("%Y-%m-%d %H:%M:%S%Z")
 
-    print(f"request.node.name= {request.node.name}")
     assert result == (
         expected if "flink" not in request.node.name else expected_for_flink
     )
