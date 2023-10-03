@@ -109,7 +109,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     Analogous to a SQL table or a pandas DataFrame. A table expression contains
     an [ordered set of named columns](./schemas.qmd#ibis.expr.schema.Schema),
     each with a single known type. Unless explicitly ordered with an
-    [`.order_by()`](./expression-tables#ibis.expr.types.relations.Table.order_by),
+    [`.order_by()`](./expression-tables.qmd#ibis.expr.types.relations.Table.order_by),
     the order of rows is undefined.
 
     Table immutability means that the data underlying an Ibis `Table` cannot be modified: every
