@@ -1211,14 +1211,16 @@ def test_hash_consistent(backend, alltypes):
             "a",
             "int",
             None,
-            marks=pytest.mark.notyet(["polars"], reason="polars casts to nan"),
+            marks=pytest.mark.notyet(["polars", "flink"], reason="casts to nan"),
         ),
         param(
             datetime.datetime(2023, 1, 1),
             "int",
             None,
             marks=[
-                pytest.mark.never(["clickhouse"], reason="casts to 1672531200"),
+                pytest.mark.never(
+                    ["clickhouse", "flink"], reason="casts to 1672531200"
+                ),
                 pytest.mark.notyet(
                     ["trino"],
                     raises=sa.exc.ProgrammingError,
@@ -1301,14 +1303,14 @@ def test_try_cast_table(con):
             np.isnan,
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse"], reason="clickhouse casts this to to a number"
+                    ["clickhouse", "polars", "flink"],
+                    reason="casts this to to a number",
                 ),
                 pytest.mark.notyet(
                     ["trino"],
                     raises=sa.exc.ProgrammingError,
                     reason="raises TrinoUserError",
                 ),
-                pytest.mark.notyet(["polars"], reason="polars casts this to a number"),
             ],
         ),
     ],
