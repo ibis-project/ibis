@@ -1180,7 +1180,7 @@ WHERE catalog_name = :database"""
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops
 
-        with self.begin() as con:
+        with self.con.connect() as con:
             for udf_node in expr.op().find(ops.ScalarUDF):
                 compile_func = getattr(
                     self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
