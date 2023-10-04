@@ -310,14 +310,52 @@ class Value(Expr):
         return ops.Least((self, *args)).to_expr()
 
     def typeof(self) -> ir.StringValue:
-        """Return the data type of the expression.
+        """Return the string name of the datatype of self.
 
         The values of the returned strings are necessarily backend dependent.
+        e.g. duckdb may say "DOUBLE", while sqlite may say "real".
 
         Returns
         -------
         StringValue
             A string indicating the type of the value
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> vals = ibis.examples.penguins.fetch().head(5).bill_length_mm
+        >>> vals
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ float64        │
+        ├────────────────┤
+        │           39.1 │
+        │           39.5 │
+        │           40.3 │
+        │            nan │
+        │           36.7 │
+        └────────────────┘
+        >>> vals.typeof()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ TypeOf(bill_length_mm) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                 │
+        ├────────────────────────┤
+        │ DOUBLE                 │
+        │ DOUBLE                 │
+        │ DOUBLE                 │
+        │ DOUBLE                 │
+        │ DOUBLE                 │
+        └────────────────────────┘
+
+        Different backends have different names for their native types
+
+        >>> ibis.duckdb.connect().execute(ibis.literal(5.4).typeof())
+        'DOUBLE'
+        >>> ibis.sqlite.connect().execute(ibis.literal(5.4).typeof())
+        'real'
         """
         return ops.TypeOf(self).to_expr()
 
