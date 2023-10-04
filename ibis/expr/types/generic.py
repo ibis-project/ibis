@@ -370,6 +370,8 @@ class Value(Expr):
         Commonly used to avoid divide-by-zero problems by replacing zero with
         `NULL` in the divisor.
 
+        Equivalent to `(self == null_if_expr).ifelse(ibis.null(), self)`.
+
         Parameters
         ----------
         null_if_expr
@@ -379,6 +381,36 @@ class Value(Expr):
         -------
         Value
             Value expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> vals = ibis.examples.penguins.fetch().head(5).sex
+        >>> vals
+        ┏━━━━━━━━┓
+        ┃ sex    ┃
+        ┡━━━━━━━━┩
+        │ string │
+        ├────────┤
+        │ male   │
+        │ female │
+        │ female │
+        │ NULL   │
+        │ female │
+        └────────┘
+        >>> vals.nullif("male")
+        ┏━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ NullIf(sex, 'male') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━┩
+        │ string              │
+        ├─────────────────────┤
+        │ NULL                │
+        │ female              │
+        │ female              │
+        │ NULL                │
+        │ female              │
+        └─────────────────────┘
         """
         return ops.NullIf(self, null_if_expr).to_expr()
 
