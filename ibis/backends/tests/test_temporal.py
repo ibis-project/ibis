@@ -1583,7 +1583,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     reason="'StringColumn' object has no attribute 'date'",
 )
 @pytest.mark.notimpl(
-    ["flask"],
+    ["flink"],
     raises=Py4JJavaError,
     reason="org.apache.flink.table.planner.codegen.CodeGenException: Interval expression type expected",
 )
@@ -1672,7 +1672,7 @@ def test_interval_add_cast_column(backend, alltypes, df):
                     reason="'StringColumn' object has no attribute 'strftime'",
                 ),
                 pytest.mark.notimpl(
-                    ["flask"],
+                    ["flink"],
                     raises=AttributeError,
                     reason="'StringConcat' object has no attribute 'value'",
                 ),
@@ -2565,6 +2565,11 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="PySpark doesn't handle big timestamps",
     raises=pd.errors.OutOfBoundsDatetime,
 )
+@pytest.mark.broken(
+    ["flink"],
+    reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
+    raises=ArrowInvalid,
+)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     value = ibis.timestamp("2419-10-11 10:10:25")
@@ -2652,6 +2657,11 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
         "value: OverflowError('int too big to convert'), traceback: None }"
     ),
 )
+@pytest.mark.broken(
+    ["flink"],
+    reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
+    raises=ArrowInvalid,
+)
 def test_large_timestamp(con):
     huge_timestamp = datetime.datetime(year=4567, month=1, day=1)
     expr = ibis.timestamp("4567-01-01 00:00:00")
@@ -2715,6 +2725,11 @@ def test_large_timestamp(con):
                         "Server returns: 400 Invalid timestamp: '2023-01-07 13:20:05.561000231'"
                     ),
                     raises=GoogleBadRequest,
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    reason="AssertionError: assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561000231')",
+                    raises=AssertionError,
                 ),
             ],
         ),
