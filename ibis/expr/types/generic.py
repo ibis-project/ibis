@@ -75,6 +75,13 @@ class Value(Expr):
         -------
         IntegerValue
             The hash value of `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.literal("hello").hash()  # doctest: +SKIP
+        -4155090522938856779
         """
         return ops.Hash(self).to_expr()
 
