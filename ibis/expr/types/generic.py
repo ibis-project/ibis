@@ -7,7 +7,7 @@ from public import public
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.expr.deferred import Deferred
+from ibis.common.deferred import Deferred
 import ibis.expr.operations as ops
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
@@ -722,7 +722,7 @@ class Value(Expr):
         """
         import ibis.expr.analysis as an
         import ibis.expr.builders as bl
-        import ibis.expr.deferred as de
+        from ibis.common.deferred import Deferred, Call
         from ibis import _
 
         if window is None:
@@ -746,7 +746,7 @@ class Value(Expr):
             if table := an.find_first_base_table(self.op()):
                 return bind(table)
             else:
-                return de.DeferredCall(bind, (_,))
+                return Deferred(Call(bind, _))
         else:
             return ops.WindowFunction(self, window).to_expr()
 
@@ -1244,6 +1244,9 @@ class Scalar(Value):
         else:
             return ops.DummyTable(values=(op,)).to_expr()
 
+    def __deferred_repr__(self):
+        return f"<scalar[{self.type()}]>"
+
     def _repr_html_(self) -> str | None:
         return None
 
@@ -1297,7 +1300,11 @@ class Column(Value, _FixedTextJupyterMixin):
         if where is None or not isinstance(where, Deferred):
             return where
 
-        return where.resolve(an.find_first_base_table(self.op()).to_expr())
+        table = an.find_first_base_table(self.op()).to_expr()
+        return where.resolve(table)
+
+    def __deferred_repr__(self):
+        return f"<column[{self.type()}]>"
 
     def approx_nunique(
         self,

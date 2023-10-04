@@ -14,10 +14,10 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.bases import Abstract
+from ibis.common.deferred import Deferred  # noqa: TCH001
 from ibis.common.grounds import Singleton
 from ibis.common.patterns import InstanceOf, Length  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.deferred import Deferred  # noqa: TCH001
 from ibis.expr.operations.core import Named, Scalar, Unary, Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 

@@ -291,6 +291,7 @@ def test_window_api_mutually_exclusive_options():
 def test_window_builder_methods(alltypes):
     t = alltypes
     w1 = ibis.window(preceding=5, following=1, group_by=t.a, order_by=t.b)
+
     w2 = w1.group_by(t.c)
     expected = ibis.window(preceding=5, following=1, group_by=[t.a, t.c], order_by=t.b)
     assert w2 == expected

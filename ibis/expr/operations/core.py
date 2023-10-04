@@ -178,4 +178,4 @@ class Argument(Value):
     dtype: dt.DataType
 
 
-public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary)
+public(ValueOp=Value, UnaryOp=Unary, BinaryOp=Binary, Scalar=Scalar, Column=Column)

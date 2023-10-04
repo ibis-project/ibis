@@ -25,7 +25,7 @@ import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.expr.deferred import Deferred
+from ibis.common.deferred import Deferred
 from ibis.selectors import Selector
 from ibis.expr.types.relations import bind_expr
 import ibis.common.exceptions as com

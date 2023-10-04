@@ -15,12 +15,12 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import selectors, util
 from ibis.backends.base import BaseBackend, connect
+from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.decompile import decompile
-from ibis.expr.deferred import Deferred, deferrable
 from ibis.expr.schema import Schema
 from ibis.expr.sql import parse_sql, show_sql, to_sql
 from ibis.expr.types import (
@@ -191,8 +191,7 @@ Examples
 True
 """
 
-
-_ = deferred = Deferred()
+deferred = _
 """Deferred expression object.
 
 Use this object to refer to a previous table expression in a chain of
@@ -935,7 +934,7 @@ def interval(
         ("years", years, "Y"),
     ]
     if value is not None:
-        for kw, v, _ in keyword_value_unit:
+        for kw, v, _abbrev in keyword_value_unit:
             if v is not None:
                 raise TypeError(f"Cannot provide both 'value' and '{kw}'")
         if isinstance(value, datetime.timedelta):

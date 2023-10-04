@@ -16,7 +16,7 @@ import ibis.expr.rules as rlz
 from ibis import util
 from ibis.common.annotations import Argument
 from ibis.common.collections import FrozenDict
-from ibis.expr.deferred import deferrable
+from ibis.common.deferred import deferrable
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir

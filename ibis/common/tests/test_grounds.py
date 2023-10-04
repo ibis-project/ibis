@@ -251,8 +251,15 @@ def test_annotable():
     assert not hasattr(obj, "__dict__")
     assert obj.__module__ == __name__
     assert type(obj).__qualname__ == "test_annotable.<locals>.Between"
-    assert obj == obj.copy()
-    assert obj == copy.copy(obj)
+
+    copied = copy.copy(obj)
+    assert obj == copied
+    assert obj is not copied
+
+    copied = obj.copy()
+    assert obj == copied
+    assert obj is not copied
+
     obj2 = Between(10, lower=8)
     assert obj.copy(lower=8) == obj2
 
