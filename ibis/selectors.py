@@ -64,11 +64,9 @@ import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.annotations import attribute
-from ibis.common.collections import frozendict
+from ibis.common.collections import frozendict  # noqa: TCH001
+from ibis.common.deferred import Deferred, Resolver
 from ibis.common.grounds import Concrete, Singleton
-from ibis.common.patterns import Coercible
-from ibis.expr.deferred import Deferred
 
 
 class Selector(Concrete):
@@ -415,9 +413,9 @@ def c(*names: str | ir.Column) -> Predicate:
 class Across(Selector):
     selector: Selector
     funcs: Union[
-        Deferred,
+        Resolver,
         Callable[[ir.Value], ir.Value],
-        frozendict[Optional[str], Union[Deferred, Callable[[ir.Value], ir.Value]]],
+        frozendict[Optional[str], Union[Resolver, Callable[[ir.Value], ir.Value]]],
     ]
     names: Union[str, Callable[[str, Optional[str]], str]]
 
@@ -427,15 +425,18 @@ class Across(Selector):
         names = self.names
         cols = self.selector.expand(table)
         for func_name, func in self.funcs.items():
-            resolve = func.resolve if isinstance(func, Deferred) else func
-            expanded.extend(
-                col.name(
-                    names(orig_col.get_name(), func_name)
-                    if callable(names)
-                    else names.format(col=orig_col.get_name(), fn=func_name)
-                )
-                for col, orig_col in zip(map(resolve, cols), cols)
-            )
+            for orig_col in cols:
+                if isinstance(func, Resolver):
+                    col = func.resolve({"_": orig_col})
+                else:
+                    col = func(orig_col)
+
+                if callable(names):
+                    name = names(orig_col.get_name(), func_name)
+                else:
+                    name = names.format(col=orig_col.get_name(), fn=func_name)
+
+                expanded.append(col.name(name))
 
         return expanded
 
@@ -496,7 +497,7 @@ def across(
     """
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
-    funcs = frozendict(func if isinstance(func, Mapping) else {None: func})
+    funcs = dict(func if isinstance(func, Mapping) else {None: func})
     if not isinstance(selector, Selector):
         selector = c(*util.promote_list(selector))
     return Across(selector=selector, funcs=funcs, names=names)
@@ -504,15 +505,17 @@ def across(
 
 class IfAnyAll(Selector):
     selector: Selector
-    predicate: Union[Deferred, Callable[[ir.Value], ir.BooleanValue]]
+    predicate: Union[Resolver, Callable[[ir.Value], ir.BooleanValue]]
     summarizer: Callable[[ir.BooleanValue, ir.BooleanValue], ir.BooleanValue]
 
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         func = self.predicate
-        resolve = func.resolve if isinstance(func, Deferred) else func
-        return [
-            functools.reduce(self.summarizer, map(resolve, self.selector.expand(table)))
-        ]
+        if isinstance(func, Resolver):
+            elems = (func.resolve({"_": col}) for col in self.selector.expand(table))
+        else:
+            elems = (func(col) for col in self.selector.expand(table))
+
+        return [functools.reduce(self.summarizer, elems)]
 
 
 @public
@@ -607,30 +610,6 @@ def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
     """
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.and_)
-
-
-class HashableSlice(Concrete, Coercible):
-    slice: slice
-
-    @classmethod
-    def __coerce__(cls, slice):
-        return cls(slice)
-
-    @property
-    def start(self):
-        return self.slice.start
-
-    @property
-    def stop(self):
-        return self.slice.stop
-
-    @property
-    def step(self):
-        return self.slice.step
-
-    @attribute
-    def __precomputed_hash__(self) -> int:
-        return hash((self.__class__, (self.start, self.stop, self.step)))
 
 
 class Sliceable(Singleton):

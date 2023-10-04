@@ -18,7 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.expr.deferred import Deferred
+from ibis.common.deferred import Deferred, Resolver
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import literal
 
@@ -705,8 +705,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             # treat Python integers as a column index
             return self[self.schema().name_at_position(expr)]
         elif isinstance(expr, Deferred):
-            # resolve deferred expressions
             return expr.resolve(self)
+        elif isinstance(expr, Resolver):
+            return expr.resolve({"_": self})
         elif isinstance(expr, Selector):
             return expr.expand(self)
         elif callable(expr):

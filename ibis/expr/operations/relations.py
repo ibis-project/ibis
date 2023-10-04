@@ -15,10 +15,10 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.annotations import annotated, attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.deferred import Deferred
 from ibis.common.grounds import Immutable
 from ibis.common.patterns import Coercible
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.deferred import Deferred
 from ibis.expr.operations.core import Column, Named, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 from ibis.expr.schema import Schema

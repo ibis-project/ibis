@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import numbers
-import sys
 from abc import abstractmethod
 from collections.abc import Callable, Mapping, Sequence
 from enum import Enum
@@ -20,14 +19,22 @@ from typing import (
 from typing import Any as AnyType
 
 import toolz
-from typing_extensions import GenericMeta, Self, get_args, get_origin
+from typing_extensions import GenericMeta, get_args, get_origin
 
-from ibis.common.bases import Abstract, Hashable, Singleton
 from ibis.common.bases import FrozenSlotted as Slotted
+from ibis.common.bases import Hashable, Singleton
 from ibis.common.collections import FrozenDict, RewindableIterator, frozendict
+from ibis.common.deferred import (
+    Deferred,
+    Resolver,
+    Variable,
+    _,  # noqa: F401
+    resolver,
+)
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.typing import (
-    ModuleType,
+    Coercible,
+    CoercionError,
     Sentinel,
     UnionType,
     _ClassInfo,
@@ -38,24 +45,6 @@ from ibis.common.typing import (
 from ibis.util import is_iterable, promote_tuple
 
 T_co = TypeVar("T_co", covariant=True)
-
-
-class CoercionError(Exception):
-    ...
-
-
-class Coercible(Abstract):
-    """Protocol for defining coercible types.
-
-    Coercible types define a special ``__coerce__`` method that accepts an object
-    with an instance of the type. Used in conjunction with the ``coerced_to``
-    pattern to coerce arguments to a specific type.
-    """
-
-    @classmethod
-    @abstractmethod
-    def __coerce__(cls, value: Any, **kwargs: Any) -> Self:
-        ...
 
 
 class NoMatch(metaclass=Sentinel):
@@ -276,13 +265,13 @@ class Pattern(Hashable):
         """
         return AllOf(self, other)
 
-    def __rshift__(self, other: Builder) -> Replace:
+    def __rshift__(self, other: Deferred) -> Replace:
         """Syntax sugar for replacing a value.
 
         Parameters
         ----------
         other
-            The builder to use for constructing the replacement value.
+            The deferred to use for constructing the replacement value.
 
         Returns
         -------
@@ -303,210 +292,6 @@ class Pattern(Hashable):
         New capture pattern.
         """
         return Capture(name, self)
-
-
-class Builder(Hashable):
-    """A builder is a function that takes a context and returns a new object.
-
-    The context is a dictionary that contains all the captured values and
-    information relevant for the builder. The builder construct a new object
-    only given by the context.
-
-    The builder is used in the right hand side of the replace pattern:
-    `Replace(pattern, builder)`. Semantically when a match occurs for the
-    replace pattern, the builder is called with the context and the result
-    of the builder is used as the replacement value.
-    """
-
-    @abstractmethod
-    def __eq__(self, other):
-        ...
-
-    @abstractmethod
-    def build(self, context: dict):
-        """Construct a new object from the context.
-
-        Parameters
-        ----------
-        context
-            A dictionary containing all the captured values and information
-            relevant for the builder.
-
-        Returns
-        -------
-        The constructed object.
-        """
-
-    def __getattr__(self, name):
-        return Getattr(self, name)
-
-    def __getitem__(self, name):
-        return Getitem(self, name)
-
-    def __call__(self, *args, **kwargs):
-        return Call(self, *args, **kwargs)
-
-
-class Variable(Slotted, Builder):
-    """Retrieve a value from the context.
-
-    Parameters
-    ----------
-    name
-        The key to retrieve from the state.
-    """
-
-    __slots__ = ("name",)
-    name: AnyType
-
-    def __init__(self, name):
-        super().__init__(name=name)
-
-    def build(self, context):
-        return context[self]
-
-
-class Just(Slotted, Builder):
-    """Construct exactly the given value.
-
-    Parameters
-    ----------
-    value
-        The value to return when the builder is called.
-    """
-
-    __slots__ = ("value",)
-    value: AnyType
-
-    @classmethod
-    def __create__(cls, value):
-        if isinstance(value, Just):
-            return value
-        return super().__create__(value)
-
-    def __init__(self, value):
-        assert not isinstance(value, (Pattern, Builder))
-        super().__init__(value=value)
-
-    def build(self, context):
-        return self.value
-
-
-class Factory(Slotted, Builder):
-    """Construct a value by calling a function.
-
-    The function is called with two positional arguments:
-    1. the value being matched
-    2. the context dictionary
-
-    The function must return the constructed value.
-
-    Parameters
-    ----------
-    func
-        The function to apply.
-    """
-
-    __slots__ = ("func",)
-    func: Callable
-
-    def __init__(self, func):
-        assert callable(func)
-        super().__init__(func=func)
-
-    def build(self, context):
-        value = context[_]
-        return self.func(value, context)
-
-
-class Getattr(Slotted, Builder):
-    __slots__ = ("instance", "name")
-
-    def __init__(self, instance, name):
-        instance = instance if isinstance(instance, Builder) else Just(instance)
-        super().__init__(instance=instance, name=name)
-
-    def build(self, context):
-        instance = self.instance.build(context)
-        return getattr(instance, self.name)
-
-
-class Getitem(Slotted, Builder):
-    __slots__ = ("instance", "name")
-
-    def __init__(self, instance, name):
-        instance = instance if isinstance(instance, Builder) else Just(instance)
-        super().__init__(instance=instance, name=name)
-
-    def build(self, context):
-        instance = self.instance.build(context)
-        return instance[self.name]
-
-
-class Call(Slotted, Builder):
-    """Pattern that calls a function with the given arguments.
-
-    Both positional and keyword arguments are coerced into patterns.
-
-    Parameters
-    ----------
-    func
-        The function to call.
-    args
-        The positional argument patterns.
-    kwargs
-        The keyword argument patterns.
-    """
-
-    __slots__ = ("func", "args", "kwargs")
-    func: Builder
-    args: tuple[Builder, ...]
-    kwargs: FrozenDict[str, Builder]
-
-    def __init__(self, func, *args, **kwargs):
-        func = func if isinstance(func, Builder) else Just(func)
-        args = tuple(map(builder, args))
-        kwargs = frozendict({k: builder(v) for k, v in kwargs.items()})
-        super().__init__(func=func, args=args, kwargs=kwargs)
-
-    def build(self, context):
-        func = self.func.build(context)
-        args = tuple(arg.build(context) for arg in self.args)
-        kwargs = {k: v.build(context) for k, v in self.kwargs.items()}
-        return func(*args, **kwargs)
-
-    def __call__(self, *args, **kwargs):
-        if self.args or self.kwargs:
-            raise TypeError("Further specification of Call object is not allowed")
-        return Call(self.func, *args, **kwargs)
-
-    @classmethod
-    def namespace(cls, module) -> Namespace:
-        """Convenience method to create a namespace for easy object construction.
-
-        Parameters
-        ----------
-        module
-            The module object or name to look up the types.
-
-        Examples
-        --------
-        >>> from ibis.common.patterns import Call
-        >>> from ibis.expr.operations import Negate
-        >>>
-        >>> c = Call.namespace("ibis.expr.operations")
-        >>> x = Variable("x")
-        >>> pattern = c.Negate(x)
-        >>> pattern
-        Call(func=Just(value=<class 'ibis.expr.operations.numeric.Negate'>), args=(Variable(name='x'),), kwargs=FrozenDict({}))
-        >>> pattern.build({x: 5})
-        <ibis.expr.operations.numeric.Negate object at 0x...>
-        """
-        return Namespace(cls, module)
-
-
-# reserved variable name for the value being matched
-_ = Variable("_")
 
 
 class Is(Slotted, Pattern):
@@ -561,6 +346,12 @@ class Capture(Slotted, Pattern):
     pattern: Pattern
 
     def __init__(self, key, pat=_any):
+        if isinstance(key, (Deferred, Resolver)):
+            key = resolver(key)
+            if isinstance(key, Variable):
+                key = key.name
+            else:
+                raise TypeError("Only variables can be used as capture keys")
         super().__init__(key=key, pattern=pattern(pat))
 
     def match(self, value, context):
@@ -582,12 +373,12 @@ class Replace(Slotted, Pattern):
         The pattern to use as a replacement.
     """
 
-    __slots__ = ("pattern", "builder")
+    __slots__ = ("pattern", "deferred")
     pattern: Pattern
-    builder: Builder
+    deferred: Resolver
 
     def __init__(self, matcher, replacer):
-        super().__init__(pattern=pattern(matcher), builder=builder(replacer))
+        super().__init__(pattern=pattern(matcher), deferred=resolver(replacer))
 
     def match(self, value, context):
         value = self.pattern.match(value, context)
@@ -595,8 +386,8 @@ class Replace(Slotted, Pattern):
             return NoMatch
         # use the `_` reserved variable to record the value being replaced
         # in the context, so that it can be used in the replacer pattern
-        context[_] = value
-        return self.builder.build(context)
+        context["_"] = value
+        return self.deferred.resolve(context)
 
 
 def replace(matcher):
@@ -620,6 +411,13 @@ class Check(Slotted, Pattern):
     __slots__ = ("predicate",)
     predicate: Callable
 
+    @classmethod
+    def __create__(cls, predicate):
+        if isinstance(predicate, (Deferred, Resolver)):
+            return DeferredCheck(predicate)
+        else:
+            return super().__create__(predicate)
+
     def __init__(self, predicate):
         assert callable(predicate)
         super().__init__(predicate=predicate)
@@ -637,8 +435,29 @@ class Check(Slotted, Pattern):
             return NoMatch
 
 
-class Function(Slotted, Pattern):
-    """Pattern that applies a function to the value.
+class DeferredCheck(Slotted, Pattern):
+    __slots__ = ("deferred",)
+    deferred: Resolver
+
+    def __init__(self, obj):
+        super().__init__(deferred=resolver(obj))
+
+    def describe(self, plural=False):
+        if plural:
+            return f"values that satisfy {self.deferred!r}"
+        else:
+            return f"a value that satisfies {self.deferred!r}"
+
+    def match(self, value, context):
+        context["_"] = value
+        if self.deferred.resolve(context):
+            return value
+        else:
+            return NoMatch
+
+
+class Custom(Slotted, Pattern):
+    """User defined custom matcher function.
 
     Parameters
     ----------
@@ -657,46 +476,6 @@ class Function(Slotted, Pattern):
         return self.func(value, context)
 
 
-class Namespace:
-    """Convenience class for creating patterns for various types from a module.
-
-    Useful to reduce boilerplate when creating patterns for various types from
-    a module.
-
-    Parameters
-    ----------
-    pattern
-        The pattern to construct with the looked up types.
-    module
-        The module object or name to look up the types.
-
-    Examples
-    --------
-    >>> from ibis.common.patterns import Namespace
-    >>> import ibis.expr.operations as ops
-    >>>
-    >>> ns = Namespace(InstanceOf, ops)
-    >>> ns.Negate
-    InstanceOf(type=<class 'ibis.expr.operations.numeric.Negate'>)
-    >>>
-    >>> ns.Negate(5)
-    Object(type=CoercedTo(target=<class 'ibis.expr.operations.numeric.Negate'>, func=<bound method Value.__coerce__ of <class 'ibis.expr.operations.numeric.Negate'>>), args=(EqualTo(value=5),), kwargs=FrozenDict({}))
-    """
-
-    __slots__ = ("module", "pattern")
-    module: ModuleType
-    pattern: Pattern
-
-    def __init__(self, pattern, module):
-        if isinstance(module, str):
-            module = sys.modules[module]
-        self.module = module
-        self.pattern = pattern
-
-    def __getattr__(self, name: str) -> Pattern:
-        return self.pattern(getattr(self.module, name))
-
-
 class EqualTo(Slotted, Pattern):
     """Pattern that checks a value equals to the given value.
 
@@ -709,6 +488,13 @@ class EqualTo(Slotted, Pattern):
     __slots__ = ("value",)
     value: AnyType
 
+    @classmethod
+    def __create__(cls, value):
+        if isinstance(value, (Deferred, Resolver)):
+            return DeferredEqualTo(value)
+        else:
+            return super().__create__(value)
+
     def __init__(self, value):
         super().__init__(value=value)
 
@@ -720,6 +506,32 @@ class EqualTo(Slotted, Pattern):
 
     def describe(self, plural=False):
         return repr(self.value)
+
+
+class DeferredEqualTo(Slotted, Pattern):
+    """Pattern that checks a value equals to the given value.
+
+    Parameters
+    ----------
+    value
+        The value to check against.
+    """
+
+    __slots__ = ("deferred",)
+    deferred: Resolver
+
+    def __init__(self, obj):
+        super().__init__(deferred=resolver(obj))
+
+    def match(self, value, context):
+        context["_"] = value
+        if value == self.deferred.resolve(context):
+            return value
+        else:
+            return NoMatch
+
+    def describe(self, plural=False):
+        return repr(self.deferred)
 
 
 class Option(Slotted, Pattern):
@@ -946,19 +758,19 @@ class CoercedTo(Slotted, Pattern, Generic[T_co]):
         The type to coerce to.
     """
 
-    __slots__ = ("target", "func")
-    target: T_co
+    __slots__ = ("type", "func")
+    type: T_co
 
-    def __init__(self, target):
-        func = target.__coerce__ if issubclass(target, Coercible) else target
-        super().__init__(target=target, func=func)
+    def __init__(self, type):
+        func = type.__coerce__ if issubclass(type, Coercible) else type
+        super().__init__(type=type, func=func)
 
     def describe(self, plural=False):
-        target = _describe_type(self.target, plural=False)
+        type = _describe_type(self.type, plural=False)
         if plural:
-            return f"coercibles to {target}"
+            return f"coercibles to {type}"
         else:
-            return f"coercible to {target}"
+            return f"coercible to {type}"
 
     def match(self, value, context):
         try:
@@ -966,10 +778,13 @@ class CoercedTo(Slotted, Pattern, Generic[T_co]):
         except (TypeError, CoercionError):
             return NoMatch
 
-        if isinstance(value, self.target):
+        if isinstance(value, self.type):
             return value
         else:
             return NoMatch
+
+    def __call__(self, *args, **kwargs):
+        return Object(self.type, *args, **kwargs)
 
 
 As = CoercedTo
@@ -1570,10 +1385,6 @@ class Object(Slotted, Pattern):
         else:
             return value
 
-    @classmethod
-    def namespace(cls, module):
-        return Namespace(InstanceOf, module)
-
 
 class Node(Slotted, Pattern):
     __slots__ = ("type", "each_arg")
@@ -1807,41 +1618,12 @@ def FrozenDictOf(key_pattern, value_pattern):
     return MappingOf(key_pattern, value_pattern, type=frozendict)
 
 
-def builder(obj):
-    """Convert an object to a builder.
-
-    It encapsulates:
-        - callable objects into a `Factory` builder
-        - non-callable objects into a `Just` builder
-
-    Parameters
-    ----------
-    obj
-        The object to convert to a builder.
-
-    Returns
-    -------
-    The builder instance.
-    """
-    if isinstance(obj, Builder):
-        # already a builder, no need to convert
-        return obj
-    elif callable(obj):
-        # the callable builds the substitution
-        return Factory(obj)
-    elif isinstance(obj, Mapping):
-        # allow nesting builder patterns in dicts
-        return Call(type(obj), **obj)
-    elif is_iterable(obj):
-        # allow nesting builder patterns in tuples/lists
-        return Call(lambda *args: type(obj)(args), *obj)
-    else:
-        # the object is used as a constant value
-        return Just(obj)
-
-
 def pattern(obj: AnyType) -> Pattern:
     """Create a pattern from various types.
+
+    Not that if a Coercible type is passed as argument, the constructed pattern
+    won't attempt to coerce the value during matching. In order to allow type
+    coercions use `Pattern.from_typehint()` factory method.
 
     Parameters
     ----------
@@ -1869,21 +1651,18 @@ def pattern(obj: AnyType) -> Pattern:
         return _any
     elif isinstance(obj, Pattern):
         return obj
-    elif isinstance(obj, Variable):
+    elif isinstance(obj, (Deferred, Resolver)):
         return Capture(obj)
     elif isinstance(obj, Mapping):
         return PatternMapping(obj)
     elif isinstance(obj, type):
-        if issubclass(obj, Coercible):
-            return CoercedTo(obj)
-        else:
-            return InstanceOf(obj)
+        return InstanceOf(obj)
     elif get_origin(obj):
-        return Pattern.from_typehint(obj)
+        return Pattern.from_typehint(obj, allow_coercion=False)
     elif is_iterable(obj):
         return PatternSequence(obj)
     elif callable(obj):
-        return Function(obj)
+        return Custom(obj)
     else:
         return EqualTo(obj)
 

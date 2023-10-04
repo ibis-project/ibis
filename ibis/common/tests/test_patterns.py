@@ -24,32 +24,28 @@ import pytest
 
 from ibis.common.annotations import ValidationError
 from ibis.common.collections import FrozenDict
+from ibis.common.deferred import Call, deferred, var
 from ibis.common.graph import Node as GraphNode
 from ibis.common.patterns import (
     AllOf,
     Any,
     AnyOf,
     Between,
-    Call,
     CallableWith,
     Capture,
     Check,
     CoercedTo,
     Coercible,
     Contains,
+    Custom,
     DictOf,
     EqualTo,
-    Factory,
     FrozenDictOf,
-    Function,
     GenericInstanceOf,
     GenericSequenceOf,
-    Getattr,
-    Getitem,
     Innermost,
     InstanceOf,
     IsIn,
-    Just,
     LazyInstanceOf,
     Length,
     ListOf,
@@ -72,11 +68,11 @@ from ibis.common.patterns import (
     TypeOf,
     Variable,
     _,
-    builder,
     match,
     pattern,
     replace,
 )
+from ibis.util import Namespace
 
 
 class Double(Pattern):
@@ -126,15 +122,6 @@ def test_nothing():
     assert p.match(2, context={}) is NoMatch
 
 
-def test_just():
-    p = Just(1)
-    assert p.build({}) == 1
-    assert p.build({"a": 1}) == 1
-
-    # unwrap subsequently nested Just instances
-    assert Just(p) == p
-
-
 def test_min():
     p = Min(10)
     assert p.match(10, context={}) == 10
@@ -153,31 +140,14 @@ def test_any():
     assert p.describe() == "matching Any()"
 
 
-def test_variable():
-    p = Variable("other")
-    context = {p: 10}
-    assert p.build(context) == 10
-
-
-def test_variable_getattr():
-    v = Variable("v")
-    p = v.copy
-    assert p == Getattr(v, "copy")
-    assert p.build({v: [1, 2, 3]})() == [1, 2, 3]
-
-    p = v.copy()
-    assert p == Call(Getattr(v, "copy"))
-    assert p.build({v: [1, 2, 3]}) == [1, 2, 3]
-
-
 def test_pattern_factory_wraps_variable_with_capture():
-    v = Variable("other")
+    v = var("other")
     p = pattern(v)
-    assert p == Capture(v, Any())
+    assert p == Capture("other", Any())
 
     ctx = {}
     assert p.match(10, ctx) == 10
-    assert ctx == {v: 10}
+    assert ctx == {"other": 10}
 
 
 def test_capture():
@@ -616,6 +586,35 @@ def test_object_pattern_complex_type():
     assert match(p, Bar(1, 2)) is NoMatch
 
 
+def test_object_pattern_from_instance_of():
+    class MyType:
+        def __init__(self, a, b):
+            self.a = a
+            self.b = b
+
+    p = pattern(MyType)
+    assert p == InstanceOf(MyType)
+
+    p_call = p(1, 2)
+    assert p_call == Object(MyType, 1, 2)
+
+
+def test_object_pattern_from_coerced_to():
+    class MyCoercibleType(Coercible):
+        def __init__(self, a, b):
+            self.a = a
+            self.b = b
+
+        @classmethod
+        def __coerce__(cls, other):
+            a, b = other
+            return cls(a, b)
+
+    p = CoercedTo(MyCoercibleType)
+    p_call = p(1, 2)
+    assert p_call == Object(MyCoercibleType, 1, 2)
+
+
 def test_callable_with():
     def func(a, b):
         return str(a) + b
@@ -732,14 +731,14 @@ def test_replace_in_nested_object_pattern():
     # simple example using reference to replace a value
     b = Variable("b")
     p = Object(Foo, 1, b=Replace(..., b))
-    f = p.match(Foo(1, 2), {b: 3})
+    f = p.match(Foo(1, 2), {"b": 3})
     assert f.a == 1
     assert f.b == 3
 
     # nested example using reference to replace a value
     d = Variable("d")
     p = Object(Foo, 1, b=Object(Bar, 2, d=Replace(..., d)))
-    g = p.match(Foo(1, Bar(2, 3)), {d: 4})
+    g = p.match(Foo(1, Bar(2, 3)), {"d": 4})
     assert g.b.c == 2
     assert g.b.d == 4
 
@@ -747,7 +746,7 @@ def test_replace_in_nested_object_pattern():
     p = Object(
         Foo,
         1,
-        b=Replace(Object(Bar, 2, d="d" @ Any()), lambda _, ctx: Foo(-1, b=ctx["d"])),
+        b=Replace(Object(Bar, 2, d="d" @ Any()), lambda _, d: Foo(-1, b=d)),
     )
     h = p.match(Foo(1, Bar(2, 3)), {})
     assert isinstance(h, Foo)
@@ -756,8 +755,8 @@ def test_replace_in_nested_object_pattern():
     assert h.b.b == 3
 
     # same example with more syntactic sugar
-    o = Object.namespace(__name__)
-    c = Call.namespace(__name__)
+    o = Namespace(pattern, module=__name__)
+    c = Namespace(deferred, module=__name__)
 
     d = Variable("d")
     p = o.Foo(1, b=o.Bar(2, d=d @ Any()) >> c.Foo(-1, b=d))
@@ -770,11 +769,28 @@ def test_replace_in_nested_object_pattern():
 
 def test_replace_decorator():
     @replace(int)
-    def sub(value, ctx):
-        return value - 1
+    def sub(_):
+        return _ - 1
 
     assert match(sub, 1) == 0
     assert match(sub, 2) == 1
+
+
+def test_replace_using_deferred():
+    p = Namespace(pattern, module=__name__)
+    d = Namespace(deferred, module=__name__)
+
+    x = var("x")
+    y = var("y")
+
+    pat = p.Foo(x, b=y) >> d.Foo(x, b=y)
+    assert match(pat, Foo(1, 2)) == Foo(1, 2)
+
+    pat = p.Foo(x, b=y) >> d.Foo(x, b=(y + 1) * x)
+    assert match(pat, Foo(2, 3)) == Foo(2, 8)
+
+    pat = p.Foo(x, y @ p.Bar) >> d.Foo(x, b=y.c + y.d)
+    assert match(pat, Foo(1, Bar(2, 3))) == Foo(1, 5)
 
 
 def test_matching_sequence_pattern():
@@ -806,7 +822,7 @@ def test_matching_sequence_with_captures():
 
     v = list(range(5))
     assert match([0, 1, x @ SequenceOf(...), 4], v, ctx := {}) == v
-    assert ctx == {x: (2, 3)}
+    assert ctx == {"x": (2, 3)}
     assert match([0, 1, "var" @ SequenceOf(...), 4], v, ctx := {}) == v
     assert ctx == {"var": (2, 3)}
 
@@ -1139,20 +1155,37 @@ def test_pattern_function():
         def __coerce__(cls, other):
             return cls(-int(other))
 
-    assert pattern(...) == Any()
-    assert pattern(Any()) == Any()
-    assert pattern(int) == InstanceOf(int)
-    assert pattern(MyNegativeInt) == CoercedTo(MyNegativeInt)
-    assert pattern(List[int]) == ListOf(InstanceOf(int))  # noqa: UP006
-    assert pattern([int, str, 1]) == PatternSequence(
-        [InstanceOf(int), InstanceOf(str), EqualTo(1)]
-    )
-    assert pattern(True) == EqualTo(True)
+    class Box(Generic[T]):
+        value: T
 
     def f(x):
         return x > 0
 
-    assert pattern(f) == Function(f)
+    # ... is treated the same as Any()
+    assert pattern(...) == Any()
+    assert pattern(Any()) == Any()
+    assert pattern(True) == EqualTo(True)
+
+    # plain types are converted to InstanceOf patterns
+    assert pattern(int) == InstanceOf(int)
+    # no matter whether the type implements the coercible protocol or not
+    assert pattern(MyNegativeInt) == InstanceOf(MyNegativeInt)
+
+    # generic types are converted to GenericInstanceOf patterns
+    assert pattern(Box[int]) == GenericInstanceOf(Box[int])
+    # no matter whethwe the origin type implements the coercible protocol or not
+    assert pattern(Box[MyNegativeInt]) == GenericInstanceOf(Box[MyNegativeInt])
+
+    # sequence typehints are converted to the appropriate sequence checkers
+    assert pattern(List[int]) == ListOf(InstanceOf(int))  # noqa: UP006
+
+    # spelled out sequences construct a more advanced pattern sequence
+    assert pattern([int, str, 1]) == PatternSequence(
+        [InstanceOf(int), InstanceOf(str), EqualTo(1)]
+    )
+
+    # matching deferred to user defined functions
+    assert pattern(f) == Custom(f)
 
 
 class Term(GraphNode):
@@ -1229,109 +1262,7 @@ def test_topmost_innermost():
 def test_node():
     pat = Node(
         InstanceOf(Add),
-        each_arg=Replace(
-            Object(Lit, value=Capture("v")), lambda _, ctx: Lit(ctx["v"] + 100)
-        ),
+        each_arg=Replace(Object(Lit, value=Capture("v")), lambda _, v: Lit(v + 100)),
     )
     result = six.replace(pat)
     assert result == Mul(two, Add(Lit(101), two))
-
-
-def test_factory():
-    f = Factory(lambda x, ctx: x + 1)
-    assert f.build({_: 1}) == 2
-    assert f.build({_: 2}) == 3
-
-    def fn(x, ctx):
-        assert ctx == {_: 10, "a": 5}
-        assert x == 10
-        return -1
-
-    f = Factory(fn)
-    assert f.build({_: 10, "a": 5}) == -1
-
-
-def test_call():
-    def fn(a, b, c=1):
-        return a + b + c
-
-    c = Call(fn, 1, 2, c=3)
-    assert c.build({}) == 6
-
-    c = Call(fn, Just(-1), Just(-2))
-    assert c.build({}) == -2
-
-    c = Call(dict, a=1, b=2)
-    assert c.build({}) == {"a": 1, "b": 2}
-
-
-def test_getattr():
-    class MyType:
-        def __init__(self, a, b):
-            self.a = a
-            self.b = b
-
-        def __hash__(self):
-            return hash((type(self), self.a, self.b))
-
-    v = Variable("v")
-    b = Getattr(v, "b")
-    assert b.build({v: MyType(1, 2)}) == 2
-
-    b = Getattr(MyType(1, 2), "a")
-    assert b.build({}) == 1
-
-
-def test_getitem():
-    v = Variable("v")
-    b = Getitem(v, 1)
-    assert b.build({v: [1, 2, 3]}) == 2
-
-    b = Getitem(FrozenDict(a=1, b=2), "a")
-    assert b.build({}) == 1
-
-
-def test_builder():
-    def fn(x, ctx):
-        return x + 1
-
-    assert builder(1) == Just(1)
-    assert builder(Just(1)) == Just(1)
-    assert builder(Just(Just(1))) == Just(1)
-    assert builder(fn) == Factory(fn)
-
-    b = builder(())
-    assert b.build({}) == ()
-
-    b = builder([])
-    assert b.build({}) == []
-
-    b = builder({})
-    assert b.build({}) == {}
-
-    b = builder((1, 2, 3))
-    assert b.args == (Just(1), Just(2), Just(3))
-    assert b.build({}) == (1, 2, 3)
-
-    b = builder([1, 2, 3])
-    assert b.args == (Just(1), Just(2), Just(3))
-    assert b.build({}) == [1, 2, 3]
-
-    b = builder({"a": 1, "b": 2})
-    assert b.kwargs == {"a": Just(1), "b": Just(2)}
-    assert b.build({}) == {"a": 1, "b": 2}
-
-    b = builder(FrozenDict({"a": 1, "b": 2, "c": 3}))
-    assert b.kwargs == {"a": Just(1), "b": Just(2), "c": Just(3)}
-    assert b.build({}) == FrozenDict({"a": 1, "b": 2, "c": 3})
-
-
-def test_builder_supports_string_arguments():
-    # builder() is applied on all arguments of Call() except the first one and
-    # sequences are transparently handled, the check far sequences was incorrect
-    # for strings causing infinite recursion
-    b = builder("3.14")
-    assert b.build({}) == "3.14"
-
-    c = Call(float, "1.1")
-    assert c.build({}) == 1.1

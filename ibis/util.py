@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import base64
 import collections
+import collections.abc
 import functools
 import importlib.metadata
 import itertools
@@ -14,6 +15,7 @@ import textwrap
 import types
 import uuid
 import warnings
+from types import ModuleType
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -617,3 +619,69 @@ def slice_to_limit_offset(
         else:  # stop > 0
             limit = ibis.greatest((stop - start) - count, 0)
     return limit, offset
+
+
+class Namespace:
+    """Convenience class for creating patterns for various types from a module.
+
+    Useful to reduce boilerplate when creating patterns for various types from
+    a module.
+
+    Parameters
+    ----------
+    factory
+        The pattern to construct with the looked up types.
+    module
+        The module object or name to look up the types.
+    """
+
+    __slots__ = ("_factory", "_module")
+    _factory: Callable
+    _module: ModuleType
+
+    def __init__(self, factory, module):
+        if isinstance(module, str):
+            module = sys.modules[module]
+        self._module = module
+        self._factory = factory
+
+    def __getattr__(self, name: str):
+        obj = getattr(self._module, name)
+        return self._factory(obj)
+
+
+# TODO(kszucs): use this for the TableProxy objects
+class PseudoHashable:
+    """A wrapper that provides a best effort precomputed hash."""
+
+    __slots__ = ("obj", "hash")
+
+    def __init__(self, obj):
+        if isinstance(obj, collections.abc.Hashable):
+            raise TypeError(f"Cannot wrap a hashable object: {obj!r}")
+        elif isinstance(obj, collections.abc.Sequence):
+            hashable_obj = tuple(obj)
+        elif isinstance(obj, collections.abc.Mapping):
+            hashable_obj = tuple(obj.items())
+        elif isinstance(obj, collections.abc.Set):
+            hashable_obj = frozenset(obj)
+        else:
+            hashable_obj = id(obj)
+
+        self.obj = obj
+        self.hash = hash((type(obj), hashable_obj))
+
+    def __hash__(self):
+        return self.hash
+
+    def __eq__(self, other):
+        if isinstance(other, PseudoHashable):
+            return self.obj == other.obj
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, PseudoHashable):
+            return self.obj != other.obj
+        else:
+            return NotImplemented

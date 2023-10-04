@@ -386,7 +386,7 @@ class Backend(BaseBackend):
             params = {param.op(): value for param, value in params.items()}
             rule = Replace(
                 ops.ScalarParameter,
-                lambda op, ctx: ops.Literal(value=params[op], dtype=op.dtype),
+                lambda _: ops.Literal(value=params[_], dtype=_.dtype),
             )
             node = node.replace(rule)
             expr = node.to_expr()

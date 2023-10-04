@@ -246,17 +246,23 @@ class Node(Hashable):
         ctx = context or {}
 
         def fn(node, _, **kwargs):
-            # TODO(kszucs): pass the reconstructed node from the results provided by the
-            # kwargs to the pattern rather than the original one node object, this way
-            # we can match on already replaced nodes
-            if (result := pat.match(node, ctx)) is NoMatch:
-                # TODO(kszucs): annotable instances should use node.__recreate__()
-                # for quick reconstruction
-                return node.__class__(**kwargs)
+            # need to first reconstruct the node from the possible rewritten
+            # children, so we can match on the new node containing the rewritten
+            # child arguments, this way we can propagate the rewritten nodes
+            # upward in the hierarchy
+            # TODO(kszucs): add a __recreate__() method to the Node interface
+            # with a default implementation that uses the __class__ constructor
+            # which is supposed to provide an implementation for quick object
+            # reconstruction (the __recreate__ implementation in grounds.py
+            # should be sped up as well by totally avoiding the validation)
+            recreated = node.__class__(**kwargs)
+            if (result := pat.match(recreated, ctx)) is NoMatch:
+                return recreated
             else:
                 return result
 
-        return self.map(fn, filter=filter)[self]
+        results = self.map(fn, filter=filter)
+        return results[self]
 
 
 class Graph(dict[Node, Sequence[Node]]):

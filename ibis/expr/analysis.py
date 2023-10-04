@@ -13,17 +13,19 @@ import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import ValidationError
+from ibis.common.deferred import deferred, var
 from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.common.patterns import Call, Object, Variable
+from ibis.common.patterns import pattern
+from ibis.util import Namespace
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
-p = Object.namespace(ops)
-c = Call.namespace(ops)
+p = Namespace(pattern, module=ops)
+c = Namespace(deferred, module=ops)
 
-x = Variable("x")
-y = Variable("y")
+x = var("x")
+y = var("y")
 
 # ---------------------------------------------------------------------
 # Some expression metaprogramming / graph transformations to support

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import re
 import sys
+from abc import abstractmethod
 from itertools import zip_longest
 from types import ModuleType  # noqa: F401
 from typing import (
+    TYPE_CHECKING,
     Any,
     Generic,  # noqa: F401
     Optional,
@@ -15,7 +17,11 @@ from typing import (
 )
 from typing import get_type_hints as _get_type_hints
 
+from ibis.common.bases import Abstract
 from ibis.common.caching import memoize
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 if sys.version_info >= (3, 10):
     from types import UnionType
@@ -241,3 +247,21 @@ class Sentinel(type):
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
         raise TypeError("Sentinels are not constructible")
+
+
+class CoercionError(Exception):
+    ...
+
+
+class Coercible(Abstract):
+    """Protocol for defining coercible types.
+
+    Coercible types define a special ``__coerce__`` method that accepts an object
+    with an instance of the type. Used in conjunction with the ``coerced_to``
+    pattern to coerce arguments to a specific type.
+    """
+
+    @classmethod
+    @abstractmethod
+    def __coerce__(cls, value: Any, **kwargs: Any) -> Self:
+        ...

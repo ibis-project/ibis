@@ -4,17 +4,16 @@ import math
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import ibis
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import annotated
+from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.deferred import Deferred, deferrable
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
 from ibis.expr.types.relations import bind_expr
 
@@ -39,9 +38,9 @@ def _finish_searched_case(cases, results, default) -> ir.Value:
 class SearchedCaseBuilder(Builder):
     """A case builder, used for constructing `ibis.case()` expressions."""
 
-    cases: VarTuple[Union[Deferred, ops.Value[dt.Boolean, ds.Any]]] = ()
-    results: VarTuple[Union[Deferred, ops.Value]] = ()
-    default: Optional[Union[None, Deferred, ops.Value]] = None
+    cases: VarTuple[Union[Resolver, ops.Value[dt.Boolean]]] = ()
+    results: VarTuple[Union[Resolver, ops.Value]] = ()
+    default: Optional[Union[Resolver, ops.Value]] = None
 
     def when(self, case_expr: Any, result_expr: Any) -> Self:
         """Add a new condition and result to the `CASE` expression.
@@ -78,7 +77,7 @@ class SimpleCaseBuilder(Builder):
     base: ops.Value
     cases: VarTuple[ops.Value] = ()
     results: VarTuple[ops.Value] = ()
-    default: Optional[Union[None, ops.Value]] = None
+    default: Optional[ops.Value] = None
 
     def when(self, case_expr: Any, result_expr: Any) -> Self:
         """Add a new condition and result to the `CASE` expression.
@@ -143,8 +142,8 @@ class WindowBuilder(Builder):
     how: Literal["rows", "range"] = "rows"
     start: Optional[RangeWindowBoundary] = None
     end: Optional[RangeWindowBoundary] = None
-    groupings: VarTuple[Union[str, Deferred, ops.Value]] = ()
-    orderings: VarTuple[Union[str, Deferred, ops.Value]] = ()
+    groupings: VarTuple[Union[str, Resolver, ops.Value]] = ()
+    orderings: VarTuple[Union[str, Resolver, ops.Value]] = ()
     max_lookback: Optional[ops.Value[dt.Interval]] = None
 
     def _maybe_cast_boundary(self, boundary, dtype):

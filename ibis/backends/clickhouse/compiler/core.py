@@ -23,19 +23,15 @@ from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.backends.clickhouse.compiler.relations import translate_rel
 from ibis.backends.clickhouse.compiler.values import translate_val
-from ibis.common.patterns import Call, _
-from ibis.expr.analysis import c, p, x, y
+from ibis.common.deferred import _
+from ibis.expr.analysis import c, find_first_base_table, p, x, y
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-
-
-a = Call.namespace(an)
 
 
 def _translate_node(node, **kwargs):
@@ -88,14 +84,14 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
     # `translate_val` rule
     params = {param.op(): value for param, value in params.items()}
     replace_literals = p.ScalarParameter(dtype=x) >> (
-        lambda op, ctx: ops.Literal(value=params[op], dtype=ctx[x])
+        lambda _, x: ops.Literal(value=params[_], dtype=x)
     )
 
     # replace the right side of InColumn into a scalar subquery for sql
     # backends
     replace_in_column_with_table_array_view = p.InColumn(..., y) >> _.copy(
         options=c.TableArrayView(
-            c.Selection(table=a.find_first_base_table(y), selections=(y,))
+            c.Selection(table=lambda _, y: find_first_base_table(y), selections=(y,))
         ),
     )
 
