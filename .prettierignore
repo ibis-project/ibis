@@ -18,3 +18,4 @@ ibis
 result*
 *.delta
 *.lock
+flink-demo.ipynb

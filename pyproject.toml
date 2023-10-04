@@ -471,6 +471,7 @@ required-imports = ["from __future__ import annotations"]
 "ci/*.py" = ["INP001"]
 "docs/*.py" = ["INP001"]
 "ci/release/verify_release.py" = ["T201"] # CLI tool that prints stuff
+"docker/flink/generate_source_data.py" = ["INP001"]
 
 [tool.blackdoc]
 extend_exclude = 'ibis/examples/__init__\.py'

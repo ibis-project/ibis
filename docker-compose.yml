@@ -433,7 +433,55 @@ services:
     volumes:
       - oracle:/opt/oracle/data
 
+  flink-kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    hostname: flink-kafka
+    container_name: flink-kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://flink-kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@flink-kafka:29093
+      KAFKA_LISTENERS: PLAINTEXT://flink-kafka:29092,CONTROLLER://flink-kafka:29093,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+    networks:
+      - flink
+
+  flink-init-kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - flink-kafka
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      "
+      # blocks until kafka is reachable
+      kafka-topics --bootstrap-server flink-kafka:29092 --list
+
+      echo -e 'Creating kafka topics'
+      kafka-topics --bootstrap-server flink-kafka:29092 --create --if-not-exists --topic payment_msg --replication-factor 1 --partitions 1
+      kafka-topics --bootstrap-server flink-kafka:29092 --create --if-not-exists --topic sink --replication-factor 1 --partitions 1
+
+      echo -e 'Successfully created the following topics:'
+      kafka-topics --bootstrap-server flink-kafka:29092 --list
+      "
+    networks:
+      - flink
+
+  flink-data-generator:
+    build: ./docker/flink
+    image: ibis-flink-data-generator
+    depends_on:
+      - flink-init-kafka
+    networks:
+      - flink
+
 networks:
+  flink:
   impala:
   mysql:
   mssql:
