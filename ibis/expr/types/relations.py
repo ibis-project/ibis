@@ -1300,6 +1300,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     ) -> Table:
         """Sort a table by one or more expressions.
 
+        Similar to `pandas.DataFrame.sort_values()`.
+
         Parameters
         ----------
         by
@@ -1314,36 +1316,109 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [1, 2, 3], "b": ["c", "b", "a"], "c": [4, 6, 5]})
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "a": [3, 2, 1, 3],
+        ...         "b": ["a", "B", "c", "D"],
+        ...         "c": [4, 6, 5, 7],
+        ...     }
+        ... )
         >>> t
         ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
         ┃ a     ┃ b      ┃ c     ┃
         ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
         │ int64 │ string │ int64 │
         ├───────┼────────┼───────┤
-        │     1 │ c      │     4 │
-        │     2 │ b      │     6 │
-        │     3 │ a      │     5 │
+        │     3 │ a      │     4 │
+        │     2 │ B      │     6 │
+        │     1 │ c      │     5 │
+        │     3 │ D      │     7 │
         └───────┴────────┴───────┘
+
+        Sort by b. Default is ascending. Note how capital letters come before lowercase
+
         >>> t.order_by("b")
         ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
         ┃ a     ┃ b      ┃ c     ┃
         ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
         │ int64 │ string │ int64 │
         ├───────┼────────┼───────┤
-        │     3 │ a      │     5 │
-        │     2 │ b      │     6 │
-        │     1 │ c      │     4 │
+        │     2 │ B      │     6 │
+        │     3 │ D      │     7 │
+        │     3 │ a      │     4 │
+        │     1 │ c      │     5 │
         └───────┴────────┴───────┘
-        >>> t.order_by(ibis.desc("c"))
+
+        Sort in descending order
+
+        >>> t.order_by(ibis.desc("b"))
         ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
         ┃ a     ┃ b      ┃ c     ┃
         ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
         │ int64 │ string │ int64 │
         ├───────┼────────┼───────┤
-        │     2 │ b      │     6 │
-        │     3 │ a      │     5 │
-        │     1 │ c      │     4 │
+        │     1 │ c      │     5 │
+        │     3 │ a      │     4 │
+        │     3 │ D      │     7 │
+        │     2 │ B      │     6 │
+        └───────┴────────┴───────┘
+
+        You can also use the deferred API to get the same result
+
+        >>> from ibis import _
+        >>> t.order_by(_.b.desc())
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ string │ int64 │
+        ├───────┼────────┼───────┤
+        │     1 │ c      │     5 │
+        │     3 │ a      │     4 │
+        │     3 │ D      │     7 │
+        │     2 │ B      │     6 │
+        └───────┴────────┴───────┘
+
+        Sort by multiple columns/expressions
+
+        >>> t.order_by(["a", _.c.desc()])
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ string │ int64 │
+        ├───────┼────────┼───────┤
+        │     1 │ c      │     5 │
+        │     2 │ B      │     6 │
+        │     3 │ D      │     7 │
+        │     3 │ a      │     4 │
+        └───────┴────────┴───────┘
+
+        You can actually pass arbitrary expressions to use as sort keys.
+        For example, to ignore the case of the strings in column `b`
+
+        >>> t.order_by(_.b.lower())
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ string │ int64 │
+        ├───────┼────────┼───────┤
+        │     3 │ a      │     4 │
+        │     2 │ B      │     6 │
+        │     1 │ c      │     5 │
+        │     3 │ D      │     7 │
+        └───────┴────────┴───────┘
+
+        This means than shuffling a Table is super simple
+
+        >>> t.order_by(ibis.random())  # doctest: +SKIP
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b      ┃ c     ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+        │ int64 │ string │ int64 │
+        ├───────┼────────┼───────┤
+        │     1 │ c      │     5 │
+        │     3 │ D      │     7 │
+        │     3 │ a      │     4 │
+        │     2 │ B      │     6 │
         └───────┴────────┴───────┘
         """
         sort_keys = []
