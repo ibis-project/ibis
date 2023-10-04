@@ -434,26 +434,65 @@ class Value(Expr):
         BooleanValue
             Expression indicating membership
 
+        See Also
+        --------
+        [`Value.notin()`](./expression-generic.qmd#ibis.expr.types.generic.Value.notin)
+
         Examples
         --------
-        Check whether a column's values are contained in a sequence
-
         >>> import ibis
-        >>> table = ibis.table(dict(string_col="string"), name="t")
-        >>> table.string_col.isin(["foo", "bar", "baz"])
-        r0 := UnboundTable: t
-          string_col string
-        InValues(string_col): InValues(...)
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 2, 3], "b": [2, 3, 4]})
+        >>> t
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ a     ┃ b     ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │     1 │     2 │
+        │     2 │     3 │
+        │     3 │     4 │
+        └───────┴───────┘
 
-        Check whether a column's values are contained in another table's column
+        Check against a literal sequence of values
 
-        >>> table2 = ibis.table(dict(other_string_col="string"), name="t2")
-        >>> table.string_col.isin(table2.other_string_col)
-        r0 := UnboundTable: t
-          string_col string
-        r1 := UnboundTable: t2
-          other_string_col string
-        InColumn(string_col, other_string_col): InColumn(...)
+        >>> t.a.isin([1, 2])
+        ┏━━━━━━━━━━━━━┓
+        ┃ InValues(a) ┃
+        ┡━━━━━━━━━━━━━┩
+        │ boolean     │
+        ├─────────────┤
+        │ True        │
+        │ True        │
+        │ False       │
+        └─────────────┘
+
+        Check against a derived expression
+
+        >>> t.a.isin(t.b + 1)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ InColumn(a, Add(b, 1)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                │
+        ├────────────────────────┤
+        │ False                  │
+        │ False                  │
+        │ True                   │
+        └────────────────────────┘
+
+        Check against a column from a different table
+
+        >>> t2 = ibis.memtable({"x": [99, 2, 99]})
+        >>> t.a.isin(t2.x)
+        ┏━━━━━━━━━━━━━━━━┓
+        ┃ InColumn(a, x) ┃
+        ┡━━━━━━━━━━━━━━━━┩
+        │ boolean        │
+        ├────────────────┤
+        │ False          │
+        │ True           │
+        │ False          │
+        └────────────────┘
         """
         from ibis.expr.types import ArrayValue
 
@@ -466,6 +505,8 @@ class Value(Expr):
 
     def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
         """Check whether this expression's values are not in `values`.
+
+        Opposite of [`Value.isin()`](./expression-generic.qmd#ibis.expr.types.generic.Value.isin).
 
         Parameters
         ----------
