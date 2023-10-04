@@ -15,6 +15,7 @@ from typing import (
 import duckdb
 import pyarrow as pa
 import sqlalchemy as sa
+import sqlglot as sg
 import toolz
 
 import ibis.common.exceptions as exc
@@ -25,6 +26,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
+from ibis.backends.base.sqlglot import C, F, lit
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType
 from ibis.expr.operations.relations import PandasDataFrameProxy
@@ -684,14 +686,69 @@ WHERE catalog_name = :database"""
             delta_table.to_pyarrow_dataset(), table_name=table_name
         )
 
-    def list_tables(self, like=None, database=None):
-        tables = self.inspector.get_table_names(schema=database)
-        views = self.inspector.get_view_names(schema=database)
-        # workaround for GH5503
-        temp_views = self.inspector.get_view_names(
-            schema="temp" if database is None else database
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List tables and views.
+
+        Parameters
+        ----------
+        like
+            Regex to filter by table/view name.
+        database
+            Database name. If not passed, uses the current database. Only
+            supported with MotherDuck.
+        schema
+            Schema name. If not passed, uses the current schema.
+
+        Returns
+        -------
+        list[str]
+            List of table and view names.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
+        >>> con.list_tables()
+        ['foo']
+        >>> bar = con.create_view("bar", foo)
+        >>> con.list_tables()
+        ['bar', 'foo']
+        >>> con.create_schema("my_schema")
+        >>> con.list_tables(schema="my_schema")
+        []
+        >>> with con.begin() as c:
+        ...     c.exec_driver_sql(
+        ...         "CREATE TABLE my_schema.baz (a INTEGER)"
+        ...     )  # doctest: +ELLIPSIS
+        ...
+        <...>
+        >>> con.list_tables(schema="my_schema")
+        ['baz']
+        """
+        database = F.current_database() if database is None else lit(database)
+        schema = F.current_schema() if schema is None else lit(schema)
+
+        sql = (
+            sg.select(C.table_name)
+            .from_(sg.table("tables", db="information_schema"))
+            .distinct()
+            .where(
+                C.table_catalog.eq(database).or_(C.table_catalog.eq(lit("temp"))),
+                C.table_schema.eq(schema),
+            )
+            .sql(self.name, pretty=True)
         )
-        return self._filter_with_like(tables + views + temp_views, like)
+
+        with self.begin() as con:
+            out = con.exec_driver_sql(sql).cursor.fetch_arrow_table()
+
+        return self._filter_with_like(out["table_name"].to_pylist(), like)
 
     def read_postgres(
         self, uri: str, table_name: str | None = None, schema: str = "public"
