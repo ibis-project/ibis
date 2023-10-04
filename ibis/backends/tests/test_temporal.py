@@ -2531,6 +2531,11 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     reason="No match found for function signature to_timestamp(<NUMERIC>)",
 )
 @pytest.mark.notimpl(["oracle"], raises=sa.exc.DatabaseError)
+@pytest.mark.broken(
+    ["flink"],
+    reason="assert Timestamp('1969-12-31 19:00:00') == Timestamp('1970-01-01 00:00:00')",
+    raises=AssertionError,
+)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
