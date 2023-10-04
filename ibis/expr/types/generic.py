@@ -61,7 +61,7 @@ class Value(Expr):
 
     # TODO(kszucs): should rename to dtype
     def type(self) -> dt.DataType:
-        """Return the [DataType] of this expression."""
+        """Return the [DataType](./datatypes.qmd) of `self`."""
         return self.op().dtype
 
     def hash(self) -> ir.IntegerValue:
