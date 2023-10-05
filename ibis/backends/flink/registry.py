@@ -331,6 +331,28 @@ def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
 
 
 def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> str:
+    from ibis.expr.operations import temporal
+
+    if (
+        isinstance(op.year, temporal.ExtractYear) and
+        isinstance(op.month, temporal.ExtractMonth) and
+        isinstance(op.day, temporal.ExtractDay)
+    ):
+        arg_translated_list = [
+            translator.translate(op.year.arg),
+            translator.translate(op.month.arg),
+            translator.translate(op.day.arg),
+        ]
+        if len(set(arg_translated_list)) == 1:
+            return arg_translated_list[0]
+
+        else:
+            raise com.UnsupportedOperationError(
+                "Timestamp defined with ExtractYear/Month/Day"
+                "must extract from the same column. "
+                f"Can NOT extract from multiple columns: {arg_translated_list}"
+            )
+
     year, month, day = op.year, op.month, op.day
     date_string = f"{year.value}-{month.value}-{day.value}"
     return f"CAST('{date_string}' AS DATE)"
