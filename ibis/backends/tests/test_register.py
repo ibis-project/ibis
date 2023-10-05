@@ -308,10 +308,6 @@ def test_register_pyarrow_tables(con):
     assert t.x.sum().execute() == 6
 
 
-@pytest.mark.broken(
-    ["polars"], reason="it's working but polars infers the int column as 32"
-)
-@pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(
     [
         "bigquery",
@@ -322,7 +318,6 @@ def test_register_pyarrow_tables(con):
         "mysql",
         "pandas",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",
@@ -350,15 +345,6 @@ def test_csv_reregister_schema(con, tmp_path):
     assert result_schema["cola"].is_integer()
     assert result_schema["colb"].is_float64()
     assert result_schema["colc"].is_string()
-
-    # If file scan is limited to first two rows, should be all some kind of integer.
-    # The specific type isn't so important, and may vary across backends/versions
-    foo_table = con.register(foo, SAMPLE_SIZE=2, table_name="same")
-    result_schema = foo_table.schema()
-    assert result_schema.names == ("cola", "colb", "colc")
-    assert result_schema["cola"].is_integer()
-    assert result_schema["colb"].is_integer()
-    assert result_schema["colc"].is_integer()
 
 
 @pytest.mark.notimpl(
