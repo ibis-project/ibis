@@ -2509,6 +2509,37 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     raises=sa.exc.ProgrammingError,
     reason="No match found for function signature to_timestamp(<NUMERIC>)",
 )
+@pytest.mark.broken(
+    ["flink"],
+    raises=AssertionError,
+    reason=(
+        # TODO (mehmet): Figure out why 5 hours difference?
+        # FROM_UNIXTIME(numeric[, string])
+        # Returns a representation of the numeric argument as a value in
+        # string format (default is ‘yyyy-MM-dd HH:mm:ss’). numeric is an
+        # internal timestamp value representing seconds since ‘1970-01-01 00:00:00’ UTC,
+        # such as produced by the UNIX_TIMESTAMP() function. The return value is
+        # expressed in the session time zone (specified in TableConfig).
+        # E.g., FROM_UNIXTIME(44) returns ‘1970-01-01 00:00:44’ if in UTC
+        # time zone, but returns ‘1970-01-01 09:00:44’ if in ‘Asia/Tokyo’ time zone.
+        # Ref: https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/
+        "numpy array are different",
+        """expected   = 0      1970-01-01 00:00:00
+        1      1970-01-01 00:00:01
+        2      1970-01-01 00:00:02
+        3      1970-01-01 00:00:03
+        4      197...98   1970-01-01 00:00:08
+        7299   1970-01-01 00:00:09
+
+        result     = 0      1969-12-31 19:00:00
+        1      1969-12-31 19:00:01
+        2      1969-12-31 19:00:02
+        3      1969-12-31 19:00:03
+        4      196...98   1969-12-31 19:00:08
+        7299   1969-12-31 19:00:09
+        """
+    ),
+)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
