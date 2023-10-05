@@ -437,9 +437,9 @@ def in_values(op, **kw):
 
 
 _string_unary = {
-    ops.Strip: "strip",
-    ops.LStrip: "lstrip",
-    ops.RStrip: "rstrip",
+    ops.Strip: "strip_chars",
+    ops.LStrip: "strip_chars_start",
+    ops.RStrip: "strip_chars_end",
     ops.Lowercase: "to_lowercase",
     ops.Uppercase: "to_uppercase",
 }
@@ -924,7 +924,7 @@ _unary = {
     ops.Log10: operator.methodcaller("log10"),
     ops.Log2: lambda arg: arg.log(2),
     ops.Negate: operator.neg,
-    ops.Not: operator.methodcaller("is_not"),
+    ops.Not: operator.methodcaller("not_"),
     ops.NotNull: operator.methodcaller("is_not_null"),
     ops.Sin: operator.methodcaller("sin"),
     ops.Sqrt: operator.methodcaller("sqrt"),
@@ -1088,7 +1088,7 @@ def execute_not_all(op, **kw):
     if (op_where := op.where) is not None:
         arg = ops.IfElse(op_where, arg, None)
 
-    return translate(arg, **kw).all().is_not()
+    return translate(arg, **kw).all().not_()
 
 
 @translate.register(ops.NotAny)
@@ -1097,7 +1097,7 @@ def execute_not_any(op, **kw):
     if (op_where := op.where) is not None:
         arg = ops.IfElse(op_where, arg, None)
 
-    return translate(arg, **kw).any().is_not()
+    return translate(arg, **kw).any().not_()
 
 
 def _arg_min_max(op, func, **kw):
