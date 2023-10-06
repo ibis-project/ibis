@@ -2344,6 +2344,14 @@ INTERVAL_BACKEND_TYPES = {
     raises=AssertionError,
     reason="duckdb 0.8.0 returns DateOffset columns",
 )
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason=(
+        "UnsupportedOperationException: Python vectorized UDF doesn't "
+        "support logical type INTERVAL SECOND(3) NOT NULL currently"
+    )
+)
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
     result = con.execute(expr)
