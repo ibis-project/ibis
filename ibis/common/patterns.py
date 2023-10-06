@@ -119,9 +119,11 @@ class Pattern(Hashable):
             elif isinstance(annot, Enum):
                 # for enums we check the value against the enum values
                 return EqualTo(annot)
-            elif isinstance(annot, (str, ForwardRef)):
+            elif isinstance(annot, str):
                 # for strings and forward references we check in a lazy way
                 return LazyInstanceOf(annot)
+            elif isinstance(annot, ForwardRef):
+                return LazyInstanceOf(annot.__forward_arg__)
             else:
                 raise TypeError(f"Cannot create validator from annotation {annot!r}")
         elif origin is CoercedTo:
