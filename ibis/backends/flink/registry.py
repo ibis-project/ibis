@@ -248,6 +248,10 @@ def _array_index(translator: ExprTranslator, op: ops.arrays.ArrayIndex):
     return f"{table_column_translated} '[' {index_translated} ']'"
 
 
+def _array_length(translator: ExprTranslator, op: ops.arrays.ArrayLength) -> str:
+    return f"CARDINALITY({translator.translate(op.arg)})"
+
+
 def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
     arg = translator.translate(op.args[0])
     return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
@@ -434,8 +438,10 @@ operation_registry.update(
         # Binary operations
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
-        # Temporal functions
+        # Array functions
         ops.ArrayIndex: _array_index,
+        ops.ArrayLength: _array_length,
+        # Temporal functions
         ops.DateAdd: _date_add,
         ops.DateDiff: _date_diff,
         ops.DateFromYMD: _date_from_ymd,
