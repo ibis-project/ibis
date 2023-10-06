@@ -29,7 +29,7 @@ INSERT INTO struct VALUES
     (NULL),
     ({'a': 3.0, 'b': 'orange', 'c': NULL});
 
-CREATE OR REPLACE TABLE json_t (js JSON);
+CREATE OR REPLACE TABLE json_t (js TEXT);
 
 INSERT INTO json_t VALUES
     ('{"a": [1,2,3,4], "b": 1}'),
