@@ -799,7 +799,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ banana │    0.25 │
         │ orange │    0.33 │
         └────────┴─────────┘
-        >>> t.group_by("fruit").agg(total_cost=_.price.sum(), avg_cost=_.price.mean())
+        >>> t.group_by("fruit").agg(
+        ...     total_cost=_.price.sum(), avg_cost=_.price.mean()
+        ... ).order_by("fruit")
         ┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
         ┃ fruit  ┃ total_cost ┃ avg_cost ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
@@ -2259,14 +2261,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t.filter(
         ...     [t.species == "Adelie", t.body_mass_g > 3500]
-        ... ).sex.value_counts().dropna("sex")
+        ... ).sex.value_counts().dropna("sex").order_by("sex")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
         ┃ sex    ┃ sex_count ┃
         ┡━━━━━━━━╇━━━━━━━━━━━┩
         │ string │ int64     │
         ├────────┼───────────┤
-        │ male   │        68 │
         │ female │        22 │
+        │ male   │        68 │
         └────────┴───────────┘
         """
         import ibis.expr.analysis as an

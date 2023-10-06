@@ -658,26 +658,28 @@ class Value(Expr):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
-        >>> t.island.value_counts()
+        >>> t.island.value_counts().order_by("island")
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━┓
         ┃ island    ┃ island_count ┃
         ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━┩
         │ string    │ int64        │
         ├───────────┼──────────────┤
-        │ Torgersen │           52 │
         │ Biscoe    │          168 │
         │ Dream     │          124 │
+        │ Torgersen │           52 │
         └───────────┴──────────────┘
-        >>> t.island.substitute({"Torgersen": "torg", "Biscoe": "bisc"}).value_counts()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ SimpleCase(island, island) ┃ SimpleCase(island, island)_count ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                     │ int64                            │
-        ├────────────────────────────┼──────────────────────────────────┤
-        │ torg                       │                               52 │
-        │ bisc                       │                              168 │
-        │ Dream                      │                              124 │
-        └────────────────────────────┴──────────────────────────────────┘
+        >>> t.island.substitute({"Torgersen": "torg", "Biscoe": "bisc"}).name(
+        ...     "island"
+        ... ).value_counts().order_by("island")
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ island ┃ island_count ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ string │ int64        │
+        ├────────┼──────────────┤
+        │ Dream  │          124 │
+        │ bisc   │          168 │
+        │ torg   │           52 │
+        └────────┴──────────────┘
         """
         expr = self.case()
         if isinstance(value, dict):
@@ -1004,7 +1006,7 @@ class Value(Expr):
 
         Collect elements per group
 
-        >>> t.group_by("key").agg(v=lambda t: t.value.collect())
+        >>> t.group_by("key").agg(v=lambda t: t.value.collect()).order_by("key")
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ key    ┃ v                    ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1016,7 +1018,9 @@ class Value(Expr):
 
         Collect elements per group using a filter
 
-        >>> t.group_by("key").agg(v=lambda t: t.value.collect(where=t.value > 1))
+        >>> t.group_by("key").agg(
+        ...     v=lambda t: t.value.collect(where=t.value > 1)
+        ... ).order_by("key")
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ key    ┃ v                    ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1626,7 +1630,7 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │
         │ d      │
         └────────┘
-        >>> t.chars.value_counts()
+        >>> t.chars.value_counts().order_by("chars")
         ┏━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ chars  ┃ chars_count ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━━┩
