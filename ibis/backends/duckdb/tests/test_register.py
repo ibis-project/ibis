@@ -11,6 +11,7 @@ import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+import sqlalchemy as sa
 
 import ibis
 import ibis.common.exceptions as exc
@@ -279,9 +280,17 @@ def test_set_temp_dir(tmp_path):
     assert path.exists()
 
 
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason=(
+        "nix on linux cannot download duckdb extensions or data due to sandboxing; "
+        "duckdb will try to automatically install and load read_parquet"
+    ),
+    raises=(duckdb.IOException, sa.exc.DBAPIError),
+)
 def test_s3_403_fallback(con, httpserver, monkeypatch):
     # monkeypatch to avoid downloading extensions in tests
-    monkeypatch.setattr(con, "_load_extensions", lambda x: True)
+    monkeypatch.setattr(con, "_load_extensions", lambda _: True)
 
     # Throw a 403 to trigger fallback to pyarrow.dataset
     httpserver.expect_request("/myfile").respond_with_data(
