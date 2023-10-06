@@ -9,7 +9,7 @@ from rich.console import Console
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.expr.types.pretty import format_column
+from ibis.expr.types.pretty import format_column, format_values
 
 null = "NULL"
 
@@ -178,3 +178,12 @@ def test_non_interactive_column_repr():
 
     result = capture.get()
     assert "Selection" not in result
+
+
+def test_format_link():
+    result = format_values(dt.string, ["https://ibis-project.org"])
+    assert result[0].spans[0].style == "link"
+
+    # not links
+    result = format_values(dt.string, ["https://", "https:", "https"])
+    assert all(not rendered.spans for rendered in result)

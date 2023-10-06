@@ -3,6 +3,7 @@ from __future__ import annotations
 import datetime
 from functools import singledispatch
 from math import isfinite
+from urllib.parse import urlparse
 
 import rich
 from rich.align import Align
@@ -138,6 +139,12 @@ def _(dtype, values):
                 v = "".join(
                     f"[dim]{repr(c)[1:-1]}[/]" if not c.isprintable() else c for c in v
                 )
+            elif len(v) <= max_string:
+                url = urlparse(v)
+                # check both scheme and netloc to avoid rendering e.g.,
+                # `https://` as link
+                if url.scheme and url.netloc:
+                    v = f"[link]{v}[/link]"
             text = Text.from_markup(v, style="green")
         else:
             text = Text.styled("~", "dim")
