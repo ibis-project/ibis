@@ -27,6 +27,7 @@ def tpch_test(test: Callable[..., ir.Table]):
 
     @pytest.mark.tpch
     @pytest.mark.usefixtures("backend", "snapshot")
+    @pytest.mark.xdist_group("tpch")
     @functools.wraps(test)
     def wrapper(*args, backend, snapshot, **kwargs):
         backend_name = backend.name()
