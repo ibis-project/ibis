@@ -199,9 +199,9 @@ class scalar(_UDF):
         Python function call per row
 
         This calling pattern tends to be **much** slower than
-        [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
+        [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
         or
-        [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)-based
+        [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)-based
         vectorized UDFs.
         :::
 
@@ -231,8 +231,8 @@ class scalar(_UDF):
 
         See Also
         --------
-        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
-        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)
+        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
+        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
         """
         return _wrap(
             cls._make_wrapper,
@@ -284,8 +284,8 @@ class scalar(_UDF):
 
         See Also
         --------
-        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.scalar.python)
-        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pyarrow)
+        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
+        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
         """
         return _wrap(
             cls._make_wrapper,
@@ -336,8 +336,8 @@ class scalar(_UDF):
 
         See Also
         --------
-        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.scalar.python)
-        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.scalar.pandas)
+        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
+        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
         """
         return _wrap(
             cls._make_wrapper,
