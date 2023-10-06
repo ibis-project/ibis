@@ -212,7 +212,7 @@ def test_deferred_const():
     obj = const({"a": 1, "b": 2, "c": "gamma"})
 
     deferred = obj["c"].upper()
-    assert deferred._builder == Call(Attr(Item(obj, "c"), "upper"))
+    assert deferred._resolver == Call(Attr(Item(obj, "c"), "upper"))
     assert deferred.resolve() == "GAMMA"
 
 

@@ -43,7 +43,6 @@ from ibis.common.patterns import (
     FrozenDictOf,
     GenericInstanceOf,
     GenericSequenceOf,
-    Innermost,
     InstanceOf,
     IsIn,
     LazyInstanceOf,
@@ -63,7 +62,6 @@ from ibis.common.patterns import (
     Replace,
     SequenceOf,
     SubclassOf,
-    Topmost,
     TupleOf,
     TypeOf,
     Variable,
@@ -1241,22 +1239,6 @@ three = Add(one, two)
 six = Mul(two, three)
 seven = Add(one, six)
 fourteen = Add(seven, seven)
-
-
-def test_topmost_innermost():
-    inner = Object(Mul, Capture("a"), Capture("b"))
-    assert inner.match(six, {}) is six
-
-    context = {}
-    p = Topmost(inner)
-    m = p.match(seven, context)
-    assert m is six
-    assert context == {"a": two, "b": three}
-
-    p = Innermost(inner)
-    m = p.match(seven, context)
-    assert m is two
-    assert context == {"a": Lit(2), "b": one}
 
 
 def test_node():
