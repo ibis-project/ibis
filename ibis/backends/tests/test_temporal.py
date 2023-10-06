@@ -2268,6 +2268,14 @@ def test_time_literal(con, backend):
                     raises=AssertionError,
                     reason="has enough precision, but sqlalchemy dialect drops them",
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=AssertionError,
+                    reason=(
+                        "Flink does not support microsecond precision in time."
+                        "assert datetime.time(13, 20, 5) == datetime.time(13, 20, 5, 561021)"
+                    ),
+                ),
             ],
         ),
     ],

@@ -362,7 +362,7 @@ def _date_sub(translator: ExprTranslator, op: ops.temporal.DateSub) -> str:
     return _left_op_right(translator=translator, op_node=op, op_sign="-")
 
 
-def extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
+def _extract_epoch_seconds(translator: ExprTranslator, op: ops.Node) -> str:
     arg = translator.translate(op.arg)
     return f"UNIX_TIMESTAMP(CAST({arg} AS STRING))"
 
@@ -373,6 +373,20 @@ def _string_to_timestamp(
     arg = translator.translate(op.arg)
     format_string = translator.translate(op.format_str)
     return f"TO_TIMESTAMP({arg}, {format_string})"
+
+
+def _time(translator: ExprTranslator, op: ops.temporal.Time) -> str:
+    from ibis.expr.datatypes.core import Timestamp
+    from datetime import datetime
+
+    if isinstance(op.arg.dtype, Timestamp):
+        date_time: datetime = op.arg.value
+        return f"TIME '{date_time.hour}:{date_time.minute}:{date_time.second}'"
+
+    else:
+        raise com.UnsupportedOperationError(
+            f"Does NOT support dtype= {op.arg.dtype}"
+        )
 
 
 operation_registry.update(
@@ -391,7 +405,7 @@ operation_registry.update(
         ops.RegexSearch: fixed_arity("regexp", 2),
         # Timestamp operations
         ops.Date: _date,
-        ops.ExtractEpochSeconds: extract_epoch_seconds,
+        ops.ExtractEpochSeconds: _extract_epoch_seconds,
         ops.ExtractYear: _extract_field("year"),  # equivalent to YEAR(date)
         ops.ExtractMonth: _extract_field("month"),  # equivalent to MONTH(date)
         ops.ExtractDay: _extract_field("day"),  # equivalent to DAYOFMONTH(date)
@@ -428,5 +442,6 @@ operation_registry.update(
         ops.DateSub: _date_sub,
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.StringToTimestamp: _string_to_timestamp,
+        ops.Time: _time,
     }
 )
