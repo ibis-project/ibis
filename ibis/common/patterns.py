@@ -210,22 +210,6 @@ class Pattern(Hashable):
         """
         ...
 
-    def is_match(self, value: AnyType, context: dict[str, AnyType]) -> bool:
-        """Check if the value matches the pattern.
-
-        Parameters
-        ----------
-        value
-            The value to match the pattern against.
-        context
-            A dictionary providing arbitrary context for the pattern matching.
-
-        Returns
-        -------
-        Whether the value matches the pattern.
-        """
-        return self.match(value, context) is not NoMatch
-
     def describe(self, plural=False):
         return f"matching {self!r}"
 
@@ -369,16 +353,16 @@ class Replace(Slotted, Pattern):
     ----------
     matcher
         The pattern to match against.
-    replacer
-        The pattern to use as a replacement.
+    resolver
+        The deferred to use as a replacement.
     """
 
-    __slots__ = ("pattern", "deferred")
+    __slots__ = ("pattern", "resolver")
     pattern: Pattern
-    deferred: Resolver
+    resolver: Resolver
 
     def __init__(self, matcher, replacer):
-        super().__init__(pattern=pattern(matcher), deferred=resolver(replacer))
+        super().__init__(pattern=pattern(matcher), resolver=resolver(replacer))
 
     def match(self, value, context):
         value = self.pattern.match(value, context)
@@ -387,7 +371,7 @@ class Replace(Slotted, Pattern):
         # use the `_` reserved variable to record the value being replaced
         # in the context, so that it can be used in the replacer pattern
         context["_"] = value
-        return self.deferred.resolve(context)
+        return self.resolver.resolve(context)
 
 
 def replace(matcher):
@@ -435,22 +419,25 @@ class Check(Slotted, Pattern):
             return NoMatch
 
 
+If = Check
+
+
 class DeferredCheck(Slotted, Pattern):
-    __slots__ = ("deferred",)
-    deferred: Resolver
+    __slots__ = ("resolver",)
+    resolver: Resolver
 
     def __init__(self, obj):
-        super().__init__(deferred=resolver(obj))
+        super().__init__(resolver=resolver(obj))
 
     def describe(self, plural=False):
         if plural:
-            return f"values that satisfy {self.deferred!r}"
+            return f"values that satisfy {self.resolver!r}"
         else:
-            return f"a value that satisfies {self.deferred!r}"
+            return f"a value that satisfies {self.resolver!r}"
 
     def match(self, value, context):
         context["_"] = value
-        if self.deferred.resolve(context):
+        if self.resolver.resolve(context):
             return value
         else:
             return NoMatch
@@ -508,6 +495,9 @@ class EqualTo(Slotted, Pattern):
         return repr(self.value)
 
 
+Eq = EqualTo
+
+
 class DeferredEqualTo(Slotted, Pattern):
     """Pattern that checks a value equals to the given value.
 
@@ -517,21 +507,21 @@ class DeferredEqualTo(Slotted, Pattern):
         The value to check against.
     """
 
-    __slots__ = ("deferred",)
-    deferred: Resolver
+    __slots__ = ("resolver",)
+    resolver: Resolver
 
     def __init__(self, obj):
-        super().__init__(deferred=resolver(obj))
+        super().__init__(resolver=resolver(obj))
 
     def match(self, value, context):
         context["_"] = value
-        if value == self.deferred.resolve(context):
+        if value == self.resolver.resolve(context):
             return value
         else:
             return NoMatch
 
     def describe(self, plural=False):
-        return repr(self.deferred)
+        return repr(self.resolver)
 
 
 class Option(Slotted, Pattern):
@@ -1553,49 +1543,6 @@ class PatternMapping(Slotted, Pattern):
             return NoMatch
 
         return dict(zip(keys, values))
-
-
-class Topmost(Slotted, Pattern):
-    """Traverse the value tree topmost first and match the first value that matches."""
-
-    __slots__ = ("pattern", "filter")
-    pattern: Pattern
-    filter: AnyType
-
-    def __init__(self, searcher, filter=None):
-        super().__init__(pattern=pattern(searcher), filter=filter)
-
-    def match(self, value, context):
-        result = self.pattern.match(value, context)
-        if result is not NoMatch:
-            return result
-
-        for child in value.__children__(self.filter):
-            result = self.match(child, context)
-            if result is not NoMatch:
-                return result
-
-        return NoMatch
-
-
-class Innermost(Slotted, Pattern):
-    # matches items in the innermost layer first, but all matches belong to the same layer
-    """Traverse the value tree innermost first and match the first value that matches."""
-
-    __slots__ = ("pattern", "filter")
-    pattern: Pattern
-    filter: AnyType
-
-    def __init__(self, searcher, filter=None):
-        super().__init__(pattern=pattern(searcher), filter=filter)
-
-    def match(self, value, context):
-        for child in value.__children__(self.filter):
-            result = self.match(child, context)
-            if result is not NoMatch:
-                return result
-
-        return self.pattern.match(value, context)
 
 
 def NoneOf(*args) -> Pattern:

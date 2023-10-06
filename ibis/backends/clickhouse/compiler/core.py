@@ -122,6 +122,5 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         | replace_notall_with_max_not
     )
     # apply translate rules in topological order
-    results = op.map(fn, filter=(ops.TableNode, ops.Value))
-    node = results[op]
+    node = op.map(fn)[op]
     return node.this if isinstance(node, sg.exp.Subquery) else node

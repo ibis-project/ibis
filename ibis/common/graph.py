@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
 
 from ibis.common.bases import Hashable
 from ibis.common.collections import frozendict
-from ibis.common.patterns import NoMatch, pattern
+from ibis.common.patterns import NoMatch, Pattern, pattern
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     N = TypeVar("N")
 
 
-def _flatten_collections(node: Any, filter: type[N]) -> Iterator[N]:
+def _flatten_collections(node: Any) -> Iterator[N]:
     """Flatten collections of nodes into a single iterator.
 
     We treat common collection types inherently traversable (e.g. list, tuple, dict)
@@ -26,9 +26,7 @@ def _flatten_collections(node: Any, filter: type[N]) -> Iterator[N]:
     Parameters
     ----------
     node
-        Flattaneble object unless it's an instance of the types passed as filter.
-    filter
-        Type to filter out for the traversal, e.g. Node.
+        Flattaneble object.
 
     Returns
     -------
@@ -50,21 +48,21 @@ def _flatten_collections(node: Any, filter: type[N]) -> Iterator[N]:
     >>> c = MyNode(2, "c", (a, b))
     >>> d = MyNode(1, "d", (c,))
     >>>
-    >>> assert list(_flatten_collections(a, Node)) == [a]
-    >>> assert list(_flatten_collections((c,), Node)) == [c]
-    >>> assert list(_flatten_collections([a, b, (c, a)], Node)) == [a, b, c, a]
+    >>> assert list(_flatten_collections(a)) == [a]
+    >>> assert list(_flatten_collections((c,))) == [c]
+    >>> assert list(_flatten_collections([a, b, (c, a)])) == [a, b, c, a]
     """
-    if isinstance(node, filter):
+    if isinstance(node, Node):
         yield node
     elif isinstance(node, (tuple, list)):
         for item in node:
-            yield from _flatten_collections(item, filter)
+            yield from _flatten_collections(item)
     elif isinstance(node, (dict, frozendict)):
         for value in node.values():
-            yield from _flatten_collections(value, filter)
+            yield from _flatten_collections(value)
 
 
-def _recursive_get(obj: Any, dct: dict, filter: type) -> Any:
+def _recursive_lookup(obj: Any, dct: dict) -> Any:
     """Recursively replace objects in a nested structure with values from a dict.
 
     Since we treat common collection types inherently traversable, so we need to
@@ -76,8 +74,6 @@ def _recursive_get(obj: Any, dct: dict, filter: type) -> Any:
         Object to replace.
     dct
         Mapping of objects to replace with their values.
-    filter
-        Type to filter out for the traversal, e.g. Node.
 
     Returns
     -------
@@ -85,22 +81,36 @@ def _recursive_get(obj: Any, dct: dict, filter: type) -> Any:
 
     Examples
     --------
-    >>> from ibis.common.graph import _recursive_get
+    >>> from ibis.common.grounds import Concrete
+    >>> from ibis.common.graph import Node
     >>>
-    >>> dct = {1: 2, 3: 4}
-    >>> _recursive_get((1, 3), dct, filter=int)
-    (2, 4)
-    >>> _recursive_get(frozendict({1: 3}), dct, filter=int)
-    {1: 4}
-    >>> _recursive_get(frozendict({1: (1, 3)}), dct, filter=int)
-    {1: (2, 4)}
+    >>> class MyNode(Concrete, Node):
+    ...     number: int
+    ...     string: str
+    ...     children: tuple[Node, ...]
+    ...
+    >>> a = MyNode(4, "a", ())
+    >>>
+    >>> b = MyNode(3, "b", ())
+    >>> c = MyNode(2, "c", (a, b))
+    >>> d = MyNode(1, "d", (c,))
+    >>>
+    >>> dct = {a: "A", b: "B"}
+    >>> _recursive_lookup(a, dct)
+    'A'
+    >>> _recursive_lookup((a, b), dct)
+    ('A', 'B')
+    >>> _recursive_lookup({1: a, 2: b}, dct)
+    {1: 'A', 2: 'B'}
+    >>> _recursive_lookup((a, frozendict({1: c})), dct)
+    ('A', {1: MyNode(number=2, ...)})
     """
-    if isinstance(obj, filter):
-        return dct[obj]
+    if isinstance(obj, Node):
+        return dct.get(obj, obj)
     elif isinstance(obj, (tuple, list)):
-        return tuple(_recursive_get(o, dct, filter) for o in obj)
+        return tuple(_recursive_lookup(o, dct) for o in obj)
     elif isinstance(obj, (dict, frozendict)):
-        return {k: _recursive_get(v, dct, filter) for k, v in obj.items()}
+        return {k: _recursive_lookup(v, dct) for k, v in obj.items()}
     else:
         return obj
 
@@ -118,30 +128,11 @@ class Node(Hashable):
     def __argnames__(self) -> tuple[str, ...]:
         """Sequence of argument names."""
 
-    def __children__(self, filter: Optional[type] = None) -> tuple[Node, ...]:
-        """Return the children of this node.
-
-        This method is used to traverse the Node so it returns the children of the node
-        in the order they should be traversed. We treat common collection types
-        inherently traversable (e.g. list, tuple, dict), so this method flattens and
-        optionally filters the arguments of the node.
-
-        Parameters
-        ----------
-        filter : type, default Node
-            Type to filter out for the traversal, Node is used by default.
-
-        Returns
-        -------
-        Child nodes of this node.
-        """
-        return tuple(_flatten_collections(self.__args__, filter or Node))
-
     def __rich_repr__(self):
         """Support for rich reprerentation of the node."""
         return zip(self.__argnames__, self.__args__)
 
-    def map(self, fn: Callable, filter: Optional[type] = None) -> dict[Node, Any]:
+    def map(self, fn: Callable, filter: Optional[Any] = None) -> dict[Node, Any]:
         """Apply a function to all nodes in the graph.
 
         The traversal is done in a topological order, so the function receives the
@@ -149,39 +140,40 @@ class Node(Hashable):
 
         Parameters
         ----------
-        fn : Callable
+        fn
             Function to apply to each node. It receives the node as the first argument,
             the results as the second and the results of the children as keyword
             arguments.
-        filter : Optional[type], default None
-            Type to filter out for the traversal, Node is filtered out by default.
+        filter
+            Pattern-like object to filter out nodes from the traversal. Essentially
+            the traversal will only visit nodes that match the given pattern and
+            stop otherwise.
 
         Returns
         -------
         A mapping of nodes to their results.
         """
-        filter = filter or Node
         results: dict[Node, Any] = {}
         for node in Graph.from_bfs(self, filter=filter).toposort():
             # minor optimization to directly recurse into the children
             kwargs = {
-                k: _recursive_get(v, results, filter)
+                k: _recursive_lookup(v, results)
                 for k, v in zip(node.__argnames__, node.__args__)
             }
             results[node] = fn(node, results, **kwargs)
         return results
 
-    def find(
-        self, type: type | tuple[type], filter: Optional[type] = None
-    ) -> set[Node]:
+    def find(self, type: type | tuple[type], filter: Optional[Any] = None) -> set[Node]:
         """Find all nodes of a given type in the graph.
 
         Parameters
         ----------
-        type : type | tuple[type]
+        type
             Type or tuple of types to find.
-        filter : Optional[type], default None
-            Type to filter out for the traversal, Node is filtered out by default.
+        filter
+            Pattern-like object to filter out nodes from the traversal. Essentially
+            the traversal will only visit nodes that match the given pattern and
+            stop otherwise.
 
         Returns
         -------
@@ -192,7 +184,7 @@ class Node(Hashable):
 
     @experimental
     def match(
-        self, pat: Any, filter: Optional[type] = None, context: Optional[dict] = None
+        self, pat: Any, filter: Optional[Any] = None, context: Optional[dict] = None
     ) -> set[Node]:
         """Find all nodes matching a given pattern in the graph.
 
@@ -201,12 +193,14 @@ class Node(Hashable):
 
         Parameters
         ----------
-        pat : Any
+        pat
             Pattern to match. `ibis.common.pattern()` function is used to coerce the
             input value into a pattern. See the pattern module for more details.
-        filter : Optional[type], default None
-            Type to filter out for the traversal, Node is filtered out by default.
-        context : Optional[dict], default None
+        filter
+            Pattern-like object to filter out nodes from the traversal. Essentially
+            the traversal will only visit nodes that match the given pattern and
+            stop otherwise.
+        context
             Optional context to use for the pattern matching.
 
         Returns
@@ -216,7 +210,7 @@ class Node(Hashable):
         pat = pattern(pat)
         ctx = context or {}
         nodes = Graph.from_bfs(self, filter=filter).nodes()
-        return {node for node in nodes if pat.is_match(node, ctx)}
+        return {node for node in nodes if pat.match(node, ctx) is not NoMatch}
 
     @experimental
     def replace(
@@ -262,7 +256,7 @@ class Node(Hashable):
                 return result
 
         results = self.map(fn, filter=filter)
-        return results[self]
+        return results.get(self, self)
 
 
 class Graph(dict[Node, Sequence[Node]]):
@@ -284,17 +278,19 @@ class Graph(dict[Node, Sequence[Node]]):
         super().__init__(mapping, **kwargs)
 
     @classmethod
-    def from_bfs(cls, root: Node, filter=Node) -> Self:
+    def from_bfs(cls, root: Node, filter: Optional[Any] = None) -> Self:
         """Construct a graph from a root node using a breadth-first search.
 
         The traversal is implemented in an iterative fashion using a queue.
 
         Parameters
         ----------
-        root : Node
+        root
             Root node of the graph.
-        filter : Optional[type], default None
-            Type to filter out for the traversal, Node is filtered out by default.
+        filter
+            Pattern-like object to filter out nodes from the traversal. Essentially
+            the traversal will only visit nodes that match the given pattern and
+            stop otherwise.
 
         Returns
         -------
@@ -303,28 +299,48 @@ class Graph(dict[Node, Sequence[Node]]):
         if not isinstance(root, Node):
             raise TypeError("node must be an instance of ibis.common.graph.Node")
 
-        queue = deque([root])
+        queue = deque()
         graph = cls()
 
-        while queue:
-            if (node := queue.popleft()) not in graph:
-                graph[node] = deps = node.__children__(filter)
-                queue.extend(deps)
+        if filter is None:
+            # fast path for the default no filter case, according to benchmarks
+            # this is gives a 10% speedup compared to the filtered version
+            queue.append(root)
+            while queue:
+                if (node := queue.popleft()) not in graph:
+                    children = tuple(_flatten_collections(node.__args__))
+                    graph[node] = children
+                    queue.extend(children)
+        else:
+            filter = pattern(filter)
+            if filter.match(root, {}) is not NoMatch:
+                queue.append(root)
+            while queue:
+                if (node := queue.popleft()) not in graph:
+                    children = tuple(
+                        child
+                        for child in _flatten_collections(node.__args__)
+                        if filter.match(child, {}) is not NoMatch
+                    )
+                    graph[node] = children
+                    queue.extend(children)
 
         return graph
 
     @classmethod
-    def from_dfs(cls, root: Node, filter=Node) -> Self:
+    def from_dfs(cls, root: Node, filter: Optional[Any] = None) -> Self:
         """Construct a graph from a root node using a depth-first search.
 
         The traversal is implemented in an iterative fashion using a stack.
 
         Parameters
         ----------
-        root : Node
+        root
             Root node of the graph.
-        filter : Optional[type], default None
-            Type to filter out for the traversal, Node is filtered out by default.
+        filter
+            Pattern-like object to filter out nodes from the traversal. Essentially
+            the traversal will only visit nodes that match the given pattern and
+            stop otherwise.
 
         Returns
         -------
@@ -333,13 +349,31 @@ class Graph(dict[Node, Sequence[Node]]):
         if not isinstance(root, Node):
             raise TypeError("node must be an instance of ibis.common.graph.Node")
 
-        stack = deque([root])
+        stack = deque()
         graph = dict()
 
-        while stack:
-            if (node := stack.pop()) not in graph:
-                graph[node] = deps = node.__children__(filter)
-                stack.extend(deps)
+        if filter is None:
+            # fast path for the default no filter case, according to benchmarks
+            # this is gives a 10% speedup compared to the filtered version
+            stack.append(root)
+            while stack:
+                if (node := stack.pop()) not in graph:
+                    children = tuple(_flatten_collections(node.__args__))
+                    graph[node] = children
+                    stack.extend(children)
+        else:
+            filter = pattern(filter)
+            if filter.match(root, {}) is not NoMatch:
+                stack.append(root)
+            while stack:
+                if (node := stack.pop()) not in graph:
+                    children = tuple(
+                        child
+                        for child in _flatten_collections(node.__args__)
+                        if filter.match(child, {}) is not NoMatch
+                    )
+                    graph[node] = children
+                    stack.extend(children)
 
         return cls(reversed(graph.items()))
 
@@ -399,34 +433,42 @@ class Graph(dict[Node, Sequence[Node]]):
         return result
 
 
-def bfs(node: Node) -> Graph:
+def bfs(node: Node, filter: Optional[Any] = None) -> Graph:
     """Construct a graph from a root node using a breadth-first search.
 
     Parameters
     ----------
-    node : Node
+    node
         Root node of the graph.
+    filter
+        Pattern-like object to filter out nodes from the traversal. Essentially
+        the traversal will only visit nodes that match the given pattern and
+        stop otherwise.
 
     Returns
     -------
     A graph constructed from the root node.
     """
-    return Graph.from_bfs(node)
+    return Graph.from_bfs(node, filter=filter)
 
 
-def dfs(node: Node) -> Graph:
+def dfs(node: Node, filter: Optional[Any] = None) -> Graph:
     """Construct a graph from a root node using a depth-first search.
 
     Parameters
     ----------
-    node : Node
+    node
         Root node of the graph.
+    filter
+        Pattern-like object to filter out nodes from the traversal. Essentially
+        the traversal will only visit nodes that match the given pattern and
+        stop otherwise.
 
     Returns
     -------
     A graph constructed from the root node.
     """
-    return Graph.from_dfs(node)
+    return Graph.from_dfs(node, filter=filter)
 
 
 def toposort(node: Node) -> Graph:
@@ -452,31 +494,36 @@ halt = False
 def traverse(
     fn: Callable[[Node], tuple[bool | Iterable, Any]],
     node: Iterable[Node] | Node,
-    filter=Node,
+    filter: Optional[Any] = None,
 ) -> Iterator[Any]:
     """Utility for generic expression tree traversal.
 
     Parameters
     ----------
     fn
-        A function applied on each expression. The first element of the tuple
-        controls the traversal, and the second is the result if its not `None`.
+        A function applied on each expression. The first element of the tuple controls
+        the traversal, and the second is the result if its not `None`.
     node
         The Node expression or a list of expressions.
     filter
-        Restrict initial traversal to this kind of node
+        Pattern-like object to filter out nodes from the traversal. The traversal will
+        only visit nodes that match the given pattern and stop otherwise.
     """
-    args = reversed(node) if isinstance(node, Iterable) else [node]
-    todo: deque[Node] = deque(arg for arg in args if isinstance(arg, filter))
+
+    args = reversed(node) if isinstance(node, Sequence) else [node]
+    todo: deque[Node] = deque(args)
     seen: set[Node] = set()
+    filter: Pattern = pattern(filter or ...)
 
     while todo:
         node = todo.pop()
 
         if node in seen:
             continue
-        else:
-            seen.add(node)
+        if filter.match(node, {}) is NoMatch:
+            continue
+
+        seen.add(node)
 
         control, result = fn(node)
         if result is not None:
@@ -484,13 +531,13 @@ def traverse(
 
         if control is not halt:
             if control is proceed:
-                args = node.__children__(filter)
+                children = tuple(_flatten_collections(node.__args__))
             elif isinstance(control, Iterable):
-                args = control
+                children = control
             else:
                 raise TypeError(
                     "First item of the returned tuple must be "
                     "an instance of boolean or iterable"
                 )
 
-            todo.extend(reversed(args))
+            todo.extend(reversed(children))

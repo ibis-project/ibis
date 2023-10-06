@@ -186,7 +186,6 @@ def test_bug_duplicated_where(airlines, snapshot):
     expr = t.group_by("dest").mutate(
         dest_avg=t.arrdelay.mean(), dev=t.arrdelay - t.arrdelay.mean()
     )
-
     tmp1 = expr[expr.dev.notnull()]
     tmp2 = tmp1.order_by(ibis.desc("dev"))
     expr = tmp2.limit(10)

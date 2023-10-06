@@ -9,16 +9,17 @@ from ibis.common.graph import (
     Graph,
     Node,
     _flatten_collections,
-    _recursive_get,
+    _recursive_lookup,
     bfs,
     dfs,
     toposort,
 )
 from ibis.common.grounds import Annotable, Concrete
-from ibis.common.patterns import InstanceOf, TupleOf
+from ibis.common.patterns import Eq, If, InstanceOf, Object, TupleOf, _
 
 
 class MyNode(Node):
+    __match_args__ = ("name", "children")
     __slots__ = ("name", "children")
 
     def __init__(self, name, children):
@@ -114,8 +115,34 @@ def test_nested_children():
     c = MyNode(name="c", children=[])
     d = MyNode(name="d", children=[])
     e = MyNode(name="e", children=[[b, c], d])
+    assert bfs(e) == {
+        e: (b, c, d),
+        b: (a,),
+        c: (),
+        d: (),
+        a: (),
+    }
 
-    assert e.__children__() == (b, c, d)
+
+@pytest.mark.parametrize("func", [bfs, dfs, Graph.from_bfs, Graph.from_dfs])
+def test_traversals_with_filter(func):
+    graph = func(A, filter=If(lambda x: x.name != "B"))
+    assert graph == {A: (C,), C: ()}
+
+    graph = func(A, filter=If(lambda x: x.name != "D"))
+    assert graph == {E: (), B: (E,), A: (B, C), C: ()}
+
+
+@pytest.mark.parametrize("func", [bfs, dfs, Graph.from_bfs, Graph.from_dfs])
+def test_traversal_with_filtering_out_root(func):
+    graph = func(A, filter=If(lambda x: x.name != "A"))
+    assert graph == {}
+
+
+def test_replace_with_filtering_out_root():
+    rule = InstanceOf(MyNode) >> MyNode(name="new", children=[])
+    result = A.replace(rule, filter=If(lambda x: x.name != "A"))
+    assert result == A
 
 
 def test_example():
@@ -179,15 +206,21 @@ def test_concrete_with_traversable_children():
 
     node = All((T, F), strict=True)
     assert node.__args__ == ((T, F), True)
-    assert node.__children__() == (T, F)
+    assert bfs(node) == {node: (T, F), T: (), F: ()}
 
     node = Either(T, F)
     assert node.__args__ == (T, F)
-    assert node.__children__() == (T, F)
+    assert bfs(node) == {node: (T, F), T: (), F: ()}
 
     node = All((T, Either(T, Either(T, F))), strict=False)
     assert node.__args__ == ((T, Either(T, Either(T, F))), False)
-    assert node.__children__() == (T, Either(T, Either(T, F)))
+    assert bfs(node) == {
+        node: (T, Either(T, Either(T, F))),
+        T: (),
+        F: (),
+        Either(T, Either(T, F)): (T, Either(T, F)),
+        Either(T, F): (T, F),
+    }
 
     copied = node.copy(arguments=(T, F))
     assert copied == All((T, F), strict=False)
@@ -222,44 +255,52 @@ def test_flatten_collections():
     # test that flatten collections doesn't recurse into arbitrary mappings
     # and sequences, just the commonly used builtin ones: list, tuple, dict
 
-    result = _flatten_collections(
-        [0.0, 1, 2, [3, 4, (5, 6)], "7", MySequence(8, 9)], filter=int
-    )
-    assert list(result) == [1, 2, 3, 4, 5, 6]
+    result = _flatten_collections([0.0, A, B, [C, D, (E, 6)], "7", MySequence(8, A)])
+    assert list(result) == [A, B, C, D, E]
 
     result = _flatten_collections(
         {
             "a": 0.0,
-            "b": 1,
-            "c": (MyMapping(d=2, e=3), frozendict(f=4)),
-            "d": [5, "6", {"e": (7, 8.9)}],
-        },
-        filter=int,
+            "b": A,
+            "c": (MyMapping(d=B, e=3), frozendict(f=C)),
+            "d": [5, "6", {"e": (D, 8.9)}],
+        }
     )
-    assert list(result) == [1, 4, 5, 7]
+    assert list(result) == [A, C, D]
 
 
-def test_recurse_get():
-    results = {"a": "A", "b": "B", "c": "C", "d": "D"}
+def test_recursive_lookup():
+    results = {A: "A", B: "B", C: "C", D: "D"}
 
-    assert _recursive_get((0, 1, "a", {"b": "c"}), results, filter=str) == (
-        0,
-        1,
+    assert _recursive_lookup((A, B, "a", {"b": C}), results) == (
         "A",
+        "B",
+        "a",
         {"b": "C"},
     )
-    assert _recursive_get({"a": "b", "c": "d"}, results, filter=str) == {
+    assert _recursive_lookup({"a": B, "c": D}, results) == {
         "a": "B",
         "c": "D",
     }
-    assert _recursive_get(["a", "b", "c"], results, filter=str) == ("A", "B", "C")
-    assert _recursive_get("a", results, filter=str) == "A"
+    assert _recursive_lookup([A, B, "c"], results) == ("A", "B", "c")
+    assert _recursive_lookup(A, results) == "A"
 
-    my_seq = MySequence("a", "b", "c")
-    my_map = MyMapping(a="a", b="b", c="c")
-    assert _recursive_get(("a", my_seq, ["b", "a"], my_map), results, filter=str) == (
+    my_seq = MySequence(A, "b", "c")
+    my_map = MyMapping(a="a", b=B, c="c")
+    assert _recursive_lookup((A, my_seq, [B, A], my_map), results) == (
         "A",
         my_seq,
         ("B", "A"),
         my_map,
     )
+
+
+def test_node_match():
+    result = A.match(If(_.name == "C"))
+    assert result == {C}
+
+    result = A.match(Object(MyNode, name=Eq("D")))
+    assert result == {D}
+
+    result = A.match(If(_.children))
+    assert result == {A, B}
