@@ -50,7 +50,7 @@ class AnnotableMeta(AbstractMeta):
         annotations = dct.get("__annotations__", {})
 
         # TODO(kszucs): pass dct as localns to evaluate_annotations
-        typehints = evaluate_annotations(annotations, module)
+        typehints = evaluate_annotations(annotations, module, clsname)
         for name, typehint in typehints.items():
             if get_origin(typehint) is ClassVar:
                 continue

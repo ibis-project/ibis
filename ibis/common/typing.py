@@ -167,7 +167,9 @@ def get_bound_typevars(obj: Any) -> dict[TypeVar, tuple[str, type]]:
 
 
 def evaluate_annotations(
-    annots: dict[str, str], module_name: str, localns: Optional[Namespace] = None
+    annots: dict[str, str],
+    module_name: str,
+    class_name: Optional[str] = None,
 ) -> dict[str, Any]:
     """Evaluate type annotations that are strings.
 
@@ -178,8 +180,9 @@ def evaluate_annotations(
     module_name
         The name of the module that the annotations are defined in, hence
         providing global scope.
-    localns
-        The local namespace to use for evaluation.
+    class_name
+        The name of the class that the annotations are defined in, hence
+        providing Self type.
 
     Returns
     -------
@@ -193,6 +196,10 @@ def evaluate_annotations(
     """
     module = sys.modules.get(module_name, None)
     globalns = getattr(module, "__dict__", None)
+    if class_name is None:
+        localns = None
+    else:
+        localns = dict(Self=f"{module_name}.{class_name}")
     return {
         k: eval(v, globalns, localns) if isinstance(v, str) else v  # noqa: PGH001
         for k, v in annots.items()

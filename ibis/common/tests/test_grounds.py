@@ -5,7 +5,7 @@ import pickle
 import sys
 import weakref
 from abc import ABCMeta
-from typing import Callable, Generic, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar, Union
 
 import pytest
 
@@ -41,6 +41,9 @@ from ibis.common.patterns import (
     TupleOf,
 )
 from ibis.tests.util import assert_pickle_roundtrip
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 is_any = InstanceOf(object)
 is_bool = InstanceOf(bool)
@@ -312,6 +315,21 @@ def test_annotable_with_type_annotations() -> None:
 
     with pytest.raises(ValidationError):
         Op2()
+
+
+class RecursiveNode(Annotable):
+    child: Optional[Self] = None
+
+
+def test_annotable_with_self_typehint() -> None:
+    node = RecursiveNode(RecursiveNode(RecursiveNode(None)))
+    assert isinstance(node, RecursiveNode)
+    assert isinstance(node.child, RecursiveNode)
+    assert isinstance(node.child.child, RecursiveNode)
+    assert node.child.child.child is None
+
+    with pytest.raises(ValidationError):
+        RecursiveNode(1)
 
 
 def test_annotable_with_recursive_generic_type_annotations():

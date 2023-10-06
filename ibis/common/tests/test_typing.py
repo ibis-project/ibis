@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Generic, Optional, Union
+from typing import ForwardRef, Generic, Optional, Union
 
 from typing_extensions import TypeVar
 
@@ -41,9 +41,16 @@ def example(a: int, b: str) -> str:  # type: ignore
 
 
 def test_evaluate_annotations() -> None:
-    annotations = {"a": "Union[int, str]", "b": "Optional[str]"}
-    hints = evaluate_annotations(annotations, module_name=__name__)
+    annots = {"a": "Union[int, str]", "b": "Optional[str]"}
+    hints = evaluate_annotations(annots, module_name=__name__)
     assert hints == {"a": Union[int, str], "b": Optional[str]}
+
+
+def test_evaluate_annotations_with_self() -> None:
+    annots = {"a": "Union[int, Self]", "b": "Optional[Self]"}
+    myhint = ForwardRef(f"{__name__}.My")
+    hints = evaluate_annotations(annots, module_name=__name__, class_name="My")
+    assert hints == {"a": Union[int, myhint], "b": Optional[myhint]}
 
 
 def test_get_type_hints() -> None:
