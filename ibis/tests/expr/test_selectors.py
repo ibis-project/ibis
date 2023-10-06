@@ -475,3 +475,18 @@ def test_c_error_on_misspelled_column(penguins):
     sel = s.any_of(s.c("island", "inland"))
     with pytest.raises(exc.IbisInputError, match=match):
         penguins.select(sel)
+
+
+def test_order_by_with_selectors(penguins):
+    expr = penguins.order_by(s.of_type("string"))
+    assert tuple(key.name for key in expr.op().sort_keys) == (
+        "species",
+        "island",
+        "sex",
+    )
+
+    expr = penguins.order_by(s.all())
+    assert tuple(key.name for key in expr.op().sort_keys) == tuple(expr.columns)
+
+    with pytest.raises(exc.IbisError):
+        penguins.order_by(~s.all())
