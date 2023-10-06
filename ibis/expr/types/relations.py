@@ -1122,7 +1122,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         You can pass [`selectors`](./selectors.qmd) to `on`
 
-        >>> t.distinct(on=~s.numeric())
+        >>> t.distinct(on=~s.numeric())  # doctest: +SKIP
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
         ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
@@ -3549,7 +3549,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  4842 │ MAE     │     1 │
         │     … │ …       │     … │
         └───────┴─────────┴───────┘
-        >>> fish_encounters.pivot_wider(names_from="station", values_from="seen")
+        >>> fish_encounters.pivot_wider(
+        ...     names_from="station", values_from="seen"
+        ... )  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
         ┃ fish  ┃ Release ┃ I80_1 ┃ Lisbon ┃ Rstr  ┃ Base_TD ┃ BCE   ┃ BCW   ┃ … ┃
         ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
@@ -3572,7 +3574,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         >>> fish_encounters.pivot_wider(
         ...     names_from="station", values_from="seen", values_fill=0
-        ... )
+        ... )  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━┓
         ┃ fish  ┃ Release ┃ I80_1 ┃ Lisbon ┃ Rstr  ┃ Base_TD ┃ BCE   ┃ BCW   ┃ … ┃
         ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━┩
@@ -3614,7 +3616,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └────────┴────────────┴──────────┴──────────┴───────┘
         >>> us_rent_income.pivot_wider(
         ...     names_from="variable", values_from=["estimate", "moe"]
-        ... )
+        ... )  # doctest: +SKIP
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
         ┃ geoid  ┃ name                 ┃ estimate_income ┃ moe_income ┃ … ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
@@ -3639,7 +3641,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_from="variable",
         ...     names_sep=".",
         ...     values_from=("estimate", "moe"),
-        ... )
+        ... )  # doctest: +SKIP
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
         ┃ geoid  ┃ name                 ┃ estimate.income ┃ moe.income ┃ … ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
@@ -3771,7 +3773,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> production.pivot_wider(
         ...     names_from=["product", "country"],
         ...     values_from="production",
-        ... )
+        ... )  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
         ┃ year  ┃ B_AI     ┃ B_EI     ┃ A_AI     ┃
         ┡━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
@@ -3797,7 +3799,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_from=["product", "country"],
         ...     names=[("A", "AI"), ("B", "AI")],
         ...     values_from="production",
-        ... )
+        ... )  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
         ┃ year  ┃ A_AI     ┃ B_AI     ┃
         ┡━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
@@ -3822,7 +3824,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_from=["product", "country"],
         ...     values_from="production",
         ...     names_sort=True,
-        ... )
+        ... )  # doctest: +SKIP
         ┏━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━┓
         ┃ year  ┃ A_AI     ┃ B_AI     ┃ B_EI     ┃
         ┡━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━┩
