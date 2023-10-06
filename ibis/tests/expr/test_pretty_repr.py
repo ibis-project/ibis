@@ -181,9 +181,18 @@ def test_non_interactive_column_repr():
 
 
 def test_format_link():
-    result = format_values(dt.string, ["https://ibis-project.org"])
-    assert result[0].spans[0].style == "link"
+    result = format_values(dt.string, ["https://ibis-project.org"])[0]
+    assert str(result) == "https://ibis-project.org"
+    assert result.spans[0].style == "link https://ibis-project.org"
+
+    # Check that long urls are truncated visually, but the link
+    # itself is still the full url.
+    long = "https://" + "x" * 1000
+    result = format_values(dt.string, [long])[0]
+    assert str(result).startswith("https://xxxxx")
+    assert len(str(result)) < 1000
+    assert result.spans[0].style == "link " + long
 
     # not links
-    result = format_values(dt.string, ["https://", "https:", "https"])
-    assert all(not rendered.spans for rendered in result)
+    results = format_values(dt.string, ["https://", "https:", "https"])
+    assert all(not rendered.spans for rendered in results)
