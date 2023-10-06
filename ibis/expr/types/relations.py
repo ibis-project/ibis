@@ -1296,7 +1296,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def order_by(
         self,
-        by: str | ir.Column | Sequence[str] | Sequence[ir.Column] | None,
+        by: str
+        | ir.Column
+        | s.Selector
+        | Sequence[str]
+        | Sequence[ir.Column]
+        | Sequence[s.Selector]
+        | None,
     ) -> Table:
         """Sort a table by one or more expressions.
 
@@ -1421,19 +1427,21 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     2 │ B      │     6 │
         └───────┴────────┴───────┘
         """
+        import ibis.selectors as s
+
         sort_keys = []
         for item in util.promote_list(by):
             if isinstance(item, tuple):
                 if len(item) != 2:
-                    raise ValueError(
-                        "Tuple must be of length 2, got {}".format(len(item))
-                    )
-                item = (bind_expr(self, item[0]), item[1])
-                used_tuple_syntax = True
+                    raise ValueError(f"Tuple must be of length 2, got {len(item):d}")
+                sort_keys.append(bind_expr(self, item[0]), item[1])
+            elif isinstance(item, s.Selector):
+                sort_keys.extend(item.expand(self))
             else:
-                item = bind_expr(self, item)
-            sort_keys.append(item)
+                sort_keys.append(bind_expr(self, item))
 
+        if not sort_keys:
+            raise com.IbisError("At least one sort key must be provided")
         return self.op().order_by(sort_keys).to_expr()
 
     def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
