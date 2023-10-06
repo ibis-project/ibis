@@ -2187,6 +2187,7 @@ def test_timestamp_with_timezone_literal(
 
 TIME_BACKEND_TYPES = {
     "bigquery": "TIME",
+    "flink": "TIME(0) NOT NULL",
     "snowflake": "TIME",
     "sqlite": "text",
     "trino": "time(3)",

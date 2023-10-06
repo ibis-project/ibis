@@ -110,75 +110,6 @@ def _filter(translator: ExprTranslator, op: ops.Node) -> str:
     return f"CASE WHEN {bool_expr} THEN {true_expr} ELSE {false_null_expr} END"
 
 
-def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
-    return _left_op_right(translator=translator, op_node=op, op_sign="+")
-
-
-def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
-    return _left_op_right(translator=translator, op_node=op, op_sign="-")
-
-
-def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
-    table_column = op.left
-    interval = op.right
-
-    table_column_translated = translator.translate(table_column)
-    interval_translated = translator.translate(interval)
-    return f"{table_column_translated} - {interval_translated}"
-
-
-def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
-    arg, unit = op.args
-
-    numeric = helpers.quote_identifier(arg.name, force=True)
-    if unit == TimestampUnit.MILLISECOND:
-        precision = 3
-    elif unit == TimestampUnit.SECOND:
-        precision = 0
-    else:
-        raise ValueError(f"{unit!r} unit is not supported!")
-
-    return f"TO_TIMESTAMP_LTZ({numeric}, {precision})"
-
-
-def _timestamp_from_ymdhms(
-    translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
-) -> str:
-    from ibis.expr.operations import temporal
-
-    if (
-        isinstance(op.year, temporal.ExtractYear) and
-        isinstance(op.month, temporal.ExtractMonth) and
-        isinstance(op.day, temporal.ExtractDay) and
-        isinstance(op.hours, temporal.ExtractHour) and
-        isinstance(op.minutes, temporal.ExtractMinute) and
-        isinstance(op.seconds, temporal.ExtractSecond)
-    ):
-        arg_translated_list = [
-            translator.translate(op.year.arg),
-            translator.translate(op.month.arg),
-            translator.translate(op.day.arg),
-            translator.translate(op.hours.arg),
-            translator.translate(op.minutes.arg),
-            translator.translate(op.seconds.arg)
-        ]
-        if len(set(arg_translated_list)) == 1:
-            return arg_translated_list[0]
-
-        else:
-            raise com.UnsupportedOperationError(
-                "Timestamp defined with ExtractYear/Month/Day/... "
-                "must extract from the same column. "
-                f"Can NOT extract from multiple columns: {arg_translated_list}"
-            )
-
-    year, month, day = op.year.value, op.month.value, op.day.value
-    hours, minutes, seconds = op.hours.value, op.minutes.value, op.seconds.value
-
-    date_string = f"{year}-{month}-{day} {hours}:{minutes}:{seconds}"
-    return f"CAST('{date_string}' AS TIMESTAMP)"
-
-
 def _format_window_start(translator: ExprTranslator, boundary):
     if boundary is None:
         return "UNBOUNDED PRECEDING"
@@ -389,6 +320,80 @@ def _time(translator: ExprTranslator, op: ops.temporal.Time) -> str:
         )
 
 
+def _time_from_hms(translator: ExprTranslator, op: ops.temporal.TimeFromHMS) -> str:
+    hours, minutes, seconds = op.hours.value, op.minutes.value, op.seconds.value
+    return f"TIME '{hours}:{minutes}:{seconds}'"
+
+
+def _timestamp_add(translator: ExprTranslator, op: ops.temporal.TimestampAdd) -> str:
+    return _left_op_right(translator=translator, op_node=op, op_sign="+")
+
+
+def _timestamp_diff(translator: ExprTranslator, op: ops.temporal.TimestampDiff) -> str:
+    return _left_op_right(translator=translator, op_node=op, op_sign="-")
+
+
+def _timestamp_sub(translator: ExprTranslator, op: ops.temporal.TimestampSub) -> str:
+    table_column = op.left
+    interval = op.right
+
+    table_column_translated = translator.translate(table_column)
+    interval_translated = translator.translate(interval)
+    return f"{table_column_translated} - {interval_translated}"
+
+
+def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
+    arg, unit = op.args
+
+    numeric = helpers.quote_identifier(arg.name, force=True)
+    if unit == TimestampUnit.MILLISECOND:
+        precision = 3
+    elif unit == TimestampUnit.SECOND:
+        precision = 0
+    else:
+        raise ValueError(f"{unit!r} unit is not supported!")
+
+    return f"TO_TIMESTAMP_LTZ({numeric}, {precision})"
+
+
+def _timestamp_from_ymdhms(
+    translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
+) -> str:
+    from ibis.expr.operations import temporal
+
+    if (
+        isinstance(op.year, temporal.ExtractYear) and
+        isinstance(op.month, temporal.ExtractMonth) and
+        isinstance(op.day, temporal.ExtractDay) and
+        isinstance(op.hours, temporal.ExtractHour) and
+        isinstance(op.minutes, temporal.ExtractMinute) and
+        isinstance(op.seconds, temporal.ExtractSecond)
+    ):
+        arg_translated_list = [
+            translator.translate(op.year.arg),
+            translator.translate(op.month.arg),
+            translator.translate(op.day.arg),
+            translator.translate(op.hours.arg),
+            translator.translate(op.minutes.arg),
+            translator.translate(op.seconds.arg)
+        ]
+        if len(set(arg_translated_list)) == 1:
+            return arg_translated_list[0]
+
+        else:
+            raise com.UnsupportedOperationError(
+                "Timestamp defined with ExtractYear/Month/Day/... "
+                "must extract from the same column. "
+                f"Can NOT extract from multiple columns: {arg_translated_list}"
+            )
+
+    year, month, day = op.year.value, op.month.value, op.day.value
+    hours, minutes, seconds = op.hours.value, op.minutes.value, op.seconds.value
+
+    date_string = f"{year}-{month}-{day} {hours}:{minutes}:{seconds}"
+    return f"CAST('{date_string}' AS TIMESTAMP)"
+
+
 operation_registry.update(
     {
         # Unary operations
@@ -424,11 +429,6 @@ operation_registry.update(
         ops.Literal: _literal,
         ops.TryCast: _try_cast,
         ops.IfElse: _filter,
-        ops.TimestampAdd: _timestamp_add,
-        ops.TimestampDiff: _timestamp_diff,
-        ops.TimestampFromUNIX: _timestamp_from_unix,
-        ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
-        ops.TimestampSub: _timestamp_sub,
         ops.Window: _window,
         ops.Clip: _clip,
         # Binary operations
@@ -443,5 +443,11 @@ operation_registry.update(
         ops.DayOfWeekIndex: _day_of_week_index,
         ops.StringToTimestamp: _string_to_timestamp,
         ops.Time: _time,
+        ops.TimeFromHMS: _time_from_hms,
+        ops.TimestampAdd: _timestamp_add,
+        ops.TimestampDiff: _timestamp_diff,
+        ops.TimestampFromUNIX: _timestamp_from_unix,
+        ops.TimestampFromYMDHMS: _timestamp_from_ymdhms,
+        ops.TimestampSub: _timestamp_sub,
     }
 )
