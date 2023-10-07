@@ -98,6 +98,14 @@ def test_scalar_param_struct(con):
     reason="mysql and sqlite will never implement map types",
 )
 @pytest.mark.notyet(["bigquery"])
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason=(
+        "SqlParseException: Expecting alias, found character literal"
+        "sql= SELECT MAP_FROM_ARRAYS(ARRAY['a', 'b', 'c'], ARRAY['ghi', 'def', 'abc']) '[' 'b' ']' AS `MapGet(param_0, 'b', None)`"
+    ),
+)
 def test_scalar_param_map(con):
     value = {"a": "ghi", "b": "def", "c": "abc"}
     param = ibis.param(dt.Map(dt.string, dt.string))
