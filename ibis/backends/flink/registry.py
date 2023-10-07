@@ -252,6 +252,19 @@ def _array_length(translator: ExprTranslator, op: ops.arrays.ArrayLength) -> str
     return f"CARDINALITY({translator.translate(op.arg)})"
 
 
+def _map(translator: ExprTranslator, op: ops.maps.Map) -> str:
+    key_array = translator.translate(op.keys)
+    value_array = translator.translate(op.values)
+
+    return f"MAP_FROM_ARRAYS({key_array}, {value_array})"
+
+
+def _map_get(translator: ExprTranslator, op: ops.maps.MapGet) -> str:
+    map_ = translator.translate(op.arg)
+    key = translator.translate(op.key)
+    return f"{map_} '[' {key} ']'"
+
+
 def _day_of_week_index(translator: ExprTranslator, op: ops.Node) -> str:
     arg = translator.translate(op.args[0])
     return f"MOD(DAYOFWEEK({arg}) + 5, 7)"
@@ -438,9 +451,11 @@ operation_registry.update(
         # Binary operations
         ops.Power: fixed_arity("power", 2),
         ops.FloorDivide: _floor_divide,
-        # Array functions
+        # Collection functions
         ops.ArrayIndex: _array_index,
         ops.ArrayLength: _array_length,
+        ops.Map: _map,
+        ops.MapGet: _map_get,
         # Temporal functions
         ops.DateAdd: _date_add,
         ops.DateDiff: _date_diff,
