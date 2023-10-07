@@ -91,7 +91,7 @@ con = ibis.mysql.connect(
 #| output: asis
 from _utils import render_do_connect
 
-render_do_connect("mssql")
+render_do_connect("mysql")
 ```
 
 ### `ibis.connect` URL format
