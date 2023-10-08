@@ -18,13 +18,12 @@ operation_registry = base_operation_registry.copy()
 
 
 def _count_star(translator: ExprTranslator, op: ops.Node) -> str:
-    # TODO(deepyaman): Use `FILTER` syntax; see note on `_filter` below.
     if (where := op.where) is not None:
-        condition = f"CASE WHEN {translator.translate(where)} THEN 1 END"
+        condition = f" FILTER (WHERE {translator.translate(where)})"
     else:
-        condition = "*"
+        condition = ""
 
-    return f"COUNT({condition})"
+    return f"COUNT(*){condition}"
 
 
 def _date(translator: ExprTranslator, op: ops.Node) -> str:
