@@ -11,6 +11,8 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 class TestConf(BackendTest, RoundAwayFromZero):
     supports_structs = False
+    # supports_json = True
+    # supports_map = True
     deps = "pandas", "pyflink"
 
     @staticmethod
@@ -30,6 +32,8 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
+
+            # import pdb; pdb.set_trace()
             self.connection.create_table(table_name, pd.read_parquet(path))
 
 
