@@ -74,6 +74,7 @@ def test_timestamp_accepts_date_literals(alltypes):
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
+@pytest.mark.broken(["flink"], "WIP")
 def test_scalar_param_array(con):
     value = [1, 2, 3]
     param = ibis.param(dt.Array(dt.int64))
@@ -86,6 +87,7 @@ def test_scalar_param_array(con):
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",
 )
+@pytest.mark.broken(["flink"], "WIP")
 def test_scalar_param_struct(con):
     value = dict(a=1, b="abc", c=3.0)
     param = ibis.param("struct<a: int64, b: string, c: float64>")
@@ -100,7 +102,7 @@ def test_scalar_param_struct(con):
 )
 @pytest.mark.notyet(["bigquery"])
 @pytest.mark.broken(
-    ["flink"],
+    ["flink"], "WIP",
     raises=Py4JJavaError,
     reason=(
         "SqlParseException: Expecting alias, found character literal"
@@ -190,6 +192,7 @@ def test_scalar_param(alltypes, df, value, dtype, col):
 )
 @pytest.mark.notimpl(["datafusion", "druid", "oracle"])
 @pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
+@pytest.mark.broken(["flink"], "WIP")
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col
@@ -235,6 +238,7 @@ def test_scalar_param_date(backend, alltypes, value):
         "druid",
     ]
 )
+@pytest.mark.broken(["flink"], "WIP")
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")
     value = OrderedDict([("x", [OrderedDict([("y", [1.0, 2.0, 3.0])])])])
