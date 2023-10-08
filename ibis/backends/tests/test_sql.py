@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 
 import pytest
-from pytest import mark, param
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as exc
@@ -16,16 +16,17 @@ sg = pytest.importorskip("sqlglot")
 pytestmark = pytest.mark.notimpl(["druid"])
 
 
-@mark.never(
+@pytest.mark.never(
     ["dask", "pandas"],
     reason="Dask and Pandas are not SQL backends",
     raises=(NotImplementedError, ValueError),
 )
-@mark.notimpl(
+@pytest.mark.notimpl(
     ["datafusion", "pyspark", "polars"],
     reason="Not clear how to extract SQL from the backend",
     raises=(exc.OperationNotDefinedError, NotImplementedError, ValueError),
 )
+@pytest.mark.broken(["flink"], "WIP")
 def test_table(backend):
     expr = backend.functional_alltypes.select(c=_.int_col + 1)
     buf = io.StringIO()
@@ -37,12 +38,12 @@ simple_literal = param(ibis.literal(1), id="simple_literal")
 array_literal = param(
     ibis.array([1]),
     marks=[
-        mark.never(
+        pytest.mark.never(
             ["mysql", "mssql", "oracle"],
             raises=sa.exc.CompileError,
             reason="arrays not supported in the backend",
         ),
-        mark.notyet(
+        pytest.mark.notyet(
             ["impala", "sqlite"],
             raises=NotImplementedError,
             reason="backends hasn't implemented array literals",
@@ -50,26 +51,26 @@ array_literal = param(
     ],
     id="array_literal",
 )
-no_structs = mark.never(
+no_structs = pytest.mark.never(
     ["impala", "mysql", "sqlite", "mssql"],
     raises=(NotImplementedError, sa.exc.CompileError),
     reason="structs not supported in the backend",
 )
-no_struct_literals = mark.notimpl(
+no_struct_literals = pytest.mark.notimpl(
     ["postgres", "mssql", "oracle"], reason="struct literals are not yet implemented"
 )
-not_sql = mark.never(
+not_sql = pytest.mark.never(
     ["pandas", "dask"],
     raises=(exc.IbisError, NotImplementedError, ValueError),
     reason="Not a SQL backend",
 )
-no_sql_extraction = mark.notimpl(
+no_sql_extraction = pytest.mark.notimpl(
     ["datafusion", "pyspark", "polars"],
     reason="Not clear how to extract SQL from the backend",
 )
 
 
-@mark.parametrize(
+@pytest.mark.parametrize(
     "expr",
     [
         simple_literal,
@@ -83,6 +84,7 @@ no_sql_extraction = mark.notimpl(
 )
 @not_sql
 @no_sql_extraction
+@pytest.mark.broken(["flink"], "WIP")
 def test_literal(backend, expr):
     assert ibis.to_sql(expr, dialect=backend.name())
 
@@ -93,6 +95,7 @@ def test_literal(backend, expr):
 @pytest.mark.xfail_version(
     mssql=["sqlalchemy>=2"], reason="sqlalchemy 2 prefixes literals with `N`"
 )
+@pytest.mark.broken(["flink"], "WIP")
 def test_group_by_has_index(backend, snapshot):
     countries = ibis.table(
         dict(continent="string", population="int64"), name="countries"
@@ -118,6 +121,7 @@ def test_group_by_has_index(backend, snapshot):
 @pytest.mark.never(
     ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
 )
+@pytest.mark.broken(["flink"], "WIP")
 def test_cte_refs_in_topo_order(backend, snapshot):
     mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name="leaf")
 
@@ -133,6 +137,7 @@ def test_cte_refs_in_topo_order(backend, snapshot):
 @pytest.mark.never(
     ["pandas", "dask", "datafusion", "polars", "pyspark"], reason="not SQL"
 )
+@pytest.mark.broken(["flink"], "WIP")
 def test_isin_bug(con, snapshot):
     t = ibis.table(dict(x="int"), name="t")
     good = t[t.x > 2].x
