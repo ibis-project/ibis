@@ -72,10 +72,10 @@ oracledb = { version = ">=1.3.1,<2", optional = true }
 packaging = { version = ">=21.3,<24", optional = true }
 polars = { version = ">=0.19,<1", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
-pymssql = { version = ">=2.2.5,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
 pydruid = { version = ">=0.6.5,<1", optional = true, extras = ["sqlalchemy"] }
 pymysql = { version = ">=1,<2", optional = true }
+pyodbc = { version = ">=4.0.39,<5", optional = true }
 pyspark = { version = ">=3,<4", optional = true }
 # used to support posix regexen in the pandas, dask and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
@@ -164,8 +164,8 @@ all = [
   "psycopg2",
   "pydata-google-auth",
   "pydruid",
-  "pymssql",
   "pymysql",
+  "pyodbc",
   "pyspark",
   "regex",
   "requests",
@@ -190,7 +190,7 @@ duckdb = ["duckdb", "duckdb-engine", "sqlalchemy", "sqlalchemy-views"]
 flink = []
 geospatial = ["GeoAlchemy2", "geopandas", "shapely"]
 impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
-mssql = ["sqlalchemy", "pymssql", "sqlalchemy-views"]
+mssql = ["sqlalchemy", "pyodbc", "sqlalchemy-views"]
 mysql = ["sqlalchemy", "pymysql", "sqlalchemy-views"]
 oracle = ["sqlalchemy", "oracledb", "packaging", "sqlalchemy-views"]
 pandas = ["regex"]

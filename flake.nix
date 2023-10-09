@@ -54,6 +54,9 @@
         duckdb
         # mysql
         mycli
+        # pyodbc setup debugging
+        # in particular: odbcinst -j
+        unixODBC
         # pyspark
         openjdk17_headless
         # postgres client
@@ -115,6 +118,12 @@
         MYSQL_PWD = "ibis";
         MSSQL_SA_PASSWORD = "1bis_Testing!";
         DRUID_URL = "druid://localhost:8082/druid/v2/sql";
+
+        # needed for mssql+pyodbc
+        ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
+          [FreeTDS]
+          Driver = ${pkgs.lib.makeLibraryPath [ pkgs.freetds ]}/libtdsodbc.so
+        '';
 
         __darwinAllowLocalNetworking = true;
       };

@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+import contextlib
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
 import toolz
@@ -34,10 +35,16 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
         port: int = 1433,
         database: str | None = None,
         url: str | None = None,
-        driver: Literal["pymssql"] = "pymssql",
+        query: Mapping[str, Any] | None = None,
+        driver: str | None = None,
+        **kwargs: Any,
     ) -> None:
-        if driver != "pymssql":
-            raise NotImplementedError("pymssql is currently the only supported driver")
+        if query is None:
+            query = {}
+
+        if driver is not None:
+            query["driver"] = driver
+
         alchemy_url = self._build_alchemy_url(
             url=url,
             host=host,
@@ -45,10 +52,13 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
             user=user,
             password=password,
             database=database,
-            driver=f"mssql+{driver}",
+            driver="mssql+pyodbc",
+            query=query,
         )
 
-        engine = sa.create_engine(alchemy_url, poolclass=sa.pool.StaticPool)
+        engine = sa.create_engine(
+            alchemy_url, poolclass=sa.pool.StaticPool, connect_args=kwargs
+        )
 
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
@@ -83,6 +93,21 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     @property
     def current_schema(self) -> str:
         return self._scalar_query(sa.select(sa.func.schema_name()))
+
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, stmt, *args, **kwargs):
+        sql = str(
+            stmt.compile(
+                dialect=self.con.dialect, compile_kwargs={"literal_binds": True}
+            )
+        )
+        with self.begin() as con:
+            yield con.exec_driver_sql(sql, *args, **kwargs)
+
+    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
+        return super()._get_compiled_statement(
+            view, definition, compile_kwargs={"literal_binds": True}
+        )
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled

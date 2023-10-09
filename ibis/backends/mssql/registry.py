@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sqlalchemy as sa
+from sqlalchemy.dialects import mssql
 from sqlalchemy.ext.compiler import compiles
 
 import ibis.common.exceptions as com
@@ -11,6 +12,9 @@ from ibis.backends.base.sql.alchemy import (
     sqlalchemy_operation_registry,
     sqlalchemy_window_functions_registry,
     unary,
+)
+from ibis.backends.base.sql.alchemy.registry import (
+    _literal as _alchemy_literal,
 )
 from ibis.backends.base.sql.alchemy.registry import substr, variance_reduction
 
@@ -112,6 +116,39 @@ def _temporal_delta(t, op):
     return sa.func.datediff(sa.literal_column(op.part.value.upper()), right, left)
 
 
+def _literal(t, op):
+    dtype = op.dtype
+    value = op.value
+
+    if value is not None:
+        if dtype.is_timestamp():
+            return sa.func.datetime2fromparts(
+                value.year,
+                value.month,
+                value.day,
+                value.hour,
+                value.minute,
+                value.second,
+                value.microsecond,
+                6,
+            )
+        elif dtype.is_date():
+            return sa.func.datefromparts(value.year, value.month, value.day)
+        elif dtype.is_time():
+            return sa.func.timefromparts(
+                value.hour,
+                value.minute,
+                value.second,
+                value.microsecond,
+                sa.literal_column("6"),
+            )
+        elif dtype.is_uuid():
+            return sa.cast(sa.literal(str(value)), mssql.UNIQUEIDENTIFIER)
+        elif dtype.is_binary():
+            return sa.cast(sa.literal(value), mssql.VARBINARY)
+    return _alchemy_literal(t, op)
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
@@ -195,7 +232,7 @@ operation_registry.update(
             6,
         ),
         ops.TimeFromHMS: fixed_arity(
-            lambda h, m, s: sa.func.timefromparts(h, m, s, 0, 0), 3
+            lambda h, m, s: sa.func.timefromparts(h, m, s, 0, sa.literal_column("0")), 3
         ),
         ops.TimestampTruncate: _timestamp_truncate,
         ops.DateTruncate: _timestamp_truncate,
@@ -206,6 +243,7 @@ operation_registry.update(
         ops.TimeDelta: _temporal_delta,
         ops.DateDelta: _temporal_delta,
         ops.TimestampDelta: _temporal_delta,
+        ops.Literal: _literal,
     }
 )
 

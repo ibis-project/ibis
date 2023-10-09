@@ -144,7 +144,7 @@ def uses_java_re(t):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.OperationalError,
+                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -159,7 +159,7 @@ def uses_java_re(t):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.OperationalError,
+                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -174,7 +174,7 @@ def uses_java_re(t):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.OperationalError,
+                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -190,7 +190,7 @@ def uses_java_re(t):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
-                    raises=sa.exc.OperationalError,
+                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -535,22 +535,7 @@ def uses_java_re(t):
                     ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["druid"],
-                    raises=sa.exc.ProgrammingError,
-                ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason=(
-                        '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near the keyword '
-                        "'LIKE'.DB-Lib error message 20018, severity 15:\nGeneral SQL Server error: "
-                        'Check messages from the SQL Server\n")'
-                        "[SQL: SELECT (CASE t0.int_col WHEN %(param_1)s THEN %(param_2)s WHEN %(param_3)s "
-                        "THEN %(param_4)s ELSE %(param_5)s END LIKE %(param_6)s + '%') AS tmp"
-                        "FROM functional_alltypes AS t0]"
-                    ),
-                ),
+                pytest.mark.broken(["druid", "mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -565,16 +550,7 @@ def uses_java_re(t):
                     ["dask", "datafusion", "pyspark"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError),
-                pytest.mark.broken(
-                    ["mssql"],
-                    reason=(
-                        '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
-                        "the keyword 'LIKE'.DB-Lib error message 20018, severity 15:\n"
-                        'General SQL Server error: Check messages from the SQL Server\n")'
-                    ),
-                    raises=sa.exc.OperationalError,
-                ),
+                pytest.mark.broken(["druid", "mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -586,15 +562,7 @@ def uses_java_re(t):
                     ["dask"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason=(
-                        '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
-                        "the keyword 'LIKE'.DB-Lib error message 20018, severity 15:\n"
-                        'General SQL Server error: Check messages from the SQL Server\n")'
-                    ),
-                ),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -606,15 +574,7 @@ def uses_java_re(t):
                     ["dask", "datafusion"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["mssql"],
-                    raises=sa.exc.OperationalError,
-                    reason=(
-                        '(pymssql._pymssql.OperationalError) (156, b"Incorrect syntax near '
-                        "the keyword 'LIKE'.DB-Lib error message 20018, severity 15:\n"
-                        'General SQL Server error: Check messages from the SQL Server\n")'
-                    ),
-                ),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
             ],
         ),
         param(
@@ -659,7 +619,7 @@ def uses_java_re(t):
                 pytest.mark.broken(
                     ["mssql"],
                     reason="substr requires 3 arguments",
-                    raises=sa.exc.OperationalError,
+                    raises=sa.exc.ProgrammingError,
                 ),
             ],
         ),
@@ -867,14 +827,7 @@ def test_re_replace_global(con):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["mssql"],
-    raises=sa.exc.OperationalError,
-    reason=(
-        '(pymssql._pymssql.OperationalError) (4145, b"An expression of non-boolean type specified in '
-        "a context where a condition is expected, near 'THEN'.DB-Lib error message 20018, severity 15:\n"
-    ),
-)
+@pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
 @pytest.mark.notimpl(["druid"], raises=ValidationError)
 @pytest.mark.broken(
     ["oracle"],
@@ -1057,7 +1010,7 @@ def test_levenshtein(con, right):
 @pytest.mark.notyet(
     ["mssql"],
     reason="doesn't allow boolean expressions in select statements",
-    raises=sa.exc.OperationalError,
+    raises=sa.exc.ProgrammingError,
 )
 @pytest.mark.broken(
     ["oracle"],
