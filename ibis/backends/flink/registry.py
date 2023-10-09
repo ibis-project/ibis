@@ -40,7 +40,7 @@ def _extract_field(sql_attr: str) -> str:
 
 
 def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
-    from ibis.expr.datatypes.core import Timestamp
+    from ibis.expr.datatypes.core import JSON, Timestamp
 
     arg, to = op.arg, op.to
     arg_translated = translator.translate(arg)
@@ -52,6 +52,9 @@ def _cast(translator: ExprTranslator, op: ops.generic.Cast) -> str:
             return f"TO_TIMESTAMP(CONVERT_TZ(CAST({arg_translated} AS STRING), 'UTC+0', '{to.timezone}'))"
         else:
             return f"TO_TIMESTAMP({arg_translated})"
+
+    elif isinstance(to, JSON):
+        return arg_translated
 
     from ibis.backends.base.sql.registry.main import cast
 
@@ -250,6 +253,16 @@ def _array_index(translator: ExprTranslator, op: ops.arrays.ArrayIndex):
 
 def _array_length(translator: ExprTranslator, op: ops.arrays.ArrayLength) -> str:
     return f"CARDINALITY({translator.translate(op.arg)})"
+
+
+def _json_get_item(translator: ExprTranslator, op: ops.json.JSONGetItem) -> str:
+    arg_translated = translator.translate(op.arg)
+    if op.index.dtype.is_integer():
+        query_path = f"$[{op.index.value}]"
+    else:  # is string
+        query_path = f"$.{op.index.value}"
+
+    return f"JSON_QUERY({arg_translated}, '{query_path}' WITH CONDITIONAL ARRAY WRAPPER)"
 
 
 def _map(translator: ExprTranslator, op: ops.maps.Map) -> str:
@@ -454,6 +467,7 @@ operation_registry.update(
         # Collection functions
         ops.ArrayIndex: _array_index,
         ops.ArrayLength: _array_length,
+        ops.JSONGetItem: _json_get_item,
         ops.Map: _map,
         ops.MapGet: _map_get,
         # Temporal functions

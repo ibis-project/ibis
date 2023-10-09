@@ -10,9 +10,8 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
-    supports_structs = False
-    # supports_json = True
     # supports_map = True
+    supports_structs = False
     deps = "pandas", "pyflink"
 
     @staticmethod
@@ -29,12 +28,15 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     def _load_data(self, **_: Any) -> None:
         import pandas as pd
+        from ibis.backends.tests.data import json_types
 
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
 
             # import pdb; pdb.set_trace()
             self.connection.create_table(table_name, pd.read_parquet(path))
+
+        self.connection.create_table("json_t", json_types)
 
 
 class TestConfForStreaming(TestConf):
