@@ -80,13 +80,11 @@ def _strftime_int(fmt):
 
 def _extract_quarter(t, op):
     expr_new = ops.ExtractMonth(op.arg).to_expr()
-    expr_new = (
-        ibis.case()
-        .when(expr_new.isin([1, 2, 3]), 1)
-        .when(expr_new.isin([4, 5, 6]), 2)
-        .when(expr_new.isin([7, 8, 9]), 3)
-        .else_(4)
-        .end()
+    expr_new = ibis.cases(
+        (expr_new.isin([1, 2, 3]), 1),
+        (expr_new.isin([4, 5, 6]), 2),
+        (expr_new.isin([7, 8, 9]), 3),
+        else_=4,
     )
     return sa.cast(t.translate(expr_new.op()), sa.Integer)
 

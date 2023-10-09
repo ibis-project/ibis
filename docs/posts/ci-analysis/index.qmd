@@ -203,13 +203,11 @@ Let's also give them some names that'll look nice on our plots.
 stats = stats.mutate(
     raw_improvements=_.has_poetry.cast("int") + _.has_team.cast("int")
 ).mutate(
-    improvements=(
-        _.raw_improvements.case()
-        .when(0, "None")
-        .when(1, "Poetry")
-        .when(2, "Poetry + Team Plan")
-        .else_("NA")
-        .end()
+    improvements=_.raw_improvements.cases(
+        (0, "None"),
+        (1, "Poetry"),
+        (2, "Poetry + Team Plan"),
+        else_="NA",
     ),
     team_plan=ibis.where(_.raw_improvements > 1, "Poetry + Team Plan", "None"),
 )

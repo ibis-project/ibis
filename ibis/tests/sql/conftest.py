@@ -167,15 +167,9 @@ def difference(con):
 
 
 @pytest.fixture(scope="module")
-def simple_case(con):
-    t = con.table("alltypes")
-    return t.g.case().when("foo", "bar").when("baz", "qux").else_("default").end()
-
-
-@pytest.fixture(scope="module")
 def search_case(con):
     t = con.table("alltypes")
-    return ibis.case().when(t.f > 0, t.d * 2).when(t.c < 0, t.a * 2).end()
+    return ibis.cases((t.f > 0, t.d * 2), (t.c < 0, t.a * 2))
 
 
 @pytest.fixture(scope="module")

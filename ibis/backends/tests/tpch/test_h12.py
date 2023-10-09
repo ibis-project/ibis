@@ -31,19 +31,15 @@ def test_tpc_h12(orders, lineitem):
 
     gq = q.group_by([q.l_shipmode])
     q = gq.aggregate(
-        high_line_count=(
-            q.o_orderpriority.case()
-            .when("1-URGENT", 1)
-            .when("2-HIGH", 1)
-            .else_(0)
-            .end()
+        high_line_count=q.o_orderpriority.cases(
+            ("1-URGENT", 1),
+            ("2-HIGH", 1),
+            else_=0,
         ).sum(),
-        low_line_count=(
-            q.o_orderpriority.case()
-            .when("1-URGENT", 0)
-            .when("2-HIGH", 0)
-            .else_(1)
-            .end()
+        low_line_count=q.o_orderpriority.cases(
+            ("1-URGENT", 0),
+            ("2-HIGH", 0),
+            else_=1,
         ).sum(),
     )
     q = q.order_by(q.l_shipmode)

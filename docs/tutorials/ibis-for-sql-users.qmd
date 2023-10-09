@@ -473,11 +473,11 @@ semantics:
 case = (
     t.one.cast("timestamp")
     .year()
-    .case()
-    .when(2015, "This year")
-    .when(2014, "Last year")
-    .else_("Earlier")
-    .end()
+    .cases(
+        (2015, "This year"),
+        (2014, "Last year"),
+        else_="Earlier",
+    )
 )
 
 expr = t.mutate(year_group=case)
@@ -496,15 +496,13 @@ CASE
 END
 ```
 
-To do this, use `ibis.case`:
+To do this, use `ibis.cases`:
 
 ```{python}
-case = (
-    ibis.case()
-    .when(t.two < 0, t.three * 2)
-    .when(t.two > 1, t.three)
-    .else_(t.two)
-    .end()
+case = ibis.cases(
+    (t.two < 0, t.three * 2),
+    (t.two > 1, t.three),
+    else_=t.two,
 )
 
 expr = t.mutate(cond_value=case)

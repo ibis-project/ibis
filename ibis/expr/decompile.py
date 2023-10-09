@@ -243,18 +243,13 @@ def ifelse(op, bool_expr, true_expr, false_null_expr):
     return f"{bool_expr}.ifelse({true_expr}, {false_null_expr})"
 
 
-@translate.register(ops.SimpleCase)
 @translate.register(ops.SearchedCase)
 def switch_case(op, cases, results, default, base=None):
-    out = f"{base}.case()" if base else "ibis.case()"
-
-    for case, result in zip(cases, results):
-        out = f"{out}.when({case}, {result})"
-
-    if default is not None:
-        out = f"{out}.else_({default})"
-
-    return f"{out}.end()"
+    func_str = f"{base}.cases" if base else "ibis.cases"
+    branch_strings = [f"({case}, {result})" for case, result in zip(cases, results)]
+    branch_str = ", ".join(branch_strings)
+    default_str = f", else_={default}" if default is not None else ""
+    return f"{func_str}({branch_str}{default_str})"
 
 
 _infix_ops = {

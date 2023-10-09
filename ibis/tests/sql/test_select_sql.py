@@ -406,8 +406,8 @@ def test_bool_bool(snapshot):
 
 def test_case_in_projection(alltypes, snapshot):
     t = alltypes
-    expr = t.g.case().when("foo", "bar").when("baz", "qux").else_("default").end()
-    expr2 = ibis.case().when(t.g == "foo", "bar").when(t.g == "baz", t.g).end()
+    expr = t.g.cases(("foo", "bar"), ("baz", "qux"), else_="default")
+    expr2 = ibis.cases((t.g == "foo", "bar"), (t.g == "baz", t.g))
     expr = t[expr.name("col1"), expr2.name("col2"), t]
 
     snapshot.assert_match(to_sql(expr), "out.sql")

@@ -5,7 +5,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
-from ibis.tests.util import assert_equal, assert_pickle_roundtrip
+from ibis.tests.util import assert_pickle_roundtrip
 
 
 def test_ifelse_method(table):
@@ -45,74 +45,46 @@ def test_ifelse_function_deferred(table):
 
 
 def test_simple_case_expr(table):
-    case1, result1 = "foo", table.a
-    case2, result2 = "bar", table.c
-    default_result = table.b
-
-    expr1 = table.g.lower().cases(
-        [(case1, result1), (case2, result2)], default=default_result
-    )
-
-    expr2 = (
-        table.g.lower()
-        .case()
-        .when(case1, result1)
-        .when(case2, result2)
-        .else_(default_result)
-        .end()
-    )
-
-    assert_equal(expr1, expr2)
+    expr1 = table.g.lower().cases(("foo", table.a), ("bar", table.c), else_=table.b)
     assert isinstance(expr1, ir.IntegerColumn)
 
 
 def test_multiple_case_expr(table):
-    expr = (
-        ibis.case()
-        .when(table.a == 5, table.f)
-        .when(table.b == 128, table.b * 2)
-        .when(table.c == 1000, table.e)
-        .else_(table.d)
-        .end()
+    expr = ibis.cases(
+        (table.a == 5, table.f),
+        (table.b == 128, table.b * 2),
+        (table.c == 1000, table.e),
+        else_=table.d,
     )
 
     # deferred cases
-    deferred = (
-        ibis.case()
-        .when(_.a == 5, table.f)
-        .when(_.b == 128, table.b * 2)
-        .when(_.c == 1000, table.e)
-        .else_(table.d)
-        .end()
+    expr2 = ibis.cases(
+        (_.a == 5, table.f),
+        (_.b == 128, table.b * 2),
+        (_.c == 1000, table.e),
+        else_=table.d,
     )
-    expr2 = deferred.resolve(table)
 
     # deferred results
-    expr3 = (
-        ibis.case()
-        .when(table.a == 5, _.f)
-        .when(table.b == 128, _.b * 2)
-        .when(table.c == 1000, _.e)
-        .else_(table.d)
-        .end()
-        .resolve(table)
+    expr3 = ibis.cases(
+        (table.a == 5, _.f),
+        (table.b == 128, _.b * 2),
+        (table.c == 1000, _.e),
+        else_=table.d,
     )
 
     # deferred default
-    expr4 = (
-        ibis.case()
-        .when(table.a == 5, table.f)
-        .when(table.b == 128, table.b * 2)
-        .when(table.c == 1000, table.e)
-        .else_(_.d)
-        .end()
-        .resolve(table)
+    expr4 = ibis.cases(
+        (table.a == 5, table.f),
+        (table.b == 128, table.b * 2),
+        (table.c == 1000, table.e),
+        else_=_.d,
     )
 
-    assert repr(deferred) == "<case>"
-    assert expr.equals(expr2)
-    assert expr.equals(expr3)
-    assert expr.equals(expr4)
+    assert repr(expr2) == "<cases>"
+    assert expr.equals(expr2.resolve(table))
+    assert expr.equals(expr3.resolve(table))
+    assert expr.equals(expr4.resolve(table))
 
     op = expr.op()
     assert isinstance(expr, ir.FloatingColumn)
@@ -130,13 +102,11 @@ def test_pickle_multiple_case_node(table):
     result3 = table.e
 
     default = table.d
-    expr = (
-        ibis.case()
-        .when(case1, result1)
-        .when(case2, result2)
-        .when(case3, result3)
-        .else_(default)
-        .end()
+    expr = ibis.cases(
+        (case1, result1),
+        (case2, result2),
+        (case3, result3),
+        else_=default,
     )
 
     op = expr.op()
@@ -144,7 +114,7 @@ def test_pickle_multiple_case_node(table):
 
 
 def test_simple_case_null_else(table):
-    expr = table.g.case().when("foo", "bar").end()
+    expr = table.g.cases(("foo", "bar"))
     op = expr.op()
 
     assert isinstance(expr, ir.StringColumn)
@@ -154,8 +124,8 @@ def test_simple_case_null_else(table):
 
 
 def test_multiple_case_null_else(table):
-    expr = ibis.case().when(table.g == "foo", "bar").end()
-    expr2 = ibis.case().when(table.g == "foo", _).end().resolve("bar")
+    expr = ibis.cases((table.g == "foo", "bar"))
+    expr2 = ibis.cases((table.g == "foo", _)).resolve("bar")
 
     assert expr.equals(expr2)
 
@@ -172,8 +142,6 @@ def test_case_mixed_type():
         name="my_data",
     )
 
-    expr = (
-        t0.three.case().when(0, "low").when(1, "high").else_("null").end().name("label")
-    )
+    expr = t0.three.cases((0, "low"), (1, "high"), else_="null").name("label")
     result = t0[expr]
     assert result["label"].type().equals(dt.string)

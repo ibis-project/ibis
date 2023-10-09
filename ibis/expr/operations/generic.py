@@ -270,28 +270,6 @@ class HashBytes(Value):
     shape = rlz.shape_like("arg")
 
 
-# TODO(kszucs): we should merge the case operations by making the
-# cases, results and default optional arguments like they are in
-# api.py
-@public
-class SimpleCase(Value):
-    base: Value
-    cases: VarTuple[Value]
-    results: VarTuple[Value]
-    default: Value
-
-    shape = rlz.shape_like("base")
-
-    def __init__(self, cases, results, **kwargs):
-        assert len(cases) == len(results)
-        super().__init__(cases=cases, results=results, **kwargs)
-
-    @attribute
-    def dtype(self):
-        values = [*self.results, self.default]
-        return rlz.highest_precedence_dtype(values)
-
-
 @public
 class SearchedCase(Value):
     cases: VarTuple[Value[dt.Boolean]]

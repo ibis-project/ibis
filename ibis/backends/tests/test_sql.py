@@ -98,17 +98,15 @@ def test_group_by_has_index(backend, snapshot):
         dict(continent="string", population="int64"), name="countries"
     )
     expr = countries.group_by(
-        cont=(
-            _.continent.case()
-            .when("NA", "North America")
-            .when("SA", "South America")
-            .when("EU", "Europe")
-            .when("AF", "Africa")
-            .when("AS", "Asia")
-            .when("OC", "Oceania")
-            .when("AN", "Antarctica")
-            .else_("Unknown continent")
-            .end()
+        cont=_.continent.cases(
+            ("NA", "North America"),
+            ("SA", "South America"),
+            ("EU", "Europe"),
+            ("AF", "Africa"),
+            ("AS", "Asia"),
+            ("OC", "Oceania"),
+            ("AN", "Antarctica"),
+            else_="Unknown continent",
         )
     ).agg(total_pop=_.population.sum())
     sql = str(ibis.to_sql(expr, dialect=backend.name()))

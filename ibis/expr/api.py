@@ -52,7 +52,7 @@ __all__ = (
     "and_",
     "array",
     "asc",
-    "case",
+    "cases",
     "coalesce",
     "connect",
     "cross_join",
@@ -960,55 +960,11 @@ def interval(
     return functools.reduce(operator.add, intervals)
 
 
-def case() -> bl.SearchedCaseBuilder:
-    """Begin constructing a case expression.
-
-    Use the `.when` method on the resulting object followed by `.end` to create a
-    complete case expression.
-
-    Returns
-    -------
-    SearchedCaseBuilder
-        A builder object to use for constructing a case expression.
-
-    See Also
-    --------
-    [`Value.case()`](./expression-generic.qmd#ibis.expr.types.generic.Value.case)
-
-    Examples
-    --------
-    >>> import ibis
-    >>> from ibis import _
-    >>> ibis.options.interactive = True
-    >>> t = ibis.memtable(
-    ...     {
-    ...         "left": [1, 2, 3, 4],
-    ...         "symbol": ["+", "-", "*", "/"],
-    ...         "right": [5, 6, 7, 8],
-    ...     }
-    ... )
-    >>> t.mutate(
-    ...     result=(
-    ...         ibis.case()
-    ...         .when(_.symbol == "+", _.left + _.right)
-    ...         .when(_.symbol == "-", _.left - _.right)
-    ...         .when(_.symbol == "*", _.left * _.right)
-    ...         .when(_.symbol == "/", _.left / _.right)
-    ...         .end()
-    ...     )
-    ... )
-    ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━┓
-    ┃ left  ┃ symbol ┃ right ┃ result  ┃
-    ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━┩
-    │ int64 │ string │ int64 │ float64 │
-    ├───────┼────────┼───────┼─────────┤
-    │     1 │ +      │     5 │     6.0 │
-    │     2 │ -      │     6 │    -4.0 │
-    │     3 │ *      │     7 │    21.0 │
-    │     4 │ /      │     8 │     0.5 │
-    └───────┴────────┴───────┴─────────┘
-    """
-    return bl.SearchedCaseBuilder()
+@deferrable(repr="<cases>")
+def cases(*branches: tuple[Any, Any], else_: Any | None = None) -> ir.Value:
+    """Create a multi-branch if-else case expression."""
+    cases, results = zip(*branches)
+    return ops.SearchedCase(cases=cases, results=results, default=else_).to_expr()
 
 
 def now() -> ir.TimestampScalar:

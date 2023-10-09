@@ -2607,9 +2607,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         for pos, colname in enumerate(self.columns):
             col = self[colname]
             typ = col.type()
-            agg = self.select(
-                isna=ibis.case().when(col.isnull(), 1).else_(0).end()
-            ).agg(
+            agg = self.select(isna=ibis.cases((col.isnull(), 1), else_=0)).agg(
                 name=lit(colname),
                 type=lit(str(typ)),
                 nullable=lit(int(typ.nullable)).cast("bool"),

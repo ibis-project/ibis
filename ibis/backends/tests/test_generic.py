@@ -338,14 +338,9 @@ def test_filter_with_window_op(backend, alltypes, sorted_df):
 def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
-        new_col=(
-            ibis.case()
-            .when(table["int_col"] == 1, 20)
-            .when(table["int_col"] == 0, 10)
-            .else_(0)
-            .end()
-            .cast("int64")
-        )
+        new_col=ibis.cases(
+            (table["int_col"] == 1, 20), (table["int_col"] == 0, 10), else_=0
+        ).cast("int64")
     )
 
     result = table.execute()
@@ -374,9 +369,7 @@ def test_select_filter_mutate(backend, alltypes, df):
 
     # Prepare the float_col so that filter must execute
     # before the cast to get the correct result.
-    t = t.mutate(
-        float_col=ibis.case().when(t["bool_col"], t["float_col"]).else_(np.nan).end()
-    )
+    t = t.mutate(float_col=ibis.cases((t["bool_col"], t["float_col"]), else_=np.nan))
 
     # Actual test
     t = t[t.columns]

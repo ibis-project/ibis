@@ -1378,9 +1378,7 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
 @pytest.mark.notimpl(["datafusion", "pyspark"], raises=com.OperationNotDefinedError)
 def test_binds_are_cast(alltypes):
     expr = alltypes.aggregate(
-        high_line_count=(
-            alltypes.string_col.case().when("1-URGENT", 1).else_(0).end().sum()
-        )
+        high_line_count=alltypes.string_col.cases(("1-URGENT", 1), else_=0).sum()
     )
 
     expr.execute()
@@ -1427,7 +1425,7 @@ def test_agg_name_in_output_column(alltypes):
 def test_grouped_case(backend, con):
     table = ibis.memtable({"key": [1, 1, 2, 2], "value": [10, 30, 20, 40]})
 
-    case_expr = ibis.case().when(table.value < 25, table.value).else_(ibis.null()).end()
+    case_expr = ibis.cases((table.value < 25, table.value), else_=ibis.null())
 
     expr = table.group_by("key").aggregate(mx=case_expr.max()).order_by("key")
     result = con.execute(expr)

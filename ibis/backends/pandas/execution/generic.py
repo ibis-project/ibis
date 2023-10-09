@@ -1443,32 +1443,6 @@ def execute_searched_case(op, whens, thens, otherwise, **kwargs):
     return _build_select(op, whens, thens, otherwise, **kwargs)
 
 
-@execute_node.register(ops.SimpleCase, object, tuple, tuple, object)
-def execute_simple_case_scalar(op, value, whens, thens, otherwise, **kwargs):
-    value = getattr(value, "obj", value)
-    return _build_select(
-        op,
-        whens,
-        thens,
-        otherwise,
-        func=lambda whens: np.asarray(whens) == value,
-        **kwargs,
-    )
-
-
-@execute_node.register(ops.SimpleCase, (pd.Series, SeriesGroupBy), tuple, tuple, object)
-def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
-    value = getattr(value, "obj", value)
-    return _build_select(
-        op,
-        whens,
-        thens,
-        otherwise,
-        func=lambda whens: [value == when for when in whens],
-        **kwargs,
-    )
-
-
 @execute_node.register(ops.Distinct, pd.DataFrame)
 def execute_distinct_dataframe(op, df, **kwargs):
     return df.drop_duplicates()

@@ -1,18 +1,32 @@
 SELECT
-  CASE t0.continent
-    WHEN 'NA'
+  CASE
+    WHEN (
+      t0.continent = 'NA'
+    )
     THEN 'North America'
-    WHEN 'SA'
+    WHEN (
+      t0.continent = 'SA'
+    )
     THEN 'South America'
-    WHEN 'EU'
+    WHEN (
+      t0.continent = 'EU'
+    )
     THEN 'Europe'
-    WHEN 'AF'
+    WHEN (
+      t0.continent = 'AF'
+    )
     THEN 'Africa'
-    WHEN 'AS'
+    WHEN (
+      t0.continent = 'AS'
+    )
     THEN 'Asia'
-    WHEN 'OC'
+    WHEN (
+      t0.continent = 'OC'
+    )
     THEN 'Oceania'
-    WHEN 'AN'
+    WHEN (
+      t0.continent = 'AN'
+    )
     THEN 'Antarctica'
     ELSE 'Unknown continent'
   END AS cont,

@@ -201,9 +201,7 @@ def test_ifelse(alltypes, df, op, pandas_op):
 
 def test_simple_case(con, alltypes, snapshot):
     t = alltypes
-    expr = (
-        t.string_col.case().when("foo", "bar").when("baz", "qux").else_("default").end()
-    )
+    expr = t.string_col.cases(("foo", "bar"), ("baz", "qux"), else_="default")
 
     snapshot.assert_match(expr.compile(), "out.sql")
     assert len(con.execute(expr))
@@ -211,12 +209,10 @@ def test_simple_case(con, alltypes, snapshot):
 
 def test_search_case(con, alltypes, snapshot):
     t = alltypes
-    expr = (
-        ibis.case()
-        .when(t.float_col > 0, t.int_col * 2)
-        .when(t.float_col < 0, t.int_col)
-        .else_(0)
-        .end()
+    expr = ibis.cases(
+        (t.float_col > 0, t.int_col * 2),
+        (t.float_col < 0, t.int_col),
+        else_=0,
     )
 
     snapshot.assert_match(expr.compile(), "out.sql")

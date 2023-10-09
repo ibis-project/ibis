@@ -845,7 +845,7 @@ def test_quantile_group_by(batting, batting_df):
 
 
 def test_searched_case_scalar(client):
-    expr = ibis.case().when(True, 1).when(False, 2).end()
+    expr = ibis.cases((True, 1), (False, 2))
     result = client.execute(expr)
     expected = np.int8(1)
     assert result == expected
@@ -854,12 +854,10 @@ def test_searched_case_scalar(client):
 def test_searched_case_column(batting, batting_df):
     t = batting
     df = batting_df
-    expr = (
-        ibis.case()
-        .when(t.RBI < 5, "really bad team")
-        .when(t.teamID == "PH1", "ph1 team")
-        .else_(t.teamID)
-        .end()
+    expr = ibis.cases(
+        (t.RBI < 5, "really bad team"),
+        (t.teamID == "PH1", "ph1 team"),
+        else_=t.teamID,
     )
     result = expr.compile()
     expected = dd.from_array(
@@ -874,7 +872,7 @@ def test_searched_case_column(batting, batting_df):
 
 def test_simple_case_scalar(client):
     x = ibis.literal(2)
-    expr = x.case().when(2, x - 1).when(3, x + 1).when(4, x + 2).end()
+    expr = x.cases((2, x - 1), (3, x + 1), (4, x + 2))
     result = client.execute(expr)
     expected = np.int8(1)
     assert result == expected
@@ -883,13 +881,11 @@ def test_simple_case_scalar(client):
 def test_simple_case_column(batting, batting_df):
     t = batting
     df = batting_df
-    expr = (
-        t.RBI.case()
-        .when(5, "five")
-        .when(4, "four")
-        .when(3, "three")
-        .else_("could be good?")
-        .end()
+    expr = t.RBI.cases(
+        (5, "five"),
+        (4, "four"),
+        (3, "three"),
+        else_=("could be good?"),
     )
     result = expr.compile()
     expected = dd.from_array(

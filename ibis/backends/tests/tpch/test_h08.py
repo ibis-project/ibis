@@ -54,9 +54,7 @@ def test_tpc_h08(part, supplier, region, lineitem, orders, customer, nation):
         ]
     )
 
-    q = q.mutate(
-        nation_volume=ibis.case().when(q.nation == NATION, q.volume).else_(0).end()
-    )
+    q = q.mutate(nation_volume=ibis.cases((q.nation == NATION, q.volume), else_=0))
     gq = q.group_by([q.o_year])
     q = gq.aggregate(mkt_share=q.nation_volume.sum() / q.volume.sum())
     q = q.order_by([q.o_year])

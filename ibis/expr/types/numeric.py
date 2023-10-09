@@ -1174,13 +1174,7 @@ class IntegerValue(NumericValue):
         │     2 │ c       │
         └───────┴─────────┘
         """
-        return (
-            functools.reduce(
-                lambda stmt, inputs: stmt.when(*inputs), enumerate(labels), self.case()
-            )
-            .else_(nulls)
-            .end()
-        )
+        return self.cases(*enumerate(labels), else_=nulls)
 
 
 @public

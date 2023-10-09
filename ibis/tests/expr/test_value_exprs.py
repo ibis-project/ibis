@@ -792,15 +792,11 @@ def test_substitute_dict():
     subs = {"a": "one", "b": table.bar}
 
     result = table.foo.substitute(subs)
-    expected = (
-        table.foo.case().when("a", "one").when("b", table.bar).else_(table.foo).end()
-    )
+    expected = table.foo.cases(("a", "one"), ("b", table.bar), else_=table.foo)
     assert_equal(result, expected)
 
     result = table.foo.substitute(subs, else_=ibis.NA)
-    expected = (
-        table.foo.case().when("a", "one").when("b", table.bar).else_(ibis.NA).end()
-    )
+    expected = table.foo.cases(("a", "one"), ("b", table.bar), else_=ibis.NA)
     assert_equal(result, expected)
 
 

@@ -411,7 +411,6 @@ def _literal(op, *, value, dtype, **kw):
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
 
 
-@translate_val.register(ops.SimpleCase)
 @translate_val.register(ops.SearchedCase)
 def _case(op, *, base=None, cases, results, default, **_):
     return sg.exp.Case(this=base, ifs=list(map(if_, cases, results)), default=default)

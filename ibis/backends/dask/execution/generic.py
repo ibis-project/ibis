@@ -509,16 +509,6 @@ def execute_searched_case_dask(op, when_nodes, then_nodes, otherwise, **kwargs):
     return out
 
 
-@execute_node.register(ops.SimpleCase, dd.Series, tuple, tuple, object)
-def execute_simple_case_series(op, value, whens, thens, otherwise, **kwargs):
-    whens = [execute(arg, **kwargs) for arg in whens]
-    thens = [execute(arg, **kwargs) for arg in thens]
-    if otherwise is None:
-        otherwise = np.nan
-    raw = np.select([value == when for when in whens], thens, otherwise)
-    return wrap_case_result(raw, op.to_expr())
-
-
 @execute_node.register(ops.Greatest, tuple)
 def execute_node_greatest_list(op, values, **kwargs):
     values = [execute(arg, **kwargs) for arg in values]

@@ -374,17 +374,6 @@ def ifelse(op, **kw):
     return pl.when(bool_expr).then(true_expr).otherwise(false_null_expr)
 
 
-@translate.register(ops.SimpleCase)
-def simple_case(op, **kw):
-    base = translate(op.base, **kw)
-    default = translate(op.default, **kw)
-    for case, result in reversed(list(zip(op.cases, op.results))):
-        case = base == translate(case, **kw)
-        result = translate(result, **kw)
-        default = pl.when(case).then(result).otherwise(default)
-    return default
-
-
 @translate.register(ops.SearchedCase)
 def searched_case(op, **kw):
     default = translate(op.default, **kw)

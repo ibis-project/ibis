@@ -277,7 +277,7 @@ rewrites = ExprTranslator.rewrites
 def _bucket(op):
     # TODO(kszucs): avoid the expression roundtrip
     expr = op.arg.to_expr()
-    stmt = ibis.case()
+    branches = []
 
     if op.closed == "left":
         l_cmp = ops.LessEqual
@@ -294,7 +294,7 @@ def _bucket(op):
             cmp = ops.Less if op.close_extreme else r_cmp
         else:
             cmp = ops.LessEqual if op.closed == "right" else ops.Less
-        stmt = stmt.when(cmp(op.arg, op.buckets[0]).to_expr(), bucket_id)
+        branches.append((cmp(op.arg, op.buckets[0]).to_expr(), bucket_id))
         bucket_id += 1
 
     for j, (lower, upper) in enumerate(zip(op.buckets, op.buckets[1:])):
@@ -302,16 +302,20 @@ def _bucket(op):
             (op.closed == "right" and j == 0)
             or (op.closed == "left" and j == (user_num_buckets - 1))
         ):
-            stmt = stmt.when(
-                ops.And(
-                    ops.LessEqual(lower, op.arg), ops.LessEqual(op.arg, upper)
-                ).to_expr(),
-                bucket_id,
+            branches.append(
+                (
+                    ops.And(
+                        ops.LessEqual(lower, op.arg), ops.LessEqual(op.arg, upper)
+                    ).to_expr(),
+                    bucket_id,
+                )
             )
         else:
-            stmt = stmt.when(
-                ops.And(l_cmp(lower, op.arg), r_cmp(op.arg, upper)).to_expr(),
-                bucket_id,
+            branches.append(
+                (
+                    ops.And(l_cmp(lower, op.arg), r_cmp(op.arg, upper)).to_expr(),
+                    bucket_id,
+                )
             )
         bucket_id += 1
 
@@ -321,10 +325,10 @@ def _bucket(op):
         else:
             cmp = ops.Less if op.closed == "right" else ops.LessEqual
 
-        stmt = stmt.when(cmp(op.buckets[-1], op.arg).to_expr(), bucket_id)
+        branches.append((cmp(op.buckets[-1], op.arg).to_expr(), bucket_id))
         bucket_id += 1
 
-    result = stmt.end()
+    result = ibis.cases(*branches)
     if expr.has_name():
         result = result.name(expr.get_name())
 

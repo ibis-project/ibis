@@ -183,11 +183,6 @@ def test_full_outer_join(con):
     assert "left" not in joined_sql_str.lower()
 
 
-def test_simple_case(simple_case, snapshot):
-    expr = simple_case.name("tmp")
-    snapshot.assert_match(to_sql(expr), "out.sql")
-
-
 def test_searched_case(search_case, snapshot):
     expr = search_case.name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")

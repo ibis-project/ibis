@@ -524,9 +524,9 @@ def uses_java_re(t):
             id="length",
         ),
         param(
-            lambda t: t.int_col.cases([(1, "abcd"), (2, "ABCD")], "dabc").startswith(
-                "abc"
-            ),
+            lambda t: t.int_col.cases(
+                (1, "abcd"), (2, "ABCD"), else_="dabc"
+            ).startswith("abc"),
             lambda t: t.int_col == 1,
             id="startswith",
             # pyspark doesn't support `cases` yet
@@ -554,7 +554,7 @@ def uses_java_re(t):
             ],
         ),
         param(
-            lambda t: t.int_col.cases([(1, "abcd"), (2, "ABCD")], "dabc").endswith(
+            lambda t: t.int_col.cases((1, "abcd"), (2, "ABCD"), else_="dabc").endswith(
                 "bcd"
             ),
             lambda t: t.int_col == 1,
@@ -883,11 +883,10 @@ def test_re_replace_global(con):
 )
 def test_substr_with_null_values(backend, alltypes, df):
     table = alltypes.mutate(
-        substr_col_null=ibis.case()
-        .when(alltypes["bool_col"], alltypes["string_col"])
-        .else_(None)
-        .end()
-        .substr(0, 2)
+        substr_col_null=ibis.cases(
+            (alltypes["bool_col"], alltypes["string_col"]),
+            else_=None,
+        ).substr(0, 2)
     )
     result = table.execute()
 
@@ -1067,7 +1066,7 @@ def test_levenshtein(con, right):
 @pytest.mark.parametrize(
     "expr",
     [
-        param(ibis.case().when(True, "%").end(), id="case"),
+        param(ibis.cases((True, "%")), id="case"),
         param(ibis.ifelse(True, "%", ibis.NA), id="ifelse"),
     ],
 )

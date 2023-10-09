@@ -273,18 +273,10 @@ def _floor_divide(t, op):
     return sa.func.floor(left / right)
 
 
-def _simple_case(t, op):
-    return _translate_case(t, op, value=t.translate(op.base))
-
-
-def _searched_case(t, op):
-    return _translate_case(t, op, value=None)
-
-
-def _translate_case(t, op, *, value):
+def _translate_case(t, op):
     return sa.case(
         *zip(map(t.translate, op.cases), map(t.translate, op.results)),
-        value=value,
+        value=None,
         else_=t.translate(op.default),
     )
 
@@ -558,8 +550,7 @@ sqlalchemy_operation_registry: dict[Any, Any] = {
     ops.Negate: _negate,
     ops.Round: _round,
     ops.Literal: _literal,
-    ops.SimpleCase: _simple_case,
-    ops.SearchedCase: _searched_case,
+    ops.SearchedCase: _translate_case,
     ops.TableColumn: _table_column,
     ops.TableArrayView: _table_array_view,
     ops.ExistsSubquery: _exists_subquery,
