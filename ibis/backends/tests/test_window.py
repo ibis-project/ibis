@@ -692,7 +692,8 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     raises=AnalysisException,
                     reason="pyspark requires ORDER BY",
                 ),
-                pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
+                pytest.mark.broken(["mysql"], raises=sa.exc.OperationalError),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
@@ -726,7 +727,8 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     raises=AnalysisException,
                     reason="pyspark requires ORDER BY",
                 ),
-                pytest.mark.broken(["mssql", "mysql"], raises=sa.exc.OperationalError),
+                pytest.mark.broken(["mysql"], raises=sa.exc.OperationalError),
+                pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend requires ordering",
@@ -837,11 +839,7 @@ def test_ungrouped_unbounded_window(
     reason="RANGE OFFSET frame for 'DB::ColumnNullable' ORDER BY column is not implemented",
     raises=ClickHouseOperationalError,
 )
-@pytest.mark.notyet(
-    ["mssql"],
-    reason="RANGE is only supported with UNBOUNDED and CURRENT ROW window frame delimiters",
-    raises=sa.exc.OperationalError,
-)
+@pytest.mark.notyet(["mssql"], raises=sa.exc.ProgrammingError)
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #

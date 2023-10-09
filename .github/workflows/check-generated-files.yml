@@ -36,7 +36,7 @@ jobs:
         run: sudo apt-get update -y -q
 
       - name: install system dependencies
-        run: sudo apt-get install -y -q build-essential graphviz libgeos-dev libkrb5-dev krb5-config freetds-dev
+        run: sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
 
       - name: install poetry
         run: pip install 'poetry==1.6.1'

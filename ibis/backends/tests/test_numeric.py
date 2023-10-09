@@ -454,7 +454,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
                     'Check messages from the SQL Server\n")'
                     "[SQL: SELECT %(param_1)s AS [Decimal('Infinity')]]",
-                    raises=sa.exc.ProgrammingError,
+                    raises=(sa.exc.ProgrammingError, KeyError),
                 ),
                 pytest.mark.broken(
                     ["druid"],
@@ -534,7 +534,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
                     'Check messages from the SQL Server\n")'
                     "[SQL: SELECT %(param_1)s AS [Decimal('-Infinity')]]",
-                    raises=sa.exc.ProgrammingError,
+                    raises=(sa.exc.ProgrammingError, KeyError),
                 ),
                 pytest.mark.broken(
                     ["druid"],
@@ -617,7 +617,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "DB-Lib error message 20018, severity 16:\nGeneral SQL Server error: "
                     'Check messages from the SQL Server\n")'
                     "[SQL: SELECT %(param_1)s AS [Decimal('NaN')]]",
-                    raises=sa.exc.ProgrammingError,
+                    raises=(sa.exc.ProgrammingError, KeyError),
                 ),
                 pytest.mark.broken(
                     ["mssql"],
@@ -1182,7 +1182,9 @@ def test_mod(backend, alltypes, df):
     backend.assert_series_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["mssql"], raises=sa.exc.OperationalError)
+@pytest.mark.notimpl(
+    ["mssql"], raises=(sa.exc.OperationalError, sa.exc.ProgrammingError)
+)
 @pytest.mark.notyet(
     ["druid"], raises=AssertionError, reason="mod with floats is integer mod"
 )
@@ -1262,7 +1264,7 @@ def test_floating_mod(backend, alltypes, df):
     ],
 )
 @pytest.mark.notyet(["duckdb", "mysql", "pyspark", "sqlite"], raises=AssertionError)
-@pytest.mark.notyet(["mssql"], raises=sa.exc.OperationalError)
+@pytest.mark.notyet(["mssql"], raises=(sa.exc.OperationalError, sa.exc.DataError))
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
 @pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.xfail_version(datafusion=["datafusion<31"], raises=Exception)
