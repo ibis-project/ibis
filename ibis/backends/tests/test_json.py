@@ -90,6 +90,15 @@ def test_json_map(json_t):
     ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
 )
 @pytest.mark.notyet(["bigquery"], reason="doesn't allow null in arrays")
+@pytest.mark.notimpl(["duckdb"], raises=OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=OperationNotDefinedError,
+    reason=(
+        "No translation rule for <class 'ibis.expr.operations.json.ToJSONArray'"
+        "Flink does not support ToJSONArray"
+    )
+)
 def test_json_array(json_t):
     expr = json_t.js.array.name("res")
     result = expr.execute()
