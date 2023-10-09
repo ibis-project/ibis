@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Literal
+import contextlib
+from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
-import sqlglot as sg
 import toolz
 
 from ibis.backends.base import CanCreateDatabase
@@ -35,10 +35,16 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
         port: int = 1433,
         database: str | None = None,
         url: str | None = None,
-        driver: Literal["pymssql"] = "pymssql",
+        query: Mapping[str, Any] | None = None,
+        driver: str | None = None,
+        **kwargs: Any,
     ) -> None:
-        if driver != "pymssql":
-            raise NotImplementedError("pymssql is currently the only supported driver")
+        if query is None:
+            query = {}
+
+        if driver is not None:
+            query["driver"] = driver
+
         alchemy_url = self._build_alchemy_url(
             url=url,
             host=host,
@@ -46,10 +52,13 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
             user=user,
             password=password,
             database=database,
-            driver=f"mssql+{driver}",
+            driver="mssql+pyodbc",
+            query=query,
         )
 
-        engine = sa.create_engine(alchemy_url, poolclass=sa.pool.StaticPool)
+        engine = sa.create_engine(
+            alchemy_url, poolclass=sa.pool.StaticPool, connect_args=kwargs
+        )
 
         @sa.event.listens_for(engine, "connect")
         def connect(dbapi_connection, connection_record):
@@ -85,40 +94,20 @@ class Backend(BaseAlchemyBackend, CanCreateDatabase, AlchemyCanCreateSchema):
     def current_schema(self) -> str:
         return self._scalar_query(sa.select(sa.func.schema_name()))
 
-    def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
-        schema: str | None = None,
-    ) -> list[str]:
-        tablequery = sg.select("name").from_(
-            sg.table("tables", db="sys", catalog=database)
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, stmt, *args, **kwargs):
+        sql = str(
+            stmt.compile(
+                dialect=self.con.dialect, compile_kwargs={"literal_binds": True}
+            )
         )
-        viewquery = sg.select("name").from_(
-            sg.table("views", db="sys", catalog=database)
-        )
-
-        if schema is not None:
-            table_predicate = sg.func(
-                "schema_name",
-                sg.column("schema_id", table="tables", db="sys", catalog=database),
-            ).eq(schema)
-            view_predicate = sg.func(
-                "schema_name",
-                sg.column("schema_id", table="views", db="sys", catalog=database),
-            ).eq(schema)
-            tablequery = tablequery.where(table_predicate)
-            viewquery = viewquery.where(view_predicate)
-
-        tablequery = sa.text(tablequery.sql(dialect="tsql"))
-        viewquery = sa.text(viewquery.sql(dialect="tsql"))
-
         with self.begin() as con:
-            tablequery = list(con.execute(tablequery).scalars())
-            viewresults = list(con.execute(viewquery).scalars())
-        results = tablequery + viewresults
+            yield con.exec_driver_sql(sql, *args, **kwargs)
 
-        return self._filter_with_like(results, like)
+    def _get_compiled_statement(self, view: sa.Table, definition: sa.sql.Selectable):
+        return super()._get_compiled_statement(
+            view, definition, compile_kwargs={"literal_binds": True}
+        )
 
     def _get_temp_view_definition(
         self, name: str, definition: sa.sql.compiler.Compiled
