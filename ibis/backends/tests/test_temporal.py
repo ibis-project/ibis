@@ -2144,17 +2144,11 @@ def test_timestamp_literal(con, backend):
 @pytest.mark.parametrize(
     ("timezone", "expected"),
     [
-        param(
-            "Europe/London",
-            "2022-02-04 16:20:00GMT",
-            id="name",
-            marks=[pytest.mark.broken(["mssql"], raises=TypeError)],
-        ),
+        param("Europe/London", "2022-02-04 16:20:00GMT", id="name"),
         param(
             "PST8PDT",
             "2022-02-04 08:20:00PST",  # The time zone for Berkeley, California.
             id="iso",
-            marks=[pytest.mark.broken(["mssql"], raises=TypeError)],
         ),
     ],
 )
@@ -2259,7 +2253,7 @@ def test_time_literal(con, backend):
             561021,
             marks=[
                 pytest.mark.notimpl(
-                    ["mssql", "mysql"],
+                    ["mysql"],
                     raises=AssertionError,
                     reason="doesn't have enough precision to capture microseconds",
                 ),
@@ -2673,24 +2667,13 @@ def test_large_timestamp(con):
 @pytest.mark.parametrize(
     ("ts", "scale", "unit"),
     [
-        param(
-            "2023-01-07 13:20:05.561",
-            3,
-            "ms",
-            id="ms",
-            marks=pytest.mark.broken(
-                ["mssql"], reason="incorrect result", raises=AssertionError
-            ),
-        ),
+        param("2023-01-07 13:20:05.561", 3, "ms", id="ms"),
         param(
             "2023-01-07 13:20:05.561021",
             6,
             "us",
             id="us",
             marks=[
-                pytest.mark.broken(
-                    ["mssql"], reason="incorrect result", raises=AssertionError
-                ),
                 pytest.mark.notyet(
                     ["sqlite"],
                     reason="doesn't support microseconds",
@@ -2722,7 +2705,7 @@ def test_large_timestamp(con):
                 pytest.mark.notyet(
                     ["mssql"],
                     reason="doesn't support nanoseconds",
-                    raises=sa.exc.OperationalError,
+                    raises=sa.exc.ProgrammingError,
                 ),
                 pytest.mark.notyet(
                     ["bigquery"],

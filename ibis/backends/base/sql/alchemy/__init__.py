@@ -3,7 +3,6 @@ from __future__ import annotations
 import abc
 import atexit
 import contextlib
-import getpass
 import warnings
 from operator import methodcaller
 from typing import TYPE_CHECKING, Any
@@ -136,11 +135,20 @@ class BaseAlchemyBackend(BaseSQLBackend):
             self.compiler.translator_class.get_sqla_type(dtype)
         ).compile(dialect=dialect)
 
-    def _build_alchemy_url(self, url, host, port, user, password, database, driver):
+    def _build_alchemy_url(
+        self,
+        url: str | None,
+        host: str | None,
+        port: int | None,
+        user: str | None,
+        password: str | None,
+        database: str | None,
+        driver: str | None,
+        query: Mapping[str, Any] | None = None,
+    ) -> sa.engine.URL:
         if url is not None:
             return sa.engine.url.make_url(url)
 
-        user = user or getpass.getuser()
         return sa.engine.url.URL.create(
             driver,
             host=host,
@@ -148,6 +156,7 @@ class BaseAlchemyBackend(BaseSQLBackend):
             username=user,
             password=password,
             database=database,
+            query=query or {},
         )
 
     @property
@@ -824,8 +833,11 @@ class BaseAlchemyBackend(BaseSQLBackend):
         compiled = definition.compile(
             dialect=self.con.dialect, compile_kwargs=compile_kwargs
         )
-        lines = self._get_temp_view_definition(name, definition=compiled)
-        return lines, compiled.params
+        create_view = self._get_temp_view_definition(name, definition=compiled)
+        params = compiled.params
+        if compiled.positional:
+            params = tuple(params.values())
+        return create_view, params
 
     def _create_temp_view(self, view: sa.Table, definition: sa.sql.Selectable) -> None:
         raw_name = view.name

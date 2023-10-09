@@ -19,6 +19,7 @@ MSSQL_PASS = os.environ.get("IBIS_TEST_MSSQL_PASSWORD", "1bis_Testing!")
 MSSQL_HOST = os.environ.get("IBIS_TEST_MSSQL_HOST", "localhost")
 MSSQL_PORT = int(os.environ.get("IBIS_TEST_MSSQL_PORT", 1433))
 IBIS_TEST_MSSQL_DB = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis_testing")
+MSSQL_PYODBC_DRIVER = os.environ.get("IBIS_TEST_MSSQL_PYODBC_DRIVER", "FreeTDS")
 
 
 class TestConf(ServiceBackendTest, RoundHalfToEven):
@@ -31,7 +32,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
     supports_structs = False
     supports_json = False
     service_name = "mssql"
-    deps = "pymssql", "sqlalchemy"
+    deps = "pyodbc", "sqlalchemy"
 
     @property
     def test_files(self) -> Iterable[Path]:
@@ -56,10 +57,12 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
         script_dir
             Location of scripts defining schemas
         """
+        params = f"driver={MSSQL_PYODBC_DRIVER}"
+        url = sa.engine.make_url(
+            f"mssql+pyodbc://{user}:{password}@{host}:{port:d}/{database}?{params}"
+        )
         init_database(
-            url=sa.engine.make_url(
-                f"mssql+pymssql://{user}:{password}@{host}:{port:d}/{database}"
-            ),
+            url=url,
             database=database,
             schema=self.ddl_script,
             isolation_level="AUTOCOMMIT",
@@ -74,6 +77,7 @@ class TestConf(ServiceBackendTest, RoundHalfToEven):
             password=MSSQL_PASS,
             database=IBIS_TEST_MSSQL_DB,
             port=MSSQL_PORT,
+            driver=MSSQL_PYODBC_DRIVER,
             **kw,
         )
 
