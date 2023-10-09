@@ -352,8 +352,22 @@ jobs:
           IBIS_TEST_WEBHDFS_USER: hdfs
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
+      - name: "run serial tests: ${{ matrix.backend.name }} (common)"
+        if: matrix.backend.serial && matrix.backend.name == 'flink'
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/tests
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          JVM_ARGS: -XX:CompressedClassSpaceSize=3G
+
+      - name: "run serial tests: ${{ matrix.backend.name }} (backend-specific)"
+        if: matrix.backend.serial && matrix.backend.name == 'flink'
+        run: just ci-check -m ${{ matrix.backend.name }} ibis/backends/flink/tests
+        env:
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+          JVM_ARGS: -XX:CompressedClassSpaceSize=3G
+
       - name: "run serial tests: ${{ matrix.backend.name }}"
-        if: matrix.backend.serial && matrix.backend.name != 'impala'
+        if: matrix.backend.serial && matrix.backend.name != 'impala' && matrix.backend.name != 'flink'
         run: just ci-check -m ${{ matrix.backend.name }}
         env:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
