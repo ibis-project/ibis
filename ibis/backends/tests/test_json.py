@@ -57,6 +57,15 @@ def test_json_getitem(json_t, expr_fn, expected, backend):
 @pytest.mark.notyet(
     ["pyspark", "trino"], reason="should work but doesn't deserialize JSON"
 )
+@pytest.mark.notimpl(["duckdb"], raises=OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=OperationNotDefinedError,
+    reason=(
+        "No translation rule for <class 'ibis.expr.operations.json.ToJSONMap'"
+        "Flink does not support ToJSONMap"
+    )
+)
 def test_json_map(json_t):
     expr = json_t.js.map.name("res")
     result = expr.execute()
