@@ -165,8 +165,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -q build-essential graphviz libgeos-dev libkrb5-dev freetds-dev
+          sudo apt-get update -y -q
+          sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
 
       - name: checkout
         uses: actions/checkout@v4

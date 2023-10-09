@@ -101,9 +101,7 @@ jobs:
           python-version: "3.11"
 
       - name: install system dependencies
-        run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev libkrb5-dev krb5-config
+        run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
 
       - uses: syphar/restore-virtualenv@v1
         with:
