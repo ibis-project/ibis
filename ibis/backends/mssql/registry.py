@@ -229,7 +229,7 @@ operation_registry.update(
             6,
         ),
         ops.TimeFromHMS: fixed_arity(
-            lambda h, m, s: sa.func.timefromparts(h, m, s, 0, 0), 3
+            lambda h, m, s: sa.func.timefromparts(h, m, s, 0, sa.literal_column("0")), 3
         ),
         ops.TimestampTruncate: _timestamp_truncate,
         ops.DateTruncate: _timestamp_truncate,

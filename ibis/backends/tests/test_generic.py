@@ -755,7 +755,7 @@ def test_select_filter_select(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["mssql"], raises=sa.exc.OperationalError)
+@pytest.mark.broken(["mssql"], raises=sa.exc.ProgrammingError)
 def test_between(backend, alltypes, df):
     expr = alltypes.double_col.between(5, 10)
     result = expr.execute().rename("double_col")

@@ -43,6 +43,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SQLALCHEMY_WARN_20: "1"
+      ODBCSYSINI: "${{ github.workspace }}/.odbc"
     strategy:
       fail-fast: false
       matrix:
@@ -129,15 +130,14 @@ jobs:
               - ninja-build
           - name: mssql
             title: MS SQL Server
-            serial: true
             extras:
               - mssql
             services:
               - mssql
             sys-deps:
-              - libkrb5-dev
-              - krb5-config
               - freetds-dev
+              - unixodbc-dev
+              - tdsodbc
           - name: trino
             title: Trino
             extras:
@@ -219,15 +219,14 @@ jobs:
             backend:
               name: mssql
               title: MS SQL Server
-              serial: true
               extras:
                 - mssql
               services:
                 - mssql
               sys-deps:
-                - libkrb5-dev
-                - krb5-config
                 - freetds-dev
+                - unixodbc-dev
+                - tdsodbc
           - os: windows-latest
             backend:
               name: trino
@@ -269,6 +268,16 @@ jobs:
 
       - name: checkout
         uses: actions/checkout@v4
+
+      - name: setup odbc for mssql
+        if: ${{ matrix.backend.name == 'mssql' }}
+        run: |
+          mkdir -p "$ODBCSYSINI"
+
+          {
+            echo '[FreeTDS]'
+            echo "Driver = libtdsodbc.so"
+          } > "$ODBCSYSINI/odbcinst.ini"
 
       - uses: extractions/setup-just@v1
         env:
@@ -593,6 +602,10 @@ jobs:
               - mssql
             extras:
               - mssql
+            sys-deps:
+              - freetds-dev
+              - unixodbc-dev
+              - tdsodbc
           - name: mysql
             title: MySQL
             services:
@@ -607,6 +620,8 @@ jobs:
             extras:
               - geospatial
               - postgres
+            sys-deps:
+              - libgeos-dev
           - name: sqlite
             title: SQLite
             extras:
@@ -629,21 +644,29 @@ jobs:
               - oracle
             services:
               - oracle
+    env:
+      ODBCSYSINI: "${{ github.workspace }}/.odbc"
     steps:
       - name: checkout
         uses: actions/checkout@v4
 
-      - name: install libgeos for shapely
-        if: ${{ matrix.backend.name == 'postgres' }}
+      - name: update and install system dependencies
+        if: matrix.backend.sys-deps != null
         run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -qq -y build-essential libgeos-dev
+          set -euo pipefail
 
-      - name: install freetds-dev for mssql
+          sudo apt-get update -qq -y
+          sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
+
+      - name: setup odbc for mssql
         if: ${{ matrix.backend.name == 'mssql' }}
         run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -qq -y build-essential libkrb5-dev krb5-config freetds-dev
+          mkdir -p "$ODBCSYSINI"
+
+          {
+            echo '[FreeTDS]'
+            echo "Driver = libtdsodbc.so"
+          } > "$ODBCSYSINI/odbcinst.ini"
 
       - uses: extractions/setup-just@v1
         env:

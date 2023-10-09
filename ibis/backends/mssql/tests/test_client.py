@@ -120,7 +120,7 @@ def test_builtin_agg_udf_filtered(con):
     ft = con.tables.functional_alltypes
     expr = count_big(ft.id)
     with pytest.raises(
-        sa.exc.OperationalError, match="An expression of non-boolean type specified"
+        sa.exc.ProgrammingError, match="An expression of non-boolean type specified"
     ):
         assert expr.execute()
 
