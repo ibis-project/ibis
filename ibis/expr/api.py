@@ -17,12 +17,12 @@ from ibis import selectors, util
 from ibis.backends.base import BaseBackend, connect
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
+from ibis.common.grounds import Concrete
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.decompile import decompile
 from ibis.expr.deferred import Deferred, deferrable
 from ibis.expr.schema import Schema
 from ibis.expr.sql import parse_sql, show_sql, to_sql
-from ibis.expr.streaming import Watermark
 from ibis.expr.types import (
     DateValue,
     Expr,
@@ -1743,6 +1743,11 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Ta
     └───────┘
     """
     return table.difference(*rest, distinct=distinct) if rest else table
+
+
+class Watermark(Concrete):
+    time_col: str
+    allowed_delay: ir.IntervalScalar
 
 
 def watermark(time_col: str, allowed_delay: ir.IntervalScalar) -> Watermark:

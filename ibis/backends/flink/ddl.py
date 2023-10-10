@@ -18,7 +18,7 @@ from ibis.backends.base.sql.ddl import (
 from ibis.backends.base.sql.registry import quote_identifier, type_to_sql_string
 
 if TYPE_CHECKING:
-    from ibis.expr.streaming import Watermark
+    from ibis.api import Watermark
 
 
 def format_schema(schema):
