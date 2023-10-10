@@ -70,17 +70,27 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
 @pytest.mark.parametrize(
     "sch",
     [
-        ibis.schema(
-            [
-                ("first_name", "string"),
-                ("last_name", "string"),
-                ("department_name", "string"),
-                ("salary", "float64"),
-            ]
+        param(
+            None,
+            id="no schema",
         ),
-        None,
+        param(
+            ibis.schema(
+                [
+                    ("first_name", "string"),
+                    ("last_name", "string"),
+                    ("department_name", "string"),
+                    ("salary", "float64"),
+                ]
+            ),
+            id="schema",
+            marks=pytest.mark.notimpl(
+                ["flink"],
+                raises=com.IbisError,
+                reason="tbl_properties is required when creating table with schema",
+            )
+        ),
     ],
-    ids=["schema", "no schema"],
 )
 @pytest.mark.notimpl(["dask", "datafusion", "druid"])
 def test_create_table(backend, con, temp_table, lamduh, sch):
@@ -127,7 +137,20 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
     )
 
     obj = lamduh(df)
-    alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
+
+    if alchemy_backend.name() == "flink":
+        alchemy_con.create_table(
+            alchemy_temp_table,
+            obj,
+            schema=sch,
+            tbl_properties={
+                "connector": None,
+            },
+            overwrite=True
+        )
+    else:
+        alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
+
     result = (
         alchemy_con.table(alchemy_temp_table)
         .execute()
