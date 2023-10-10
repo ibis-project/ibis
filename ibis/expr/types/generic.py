@@ -7,6 +7,7 @@ from public import public
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.expr.deferred import Deferred
 import ibis.expr.operations as ops
 from ibis.common.grounds import Singleton
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
@@ -1030,7 +1031,9 @@ class Value(Expr):
         │ b      │ [4, 5]               │
         └────────┴──────────────────────┘
         """
-        return ops.ArrayCollect(self, where=where).to_expr()
+        return ops.ArrayCollect(
+            self, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
@@ -1106,7 +1109,9 @@ class Value(Expr):
         >>> t.bill_length_mm.group_concat(sep=": ", where=t.bill_depth_mm > 18)
         '39.1: 36.7'
         """
-        return ops.GroupConcat(self, sep=sep, where=where).to_expr()
+        return ops.GroupConcat(
+            self, sep=sep, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def __hash__(self) -> int:
         return super().__hash__()
@@ -1286,6 +1291,14 @@ class Column(Value, _FixedTextJupyterMixin):
         (column,) = df.columns
         return PandasData.convert_column(df.loc[:, column], self.type())
 
+    def _bind_reduction_filter(self, where):
+        import ibis.expr.analysis as an
+
+        if where is None or not isinstance(where, Deferred):
+            return where
+
+        return where.resolve(an.find_first_base_table(self.op()).to_expr())
+
     def approx_nunique(
         self,
         where: ir.BooleanValue | None = None,
@@ -1323,7 +1336,9 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
         55
         """
-        return ops.ApproxCountDistinct(self, where).to_expr()
+        return ops.ApproxCountDistinct(
+            self, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def approx_median(
         self,
@@ -1362,7 +1377,9 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
         3700
         """
-        return ops.ApproxMedian(self, where).to_expr()
+        return ops.ApproxMedian(
+            self, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the mode of a column.
@@ -1387,7 +1404,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
         5550
         """
-        return ops.Mode(self, where).to_expr()
+        return ops.Mode(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column.
@@ -1412,7 +1429,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.max(where=t.species == "Chinstrap")
         4800
         """
-        return ops.Max(self, where).to_expr()
+        return ops.Max(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def min(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the minimum of a column.
@@ -1437,7 +1454,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.min(where=t.species == "Adelie")
         2850
         """
-        return ops.Min(self, where).to_expr()
+        return ops.Min(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`.
@@ -1462,7 +1479,9 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.species.argmax(t.body_mass_g, where=t.island == "Dream")
         'Chinstrap'
         """
-        return ops.ArgMax(self, key=key, where=where).to_expr()
+        return ops.ArgMax(
+            self, key=key, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that minimizes `key`.
@@ -1488,7 +1507,9 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.species.argmin(t.body_mass_g, where=t.island == "Biscoe")
         'Adelie'
         """
-        return ops.ArgMin(self, key=key, where=where).to_expr()
+        return ops.ArgMin(
+            self, key=key, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of distinct rows in an expression.
@@ -1513,7 +1534,9 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.nunique(where=t.species == "Adelie")
         55
         """
-        return ops.CountDistinct(self, where).to_expr()
+        return ops.CountDistinct(
+            self, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def topk(
         self,
@@ -1586,7 +1609,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Scalar
             An expression
         """
-        return ops.Arbitrary(self, how=how, where=where).to_expr()
+        return ops.Arbitrary(
+            self, how=how, where=self._bind_reduction_filter(where)
+        ).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in an expression.
@@ -1601,7 +1626,7 @@ class Column(Value, _FixedTextJupyterMixin):
         IntegerScalar
             Number of elements in an expression
         """
-        return ops.Count(self, where).to_expr()
+        return ops.Count(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def value_counts(self) -> ir.Table:
         """Compute a frequency table.
@@ -1677,7 +1702,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.chars.first(where=t.chars != "a")
         'b'
         """
-        return ops.First(self, where=where).to_expr()
+        return ops.First(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def last(self, where: ir.BooleanValue | None = None) -> Value:
         """Return the last value of a column.
@@ -1703,7 +1728,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.chars.last(where=t.chars != "d")
         'c'
         """
-        return ops.Last(self, where=where).to_expr()
+        return ops.Last(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def rank(self) -> ir.IntegerColumn:
         """Compute position of first element within each equal-value group in sorted order.

@@ -704,7 +704,7 @@ def _make_any(
             predicates=predicates,
         )
     else:
-        op = any_op_class(expr, where=where)
+        op = any_op_class(expr, where=expr._bind_reduction_filter(where))
     return op.to_expr()
 
 
