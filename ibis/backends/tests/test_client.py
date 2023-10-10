@@ -84,11 +84,6 @@ def _create_temp_table_with_schema(con, temp_table_name, schema, data=None):
                 ]
             ),
             id="schema",
-            marks=pytest.mark.notimpl(
-                ["flink"],
-                raises=com.IbisError,
-                reason="tbl_properties is required when creating table with schema",
-            )
         ),
     ],
 )
@@ -104,7 +99,18 @@ def test_create_table(backend, con, temp_table, lamduh, sch):
     )
 
     obj = lamduh(df)
-    con.create_table(temp_table, obj, schema=sch)
+    if backend.name() == "flink":
+        con.create_table(
+            temp_table,
+            obj,
+            schema=sch,
+            tbl_properties={
+                "connector": None,
+            },
+        )
+    else:
+        con.create_table(temp_table, obj, schema=sch)
+
     result = (
         con.table(temp_table).execute().sort_values("first_name").reset_index(drop=True)
     )
