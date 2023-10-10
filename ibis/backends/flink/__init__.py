@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from pyflink.table import TableEnvironment
     from pyflink.table.table_result import TableResult
 
-    from ibis.expr.streaming import Watermark
+    from ibis.api import Watermark
 
 
 class Backend(BaseBackend, CanCreateDatabase):
