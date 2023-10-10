@@ -10,7 +10,6 @@ from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
-    # supports_map = True
     supports_structs = False
     deps = "pandas", "pyflink"
 
