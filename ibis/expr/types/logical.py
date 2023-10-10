@@ -329,7 +329,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         False
 
         """
-        return ops.All(self, where=where).to_expr()
+        return ops.All(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def notall(self, where: BooleanValue | None = None) -> BooleanScalar:
         """Return whether not all elements are `True`.
@@ -358,7 +358,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         >>> (t.arr == 2).notall(where=t.arr >= 2)
         True
         """
-        return ops.NotAll(self, where=where).to_expr()
+        return ops.NotAll(self, where=self._bind_reduction_filter(where)).to_expr()
 
     def cumany(self, *, where=None, group_by=None, order_by=None) -> BooleanColumn:
         """Accumulate the `any` aggregate.

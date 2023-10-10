@@ -756,6 +756,12 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="is_in",
             marks=[mark.broken(["datafusion"], raises=AssertionError)],
         ),
+        param(
+            lambda _: ibis._.string_col.isin(["1", "7"]),
+            lambda t: t.string_col.isin(["1", "7"]),
+            id="is_in_deferred",
+            marks=[mark.broken(["datafusion"], raises=AssertionError)],
+        ),
     ],
 )
 def test_reduction_ops(
