@@ -199,10 +199,17 @@ _LIMIT = {
 
 @pytest.mark.notimpl(["datafusion", "polars", "mssql"])
 @pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=AttributeError,
+    reason="'Backend' object has no attribute 'sql'"
+)
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
     limit = _LIMIT.get(backend.name(), "LIMIT 10")
+
+    # TODO (mehmet): Is there a way to get ir.Expr from SQL statement for Flink?
     expr = con.sql(f"SELECT * FROM {table} {limit}")
     result = expr.execute()
     assert len(result) == 10
