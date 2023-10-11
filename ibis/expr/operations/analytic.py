@@ -45,12 +45,12 @@ class RankBase(Analytic):
 
 @public
 class MinRank(RankBase):
-    arg: Column[dt.Any]
+    pass
 
 
 @public
 class DenseRank(RankBase):
-    arg: Column[dt.Any]
+    pass
 
 
 @public
@@ -76,21 +76,16 @@ class RowNumber(RankBase):
 
 @public
 class PercentRank(Analytic):
-    arg: Column[dt.Any]
-
     dtype = dt.double
 
 
 @public
 class CumeDist(Analytic):
-    arg: Column[dt.Any]
-
     dtype = dt.double
 
 
 @public
 class NTile(Analytic):
-    arg: Column[dt.Any]
     buckets: Scalar[dt.Integer]
 
     dtype = dt.int64
