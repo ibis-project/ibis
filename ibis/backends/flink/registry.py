@@ -389,39 +389,24 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
 def _timestamp_from_ymdhms(
     translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
 ) -> str:
-    from ibis.expr.operations import temporal
-
-    if (
-        isinstance(op.year, temporal.ExtractYear) and
-        isinstance(op.month, temporal.ExtractMonth) and
-        isinstance(op.day, temporal.ExtractDay) and
-        isinstance(op.hours, temporal.ExtractHour) and
-        isinstance(op.minutes, temporal.ExtractMinute) and
-        isinstance(op.seconds, temporal.ExtractSecond)
-    ):
-        arg_translated_list = [
-            translator.translate(op.year.arg),
-            translator.translate(op.month.arg),
-            translator.translate(op.day.arg),
-            translator.translate(op.hours.arg),
-            translator.translate(op.minutes.arg),
-            translator.translate(op.seconds.arg)
-        ]
-        if len(set(arg_translated_list)) == 1:
-            return arg_translated_list[0]
-
-        else:
-            raise com.UnsupportedOperationError(
-                "Timestamp defined with ExtractYear/Month/Day/... "
-                "must extract from the same column. "
-                f"Can NOT extract from multiple columns: {arg_translated_list}"
-            )
-
-    year, month, day = op.year.value, op.month.value, op.day.value
-    hours, minutes, seconds = op.hours.value, op.minutes.value, op.seconds.value
-
-    date_string = f"{year}-{month}-{day} {hours}:{minutes}:{seconds}"
-    return f"CAST('{date_string}' AS TIMESTAMP)"
+    date_string = (
+        "CONCAT("
+        + ", '-', ".join(
+            [
+                f"CAST({translator.translate(e)} AS STRING)"
+                for e in [op.year, op.month, op.day]
+            ]
+        )
+        + ", ' ', "
+        + ", ':', ".join(
+            [
+                f"CAST({translator.translate(e)} AS STRING)"
+                for e in [op.hours, op.minutes, op.seconds]
+            ]
+        )
+        + ")"
+    )
+    return f"CAST({date_string} AS TIMESTAMP)"
 
 
 operation_registry.update(
