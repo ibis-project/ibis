@@ -26,7 +26,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import CanCreateSchema
 from ibis.backends.base.sql.alchemy import BaseAlchemyBackend
-from ibis.backends.base.sqlglot import C, F, lit
+from ibis.backends.base.sqlglot import C, F
 from ibis.backends.duckdb.compiler import DuckDBSQLCompiler
 from ibis.backends.duckdb.datatypes import DuckDBType
 from ibis.expr.operations.relations import PandasDataFrameProxy
@@ -731,15 +731,19 @@ WHERE catalog_name = :database"""
         >>> con.list_tables(schema="my_schema")
         ['baz']
         """
-        database = F.current_database() if database is None else lit(database)
-        schema = F.current_schema() if schema is None else lit(schema)
+        database = (
+            F.current_database() if database is None else sg.exp.convert(database)
+        )
+        schema = F.current_schema() if schema is None else sg.exp.convert(schema)
 
         sql = (
             sg.select(C.table_name)
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(
-                C.table_catalog.eq(database).or_(C.table_catalog.eq(lit("temp"))),
+                C.table_catalog.eq(database).or_(
+                    C.table_catalog.eq(sg.exp.convert("temp"))
+                ),
                 C.table_schema.eq(schema),
             )
             .sql(self.name, pretty=True)
