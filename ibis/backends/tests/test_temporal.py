@@ -2441,26 +2441,6 @@ def test_date_column_from_ymd(con, alltypes, df):
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00904 make timestamp invalid"
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["flink"],
-    raises=AssertionError,
-    reason=(
-        # TODO (mehmet): Figure out why the precision is different?
-        # Refer to ibis/ibis/backends/flink/registry.py::_timestamp_from_ymdhms()
-        "numpy array are different",
-        """left = [
-          '2010-11-01 00:00:00', '2010-11-01 00:01:00', '2010-11-01 00:02:00',
-          '2010-11-01 00:03:00', '2010-11...31 05:06:13', '2010-01-31 05:07:13',
-          '2010-01-31 05:08:13', '2010-01-31 05:09:13'
-        ]
-        right = [
-          '2010-11-01 00:00:00','2010-11-01 00:01:00', '2010-11-01 00:02:00.100000',
-          '2010-11-0...1-31 05:07:13.710000', '2010-01-31 05:08:13.780000',
-          '2010-01-31 05:09:13.860000'
-        ]
-        """
-    ),
-)
 def test_timestamp_column_from_ymdhms(con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.timestamp(
