@@ -731,7 +731,8 @@ class Backend(BaseBackend, CanCreateDatabase):
                     expressions=[
                         sg.exp.SetItem(
                             this=sg.exp.EQ(
-                                this=sg.to_identifier(name), expression=lit(value)
+                                this=sg.to_identifier(name),
+                                expression=sg.exp.convert(value),
                             )
                         )
                         for name, value in settings.items()
