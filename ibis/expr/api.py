@@ -1093,12 +1093,62 @@ def dense_rank() -> ir.IntegerColumn:
 
 
 def percent_rank() -> ir.FloatingColumn:
-    """Return the relative rank of the values in the column."""
+    """Return the relative rank of the values in the column.
+
+    Returns
+    -------
+    FloatingColumn
+        The percent rank
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+    >>> t.mutate(pct_rank=ibis.percent_rank().over(order_by=t.values))
+    ┏━━━━━━━━┳━━━━━━━━━━┓
+    ┃ values ┃ pct_rank ┃
+    ┡━━━━━━━━╇━━━━━━━━━━┩
+    │ int64  │ float64  │
+    ├────────┼──────────┤
+    │      1 │      0.0 │
+    │      1 │      0.0 │
+    │      2 │      0.4 │
+    │      2 │      0.4 │
+    │      2 │      0.4 │
+    │      3 │      1.0 │
+    └────────┴──────────┘
+    """
     return ops.PercentRank().to_expr()
 
 
 def cume_dist() -> ir.FloatingColumn:
-    """Return the cumulative distribution over a window."""
+    """Return the cumulative distribution over a window.
+
+    Returns
+    -------
+    FloatingColumn
+        The cumulative distribution
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+    >>> t.mutate(dist=ibis.cume_dist().over(order_by=t.values))
+    ┏━━━━━━━━┳━━━━━━━━━━┓
+    ┃ values ┃ dist     ┃
+    ┡━━━━━━━━╇━━━━━━━━━━┩
+    │ int64  │ float64  │
+    ├────────┼──────────┤
+    │      1 │ 0.333333 │
+    │      1 │ 0.333333 │
+    │      2 │ 0.833333 │
+    │      2 │ 0.833333 │
+    │      2 │ 0.833333 │
+    │      3 │ 1.000000 │
+    └────────┴──────────┘
+    """
     return ops.CumeDist().to_expr()
 
 
@@ -1109,6 +1159,25 @@ def ntile(buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
     ----------
     buckets
         Number of buckets to partition into
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+    >>> t.mutate(ntile=ibis.ntile(2).over(order_by=t.values))
+    ┏━━━━━━━━┳━━━━━━━┓
+    ┃ values ┃ ntile ┃
+    ┡━━━━━━━━╇━━━━━━━┩
+    │ int64  │ int64 │
+    ├────────┼───────┤
+    │      1 │     0 │
+    │      1 │     0 │
+    │      2 │     0 │
+    │      2 │     1 │
+    │      2 │     1 │
+    │      3 │     1 │
+    └────────┴───────┘
     """
     return ops.NTile(buckets).to_expr()
 
@@ -1120,6 +1189,25 @@ def row_number() -> ir.IntegerColumn:
     -------
     IntegerColumn
         A column expression enumerating rows
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+    >>> t.mutate(rownum=ibis.row_number())
+    ┏━━━━━━━━┳━━━━━━━━┓
+    ┃ values ┃ rownum ┃
+    ┡━━━━━━━━╇━━━━━━━━┩
+    │ int64  │ int64  │
+    ├────────┼────────┤
+    │      1 │      0 │
+    │      2 │      1 │
+    │      1 │      2 │
+    │      2 │      3 │
+    │      3 │      4 │
+    │      2 │      5 │
+    └────────┴────────┘
     """
     return ops.RowNumber().to_expr()
 
