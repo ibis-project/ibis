@@ -75,6 +75,23 @@ def test_dtype_from_classes(klass, expected):
     assert dt.dtype(klass) == expected
 
 
+@pytest.mark.parametrize(
+    ("uklass", "klass"),
+    [
+        (dt.UInt64, dt.Int64),
+        (dt.UInt32, dt.Int32),
+        (dt.UInt16, dt.Int16),
+        (dt.UInt8, dt.Int8),
+    ],
+)
+def test_signed_unsigned_bounds(uklass, klass):
+    unsigned = dt.dtype(uklass)
+    signed = dt.dtype(klass)
+    assert unsigned.bounds.upper > signed.bounds.upper
+    assert unsigned.bounds.lower == 0
+    assert signed.bounds.lower < 0
+
+
 class FooStruct:
     a: dt.int16
     b: dt.int32
