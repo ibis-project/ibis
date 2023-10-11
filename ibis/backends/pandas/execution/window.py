@@ -254,10 +254,10 @@ def trim_window_result(data: pd.Series | pd.DataFrame, timecontext: TimeContext 
     return indexed_subset[name]
 
 
-@execute_node.register(ops.WindowFunction, pd.Series)
+@execute_node.register(ops.WindowFunction, [pd.Series])
 def execute_window_op(
     op,
-    data,
+    *data,
     scope: Scope | None = None,
     timecontext: TimeContext | None = None,
     aggcontext=None,
@@ -485,33 +485,42 @@ def execute_series_group_by_last_value(op, data, aggcontext=None, **kwargs):
     return aggcontext.agg(data, lambda x: _getter(x, -1))
 
 
-@execute_node.register(ops.MinRank, (pd.Series, SeriesGroupBy))
-def execute_series_min_rank(op, data, **kwargs):
-    # TODO(phillipc): Handle ORDER BY
+@execute_node.register(ops.MinRank)
+def execute_series_min_rank(op, aggcontext=None, **kwargs):
+    (key,) = aggcontext.order_by
+    df = aggcontext.parent
+    data = df[key]
     return data.rank(method="min", ascending=True).astype("int64") - 1
 
 
-@execute_node.register(ops.DenseRank, (pd.Series, SeriesGroupBy))
-def execute_series_dense_rank(op, data, **kwargs):
-    # TODO(phillipc): Handle ORDER BY
+@execute_node.register(ops.DenseRank)
+def execute_series_dense_rank(op, aggcontext=None, **kwargs):
+    (key,) = aggcontext.order_by
+    df = aggcontext.parent
+    data = df[key]
     return data.rank(method="dense", ascending=True).astype("int64") - 1
 
 
-@execute_node.register(ops.PercentRank, SeriesGroupBy)
-def execute_series_group_by_percent_rank(op, data, **kwargs):
-    return (
-        data.rank(method="min", ascending=True)
-        .sub(1)
-        .div(data.transform("count").sub(1))
-    )
+@execute_node.register(ops.PercentRank)
+def execute_series_group_by_percent_rank(op, aggcontext=None, **kwargs):
+    (key,) = aggcontext.order_by
+    df = aggcontext.parent
+    data = df[key]
+
+    result = data.rank(method="min", ascending=True) - 1
+
+    if isinstance(data, SeriesGroupBy):
+        nrows = data.transform("count")
+    else:
+        nrows = len(data)
+
+    result /= nrows - 1
+    return result
 
 
-@execute_node.register(ops.PercentRank, pd.Series)
-def execute_series_percent_rank(op, data, **kwargs):
-    # TODO(phillipc): Handle ORDER BY
-    return data.rank(method="min", ascending=True).sub(1).div(len(data) - 1)
-
-
-@execute_node.register(ops.CumeDist, (pd.Series, SeriesGroupBy))
-def execute_series_group_by_cume_dist(op, data, **kwargs):
+@execute_node.register(ops.CumeDist)
+def execute_series_group_by_cume_dist(op, aggcontext=None, **kwargs):
+    (key,) = aggcontext.order_by
+    df = aggcontext.parent
+    data = df[key]
     return data.rank(method="min", ascending=True, pct=True)

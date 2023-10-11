@@ -157,9 +157,8 @@ def calc_zscore(s):
             lambda t: t.cumcount(),
             id="row_number",
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "pandas"], raises=com.OperationNotDefinedError
-                )
+                pytest.mark.notimpl(["dask"], raises=NotImplementedError),
+                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
             ],
         ),
         param(
@@ -891,9 +890,9 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "dask", "datafusion", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["clickhouse", "datafusion", "polars"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["dask"], raises=AttributeError)
 @pytest.mark.notimpl(["pyspark"], raises=AnalysisException)
 @pytest.mark.notyet(
     ["clickhouse"],
