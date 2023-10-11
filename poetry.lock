@@ -5374,13 +5374,13 @@ sqlalchemy = ">=1.0.0"
 
 [[package]]
 name = "sqlglot"
-version = "18.11.4"
+version = "18.12.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-18.11.4-py3-none-any.whl", hash = "sha256:f2a1e885b60c4780343923b8b8a81d4dfdf67b6097e2e75fbff97f3eefc58e5f"},
-    {file = "sqlglot-18.11.4.tar.gz", hash = "sha256:90552172e26ee5a7f2be4d04743ec2797d3cbec6e6320a5afda39b995549e161"},
+    {file = "sqlglot-18.12.0-py3-none-any.whl", hash = "sha256:e43489daa6ca685e4a95ba316f4a43c367d4c39b87788eec38718ea4bfd58451"},
+    {file = "sqlglot-18.12.0.tar.gz", hash = "sha256:71269ea98e158978362afaa5a3db313641a96b3ac70aaee35ff1b129dec3e9e6"},
 ]
 
 [package.extras]
@@ -6101,4 +6101,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "8994dfce7b2294e106595fdf0141bbb699edf6c28fa4f3e7237d9cd5045cabcc"
+content-hash = "4caab94d114794c7f40a0d0f8d6aa7303e10f8a620c843f1c75f065086ee699d"
