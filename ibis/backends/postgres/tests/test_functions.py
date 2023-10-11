@@ -1110,40 +1110,15 @@ def test_identical_to(con, df):
     tm.assert_series_equal(result, expected)
 
 
-def test_rank(con):
-    t = con.table("functional_alltypes")
-    expr = t.double_col.rank().name("rank")
-    sqla_expr = expr.compile()
-    result = str(sqla_expr.compile(compile_kwargs={"literal_binds": True}))
-    expected = (
-        "SELECT rank() OVER (ORDER BY t0.double_col) - 1 AS rank \n"
-        "FROM functional_alltypes AS t0"
+def test_analytic_functions(alltypes, snapshot):
+    expr = alltypes.select(
+        rank=alltypes.double_col.rank(),
+        dense_rank=alltypes.double_col.dense_rank(),
+        cume_dist=alltypes.double_col.cume_dist(),
+        ntile=alltypes.double_col.ntile(7),
+        percent_rank=alltypes.double_col.percent_rank(),
     )
-    assert result == expected
-
-
-def test_percent_rank(con):
-    t = con.table("functional_alltypes")
-    expr = t.double_col.percent_rank().name("percent_rank")
-    sqla_expr = expr.compile()
-    result = str(sqla_expr.compile(compile_kwargs={"literal_binds": True}))
-    expected = (
-        "SELECT percent_rank() OVER (ORDER BY t0.double_col) AS "
-        "percent_rank \nFROM functional_alltypes AS t0"
-    )
-    assert result == expected
-
-
-def test_ntile(con):
-    t = con.table("functional_alltypes")
-    expr = t.double_col.ntile(7).name("result")
-    sqla_expr = expr.compile()
-    result = str(sqla_expr.compile(compile_kwargs={"literal_binds": True}))
-    expected = (
-        "SELECT ntile(7) OVER (ORDER BY t0.double_col) - 1 AS result \n"
-        "FROM functional_alltypes AS t0"
-    )
-    assert result == expected
+    snapshot.assert_match(str(ibis.to_sql(expr)), "out.sql")
 
 
 @pytest.mark.parametrize("opname", ["invert", "neg"])
