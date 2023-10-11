@@ -230,6 +230,21 @@ quartodoc:
             - name: row_number
               dynamic: true
               signature_name: full
+            - name: rank
+              dynamic: true
+              signature_name: full
+            - name: dense_rank
+              dynamic: true
+              signature_name: full
+            - name: percent_rank
+              dynamic: true
+              signature_name: full
+            - name: cume_dist
+              dynamic: true
+              signature_name: full
+            - name: ntile
+              dynamic: true
+              signature_name: full
             - name: window
               dynamic: true
               signature_name: full
