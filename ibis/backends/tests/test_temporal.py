@@ -858,11 +858,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedArgumentError,
                     reason="Interval unit \"ms\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
                 ),
-                pytest.mark.broken(
-                    ["flink"],
-                    raises=Py4JJavaError,
-                    reason="ParseException: Encountered 'MILLISECOND'. Was expecting one of: DAY, DAYS, HOUR, ...",
-                ),
             ],
         ),
         param(
@@ -899,6 +894,11 @@ def test_date_truncate(backend, alltypes, df, unit):
     ["druid"],
     raises=ValidationError,
     reason="Given argument with datatype interval('h') is not implicitly castable to string",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="The INTERVAL keyword should be followed by a numeric value, not a column reference.",
 )
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
