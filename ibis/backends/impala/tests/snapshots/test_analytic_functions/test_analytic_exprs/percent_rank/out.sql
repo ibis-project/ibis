@@ -1,1 +1,1 @@
-percent_rank()
+percent_rank() OVER (ORDER BY `double_col` ASC)

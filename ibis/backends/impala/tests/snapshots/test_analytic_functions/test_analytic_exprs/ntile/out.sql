@@ -1,1 +1,1 @@
-ntile(3)
+ntile(3) OVER (ORDER BY `double_col` ASC)
