@@ -1,0 +1,103 @@
+# Alternatives
+
+Compare/contrast Ibis with other popular dataframe libraries.
+
+| Library | API              | Eager/Lazy | Query Optimizer                      | Collection Types | Engine      | Multi-core | Distributed | Out-of-core | Arrow Backed    |
+| ------- | ---------------- | ---------- | ------------------------------------ | ---------------- | ----------- | ---------- | ----------- | ----------- | --------------- |
+| Ibis    | expression-based | Lazy       | ✅, plus some backends do additional | ✅               | 🟡          | 🟡         | 🟡          | 🟡          | 🟡              |
+| Pandas  | pandas           | Eager      | ❌                                   | Python object    | numpy/arrow | ❌         | ❌          | ❌          | optional >= 2.0 |
+| Dask DF | pandas           | Eager      | ❌                                   | Python object    | numpy/arrow | ✅         | ✅          | ✅          | ❌              |
+| Modin   | pandas           | Eager      | ❌                                   | Python object    | numpy/arrow | ✅         | ✅          | ✅          | ❌              |
+| Vaex    | pandas-close     | Lazy       | ❌                                   | some             | custom      | ✅         | ❌          | ✅          | ❌              |
+| Polars  | expression-based | Lazy       | ✅                                   | ✅               | custom      | ✅         | ❌          | ✅          | ✅              |
+| Daft    | expression-based | Lazy       | ✅                                   | ✅               | custom      | ✅         | ✅          | ✅          | ✅              |
+| Pyspark | expression-based | Lazy       | ✅                                   | ❌               | spark SQL   | ✅         | ✅          | ✅          | ❌              |
+| DuckDB  | SQL              | Eager      | ✅                                   | ✅               | itself      | ✅         | ❌          | ✅          | ✅              |
+
+🟡 = depends on the backend. So if you use the duckdb or Polars backend,
+then you get multi-core, out-of-core, and arrow-backed. Or if you use the
+Spark, BigQuery, Snowflake, etc backend, then you get distributed.
+
+Some general summaries:
+
+Any *eager* library is going to be limited in its ability to optimize queries.
+They work by telling the compute engine *how* to do something in a imperative style.
+A *lazy* library, on the other hand, tells the compute engine *what* to do
+in a declarative style. This allows the compute engine to optimize the query,
+doing things in a different order, or even not doing things at all. This also
+allows teh user to write code that is more concise and easier to read, because
+the optimizer can make it more efficient.
+
+Any library with a *custom* engine is going to be limited in the pool of contributors.
+Numpy and arrow are going to enjoy very active development and are going to be highly
+tuned because so many people rely upon them. Similar with duckdb, which gets to
+enjoy 50+ years of database research. Custom engines are going to be more limited
+in how much research and development can go into them.
+
+## Pandas
+Much of Ibis's API is inspired by Pandas, but makes some changes.
+Ibis uses a lazy execution model vs pandas eager execution model, which allows queries
+to be optimized. Ibis supports collection dtypes like arrays and structs,
+while with pandas you must use python objects.
+Pandas is single-core, in-memory, and single-machine, so it is only suitable for smaller datasets
+that can fit into memory.
+
+## Dask DF
+
+Parallelizes existing single-threaded libraries like NumPy and Pandas.
+As a consumer of those libraries Dask therefore has less control over low level performance and semantics.
+Those libraries are treated like a black box.
+On a single machine the parallelization effort can also be
+seriously stalled by pandas strings.
+Pandas strings, by default, are stored as python objects in numpy arrays meaning
+that any operation on them is GIL bound and therefore single threaded.
+This can be circumvented by multi-processing but has a non-trivial cost.
+Setting up a distributed cluster is also non-trivial.
+
+## Modin
+
+Similar to Dask.
+
+## Vaex
+
+An out-of core, single node library with a C++ backend and a pandas-like API.
+Vaex's method of out-of-core analysis is memory mapping files, which works until it doesn't.
+For instance parquet or csv files first need to be read and converted to a
+file format that can be memory mapped.
+Another downside is that the OS determines when pages will be swapped.
+Operations that need a full data shuffle, such as sorts,
+have terrible performance on memory mapped data.
+
+## Polars
+
+Polars is quite similar to Ibis. They both try to solve a lot of the same
+problems with pandas, and with similar philosophies. They are both lazy and use a
+mature, well-typed expression system that allows for query optimizations.
+Code written for ibis looks similar to code written for polars.
+They both support a lot of the same datatypes, including collections.
+Polars is multi-core and supports out-of-core operations, but it is not distributed.
+Depending on the backend you use, Ibis can be any of these things.
+For example, you can actually use Polars *as* an Ibis backend, and then
+you get the exact same performance characterisits.
+
+## Daft
+
+A new kid on the block, it appears to be very similar to Polars, except that it
+also is able to target distributed systems. Not sure what else about it.
+
+## Pyspark
+
+Spark is a distributed SQL engine, with a dataframe API stacked on top.
+This is very similar to the architecture of Ibis. In fact, you can use
+Spark as an Ibis backend, although you could also use other backends like duckdb
+or Polars. Spark is a very mature project, and has a lot of features.
+It is non-trivial and slow to set up a spark cluster so really only makes sense
+for 100s of Gbs to Tbs of data.
+
+## DuckDB
+
+DuckDB is a single-node, in-memory, columnar, SQL database.
+It is one of the execution engines that Ibis can target.
+It has graceful spill-to-disk, so it can handle datasets larger than memory.
+Use duckdb directly if you want to write SQL, or use Ibis if you want to write
+python code.
