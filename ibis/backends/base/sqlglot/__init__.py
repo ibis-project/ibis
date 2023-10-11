@@ -23,12 +23,8 @@ class AggGen:
         return getattr(self, key)
 
 
-def _to_sqlglot(arg):
-    return arg if isinstance(arg, sg.exp.Expression) else lit(arg)
-
-
 def _func(name: str, *args: Any, **kwargs: Any):
-    return sg.func(name, *map(_to_sqlglot, args), **kwargs)
+    return sg.func(name, *map(sg.exp.convert, args), **kwargs)
 
 
 class FuncGen:
@@ -41,16 +37,16 @@ class FuncGen:
         return getattr(self, key)
 
     def array(self, *args):
-        return sg.exp.Array.from_arg_list(list(map(_to_sqlglot, args)))
+        return sg.exp.Array.from_arg_list(list(map(sg.exp.convert, args)))
 
     def tuple(self, *args):
-        return sg.func("tuple", *map(_to_sqlglot, args))
+        return sg.func("tuple", *map(sg.exp.convert, args))
 
     def exists(self, query):
         return sg.exp.Exists(this=query)
 
     def concat(self, *args):
-        return sg.exp.Concat.from_arg_list(list(map(_to_sqlglot, args)))
+        return sg.exp.Concat.from_arg_list(list(map(sg.exp.convert, args)))
 
     def map(self, keys, values):
         return sg.exp.Map(keys=keys, values=values)
@@ -66,12 +62,8 @@ class ColGen:
         return sg.column(key)
 
 
-def lit(val):
-    return sg.exp.Literal(this=str(val), is_string=isinstance(val, str))
-
-
 def interval(value, *, unit):
-    return sg.exp.Interval(this=_to_sqlglot(value), unit=sg.exp.var(unit))
+    return sg.exp.Interval(this=sg.exp.convert(value), unit=sg.exp.var(unit))
 
 
 F = FuncGen()

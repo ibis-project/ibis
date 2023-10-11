@@ -23,7 +23,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.base import BaseBackend, CanCreateDatabase
-from ibis.backends.base.sqlglot import STAR, C, F, lit
+from ibis.backends.base.sqlglot import STAR, C, F
 from ibis.backends.clickhouse.compiler import translate
 from ibis.backends.clickhouse.datatypes import ClickhouseType
 
@@ -201,7 +201,7 @@ class Backend(BaseBackend, CanCreateDatabase):
         if database is None:
             database = F.currentDatabase()
         else:
-            database = lit(database)
+            database = sg.exp.convert(database)
 
         query = query.where(C.database.eq(database).or_(C.is_temporary))
 

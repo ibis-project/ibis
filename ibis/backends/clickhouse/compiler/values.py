@@ -2,37 +2,19 @@ from __future__ import annotations
 
 import calendar
 import functools
+import math
 import operator
 from functools import partial
 from typing import Any
 
 import sqlglot as sg
-from sqlglot.dialects.dialect import rename_func
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.base.sqlglot import (
-    NULL,
-    STAR,
-    AggGen,
-    C,
-    F,
-    interval,
-    lit,
-    make_cast,
-)
+from ibis.backends.base.sqlglot import NULL, STAR, AggGen, C, F, interval, make_cast
 from ibis.backends.clickhouse.datatypes import ClickhouseType
-
-# TODO: This is a hack to get around the fact that sqlglot 17.8.6 is broken for
-# ClickHouse's isNaN
-sg.dialects.clickhouse.ClickHouse.Generator.TRANSFORMS.update(
-    {
-        sg.exp.IsNan: rename_func("isNaN"),
-        sg.exp.StartsWith: rename_func("startsWith"),
-    }
-)
 
 
 def _aggregate(funcname, *args, where):
@@ -325,14 +307,14 @@ def _literal(op, *, value, dtype, **kw):
             return NULL
         return cast(NULL, dtype)
     elif dtype.is_boolean():
-        return lit(bool(value))
+        return sg.exp.convert(bool(value))
     elif dtype.is_inet():
         v = str(value)
         return F.toIPv6(v) if ":" in v else F.toIPv4(v)
     elif dtype.is_string():
-        return lit(str(value).replace(r"\0", r"\\0"))
+        return sg.exp.convert(str(value).replace(r"\0", r"\\0"))
     elif dtype.is_macaddr():
-        return lit(str(value))
+        return sg.exp.convert(str(value))
     elif dtype.is_decimal():
         precision = dtype.precision
         if precision is None or not 1 <= precision <= 76:
@@ -350,10 +332,14 @@ def _literal(op, *, value, dtype, **kw):
             type_name = F.toDecimal256
         return type_name(value, dtype.scale)
     elif dtype.is_numeric():
-        return lit(value)
+        if math.isnan(value):
+            return sg.exp.Literal(this="NaN", is_string=False)
+        elif math.isinf(value):
+            inf = sg.exp.Literal(this="inf", is_string=False)
+            return -inf if value < 0 else inf
+        return sg.exp.convert(value)
     elif dtype.is_interval():
-        dtype = op.dtype
-        if dtype.unit.short in {"ms", "us", "ns"}:
+        if dtype.unit.short in ("ms", "us", "ns"):
             raise com.UnsupportedOperationError(
                 "Clickhouse doesn't support subsecond interval resolutions"
             )
@@ -393,7 +379,7 @@ def _literal(op, *, value, dtype, **kw):
         values = []
 
         for k, v in value.items():
-            keys.append(lit(k))
+            keys.append(sg.exp.convert(k))
             values.append(
                 _literal(
                     ops.Literal(v, dtype=value_type), value=v, dtype=value_type, **kw
@@ -578,7 +564,7 @@ def _clip(op, *, arg, lower, upper, **_):
 def _struct_field(op, *, arg, field: str, **_):
     arg_dtype = op.arg.dtype
     idx = arg_dtype.names.index(field)
-    return cast(sg.exp.Dot(this=arg, expression=lit(idx + 1)), op.dtype)
+    return cast(sg.exp.Dot(this=arg, expression=sg.exp.convert(idx + 1)), op.dtype)
 
 
 @translate_val.register(ops.NthValue)
@@ -638,7 +624,7 @@ def day_of_week_name(op, *, arg, **_):
         sg.exp.Case(
             this=base,
             ifs=[if_(day, calendar.day_name[day]) for day in weekdays],
-            default=lit(""),
+            default=sg.exp.convert(""),
         ),
         "",
     )
