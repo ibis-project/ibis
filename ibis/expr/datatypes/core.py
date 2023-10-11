@@ -653,7 +653,7 @@ class UnsignedInteger(Integer):
 
     @property
     def bounds(self):
-        exp = self.nbytes * 8 - 1
+        exp = self.nbytes * 8
         upper = 1 << exp
         return Bounds(lower=0, upper=upper)
 
