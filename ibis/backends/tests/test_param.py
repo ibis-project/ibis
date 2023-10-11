@@ -223,7 +223,6 @@ def test_scalar_param_date(backend, alltypes, value):
         "oracle",
         "pyspark",
         "mssql",
-        "trino",
         "druid",
     ]
 )

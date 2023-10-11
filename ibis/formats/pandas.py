@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import warnings
 
 import numpy as np
@@ -205,40 +206,78 @@ class PandasData(DataMapper):
 
     @staticmethod
     def convert_UUID(s, dtype, pandas_type):
-        from uuid import UUID
-
-        return s.map(
-            lambda v: v if isinstance(v, UUID) else UUID(v), na_action="ignore"
-        )
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
 
     @staticmethod
     def convert_Struct(s, dtype, pandas_type):
-        return s.map(
-            lambda values, names=dtype.names: (
-                values if isinstance(values, dict) else dict(zip(names, values))
-            ),
-            na_action="ignore",
-        )
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
 
     @staticmethod
     def convert_Array(s, dtype, pandas_type):
-        return s.map(list, na_action="ignore")
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
 
     @staticmethod
     def convert_Map(s, dtype, pandas_type):
-        return s.map(dict, na_action="ignore")
+        return s.map(PandasData.get_element_converter(dtype), na_action="ignore")
 
     @staticmethod
     def convert_JSON(s, dtype, pandas_type):
-        import json
+        return s.map(
+            PandasData.get_element_converter(dtype), na_action="ignore"
+        ).astype("object")
 
+    @staticmethod
+    def get_element_converter(dtype):
+        funcgen = getattr(
+            PandasData, f"convert_{type(dtype).__name__}_element", lambda _: lambda x: x
+        )
+        return funcgen(dtype)
+
+    @staticmethod
+    def convert_Struct_element(dtype):
+        converters = tuple(map(PandasData.get_element_converter, dtype.types))
+
+        def convert(values, names=dtype.names, converters=converters):
+            items = values.items() if isinstance(values, dict) else zip(names, values)
+            return {
+                k: converter(v) if v is not None else v
+                for converter, (k, v) in zip(converters, items)
+            }
+
+        return convert
+
+    @staticmethod
+    def convert_JSON_element(_):
         def try_json(x):
+            if x is None:
+                return x
             try:
                 return json.loads(x)
             except (TypeError, json.JSONDecodeError):
                 return x
 
-        return s.map(try_json, na_action="ignore").astype("object")
+        return try_json
+
+    @staticmethod
+    def convert_Array_element(dtype):
+        convert_value = PandasData.get_element_converter(dtype.value_type)
+        return lambda values: [
+            convert_value(value) if value is not None else value for value in values
+        ]
+
+    @staticmethod
+    def convert_Map_element(dtype):
+        convert_value = PandasData.get_element_converter(dtype.value_type)
+        return lambda row: {
+            key: convert_value(value) if value is not None else value
+            for key, value in dict(row).items()
+        }
+
+    @staticmethod
+    def convert_UUID_element(_):
+        from uuid import UUID
+
+        return lambda v: v if isinstance(v, UUID) else UUID(v)
 
 
 class DaskData(PandasData):
