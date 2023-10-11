@@ -57,6 +57,11 @@ __all__ = (
     "connect",
     "cross_join",
     "cumulative_window",
+    "cume_dist",
+    "rank",
+    "ntile",
+    "dense_rank",
+    "percent_rank",
     "date",
     "desc",
     "decompile",
@@ -1019,6 +1024,93 @@ def now() -> ir.TimestampScalar:
         An expression representing the current timestamp.
     """
     return ops.TimestampNow().to_expr()
+
+
+def rank() -> ir.IntegerColumn:
+    """Compute position of first element within each equal-value group in sorted order.
+
+    Equivalent to SQL's `RANK()` window function.
+
+    Returns
+    -------
+    Int64Column
+        The min rank
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+    >>> t.mutate(rank=ibis.rank().over(order_by=t.values))
+    ┏━━━━━━━━┳━━━━━━━┓
+    ┃ values ┃ rank  ┃
+    ┡━━━━━━━━╇━━━━━━━┩
+    │ int64  │ int64 │
+    ├────────┼───────┤
+    │      1 │     0 │
+    │      1 │     0 │
+    │      2 │     2 │
+    │      2 │     2 │
+    │      2 │     2 │
+    │      3 │     5 │
+    └────────┴───────┘
+    """
+    return ops.MinRank().to_expr()
+
+
+def dense_rank() -> ir.IntegerColumn:
+    """Position of first element within each group of equal values.
+
+    Values are returned in sorted order and duplicate values are ignored.
+
+    Equivalent to SQL's `DENSE_RANK()`.
+
+    Returns
+    -------
+    IntegerColumn
+        The rank
+
+    Examples
+    --------
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+    >>> t.mutate(rank=ibis.dense_rank().over(order_by=t.values))
+    ┏━━━━━━━━┳━━━━━━━┓
+    ┃ values ┃ rank  ┃
+    ┡━━━━━━━━╇━━━━━━━┩
+    │ int64  │ int64 │
+    ├────────┼───────┤
+    │      1 │     0 │
+    │      1 │     0 │
+    │      2 │     1 │
+    │      2 │     1 │
+    │      2 │     1 │
+    │      3 │     2 │
+    └────────┴───────┘
+    """
+    return ops.DenseRank().to_expr()
+
+
+def percent_rank() -> ir.FloatingColumn:
+    """Return the relative rank of the values in the column."""
+    return ops.PercentRank().to_expr()
+
+
+def cume_dist() -> ir.FloatingColumn:
+    """Return the cumulative distribution over a window."""
+    return ops.CumeDist().to_expr()
+
+
+def ntile(buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+    """Return the integer number of a partitioning of the column values.
+
+    Parameters
+    ----------
+    buckets
+        Number of buckets to partition into
+    """
+    return ops.NTile(buckets).to_expr()
 
 
 def row_number() -> ir.IntegerColumn:

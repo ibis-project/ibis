@@ -1765,7 +1765,13 @@ class Column(Value, _FixedTextJupyterMixin):
         │      3 │     5 │
         └────────┴───────┘
         """
-        return ops.MinRank(self).to_expr()
+        import ibis.expr.analysis as an
+
+        return (
+            ibis.rank()
+            .over(order_by=self)
+            .resolve(an.find_first_base_table(self.op()).to_expr())
+        )
 
     def dense_rank(self) -> ir.IntegerColumn:
         """Position of first element within each group of equal values.
@@ -1798,15 +1804,49 @@ class Column(Value, _FixedTextJupyterMixin):
         │      3 │     2 │
         └────────┴───────┘
         """
-        return ops.DenseRank(self).to_expr()
+        import ibis.expr.analysis as an
+
+        return (
+            ibis.dense_rank()
+            .over(order_by=self)
+            .resolve(an.find_first_base_table(self.op()).to_expr())
+        )
 
     def percent_rank(self) -> Column:
         """Return the relative rank of the values in the column."""
-        return ops.PercentRank(self).to_expr()
+        import ibis.expr.analysis as an
+
+        return (
+            ibis.percent_rank()
+            .over(order_by=self)
+            .resolve(an.find_first_base_table(self.op()).to_expr())
+        )
 
     def cume_dist(self) -> Column:
         """Return the cumulative distribution over a window."""
-        return ops.CumeDist(self).to_expr()
+        import ibis.expr.analysis as an
+
+        return (
+            ibis.cume_dist()
+            .over(order_by=self)
+            .resolve(an.find_first_base_table(self.op()).to_expr())
+        )
+
+    def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+        """Return the integer number of a partitioning of the column values.
+
+        Parameters
+        ----------
+        buckets
+            Number of buckets to partition into
+        """
+        import ibis.expr.analysis as an
+
+        return (
+            ibis.ntile(buckets)
+            .over(order_by=self)
+            .resolve(an.find_first_base_table(self.op()).to_expr())
+        )
 
     def cummin(self, *, where=None, group_by=None, order_by=None) -> Column:
         """Return the cumulative min over a window."""
@@ -1851,16 +1891,6 @@ class Column(Value, _FixedTextJupyterMixin):
             Value used if no row exists at `offset`
         """
         return ops.Lead(self, offset, default).to_expr()
-
-    def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
-        """Return the integer number of a partitioning of the column values.
-
-        Parameters
-        ----------
-        buckets
-            Number of buckets to partition into
-        """
-        return ops.NTile(self, buckets).to_expr()
 
     def nth(self, n: int | ir.IntegerValue) -> Column:
         """Return the `n`th value (0-indexed) over a window.
