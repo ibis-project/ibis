@@ -72,7 +72,7 @@ except ImportError:
             id="cast",
             marks=[
                 pytest.mark.notimpl(
-                    ["flink", "impala"],
+                    ["impala"],
                     raises=com.UnsupportedBackendType,
                 ),
             ],
