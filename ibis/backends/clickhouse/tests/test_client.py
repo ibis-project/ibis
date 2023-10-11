@@ -224,6 +224,21 @@ def test_create_table_data(con, data, engine, temp_table):
     assert len(t.execute()) == 3
 
 
+def test_create_table_with_properties(con, temp_table):
+    data = pd.DataFrame({"a": list("abcde" * 20), "b": [1, 2, 3, 4, 5] * 20})
+    n = len(data)
+    t = con.create_table(
+        temp_table,
+        data,
+        schema=ibis.schema(dict(a="string", b="!uint32")),
+        order_by=["a", "b"],
+        partition_by=["a"],
+        sample_by=["b"],
+        settings={"allow_nullable_key": "1"},
+    )
+    assert t.count().execute() == n
+
+
 @pytest.mark.parametrize(
     "engine",
     [
