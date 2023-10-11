@@ -331,6 +331,11 @@ _temporal_delta = fixed_arity(
 )
 
 
+def _to_json_collection(t, op):
+    typ = t.get_sqla_type(op.dtype)
+    return try_cast(t.translate(op.arg), typ, type_=typ)
+
+
 operation_registry.update(
     {
         ops.ArrayColumn: (
@@ -477,6 +482,8 @@ operation_registry.update(
         ops.TimeDelta: _temporal_delta,
         ops.DateDelta: _temporal_delta,
         ops.TimestampDelta: _temporal_delta,
+        ops.ToJSONMap: _to_json_collection,
+        ops.ToJSONArray: _to_json_collection,
     }
 )
 
@@ -486,9 +493,6 @@ _invalid_operations = {
     ops.NTile,
     # ibis.expr.operations.strings
     ops.Translate,
-    # ibis.expr.operations.json
-    ops.ToJSONMap,
-    ops.ToJSONArray,
 }
 
 operation_registry = {
