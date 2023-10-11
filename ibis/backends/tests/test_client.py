@@ -143,19 +143,7 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
     )
 
     obj = lamduh(df)
-
-    if alchemy_backend.name() == "flink":
-        alchemy_con.create_table(
-            alchemy_temp_table,
-            obj,
-            schema=sch,
-            tbl_properties={
-                "connector": None,
-            },
-            overwrite=True
-        )
-    else:
-        alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
+    alchemy_con.create_table(alchemy_temp_table, obj, schema=sch, overwrite=True)
 
     result = (
         alchemy_con.table(alchemy_temp_table)
