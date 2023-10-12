@@ -13,6 +13,7 @@ no_python_udfs = mark.notimpl(
         "clickhouse",
         "dask",
         "druid",
+        "flink",
         "impala",
         "mssql",
         "mysql",
