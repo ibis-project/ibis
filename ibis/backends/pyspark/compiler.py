@@ -1227,7 +1227,7 @@ def compile_window_function(t, op, **kwargs):
 
     result = t.translate(func, **kwargs, aggcontext=aggcontext).over(pyspark_window)
 
-    if isinstance(func, ops.RankBase):
+    if isinstance(func, (ops.RankBase, ops.NTile)):
         # result must be cast to long type for Rank / RowNumber
         return result.astype("long") - 1
     else:
