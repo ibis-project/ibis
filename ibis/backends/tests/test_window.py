@@ -1018,6 +1018,11 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     reason="clickhouse doesn't implement percent_rank",
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=com.UnsupportedOperationError,
+    reason="Flink engine does not support generic window clause with no order by",
+)
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 
