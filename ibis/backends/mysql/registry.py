@@ -258,11 +258,3 @@ operation_registry.update(
         ops.DateDelta: _temporal_delta,
     }
 )
-
-_invalid_operations = {
-    ops.NTile,
-}
-
-operation_registry = {
-    k: v for k, v in operation_registry.items() if k not in _invalid_operations
-}
