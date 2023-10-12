@@ -9,6 +9,7 @@ import warnings
 from typing import TYPE_CHECKING, Any
 
 import oracledb
+import sqlglot as sg
 
 from ibis import util
 
@@ -178,6 +179,17 @@ class Backend(BaseAlchemyBackend):
         from sqlalchemy_views import CreateView, DropView
 
         name = util.gen_name("oracle_metadata")
+
+        try:
+            sg_expr = sg.parse_one(query, into=sg.exp.Table, dialect="oracle")
+        except sg.ParseError:
+            sg_expr = sg.parse_one(query, dialect="oracle")
+
+        # If query is a table, adjust the query accordingly
+        if isinstance(sg_expr, sg.exp.Table):
+            sg_expr = sg.select("*").from_(sg_expr)
+
+        query = sg_expr.sql(dialect="oracle")
 
         view = sa.table(name)
         create_view = CreateView(view, sa.text(query))
