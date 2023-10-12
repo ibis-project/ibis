@@ -22,6 +22,7 @@ import rich.console
 import sqlalchemy as sa
 from packaging.version import parse as vparse
 from pytest import mark, param
+from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.common.exceptions as com
@@ -165,6 +166,14 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
             id="table",
         ),
     ],
+)
+@pytest.mark.broken(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason=(
+        "org.apache.flink.table.api.ValidationException: "
+        "Table `default_catalog`.`default_database`.`functional_alltypes` was not found."
+    )
 )
 def test_query_schema(ddl_backend, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
@@ -898,7 +907,7 @@ def test_self_join_memory_table(backend, con):
         param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "druid", "flink"])
+@pytest.mark.notimpl(["dask", "datafusion", "druid"])
 def test_create_from_in_memory_table(backend, con, t, temp_table):
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
@@ -1199,12 +1208,27 @@ def test_set_backend_url(url, monkeypatch):
 )
 @pytest.mark.broken(["oracle"], reason="oracle doesn't like `DESCRIBE` from sqlalchemy")
 @pytest.mark.broken(["druid"], reason="sqlalchemy dialect is broken")
-@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=AttributeError,
+    reason="'Backend' object has no attribute 'raw_sql'",
+)
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
     )
-    con.create_table(temp_table, schema=schema, overwrite=True)
+
+    if con.name == "flink":
+        con.create_table(
+            temp_table,
+            schema=schema,
+            tbl_properties={
+                "connector": None,
+            },
+            overwrite=True,
+        )
+    else:
+        con.create_table(temp_table, schema=schema, overwrite=True)
     rows = con.raw_sql(f"DESCRIBE {temp_table}").fetchall()
     result = ibis.schema((name, typ) for name, typ, *_ in rows)
     assert result == schema
