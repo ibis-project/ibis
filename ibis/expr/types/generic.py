@@ -735,12 +735,15 @@ class Value(Expr):
 
         def bind(table):
             frame = window.bind(table)
-            return ops.WindowFunction(self, frame).to_expr()
+            expr = an.windowize_function(self, frame)
+            if expr.equals(self):
+                raise com.IbisTypeError(
+                    "No reduction or analytic function found to construct a window expression"
+                )
+            return expr
 
         op = self.op()
-        if isinstance(op, ops.Alias):
-            return op.arg.to_expr().over(window).name(op.name)
-        elif isinstance(op, ops.WindowFunction):
+        if isinstance(op, ops.WindowFunction):
             return op.func.to_expr().over(window)
         elif isinstance(window, bl.WindowBuilder):
             if table := an.find_first_base_table(self.op()):
@@ -748,7 +751,7 @@ class Value(Expr):
             else:
                 return Deferred(Call(bind, _))
         else:
-            return ops.WindowFunction(self, window).to_expr()
+            raise com.IbisTypeError("Unexpected window type: {window!r}")
 
     def isnull(self) -> ir.BooleanValue:
         """Return whether this expression is NULL.

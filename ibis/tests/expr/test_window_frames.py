@@ -529,3 +529,19 @@ def test_window_analysis_auto_windowize_bug():
     expected = annual_delay[annual_delay, expr]
 
     assert enriched.equals(expected)
+
+
+def test_windowization_wraps_reduction_inside_a_nested_value_expression(alltypes):
+    t = alltypes
+    win = ibis.window(
+        following=0,
+        group_by=[t.g],
+        order_by=[t.a],
+    )
+    expr = (t.f == 0).notany().over(win)
+    assert expr.op() == ops.Not(
+        ops.WindowFunction(
+            func=ops.Any(t.f == 0),
+            frame=ops.RowsWindowFrame(table=t, end=0, group_by=[t.g], order_by=[t.a]),
+        )
+    )

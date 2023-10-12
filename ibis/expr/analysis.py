@@ -323,38 +323,10 @@ def pushdown_aggregation_filters(op, predicates):
         return ops.Selection(op, [], predicates)
 
 
-# TODO(kszucs): use ibis.expr.analysis.substitute instead
-def propagate_down_window(func: ops.Value, frame: ops.WindowFrame):
-    import ibis.expr.operations as ops
-
-    clean_args = []
-    for arg in func.args:
-        if isinstance(arg, ops.Value) and not isinstance(func, ops.WindowFunction):
-            arg = propagate_down_window(arg, frame)
-            if isinstance(arg, ops.Analytic):
-                arg = ops.WindowFunction(arg, frame)
-        clean_args.append(arg)
-
-    return type(func)(*clean_args)
-
-
 def windowize_function(expr, default_frame):
-    func = var("func")
-    frame = var("frame")
-
     wrap_analytic = (p.Analytic | p.Reduction) >> c.WindowFunction(_, default_frame)
-    merge_frames = p.WindowFunction(func, frame) >> c.WindowFunction(
-        func,
-        frame.copy(
-            order_by=frame.order_by + default_frame.order_by,
-            group_by=frame.group_by + default_frame.group_by,
-        ),
-    )
-
     node = expr.op()
-    node = node.replace(merge_frames, filter=p.Value)
     node = node.replace(wrap_analytic, filter=p.Value & ~p.WindowFunction)
-
     return node.to_expr()
 
 
