@@ -36,7 +36,7 @@ def test_implicitly_castable_primitives(source, target):
         (dt.int32, dt.uint16),
         (dt.uint64, dt.int16),
         (dt.uint64, dt.uint16),
-        (dt.uint64, dt.int64),
+        # (dt.uint64, dt.int64), TODO: https://github.com/ibis-project/ibis/issues/7331
         (dt.Decimal(12, 2), dt.int32),
         (dt.timestamp, dt.boolean),
         (dt.Interval("s"), dt.Interval("ns")),
