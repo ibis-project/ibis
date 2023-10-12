@@ -5,6 +5,7 @@ import operator
 import pytest
 
 import ibis
+import ibis.expr.operations as ops
 from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.tests.mocks import MockImpalaConnection
 
@@ -296,5 +297,8 @@ def test_group_by_with_window_preserves_range(snapshot):
     w = ibis.cumulative_window(order_by=t.one)
     expr = t.group_by(t.three).mutate(four=t.two.sum().over(w))
 
-    result = ibis.impala.compile(expr)
-    snapshot.assert_match(result, "out.sql")
+    expected = ops.WindowFunction(
+        func=ops.Sum(t.two),
+        frame=ops.RowsWindowFrame(table=t, end=0, group_by=[t.three], order_by=[t.one]),
+    )
+    assert expr.op() == expected

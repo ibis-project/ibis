@@ -323,10 +323,25 @@ def pushdown_aggregation_filters(op, predicates):
         return ops.Selection(op, [], predicates)
 
 
-def windowize_function(expr, default_frame):
+def windowize_function(expr, default_frame, merge_frames=False):
+    func, frame = var("func"), var("frame")
+
     wrap_analytic = (p.Analytic | p.Reduction) >> c.WindowFunction(_, default_frame)
+    merge_windows = p.WindowFunction(func, frame) >> c.WindowFunction(
+        func,
+        frame.copy(
+            order_by=frame.order_by + default_frame.order_by,
+            group_by=frame.group_by + default_frame.group_by,
+        ),
+    )
+
     node = expr.op()
+    if merge_frames:
+        # it only happens in ibis.expr.groupby.GroupedTable, but the projector
+        # changes the windowization order to put everything here
+        node = node.replace(merge_windows, filter=p.Value)
     node = node.replace(wrap_analytic, filter=p.Value & ~p.WindowFunction)
+
     return node.to_expr()
 
 
