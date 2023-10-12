@@ -13,7 +13,7 @@ import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.annotations import ValidationError
-from ibis.common.deferred import deferred, var
+from ibis.common.deferred import _, deferred, var
 from ibis.common.exceptions import IbisTypeError, IntegrityError
 from ibis.common.patterns import pattern
 from ibis.util import Namespace
@@ -338,48 +338,24 @@ def propagate_down_window(func: ops.Value, frame: ops.WindowFrame):
     return type(func)(*clean_args)
 
 
-# TODO(kszucs): rewrite to receive and return an ops.Node
-def windowize_function(expr, frame):
-    assert isinstance(expr, ir.Expr), type(expr)
-    assert isinstance(frame, ops.WindowFrame)
+def windowize_function(expr, default_frame):
+    func = var("func")
+    frame = var("frame")
 
-    def _windowize(op, frame):
-        if isinstance(op, ops.WindowFunction):
-            walked_child = _walk(op.func, frame)
-            walked = walked_child.to_expr().over(op.frame).op()
-        elif isinstance(op, ops.Value):
-            walked = _walk(op, frame)
-        else:
-            walked = op
+    wrap_analytic = (p.Analytic | p.Reduction) >> c.WindowFunction(_, default_frame)
+    merge_frames = p.WindowFunction(func, frame) >> c.WindowFunction(
+        func,
+        frame.copy(
+            order_by=frame.order_by + default_frame.order_by,
+            group_by=frame.group_by + default_frame.group_by,
+        ),
+    )
 
-        if isinstance(walked, (ops.Analytic, ops.Reduction)):
-            return op.to_expr().over(frame).op()
-        elif isinstance(walked, ops.WindowFunction):
-            if frame is not None:
-                frame = walked.frame.copy(
-                    group_by=frame.group_by + walked.frame.group_by,
-                    order_by=frame.order_by + walked.frame.order_by,
-                )
-                return walked.to_expr().over(frame).op()
-            else:
-                return walked
-        else:
-            return walked
+    node = expr.op()
+    node = node.replace(merge_frames, filter=p.Value)
+    node = node.replace(wrap_analytic, filter=p.Value & ~p.WindowFunction)
 
-    def _walk(op, frame):
-        # TODO(kszucs): rewrite to use the substitute utility
-        windowed_args = []
-        for arg in op.args:
-            if isinstance(arg, ops.Value):
-                arg = _windowize(arg, frame)
-            elif isinstance(arg, tuple):
-                arg = tuple(_windowize(x, frame) for x in arg)
-
-            windowed_args.append(arg)
-
-        return type(op)(*windowed_args)
-
-    return _windowize(expr.op(), frame).to_expr()
+    return node.to_expr()
 
 
 def contains_first_or_last_agg(exprs):
@@ -458,8 +434,7 @@ class Projector:
 
         default_frame = ops.RowsWindowFrame(table=parent)
         self.clean_exprs = [
-            windowize_function(expr, frame=default_frame)
-            for expr in self.resolved_exprs
+            windowize_function(expr, default_frame) for expr in self.resolved_exprs
         ]
 
     def get_result(self):

@@ -145,9 +145,8 @@ class Node(Hashable):
             the results as the second and the results of the children as keyword
             arguments.
         filter
-            Pattern-like object to filter out nodes from the traversal. Essentially
-            the traversal will only visit nodes that match the given pattern and
-            stop otherwise.
+            Pattern-like object to filter out nodes from the traversal. The traversal
+            will only visit nodes that match the given pattern and stop otherwise.
 
         Returns
         -------
@@ -171,9 +170,8 @@ class Node(Hashable):
         type
             Type or tuple of types to find.
         filter
-            Pattern-like object to filter out nodes from the traversal. Essentially
-            the traversal will only visit nodes that match the given pattern and
-            stop otherwise.
+            Pattern-like object to filter out nodes from the traversal. The traversal
+            will only visit nodes that match the given pattern and stop otherwise.
 
         Returns
         -------
@@ -197,9 +195,8 @@ class Node(Hashable):
             Pattern to match. `ibis.common.pattern()` function is used to coerce the
             input value into a pattern. See the pattern module for more details.
         filter
-            Pattern-like object to filter out nodes from the traversal. Essentially
-            the traversal will only visit nodes that match the given pattern and
-            stop otherwise.
+            Pattern-like object to filter out nodes from the traversal. The traversal
+            will only visit nodes that match the given pattern and stop otherwise.
         context
             Optional context to use for the pattern matching.
 
@@ -288,9 +285,8 @@ class Graph(dict[Node, Sequence[Node]]):
         root
             Root node of the graph.
         filter
-            Pattern-like object to filter out nodes from the traversal. Essentially
-            the traversal will only visit nodes that match the given pattern and
-            stop otherwise.
+            Pattern-like object to filter out nodes from the traversal. The traversal
+            will only visit nodes that match the given pattern and stop otherwise.
 
         Returns
         -------
@@ -338,9 +334,8 @@ class Graph(dict[Node, Sequence[Node]]):
         root
             Root node of the graph.
         filter
-            Pattern-like object to filter out nodes from the traversal. Essentially
-            the traversal will only visit nodes that match the given pattern and
-            stop otherwise.
+            Pattern-like object to filter out nodes from the traversal. The traversal
+            will only visit nodes that match the given pattern and stop otherwise.
 
         Returns
         -------
@@ -441,9 +436,8 @@ def bfs(node: Node, filter: Optional[Any] = None) -> Graph:
     node
         Root node of the graph.
     filter
-        Pattern-like object to filter out nodes from the traversal. Essentially
-        the traversal will only visit nodes that match the given pattern and
-        stop otherwise.
+        Pattern-like object to filter out nodes from the traversal. The traversal
+        will only visit nodes that match the given pattern and stop otherwise.
 
     Returns
     -------
@@ -460,9 +454,8 @@ def dfs(node: Node, filter: Optional[Any] = None) -> Graph:
     node
         Root node of the graph.
     filter
-        Pattern-like object to filter out nodes from the traversal. Essentially
-        the traversal will only visit nodes that match the given pattern and
-        stop otherwise.
+        Pattern-like object to filter out nodes from the traversal. The traversal
+        will only visit nodes that match the given pattern and stop otherwise.
 
     Returns
     -------
