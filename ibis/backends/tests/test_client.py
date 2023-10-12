@@ -214,7 +214,7 @@ backend_type_mapping = {
 }
 
 
-@mark.notimpl(["datafusion", "druid"])
+@mark.notimpl(["datafusion", "druid", "flink"])
 def test_create_table_from_schema(con, new_schema, temp_table):
     new_table = con.create_table(temp_table, schema=new_schema)
     backend_mapping = backend_type_mapping.get(con.name, {})
@@ -275,6 +275,7 @@ def test_create_temporary_table_from_schema(tmpcon, new_schema):
         "datafusion",
         "druid",
         "duckdb",
+        "flink",
         "mssql",
         "mysql",
         "oracle",
@@ -330,7 +331,7 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["datafusion", "druid", "polars"])
+@mark.notimpl(["datafusion", "druid", "flink", "polars"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -877,15 +878,27 @@ def test_self_join_memory_table(backend, con):
         param(
             ibis.memtable([("a", 1.0)], columns=["a", "b"]),
             id="python",
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=NotImplementedError,
+                )
+            ],
         ),
         param(
             ibis.memtable(pd.DataFrame([("a", 1.0)], columns=["a", "b"])),
             id="pandas-memtable",
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=NotImplementedError,
+                )
+            ],
         ),
         param(pd.DataFrame([("a", 1.0)], columns=["a", "b"]), id="pandas"),
     ],
 )
-@pytest.mark.notimpl(["dask", "datafusion", "druid"])
+@pytest.mark.notimpl(["dask", "datafusion", "druid", "flink"])
 def test_create_from_in_memory_table(backend, con, t, temp_table):
     con.create_table(temp_table, t)
     assert temp_table in con.list_tables()
@@ -1186,6 +1199,7 @@ def test_set_backend_url(url, monkeypatch):
 )
 @pytest.mark.broken(["oracle"], reason="oracle doesn't like `DESCRIBE` from sqlalchemy")
 @pytest.mark.broken(["druid"], reason="sqlalchemy dialect is broken")
+@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_create_table_timestamp(con, temp_table):
     schema = ibis.schema(
         dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
@@ -1196,7 +1210,7 @@ def test_create_table_timestamp(con, temp_table):
     assert result == schema
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1213,14 +1227,10 @@ def test_persist_expression_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 1
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
-)
-@mark.notimpl(
-    ["flink"],
-    raises=NotImplementedError,
 )
 def test_persist_expression(alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation", other_calc="xyz")
@@ -1228,7 +1238,7 @@ def test_persist_expression(alltypes):
     tm.assert_frame_equal(non_persisted_table.to_pandas(), persisted_table.to_pandas())
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1241,7 +1251,7 @@ def test_persist_expression_contextmanager(alltypes):
         tm.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1257,7 +1267,7 @@ def test_persist_expression_contextmanager_ref_count(con, alltypes):
     assert con._query_cache.refs[op] == 0
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1290,7 +1300,7 @@ def test_persist_expression_multiple_refs(con, alltypes):
     assert name2 not in con.list_tables()
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1304,7 +1314,7 @@ def test_persist_expression_repeated_cache(alltypes):
             assert not nested_cached_table.to_pandas().empty
 
 
-@mark.notimpl(["datafusion", "bigquery", "impala", "trino", "druid"])
+@mark.notimpl(["datafusion", "bigquery", "flink", "impala", "trino", "druid"])
 @mark.never(
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
@@ -1345,7 +1355,7 @@ def gen_test_name(con: BaseBackend) -> str:
     ["druid"], raises=sa.exc.ProgrammingError, reason="generated SQL fails to parse"
 )
 @mark.notimpl(["impala"], reason="impala doesn't support memtable")
-@mark.notimpl(["pyspark"])
+@mark.notimpl(["flink", "pyspark"])
 def test_overwrite(ddl_con):
     t0 = ibis.memtable({"a": [1, 2, 3]})
 
