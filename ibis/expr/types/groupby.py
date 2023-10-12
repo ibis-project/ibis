@@ -29,6 +29,7 @@ from ibis.common.deferred import Deferred
 from ibis.selectors import Selector
 from ibis.expr.types.relations import bind_expr
 import ibis.common.exceptions as com
+from public import public
 
 _function_types = tuple(
     filter(
@@ -60,13 +61,11 @@ def _get_group_by_key(table, value):
         yield value
 
 
-# TODO(kszucs): make a builder class for this
+@public
 class GroupedTable:
     """An intermediate table expression to hold grouping information."""
 
-    def __init__(
-        self, table, by, having=None, order_by=None, window=None, **expressions
-    ):
+    def __init__(self, table, by, having=None, order_by=None, **expressions):
         self.table = table
         self.by = list(
             itertools.chain(
@@ -86,7 +85,6 @@ class GroupedTable:
 
         self._order_by = order_by or []
         self._having = having or []
-        self._window = window
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
@@ -133,7 +131,6 @@ class GroupedTable:
             self.by,
             having=self._having + util.promote_list(expr),
             order_by=self._order_by,
-            window=self._window,
         )
 
     def order_by(self, expr: ir.Value | Iterable[ir.Value]) -> GroupedTable:
@@ -158,7 +155,6 @@ class GroupedTable:
             self.by,
             having=self._having,
             order_by=self._order_by + util.promote_list(expr),
-            window=self._window,
         )
 
     def mutate(
@@ -250,32 +246,23 @@ class GroupedTable:
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
         table = self.table
-        default_frame = self._get_window()
+        default_frame = ops.RowsWindowFrame(
+            table=self.table,
+            group_by=bind_expr(self.table, self.by),
+            order_by=bind_expr(self.table, self._order_by),
+        )
         return [
-            an.windowize_function(e2, frame=default_frame)
+            an.windowize_function(e2, default_frame)
             for expr in exprs
             for e1 in util.promote_list(expr)
             for e2 in util.promote_list(table._ensure_expr(e1))
         ] + [
-            an.windowize_function(e, frame=default_frame).name(k)
+            an.windowize_function(e, default_frame).name(k)
             for k, expr in kwexprs.items()
             for e in util.promote_list(table._ensure_expr(expr))
         ]
 
     projection = select
-
-    def _get_window(self):
-        if self._window is None:
-            return ops.RowsWindowFrame(
-                table=self.table,
-                group_by=self.by,
-                order_by=bind_expr(self.table, self._order_by),
-            )
-        else:
-            return self._window.copy(
-                groupy_by=bind_expr(self.table, self._window.group_by + self.by),
-                order_by=bind_expr(self.table, self._window.order_by + self._order_by),
-            )
 
     def over(
         self,
@@ -347,6 +334,7 @@ def _group_agg_dispatch(name):
     return wrapper
 
 
+@public
 class GroupedArray:
     def __init__(self, arr, parent):
         self.arr = arr
@@ -361,6 +349,7 @@ class GroupedArray:
     group_concat = _group_agg_dispatch("group_concat")
 
 
+@public
 class GroupedNumbers(GroupedArray):
     mean = _group_agg_dispatch("mean")
     sum = _group_agg_dispatch("sum")

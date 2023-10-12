@@ -200,8 +200,7 @@ def test_batting_avg_change_in_games_per_year(players, players_df):
 
 
 @pytest.mark.xfail(
-    raises=AssertionError,
-    reason="Dask doesn't support the `rank` method on SeriesGroupBy",
+    raises=AttributeError, reason="'Series' object has no attribute 'rank'"
 )
 def test_batting_most_hits(players, players_df):
     expr = players.mutate(

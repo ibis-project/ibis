@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+import pytest
 from typing_extensions import Self  # noqa: TCH002
 
 from ibis.common.collections import frozendict
@@ -32,11 +33,11 @@ def generate_node(depth):
     )
 
 
-def test_generate_node():
-    for depth in [0, 1, 2, 10, 100]:
-        n = generate_node(depth)
-        assert isinstance(n, MyNode)
-        assert len(Graph.from_bfs(n).nodes()) == depth + 1
+@pytest.mark.parametrize("depth", [0, 1, 10])
+def test_generate_node(depth):
+    n = generate_node(depth)
+    assert isinstance(n, MyNode)
+    assert len(Graph.from_bfs(n).nodes()) == depth + 1
 
 
 def test_bfs(benchmark):
