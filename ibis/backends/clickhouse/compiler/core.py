@@ -101,19 +101,27 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         False, dtype="bool"
     )
 
-    # subtract one from ranking functions to convert from 1-indexed to 0-indexed
-    subtract_one_from_ranking_functions = p.WindowFunction(
-        p.RankBase | p.NTile
+    # subtract one from one-based functions to convert to zero-based indexing
+    subtract_one_from_one_indexed_functions = (
+        p.WindowFunction(p.RankBase | p.NTile)
+        | p.StringFind
+        | p.FindInSet
+        | p.ArrayPosition
     ) >> c.Subtract(_, 1)
 
     add_one_to_nth_value_input = p.NthValue >> _.copy(nth=c.Add(_.nth, 1))
+
+    nullify_empty_string_results = (p.ExtractURLField | p.DayOfWeekName) >> c.NullIf(
+        _, ""
+    )
 
     op = op.replace(
         replace_literals
         | replace_in_column_with_table_array_view
         | replace_empty_in_values_with_false
-        | subtract_one_from_ranking_functions
+        | subtract_one_from_one_indexed_functions
         | add_one_to_nth_value_input
+        | nullify_empty_string_results
     )
     # apply translate rules in topological order
     node = op.map(fn)[op]

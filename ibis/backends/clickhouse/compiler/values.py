@@ -206,9 +206,9 @@ def _string_find(op, *, arg, substr, start, end, **_):
         raise com.UnsupportedOperationError("String find doesn't support end argument")
 
     if start is not None:
-        return F.locate(arg, substr, start) - 1
+        return F.locate(arg, substr, start)
 
-    return F.locate(arg, substr) - 1
+    return F.locate(arg, substr)
 
 
 @translate_val.register(ops.RegexSearch)
@@ -234,7 +234,7 @@ def _regex_extract(op, *, arg, pattern, index, **_):
 
 @translate_val.register(ops.FindInSet)
 def _index_of(op, *, needle, values, **_):
-    return F.indexOf(F.array(*values), needle) - 1
+    return F.indexOf(F.array(*values), needle)
 
 
 @translate_val.register(ops.Round)
@@ -567,11 +567,6 @@ def _struct_field(op, *, arg, field: str, **_):
     return cast(sg.exp.Dot(this=arg, expression=sg.exp.convert(idx + 1)), op.dtype)
 
 
-@translate_val.register(ops.NthValue)
-def _nth_value(op, *, arg, nth, **_):
-    return F.nth_value(arg, _parenthesize(op.nth, nth))
-
-
 @translate_val.register(ops.Repeat)
 def _repeat(op, *, arg, times, **_):
     return F.repeat(arg, F.accurateCast(times, "UInt64"))
@@ -597,7 +592,8 @@ def _in_column(op, *, value, options, **_):
     return value.isin(options.this if isinstance(options, sg.exp.Subquery) else options)
 
 
-_NUM_WEEKDAYS = 7
+_DAYS = calendar.day_name
+_NUM_WEEKDAYS = len(_DAYS)
 
 
 @translate_val.register(ops.DayOfWeekIndex)
@@ -618,15 +614,11 @@ def day_of_week_name(op, *, arg, **_):
     #
     # We test against 20 in CI, so we implement day_of_week_name as follows
     num_weekdays = _NUM_WEEKDAYS
-    weekdays = range(num_weekdays)
     base = (((F.toDayOfWeek(arg) - 1) % num_weekdays) + num_weekdays) % num_weekdays
-    return F.nullIf(
-        sg.exp.Case(
-            this=base,
-            ifs=[if_(day, calendar.day_name[day]) for day in weekdays],
-            default=sg.exp.convert(""),
-        ),
-        "",
+    return sg.exp.Case(
+        this=base,
+        ifs=[if_(i, day) for i, day in enumerate(_DAYS)],
+        default=sg.exp.convert(""),
     )
 
 
@@ -804,6 +796,16 @@ _simple_ops = {
     ops.NTile: "ntile",
     ops.ArrayIntersect: "arrayIntersect",
     ops.ExtractEpochSeconds: "toRelativeSecondNum",
+    ops.NthValue: "nth_value",
+    ops.MinRank: "rank",
+    ops.DenseRank: "dense_rank",
+    ops.RowNumber: "row_number",
+    ops.ExtractProtocol: "protocol",
+    ops.ExtractAuthority: "netloc",
+    ops.ExtractHost: "domain",
+    ops.ExtractPath: "path",
+    ops.ExtractFragment: "fragment",
+    ops.ArrayPosition: "indexOf",
 }
 
 
@@ -925,58 +927,17 @@ shift_like(ops.Lag, F.lagInFrame)
 shift_like(ops.Lead, F.leadInFrame)
 
 
-@translate_val.register(ops.RowNumber)
-def _row_number(op, **_):
-    return F.row_number()
-
-
-@translate_val.register(ops.DenseRank)
-def _dense_rank(op, **_):
-    return F.dense_rank()
-
-
-@translate_val.register(ops.MinRank)
-def _rank(op, **_):
-    return F.rank()
-
-
-@translate_val.register(ops.ExtractProtocol)
-def _extract_protocol(op, *, arg, **_):
-    return F.nullIf(F.protocol(arg), "")
-
-
-@translate_val.register(ops.ExtractAuthority)
-def _extract_authority(op, *, arg, **_):
-    return F.nullIf(F.netloc(arg), "")
-
-
-@translate_val.register(ops.ExtractHost)
-def _extract_host(op, *, arg, **_):
-    return F.nullIf(F.domain(arg), "")
-
-
 @translate_val.register(ops.ExtractFile)
 def _extract_file(op, *, arg, **_):
-    return F.nullIf(F.cutFragment(F.pathFull(arg)), "")
-
-
-@translate_val.register(ops.ExtractPath)
-def _extract_path(op, *, arg, **_):
-    return F.nullIf(F.path(arg), "")
+    return F.cutFragment(F.pathFull(arg))
 
 
 @translate_val.register(ops.ExtractQuery)
 def _extract_query(op, *, arg, key, **_):
     if key is not None:
-        input = F.extractURLParameter(arg, key)
+        return F.extractURLParameter(arg, key)
     else:
-        input = F.queryString(arg)
-    return F.nullIf(input, "")
-
-
-@translate_val.register(ops.ExtractFragment)
-def _extract_fragment(op, *, arg, **_):
-    return F.nullIf(F.fragment(arg), "")
+        return F.queryString(arg)
 
 
 @translate_val.register(ops.ArrayStringJoin)
@@ -999,11 +960,6 @@ def _array_map(op, *, arg, param, body, **_):
 def _array_filter(op, *, arg, param, body, **_):
     func = sg.exp.Lambda(this=body, expressions=[param])
     return F.arrayFilter(func, arg)
-
-
-@translate_val.register(ops.ArrayPosition)
-def _array_position(op, *, arg, other, **_):
-    return F.indexOf(arg, other) - 1
 
 
 @translate_val.register(ops.ArrayRemove)
