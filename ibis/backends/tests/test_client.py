@@ -814,6 +814,21 @@ def test_agg_memory_table(con):
     assert result == 3
 
 
+@pytest.mark.broken(
+    ["polars"], reason="join column renaming is currently incorrect on polars"
+)
+@pytest.mark.notimpl(["datafusion"])
+def test_self_join_memory_table(backend, con):
+    t = ibis.memtable({"x": [1, 2], "y": [2, 1], "z": ["a", "b"]})
+    t_view = t.view()
+    expr = t.join(t_view, t.x == t_view.y).select("x", "y", "z", "z_right")
+    result = con.execute(expr).sort_values("x").reset_index(drop=True)
+    expected = pd.DataFrame(
+        {"x": [1, 2], "y": [2, 1], "z": ["a", "b"], "z_right": ["b", "a"]}
+    )
+    backend.assert_frame_equal(result, expected)
+
+
 @pytest.mark.parametrize(
     "t",
     [

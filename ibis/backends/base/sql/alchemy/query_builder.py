@@ -82,79 +82,79 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
 
     def _format_table(self, op):
         ctx = self.context
-        ref_op = op
 
+        orig_op = op
         if isinstance(op, ops.SelfReference):
-            ref_op = op.table
+            op = op.table
 
-        alias = ctx.get_ref(op)
+        alias = ctx.get_ref(orig_op)
 
-        translator = ctx.compiler.translator_class(ref_op, ctx)
+        translator = ctx.compiler.translator_class(op, ctx)
 
-        if isinstance(ref_op, ops.DatabaseTable):
-            result = ref_op.source._get_sqla_table(ref_op.name, schema=ref_op.namespace)
-        elif isinstance(ref_op, ops.UnboundTable):
+        if isinstance(op, ops.DatabaseTable):
+            result = op.source._get_sqla_table(op.name, schema=op.namespace)
+        elif isinstance(op, ops.UnboundTable):
             # use SQLAlchemy's TableClause for unbound tables
             result = sa.Table(
-                ref_op.name,
+                op.name,
                 sa.MetaData(),
-                *translator._schema_to_sqlalchemy_columns(ref_op.schema),
+                *translator._schema_to_sqlalchemy_columns(op.schema),
                 quote=translator._quote_table_names,
             )
-        elif isinstance(ref_op, ops.SQLQueryResult):
-            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
-            result = sa.text(ref_op.query).columns(*columns)
-        elif isinstance(ref_op, ops.SQLStringView):
-            columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
-            result = sa.text(ref_op.query).columns(*columns).cte(ref_op.name)
-        elif isinstance(ref_op, ops.View):
+        elif isinstance(op, ops.SQLQueryResult):
+            columns = translator._schema_to_sqlalchemy_columns(op.schema)
+            result = sa.text(op.query).columns(*columns)
+        elif isinstance(op, ops.SQLStringView):
+            columns = translator._schema_to_sqlalchemy_columns(op.schema)
+            result = sa.text(op.query).columns(*columns).cte(op.name)
+        elif isinstance(op, ops.View):
             # TODO(kszucs): avoid converting to expression
-            child_expr = ref_op.child.to_expr()
+            child_expr = op.child.to_expr()
             definition = child_expr.compile()
             result = sa.Table(
-                ref_op.name,
+                op.name,
                 sa.MetaData(),
-                *translator._schema_to_sqlalchemy_columns(ref_op.schema),
+                *translator._schema_to_sqlalchemy_columns(op.schema),
                 quote=translator._quote_table_names,
             )
             backend = child_expr._find_backend()
             backend._create_temp_view(view=result, definition=definition)
-        elif isinstance(ref_op, ops.InMemoryTable):
-            result = self._format_in_memory_table(op, ref_op, translator)
-        elif isinstance(ref_op, ops.DummyTable):
+        elif isinstance(op, ops.InMemoryTable):
+            result = self._format_in_memory_table(op, translator)
+        elif isinstance(op, ops.DummyTable):
             result = sa.select(
                 *(
                     translator.translate(value).label(name)
-                    for name, value in zip(ref_op.schema.names, ref_op.values)
+                    for name, value in zip(op.schema.names, op.values)
                 )
             )
         else:
             # A subquery
-            if ctx.is_extracted(ref_op):
+            if ctx.is_extracted(op):
                 # Was put elsewhere, e.g. WITH block, we just need to grab
                 # its alias
-                alias = ctx.get_ref(op)
+                alias = ctx.get_ref(orig_op)
 
                 # hack
-                if isinstance(op, ops.SelfReference):
-                    table = ctx.get_ref(ref_op)
+                if isinstance(orig_op, ops.SelfReference):
+                    table = ctx.get_ref(op)
                     self_ref = alias if hasattr(alias, "name") else table.alias(alias)
-                    ctx.set_ref(op, self_ref)
+                    ctx.set_ref(orig_op, self_ref)
                     return self_ref
                 return alias
 
-            alias = ctx.get_ref(op)
-            result = ctx.get_compiled_expr(op)
+            alias = ctx.get_ref(orig_op)
+            result = ctx.get_compiled_expr(orig_op)
 
         result = alias if hasattr(alias, "name") else result.alias(alias)
-        ctx.set_ref(op, result)
+        ctx.set_ref(orig_op, result)
         return result
 
-    def _format_in_memory_table(self, op, ref_op, translator):
-        columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
+    def _format_in_memory_table(self, op, translator):
+        columns = translator._schema_to_sqlalchemy_columns(op.schema)
         if self.context.compiler.cheap_in_memory_tables:
             result = sa.Table(
-                ref_op.name,
+                op.name,
                 sa.MetaData(),
                 *columns,
                 quote=translator._quote_table_names,
@@ -167,8 +167,8 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                 )
             ).limit(0)
         elif self.context.compiler.support_values_syntax_in_select:
-            rows = list(ref_op.data.to_frame().itertuples(index=False))
-            result = sa.values(*columns, name=ref_op.name).data(rows)
+            rows = list(op.data.to_frame().itertuples(index=False))
+            result = sa.values(*columns, name=op.name).data(rows)
         else:
             raw_rows = (
                 sa.select(
@@ -179,7 +179,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                 )
                 for row in op.data.to_frame().itertuples(index=False)
             )
-            result = sa.union_all(*raw_rows).alias(ref_op.name)
+            result = sa.union_all(*raw_rows).alias(op.name)
         return result
 
 

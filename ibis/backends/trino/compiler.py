@@ -49,7 +49,7 @@ def _rewrite_string_contains(op):
 
 
 class TrinoTableSetFormatter(_AlchemyTableSetFormatter):
-    def _format_in_memory_table(self, op, ref_op, translator):
+    def _format_in_memory_table(self, op, translator):
         if not op.data:
             return sa.select(
                 *(
@@ -64,10 +64,10 @@ class TrinoTableSetFormatter(_AlchemyTableSetFormatter):
                 translator.translate(ops.Literal(col, dtype=type_)).label(name)
                 for col, (name, type_) in zip(row, op_schema)
             )
-            for row in ref_op.data.to_frame().itertuples(index=False)
+            for row in op.data.to_frame().itertuples(index=False)
         ]
-        columns = translator._schema_to_sqlalchemy_columns(ref_op.schema)
-        return sa.values(*columns, name=ref_op.name).data(rows)
+        columns = translator._schema_to_sqlalchemy_columns(op.schema)
+        return sa.values(*columns, name=op.name).data(rows)
 
 
 class TrinoSQLCompiler(AlchemyCompiler):

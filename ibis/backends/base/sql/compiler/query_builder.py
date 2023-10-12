@@ -98,41 +98,41 @@ class TableSetFormatter:
         # TODO: This could probably go in a class and be significantly nicer
         ctx = self.context
 
-        ref_op = op
+        orig_op = op
         if isinstance(op, ops.SelfReference):
-            ref_op = op.table
+            op = op.table
 
-        if isinstance(ref_op, ops.InMemoryTable):
-            result = self._format_in_memory_table(ref_op)
-        elif isinstance(ref_op, ops.PhysicalTable):
+        if isinstance(op, ops.InMemoryTable):
+            result = self._format_in_memory_table(op)
+        elif isinstance(op, ops.PhysicalTable):
             # TODO(kszucs): add a mandatory `name` field to the base
             # PhyisicalTable instead of the child classes, this should prevent
             # this error scenario
-            if (name := ref_op.name) is None:
+            if (name := op.name) is None:
                 raise com.RelationError(f"Table did not have a name: {op!r}")
 
             result = sg.table(
                 name,
-                db=getattr(ref_op, "namespace", None),
+                db=getattr(op, "namespace", None),
                 quoted=self.parent.translator_class._quote_identifiers,
             ).sql(dialect=self.parent.translator_class._dialect_name)
         else:
             # A subquery
-            if ctx.is_extracted(ref_op):
+            if ctx.is_extracted(op):
                 # Was put elsewhere, e.g. WITH block, we just need to grab its
                 # alias
-                alias = ctx.get_ref(op)
+                alias = ctx.get_ref(orig_op)
 
                 # HACK: self-references have to be treated more carefully here
-                if isinstance(op, ops.SelfReference):
-                    return f"{ctx.get_ref(ref_op)} {alias}"
+                if isinstance(orig_op, ops.SelfReference):
+                    return f"{ctx.get_ref(op)} {alias}"
                 else:
                     return alias
 
-            subquery = ctx.get_compiled_expr(op)
+            subquery = ctx.get_compiled_expr(orig_op)
             result = f"(\n{util.indent(subquery, self.indent)}\n)"
 
-        result += f" {ctx.get_ref(op)}"
+        result += f" {ctx.get_ref(orig_op)}"
 
         return result
 
