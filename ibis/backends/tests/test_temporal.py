@@ -1904,11 +1904,16 @@ def test_string_to_timestamp(alltypes, fmt):
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["flink", "impala"], raises=com.UnsupportedBackendType)
+@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
 @pytest.mark.xfail_version(
     datafusion=["datafusion<31"],
     raises=Exception,
     reason="Exception: Arrow error: Cast error: Cannot cast string to value of Date64 type",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="DayOfWeekName is not supported in Flink",
 )
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
