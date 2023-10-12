@@ -545,3 +545,26 @@ def test_windowization_wraps_reduction_inside_a_nested_value_expression(alltypes
             frame=ops.RowsWindowFrame(table=t, end=0, group_by=[t.g], order_by=[t.a]),
         )
     )
+
+
+def test_group_by_with_window_function_preserves_range(alltypes):
+    t = ibis.table(dict(one="string", two="double", three="int32"), name="my_data")
+    w = ibis.cumulative_window(order_by=t.one)
+    expr = t.group_by(t.three).mutate(four=t.two.sum().over(w))
+
+    expected = ops.Selection(
+        t,
+        [
+            t,
+            ops.Alias(
+                ops.WindowFunction(
+                    func=ops.Sum(t.two),
+                    frame=ops.RowsWindowFrame(
+                        table=t, end=0, group_by=[t.three], order_by=[t.one]
+                    ),
+                ),
+                name="four",
+            ),
+        ],
+    )
+    assert expr.op() == expected
