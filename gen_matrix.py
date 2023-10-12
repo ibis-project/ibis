@@ -29,7 +29,6 @@ def main():
     internal_ops = {
         # Never translates into anything
         ops.UnresolvedExistsSubquery,
-        ops.UnresolvedNotExistsSubquery,
         ops.ScalarParameter,
     }
 
