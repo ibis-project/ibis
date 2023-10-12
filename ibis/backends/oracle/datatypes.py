@@ -15,6 +15,8 @@ class OracleType(AlchemyType):
     def to_ibis(cls, typ, nullable=True):
         if isinstance(typ, oracle.ROWID):
             return dt.String(nullable=nullable)
+        elif isinstance(typ, (oracle.RAW, sat.BLOB)):
+            return dt.Binary(nullable=nullable)
         elif isinstance(typ, sat.Float):
             return dt.Float64(nullable=nullable)
         elif isinstance(typ, sat.Numeric):
