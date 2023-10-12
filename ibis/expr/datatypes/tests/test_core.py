@@ -76,20 +76,22 @@ def test_dtype_from_classes(klass, expected):
 
 
 @pytest.mark.parametrize(
-    ("uklass", "klass"),
+    ("klass", "lower", "upper"),
     [
-        (dt.UInt64, dt.Int64),
-        (dt.UInt32, dt.Int32),
-        (dt.UInt16, dt.Int16),
-        (dt.UInt8, dt.Int8),
+        (dt.UInt8, 0, 2**8 - 1),
+        (dt.UInt16, 0, 2**16 - 1),
+        (dt.UInt32, 0, 2**32 - 1),
+        (dt.UInt64, 0, 2**64 - 1),
+        (dt.Int8, -(2**7), 2**7 - 1),
+        (dt.Int16, -(2**15), 2**15 - 1),
+        (dt.Int32, -(2**31), 2**31 - 1),
+        (dt.Int64, -(2**63), 2**63 - 1),
     ],
 )
-def test_signed_unsigned_bounds(uklass, klass):
-    unsigned = dt.dtype(uklass)
-    signed = dt.dtype(klass)
-    assert unsigned.bounds.upper > signed.bounds.upper
-    assert unsigned.bounds.lower == 0
-    assert signed.bounds.lower < 0
+def test_signed_unsigned_bounds(klass, lower, upper):
+    bounds = dt.dtype(klass).bounds
+    assert bounds.lower == lower
+    assert bounds.upper == upper
 
 
 class FooStruct:
