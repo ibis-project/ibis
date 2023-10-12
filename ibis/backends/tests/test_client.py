@@ -1218,6 +1218,10 @@ def test_persist_expression_ref_count(con, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
+@mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+)
 def test_persist_expression(alltypes):
     non_persisted_table = alltypes.mutate(test_column="calculation", other_calc="xyz")
     persisted_table = non_persisted_table.cache()
