@@ -2753,6 +2753,11 @@ def test_large_timestamp(con):
                     reason="doesn't support microseconds",
                     raises=AssertionError,
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    reason="assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561021')",
+                    raises=AssertionError,
+                ),
             ],
         ),
         param(
@@ -2786,7 +2791,7 @@ def test_large_timestamp(con):
                 ),
                 pytest.mark.broken(
                     ["flink"],
-                    reason="AssertionError: assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561000231')",
+                    reason="assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561000231')",
                     raises=AssertionError,
                 ),
             ],
