@@ -301,11 +301,29 @@ def test_rename_table(con, temp_table, temp_table_orig):
     ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
 )
 @mark.broken(["snowflake"], reason="snowflake shows not nullable column as nullable")
+@mark.broken(
+    ["flink"],
+    raises=AssertionError,
+    reason=(
+        "assert not True, where True = Int64(nullable=True).nullable"
+        "Flink shows not nullable column as nullable"
+    )
+)
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
         [("foo", "int64"), ("bar", dt.int64(nullable=False)), ("baz", "boolean")]
     )
-    t = con.create_table(temp_table, schema=sch)
+
+    if con.name == "flink":
+        t = con.create_table(
+            temp_table,
+            schema=sch,
+            tbl_properties={
+                "connector": None,
+            },
+        )
+    else:
+        t = con.create_table(temp_table, schema=sch)
 
     assert t.schema().types[0].nullable
     assert not t.schema().types[1].nullable
