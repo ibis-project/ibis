@@ -113,6 +113,13 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
     replace_notany_with_min_not = p.NotAny(x, where=y) >> c.Min(c.Not(x), where=y)
     replace_notall_with_max_not = p.NotAll(x, where=y) >> c.Max(c.Not(x), where=y)
 
+    # subtract one from ranking functions to convert from 1-indexed to 0-indexed
+    subtract_one_from_ranking_functions = p.WindowFunction(
+        p.RankBase | p.NTile
+    ) >> c.Subtract(_, 1)
+
+    add_one_to_nth_value_input = p.NthValue >> _.copy(nth=c.Add(_.nth, 1))
+
     op = op.replace(
         replace_literals
         | replace_in_column_with_table_array_view
@@ -120,6 +127,8 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         | replace_notexists_subquery_with_not_exists
         | replace_notany_with_min_not
         | replace_notall_with_max_not
+        | subtract_one_from_ranking_functions
+        | add_one_to_nth_value_input
     )
     # apply translate rules in topological order
     results = op.map(fn, filter=(ops.TableNode, ops.Value))

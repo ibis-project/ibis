@@ -569,7 +569,7 @@ def _struct_field(op, *, arg, field: str, **_):
 
 @translate_val.register(ops.NthValue)
 def _nth_value(op, *, arg, nth, **_):
-    return F.nth_value(arg, _parenthesize(op.nth, nth) + 1)
+    return F.nth_value(arg, _parenthesize(op.nth, nth))
 
 
 @translate_val.register(ops.Repeat)
@@ -898,12 +898,8 @@ def _window_frame(op, *, group_by, order_by, start, end, max_lookback=None, **_)
 
 @translate_val.register(ops.WindowFunction)
 def _window(op: ops.WindowFunction, *, func, frame, **_: Any):
-    window = frame(this=func)
-
-    # preserve zero-based indexing
-    if isinstance(op.func, ops.RankBase):
-        return window - 1
-    return window
+    # frame is a partial call to sg.exp.Window
+    return frame(this=func)
 
 
 def shift_like(op_class, func):
