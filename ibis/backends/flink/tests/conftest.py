@@ -31,8 +31,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
-
-            # import pdb; pdb.set_trace()
             self.connection.create_table(table_name, pd.read_parquet(path))
 
         self.connection.create_table("json_t", json_types)
