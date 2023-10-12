@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import partial
 from operator import methodcaller
 
 import numpy as np
@@ -12,7 +13,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis import _
 from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = pytest.mark.notimpl(
@@ -42,6 +42,44 @@ try:
     from impala.error import HiveServer2Error
 except ImportError:
     HiveServer2Error = None
+
+
+# adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
+def pandas_ntile(x, bucket: int):
+    """Divide values into a number of buckets.
+
+    It divides an ordered and grouped data set into a number of buckets
+    and assigns the appropriate bucket number to each row.
+
+    Return an integer ranging from 0 to `bucket - 1`, dividing the
+    partition as equally as possible.
+    """
+
+    # internal ntile function
+    def _ntile(x: pd.Series, bucket: int) -> pd.Series:
+        n = x.shape[0]
+        sub_n = n // bucket
+        diff = n - (sub_n * bucket)
+
+        result = []
+        for i in range(bucket):
+            sub_result = [i] * (sub_n + (1 if diff else 0))
+            result.extend(sub_result)
+            if diff > 0:
+                diff -= 1
+        return pd.Series(result, index=x.index)
+
+    if isinstance(x, pd.core.groupby.generic.SeriesGroupBy):
+        return x.apply(partial(_ntile, bucket=bucket))
+    elif isinstance(x, pd.Series):
+        return _ntile(x, bucket)
+
+    raise TypeError(
+        "`x` should be `pandas.Series` or `pandas.DataFrame` or "
+        "`pd.core.groupby.generic.SeriesGroupBy` or "
+        "`pd.core.groupby.generic.DataFrameGroupBy`, "
+        f"not {type(x)}."
+    )
 
 
 @reduction(input_type=[dt.double], output_type=dt.double)
@@ -117,9 +155,24 @@ def calc_zscore(s):
         ),
         param(
             lambda t, win: t.float_col.ntile(buckets=7).over(win),
-            lambda t: t,
+            lambda t: pandas_ntile(t.float_col, 7),
             id="ntile",
-            marks=pytest.mark.xfail,
+            marks=[
+                pytest.mark.notimpl(
+                    ["dask", "pandas", "polars", "datafusion"],
+                    raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=ClickHouseOperationalError,
+                    reason="ClickHouse requires a specific window frame: unbounded preceding and unbounded following ONLY",
+                ),
+                pytest.mark.broken(
+                    ["impala"],
+                    raises=AssertionError,
+                    reason="Results don't match; possibly due to ordering",
+                ),
+            ],
         ),
         param(
             lambda t, win: t.float_col.first().over(win),
@@ -612,6 +665,22 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
             id="unordered-mean",
         ),
         param(
+            lambda _, win: ibis.ntile(7).over(win),
+            lambda df: pandas_ntile(df.id, 7),
+            True,
+            id="unordered-ntile",
+            marks=[
+                pytest.mark.notimpl(
+                    ["pandas", "dask"], raises=com.OperationNotDefinedError
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=AnalysisException,
+                    reason="pyspark requires CURRENT ROW",
+                ),
+            ],
+        ),
+        param(
             lambda t, win: mean_udf(t.double_col).over(win),
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             True,
@@ -950,8 +1019,8 @@ def test_mutate_window_filter(backend, alltypes, df):
     t = alltypes
     win = ibis.window(order_by=[t.id])
     expr = (
-        t.mutate(next_int=_.int_col.lead().over(win))
-        .filter(_.int_col == 1)
+        t.mutate(next_int=t.int_col.lead().over(win))
+        .filter(lambda t: t.int_col == 1)
         .select("int_col", "next_int")
         .limit(3)
     )
