@@ -123,7 +123,7 @@ def window(translator, op):
     arg_formatted = translator.translate(func.__window_op__)
     result = f"{arg_formatted} {window_formatted}"
 
-    if isinstance(func, ops.RankBase):
+    if isinstance(func, (ops.RankBase, ops.NTile)):
         return f"({result} - 1)"
     else:
         return result
