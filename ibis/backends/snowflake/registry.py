@@ -475,8 +475,6 @@ operation_registry.update(
 )
 
 _invalid_operations = {
-    # ibis.expr.operations.analytic
-    ops.NTile,
     # ibis.expr.operations.array
     ops.ArrayMap,
     ops.ArrayFilter,
