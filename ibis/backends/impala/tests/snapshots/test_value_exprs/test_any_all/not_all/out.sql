@@ -1,1 +1,1 @@
-max((`f` = 0) = FALSE)
+NOT min(`f` = 0)
