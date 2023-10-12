@@ -1825,7 +1825,7 @@ def test_integer_to_timestamp(backend, con, unit):
                 ),
                 pytest.mark.never(
                     ["flink"],
-                    raises=com.OperationNotDefinedError,
+                    raises=ValueError,
                     reason=(
                         "datetime formatting style not supported"
                         "Test failed with; ValueError: NaTType does not support strftime"
