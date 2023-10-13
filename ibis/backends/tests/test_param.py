@@ -8,6 +8,7 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
+from py4j.protocol import Py4JJavaError
 from pytest import param
 from py4j.protocol import Py4JJavaError
 
@@ -82,7 +83,9 @@ def test_scalar_param_array(con):
     assert result == len(value)
 
 
-@pytest.mark.notimpl(["datafusion", "impala", "flink", "postgres", "pyspark", "druid", "oracle"])
+@pytest.mark.notimpl(
+    ["datafusion", "impala", "flink", "postgres", "pyspark", "druid", "oracle"]
+)
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"],
     reason="mysql and sqlite will never implement struct types",

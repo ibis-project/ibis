@@ -617,6 +617,42 @@ def functional_alltypes_w_watermark(con):
     )
 
 @pytest.fixture(scope="session")
+def functional_alltypes_w_watermark(con):
+    import ibis.expr.datatypes as dt
+    import ibis.expr.schema as sch
+
+    table_name = "functional_alltypes"
+    return con.create_table(
+        table_name,
+        schema=sch.Schema(
+            {
+                "id": dt.int32,
+                "bool_col": dt.bool,
+                "smallint_col": dt.int16,
+                "int_col": dt.int32,
+                "bigint_col": dt.int64,
+                "float_col": dt.float32,
+                "double_col": dt.float64,
+                "date_string_col": dt.string,
+                "string_col": dt.string,
+                "timestamp_col": dt.timestamp(scale=3),
+                "year": dt.int32,
+                "month": dt.int32,
+            }
+        ),
+        tbl_properties={
+            "connector": "filesystem",
+            "path": f"ci/ibis-testing-data/csv/{table_name}.csv",
+            "format": "csv",
+            "csv.ignore-parse-errors": "true",
+        },
+        watermark=ibis.watermark(
+            time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
+        ),
+    )
+
+
+@pytest.fixture(scope="session")
 def json_t(backend):
     return backend.json_t
 

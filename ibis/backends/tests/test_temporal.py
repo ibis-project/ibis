@@ -9,6 +9,7 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
+import pyflink.util.exceptions as pyflink_exceptions
 import pytest
 import sqlalchemy as sa
 import pyflink.util.exceptions as pyflink_exceptions
@@ -76,7 +77,7 @@ except ImportError:
             id="cast",
             marks=[
                 pytest.mark.notimpl(
-                    ["impala"],
+                    ["flink", "impala"],
                     raises=com.UnsupportedBackendType,
                 ),
             ],
@@ -877,6 +878,11 @@ def test_date_truncate(backend, alltypes, df, unit):
                     ["pyspark"],
                     raises=com.UnsupportedArgumentError,
                     reason="Interval unit \"ms\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
+                ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="ParseException: Encountered 'MILLISECOND'. Was expecting one of: DAY, DAYS, HOUR, ...",
                 ),
             ],
         ),
@@ -1924,7 +1930,7 @@ def test_string_to_timestamp(alltypes, fmt):
     ],
 )
 @pytest.mark.notimpl(["mssql", "druid", "oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["impala"], raises=com.UnsupportedBackendType)
+@pytest.mark.notimpl(["flink", "impala"], raises=com.UnsupportedBackendType)
 @pytest.mark.xfail_version(
     datafusion=["datafusion<31"],
     raises=Exception,
@@ -2384,7 +2390,7 @@ INTERVAL_BACKEND_TYPES = {
     reason=(
         "UnsupportedOperationException: Python vectorized UDF doesn't "
         "support logical type INTERVAL SECOND(3) NOT NULL currently"
-    )
+    ),
 )
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
@@ -2416,6 +2422,26 @@ def test_interval_literal(con, backend):
 )
 @pytest.mark.broken(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936: missing expression"
+)
+@pytest.mark.broken(
+    ["flink"],
+    raises=AssertionError,
+    reason=(
+        # TODO (mehmet): Figure out why the precision is different?
+        # Refer to ibis/ibis/backends/flink/registry.py::_date_from_ymd()
+        "numpy array are different",
+        """left = [
+          '2010-11-01 00:00:00', '2010-11-01 00:00:00', '2010-11-01 00:00:00',
+          '2010-11-01 00:00:00', '2010-11...31 00:00:00', '2010-01-31 00:00:00',
+          '2010-01-31 00:00:00', '2010-01-31 00:00:00'
+        ]
+        right = [
+          '2010-11-01 00:00:00', '2010-11-01 00:01:00',
+          '2010-11-01 00:02:00.100000', '2010-11-0...1-31 05:07:13.710000',
+          '2010-01-31 05:08:13.780000', '2010-01-31 05:09:13.860000'
+        ]
+        """,
+    ),
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_date_column_from_ymd(con, alltypes, df):
@@ -2558,12 +2584,12 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
         # TODO (mehmet): Figure out why 5 hours difference?
         # FROM_UNIXTIME(numeric[, string])
         # Returns a representation of the numeric argument as a value in
-        # string format (default is ‘yyyy-MM-dd HH:mm:ss’). numeric is an
-        # internal timestamp value representing seconds since ‘1970-01-01 00:00:00’ UTC,
+        # string format (default is `yyyy-MM-dd HH:mm:ss`). numeric is an
+        # internal timestamp value representing seconds since `1970-01-01 00:00:00` UTC,
         # such as produced by the UNIX_TIMESTAMP() function. The return value is
         # expressed in the session time zone (specified in TableConfig).
-        # E.g., FROM_UNIXTIME(44) returns ‘1970-01-01 00:00:44’ if in UTC
-        # time zone, but returns ‘1970-01-01 09:00:44’ if in ‘Asia/Tokyo’ time zone.
+        # E.g., FROM_UNIXTIME(44) returns `1970-01-01 00:00:44` if in UTC
+        # time zone, but returns `1970-01-01 09:00:44` if in `Asia/Tokyo` time zone.
         # Ref: https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/
         "numpy array are different",
         """expected   = 0      1970-01-01 00:00:00
@@ -2579,7 +2605,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
         3      1969-12-31 19:00:03
         4      196...98   1969-12-31 19:00:08
         7299   1969-12-31 19:00:09
-        """
+        """,
     ),
 )
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):

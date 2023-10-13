@@ -24,7 +24,6 @@ UUID_BACKEND_TYPE = {
     "snowflake": "VARCHAR",
     "trino": "varchar(32)" if SQLALCHEMY2 else "uuid",
     "postgres": "uuid",
-    "flink": "CHAR(36) NOT NULL",
 }
 
 UUID_EXPECTED_VALUES = {

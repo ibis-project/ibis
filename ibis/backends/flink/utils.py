@@ -323,6 +323,6 @@ def translate_literal(op: ops.Literal) -> str:
     elif dtype.is_uuid():
         return translate_literal(ops.Literal(str(value), dtype=dt.str))
     elif dtype.is_array():
-        return f"ARRAY{[e for e in value]}"
+        return f"ARRAY{list(value)}"
 
     raise NotImplementedError(f"No translation rule for {dtype}")
