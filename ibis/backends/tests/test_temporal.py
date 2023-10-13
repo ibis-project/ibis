@@ -75,12 +75,6 @@ except ImportError:
         param(
             lambda c: c.cast("date"),
             id="cast",
-            marks=[
-                pytest.mark.notimpl(
-                    ["flink", "impala"],
-                    raises=com.UnsupportedBackendType,
-                ),
-            ],
         ),
     ],
 )
@@ -2423,26 +2417,6 @@ def test_interval_literal(con, backend):
 @pytest.mark.broken(
     ["oracle"], raises=sa.exc.DatabaseError, reason="ORA-00936: missing expression"
 )
-@pytest.mark.broken(
-    ["flink"],
-    raises=AssertionError,
-    reason=(
-        # TODO (mehmet): Figure out why the precision is different?
-        # Refer to ibis/ibis/backends/flink/registry.py::_date_from_ymd()
-        "numpy array are different",
-        """left = [
-          '2010-11-01 00:00:00', '2010-11-01 00:00:00', '2010-11-01 00:00:00',
-          '2010-11-01 00:00:00', '2010-11...31 00:00:00', '2010-01-31 00:00:00',
-          '2010-01-31 00:00:00', '2010-01-31 00:00:00'
-        ]
-        right = [
-          '2010-11-01 00:00:00', '2010-11-01 00:01:00',
-          '2010-11-01 00:02:00.100000', '2010-11-0...1-31 05:07:13.710000',
-          '2010-01-31 05:08:13.780000', '2010-01-31 05:09:13.860000'
-        ]
-        """,
-    ),
-)
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
 def test_date_column_from_ymd(con, alltypes, df):
     c = alltypes.timestamp_col
@@ -2591,8 +2565,8 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
         # E.g., FROM_UNIXTIME(44) returns `1970-01-01 00:00:44` if in UTC
         # time zone, but returns `1970-01-01 09:00:44` if in `Asia/Tokyo` time zone.
         # Ref: https://nightlies.apache.org/flink/flink-docs-master/docs/dev/table/functions/systemfunctions/
-        "numpy array are different",
-        """expected   = 0      1970-01-01 00:00:00
+        """numpy array are different
+        expected   = 0      1970-01-01 00:00:00
         1      1970-01-01 00:00:01
         2      1970-01-01 00:00:02
         3      1970-01-01 00:00:03
@@ -2605,7 +2579,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
         3      1969-12-31 19:00:03
         4      196...98   1969-12-31 19:00:08
         7299   1969-12-31 19:00:09
-        """,
+        """
     ),
 )
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):

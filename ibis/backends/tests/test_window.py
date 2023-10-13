@@ -183,6 +183,11 @@ def calc_zscore(s):
                     raises=AssertionError,
                     reason="Results don't match; possibly due to ordering",
                 ),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: Argument to function 'NTILE' must be a literal",
+                ),
             ],
         ),
         param(
@@ -709,6 +714,11 @@ def test_simple_ungrouped_window_with_scalar_order_by(backend, alltypes):
                     raises=AnalysisException,
                     reason="pyspark requires CURRENT ROW",
                 ),
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="CalciteContextException: Argument to function 'NTILE' must be a literal",
+                ),
             ],
         ),
         param(
@@ -1023,11 +1033,6 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     ["clickhouse"],
     reason="clickhouse doesn't implement percent_rank",
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["flink"],
-    raises=com.UnsupportedOperationError,
-    reason="Flink engine does not support generic window clause with no order by",
 )
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
