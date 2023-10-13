@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import functools
 import glob
+import importlib
 import inspect
 import itertools
 import json
@@ -19,7 +20,7 @@ from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 import sqlalchemy as sa
-from snowflake.sqlalchemy import ARRAY, DOUBLE, OBJECT, URL
+from packaging.version import parse as vparse
 from sqlalchemy.ext.compiler import compiles
 
 import ibis
@@ -35,9 +36,21 @@ from ibis.backends.base.sql.alchemy import (
     AlchemyCrossSchemaBackend,
     AlchemyExprTranslator,
 )
-from ibis.backends.snowflake.converter import SnowflakePandasData
-from ibis.backends.snowflake.datatypes import SnowflakeType
-from ibis.backends.snowflake.registry import operation_registry
+
+with warnings.catch_warnings():
+    if vparse(importlib.metadata.version("snowflake-connector-python")) >= vparse(
+        "3.3.0"
+    ):
+        warnings.filterwarnings(
+            "ignore",
+            message="You have an incompatible version of 'pyarrow' installed",
+            category=UserWarning,
+        )
+    from snowflake.sqlalchemy import ARRAY, DOUBLE, OBJECT, URL
+
+    from ibis.backends.snowflake.converter import SnowflakePandasData
+    from ibis.backends.snowflake.datatypes import SnowflakeType
+    from ibis.backends.snowflake.registry import operation_registry
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
