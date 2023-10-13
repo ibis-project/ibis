@@ -12,6 +12,8 @@ from ibis.backends.base.sql.registry.main import varargs
 from ibis.common.temporal import TimestampUnit
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from ibis.backends.base.sql.compiler import ExprTranslator
 
 operation_registry = base_operation_registry.copy()
@@ -346,7 +348,9 @@ def _json_get_item(translator: ExprTranslator, op: ops.json.JSONGetItem) -> str:
     else:  # is string
         query_path = f"$.{op.index.value}"
 
-    return f"JSON_QUERY({arg_translated}, '{query_path}' WITH CONDITIONAL ARRAY WRAPPER)"
+    return (
+        f"JSON_QUERY({arg_translated}, '{query_path}' WITH CONDITIONAL ARRAY WRAPPER)"
+    )
 
 
 def _map(translator: ExprTranslator, op: ops.maps.Map) -> str:
@@ -454,9 +458,7 @@ def _time(translator: ExprTranslator, op: ops.temporal.Time) -> str:
         return f"TIME '{date_time.hour}:{date_time.minute}:{date_time.second}'"
 
     else:
-        raise com.UnsupportedOperationError(
-            f"Does NOT support dtype= {op.arg.dtype}"
-        )
+        raise com.UnsupportedOperationError(f"Does NOT support dtype= {op.arg.dtype}")
 
 
 def _time_from_hms(translator: ExprTranslator, op: ops.temporal.TimeFromHMS) -> str:

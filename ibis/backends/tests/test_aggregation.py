@@ -818,7 +818,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda _: ibis._.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in_deferred",
-            marks=[mark.broken(["datafusion"], raises=AssertionError)],
+            marks=[pytest.mark.broken(["datafusion"], raises=AssertionError)],
         ),
     ],
 )

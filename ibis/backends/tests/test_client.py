@@ -201,9 +201,7 @@ _LIMIT = {
 @pytest.mark.notimpl(["datafusion", "polars", "mssql"])
 @pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
 @pytest.mark.notimpl(
-    ["flink"],
-    raises=AttributeError,
-    reason="'Backend' object has no attribute 'sql'"
+    ["flink"], raises=AttributeError, reason="'Backend' object has no attribute 'sql'"
 )
 def test_sql(backend, con):
     # execute the expression using SQL query
