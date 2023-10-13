@@ -206,7 +206,7 @@ WHERE p.proname = :name
         return op
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
-        config = udf_node.__config__["kwargs"]
+        config = udf_node.__config__
         func = udf_node.__func__
         func_name = func.__name__
         return dict(
