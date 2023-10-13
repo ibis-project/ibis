@@ -644,16 +644,10 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
     [
         param(True, True, toolz.identity, id="true_noop"),
         param(False, False, toolz.identity, id="false_noop"),
-        param(
-            True, False, invert, id="true_invert", marks=pytest.mark.notimpl(["mssql"])
-        ),
-        param(
-            False, True, invert, id="false_invert", marks=pytest.mark.notimpl(["mssql"])
-        ),
-        param(True, False, neg, id="true_negate", marks=pytest.mark.notimpl(["mssql"])),
-        param(
-            False, True, neg, id="false_negate", marks=pytest.mark.notimpl(["mssql"])
-        ),
+        param(True, False, invert, id="true_invert"),
+        param(False, True, invert, id="false_invert"),
+        param(True, False, neg, id="true_negate"),
+        param(False, True, neg, id="false_negate"),
     ],
 )
 def test_logical_negation_literal(con, expr, expected, op):
@@ -664,8 +658,8 @@ def test_logical_negation_literal(con, expr, expected, op):
     "op",
     [
         toolz.identity,
-        param(invert, marks=pytest.mark.notimpl(["mssql"])),
-        param(neg, marks=pytest.mark.notimpl(["mssql"])),
+        invert,
+        neg,
     ],
 )
 def test_logical_negation_column(backend, alltypes, df, op):

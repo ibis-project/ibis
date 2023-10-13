@@ -216,12 +216,13 @@ class Select(DML, Comparable):
 
         self.indent = indent
 
-    def _translate(self, expr, named=False, permit_subquery=False):
+    def _translate(self, expr, named=False, permit_subquery=False, within_where=False):
         translator = self.translator_class(
             expr,
             context=self.context,
             named=named,
             permit_subquery=permit_subquery,
+            within_where=within_where,
         )
         return translator.get_result()
 
@@ -395,7 +396,7 @@ class Select(DML, Comparable):
         fmt_preds = []
         npreds = len(self.where)
         for pred in self.where:
-            new_pred = self._translate(pred, permit_subquery=True)
+            new_pred = self._translate(pred, permit_subquery=True, within_where=True)
             if npreds > 1:
                 new_pred = f"({new_pred})"
             fmt_preds.append(new_pred)

@@ -188,7 +188,9 @@ class ExprTranslator:
     _dialect_name = "hive"
     _quote_identifiers = None
 
-    def __init__(self, node, context, named=False, permit_subquery=False):
+    def __init__(
+        self, node, context, named=False, permit_subquery=False, within_where=False
+    ):
         self.node = node
         self.permit_subquery = permit_subquery
 
@@ -197,6 +199,11 @@ class ExprTranslator:
 
         # For now, governing whether the result will have a name
         self.named = named
+
+        # used to indicate whether the expression being rendered is within a
+        # WHERE clause. This is used for MSSQL to determine whether to use
+        # boolean expressions or not.
+        self.within_where = within_where
 
     def _needs_name(self, op):
         if not self.named:
