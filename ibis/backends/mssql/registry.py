@@ -112,11 +112,22 @@ def _temporal_delta(t, op):
     return sa.func.datediff(sa.literal_column(op.part.value.upper()), right, left)
 
 
+def _not(t, op):
+    arg = t.translate(op.arg)
+    if t.within_where:
+        return sa.not_(arg)
+    else:
+        # mssql doesn't support boolean types or comparisons at selection positions
+        # so we need to compare the value wrapped in a case statement
+        return sa.case((arg == 0, True), else_=False)
+
+
 operation_registry = sqlalchemy_operation_registry.copy()
 operation_registry.update(sqlalchemy_window_functions_registry)
 
 operation_registry.update(
     {
+        ops.Not: _not,
         # aggregate methods
         ops.Count: _reduction(sa.func.count),
         ops.Max: _reduction(sa.func.max),
