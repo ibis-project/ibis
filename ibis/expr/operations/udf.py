@@ -5,7 +5,7 @@ import enum
 import functools
 import inspect
 import typing
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, overload
 
 from public import public
 
@@ -132,15 +132,25 @@ class scalar(_UDF):
 
     _base = ScalarUDF
 
-    @util.experimental
+    @overload
+    @classmethod
+    def builtin(cls, fn: Callable) -> Callable[..., ir.Value]:
+        ...
+
+    @overload
     @classmethod
     def builtin(
         cls,
-        fn: Callable | None = None,
+        *,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
-    ) -> Callable:
+    ) -> Callable[[Callable], Callable[..., ir.Value]]:
+        ...
+
+    @util.experimental
+    @classmethod
+    def builtin(cls, fn=None, *, name=None, schema=None, **kwargs):
         """Construct a scalar user-defined function that is built-in to the backend.
 
         Parameters
@@ -174,15 +184,25 @@ class scalar(_UDF):
             **kwargs,
         )
 
-    @util.experimental
+    @overload
+    @classmethod
+    def python(cls, fn: Callable) -> Callable[..., ir.Value]:
+        ...
+
+    @overload
     @classmethod
     def python(
         cls,
-        fn: Callable | None = None,
+        *,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
-    ) -> Callable:
+    ) -> Callable[[Callable], Callable[..., ir.Value]]:
+        ...
+
+    @util.experimental
+    @classmethod
+    def python(cls, fn=None, *, name=None, schema=None, **kwargs):
         """Construct a **non-vectorized** scalar user-defined function that accepts Python scalar values as inputs.
 
         ::: {.callout-warning collapse="true"}
@@ -234,15 +254,25 @@ class scalar(_UDF):
             **kwargs,
         )
 
-    @util.experimental
+    @overload
+    @classmethod
+    def pandas(cls, fn: Callable) -> Callable[..., ir.Value]:
+        ...
+
+    @overload
     @classmethod
     def pandas(
         cls,
-        fn: Callable | None = None,
+        *,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
-    ) -> Callable:
+    ) -> Callable[[Callable], Callable[..., ir.Value]]:
+        ...
+
+    @util.experimental
+    @classmethod
+    def pandas(cls, fn=None, *, name=None, schema=None, **kwargs):
         """Construct a **vectorized** scalar user-defined function that accepts pandas Series' as inputs.
 
         Parameters
@@ -283,15 +313,25 @@ class scalar(_UDF):
             **kwargs,
         )
 
-    @util.experimental
+    @overload
+    @classmethod
+    def pyarrow(cls, fn: Callable) -> Callable[..., ir.Value]:
+        ...
+
+    @overload
     @classmethod
     def pyarrow(
         cls,
-        fn: Callable | None = None,
+        *,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
-    ) -> Callable:
+    ) -> Callable[[Callable], Callable[..., ir.Value]]:
+        ...
+
+    @util.experimental
+    @classmethod
+    def pyarrow(cls, fn=None, *, name=None, schema=None, **kwargs):
         """Construct a **vectorized** scalar user-defined function that accepts PyArrow Arrays as input.
 
         Parameters
@@ -337,15 +377,25 @@ class agg(_UDF):
 
     _base = AggUDF
 
-    @util.experimental
+    @overload
+    @classmethod
+    def builtin(cls, fn: Callable) -> Callable[..., ir.Value]:
+        ...
+
+    @overload
     @classmethod
     def builtin(
         cls,
-        fn: Callable | None = None,
+        *,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
-    ) -> Callable:
+    ) -> Callable[[Callable], Callable[..., ir.Value]]:
+        ...
+
+    @util.experimental
+    @classmethod
+    def builtin(cls, fn=None, *, name=None, schema=None, **kwargs):
         """Construct an aggregate user-defined function that is built-in to the backend.
 
         Parameters
