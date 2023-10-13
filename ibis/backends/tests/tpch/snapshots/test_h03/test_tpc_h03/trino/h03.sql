@@ -13,8 +13,8 @@ WITH t0 AS (
     ON t4.l_orderkey = t3.o_orderkey
   WHERE
     t2.c_mktsegment = 'BUILDING'
-    AND t3.o_orderdate < CAST('1995-03-15' AS DATE)
-    AND t4.l_shipdate > CAST('1995-03-15' AS DATE)
+    AND t3.o_orderdate < FROM_ISO8601_DATE('1995-03-15')
+    AND t4.l_shipdate > FROM_ISO8601_DATE('1995-03-15')
   GROUP BY
     1,
     2,

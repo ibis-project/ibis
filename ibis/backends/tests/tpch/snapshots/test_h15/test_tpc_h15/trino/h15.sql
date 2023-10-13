@@ -6,8 +6,8 @@ WITH t0 AS (
     )) AS total_revenue
   FROM "hive".ibis_sf1.lineitem AS t3
   WHERE
-    t3.l_shipdate >= CAST('1996-01-01' AS DATE)
-    AND t3.l_shipdate < CAST('1996-04-01' AS DATE)
+    t3.l_shipdate >= FROM_ISO8601_DATE('1996-01-01')
+    AND t3.l_shipdate < FROM_ISO8601_DATE('1996-04-01')
   GROUP BY
     1
 ), t1 AS (

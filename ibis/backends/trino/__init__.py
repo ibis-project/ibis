@@ -26,7 +26,7 @@ from ibis.backends.base.sql.alchemy import (
 )
 from ibis.backends.base.sql.alchemy.datatypes import ArrayType
 from ibis.backends.trino.compiler import TrinoSQLCompiler
-from ibis.backends.trino.datatypes import ROW, TrinoType
+from ibis.backends.trino.datatypes import INTERVAL, ROW, TrinoType
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -171,6 +171,12 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
             elif isinstance(typ, sa.ARRAY):
                 column_info["type"] = toolz.nth(
                     typ.dimensions or 1, toolz.iterate(ArrayType, typ.item_type)
+                )
+            elif isinstance(typ, sa.Interval):
+                column_info["type"] = INTERVAL(
+                    native=typ.native,
+                    day_precision=typ.day_precision,
+                    second_precision=typ.second_precision,
                 )
 
         return meta

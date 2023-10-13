@@ -54,8 +54,8 @@ WITH t0 AS (
             WHERE
               t6.l_partkey = t5.ps_partkey
               AND t6.l_suppkey = t5.ps_suppkey
-              AND t6.l_shipdate >= CAST('1994-01-01' AS DATE)
-              AND t6.l_shipdate < CAST('1995-01-01' AS DATE)
+              AND t6.l_shipdate >= FROM_ISO8601_DATE('1994-01-01')
+              AND t6.l_shipdate < FROM_ISO8601_DATE('1995-01-01')
           ) * 0.5
       ) AS t4
     )
