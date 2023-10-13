@@ -7,7 +7,7 @@ import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.base.sqlglot import FALSE, NULL, STAR
+from ibis.backends.base.sqlglot import STAR
 
 
 @functools.singledispatch
@@ -198,33 +198,6 @@ def _limit(op: ops.Limit, *, table, n, offset, **_):
 @translate_rel.register
 def _distinct(op: ops.Distinct, *, table, **_):
     return sg.select(STAR).distinct().from_(table)
-
-
-@translate_rel.register
-def _dropna(op: ops.DropNa, *, table, how, subset, **_):
-    colnames = op.schema.names
-    alias = table.alias_or_name
-
-    if subset is None:
-        columns = [sg.column(name, table=alias) for name in colnames]
-    else:
-        columns = subset
-
-    if columns:
-        func = sg.and_ if how == "any" else sg.or_
-        predicate = func(*(sg.not_(col.is_(NULL)) for col in columns))
-    elif how == "all":
-        predicate = FALSE
-    else:
-        predicate = None
-
-    if predicate is None:
-        return table
-
-    try:
-        return table.where(predicate)
-    except AttributeError:
-        return sg.select(STAR).from_(table).where(predicate)
 
 
 @translate_rel.register
