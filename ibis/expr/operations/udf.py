@@ -47,14 +47,13 @@ def _wrap(
     wrapper,
     input_type: InputType,
     fn: Callable | None = None,
-    *args: Any,
     **kwargs: Any,
 ) -> Callable:
     """Wrap a function `fn` with `wrapper`, allowing zero arguments when used as part of a decorator."""
 
     def wrap(fn):
         return functools.update_wrapper(
-            deferrable(wrapper(input_type, fn, *args, **kwargs)), fn
+            deferrable(wrapper(input_type, fn, **kwargs)), fn
         )
 
     return wrap(fn) if fn is not None else wrap
@@ -72,58 +71,11 @@ class _UDF(abc.ABC):
     def _base(self) -> type[B]:
         """Base class of the UDF."""
 
-    @util.experimental
-    @classmethod
-    def builtin(
-        cls,
-        fn: Callable | None = None,
-        *args: Any,
-        name: str | None = None,
-        schema: str | None = None,
-        **kwargs: Any,
-    ) -> Callable:
-        """Construct a scalar user-defined function that is built-in to the backend.
-
-        Parameters
-        ----------
-        fn
-            The The function to wrap.
-        args
-            Configuration arguments for the UDF.
-        name
-            The name of the UDF in the backend if different from the function name.
-        schema
-            The schema in which the builtin function resides.
-        kwargs
-            Additional configuration arguments for the UDF.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> @ibis.udf.scalar.builtin
-        ... def hamming(a: str, b: str) -> int:
-        ...     '''Compute the Hamming distance between two strings.'''
-        >>> expr = hamming("duck", "luck")
-        >>> con = ibis.connect("duckdb://")
-        >>> con.execute(expr)
-        1
-        """
-        return _wrap(
-            cls._make_wrapper,
-            InputType.BUILTIN,
-            fn,
-            *args,
-            name=name,
-            schema=schema,
-            **kwargs,
-        )
-
     @classmethod
     def _make_node(
         cls,
         fn: Callable,
         input_type: InputType,
-        *args,
         name: str | None = None,
         schema: str | None = None,
         **kwargs,
@@ -147,7 +99,7 @@ class _UDF(abc.ABC):
             # must wrap `fn` in a `property` otherwise `fn` is assumed to be a
             # method
             "__func__": property(fget=lambda _, fn=fn: fn),
-            "__config__": FrozenDict(args=args, kwargs=FrozenDict(**kwargs)),
+            "__config__": FrozenDict(kwargs),
             "__udf_namespace__": schema,
             "__module__": fn.__module__,
             "__func_name__": func_name,
@@ -158,9 +110,9 @@ class _UDF(abc.ABC):
 
     @classmethod
     def _make_wrapper(
-        cls, input_type: InputType, fn: Callable, *args: Any, **kwargs: Any
+        cls, input_type: InputType, fn: Callable, **kwargs: Any
     ) -> Callable:
-        node = cls._make_node(fn, input_type, *args, **kwargs)
+        node = cls._make_node(fn, input_type, **kwargs)
 
         @functools.wraps(fn)
         def construct(*args: Any, **kwargs: Any) -> ir.Value:
@@ -182,10 +134,51 @@ class scalar(_UDF):
 
     @util.experimental
     @classmethod
+    def builtin(
+        cls,
+        fn: Callable | None = None,
+        name: str | None = None,
+        schema: str | None = None,
+        **kwargs: Any,
+    ) -> Callable:
+        """Construct a scalar user-defined function that is built-in to the backend.
+
+        Parameters
+        ----------
+        fn
+            The The function to wrap.
+        name
+            The name of the UDF in the backend if different from the function name.
+        schema
+            The schema in which the builtin function resides.
+        kwargs
+            Additional backend-specific configuration arguments for the UDF.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> @ibis.udf.scalar.builtin
+        ... def hamming(a: str, b: str) -> int:
+        ...     '''Compute the Hamming distance between two strings.'''
+        >>> expr = hamming("duck", "luck")
+        >>> con = ibis.connect("duckdb://")
+        >>> con.execute(expr)
+        1
+        """
+        return _wrap(
+            cls._make_wrapper,
+            InputType.BUILTIN,
+            fn,
+            name=name,
+            schema=schema,
+            **kwargs,
+        )
+
+    @util.experimental
+    @classmethod
     def python(
         cls,
         fn: Callable | None = None,
-        *args: Any,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
@@ -209,14 +202,12 @@ class scalar(_UDF):
         ----------
         fn
             The The function to wrap.
-        args
-            Configuration arguments for the UDF.
         name
             The name of the UDF in the backend if different from the function name.
         schema
             The schema in which to create the UDF.
         kwargs
-            Additional configuration arguments for the UDF.
+            Additional backend-specific configuration arguments for the UDF.
 
         Examples
         --------
@@ -238,7 +229,6 @@ class scalar(_UDF):
             cls._make_wrapper,
             InputType.PYTHON,
             fn,
-            *args,
             name=name,
             schema=schema,
             **kwargs,
@@ -249,7 +239,6 @@ class scalar(_UDF):
     def pandas(
         cls,
         fn: Callable | None = None,
-        *args: Any,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
@@ -260,14 +249,12 @@ class scalar(_UDF):
         ----------
         fn
             The The function to wrap.
-        args
-            Configuration arguments for the UDF.
         name
             The name of the UDF in the backend if different from the function name.
         schema
             The schema in which to create the UDF.
         kwargs
-            Additional configuration arguments for the UDF.
+            Additional backend-specific configuration arguments for the UDF.
 
         Examples
         --------
@@ -291,7 +278,6 @@ class scalar(_UDF):
             cls._make_wrapper,
             InputType.PANDAS,
             fn,
-            *args,
             name=name,
             schema=schema,
             **kwargs,
@@ -302,7 +288,6 @@ class scalar(_UDF):
     def pyarrow(
         cls,
         fn: Callable | None = None,
-        *args: Any,
         name: str | None = None,
         schema: str | None = None,
         **kwargs: Any,
@@ -313,14 +298,12 @@ class scalar(_UDF):
         ----------
         fn
             The The function to wrap.
-        args
-            Configuration arguments for the UDF.
         name
             The name of the UDF in the backend if different from the function name.
         schema
             The schema in which to create the UDF.
         kwargs
-            Additional configuration arguments for the UDF.
+            Additional backend-specific configuration arguments for the UDF.
 
         Examples
         --------
@@ -343,7 +326,6 @@ class scalar(_UDF):
             cls._make_wrapper,
             InputType.PYARROW,
             fn,
-            *args,
             name=name,
             schema=schema,
             **kwargs,
@@ -357,21 +339,25 @@ class agg(_UDF):
 
     @util.experimental
     @classmethod
-    def builtin(cls, *args: Any, **kwargs: Any) -> Callable:
+    def builtin(
+        cls,
+        fn: Callable | None = None,
+        name: str | None = None,
+        schema: str | None = None,
+        **kwargs: Any,
+    ) -> Callable:
         """Construct an aggregate user-defined function that is built-in to the backend.
 
         Parameters
         ----------
         fn
             The The function to wrap.
-        args
-            Configuration arguments for the UDF.
         name
             The name of the UDF in the backend if different from the function name.
         schema
             The schema in which the builtin function resides.
         kwargs
-            Additional configuration arguments for the UDF.
+            Additional backend-specific configuration arguments for the UDF.
 
         Examples
         --------
@@ -385,4 +371,11 @@ class agg(_UDF):
         >>> expr
         43.9219298245614
         """
-        return super().builtin(*args, **kwargs)
+        return _wrap(
+            cls._make_wrapper,
+            InputType.BUILTIN,
+            fn,
+            name=name,
+            schema=schema,
+            **kwargs,
+        )
