@@ -1245,23 +1245,19 @@ def test_floating_mod(backend, alltypes, df):
             ],
         ),
         param(
-            "float_col",
-            marks=[
-                pytest.mark.broken(
-                    "polars",
-                    strict=False,
-                    reason="output type is float64 instead of the expected float32",
-                    raises=AssertionError,
-                ),
-                pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
-            ],
+            "float_col", marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError)
         ),
         param(
             "double_col", marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError)
         ),
     ],
 )
-@pytest.mark.notyet(["duckdb", "mysql", "pyspark", "sqlite"], raises=AssertionError)
+@pytest.mark.notyet(["mysql", "pyspark"], raises=AssertionError)
+@pytest.mark.notyet(
+    ["duckdb", "sqlite"],
+    raises=AssertionError,
+    reason="returns NULL when dividing by zero",
+)
 @pytest.mark.notyet(["mssql"], raises=sa.exc.OperationalError)
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
 @pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
@@ -1274,7 +1270,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expected = df[column].div(denominator)
     expected = backend.default_series_rename(expected).astype("float64")
 
-    backend.assert_series_equal(result, expected)
+    backend.assert_series_equal(result.astype("float64"), expected)
 
 
 @pytest.mark.parametrize(

@@ -87,10 +87,7 @@ def literal(op, **_):
         value = pl.Series("", value)
         typ = dtype_to_polars(dtype)
         val = pl.lit(value, dtype=typ)
-        try:
-            return val.implode()
-        except AttributeError:  # pragma: no cover
-            return val.list()  # pragma: no cover
+        return val.implode()
     elif dtype.is_struct():
         values = [
             pl.lit(v, dtype=dtype_to_polars(dtype[k])).alias(k)
@@ -317,10 +314,7 @@ def dropna(op, **kw):
 
     if op.how == "all":
         cols = pl.col(subset) if subset else pl.all()
-        try:
-            return lf.filter(~pl.all_horizontal(cols.is_null()))
-        except AttributeError:
-            return lf.filter(~pl.all(cols.is_null()))
+        return lf.filter(~pl.all_horizontal(cols.is_null()))
 
     return lf.drop_nulls(subset)
 
@@ -404,19 +398,13 @@ def coalesce(op, **kw):
 @translate.register(ops.Least)
 def least(op, **kw):
     arg = [translate(arg, **kw) for arg in op.arg]
-    try:
-        return pl.min_horizontal(arg)
-    except AttributeError:
-        return pl.min(arg)
+    return pl.min_horizontal(arg)
 
 
 @translate.register(ops.Greatest)
 def greatest(op, **kw):
     arg = [translate(arg, **kw) for arg in op.arg]
-    try:
-        return pl.max_horizontal(arg)
-    except AttributeError:
-        return pl.max(arg)
+    return pl.max_horizontal(arg)
 
 
 @translate.register(ops.InColumn)
@@ -430,10 +418,7 @@ def in_column(op, **kw):
 def in_values(op, **kw):
     value = translate(op.value, **kw)
     options = list(map(translate, op.options))
-    try:
-        return pl.any_horizontal([value == option for option in options])
-    except AttributeError:
-        return pl.any([value == option for option in options])
+    return pl.any_horizontal([value == option for option in options])
 
 
 _string_unary = {
@@ -449,7 +434,7 @@ _string_unary = {
 def string_length(op, **kw):
     arg = translate(op.arg, **kw)
     typ = dtype_to_polars(op.dtype)
-    return arg.str.lengths().cast(typ)
+    return arg.str.len_bytes().cast(typ)
 
 
 @translate.register(ops.StringUnary)
@@ -515,10 +500,7 @@ def string_join(op, **kw):
     args = [translate(arg, **kw) for arg in op.arg]
     _assert_literal(op.sep)
     sep = op.sep.value
-    try:
-        return pl.concat_str(args, separator=sep)
-    except TypeError:  # pragma: no cover
-        return pl.concat_str(args, sep=sep)  # pragma: no cover
+    return pl.concat_str(args, separator=sep)
 
 
 @translate.register(ops.Substring)
@@ -839,10 +821,7 @@ def timestamp_diff(op, **kw):
 @translate.register(ops.ArrayLength)
 def array_length(op, **kw):
     arg = translate(op.arg, **kw)
-    try:
-        return arg.arr.lengths()
-    except AttributeError:
-        return arg.list.lengths()
+    return arg.list.len()
 
 
 @translate.register(ops.ArrayConcat)
@@ -850,10 +829,7 @@ def array_concat(op, **kw):
     result, *rest = map(partial(translate, **kw), op.arg)
 
     for arg in rest:
-        try:
-            result = result.arr.concat(arg)
-        except AttributeError:
-            result = result.list.concat(arg)
+        result = result.list.concat(arg)
 
     return result
 

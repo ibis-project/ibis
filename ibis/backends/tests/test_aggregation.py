@@ -706,14 +706,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.count(where=where),
             lambda t, where: len(t[where]),
             id="count_star",
-            marks=[
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=ComputeError,
-                    reason="polars seems broken for named ungrouped scalar reductions with no filter",
-                    strict=False,
-                )
-            ],
         ),
         param(
             lambda t, where: t.string_col.collect(where=where),
