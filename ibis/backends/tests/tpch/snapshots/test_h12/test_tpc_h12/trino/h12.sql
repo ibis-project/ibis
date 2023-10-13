@@ -14,8 +14,8 @@ FROM (
     t2.l_shipmode IN ('MAIL', 'SHIP')
     AND t2.l_commitdate < t2.l_receiptdate
     AND t2.l_shipdate < t2.l_commitdate
-    AND t2.l_receiptdate >= CAST('1994-01-01' AS DATE)
-    AND t2.l_receiptdate < CAST('1995-01-01' AS DATE)
+    AND t2.l_receiptdate >= FROM_ISO8601_DATE('1994-01-01')
+    AND t2.l_receiptdate < FROM_ISO8601_DATE('1995-01-01')
   GROUP BY
     1
 ) AS t0

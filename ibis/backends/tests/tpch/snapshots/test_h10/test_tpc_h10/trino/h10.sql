@@ -18,8 +18,8 @@ WITH t0 AS (
   JOIN "hive".ibis_sf1.nation AS t5
     ON t2.c_nationkey = t5.n_nationkey
   WHERE
-    t3.o_orderdate >= CAST('1993-10-01' AS DATE)
-    AND t3.o_orderdate < CAST('1994-01-01' AS DATE)
+    t3.o_orderdate >= FROM_ISO8601_DATE('1993-10-01')
+    AND t3.o_orderdate < FROM_ISO8601_DATE('1994-01-01')
     AND t4.l_returnflag = 'R'
   GROUP BY
     1,

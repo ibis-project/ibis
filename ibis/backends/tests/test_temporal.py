@@ -582,6 +582,11 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
                 ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=com.UnsupportedOperationError,
+                    reason="year not implemented",
+                ),
             ],
         ),
         param("Q", pd.offsets.DateOffset, marks=pytest.mark.xfail),
@@ -610,6 +615,11 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
                 ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=com.UnsupportedOperationError,
+                    reason="month not implemented",
+                ),
             ],
         ),
         param(
@@ -631,6 +641,11 @@ def test_date_truncate(backend, alltypes, df, unit):
                     ["pyspark"],
                     raises=com.UnsupportedOperationError,
                     reason="Interval from integer column is unsupported for the PySpark backend.",
+                ),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=com.UnsupportedOperationError,
+                    reason="week not implemented",
                 ),
             ],
         ),
@@ -704,12 +719,17 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedArgumentError,
                     reason="Interval unit \"us\" is not allowed. Allowed units are: ['Y', 'W', 'M', 'D', 'h', 'm', 's']",
                 ),
+                pytest.mark.notimpl(
+                    ["trino"],
+                    raises=AssertionError,
+                    reason="we're dropping microseconds to ensure results consistent with pandas",
+                ),
             ],
         ),
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "trino", "mssql", "oracle"],
+    ["datafusion", "sqlite", "snowflake", "mssql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -740,7 +760,23 @@ def test_integer_to_interval_timestamp(
 
 
 @pytest.mark.parametrize(
-    "unit", ["Y", param("Q", marks=pytest.mark.xfail), "M", "W", "D"]
+    "unit",
+    [
+        param(
+            "Y",
+            marks=pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+        ),
+        param("Q", marks=pytest.mark.xfail),
+        param(
+            "M",
+            marks=pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+        ),
+        param(
+            "W",
+            marks=pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+        ),
+        "D",
+    ],
 )
 # TODO - DateOffset - #2553
 @pytest.mark.notimpl(
@@ -753,7 +789,6 @@ def test_integer_to_interval_timestamp(
         "snowflake",
         "polars",
         "mssql",
-        "trino",
         "druid",
         "oracle",
     ],
@@ -942,6 +977,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=AssertionError,
                     reason="duckdb 0.8.0 returns DateOffset columns",
                 ),
+                pytest.mark.broken(
+                    ["trino"],
+                    raises=AssertionError,
+                    reason="doesn't match pandas results, unclear what the issue is, perhaps timezones",
+                ),
             ],
         ),
         param(
@@ -969,8 +1009,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "mssql", "trino", "oracle"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "mssql", "oracle"], raises=com.OperationNotDefinedError
 )
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
@@ -1144,8 +1183,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "mssql", "trino", "oracle"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "sqlite", "mssql", "oracle"], raises=com.OperationNotDefinedError
 )
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
@@ -1286,7 +1324,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "mssql", "trino", "oracle"],
+    ["datafusion", "sqlite", "snowflake", "mssql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
@@ -1307,7 +1345,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     ["pyspark"], reason="PySpark does not support casting columns to intervals"
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "mssql", "trino", "oracle"],
+    ["datafusion", "sqlite", "snowflake", "mssql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -1948,7 +1986,7 @@ INTERVAL_BACKEND_TYPES = {
     "bigquery": "INTERVAL",
     "clickhouse": "IntervalSecond",
     "sqlite": "integer",
-    "trino": "integer",
+    "trino": "interval day to second",
     "duckdb": "INTERVAL",
     "postgres": "interval",
 }

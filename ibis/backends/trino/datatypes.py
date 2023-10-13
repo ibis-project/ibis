@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import time, timedelta
 from typing import Any
 
 import sqlalchemy.types as sat
@@ -29,6 +30,26 @@ class ROW(_ROW):
                 return value
             else:
                 return dict(zip(names, value))
+
+        return process
+
+
+class INTERVAL(sat.Interval):
+    def result_processor(self, dialect, coltype: str) -> None:
+        def process(value):
+            if value is None:
+                return value
+
+            # TODO: support year-month intervals
+            days, duration = value.split(" ", 1)
+            t = time.fromisoformat(duration)
+            return timedelta(
+                days=int(days),
+                hours=t.hour,
+                minutes=t.minute,
+                seconds=t.second,
+                microseconds=t.microsecond,
+            )
 
         return process
 

@@ -29,7 +29,7 @@ FROM (
     COUNT(*) AS count_order
   FROM "hive".ibis_sf1.lineitem AS t1
   WHERE
-    t1.l_shipdate <= CAST('1998-09-02' AS DATE)
+    t1.l_shipdate <= FROM_ISO8601_DATE('1998-09-02')
   GROUP BY
     1,
     2
