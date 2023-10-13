@@ -16,6 +16,7 @@ from ibis.backends.base.sql.compiler.translator import ExprTranslator, QueryCont
 from ibis.backends.base.sql.registry import quote_identifier
 from ibis.common.grounds import Comparable
 from ibis.config import options
+from ibis.expr.rewrites import rewrite_dropna, rewrite_fillna
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -517,6 +518,8 @@ class Compiler:
     support_values_syntax_in_select = True
     null_limit = None
 
+    rewrites = rewrite_fillna | rewrite_dropna
+
     @classmethod
     def make_context(cls, params=None):
         params = params or {}
@@ -535,6 +538,9 @@ class Compiler:
         # TODO(kszucs): consider to support a single type only
         if isinstance(node, ir.Expr):
             node = node.op()
+
+        if cls.rewrites:
+            node = node.replace(cls.rewrites)
 
         if context is None:
             context = cls.make_context()
