@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import functools
-from collections.abc import Mapping
 from typing import NamedTuple
 
 import ibis.expr.analysis as an
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 
 
@@ -138,48 +135,6 @@ class SelectBuilder:
             self.distinct = True
 
         self._collect(op.table, toplevel=toplevel)
-
-    def _collect_DropNa(self, op, toplevel=False):
-        if toplevel:
-            if op.subset is None:
-                columns = [
-                    ops.TableColumn(op.table, name) for name in op.table.schema.names
-                ]
-            else:
-                columns = op.subset
-            if columns:
-                filters = [
-                    functools.reduce(
-                        ops.And if op.how == "any" else ops.Or,
-                        [ops.NotNull(c) for c in columns],
-                    )
-                ]
-            elif op.how == "all":
-                filters = [ops.Literal(False, dtype=dt.bool)]
-            else:
-                filters = []
-            self.table_set = op.table
-            self.select_set = [op.table]
-            self.filters = filters
-
-    def _collect_FillNa(self, op, toplevel=False):
-        if toplevel:
-            table = op.table.to_expr()
-            if isinstance(op.replacements, Mapping):
-                mapping = op.replacements
-            else:
-                mapping = {
-                    name: op.replacements
-                    for name, type in table.schema().items()
-                    if type.nullable
-                }
-            new_op = table.mutate(
-                [
-                    table[name].fillna(value).name(name)
-                    for name, value in mapping.items()
-                ]
-            ).op()
-            self._collect(new_op, toplevel=toplevel)
 
     def _collect_Limit(self, op, toplevel=False):
         if toplevel:
