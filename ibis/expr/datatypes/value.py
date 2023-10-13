@@ -8,7 +8,7 @@ import ipaddress
 import json
 import uuid
 from collections.abc import Mapping, Sequence
-from typing import Any, NamedTuple
+from typing import Any
 
 import toolz
 from public import public
@@ -233,8 +233,9 @@ del infer.register
 
 
 @public
-class _WellKnownText(NamedTuple):
-    text: str
+class _WellKnownText:
+    def __init__(self, text: str):
+        self.text = text
 
     def __str__(self):
         return self.text
@@ -315,6 +316,8 @@ def normalize(typ, value):
                 return tuple(normalize(dt.linestring, item) for item in value)
             elif dtype.is_multipolygon():
                 return tuple(normalize(dt.polygon, item) for item in value)
+        elif isinstance(value, _WellKnownText):
+            return value
         return _WellKnownText(value.wkt)
     elif dtype.is_date():
         return normalize_datetime(value).date()
