@@ -425,7 +425,7 @@ def test_table_fillna_invalid(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "clickhouse"])
+@pytest.mark.notimpl(["datafusion"])
 def test_table_fillna_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
@@ -440,7 +440,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion", "clickhouse", "druid", "oracle"])
+@pytest.mark.notimpl(["datafusion", "druid", "oracle"])
 def test_table_fillna_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
