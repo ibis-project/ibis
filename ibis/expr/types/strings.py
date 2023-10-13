@@ -1086,7 +1086,7 @@ class StringValue(Value):
         pattern: str | StringValue,
         replacement: str | StringValue,
     ) -> StringValue:
-        r"""Replace match found by regex `pattern` with `replacement`.
+        r"""Replace all matches found by regex `pattern` with `replacement`.
 
         Parameters
         ----------
@@ -1104,16 +1104,51 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["abc", "bac", "bca"]})
-        >>> t.s.re_replace("^(a)", "b")
+        >>> t = ibis.memtable(
+        ...     {"s": ["abc", "bac", "bca", "this has  multi \t whitespace"]}
+        ... )
+        >>> s = t.s
+
+        Replace all "a"s that are at the beginning of the string with "b":
+
+        >>> s.re_replace("^a", "b")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ RegexReplace(s, '^a', 'b')    ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                        │
+        ├───────────────────────────────┤
+        │ bbc                           │
+        │ bac                           │
+        │ bca                           │
+        │ this has  multi \t whitespace │
+        └───────────────────────────────┘
+
+        Double up any "a"s or "b"s, using capture groups and backreferences:
+
+        >>> s.re_replace("([ab])", r"\0\0")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ RegexReplace(s, '()', '\\0\\0')     ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                              │
+        ├─────────────────────────────────────┤
+        │ aabbc                               │
+        │ bbaac                               │
+        │ bbcaa                               │
+        │ this haas  multi \t whitespaace     │
+        └─────────────────────────────────────┘
+
+        Normalize all whitespace to a single space:
+
+        >>> s.re_replace("\s+", " ")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ RegexReplace(s, '^(a)', 'b') ┃
+        ┃ RegexReplace(s, '\\s+', ' ') ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
         │ string                       │
         ├──────────────────────────────┤
-        │ bbc                          │
+        │ abc                          │
         │ bac                          │
         │ bca                          │
+        │ this has multi whitespace    │
         └──────────────────────────────┘
         """
         return ops.RegexReplace(self, pattern, replacement).to_expr()
