@@ -248,7 +248,7 @@ def _array_index(translator: ExprTranslator, op: ops.arrays.ArrayIndex):
     table_column_translated = translator.translate(table_column)
     index_translated = translator.translate(index)
 
-    return f"{table_column_translated} '[' {index_translated} ']'"
+    return f"{table_column_translated} [ {index_translated} + 1 ]"
 
 
 def _array_length(translator: ExprTranslator, op: ops.arrays.ArrayLength) -> str:
