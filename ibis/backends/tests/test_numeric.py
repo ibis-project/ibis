@@ -1212,10 +1212,85 @@ def test_floating_mod(backend, alltypes, df):
 
 
 @pytest.mark.parametrize(
-    "column",
+    ("column", "denominator"),
     [
         param(
             "tinyint_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "smallint_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "int_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "bigint_col",
+            0,
+            marks=[
+                pytest.mark.notyet(
+                    "oracle",
+                    raises=(sa.exc.DatabaseError, sa.exc.ArgumentError),
+                    reason="Oracle doesn't do integer division by zero",
+                ),
+                pytest.mark.notyet(
+                    "flink",
+                    raises=Py4JError,
+                    reason="Flink doesn't do integer division by zero",
+                ),
+            ],
+        ),
+        param(
+            "float_col",
+            0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+        ),
+        param(
+            "double_col",
+            0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
+        ),
+        param(
+            "tinyint_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1226,6 +1301,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
         param(
             "smallint_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1236,6 +1312,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
         param(
             "int_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1246,6 +1323,7 @@ def test_floating_mod(backend, alltypes, df):
         ),
         param(
             "bigint_col",
+            0.0,
             marks=[
                 pytest.mark.notyet(
                     "oracle",
@@ -1255,10 +1333,14 @@ def test_floating_mod(backend, alltypes, df):
             ],
         ),
         param(
-            "float_col", marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError)
+            "float_col",
+            0.0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
         ),
         param(
-            "double_col", marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError)
+            "double_col",
+            0.0,
+            marks=pytest.mark.notimpl(["druid"], raises=ZeroDivisionError),
         ),
     ],
 )
@@ -1272,7 +1354,6 @@ def test_floating_mod(backend, alltypes, df):
 @pytest.mark.notyet(["postgres"], raises=sa.exc.DataError)
 @pytest.mark.notyet(["snowflake"], raises=sa.exc.ProgrammingError)
 @pytest.mark.xfail_version(datafusion=["datafusion<31"], raises=Exception)
-@pytest.mark.parametrize("denominator", [0, 0.0])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
     result = expr.name("tmp").execute()
