@@ -282,6 +282,8 @@ def translate_literal(op: ops.Literal) -> str:
     elif dtype.is_string():
         quoted = value.replace("'", "''")
         return f"'{quoted}'"
+    elif dtype.is_binary():
+        return f"x'{value.hex()}'"
     elif dtype.is_date():
         if isinstance(value, datetime.date):
             value = value.strftime("%Y-%m-%d")
