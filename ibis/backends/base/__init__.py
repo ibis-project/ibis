@@ -22,7 +22,6 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.caching import RefCountedCache
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
@@ -266,6 +265,8 @@ class _FileIOHandler:
         Iterator[pd.DataFrame]
             An iterator of pandas `DataFrame`s.
         """
+        from ibis.formats.pandas import PandasData
+
         orig_expr = expr
         expr = expr.as_table()
         schema = expr.schema()
