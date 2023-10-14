@@ -63,12 +63,12 @@ def test_multiple_backends(mocker):
         ibis.foo  # noqa: B018
 
 
-def test_no_import_pandas():
-    script = """
+@pytest.mark.parametrize("module", ["pandas", "pyarrow"])
+def test_no_import(module):
+    script = f"""
 import ibis
 import sys
 
-assert "pandas" not in sys.modules
+assert "{module}" not in sys.modules
 """
-
     subprocess.run([sys.executable, "-c", script], check=True)
