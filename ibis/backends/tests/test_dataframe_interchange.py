@@ -13,7 +13,7 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
@@ -60,7 +60,6 @@ def test_dataframe_interchange_no_execute(con, alltypes, mocker):
     assert not to_pyarrow.called
 
 
-@pytest.mark.notimpl(["dask"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
@@ -80,7 +79,7 @@ def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
     assert to_pyarrow.call_count == 1
 
 
-@pytest.mark.notimpl(["dask", "druid"])
+@pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
@@ -112,7 +111,6 @@ def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     assert col2.size() == pa_col2.size()
 
 
-@pytest.mark.notimpl(["dask"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
