@@ -370,10 +370,10 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
 def _timestamp_from_ymdhms(
     translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
 ) -> str:
-    year, month, day, hours, minutes, seconds = [
+    year, month, day, hours, minutes, seconds = (
         f"CAST({translator.translate(e)} AS STRING)"
         for e in [op.year, op.month, op.day, op.hours, op.minutes, op.seconds]
-    ]
+    )
     concat_string = f"CONCAT({year}, '-', {month}, '-', {day}, ' ', {hours}, ':', {minutes}, ':', {seconds})"
     return f"CAST({concat_string} AS TIMESTAMP)"
 
