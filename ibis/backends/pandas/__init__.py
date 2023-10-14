@@ -229,10 +229,6 @@ class BasePandasBackend(BaseBackend):
     def _clean_up_cached_table(self, op):
         del self.dictionary[op.name]
 
-
-class Backend(BasePandasBackend):
-    name = "pandas"
-
     def to_pyarrow(
         self,
         expr: ir.Expr,
@@ -263,6 +259,10 @@ class Backend(BasePandasBackend):
         return pa.RecordBatchReader.from_batches(
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )
+
+
+class Backend(BasePandasBackend):
+    name = "pandas"
 
     def execute(self, query, params=None, limit="default", **kwargs):
         from ibis.backends.pandas.core import execute_and_reset
