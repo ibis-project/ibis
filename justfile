@@ -129,7 +129,7 @@ view-changelog flags="":
         | ([ "{{ flags }}" = "--pretty" ] && glow -p - || cat -)
 
 # run the decouple script to check for prohibited inter-module dependencies
-decouple *args:
+decouple +args:
     python ci/check_disallowed_imports.py {{ args }}
 
 # profile something
