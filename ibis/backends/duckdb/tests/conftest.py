@@ -7,7 +7,6 @@ import pytest
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-from ibis.conftest import SANDBOXED
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -20,12 +19,6 @@ class TestConf(BackendTest, RoundAwayFromZero):
     deps = "duckdb", "duckdb_engine"
     stateful = False
     supports_tpch = True
-
-    def preload(self):
-        if not SANDBOXED:
-            self.connection._load_extensions(
-                ["httpfs", "postgres_scanner", "sqlite_scanner"]
-            )
 
     @property
     def ddl_script(self) -> Iterator[str]:
@@ -41,10 +34,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
-        # extension directory per test worker to prevent simultaneous downloads
-        return ibis.duckdb.connect(
-            extension_directory=str(tmpdir.mktemp(f"{worker_id}_exts")), **kw
-        )
+        return ibis.duckdb.connect(**kw)
 
     def load_tpch(self) -> None:
         with self.connection.begin() as con:
