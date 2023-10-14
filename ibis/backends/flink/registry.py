@@ -292,53 +292,12 @@ def _date_diff(translator: ExprTranslator, op: ops.temporal.DateDiff) -> str:
 
 
 def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> str:
-    # from ibis.expr.operations import temporal
-
-    # if (
-    #     isinstance(op.year, temporal.ExtractYear) and
-    #     isinstance(op.month, temporal.ExtractMonth) and
-    #     isinstance(op.day, temporal.ExtractDay)
-    # ):
-    #     arg_translated_list = [
-    #         translator.translate(op.year.arg),
-    #         translator.translate(op.month.arg),
-    #         translator.translate(op.day.arg),
-    #     ]
-    #     if len(set(arg_translated_list)) == 1:
-    #         return arg_translated_list[0]
-
-    #     else:
-    #         raise com.UnsupportedOperationError(
-    #             "Timestamp defined with ExtractYear/Month/Day"
-    #             "must extract from the same column. "
-    #             f"Can NOT extract from multiple columns: {arg_translated_list}"
-    #         )
-
-    # year, month, day = op.year, op.month, op.day
-    # date_string = f"{year.value}-{month.value}-{day.value}"
-    # return f"CAST('{date_string}' AS DATE)"
-
-    date_string = (
-        "CONCAT("
-        + ", '-', ".join(
-            [
-                f"CAST({translator.translate(e)} AS STRING)"
-                for e in [op.year, op.month, op.day]
-            ]
-        )
-        + ")"
-    )
-
-    # date_string = (
-    #     "CONCAT("
-    #     + f"CAST({translator.translate(op.year)} AS STRING)"
-    #     + ", '-', "
-    #     + f"CAST({translator.translate(op.month)} AS STRING)"
-    #     + ", '-', "
-    #     + f"CAST({translator.translate(op.day)} AS STRING)"
-    #     + ")"
-    # )
-    return f"CAST({date_string} AS DATE)"
+    year, month, day = [
+        f"CAST({translator.translate(e)} AS STRING)"
+        for e in [op.year, op.month, op.day]
+    ]
+    concat_string = f"CONCAT({year}, '-', {month}, '-', {day}"
+    return f"CAST({concat_string} AS DATE)"
 
 
 def _date_sub(translator: ExprTranslator, op: ops.temporal.DateSub) -> str:
@@ -411,7 +370,7 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
 def _timestamp_from_ymdhms(
     translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
 ) -> str:
-    date_string = (
+    concat_string = (
         "CONCAT("
         + ", '-', ".join(
             [
@@ -428,7 +387,7 @@ def _timestamp_from_ymdhms(
         )
         + ")"
     )
-    return f"CAST({date_string} AS TIMESTAMP)"
+    return f"CAST({concat_string} AS TIMESTAMP)"
 
 
 operation_registry.update(
