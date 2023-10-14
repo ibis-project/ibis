@@ -188,25 +188,25 @@ services:
     volumes:
       - trino-postgres:/data
 
-  hive-metastore-mariadb:
-    image: mariadb:10.11.5
+  hive-metastore-db:
+    image: postgres:16.0-alpine3.18
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-      MYSQL_USER: admin
-      MYSQL_PASSWORD: admin
-      MYSQL_DATABASE: metastore_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: metastore
     healthcheck:
       interval: 1s
       retries: 30
       test:
         - CMD
-        - mariadb-admin
-        - ping
+        - pg_isready
+        - --port=23456
       timeout: 5s
+    command: -c port=23456
     networks:
       - trino
 
-  hive-metastore-minio:
+  minio:
     image: minio/minio:latest
     environment:
       - MINIO_ACCESS_KEY=accesskey
@@ -217,18 +217,42 @@ services:
       - trino
 
   hive-metastore:
-    build: ./docker/trino
-    image: ibis-hive-metastore
+    image: starburstdata/hive:3.1.3-e.4
+    environment:
+      HIVE_METASTORE_DRIVER: org.postgresql.Driver
+      HIVE_METASTORE_JDBC_URL: jdbc:postgresql://hive-metastore-db:23456/metastore
+      HIVE_METASTORE_USER: admin
+      HIVE_METASTORE_PASSWORD: admin
+      HIVE_METASTORE_WAREHOUSE_DIR: s3://warehouse/
+      HIVE_METASTORE_USERS_IN_ADMIN_ROLE: "admin"
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: accesskey
+      S3_SECRET_KEY: secretkey
+      S3_PATH_STYLE_ACCESS: "true"
+      REGION: ""
+      GOOGLE_CLOUD_KEY_FILE_PATH: ""
+      AZURE_ADL_CLIENT_ID: ""
+      AZURE_ADL_CREDENTIAL: ""
+      AZURE_ADL_REFRESH_URL: ""
+      AZURE_ABFS_STORAGE_ACCOUNT: ""
+      AZURE_ABFS_ACCESS_KEY: ""
+      AZURE_WASB_STORAGE_ACCOUNT: ""
+      AZURE_ABFS_OAUTH: ""
+      AZURE_ABFS_OAUTH_TOKEN_PROVIDER: ""
+      AZURE_ABFS_OAUTH_CLIENT_ID: ""
+      AZURE_ABFS_OAUTH_SECRET: ""
+      AZURE_ABFS_OAUTH_ENDPOINT: ""
+      AZURE_WASB_ACCESS_KEY: ""
     depends_on:
-      - hive-metastore-mariadb
-      - hive-metastore-minio
+      - hive-metastore-db
+      - minio
     networks:
       - trino
 
   trino:
     depends_on:
-      - trino-postgres
       - hive-metastore
+      - trino-postgres
     healthcheck:
       interval: 5s
       retries: 10
