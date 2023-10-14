@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import math
+import string
+
 import pytest
 
 import ibis
-from ibis import udf
+from ibis import udf, util
 from ibis.backends.trino.tests.conftest import (
     TRINO_HOST,
     TRINO_PASS,
@@ -56,9 +59,7 @@ def test_hive_table_overwrite(tmp_name):
 
 
 def test_list_catalogs(con):
-    assert {"hive", "postgresql", "memory", "system", "tpch", "tpcds"}.issubset(
-        con.list_databases()
-    )
+    assert {"hive", "memory", "system", "tpch", "tpcds"}.issubset(con.list_databases())
 
 
 def test_list_schemas(con):
@@ -83,8 +84,6 @@ def test_con_source(source, expected):
     ("schema", "table"),
     [
         # tables known to exist
-        ("memory.default", "diamonds"),
-        ("postgresql.public", "map"),
         ("system.metadata", "table_comments"),
         ("tpcds.sf1", "store"),
         ("tpch.sf1", "nation"),
@@ -95,15 +94,14 @@ def test_cross_schema_table_access(con, schema, table):
     assert t.count().execute()
 
 
-def test_builtin_scalar_udf(con):
+def test_builtin_scalar_udf(con, snapshot):
     @udf.scalar.builtin
     def bar(x: float, width: int) -> str:
         """Render a single bar of length `width`, with `x` percent filled."""
 
     expr = bar(0.25, 40)
     result = con.execute(expr)
-    expected = "\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;196m█\x1b[38;5;202m█\x1b[38;5;202m█\x1b[38;5;202m█\x1b[38;5;208m█\x1b[38;5;208m█\x1b[38;5;208m█\x1b[0m                              "
-    assert result == expected
+    snapshot.assert_match(result, "result.txt")
 
 
 def test_builtin_agg_udf(con):
@@ -112,12 +110,38 @@ def test_builtin_agg_udf(con):
         """Geometric mean of a series of numbers."""
 
     t = con.table("diamonds")
-    expr = geometric_mean(t.price)
-    result = expr.execute()
+    expr = t.agg(n=t.count(), geomean=geometric_mean(t.price))
+    result_n, result = expr.execute().squeeze().tolist()
 
     with con.begin() as c:
-        expected = c.exec_driver_sql(
-            "SELECT GEOMETRIC_MEAN(price) FROM diamonds"
-        ).scalar()
+        expected_n, expected = c.exec_driver_sql(
+            "SELECT COUNT(*), GEOMETRIC_MEAN(price) FROM diamonds"
+        ).one()
 
+    # check the count
+    assert result_n > 0
+    assert expected_n > 0
+    assert result_n == expected_n
+
+    # check the value
+    assert result is not None
+    assert expected is not None
+    assert math.isfinite(result)
     assert result == expected
+
+
+def test_create_table_timestamp():
+    con = ibis.trino.connect(database="memory", schema="default")
+    schema = ibis.schema(
+        dict(zip(string.ascii_letters, map("timestamp({:d})".format, range(10))))
+    )
+    table = util.gen_name("trino_temp_table")
+    t = con.create_table(table, schema=schema)
+    try:
+        rows = con.raw_sql(f"DESCRIBE {table}").fetchall()
+        result = ibis.schema((name, typ) for name, typ, *_ in rows)
+        assert result == schema
+        assert result == t.schema()
+    finally:
+        con.drop_table(table)
+        assert table not in con.list_tables()

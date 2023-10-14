@@ -37,8 +37,9 @@ def test_map_table(backend):
 )
 def test_column_map_values(backend):
     table = backend.map
-    result = table.kv.values().name("values").execute().map(sorted)
-    expected = pd.Series([[1, 2, 3], [4, 5, 6]], name="values")
+    expr = table.select("idx", vals=table.kv.values()).order_by("idx")
+    result = expr.execute().vals
+    expected = pd.Series([[1, 2, 3], [4, 5, 6]], name="vals")
     tm.assert_series_equal(result, expected)
 
 
@@ -48,8 +49,11 @@ def test_column_map_values(backend):
 )
 def test_column_map_merge(backend):
     table = backend.map
-    expr = (table.kv.cast("map<string, int8>") + ibis.map({"d": 1})).name("merged")
-    result = expr.execute()
+    expr = table.select(
+        "idx",
+        merged=table.kv.cast("map<string, int8>") + ibis.map({"d": 1}),
+    ).order_by("idx")
+    result = expr.execute().merged
     expected = pd.Series(
         [{"a": 1, "b": 2, "c": 3, "d": 1}, {"d": 1, "e": 5, "f": 6}], name="merged"
     )
@@ -247,6 +251,6 @@ def test_map_length(con):
 
 
 def test_map_keys_unnest(backend):
-    expr = backend.map.head(1).kv.keys().unnest()
+    expr = backend.map.kv.keys().unnest()
     result = expr.to_pandas()
-    assert frozenset(result) == frozenset("abc")
+    assert frozenset(result) == frozenset("abcdef")

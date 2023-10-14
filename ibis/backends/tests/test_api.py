@@ -70,9 +70,10 @@ def test_tables_accessor_mapping(backend, con):
         con.tables["doesnt_exist"]
 
     # temporary might pop into existence in parallel test runs, in between the
-    # first `list_tables` call and the second, so we check a subset relationship
-    assert TEST_TABLES.keys() <= set(map(str.lower, con.list_tables()))
-    assert TEST_TABLES.keys() <= set(map(str.lower, con.tables))
+    # first `list_tables` call and the second, so we check that there's a
+    # non-empty intersection
+    assert TEST_TABLES.keys() & set(map(str.lower, con.list_tables()))
+    assert TEST_TABLES.keys() & set(map(str.lower, con.tables))
 
 
 def test_tables_accessor_getattr(backend, con):

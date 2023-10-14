@@ -1,21 +1,20 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any
+import subprocess
+from typing import TYPE_CHECKING
 
-import pandas as pd
 import pytest
 import sqlglot as sg
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.postgres.tests.conftest import TestConf as PostgresTestConf
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
-from ibis.backends.tests.data import struct_types
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Iterable
     from pathlib import Path
+
 
 TRINO_USER = os.environ.get(
     "IBIS_TEST_TRINO_USER", os.environ.get("TRINO_USER", "user")
@@ -26,24 +25,9 @@ TRINO_PASS = os.environ.get(
 TRINO_HOST = os.environ.get(
     "IBIS_TEST_TRINO_HOST", os.environ.get("TRINO_HOST", "localhost")
 )
-TRINO_PORT = os.environ.get("IBIS_TEST_TRINO_PORT", os.environ.get("TRINO_PORT", 8080))
-IBIS_TEST_TRINO_DB = os.environ.get(
-    "IBIS_TEST_TRINO_DATABASE",
-    os.environ.get("TRINO_DATABASE", "memory"),
+TRINO_PORT = int(
+    os.environ.get("IBIS_TEST_TRINO_PORT", os.environ.get("TRINO_PORT", 8080))
 )
-
-
-class TrinoPostgresTestConf(PostgresTestConf):
-    service_name = "trino-postgres"
-    deps = "sqlalchemy", "psycopg2"
-
-    @classmethod
-    def name(cls) -> str:
-        return "postgres"
-
-    @property
-    def test_files(self) -> Iterable[Path]:
-        return self.data_dir.joinpath("csv").glob("*.csv")
 
 
 class TestConf(BackendTest, RoundAwayFromZero):
@@ -54,11 +38,48 @@ class TestConf(BackendTest, RoundAwayFromZero):
     supports_structs = True
     supports_map = True
     supports_tpch = True
-    service_name = "trino"
     deps = ("sqlalchemy", "trino.sqlalchemy")
 
     _tpch_data_schema = "tpch.sf1"
     _tpch_query_schema = "hive.ibis_sf1"
+
+    def preload(self):
+        # create a minio host named trino
+        subprocess.run(
+            [
+                "docker",
+                "compose",
+                "exec",
+                "minio",
+                "bash",
+                "-c",
+                "mc config host add trino http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD",
+            ],
+            check=True,
+        )
+
+        for path in self.test_files:
+            directory = path.with_suffix("").name
+            raw_data_path = f"/opt/data/raw/{path.name}"
+            # copy from local to minio container
+            subprocess.run(
+                ["docker", "compose", "cp", str(path), f"minio:{raw_data_path}"],
+                check=True,
+            )
+            # copy from minio container to trino minio host
+            subprocess.run(
+                [
+                    "docker",
+                    "compose",
+                    "exec",
+                    "minio",
+                    "mc",
+                    "cp",
+                    raw_data_path,
+                    f"trino/warehouse/{directory}/{path.name}",
+                ],
+                check=True,
+            )
 
     def _transform_tpch_sql(self, parsed):
         def add_catalog_and_schema(node):
@@ -110,46 +131,9 @@ class TestConf(BackendTest, RoundAwayFromZero):
             schema=self._tpch_query_schema,
         )
 
-    @classmethod
-    def load_data(cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any) -> None:
-        TrinoPostgresTestConf.load_data(data_dir, tmpdir, worker_id, port=5433)
-        return super().load_data(data_dir, tmpdir, worker_id, **kw)
-
     @property
-    def ddl_script(self) -> Iterator[str]:
-        selects = []
-        for row in struct_types.abc:
-            if pd.isna(row):
-                datarow = "NULL"
-            else:
-                datarow = ", ".join(
-                    "NULL" if pd.isna(val) else repr(val) for val in row.values()
-                )
-                datarow = f"CAST(ROW({datarow}) AS ROW(a DOUBLE, b VARCHAR, c BIGINT))"
-            selects.append(f"SELECT {datarow} AS abc")
-
-        # mirror the existing tables except for intervals which are not supported
-        # and maps which we do natively in trino, because trino has more extensive
-        # map support
-        unsupported_memory_tables = ("intervals", "not_supported_intervals", "map")
-        with self.connection.begin() as c:
-            pg_tables = c.exec_driver_sql(
-                f"""
-                SELECT table_name
-                FROM postgresql.information_schema.tables
-                WHERE table_schema = 'public'
-                  AND table_name NOT IN {unsupported_memory_tables!r}
-                """
-            ).scalars()
-
-        for table in pg_tables:
-            dest = f"memory.default.{table}"
-            yield f"DROP VIEW IF EXISTS {dest}"
-            yield f"CREATE VIEW {dest} AS SELECT * FROM postgresql.public.{table}"
-
-        yield "DROP VIEW IF EXISTS struct"
-        yield f"CREATE VIEW struct AS {' UNION ALL '.join(selects)}"
-        yield from super().ddl_script
+    def test_files(self) -> Iterable[Path]:
+        return self.data_dir.joinpath("parquet").glob("*.parquet")
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
@@ -158,7 +142,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
             port=TRINO_PORT,
             user=TRINO_USER,
             password=TRINO_PASS,
-            database=IBIS_TEST_TRINO_DB,
+            database="memory",
             schema="default",
             **kw,
         )

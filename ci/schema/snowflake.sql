@@ -105,11 +105,11 @@ INSERT INTO array_types ("x", "y", "z", "grouper", "scalar_column", "multi_dim")
     SELECT [2, NULL, 3], ['b', NULL, 'c'], NULL, 'b', 5.0, NULL UNION
     SELECT [4, NULL, NULL, 5], ['d', NULL, NULL, 'e'], [4.0, NULL, NULL, 5.0], 'c', 6.0, [[1, 2, 3]];
 
-CREATE OR REPLACE TABLE map ("kv" OBJECT);
+CREATE OR REPLACE TABLE map ("idx" BIGINT, "kv" OBJECT);
 
-INSERT INTO map ("kv")
-    SELECT object_construct('a', 1, 'b', 2, 'c', 3) UNION
-    SELECT object_construct('d', 4, 'e', 5, 'f', 6);
+INSERT INTO map ("idx", "kv")
+    SELECT 1, object_construct('a', 1, 'b', 2, 'c', 3) UNION
+    SELECT 2, object_construct('d', 4, 'e', 5, 'f', 6);
 
 
 CREATE OR REPLACE TABLE struct ("abc" OBJECT);
