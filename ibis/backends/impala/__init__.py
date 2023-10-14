@@ -52,9 +52,11 @@ from ibis.config import options
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from pathlib import Path
 
     import pandas as pd
+    import pyarrow as pa
 
 
 __all__ = (
@@ -1378,3 +1380,39 @@ class Backend(BaseSQLBackend):
         """
         writer = DataFrameWriter(self, df)
         return writer.write_csv(path)
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        import pyarrow as pa
+
+        from ibis.formats.pyarrow import PyArrowData
+
+        table_expr = expr.as_table()
+        output = pa.Table.from_pandas(
+            self.execute(table_expr, params=params, limit=limit, **kwargs),
+            preserve_index=False,
+        )
+        table = PyArrowData.convert_table(output, table_expr.schema())
+        return expr.__pyarrow_result__(table)
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1000000,
+        **kwargs: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        pa = self._import_pyarrow()
+        pa_table = self.to_pyarrow(
+            expr.as_table(), params=params, limit=limit, **kwargs
+        )
+        return pa.RecordBatchReader.from_batches(
+            pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
+        )
