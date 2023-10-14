@@ -2,21 +2,14 @@ from __future__ import annotations
 
 import pyarrow as pa
 import pytest
+from packaging.version import parse as vparse
 
-pytestmark = [
-    pytest.mark.skipif(pa.__version__ < "12.", reason="pyarrow >= 12 required"),
-    pytest.mark.notimpl(
-        ["pyspark"],
-        raises=NotImplementedError,
-        reason="PySpark doesn't implement fetchmany",
-    ),
-]
+pytestmark = pytest.mark.skipif(
+    vparse(pa.__version__) < vparse("12"), reason="pyarrow >= 12 required"
+)
 
 
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
 def test_dataframe_interchange_no_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -60,9 +53,6 @@ def test_dataframe_interchange_no_execute(con, alltypes, mocker):
     assert not to_pyarrow.called
 
 
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
 def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -80,9 +70,6 @@ def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
 
 
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
 def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -111,9 +98,6 @@ def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     assert col2.size() == pa_col2.size()
 
 
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
 def test_dataframe_interchange_select_after_execution_no_reexecute(
     con, alltypes, mocker
 ):

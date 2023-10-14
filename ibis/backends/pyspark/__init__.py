@@ -33,7 +33,7 @@ from ibis.backends.pyspark.compiler import PySparkExprTranslator
 from ibis.backends.pyspark.datatypes import PySparkType
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
 
     import pandas as pd
     import pyarrow as pa
@@ -816,3 +816,39 @@ class Backend(BaseSQLBackend, CanCreateDatabase):
             PySpark Delta Lake table write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.save.html
         """
         expr.compile().write.format("delta").save(os.fspath(path), **kwargs)
+
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pa.Table:
+        import pyarrow as pa
+
+        from ibis.formats.pyarrow import PyArrowData
+
+        table_expr = expr.as_table()
+        output = pa.Table.from_pandas(
+            self.execute(table_expr, params=params, limit=limit, **kwargs),
+            preserve_index=False,
+        )
+        table = PyArrowData.convert_table(output, table_expr.schema())
+        return expr.__pyarrow_result__(table)
+
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1000000,
+        **kwargs: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        pa = self._import_pyarrow()
+        pa_table = self.to_pyarrow(
+            expr.as_table(), params=params, limit=limit, **kwargs
+        )
+        return pa.RecordBatchReader.from_batches(
+            pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
+        )
