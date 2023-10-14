@@ -13,7 +13,6 @@ import pytest
 import sqlalchemy as sa
 import pyflink.util.exceptions as pyflink_exceptions
 from pytest import param
-from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.common.exceptions as com
@@ -60,6 +59,11 @@ try:
     )
 except ImportError:
     ImpalaHiveServer2Error = ImpalaOperationalError = None
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])

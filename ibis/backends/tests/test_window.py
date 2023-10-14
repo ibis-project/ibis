@@ -8,13 +8,18 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
-from py4j.protocol import Py4JJavaError
 from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.legacy.udf.vectorized import analytic, reduction
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
 
 pytestmark = pytest.mark.notimpl(
     ["druid"],

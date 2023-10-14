@@ -22,7 +22,6 @@ import rich.console
 import sqlalchemy as sa
 from packaging.version import parse as vparse
 from pytest import mark, param
-from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.common.exceptions as com
@@ -33,6 +32,11 @@ from ibis.util import gen_name, guid
 
 if TYPE_CHECKING:
     from ibis.backends.base import BaseBackend
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
 
 
 @pytest.fixture

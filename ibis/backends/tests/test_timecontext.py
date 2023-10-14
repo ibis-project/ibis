@@ -5,11 +5,16 @@ import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
-from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.common.exceptions as com
 from ibis.backends.tests.test_vectorized_udf import calc_mean, create_demean_struct_udf
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
 
 pytestmark = pytest.mark.notimpl(
     [
