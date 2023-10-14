@@ -252,7 +252,7 @@ INSERT INTO win VALUES
     ('a', 4, 1);
 
 DROP TABLE IF EXISTS map CASCADE;
-CREATE TABLE map (kv HSTORE);
+CREATE TABLE map (idx BIGINT, kv HSTORE);
 INSERT INTO map VALUES
-    ('a=>1,b=>2,c=>3'),
-    ('d=>4,e=>5,c=>6');
+    (1, 'a=>1,b=>2,c=>3'),
+    (2, 'd=>4,e=>5,c=>6');
