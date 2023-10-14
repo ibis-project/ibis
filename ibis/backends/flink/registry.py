@@ -296,7 +296,7 @@ def _date_from_ymd(translator: ExprTranslator, op: ops.temporal.DateFromYMD) -> 
         f"CAST({translator.translate(e)} AS STRING)"
         for e in [op.year, op.month, op.day]
     ]
-    concat_string = f"CONCAT({year}, '-', {month}, '-', {day}"
+    concat_string = f"CONCAT({year}, '-', {month}, '-', {day})"
     return f"CAST({concat_string} AS DATE)"
 
 
@@ -370,23 +370,11 @@ def _timestamp_from_unix(translator: ExprTranslator, op: ops.Node) -> str:
 def _timestamp_from_ymdhms(
     translator: ExprTranslator, op: ops.temporal.TimestampFromYMDHMS
 ) -> str:
-    concat_string = (
-        "CONCAT("
-        + ", '-', ".join(
-            [
-                f"CAST({translator.translate(e)} AS STRING)"
-                for e in [op.year, op.month, op.day]
-            ]
-        )
-        + ", ' ', "
-        + ", ':', ".join(
-            [
-                f"CAST({translator.translate(e)} AS STRING)"
-                for e in [op.hours, op.minutes, op.seconds]
-            ]
-        )
-        + ")"
-    )
+    year, month, day, hours, minutes, seconds = [
+        f"CAST({translator.translate(e)} AS STRING)"
+        for e in [op.year, op.month, op.day, op.hours, op.minutes, op.seconds]
+    ]
+    concat_string = f"CONCAT({year}, '-', {month}, '-', {day}, ' ', {hours}, ':', {minutes}, ':', {seconds})"
     return f"CAST({concat_string} AS TIMESTAMP)"
 
 
