@@ -21,7 +21,6 @@ from ibis.formats.pandas import DaskData
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, MutableMapping
-    from pathlib import Path
 
 # Make sure that the pandas backend options have been loaded
 ibis.pandas  # noqa: B018
@@ -135,8 +134,3 @@ class Backend(BasePandasBackend):
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, self.compile(expr).persist())
-
-    def read_delta(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
-    ):
-        raise NotImplementedError(self.name)

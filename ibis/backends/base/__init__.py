@@ -476,6 +476,31 @@ class _FileIOHandler:
             f"{self.name} does not support direct registration of JSON data."
         )
 
+    def read_delta(
+        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+    ):
+        """Register a Delta Lake table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source. Must be a directory
+            containing a Delta Lake table.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the underlying backend or library.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+        """
+        raise NotImplementedError(
+            f"{self.name} does not support direct registration of DeltaLake tables."
+        )
+
     @util.experimental
     def to_parquet(
         self,
