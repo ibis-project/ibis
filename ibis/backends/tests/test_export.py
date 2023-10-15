@@ -264,9 +264,7 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
     backend.assert_frame_equal(reingest.to_pandas(), awards_players.to_pandas())
 
 
-@pytest.mark.notimpl(
-    ["flink"], reason="No support for exporting files"
-)
+@pytest.mark.notimpl(["flink"], reason="No support for exporting files")
 @pytest.mark.parametrize("ftype", ["csv", "parquet"])
 def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
     """

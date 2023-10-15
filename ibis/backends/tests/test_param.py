@@ -8,9 +8,7 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 import sqlalchemy as sa
-from py4j.protocol import Py4JJavaError
 from pytest import param
-from py4j.protocol import Py4JJavaError
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -20,6 +18,11 @@ try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
 except ImportError:
     GoogleBadRequest = None
+
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
 
 
 @pytest.mark.parametrize(
@@ -75,7 +78,6 @@ def test_timestamp_accepts_date_literals(alltypes):
 @pytest.mark.never(
     ["mysql", "sqlite", "mssql"], reason="backend will never implement array types"
 )
-@pytest.mark.broken(["flink"], "WIP")
 def test_scalar_param_array(con):
     value = [1, 2, 3]
     param = ibis.param(dt.Array(dt.int64))
@@ -105,7 +107,8 @@ def test_scalar_param_struct(con):
 )
 @pytest.mark.notyet(["bigquery"])
 @pytest.mark.broken(
-    ["flink"], "WIP",
+    ["flink"],
+    "WIP",
     raises=Py4JJavaError,
     reason=(
         "SqlParseException: Expecting alias, found character literal"
@@ -195,7 +198,6 @@ def test_scalar_param(alltypes, df, value, dtype, col):
 )
 @pytest.mark.notimpl(["datafusion", "druid", "oracle"])
 @pytest.mark.notyet(["impala"], reason="impala doesn't support dates")
-@pytest.mark.broken(["flink"], "WIP")
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col

@@ -46,6 +46,11 @@ try:
 except ImportError:
     HiveServer2Error = None
 
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
@@ -776,6 +781,11 @@ def test_between(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="NotImplementedError('flink') raised in repr()",
+)
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -1269,6 +1279,11 @@ def test_hash_consistent(backend, alltypes):
                     reason="raises TrinoUserError",
                 ),
                 pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.broken(
+                    ["flink"],
+                    raises=AssertionError,
+                    reason="assert 1672549200 == 1672531200",
+                ),
             ],
         ),
     ],

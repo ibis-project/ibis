@@ -23,7 +23,7 @@ MACADDR_BACKEND_TYPE = {
 }
 
 
-@pytest.mark.notimpl(["polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["flink", "polars"], raises=NotImplementedError)
 def test_macaddr_literal(con, backend):
     test_macaddr = "00:00:0A:BB:28:FC"
     expr = ibis.literal(test_macaddr, type=dt.macaddr)
@@ -104,7 +104,7 @@ def test_macaddr_literal(con, backend):
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=NotImplementedError)
+@pytest.mark.notimpl(["flink", "polars"], raises=NotImplementedError)
 @pytest.mark.notimpl(["druid", "oracle"], raises=KeyError)
 def test_inet_literal(con, backend, test_value, expected_values, expected_types):
     backend_name = backend.name()

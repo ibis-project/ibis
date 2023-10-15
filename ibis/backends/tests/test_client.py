@@ -177,7 +177,7 @@ def test_load_data_sqlalchemy(alchemy_backend, alchemy_con, alchemy_temp_table, 
     reason=(
         "org.apache.flink.table.api.ValidationException: "
         "Table `default_catalog`.`default_database`.`functional_alltypes` was not found."
-    )
+    ),
 )
 def test_query_schema(ddl_backend, expr_fn, expected):
     expr = expr_fn(ddl_backend.functional_alltypes)
@@ -319,7 +319,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
     reason=(
         "assert not True, where True = Int64(nullable=True).nullable"
         "Flink shows not nullable column as nullable"
-    )
+    ),
 )
 def test_nullable_input_output(con, temp_table):
     sch = ibis.schema(
@@ -893,6 +893,7 @@ def test_self_join_memory_table(backend, con):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=NotImplementedError,
+                    reason="NotImplementedError('flink') raised in repr()",
                 )
             ],
         ),
@@ -903,6 +904,7 @@ def test_self_join_memory_table(backend, con):
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=NotImplementedError,
+                    reason="NotImplementedError('flink') raised in repr()",
                 )
             ],
         ),
@@ -1006,7 +1008,22 @@ def test_dunder_array_column(alltypes, dtype):
     np.testing.assert_array_equal(result, expected)
 
 
-@pytest.mark.parametrize("interactive", [True, False])
+@pytest.mark.parametrize(
+    "interactive",
+    [
+        param(
+            True,
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=NotImplementedError,
+                    reason="NotImplementedError('flink') raised in repr()",
+                )
+            ],
+        ),
+        False,
+    ],
+)
 def test_repr(alltypes, interactive, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
@@ -1022,6 +1039,11 @@ def test_repr(alltypes, interactive, monkeypatch):
 
 
 @pytest.mark.parametrize("show_types", [True, False])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="NotImplementedError('flink') raised in repr()",
+)
 def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
     monkeypatch.setattr(ibis.options.repr.interactive, "show_types", show_types)
@@ -1035,6 +1057,11 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
 
 @pytest.mark.parametrize("is_jupyter", [True, False])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="NotImplementedError('flink') raised in repr()",
+)
 def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
@@ -1073,7 +1100,16 @@ def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
 
 
 @pytest.mark.parametrize("expr_type", ["table", "column"])
-@pytest.mark.parametrize("interactive", [True, False])
+@pytest.mark.parametrize(
+    "interactive",
+    [
+        param(
+            True,
+            marks=pytest.mark.notimpl(["flink"], raises=NotImplementedError),
+        ),
+        False,
+    ],
+)
 def test_repr_mimebundle(alltypes, interactive, expr_type, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
