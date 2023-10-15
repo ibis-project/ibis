@@ -4,7 +4,6 @@ import pandas as pd
 import pandas.testing as tm
 import pytest
 from packaging.version import parse as vparse
-from py4j.protocol import Py4JJavaError
 from pytest import param
 
 import ibis

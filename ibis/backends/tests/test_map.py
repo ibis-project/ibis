@@ -10,6 +10,12 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 
+try:
+    from py4j.protocol import Py4JJavaError
+except ImportError:
+    Py4JJavaError = None
+
+
 pytestmark = [
     pytest.mark.never(
         ["sqlite", "mysql", "mssql"], reason="Unlikely to ever add map support"
@@ -60,6 +66,11 @@ def test_column_map_merge(backend):
     tm.assert_series_equal(result, expected)
 
 
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason=("No translation rule for <class 'ibis.expr.operations.maps.MapKeys'>"),
+)
 def test_literal_map_keys(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
     expr = mapping.keys().name("tmp")
@@ -70,6 +81,11 @@ def test_literal_map_keys(con):
     assert np.array_equal(result, ["1", "2"])
 
 
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.maps.MapValues'>",
+)
 def test_literal_map_values(con):
     mapping = ibis.literal({"1": "a", "2": "b"})
     expr = mapping.values().name("tmp")
@@ -79,6 +95,11 @@ def test_literal_map_values(con):
 
 
 @pytest.mark.notimpl(["postgres"])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.arrays.ArrayContains'>",
+)
 def test_scalar_isin_literal_map_keys(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -90,6 +111,11 @@ def test_scalar_isin_literal_map_keys(con):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.maps.MapContains'>",
+)
 def test_map_scalar_contains_key_scalar(con):
     mapping = ibis.literal({"a": 1, "b": 2})
     a = ibis.literal("a")
@@ -100,6 +126,11 @@ def test_map_scalar_contains_key_scalar(con):
     assert con.execute(false) == False  # noqa: E712
 
 
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.maps.MapContains'>",
+)
 def test_map_scalar_contains_key_column(backend, alltypes, df):
     value = {"1": "a", "3": "c"}
     mapping = ibis.literal(value)
@@ -110,6 +141,11 @@ def test_map_scalar_contains_key_column(backend, alltypes, df):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason=("No translation rule for <class 'ibis.expr.operations.maps.MapContains'>"),
+)
 def test_map_column_contains_key_scalar(backend, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     series = df.apply(lambda row: {row["string_col"]: row["int_col"]}, axis=1)
@@ -121,6 +157,11 @@ def test_map_column_contains_key_scalar(backend, alltypes, df):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.maps.MapContains'>",
+)
 def test_map_column_contains_key_column(alltypes):
     map_expr = ibis.map(
         ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col])
@@ -131,6 +172,11 @@ def test_map_column_contains_key_column(alltypes):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.maps.MapMerge'>",
+)
 def test_literal_map_merge(con):
     a = ibis.literal({"a": 0, "b": 2})
     b = ibis.literal({"a": 1, "c": 3})
@@ -139,6 +185,11 @@ def test_literal_map_merge(con):
     assert con.execute(expr) == {"a": 1, "b": 2, "c": 3}
 
 
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="No translation rule for map<string, string>",
+)
 def test_literal_map_getitem_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
 
@@ -151,6 +202,11 @@ def test_literal_map_getitem_broadcast(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="No translation rule for map<string, string>",
+)
 def test_literal_map_get_broadcast(backend, alltypes, df):
     value = {"1": "a", "2": "b"}
 
@@ -170,12 +226,22 @@ def test_literal_map_get_broadcast(backend, alltypes, df):
             ["a", "b"],
             [1, 2],
             id="string",
-            marks=pytest.mark.notyet(
-                ["postgres"], reason="only support maps of string -> string"
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    ["postgres"], reason="only support maps of string -> string"
+                ),
+            ],
         ),
         param(["a", "b"], ["1", "2"], id="int"),
     ],
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason=(
+        "CalciteContextException: No match found for function signature "
+        "MAP_FROM_ARRAYS(<CHAR(1) ARRAY>, <INTEGER ARRAY>)"
+    ),
 )
 def test_map_construct_dict(con, keys, values):
     expr = ibis.map(keys, values)
@@ -184,6 +250,11 @@ def test_map_construct_dict(con, keys, values):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.arrays.ArrayColumn'>",
+)
 def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     result = con.execute(expr)
@@ -193,6 +264,11 @@ def test_map_construct_array_column(con, alltypes, df):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="No translation rule for map<string, int16>",
+)
 def test_map_get_with_compatible_value_smaller(con):
     value = ibis.literal({"A": 1000, "B": 2000})
     expr = value.get("C", 3)
@@ -200,6 +276,11 @@ def test_map_get_with_compatible_value_smaller(con):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="No translation rule for map<string, int8>",
+)
 def test_map_get_with_compatible_value_bigger(con):
     value = ibis.literal({"A": 1, "B": 2})
     expr = value.get("C", 3000)
@@ -207,6 +288,11 @@ def test_map_get_with_compatible_value_bigger(con):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="NotImplementedError: No translation rule for map<string, int16>",
+)
 def test_map_get_with_incompatible_value_different_kind(con):
     value = ibis.literal({"A": 1000, "B": 2000})
     expr = value.get("C", 3.0)
@@ -215,6 +301,11 @@ def test_map_get_with_incompatible_value_different_kind(con):
 
 @pytest.mark.parametrize("null_value", [None, ibis.NA])
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="No translation rule for map<string, int16>",
+)
 def test_map_get_with_null_on_not_nullable(con, null_value):
     map_type = dt.Map(dt.string, dt.Int16(nullable=False))
     value = ibis.literal({"A": 1000, "B": 2000}).cast(map_type)
@@ -224,6 +315,11 @@ def test_map_get_with_null_on_not_nullable(con, null_value):
 
 
 @pytest.mark.parametrize("null_value", [None, ibis.NA])
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="No translation rule for map<string, null>",
+)
 def test_map_get_with_null_on_null_type_with_null(con, null_value):
     value = ibis.literal({"A": None, "B": None})
     expr = value.get("C", null_value)
@@ -232,19 +328,43 @@ def test_map_get_with_null_on_null_type_with_null(con, null_value):
 
 
 @pytest.mark.notyet(["postgres"], reason="only support maps of string -> string")
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=NotImplementedError,
+    reason="No translation rule for map<string, null>",
+)
 def test_map_get_with_null_on_null_type_with_non_null(con):
     value = ibis.literal({"A": None, "B": None})
     expr = value.get("C", 1)
     assert con.execute(expr) == 1
 
 
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.UnsupportedBackendType,
+    reason="UnsupportedBackendType: map",
+)
 def test_map_create_table(con, temp_table):
-    t = con.create_table(
-        temp_table, schema=ibis.schema(dict(xyz="map<string, string>"))
-    )
+    if con.name == "flink":
+        t = con.create_table(
+            temp_table,
+            schema=ibis.schema(dict(xyz="map<string, string>")),
+            tbl_properties={
+                "connector": None,
+            },
+        )
+    else:
+        t = con.create_table(
+            temp_table, schema=ibis.schema(dict(xyz="map<string, string>"))
+        )
     assert t.schema()["xyz"].is_map()
 
 
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=exc.OperationNotDefinedError,
+    reason="No translation rule for <class 'ibis.expr.operations.maps.MapLength'>",
+)
 def test_map_length(con):
     expr = ibis.literal(dict(a="A", b="B")).length()
     assert con.execute(expr) == 2

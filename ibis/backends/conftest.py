@@ -581,6 +581,7 @@ def udf_con(udf_backend):
 def alltypes(backend):
     return backend.functional_alltypes
 
+
 @pytest.fixture(scope="session")
 def functional_alltypes_w_watermark(con):
     import ibis.expr.datatypes as dt
@@ -615,6 +616,7 @@ def functional_alltypes_w_watermark(con):
             time_col="timestamp_col", allowed_delay=ibis.interval(seconds=15)
         ),
     )
+
 
 @pytest.fixture(scope="session")
 def functional_alltypes_w_watermark(con):

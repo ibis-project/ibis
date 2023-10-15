@@ -9,10 +9,8 @@ from operator import methodcaller
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
-import pyflink.util.exceptions as pyflink_exceptions
 import pytest
 import sqlalchemy as sa
-import pyflink.util.exceptions as pyflink_exceptions
 from pytest import param
 
 import ibis
@@ -1255,7 +1253,9 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                 ),
                 pytest.mark.notimpl(
                     ["flink"],
-                    raises=pyflink_exceptions.TableException,
+                    # Note (mehmet): Following cannot be imported for backends other than Flink.
+                    # raises=pyflink.util.exceptions.TableException,
+                    raises=Exception,
                     reason="TableException: DAY_INTERVAL_TYPES precision is not supported: 5",
                 ),
             ],
@@ -1336,8 +1336,10 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                 ),
                 pytest.mark.broken(
                     ["flink"],
-                    raises=pyflink_exceptions.TableException,
-                    reason="DAY_INTERVAL_TYPES precision is not supported: 5",
+                    # Note (mehmet): Following cannot be imported for backends other than Flink.
+                    # raises=pyflink.util.exceptions.TableException,
+                    raises=Exception,
+                    reason="TableException: DAY_INTERVAL_TYPES precision is not supported: 5",
                 ),
             ],
         ),

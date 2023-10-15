@@ -53,13 +53,7 @@ def test_dataframe_interchange_no_execute(con, alltypes, mocker):
     assert not to_pyarrow.called
 
 
-<<<<<<< HEAD
-=======
-@pytest.mark.notimpl(["dask", "flink"])
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
->>>>>>> dbd72a356 (revert(flink): un-undo changes in common test dirs)
+@pytest.mark.notimpl(["flink"])
 def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -76,14 +70,7 @@ def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
     assert to_pyarrow.call_count == 1
 
 
-<<<<<<< HEAD
-@pytest.mark.notimpl(["druid"])
-=======
-@pytest.mark.notimpl(["dask", "druid", "flink"])
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
->>>>>>> dbd72a356 (revert(flink): un-undo changes in common test dirs)
+@pytest.mark.notimpl(["druid", "flink"])
 def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     t = alltypes.select("int_col", "double_col", "string_col")
     pa_df = t.to_pyarrow().__dataframe__()
@@ -112,13 +99,7 @@ def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     assert col2.size() == pa_col2.size()
 
 
-<<<<<<< HEAD
-=======
-@pytest.mark.notimpl(["dask", "flink"])
-@pytest.mark.notimpl(
-    ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
->>>>>>> dbd72a356 (revert(flink): un-undo changes in common test dirs)
+@pytest.mark.notimpl(["flink"])
 def test_dataframe_interchange_select_after_execution_no_reexecute(
     con, alltypes, mocker
 ):
