@@ -181,7 +181,7 @@ class Backend(BaseAlchemyBackend):
 
         view = sa.table(name)
         create_view = CreateView(view, sa.text(query))
-        drop_view = DropView(view, if_exists=True)
+        drop_view = DropView(view, if_exists=False)
 
         t = sa.table(
             "all_tab_columns",
