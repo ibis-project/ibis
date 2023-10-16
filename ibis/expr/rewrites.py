@@ -6,6 +6,7 @@ from collections.abc import Mapping
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.exceptions import UnsupportedOperationError
 from ibis.common.patterns import pattern, replace
 from ibis.util import Namespace
 
@@ -58,3 +59,23 @@ def rewrite_dropna(_):
         return _.table
 
     return ops.Selection(_.table, (), preds, ())
+
+
+@replace(p.Sample)
+def rewrite_sample(_):
+    """Rewrite Sample as `t.filter(random() <= fraction)`.
+
+    Errors as unsupported if a `seed` is specified.
+    """
+
+    if _.seed is not None:
+        raise UnsupportedOperationError(
+            "`Table.sample` with a random seed is unsupported"
+        )
+
+    return ops.Selection(
+        _.table,
+        (),
+        (ops.LessEqual(ops.RandomScalar(), _.fraction),),
+        (),
+    )

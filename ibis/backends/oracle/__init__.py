@@ -39,6 +39,7 @@ from ibis.backends.base.sql.alchemy import (  # noqa: E402
 )
 from ibis.backends.oracle.datatypes import OracleType  # noqa: E402
 from ibis.backends.oracle.registry import operation_registry  # noqa: E402
+from ibis.expr.rewrites import rewrite_sample  # noqa: E402
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -73,6 +74,7 @@ class OracleCompiler(AlchemyCompiler):
     support_values_syntax_in_select = False
     supports_indexed_grouping_keys = False
     null_limit = None
+    rewrites = AlchemyCompiler.rewrites | rewrite_sample
 
 
 class Backend(BaseAlchemyBackend):

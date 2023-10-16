@@ -5,6 +5,7 @@ import ibis.expr.rules as rlz
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.postgres.datatypes import PostgresType
 from ibis.backends.postgres.registry import operation_registry
+from ibis.expr.rewrites import rewrite_sample
 
 
 class PostgresUDFNode(ops.Value):
@@ -35,3 +36,4 @@ def _any_all_no_op(expr):
 
 class PostgreSQLCompiler(AlchemyCompiler):
     translator_class = PostgreSQLExprTranslator
+    rewrites = AlchemyCompiler.rewrites | rewrite_sample

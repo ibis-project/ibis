@@ -16,6 +16,7 @@ from __future__ import annotations
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.sqlite.datatypes import SqliteType
 from ibis.backends.sqlite.registry import operation_registry
+from ibis.expr.rewrites import rewrite_sample
 
 
 class SQLiteExprTranslator(AlchemyExprTranslator):
@@ -32,3 +33,4 @@ class SQLiteCompiler(AlchemyCompiler):
     translator_class = SQLiteExprTranslator
     support_values_syntax_in_select = False
     null_limit = None
+    rewrites = AlchemyCompiler.rewrites | rewrite_sample

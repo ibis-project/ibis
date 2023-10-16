@@ -7,6 +7,7 @@ import sqlalchemy as sa
 import ibis.backends.druid.datatypes as ddt
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.druid.registry import operation_registry
+from ibis.expr.rewrites import rewrite_sample
 
 
 class DruidExprTranslator(AlchemyExprTranslator):
@@ -29,3 +30,4 @@ rewrites = DruidExprTranslator.rewrites
 class DruidCompiler(AlchemyCompiler):
     translator_class = DruidExprTranslator
     null_limit = sa.literal_column("ALL")
+    rewrites = AlchemyCompiler.rewrites | rewrite_sample
