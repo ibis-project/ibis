@@ -1191,6 +1191,80 @@ class Table(Expr, _FixedTextJupyterMixin):
             return res.select(self.columns)
         return res
 
+    def sample(
+        self,
+        fraction: float,
+        *,
+        method: Literal["row", "block"] = "row",
+        seed: int | None = None,
+    ) -> Table:
+        """Sample a fraction of rows from a table.
+
+        Parameters
+        ----------
+        fraction
+            The percentage of rows to include in the sample, expressed as a
+            float between 0 and 1.
+        method
+            The sampling method to use. The default is "row", which includes
+            each row with a probability of ``fraction``. If method is "block",
+            some backends may instead perform sampling a fraction of blocks of
+            rows (where "block" is a backend dependent definition). This is
+            identical to "row" for backends lacking a blockwise sampling
+            implementation. For those coming from SQL, "row" and "block"
+            correspond to "bernoulli" and "system" respectively in a
+            TABLESAMPLE clause.
+        seed
+            An optional random seed to use, for repeatable sampling. Backends
+            that never support specifying a seed for repeatable sampling will
+            error appropriately. Note that some backends (like DuckDB) do
+            support specifying a seed, but may still not have repeatable
+            results in all cases.
+
+        Returns
+        -------
+        Table
+            The input table, with `fraction` of rows selected.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"x": [1, 2, 3, 4], "y": ["a", "b", "c", "d"]})
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ x     ┃ y      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     1 │ a      │
+        │     2 │ b      │
+        │     3 │ c      │
+        │     4 │ d      │
+        └───────┴────────┘
+
+        Sample approximately half the rows, with a seed specified for
+        reproducibility.
+
+        >>> t.sample(0.5, seed=1234)
+        ┏━━━━━━━┳━━━━━━━━┓
+        ┃ x     ┃ y      ┃
+        ┡━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string │
+        ├───────┼────────┤
+        │     2 │ b      │
+        │     3 │ c      │
+        └───────┴────────┘
+        """
+        if fraction == 1:
+            return self
+        elif fraction == 0:
+            return self.limit(0)
+        else:
+            return ops.Sample(
+                self, fraction=fraction, method=method, seed=seed
+            ).to_expr()
+
     def limit(self, n: int | None, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
 

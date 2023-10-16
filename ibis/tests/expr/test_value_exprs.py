@@ -1666,3 +1666,20 @@ def test_quantile_shape():
     (b1,) = expr.op().selections
 
     assert b1.shape.is_columnar()
+
+
+def test_sample():
+    t = ibis.table({"x": "int64", "y": "string"})
+
+    expr = t.sample(1)
+    assert expr.equals(t)
+
+    expr = t.sample(0)
+    assert expr.equals(t.limit(0))
+
+    expr = t.sample(0.5, method="block", seed=1234)
+    assert expr.schema() == t.schema()
+    op = expr.op()
+    assert op.fraction == 0.5
+    assert op.method == "block"
+    assert op.seed == 1234
