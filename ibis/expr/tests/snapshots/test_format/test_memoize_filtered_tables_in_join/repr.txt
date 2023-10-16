@@ -10,18 +10,21 @@ r1 := Aggregation[r0]
   by:
     region: r0.region
     kind:   r0.kind
-
-r2 := Selection[r1]
   predicates:
-    r1.kind == 'foo'
+    r0.kind == 'foo'
 
-r3 := Selection[r1]
+r2 := Aggregation[r0]
+  metrics:
+    total: Sum(r0.amount)
+  by:
+    region: r0.region
+    kind:   r0.kind
   predicates:
-    r1.kind == 'bar'
+    r0.kind == 'bar'
 
-r4 := InnerJoin[r2, r3] r2.region == r3.region
+r3 := InnerJoin[r1, r2] r1.region == r2.region
 
-Selection[r4]
+Selection[r3]
   selections:
-    r2
-    right_total: r3.total
+    r1
+    right_total: r2.total
