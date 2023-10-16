@@ -739,7 +739,6 @@ def test_group_by_kwargs(table):
 def test_compound_aggregate_expr(table):
     # See ibis #24
     compound_expr = (table["a"].sum() / table["a"].mean()).name("foo")
-    assert an.is_reduction(compound_expr.op())
 
     # Validates internally
     table.aggregate([compound_expr])

@@ -431,38 +431,6 @@ def flatten_predicate(node):
     return list(g.traverse(predicate, node))
 
 
-def is_reduction(node):
-    """Check whether an expression contains a reduction or not.
-
-    Aggregations yield typed scalar expressions, since the result of an
-    aggregation is a single value. When creating an table expression
-    containing a GROUP BY equivalent, we need to be able to easily check
-    that we are looking at the result of an aggregation.
-
-    As an example, the expression we are looking at might be something
-    like: foo.sum().log10() + bar.sum().log10()
-
-    We examine the operator DAG in the expression to determine if there
-    are aggregations present.
-
-    A bound aggregation referencing a separate table is a "false
-    aggregation" in a GROUP BY-type expression and should be treated a
-    literal, and must be computed as a separate query and stored in a
-    temporary variable (or joined, for bound aggregations with keys)
-    """
-
-    def predicate(node):
-        if isinstance(node, ops.Reduction):
-            return g.halt, True
-        elif isinstance(node, ops.TableNode):
-            # don't go below any table nodes
-            return g.halt, None
-        else:
-            return g.proceed, None
-
-    return any(g.traverse(predicate, node))
-
-
 def find_predicates(node, flatten=True):
     # TODO(kszucs): consider to remove flatten argument and compose with
     # flatten_predicates instead
