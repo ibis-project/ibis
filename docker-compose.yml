@@ -60,11 +60,10 @@ services:
       - SYS_TIME
     depends_on:
       - kudu-tserver
-    environment:
-      KUDU_MASTER: "true"
-    image: ibisproject/kudu:latest
+    image: apache/kudu:1.17.0
     networks:
       - impala
+    command: kudu master run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master
     healthcheck:
       interval: 5s
       retries: 20
@@ -76,11 +75,10 @@ services:
   kudu-tserver:
     cap_add:
       - SYS_TIME
-    environment:
-      KUDU_MASTER: "false"
-    image: ibisproject/kudu:latest
+    image: apache/kudu:1.17.0
     networks:
       - impala
+    command: kudu tserver run --fs_wal_dir=/var/lib/kudu/master --fs_data_dirs=/var/lib/kudu/master --tserver_master_addrs=kudu
     healthcheck:
       interval: 5s
       retries: 20
