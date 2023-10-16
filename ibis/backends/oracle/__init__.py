@@ -177,6 +177,37 @@ class Backend(BaseAlchemyBackend):
     def current_database(self) -> str:
         return self._scalar_query("SELECT * FROM global_name")
 
+    def list_tables(self, like=None, database=None, schema=None):
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            (deprecated) The database to perform the list against.
+        schema
+            The schema to perform the list against.
+
+            ::: {.callout-warning}
+            ## `schema` refers to database hierarchy
+
+            The `schema` parameter does **not** refer to the column names and
+            types of `table`.
+            :::
+        """
+        if database is not None:
+            util.warn_deprecated(
+                "database",
+                instead="Use the `schema` keyword argument instead",
+                as_of="7.1",
+                removed_in="8.0",
+            )
+        schema = schema or database
+        tables = self.inspector.get_table_names(schema=schema)
+        views = self.inspector.get_view_names(schema=schema)
+        return self._filter_with_like(tables + views, like)
+
     def _metadata(self, query: str) -> Iterable[tuple[str, dt.DataType]]:
         from sqlalchemy_views import CreateView, DropView
 
