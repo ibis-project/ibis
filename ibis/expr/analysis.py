@@ -144,33 +144,6 @@ def substitute(fn, node):
         return node
 
 
-def substitute_parents(node):
-    """Rewrite `node` by replacing table nodes that commute."""
-    assert isinstance(node, ops.Node), type(node)
-
-    def fn(node):
-        if isinstance(node, ops.Selection):
-            # stop substituting child nodes
-            return g.halt
-        elif isinstance(node, ops.TableColumn):
-            # For table column references, in the event that we're on top of a
-            # projection, we need to check whether the ref comes from the base
-            # table schema or is a derived field. If we've projected out of
-            # something other than a physical table, then lifting should not
-            # occur
-            table = node.table
-
-            if isinstance(table, ops.Selection):
-                for val in table.selections:
-                    if isinstance(val, ops.PhysicalTable) and node.name in val.schema:
-                        return ops.TableColumn(val, node.name)
-
-        # keep looking for nodes to substitute
-        return g.proceed
-
-    return substitute(fn, node)
-
-
 def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
     """Return the exprs to use to instantiate the mutation."""
     # The below logic computes the mutation node exprs by splitting the
