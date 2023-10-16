@@ -1541,7 +1541,6 @@ def test_dynamic_table_slice_with_computed_offset(backend):
         "polars",
         "pyspark",
         "snowflake",
-        "trino",
     ]
 )
 def test_sample(backend):
@@ -1571,7 +1570,6 @@ def test_sample(backend):
         "polars",
         "pyspark",
         "snowflake",
-        "trino",
     ]
 )
 def test_sample_memtable(con, backend):
