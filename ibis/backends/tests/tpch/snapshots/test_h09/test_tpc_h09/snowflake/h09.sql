@@ -85,6 +85,8 @@ WITH t0 AS (
     ON t4."o_orderkey" = t0."l_orderkey"
   JOIN t5
     ON t1."s_nationkey" = t5."n_nationkey"
+  WHERE
+    t3."p_name" LIKE '%green%'
 )
 SELECT
   t7."nation",
@@ -96,8 +98,6 @@ FROM (
     t6."o_year" AS "o_year",
     SUM(t6."amount") AS "sum_profit"
   FROM t6
-  WHERE
-    t6."p_name" LIKE '%green%'
   GROUP BY
     1,
     2

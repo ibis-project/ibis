@@ -13,7 +13,7 @@ from ibis import util
 from ibis.common.annotations import ValidationError
 from ibis.common.deferred import _, deferred, var
 from ibis.common.exceptions import IbisTypeError, IntegrityError
-from ibis.common.patterns import pattern
+from ibis.common.patterns import Eq, In, pattern
 from ibis.util import Namespace
 
 if TYPE_CHECKING:
@@ -196,69 +196,39 @@ def apply_filter(op, predicates):
         return ops.Selection(op, [], predicates)
 
 
-def pushdown_selection_filters(op, predicates):
-    default = ops.Selection(op, selections=[], predicates=predicates)
+def pushdown_selection_filters(parent, predicates):
+    default = ops.Selection(parent, selections=[], predicates=predicates)
 
-    # We can't push down filters on Unnest or Window because they
-    # change the shape and potential values of the data.
-    if any(
-        isinstance(
-            sel.arg if isinstance(sel, ops.Alias) else sel,
-            (ops.Unnest, ops.Window),
-        )
-        for sel in op.selections
-    ):
-        return default
+    projected_column_names = set()
+    for value in parent.selections:
+        if isinstance(value, (ops.Relation, ops.TableColumn)):
+            # we are only interested in projected value expressions, not tables
+            # nor column references which are not changing the projection
+            continue
+        elif value.find((ops.Reduction, ops.Analytic), filter=ops.Value):
+            # the parent has analytic projections like window functions so we
+            # can't push down filters to that level
+            return default
+        else:
+            # otherwise collect the names of newly projected value expressions
+            # which are not just plain column references
+            projected_column_names.add(value.name)
 
-    # if any of the filter predicates have the parent expression among
-    # their roots, then pushdown (at least of that predicate) is not
-    # possible
+    conflicting_projection = p.TableColumn(parent, In(projected_column_names))
+    pushdown_pattern = Eq(parent) >> parent.table
 
-    # It's not unusual for the filter to reference the projection
-    # itself. If a predicate can be pushed down, in this case we must
-    # rewrite replacing the table refs with the roots internal to the
-    # projection we are referencing
-    #
-    # Assuming that the fields referenced by the filter predicate originate
-    # below the projection, we need to rewrite the predicate referencing
-    # the parent tables in the join being projected
+    simplified = []
+    for pred in predicates:
+        if pred.match(conflicting_projection, filter=p.Value):
+            return default
+        try:
+            simplified.append(pred.replace(pushdown_pattern))
+        except (IntegrityError, IbisTypeError):
+            # former happens when there is a duplicate column name in the parent
+            # which is a join, the latter happens for semi/anti joins
+            return default
 
-    # Potential fusion opportunity. The predicates may need to be
-    # rewritten in terms of the child table. This prevents the broken
-    # ref issue (described in more detail in #59)
-    try:
-        simplified_predicates = tuple(
-            sub_for(predicate, {op: op.table})
-            if not is_reduction(predicate)
-            else predicate
-            for predicate in predicates
-        )
-    except IntegrityError:
-        return default
-
-    if not shares_all_roots(simplified_predicates, op.table):
-        return default
-
-    # find spuriously simplified predicates
-    for predicate in simplified_predicates:
-        # find columns in the predicate
-        depends_on = predicate.find((ops.TableColumn, ops.Literal))
-        for projection in op.selections:
-            if not isinstance(projection, (ops.TableColumn, ops.Literal)):
-                # if the projection's table columns overlap with columns
-                # used in the predicate then we return immediately
-                #
-                # this means that we were too aggressive during simplification
-                # example: t.mutate(a=_.a + 1).filter(_.a > 1)
-                if projection.find((ops.TableColumn, ops.Literal)) & depends_on:
-                    return default
-
-    return ops.Selection(
-        op.table,
-        selections=op.selections,
-        predicates=op.predicates + simplified_predicates,
-        sort_keys=op.sort_keys,
-    )
+    return parent.copy(predicates=parent.predicates + tuple(simplified))
 
 
 def pushdown_aggregation_filters(op, predicates):
@@ -391,6 +361,14 @@ class Projector:
     def get_result(self):
         roots = find_immediate_parent_tables(self.parent.op())
         first_root = roots[0]
+        parent_op = self.parent.op()
+
+        # reprojection of the same selections
+        if len(self.clean_exprs) == 1:
+            first = self.clean_exprs[0].op()
+            if isinstance(first, ops.Selection):
+                if first.selections == parent_op.selections:
+                    return parent_op
 
         if len(roots) == 1 and isinstance(first_root, ops.Selection):
             fused_op = self.try_fusion(first_root)

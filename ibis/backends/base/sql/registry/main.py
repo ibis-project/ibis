@@ -153,12 +153,11 @@ def exists_subquery(translator, op):
     ctx = translator.context
 
     dummy = ir.literal(1).name("")
-
-    filtered = op.foreign_table.to_expr().filter(
-        [pred.to_expr() for pred in op.predicates]
+    node = ops.Selection(
+        table=op.foreign_table,
+        selections=[dummy],
+        predicates=op.predicates,
     )
-    node = filtered.select(dummy).op()
-
     subquery = ctx.get_compiled_expr(node)
 
     return f"EXISTS (\n{util.indent(subquery, ctx.indent)}\n)"
