@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import itertools
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, Literal, Optional
+from typing import TYPE_CHECKING, Annotated, Any, Literal, Optional
 from typing import Union as UnionType
 
 from public import public
@@ -17,7 +17,7 @@ from ibis.common.annotations import annotated, attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred
 from ibis.common.grounds import Immutable
-from ibis.common.patterns import Coercible, Eq
+from ibis.common.patterns import Between, Coercible, Eq
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Named, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
@@ -574,6 +574,20 @@ class Distinct(Relation):
     """
 
     table: Relation
+
+    @attribute
+    def schema(self):
+        return self.table.schema
+
+
+@public
+class Sample(Relation):
+    """Sample performs random sampling of records in a table."""
+
+    table: Relation
+    fraction: Annotated[float, Between(0, 1)]
+    method: Literal["row", "block"] = "row"
+    seed: UnionType[int, None] = None
 
     @attribute
     def schema(self):

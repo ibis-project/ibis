@@ -291,6 +291,7 @@ def _join(op, left, right, predicates, **kwargs):
 
 
 @fmt.register(ops.Limit)
+@fmt.register(ops.Sample)
 def _limit(op, table, **kwargs):
     params = inline_args(kwargs)
     return f"{op.__class__.__name__}[{table}, {params}]"
