@@ -173,13 +173,6 @@ def substitute_parents(node):
     return substitute(fn, node)
 
 
-def substitute_unbound(node):
-    """Rewrite `node` by replacing table expressions with an equivalent unbound table."""
-    return node.replace(
-        p.DatabaseTable(name=x, schema=y) >> c.UnboundTable(name=x, schema=y)
-    )
-
-
 def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
     """Return the exprs to use to instantiate the mutation."""
     # The below logic computes the mutation node exprs by splitting the
