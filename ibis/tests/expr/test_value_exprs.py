@@ -17,7 +17,6 @@ from pytest import param
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analysis as an
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -489,7 +488,7 @@ def test_arbitrary(table, column, how, condition_fn):
     expr = col.arbitrary(how=how, where=where)
     assert expr.type() == col.type()
     assert isinstance(expr, ir.Scalar)
-    assert an.is_reduction(expr.op())
+    assert isinstance(expr.op(), ops.Arbitrary)
 
 
 @pytest.mark.parametrize(
@@ -505,7 +504,7 @@ def test_arbitrary(table, column, how, condition_fn):
 def test_any_all_notany(table, column, operation):
     expr = operation(table[column])
     assert isinstance(expr, ir.BooleanScalar)
-    assert an.is_reduction(expr.op())
+    assert expr.op().find(ops.Reduction)
 
 
 @pytest.mark.parametrize(
