@@ -532,6 +532,10 @@ class Aggregation(Relation):
         )
 
     @attribute
+    def _projection(self):
+        return Projection(self.table, self.metrics + self.by)
+
+    @attribute
     def schema(self):
         names, types = [], []
         for value in self.by + self.metrics:

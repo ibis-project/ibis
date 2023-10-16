@@ -181,31 +181,21 @@ def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | 
     return [table_expr] + exprs
 
 
-def apply_filter(op, predicates):
-    # This will attempt predicate pushdown in the cases where we can do it
-    # easily and safely, to make both cleaner SQL and fewer referential errors
-    # for users
-    if not predicates:
-        return op
-
-    if isinstance(op, ops.Selection):
-        return pushdown_selection_filters(op, predicates)
-    elif isinstance(op, ops.Aggregation):
-        return pushdown_aggregation_filters(op, predicates)
-    else:
-        return ops.Selection(op, [], predicates)
-
-
 def pushdown_selection_filters(parent, predicates):
+    if not predicates:
+        return parent
+
     default = ops.Selection(parent, selections=[], predicates=predicates)
+    if not isinstance(parent, (ops.Selection, ops.Aggregation)):
+        return default
 
     projected_column_names = set()
-    for value in parent.selections:
+    for value in parent._projection.selections:
         if isinstance(value, (ops.Relation, ops.TableColumn)):
             # we are only interested in projected value expressions, not tables
             # nor column references which are not changing the projection
             continue
-        elif value.find((ops.Reduction, ops.Analytic), filter=ops.Value):
+        elif value.find((ops.WindowFunction, ops.ExistsSubquery), filter=ops.Value):
             # the parent has analytic projections like window functions so we
             # can't push down filters to that level
             return default
@@ -229,32 +219,6 @@ def pushdown_selection_filters(parent, predicates):
             return default
 
     return parent.copy(predicates=parent.predicates + tuple(simplified))
-
-
-def pushdown_aggregation_filters(op, predicates):
-    # Potential fusion opportunity
-    # GH1344: We can't sub in things with correlated subqueries
-    simplified_predicates = tuple(
-        # Originally this line tried substituting op.table in for expr, but
-        # that is too aggressive in the presence of filters that occur
-        # after aggregations.
-        #
-        # See https://github.com/ibis-project/ibis/pull/3341 for details
-        sub_for(predicate, {op.table: op}) if not is_reduction(predicate) else predicate
-        for predicate in predicates
-    )
-
-    if shares_all_roots(simplified_predicates, op.table):
-        return ops.Aggregation(
-            op.table,
-            op.metrics,
-            by=op.by,
-            having=op.having,
-            predicates=op.predicates + simplified_predicates,
-            sort_keys=op.sort_keys,
-        )
-    else:
-        return ops.Selection(op, [], predicates)
 
 
 def windowize_function(expr, default_frame, merge_frames=False):
@@ -464,6 +428,8 @@ def _find_projections(node):
         return g.proceed, node._projection
     elif isinstance(node, ops.SelfReference):
         return g.proceed, node
+    elif isinstance(node, ops.Aggregation):
+        return g.proceed, node._projection
     elif isinstance(node, ops.Join):
         return g.proceed, None
     elif isinstance(node, ops.TableNode):

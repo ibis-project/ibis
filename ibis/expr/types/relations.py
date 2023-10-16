@@ -2281,7 +2281,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         import ibis.expr.analysis as an
 
         resolved_predicates = _resolve_predicates(self, predicates)
-        return an.apply_filter(self.op(), resolved_predicates).to_expr()
+        relation = an.pushdown_selection_filters(self.op(), resolved_predicates)
+        return relation.to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of unique rows in the table.
