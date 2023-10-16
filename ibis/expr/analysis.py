@@ -10,14 +10,13 @@ import ibis.expr.operations as ops
 import ibis.expr.operations.relations as rels
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.annotations import ValidationError
 from ibis.common.deferred import _, deferred, var
 from ibis.common.exceptions import IbisTypeError, IntegrityError
 from ibis.common.patterns import Eq, In, pattern
 from ibis.util import Namespace
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Iterator
 
 p = Namespace(pattern, module=ops)
 c = Namespace(deferred, module=ops)
@@ -30,39 +29,10 @@ y = var("y")
 # compilation later
 
 
-def sub_for(node: ops.Node, substitutions: Mapping[ops.Node, ops.Node]) -> ops.Node:
-    """Substitute operations in `node` with nodes in `substitutions`.
-
-    Parameters
-    ----------
-    node
-        An Ibis operation
-    substitutions
-        A mapping from node to node. If any subnode of `node` is equal to any
-        of the keys in `substitutions`, the value for that key will replace the
-        corresponding node in `node`.
-
-    Returns
-    -------
-    Node
-        An Ibis expression
-    """
-    assert isinstance(node, ops.Node), type(node)
-
-    def fn(node):
-        try:
-            return substitutions[node]
-        except KeyError:
-            if isinstance(node, ops.TableNode):
-                return g.halt
-            return g.proceed
-
-    return substitute(fn, node)
-
-
-def sub_immediate_parents(op: ops.Node, table: ops.TableNode) -> ops.Node:
+def sub_immediate_parents(node: ops.Node, table: ops.TableNode) -> ops.Node:
     """Replace immediate parent tables in `op` with `table`."""
-    return sub_for(op, {base: table for base in find_immediate_parent_tables(op)})
+    parents = find_immediate_parent_tables(node)
+    return node.replace(In(parents) >> table)
 
 
 def find_immediate_parent_tables(input_node, keep_input=True):
@@ -114,34 +84,6 @@ def find_immediate_parent_tables(input_node, keep_input=True):
             return g.proceed, None
 
     return list(toolz.unique(g.traverse(finder, input_node)))
-
-
-def substitute(fn, node):
-    """Substitute expressions with other expressions."""
-
-    assert isinstance(node, ops.Node), type(node)
-
-    result = fn(node)
-    if result is g.halt:
-        return node
-    elif result is not g.proceed:
-        assert isinstance(result, ops.Node), type(result)
-        return result
-
-    new_args = []
-    for arg in node.args:
-        if isinstance(arg, tuple):
-            arg = tuple(
-                substitute(fn, x) if isinstance(arg, ops.Node) else x for x in arg
-            )
-        elif isinstance(arg, ops.Node):
-            arg = substitute(fn, arg)
-        new_args.append(arg)
-
-    try:
-        return node.__class__(*new_args)
-    except (TypeError, ValidationError):
-        return node
 
 
 def get_mutation_exprs(exprs: list[ir.Expr], table: ir.Table) -> list[ir.Expr | None]:
@@ -256,7 +198,8 @@ def simplify_aggregation(agg):
     def _pushdown(nodes):
         subbed = []
         for node in nodes:
-            subbed.append(sub_for(node, {agg.table: agg.table.table}))
+            new_node = node.replace(Eq(agg.table) >> agg.table.table)
+            subbed.append(new_node)
 
         # TODO(kszucs): perhaps this validation could be omitted
         if subbed:
@@ -557,16 +500,6 @@ def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Tab
         return (
             isinstance(node, ops.Value),
             find_first_base_table(node) if isinstance(node, ops.Unnest) else None,
-        )
-
-    return g.traverse(finder, nodes, filter=ops.Node)
-
-
-def find_toplevel_aggs(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
-    def finder(node):
-        return (
-            isinstance(node, ops.Value),
-            node if isinstance(node, ops.Reduction) else None,
         )
 
     return g.traverse(finder, nodes, filter=ops.Node)

@@ -17,7 +17,7 @@ from ibis.common.annotations import annotated, attribute
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Deferred
 from ibis.common.grounds import Immutable
-from ibis.common.patterns import Coercible
+from ibis.common.patterns import Coercible, Eq
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Named, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
@@ -236,7 +236,6 @@ class Join(Relation):
         # TODO(kszucs): predicates should be already a list of operations, need
         # to update the validation rule for the Join classes which is a noop
         # currently
-        import ibis.expr.analysis as an
         import ibis.expr.operations as ops
         import ibis.expr.types as ir
 
@@ -258,10 +257,8 @@ class Join(Relation):
             # and tables on the right are incorrectly scoped
             old = right
             new = right = ops.SelfReference(right)
-            predicates = [
-                an.sub_for(pred, {old: new}) if isinstance(pred, ops.Node) else pred
-                for pred in predicates
-            ]
+            rule = Eq(old) >> new
+            predicates = [pred.replace(rule) for pred in predicates]
 
         predicates = _clean_join_predicates(left, right, predicates)
 
