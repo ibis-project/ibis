@@ -19,6 +19,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends.base import CanCreateSchema, CanListDatabases, Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
@@ -528,8 +529,45 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
         return self.list_schemas(like=like)
 
     def list_tables(
-        self, like: str | None = None, database: str | None = None
+        self,
+        like: str | None = None,
+        database: str | None = None,
+        schema: str | None = None,
     ) -> list[str]:
+        """List the tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            The database (project) to perform the list against.
+        schema
+            The schema (dataset) inside `database` to perform the list against.
+
+            ::: {.callout-warning}
+            ## `schema` refers to database hierarchy
+
+            The `schema` parameter does **not** refer to the column names and
+            types of `table`.
+            :::
+        """
+        if database is not None and schema is None:
+            util.warn_deprecated(
+                "database",
+                instead=(
+                    f"{self.name} cannot list tables only using `database` specifier. "
+                    "Include a `schema` argument."
+                ),
+                as_of="7.1",
+                removed_in="8.0",
+            )
+            database = sg.parse_one(database, into=sg.exp.Table).sql(dialect=self.name)
+        elif database is None and schema is not None:
+            database = sg.parse_one(schema, into=sg.exp.Table).sql(dialect=self.name)
+        else:
+            database = sg.table(schema, db=database).sql(dialect=self.name) or None
+
         project, dataset = self._parse_project_and_dataset(database)
         dataset_ref = bq.DatasetReference(project, dataset)
         result = [table.table_id for table in self.client.list_tables(dataset_ref)]
