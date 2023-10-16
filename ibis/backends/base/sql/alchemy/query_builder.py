@@ -6,6 +6,7 @@ import sqlalchemy as sa
 import toolz
 from sqlalchemy import sql
 
+import ibis.common.exceptions as com
 import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy.translator import (
@@ -84,7 +85,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
         ctx = self.context
 
         orig_op = op
-        if isinstance(op, ops.SelfReference):
+        if isinstance(op, (ops.SelfReference, ops.Sample)):
             op = op.table
 
         alias = ctx.get_ref(orig_op)
@@ -128,27 +129,26 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
                     for name, value in zip(op.schema.names, op.values)
                 )
             )
+        elif ctx.is_extracted(op):
+            if isinstance(orig_op, ops.SelfReference):
+                result = ctx.get_ref(op)
+            else:
+                result = alias
         else:
-            # A subquery
-            if ctx.is_extracted(op):
-                # Was put elsewhere, e.g. WITH block, we just need to grab
-                # its alias
-                alias = ctx.get_ref(orig_op)
-
-                # hack
-                if isinstance(orig_op, ops.SelfReference):
-                    table = ctx.get_ref(op)
-                    self_ref = alias if hasattr(alias, "name") else table.alias(alias)
-                    ctx.set_ref(orig_op, self_ref)
-                    return self_ref
-                return alias
-
-            alias = ctx.get_ref(orig_op)
-            result = ctx.get_compiled_expr(orig_op)
+            result = ctx.get_compiled_expr(op)
 
         result = alias if hasattr(alias, "name") else result.alias(alias)
+
+        if isinstance(orig_op, ops.Sample):
+            result = self._format_sample(orig_op, result)
+
         ctx.set_ref(orig_op, result)
         return result
+
+    def _format_sample(self, op, table):
+        # Should never be hit in practice, as Sample operations should be rewritten
+        # before this point for all backends without TABLESAMPLE support
+        raise com.UnsupportedOperationError("`Table.sample` is not supported")
 
     def _format_in_memory_table(self, op, translator):
         columns = translator._schema_to_sqlalchemy_columns(op.schema)
@@ -168,7 +168,7 @@ class _AlchemyTableSetFormatter(TableSetFormatter):
             ).limit(0)
         elif self.context.compiler.support_values_syntax_in_select:
             rows = list(op.data.to_frame().itertuples(index=False))
-            result = sa.values(*columns, name=op.name).data(rows)
+            result = sa.values(*columns, name=op.name).data(rows).select().subquery()
         else:
             raw_rows = (
                 sa.select(
@@ -219,12 +219,10 @@ class AlchemySelect(Select):
             self.context.set_ref(expr, result)
 
     def _compile_table_set(self):
-        if self.table_set is not None:
-            helper = self.table_set_formatter_class(self, self.table_set)
-            result = helper.get_result()
-            return result
-        else:
+        if self.table_set is None:
             return None
+
+        return self.table_set_formatter_class(self, self.table_set).get_result()
 
     def _add_select(self, table_set):
         if not self.select_set:

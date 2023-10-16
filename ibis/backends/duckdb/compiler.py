@@ -6,6 +6,7 @@ from sqlalchemy.ext.compiler import compiles
 import ibis.backends.base.sql.alchemy.datatypes as sat
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
+from ibis.backends.base.sql.alchemy.query_builder import _AlchemyTableSetFormatter
 from ibis.backends.duckdb.datatypes import DuckDBType
 from ibis.backends.duckdb.registry import operation_registry
 
@@ -60,6 +61,19 @@ def _no_op(expr):
     return expr
 
 
+class DuckDBTableSetFormatter(_AlchemyTableSetFormatter):
+    def _format_sample(self, op, table):
+        if op.method == "row":
+            method = sa.func.bernoulli
+        else:
+            method = sa.func.system
+        return table.tablesample(
+            sampling=method(sa.literal_column(f"{op.fraction * 100} PERCENT")),
+            seed=(None if op.seed is None else sa.literal_column(str(op.seed))),
+        )
+
+
 class DuckDBSQLCompiler(AlchemyCompiler):
     cheap_in_memory_tables = True
     translator_class = DuckDBSQLExprTranslator
+    table_set_formatter_class = DuckDBTableSetFormatter
