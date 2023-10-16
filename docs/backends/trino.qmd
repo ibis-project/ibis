@@ -108,13 +108,47 @@ from trino.auth import OAuth2Authentication
 
 con = ibis.trino.connect(
   user="user",
-  port=8080,
+  host="hostname",
+  port=443,
   database="database",
   schema="default",
   auth=OAuth2Authentication(),
   http_scheme="https"
 )
 ```
+
+### Connecting to Starburst managed Trino instances
+
+Starburst makes use of role-based access controls.  When connecting to a
+Starburst Trino cluster, if you encounter issues listing or connecting to
+tables, ensure that a role is specified using the `roles` keyword.
+
+```python
+import ibis
+
+con = ibis.trino.connect(
+    user="user",
+    host="hostname",
+    port=443,
+    database="sample",
+    schema="demo",
+    roles="defaultrolewithtableaccess",  #<1>
+    http_scheme="https"
+)
+```
+
+1. Role names will be visible in the Starburst Galaxy dashboard.
+
+#### Finding your Starburst `host`
+
+Log into Starburst Galaxy and select `Clusters` from the left-hand-side menu:
+
+![](./images/starburst_clusters.svg)
+
+Select `Connection info` for the cluster you wish to connect to -- the username
+and hostname displayed can be copied directly into the Ibis `connect` call.
+
+![](./images/starburst_connection_info.svg)
 
 ```{python}
 #| echo: false
