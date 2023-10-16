@@ -3,6 +3,7 @@ from __future__ import annotations
 import ibis.expr.operations as ops
 from ibis.backends.base.sql.compiler import Compiler, ExprTranslator, TableSetFormatter
 from ibis.backends.base.sql.registry import binary_infix_ops, operation_registry, unary
+from ibis.expr.rewrites import rewrite_sample
 
 
 class ImpalaTableSetFormatter(TableSetFormatter):
@@ -58,3 +59,4 @@ def _floor_divide(op):
 class ImpalaCompiler(Compiler):
     translator_class = ImpalaExprTranslator
     table_set_formatter_class = ImpalaTableSetFormatter
+    rewrites = Compiler.rewrites | rewrite_sample

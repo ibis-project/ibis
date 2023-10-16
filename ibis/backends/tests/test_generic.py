@@ -1535,7 +1535,6 @@ def test_dynamic_table_slice_with_computed_offset(backend):
         "datafusion",
         "druid",
         "flink",
-        "impala",
         "polars",
         "snowflake",
     ]
@@ -1561,7 +1560,6 @@ def test_sample(backend):
         "datafusion",
         "druid",
         "flink",
-        "impala",
         "polars",
         "snowflake",
     ]

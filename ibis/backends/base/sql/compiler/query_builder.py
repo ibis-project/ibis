@@ -100,8 +100,10 @@ class TableSetFormatter:
         ctx = self.context
 
         orig_op = op
-        if isinstance(op, ops.SelfReference):
+        if isinstance(op, (ops.SelfReference, ops.Sample)):
             op = op.table
+
+        alias = ctx.get_ref(orig_op)
 
         if isinstance(op, ops.InMemoryTable):
             result = self._format_in_memory_table(op)
@@ -117,25 +119,27 @@ class TableSetFormatter:
                 db=getattr(op, "namespace", None),
                 quoted=self.parent.translator_class._quote_identifiers,
             ).sql(dialect=self.parent.translator_class._dialect_name)
+        elif ctx.is_extracted(op):
+            if isinstance(orig_op, ops.SelfReference):
+                result = ctx.get_ref(op)
+            else:
+                result = alias
         else:
-            # A subquery
-            if ctx.is_extracted(op):
-                # Was put elsewhere, e.g. WITH block, we just need to grab its
-                # alias
-                alias = ctx.get_ref(orig_op)
-
-                # HACK: self-references have to be treated more carefully here
-                if isinstance(orig_op, ops.SelfReference):
-                    return f"{ctx.get_ref(op)} {alias}"
-                else:
-                    return alias
-
-            subquery = ctx.get_compiled_expr(orig_op)
+            subquery = ctx.get_compiled_expr(op)
             result = f"(\n{util.indent(subquery, self.indent)}\n)"
 
-        result += f" {ctx.get_ref(orig_op)}"
+        if result != alias:
+            result = f"{result} {alias}"
+
+        if isinstance(orig_op, ops.Sample):
+            result = self._format_sample(orig_op, result)
 
         return result
+
+    def _format_sample(self, op, table):
+        # Should never be hit in practice, as Sample operations should be rewritten
+        # before this point for all backends without TABLESAMPLE support
+        raise com.UnsupportedOperationError("`Table.sample` is not supported")
 
     def get_result(self):
         # Got to unravel the join stack; the nesting order could be
