@@ -1537,7 +1537,6 @@ def test_dynamic_table_slice_with_computed_offset(backend):
         "flink",
         "impala",
         "polars",
-        "pyspark",
         "snowflake",
     ]
 )
@@ -1564,7 +1563,6 @@ def test_sample(backend):
         "flink",
         "impala",
         "polars",
-        "pyspark",
         "snowflake",
     ]
 )
@@ -1588,7 +1586,6 @@ def test_sample_memtable(con, backend):
         "oracle",
         "polars",
         "postgres",
-        "pyspark",
         "snowflake",
         "sqlite",
         "trino",

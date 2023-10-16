@@ -300,6 +300,12 @@ def compile_limit(t, op, **kwargs):
         return df
 
 
+@compiles(ops.Sample)
+def compile_sample(t, op, **kwargs):
+    df = t.translate(op.table, **kwargs)
+    return df.sample(fraction=op.fraction, seed=op.seed)
+
+
 @compiles(ops.And)
 def compile_and(t, op, **kwargs):
     return t.translate(op.left, **kwargs) & t.translate(op.right, **kwargs)
