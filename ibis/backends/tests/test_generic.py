@@ -1527,3 +1527,87 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     result = expr.to_pandas()
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "druid",
+        "duckdb",
+        "flink",
+        "impala",
+        "pandas",
+        "polars",
+        "pyspark",
+        "snowflake",
+        "trino",
+    ]
+)
+def test_sample(backend):
+    t = backend.functional_alltypes.filter(_.int_col >= 2)
+
+    total_rows = t.count().execute()
+    empty = t.limit(1).execute().iloc[:0]
+
+    df = t.sample(0.1, method="row").execute()
+    assert len(df) <= total_rows
+    backend.assert_frame_equal(empty, df.iloc[:0])
+
+    df = t.sample(0.1, method="block").execute()
+    assert len(df) <= total_rows
+    backend.assert_frame_equal(empty, df.iloc[:0])
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "dask",
+        "datafusion",
+        "druid",
+        "duckdb",
+        "flink",
+        "impala",
+        "pandas",
+        "polars",
+        "pyspark",
+        "snowflake",
+        "trino",
+    ]
+)
+def test_sample_memtable(con, backend):
+    df = pd.DataFrame({"x": [1, 2, 3, 4]})
+    res = con.execute(ibis.memtable(df).sample(0.5))
+    assert len(res) <= 4
+    backend.assert_frame_equal(res.iloc[:0], df.iloc[:0])
+
+
+@pytest.mark.notimpl(
+    [
+        "bigquery",
+        "clickhouse",
+        "dask",
+        "datafusion",
+        "druid",
+        "duckdb",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "pandas",
+        "polars",
+        "postgres",
+        "pyspark",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ]
+)
+def test_sample_with_seed(backend):
+    t = backend.functional_alltypes
+    expr = t.sample(0.1, seed=1234)
+    df1 = expr.to_pandas()
+    df2 = expr.to_pandas()
+    backend.assert_frame_equal(df1, df2)

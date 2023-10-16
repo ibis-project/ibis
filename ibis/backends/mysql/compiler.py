@@ -5,6 +5,7 @@ import sqlalchemy as sa
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.mysql.datatypes import MySQLType
 from ibis.backends.mysql.registry import operation_registry
+from ibis.expr.rewrites import rewrite_sample
 
 
 class MySQLExprTranslator(AlchemyExprTranslator):
@@ -24,3 +25,4 @@ class MySQLCompiler(AlchemyCompiler):
     translator_class = MySQLExprTranslator
     support_values_syntax_in_select = False
     null_limit = None
+    rewrites = AlchemyCompiler.rewrites | rewrite_sample

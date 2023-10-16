@@ -29,7 +29,7 @@ from ibis.backends.clickhouse.compiler.relations import translate_rel
 from ibis.backends.clickhouse.compiler.values import translate_val
 from ibis.common.deferred import _
 from ibis.expr.analysis import c, find_first_base_table, p, x, y
-from ibis.expr.rewrites import rewrite_dropna, rewrite_fillna
+from ibis.expr.rewrites import rewrite_dropna, rewrite_fillna, rewrite_sample
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -125,6 +125,7 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
         | nullify_empty_string_results
         | rewrite_fillna
         | rewrite_dropna
+        | rewrite_sample
     )
     # apply translate rules in topological order
     node = op.map(fn)[op]

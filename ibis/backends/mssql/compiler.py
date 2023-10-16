@@ -6,6 +6,7 @@ import ibis.expr.operations as ops
 from ibis.backends.base.sql.alchemy import AlchemyCompiler, AlchemyExprTranslator
 from ibis.backends.mssql.datatypes import MSSQLType
 from ibis.backends.mssql.registry import _timestamp_from_unix, operation_registry
+from ibis.expr.rewrites import rewrite_sample
 
 
 class MsSqlExprTranslator(AlchemyExprTranslator):
@@ -35,3 +36,4 @@ class MsSqlCompiler(AlchemyCompiler):
 
     supports_indexed_grouping_keys = False
     null_limit = None
+    rewrites = AlchemyCompiler.rewrites | rewrite_sample
