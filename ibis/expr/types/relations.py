@@ -2281,11 +2281,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         import ibis.expr.analysis as an
 
         resolved_predicates = _resolve_predicates(self, predicates)
-        predicates = [
-            an._rewrite_filter(pred.op() if isinstance(pred, Expr) else pred)
-            for pred in resolved_predicates
-        ]
-        return an.apply_filter(self.op(), predicates).to_expr()
+        return an.apply_filter(self.op(), resolved_predicates).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of unique rows in the table.
@@ -4158,12 +4154,13 @@ class CachedTable(Table):
         return current_backend._release_cached(self)
 
 
+# TODO(kszucs): used at a single place along with an.apply_filter(), should be
+# consolidated into a single function
 def _resolve_predicates(
     table: Table, predicates
 ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
     import ibis.expr.types as ir
-    from ibis.expr.analysis import p, flatten_predicate
-    from ibis.common.deferred import _, Attr, Call
+    from ibis.expr.analysis import p, flatten_predicate, _
 
     # TODO(kszucs): clean this up, too much flattening and resolving happens here
     predicates = [
@@ -4176,15 +4173,17 @@ def _resolve_predicates(
     ]
     predicates = flatten_predicate(predicates)
 
-    # _.resolve is actually a non-deferred method, so it won't dispatch to
-    # the matched UnresolvedExistsSubquery.resolve() method
-    # TODO(kszucs): remove Deferred.resolve() method
-    replacement = Call(Attr(_, "resolve"), table.op())
-    resolved_predicates = [
-        pred.replace(p.UnresolvedExistsSubquery >> replacement) for pred in predicates
-    ]
-
-    return resolved_predicates
+    rules = (
+        # turn reductions into table array views so that they can be used as
+        # WHERE t1.`a` = (SELECT max(t1.`a`) AS `Max(a)`
+        p.Reduction >> (lambda _: ops.TableArrayView(_.to_expr().as_table()))
+        |
+        # resolve unresolved exists subqueries to IN subqueries
+        p.UnresolvedExistsSubquery >> (lambda _: _.resolve(table.op()))
+    )
+    # do not apply the rules below the following nodes
+    until = p.Value & ~p.WindowFunction & ~p.TableArrayView & ~p.ExistsSubquery
+    return [pred.replace(rules, filter=until) for pred in predicates]
 
 
 def bind_expr(table, expr):

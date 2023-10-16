@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import functools
-import operator
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -635,72 +633,6 @@ def find_subqueries(node: ops.Node, min_dependents=1) -> tuple[ops.Node, ...]:
         for node, dependents in reversed(subquery_dependents.items())
         if len(dependents) >= min_dependents
     )
-
-
-# TODO(kszucs): use substitute instead
-@functools.singledispatch
-def _rewrite_filter(op, **kwargs):
-    raise NotImplementedError(type(op))
-
-
-@_rewrite_filter.register(ops.Reduction)
-def _rewrite_filter_reduction(op, name: str | None = None, **kwargs):
-    """Turn a reduction inside of a filter into an aggregate."""
-    # TODO: what about reductions that reference a join that isn't visible at
-    # this level? Means we probably have the wrong design, but will have to
-    # revisit when it becomes a problem.
-    if name is not None:
-        op = ops.Alias(op, name=name)
-
-    agg = op.to_expr().as_table()
-    return ops.TableArrayView(agg)
-
-
-@_rewrite_filter.register(ops.Any)
-@_rewrite_filter.register(ops.TableColumn)
-@_rewrite_filter.register(ops.Literal)
-@_rewrite_filter.register(ops.ExistsSubquery)
-@_rewrite_filter.register(ops.WindowFunction)
-def _rewrite_filter_subqueries(op, **kwargs):
-    """Don't rewrite any of these operations in filters."""
-    return op
-
-
-@_rewrite_filter.register(ops.Alias)
-def _rewrite_filter_alias(op, name: str | None = None, **kwargs):
-    """Rewrite filters on aliases."""
-    return _rewrite_filter(
-        op.arg,
-        name=name if name is not None else op.name,
-        **kwargs,
-    )
-
-
-@_rewrite_filter.register(ops.Value)
-def _rewrite_filter_value(op, **kwargs):
-    """Recursively apply filter rewriting on operations."""
-
-    visited = [
-        _rewrite_filter(arg, **kwargs) if isinstance(arg, ops.Node) else arg
-        for arg in op.args
-    ]
-    if all(map(operator.is_, visited, op.args)):
-        return op
-
-    return op.__class__(*visited)
-
-
-@_rewrite_filter.register(tuple)
-def _rewrite_filter_value_list(op, **kwargs):
-    visited = [
-        _rewrite_filter(arg, **kwargs) if isinstance(arg, ops.Node) else arg
-        for arg in op.args
-    ]
-
-    if all(map(operator.is_, visited, op.args)):
-        return op
-
-    return op.__class__(*visited)
 
 
 def find_toplevel_unnest_children(nodes: Iterable[ops.Node]) -> Iterator[ops.Table]:
