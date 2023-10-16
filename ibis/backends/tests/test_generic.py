@@ -1532,7 +1532,6 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "dask",
         "datafusion",
         "druid",
         "flink",
@@ -1560,7 +1559,6 @@ def test_sample(backend):
 @pytest.mark.notimpl(
     [
         "bigquery",
-        "dask",
         "datafusion",
         "druid",
         "flink",
@@ -1581,7 +1579,6 @@ def test_sample_memtable(con, backend):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "druid",
         "flink",

@@ -552,3 +552,8 @@ def execute_table_array_view(op, _, **kwargs):
     # Need to compute dataframe in order to squeeze into a scalar
     ddf = execute(op.table)
     return ddf.compute().squeeze()
+
+
+@execute_node.register(ops.Sample, dd.DataFrame, object, object)
+def execute_sample(op, data, fraction, seed, **kwargs):
+    return data.sample(frac=fraction, random_state=seed)
