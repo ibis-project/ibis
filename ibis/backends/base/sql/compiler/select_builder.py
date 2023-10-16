@@ -213,14 +213,12 @@ class SelectBuilder:
         # format these depending on the database. Most likely the
         # GROUP BY 1, 2, ... style
         if toplevel:
-            sub_op = an.substitute_parents(op)
-
-            self.group_by = self._convert_group_by(sub_op.by)
-            self.having = sub_op.having
-            self.select_set = sub_op.by + sub_op.metrics
-            self.table_set = sub_op.table
-            self.filters = sub_op.predicates
-            self.order_by = sub_op.sort_keys
+            self.group_by = self._convert_group_by(op.by)
+            self.having = op.having
+            self.select_set = op.by + op.metrics
+            self.table_set = op.table
+            self.filters = op.predicates
+            self.order_by = op.sort_keys
 
             self._collect(op.table)
 
@@ -256,9 +254,8 @@ class SelectBuilder:
 
     def _collect_Join(self, op, toplevel=False):
         if toplevel:
-            subbed = an.substitute_parents(op)
-            self.table_set = subbed
-            self.select_set = [subbed]
+            self.table_set = op
+            self.select_set = [op]
 
     def _collect_PhysicalTable(self, op, toplevel=False):
         if toplevel:

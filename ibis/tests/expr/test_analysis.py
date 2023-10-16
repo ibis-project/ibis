@@ -11,6 +11,8 @@ from ibis.tests.util import assert_equal
 # Place to collect esoteric expression analysis bugs and tests
 
 
+# TODO(kszucs): not directly using an analysis function anymore, move to a
+# more appropriate test module
 def test_rewrite_join_projection_without_other_ops(con):
     # See #790, predicate pushdown in joins not supported
 
@@ -34,9 +36,7 @@ def test_rewrite_join_projection_without_other_ops(con):
     ex_pred2 = table["bar_id"] == table3["bar_id"]
     ex_expr = table.left_join(table2, [pred1]).inner_join(table3, [ex_pred2])
 
-    rewritten_proj = an.substitute_parents(view.op())
-
-    assert not rewritten_proj.table.equals(ex_expr.op())
+    assert view.op().table != ex_expr.op()
 
 
 def test_multiple_join_deeper_reference():
@@ -147,15 +147,6 @@ def test_filter_self_join():
     # proj exprs unaffected by analysis
     assert_equal(proj_exprs[0], left.region.op())
     assert_equal(proj_exprs[1], metric.op())
-
-
-def test_no_rewrite(con):
-    table = con.table("test1")
-    table4 = table[["c", (table["c"] * 2).name("foo")]]
-    expr = table4["c"] == table4["foo"]
-    result = an.substitute_parents(expr.op()).to_expr()
-    expected = expr
-    assert result.equals(expected)
 
 
 def test_join_table_choice():
