@@ -97,6 +97,25 @@ from _utils import render_do_connect
 render_do_connect("trino")
 ```
 
+### Authenticating with SSO
+
+Ibis supports connecting to SSO-enabled Trino clusters using the
+`OAuth2Authentication` helper from the `trino` library.
+
+```python
+import ibis
+from trino.auth import OAuth2Authentication
+
+con = ibis.trino.connect(
+  user="user",
+  port=8080,
+  database="database",
+  schema="default",
+  auth=OAuth2Authentication(),
+  http_scheme="https"
+)
+```
+
 ```{python}
 #| echo: false
 BACKEND = "Trino"
