@@ -279,7 +279,6 @@ class ExprTranslator:
 rewrites = ExprTranslator.rewrites
 
 
-# TODO(kszucs): use analysis.substitute() instead of a custom rewriter
 @rewrites(ops.Bucket)
 def _bucket(op):
     # TODO(kszucs): avoid the expression roundtrip

@@ -3854,6 +3854,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         import ibis.expr.analysis as an
         import ibis.selectors as s
         from ibis import _
+        from ibis.expr.analysis import p, x
 
         orig_names_from = util.promote_list(names_from)
 
@@ -3895,23 +3896,14 @@ class Table(Expr, _FixedTextJupyterMixin):
             for values_col in values_cols:
                 arg = values_agg(values_col)
 
-                # add in the where clause to filter the appropriate values
-                # in/out
-                #
                 # this allows users to write the aggregate without having to deal with
                 # the filter themselves
-                existing_aggs = an.find_toplevel_aggs(arg.op())
-                subs = {
-                    agg: agg.copy(
-                        where=(
-                            where
-                            if (existing := agg.where) is None
-                            else where & existing
-                        )
-                    )
-                    for agg in existing_aggs
-                }
-                arg = an.sub_for(arg.op(), subs).to_expr()
+                rules = (
+                    # add in the where clause to filter the appropriate values
+                    p.Reduction(where=None) >> _.copy(where=where)
+                    | p.Reduction(where=x) >> _.copy(where=where & x)
+                )
+                arg = arg.op().replace(rules, filter=p.Value).to_expr()
 
                 # build the components of the group by key
                 key_components = (

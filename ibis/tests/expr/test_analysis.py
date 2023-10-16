@@ -4,7 +4,6 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-import ibis.expr.analysis as an
 import ibis.expr.operations as ops
 from ibis.tests.util import assert_equal
 
@@ -147,16 +146,6 @@ def test_filter_self_join():
     # proj exprs unaffected by analysis
     assert_equal(proj_exprs[0], left.region.op())
     assert_equal(proj_exprs[1], metric.op())
-
-
-def test_join_table_choice():
-    # GH807
-    x = ibis.table(ibis.schema([("n", "int64")]), "x")
-    t = x.aggregate(cnt=x.n.count())
-    predicate = t.cnt > 0
-
-    result = an.sub_for(predicate.op(), {t.op(): t.op().table})
-    assert result == predicate.op()
 
 
 def test_is_ancestor_analytic():
