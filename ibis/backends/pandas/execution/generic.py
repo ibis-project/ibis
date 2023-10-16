@@ -1450,3 +1450,8 @@ def execute_table_array_view(op, _, **kwargs):
 @execute_node.register(ops.InMemoryTable)
 def execute_in_memory_table(op, **kwargs):
     return op.data.to_frame()
+
+
+@execute_node.register(ops.Sample, pd.DataFrame, object, object)
+def execute_sample(op, data, fraction, seed, **kwargs):
+    return data.sample(frac=fraction, random_state=seed)
