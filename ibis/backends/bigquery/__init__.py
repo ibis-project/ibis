@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import contextlib
-import warnings
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
 
@@ -378,13 +377,7 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
 
     @property
     def current_database(self) -> str:
-        warnings.warn(
-            "current_database will return the current *data project* in ibis 7.0.0; "
-            "use current_schema for the current BigQuery dataset",
-            category=FutureWarning,
-        )
-        # TODO: return self.data_project in ibis 7.0.0
-        return self.dataset
+        return self.data_project
 
     @property
     def current_schema(self) -> str | None:

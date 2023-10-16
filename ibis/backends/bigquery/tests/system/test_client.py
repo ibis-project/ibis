@@ -35,14 +35,13 @@ def test_list_tables(con):
     assert set(tables) == {"functional_alltypes", "functional_alltypes_parted"}
 
 
-def test_current_database(con, dataset_id):
-    with pytest.warns(FutureWarning, match="data project"):
-        db = con.current_database
-    assert db == dataset_id
-    assert db == con.dataset_id
-    assert con.list_tables(database=db, like="alltypes") == con.list_tables(
-        like="alltypes"
-    )
+def test_current_database(con, project_id):
+    db = con.current_database
+    assert db == project_id
+    assert db == con.project_id
+    assert con.list_tables(
+        database=f"{db}.{con.dataset_id}", like="alltypes"
+    ) == con.list_tables(like="alltypes")
 
 
 def test_database(con):
