@@ -147,6 +147,11 @@ class SelectBuilder:
             assert self.limit is None
             self.limit = _LimitSpec(op.n, op.offset)
 
+    def _collect_Sample(self, op, toplevel=False):
+        if toplevel:
+            self.table_set = op
+            self.select_set = [op]
+
     def _collect_Union(self, op, toplevel=False):
         if toplevel:
             self.table_set = op
