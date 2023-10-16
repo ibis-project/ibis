@@ -34,7 +34,11 @@ class TestConf(BackendTest, RoundAwayFromZero):
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
-        return ibis.duckdb.connect(**kw)
+        # use an extension directory per test worker to prevent simultaneous
+        # downloads
+        extension_directory = tmpdir.getbasetemp().joinpath("duckdb_extensions")
+        extension_directory.mkdir(exist_ok=True)
+        return ibis.duckdb.connect(extension_directory=extension_directory, **kw)
 
     def load_tpch(self) -> None:
         with self.connection.begin() as con:
