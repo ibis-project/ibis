@@ -226,9 +226,5 @@ class UnresolvedExistsSubquery(Value):
     shape = ds.columnar
 
     def resolve(self, table) -> ExistsSubquery:
-        from ibis.expr.operations.relations import TableNode
-
-        assert isinstance(table, TableNode)
-
         (foreign_table,) = (t for t in self.tables if t != table)
-        return ExistsSubquery(foreign_table, self.predicates).to_expr()
+        return ExistsSubquery(foreign_table, self.predicates)

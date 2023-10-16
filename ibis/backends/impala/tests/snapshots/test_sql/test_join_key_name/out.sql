@@ -13,7 +13,7 @@ t1 AS (
   SELECT extract(t0.`odate`, 'year') AS `year`, count(1) AS `CountStar()`
   FROM t0
   WHERE t0.`o_totalprice` > (
-    SELECT avg(t3.`o_totalprice`) AS `mean`
+    SELECT avg(t3.`o_totalprice`) AS `Mean(o_totalprice)`
     FROM t0 t3
     WHERE t3.`region` = t0.`region`
   )
