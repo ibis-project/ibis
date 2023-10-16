@@ -109,7 +109,7 @@ class TestConf(BackendTest, RoundAwayFromZero):
         data_schema = self._tpch_data_schema
         database, schema = query_schema.split(".")
 
-        tables = con.list_tables(database=self._tpch_data_schema)
+        tables = con.list_tables(schema=self._tpch_data_schema)
         con.create_schema(schema, database=database, force=True)
 
         prefixes = {"partsupp": "ps"}
