@@ -93,6 +93,50 @@ def test_vectorized_udf_operations(table, klass, output_type):
         pytest.param(ibis.udf.agg.builtin, id="agg-builtin"),
     ],
 )
+def test_udf_from_annotations(dec, table):
+    @dec
+    def myfunc(x: int, y: str) -> float:
+        ...
+
+    assert myfunc(table.a, table.b).type().is_floating()
+
+    with pytest.raises(ValidationError):
+        # Wrong arg types
+        myfunc(table.b, table.a)
+
+
+@pytest.mark.parametrize(
+    "dec",
+    [
+        pytest.param(ibis.udf.scalar.builtin, id="scalar-builtin"),
+        pytest.param(ibis.udf.scalar.pandas, id="scalar-pandas"),
+        pytest.param(ibis.udf.scalar.pyarrow, id="scalar-pyarrow"),
+        pytest.param(ibis.udf.scalar.python, id="scalar-python"),
+        pytest.param(ibis.udf.agg.builtin, id="agg-builtin"),
+    ],
+)
+def test_udf_from_sig(dec, table):
+    @dec(signature=((int, str), float))
+    def myfunc(x, y):
+        ...
+
+    assert myfunc(table.a, table.b).type().is_floating()
+
+    with pytest.raises(ValidationError):
+        # Wrong arg types
+        myfunc(table.b, table.a)
+
+
+@pytest.mark.parametrize(
+    "dec",
+    [
+        pytest.param(ibis.udf.scalar.builtin, id="scalar-builtin"),
+        pytest.param(ibis.udf.scalar.pandas, id="scalar-pandas"),
+        pytest.param(ibis.udf.scalar.pyarrow, id="scalar-pyarrow"),
+        pytest.param(ibis.udf.scalar.python, id="scalar-python"),
+        pytest.param(ibis.udf.agg.builtin, id="agg-builtin"),
+    ],
+)
 def test_udf_deferred(dec, table):
     @dec
     def myfunc(x: int) -> int:
