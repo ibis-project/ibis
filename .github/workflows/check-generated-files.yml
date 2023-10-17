@@ -42,7 +42,7 @@ jobs:
         run: pip install 'poetry==1.6.1'
 
       - name: check consistency with pyproject.toml
-        run: poetry lock --check
+        run: poetry check --lock
 
       - name: check that the `all` extra matches the current lock file
         run: |
