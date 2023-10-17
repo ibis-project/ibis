@@ -7,5 +7,5 @@ FROM (
   UNION DISTINCT
   SELECT
     t1.*
-  FROM t1 AS t1
+  FROM t1
 ) AS t0
