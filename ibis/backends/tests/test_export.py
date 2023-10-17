@@ -329,7 +329,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 
 @pytest.mark.notyet(
     [
-        "bigquery",
         "impala",
         "mysql",
         "oracle",
@@ -343,7 +342,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
-@pytest.mark.notyet(["dask"], raises=NotImplementedError)
+@pytest.mark.notyet(["bigquery", "dask"], raises=NotImplementedError)
 @pytest.mark.notyet(
     ["druid"],
     raises=pa.lib.ArrowTypeError,
