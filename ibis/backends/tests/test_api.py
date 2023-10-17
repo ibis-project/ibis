@@ -21,7 +21,7 @@ def test_version(backend):
 
 # 1. `current_database` returns '.', but isn't listed in list_databases()
 @pytest.mark.never(
-    ["polars", "dask", "pandas", "druid", "oracle"],
+    ["polars", "dask", "pandas", "druid", "oracle", "bigquery"],
     reason="backend does not support databases",
     raises=AttributeError,
 )
@@ -29,9 +29,6 @@ def test_version(backend):
     ["datafusion"],
     raises=NotImplementedError,
     reason="current_database isn't implemented",
-)
-@pytest.mark.never(
-    ["bigquery"], raises=FutureWarning, reason="list_databases is deprecated"
 )
 def test_database_consistency(backend, con):
     databases = con.list_databases()
