@@ -92,9 +92,8 @@ def test_timestamp_truncate(con, unit, snapshot):
 
 
 @pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
-def test_nullifzero(con, value, expected):
-    with pytest.warns(FutureWarning):
-        result = con.execute(L(value).nullifzero())
+def test_nullif_zero(con, value, expected):
+    result = con.execute(L(value).nullif(0))
     if expected is None:
         assert pd.isnull(result)
     else:

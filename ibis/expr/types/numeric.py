@@ -481,11 +481,6 @@ class NumericValue(Value):
         """
         return ops.Sqrt(self).to_expr()
 
-    @util.deprecated(instead="use nullif(0)", as_of="7.0", removed_in="8.0")
-    def nullifzero(self) -> NumericValue:
-        """DEPRECATED: Use `nullif(0)` instead."""
-        return self.nullif(0)
-
     def acos(self) -> NumericValue:
         """Compute the arc cosine of `self`.
 
