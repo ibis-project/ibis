@@ -197,9 +197,8 @@ def test_typeof(con, value, expected):
 
 
 @pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])
-def test_nullifzero(con, value, expected):
-    with pytest.warns(FutureWarning):
-        assert con.execute(L(value).nullifzero()) == expected
+def test_nullif_zero(con, value, expected):
+    assert con.execute(L(value).nullif(0)) == expected
 
 
 @pytest.mark.parametrize(("value", "expected"), [("foo_bar", 7), ("", 0)])
