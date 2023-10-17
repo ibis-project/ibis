@@ -7,5 +7,5 @@ FROM (
   UNION ALL
   SELECT
     t1.*
-  FROM t1 AS t1
+  FROM t1
 ) AS t0
