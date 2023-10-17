@@ -193,6 +193,7 @@ def fmt(op, **kwargs):
 
 @fmt.register(ops.Relation)
 @fmt.register(ops.DummyTable)
+@fmt.register(ops.WindowingTVF)
 def _relation(op, **kwargs):
     schema = render_schema(op.schema, indent_level=1)
     return f"{op.__class__.__name__}\n{schema}"

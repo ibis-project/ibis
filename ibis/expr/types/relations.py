@@ -30,6 +30,7 @@ if TYPE_CHECKING:
     import ibis.selectors as s
     from ibis.common.typing import SupportsSchema
     from ibis.expr.types.groupby import GroupedTable
+    from ibis.expr.types.tvf import WindowedTable
     from ibis.selectors import IfAnyAll, Selector
 
 _ALIASES = (f"_ibis_view_{n:d}" for n in itertools.count())
@@ -4220,6 +4221,26 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return relocated
 
+    def window_by(self, time_col: ir.Value) -> WindowedTable:
+        """Create a windowing table-valued function (TVF) expression.
+
+        Windowing table-valued functions (TVF) assign rows of a table to windows
+        based on a time attribute column in the table.
+
+        Parameters
+        ----------
+        time_col
+            Column of the table that will be mapped to windows.
+
+        Returns
+        -------
+        WindowedTable
+            WindowedTable expression.
+        """
+        from ibis.expr.types.temporal_windows import WindowedTable
+
+        return WindowedTable(self, time_col)
+
 
 @public
 class CachedTable(Table):
@@ -4241,7 +4262,7 @@ def _resolve_predicates(
     table: Table, predicates
 ) -> tuple[list[ir.BooleanValue], list[tuple[ir.BooleanValue, ir.Table]]]:
     import ibis.expr.types as ir
-    from ibis.expr.analysis import p, flatten_predicate, _
+    from ibis.expr.analysis import _, flatten_predicate, p
 
     # TODO(kszucs): clean this up, too much flattening and resolving happens here
     predicates = [

@@ -127,6 +127,8 @@ class SelectBuilder:
             self._collect_PhysicalTable(op, toplevel=toplevel)
         elif isinstance(op, ops.Join):
             self._collect_Join(op, toplevel=toplevel)
+        elif isinstance(op, ops.WindowingTVF):
+            self._collect_WindowingTVF(op, toplevel=toplevel)
         else:
             raise NotImplementedError(type(op))
 
@@ -230,6 +232,11 @@ class SelectBuilder:
     def _collect_SelfReference(self, op, toplevel=False):
         if toplevel:
             self._collect(op.table, toplevel=toplevel)
+
+    def _collect_WindowingTVF(self, op, toplevel=False):
+        if toplevel:
+            self.table_set = op
+            self.select_set = [op]
 
     # --------------------------------------------------------------------
     # Subquery analysis / extraction
