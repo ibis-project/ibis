@@ -1,0 +1,1 @@
+coalesce(`int_col`, 0)
