@@ -82,12 +82,10 @@ def test_group_concat(functional_alltypes):
     assert op.where is None
 
 
-def test_zeroifnull(functional_alltypes):
-    with pytest.warns(FutureWarning):
-        dresult = functional_alltypes.double_col.zeroifnull()
+def test_zero_ifnull(functional_alltypes):
+    dresult = functional_alltypes.double_col.fillna(0)
 
-    with pytest.warns(FutureWarning):
-        iresult = functional_alltypes.int_col.zeroifnull()
+    iresult = functional_alltypes.int_col.fillna(0)
 
     assert type(dresult.op()) == ops.Coalesce
     assert type(dresult) == ir.FloatingColumn
