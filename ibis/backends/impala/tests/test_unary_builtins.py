@@ -28,10 +28,7 @@ def table(mockcon):
         param(lambda x: x.ln(), id="ln"),
         param(lambda x: x.log2(), id="log2"),
         param(lambda x: x.log10(), id="log10"),
-        param(
-            lambda x: pytest.warns(FutureWarning, lambda y: y.nullifzero(), x),
-            id="nullifzero",
-        ),
+        param(lambda x: x.nullif(0), id="nullif_zero"),
         param(lambda x: x.fillna(0), id="zero_ifnull"),
     ],
 )
