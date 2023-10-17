@@ -486,11 +486,6 @@ class NumericValue(Value):
         """DEPRECATED: Use `nullif(0)` instead."""
         return self.nullif(0)
 
-    @util.deprecated(instead="use fillna(0)", as_of="7.0", removed_in="8.0")
-    def zeroifnull(self) -> NumericValue:
-        """DEPRECATED: Use `fillna(0)` instead."""
-        return self.fillna(0)
-
     def acos(self) -> NumericValue:
         """Compute the arc cosine of `self`.
 

@@ -32,10 +32,7 @@ def table(mockcon):
             lambda x: pytest.warns(FutureWarning, lambda y: y.nullifzero(), x),
             id="nullifzero",
         ),
-        param(
-            lambda x: pytest.warns(FutureWarning, lambda y: y.zeroifnull(), x),
-            id="zeroifnull",
-        ),
+        param(lambda x: x.fillna(0), id="zero_ifnull"),
     ],
 )
 @pytest.mark.parametrize("cname", ["double_col", "int_col"])
