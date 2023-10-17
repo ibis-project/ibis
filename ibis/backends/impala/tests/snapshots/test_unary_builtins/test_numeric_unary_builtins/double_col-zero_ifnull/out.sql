@@ -1,0 +1,1 @@
+coalesce(`double_col`, 0)
