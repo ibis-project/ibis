@@ -794,12 +794,6 @@ class Backend(BaseSQLBackend, CanCreateSchema):
         ]
         return self._filter_with_like(results, like)
 
-    @ibis.util.deprecated(
-        instead="use `list_schemas()`", as_of="6.1.0", removed_in="8.0.0"
-    )
-    def list_databases(self, like=None):
-        return self.list_schemas(like=like)
-
     def list_tables(
         self,
         like: str | None = None,
