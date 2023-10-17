@@ -240,9 +240,8 @@ def test_boolean_aggregation(t, df, reduction):
 
 
 @pytest.mark.parametrize("column", ["float64_with_zeros", "int64_with_zeros"])
-def test_null_if_zero(t, df, column):
-    with pytest.warns(FutureWarning):
-        expr = t[column].nullifzero()
+def test_nullif_zero(t, df, column):
+    expr = t[column].nullif(0)
     result = expr.execute()
     expected = df[column].replace(0, np.nan)
     tm.assert_series_equal(result, expected)
