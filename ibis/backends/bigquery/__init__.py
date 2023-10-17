@@ -19,7 +19,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends.base import CanCreateSchema, CanListDatabases, Database
+from ibis.backends.base import CanCreateSchema, Database
 from ibis.backends.base.sql import BaseSQLBackend
 from ibis.backends.bigquery.client import (
     BigQueryCursor,
@@ -86,7 +86,7 @@ def _anonymous_unnest_to_explode(node: sg.exp.Expression):
     return node
 
 
-class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
+class Backend(BaseSQLBackend, CanCreateSchema):
     name = "bigquery"
     compiler = BigQueryCompiler
     supports_in_memory_tables = False
@@ -514,12 +514,6 @@ class Backend(BaseSQLBackend, CanCreateSchema, CanListDatabases):
             )
         ]
         return self._filter_with_like(results, like)
-
-    @ibis.util.deprecated(
-        instead="use `list_schemas()`", as_of="6.1.0", removed_in="8.0.0"
-    )
-    def list_databases(self, like=None):
-        return self.list_schemas(like=like)
 
     def list_tables(
         self,
