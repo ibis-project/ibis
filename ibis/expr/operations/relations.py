@@ -586,7 +586,7 @@ class Sample(Relation):
 
     table: Relation
     fraction: Annotated[float, Between(0, 1)]
-    method: Literal["row", "block"] = "row"
+    method: Literal["row", "block"]
     seed: UnionType[int, None] = None
 
     @attribute

@@ -1200,6 +1200,20 @@ class Table(Expr, _FixedTextJupyterMixin):
     ) -> Table:
         """Sample a fraction of rows from a table.
 
+        ::: {.callout-note}
+        ## Results may be non-repeatable
+
+        Sampling is by definition a random operation. Some backends support
+        specifying a `seed` for repeatable results, but not all backends
+        support that option. And some backends (duckdb, for example) do support
+        specifying a seed but may still not have repeatable results in all
+        cases.
+
+        In all cases, results are backend-specific. An execution against one
+        backend is unlikely to sample the same rows when executed against a
+        different backend, even with the same `seed` set.
+        :::
+
         Parameters
         ----------
         fraction
