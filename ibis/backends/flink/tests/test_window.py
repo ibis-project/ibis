@@ -4,20 +4,19 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.backends.flink.compiler.core import translate
 from ibis.common.exceptions import UnsupportedOperationError
 
 
-def test_window_requires_order_by(simple_table):
+def test_window_requires_order_by(con, simple_table):
     expr = simple_table.mutate(simple_table.c - simple_table.c.mean())
     with pytest.raises(
         UnsupportedOperationError,
         match="Flink engine does not support generic window clause with no order by",
     ):
-        translate(expr.as_table().op())
+        con.compile(expr)
 
 
-def test_window_does_not_support_multiple_order_by(simple_table):
+def test_window_does_not_support_multiple_order_by(con, simple_table):
     expr = simple_table.f.sum().over(
         rows=(-1, 1),
         group_by=[simple_table.g, simple_table.a],
@@ -27,10 +26,10 @@ def test_window_does_not_support_multiple_order_by(simple_table):
         UnsupportedOperationError,
         match="Windows in Flink can only be ordered by a single time column",
     ):
-        translate(expr.as_table().op())
+        con.compile(expr)
 
 
-def test_window_does_not_support_desc_order(simple_table):
+def test_window_does_not_support_desc_order(con, simple_table):
     expr = simple_table.f.sum().over(
         rows=(-1, 1),
         group_by=[simple_table.g, simple_table.a],
@@ -40,7 +39,7 @@ def test_window_does_not_support_desc_order(simple_table):
         UnsupportedOperationError,
         match="Flink only supports windows ordered in ASCENDING mode",
     ):
-        translate(expr.as_table().op())
+        con.compile(expr)
 
 
 @pytest.mark.parametrize(
@@ -68,21 +67,21 @@ def test_window_does_not_support_desc_order(simple_table):
         ),
     ],
 )
-def test_window_invalid_start_end(simple_table, window, err):
+def test_window_invalid_start_end(con, simple_table, window, err):
     expr = simple_table.f.sum().over(**window, order_by=simple_table.f)
     with pytest.raises(UnsupportedOperationError, match=err):
-        translate(expr.as_table().op())
+        con.compile(expr)
 
 
-def test_range_window(snapshot, simple_table):
+def test_range_window(con, snapshot, simple_table):
     expr = simple_table.f.sum().over(
         range=(-ibis.interval(minutes=500), 0), order_by=simple_table.f
     )
-    result = translate(expr.as_table().op())
+    result = con.compile(expr)
     snapshot.assert_match(result, "out.sql")
 
 
-def test_rows_window(snapshot, simple_table):
+def test_rows_window(con, snapshot, simple_table):
     expr = simple_table.f.sum().over(rows=(-1000, 0), order_by=simple_table.f)
-    result = translate(expr.as_table().op())
+    result = con.compile(expr)
     snapshot.assert_match(result, "out.sql")

@@ -8,7 +8,6 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.backends.flink.compiler.core import translate
 
 
 @pytest.mark.parametrize(
@@ -20,9 +19,9 @@ from ibis.backends.flink.compiler.core import translate
         param(False, "FALSE", id="false"),
     ],
 )
-def test_simple_literals(value, expected):
+def test_simple_literals(con, value, expected):
     expr = ibis.literal(value)
-    result = translate(expr.op())
+    result = con.compile(expr)
     assert result == expected
 
 
@@ -34,9 +33,9 @@ def test_simple_literals(value, expected):
         param('An "escape"', """'An "escape"'""", id="nested_token"),
     ],
 )
-def test_string_literals(value, expected):
+def test_string_literals(con, value, expected):
     expr = ibis.literal(value)
-    result = translate(expr.op())
+    result = con.compile(expr)
     assert result == expected
 
 
@@ -54,9 +53,9 @@ def test_string_literals(value, expected):
         param(ibis.interval(seconds=5), "INTERVAL '5' SECOND", id="5seconds"),
     ],
 )
-def test_translate_interval_literal(value, expected):
+def test_translate_interval_literal(con, value, expected):
     expr = ibis.literal(value)
-    result = translate(expr.op())
+    result = con.compile(expr)
     assert result == expected
 
 
@@ -75,7 +74,7 @@ def test_translate_interval_literal(value, expected):
         param("04:55:59", dt.time, id="string_time"),
     ],
 )
-def test_literal_timestamp_or_time(snapshot, case, dtype):
+def test_literal_timestamp_or_time(con, snapshot, case, dtype):
     expr = ibis.literal(case, type=dtype)
-    result = translate(expr.op())
+    result = con.compile(expr)
     snapshot.assert_match(result, "out.sql")

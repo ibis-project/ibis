@@ -6,12 +6,14 @@ import functools
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
 from ibis.backends.base.sql.compiler import (
     Compiler,
     Select,
     SelectBuilder,
     TableSetFormatter,
 )
+from ibis.backends.base.sql.registry import quote_identifier
 from ibis.backends.flink.translator import FlinkExprTranslator
 
 
@@ -28,8 +30,22 @@ class FlinkTableSetFormatter(TableSetFormatter):
         rows = ", ".join(f"({raw_row})" for raw_row in raw_rows)
         return f"(VALUES {rows})"
 
+    def _format_window_tvf(self, op) -> str:
+        if isinstance(op, ops.TumbleWindowingTVF):
+            function_type = "TUMBLE"
+        elif isinstance(op, ops.HopWindowingTVF):
+            function_type = "HOP"
+        elif isinstance(op, ops.CumulateWindowingTVF):
+            function_type = "CUMULATE"
+        return f"TABLE({function_type}({format_windowing_tvf_params(op, self)}))"
+
     def _format_table(self, op) -> str:
-        result = super()._format_table(op)
+        ctx = self.context
+        if isinstance(op, ops.WindowingTVF):
+            formatted_table = self._format_window_tvf(op)
+            return f"{formatted_table} {ctx.get_ref(op)}"
+        else:
+            result = super()._format_table(op)
 
         ref_op = op
         if isinstance(op, ops.SelfReference):
@@ -77,25 +93,72 @@ class FlinkCompiler(Compiler):
 
     cheap_in_memory_tables = True
 
+    @classmethod
+    def to_sql(cls, node, context=None, params=None):
+        if isinstance(node, ir.Expr):
+            node = node.op()
 
-def translate(op: ops.TableNode) -> str:
-    return translate_op(op)
+        if isinstance(node, ops.Literal):
+            from ibis.backends.flink.utils import translate_literal
+
+            return translate_literal(node)
+
+        return super().to_sql(node, context, params)
 
 
 @functools.singledispatch
-def translate_op(op: ops.TableNode) -> str:
-    raise com.OperationNotDefinedError(f"No translation rule for {type(op)}")
+def format_windowing_tvf_params(
+    op: ops.WindowingTVF, formatter: TableSetFormatter
+) -> str:
+    raise com.OperationNotDefinedError(f"No formatting rule for {type(op)}")
 
 
-@translate_op.register(ops.Literal)
-def _literal(op: ops.Literal) -> str:
-    from ibis.backends.flink.utils import translate_literal
+@format_windowing_tvf_params.register(ops.TumbleWindowingTVF)
+def _tumble_window_params(
+    op: ops.TumbleWindowingTVF, formatter: TableSetFormatter
+) -> str:
+    return ", ".join(
+        filter(
+            None,
+            [
+                f"TABLE {quote_identifier(op.table.name)}",
+                f"DESCRIPTOR({formatter._translate(op.time_col)})",
+                formatter._translate(op.window_size),
+                formatter._translate(op.offset) if op.offset else None,
+            ],
+        )
+    )
 
-    return translate_literal(op)
+
+@format_windowing_tvf_params.register(ops.HopWindowingTVF)
+def _hop_window_params(op: ops.HopWindowingTVF, formatter: TableSetFormatter) -> str:
+    return ", ".join(
+        filter(
+            None,
+            [
+                f"TABLE {quote_identifier(op.table.name)}",
+                f"DESCRIPTOR({formatter._translate(op.time_col)})",
+                formatter._translate(op.window_slide),
+                formatter._translate(op.window_size),
+                formatter._translate(op.offset) if op.offset else None,
+            ],
+        )
+    )
 
 
-@translate_op.register(ops.Selection)
-@translate_op.register(ops.Aggregation)
-@translate_op.register(ops.Limit)
-def _(op: ops.Selection | ops.Aggregation | ops.Limit) -> str:
-    return FlinkCompiler.to_sql(op)  # to_sql uses to_ast, which builds a select tree
+@format_windowing_tvf_params.register(ops.CumulateWindowingTVF)
+def _cumulate_window_params(
+    op: ops.CumulateWindowingTVF, formatter: TableSetFormatter
+) -> str:
+    return ", ".join(
+        filter(
+            None,
+            [
+                f"TABLE {quote_identifier(op.table.name)}",
+                f"DESCRIPTOR({formatter._translate(op.time_col)})",
+                formatter._translate(op.window_step),
+                formatter._translate(op.window_size),
+                formatter._translate(op.offset) if op.offset else None,
+            ],
+        )
+    )
