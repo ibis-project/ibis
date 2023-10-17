@@ -101,9 +101,8 @@ def test_div_floordiv(con, expr, expected):
 
 
 @pytest.mark.parametrize(("lit", "expected"), [(L(0), None), (L(5.5), 5.5)])
-def test_nullifzero(con, lit, expected):
-    with pytest.warns(FutureWarning):
-        expr = lit.nullifzero()
+def test_nullif_zero(con, lit, expected):
+    expr = lit.nullif(0)
     assert con.execute(expr) == expected
 
 
