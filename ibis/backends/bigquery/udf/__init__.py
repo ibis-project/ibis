@@ -20,24 +20,10 @@ __all__ = ("udf",)
 _udf_name_cache: dict[str, Iterable[int]] = collections.defaultdict(itertools.count)
 
 
-def _create_udf_node(name, fields):
-    """Create a new UDF node type.
-
-    Parameters
-    ----------
-    name : str
-        Then name of the UDF node
-    fields : OrderedDict
-        Mapping of class member name to definition
-
-    Returns
-    -------
-    result : type
-        A new BigQueryUDFNode subclass
-    """
+def _make_udf_name(name):
     definition = next(_udf_name_cache[name])
     external_name = f"{name}_{definition:d}"
-    return type(external_name, (BigQueryUDFNode,), fields)
+    return external_name
 
 
 class _BigQueryUDF:
@@ -274,24 +260,6 @@ return {f.__name__}({args});\
         if libraries is None:
             libraries = []
 
-        udf_node_fields = {
-            name: rlz.ValueOf(None if type_ == "ANY TYPE" else type_)
-            for name, type_ in params.items()
-        }
-
-        udf_node_fields["dtype"] = output_type
-        udf_node_fields["shape"] = rlz.shape_like("args")
-        udf_node_fields["__slots__"] = ("sql",)
-
-        udf_node = _create_udf_node(name, udf_node_fields)
-
-        from ibis.backends.bigquery.compiler import compiles
-
-        @compiles(udf_node)
-        def compiles_udf_node(t, op):
-            args = ", ".join(map(t.translate, op.args))
-            return f"{udf_node.__name__}({args})"
-
         bigquery_signature = ", ".join(
             f"{name} {BigQueryType.from_ibis(dt.dtype(type_))}"
             for name, type_ in params.items()
@@ -305,16 +273,35 @@ return {f.__name__}({args});\
             False: "NOT DETERMINISTIC\n",
             None: "",
         }.get(determinism)
+
+        name = _make_udf_name(name)
         sql_code = f'''\
-CREATE TEMPORARY FUNCTION {udf_node.__name__}({bigquery_signature})
+CREATE TEMPORARY FUNCTION {name}({bigquery_signature})
 RETURNS {return_type}
 {determinism_formatted}LANGUAGE js AS """
 {body}
 """{libraries_opts};'''
 
+        udf_node_fields = {
+            name: rlz.ValueOf(None if type_ == "ANY TYPE" else type_)
+            for name, type_ in params.items()
+        }
+
+        udf_node_fields["dtype"] = output_type
+        udf_node_fields["shape"] = rlz.shape_like("args")
+        udf_node_fields["sql"] = sql_code
+
+        udf_node = type(name, (BigQueryUDFNode,), udf_node_fields)
+
+        from ibis.backends.bigquery.compiler import compiles
+
+        @compiles(udf_node)
+        def compiles_udf_node(t, op):
+            args = ", ".join(map(t.translate, op.args))
+            return f"{udf_node.__name__}({args})"
+
         def wrapped(*args, **kwargs):
             node = udf_node(*args, **kwargs)
-            object.__setattr__(node, "sql", sql_code)
             return node.to_expr()
 
         wrapped.__signature__ = inspect.Signature(
@@ -376,19 +363,6 @@ RETURNS {return_type}
         }
         return_type = BigQueryType.from_ibis(dt.dtype(output_type))
 
-        udf_node_fields["dtype"] = output_type
-        udf_node_fields["shape"] = rlz.shape_like("args")
-        udf_node_fields["__slots__"] = ("sql",)
-
-        udf_node = _create_udf_node(name, udf_node_fields)
-
-        from ibis.backends.bigquery.compiler import compiles
-
-        @compiles(udf_node)
-        def compiles_udf_node(t, op):
-            args_formatted = ", ".join(map(t.translate, op.args))
-            return f"{udf_node.__name__}({args_formatted})"
-
         bigquery_signature = ", ".join(
             "{name} {type}".format(
                 name=name,
@@ -398,14 +372,27 @@ RETURNS {return_type}
             )
             for name, type_ in params.items()
         )
+        name = _make_udf_name(name)
         sql_code = f"""\
-CREATE TEMPORARY FUNCTION {udf_node.__name__}({bigquery_signature})
+CREATE TEMPORARY FUNCTION {name}({bigquery_signature})
 RETURNS {return_type}
 AS ({sql_expression});"""
 
+        udf_node_fields["dtype"] = output_type
+        udf_node_fields["shape"] = rlz.shape_like("args")
+        udf_node_fields["sql"] = sql_code
+
+        udf_node = type(name, (BigQueryUDFNode,), udf_node_fields)
+
+        from ibis.backends.bigquery.compiler import compiles
+
+        @compiles(udf_node)
+        def compiles_udf_node(t, op):
+            args = ", ".join(map(t.translate, op.args))
+            return f"{udf_node.__name__}({args})"
+
         def wrapper(*args, **kwargs):
             node = udf_node(*args, **kwargs)
-            object.__setattr__(node, "sql", sql_code)
             return node.to_expr()
 
         return wrapper
