@@ -27,7 +27,7 @@ FROM (
     AVG(t1.l_extendedprice) AS avg_price,
     AVG(t1.l_discount) AS avg_disc,
     COUNT(*) AS count_order
-  FROM "hive".ibis_sf1.lineitem AS t1
+  FROM hive.ibis_sf1.lineitem AS t1
   WHERE
     t1.l_shipdate <= FROM_ISO8601_DATE('1998-09-02')
   GROUP BY

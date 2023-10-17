@@ -2,7 +2,7 @@ WITH t0 AS (
   SELECT
     t2.l_orderkey AS l_orderkey,
     SUM(t2.l_quantity) AS qty_sum
-  FROM "hive".ibis_sf1.lineitem AS t2
+  FROM hive.ibis_sf1.lineitem AS t2
   GROUP BY
     1
 )
@@ -21,10 +21,10 @@ FROM (
     t3.o_orderdate AS o_orderdate,
     t3.o_totalprice AS o_totalprice,
     SUM(t4.l_quantity) AS sum_qty
-  FROM "hive".ibis_sf1.customer AS t2
-  JOIN "hive".ibis_sf1.orders AS t3
+  FROM hive.ibis_sf1.customer AS t2
+  JOIN hive.ibis_sf1.orders AS t3
     ON t2.c_custkey = t3.o_custkey
-  JOIN "hive".ibis_sf1.lineitem AS t4
+  JOIN hive.ibis_sf1.lineitem AS t4
     ON t3.o_orderkey = t4.l_orderkey
   WHERE
     t3.o_orderkey IN (

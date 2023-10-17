@@ -8,20 +8,20 @@ WITH t0 AS (
     t10.r_name AS r_name,
     t7.o_orderdate AS o_orderdate,
     t4.p_type AS p_type
-  FROM "hive".ibis_sf1.part AS t4
-  JOIN "hive".ibis_sf1.lineitem AS t5
+  FROM hive.ibis_sf1.part AS t4
+  JOIN hive.ibis_sf1.lineitem AS t5
     ON t4.p_partkey = t5.l_partkey
-  JOIN "hive".ibis_sf1.supplier AS t6
+  JOIN hive.ibis_sf1.supplier AS t6
     ON t6.s_suppkey = t5.l_suppkey
-  JOIN "hive".ibis_sf1.orders AS t7
+  JOIN hive.ibis_sf1.orders AS t7
     ON t5.l_orderkey = t7.o_orderkey
-  JOIN "hive".ibis_sf1.customer AS t8
+  JOIN hive.ibis_sf1.customer AS t8
     ON t7.o_custkey = t8.c_custkey
-  JOIN "hive".ibis_sf1.nation AS t9
+  JOIN hive.ibis_sf1.nation AS t9
     ON t8.c_nationkey = t9.n_nationkey
-  JOIN "hive".ibis_sf1.region AS t10
+  JOIN hive.ibis_sf1.region AS t10
     ON t9.n_regionkey = t10.r_regionkey
-  JOIN "hive".ibis_sf1.nation AS t11
+  JOIN hive.ibis_sf1.nation AS t11
     ON t6.s_nationkey = t11.n_nationkey
 ), t1 AS (
   SELECT

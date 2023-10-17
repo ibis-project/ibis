@@ -28,14 +28,14 @@ WITH t0 AS (
     t6.r_regionkey AS r_regionkey,
     t6.r_name AS r_name,
     t6.r_comment AS r_comment
-  FROM "hive".ibis_sf1.part AS t2
-  JOIN "hive".ibis_sf1.partsupp AS t3
+  FROM hive.ibis_sf1.part AS t2
+  JOIN hive.ibis_sf1.partsupp AS t3
     ON t2.p_partkey = t3.ps_partkey
-  JOIN "hive".ibis_sf1.supplier AS t4
+  JOIN hive.ibis_sf1.supplier AS t4
     ON t4.s_suppkey = t3.ps_suppkey
-  JOIN "hive".ibis_sf1.nation AS t5
+  JOIN hive.ibis_sf1.nation AS t5
     ON t4.s_nationkey = t5.n_nationkey
-  JOIN "hive".ibis_sf1.region AS t6
+  JOIN hive.ibis_sf1.region AS t6
     ON t5.n_regionkey = t6.r_regionkey
   WHERE
     t2.p_size = 15
@@ -44,12 +44,12 @@ WITH t0 AS (
     AND t3.ps_supplycost = (
       SELECT
         MIN(t3.ps_supplycost) AS "Min(ps_supplycost)"
-      FROM "hive".ibis_sf1.partsupp AS t3
-      JOIN "hive".ibis_sf1.supplier AS t4
+      FROM hive.ibis_sf1.partsupp AS t3
+      JOIN hive.ibis_sf1.supplier AS t4
         ON t4.s_suppkey = t3.ps_suppkey
-      JOIN "hive".ibis_sf1.nation AS t5
+      JOIN hive.ibis_sf1.nation AS t5
         ON t4.s_nationkey = t5.n_nationkey
-      JOIN "hive".ibis_sf1.region AS t6
+      JOIN hive.ibis_sf1.region AS t6
         ON t5.n_regionkey = t6.r_regionkey
       WHERE
         t6.r_name = 'EUROPE' AND t2.p_partkey = t3.ps_partkey

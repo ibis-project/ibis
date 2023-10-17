@@ -145,3 +145,19 @@ def test_create_table_timestamp():
     finally:
         con.drop_table(table)
         assert table not in con.list_tables()
+
+
+def test_table_access_from_connection_without_catalog_or_schema():
+    con = ibis.trino.connect()
+    # can't use the `system` catalog to test here, because the trino sqlalchemy
+    # dialect defaults to `system` if no catalog is passed, so it wouldn't be a
+    # useful test
+    assert con.current_database != "tpch"
+    assert con.current_schema is None
+
+    t = con.table("region", schema="tpch.sf1")
+
+    assert con.current_database != "tpch"
+    assert con.current_schema is None
+
+    assert t.count().execute()

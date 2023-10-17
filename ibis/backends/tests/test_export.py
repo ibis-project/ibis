@@ -335,14 +335,15 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "postgres",
         "snowflake",
         "sqlite",
+        "bigquery",
+        "dask",
         "trino",
     ],
-    raises=AttributeError,
+    raises=NotImplementedError,
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
-@pytest.mark.notyet(["bigquery", "dask"], raises=NotImplementedError)
 @pytest.mark.notyet(
     ["druid"],
     raises=pa.lib.ArrowTypeError,

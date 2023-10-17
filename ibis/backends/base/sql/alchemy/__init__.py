@@ -9,6 +9,7 @@ from operator import methodcaller
 from typing import TYPE_CHECKING, Any
 
 import sqlalchemy as sa
+import sqlglot as sg
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import quoted_name
 from sqlalchemy.sql.expression import ClauseElement, Executable
@@ -38,6 +39,7 @@ from ibis.backends.base.sql.alchemy.translator import (
     AlchemyContext,
     AlchemyExprTranslator,
 )
+from ibis.backends.base.sqlglot import STAR
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
@@ -902,28 +904,6 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
     currently active one.
     """
 
-    @property
-    @abc.abstractmethod
-    def use_stmt_prefix(self) -> str:
-        """The prefix to use for switching schemas.
-
-        Common examples are `USE` and `USE SCHEMA`.
-        """
-
-    @contextlib.contextmanager
-    def _use_schema(self, ident: str, current_db: str, current_schema: str) -> None:
-        use_prefix = self.use_stmt_prefix
-
-        try:
-            with self.begin() as c:
-                c.exec_driver_sql(f"{use_prefix} {ident}")
-            yield
-        finally:
-            with self.begin() as c:
-                c.exec_driver_sql(
-                    f"{use_prefix} {self._quote(current_db)}.{self._quote(current_schema)}"
-                )
-
     def _get_sqla_table(
         self,
         name: str,
@@ -937,27 +917,51 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
             schema = current_schema
         *db, schema = schema.split(".")
         db = "".join(db) or database or current_db
-        ident = ".".join(map(self._quote, filter(None, (db, schema))))
 
-        pairs = self._metadata(f"SELECT * FROM {ident}.{self._quote(name)} LIMIT 0")
+        table = sg.table(
+            name,
+            db=schema,
+            catalog=db,
+            quoted=self.compiler.translator_class._quote_table_names,
+        )
+        metadata_query = sg.select(STAR).from_(table).limit(0).sql(dialect=self.name)
+        pairs = self._metadata(metadata_query)
         ibis_schema = ibis.schema(pairs)
 
-        with self._use_schema(ident, current_db, current_schema):
-            result = self._table_from_schema(name, schema=ibis_schema)
-        result.schema = self._get_schema_for_table(qualname=ident, schema=schema)
+        columns = self._columns_from_schema(name, ibis_schema)
+        result = sa.Table(
+            name,
+            sa.MetaData(),
+            *columns,
+            quote=self.compiler.translator_class._quote_table_names,
+        )
+        result.fullname = table.sql(dialect=self.name)
         return result
-
-    @abc.abstractmethod
-    def _get_schema_for_table(self, *, qualname: str, schema: str) -> str:
-        """Choose whether to prefix a table with its fully qualified path or schema."""
 
     def drop_table(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        name = self._quote(name)
-        # TODO: handle database quoting
-        if database is not None:
-            name = f"{database}.{name}"
-        drop_stmt = "DROP TABLE" + (" IF EXISTS" * force) + f" {name}"
+        table = sg.table(name, db=database)
+        drop_table = sg.exp.Drop(kind="TABLE", exists=force, this=table)
+        drop_table_sql = drop_table.sql(dialect=self.name)
         with self.begin() as con:
-            con.exec_driver_sql(drop_stmt)
+            con.exec_driver_sql(drop_table_sql)
+
+
+@compiles(sa.Table, "trino")
+def compile_trino_table(element, compiler, **kw):
+    return element.fullname
+
+
+@compiles(sa.Table, "snowflake")
+def compile_snowflake_table(element, compiler, **kw):
+    dialect = compiler.dialect.name
+    return (
+        sg.parse_one(element.fullname, into=sg.exp.Table, read=dialect)
+        .transform(
+            lambda node: node.__class__(this=node.this, quoted=True)
+            if isinstance(node, sg.exp.Identifier)
+            else node
+        )
+        .sql(dialect)
+    )

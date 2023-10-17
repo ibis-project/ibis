@@ -11,8 +11,8 @@ WITH t0 AS (
     t3.n_name AS n_name,
     t3.n_regionkey AS n_regionkey,
     t3.n_comment AS n_comment
-  FROM "hive".ibis_sf1.supplier AS t2
-  JOIN "hive".ibis_sf1.nation AS t3
+  FROM hive.ibis_sf1.supplier AS t2
+  JOIN hive.ibis_sf1.nation AS t3
     ON t2.s_nationkey = t3.n_nationkey
   WHERE
     t3.n_name = 'CANADA'
@@ -26,7 +26,7 @@ WITH t0 AS (
           t5.ps_availqty AS ps_availqty,
           t5.ps_supplycost AS ps_supplycost,
           t5.ps_comment AS ps_comment
-        FROM "hive".ibis_sf1.partsupp AS t5
+        FROM hive.ibis_sf1.partsupp AS t5
         WHERE
           t5.ps_partkey IN (
             SELECT
@@ -42,7 +42,7 @@ WITH t0 AS (
                 t7.p_container AS p_container,
                 t7.p_retailprice AS p_retailprice,
                 t7.p_comment AS p_comment
-              FROM "hive".ibis_sf1.part AS t7
+              FROM hive.ibis_sf1.part AS t7
               WHERE
                 t7.p_name LIKE 'forest%'
             ) AS t6
@@ -50,7 +50,7 @@ WITH t0 AS (
           AND t5.ps_availqty > (
             SELECT
               SUM(t6.l_quantity) AS "Sum(l_quantity)"
-            FROM "hive".ibis_sf1.lineitem AS t6
+            FROM hive.ibis_sf1.lineitem AS t6
             WHERE
               t6.l_partkey = t5.ps_partkey
               AND t6.l_suppkey = t5.ps_suppkey

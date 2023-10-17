@@ -10,12 +10,12 @@ WITH t0 AS (
     SUM(t4.l_extendedprice * (
       1 - t4.l_discount
     )) AS revenue
-  FROM "hive".ibis_sf1.customer AS t2
-  JOIN "hive".ibis_sf1.orders AS t3
+  FROM hive.ibis_sf1.customer AS t2
+  JOIN hive.ibis_sf1.orders AS t3
     ON t2.c_custkey = t3.o_custkey
-  JOIN "hive".ibis_sf1.lineitem AS t4
+  JOIN hive.ibis_sf1.lineitem AS t4
     ON t4.l_orderkey = t3.o_orderkey
-  JOIN "hive".ibis_sf1.nation AS t5
+  JOIN hive.ibis_sf1.nation AS t5
     ON t2.c_nationkey = t5.n_nationkey
   WHERE
     t3.o_orderdate >= FROM_ISO8601_DATE('1993-10-01')
