@@ -8,7 +8,7 @@ WITH t0 AS (
       ELSE SUBSTR(t2.c_phone, 0 + 1 + LENGTH(t2.c_phone), 2)
     END AS cntrycode,
     t2.c_acctbal AS c_acctbal
-  FROM "hive".ibis_sf1.customer AS t2
+  FROM hive.ibis_sf1.customer AS t2
   WHERE
     CASE
       WHEN (
@@ -23,7 +23,7 @@ WITH t0 AS (
       FROM (
         SELECT
           AVG(t2.c_acctbal) AS avg_bal
-        FROM "hive".ibis_sf1.customer AS t2
+        FROM hive.ibis_sf1.customer AS t2
         WHERE
           t2.c_acctbal > 0.0
           AND CASE
@@ -39,7 +39,7 @@ WITH t0 AS (
       EXISTS(
         SELECT
           1 AS anon_2
-        FROM "hive".ibis_sf1.orders AS t3
+        FROM hive.ibis_sf1.orders AS t3
         WHERE
           t3.o_custkey = t2.c_custkey
       )

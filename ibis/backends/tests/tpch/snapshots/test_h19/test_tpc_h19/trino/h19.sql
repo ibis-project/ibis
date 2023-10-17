@@ -2,8 +2,8 @@ SELECT
   SUM(t0.l_extendedprice * (
     1 - t0.l_discount
   )) AS revenue
-FROM "hive".ibis_sf1.lineitem AS t0
-JOIN "hive".ibis_sf1.part AS t1
+FROM hive.ibis_sf1.lineitem AS t0
+JOIN hive.ibis_sf1.part AS t1
   ON t1.p_partkey = t0.l_partkey
 WHERE
   t1.p_brand = 'Brand#12'

@@ -9,8 +9,8 @@ FROM (
     t2.p_type AS p_type,
     t2.p_size AS p_size,
     COUNT(DISTINCT t1.ps_suppkey) AS supplier_cnt
-  FROM "hive".ibis_sf1.partsupp AS t1
-  JOIN "hive".ibis_sf1.part AS t2
+  FROM hive.ibis_sf1.partsupp AS t1
+  JOIN hive.ibis_sf1.part AS t2
     ON t2.p_partkey = t1.ps_partkey
   WHERE
     t2.p_brand <> 'Brand#45'
@@ -29,7 +29,7 @@ FROM (
             t4.s_phone AS s_phone,
             t4.s_acctbal AS s_acctbal,
             t4.s_comment AS s_comment
-          FROM "hive".ibis_sf1.supplier AS t4
+          FROM hive.ibis_sf1.supplier AS t4
           WHERE
             t4.s_comment LIKE '%Customer%Complaints%'
         ) AS t3

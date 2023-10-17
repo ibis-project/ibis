@@ -4,7 +4,7 @@ WITH t0 AS (
     SUM(t3.l_extendedprice * (
       1 - t3.l_discount
     )) AS total_revenue
-  FROM "hive".ibis_sf1.lineitem AS t3
+  FROM hive.ibis_sf1.lineitem AS t3
   WHERE
     t3.l_shipdate >= FROM_ISO8601_DATE('1996-01-01')
     AND t3.l_shipdate < FROM_ISO8601_DATE('1996-04-01')
@@ -21,7 +21,7 @@ WITH t0 AS (
     t3.s_comment AS s_comment,
     t0.l_suppkey AS l_suppkey,
     t0.total_revenue AS total_revenue
-  FROM "hive".ibis_sf1.supplier AS t3
+  FROM hive.ibis_sf1.supplier AS t3
   JOIN t0
     ON t3.s_suppkey = t0.l_suppkey
   WHERE

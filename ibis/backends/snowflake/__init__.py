@@ -128,7 +128,6 @@ class Backend(AlchemyCrossSchemaBackend, CanCreateDatabase, AlchemyCanCreateSche
     compiler = SnowflakeCompiler
     supports_create_or_replace = True
     supports_python_udfs = True
-    use_stmt_prefix = "USE SCHEMA"
 
     _latest_udf_python_version = (3, 10)
 
@@ -813,9 +812,6 @@ $$""".format(
 
         return self.table(table)
 
-    def _get_schema_for_table(self, *, qualname: str, schema: str) -> str:
-        return qualname
-
     def read_parquet(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
@@ -886,20 +882,6 @@ $$""".format(
             )
 
         return self.table(table)
-
-
-@compiles(sa.Table, "snowflake")
-def compile_table(element, compiler, **kw):
-    """Override compilation of leaf tables.
-
-    The override is necessary because snowflake-sqlalchemy does not handle
-    quoting databases and schemas correctly.
-    """
-    schema = element.schema
-    name = compiler.preparer.quote_identifier(element.name)
-    if schema is not None:
-        return f"{schema}.{name}"
-    return name
 
 
 @compiles(sa.sql.Join, "snowflake")

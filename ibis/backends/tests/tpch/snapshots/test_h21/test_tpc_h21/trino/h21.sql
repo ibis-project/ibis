@@ -7,12 +7,12 @@ WITH t0 AS (
     t3.l_suppkey AS l1_suppkey,
     t2.s_name AS s_name,
     t5.n_name AS n_name
-  FROM "hive".ibis_sf1.supplier AS t2
-  JOIN "hive".ibis_sf1.lineitem AS t3
+  FROM hive.ibis_sf1.supplier AS t2
+  JOIN hive.ibis_sf1.lineitem AS t3
     ON t2.s_suppkey = t3.l_suppkey
-  JOIN "hive".ibis_sf1.orders AS t4
+  JOIN hive.ibis_sf1.orders AS t4
     ON t4.o_orderkey = t3.l_orderkey
-  JOIN "hive".ibis_sf1.nation AS t5
+  JOIN hive.ibis_sf1.nation AS t5
     ON t2.s_nationkey = t5.n_nationkey
 )
 SELECT
@@ -31,7 +31,7 @@ FROM (
       EXISTS(
         SELECT
           1 AS anon_1
-        FROM "hive".ibis_sf1.lineitem AS t2
+        FROM hive.ibis_sf1.lineitem AS t2
         WHERE
           t2.l_orderkey = t0.l1_orderkey AND t2.l_suppkey <> t0.l1_suppkey
       )
@@ -40,7 +40,7 @@ FROM (
       EXISTS(
         SELECT
           1 AS anon_2
-        FROM "hive".ibis_sf1.lineitem AS t2
+        FROM hive.ibis_sf1.lineitem AS t2
         WHERE
           t2.l_orderkey = t0.l1_orderkey
           AND t2.l_suppkey <> t0.l1_suppkey

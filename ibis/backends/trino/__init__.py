@@ -41,7 +41,6 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
     compiler = TrinoSQLCompiler
     supports_create_or_replace = False
     supports_temporary_tables = False
-    use_stmt_prefix = "USE"
 
     @cached_property
     def version(self) -> str:
@@ -373,11 +372,3 @@ class Backend(AlchemyCrossSchemaBackend, AlchemyCanCreateSchema, CanListDatabase
             trino_catalog=database or self.current_database,
             **kwargs,
         )
-
-    def _get_schema_for_table(self, *, qualname: str, schema: str) -> str:
-        """Trino compiles the `trino_catalog` argument into `sa.Table`.
-
-        This means we only need the schema and not the fully qualified
-        $catalog.$schema identifier.
-        """
-        return schema
