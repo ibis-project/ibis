@@ -11,7 +11,7 @@ nix develop '.#release' -c poetry check
 #
 # the lock file might not be the most fresh, but that's okay: it need only be
 # consistent with pyproject.toml
-nix develop '.#release' -c poetry lock --check
+nix develop '.#release' -c poetry check --lock
 
 # verify that we have a token available to push to pypi using set -u
 if [ "${dry_run}" = "false" ]; then
