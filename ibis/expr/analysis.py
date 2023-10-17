@@ -128,7 +128,7 @@ def pushdown_selection_filters(parent, predicates):
         return parent
 
     default = ops.Selection(parent, selections=[], predicates=predicates)
-    if not isinstance(parent, (ops.Selection, ops.Aggregation)):
+    if not isinstance(parent, (ops.Selection, ops.Aggregation)):  # ops.Projection
         return default
 
     projected_column_names = set()
@@ -266,20 +266,30 @@ class Projector:
         ]
 
     def get_result(self):
+        from ibis.common.patterns import NoMatch, match
+        from ibis.expr.rewrites import rewrite_redundant_selection, prune_subsequent_projection
+
         roots = find_immediate_parent_tables(self.parent.op())
         first_root = roots[0]
-        parent_op = self.parent.op()
 
-        # reprojection of the same selections
-        if len(self.clean_exprs) == 1:
-            first = self.clean_exprs[0].op()
-            if isinstance(first, ops.Selection):
-                if first.selections == parent_op.selections:
-                    return parent_op
+        new = ops.Selection(self.parent, selections=self.clean_exprs)
+        rewritten = match(rewrite_redundant_selection, new)
+        if rewritten is not NoMatch:
+            return rewritten
+
+        rewritten = match(prune_subsequent_projection, new)
+        if rewritten is not NoMatch:
+            return rewritten
 
         if len(roots) == 1 and isinstance(first_root, ops.Selection):
             fused_op = self.try_fusion(first_root)
             if fused_op is not None:
+                from rich.pretty import pprint
+                # pprint(fused_op)
+                # print()
+                # print(new.to_expr())
+                # print("==========")
+                # print(fused_op.to_expr())
                 return fused_op
 
         return ops.Selection(self.parent, self.clean_exprs)

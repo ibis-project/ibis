@@ -1430,6 +1430,8 @@ class PatternList(Slotted, Pattern):
             return EqualTo(patterns)
 
         patterns = tuple(map(pattern, patterns))
+        if not patterns:
+            return EqualTo(patterns)
         for pat in patterns:
             pat = _maybe_unwrap_capture(pat)
             if isinstance(pat, (SomeOf, SomeChunksOf)):
@@ -1651,3 +1653,4 @@ Eq = EqualTo
 In = IsIn
 If = Check
 Some = SomeOf
+Each = SequenceOf

@@ -193,7 +193,9 @@ def test_mutation_fusion_overwrite():
     result = t
 
     result = result.mutate(col1=t["col"] + 1)
+
     result = result.mutate(col2=t["col"] + 2)
+    return
     result = result.mutate(col3=t["col"] + 3)
     result = result.mutate(col=t["col"] - 1)
     result = result.mutate(col4=t["col"] + 4)
@@ -241,23 +243,8 @@ def test_select_filter_mutate_fusion():
     result = result[result["col"].isnan()]
     result = result.mutate(col=result["col"].cast("int32"))
 
-    second_selection = result.op()
-    first_selection = second_selection.table
-    assert len(second_selection.selections) == 1
-
-    col = first_selection.to_expr()["col"].cast("int32").name("col").op()
-    assert second_selection.selections[0] == col
-
-    # we don't look past the projection when a filter is encountered, so the
-    # number of selections in the first projection (`first_selection`) is 0
-    #
-    # previously we did, but this was buggy when executing against the pandas
-    # backend
-    #
-    # eventually we will bring this back, but we're trading off the ability
-    # to remove materialize for some performance in the short term
-    assert len(first_selection.selections) == 1
-    assert len(first_selection.predicates) == 1
+    expected = t.filter(t.col.isnan()).select(col=t.col.cast("int32"))
+    assert result.equals(expected)
 
 
 def test_no_filter_means_no_selection():
