@@ -57,10 +57,10 @@ from ibis.common.patterns import (
     Object,
     Option,
     Pattern,
-    PatternMapping,
-    PatternSequence,
+    PatternList,
     Replace,
     SequenceOf,
+    Some,
     SubclassOf,
     TupleOf,
     TypeOf,
@@ -146,6 +146,12 @@ def test_pattern_factory_wraps_variable_with_capture():
     ctx = {}
     assert p.match(10, ctx) == 10
     assert ctx == {"other": 10}
+
+
+def test_match_on_ellipsis():
+    assert match(..., 1) == 1
+    assert match(..., [1, 2, 3]) == [1, 2, 3]
+    assert match(..., (1, 2, 3)) == (1, 2, 3)
 
 
 def test_capture():
@@ -484,22 +490,14 @@ def test_generic_sequence_of():
         def __coerce__(cls, value, T=...):
             return cls(value)
 
-    p = SequenceOf(InstanceOf(str), MyList)
-    assert isinstance(p, GenericSequenceOf)
-    assert p == GenericSequenceOf(InstanceOf(str), MyList)
+    p = GenericSequenceOf(InstanceOf(str), MyList)
     assert p.match(["foo", "bar"], context={}) == MyList(["foo", "bar"])
     assert p.match("string", context={}) is NoMatch
 
-    p = SequenceOf(InstanceOf(str), tuple, at_least=1)
-    assert isinstance(p, GenericSequenceOf)
+    p = GenericSequenceOf(InstanceOf(str), tuple, at_least=1)
     assert p == GenericSequenceOf(InstanceOf(str), tuple, at_least=1)
     assert p.match(("foo", "bar"), context={}) == ("foo", "bar")
     assert p.match([], context={}) is NoMatch
-
-    p = GenericSequenceOf(InstanceOf(str), list)
-    assert isinstance(p, SequenceOf)
-    assert p == SequenceOf(InstanceOf(str), list)
-    assert p.match(("foo", "bar"), context={}) == ["foo", "bar"]
 
 
 def test_list_of():
@@ -512,21 +510,17 @@ def test_list_of():
     assert p.describe(plural=True) == "lists of strs"
 
 
-def test_tuple_of():
-    p = TupleOf((InstanceOf(str), InstanceOf(int), InstanceOf(float)))
-    assert p.match(("foo", 1, 1.0), context={}) == ("foo", 1, 1.0)
-    assert p.match(["foo", 1, 1.0], context={}) == ("foo", 1, 1.0)
+def test_pattern_sequence():
+    p = PatternList((InstanceOf(str), InstanceOf(int), InstanceOf(float)))
+    assert p.match(("foo", 1, 1.0), context={}) == ["foo", 1, 1.0]
+    assert p.match(["foo", 1, 1.0], context={}) == ["foo", 1, 1.0]
     assert p.match(1, context={}) is NoMatch
     assert p.describe() == "a tuple of (a str, an int, a float)"
     assert p.describe(plural=True) == "tuples of (a str, an int, a float)"
 
-    p = TupleOf(InstanceOf(str))
-    assert p == SequenceOf(InstanceOf(str), tuple)
-    assert p.match(("foo", "bar"), context={}) == ("foo", "bar")
-    assert p.match(["foo"], context={}) == ("foo",)
-    assert p.match(1, context={}) is NoMatch
-    assert p.describe() == "a tuple of strs"
-    assert p.describe(plural=True) == "tuples of strs"
+    p = PatternList((InstanceOf(str),))
+    assert p.match(("foo",), context={}) == ["foo"]
+    assert p.match(("foo", "bar"), context={}) is NoMatch
 
 
 def test_mapping_of():
@@ -676,19 +670,57 @@ def test_callable_with_default_arguments():
 
 
 def test_pattern_list():
-    p = PatternSequence([1, 2, InstanceOf(int), ...])
+    p = PatternList([1, 2, InstanceOf(int), Some(...)])
     assert p.match([1, 2, 3, 4, 5], context={}) == [1, 2, 3, 4, 5]
     assert p.match([1, 2, 3, 4, 5, 6], context={}) == [1, 2, 3, 4, 5, 6]
     assert p.match([1, 2, 3, 4], context={}) == [1, 2, 3, 4]
     assert p.match([1, 2, "3", 4], context={}) is NoMatch
 
     # subpattern is a simple pattern
-    p = PatternSequence([1, 2, CoercedTo(int), ...])
+    p = PatternList([1, 2, CoercedTo(int), Some(...)])
     assert p.match([1, 2, 3.0, 4.0, 5.0], context={}) == [1, 2, 3, 4.0, 5.0]
 
     # subpattern is a sequence
-    p = PatternSequence([1, 2, 3, SequenceOf(CoercedTo(int), at_least=1)])
+    p = PatternList([1, 2, 3, Some(CoercedTo(int), at_least=1)])
     assert p.match([1, 2, 3, 4.0, 5.0], context={}) == [1, 2, 3, 4, 5]
+
+
+def test_pattern_list_from_tuple_typehint():
+    p = Pattern.from_typehint(tuple[str, int, float])
+    assert p == PatternList(
+        [InstanceOf(str), InstanceOf(int), InstanceOf(float)], type=tuple
+    )
+    assert p.match(["foo", 1, 2.0], context={}) == ("foo", 1, 2.0)
+    assert p.match(("foo", 1, 2.0), context={}) == ("foo", 1, 2.0)
+    assert p.match(["foo", 1], context={}) is NoMatch
+    assert p.match(["foo", 1, 2.0, 3.0], context={}) is NoMatch
+
+    class MyTuple(tuple):
+        pass
+
+    p = Pattern.from_typehint(MyTuple[int, bool])
+    assert p == PatternList([InstanceOf(int), InstanceOf(bool)], type=MyTuple)
+    assert p.match([1, True], context={}) == MyTuple([1, True])
+    assert p.match(MyTuple([1, True]), context={}) == MyTuple([1, True])
+    assert p.match([1, 2], context={}) is NoMatch
+
+
+def test_pattern_list_unpack():
+    integer = pattern(int)
+    floating = pattern(float)
+
+    assert match([1, 2, *floating], [1, 2, 3]) is NoMatch
+    assert match([1, 2, *floating], [1, 2, 3.0]) == [1, 2, 3.0]
+    assert match([1, 2, *floating], [1, 2, 3.0, 4.0]) == [1, 2, 3.0, 4.0]
+    assert match([1, *floating, *integer], [1, 2.0, 3.0, 4]) == [1, 2.0, 3.0, 4]
+    assert match([1, *floating, *integer], [1, 2.0, 3.0, 4, 5]) == [
+        1,
+        2.0,
+        3.0,
+        4,
+        5,
+    ]
+    assert match([1, *floating, *integer], [1, 2.0, 3, 4.0]) is NoMatch
 
 
 def test_matching():
@@ -728,14 +760,14 @@ def test_replace_passes_matched_value_as_underscore():
 def test_replace_in_nested_object_pattern():
     # simple example using reference to replace a value
     b = Variable("b")
-    p = Object(Foo, 1, b=Replace(..., b))
+    p = Object(Foo, 1, b=Replace(Any(), b))
     f = p.match(Foo(1, 2), {"b": 3})
     assert f.a == 1
     assert f.b == 3
 
     # nested example using reference to replace a value
     d = Variable("d")
-    p = Object(Foo, 1, b=Object(Bar, 2, d=Replace(..., d)))
+    p = Object(Foo, 1, b=Object(Bar, 2, d=Replace(Any(), d)))
     g = p.match(Foo(1, Bar(2, 3)), {"d": 4})
     assert g.b.c == 2
     assert g.b.d == 4
@@ -795,148 +827,131 @@ def test_matching_sequence_pattern():
     assert match([], []) == []
     assert match([], [1]) is NoMatch
 
-    assert match([1, 2, 3, 4, ...], list(range(1, 9))) == list(range(1, 9))
-    assert match([1, 2, 3, 4, ...], list(range(1, 3))) is NoMatch
-    assert match([1, 2, 3, 4, ...], list(range(1, 5))) == list(range(1, 5))
-    assert match([1, 2, 3, 4, ...], list(range(1, 6))) == list(range(1, 6))
+    assert match([1, 2, 3, 4, Some(...)], list(range(1, 9))) == list(range(1, 9))
+    assert match([1, 2, 3, 4, Some(...)], list(range(1, 3))) is NoMatch
+    assert match([1, 2, 3, 4, Some(...)], list(range(1, 5))) == list(range(1, 5))
+    assert match([1, 2, 3, 4, Some(...)], list(range(1, 6))) == list(range(1, 6))
 
-    assert match([..., 3, 4], list(range(5))) == list(range(5))
-    assert match([..., 3, 4], list(range(3))) is NoMatch
+    assert match([Some(...), 3, 4], list(range(5))) == list(range(5))
+    assert match([Some(...), 3, 4], list(range(3))) is NoMatch
 
-    assert match([0, 1, ..., 4], list(range(5))) == list(range(5))
-    assert match([0, 1, ..., 4], list(range(4))) is NoMatch
+    assert match([0, 1, Some(...), 4], list(range(5))) == list(range(5))
+    assert match([0, 1, Some(...), 4], list(range(4))) is NoMatch
 
-    assert match([...], list(range(5))) == list(range(5))
-    assert match([..., 2, 3, 4, ...], list(range(8))) == list(range(8))
+    assert match([Some(...)], list(range(5))) == list(range(5))
+    assert match([Some(...), 2, 3, 4, Some(...)], list(range(8))) == list(range(8))
 
 
 def test_matching_sequence_with_captures():
-    assert match([1, 2, 3, 4, SequenceOf(...)], v := list(range(1, 9))) == v
-    assert (
-        match([1, 2, 3, 4, "rest" @ SequenceOf(...)], v := list(range(1, 9)), ctx := {})
-        == v
-    )
-    assert ctx == {"rest": (5, 6, 7, 8)}
+    v = list(range(1, 9))
+    assert match([1, 2, 3, 4, Some(...)], v) == v
+    assert match([1, 2, 3, 4, "rest" @ Some(...)], v, ctx := {}) == v
+    assert ctx == {"rest": [5, 6, 7, 8]}
 
     v = list(range(5))
-    assert match([0, 1, x @ SequenceOf(...), 4], v, ctx := {}) == v
-    assert ctx == {"x": (2, 3)}
-    assert match([0, 1, "var" @ SequenceOf(...), 4], v, ctx := {}) == v
-    assert ctx == {"var": (2, 3)}
+    assert match([0, 1, x @ Some(...), 4], v, ctx := {}) == v
+    assert ctx == {"x": [2, 3]}
+    assert match([0, 1, "var" @ Some(...), 4], v, ctx := {}) == v
+    assert ctx == {"var": [2, 3]}
 
     p = [
         0,
         1,
-        "ints" @ SequenceOf(InstanceOf(int)),
-        "floats" @ SequenceOf(InstanceOf(float)),
+        "ints" @ Some(int),
+        Some("last_float" @ InstanceOf(float)),
         6,
     ]
     v = [0, 1, 2, 3, 4.0, 5.0, 6]
     assert match(p, v, ctx := {}) == v
-    assert ctx == {"ints": (2, 3), "floats": (4.0, 5.0)}
+    assert ctx == {"ints": [2, 3], "last_float": 5.0}
 
 
 def test_matching_sequence_remaining():
-    Seq = SequenceOf
-    IsInt = InstanceOf(int)
-
     three = [1, 2, 3]
     four = [1, 2, 3, 4]
     five = [1, 2, 3, 4, 5]
 
-    assert match([1, 2, 3, Seq(IsInt, at_least=1)], four) == four
-    assert match([1, 2, 3, Seq(IsInt, at_least=1)], three) is NoMatch
-    assert match([1, 2, 3, Seq(IsInt)], three) == three
-    assert match([1, 2, 3, Seq(IsInt, at_most=1)], three) == three
-    assert match([1, 2, 3, Seq(IsInt & Between(0, 10))], five) == five
-    assert match([1, 2, 3, Seq(IsInt & Between(0, 4))], five) is NoMatch
-    assert match([1, 2, 3, Seq(IsInt, at_least=2)], four) is NoMatch
-    assert match([1, 2, 3, "res" @ Seq(IsInt, at_least=2)], five, ctx := {}) == five
-    assert ctx == {"res": (4, 5)}
+    assert match([1, 2, 3, Some(int, at_least=1)], four) == four
+    assert match([1, 2, 3, Some(int, at_least=1)], three) is NoMatch
+    assert match([1, 2, 3, Some(int)], three) == three
+    assert match([1, 2, 3, Some(int, at_most=1)], three) == three
+    assert match([1, 2, 3, Some(InstanceOf(int) & Between(0, 10))], five) == five
+    assert match([1, 2, 3, Some(InstanceOf(int) & Between(0, 4))], five) is NoMatch
+    assert match([1, 2, 3, Some(int, at_least=2)], four) is NoMatch
+    assert match([1, 2, 3, "res" @ Some(int, at_least=2)], five, ctx := {}) == five
+    assert ctx == {"res": [4, 5]}
 
 
 def test_matching_sequence_complicated():
-    pattern = [
+    pat = [
         1,
-        "a" @ ListOf(InstanceOf(int) & Check(lambda x: x < 10)),
+        "a" @ Some(InstanceOf(int) & Check(lambda x: x < 10)),
         4,
-        "b" @ SequenceOf(...),
+        "b" @ Some(...),
         8,
         9,
     ]
     expected = {
         "a": [2, 3],
-        "b": (5, 6, 7),
+        "b": [5, 6, 7],
     }
-    assert match(pattern, range(1, 10), ctx := {}) == list(range(1, 10))
+    assert match(pat, range(1, 10), ctx := {}) == list(range(1, 10))
     assert ctx == expected
 
-    pattern = [0, "pairs" @ PatternSequence([-1, -2]), 3]
-    expected = {"pairs": [-1, -2]}
-    assert match(pattern, [0, -1, -2, 3], ctx := {}) == [0, -1, -2, 3]
+    pat = [1, 2, Capture("remaining", Some(...))]
+    expected = {"remaining": [3, 4, 5, 6, 7, 8, 9]}
+    assert match(pat, range(1, 10), ctx := {}) == list(range(1, 10))
     assert ctx == expected
 
-    pattern = [
+    v = [0, [1, 2, "3"], [1, 2, "4"], 3]
+    assert match([0, Some([1, 2, str]), 3], v) == v
+
+
+def test_pattern_sequence_with_nested_some():
+    ctx = {}
+    res = match([0, "subseq" @ Some(1, 2), 3], [0, 1, 2, 1, 2, 3], ctx)
+    assert res == [0, 1, 2, 1, 2, 3]
+    assert ctx == {"subseq": [1, 2, 1, 2]}
+
+    assert match([0, Some(1), 2, 3], [0, 2, 3]) == [0, 2, 3]
+    assert match([0, Some(1, at_least=1), 2, 3], [0, 2, 3]) is NoMatch
+    assert match([0, Some(1, at_least=1), 2, 3], [0, 1, 2, 3]) == [0, 1, 2, 3]
+    assert match([0, Some(1, at_least=2), 2, 3], [0, 1, 2, 3]) is NoMatch
+    assert match([0, Some(1, at_least=2), 2, 3], [0, 1, 1, 2, 3]) == [0, 1, 1, 2, 3]
+    assert match([0, Some(1, at_most=2), 2, 3], [0, 1, 1, 2, 3]) == [0, 1, 1, 2, 3]
+    assert match([0, Some(1, at_most=1), 2, 3], [0, 1, 1, 2, 3]) is NoMatch
+    assert match([0, Some(1, exactly=1), 2, 3], [0, 2, 3]) is NoMatch
+    assert match([0, Some(1, exactly=1), 2, 3], [0, 1, 2, 3]) == [0, 1, 2, 3]
+    assert match([0, Some(1, exactly=0), 2, 3], [0, 2, 3]) == [0, 2, 3]
+    assert match([0, Some(1, exactly=0), 2, 3], [0, 1, 2, 3]) is NoMatch
+
+    assert match([0, Some(1, Some(2)), 3], [0, 3]) == [0, 3]
+    assert match([0, Some(1, Some(2)), 3], [0, 1, 3]) == [0, 1, 3]
+    assert match([0, Some(1, Some(2)), 3], [0, 1, 2, 3]) == [0, 1, 2, 3]
+    assert match([0, Some(1, Some(2)), 3], [0, 1, 2, 2, 3]) == [0, 1, 2, 2, 3]
+    assert match([0, Some(1, Some(2)), 3], [0, 1, 2, 2, 2, 3]) == [0, 1, 2, 2, 2, 3]
+    assert match([0, Some(1, Some(2)), 3], [0, 1, 2, 1, 2, 2, 3]) == [
         0,
-        "first" @ PatternSequence([1, 2]),
-        "second" @ PatternSequence([4, 5]),
+        1,
+        2,
+        1,
+        2,
+        2,
         3,
     ]
-    expected = {"first": [1, 2], "second": [4, 5]}
-    assert match(pattern, [0, 1, 2, 4, 5, 3], ctx := {}) == [0, 1, 2, 4, 5, 3]
-    assert ctx == expected
-
-    pattern = [1, 2, "remaining" @ SequenceOf(...)]
-    expected = {"remaining": (3, 4, 5, 6, 7, 8, 9)}
-    assert match(pattern, range(1, 10), ctx := {}) == list(range(1, 10))
-    assert ctx == expected
-
-    assert match([0, SequenceOf([1, 2]), 3], v := [0, [1, 2], [1, 2], 3]) == v
-
-
-def test_pattern_map():
-    assert PatternMapping({}).match({}, context={}) == {}
-    assert PatternMapping({}).match({1: 2}, context={}) is NoMatch
-
-
-def test_matching_mapping():
-    assert match({}, {}) == {}
-    assert match({}, {1: 2}) is NoMatch
-
-    assert match({1: 2}, {1: 2}) == {1: 2}
-    assert match({1: 2}, {1: 3}) is NoMatch
-
-    assert match({}, 3) is NoMatch
-    ctx = {}
-    assert match({"a": "capture" @ InstanceOf(int)}, {"a": 1}, ctx) == {"a": 1}
-    assert ctx == {"capture": 1}
-
-    p = {
-        "a": "capture" @ InstanceOf(int),
-        "b": InstanceOf(float),
-        ...: InstanceOf(str),
-    }
-    ctx = {}
-    assert match(p, {"a": 1, "b": 2.0, "c": "foo"}, ctx) == {
-        "a": 1,
-        "b": 2.0,
-        "c": "foo",
-    }
-    assert ctx == {"capture": 1}
-    assert match(p, {"a": 1, "b": 2.0, "c": 3}) is NoMatch
-
-    p = {
-        "a": "capture" @ InstanceOf(int),
-        "b": InstanceOf(float),
-        "rest" @ SequenceOf(...): InstanceOf(str),
-    }
-    ctx = {}
-    assert match(p, {"a": 1, "b": 2.0, "c": "foo"}, ctx) == {
-        "a": 1,
-        "b": 2.0,
-        "c": "foo",
-    }
-    assert ctx == {"capture": 1, "rest": ("c",)}
+    assert match([0, Some(1, Some(2), at_least=1), 3], [0, 1, 2, 3]) == [0, 1, 2, 3]
+    assert match([0, Some(1, Some(2), at_least=1), 3], [0, 1, 3]) == [0, 1, 3]
+    assert match([0, Some(1, Some(2, at_least=2), at_least=1), 3], [0, 1, 3]) is NoMatch
+    assert (
+        match([0, Some(1, Some(2, at_least=2), at_least=1), 3], [0, 1, 2, 3]) is NoMatch
+    )
+    assert match([0, Some(1, Some(2, at_least=2), at_least=1), 3], [0, 1, 2, 2, 3]) == [
+        0,
+        1,
+        2,
+        2,
+        3,
+    ]
 
 
 @pytest.mark.parametrize(
@@ -953,7 +968,7 @@ def test_matching_mapping():
         (IsIn(("a", "b")), "b", "b"),
         (IsIn({"a", "b", "c"}), "c", "c"),
         (TupleOf(InstanceOf(int)), (1, 2, 3), (1, 2, 3)),
-        (TupleOf((InstanceOf(int), InstanceOf(str))), (1, "a"), (1, "a")),
+        (PatternList((InstanceOf(int), InstanceOf(str))), (1, "a"), [1, "a"]),
         (ListOf(InstanceOf(str)), ["a", "b"], ["a", "b"]),
         (AnyOf(InstanceOf(str), InstanceOf(int)), "foo", "foo"),
         (AnyOf(InstanceOf(str), InstanceOf(int)), 7, 7),
@@ -1022,7 +1037,9 @@ def test_pattern_decorator():
         (list[int], SequenceOf(InstanceOf(int), list)),
         (
             tuple[int, float, str],
-            TupleOf((InstanceOf(int), InstanceOf(float), InstanceOf(str))),
+            PatternList(
+                (InstanceOf(int), InstanceOf(float), InstanceOf(str)), type=tuple
+            ),
         ),
         (tuple[int, ...], TupleOf(InstanceOf(int))),
         (
@@ -1141,7 +1158,7 @@ def test_pattern_coercible_sequence_type():
     assert s.match([1, 2, 3], context={}) == (PlusOne(2), PlusOne(3), PlusOne(4))
 
     s = Pattern.from_typehint(DoubledList[PlusOne])
-    assert s == SequenceOf(CoercedTo(PlusOne), type=DoubledList)
+    assert s == GenericSequenceOf(CoercedTo(PlusOne), type=DoubledList)
     assert s.match([1, 2, 3], context={}) == DoubledList(
         [PlusOne(2), PlusOne(3), PlusOne(4), PlusOne(2), PlusOne(3), PlusOne(4)]
     )
@@ -1178,7 +1195,7 @@ def test_pattern_function():
     assert pattern(List[int]) == ListOf(InstanceOf(int))  # noqa: UP006
 
     # spelled out sequences construct a more advanced pattern sequence
-    assert pattern([int, str, 1]) == PatternSequence(
+    assert pattern([int, str, 1]) == PatternList(
         [InstanceOf(int), InstanceOf(str), EqualTo(1)]
     )
 

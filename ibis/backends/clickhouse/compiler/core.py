@@ -90,7 +90,7 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
 
     # replace the right side of InColumn into a scalar subquery for sql
     # backends
-    replace_in_column_with_table_array_view = p.InColumn(..., y) >> _.copy(
+    replace_in_column_with_table_array_view = p.InColumn(options=y) >> _.copy(
         options=c.TableArrayView(
             c.Selection(table=lambda _, y: find_first_base_table(y), selections=(y,))
         ),
@@ -98,7 +98,7 @@ def translate(op: ops.TableNode, params: Mapping[ir.Value, Any]) -> sg.exp.Expre
 
     # replace any checks against an empty right side of the IN operation with
     # `False`
-    replace_empty_in_values_with_false = p.InValues(..., ()) >> c.Literal(
+    replace_empty_in_values_with_false = p.InValues(options=()) >> c.Literal(
         False, dtype="bool"
     )
 
