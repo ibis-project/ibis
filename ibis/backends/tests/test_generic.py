@@ -684,16 +684,13 @@ def test_logical_negation_column(backend, alltypes, df, op):
     ("dtype", "zero", "expected"),
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
 )
-def test_zeroifnull_literals(con, dtype, zero, expected):
-    with pytest.warns(FutureWarning):
-        assert con.execute(ibis.NA.cast(dtype).zeroifnull()) == zero
-    with pytest.warns(FutureWarning):
-        assert con.execute(ibis.literal(expected, type=dtype).zeroifnull()) == expected
+def test_zero_ifnull_literals(con, dtype, zero, expected):
+    assert con.execute(ibis.NA.cast(dtype).fillna(0)) == zero
+    assert con.execute(ibis.literal(expected, type=dtype).fillna(0)) == expected
 
 
-def test_zeroifnull_column(backend, alltypes, df):
-    with pytest.warns(FutureWarning):
-        expr = alltypes.int_col.nullif(1).zeroifnull().name("tmp")
+def test_zero_ifnull_column(backend, alltypes, df):
+    expr = alltypes.int_col.nullif(1).fillna(0).name("tmp")
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)
