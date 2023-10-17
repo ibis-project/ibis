@@ -7,6 +7,7 @@ import pytest
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest, RoundAwayFromZero
+from ibis.conftest import SANDBOXED
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -19,6 +20,12 @@ class TestConf(BackendTest, RoundAwayFromZero):
     deps = "duckdb", "duckdb_engine"
     stateful = False
     supports_tpch = True
+
+    def preload(self):
+        if not SANDBOXED:
+            self.connection._load_extensions(
+                ["httpfs", "postgres_scanner", "sqlite_scanner"]
+            )
 
     @property
     def ddl_script(self) -> Iterator[str]:
