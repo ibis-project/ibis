@@ -83,7 +83,7 @@ def _timestamp_from_unix(x, unit="s"):
     raise com.UnsupportedOperationError(f"{unit!r} unit is not supported!")
 
 
-_truncate_precisions = {
+_interval_units = {
     "us": "microsecond",
     "ms": "millisecond",
     "s": "second",
@@ -100,10 +100,33 @@ _truncate_precisions = {
 def _timestamp_truncate(t, op):
     arg = t.translate(op.arg)
     unit = op.unit.short
-    if unit not in _truncate_precisions:
+    if unit not in _interval_units:
         raise com.UnsupportedOperationError(f"Unsupported truncate unit {op.unit!r}")
 
-    return sa.func.datetrunc(sa.text(_truncate_precisions[unit]), arg)
+    return sa.func.datetrunc(sa.text(_interval_units[unit]), arg)
+
+
+def _timestamp_bucket(t, op):
+    unit = op.interval.dtype.unit.short
+    if not isinstance(op.interval, ops.Literal):
+        raise com.UnsupportedOperationError(
+            "Only literal interval values are supported"
+        )
+    if unit == "us" or unit not in _interval_units:
+        raise com.UnsupportedOperationError(
+            f"Unsupported bucket interval {op.interval!r}"
+        )
+    if op.offset is not None:
+        raise com.UnsupportedOperationError(
+            "Timestamp bucket with offset is not supported"
+        )
+
+    part = sa.literal_column(_interval_units[unit])
+    value = sa.literal_column(str(op.interval.value))
+    arg = t.translate(op.arg)
+    origin = sa.literal_column("CAST('1970-01-01' AS DATETIME2)")
+
+    return sa.func.DATE_BUCKET(part, value, arg, origin)
 
 
 def _temporal_delta(t, op):
@@ -210,6 +233,7 @@ operation_registry.update(
         ),
         ops.TimestampTruncate: _timestamp_truncate,
         ops.DateTruncate: _timestamp_truncate,
+        ops.TimestampBucket: _timestamp_bucket,
         ops.Hash: unary(sa.func.checksum),
         ops.ExtractMicrosecond: fixed_arity(
             lambda arg: sa.func.datepart(sa.literal_column("microsecond"), arg), 1
