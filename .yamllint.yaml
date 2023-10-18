@@ -3,6 +3,7 @@ extends: default
 
 ignore:
   - docs/_publish.yml
+  - ci/conda-lock/python-*.yml
 
 rules:
   document-start: disable
