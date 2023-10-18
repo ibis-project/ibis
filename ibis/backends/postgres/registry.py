@@ -66,6 +66,17 @@ def _timestamp_truncate(t, op):
     return sa.func.date_trunc(precision, sa_arg)
 
 
+def _timestamp_bucket(t, op):
+    arg = t.translate(op.arg)
+    interval = t.translate(op.interval)
+
+    origin = sa.literal_column("timestamp '1970-01-01 00:00:00'")
+
+    if op.offset is not None:
+        origin = origin + t.translate(op.offset)
+    return sa.func.date_bin(interval, arg, origin)
+
+
 def _typeof(t, op):
     sa_arg = t.translate(op.arg)
     typ = sa.cast(sa.func.pg_typeof(sa_arg), sa.TEXT)
@@ -638,6 +649,7 @@ operation_registry.update(
         ops.DateFromYMD: fixed_arity(sa.func.make_date, 3),
         ops.DateTruncate: _timestamp_truncate,
         ops.TimestampTruncate: _timestamp_truncate,
+        ops.TimestampBucket: _timestamp_bucket,
         ops.IntervalFromInteger: (
             lambda t, op: t.translate(op.arg)
             * sa.text(f"INTERVAL '1 {op.dtype.resolution}'")
