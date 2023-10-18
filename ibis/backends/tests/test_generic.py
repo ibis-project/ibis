@@ -797,10 +797,10 @@ def test_int_column(alltypes):
     ["bigquery", "sqlite", "snowflake"], reason="backend only implements int64"
 )
 def test_int_scalar(alltypes):
-    expr = alltypes.smallint_col.min()
+    expr = alltypes.int_col.min()
     result = expr.execute()
-    assert expr.type() == dt.int16
-    assert result.dtype == np.int16
+    assert expr.type() == dt.int32
+    assert result.dtype == np.int32
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])

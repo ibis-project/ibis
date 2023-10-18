@@ -165,7 +165,7 @@ def exists_subquery(translator, op):
 
 # XXX this is not added to operation_registry, but looks like impala is
 # using it in the tests, and it works, even if it's not imported anywhere
-def round(translator, op):
+def _round(translator, op):
     arg, digits = op.args
 
     arg_formatted = translator.translate(arg)
@@ -173,7 +173,10 @@ def round(translator, op):
     if digits is not None:
         digits_formatted = translator.translate(digits)
         return f"round({arg_formatted}, {digits_formatted})"
-    return f"round({arg_formatted})"
+    rounded = f"round({arg_formatted})"
+    if op.dtype.is_integer():
+        return f"cast({rounded} AS BIGINT)"
+    return round
 
 
 def concat(translator, op):
@@ -194,6 +197,20 @@ def count_star(translator, op):
         op.where,
         ops.Literal(value=1, dtype=dt.int64),
     )
+
+
+def _ceil(t, op):
+    ceil = f"ceil({t.translate(op.arg)})"
+    if op.dtype.is_integer():
+        return f"cast({ceil} AS BIGINT)"
+    return ceil
+
+
+def _floor(t, op):
+    floor = f"floor({t.translate(op.arg)})"
+    if op.dtype.is_integer():
+        return f"cast({floor} AS BIGINT)"
+    return floor
 
 
 binary_infix_ops = {
@@ -237,10 +254,10 @@ operation_registry = {
     ops.NullIf: fixed_arity("nullif", 2),
     ops.Abs: unary("abs"),
     ops.BaseConvert: fixed_arity("conv", 3),
-    ops.Ceil: unary("ceil"),
-    ops.Floor: unary("floor"),
+    ops.Ceil: _ceil,
+    ops.Floor: _floor,
     ops.Exp: unary("exp"),
-    ops.Round: round,
+    ops.Round: _round,
     ops.Sign: sign,
     ops.Sqrt: unary("sqrt"),
     ops.HashBytes: hashbytes,
@@ -324,8 +341,8 @@ operation_registry = {
     ops.ExtractHour: timestamp.extract_field("hour"),
     ops.ExtractMinute: timestamp.extract_field("minute"),
     ops.ExtractSecond: timestamp.extract_field("second"),
-    ops.ExtractMicrosecond: timestamp.extract_field("microsecond"),
-    ops.ExtractMillisecond: timestamp.extract_field("millisecond"),
+    ops.ExtractMicrosecond: timestamp.extract_microsecond,
+    ops.ExtractMillisecond: timestamp.extract_millisecond,
     ops.TimestampTruncate: timestamp.truncate,
     ops.DateTruncate: timestamp.truncate,
     ops.IntervalFromInteger: timestamp.interval_from_integer,
