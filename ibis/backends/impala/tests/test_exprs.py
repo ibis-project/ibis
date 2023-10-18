@@ -175,8 +175,8 @@ def test_int_builtins(con, expr, expected):
 @pytest.mark.parametrize(
     ("col", "expected"),
     [
-        param("tinyint_col", "int8", id="tinyint"),
-        param("smallint_col", "int16", id="smallint"),
+        param("tinyint_col", "int32", id="tinyint"),
+        param("smallint_col", "int32", id="smallint"),
         param("int_col", "int32", id="int"),
         param("bigint_col", "int64", id="bigint"),
         param("float_col", "float32", id="float"),
@@ -624,13 +624,6 @@ def test_unions_with_ctes(con, alltypes):
 
     expr = join1.union(join2)
     con.explain(expr)
-
-
-def test_head(con):
-    t = con.table("functional_alltypes")
-    result = t.head().execute()
-    expected = t.limit(5).execute()
-    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.parametrize(

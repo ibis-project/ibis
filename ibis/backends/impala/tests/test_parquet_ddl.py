@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import gc
 from posixpath import join as pjoin
 
 import pytest
@@ -13,19 +12,10 @@ pytest.importorskip("impala")
 from ibis.backends.impala.compat import HS2Error  # noqa: E402
 
 
-def test_cleanup_tmp_table_on_gc(con, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
-    table = con.parquet_file(hdfs_path)
-    name = table.op().name
-    table = None
-    gc.collect()
-    assert name not in con.list_tables()
-
-
-def test_persist_parquet_file_with_name(con, test_data_dir, temp_table_db):
+def test_parquet_file_with_name(con, test_data_dir, temp_table):
     hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
 
-    tmp_db, name = temp_table_db
+    name = temp_table
     schema = ibis.schema(
         [
             ("r_regionkey", "int16"),
@@ -33,11 +23,10 @@ def test_persist_parquet_file_with_name(con, test_data_dir, temp_table_db):
             ("r_comment", "string"),
         ]
     )
-    con.parquet_file(hdfs_path, schema=schema, name=name, database=tmp_db, persist=True)
-    gc.collect()
+    con.parquet_file(hdfs_path, schema=schema, name=temp_table)
 
     # table still exists
-    con.table(name, database=tmp_db)
+    con.table(name)
 
 
 def test_query_parquet_file_with_schema(con, test_data_dir):
@@ -82,7 +71,7 @@ def test_query_parquet_file_like_table(con, test_data_dir):
 
 def test_query_parquet_infer_schema(con, test_data_dir):
     hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
-    table = con.parquet_file(hdfs_path)
+    table = con.parquet_file(hdfs_path, like_table="region")
 
     # NOTE: the actual schema should have an int16, but bc this is being
     # inferred from a parquet file, which has no notion of int16, the
@@ -98,11 +87,9 @@ def test_query_parquet_infer_schema(con, test_data_dir):
     assert_equal(table.schema(), ex_schema)
 
 
-def test_create_table_persist_fails_if_called_twice(con, temp_table_db, test_data_dir):
-    tmp_db, tname = temp_table_db
-
+def test_create_table_persist_fails_if_called_twice(con, temp_table, test_data_dir):
     hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
-    con.parquet_file(hdfs_path, name=tname, persist=True, database=tmp_db)
+    con.parquet_file(hdfs_path, like_table="region", name=temp_table)
 
     with pytest.raises(HS2Error):
-        con.parquet_file(hdfs_path, name=tname, persist=True, database=tmp_db)
+        con.parquet_file(hdfs_path, like_table="region", name=temp_table)

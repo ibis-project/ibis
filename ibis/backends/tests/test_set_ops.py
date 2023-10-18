@@ -68,7 +68,15 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
+                [
+                    "impala",
+                    "bigquery",
+                    "dask",
+                    "pandas",
+                    "sqlite",
+                    "snowflake",
+                    "mssql",
+                ],
                 reason="backend doesn't support INTERSECT ALL",
             ),
             id="all",
@@ -76,8 +84,7 @@ def test_union_mixed_distinct(backend, union_subsets):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["polars"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_intersect(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
@@ -107,7 +114,15 @@ def test_intersect(backend, alltypes, df, distinct):
         param(
             False,
             marks=pytest.mark.notyet(
-                ["bigquery", "dask", "pandas", "sqlite", "snowflake", "mssql"],
+                [
+                    "impala",
+                    "bigquery",
+                    "dask",
+                    "pandas",
+                    "sqlite",
+                    "snowflake",
+                    "mssql",
+                ],
                 reason="backend doesn't support EXCEPT ALL",
             ),
             id="all",
@@ -115,8 +130,7 @@ def test_intersect(backend, alltypes, df, distinct):
         param(True, id="distinct"),
     ],
 )
-@pytest.mark.notimpl(["polars"])
-@pytest.mark.notyet(["impala"])
+@pytest.mark.notimpl(["datafusion", "polars"])
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_difference(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
@@ -178,7 +192,7 @@ def test_top_level_union(backend, con, alltypes, distinct):
         param(
             False,
             marks=pytest.mark.notimpl(
-                ["bigquery", "dask", "mssql", "pandas", "snowflake", "sqlite"]
+                ["impala", "bigquery", "dask", "mssql", "pandas", "snowflake", "sqlite"]
             ),
         ),
     ],
@@ -191,8 +205,7 @@ def test_top_level_union(backend, con, alltypes, distinct):
     ],
     ids=["intersect", "difference"],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(["impala"], reason="doesn't support intersection or difference")
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(["druid"], raises=sa.exc.ProgrammingError)
 def test_top_level_intersect_difference(
     backend, con, alltypes, distinct, opname, expected

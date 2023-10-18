@@ -288,7 +288,7 @@ class PyArrowData(DataMapper):
             table = table.rename_columns(schema.names)
 
         if pa_schema != desired_schema:
-            return table.cast(desired_schema)
+            return table.cast(desired_schema, safe=False)
         else:
             return table
 

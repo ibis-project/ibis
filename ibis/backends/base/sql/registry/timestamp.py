@@ -17,6 +17,22 @@ def extract_field(sql_attr):
     return extract_field_formatter
 
 
+def extract_millisecond(translator, op):
+    arg = translator.translate(op.args[0])
+
+    # This is pre-2.0 Impala-style, which did not used to support the
+    # SQL-99 format extract($FIELD from expr)
+    return f"extract({arg}, 'millisecond') % 1000"
+
+
+def extract_microsecond(translator, op):
+    arg = translator.translate(op.args[0])
+
+    # This is pre-2.0 Impala-style, which did not used to support the
+    # SQL-99 format extract($FIELD from expr)
+    return f"extract({arg}, 'microsecond') % 1000000"
+
+
 def extract_epoch_seconds(t, op):
     return f"unix_timestamp({t.translate(op.arg)})"
 

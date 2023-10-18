@@ -254,17 +254,6 @@ def _register_uda(inputs, output, name):
 
 
 @pytest.fixture
-def udfcon(con, monkeypatch):
-    monkeypatch.setitem(con.con.options, "DISABLE_CODEGEN", "0")
-    return con
-
-
-@pytest.fixture
-def alltypes(udfcon):
-    return udfcon.table("functional_alltypes")
-
-
-@pytest.fixture
 def udf_ll(test_data_dir):
     return pjoin(test_data_dir, "udf/udf-sample.ll")
 
@@ -312,23 +301,23 @@ def uda_so(test_data_dir):
     reason="Unknown reason. xfailing to restore the CI for udf tests. #2358"
 )
 def test_identity_primitive_types(
-    udfcon, alltypes, test_data_db, udf_ll, typ, lit_val, col_name
+    con, alltypes, test_data_db, udf_ll, typ, lit_val, col_name
 ):
     col_val = alltypes[col_name]
-    identity_func_testing(udf_ll, udfcon, test_data_db, typ, lit_val, col_val)
+    identity_func_testing(udf_ll, con, test_data_db, typ, lit_val, col_val)
 
 
 @pytest.mark.xfail(
     reason="Unknown reason. xfailing to restore the CI for udf tests. #2358"
 )
-def test_decimal_fail(udfcon, test_data_db, udf_ll):
-    col = udfcon.table("customer").c_acctbal
+def test_decimal_fail(con, test_data_db, udf_ll):
+    col = con.table("customer").c_acctbal
     literal = ibis.literal(1).cast("decimal(12,2)")
     name = "__tmp_udf_" + util.guid()
 
     func = udf_creation_to_op(
         udf_ll,
-        udfcon,
+        con,
         test_data_db,
         name,
         "Identity",
@@ -338,57 +327,55 @@ def test_decimal_fail(udfcon, test_data_db, udf_ll):
 
     expr = func(literal)
     assert issubclass(type(expr), ir.Scalar)
-    result = udfcon.execute(expr)
+    result = con.execute(expr)
     assert result == Decimal(1)
 
     expr = func(col)
     assert issubclass(type(expr), ir.Column)
-    udfcon.execute(expr)
+    con.execute(expr)
 
 
 @pytest.mark.xfail(
     reason="Unknown reason. xfailing to restore the CI for udf tests. #2358"
 )
-def test_mixed_inputs(udfcon, alltypes, test_data_db, udf_ll):
+def test_mixed_inputs(con, alltypes, test_data_db, udf_ll):
     name = "two_args"
     symbol = "TwoArgs"
     inputs = ["int32", "int32"]
     output = "int32"
-    func = udf_creation_to_op(
-        udf_ll, udfcon, test_data_db, name, symbol, inputs, output
-    )
+    func = udf_creation_to_op(udf_ll, con, test_data_db, name, symbol, inputs, output)
 
     expr = func(alltypes.int_col, 1)
     assert issubclass(type(expr), ir.Column)
-    udfcon.execute(expr)
+    con.execute(expr)
 
     expr = func(1, alltypes.int_col)
     assert issubclass(type(expr), ir.Column)
-    udfcon.execute(expr)
+    con.execute(expr)
 
     expr = func(alltypes.int_col, alltypes.tinyint_col)
-    udfcon.execute(expr)
+    con.execute(expr)
 
 
 @pytest.mark.xfail(
     reason="Unknown reason. xfailing to restore the CI for udf tests. #2358"
 )
-def test_implicit_typecasting(udfcon, alltypes, test_data_db, udf_ll):
+def test_implicit_typecasting(con, alltypes, test_data_db, udf_ll):
     col = alltypes.tinyint_col
     literal = ibis.literal(1000)
-    identity_func_testing(udf_ll, udfcon, test_data_db, "int32", literal, col)
+    identity_func_testing(udf_ll, con, test_data_db, "int32", literal, col)
 
 
-def identity_func_testing(udf_ll, udfcon, test_data_db, datatype, literal, column):
+def identity_func_testing(udf_ll, con, test_data_db, datatype, literal, column):
     inputs = [datatype]
     name = "__tmp_udf_" + util.guid()
     func = udf_creation_to_op(
-        udf_ll, udfcon, test_data_db, name, "Identity", inputs, datatype
+        udf_ll, con, test_data_db, name, "Identity", inputs, datatype
     )
 
     expr = func(literal)
     assert issubclass(type(expr), ir.Scalar)
-    result = udfcon.execute(expr)
+    result = con.execute(expr)
     # Hacky
     if datatype == "timestamp":
         assert type(result) == pd.Timestamp
@@ -397,17 +384,17 @@ def identity_func_testing(udf_ll, udfcon, test_data_db, datatype, literal, colum
         if isinstance(lop, ir.Literal):
             np.testing.assert_allclose(lop.value, 5)
         else:
-            np.testing.assert_allclose(result, udfcon.execute(literal), 5)
+            np.testing.assert_allclose(result, con.execute(literal), 5)
 
     expr = func(column)
     assert issubclass(type(expr), ir.Column)
-    udfcon.execute(expr)
+    con.execute(expr)
 
 
 @pytest.mark.xfail(
     reason="Unknown reason. xfailing to restore the CI for udf tests. #2358"
 )
-def test_mult_type_args(udfcon, alltypes, test_data_db, udf_ll):
+def test_mult_type_args(con, alltypes, test_data_db, udf_ll):
     symbol = "AlmostAllTypes"
     name = "most_types"
     inputs = [
@@ -422,12 +409,10 @@ def test_mult_type_args(udfcon, alltypes, test_data_db, udf_ll):
     ]
     output = "int32"
 
-    func = udf_creation_to_op(
-        udf_ll, udfcon, test_data_db, name, symbol, inputs, output
-    )
+    func = udf_creation_to_op(udf_ll, con, test_data_db, name, symbol, inputs, output)
 
     expr = func("a", True, 1, 1, 1, 1, 1.0, 1.0)
-    result = udfcon.execute(expr)
+    result = con.execute(expr)
     assert result == 8
 
     table = alltypes
@@ -441,13 +426,13 @@ def test_mult_type_args(udfcon, alltypes, test_data_db, udf_ll):
         1.0,
         1.0,
     )
-    udfcon.execute(expr)
+    con.execute(expr)
 
 
 @pytest.mark.xfail(
     reason="Unknown reason. xfailing to restore the CI for udf tests. #2358"
 )
-def test_udf_varargs(udfcon, alltypes, udf_ll, test_data_db):
+def test_udf_varargs(con, alltypes, udf_ll, test_data_db):
     t = alltypes
 
     name = f"add_numbers_{util.guid()[:4]}"
@@ -455,32 +440,32 @@ def test_udf_varargs(udfcon, alltypes, udf_ll, test_data_db):
     input_sig = rules.varargs(rules.double)
     func = api.wrap_udf(udf_ll, input_sig, "double", "AddNumbers", name=name)
     func.register(name, test_data_db)
-    udfcon.create_function(func, database=test_data_db)
+    con.create_function(func, database=test_data_db)
 
     expr = func(t.double_col, t.double_col)
     expr.execute()
 
 
-def test_drop_udf_not_exists(udfcon):
+def test_drop_udf_not_exists(con):
     random_name = util.guid()
     with pytest.raises(com.MissingUDFError, match=random_name):
-        udfcon.drop_udf(random_name)
+        con.drop_udf(random_name)
 
 
-def test_drop_uda_not_exists(udfcon):
+def test_drop_uda_not_exists(con):
     random_name = util.guid()
     with pytest.raises(com.MissingUDFError, match=random_name):
-        udfcon.drop_uda(random_name)
+        con.drop_uda(random_name)
 
 
-def udf_creation_to_op(udf_ll, udfcon, test_data_db, name, symbol, inputs, output):
+def udf_creation_to_op(udf_ll, con, test_data_db, name, symbol, inputs, output):
     func = api.wrap_udf(udf_ll, inputs, output, symbol, name)
 
-    udfcon.create_function(func, database=test_data_db)
+    con.create_function(func, database=test_data_db)
 
     func.register(name, test_data_db)
 
-    assert udfcon.exists_udf(name, test_data_db)
+    assert con.exists_udf(name, test_data_db)
     return func
 
 
@@ -512,49 +497,25 @@ def wrapped_count_uda(uda_so):
     return api.wrap_uda(uda_so, ["int32"], "int64", "CountUpdate", name=name)
 
 
-def test_count_uda(udfcon, alltypes, test_data_db, wrapped_count_uda):
+def test_count_uda(con, alltypes, test_data_db, wrapped_count_uda):
     func = wrapped_count_uda
     func.register(func.name, test_data_db)
-    udfcon.create_function(func, database=test_data_db)
+    con.create_function(func, database=test_data_db)
 
     # it works!
     func(alltypes.int_col).execute()
 
 
-def test_list_udas(udfcon, temp_database, wrapped_count_uda):
+def test_list_udas(con, wrapped_count_uda):
     func = wrapped_count_uda
-    db = temp_database
-    udfcon.create_function(func, database=db)
+    con.create_function(func)
 
-    funcs = udfcon.list_udas(database=db)
+    funcs = con.list_udas()
 
-    f = funcs[0]
+    (f,) = (ff for ff in funcs if func.name == ff.name)
     assert f.name == func.name
     assert f.inputs == func.inputs
     assert f.output == func.output
-
-
-@pytest.mark.xfail(
-    reason="Unknown reason. xfailing to restore the CI for udf tests. #2358"
-)
-def test_drop_database_with_udfs_and_udas(udfcon, temp_database, wrapped_count_uda):
-    uda1 = wrapped_count_uda
-
-    udf1 = api.wrap_udf(
-        udf_ll,
-        ["boolean"],
-        "boolean",
-        "Identity",
-        f"udf_{util.guid()}",
-    )
-
-    db = temp_database
-
-    udfcon.create_database(db)
-
-    udfcon.create_function(uda1, database=db)
-    udfcon.create_function(udf1, database=db)
-    # drop happens in test tear down
 
 
 @pytest.fixture

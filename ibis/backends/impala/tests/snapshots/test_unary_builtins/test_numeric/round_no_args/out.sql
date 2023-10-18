@@ -1,1 +1,1 @@
-round(`double_col`)
+cast(round(`double_col`) AS BIGINT)

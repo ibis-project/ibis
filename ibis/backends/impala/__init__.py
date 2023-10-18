@@ -5,15 +5,11 @@ from __future__ import annotations
 import contextlib
 import io
 import operator
-import os
 import re
-import weakref
 from functools import cached_property
-from posixpath import join as pjoin
 from typing import TYPE_CHECKING, Any, Literal
 
-import fsspec
-import numpy as np
+import pandas as pd
 import sqlglot as sg
 
 import ibis.common.exceptions as com
@@ -38,10 +34,9 @@ from ibis.backends.base.sql.ddl import (
     is_fully_qualified,
 )
 from ibis.backends.impala import ddl, udf
-from ibis.backends.impala.client import ImpalaConnection, ImpalaDatabase, ImpalaTable
-from ibis.backends.impala.compat import HS2Error, ImpylaError
+from ibis.backends.impala.client import ImpalaTable
+from ibis.backends.impala.compat import ImpylaError, impyla
 from ibis.backends.impala.compiler import ImpalaCompiler
-from ibis.backends.impala.pandas_interop import DataFrameWriter
 from ibis.backends.impala.udf import (
     aggregate_function,
     scalar_function,
@@ -55,8 +50,9 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
 
-    import pandas as pd
     import pyarrow as pa
+
+    from ibis.backends.base.sql.compiler import DDL, DML
 
 
 __all__ = (
@@ -66,24 +62,6 @@ __all__ = (
     "wrap_uda",
     "wrap_udf",
 )
-
-_HS2_TTypeId_to_dtype = {
-    "BOOLEAN": "bool",
-    "TINYINT": "int8",
-    "SMALLINT": "int16",
-    "INT": "int32",
-    "BIGINT": "int64",
-    "TIMESTAMP": "datetime64[ns]",
-    "FLOAT": "float32",
-    "DOUBLE": "float64",
-    "STRING": "object",
-    "DECIMAL": "object",
-    "BINARY": "object",
-    "VARCHAR": "object",
-    "CHAR": "object",
-    "DATE": "datetime64[ns]",
-    "VOID": None,
-}
 
 
 def _split_signature(x):
@@ -125,72 +103,11 @@ class _type_parser:
         self.buf.write(c)
 
 
-def _chunks_to_pandas_array(chunks):
-    total_length = 0
-    have_nulls = False
-    for c in chunks:
-        total_length += len(c)
-        have_nulls = have_nulls or c.nulls.any()
-
-    type_ = chunks[0].data_type
-    numpy_type = _HS2_TTypeId_to_dtype[type_]
-
-    def fill_nonnull(target, chunks):
-        pos = 0
-        for c in chunks:
-            target[pos : pos + len(c)] = c.values
-            pos += len(c.values)
-
-    def fill(target, chunks, na_rep):
-        pos = 0
-        for c in chunks:
-            nulls = c.nulls.copy()
-            nulls.bytereverse()
-            bits = np.frombuffer(nulls.tobytes(), dtype="u1")
-            mask = np.unpackbits(bits).view(np.bool_)
-
-            k = len(c)
-
-            dest = target[pos : pos + k]
-            dest[:] = c.values
-            dest[mask[:k]] = na_rep
-
-            pos += k
-
-    if have_nulls:
-        if numpy_type in ("bool", "datetime64[ns]"):
-            target = np.empty(total_length, dtype="O")
-            na_rep = np.nan
-        elif numpy_type.startswith("int"):
-            target = np.empty(total_length, dtype="f8")
-            na_rep = np.nan
-        else:
-            target = np.empty(total_length, dtype=numpy_type)
-            na_rep = np.nan
-
-        fill(target, chunks, na_rep)
-    else:
-        target = np.empty(total_length, dtype=numpy_type)
-        fill_nonnull(target, chunks)
-
-    return target
-
-
-def _column_batches_to_dataframe(names, batches):
-    import pandas as pd
-
-    cols = {}
-    for name, chunks in zip(names, zip(*(b.columns for b in batches))):
-        cols[name] = _chunks_to_pandas_array(chunks)
-    return pd.DataFrame(cols, columns=names)
-
-
 class Backend(BaseSQLBackend):
     name = "impala"
     compiler = ImpalaCompiler
 
     _sqlglot_dialect = "hive"  # not 100% accurate, but very close
-    _top_level_methods = ("hdfs_connect",)
 
     class Options(ibis.config.Config):
         """Impala specific options.
@@ -199,20 +116,12 @@ class Backend(BaseSQLBackend):
         ----------
         temp_db : str, default "__ibis_tmp"
             Database to use for temporary objects.
-        temp_hdfs_path : str, default "/tmp/ibis"
-            HDFS path for storage of temporary data.
+        temp_path : str, default "/tmp/ibis"
+            Path for storage of temporary data.
         """
 
         temp_db: str = "__ibis_tmp"
-        temp_hdfs_path: str = "/tmp/hdfs"
-
-    @staticmethod
-    def hdfs_connect(
-        *args: Any,
-        protocol: str = "webhdfs",
-        **kwargs: Any,
-    ) -> fsspec.spec.AbstractFileSystem:
-        return fsspec.filesystem(protocol, *args, **kwargs)
+        temp_path: str = "/tmp/__ibis"
 
     def do_connect(
         self,
@@ -227,7 +136,6 @@ class Backend(BaseSQLBackend):
         auth_mechanism: Literal["NOSASL", "PLAIN", "GSSAPI", "LDAP"] = "NOSASL",
         kerberos_service_name: str = "impala",
         pool_size: int = 8,
-        hdfs_client: fsspec.spec.AbstractFileSystem | None = None,
         **params: Any,
     ):
         """Create an Impala `Backend` for use with Ibis.
@@ -263,8 +171,6 @@ class Backend(BaseSQLBackend):
             Specify a particular `impalad` service principal.
         pool_size
             Size of the connection pool. Typically this is not necessary to configure.
-        hdfs_client
-            An existing HDFS client.
         params
             Any additional parameters necessary to open a connection to Impala.
             Please refer to impyla documentation for the full list of
@@ -274,26 +180,17 @@ class Backend(BaseSQLBackend):
         --------
         >>> import os
         >>> import ibis
-        >>> hdfs_host = os.environ.get("IBIS_TEST_NN_HOST", "localhost")
-        >>> hdfs_port = int(os.environ.get("IBIS_TEST_NN_PORT", 50070))
         >>> impala_host = os.environ.get("IBIS_TEST_IMPALA_HOST", "localhost")
         >>> impala_port = int(os.environ.get("IBIS_TEST_IMPALA_PORT", 21050))
-        >>> hdfs = ibis.impala.hdfs_connect(host=hdfs_host, port=hdfs_port)
-        >>> client = ibis.impala.connect(
-        ...     host=impala_host,
-        ...     port=impala_port,
-        ...     hdfs_client=hdfs,
-        ... )
+        >>> client = ibis.impala.connect(host=impala_host, port=impala_port)
         >>> client  # doctest: +ELLIPSIS
         <ibis.backends.impala.Backend object at 0x...>
         """
-        self._temp_objects = set()
-        self._hdfs = hdfs_client
-
         if ca_cert is not None:
             params["ca_cert"] = str(ca_cert)
-        self.con = ImpalaConnection(
-            pool_size=pool_size,
+
+        # make sure the connection works
+        con = impyla.connect(
             host=host,
             port=port,
             database=database,
@@ -305,35 +202,25 @@ class Backend(BaseSQLBackend):
             kerberos_service_name=kerberos_service_name,
             **params,
         )
+        with contextlib.closing(
+            con.cursor(user=params.get("user"), convert_types=True)
+        ) as cur:
+            cur.ping()
 
+        self.con = con
+        self.options = {}
         self._ensure_temp_db_exists()
 
     @cached_property
     def version(self):
-        with self._safe_raw_sql("select version()") as cursor:
+        with self._safe_raw_sql("SELECT VERSION()") as cursor:
             (result,) = cursor.fetchone()
         return result
 
-    @util.deprecated(instead="use equivalent methods in the backend")
-    def database(self, name: str | None = None):
-        """Return a `Database` object for the `name` database.
-
-        Parameters
-        ----------
-        name
-            Name of the database to return the object for.
-
-        Returns
-        -------
-        Database
-            A database object for the specified database.
-        """
-        return ImpalaDatabase(name=name or self.current_database, client=self)
-
     def list_databases(self, like=None):
         with self._safe_raw_sql("SHOW DATABASES") as cur:
-            databases = self._get_list(cur)
-        return self._filter_with_like(databases, like)
+            databases = fetchall(cur)
+        return self._filter_with_like(databases.name.tolist(), like)
 
     def list_tables(self, like=None, database=None):
         statement = "SHOW TABLES"
@@ -347,65 +234,47 @@ class Backend(BaseSQLBackend):
             statement += f" LIKE '{like}'"
 
         with self._safe_raw_sql(statement) as cursor:
-            tables = [row[0] for row in cursor.fetchall()]
-        return self._filter_with_like(tables)
+            tables = fetchall(cursor)
+        return self._filter_with_like(tables.name.tolist())
+
+    def raw_sql(self, query: str):
+        cursor = self.con.cursor()
+
+        try:
+            for k, v in self.options.items():
+                q = f"SET {k} = {v!r}"
+                util.log(q)
+                cursor.execute_async(q)
+
+            cursor._wait_to_finish()
+
+            util.log(query)
+            cursor.execute_async(query)
+
+            cursor._wait_to_finish()
+        except (Exception, KeyboardInterrupt):
+            cursor.cancel_operation()
+            cursor.close()
+            raise
+
+        return cursor
 
     def fetch_from_cursor(self, cursor, schema):
-        batches = cursor.fetchall(columnar=True)
-        names = [name for name, *_ in cursor.description]
-        df = _column_batches_to_dataframe(names, batches)
+        results = fetchall(cursor)
         if schema:
-            return PandasData.convert_table(df, schema)
-        return df
+            return PandasData.convert_table(results, schema)
+        return results
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, *args, **kwargs):
-        with contextlib.closing(self.raw_sql(*args, **kwargs)) as cursor:
-            yield cursor
-        with contextlib.suppress(AttributeError):
-            cursor.release()
+    def _safe_raw_sql(self, query: str | DDL | DML):
+        if not isinstance(query, str):
+            query = query.compile()
+        with contextlib.closing(self.raw_sql(query)) as cur:
+            yield cur
 
     def _safe_exec_sql(self, *args, **kwargs):
         with self._safe_raw_sql(*args, **kwargs):
             pass
-
-    @property
-    def hdfs(self):
-        if self._hdfs is None:
-            raise com.IbisError(
-                "No HDFS connection; must pass connection "
-                "using the hdfs_client argument to "
-                "ibis.impala.connect"
-            )
-        return self._hdfs
-
-    @property
-    def kudu(self):
-        raise NotImplementedError(
-            "kudu support using kudu-python is no longer supported; "
-            "use impala facilities to manage kudu tables; "
-            "see https://kudu.apache.org/docs/kudu_impala_integration.html"
-        )
-
-    def close(self):
-        """Close the connection and drop temporary objects."""
-        while self._temp_objects:
-            finalizer = self._temp_objects.pop()
-            with contextlib.suppress(HS2Error):
-                finalizer()
-
-        self.con.close()
-
-    def disable_codegen(self, disabled=True):
-        """Turn off or on LLVM codegen in Impala query execution.
-
-        Parameters
-        ----------
-        disabled
-            To disable codegen, pass with no argument or True. To enable
-            codegen, pass False.
-        """
-        self.con.disable_codegen(disabled)
 
     def _fully_qualified_name(self, name, database):
         if is_fully_qualified(name):
@@ -416,16 +285,11 @@ class Backend(BaseSQLBackend):
             dialect=getattr(self, "_sqlglot_dialect", self.name)
         )
 
-    def _get_list(self, cur):
-        tuples = cur.fetchall()
-        return list(map(operator.itemgetter(0), tuples))
-
     @property
     def current_database(self) -> str:
-        # XXX The parent `Client` has a generic method that calls this same
-        # method in the backend. But for whatever reason calling this code from
-        # that method doesn't seem to work. Maybe `con` is a copy?
-        return self.con.database
+        with self._safe_raw_sql("SELECT CURRENT_DATABASE()") as cur:
+            (db,) = cur.fetchone()
+        return db
 
     def create_database(self, name, path=None, force=False):
         """Create a new Impala database.
@@ -435,15 +299,10 @@ class Backend(BaseSQLBackend):
         name
             Database name
         path
-            HDFS path where to store the database data; otherwise uses Impala
-            default
+            Path where to store the database data; otherwise uses the Impala default
         force
             Forcibly create the database
         """
-        if path:
-            # explicit mkdir ensures the user own the dir rather than impala,
-            # which is easier for manual cleanup, if necessary
-            self.hdfs.mkdir(path)
         statement = CreateDatabase(name, path=path, can_exist=force)
         self._safe_exec_sql(statement)
 
@@ -512,13 +371,10 @@ class Backend(BaseSQLBackend):
         qualified_name = self._fully_qualified_name(table_name, database)
         query = f"DESCRIBE {qualified_name}"
 
-        # only pull out the first two columns which are names and types
-        pairs = [row[:2] for row in self.con.fetchall(query)]
-        names, types = zip(*pairs)
-
-        ibis_types = [udf.parse_type(type.lower()) for type in types]
-        ibis_fields = dict(zip(names, ibis_types))
-        return sch.Schema(ibis_fields)
+        with self._safe_raw_sql(query) as cur:
+            meta = fetchall(cur)
+        ibis_types = meta.type.str.lower().map(udf.parse_type)
+        return sch.Schema(dict(zip(meta.name, ibis_types)))
 
     @property
     def client_options(self):
@@ -526,25 +382,16 @@ class Backend(BaseSQLBackend):
 
     def get_options(self) -> dict[str, str]:
         """Return current query options for the Impala session."""
-        return {key: value for key, value, *_ in self.con.fetchall("SET")}
+        with self._safe_raw_sql("SET") as cur:
+            opts = fetchall(cur)
+
+        return dict(zip(opts.option, opts.value))
 
     def set_options(self, options):
-        self.con.set_options(options)
-
-    def reset_options(self):
-        # Must nuke all cursors
-        raise NotImplementedError
+        self.options.update(options)
 
     def set_compression_codec(self, codec):
-        if codec is None:
-            codec = "none"
-        else:
-            codec = codec.lower()
-
-        if codec not in ("none", "gzip", "snappy"):
-            raise ValueError(f"Unknown codec: {codec}")
-
-        self.set_options({"COMPRESSION_CODEC": codec})
+        self.set_options({"COMPRESSION_CODEC": str(codec).lower()})
 
     def create_view(
         self,
@@ -564,16 +411,6 @@ class Backend(BaseSQLBackend):
         stmt = DropView(name, database=database, must_exist=not force)
         self._safe_exec_sql(stmt)
 
-    @contextlib.contextmanager
-    def _setup_insert(self, obj):
-        import pandas as pd
-
-        if isinstance(obj, pd.DataFrame):
-            with DataFrameWriter(self, obj) as writer:
-                yield writer.delimited_table(writer.write_temp_csv())
-        else:
-            yield obj
-
     def table(self, name: str, database: str | None = None, **kwargs: Any) -> ir.Table:
         expr = super().table(name, database=database, **kwargs)
         return ImpalaTable(expr.op())
@@ -588,15 +425,12 @@ class Backend(BaseSQLBackend):
         temp: bool | None = None,
         overwrite: bool = False,
         external: bool = False,
-        # HDFS options
         format="parquet",
         location=None,
         partition=None,
         like_parquet=None,
     ) -> ir.Table:
         """Create a new table in Impala using an Ibis table expression.
-
-        This is currently designed for tables whose data is stored in HDFS.
 
         Parameters
         ----------
@@ -638,30 +472,33 @@ class Backend(BaseSQLBackend):
             raise NotImplementedError
 
         if obj is not None:
-            with self._setup_insert(obj) as to_insert:
-                ast = self.compiler.to_ast(to_insert)
-                select = ast.queries[0]
+            if isinstance(obj, pd.DataFrame):
+                raise NotImplementedError("Pandas DataFrames not yet supported")
 
-                if overwrite:
-                    self.drop_table(name, force=True)
-                self._safe_exec_sql(
-                    CTAS(
-                        name,
-                        select,
-                        database=database,
-                        format=format,
-                        external=external,
-                        partition=partition,
-                        path=location,
-                    )
+            ast = self.compiler.to_ast(obj)
+            select = ast.queries[0]
+
+            if overwrite:
+                self.drop_table(name, force=True)
+
+            self._safe_exec_sql(
+                CTAS(
+                    name,
+                    select,
+                    database=database,
+                    format=format,
+                    external=True if location is not None else external,
+                    partition=partition,
+                    path=location,
                 )
+            )
         else:  # schema is not None
             if overwrite:
                 self.drop_table(name, force=True)
             self._safe_exec_sql(
                 CreateTableWithSchema(
                     name,
-                    schema,
+                    schema if schema is not None else obj.schema(),
                     database=database,
                     format=format,
                     external=external,
@@ -672,20 +509,14 @@ class Backend(BaseSQLBackend):
         return self.table(name, database=database)
 
     def avro_file(
-        self,
-        hdfs_dir,
-        avro_schema,
-        name=None,
-        database=None,
-        external=True,
-        persist=False,
+        self, directory, avro_schema, name=None, database=None, external=True
     ):
         """Create a table to read a collection of Avro data.
 
         Parameters
         ----------
-        hdfs_dir
-            Absolute HDFS path to directory containing avro files
+        directory
+            Server path to directory containing avro files
         avro_schema
             The Avro schema for the data as a Python dict
         name
@@ -694,25 +525,23 @@ class Backend(BaseSQLBackend):
             Database name
         external
             Whether the table is external
-        persist
-            Persist the table
 
         Returns
         -------
         ImpalaTable
             Impala table expression
         """
-        name, database = self._get_concrete_table_path(name, database, persist=persist)
+        name, database = self._get_concrete_table_path(name, database)
 
         stmt = ddl.CreateTableAvro(
-            name, hdfs_dir, avro_schema, database=database, external=external
+            name, directory, avro_schema, database=database, external=external
         )
         self._safe_exec_sql(stmt)
-        return self._wrap_new_table(name, database, persist)
+        return self._wrap_new_table(name, database)
 
     def delimited_file(
         self,
-        hdfs_dir,
+        directory,
         schema,
         name=None,
         database=None,
@@ -721,7 +550,6 @@ class Backend(BaseSQLBackend):
         escapechar=None,
         lineterminator=None,
         external=True,
-        persist=False,
     ):
         """Interpret delimited text files as an Ibis table expression.
 
@@ -730,13 +558,12 @@ class Backend(BaseSQLBackend):
 
         Parameters
         ----------
-        hdfs_dir
-            HDFS directory containing delimited text files
+        directory
+            Server directory containing delimited text files
         schema
             Ibis schema
         name
-            Name for temporary or persistent table; otherwise random names are
-            generated
+            Name for the table; otherwise random names are generated
         database
             Database to create the table in
         delimiter
@@ -748,23 +575,18 @@ class Backend(BaseSQLBackend):
         lineterminator
             Character used to delimit lines
         external
-            Create table as EXTERNAL (data will not be deleted on drop). Not
-            that if persist=False and external=False, whatever data you
-            reference will be deleted
-        persist
-            If True, do not delete the table upon garbage collection of ibis
-            table object
+            Create table as EXTERNAL (data will not be deleted on drop).
 
         Returns
         -------
         ImpalaTable
             Impala table expression
         """
-        name, database = self._get_concrete_table_path(name, database, persist=persist)
+        name, database = self._get_concrete_table_path(name, database)
 
         stmt = ddl.CreateTableDelimited(
             name,
-            hdfs_dir,
+            directory,
             schema,
             database=database,
             delimiter=delimiter,
@@ -774,37 +596,33 @@ class Backend(BaseSQLBackend):
             escapechar=escapechar,
         )
         self._safe_exec_sql(stmt)
-        return self._wrap_new_table(name, database, persist)
+        return self._wrap_new_table(name, database)
 
     def parquet_file(
         self,
-        hdfs_dir,
+        directory,
         schema=None,
         name=None,
         database=None,
         external=True,
         like_file=None,
         like_table=None,
-        persist=False,
     ):
-        """Make indicated parquet file in HDFS available as an Ibis table.
+        """Create an Ibis table from the passed directory of Parquet files.
 
-        The table created can be optionally named and persisted, otherwise a
-        unique name will be generated. Temporarily, for any non-persistent
-        external table created by Ibis we will attempt to drop it when the
-        underlying object is garbage collected (or the Python interpreter shuts
-        down normally).
+        The table can be optionally named, otherwise a unique name will be
+        generated.
 
         Parameters
         ----------
-        hdfs_dir
-            Path in HDFS
+        directory
+            Path
         schema
             If no schema provided, and neither of the like_* argument is
             passed, one will be inferred from one of the parquet files in the
             directory.
         like_file
-            Absolute path to Parquet file in HDFS to use for schema
+            Absolute path to Parquet file on the server to use for schema
             definitions. An alternative to having to supply an explicit schema
         like_table
             Fully scoped and escaped string to an Impala table whose schema we
@@ -817,38 +635,17 @@ class Backend(BaseSQLBackend):
             If a table is external, the referenced data will not be deleted
             when the table is dropped in Impala. Otherwise (external=False)
             Impala takes ownership of the Parquet file.
-        persist
-            Do not drop the table during garbage collection
 
         Returns
         -------
         ImpalaTable
             Impala table expression
         """
-        name, database = self._get_concrete_table_path(name, database, persist=persist)
-
-        # If no schema provided, need to find some absolute path to a file in
-        # the HDFS directory
-        if like_file is None and like_table is None and schema is None:
-            try:
-                file_name = next(
-                    fn
-                    for fn in (
-                        os.path.basename(f["name"])
-                        for f in self.hdfs.ls(hdfs_dir, detail=True)
-                        if f["type"].lower() == "file"
-                    )
-                    if not fn.startswith(("_", "."))
-                    if not fn.endswith((".tmp", ".copying"))
-                )
-            except StopIteration:
-                raise com.IbisError("No files found in the passed directory")
-            else:
-                like_file = pjoin(hdfs_dir, file_name)
+        name, database = self._get_concrete_table_path(name, database)
 
         stmt = ddl.CreateTableParquet(
             name,
-            hdfs_dir,
+            directory,
             schema=schema,
             database=database,
             example_file=like_file,
@@ -857,30 +654,18 @@ class Backend(BaseSQLBackend):
             can_exist=False,
         )
         self._safe_exec_sql(stmt)
-        return self._wrap_new_table(name, database, persist)
+        return self._wrap_new_table(name, database)
 
     def _get_concrete_table_path(
-        self, name: str, database: str | None, persist: bool = False
-    ) -> tuple[str, str]:
-        if not persist:
-            if name is None:
-                name = f"__ibis_tmp_{util.guid()}"
-
-            if database is None:
-                self._ensure_temp_db_exists()
-                database = options.impala.temp_db
-            return name, database
-        else:
-            if name is None:
-                raise com.IbisError("Must pass table name if persist=True")
-            return name, database
+        self, name: str | None, database: str | None
+    ) -> tuple[str, str | None]:
+        return name if name is not None else util.gen_name("impala_table"), database
 
     def _ensure_temp_db_exists(self):
         # TODO: session memoize to avoid unnecessary `SHOW DATABASES` calls
-        name, path = options.impala.temp_db, options.impala.temp_hdfs_path
+        name, path = options.impala.temp_db, options.impala.temp_path
         if name not in self.list_databases():
-            if self._hdfs is not None:
-                self.create_database(name, path=path, force=True)
+            self.create_database(name, path=path, force=True)
 
     def _drop_table(self, name: str) -> None:
         # database might have been dropped, so we suppress the
@@ -888,16 +673,9 @@ class Backend(BaseSQLBackend):
         with contextlib.suppress(ImpylaError):
             self.drop_table(name)
 
-    def _wrap_new_table(self, name, database, persist):
+    def _wrap_new_table(self, name, database):
         qualified_name = self._fully_qualified_name(name, database)
         t = self.table(name, database=database)
-        if not persist:
-            self._temp_objects.add(
-                # weakref the op instead of the expression because the table is
-                # potentially collected after subsequent use when `_erase_expr`
-                # unwraps the Expr layer
-                weakref.finalize(t.op(), self._drop_table, qualified_name)
-            )
 
         # Compute number of rows in table for better default query planning
         cardinality = t.count().execute()
@@ -907,9 +685,6 @@ class Backend(BaseSQLBackend):
         )
 
         return t
-
-    def text_file(self, hdfs_path, column_name="value"):
-        """Interpret text data as a table with a single string column."""
 
     def insert(
         self,
@@ -1033,8 +808,6 @@ class Backend(BaseSQLBackend):
 
     def _get_schema_using_query(self, query):
         with self._safe_raw_sql(f"SELECT * FROM ({query}) t0 LIMIT 0") as cur:
-            # resets the state of the cursor and closes operation
-            cur.fetchall()
             ibis_fields = self._adapt_types(cur.description)
 
         return sch.Schema(ibis_fields)
@@ -1179,11 +952,12 @@ class Backend(BaseSQLBackend):
             ibis_type = udf._impala_type_to_ibis(x.lower())
             return dt.dtype(ibis_type)
 
-        tuples = cur.fetchall()
-        if len(tuples) > 0:
+        rows = fetchall(cur)
+        if not rows.empty:
             result = []
-            for tup in tuples:
-                out_type, sig = tup[:2]
+            for _, row in rows.iterrows():
+                out_type = row["return type"]
+                sig = row["signature"]
                 name, types = _split_signature(sig)
                 types = _type_parser(types).types
 
@@ -1197,8 +971,6 @@ class Backend(BaseSQLBackend):
                     else:
                         t = _to_type(var)
                         inputs = rlz.listof(t)
-                        # TODO
-                        # inputs.append(varargs(t))
                         break
 
                 output = udf._impala_type_to_ibis(out_type.lower())
@@ -1260,7 +1032,7 @@ class Backend(BaseSQLBackend):
         self._safe_exec_sql(stmt)
 
     def refresh(self, name: str, database: str | None = None) -> None:
-        """Reload HDFS block location metadata for a table.
+        """Reload metadata for a table.
 
         This can be useful after ingesting data as part of an ETL pipeline, for
         example.
@@ -1361,26 +1133,6 @@ class Backend(BaseSQLBackend):
                 adapted_types.append(typename)
         return dict(zip(names, adapted_types))
 
-    def write_dataframe(
-        self,
-        df: pd.DataFrame,
-        path: str,
-        format: Literal["csv"] = "csv",
-    ) -> Any:
-        """Write a pandas DataFrame to indicated file path.
-
-        Parameters
-        ----------
-        df
-            Pandas DataFrame
-        path
-            Absolute file path
-        format
-            File format
-        """
-        writer = DataFrameWriter(self, df)
-        return writer.write_csv(path)
-
     def to_pyarrow(
         self,
         expr: ir.Expr,
@@ -1417,3 +1169,123 @@ class Backend(BaseSQLBackend):
         return pa.RecordBatchReader.from_batches(
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )
+
+    def explain(
+        self, expr: ir.Expr | str, params: Mapping[ir.Expr, Any] | None = None
+    ) -> str:
+        """Explain an expression.
+
+        Return the query plan associated with the indicated expression or SQL
+        query.
+
+        Returns
+        -------
+        str
+            Query plan
+        """
+        if isinstance(expr, ir.Expr):
+            context = self.compiler.make_context(params=params)
+            query_ast = self.compiler.to_ast(expr, context)
+            if len(query_ast.queries) > 1:
+                raise Exception("Multi-query expression")
+
+            query = query_ast.queries[0].compile()
+        else:
+            query = expr
+
+        statement = f"EXPLAIN {query}"
+
+        with self._safe_raw_sql(statement) as cur:
+            results = fetchall(cur)
+
+        return "\n".join(["Query:", util.indent(query, 2), "", *results.iloc[:, 0]])
+
+
+def fetchall(cur):
+    batches = cur.fetchcolumnar()
+    names = list(map(operator.itemgetter(0), cur.description))
+    df = _column_batches_to_dataframe(names, batches)
+    return df
+
+
+def _column_batches_to_dataframe(names, batches):
+    import pandas as pd
+
+    cols = {
+        name: _chunks_to_pandas_array(chunks)
+        for name, chunks in zip(names, zip(*(b.columns for b in batches)))
+    }
+
+    return pd.DataFrame(cols, columns=names)
+
+
+_HS2_TTypeId_to_dtype = {
+    "BOOLEAN": "bool",
+    "TINYINT": "int8",
+    "SMALLINT": "int16",
+    "INT": "int32",
+    "BIGINT": "int64",
+    "TIMESTAMP": "datetime64[ns]",
+    "FLOAT": "float32",
+    "DOUBLE": "float64",
+    "STRING": "object",
+    "DECIMAL": "object",
+    "BINARY": "object",
+    "VARCHAR": "object",
+    "CHAR": "object",
+    "DATE": "datetime64[ns]",
+    "VOID": None,
+}
+
+
+def _chunks_to_pandas_array(chunks):
+    import numpy as np
+
+    total_length = 0
+    have_nulls = False
+    for c in chunks:
+        total_length += len(c)
+        have_nulls = have_nulls or c.nulls.any()
+
+    type_ = chunks[0].data_type
+    numpy_type = _HS2_TTypeId_to_dtype[type_]
+
+    def fill_nonnull(target, chunks):
+        pos = 0
+        for c in chunks:
+            target[pos : pos + len(c)] = c.values
+            pos += len(c.values)
+
+    def fill(target, chunks, na_rep):
+        pos = 0
+        for c in chunks:
+            nulls = c.nulls.copy()
+            nulls.bytereverse()
+            bits = np.frombuffer(nulls.tobytes(), dtype="u1")
+            mask = np.unpackbits(bits).view(np.bool_)
+
+            k = len(c)
+
+            dest = target[pos : pos + k]
+            dest[:] = c.values
+            dest[mask[:k]] = na_rep
+
+            pos += k
+
+    if have_nulls:
+        if numpy_type in ("bool", "datetime64[ns]"):
+            target = np.empty(total_length, dtype="O")
+            na_rep = np.nan
+        elif numpy_type.startswith("int"):
+            target = np.empty(total_length, dtype="f8")
+            na_rep = np.nan
+        else:
+            target = np.empty(total_length, dtype=numpy_type)
+            na_rep = np.nan
+
+        fill(target, chunks, na_rep)
+    else:
+        target = np.empty(total_length, dtype=numpy_type)
+        fill_nonnull(target, chunks)
+
+    return target

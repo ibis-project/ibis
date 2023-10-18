@@ -1,1 +1,1 @@
-ceil(`int_col`)
+cast(ceil(`int_col`) AS BIGINT)

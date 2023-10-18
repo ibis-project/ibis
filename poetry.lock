@@ -7282,7 +7282,7 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "duckdb-engine", "fsspec", "geoalchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "requests", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-views", "trino"]
+all = ["black", "clickhouse-connect", "dask", "datafusion", "db-dtypes", "deltalake", "duckdb", "duckdb-engine", "geoalchemy2", "geopandas", "google-cloud-bigquery", "google-cloud-bigquery-storage", "graphviz", "impyla", "oracledb", "packaging", "polars", "psycopg2", "pydata-google-auth", "pydruid", "pymysql", "pyodbc", "pyspark", "regex", "shapely", "snowflake-connector-python", "snowflake-sqlalchemy", "sqlalchemy", "sqlalchemy-views", "trino"]
 bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
 clickhouse = ["clickhouse-connect", "sqlalchemy"]
 dask = ["dask", "regex"]
@@ -7293,7 +7293,7 @@ druid = ["pydruid", "sqlalchemy"]
 duckdb = ["duckdb", "duckdb-engine", "sqlalchemy", "sqlalchemy-views"]
 flink = []
 geospatial = ["geoalchemy2", "geopandas", "shapely"]
-impala = ["fsspec", "impyla", "requests", "sqlalchemy"]
+impala = ["impyla", "sqlalchemy"]
 mssql = ["pyodbc", "sqlalchemy", "sqlalchemy-views"]
 mysql = ["pymysql", "sqlalchemy", "sqlalchemy-views"]
 oracle = ["oracledb", "packaging", "sqlalchemy", "sqlalchemy-views"]
@@ -7309,4 +7309,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "de627c2c0cdc1bc7dd4d4fc8896de8dc7ca7f818bd04549f828632f173e2192a"
+content-hash = "5ae8af6ed23218158b4fddb4003f43626f6e3ebe7ab951d63837a98fd40888bd"
