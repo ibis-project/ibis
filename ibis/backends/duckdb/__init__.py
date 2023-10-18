@@ -764,6 +764,44 @@ WHERE catalog_name = :database"""
 
         return self.table(table_name)
 
+    def attach(
+        self, path: str | Path, name: str | None = None, read_only: bool = False
+    ) -> None:
+        """Attach another DuckDB database to the current DuckDB session.
+
+        Parameters
+        ----------
+        path
+            Path to the database to attach.
+        name
+            Name to attach the database as. Defaults to the basename of `path`.
+        read_only
+            Whether to attach the database as read-only.
+        """
+        code = f"ATTACH '{path}'"
+
+        if name is not None:
+            name = sg.to_identifier(name).sql(self.name)
+            code += f" AS {name}"
+
+        if read_only:
+            code += " (READ_ONLY)"
+
+        with self.begin() as con:
+            con.exec_driver_sql(code)
+
+    def detach(self, name: str) -> None:
+        """Detach a database from the current DuckDB session.
+
+        Parameters
+        ----------
+        name
+            The name of the database to detach.
+        """
+        name = sg.to_identifier(name).sql(self.name)
+        with self.begin() as con:
+            con.exec_driver_sql(f"DETACH {name}")
+
     def attach_sqlite(
         self, path: str | Path, overwrite: bool = False, all_varchar: bool = False
     ) -> None:
