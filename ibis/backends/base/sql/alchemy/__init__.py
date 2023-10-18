@@ -904,19 +904,27 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
     currently active one.
     """
 
-    def _get_sqla_table(
-        self,
-        name: str,
-        schema: str | None = None,
-        database: str | None = None,
-        **_: Any,
-    ) -> sa.Table:
-        current_db = self.current_database
-        current_schema = self.current_schema
+    def _get_table_identifier(self, *, name, schema, database):
         if schema is None:
-            schema = current_schema
-        *db, schema = schema.split(".")
-        db = "".join(db) or database or current_db
+            schema = self.current_schema
+
+        try:
+            schema = sg.parse_one(schema, into=sg.exp.Identifier)
+        except sg.ParseError:
+            # not actually a table, but that's how sqlglot parses
+            # `CREATE SCHEMA` statements
+            parsed = sg.parse_one(schema, into=sg.exp.Table)
+
+            # user passed database="foo", schema="bar.baz", which is ambiguous
+            if database is not None:
+                raise com.IbisInputError(
+                    "Cannot specify both `database` and a dotted path in `schema`"
+                )
+
+            db = parsed.args["db"].this
+            schema = parsed.args["this"].this
+        else:
+            db = database
 
         table = sg.table(
             name,
@@ -924,6 +932,16 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
             catalog=db,
             quoted=self.compiler.translator_class._quote_table_names,
         )
+        return table
+
+    def _get_sqla_table(
+        self,
+        name: str,
+        schema: str | None = None,
+        database: str | None = None,
+        **_: Any,
+    ) -> sa.Table:
+        table = self._get_table_identifier(name=name, schema=schema, database=database)
         metadata_query = sg.select(STAR).from_(table).limit(0).sql(dialect=self.name)
         pairs = self._metadata(metadata_query)
         ibis_schema = ibis.schema(pairs)
@@ -948,7 +966,7 @@ class AlchemyCrossSchemaBackend(BaseAlchemyBackend):
             con.exec_driver_sql(drop_table_sql)
 
 
-@compiles(sa.Table, "trino")
+@compiles(sa.Table, "trino", "duckdb")
 def compile_trino_table(element, compiler, **kw):
     return element.fullname
 
